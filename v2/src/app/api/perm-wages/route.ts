@@ -26,6 +26,12 @@ import { binWidth, clampBins, MIN_FOR_MEDIAN } from "@/lib/wageStats";
  */
 export const revalidate = 0;
 
+// The files behind these figures change four times a year, so a response is
+// cached at the edge for a day and served stale for a week while it refreshes.
+// Turso bills rows read: the software-developer group alone is ~120,000 rows
+// per uncached call, and a reader dragging a filter fires several.
+const CACHE_HEADERS = { "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800" };
+
 // Nothing DOL prints is anywhere near these. They exist so a caller cannot
 // hand us a megabyte and make us do work proportional to it.
 const MAX_CODE = 16;
@@ -68,7 +74,7 @@ export async function GET(request: Request) {
   // Below the floor there is nothing to draw and nothing to break down, and
   // the histogram query would still cost a full scan of the filtered set.
   if (stats.n < MIN_FOR_MEDIAN) {
-    return NextResponse.json({ stats, bins: [], binWidth: 0, below: 0, above: 0, byState: [] });
+    return NextResponse.json({ stats, bins: [], binWidth: 0, below: 0, above: 0, byState: [] }, { headers: CACHE_HEADERS });
   }
 
   // Width comes from the SELECTED subset's own middle. A ladder that suits the
@@ -86,5 +92,5 @@ export async function GET(request: Request) {
   const hi = stats.p95 !== null ? Math.floor(stats.p95 / width) * width : 0;
   const { bins, below, above } = clampBins(raw, lo, hi);
 
-  return NextResponse.json({ stats, bins, binWidth: width, below, above, byState });
+  return NextResponse.json({ stats, bins, binWidth: width, below, above, byState }, { headers: CACHE_HEADERS });
 }
