@@ -54,6 +54,13 @@ describe("the calm system", () => {
     expect(FILES.length).toBeGreaterThan(800);
   });
 
+  it("paints nothing in a pale lime wash", () => {
+    // No highlighter-green wash (the owner's call, Oct 15 2026). Lime is solid
+    // (with ink on it) or a 4px+ edge; a wash behind text or a row is the tint.
+    expect(findAll(tok("(?:[\\w-]+:)*bg-(?:primary|green-\\d+|emerald-\\d+)/(?:[1-3]?\\d)"))).toEqual([]);
+    expect(findAll(tok("(?:[\\w-]+:)*bg-(?:green|emerald|lime)-(?:50|100|200)"))).toEqual([]);
+  });
+
   it("draws no hard offset shadow", () => {
     expect(findAll(tok("(?:[\\w-]+:)*shadow-(?:hard(?:-sm|-lg)?|\\[[^\\]\\s]*px[^\\]\\s]*\\])"))).toEqual([]);
   });
