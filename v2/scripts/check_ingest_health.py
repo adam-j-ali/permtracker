@@ -809,6 +809,61 @@ def check_policy_sources(db) -> int:
     return 0
 
 
+# Jobs that read their pages in a browser, not on a server (Nov 3 2026): travel.state.gov and egov.uscis.gov
+# refuse scripts and Search Console needs a sign-in. Such a job can stop unnoticed, and one that only
+# loads when its source moved leaves no trace on a quiet day. So every firing records a heartbeat, due or not,
+# through `permtracker-uscis browser-check <name> <note>` (script `browser-timer:<name>`), and a job that
+# stopped shows here within days instead of when its dataset finally goes stale. Days allowed: the job's own
+# interval plus a day. Keep this in step with the browser jobs' own schedules.
+BROWSER_TIMERS = {
+    "bulletin-read": ("the visa bulletin read", 2),
+    "iv-tool-read": ("State's IV scheduling table", 2),
+    "state-pages-read": ("NVC timeframes and visa wait times", 2),
+    "uscis-times": ("USCIS's processing times", 8),
+    "gsc-round": ("the Search Console round", 2),
+}
+# A heartbeat whose note starts this way ran but couldn't read its page (Chrome closed, a challenge it
+# couldn't clear by itself, the page moved).
+BROWSER_FAILED = "could not read"
+
+
+def check_browser_timers(db) -> int:
+    """Warn when a browser timer hasn't checked in within its interval, or couldn't read its page.
+
+    Never a failure: a browser job stops whenever the computer running it sleeps, and nothing on the server is
+    wrong when it does. The warning says what to do."""
+    for name, (label, days) in BROWSER_TIMERS.items():
+        try:
+            got = query_rows(db, "SELECT finished_at, note FROM ingest_runs WHERE script = ? "
+                             "ORDER BY finished_at DESC LIMIT 1", [f"browser-timer:{name}"])
+        except RuntimeError as exc:
+            print(f"browser timer     : {name} unreadable ({str(exc)[:100]})")
+            continue
+        if not got:
+            print(f"browser timer     : {name} has never checked in  NEVER")
+            print(f"::warning::The browser timer {name} ({label}) has never checked in. It runs in a browser, "
+                  "off this server: start it where the browser jobs run.")
+            continue
+        try:
+            age = (NOW_MS - int(got[0][0])) / 86_400_000
+        except (TypeError, ValueError, IndexError):
+            print(f"browser timer     : {name} has an unreadable heartbeat ({str(got[0])[:80]})")
+            continue
+        note = str(got[0][1] or "")
+        if age > days:
+            print(f"browser timer     : {name} last checked in {age:.1f} days ago  STOPPED")
+            print(f"::warning::The browser timer {name} ({label}) last checked in {age:.0f} days ago, past its "
+                  f"{days}-day allowance: the Claude Code session that runs it has probably ended. Reopen it and "
+                  "recreate the timer from ~/.claude/timers/registry.py.")
+        elif note.startswith(BROWSER_FAILED):
+            print(f"browser timer     : {name} ran but couldn't read its page  READ FAILED")
+            print(f"::warning::The browser timer {name} ({label}) ran {age * 24:.0f} hours ago but couldn't read "
+                  f"its page: {note[:200]}")
+        else:
+            print(f"browser timer     : {name} checked in {age * 24:.0f} hours ago  ok")
+    return 0
+
+
 def check_data_gov_key(db) -> int:
     """Warn while the api.data.gov readers run on DEMO_KEY: 50 requests a day
     for the server's address, so they read twice a day, not every half hour.
@@ -1070,6 +1125,7 @@ def main() -> int:
     check_warn_states(db)             # a warning only; see its docstring
     check_policy_sources(db)          # a warning only; see its docstring
     check_data_gov_key(db)            # a warning only; see its docstring
+    check_browser_timers(db)          # a warning only; see its docstring
     check_posted_vs_typed(db)         # a warning only; see its docstring
     check_consular_facts()            # a warning only; see its docstring
     demand_bad = check_lookup_demand(db)
