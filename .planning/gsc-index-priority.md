@@ -1933,3 +1933,30 @@ Still to request:
    and `/visa-bulletin/categories/eb2-india`, then `/api-terms`, `/i485-by-field-office`, `/perm-attorneys`,
    `/perm-by-state`, `/perm-denial-risk`, `/perm-employers`, `/perm-wages`, `/perm-employers/under-review`,
    `/guides/tracking-a-case-without-an-account`, `/guides/tracking-perm-deadlines`.
+
+### Round, Saturday Nov 7 2026 (about 11:52 AM to 12:00 PM EST, cut short)
+
+What's live is a1cef84b (release 528), which includes dcba50b9 (the 2:00 AM EST run shipped it), so the pages held
+for it are due now. The Chrome extension dropped off partway through the fifth request.
+
+Requested (4, no quota limit reached):
+- `/case-search`: crawled Nov 5, 4:40 PM.
+- `/lca-cases`: crawled Nov 5, 4:47 PM.
+- `/visa-refusals`: indexed, crawled Nov 6, 2:45 AM, before the change that shipped at 2:00 AM today.
+- `/changelog/every-visa-at-each-consulate`: unknown to Google. The request was clicked as the extension dropped, so
+  it may not have gone through: inspect it first next round.
+
+Skipped: `/layoffs`, crawled Nov 5, 7:39 PM, with no change to it since.
+
+Still to request:
+1. Check `/changelog/every-visa-at-each-consulate` (request it if it still reads unknown to Google).
+2. Now due (dcba50b9 is live): `/perm-case-status`, `/filings-by-day`, `/perm-by-the-numbers`, `/seasonal-cases`.
+3. Changed again by the 2:00 AM release (`node scripts/gsc_queue.mjs --since 0e20b3db`), requested Nov 6 before it:
+   `/perm-processing-times`, `/pwd-cases`, `/today`.
+4. Then the rest of the Nov 6 list: `/`, `/for-attorneys`, `/h1b-cap-exempt-employers`, `/nvc-waiting-list`,
+   `/open-data`, `/perm-layoff-disclosures`, `/privacy`, `/terms`, `/visa-issuances`, `/visa-wait-times`,
+   `/wage-violations`, `/tools/green-card-line`, `/tools/green-card-timeline`, `/tools/priority-date-calculator`,
+   `/visa-bulletin/family`, the samples `/perm-attorneys/fragomen-del-rey-bernsen-loewy-llp` and
+   `/visa-bulletin/categories/eb2-india`, then `/api-terms`, `/i485-by-field-office`, `/perm-attorneys`,
+   `/perm-by-state`, `/perm-denial-risk`, `/perm-employers`, `/perm-wages`, `/perm-employers/under-review`,
+   `/guides/tracking-a-case-without-an-account`, `/guides/tracking-perm-deadlines`.
