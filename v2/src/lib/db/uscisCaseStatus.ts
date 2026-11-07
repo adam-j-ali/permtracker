@@ -5,6 +5,7 @@ import { MS_PER_DAY, MS_PER_HOUR } from "@/lib/time";
 import { exec, one } from "./client";
 import {
   fetchCaseStatus,
+  uscisEnv,
   type CaseStatusResult,
   type ClientDeps,
   type UscisCaseStatus,
@@ -202,6 +203,13 @@ export async function lookupUscisCase(
   now: Date = new Date(),
   deps: ClientDeps & { freshMs?: number } = {},
 ): Promise<UscisLookupResult> {
+  // A sandbox answer is about one of USCIS's staging receipts, not anyone's case: never stored or read back.
+  if (uscisEnv() === "sandbox") {
+    const live = await fetchCaseStatus(receipt, { now: () => now, fetchImpl: deps.fetchImpl });
+    if (live.kind !== "ok") return live;
+    const t = now.getTime();
+    return { kind: "ok", status: { ...live.status, seenAt: t, firstSeenAt: t, lastChangeAt: t }, source: "live" };
+  }
   const freshMs = deps.freshMs ?? FRESH_MS;
   const stored = await readStored(receipt);
   if (stored && now.getTime() - stored.seenAt < freshMs) {

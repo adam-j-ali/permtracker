@@ -1,0 +1,13 @@
+[Unit]
+Description=Schedule for permtracker-uscis@uscis-sandbox
+# USCIS's Case Status sandbox, asked once a day while the site holds sandbox
+# keys: USCIS wants 5 consecutive calendar days of traffic, 200 and 4xx both,
+# before it grants production keys (Nov 7 2026). Inside the sandbox's hours
+# (weekdays 7 AM to 8 PM ET). Without sandbox keys the job does nothing.
+[Timer]
+OnCalendar=*-*-* 10:15:00 America/New_York
+Persistent=true
+Unit=permtracker-uscis@uscis-sandbox.service
+
+[Install]
+WantedBy=timers.target

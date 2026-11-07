@@ -35,8 +35,11 @@ import {
   underUscisDailyBudget,
   uscisBudgetDay,
   uscisDateToIso,
-  uscisEnabled,
+  SANDBOX_CALLER_HEADER,
+  uscisAnswers,
+  uscisEnv,
   uscisLimits,
+  uscisPublic,
 } from "../torchClient";
 
 const CASE = {
@@ -89,26 +92,80 @@ afterEach(() => {
   delete process.env.USCIS_ENV;
   delete process.env.USCIS_CLIENT_ID;
   delete process.env.USCIS_CLIENT_SECRET;
+  delete process.env.REVALIDATE_SECRET;
 });
+
+/** A request to the route, carrying the sandbox caller's header when given. */
+function routeReq(header?: string): Request {
+  const headers = header === undefined ? undefined : { [SANDBOX_CALLER_HEADER]: header };
+  return new Request("https://permtracker.app/api/uscis-case-status?receipt=EAC9999103403", { headers });
+}
 
 describe("the flag", () => {
   it("is off without USCIS_ENV, and off with USCIS_ENV but no credentials", async () => {
-    expect(uscisEnabled()).toBe(false);
+    expect(uscisEnv()).toBeNull();
     process.env.USCIS_ENV = "sandbox";
-    expect(uscisEnabled()).toBe(false);
+    expect(uscisEnv()).toBeNull();
     process.env.USCIS_CLIENT_ID = "x";
-    expect(uscisEnabled()).toBe(false);
+    expect(uscisEnv()).toBeNull();
     process.env.USCIS_CLIENT_SECRET = "y";
-    expect(uscisEnabled()).toBe(true);
+    expect(uscisEnv()).toBe("sandbox");
   });
 
   it("refuses an unknown USCIS_ENV value rather than guessing a host", () => {
     process.env.USCIS_ENV = "prod"; // not a value we accept
     process.env.USCIS_CLIENT_ID = "x";
     process.env.USCIS_CLIENT_SECRET = "y";
-    expect(uscisEnabled()).toBe(false);
+    expect(uscisEnv()).toBeNull();
   });
 
+  it("puts the public page live on production keys only, never on sandbox keys", () => {
+    expect(uscisPublic()).toBe(false);
+    process.env.USCIS_CLIENT_ID = "x";
+    process.env.USCIS_CLIENT_SECRET = "y";
+    process.env.USCIS_ENV = "sandbox";
+    expect(uscisPublic()).toBe(false);
+    process.env.USCIS_ENV = "production";
+    expect(uscisPublic()).toBe(true);
+  });
+});
+
+describe("who the keys answer", () => {
+  beforeEach(() => {
+    process.env.USCIS_CLIENT_ID = "x";
+    process.env.USCIS_CLIENT_SECRET = "y";
+    process.env.REVALIDATE_SECRET = "site-secret-value";
+  });
+
+  it("answers nobody without keys, even the server's own caller", async () => {
+    delete process.env.USCIS_CLIENT_SECRET;
+    process.env.USCIS_ENV = "sandbox";
+    expect(await uscisAnswers(routeReq("site-secret-value"))).toBe(false);
+  });
+
+  it("on sandbox keys answers only the server's caller with the site's secret", async () => {
+    process.env.USCIS_ENV = "sandbox";
+    expect(await uscisAnswers(routeReq())).toBe(false);
+    expect(await uscisAnswers(routeReq("a-guess"))).toBe(false);
+    expect(await uscisAnswers(routeReq(""))).toBe(false);
+    expect(await uscisAnswers(routeReq("site-secret-value"))).toBe(true);
+  });
+
+  it("on sandbox keys answers nobody when the site's secret is unset", async () => {
+    process.env.USCIS_ENV = "sandbox";
+    delete process.env.REVALIDATE_SECRET;
+    expect(await uscisAnswers(routeReq(""))).toBe(false);
+    expect(await uscisAnswers(routeReq("site-secret-value"))).toBe(false);
+  });
+
+  it("on production keys answers every visitor, header or not", async () => {
+    process.env.USCIS_ENV = "production";
+    expect(await uscisAnswers(routeReq())).toBe(true);
+    expect(await uscisAnswers(routeReq("a-guess"))).toBe(true);
+  });
+});
+
+describe("off", () => {
   it("returns disabled and touches neither the network nor the database when off", async () => {
     const { f } = fakeFetch(() => jsonRes(200, CASE));
     const r = await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 });

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { exec, one } from "@/lib/db/client";
+import { secretMatches } from "@/lib/secretMatch";
 import { easternDay } from "@/lib/time";
 
 /**
@@ -97,9 +98,28 @@ export function uscisEnv(): UscisEnv | null {
   return e;
 }
 
-/** True when all three variables are set. The page and route read this, never the values. */
-export function uscisEnabled(): boolean {
-  return uscisEnv() !== null;
+/**
+ * The header a server job sends to use SANDBOX keys; its value is the site's REVALIDATE_SECRET.
+ * USCIS's sandbox knows only its staging receipts, so a visitor's real receipt would read "not
+ * found": sandbox keys answer the five days of test traffic USCIS asks for
+ * (`permtracker-uscis uscis-sandbox`) and a demo, never the public page (Nov 7 2026).
+ */
+export const SANDBOX_CALLER_HEADER = "x-pt-uscis-sandbox";
+
+/** True only on production keys: the public page offers the live lookup then, and only then. */
+export function uscisPublic(): boolean {
+  return uscisEnv() === "production";
+}
+
+/**
+ * Whether the route may answer this request: anyone on production keys; on sandbox keys, only a
+ * caller carrying `SANDBOX_CALLER_HEADER` with the site's REVALIDATE_SECRET; nobody without keys.
+ */
+export async function uscisAnswers(req: Request): Promise<boolean> {
+  const env = uscisEnv();
+  if (env === "production") return true;
+  if (env !== "sandbox") return false;
+  return secretMatches(req.headers.get(SANDBOX_CALLER_HEADER), process.env.REVALIDATE_SECRET);
 }
 
 /** The day, in USCIS's own zone, that a call is charged to. */

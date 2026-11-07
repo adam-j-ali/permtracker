@@ -77,6 +77,27 @@ describe("GET /api/uscis-case-status", () => {
     expect(lookup).not.toHaveBeenCalled();
   });
 
+  it("asks the access check about THIS request, so sandbox keys can answer only the server's caller", async () => {
+    const seen: Request[] = [];
+    const gated = makeUscisCaseStatusHandler({
+      lookup: (r, n) => lookup(r, n),
+      enabled: async (req) => {
+        seen.push(req);
+        return req.headers.get("x-test-caller") === "yes";
+      },
+      now: () => NOW,
+    });
+    const visitor = await gated(get("EAC9999103403"));
+    expect(visitor.status).toBe(503);
+    expect(lookup).not.toHaveBeenCalled();
+    lookup.mockResolvedValue({ kind: "not_found" });
+    const caller = get("EAC9999103403", "203.0.113.9");
+    caller.headers.set("x-test-caller", "yes");
+    expect((await gated(caller)).status).toBe(404);
+    expect(lookup).toHaveBeenCalledTimes(1);
+    expect(seen.map((r) => r.headers.get("x-test-caller"))).toEqual([null, "yes"]);
+  });
+
   it("normalises the receipt before the lookup and answers no-store", async () => {
     lookup.mockResolvedValue({ kind: "ok", status: STORED, source: "stored" });
     const res = await handler(get(" eac-9999-103403 "));
