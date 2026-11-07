@@ -26,6 +26,13 @@ sub-pages, Demo, FAQs), Nov 7 2026, about 2 PM EST:
 - **USCIS reviews** desktop and mobile readability, data retention and deletion, and privacy practices.
 - **Sharing a login or API keys is prohibited** (FAQ): anyone else who needs the keys gets their own account
   and joins the Developer Team.
+- **Not an option: reading statuses through a signed-in my.uscis.gov session** (suggested to the owner Nov 7 2026).
+  USCIS's account terms (myaccount.uscis.gov/legal-terms, read Nov 7 2026): "I will not utilize any third-party
+  software, service, program, or platform to communicate with DHS, USCIS, or any DHS component" (accessibility tools
+  excepted), and "Any violation of these Terms may result in immediate suspension or termination of any access".
+  And it can't serve a public lookup anyway: every GitHub project that calls `my.uscis.gov/account/case-service/api/cases/`
+  (ten read Nov 7) works only on the signed-in account's own cases ("Each session cookie only grants access to the
+  cases owned by the logged-in account", finxster/uscis-tracker README line 24).
 - **Before any sandbox key reaches the server:** the public `/uscis-case-status` page must not go live on
   sandbox keys (the sandbox knows only staging receipts, so every real receipt would read "not found"). Sandbox
   answers only the server's own exercise job and a demo, never the public page. Built Nov 7 2026: the page goes
