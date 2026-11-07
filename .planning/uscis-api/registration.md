@@ -32,8 +32,11 @@ sub-pages, Demo, FAQs), Nov 7 2026, about 2 PM EST:
   live on production keys only (`uscisPublic`), the route answers sandbox keys only for a caller carrying
   `x-pt-uscis-sandbox` with the site's REVALIDATE_SECRET (`uscisAnswers`), sandbox answers are never stored, and
   `permtracker-uscis@uscis-sandbox.timer` asks once a day (a staging receipt and an unknown one). The demo itself
-  then needs the lookup shown against sandbox keys: a dev server with the sandbox keys in its own env, or the
-  production site switched to sandbox for the half hour, decided nearer February.
+  then needs the lookup shown against sandbox keys. USCIS's demo agenda (read Nov 7 2026) settles where: "Use of
+  your staging environment, ensuring that all PII is removed", showing "HTTPS response handling of ALL documented
+  response codes" (200, 401, 404, 422, 429, 503) in live user flows with several test cases; they may ask to repeat
+  a flow and ask questions about the code. The agenda opens with names, titles, company and application name. The
+  page doesn't say which call software or whether cameras are on; the booking email will.
 
 Drafted Tue Sep 22 2026, 8:20 PM EDT, by the Track B fork. Adam submits this
 himself. This file is in a public repository: it names no private email
