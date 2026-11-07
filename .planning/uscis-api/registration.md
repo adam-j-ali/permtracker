@@ -1,5 +1,40 @@
 # USCIS Developer Portal registration: the answers, ready to paste
 
+## Read on the portal Sat Nov 7 2026 (supersedes anything below that disagrees)
+
+Read in a browser on developer.uscis.gov (Get Started, Sign Up, Sandbox, Production Access and its four
+sub-pages, Demo, FAQs), Nov 7 2026, about 2 PM EST:
+
+- **Sign-up is a USCIS Online Account** (myaccount.uscis.gov) **or Login.gov**: a personal identity account.
+  The owner creates it in his own legal name; the persona can't hold it.
+- **The primary contact "must be an authorized signatory who can legally bind your company/organization"**,
+  signs the Developer Portal Affidavit with a wet signature, and must attend the demo. That is the owner (the
+  operating agreement gives him full authority), so every "primary contact" below means the owner, not the
+  persona. None of this is public.
+- **Demo appointments are fully booked through January 2027; the next are in February 2027** (first come,
+  first served; Wednesdays 1 to 2 PM and Thursdays 2 to 3 PM EST; Case Status demos are 30 minutes).
+- **Before asking for production:** a developer account, a Developer Team App with the Case Status sandbox,
+  at least 5 consecutive calendar days of sandbox traffic, with 200 and 4xx responses both seen. Then email
+  developersupport@uscis.dhs.gov; USCIS answers with the affidavit (country of the development team, primary
+  contact's name and email, organization name, phone, front-end application name, notification email, business
+  home page) and later a 4-digit demo ID for a request header and a scheduler link.
+- **The demo is graded pass or fail** on: clear input with helper text and validation; the request built
+  correctly; OAuth 2.0 client credentials held on the server only ("Request originating from any client
+  applications are prohibited"); success and error responses shown to the user; case status updates shown.
+  The developer who leads it must answer questions about the code and architecture, and USCIS's FAQ asks teams
+  to audit any AI-generated or agent-assisted code before it.
+- **USCIS reviews** desktop and mobile readability, data retention and deletion, and privacy practices.
+- **Sharing a login or API keys is prohibited** (FAQ): anyone else who needs the keys gets their own account
+  and joins the Developer Team.
+- **Before any sandbox key reaches the server:** the public `/uscis-case-status` page must not go live on
+  sandbox keys (the sandbox knows only staging receipts, so every real receipt would read "not found"). Sandbox
+  answers only the server's own exercise job and a demo, never the public page. Built Nov 7 2026: the page goes
+  live on production keys only (`uscisPublic`), the route answers sandbox keys only for a caller carrying
+  `x-pt-uscis-sandbox` with the site's REVALIDATE_SECRET (`uscisAnswers`), sandbox answers are never stored, and
+  `permtracker-uscis@uscis-sandbox.timer` asks once a day (a staging receipt and an unknown one). The demo itself
+  then needs the lookup shown against sandbox keys: a dev server with the sandbox keys in its own env, or the
+  production site switched to sandbox for the half hour, decided nearer February.
+
 Drafted Tue Sep 22 2026, 8:20 PM EDT, by the Track B fork. Adam submits this
 himself. This file is in a public repository: it names no private email
 address and no credential. The persona inbox is the one recorded in the
@@ -21,8 +56,8 @@ and Sandbox pages), not from memory.
 | Privacy policy URL | https://permtracker.app/privacy#uscis-case-status |
 | Terms of use URL | https://permtracker.app/terms |
 | Section 508 conformance | See `section-508.md` in this folder; the attestation summary is below |
-| Primary contact name | Adam J Ali |
-| Primary contact email | the persona inbox (from the global notes), used as the account login |
+| Primary contact name | The owner, in his legal name (the affidavit requires an authorized signatory) |
+| Primary contact email | the owner's own USCIS Online Account or Login.gov address; notifications to support@permtracker.app |
 | Support / public contact | support@permtracker.app |
 | Phone | Adam's choice; the LLC's registered agent (Northwest) does not answer for us |
 | Application name | PERM Tracker USCIS Case Status Lookup |
@@ -57,8 +92,8 @@ figures (a local token bucket at 10 TPS and a hard daily cap of 350,000).
 
 ## Expected volume
 
-- Year one: well under 2,000 lookups a day. Our DOL case lookup, the closest
-  comparable feature, runs under a 2,000-a-day budget today and rarely nears it.
+- Year one: well under 2,000 lookups a day. Our DOL live lookup, the closest
+  comparable feature, runs under a 100,000-a-day budget and uses a small fraction of it.
 - Peak: bursts follow visa-bulletin publication days; still far under the
   400,000 daily quota. We cap ourselves at 350,000 in code regardless.
 - Concurrency: one call per visitor lookup; no batch or scheduled polling of
@@ -97,8 +132,8 @@ open in section-508.md.
 - Identity forms are shown to Adam before submission (standing rule). This
   file IS that preview; nothing has been submitted.
 - Registering as the LLC is Adam's decision of Sep 22 2026; the About page
-  names Sabrina Soltau as the site's public face, and the persona name is the
-  account contact. If the portal asks for an officer's legal name, that is
-  Adam's call, not this document's.
+  names Sabrina Soltau as the site's public face. Superseded Nov 7 2026: the
+  account and the affidavit carry the owner's legal name (see the top section),
+  never the persona.
 - The affidavit and the demo come AFTER sandbox access: see
   `affidavit-and-demo.md`.

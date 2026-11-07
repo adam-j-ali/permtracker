@@ -18,8 +18,10 @@ vi.mock("./client", () => ({
 vi.mock("server-only", () => ({}));
 
 const fetchCaseStatusMock = vi.fn();
+let keysEnv: "sandbox" | "production" | null = "production";
 vi.mock("@/lib/uscis/torchClient", () => ({
   fetchCaseStatus: (...a: unknown[]) => fetchCaseStatusMock(...a),
+  uscisEnv: () => keysEnv,
 }));
 
 import {
@@ -64,6 +66,7 @@ beforeEach(() => {
   execMock.mockReset().mockResolvedValue(1);
   oneMock.mockReset().mockResolvedValue(null);
   fetchCaseStatusMock.mockReset();
+  keysEnv = "production";
   resetEnsured();
 });
 
@@ -126,6 +129,29 @@ describe("lookupUscisCase", () => {
     if (r.kind !== "ok") return;
     expect(r.status.seenAt).toBe(NOW.getTime());
     expect(r.status.firstSeenAt).toBe(NOW.getTime());
+  });
+});
+
+describe("lookupUscisCase on sandbox keys", () => {
+  it("asks USCIS every time and never reads or writes the table: a staging receipt is nobody's case", async () => {
+    keysEnv = "sandbox";
+    oneMock.mockResolvedValue(storedRow(NOW.getTime() - 60_000));
+    fetchCaseStatusMock.mockResolvedValue({ kind: "ok", status: LIVE, raw: null });
+    const r = await lookupUscisCase("EAC9999103403", NOW);
+    expect(r.kind).toBe("ok");
+    if (r.kind !== "ok") return;
+    expect(r.source).toBe("live");
+    expect(r.status.seenAt).toBe(NOW.getTime());
+    expect(fetchCaseStatusMock).toHaveBeenCalledTimes(1);
+    expect(oneMock).not.toHaveBeenCalled();
+    expect(execMock).not.toHaveBeenCalled();
+  });
+
+  it("passes a sandbox refusal through untouched", async () => {
+    keysEnv = "sandbox";
+    fetchCaseStatusMock.mockResolvedValue({ kind: "not_found" });
+    expect(await lookupUscisCase("EAC9999100000", NOW)).toEqual({ kind: "not_found" });
+    expect(execMock).not.toHaveBeenCalled();
   });
 });
 

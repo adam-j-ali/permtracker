@@ -20,7 +20,7 @@ import {
   decodeReceipt,
   normaliseReceipt,
 } from "@/lib/uscis/receipt";
-import { uscisEnabled } from "@/lib/uscis/torchClient";
+import { uscisPublic } from "@/lib/uscis/torchClient";
 import { MoreText } from "@/components/data/MoreText";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -28,8 +28,8 @@ import { buttonVariants } from "@/components/ui/button";
  * A USCIS receipt number in; what it encodes, and (with USCIS's API keys on
  * the deployment) the case status from USCIS's Case Status API.
  *
- * TWO STATES, BOTH HONEST. Until `USCIS_ENV` and the two credentials exist on
- * the deployment, the page decodes the receipt (prefix, office, the
+ * TWO STATES, BOTH HONEST. Until production keys exist on the deployment
+ * (sandbox keys don't count: the sandbox knows only test receipts), the page decodes the receipt (prefix, office, the
  * conventional reading of the digits) and hands the reader to USCIS's own
  * status page and to Emma. It shows no status at all and says nothing about
  * access it does not have (round 3, Oct 15 2026: a page promising a lookup it
@@ -140,7 +140,7 @@ export default async function UscisCaseStatusPage({
   const { receipt: raw } = await searchParams;
   const typed = typeof raw === "string" ? raw.slice(0, 60) : "";
   const trimmed = typed.trim();
-  const enabled = uscisEnabled();
+  const enabled = uscisPublic();
 
   // A DOL number belongs on the other page. Checked FIRST, so a G-100 typed
   // here is routed rather than reported as a bad receipt.

@@ -15,8 +15,10 @@ import type { UscisLookupResult } from "@/lib/db/uscisCaseStatus";
  *
  *   1. length cap BEFORE the regex (a 100k string costs a comparison);
  *   2. shape (400, with the same sentence the form shows);
- *   3. is USCIS access configured at all (503, "pending"), so nothing below
- *      runs on a deployment without keys;
+ *   3. may USCIS keys answer this request at all (503, "pending"): none on a
+ *      deployment without keys, and on sandbox keys only the server's own
+ *      test caller (`uscisAnswers` in torchClient.ts), so nothing below runs
+ *      for a visitor until production keys exist;
  *   4. per-IP limit, in memory (429). This is the cost-raiser only: nginx's
  *      /api/ limit (240 a minute per address, slowed before refused,
  *      scripts/oracle/nginx/permtracker.conf) is the real per-IP layer, and
@@ -39,7 +41,7 @@ export const PER_IP_PER_MINUTE = 60;
 
 export interface HandlerDeps {
   lookup: (receipt: string, now: Date) => Promise<UscisLookupResult>;
-  enabled: () => boolean;
+  enabled: (req: Request) => boolean | Promise<boolean>;
   now?: () => Date;
 }
 
@@ -94,8 +96,8 @@ export function makeUscisCaseStatusHandler(deps: HandlerDeps) {
     const receipt = normaliseReceipt(raw);
     if (!receipt) return refuse(400, RECEIPT_SHAPE_MESSAGE, "shape");
 
-    // 3. Configured at all.
-    if (!deps.enabled()) {
+    // 3. May the keys answer this caller.
+    if (!(await deps.enabled(req))) {
       return refuse(503, "USCIS access is pending; this page will check live once USCIS issues API keys.", "disabled");
     }
 
