@@ -1,5 +1,5 @@
 import { makeUscisCaseStatusHandler } from "@/lib/uscis/routeHandler";
-import { uscisEnabled } from "@/lib/uscis/torchClient";
+import { uscisAnswers } from "@/lib/uscis/torchClient";
 import { lookupUscisCase } from "@/lib/db/uscisCaseStatus";
 
 /**
@@ -13,5 +13,5 @@ export const dynamic = "force-dynamic";
 
 export const GET = makeUscisCaseStatusHandler({
   lookup: (receipt, now) => lookupUscisCase(receipt, now),
-  enabled: uscisEnabled,
+  enabled: uscisAnswers,
 });
