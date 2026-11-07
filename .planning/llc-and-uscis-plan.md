@@ -65,6 +65,12 @@ The routine's Check 4 watches Sunbiz. When the record appears (or Northwest emai
 **On hold by the owner's call (Oct 7 2026): register only after the LLC's planned name change**, so the
 identity form, the developer account and USCIS's due diligence carry the final legal name once.
 
+**Unblocked Sat Nov 7 2026**: Sunbiz shows ASOLYS LLC and the EIN was issued that morning. What the portal says
+today, and the corrections it forces (the developer account and the affidavit carry the owner's legal name, not
+the persona; demos booked through January 2027), are at the top of `uscis-api/registration.md`. Built the same
+day: sandbox keys answer only the server's daily exercise job, never the public page, and
+`permtracker-uscis@uscis-sandbox.timer` makes the five days of traffic by itself once `USCIS_ENV=sandbox` is set.
+
 USCIS's own gate, quoted from developer.uscis.gov: APIs are for "software development
 organizations incorporated within the United States" that comply with the Terms of Use,
 offer Section 508 compliant apps, and post a suitable privacy policy; "USCIS will
