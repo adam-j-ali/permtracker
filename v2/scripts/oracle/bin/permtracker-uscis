@@ -1,5 +1,5 @@
 #!/bin/bash
-# permtracker-uscis <i485|i140|quarterly|h1b-hub|sevp|seasonal-jobs|reference|visa-issuances|backtests|h2b-groups|policy-watch|flag-notice|chat-models|firm-programs|whd|osha|posted-times|sam|taa|ppp|warn-archive|bulletin-tables <file> <YYYY-MM>|iv-tool <file|archive>|state-page <nvc|wait-times|news> <file>|state-page issuances <file> <YYYY-MM> <fsc|post>|state-page niv <file> <YYYY-MM>|state-page refusals <file> [<YYYY>]|niv-archive|embassy-notices <file>|browser-check <name> [note]>: the USCIS fetches that ran on the
+# permtracker-uscis <i485|i140|quarterly|h1b-hub|sevp|seasonal-jobs|reference|visa-issuances|backtests|h2b-groups|policy-watch|flag-notice|chat-models|firm-programs|whd|osha|posted-times|sam|taa|ppp|warn-archive|bulletin-tables <file> <YYYY-MM>|iv-tool <file|archive>|state-page <nvc|wait-times|news> <file>|state-page issuances <file> <YYYY-MM> <fsc|post>|state-page niv <file> <YYYY-MM>|state-page refusals <file> [<YYYY>]|niv-archive|embassy-notices <file>|uscis-sandbox|browser-check <name> [note]>: the USCIS fetches that ran on the
 # owner's Mac until Sep 28 2026, moved here because www.uscis.gov answers this server.
 # Same scripts, same failure recording.
 set -uo pipefail
@@ -162,6 +162,31 @@ case "$job" in
     if ! timeout 10m python3 scripts/ingest_embassy_notices.py --bundle "$f"; then
       rc=1; fail ingest_embassy_notices.py "the embassies' copy from a browser ($f) was refused"
     fi ;;
+  # USCIS's Case Status sandbox, asked once a day while the site holds SANDBOX keys (Nov 7 2026). Before USCIS grants
+  # production keys it wants "a minimum of 5 consecutive calendar days of API traffic" with "200 and 4xx HTTPS
+  # responses tested" (developer.uscis.gov, Request Production Access, read Nov 7 2026). Each run asks the site's own
+  # route, so the app is what calls USCIS: one staging receipt (200) and one the sandbox doesn't hold (404). Sandbox
+  # keys answer only a caller with the site's REVALIDATE_SECRET in x-pt-uscis-sandbox (uscisAnswers in
+  # src/lib/uscis/torchClient.ts), never a visitor. The run row is the dated record the email to USCIS quotes. Without
+  # sandbox keys it does nothing; the sandbox closed (weekdays 7 AM to 8 PM ET only) is a note, not a failure.
+  uscis-sandbox)
+    keys="$(sed -n 's/^USCIS_ENV=//p' /srv/permtracker/app/env/production.env | head -1)"
+    if [ "$keys" != "sandbox" ]; then echo "no sandbox keys (USCIS_ENV=${keys:-unset}); nothing to ask"; exit 0; fi
+    site_refresh_env
+    ask(){
+      out="$(curl -s -m 40 -w '\n%{http_code}' -H "Host: permtracker.app" -H "x-pt-uscis-sandbox: $REVALIDATE_SECRET" \
+        "http://127.0.0.1:8081/api/uscis-case-status?receipt=$1")"
+      code="${out##*$'\n'}"; reason="$(printf '%s' "$out" | grep -o '"reason":"[a-z_]*"' | head -1 | cut -d'"' -f4)"
+      printf '%s%s' "$code" "${reason:+ $reason}"
+    }
+    good="$(ask EAC9999103403)"; unknown="$(ask EAC9999100000)"
+    note="staging receipt $good, unknown receipt $unknown"
+    echo "$note"
+    case "$good|$unknown" in
+      200*\|4*) ok uscis-sandbox "$note" ;;
+      *unavailable*\|*) ok uscis-sandbox "$note (USCIS's sandbox answered nothing; it opens weekdays 7 AM to 8 PM ET)" ;;
+      *) rc=1; fail uscis-sandbox "$note" ;;
+    esac ;;
   # A browser timer's heartbeat (Nov 3 2026): the jobs that run in a Claude Code session in the owner's Chrome
   # (the bulletin, State's IV table, NVC and wait times, USCIS's times, the Search Console round) record one
   # every time they fire, due or not, so check_browser_timers in the health check can say when one stopped.
