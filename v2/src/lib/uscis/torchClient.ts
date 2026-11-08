@@ -52,10 +52,14 @@ import { easternDay } from "@/lib/time";
  * caseDiscovery.ts: the counter protects USCIS, not itself. The day boundary
  * is USCIS's, midnight Eastern, so our counter and their quota reset together.
  *
- * TPS is enforced in-process with a small token bucket. Several server
- * processes can each hold a bucket and together exceed 10 a second; that is
- * accepted, because USCIS answers 429 and this client turns that into a
- * refusal rather than a retry storm.
+ * TPS is enforced in-process by spacing calls 1/TPS apart, because USCIS's
+ * gateway (Apigee) counts "5 a second" as one call every 200 ms: two calls
+ * 0.16 s apart from the server's sandbox job drew a 429 "Spike Arrest" on
+ * Nov 8 2026 although a second held only two. A call waits for its slot (at
+ * most a second; the site runs on a long-lived server, so the wait is drained)
+ * and is refused locally past that. Several server processes each space their
+ * own calls and together can still collide; USCIS then answers 429 and this
+ * client turns that into a refusal rather than a retry storm.
  */
 
 export type UscisEnv = "sandbox" | "production";
@@ -208,29 +212,30 @@ export class UscisAuthError extends Error {
   }
 }
 
-/* ------------------------------------------------------------ TPS bucket */
+/* ------------------------------------------------------------ TPS spacing */
 
-let bucket = { tokens: 0, at: 0 };
+let nextSlotAt = 0;
+
+/** The longest a call waits for its slot before it's refused locally. */
+const MAX_TPS_WAIT_MS = 1000;
 
 /**
- * A per-process token bucket at the environment's TPS. Returns true when a
- * call may go now. No waiting: a caller that is refused reports "try again",
- * because a queue in a serverless function is a queue nobody drains.
+ * Reserve the next call slot at the environment's TPS. Returns how long to wait
+ * before calling (0 when the slot is now), or null when the wait would pass a
+ * second, in which case nothing is reserved.
  */
-export function takeTpsToken(env: UscisEnv, now: Date): boolean {
-  const rate = ENVS[env].tps;
+export function reserveTpsSlot(env: UscisEnv, now: Date): number | null {
+  const gap = 1000 / ENVS[env].tps;
   const t = now.getTime();
-  if (bucket.at === 0) bucket = { tokens: rate, at: t };
-  const refill = ((t - bucket.at) / 1000) * rate;
-  bucket = { tokens: Math.min(rate, bucket.tokens + refill), at: t };
-  if (bucket.tokens < 1) return false;
-  bucket.tokens -= 1;
-  return true;
+  const at = Math.max(t, nextSlotAt);
+  if (at - t > MAX_TPS_WAIT_MS) return null;
+  nextSlotAt = at + gap;
+  return at - t;
 }
 
 /** Test hook. */
 export function resetTpsBucket(): void {
-  bucket = { tokens: 0, at: 0 };
+  nextSlotAt = 0;
 }
 
 /* --------------------------------------------------------------- shapes */
@@ -307,11 +312,23 @@ export type CaseStatusResult =
 export interface ClientDeps {
   now?: () => Date;
   fetchImpl?: typeof fetch;
+  /** Waits for a call's slot; a test passes its own. */
+  sleep?: (ms: number) => Promise<void>;
+}
+
+const realSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** Wait for this call's slot. False when the queue is over a second deep. */
+async function awaitTpsSlot(env: UscisEnv, now: Date, deps: ClientDeps): Promise<boolean> {
+  const wait = reserveTpsSlot(env, now);
+  if (wait === null) return false;
+  if (wait > 0) await (deps.sleep ?? realSleep)(wait);
+  return true;
 }
 
 /**
  * One receipt, one answer. Order of guards, cheapest first: configured at
- * all; the local TPS bucket; the shared daily budget (a write); then the
+ * all; the call's TPS slot; the shared daily budget (a write); then the
  * token; then USCIS.
  */
 export async function fetchCaseStatus(receipt: string, deps: ClientDeps = {}): Promise<CaseStatusResult> {
@@ -320,7 +337,7 @@ export async function fetchCaseStatus(receipt: string, deps: ClientDeps = {}): P
   const now = deps.now ? deps.now() : new Date();
   const f = deps.fetchImpl ?? fetch;
 
-  if (!takeTpsToken(env, now)) return { kind: "rate_limited", where: "local" };
+  if (!(await awaitTpsSlot(env, now, deps))) return { kind: "rate_limited", where: "local" };
   if (!(await underUscisDailyBudget(now, ENVS[env].dailyCap))) return { kind: "budget" };
 
   let token: string;
@@ -372,7 +389,7 @@ export async function fetchProcessingTimesRaw(
   if (!env) return { kind: "disabled" };
   const now = deps.now ? deps.now() : new Date();
   const f = deps.fetchImpl ?? fetch;
-  if (!takeTpsToken(env, now)) return { kind: "rate_limited", where: "local" };
+  if (!(await awaitTpsSlot(env, now, deps))) return { kind: "rate_limited", where: "local" };
   if (!(await underUscisDailyBudget(now, ENVS[env].dailyCap))) return { kind: "budget" };
   let token: string;
   try {
