@@ -80,6 +80,12 @@ COUNT = re.compile(r"^\d[\d,]*(?:\.0+)?$")
 # June 2020, when consulates were closed. The grand total is the real check; this only
 # stops an empty or truncated read.
 MIN_ROWS = 500
+# State's PDFs for May 2017 to September 2019 print a GRAND TOTAL 13 to 37 visas below the sum of their own rows
+# (about 0.004%; measured Nov 7 2026 on five months). No class or family of classes explains it, there are no
+# duplicate rows, and the files are text, so nothing is misread: State's printed total is off. Those months load as
+# published, each gap named in the run row. A gap above this share of the month is still refused.
+PDF_TOTAL_TOLERANCE = 0.0001
+TOTAL_GAPS: list[tuple[str, int, int]] = []
 # State posts each month about eight months after it ends (February 2026 was the newest on
 # Nov 5 2026, 250 days after Feb 28), and since Nov 2 2026 a month arrives only through a
 # browser read. 330 days is the immigrant twin's budget: both tables are posted together, so
@@ -190,7 +196,7 @@ def from_pdf(data: bytes, label: str) -> tuple[dict[tuple[str, str], int], str |
     if re.search(r"\bNationality\b", head):
         raise Refusal(f"{label}: this table splits each post by nationality as well (February 2017's layout), "
                       "which this reader doesn't read")
-    return iv.rows_from_lines(lines, label, NIV_CLASS, MIN_ROWS), month_of(head)
+    return iv.rows_from_lines(lines, label, NIV_CLASS, MIN_ROWS, PDF_TOTAL_TOLERANCE, TOTAL_GAPS), month_of(head)
 
 
 def parse(data: bytes, name: str) -> tuple[dict[tuple[str, str], int], str | None]:
@@ -248,6 +254,10 @@ def finish(db: Database, written: int, loaded: int, refused: list[str], started:
     note = f"{loaded} files loaded, {written} rows written; refused {len(refused)}"
     if refused:
         note += ": " + "; ".join(refused[:3])
+    if TOTAL_GAPS:
+        worst = max(TOTAL_GAPS, key=lambda g: abs(g[1] - g[2]))
+        note += (f"; loaded as published: in {len(TOTAL_GAPS)} files State's printed total differs from its rows "
+                 f"(largest: {worst[0]}, rows {worst[1]:,}, printed {worst[2]:,})")
     if refreshed is False:
         note += "; the consulate pages' refresh didn't answer 200"
     if note_extra:
