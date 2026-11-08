@@ -45,7 +45,7 @@ import html
 import re
 import sys
 import urllib.request
-from lib_audit import audit_headers  # noqa: E402
+from lib_audit import audit_headers, audit_urlopen  # noqa: E402
 
 # Tags whose text an extractor concatenates with its neighbour's.
 #
@@ -102,7 +102,7 @@ def _fetch(url: str) -> str:
             **audit_headers(),
         },
     )
-    with urllib.request.urlopen(req, timeout=30) as r:
+    with audit_urlopen(req, timeout=30) as r:
         return r.read().decode("utf-8", "replace")
 
 

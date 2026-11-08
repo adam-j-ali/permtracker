@@ -25,7 +25,7 @@ import sys
 import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
-from lib_audit import audit_headers  # noqa: E402
+from lib_audit import audit_headers, audit_urlopen  # noqa: E402
 
 DEFAULT_BASE = "https://permtracker.app"
 UA = (
@@ -70,7 +70,7 @@ def fetch(url: str, timeout: int = 30) -> tuple[int, str]:
     # The audit key exempts this from the per-address limits (lib_audit.py).
     req = urllib.request.Request(url, headers={"User-Agent": UA, **audit_headers()})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with audit_urlopen(req, timeout=timeout) as r:
             return r.status, r.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as e:
         return e.code, ""

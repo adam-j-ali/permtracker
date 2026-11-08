@@ -33,7 +33,7 @@ import collections
 import re
 import sys
 import urllib.request
-from lib_audit import audit_headers  # noqa: E402
+from lib_audit import audit_headers, audit_urlopen  # noqa: E402
 
 HEADERS = {
     "User-Agent": "permtracker-audit/1.0",
@@ -57,7 +57,7 @@ CONTROL = "PERM Tracker"
 def fetch(url: str) -> str | None:
     try:
         req = urllib.request.Request(url, headers=HEADERS)
-        return urllib.request.urlopen(req, timeout=60).read().decode("utf-8", "replace")
+        return audit_urlopen(req, timeout=60).read().decode("utf-8", "replace")
     except Exception as e:  # noqa: BLE001
         print(f"  !! {url}: {e}", file=sys.stderr)
         return None

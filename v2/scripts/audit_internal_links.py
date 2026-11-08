@@ -27,7 +27,7 @@ import urllib.error
 import urllib.request
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from lib_audit import audit_headers  # noqa: E402
+from lib_audit import audit_headers, audit_urlopen  # noqa: E402
 
 # A LABEL THAT NAMES A TOPIC IS A PROMISE ABOUT THE DESTINATION.
 #
@@ -78,7 +78,7 @@ def fetch(url: str, timeout: int = 45) -> str | None:
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "permtracker-link-audit",
                                                    **audit_headers()})
-        return urllib.request.urlopen(req, timeout=timeout).read().decode("utf8", "ignore")
+        return audit_urlopen(req, timeout=timeout).read().decode("utf8", "ignore")
     except urllib.error.HTTPError as e:
         if e.code in (429, 503):
             REFUSED[url] = e.code
