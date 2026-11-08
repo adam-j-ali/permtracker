@@ -133,6 +133,16 @@ def main() -> int:
     rows = niv.iv.rows_from_lines(lines, "t", niv.NIV_CLASS, 1)
     check("the PDF reader takes the NIV classes and a lower-case Grand Total",
           rows, {("Abu Dhabi", "B1/B2"): 1204, ("Abu Dhabi", "NATO2"): 7})
+    off = lines[:-1] + [words(("Grand", 139, 175), ("Total", 178, 208), ("1,210", 450, 496))]
+    check("a printed total one short is refused by default", "GRAND TOTAL says 1,210" in refused(niv.iv.rows_from_lines, off, "t", niv.NIV_CLASS, 1))
+    gaps: list = []
+    rows = niv.iv.rows_from_lines(off, "t", niv.NIV_CLASS, 1, 0.001, gaps)
+    check("inside the tolerance it loads as published, and the gap is recorded",
+          (sum(rows.values()), gaps), (1211, [("t", 1211, 1210)]))
+    far = lines[:-1] + [words(("Grand", 139, 175), ("Total", 178, 208), ("1,100", 450, 496))]
+    check("a gap past the tolerance is still refused",
+          "GRAND TOTAL says 1,100" in refused(niv.iv.rows_from_lines, far, "t", niv.NIV_CLASS, 1, 0.001, []))
+    check("the tolerance PDFs get is a hundredth of a percent", niv.PDF_TOTAL_TOLERANCE, 0.0001)
     jun = (FIX / "niv-post-2020-06-last-page.pdf").read_bytes()
     msg = refused(niv.parse, jun, "June 2020 - NIV Issuances by Post and Visa Class.pdf")
     check("one page of a 33-page month is refused against State's own total", "GRAND TOTAL says 46,435" in msg, True)

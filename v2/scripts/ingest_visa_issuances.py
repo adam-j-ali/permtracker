@@ -145,12 +145,18 @@ def listing(html: str) -> dict[tuple[str, str], str]:
     return found
 
 
-def total_check(rows: dict[tuple[str, str], int], grand: int | None, label: str, min_rows: int | None = None) -> None:
+def total_check(rows: dict[tuple[str, str], int], grand: int | None, label: str, min_rows: int | None = None,
+                tolerance: float = 0.0, gaps: list[tuple[str, int, int]] | None = None) -> None:
+    """The rows must add to the file's own GRAND TOTAL. `tolerance` (a share of the total, 0 by default) lets a
+    file whose printed total State got slightly wrong load as published; each such gap goes into `gaps`."""
     if grand is None:
         raise Refusal(f"{label}: no GRAND TOTAL row")
     got = sum(rows.values())
     if got != grand:
-        raise Refusal(f"{label}: rows add to {got:,}, GRAND TOTAL says {grand:,}")
+        if not (tolerance and abs(got - grand) <= tolerance * grand):
+            raise Refusal(f"{label}: rows add to {got:,}, GRAND TOTAL says {grand:,}")
+        if gaps is not None:
+            gaps.append((label, got, grand))
     floor = MIN_ROWS if min_rows is None else min_rows
     if len(rows) < floor:
         raise Refusal(f"{label}: only {len(rows)} rows")
@@ -203,7 +209,8 @@ def parse_line(line: list[dict], symbol: re.Pattern[str] = SYMBOL) -> tuple[str,
 
 
 def rows_from_lines(lines: Iterable[list[dict]], label: str, symbol: re.Pattern[str] = SYMBOL,
-                    min_rows: int | None = None) -> dict[tuple[str, str], int]:
+                    min_rows: int | None = None, tolerance: float = 0.0,
+                    gaps: list[tuple[str, int, int]] | None = None) -> dict[tuple[str, str], int]:
     """A table's (name, symbol) counts from its lines of words, checked against its GRAND TOTAL."""
     rows: dict[tuple[str, str], int] = {}
     grand = None
@@ -221,7 +228,7 @@ def rows_from_lines(lines: Iterable[list[dict]], label: str, symbol: re.Pattern[
             continue
         key = (name, sym)
         rows[key] = rows.get(key, 0) + count
-    total_check(rows, grand, label, min_rows)
+    total_check(rows, grand, label, min_rows, tolerance, gaps)
     return rows
 
 
