@@ -1,0 +1,106 @@
+#!/bin/bash
+# permtracker-sweep <case-status-full|case-status-pending|pwd-pending|pwd-full|pwd-active|ingest-health>
+#
+# The DOL sweeps that ran on GitHub's runners until Nov 7 2026, now here: flag.dol.gov answers this
+# server, and GitHub's Actions terms are for building, testing and shipping the software, not for
+# running the site's back end. Same scripts, same order, same time limits and the same failure rows
+# as the workflows they replace (case-status-direct.yml, pwd-status-direct.yml, ingest-health.yml);
+# the pages they expire are asked through nginx (both web copies) instead of the public address.
+# One run of a job at a time (flock), so a slow full pass and the next timer never overlap.
+set -uo pipefail
+job="${1:-}"; R=/srv/permtracker/repo; V2=$R/v2
+exec 9>"/run/lock/permtracker-sweep-${job%%-*}.lock" 2>/dev/null || exec 9>"/tmp/permtracker-sweep-${job%%-*}.lock"
+flock -n 9 || { echo "$job: another ${job%%-*} sweep is still running; skipping this one"; exit 0; }
+git -C "$R" fetch -q origin main && git -C "$R" reset -q --hard origin/main
+set -a; . /srv/permtracker/app/env/uscis.env; set +a
+cd "$V2"
+note="oracle timer ($job)"
+failed=()   # steps that failed and let the run carry on; the run still ends red
+fail(){ python3 scripts/record_ingest_failure.py --script "$1" --note "$note: $2" || echo "could not record the failure row"; }
+secret="$(sed -n 's/^REVALIDATE_SECRET=//p' /srv/permtracker/app/env/production.env | head -1 | tr -d '"')"
+expire(){  # expire <route> [json-file]: through nginx, which sends it to both web copies
+  [ -n "$secret" ] || { echo "REVALIDATE_SECRET not readable; skipping $1"; return 0; }
+  local args=(-fsS -m 120 -X POST -H "Host: permtracker.app" -H "x-revalidate-secret: $secret")
+  [ -n "${2:-}" ] && args+=(-H "content-type: application/json" --data "@$2")
+  curl "${args[@]}" "http://127.0.0.1:8081/api/$1" >/dev/null || { echo "revalidation call failed ($1)"; failed+=("$1"); }
+}
+
+case_status(){  # case_status <full|pending>
+  local mode="$1"
+  rm -f changed-employer-slugs.json
+  # The pass's DOL loop stops on its own budget (110 minutes full, 80 pending) and the walk on its own,
+  # so the summaries after it finish inside these 140.
+  if ! timeout 140m nice -n 10 python3 scripts/ingest_case_status_direct.py --"$mode"; then
+    fail "ingest_case_status_direct.py --$mode" "the pass failed or ran past 140m"; failed+=("sweep")
+  fi
+  # The live remainder, the employer map, the sponsor index, the LCA cities and the wage sources, in
+  # the workflow's order: each reads the one before.
+  timeout 15m nice -n 10 python3 scripts/build_entity_detail.py --live-recent-only || failed+=("build_entity_detail.py")
+  timeout 30m nice -n 10 python3 scripts/build_employer_map.py || failed+=("build_employer_map.py")
+  timeout 10m nice -n 10 python3 scripts/build_sponsor_index.py || failed+=("build_sponsor_index.py")
+  timeout 10m nice -n 10 python3 scripts/build_lca_cities.py || failed+=("build_lca_cities.py")
+  timeout 10m nice -n 10 python3 scripts/build_wage_sources.py || failed+=("build_wage_sources.py")
+  if [ "$mode" = full ]; then
+    timeout 25m nice -n 10 python3 scripts/sweep_serial_gaps.py --window 90 --cap 600 || fail sweep_serial_gaps.py "gap sweep"
+    timeout 10m nice -n 10 python3 scripts/sync_published_live.py --cap 400 || fail sync_published_live.py "published sync"
+    timeout 5m nice -n 10 python3 scripts/build_straggler_rates.py || fail build_straggler_rates.py "stragglers"
+    timeout 10m nice -n 10 python3 scripts/build_census_days.py || fail build_census_days.py "census days"
+    timeout 10m nice -n 10 python3 scripts/build_wait_trends.py || fail build_wait_trends.py "wait trends"
+    # The estimator backtests: a failure only warns (the server reruns them at 7:05 AM ET).
+    timeout 20m nice -n 10 python3 scripts/backtest_queue.py --write || echo "warning: estimator backtest failed"
+    timeout 10m nice -n 10 python3 scripts/backtest_pwd.py --write || echo "warning: wage-request backtest failed"
+    if [ "$(date -u +%u)" = 1 ]; then
+      timeout 10m nice -n 10 python3 scripts/backtest_seasonal.py --write || echo "warning: seasonal backtest failed"
+      timeout 5m nice -n 10 python3 scripts/backtest_bulletin.py --write || echo "warning: bulletin backtest failed"
+    fi
+  fi
+  timeout 10m nice -n 10 python3 scripts/build_filings_by_day.py || { fail build_filings_by_day.py "filings by day"; failed+=("filings-by-day"); }
+  # Employer pages whose live rows moved, busiest first, expired by path and told to IndexNow.
+  if [ -s changed-employer-slugs.json ]; then
+    n=$(python3 -c "import json;print(len(json.load(open('changed-employer-slugs.json'))['slugs']))" 2>/dev/null || echo 0)
+    if [ "$n" -gt 0 ]; then
+      echo "expiring $n employer pages"; expire revalidate-live-employers changed-employer-slugs.json
+      urls=$(mktemp)
+      python3 -c "import json;[print('/perm-employers/'+s) for s in json.load(open('changed-employer-slugs.json'))['slugs']]" > "$urls" \
+        && node scripts/indexnow.mjs --urls "$urls" || echo "warning: IndexNow refused the changed employer pages"
+      rm -f "$urls"
+    else echo "no employer pages changed"; fi
+  fi
+  [ ${#failed[@]} -eq 0 ] && expire revalidate-sweep
+}
+
+pwd_status(){  # pwd_status <pending|full|active>
+  local mode="$1" limit=170m
+  [ "$mode" = active ] && limit=30m
+  if ! timeout "$limit" nice -n 10 python3 scripts/ingest_pwd_status_direct.py --"$mode"; then
+    fail "ingest_pwd_status_direct.py --$mode" "the pass failed or ran past $limit"; failed+=("sweep")
+  fi
+  [ ${#failed[@]} -eq 0 ] && expire revalidate-sweep
+  # An unfinished backfill leg is run here, in the same unit, rather than dispatched to GitHub.
+  if [ "$mode" = pending ]; then
+    decision="$(python3 scripts/ingest_pwd_status_direct.py --resume-check)"; echo "$decision"
+    case "$decision" in
+      dispatch\ *)
+        from="$(printf '%s' "$decision" | sed -n 's/.*from=\([^ ]*\).*/\1/p')"
+        to="$(printf '%s' "$decision" | sed -n 's/.*to=\([^ ]*\).*/\1/p')"
+        timeout 90m nice -n 10 python3 scripts/ingest_pwd_status_direct.py --backfill --from "$from" --to "$to" --cap 4500 \
+          || fail "ingest_pwd_status_direct.py --backfill" "backfill leg $from..$to" ;;
+    esac
+  fi
+}
+
+case "$job" in
+  case-status-full) case_status full ;;
+  case-status-pending) case_status pending ;;
+  pwd-pending) pwd_status pending ;;
+  pwd-full) pwd_status full ;;
+  pwd-active) pwd_status active ;;
+  ingest-health)
+    python3 scripts/check_ingest_health.py || failed+=("check_ingest_health.py")
+    python3 scripts/check_invariants.py || failed+=("check_invariants.py") ;;
+  *) echo "usage: permtracker-sweep <case-status-full|case-status-pending|pwd-pending|pwd-full|pwd-active|ingest-health>"; exit 2 ;;
+esac
+if [ ${#failed[@]} -gt 0 ]; then
+  echo "these steps failed and the run carried on: ${failed[*]}"; exit 1
+fi
+echo "every step finished clean"

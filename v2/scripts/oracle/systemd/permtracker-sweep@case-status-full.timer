@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule for permtracker-sweep@case-status-full
+# Every PERM case, the discovery walk and the gap sweep, in DOL's quiet hours. Moved from GitHub's runners on Nov 7 2026 (the same clock the dispatch timer had).
+[Timer]
+OnCalendar=*-*-* 04:10:00 America/New_York
+Persistent=true
+Unit=permtracker-sweep@case-status-full.service
+
+[Install]
+WantedBy=timers.target

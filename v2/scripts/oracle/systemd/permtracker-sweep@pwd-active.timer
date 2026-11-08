@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule for permtracker-sweep@pwd-active
+# The wage requests most likely to move, weekday afternoons. Moved from GitHub's runners on Nov 7 2026 (the same clock the dispatch timer had).
+[Timer]
+OnCalendar=Mon..Fri *-*-* 15:10:00 America/New_York
+Persistent=true
+Unit=permtracker-sweep@pwd-active.service
+
+[Install]
+WantedBy=timers.target
