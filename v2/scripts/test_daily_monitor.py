@@ -396,7 +396,7 @@ def main() -> int:
                                                 "permtracker-web@green", "nginx", "cloudflared"]},
              "failedUnits": [], "slot": {"active": "blue", "release": "abc-1"},
              "pageCache": {"at": "2026-09-28T11:05:00Z", "liveGB": 3.2, "standbyGB": 4.0, "tight": False},
-             "timers": dm.repo_timers()}
+             "timers": dm.expected_timers()}
         for k, v in over.items():
             d[k] = {**d[k], **v} if isinstance(d.get(k), dict) and isinstance(v, dict) else v
         return d
@@ -408,7 +408,7 @@ def main() -> int:
     check(v(doc(now={"diskPct": 93.0}), now_ms)["status"] == "fail", "a disk over 90% full fails")
     _no_timers = doc(); _no_timers.pop("timers")
     check(v(_no_timers, now_ms)["status"] == "fail", "so does a report with no timer list")
-    check(v(doc(timers=dm.repo_timers()[1:]), now_ms)["status"] == "fail", "a timer missing from the list fails")
+    check(v(doc(timers=dm.expected_timers()[1:]), now_ms)["status"] == "fail", "a timer missing from the list fails")
     check(v(doc(at="2026-09-28T09:00:00Z"), now_ms)["status"] == "fail", "a server silent for 2.5 h fails")
     check(v(doc(services={"nginx": "failed"}), now_ms)["status"] == "fail", "nginx down fails")
     check(v(doc(services={"permtracker-web@blue": "failed"}), now_ms)["status"] == "fail",
@@ -550,9 +550,14 @@ def main() -> int:
           == "fail", "six disk copies, over the free five, fails")
     check(any("Oracle disk copies: 4 held" in ln and "all free" in ln for ln in v(doc(), now_ms)["lines"]),
           "the report names the disk copies")
-    all_timers = dm.repo_timers()
+    all_timers = dm.expected_timers()
     check(len(all_timers) >= 20 and "permtracker-prune.timer" in all_timers, "the repo's timers are found")
-    check(v(doc(timers=all_timers), now_ms)["status"] == "ok", "every repo timer enabled reads ok")
+    check(v(doc(timers=all_timers), now_ms)["status"] == "ok", "every expected timer enabled reads ok")
+    check(dm.RETIRED_TIMERS <= set(dm.repo_timers()), "every retired timer is still a file in the repo")
+    check(not dm.RETIRED_TIMERS & set(all_timers), "no retired timer is expected on")
+    back = v(doc(timers=all_timers + ["permtracker-cron@dispatch-pwd-daily.timer"]), now_ms)
+    check(back["status"] == "fail" and any("dispatch-pwd-daily" in f and "twice" in f for f in says(back)),
+          "a retired timer enabled again fails and is named")
     gone = v(doc(timers=[t for t in all_timers if t != "permtracker-backup-server.timer"]), now_ms)
     check(gone["status"] == "fail" and any("permtracker-backup-server.timer" in f for f in says(gone)),
           "a repo timer missing on the server fails and is named")

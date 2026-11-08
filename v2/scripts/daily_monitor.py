@@ -1188,6 +1188,26 @@ def repo_timers() -> list[str]:
     return sorted(p.name for p in d.glob("*.timer"))
 
 
+# Timers kept in the repo but switched off on the server on purpose. Since Nov 7 2026 the
+# flag.dol.gov sweeps they sent to GitHub run on the server's own permtracker-sweep@ timers;
+# these stay so the jobs can go back to GitHub in one step. One of them enabled again would
+# run its sweep twice against DOL, so that fails too.
+RETIRED_TIMERS = frozenset({
+    "permtracker-cron@dispatch-case-status-full.timer",
+    "permtracker-cron@dispatch-case-status-midday.timer",
+    "permtracker-cron@dispatch-case-status-pending.timer",
+    "permtracker-cron@dispatch-ingest-health.timer",
+    "permtracker-cron@dispatch-pwd-active.timer",
+    "permtracker-cron@dispatch-pwd-daily.timer",
+    "permtracker-cron@dispatch-pwd-weekly-full.timer",
+})
+
+
+def expected_timers() -> list[str]:
+    """The repo's timers that must be enabled on the server."""
+    return [t for t in repo_timers() if t not in RETIRED_TIMERS]
+
+
 HOUR_MS = 3_600_000
 
 
@@ -1481,9 +1501,12 @@ def server_verdict(doc: dict | None, now_ms: int, switches: list[int] | None = N
     if not listed:
         fails.append("the server's report lists no timers, so whether they run can't be read")
     else:
-        missing_timers = sorted(set(repo_timers()) - set(listed))
+        missing_timers = sorted(set(expected_timers()) - set(listed))
         if missing_timers:
             fails.append("timers not enabled on the server: " + ", ".join(missing_timers))
+        back_on = sorted(RETIRED_TIMERS & set(listed))
+        if back_on:
+            fails.append("retired timers enabled again, so their sweeps run twice: " + ", ".join(back_on))
     pc = doc.get("pageCache")
     if not pc:
         warns.append("the page-cache cap has no result on record (permtracker-prune)")
