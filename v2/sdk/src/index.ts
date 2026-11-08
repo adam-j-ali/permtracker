@@ -18,7 +18,7 @@
  */
 
 export const DEFAULT_BASE_URL = "https://permtracker.app/v1";
-export const VERSION = "0.2.0";
+export const VERSION = "0.3.0";
 
 export interface PermTrackerOptions {
   /** A pt_live_ key from Settings, under API keys (pt_test_ for the sandbox). Only `lookupEmployer` works without one. */
@@ -363,6 +363,15 @@ export class PermTracker {
   /** The employer page a printed name belongs to. No key needed. */
   lookupEmployer(name: string): Promise<Answer<Record<string, unknown>>> {
     return this.get("/lookup/employer", { name }, false);
+  }
+
+  /**
+   * A job title's SOC codes, with each code's share of the title's filings; or, for a code
+   * (15-1252, 15-1252.00 or 151252), its title, description, core tasks, the titles filed under it
+   * and its PERM approval rate and median wage. No key needed.
+   */
+  lookupSoc(q: string): Promise<Answer<Record<string, unknown>>> {
+    return this.get("/lookup/soc", { q }, false);
   }
 
   /** Your key's scopes, the plan that applies, the paywall and what you've used. Not counted. */
