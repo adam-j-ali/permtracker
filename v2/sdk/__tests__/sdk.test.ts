@@ -48,6 +48,10 @@ describe("PermTracker", () => {
     const a = await pt.lookupEmployer("Acme");
     expect(a.data).toEqual({ match: "exact" });
     expect((f.mock.calls[0]![1]!.headers as Record<string, string>).Authorization).toBeUndefined();
+    const s = await pt.lookupSoc("data scientist");
+    expect(String(f.mock.calls[1]![0])).toContain("/lookup/soc?q=data+scientist");
+    expect((f.mock.calls[1]![1]!.headers as Record<string, string>).Authorization).toBeUndefined();
+    expect(s.data).toEqual({ match: "exact" });
   });
 
   it("turns the API's refusal into an error with its code, message and wait", async () => {

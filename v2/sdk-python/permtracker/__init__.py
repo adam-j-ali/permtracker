@@ -29,7 +29,7 @@ from typing import Any, Callable, Optional
 
 __all__ = ["PermTracker", "PermTrackerError", "Answer", "CsvExport", "Usage", "verify_webhook", "WEBHOOK_EVENTS",
            "EXPORT_KINDS", "DEFAULT_BASE_URL", "__version__"]
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 WEBHOOK_EVENTS = ("case.status_changed", "employer.moved", "bulletin.published", "queue.moved", "processing_times.updated")
 EXPORT_KINDS = ("cases", "employers", "law-firms", "occupations")
 DEFAULT_BASE_URL = "https://permtracker.app/v1"
@@ -210,6 +210,12 @@ class PermTracker:
     def lookup_employer(self, name: str) -> Answer:
         """The employer page a printed name belongs to. No key needed."""
         return self.get("/lookup/employer", {"name": name}, needs_key=False)
+
+    def lookup_soc(self, q: str) -> Answer:
+        """A job title's SOC codes, with each code's share of the title's filings; or, for a code
+        (15-1252, 15-1252.00 or 151252), its title, description, core tasks, the titles filed under it
+        and its PERM approval rate and median wage. No key needed."""
+        return self.get("/lookup/soc", {"q": q}, needs_key=False)
 
     def me(self) -> Answer:
         """Your key's scopes, the plan that applies, the paywall and what you've used. Not counted."""

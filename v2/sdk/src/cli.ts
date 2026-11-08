@@ -36,6 +36,7 @@ Usage: permtracker <command> [arguments] [--json] [--key <key>]
   firms <name>             search law firms      firm <slug>       one law firm
   jobs <title>             search occupations    job <slug>        one occupation
   lookup <name>            the employer page a printed name belongs to (no key)
+  soc <title or code>      a job title's SOC codes, or one code's record (no key)
   export <kind> [name=value ...] [--format csv|json] [--out <file>]
                            a whole search: cases (the case search's parameters),
                            employers, law-firms or occupations (q=...); CSV by default
@@ -210,6 +211,7 @@ export async function run(argv: string[]): Promise<number> {
     case "jobs": answer = await pt.occupations(need(a, "a job title to search")); break;
     case "job": answer = await pt.occupation(need(a, "an occupation's slug (search with jobs)")); break;
     case "lookup": answer = await pt.lookupEmployer(need(a, "an employer's name")); break;
+    case "soc": answer = await pt.lookupSoc(need(a, "a job title or a SOC code")); break;
     case "me": answer = await pt.me(); break;
     case "export": return await runExport(pt, p);
     case "watch":

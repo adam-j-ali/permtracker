@@ -43,6 +43,8 @@ try:
 except PermTrackerError as e:
     check(e.code == "missing_key" and e.status == 401, "a keyed call without a key says so")
 check(nokey.lookup_employer("Acme").data == {"match": "exact"} and "Authorization" not in calls[-1][1], "the lookup needs no key")
+check(nokey.lookup_soc("15-1252").data == {"match": "exact"} and "/lookup/soc?q=15-1252" in calls[-1][0]
+      and "Authorization" not in calls[-1][1], "the SOC lookup needs no key and sends q")
 limited = PermTracker(api_key=KEY, transport=transport(429, {"error": {"code": "rate_limited", "message": "Ten a minute.", "retryAfter": 42}}))
 try:
     limited.queue(); check(False, "a refusal raises")
