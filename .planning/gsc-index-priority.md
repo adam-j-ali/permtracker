@@ -1967,3 +1967,36 @@ Still to request:
    `/perm-wages`, `/perm-employers/under-review`, `/guides/tracking-a-case-without-an-account`,
    `/guides/tracking-perm-deadlines`.
 3. Then anything newer from `node scripts/gsc_queue.mjs --since a1cef84b`.
+
+### Round, Sunday Nov 8 2026 (about 11:45 AM to 12:06 PM EST)
+
+What's live is the 9:42 AM EST deploy of 01bbb268 (shipped at once on the owner's word; it carries the dependency
+updates and nothing a visitor reads differently), so the round judged each page by its own last change.
+
+Requested (11, then Quota Exceeded on the twelfth):
+- `/uscis-case-status`: crawled Nov 7, 8:26 AM, before the Nov 8 release that changed it.
+- `/nvc-waiting-list`: crawled Nov 1, 4:36 AM.
+- `/open-data`: crawled Nov 5, 5:22 PM, before its Nov 5 change went live.
+- `/privacy`: crawled Oct 31, 11:26 AM.
+- `/terms`: crawled Oct 31, 11:23 AM.
+- `/visa-issuances`: crawled Nov 1, 4:36 AM.
+- `/visa-wait-times`: crawled Oct 31, 11:58 PM.
+- `/tools/green-card-line`: crawled Nov 1, 1:15 PM.
+- `/visa-bulletin/family`: crawled Nov 1, 12:45 AM.
+- `/visa-bulletin/categories/eb2-india`: crawled Nov 2, 4:31 AM.
+- `/api-terms`: crawled Oct 27, 3:15 PM.
+
+Refused by the quota: `/perm-denial-risk` (crawled Nov 3, 10:01 PM).
+
+Skipped, crawled after their last change went live: `/for-attorneys` (Nov 8, 7:11 AM), `/h1b-cap-exempt-employers`
+(Nov 7, 12:57 AM), `/perm-layoff-disclosures` (Nov 6, 3:06 AM), `/wage-violations` (Nov 2, 1:15 PM),
+`/tools/green-card-timeline` (Nov 5, 4:26 AM), `/tools/priority-date-calculator` (Nov 7, 10:20 AM),
+`/perm-attorneys/fragomen-del-rey-bernsen-loewy-llp` (Nov 6, 8:10 AM), `/i485-by-field-office` (Nov 5, 2:57 PM),
+`/perm-attorneys` (Nov 8, 11:23 AM).
+
+Still to request:
+1. `/perm-denial-risk`.
+2. Inspect, and request only if crawled before its change went live: `/perm-employers` (changed Nov 4),
+   `/guides/tracking-a-case-without-an-account` and `/guides/tracking-perm-deadlines` (Nov 5), then `/perm-by-state`,
+   `/perm-wages` and `/perm-employers/under-review` (changed in October, probably crawled since).
+3. Then anything newer from `node scripts/gsc_queue.mjs --since 01bbb268`.
