@@ -664,3 +664,13 @@ first when the app's data shape changes (`UPDATE_TOUR_FIXTURES=1 pnpm exec vites
 Juniper now has three notes). The article capture hides `.fixed`, which caught the chat panel mid-animation and made a
 blank figure: its recipe forces opacity and transform. **Look at every clip's frames and every figure** before shipping:
 a 2 KB WebP was a blank picture, and the case-page clip is what showed the "Expired" defect.
+
+## Nov 8 2026: the SDKs caught up with the API (0.3.0)
+
+The 18 paths in `src/lib/api/openapi.ts` were compared with both packages: only `/lookup/soc` (keyless, Oct 2026) had
+no method. Added `lookupSoc(q)` to `sdk/`, `lookup_soc(q)` to `sdk-python/` and a `soc <title or code>` command to both
+CLIs; both packages and their version constants are 0.3.0. Checked against production with freshly built packages:
+the employer lookup, the SOC lookup by title and by code, and a keyed route without a key (401 `missing_key`). Package
+metadata names PERM Tracker and `support@permtracker.app`, links permtracker.app/developers, and carries no repository
+link, so nothing points at a GitHub account. **Still unpublished**: npm and PyPI need accounts on the press mailbox
+first. When they're published, the developers page gets a short "Packages" section (it names neither today).

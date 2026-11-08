@@ -26,6 +26,7 @@ COMMANDS = {
     "firms": "search law firms", "firm": "one law firm by slug",
     "jobs": "search occupations", "job": "one occupation by slug",
     "lookup": "the employer page a printed name belongs to (no key)",
+    "soc": "a job title's SOC codes, or one code's record (no key)",
     "export": "a whole search, CSV by default: cases (the case search's name=value parameters), employers, law-firms or occupations (q=...)",
     "watch": "watch a case for your webhooks (--employer <slug> for an employer); nothing after it lists your watches",
     "unwatch": "stop watching a case (--employer <slug> for an employer)",
@@ -134,6 +135,7 @@ def run(argv: list) -> int:
     elif c == "jobs": ans = pt.occupations(need("a job title to search"))
     elif c == "job": ans = pt.occupation(need("an occupation's slug (search with jobs)"))
     elif c == "lookup": ans = pt.lookup_employer(need("an employer's name"))
+    elif c == "soc": ans = pt.lookup_soc(need("a job title or a SOC code"))
     elif c == "watch":
         if a.employer: ans = pt.watch(employer=a.employer)
         elif text: ans = pt.watch(case_number=text)
