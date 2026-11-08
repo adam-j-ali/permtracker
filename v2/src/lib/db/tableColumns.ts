@@ -33,7 +33,7 @@ const TTL_MS = 10 * MS_PER_MINUTE;
 const cache = new Map<string, { at: number; cols: Promise<Set<string>> }>();
 
 export function tableColumns(table: string): Promise<Set<string>> {
-  if (!/^[a-z_]+$/.test(table)) throw new Error(`not a table name: ${table}`);
+  if (!/^[a-z][a-z0-9_]*$/.test(table)) throw new Error(`not a table name: ${table}`);
   const hit = cache.get(table);
   if (hit && Date.now() - hit.at < TTL_MS) return hit.cols;
   const cols = rows<{ name: string }>(`PRAGMA table_info(${table})`)
