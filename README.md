@@ -4,7 +4,7 @@ Free PERM case status and DOL data for people waiting on a green card, and case 
 
 **Live at [permtracker.app](https://permtracker.app)**
 
-[![Tests](https://github.com/adamjali/perm/actions/workflows/test.yml/badge.svg)](https://github.com/adamjali/perm/actions/workflows/test.yml)
+[![Tests](https://github.com/adam-j-ali/permtracker/actions/workflows/test.yml/badge.svg)](https://github.com/adam-j-ali/permtracker/actions/workflows/test.yml)
 
 ![The PERM Tracker homepage](docs/images/homepage-2026-10.jpg)
 
