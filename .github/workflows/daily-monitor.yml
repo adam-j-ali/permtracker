@@ -18,7 +18,9 @@ name: Daily monitor
 # morning email is itself the alarm, and the review routine says so.
 #
 # Optional secrets, each switching on one section (the report says "off" until
-# it is set): POSTHOG_PERSONAL_API_KEY, SENTRY_AUTH_TOKEN.
+# it is set): POSTHOG_PERSONAL_API_KEY, SENTRY_READ_TOKEN (a personal token with
+# event:read, org:read and project:read; the build's SENTRY_AUTH_TOKEN is an org token
+# that can only upload source maps, so Sentry answers it 403 here).
 #
 # Before the report, every check that reads rendered pages runs against the live
 # site (scripts/page_checks.py): glued words, content hidden until scripts run,
@@ -94,6 +96,10 @@ jobs:
           DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
           DATABASE_LCA_URL: ${{ secrets.DATABASE_LCA_URL }}
           DATABASE_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          # The crawl walks hundreds of pages from one address in seconds: without the key
+          # (scripts/lib_audit.py) Cloudflare's per-address limit answers 429 and the links
+          # and trust checks read the refusals as dead pages.
+          PERMTRACKER_AUDIT_KEY: ${{ secrets.PERMTRACKER_AUDIT_KEY }}
         run: |
           code=0
           python3 scripts/page_checks.py --base https://permtracker.app --out "${RUNNER_TEMP}/page-checks.json" || code=$?
@@ -108,7 +114,7 @@ jobs:
           DATABASE_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
           GITHUB_TOKEN: ${{ github.token }}
           POSTHOG_PERSONAL_API_KEY: ${{ secrets.POSTHOG_PERSONAL_API_KEY }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_READ_TOKEN }}
           PAGE_CHECKS_FILE: ${{ runner.temp }}/page-checks.json
         run: python3 scripts/daily_monitor.py --out "${RUNNER_TEMP}/report.json"
 

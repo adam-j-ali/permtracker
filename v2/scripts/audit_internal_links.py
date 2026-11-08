@@ -23,6 +23,7 @@ import argparse
 import html
 import re
 import sys
+import urllib.error
 import urllib.request
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -67,11 +68,21 @@ def words(s: str) -> set[str]:
     return {w for w in re.findall(r"[a-z0-9]+", s.lower()) if w not in STOP and len(w) > 2}
 
 
+# Addresses the site refused (429 or 503) rather than failed to find, with the code. A refusal
+# is the front door's rate limit, not a dead page, and is reported as one: on Nov 8 2026 a
+# crawl without the audit key read 4 of Cloudflare's 429s as dead links.
+REFUSED: dict[str, int] = {}
+
+
 def fetch(url: str, timeout: int = 45) -> str | None:
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "permtracker-link-audit",
                                                    **audit_headers()})
         return urllib.request.urlopen(req, timeout=timeout).read().decode("utf8", "ignore")
+    except urllib.error.HTTPError as e:
+        if e.code in (429, 503):
+            REFUSED[url] = e.code
+        return None
     except Exception:
         return None
 
@@ -157,10 +168,13 @@ def main() -> int:
     with ThreadPoolExecutor(8) as ex:
         fetched = dict(zip(targets, ex.map(lambda t: fetch(base + t), targets)))
 
-    dead, suspect = [], []
+    dead, refused, suspect = [], [], []
     for t in targets:
         if fetched.get(t) is None:
-            dead.append((t, sorted(labels[t])[:2], sorted(where[t])[:2]))
+            if base + t in REFUSED:
+                refused.append((t, REFUSED[base + t]))
+            else:
+                dead.append((t, sorted(labels[t])[:2], sorted(where[t])[:2]))
             continue
         for label in labels[t]:
             low = label.lower()
@@ -203,10 +217,16 @@ def main() -> int:
 
     print(f"internal targets : {len(targets)}")
     print(f"unreachable      : {len(dead)}")
+    print(f"refused (429/503): {len(refused)}")
     print(f"topic mismatches : {len(suspect)}\n")
 
     for t, ls, w in dead:
         print(f"  DEAD  {t}\n        labelled {ls}\n        linked from {w}")
+    if refused:
+        print(f"  REFUSED  {len(refused)} pages answered {sorted({c for _, c in refused})}: the site's rate limit,"
+              " not dead pages, so they went unchecked (is PERMTRACKER_AUDIT_KEY set?)")
+        for t, c in refused[:10]:
+            print(f"    {c}  {t}")
     for t, label, h1, w, phrase in suspect:
         print(f'  MISMATCH  link text says "{phrase}" but goes to {t}')
         print(f'            full label : "{label}"')
@@ -218,7 +238,7 @@ def main() -> int:
         print(f"\nFAIL: only {len(targets)} internal targets found; the crawl is broken")
         return 2
     print(f"\ncontrol: crawled {len(pages)} pages and found {len(targets)} targets")
-    return 1 if (dead or suspect) else 0
+    return 1 if (dead or refused or suspect) else 0
 
 
 if __name__ == "__main__":
