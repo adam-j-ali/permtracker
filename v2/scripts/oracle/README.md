@@ -138,6 +138,7 @@ cd - && git worktree remove /tmp/convex-rollback
 | secret | where |
 |---|---|
 | website settings (AI keys, Sentry, PostHog, Resend, Turnstile, Calendar...) | `/srv/permtracker/app/env/production.env` (root:permtracker 640), copied from Vercel's production settings |
+| direct database reads (since Nov 8 2026) | `DATABASE_LOCAL_PATH=/srv/permtracker/db/data.sqld/dbs/default/data` and `DATABASE_LCA_LOCAL_PATH=/srv/permtracker/db-lca/data.sqld/dbs/default/data` in `production.env`: the web copies read the files through read-only connections kept open (`src/lib/db/localReads.ts`), writes still go to sqld. Removing both lines and restarting the copies one at a time puts every read back on sqld. Measured: fresh employer builds 425 to 147 ms median |
 | database tokens | `/srv/permtracker/secrets/db_ro.jwt`, `db_rw.jwt`; signing key in `/root/permtracker-jwt/` |
 | `CRON_SECRET`, `REVALIDATE_SECRET` | `/srv/permtracker/secrets/` (new values; GitHub's `REVALIDATE_SECRET` is updated on switch day) |
 | `GITHUB_DISPATCH_TOKEN` | `/srv/permtracker/secrets/github_dispatch_token` |
