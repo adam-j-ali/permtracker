@@ -297,7 +297,7 @@ Six entries in `v2/vercel.json` call `/api/cron/dispatch/<job>`
 (`src/app/api/cron/dispatch/[job]/route.ts`, job table in `../jobs.ts`). The
 route checks `Authorization: Bearer <CRON_SECRET>`, refuses unknown jobs, skips a
 workflow with a run inside the last 20 minutes, and fires `workflow_dispatch` on
-`adamjali/perm` with `GITHUB_DISPATCH_TOKEN`. Reason: GitHub's `schedule` fired
+`adam-j-ali/permtracker` (`adamjali/perm` until Nov 7 2026) with `GITHUB_DISPATCH_TOKEN`. Reason: GitHub's `schedule` fired
 2 to 7.5 hours late every day. The data workflows carry no `schedule:` any more;
 `ingest-health.yml` keeps one as a second clock. Two launchd agents on Adam's Mac
 (`v2/scripts/launchd/`) retry the USCIS fetches the day after GitHub's attempt.
@@ -333,7 +333,7 @@ Detail: `v2/CLAUDE.md`.
 | Variable | Where | Purpose |
 |---|---|---|
 | `CRON_SECRET` | Vercel production | Vercel adds it as a Bearer header to every cron invocation; `/api/cron/dispatch/[job]` refuses anything else |
-| `GITHUB_DISPATCH_TOKEN` | Vercel production (sensitive) | fine-grained PAT `permtracker-cron-dispatch`, repo `adamjali/perm` only, Actions read/write; a missing value answers 500 "GITHUB_DISPATCH_TOKEN is not set" |
+| `GITHUB_DISPATCH_TOKEN` | the server's `production.env` (since the Vercel exit) | fine-grained PAT `permtracker-dispatch` on `adam-j-ali`, repo `adam-j-ali/permtracker` only, Actions read/write (Nov 7 2026; was `permtracker-cron-dispatch` on `adamjali/perm`); a missing value answers 500 "GITHUB_DISPATCH_TOKEN is not set" |
 | `REVALIDATE_SECRET` | Vercel production + GitHub Actions | guards `POST /api/revalidate-live-employers` and `/api/revalidate-dol` |
 | `TURSO_RW_AUTH_TOKEN` | Vercel production | the ONLY write credential the web app holds; the default `TURSO_AUTH_TOKEN` in production is read-only on purpose |
 
