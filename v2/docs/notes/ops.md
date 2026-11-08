@@ -2162,5 +2162,12 @@ Also: four covering indexes, measured on a copy before and after (cold mean per 
 scripts that build those tables create them. Three candidates didn't help and weren't kept: covering the facets,
 covering the payroll read, and a partial index for the SOC title list (the planner kept its old index).
 
-Still to measure once local reads are on: build times against this baseline, sqld's CPU, and the page-cache cleanup
-(`permtracker-prune`), which spent 8 minutes of every 30 walking the cache in disk wait.
+**Live Nov 8 2026.** Shipped with `-f when=now` on the owner's yes (live 1:51 PM EST), then switched on for one web
+copy first (blue2, at 4:48 PM) while the other read through sqld. Sixty random employer pages built fresh, alternating
+between the two: through sqld 425 ms median and 667 ms for the slowest tenth; reading the file 147 ms and 306 ms.
+Ten API answers were byte for byte the same from both copies, and the reading copy logged no fallback. Then
+`DATABASE_LOCAL_PATH` and `DATABASE_LCA_LOCAL_PATH` went into `production.env` for every copy (backup
+`production.env.bak-2026-11-08-localreads`). Ten minutes later: load average 0.46 (it had been about 7), the CPU 89%
+idle (11%), sqld 0% of a core over 30 seconds (about 65%), each reader process about 80 MB.
+
+Still open: the page-cache cleanup (`permtracker-prune`) spent 8 minutes of every 30 walking the cache in disk wait.
