@@ -43,7 +43,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 ET = ZoneInfo("America/New_York")
-REPO = "adamjali/perm"
+REPO = "adam-j-ali/permtracker"
 SITE = "https://permtracker.app"
 POSTHOG_PROJECT = "322551"
 
