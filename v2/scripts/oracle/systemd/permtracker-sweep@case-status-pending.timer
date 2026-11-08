@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule for permtracker-sweep@case-status-pending
+# The undecided cases, the afternoon pass. Moved from GitHub's runners on Nov 7 2026 (the same clock the dispatch timer had).
+[Timer]
+OnCalendar=*-*-* 15:40:00 America/New_York
+Persistent=true
+Unit=permtracker-sweep@case-status-pending.service
+
+[Install]
+WantedBy=timers.target
