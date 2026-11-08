@@ -2129,3 +2129,38 @@ the sweeps' first night on the server was clean. Each finding was something the 
 The four Dependabot update groups merged together the same morning; git's line merge of `pnpm-lock.yaml` left duplicate
 keys that `pnpm install --frozen-lockfile` refused, so the lockfile is the production group's with the other two resolved
 on top by `pnpm install --lockfile-only`.
+
+## Nov 8 2026: page builds were slow because every read opened a new database connection
+
+The morning report's "Page speed" had warned since at least Nov 7, and the hourly readings in
+`/srv/permtracker/health/perf.jsonl` showed why it mattered: employer, firm and job pages built in about 0.26 s
+typical Oct 22 to 28, 0.32 s from Oct 29 (the RAM lock retired) and 0.40 to 0.54 s from Nov 1, while the database's
+own statement time went from 6 to 13 s an hour to 40 to 110. The move off GitHub (Nov 7) didn't start it.
+
+What the measurements showed, in order:
+- The server has 2 cores, and they ran near full: load average about 7, 50% user, 14% system, 14% waiting on disk,
+  8% stolen by the host, 11% idle. sqld alone used about two thirds of a core.
+- The employer page's reads are cheap on their own. Run straight against a copy of the file, the ten costliest took
+  about 35 ms per employer with nothing cached and 25 ms warm.
+- Every read through sqld's HTTP interface opens a fresh SQLite connection. `SELECT 1` took 6 to 18 ms; ten
+  statements in one request cost about as much as one; requests ran close to one at a time (10 at once took 64 ms, 40
+  took 254 ms). A page build makes about 40 reads, so that overhead was most of a build.
+- The same reads on a connection kept open, through Node's built-in `node:sqlite`: `SELECT 1` 0.002 ms, a
+  `perm_docs` lookup 0.007 ms, an employer's recent cases 1.5 ms.
+
+The fix (`src/lib/db/localReads.ts`): with `DATABASE_LOCAL_PATH` (and `DATABASE_LCA_LOCAL_PATH`) set, the read layer
+reads the file through a read-only, `query_only` connection kept open in a pool of child processes. Child processes,
+not worker threads: a thread can't be stopped inside a native SQLite call (the first test hung on a runaway query),
+while a process can be killed at the read's deadline. Any other local failure is logged once and the read goes through
+sqld. Unset, nothing changes, which is every build machine and local development. Rows match libSQL's exactly,
+including the first of two same-named columns winning (`objectsOf`), and true and false bind as 1 and 0.
+
+Also: four covering indexes, measured on a copy before and after (cold mean per read): an employer's recent cases
+5.5 to 2.5 ms (`idx_pch_emp_dec_cover`), the layoff counts by year 4.5 to 1.7 (`idx_pc_emp_fy_layoff`), the page map
+3.0 to 1.8 (`employer_page_map_page_src`), the yearly counts 3.6 to 1.5 (`perm_employer_years_cover`). They added
+238 MB, were created on the live database in 42 s on Nov 8 (EXPLAIN shows each read using its covering index), and the
+scripts that build those tables create them. Three candidates didn't help and weren't kept: covering the facets,
+covering the payroll read, and a partial index for the SOC title list (the planner kept its old index).
+
+Still to measure once local reads are on: build times against this baseline, sqld's CPU, and the page-cache cleanup
+(`permtracker-prune`), which spent 8 minutes of every 30 walking the cache in disk wait.
