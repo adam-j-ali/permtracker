@@ -2210,3 +2210,4 @@ Ledger with every finding: [`.planning/audit-2026-11-04.md`](.planning/audit-202
   for word to `v2/docs/notes/`, and `scripts/test_instruction_size.py` keeps them small. Detail in `testing.md`.
 - **New lessons go in their area's notes file and a line here**; a CLAUDE.md takes only a standing decision or a rule
   every change follows.
+- **Nov 7 2026:** GitHub suspended `adamjali` (5:20 PM EST, reason not given; a reply may take two months). The code moved to a public `adam-j-ali/permtracker` with Actions on only for what GitHub's Actions terms allow (tests, scans, build and deploy, review, Dependabot) and the www.dol.gov downloads (www.dol.gov refuses the server and the owner's network); the flag.dol.gov sweeps and our own jobs move to the server. New deploy key; secrets copied from the server by pipe.

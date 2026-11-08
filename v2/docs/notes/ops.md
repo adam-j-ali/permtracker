@@ -2079,3 +2079,26 @@ Chrome for iPhone's Translate or form script, which PostHog had dropped since Oc
 `SentryClientInit.tsx` now drops it by the same rule (`sentryEventFromInjectedPageScript`: Chrome for iPhone, and every
 frame a page document rather than a script, Sentry's `app:///` names included). An error with one frame in a `/_next/`
 script still reports.
+
+## Nov 7 2026: the repository moved to adam-j-ali/permtracker after adamjali was suspended
+
+GitHub suspended `adamjali` at about 5:20 PM EST, minutes after an organization was created for the LLC, with no reason
+given; its support said a reply may take two months. `adamjali/perm` answers 404, so every workflow, every dispatch from the
+server and the server's `git fetch` stopped. The owner's call (8:20 PM EST): a public repo on the personal account, GitHub runs
+only what the Actions terms allow ("custom software development lifecycle workflows"; not "part of a serverless application",
+not activity "unrelated to the production, testing, deployment, or publication of the software project") plus the www.dol.gov
+downloads, which work only from GitHub's runners (www.dol.gov answered 403 to the server and the owner's network on Nov 7).
+Everything else runs on the server.
+
+- `adam-j-ali/perm` already existed (the private, archived pre-July copy), so the new one is `adam-j-ali/permtracker`.
+- Actions was switched off before the first push and on after the secrets, and the 11 server-bound workflows were disabled
+  at once: case-status-direct, pwd-status-direct, processing-times-ingest, convex-backup, ingest-health, daily-monitor,
+  newsworthy, backup-observations, indexnow, watched-cases, social-post.
+- Secrets were copied from the server through a pipe (`ssh ... sudo cat | gh secret set`), never printed: the database tokens
+  (`secrets/db_rw.jwt` as `TURSO_AUTH_TOKEN`, `db_ro.jwt` as `ORACLE_DB_RO_TOKEN`), `REVALIDATE_SECRET`, `SENTRY_AUTH_TOKEN`,
+  `WITHHELD_*`, `CF_ZONE_ID`; the build variables from `production.env`. A new deploy key replaced the old one in
+  `/home/deploy/.ssh/authorized_keys` with the same options (backup `authorized_keys.bak-20261107-adamjali`); it reads
+  `status` and anything else gets "unknown action". Known hosts: all three fingerprints matched this Mac's.
+- Not copied yet: `CF_PURGE_TOKEN` (only in the old repo; the deploy notes its absence and carries on),
+  `CLAUDE_CODE_OAUTH_TOKEN`, `SEMGREP_APP_TOKEN`, and the server's `GITHUB_DISPATCH_TOKEN` (a new fine-grained token on the
+  personal account, Actions write on this repo only).

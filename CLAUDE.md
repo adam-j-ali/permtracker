@@ -84,7 +84,7 @@ The site runs on an Oracle server behind Cloudflare (since Sep 28 2026; runbook
 
 | Service | Name | Notes |
 |---------|------|-------|
-| GitHub repo | `perm` | See remote origin |
+| GitHub repo | `adam-j-ali/permtracker` (public) | Since Nov 7 2026; `adamjali/perm` is suspended (remote `adamjali`) |
 | Local folder | `perm-tracker/v2/` | All code lives in `v2/` |
 | Oracle server | `ssh permtracker` | the site, the database (sqld), nginx, the timers |
 | Cloudflare | `permtracker.app` zone | DNS, the tunnel `permtracker-oracle`, R2 backups, the mail Worker |
