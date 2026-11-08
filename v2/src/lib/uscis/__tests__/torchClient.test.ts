@@ -30,8 +30,8 @@ import {
   fetchProcessingTimesRaw,
   normaliseCaseStatus,
   resetTokenCache,
+  reserveTpsSlot,
   resetTpsBucket,
-  takeTpsToken,
   underUscisDailyBudget,
   uscisBudgetDay,
   uscisDateToIso,
@@ -364,24 +364,48 @@ describe("USCIS's answers", () => {
   });
 });
 
-describe("the local TPS bucket", () => {
-  it("refuses the sixth call in one second at the sandbox rate, without touching USCIS", async () => {
-    setEnv("sandbox");
-    const { f, calls } = fakeFetch(() => jsonRes(200, CASE));
-    const results = [];
-    for (let i = 0; i < 6; i++) results.push(await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 }));
-    expect(results.slice(0, 5).every((r) => r.kind === "ok")).toBe(true);
-    expect(results[5]).toEqual({ kind: "rate_limited", where: "local" });
-    expect(calls.filter((c) => c.url.includes("/case-status/"))).toHaveLength(5);
-    // And the sixth attempt was NOT charged to the daily budget: the cheap
-    // guard runs first.
-    expect(execMock).toHaveBeenCalledTimes(5);
+describe("spacing calls the way USCIS counts them", () => {
+  // USCIS's gateway (Apigee) enforces "5 a second" as one call every 200 ms: two back-to-back calls from the
+  // server's sandbox job, 0.16 s apart, drew a 429 "Spike Arrest" on Nov 8 2026.
+  it("gives the first call its slot at once and the next one 1/TPS later", () => {
+    expect(reserveTpsSlot("sandbox", T0)).toBe(0);
+    expect(reserveTpsSlot("sandbox", T0)).toBe(200);
+    expect(reserveTpsSlot("sandbox", new Date(T0.getTime() + 150))).toBe(250);
+    resetTpsBucket();
+    expect(reserveTpsSlot("production", T0)).toBe(0);
+    expect(reserveTpsSlot("production", T0)).toBe(100);
   });
 
-  it("refills with time", () => {
-    for (let i = 0; i < 5; i++) expect(takeTpsToken("sandbox", T0)).toBe(true);
-    expect(takeTpsToken("sandbox", T0)).toBe(false);
-    expect(takeTpsToken("sandbox", new Date(T0.getTime() + 250))).toBe(true);
+  it("refuses rather than queue past a second, and a refusal reserves nothing", () => {
+    for (let i = 0; i < 6; i++) expect(reserveTpsSlot("sandbox", T0)).toBe(i * 200);
+    expect(reserveTpsSlot("sandbox", T0)).toBeNull();
+    expect(reserveTpsSlot("sandbox", new Date(T0.getTime() + 1000))).toBe(200);
+  });
+
+  it("makes a second lookup wait for its slot, then ask USCIS", async () => {
+    setEnv("sandbox");
+    const { f, calls } = fakeFetch(() => jsonRes(200, CASE));
+    const waits: number[] = [];
+    const sleep = async (ms: number) => {
+      waits.push(ms);
+    };
+    const a = await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0, sleep });
+    const b = await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0, sleep });
+    expect([a.kind, b.kind]).toEqual(["ok", "ok"]);
+    expect(waits).toEqual([200]);
+    expect(calls.filter((c) => c.url.includes("/case-status/"))).toHaveLength(2);
+  });
+
+  it("refuses locally, without charging the budget or calling USCIS, when the queue is a second deep", async () => {
+    setEnv("sandbox");
+    const { f, calls } = fakeFetch(() => jsonRes(200, CASE));
+    const sleep = async () => {};
+    const results = [];
+    for (let i = 0; i < 7; i++) results.push(await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0, sleep }));
+    expect(results.slice(0, 6).every((r) => r.kind === "ok")).toBe(true);
+    expect(results[6]).toEqual({ kind: "rate_limited", where: "local" });
+    expect(calls.filter((c) => c.url.includes("/case-status/"))).toHaveLength(6);
+    expect(execMock).toHaveBeenCalledTimes(6);
   });
 });
 

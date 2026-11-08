@@ -179,7 +179,8 @@ case "$job" in
       code="${out##*$'\n'}"; reason="$(printf '%s' "$out" | grep -o '"reason":"[a-z_]*"' | head -1 | cut -d'"' -f4)"
       printf '%s%s' "$code" "${reason:+ $reason}"
     }
-    good="$(ask EAC9999103403)"; unknown="$(ask EAC9999100000)"
+    # A second apart: USCIS counts its 5 a second as one call every 200 ms (a 429 at 0.16 s, Nov 8 2026).
+    good="$(ask EAC9999103403)"; sleep 1; unknown="$(ask EAC9999100000)"
     note="staging receipt $good, unknown receipt $unknown"
     echo "$note"
     case "$good|$unknown" in
