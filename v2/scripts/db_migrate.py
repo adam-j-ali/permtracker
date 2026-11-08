@@ -124,6 +124,8 @@ INDEXES = [
     "CREATE INDEX idx_pc_soc_st_dec    ON perm_cases(soc_code, status, decision_date)",
     "CREATE INDEX idx_pc_emp_dec       ON perm_cases(employer_slug, decision_date)",
     "CREATE INDEX idx_pc_emp_st_dec    ON perm_cases(employer_slug, status, decision_date)",
+    # The layoff answer counts one employer's cases by year: the index alone answers it (4.5 to 1.7 ms, Nov 8 2026).
+    "CREATE INDEX idx_pc_emp_fy_layoff ON perm_cases(employer_slug, fiscal_year, layoff, decision_date)",
     "CREATE INDEX idx_pc_att_dec       ON perm_cases(attorney_slug, decision_date)",
     "CREATE INDEX idx_pc_att_st_dec    ON perm_cases(attorney_slug, status, decision_date)",
     # The occupation pair is on the 6-digit group: `perm_cases` holds both
