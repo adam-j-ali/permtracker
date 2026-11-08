@@ -30,6 +30,7 @@ import { createClient, type Client } from "@libsql/client/http";
 import { maskRowsIndexed, prepareStatement, type MaskOptions } from "@/lib/privacy/withheld";
 
 import { lcaJoins, statementHome, type DatabaseHome } from "./lcaRoute";
+import { LocalDeadlineError, localPathFor, localRead, objectsOf } from "./localReads";
 
 let client: Client | null = null;
 let lcaClient: Client | null = null;
@@ -243,6 +244,41 @@ export interface RowsOptions {
   withheld?: "mask" | "drop";
 }
 
+const warnedLocal = new Set<string>();
+
+/**
+ * A read from the database file itself, when this copy runs beside the database (localReads.ts), or null to read
+ * through sqld. A read past its deadline throws; any other local failure is logged once per kind and the read goes
+ * through sqld, so a problem with the file costs speed, never a page.
+ */
+async function localRows(home: DatabaseHome, sql: string, args: unknown[]): Promise<Record<string, unknown>[] | null> {
+  const path = localPathFor(home);
+  if (!path) return null;
+  try {
+    return objectsOf(await localRead(path, sql, args, QUERY_DEADLINE_MS));
+  } catch (e) {
+    if (e instanceof LocalDeadlineError) throw e;
+    const why = String((e as Error)?.message ?? e).slice(0, 160);
+    if (!warnedLocal.has(why)) {
+      warnedLocal.add(why);
+      console.warn(`[db] local read fell back to sqld: ${why}`);
+    }
+    return null;
+  }
+}
+
+async function httpRows(home: DatabaseHome, sql: string, args: unknown[], what: string): Promise<Record<string, unknown>[]> {
+  const db = home === "lca" ? lcaDatabase() : database();
+  const rs = await withDeadline(() => db.execute({ sql, args: args as never[] }), what.slice(0, 80), {
+    retryTransient: true,
+  });
+  return rs.rows.map((r) => {
+    const o: Record<string, unknown> = {};
+    for (const c of rs.columns) o[c] = (r as unknown as Record<string, unknown>)[c];
+    return o;
+  });
+}
+
 async function readRows<T>(
   sql: string,
   args: unknown[],
@@ -252,16 +288,11 @@ async function readRows<T>(
   // masked on every page, list, sitemap and API answer at once, and a read
   // asked by its neutral slug reads the real record.
   const prepared = prepareStatement(sql, args);
-  const db = homeOf(prepared.sql) === "lca" ? lcaDatabase() : database();
-  const rs = await withDeadline(
-    () => db.execute({ sql: prepared.sql, args: prepared.args as never[] }),
-    sql.slice(0, 80),
-    { retryTransient: true },
-  );
-  const out = rs.rows.map((r) => {
+  const home = homeOf(prepared.sql);
+  const raw = (await localRows(home, prepared.sql, prepared.args)) ?? (await httpRows(home, prepared.sql, prepared.args, sql));
+  const out = raw.map((r) => {
     const o: Record<string, unknown> = {};
-    for (const c of rs.columns) {
-      const v = (r as unknown as Record<string, unknown>)[c];
+    for (const [c, v] of Object.entries(r)) {
       // libSQL returns INTEGER as bigint when it exceeds 2^53. Every count
       // and wage here is far below that, and a bigint leaking into JSON.
       // stringify throws "Do not know how to serialize a BigInt".
