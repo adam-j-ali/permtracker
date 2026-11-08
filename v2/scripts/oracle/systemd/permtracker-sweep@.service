@@ -1,0 +1,9 @@
+[Unit]
+Description=PERM Tracker DOL sweep %i
+After=network-online.target permtracker-db.service permtracker-db-lca.service
+[Service]
+Type=oneshot
+User=permtracker
+# The longest day (a Monday full pass) is the sum of its steps' own limits, about 310 minutes.
+TimeoutStartSec=6h
+ExecStart=/usr/local/bin/permtracker-sweep %i

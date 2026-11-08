@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule for permtracker-sweep@ingest-health
+# Every dataset against its own freshness budget, and the data's invariants. Moved from GitHub's runners on Nov 7 2026 (the same clock the dispatch timer had).
+[Timer]
+OnCalendar=*-*-* 06:00:00 America/New_York
+Persistent=true
+Unit=permtracker-sweep@ingest-health.service
+
+[Install]
+WantedBy=timers.target

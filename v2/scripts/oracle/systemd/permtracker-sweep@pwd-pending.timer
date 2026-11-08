@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule for permtracker-sweep@pwd-pending
+# The wage requests DOL hasn't decided. Moved from GitHub's runners on Nov 7 2026 (the same clock the dispatch timer had).
+[Timer]
+OnCalendar=*-*-* 05:40:00 America/New_York
+Persistent=true
+Unit=permtracker-sweep@pwd-pending.service
+
+[Install]
+WantedBy=timers.target
