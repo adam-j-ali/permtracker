@@ -26,7 +26,7 @@ from lib_sitemap_sample import describe_sampling, sample_by_shape  # noqa: E402
 import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
-from lib_audit import audit_headers  # noqa: E402
+from lib_audit import audit_headers, audit_urlopen  # noqa: E402
 
 UA = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -87,7 +87,7 @@ def get(url: str, timeout: int = 30, tries: int = 2) -> tuple[int, str]:
     for attempt in range(tries):
         try:
             req = urllib.request.Request(url, headers=UA)
-            with urllib.request.urlopen(req, timeout=timeout) as r:
+            with audit_urlopen(req, timeout=timeout) as r:
                 return r.status, r.read().decode("utf-8", "replace")
         except urllib.error.HTTPError as e:
             return e.code, ""
