@@ -140,6 +140,45 @@ const onDomain = (from: string, list: readonly string[]): boolean => {
   return list.some((n) => d === n || d.endsWith(`.${n}`));
 };
 
+/**
+ * Brands phishing borrows, each with its own domains. Three "Review Contract Agreement" messages from
+ * adobesharedteam.com reached support@ and security@ on Nov 6 and 7 2026 with only the AI's 2 against them. A
+ * sender domain carrying one of these names that isn't the brand's own is a lookalike. Each name is distinctive
+ * enough not to sit inside an ordinary word.
+ */
+const BRAND_DOMAINS: Record<string, readonly string[]> = {
+  adobe: ["adobe.com", "adobesign.com", "adobe.io", "echosign.com"],
+  docusign: ["docusign.com", "docusign.net"],
+  microsoft: ["microsoft.com", "microsoftonline.com"],
+  office365: ["office365.com"],
+  sharepoint: ["sharepoint.com"],
+  onedrive: ["onedrive.com"],
+  paypal: ["paypal.com"],
+  dropbox: ["dropbox.com", "dropboxmail.com"],
+  coinbase: ["coinbase.com"],
+  quickbooks: ["quickbooks.com", "intuit.com"],
+  godaddy: ["godaddy.com"],
+  namecheap: ["namecheap.com"],
+  fedex: ["fedex.com"],
+  usps: ["usps.com", "usps.gov"],
+  uscis: ["uscis.gov", "dhs.gov"],
+};
+
+/** The brand a sender's domain borrows without being that brand's, or null. */
+export function borrowedBrand(from: string): string | null {
+  const d = domainOf(from);
+  if (!d) return null;
+  for (const [brand, own] of Object.entries(BRAND_DOMAINS)) {
+    if (!d.includes(brand)) continue;
+    if (own.some((o) => d === o || d.endsWith(`.${o}`))) continue;
+    return brand;
+  }
+  return null;
+}
+
+/** One of our own addresses: phishing echoes the address it was sent to in the subject or the name. */
+const OUR_ADDRESS = /[a-z0-9._%+-]+@(?:[a-z0-9-]+\.)*permtracker\.app\b/i;
+
 export function isNoticeSender(from: string): boolean {
   return onDomain(from, NOTICE_DOMAINS);
 }
@@ -166,6 +205,10 @@ export function ruleScore(mail: MailForCheck): { score: number; reasons: string[
   const name = mail.fromName ?? "";
   if (LINK.test(name) || BARE_DOMAIN.test(name)) add(3, "a web address typed into the name");
   LINK.lastIndex = 0;
+
+  const brand = borrowedBrand(mail.from);
+  if (brand) add(2, `the sender's domain borrows ${brand}'s name`);
+  if (OUR_ADDRESS.test(subject) || OUR_ADDRESS.test(name)) add(2, "our own address quoted in the subject or name");
 
   const hosts = linkHosts(text);
   if (hosts.length >= 8) add(2, `${hosts.length} different websites linked`);
