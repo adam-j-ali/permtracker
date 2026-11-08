@@ -2102,3 +2102,30 @@ Everything else runs on the server.
 - Not copied yet: `CF_PURGE_TOKEN` (only in the old repo; the deploy notes its absence and carries on),
   `CLAUDE_CODE_OAUTH_TOKEN`, `SEMGREP_APP_TOKEN`, and the server's `GITHUB_DISPATCH_TOKEN` (a new fine-grained token on the
   personal account, Actions write on this repo only).
+
+## Nov 8 2026: the first morning report from the new repository, and what a move doesn't carry
+
+The 7:30 AM report came back red, and none of it was the site: every page answered, every dataset was inside its budget,
+the sweeps' first night on the server was clean. Each finding was something the old repository had and the new one didn't.
+
+- **The seven retired dispatch timers read as "timers not enabled".** The report wants every timer file in
+  `scripts/oracle/systemd` enabled, and these stay in the repo, off, so the jobs can go back to GitHub in one step.
+  `RETIRED_TIMERS` in `scripts/daily_monitor.py` names them; one enabled again fails, since its sweep would then run twice
+  against DOL.
+- **The page checks were answered 429 by Cloudflare.** No workflow had ever passed `PERMTRACKER_AUDIT_KEY`, so the morning
+  crawl (40 pages, 893 links, from one runner address in seconds) relied on the per-address limit's slack. The server's
+  nginx log showed no 429 to the runner, so the refusals were Cloudflare's. The key is now a repository secret, passed to
+  the page checks only. And `audit_internal_links.py` swallowed every error into "DEAD", so four refusals read as missing
+  pages; a 429 or 503 is now reported as the site refusing the crawl (`scripts/test_audit_internal_links.py`).
+- **Sentry answered 403.** The `SENTRY_AUTH_TOKEN` copied from `production.env` is an organization token, which can only
+  upload source maps; the old repository held a different, read-capable token under the same name. The report now reads
+  `SENTRY_READ_TOKEN`, a personal token with event, org and project read.
+- **24 code-scanning alerts reopened** (dismissals stay with the repository that made them): 21 in tests, a display label,
+  the DOL page text parser and a local design tool, each dismissed again with its reason.
+- **Dependabot alerts are off on a new repository** until switched on (`PUT /repos/{repo}/vulnerability-alerts`); the
+  report's 403 was that.
+- Two failed `systemd-run` units on the server were debugging runs from Nov 7 (`reset-failed`).
+
+The four Dependabot update groups merged together the same morning; git's line merge of `pnpm-lock.yaml` left duplicate
+keys that `pnpm install --frozen-lockfile` refused, so the lockfile is the production group's with the other two resolved
+on top by `pnpm install --lockfile-only`.
