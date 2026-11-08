@@ -75,7 +75,7 @@ c, _ = curl("-X", "POST", "-H", "Content-Type: application/json", "https://api.t
             "-d", json.dumps({"api_key": ENV["TAVILY_API_KEY"], "query": "PERM labor certification", "max_results": 1}))
 show("TAVILY_API_KEY", "one web search", c == "200", c)
 
-c, t = curl(*bearer("GITHUB_DISPATCH_TOKEN"), "https://api.github.com/repos/adamjali/perm/actions/workflows?per_page=1")
+c, t = curl(*bearer("GITHUB_DISPATCH_TOKEN"), "https://api.github.com/repos/adam-j-ali/permtracker/actions/workflows?per_page=1")
 show("GITHUB_DISPATCH_TOKEN", "reads the repo's workflows", c == "200", c)
 
 c, t = curl("-X", "POST", "https://oauth2.googleapis.com/token",

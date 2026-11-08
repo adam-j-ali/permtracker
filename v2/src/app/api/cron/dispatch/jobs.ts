@@ -33,7 +33,7 @@ export interface CronJob {
   description: string;
 }
 
-export const REPO = "adamjali/perm";
+export const REPO = "adam-j-ali/permtracker";
 export const BRANCH = "main";
 
 /**
