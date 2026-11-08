@@ -37,7 +37,10 @@ describe("the wiring", () => {
   it("masks every read where it passes: the database and Convex's copy of it", () => {
     const client = read("src/lib/db/client.ts");
     expect(client).toMatch(/const prepared = prepareStatement\(sql, args\);/);
-    expect(client).toMatch(/db\.execute\(\{ sql: prepared\.sql, args: prepared\.args as never\[\] \}\)/);
+    // Both ways a read can go (the file itself, or sqld) run the rewritten statement, never the caller's.
+    expect(client).toMatch(/await localRows\(home, prepared\.sql, prepared\.args\)/);
+    expect(client).toMatch(/await httpRows\(home, prepared\.sql, prepared\.args, sql\)/);
+    expect(client).toMatch(/db\.execute\(\{ sql, args: args as never\[\] \}\)/);
     expect(client).toMatch(/maskRowsIndexed\(out, prepared\.ctx, mask\)/);
     const mirror = read("convex/lib/publicMirror.ts");
     expect(mirror).toMatch(/const masker = maskerForEnv\(process\.env\);/);
