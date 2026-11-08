@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   aiUserPrompt,
+  borrowedBrand,
   HOLD_AT,
   isNoticeSender,
   linkHosts,
@@ -84,6 +85,15 @@ const SPAM: Array<[string, MailForCheck]> = [
       text: "お客様のメールは配信されませんでした。詳細は Telegram でご確認ください。",
     },
   ],
+  [
+    "a contract to review from a domain borrowing a brand's name, quoting our address",
+    {
+      from: "service@adobesharedteam.example",
+      fromName: "Adobe Sign",
+      subject: "permtracker.app Service support@permtracker.app Review Contract Agreement",
+      text: "A contract agreement was shared with you for review.",
+    },
+  ],
 ];
 
 const REAL: Array<[string, MailForCheck]> = [
@@ -117,6 +127,22 @@ const REAL: Array<[string, MailForCheck]> = [
   ["Korean", { from: "kim@naver.com", subject: "PERM 진행 상황 문의", text: "안녕하세요. 제 케이스가 아직 진행 중인데 언제쯤 결과가 나올까요?" }],
   ["Vietnamese", { from: "nguyen@gmail.com", subject: "Hỏi về hồ sơ PERM", text: "Xin chào, hồ sơ của tôi nộp tháng 12 năm 2025. Khi nào có kết quả ạ?" }],
   ["Spanish", { from: "jose@hotmail.com", subject: "Pregunta sobre mi caso", text: "Hola, ¿cuánto tarda el Departamento de Trabajo en decidir un caso PERM?" }],
+  [
+    "a person at Adobe itself",
+    { from: "j.doe@adobe.com", subject: "H-1B data question", text: "Do you have last year's LCA counts by city?" },
+  ],
+  [
+    "an attorney sending an agreement to review",
+    {
+      from: "partner@smalllawfirm.example",
+      subject: "Data license agreement for review",
+      text: "Please review the attached agreement for the data license we discussed.",
+    },
+  ],
+  [
+    "a person who names our address because a message bounced",
+    { from: "r.khan@gmail.com", subject: "My mail to support@permtracker.app bounced", text: "Is this the right address?" },
+  ],
   [
     "a person whose code didn't arrive",
     {
@@ -225,5 +251,29 @@ describe("the owner's word and replies", () => {
 describe("linkHosts", () => {
   it("counts distinct sites, not links", () => {
     expect(linkHosts("https://www.a.example/x https://a.example/y http://b.example").sort()).toEqual(["a.example", "b.example"]);
+  });
+});
+
+describe("borrowedBrand", () => {
+  it("names a brand inside someone else's domain", () => {
+    expect(borrowedBrand("service@adobesharedteam.com")).toBe("adobe");
+    expect(borrowedBrand("notice@uscis-case-update.example")).toBe("uscis");
+    expect(borrowedBrand("sign@docusign-review.example")).toBe("docusign");
+  });
+
+  it("lets the brand's own domains through", () => {
+    expect(borrowedBrand("j.doe@adobe.com")).toBeNull();
+    expect(borrowedBrand("mail@email.adobe.com")).toBeNull();
+    expect(borrowedBrand("dse@docusign.net")).toBeNull();
+    expect(borrowedBrand("alerts@uscis.gov")).toBeNull();
+    expect(borrowedBrand("person@gmail.com")).toBeNull();
+  });
+
+  it("counts 2 against the sender, as does our own address in the subject", () => {
+    const lookalike = ruleScore({ from: "a@adobesharedteam.example", subject: "Hello", text: "" });
+    expect(lookalike.score).toBe(2);
+    expect(lookalike.reasons[0]).toContain("adobe");
+    const quoted = ruleScore({ from: "a@b.example", subject: "support@permtracker.app notice", text: "" });
+    expect(quoted.score).toBe(2);
   });
 });
