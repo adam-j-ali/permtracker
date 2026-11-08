@@ -31,4 +31,15 @@ describe("tableColumns", () => {
     rows.mockResolvedValue([{ name: "page_slug" }]);
     expect((await tableColumns("employer_page_map")).has("page_slug")).toBe(true);
   });
+
+  it("reads a table whose name has a digit, and still refuses anything that isn't a plain name", async () => {
+    // The employer pages' USCIS H-1B and lottery sections read uscis_h1b_employers and h1b_lottery_employers, and a
+    // letters-only check refused both, so the sections showed their fallback (984 times on Nov 7 and 8 2026).
+    rows.mockResolvedValue([{ name: "fy" }]);
+    expect((await tableColumns("uscis_h1b_employers")).has("fy")).toBe(true);
+    expect((await tableColumns("h1b_lottery_employers")).has("fy")).toBe(true);
+    expect(() => tableColumns("perm_cases); DROP TABLE x")).toThrow("not a table name");
+    expect(() => tableColumns("1_starts_with_a_digit")).toThrow("not a table name");
+    expect(() => tableColumns("Perm_Cases")).toThrow("not a table name");
+  });
 });
