@@ -426,6 +426,22 @@ describe("case email templates", () => {
     expect(hrefs(html)).toContain(CONFIRM_URL);
   });
 
+  it("says the check couldn't run when the lookup failed, never that a correct number may be a typo", async () => {
+    const html = await render(
+      CaseAlertConfirm({
+        caseNumber: CASE,
+        currentStatus: null,
+        employerName: null,
+        asOf: null,
+        confirmUrl: CONFIRM_URL,
+        lookupFailed: true,
+      }),
+    );
+    expect(html).toContain("We couldn’t check this case number just now. Check it against your receipt before you confirm.");
+    expect(html).not.toMatch(/typo|Not in our records yet|don’t hold this case number/);
+    expect(hrefs(html)).toContain(CONFIRM_URL);
+  });
+
   it("renders without an employer or a job title", async () => {
     const html = await render(
       CaseStatusChanged({
