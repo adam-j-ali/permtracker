@@ -67,7 +67,9 @@ import {
   buildUserNotificationPrefs,
   shouldSendEmail,
 } from "./lib/notificationHelpers";
-import { emailStamp } from "./lib/time";
+import { emailStamp, MS_PER_DAY } from "./lib/time";
+import { recordError } from "./lib/errorRecording";
+import { checkAndRecordRateLimit } from "./lib/rateLimit";
 import { createLogger } from "./lib/logging";
 
 const log = createLogger("appCaseWatch");
@@ -156,10 +158,11 @@ export async function collectWatchableCases(
     const key = c.userId as unknown as string;
     let on = accountOn.get(key);
     if (on === undefined) {
+      // first(), never unique(): a second profile row would throw here and stop the watch for every account.
       const profile = await ctx.db
         .query("userProfiles")
         .withIndex("by_user_id", (q) => q.eq("userId", c.userId))
-        .unique();
+        .first();
       on = profile?.watchSavedCases !== false; // absent = on
       accountOn.set(key, on);
     }
@@ -203,6 +206,14 @@ export const watchableCases = internalQuery({
       capped,
     };
   },
+});
+
+/** True at most once a day: whether this run of the sweep reports the cap to the owner. */
+export const claimCapAlarm = internalMutation({
+  args: {},
+  returns: v.boolean(),
+  handler: async (ctx) =>
+    (await checkAndRecordRateLimit(ctx, "all", "app_watch_capped", { limit: 1, windowMs: MS_PER_DAY })).allowed,
 });
 
 /** `str`: a value that is a non-empty string, else null. */
@@ -266,6 +277,19 @@ export const sweepAppCaseStatuses = internalAction({
       log.error("app watch over cap; overflow not swept this run", {
         cap: APP_WATCH_CAP,
       });
+      // The read starts at the same place every run, so the same cases are left out every time: the owner hears
+      // of it, once a day, rather than a console line nobody reads.
+      if (await ctx.runMutation(internal.appCaseWatch.claimCapAlarm, {})) {
+        await recordError(
+          ctx,
+          "action",
+          "appCaseWatch.sweepAppCaseStatuses",
+          new Error(
+            `The saved-case watch stopped at its cap (${APP_WATCH_CAP} cases, ${APP_WATCH_READ_CAP} read, or the ` +
+              `read budget), so the saved cases past it get no live status, and the same ones are left out every run.`,
+          ),
+        );
+      }
     }
     if (rows.length === 0) {
       return { checked: 0, seeded: 0, changed: 0, notified: 0, emailed: 0, capped };
