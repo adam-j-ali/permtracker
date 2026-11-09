@@ -81,4 +81,11 @@ describe("every page is reachable, under one name", () => {
   it("keeps the footer to three columns", () => {
     expect(FOOTER_COLUMNS.map((c) => c.title)).toEqual(["Cases and data", "Learn", "PERM Tracker"]);
   });
+
+  it("lists every Learn menu page in the footer too", () => {
+    // The scorecard and the policy changes were in the Learn menu and missing from
+    // the footer's Learn column, so a reader looking there had to search for them.
+    const footer = new Set(FOOTER_COLUMNS.flatMap((c) => c.pages.map((p) => p.href)));
+    expect(LEARN_PAGES.map((p) => p.href).filter((href) => !footer.has(href))).toEqual([]);
+  });
 });
