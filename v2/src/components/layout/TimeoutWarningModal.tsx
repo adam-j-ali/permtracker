@@ -14,7 +14,7 @@
  * Inspired by: v1/frontend/src/js/components/TimeoutWarningModal.js
  */
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ClockIcon, SignOutIcon } from "@phosphor-icons/react";
 import { formatTimeRemaining } from "@/hooks/useInactivityTimeout";
@@ -33,6 +33,8 @@ export default function TimeoutWarningModal({
   onExtend,
   onLogout,
 }: TimeoutWarningModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
   // Handle keyboard shortcuts
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -42,10 +44,35 @@ export default function TimeoutWarningModal({
       if (e.key === "Escape") {
         e.preventDefault();
         onExtend();
+        return;
+      }
+      // aria-modal says the page behind is out of reach, so Tab wraps between the dialog's own buttons.
+      if (e.key === "Tab") {
+        const buttons = [...(dialogRef.current?.querySelectorAll<HTMLButtonElement>("button") ?? [])];
+        const first = buttons[0];
+        const last = buttons[buttons.length - 1];
+        if (!first || !last) return;
+        const active = document.activeElement;
+        if (e.shiftKey && (active === first || !dialogRef.current?.contains(active))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (active === last || !dialogRef.current?.contains(active))) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     },
     [isVisible, onExtend]
   );
+
+  // Opening takes focus to "Stay logged in"; closing puts it back where it was.
+  useEffect(() => {
+    if (!isVisible) return;
+    const returnTo = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const buttons = dialogRef.current?.querySelectorAll<HTMLButtonElement>("button");
+    buttons?.[buttons.length - 1]?.focus();
+    return () => returnTo?.focus();
+  }, [isVisible]);
 
   useEffect(() => {
     document.addEventListener("keydown", handleKeyDown);
@@ -73,6 +100,7 @@ export default function TimeoutWarningModal({
     <div
       className="fixed inset-0 flex items-center justify-center"
       style={{ zIndex: Z_INDEX.timeoutWarning }}
+      ref={dialogRef}
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="timeout-title"
@@ -150,7 +178,6 @@ export default function TimeoutWarningModal({
           <Button
             className="flex-1"
             onClick={onExtend}
-            autoFocus
           >
             Stay logged in
           </Button>

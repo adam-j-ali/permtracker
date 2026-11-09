@@ -254,4 +254,37 @@ describe("TimeoutWarningModal", () => {
       expect(onExtend).toHaveBeenCalledTimes(1);
     });
   });
+
+  // aria-modal promises the page behind is out of reach: Tab stays inside the dialog, and closing it puts focus
+  // back where it was.
+  describe("Focus", () => {
+    it("keeps Tab inside the dialog", () => {
+      // Arrange
+      renderWithProviders(<TimeoutWarningModal {...defaultProps} />);
+      const stay = screen.getByRole("button", { name: /Stay logged in/ });
+      const out = screen.getByRole("button", { name: /Log out now/ });
+      stay.focus();
+      // Act: Tab from the last button
+      fireEvent.keyDown(document, { key: "Tab" });
+      // Assert
+      expect(out).toHaveFocus();
+      // Act: Shift+Tab from the first
+      fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+      expect(stay).toHaveFocus();
+    });
+
+    it("puts focus back where it was when it closes", () => {
+      // Arrange
+      const before = document.createElement("button");
+      document.body.appendChild(before);
+      before.focus();
+      const { rerender } = renderWithProviders(<TimeoutWarningModal {...defaultProps} />);
+      // Act
+      rerender(<TimeoutWarningModal {...defaultProps} isVisible={false} />);
+      // Assert
+      expect(before).toHaveFocus();
+      before.remove();
+    });
+  });
 });
+
