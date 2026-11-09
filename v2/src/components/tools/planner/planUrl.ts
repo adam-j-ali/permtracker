@@ -129,12 +129,14 @@ export function planPatch(patch: Partial<Record<Milestone, string | null>> & {
   return out;
 }
 
-/** The planner's address for a case, from the pages that know one (the case page, a queue month). */
-export function planHref(c: { permFiled: string; permCertified?: string | null }): string {
-  const q = new URLSearchParams(
-    c.permCertified
-      ? { where: "perm-certified", [MILESTONE_PARAM.permFiled]: c.permFiled, [MILESTONE_PARAM.permCertified]: c.permCertified }
-      : { where: "perm-filed", [MILESTONE_PARAM.permFiled]: c.permFiled },
-  );
+/**
+ * The planner's address for a case, from the pages that know one (the case page, a queue month).
+ *
+ * `certified` says DOL has certified it even when no decision date is known yet (live, before the quarterly file):
+ * such a case goes in as certified with its date left for the reader, never as still waiting on PERM.
+ */
+export function planHref(c: { permFiled: string; permCertified?: string | null; certified?: boolean }): string {
+  const q = new URLSearchParams({ where: c.permCertified || c.certified ? "perm-certified" : "perm-filed", [MILESTONE_PARAM.permFiled]: c.permFiled });
+  if (c.permCertified) q.set(MILESTONE_PARAM.permCertified, c.permCertified);
   return `/tools/green-card-timeline?${q}`;
 }

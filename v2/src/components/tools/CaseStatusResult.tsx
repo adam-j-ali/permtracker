@@ -592,9 +592,12 @@ function monthsBetween(from: string, to: string): number {
   return ((ty ?? 0) - (fy ?? 0)) * 12 + ((tm ?? 1) - (fm ?? 1));
 }
 
-/** The planner, filled in from the case: certified on its decision day when DOL has decided, else filed on its filing day. */
+/**
+ * The planner, filled in from a certified case: filed on its filing day and certified, on its decision day when DOL's
+ * quarterly file has it. A case certified in DOL's live record before that file comes out is still certified.
+ */
 function planHrefFor(filingDate: string | null, decisionDate: string | null): string {
-  return filingDate ? planHref({ permFiled: filingDate, permCertified: decisionDate }) : "/tools/green-card-timeline";
+  return filingDate ? planHref({ permFiled: filingDate, permCertified: decisionDate, certified: true }) : "/tools/green-card-timeline";
 }
 
 /** A decided case's next step: what comes after PERM, or what a denial means. */

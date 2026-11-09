@@ -465,6 +465,29 @@ describe("CaseStatusResult, decided case", () => {
     );
   }
 
+  it("plans a case certified live, before DOL's quarterly file, as certified", () => {
+    // Arrange: certified in DOL's live record, not yet in a disclosure file
+    render(
+      <CaseStatusResult
+        result={{ ...DECIDED, decided: null }}
+        backlog={BACKLOG}
+        cohortStatuses={[]}
+        wall={null}
+        neighbours={[]}
+        publishedFront="2025-09"
+        publishedAsOf="2026-08-20"
+        wage={null}
+        duration={null}
+        today={TODAY}
+        estimator={null}
+      />,
+    );
+    // Act
+    const href = screen.getByRole("link", { name: "Plan the rest of the green card" }).getAttribute("href") ?? "";
+    // Assert
+    expect(new URLSearchParams(href.split("?")[1]).get("where")).toBe("perm-certified");
+  });
+
   it("shows DOL's own record, including the fields the mirror lacks", () => {
     const { container } = renderDecided(null);
     const text = container.textContent ?? "";
