@@ -16,8 +16,9 @@ import type { UnifiedCase } from "@/lib/db/unifiedSearch";
 
 const usePublicQuery = vi.fn();
 vi.mock("@/hooks/usePublicQuery", () => ({ usePublicQuery }));
+const address = vi.hoisted(() => ({ params: new URLSearchParams() }));
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => address.params,
   useRouter: () => ({ push: vi.fn() }),
 }));
 
@@ -64,6 +65,7 @@ const lastAsked = () => {
 };
 
 beforeEach(() => {
+  address.params = new URLSearchParams();
   usePublicQuery.mockReset();
   usePublicQuery.mockImplementation((url: string) =>
     url === "skip" ? { data: undefined, failed: false } : { data: answer(), failed: false },
@@ -174,6 +176,17 @@ describe("the answer", () => {
     const first = document.querySelector("tbody tr");
     expect(first?.textContent).toContain("G-100-24001-000002");
     expect(screen.getByText(/Highest wage first covers every match/)).toBeInTheDocument();
+  });
+
+  it("keeps the order a shared or reloaded address asks for", () => {
+    // Arrange: a link to a search ordered by the highest wage
+    address.params = new URLSearchParams("q=acme&order=wage-desc");
+    // Act
+    renderIt();
+    // Assert: the answer's first row is the higher wage, not the newest filing
+    expect(lastAsked().get("order")).toBe("wage-desc");
+    const first = document.querySelector("tbody tr");
+    expect(first?.textContent).toContain("G-100-24001-000002");
   });
 
   it("offers the same search as a CSV download", () => {
