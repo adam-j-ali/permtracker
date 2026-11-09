@@ -620,7 +620,8 @@ export function UnifiedCaseSearch({
   // Narrowing applied AFTER the answer arrives: not a new request, so flipping
   // between them costs nothing and cannot re-bill a database read.
   const [stage, setStage] = useState<"all" | "pending" | "decided">("all");
-  const [sort, setSort] = useState<SortState>(orderToSort("filed-desc"));
+  // The table starts in the order the address asked for, as the request does.
+  const [sort, setSort] = useState<SortState>(() => orderToSort(orderInput));
 
   const url = useMemo(() => {
     if (submitted === null) return "skip" as const;
