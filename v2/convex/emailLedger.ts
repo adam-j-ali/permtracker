@@ -138,7 +138,7 @@ export const enqueueRetry = internalMutation({
       row,
       "An email failed to send and was queued to retry",
       `${aOrAn(args.kind)} ${args.kind} email failed to send (${args.error.slice(0, 200)}) and was put in the retry queue. ` +
-        `It is tried again automatically${args.quota ? " after Resend's daily count resets at midnight UTC (8 PM EDT, 7 PM EST)" : " in 5 minutes, then on a backoff"}, ` +
+        `It's tried again automatically${args.quota ? " after Resend's daily count resets at midnight UTC (8 PM EDT, 7 PM EST)" : " in 5 minutes, then on a backoff"}, ` +
         `for up to two weeks. The admin page's Alerts and email tab shows how many are waiting. This email comes at most once a day.`,
     );
     log.warn("send failed; queued for retry", { kind: args.kind, quota: args.quota });
@@ -153,8 +153,8 @@ export function aOrAn(word: string): string {
 
 function failedBody(kind: string, error: string, why: string): string {
   return (
-    `${aOrAn(kind)} ${kind} email failed to send (${error.slice(0, 200)}) and could not be queued for a retry: ${why}. ` +
-    `It is counted as lost on the admin page. This email comes at most once a day.`
+    `${aOrAn(kind)} ${kind} email failed to send (${error.slice(0, 200)}) and couldn't be queued for a retry: ${why}. ` +
+    `It's counted as lost on the admin page. This email comes at most once a day.`
   );
 }
 
@@ -224,7 +224,7 @@ export const settleRetry = internalMutation({
     if (!isRetryableSendError(err)) {
       await ctx.db.delete(row._id);
       const day = await countOnDay(ctx, "lost");
-      await alertOnce(ctx, day, "A queued email could not be delivered", failedBody(row.kind, `${err.name}: ${err.message}`, "the retry was refused for good"));
+      await alertOnce(ctx, day, "A queued email couldn't be delivered", failedBody(row.kind, `${err.name}: ${err.message}`, "the retry was refused for good"));
       return null;
     }
     await ctx.db.patch(row._id, {

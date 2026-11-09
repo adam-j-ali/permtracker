@@ -78,9 +78,9 @@ export function PasswordResetCode({
       {/* Security Disclaimer */}
       <Section className="em-alert-yellow" style={styles.disclaimerBox}>
         <Text className="em-alert-yellow-text" style={styles.disclaimerText}>
-          If you didn&apos;t request a password reset, please ignore this email.
-          Your password will remain unchanged. If you&apos;re concerned about
-          unauthorized access, contact{" "}
+          If you didn&apos;t ask to reset your password, ignore this email.
+          Your password stays the same. If you&apos;re worried someone else is
+          trying to get into your account, contact{" "}
           <Link href="mailto:support@permtracker.app" className="em-alert-yellow-text" style={styles.supportLink}>
             support@permtracker.app
           </Link>

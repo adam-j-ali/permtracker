@@ -84,7 +84,7 @@ export function AccountDeletionConfirm({
               </Section>
 
               <Text className="em-text-body" style={styles.paragraph}>
-                The following data has been permanently removed:
+                We&apos;ve permanently removed:
               </Text>
 
               <Text className="em-text-body" style={styles.listItem}>
@@ -126,7 +126,7 @@ export function AccountDeletionConfirm({
                 All case data, settings, and history will be permanently deleted
               </Text>
               <Text className="em-text-body" style={styles.listItem}>
-                This action cannot be undone after the deletion date
+                This can&apos;t be undone after the deletion date
               </Text>
             </>
           )}
