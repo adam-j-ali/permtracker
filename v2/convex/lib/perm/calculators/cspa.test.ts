@@ -101,7 +101,7 @@ describe("pending time and the CSPA age (INA 203(h)(1))", () => {
     });
     expect(r.turns21).toBe("2025-02-28");
     expect(r.counted?.underTwentyOne).toBe(false);
-    expect(r.counted?.cspaAge.years).toBe(21);
+    expect(r.counted?.cspaAge?.years).toBe(21);
   });
 });
 
