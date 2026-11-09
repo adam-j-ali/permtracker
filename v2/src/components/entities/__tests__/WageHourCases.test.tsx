@@ -24,7 +24,8 @@ describe("the employer page's Wage and Hour section", () => {
     const html = renderToStaticMarkup(<WageHourCases summary={summary} pageName="Northwind Traders Inc." />);
     expect(html).toContain("Wage and Hour cases at Northwind Traders Inc.");
     expect(html).toContain("$15,501");
-    expect(html).toMatch(/H-1B<\/span>1 case, 2 violations, \$12,500 in back wages to 3 workers/);
+    // A space between the visa label and its count, or the text reads "H-1B1 case".
+    expect(html).toMatch(/H-1B<\/span> 1 case, 2 violations, \$12,500 in back wages to 3 workers/);
     expect(html).toContain("No violations found.");
     expect(html).toContain("agreed to pay, which can differ from what was paid");
   });
