@@ -338,7 +338,7 @@ export function paceReading(now: SpanReading, then: SpanReading | null): PaceRea
 export function paceFacts(r: PaceReading, since: string | null): string[] {
   const out = [`Waited ${r.waitDays.toLocaleString("en-US")} days, filed to decided`];
   if (r.perDay !== null && since) {
-    out.push(`DOL moved through ${r.perDay} filing day${r.perDay === 1 ? "" : "s"} a day since ${since}; at 1 the wait holds level`);
+    out.push(`DOL moved through ${r.perDay} filing day${r.perDay === 1 ? "" : "s"} a day since ${since}. At 1 the wait holds level`);
   }
   if (r.waitChange !== null && since) {
     const n = Math.abs(r.waitChange);
@@ -355,5 +355,5 @@ export function paceFacts(r: PaceReading, since: string | null): string[] {
 export function cutoffPaceFact(pace: number | null): string | null {
   if (pace === null || !Number.isFinite(pace)) return null;
   const r = Math.round(pace * PER_DAY_PLACES) / PER_DAY_PLACES;
-  return `The cutoff has gained ${r} month${r === 1 ? "" : "s"} a month; at 1 the wait holds level, under 1 it grows`;
+  return `The cutoff has gained ${r} month${r === 1 ? "" : "s"} a month. At 1 the wait holds level, and under 1 it grows`;
 }

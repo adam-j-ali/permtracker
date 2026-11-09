@@ -40,7 +40,7 @@ export function EmbedGallery({ origin }: { origin: string }) {
         <div className="self-center">
           <p className="font-heading text-xl font-bold">{lookup.title}</p>{" "}
           <p className="mt-2 text-base leading-relaxed text-soft">
-            {lookup.blurb} It asks DOL live, up to {EMBED_SITE_DAILY_LIVE} lookups a day from each site; past that it
+            {lookup.blurb} It asks DOL live, up to {EMBED_SITE_DAILY_LIVE} lookups a day from each site. Past that, it
             answers from PERM Tracker&apos;s own record and says so under the answer.
           </p>{" "}
           <Snippet html={embedSnippet(lookup, origin)} />

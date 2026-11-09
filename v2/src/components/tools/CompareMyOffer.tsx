@@ -165,7 +165,7 @@ export function CompareMyOffer({ occupations, states }: Props) {
       );
       setResults(out);
     } catch {
-      setError("The wage data did not load. Try again in a moment.");
+      setError("The wage data didn't load. Try again in a moment.");
       setResults(null);
     } finally {
       setBusy(false);

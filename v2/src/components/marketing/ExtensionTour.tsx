@@ -36,7 +36,7 @@ const BANDS: Band[] = [
       ["PERM cases published", "Green card labor certifications in DOL's quarterly files: decided cases only."],
       ["Certified", "The share DOL certified, once there are 30 or more decided."],
       ["Waiting at DOL now", "Its cases still open in DOL's live case status, checked every day."],
-      ["H-1B applications", "Labor condition applications: the first step of an H-1B, not the visa itself."],
+      ["H-1B applications", "Labor condition applications, the first step of an H-1B. They aren't the visa itself."],
     ],
     shots: shot("record"),
     alt: "The extension's panel over an example posting for a software engineer at Microsoft Corporation: 6,875 PERM cases published, 99% certified, 598 waiting at DOL, the newest PERM filing on September 16, 2026, and 58,652 H-1B applications.",

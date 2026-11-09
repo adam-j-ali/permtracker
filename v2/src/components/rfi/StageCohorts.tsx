@@ -108,7 +108,7 @@ export function StageCohortsChart({
         Cases at each stage as of their own last read, by the month they were
         filed. Every row is
         scaled to its own busiest month and labelled with it, so the rows show
-        where a stage sits and not how big it is next to the others.
+        where a stage sits. They don&apos;t compare its size with the others.
       </figcaption>
     </figure>
   );

@@ -78,7 +78,7 @@ export function TradeAdjustment({ rows, pageName }: { rows: TaaPetition[]; pageN
       <FinePrint className="mt-1" summary="What a petition means">
         A certification meant DOL found that imports or a shift of the work abroad contributed to the group&apos;s job
         losses, and the workers could get training and income support. A denial meant DOL didn&apos;t find that. The
-        program stopped taking petitions on July 1 2022. Matched to this employer by name and city; different companies
+        program stopped taking petitions on July 1 2022. Matched to this employer by name and city, and different companies
         can share a name. From{" "}
         <a href={DATASET_URL} rel="noopener noreferrer" target="_blank" className="link -my-3 inline-flex min-h-11 items-center">
           DOL&apos;s TAA petition data

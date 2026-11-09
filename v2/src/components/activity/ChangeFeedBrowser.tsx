@@ -93,7 +93,7 @@ const UNAVAILABLE: { slug: string; label: string; why: string }[] = [
   {
     slug: "state",
     label: "Worksite state",
-    why: "The worksite is on the published record. The live lookup returns the employer, not where the job is.",
+    why: "The worksite is on the published record. The live lookup returns the employer. It doesn't return where the job is.",
   },
   {
     slug: "soc",
@@ -614,8 +614,8 @@ export function ChangeFeedBrowser({
             <>
               These dates are newer than DOL&apos;s last published file, so what
               follows is what our daily check saw change. DOL returns five
-              fields on a case that is still moving, so the wage, law firm,
-              worksite and occupation are not available for these dates.
+              fields on a case that&apos;s still moving, so the wage, law firm,
+              worksite and occupation aren&apos;t available for these dates.
             </>
           ) : (
             <>We hold nothing for these dates.</>
@@ -625,7 +625,7 @@ export function ChangeFeedBrowser({
               {" "}
               <strong>{formatInt(cov.uncoveredDays)}</strong> of the{" "}
               {formatInt(cov.totalDays)} days selected fall between the two records
-              and are not covered by either.
+              and aren&apos;t covered by either.
             </>
           ) : null}
         </p>
@@ -635,8 +635,8 @@ export function ChangeFeedBrowser({
             <strong>{windows.decided?.to ?? "no loaded file"}</strong> and our
             own record starts{" "}
             <strong>{windows.observed?.from ?? "not yet"}</strong>. Dates
-            between the two are a genuine gap, and it closes from the left when
-            DOL publishes its next quarterly file. This is not a claim that DOL
+            between the two are a gap in the record, and it closes from the left when
+            DOL publishes its next quarterly file. It doesn&apos;t mean DOL
             did nothing.
           </p>
         ) : null}
@@ -666,7 +666,7 @@ export function ChangeFeedBrowser({
             {hasDecided ? (
               <>
                 These four arrive with the quarterly disclosure file, and the
-                dates you picked are inside it, so they are filterable and
+                dates you picked are inside it, so they&apos;re filterable and
                 sortable here and on the{" "}
                 <Link
                   href="/perm-cases"
@@ -678,7 +678,7 @@ export function ChangeFeedBrowser({
               </>
             ) : (
               <>
-                DOL returns five fields on a case that is still moving: the
+                DOL returns five fields on a case that&apos;s still moving: the
                 number, the employer, the job title, the filing date and the
                 status. The four below arrive only when the case is published in
                 a quarterly file. Pick a date inside the published range and
@@ -734,14 +734,14 @@ export function ChangeFeedBrowser({
                 ) : (
                   <>
                     Showing {formatInt(decidedRows.length)} of the decisions in this
-                    range. An exact total is not counted across a range, because
+                    range. An exact total isn&apos;t counted across a range, because
                     counting one walks every row in it.
                   </>
                 )}
                 {decided.capped ? (
                   <>
                     {" "}
-                    The list is cut at {formatInt(1000)} rows per program; narrow the
+                    The list is cut at {formatInt(1000)} rows per program, so narrow the
                     dates to see the rest.
                   </>
                 ) : null}
@@ -765,8 +765,8 @@ export function ChangeFeedBrowser({
                 </div>
               ) : decidedRows.length === 0 ? (
                 <p className="mt-4 bg-tint p-4 text-base border-2 border-border">
-                  DOL published no decisions for these dates. That is a real
-                  answer, not a missing one.
+                  DOL published no decisions for these dates. That&apos;s a real
+                  answer. Nothing is missing.
                 </p>
               ) : (
                 <DecidedTable
@@ -885,7 +885,7 @@ export function ChangeFeedBrowser({
               {feed.expiriesExcluded > 0 ? (
                 <>
                   {formatInt(feed.expiriesExcluded)} certifications whose 180-day
-                  I-140 window lapsed, because a clock running out is not DOL
+                  I-140 window lapsed, because a clock running out isn&apos;t DOL
                   acting on a case
                 </>
               ) : null}

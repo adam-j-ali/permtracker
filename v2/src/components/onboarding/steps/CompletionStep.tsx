@@ -74,7 +74,7 @@ export function CompletionStep({ onTakeTour, onSkip }: CompletionStepProps) {
       </div>
 
       <p className="text-muted-foreground text-sm mt-4">
-        You can always replay the tour from Settings &rarr; Support.
+        You can always replay the tour from Support in Settings.
       </p>
     </div>
   );

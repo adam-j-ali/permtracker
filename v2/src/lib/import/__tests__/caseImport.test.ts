@@ -528,7 +528,7 @@ describe("parseCaseImportFile", () => {
 
       expect(result.valid).toHaveLength(0);
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors[0]?.message).toContain("Could not detect file format");
+      expect(result.errors[0]?.message).toContain("Couldn't detect file format");
     });
 
     it("handles empty array with error", async () => {

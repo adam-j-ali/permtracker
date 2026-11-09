@@ -736,7 +736,7 @@ export function DocumentsTab({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this document?</AlertDialogTitle>
-            <AlertDialogDescription>It&apos;s deleted for good; it can&apos;t be brought back.</AlertDialogDescription>
+            <AlertDialogDescription>It&apos;s deleted for good and can&apos;t be brought back.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Keep it</AlertDialogCancel>

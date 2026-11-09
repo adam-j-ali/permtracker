@@ -83,7 +83,7 @@ export async function validateDocumentFile(
     const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
     return {
       valid: false,
-      error: `This file is ${sizeMB} MB; the most a document can be is ${MAX_DOCUMENT_SIZE_BYTES / (1024 * 1024)} MB.`,
+      error: `This file is ${sizeMB} MB, and the most a document can be is ${MAX_DOCUMENT_SIZE_BYTES / (1024 * 1024)} MB.`,
     };
   }
 

@@ -137,10 +137,10 @@ export function TwoMarketsNote({
     <p className={cn("text-sm leading-relaxed text-muted-foreground", className)}>
       {disjoint && ratio !== null ? (
         <>
-          The two ends do not meet. {high.label} open at{" "}
+          The two ends don&apos;t meet. {high.label} open at{" "}
           {formatDollars(high.p5 as number)} on the 5th percentile, which is{" "}
           {ratio.toFixed(1)} times what {low.label.toLowerCase()} reach at the
-          95th ({formatDollars(floor)}). There is no wage at which those two
+          95th ({formatDollars(floor)}). There&apos;s no wage at which those two
           populations overlap, and they run through the same federal process at
           the same time.
         </>

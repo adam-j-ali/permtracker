@@ -56,7 +56,7 @@ export const RECEIPT_PREFIXES: Readonly<Record<string, ReceiptPrefix>> = {
   LIN: { name: "Nebraska Service Center", source: "glossary", note: "Lincoln, where the center sits." },
   SRC: { name: "Texas Service Center", source: "glossary", note: "Southern Regional Center, the old name." },
   NBC: { name: "National Benefits Center", source: "glossary", note: "Cases that end at a field office, including most I-485 adjustment filings." },
-  MSC: { name: "National Benefits Center", source: "glossary", note: "Missouri Service Center, the center's earlier name; still issued." },
+  MSC: { name: "National Benefits Center", source: "glossary", note: "Missouri Service Center, the center's earlier name. It's still issued." },
   IOE: {
     name: "USCIS online filing (ELIS)",
     source: "glossary",
@@ -128,4 +128,4 @@ export function looksLikeReceipt(input: string): boolean {
  * hint and the server notice cannot say different things.
  */
 export const RECEIPT_SHAPE_MESSAGE =
-  "A USCIS receipt number is three letters and ten digits, like EAC2190123456, with no spaces or dashes. It is on the top of every I-797 notice.";
+  "A USCIS receipt number is three letters and ten digits, like EAC2190123456, with no spaces or dashes. It's on the top of every I-797 notice.";

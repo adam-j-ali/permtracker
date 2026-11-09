@@ -42,7 +42,7 @@ const BANDS: Record<DataGroup, { lead: string; shot: DataShot; url: string }> = 
     url: "permtracker.app/uscis-processing-times",
   },
   "Green card line": {
-    lead: "The visa bulletin since 2005, who is ahead of a priority date, the I-485 by office, and the visas the State Department issues.",
+    lead: "The visa bulletin since 2005, who's ahead of a priority date, the I-485 by office, and the visas the State Department issues.",
     shot: "line",
     url: "permtracker.app/visa-bulletin",
   },

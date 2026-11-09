@@ -98,7 +98,7 @@ function verdict(r: CspaResult, pd: string): { tone: Tone; head: string; body: s
       return {
         tone: "wait",
         head: `Under 21 if a visa is available by ${lastDay}`,
-        body: `The Final Action chart hasn't reached a priority date of ${long(pd)} since the petition was approved. A bulletin month starting on or before ${lastDay} that shows it current keeps the child under 21; then the child has a year to file.`,
+        body: `The Final Action chart hasn't reached a priority date of ${long(pd)} since the petition was approved. A bulletin month starting on or before ${lastDay} that shows it current keeps the child under 21. Then the child has a year to file.`,
       };
     case "filed-waiting":
       return {
@@ -198,9 +198,9 @@ export function CspaCalculator({
         today,
       });
       const warnings: string[] = [];
-      if (pd > filed) warnings.push("The priority date is after the petition's receipt date. A priority date is usually the receipt date or earlier; check both.");
-      if (birth > filed) warnings.push("The child was born after the petition was filed. A child born later can still be a derivative; the arithmetic below is the same.");
-      if (DATE_RE.test(sought) && sought > today) warnings.push("The filing date is in the future; the answer below assumes the child files then.");
+      if (pd > filed) warnings.push("The priority date is after the petition's receipt date. A priority date is usually the receipt date or earlier, so check both.");
+      if (birth > filed) warnings.push("The child was born after the petition was filed. A child born later can still be a derivative, and the arithmetic below is the same.");
+      if (DATE_RE.test(sought) && sought > today) warnings.push("The filing date is in the future. The answer below assumes the child files then.");
       return { kind: "ok" as const, r, warnings };
     } catch (e) {
       const message = e instanceof Error && /approved before/.test(e.message) ? "The approval date is before the receipt date. Check both." : "Enter each date as it appears on the notice.";

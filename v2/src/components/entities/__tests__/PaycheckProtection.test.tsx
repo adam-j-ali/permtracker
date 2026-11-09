@@ -14,7 +14,7 @@ describe("PaycheckProtection", () => {
     const text = document.body.textContent ?? "";
     expect(text).toContain("SBA approved 2 loans to Sumter Coatings in 2020 and 2021, $1,269,359 in all, $773,553 of it forgiven.");
     expect(text).toContain("The borrower reported 62 jobs at the time, at most.");
-    expect(text).toContain("not a count SBA checked");
+    expect(text).toContain("SBA didn't check the count");
   });
 
   it("renders nothing for a page with none, and names each draw", () => {

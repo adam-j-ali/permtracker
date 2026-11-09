@@ -22,7 +22,7 @@ import { MotionToggle } from "../MotionToggle";
 import { CAPTION_CLASS, FIGURE_CLASS, READOUT_CLASS, SUMMARY_CLASS } from "../frame";
 
 const LABEL =
-  "An illustration of two 180-day clocks as lanes on a bench. The back lane starts at the I-140 approval, the front lane at the I-485 receipt, and each ends at a lock. A gantry across both lanes marks the day you leave; each lane fills up to it, and a lock turns lime once its 180 days have run.";
+  "An illustration of two 180-day clocks as lanes on a bench. The back lane starts at the I-140 approval, the front lane at the I-485 receipt, and each ends at a lock. A gantry across both lanes marks the day you leave. Each lane fills up to it, and a lock turns lime once its 180 days have run.";
 
 const SWEEP_S = 6;
 const PAUSE_S = 1.4;

@@ -148,7 +148,7 @@ describe("paceReading: a step's wait, its pace and how the wait changed", () => 
     expect(r).toEqual({ waitDays: 287, perDay: 1.3, waitChange: -11, since: "2026-09-25" });
     expect(paceFacts(r, "Sep 25")).toEqual([
       "Waited 287 days, filed to decided",
-      "DOL moved through 1.3 filing days a day since Sep 25; at 1 the wait holds level",
+      "DOL moved through 1.3 filing days a day since Sep 25. At 1 the wait holds level",
       "11 days shorter than on Sep 25",
     ]);
   });
@@ -166,8 +166,8 @@ describe("paceReading: a step's wait, its pace and how the wait changed", () => 
   });
 
   it("words a bulletin line's pace, and nothing when there is none", () => {
-    expect(cutoffPaceFact(0.43)).toBe("The cutoff has gained 0.4 months a month; at 1 the wait holds level, under 1 it grows");
-    expect(cutoffPaceFact(1)).toBe("The cutoff has gained 1 month a month; at 1 the wait holds level, under 1 it grows");
+    expect(cutoffPaceFact(0.43)).toBe("The cutoff has gained 0.4 months a month. At 1 the wait holds level, and under 1 it grows");
+    expect(cutoffPaceFact(1)).toBe("The cutoff has gained 1 month a month. At 1 the wait holds level, and under 1 it grows");
     expect(cutoffPaceFact(null)).toBeNull();
   });
 });

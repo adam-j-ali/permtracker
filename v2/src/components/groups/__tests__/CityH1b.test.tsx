@@ -24,7 +24,7 @@ describe("CityH1b", () => {
 
   it("says an LCA counts positions offered, not people hired", () => {
     render(<CityH1b city={city} />);
-    expect(screen.getByText(/counts positions offered, not people hired/)).toBeInTheDocument();
+    expect(screen.getByText(/counts positions offered\. It doesn't count people hired/)).toBeInTheDocument();
   });
 
   it("is absent with no record", () => {

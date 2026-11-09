@@ -232,7 +232,7 @@ export function ScorecardPanel() {
       <section aria-labelledby="sc-who" className="border-2 border-border bg-card p-5 sm:p-6 shadow-hard">
         <h2 id="sc-who" className="font-heading text-xl font-bold">Who&apos;s closer, on the same cases</h2>{" "}
         <p className="mt-1 text-sm text-muted-foreground">
-          Each square is one case we both dated: green, we were closer; red, they were; grey, tied.
+          Each square is one case we both dated. Green means we were closer, red means they were, and grey is a tie.
         </p>{" "}
         {rivals.length === 0 ? (
           <p className="mt-3 text-base text-muted-foreground">No shared cases yet.</p>
@@ -371,7 +371,7 @@ export function ScorecardPanel() {
             <ScrollBox label="Head to head" className="border border-border">
               <table className="w-full min-w-[960px] text-sm">
                 <caption className="p-2 text-left text-sm text-muted-foreground">
-                  Head to head: only cases both sides dated the same day, then split by the kind of case. A waiting case counts once DOL can no longer decide nearer the earlier date; &ldquo;waiting counted&rdquo; puts each waiting case at the days it is late so far.
+                  Head to head: only cases both sides dated the same day, then split by the kind of case. A waiting case counts once DOL can no longer decide nearer the earlier date; &ldquo;waiting counted&rdquo; puts each waiting case at the days it&apos;s late so far.
                 </caption>
                 <thead className="bg-muted">
                   <tr>

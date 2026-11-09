@@ -199,13 +199,13 @@ export const getPlanReading = cache(async (): Promise<PlanReading> => {
     recruitment: lead
       ? `DOL's record of ${lead.n.toLocaleString("en-US")} cases: first recruitment step to filing, the 10th, 50th and 90th percentile`
       : "The shortest the rules allow: a 30-day job order, then 30 days before filing",
-    i140Prep: "An assumption, not measured: set it to your attorney's plan, inside the 180 days",
+    i140Prep: "An assumption that isn't measured: set it to your attorney's plan, inside the 180 days",
     i140: `USCIS's newest quarterly median, between the quickest and slowest of the last four quarters and its 80% figure (read ${PROCESSING_TIMES_AS_OF})`,
     i485: "USCIS's employment-based median, the newest quarter between the quickest and slowest of the last four",
     ead: "USCIS's work-permit median for a pending I-485, the last four quarters",
     ap: "USCIS's advance-parole median inside the US, the last four quarters",
     consular:
-      "NVC's document review, this week's between the quickest and slowest of the last 12 weeks (State's NVC Timeframes page), then the consulate's interview: an assumption, not measured. State publishes no interview wait in days; its monthly table of each consulate's scheduling month (on the consulate pages) is NVC's paperwork queue. Set it to your consulate's, and setting it dates the visa while interviews are paused",
+      "NVC's document review, this week's between the quickest and slowest of the last 12 weeks (State's NVC Timeframes page), then the consulate's interview, which is an assumption that isn't measured. State publishes no interview wait in days. Its monthly table of each consulate's scheduling month (on the consulate pages) is NVC's paperwork queue. Set it to your consulate's, and setting it dates the visa while interviews are paused",
   };
   const consulates =
     consular?.asOf

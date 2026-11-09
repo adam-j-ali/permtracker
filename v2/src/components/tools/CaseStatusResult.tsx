@@ -275,7 +275,7 @@ export function CaseStatusResult({
       {reopened && decided && live ? (
         <Notice title="DOL's file records a decision on this case, and it's back in processing.">
           {" "}DOL&apos;s quarterly file shows it {decided.status.toLowerCase()}
-          {decided.decisionDate ? <> on {formatAsOf(decided.decisionDate)}</> : null}; DOL&apos;s live status is now{" "}
+          {decided.decisionDate ? <> on {formatAsOf(decided.decisionDate)}</> : null}. DOL&apos;s live status is now{" "}
           {prettyStatus(live.status).toLowerCase()}, which is current. That&apos;s normal: a denial can be appealed
           within 30 days under{" "}
           <a href="https://www.ecfr.gov/current/title-20/section-656.24" rel="noopener noreferrer" className="link">
@@ -287,7 +287,7 @@ export function CaseStatusResult({
 
       {sourcesDisagree && decided && live ? (
         <Notice title="The two federal sources disagree about this case.">
-          {" "}DOL&apos;s quarterly disclosure file records it as {decided.status.toLowerCase()}; the live status page
+          {" "}DOL&apos;s quarterly disclosure file records it as {decided.status.toLowerCase()}, and the live status page
           shows {prettyStatus(live.status).toLowerCase()}. About one case in five thousand does this, usually after
           moving once the file closed. Both are shown below.
         </Notice>
@@ -296,7 +296,7 @@ export function CaseStatusResult({
       {!isFinal && result.censusMissing ? (
         <Notice title="Some sections are missing today." tone="info">
           {" "}The daily count of every pending case, which places this one in its filing month, couldn&apos;t be
-          read or is more than eight days old. The status above is current; the rest comes back when the count is
+          read or is more than eight days old. The status above is current. Everything else comes back when the count is
           rewritten, usually the next morning.
         </Notice>
       ) : null}
@@ -754,7 +754,7 @@ function Position({
           className="mt-6"
           caption={
             <>
-              The wait is not spread evenly. Two months carry most of it, which
+              The wait isn&apos;t spread evenly. Two months carry most of it, which
               is why the queue can look stalled for a while and then move
               several months at once.
             </>
@@ -779,9 +779,8 @@ function Position({
           {maturity === "untouched" ? (
             <>
               {" "}
-              That is early enough that the decided cases are almost entirely
-              withdrawals rather than cases that ran their course, so no
-              duration is quoted for this month.
+              That&apos;s early enough that the decided cases are almost entirely
+              withdrawals, so no duration is quoted for this month.
             </>
           ) : null}
         </p>
@@ -1036,7 +1035,7 @@ function StatusExplainer({
       {nowInStatus !== null ? (
         <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
           <b className="font-semibold text-foreground">{formatInt(nowInStatus)} cases</b> are in this status right
-          now, across every filing month: how common it is, not how likely this case is to leave it. Status changes
+          now, across every filing month. That shows how common the status is. It doesn&apos;t show how likely this case is to leave it. Status changes
           have only been recorded since August 2026, too short a record to price those odds.
         </p>
       ) : null}{" "}
@@ -1061,7 +1060,7 @@ function UndecodedStatus() {
   return (
     <p className="max-w-3xl text-base leading-relaxed text-soft">
       Not written up here yet, and DOL publishes no glossary, so this page won&apos;t guess. The notice DOL sent the
-      employer explains it; their attorney has it.
+      employer explains it, and their attorney has it.
     </p>
   );
 }
@@ -1171,7 +1170,7 @@ function EmployerRecord({
   return (
     <div>
       <p className="max-w-2xl text-base leading-relaxed text-soft">
-        Across FY2024 to FY2026. It describes the employer&apos;s filings, not this case.
+        Across FY2024 to FY2026. It describes the employer&apos;s filings. It doesn&apos;t describe this case.
       </p>{" "}
       <div className="mt-5 border-2 shadow-hard p-5 sm:p-6 bg-card border-border">
         <dl className="flex flex-wrap items-baseline gap-x-8 gap-y-4">
@@ -1196,16 +1195,16 @@ function EmployerRecord({
           {thin ? (
             employer.total === employer.certified ? (
               <>
-                A clean record over {formatInt(employer.total)} cases is worth knowing
-                and it is not a rate. At this volume one denial would move the
+                A clean record over {formatInt(employer.total)} cases is worth knowing,
+                but it isn&apos;t a rate. At this volume one denial would move the
                 figure by tens of percentage points, so the counts are here and
-                the percentage is not.
+                the percentage isn&apos;t.
               </>
             ) : (
               <>
                 At {formatInt(employer.total)} decided cases this is too small a
                 sample to carry a percentage, so the counts are here and the
-                rate is not.
+                rate isn&apos;t.
               </>
             )
           ) : (
@@ -1240,7 +1239,7 @@ export function WontSay({ isFinal }: { isFinal: boolean }) {
         <>
           <li>
             <b className="font-semibold text-foreground">A guaranteed decision date.</b> The estimate is a
-            statistic, not a schedule: audits and appeals take cases out of order. Every model side by side is on
+            statistic, and audits and appeals take cases out of order. Every model side by side is on
             the{" "}
             <Link href="/tools/perm-timeline-calculator" className="link">
               processing time calculator

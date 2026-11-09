@@ -79,8 +79,8 @@ export function BudgetPools({
         <p className="mt-3 text-sm">
           <span className="font-bold">{`Today: ${formatInt(day.used)} of ${formatInt(day.cap)} sent.`}</span>{" "}
           {day.publicCeiling
-            ? `Sign-ups and other mail anyone can set off stop at ${formatInt(day.publicCeiling)}, alerts at ${formatInt(day.listCeiling)}; the rest is kept for sign-in codes. Resend's day resets at 8 PM Eastern in summer.`
-            : `List mail stops at ${formatInt(day.listCeiling)}; the rest is kept for sign-in codes. Resend's day resets at 8 PM Eastern in summer.`}
+            ? `Sign-ups and other mail anyone can set off stop at ${formatInt(day.publicCeiling)}, alerts at ${formatInt(day.listCeiling)}. The rest is kept for sign-in codes. Resend's day resets at 8 PM Eastern in summer.`
+            : `List mail stops at ${formatInt(day.listCeiling)}, and the rest is kept for sign-in codes. Resend's day resets at 8 PM Eastern in summer.`}
           {day.retrying > 0
             ? ` ${formatInt(day.retrying)} failed ${day.retrying === 1 ? "email is" : "emails are"} waiting to retry${day.oldestRetryAt ? `, the oldest since ${new Date(day.oldestRetryAt).toLocaleString("en-US", { timeZone: EASTERN_TIMEZONE, month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} Eastern` : ""}.`
             : ""}
@@ -119,7 +119,7 @@ export function BudgetPools({
         })}
       </ul>
       <p className="mt-4 text-sm text-muted-foreground">
-        Each pool is a rolling 24-hour bound on one kind of email, counted from the same limits the senders enforce. The day&apos;s total is guarded by Resend&apos;s own count, shown above; a request either one holds back waits in a queue.
+        Each pool is a rolling 24-hour bound on one kind of email, counted from the same limits the senders enforce. The day&apos;s total is guarded by Resend&apos;s own count, shown above. A request either one holds back waits in a queue.
       </p>
     </section>
   );
@@ -171,7 +171,7 @@ export function DeliveryPanel({ data }: { data: Delivery }) {
         {data.recent.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">
             No alert email recorded in the last 7 days. The outbox has recorded
-            sends since 26 September 2026; anything sent before that isn&apos;t
+            sends since 26 September 2026, so anything sent before that isn&apos;t
             listed here.
           </p>
         ) : (

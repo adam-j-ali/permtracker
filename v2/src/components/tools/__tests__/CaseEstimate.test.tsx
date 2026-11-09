@@ -86,7 +86,7 @@ describe("what happens next", () => {
     expect(body).toMatch(/back into the ordinary queue/);
     // And it must not imply we know the timing, which we do not: 422 RFI
     // entries watched, 3 exits seen.
-    expect(body).toMatch(/not something we can measure yet/);
+    expect(body).toMatch(/can't measure how long that takes yet/);
   });
 
   it("says nothing at all when the exits are not measurable", () => {

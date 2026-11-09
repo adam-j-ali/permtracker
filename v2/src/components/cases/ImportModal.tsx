@@ -539,8 +539,8 @@ export function ImportModal({
                           {parseResult.casesNeedingBeneficiary !== 1 ? "s need" : " needs"} foreign worker info
                         </p>{" "}
                         <p className="text-sm text-data-warn-ink mt-1">
-                          These cases were imported from a legacy format without foreign worker IDs. They
-                          have been marked with{" "}
+                          These cases were imported from a legacy format without foreign worker IDs. They&apos;ve
+                          been marked with{" "}
                           <code className="bg-data-warn/8 px-1 font-mono text-sm">
                             {BENEFICIARY_PLACEHOLDER}
                           </code>{" "}

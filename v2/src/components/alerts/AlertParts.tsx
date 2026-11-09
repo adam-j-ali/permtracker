@@ -71,8 +71,8 @@ export function AlertDone({ message, queued, className }: { message: string; que
       <CheckCircleIcon className="mt-1 size-5 shrink-0 text-data-good-ink" weight="fill" aria-hidden="true" />{" "}
       <span>
         <b className="font-semibold text-foreground">{message}</b>{" "}
-        {queued ? "Confirm it when it arrives; nothing is sent until you do." : "Nothing is sent until you confirm."} No
-        email within 10 minutes? Try again then. A change to a case is emailed at once; other alerts from one day come
+        {queued ? "Confirm it when it arrives. Nothing is sent until you do." : "Nothing is sent until you confirm."} No
+        email within 10 minutes? Try again then. A change to a case is emailed at once, and other alerts from one day come
         together in one email.
       </span>
     </p>
@@ -151,7 +151,7 @@ export function OptInFold({
       <div className="space-y-3 pb-1 pl-5">
         <OptInBox id={`${id}-newsletter`} kind="newsletter" checked={newsletter} onChange={onNewsletter} />{" "}
         <OptInBox id={`${id}-news`} kind="news" checked={news} onChange={onNews} />{" "}
-        <p className="text-sm text-muted-foreground">Off unless you tick them; the same confirmation covers them.</p>
+        <p className="text-sm text-muted-foreground">Off unless you tick them. The same confirmation covers them.</p>
       </div>
     </details>
   );

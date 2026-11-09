@@ -32,7 +32,7 @@ describe("LcaProfile", () => {
     const { container } = render(<LcaProfile name="Acme" profile={shapeLcaProfile(row(), null)} />);
     const text = container.textContent ?? "";
     expect(text).toContain("4 positions for new employment, 5 moving here from another employer");
-    expect(text).toContain("not people hired");
+    expect(text).toContain("They don't count people hired");
     expect(text).toContain("3 of 8 used another source");
   });
 

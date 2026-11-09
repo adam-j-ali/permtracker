@@ -253,7 +253,7 @@ export function ReviewForm() {
       fail({ field: body?.field ?? "form", message: body?.message ?? `The review couldn't be sent (HTTP ${res.status}). Please try again.` });
     } catch (err) {
       console.warn("[reviews] send failed:", String(err));
-      fail({ field: "form", message: "Couldn't reach the server. Your review is still here; please try again in a minute." });
+      fail({ field: "form", message: "Couldn't reach the server. Your review is still here, so please try again in a minute." });
     }
   };
 
@@ -511,7 +511,7 @@ function NoteBox({
       refuse(body?.message ?? `The note couldn't be sent (HTTP ${res.status}). Please try again.`, res.status);
     } catch (err) {
       console.warn("[reviews] note failed:", String(err));
-      refuse("Couldn't reach the server. Your note is still here; please try again in a minute.", 0);
+      refuse("Couldn't reach the server. Your note is still here, so please try again in a minute.", 0);
     }
   };
 

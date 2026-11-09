@@ -61,7 +61,7 @@ export const CALCULATOR_SHOTS: Record<CalculatorShot, { shots: WindowShots; alt:
       light: { src: "/images/calculators/capgap-light.webp", width: 1800, height: 1725 },
       dark: { src: "/images/calculators/capgap-dark.webp", width: 1800, height: 1725 },
     },
-    alt: "The cap-gap calculator for OPT ending June 10, 2026, an H-1B start of October 1, 2026 and a petition filed April 1, 2026: the student's status and OPT work authorization run until April 1, 2027 while the petition is pending.",
+    alt: "The cap-gap calculator filled in for OPT ending June 10, 2026 and an H-1B start of October 1, 2026. The petition was filed April 1, 2026. It shows the student's status and OPT work authorization running until April 1, 2027 while the petition is pending.",
     captured: "2026-10-31",
   },
 };

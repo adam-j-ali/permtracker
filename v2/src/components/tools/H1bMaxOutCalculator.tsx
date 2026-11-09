@@ -49,11 +49,11 @@ export function H1bMaxOutCalculator() {
     try {
       const r = calculateH1bMaxOut({ h1bStart: start, daysOutside: Math.floor(days), ...(DATE_RE.test(perm) ? { permFiled: perm } : {}) }, today);
       const warnings: string[] = [];
-      if (start > today) warnings.push("The H-1B start date is in the future; the dates below assume status begins then.");
+      if (start > today) warnings.push("The H-1B start date is in the future. The dates below assume status begins then.");
       if (DATE_RE.test(perm) && perm < start) warnings.push("The PERM filing date is before H-1B status began. Check both dates.");
       if (r.daysOfMargin !== null && r.daysOfMargin < 0) {
         warnings.push(
-          `The last day to file a PERM under the 365-day rule was ${long(r.permFileBy)}. A one-year extension under section 106(a) now depends on a filing already made; a three-year extension under 104(c) needs an approved I-140 with no visa number available.`,
+          `The last day to file a PERM under the 365-day rule was ${long(r.permFileBy)}. A one-year extension under section 106(a) now depends on a filing already made, while a three-year extension under 104(c) needs an approved I-140 with no visa number available.`,
         );
       }
       return { kind: "ok", r, warnings };
@@ -88,7 +88,7 @@ export function H1bMaxOutCalculator() {
         <div>
           <Label htmlFor={permId}>PERM filing date (optional)</Label>{" "}
           <DateInput id={permId} value={perm} onChange={(e) => setPerm(e.target.value)} className="mt-1.5" />{" "}
-          <p className="mt-1 text-sm text-muted-foreground">Filed, or the date it is planned for.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Filed, or the date it&apos;s planned for.</p>
         </div>
       </div>{" "}
 

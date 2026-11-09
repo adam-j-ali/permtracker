@@ -64,7 +64,7 @@ const COPY: Record<GroupKind, KindCopy> = {
     detailTitle: (l) => `PERM Jobs in ${l}`,
     detailH1: (l) => `PERM jobs in ${l}`,
     coverage:
-      "The worksite city on each application, from DOL's decided cases since FY2016. Spellings of one city are pooled; a city counts as one place per state.",
+      "The worksite city on each application, from DOL's decided cases since FY2016. Spellings of one city are pooled, and a city counts as one place per state.",
   },
   industry: {
     indexTitle: "PERM by Industry",
@@ -82,7 +82,7 @@ const COPY: Record<GroupKind, KindCopy> = {
     detailSubject: (l, k) => `PERM in ${industryName(l)} (NAICS ${k})`,
     detailH1: (l) => `PERM in ${l}`,
     coverage:
-      "The industry is the NAICS code the employer entered on the form. DOL publishes the code alone; the title is the Census Bureau's, and a code Census never defined takes its parent group's title.",
+      "The industry is the NAICS code the employer entered on the form. DOL publishes the code alone. The title is the Census Bureau's, and a code Census never defined takes its parent group's title.",
   },
   country: {
     indexTitle: "PERM by Country of Citizenship",
@@ -96,7 +96,7 @@ const COPY: Record<GroupKind, KindCopy> = {
     detailTitle: (l) => `PERM Cases for Citizens of ${l}`,
     detailH1: (l) => `PERM cases for citizens of ${l}`,
     coverage:
-      "DOL printed the worker's citizenship, education and visa on its old form, and the last cases filed on it were decided in FY2024; the form in use since mid-2023 doesn't carry them. So these pages describe FY2008 to FY2023 (years) and FY2016 to FY2024 (everything else).",
+      "DOL printed the worker's citizenship, education and visa on its old form, and the last cases filed on it were decided in FY2024. The form in use since mid-2023 doesn't carry them. So these pages describe FY2008 to FY2023 (years) and FY2016 to FY2024 (everything else).",
   },
 };
 
@@ -300,7 +300,7 @@ export async function GroupDetailPage({ kind, slug }: { kind: GroupKind; slug: s
         <header>
           <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">H-1B jobs in {city.label}</h1>{" "}
           <p className="mt-4 max-w-3xl text-lg leading-relaxed text-muted-foreground">
-            Fewer than 20 PERM green card cases name {city.label} as the worksite, so this city has no PERM page; its
+            Fewer than 20 PERM green card cases name {city.label} as the worksite, so this city has no PERM page. Its
             H-1B record is below.
           </p>
         </header>

@@ -65,14 +65,14 @@ export const HOME_SHOTS: Record<string, HomeShot> = {
     captured: "2026-10-28",
     width: 960,
     height: 540,
-    alt: "H1BGrader's homepage: a teal menu bar, a search for H-1B sponsors by company, job title or city, a strip announcing its new PERM tracker, and its top H-1B sponsors, job titles and cities for FY 2026 Q3.",
+    alt: "H1BGrader's homepage, with a teal menu bar and a search for H-1B sponsors by company, job title or city. It also shows a strip announcing its new PERM tracker, and its top H-1B sponsors, job titles and cities for FY 2026 Q3.",
   },
   greencardclock: {
     src: "/images/compare/greencardclock.webp",
     captured: "2026-10-28",
     width: 960,
     height: 540,
-    alt: "GreenCardClock's homepage: a pale green page headed Your Green Card Clock Is Already Ticking, a banner that the November 2026 visa bulletin is live, buttons to check a priority date and explore salary data, and a cookie notice along the bottom.",
+    alt: "GreenCardClock's homepage: a pale green page headed Your Green Card Clock Is Already Ticking. It shows a banner that the November 2026 visa bulletin is live, and buttons to check a priority date and explore salary data. A cookie notice runs along the bottom.",
   },
   lawfully: {
     src: "/images/compare/lawfully.webp",
@@ -86,7 +86,7 @@ export const HOME_SHOTS: Record<string, HomeShot> = {
     captured: "2026-10-28",
     width: 960,
     height: 540,
-    alt: "Immigration Road's homepage: a green road-sign logo, buttons for the October and November 2026 visa bulletins, a chart of EB-2 cutoff dates, and its green card calculator.",
+    alt: "Immigration Road's homepage, with a green road-sign logo and buttons for the October and November 2026 visa bulletins. It also shows a chart of EB-2 cutoff dates and its green card calculator.",
   },
   h1bperm: {
     src: "/images/compare/h1bperm.webp",

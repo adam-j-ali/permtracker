@@ -204,7 +204,7 @@ function ClaimForm({ slug }: { slug: string }) {
           {status === "sending" ? "Sending" : "Send the confirmation link"}
         </button>{" "}
         <p className="mt-3 text-sm text-muted-foreground">
-          Free. An address at a domain DOL&apos;s own filings list for this firm is confirmed by the link alone; any
+          Free. An address at a domain DOL&apos;s own filings list for this firm is confirmed by the link alone. Any
           other address is checked by a person first. What you send shows here as the firm&apos;s own words once we&apos;ve
           read it, and we can take it down.
         </p>

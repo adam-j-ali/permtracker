@@ -65,7 +65,7 @@ export function OutcomeMix({
                     <span>{s.label}</span>
                   </p>{" "}
                   <p className="font-mono text-sm tabular-nums text-muted-foreground">
-                    {`${newest[s.key].toFixed(2)}% in ${newest.quarter}; lowest ${low[s.key].toFixed(2)}% (${low.quarter}), highest ${high[s.key].toFixed(2)}% (${high.quarter})`}
+                    {`${newest[s.key].toFixed(2)}% in ${newest.quarter}. Lowest ${low[s.key].toFixed(2)}% (${low.quarter}), highest ${high[s.key].toFixed(2)}% (${high.quarter})`}
                   </p>
                 </div>{" "}
                 <div className="mt-2 flex h-24 items-end gap-[2px] border-b-2 border-border sm:gap-1">
@@ -127,8 +127,8 @@ export function OutcomeMix({
         </ScrollBox>
       </details>{" "}
       <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-        Both strips share one scale. Each quarter is when DOL decided, not when the cases were filed, and the
-        quarters at the ends are partial.
+        Both strips share one scale. Each quarter is when DOL decided the cases, whatever quarter they were filed
+        in. The quarters at the ends are partial.
       </p>
     </div>
   );

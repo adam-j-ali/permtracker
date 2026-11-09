@@ -211,7 +211,7 @@ describe("CaseStatusResult, pending case", () => {
     const text = container.textContent ?? "";
     // The label IS the contract: an unlabeled date on a page that answers a
     // case number would be read as a promise.
-    expect(text).toMatch(/An estimate, not a promise/i);
+    expect(text).toMatch(/It's an estimate\. It isn't a promise/i);
     expect(text).toMatch(/When this case could be decided/i);
     // ANALYST REVIEW reads the middle of its month, and says so.
     expect(text).toMatch(/ordinary path/i);

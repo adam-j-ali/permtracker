@@ -30,7 +30,7 @@ export function LcaYears({ years, className }: { years: YearCount[]; className?:
           note={
             <>
               From DOL&apos;s H-1B disclosure files, matched to this page by the employer&apos;s spellings. An LCA
-              certified and then withdrawn counts as withdrawn. Fiscal years, October to September; the newest is
+              certified and then withdrawn counts as withdrawn. Fiscal years run October to September, and the newest is
               partial.
             </>
           }

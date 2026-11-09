@@ -130,7 +130,7 @@ export function GreenCardLine({
       <div className="border-b-2 border-border p-6 sm:p-8">
         <div className="flex items-center gap-3">
           <UsersThreeIcon className="h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
-          <h2 className="font-heading text-2xl font-bold leading-tight">Who is ahead of you?</h2>
+          <h2 className="font-heading text-2xl font-bold leading-tight">Who&apos;s ahead of you?</h2>
         </div>{" "}
         <div className="mt-6 grid grid-cols-1 gap-4 [&>*]:min-w-0 sm:grid-cols-2">
           {lockCategory ? null : (
@@ -197,7 +197,7 @@ export function GreenCardLine({
           </ul>{" "}
           <p className="mt-4 text-base text-muted-foreground">
             Pick a priority date and this fills in: how many people stand ahead of you in
-            this line, where they sit, and how long that is at the pace the line last moved.
+            this line, where they sit, and how long the wait runs at the pace the line last moved.
           </p>
         </div>
       ) : result.kind === "no-data" ? (

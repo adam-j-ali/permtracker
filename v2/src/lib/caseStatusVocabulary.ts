@@ -93,7 +93,7 @@ export function isApproval(status: string): boolean {
 const MEANING: Record<string, string> = {
   "ANALYST REVIEW":
     "A Department of Labor analyst has the application. This is the main " +
-    "queue, and it is where most pending PERM cases sit.",
+    "queue, and it's where most pending PERM cases sit.",
   // NO DEADLINE IS PUBLISHED FOR AN RFI, and the 30 days that circulates
   // online is the AUDIT rule wearing the wrong label. "Request for
   // Information" and "RFI" appear nowhere in 20 CFR 656; the hook is
@@ -174,10 +174,10 @@ const MEANING: Record<string, string> = {
   // reason to leave the 4 with nothing.
   "REQUEST FOR REVIEW":
     "The employer has asked for the denial to be reviewed by DOL's appeals " +
-    "board. It goes to the officer who denied the case, not to the board " +
-    "directly, within 30 days of the determination.",
+    "board. It goes to the officer who denied the case within 30 days of the " +
+    "determination, and the officer sends it on to the board.",
   DENIED: "DOL refused the application. A denial carries appeal rights.",
-  WITHDRAWN: "The application was withdrawn. DOL will not decide it.",
+  WITHDRAWN: "The application was withdrawn. DOL won't decide it.",
   // 656.24(g)(1): "The employer may request reconsideration within 30 days
   // from the date of issuance of the denial." (g)(2): for applications
   // submitted after July 16, 2007 a request "may include only: (i)

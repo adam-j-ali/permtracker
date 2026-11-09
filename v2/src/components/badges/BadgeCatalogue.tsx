@@ -298,7 +298,7 @@ export function BadgeCatalogue({ rows, origin }: { rows: BadgeRow[]; origin: str
               ))}
             </div>{" "}
             <p className="mt-2 text-sm text-muted-foreground">
-              Pick the one that matches the page you are pasting into.
+              Pick the one that matches the page you&apos;re pasting into.
             </p>
           </div>
 
@@ -362,7 +362,7 @@ export function BadgeCatalogue({ rows, origin }: { rows: BadgeRow[]; origin: str
                       {substituted ? (
                         <p className="mt-2 text-sm text-muted-foreground">
                           Shown as {STYLE_LABELS[v.style].toLowerCase()}: {STYLE_LABELS[style].toLowerCase()} needs a
-                          figure this one does not have.
+                          figure this one doesn&apos;t have.
                         </p>
                       ) : null}{" "}
                       {row.unavailable ? (

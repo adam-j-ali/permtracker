@@ -59,7 +59,7 @@ export function H1bLotteryHistory({ years, className }: { years: LotteryYear[] |
         <a href={SOURCE} rel="noopener noreferrer" className="link">
           published by Bloomberg
         </a>{" "}
-        (Apache-2.0). USCIS queried them in May 2024; each year matches USCIS&apos;s own registration totals. Matched by
+        (Apache-2.0). USCIS queried them in May 2024, and each year matches USCIS&apos;s own registration totals. Matched by
         employer name, like the figures above.
       </p>
     </section>

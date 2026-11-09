@@ -115,8 +115,8 @@ export function GreenCardFeesCalculator() {
         <Count id={childrenId} label="Children under 14" value={children} onChange={setChildren} />{" "}
         {route === "aos" ? (
           <>
-            <Count id={permitsId} label="Work permits (I-765)" value={permits} onChange={setPermits} note="One per adult who wants one; capped at the adult count." />{" "}
-            <Count id={travelId} label="Advance parole (I-131)" value={travel} onChange={setTravel} note="One per adult who wants one; capped at the adult count." />
+            <Count id={permitsId} label="Work permits (I-765)" value={permits} onChange={setPermits} note="One per adult who wants one, capped at the adult count." />{" "}
+            <Count id={travelId} label="Advance parole (I-131)" value={travel} onChange={setTravel} note="One per adult who wants one, capped at the adult count." />
           </>
         ) : null}
       </div>{" "}
@@ -199,7 +199,7 @@ export function GreenCardFeesCalculator() {
             </a>
           </>
         ) : null}
-        . Check the current edition before paying; a fee paid short is a rejected filing.
+        . Check the current edition before paying, because a fee paid short is a rejected filing.
       </p>{" "}
       <div className="mt-5 border-t-2 border-border pt-4">
         <h2 className="font-heading text-base font-bold">Not in the total</h2>{" "}
@@ -219,13 +219,13 @@ export function GreenCardFeesCalculator() {
                 </a>
                 .
               </li>{" "}
-              <li>Premium processing on an I-485, which USCIS does not offer.</li>
+              <li>Premium processing on an I-485, which USCIS doesn&apos;t offer.</li>
             </>
           ) : (
             <>
               <li>The medical exam: a panel physician the consulate names charges for it.</li>{" "}
               <li>
-                The affidavit of support review ($120 at NVC), which an employment case needs only when a relative who is a citizen
+                The affidavit of support review ($120 at NVC), which an employment case needs only when a relative who&apos;s a citizen
                 or permanent resident filed the I-140 or owns 5% or more of the employer (8 CFR 213a.2(a)(2)(i)(C)).
               </li>
             </>

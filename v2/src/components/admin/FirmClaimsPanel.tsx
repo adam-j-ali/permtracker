@@ -231,7 +231,7 @@ function EditCard({ e }: { e: Edit }) {
         })}
       </dl>{" "}
       <label htmlFor={reasonId} className="mt-4 block text-sm font-bold">
-        Reason for a decline <span className="font-normal text-muted-foreground">(optional; the firm sees it)</span>
+        Reason for a decline <span className="font-normal text-muted-foreground">(optional, and the firm sees it)</span>
       </label>{" "}
       <textarea
         id={reasonId}

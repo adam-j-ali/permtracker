@@ -93,7 +93,7 @@ export function BulletinNote({
         When your priority date becomes current
       </h3>{" "}
       <p className="mt-1 text-base text-soft">
-        {lineName}: the {month} cutoff is {cutoffLabel(cell?.latest ?? null)}; your date is {dayLabel(pd.mid, today, true)}.
+        {lineName}: the {month} cutoff is {cutoffLabel(cell?.latest ?? null)}, and your date is {dayLabel(pd.mid, today, true)}.
       </p>{" "}
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 [&>*]:min-w-0">
         {options.map((o) => {

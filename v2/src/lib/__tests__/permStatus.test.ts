@@ -126,7 +126,7 @@ describe("getStatusMeaning", () => {
   });
 
   it("states that an RFI is not an audit, which is the reassuring part", () => {
-    expect(getStatusMeaning("RFI ISSUED")!.summary).toMatch(/not an audit/);
+    expect(getStatusMeaning("RFI ISSUED")!.summary).toMatch(/isn't an audit/);
   });
 
   it("does not cite a section that does not contain the term", () => {

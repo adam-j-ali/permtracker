@@ -613,7 +613,7 @@ export function FilterableStatTable<T>({
                       ? // "Nothing matches that" would be false with results
                         // sitting directly underneath. This table holds the
                         // PUBLISHED corpus; the block below holds the rest.
-                        `Nothing in the published files matches that. There is more below.`
+                        `Nothing in the published files matches that. There's more below.`
                       : `Nothing matches that. Clear the search and the filters to see the full list.`}
                 {" "}
                 <DidYouMean

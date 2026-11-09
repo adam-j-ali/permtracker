@@ -369,7 +369,7 @@ function BlockedIpsTab() {
             </Button>
           </div>
           <p className="text-sm text-muted-foreground">
-            Defaults to 1 hour. Blocks expire automatically; hourly cron cleans them up.
+            Defaults to 1 hour. Blocks expire automatically, and an hourly cron job cleans them up.
           </p>
         </CardContent>
       </Card>

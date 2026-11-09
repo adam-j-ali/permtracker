@@ -91,7 +91,7 @@ describe("CatchingUp", () => {
     fireEvent.click(screen.getByRole("button", { name: "Day" }));
     expect(screen.getByText(/Losing ground: 324 more joined/)).toBeTruthy();
     expect(screen.getByText(/about half as many on a Friday/)).toBeTruthy();
-    expect(screen.getByText("DOL issued 334; employers withdrew 4.")).toBeTruthy();
+    expect(screen.getByText("DOL issued 334, and employers withdrew 4.")).toBeTruthy();
   });
 });
 

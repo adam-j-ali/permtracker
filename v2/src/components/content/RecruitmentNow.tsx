@@ -23,7 +23,7 @@ export async function RecruitmentNow() {
       PERM recruitment
     </Link>
   );
-  if (!doc || !first) return <>How far ahead of filing employers start is on the {page} page.</>;
+  if (!doc || !first) return <>The {page} page shows how far ahead of filing employers start.</>;
   return (
     <>
       {`In the ${formatInt(doc.cases)} decided cases filed on DOL's current form${doc.asOf ? `, through ${longDate(doc.asOf)}` : ""}, the first recruitment step came a median ${first.p50} days before filing, and half the cases started between ${first.p25} and ${first.p75} days before it (`}

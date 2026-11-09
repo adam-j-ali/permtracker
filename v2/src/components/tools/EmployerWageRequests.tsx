@@ -68,7 +68,7 @@ export function EmployerWageRequests({
           {more ? ` There were more than ${WAGE_REQUESTS_SHOWN}, so these are the newest.` : ""}
         </p>{" "}
         <p>
-          A request still waiting, withdrawn, or decided after the filing is left out. A PERM case is filed on a wage
+          A request still waiting, withdrawn, or decided after the filing is left out, because a PERM case is filed on a wage
           DOL has already issued. DOL’s published file names the case’s own request once the case is decided.
         </p>
       </FinePrint>

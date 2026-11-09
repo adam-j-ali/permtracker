@@ -161,11 +161,11 @@ export function PwdQueueEstimator({
         ) : null}
         {frontier && frontier.oewsMonth ? (
           <p className="mt-3 text-sm text-muted-foreground">
-            DOL&apos;s table says it is issuing determinations for requests received{" "}
+            DOL&apos;s table says it&apos;s issuing determinations for requests received{" "}
             {formatMonth(frontier.oewsMonth)} where the wage comes from the OEWS
             survey
             {frontier.nonOewsMonth
-              ? `, and ${formatMonth(frontier.nonOewsMonth)} where it does not`
+              ? `, and ${formatMonth(frontier.nonOewsMonth)} where it doesn't`
               : ""}
             {asOf ? `, as of ${asOf}` : ""}.
           </p>

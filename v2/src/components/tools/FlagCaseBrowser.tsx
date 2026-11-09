@@ -684,7 +684,7 @@ export function FlagCaseBrowser({
         ) : null}
         {typedCaseNumber ? (
           <p className="mt-4 border-2 border-primary bg-tint p-4 text-base leading-relaxed">
-            That is a case number.{" "}
+            That&apos;s a case number.{" "}
             <PendingLink
               href={`/perm-case-status?case=${encodeURIComponent(typedCaseNumber)}`}
               className="font-bold link"
@@ -701,8 +701,8 @@ export function FlagCaseBrowser({
         {searching && search && found === 0 ? (
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-soft">
             Nothing under that employer yet. Pending filings arrive from DOL&apos;s
-            nightly check and reach back only as far as the backfill has walked;
-            decided ones come from DOL&apos;s quarterly files
+            nightly check and reach back only as far as the backfill has walked.
+            Decided ones come from DOL&apos;s quarterly files
             {disclosure?.latestDecision ? ` (through ${disclosure.latestDecision})` : ""}.
             Have the number? The{" "}
             <Link href="/perm-case-status" className="link">
@@ -742,7 +742,7 @@ export function FlagCaseBrowser({
               {filtering ? `${formatInt(shownLive.length)} of ` : ""}
               {formatInt(search.cases.length)} {search.cases.length === 1 ? program.noun : program.nouns} from DOL&apos;s
               daily check, newest filing first
-              {search.cases.length >= 200 ? " (the first 200; narrow by title or month for the rest)" : ""}.
+              {search.cases.length >= 200 ? " (the first 200, so narrow by title or month for the rest)" : ""}.
               {halves && halves.wages.size > 0
                 ? ` ${formatInt(halves.wages.size)} of them ${halves.wages.size === 1 ? "has" : "have"} the wage from DOL's quarterly file.`
                 : ""}
@@ -766,7 +766,7 @@ export function FlagCaseBrowser({
               {formatInt(halves.fileOnly.length)} decided {halves.fileOnly.length === 1 ? program.noun : program.nouns} with the{" "}
               {program.wageLabel.toLowerCase()}
               {disclosure?.latestDecision ? `, decisions through ${disclosure.latestDecision}` : ""}
-              {halves.fileOnly.length >= 200 ? " (the first 200; narrow by title or month for the rest)" : ""}.
+              {halves.fileOnly.length >= 200 ? " (the first 200, so narrow by title or month for the rest)" : ""}.
             </p>{" "}
             <DisclosedRows
               rows={shownFile}

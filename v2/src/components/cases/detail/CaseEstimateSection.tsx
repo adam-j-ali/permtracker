@@ -211,7 +211,7 @@ function DecisionBar({
   const toGo = daysBetween(today, date);
 
   return (
-    <figure className="@container min-w-0" aria-label={`Filed ${day(filed)}, ${waited(gone)} ago; estimated around ${day(date)}`}>
+    <figure className="@container min-w-0" aria-label={`Filed ${day(filed)}, ${waited(gone)} ago. Estimated around ${day(date)}`}>
       <div aria-hidden="true" className="relative h-5">
         <span
           className={cn("absolute bottom-0 whitespace-nowrap text-sm font-bold", past ? "-translate-x-1/2" : "translate-x-0")}
@@ -506,7 +506,7 @@ export function CaseEstimateSection({ caseData }: { caseData: CaseEstimateSectio
                 <p>
                   {est.modelLabel}: {est.basis} Source: {est.source}
                 </p>{" "}
-                <p>{est.totalDays.toLocaleString("en-US")} days from filing. An estimate, not a promise.</p>{" "}
+                <p>{est.totalDays.toLocaleString("en-US")} days from filing. It&apos;s an estimate. It isn&apos;t a promise.</p>{" "}
                 {est.stage ? (
                   <p>
                     {est.stage.note} Adjusted for the case&rsquo;s stage: the {est.stage.percentile}th percentile of its
@@ -524,7 +524,7 @@ export function CaseEstimateSection({ caseData }: { caseData: CaseEstimateSectio
             {pwd ? (
               <p>
                 The day DOL is expected to reach this request, counting the wage requests filed before it and DOL&rsquo;s
-                measured pace on its working days. An estimate, not a promise.
+                measured pace on its working days. It&apos;s an estimate. It isn&apos;t a promise.
               </p>
             ) : null}{" "}
             {lineAhead ? (

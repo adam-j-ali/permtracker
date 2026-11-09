@@ -128,9 +128,9 @@ export function WageHourCases({
       </details>{" "}
 
       <FinePrint className="mt-1" summary="What DOL says about these figures">
-        DOL&apos;s notes: the findings period isn&apos;t when the case opened or closed; back wages are what the employer
-        agreed to pay, not what was paid; a case with no violations is still listed; counts loaded after October 1,
-        2025 aren&apos;t directly comparable with earlier ones. Matched by the employer&apos;s legal name, so another
+        DOL notes that the findings period isn&apos;t when the case opened or closed. Back wages are what the employer
+        agreed to pay, which can differ from what was paid. A case with no violations is still listed. Counts loaded after
+        October 1, 2025 aren&apos;t directly comparable with earlier ones. Matched by the employer&apos;s legal name, so another
         company with the same name can be missed or, rarely, included.{" "}
         <a href={DATASET_URL} rel="noopener noreferrer" target="_blank" className="link -my-3 inline-flex min-h-11 items-center">
           DOL&apos;s Wage and Hour data

@@ -125,7 +125,7 @@ describe("the worker, job and industry filters", () => {
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
     expect(lastAsked().has("city")).toBe(false);
     expect(lastAsked().has("naics")).toBe(false);
-    expect(screen.getByText(/NAICS code and Worksite city were not used\./)).toBeInTheDocument();
+    expect(screen.getByText(/NAICS code and Worksite city weren't used\./)).toBeInTheDocument();
   });
 
   it("says the old-form fields exist only for cases filed on DOL's old form", () => {

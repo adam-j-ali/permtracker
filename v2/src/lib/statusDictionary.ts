@@ -79,20 +79,20 @@ export const PWD_STATUSES: FlagStatusEntry[] = [
     label: "In process",
     pending: true,
     summary: "The request has been received and no determination has been issued. This is the ordinary wage queue, worked in filing order.",
-    unsourced: "A workflow word with no regulatory definition. DOL publishes which filing month the center is working, and that is the only official measure of the wait.",
+    unsourced: "A workflow word with no regulatory definition. DOL publishes which filing month the center is working, and that's the only official measure of the wait.",
   },
   {
     status: "RFI ISSUED",
     label: "RFI issued",
     pending: true,
-    summary: "The center has asked the employer for information before it will issue a determination, usually about the job's duties, requirements or worksite.",
-    unsourced: "DOL publishes no definition and no response period for a wage-request RFI; the letter states its own. A request the employer never answers is returned unprocessed.",
+    summary: "The center has asked the employer for information before it issues a determination, usually about the job's duties, requirements or worksite.",
+    unsourced: "DOL publishes no definition and no response period for a wage-request RFI. The letter states its own. A request the employer never answers is returned unprocessed.",
   },
   {
     status: "DETERMINATION ISSUED",
     label: "Determination issued",
     pending: false,
-    summary: "The center issued the prevailing wage. It is valid for 90 days or until the next June 30, whichever the rule gives, and recruitment or the ETA-9089 has to start inside that window.",
+    summary: "The center issued the prevailing wage. It's valid for 90 days or until the next June 30, whichever the rule gives. Recruitment or the ETA-9089 has to start inside that window.",
     cite: { label: "20 CFR 656.40(c)", href: CFR("656", "656.40") },
   },
   {
@@ -141,7 +141,7 @@ export const PWD_STATUSES: FlagStatusEntry[] = [
     status: "PENDING BALCA",
     label: "Pending BALCA",
     pending: true,
-    summary: "The employer asked the Board of Alien Labor Certification Appeals to review the Center Director's decision. The board reads the record already made; nothing new goes in.",
+    summary: "The employer asked the Board of Alien Labor Certification Appeals to review the Center Director's decision. The board reads the record already made, and nothing new goes in.",
     cite: { label: "20 CFR 656.41(d)", href: CFR("656", "656.41") },
   },
   {
@@ -169,15 +169,15 @@ export const PWD_STATUSES: FlagStatusEntry[] = [
     status: "RETURNED UNPROCESSED",
     label: "Returned unprocessed",
     pending: false,
-    summary: "The center sent the request back without deciding it. DOL neither granted nor denied a wage and the employer did not withdraw, so this is none of those three.",
-    unsourced: "DOL publishes no definition. The commonest reading is an unanswered RFI or a request that could not be processed as filed; the record does not say which.",
+    summary: "The center sent the request back without deciding it. DOL neither granted nor denied a wage, and the employer didn't withdraw, so this is none of those three.",
+    unsourced: "DOL publishes no definition. The commonest reading is an unanswered RFI or a request that couldn't be processed as filed. The record doesn't say which.",
   },
   {
     status: "WITHDRAWN",
     label: "Withdrawn",
     pending: false,
     summary: "The employer withdrew the request before a determination. DOL records no reason.",
-    unsourced: "A workflow word; the regulation describes withdrawal of a PERM application, not of a wage request.",
+    unsourced: "A workflow word. The regulation describes withdrawal of a PERM application. It says nothing about withdrawing a wage request.",
   },
 ];
 
@@ -197,7 +197,7 @@ export const LCA_STATUSES: FlagStatusEntry[] = [
     status: "CERTIFIED",
     label: "Certified",
     pending: false,
-    summary: "DOL certified the application. Certification is a review of completeness and obvious inaccuracy, not of the wage or the job; the employer's attestations are what the certification rests on.",
+    summary: "DOL certified the application. Certification checks only for completeness and obvious inaccuracy, so it doesn't review the wage or the job. The certification rests on the employer's attestations.",
     cite: { label: "20 CFR 655.740", href: CFR("655", "655.740") },
   },
   {
@@ -218,7 +218,7 @@ export const LCA_STATUSES: FlagStatusEntry[] = [
     status: "DENIED",
     label: "Denied",
     pending: false,
-    summary: "DOL did not certify the application. On an LCA that almost always means an incomplete or obviously inaccurate form, which the employer can correct and refile.",
+    summary: "DOL didn't certify the application. On an LCA that almost always means an incomplete or obviously inaccurate form, which the employer can correct and refile.",
     cite: { label: "20 CFR 655.740(a)", href: CFR("655", "655.740") },
   },
 ];
@@ -237,14 +237,14 @@ export const SEASONAL_STATUSES: (FlagStatusEntry & { forms: string })[] = [
     pending: true,
     forms: "H-2A job orders",
     summary: "The job order is in and waiting to be attached to the H-2A application (Form ETA-9142A) the employer files for the same work. The job order comes first, 60 to 75 days before the first date of need.",
-    unsourced: "DOL publishes no definition of this status; this reading comes from its name and from 20 CFR 655.121, which has the job order filed before the application.",
+    unsourced: "DOL publishes no definition of this status. This reading comes from its name and from 20 CFR 655.121, which has the job order filed before the application.",
   },
   {
     status: "APPROVED",
     label: "Approved",
     pending: false,
     forms: "H-2A job orders",
-    summary: "The job order was approved and placed in clearance, so the state workforce agency starts recruiting U.S. workers. It is the job order's own decision: the H-2A application filed with it (an H-300- number) is decided separately.",
+    summary: "The job order was approved and placed in clearance, so the state workforce agency starts recruiting U.S. workers. It's the job order's own decision. The H-2A application filed with it (an H-300- number) is decided separately.",
     cite: { label: "20 CFR 655.121(e), (f)", href: CFR("655", "655.121") },
   },
   {
@@ -268,7 +268,7 @@ export const SEASONAL_STATUSES: (FlagStatusEntry & { forms: string })[] = [
     label: "Notice of deficiency issued",
     pending: true,
     forms: "H-2A and H-2B applications",
-    summary: "DOL found the application or job order incomplete or wrong and said what to fix. The employer has 5 business days (H-2A) or 10 (H-2B) to send a modified application or ask a judge to review the notice; otherwise it is denied.",
+    summary: "DOL found the application or job order incomplete or wrong and said what to fix. The employer has 5 business days (H-2A) or 10 (H-2B) to send a modified application or ask a judge to review the notice. Otherwise it's denied.",
     cite: { label: "20 CFR 655.31, 655.141", href: CFR("655", "655.141") },
   },
   {
@@ -276,7 +276,7 @@ export const SEASONAL_STATUSES: (FlagStatusEntry & { forms: string })[] = [
     label: "Accepted, pending recruitment",
     pending: true,
     forms: "H-2A and H-2B applications",
-    summary: "DOL issued a notice of acceptance. The job order goes out to state workforce agencies and the employer recruits U.S. workers before DOL decides; an H-2A decision is due no later than 30 days before the first date of need.",
+    summary: "DOL issued a notice of acceptance. The job order goes out to state workforce agencies and the employer recruits U.S. workers before DOL decides. An H-2A decision is due no later than 30 days before the first date of need.",
     cite: { label: "20 CFR 655.33, 655.143", href: CFR("655", "655.33") },
   },
   {
@@ -292,7 +292,7 @@ export const SEASONAL_STATUSES: (FlagStatusEntry & { forms: string })[] = [
     label: "NRM issued",
     pending: true,
     forms: "H-2A applications",
-    summary: "A notice DOL sent on an H-2A application that is still open.",
+    summary: "A notice DOL sent on an H-2A application that's still open.",
     unsourced: "DOL publishes no definition of NRM and the H-2A rules don't use the abbreviation. The letter itself says what it asks for and by when.",
   },
   {
@@ -300,8 +300,8 @@ export const SEASONAL_STATUSES: (FlagStatusEntry & { forms: string })[] = [
     label: "RFI issued",
     pending: true,
     forms: "H-2B wage requests",
-    summary: "The wage center asked the employer for information before it will set the wage.",
-    unsourced: "DOL publishes no definition and no response period for a wage-request RFI; the letter states its own.",
+    summary: "The wage center asked the employer for information before it sets the wage.",
+    unsourced: "DOL publishes no definition and no response period for a wage-request RFI. The letter states its own.",
   },
   {
     status: "PENDING APPEAL",
@@ -325,14 +325,14 @@ export const SEASONAL_STATUSES: (FlagStatusEntry & { forms: string })[] = [
     pending: true,
     forms: "H-2B applications",
     summary: "DOL already certified the application and the employer has asked for something after it. DOL writes this one in mixed case.",
-    unsourced: "DOL publishes no definition; the record doesn't say what was asked for.",
+    unsourced: "DOL publishes no definition, and the record doesn't say what was asked for.",
   },
   {
     status: "FULL CERTIFICATION",
     label: "Full certification",
     pending: false,
     forms: "H-2A and H-2B applications",
-    summary: "DOL certified the application for every worker and the whole period requested. The employer files the certified application with its petition to USCIS; for H-2A, DOL sends it to USCIS directly.",
+    summary: "DOL certified the application for every worker and the whole period requested. The employer files the certified application with its petition to USCIS. For H-2A, DOL sends it to USCIS directly.",
     cite: { label: "20 CFR 655.52, 655.162", href: CFR("655", "655.162") },
   },
   {
@@ -340,7 +340,7 @@ export const SEASONAL_STATUSES: (FlagStatusEntry & { forms: string })[] = [
     label: "Partial certification",
     pending: false,
     forms: "H-2A and H-2B applications",
-    summary: "DOL certified fewer workers, a shorter period, or both. For H-2B the number drops by one for each qualified U.S. worker who is available and wasn't rejected for a lawful reason.",
+    summary: "DOL certified fewer workers, a shorter period, or both. For H-2B the number drops by one for each qualified U.S. worker who's available and wasn't rejected for a lawful reason.",
     cite: { label: "20 CFR 655.54", href: CFR("655", "655.54") },
   },
   {
@@ -373,7 +373,7 @@ export const SEASONAL_STATUSES: (FlagStatusEntry & { forms: string })[] = [
     pending: false,
     forms: "H-2A applications",
     summary:
-      "DOL took back a certification it had granted. It can do that for fraud or misrepresentation in the application, a substantial violation of the certification's terms, refusing to cooperate with a DOL investigation, or ignoring a sanction.",
+      "DOL took back a certification it had granted. It can do that for fraud or misrepresentation in the application, or for a substantial violation of the certification's terms. Refusing to cooperate with a DOL investigation, or ignoring a sanction, can also lead to it.",
     cite: { label: "20 CFR 655.181", href: CFR("655", "655.181") },
   },
   {
@@ -421,7 +421,7 @@ export const SEASONAL_STATUSES: (FlagStatusEntry & { forms: string })[] = [
     label: "Denied",
     pending: false,
     forms: "H-2A and H-2B applications",
-    summary: "DOL refused the certification, giving its reasons. The employer can ask a judge to review the denial; without that request the denial is final.",
+    summary: "DOL refused the certification, giving its reasons. The employer can ask a judge to review the denial. Without that request, the denial is final.",
     cite: { label: "20 CFR 655.53, 655.164", href: CFR("655", "655.164") },
   },
   {
@@ -430,7 +430,7 @@ export const SEASONAL_STATUSES: (FlagStatusEntry & { forms: string })[] = [
     pending: false,
     forms: "H-2B wage requests",
     summary: "The request went back to the employer without a decision.",
-    unsourced: "DOL publishes no definition for a wage request; the record doesn't say why it was returned.",
+    unsourced: "DOL publishes no definition for a wage request, and the record doesn't say why it was returned.",
   },
   {
     status: "WITHDRAWN",
@@ -438,7 +438,7 @@ export const SEASONAL_STATUSES: (FlagStatusEntry & { forms: string })[] = [
     pending: false,
     forms: "Every form",
     summary: "The employer withdrew the filing before DOL decided it. DOL records no reason.",
-    unsourced: "A workflow word; the H-2A and H-2B rules describe withdrawal only after certification.",
+    unsourced: "A workflow word. The H-2A and H-2B rules describe withdrawal only after certification.",
   },
 ];
 

@@ -252,8 +252,8 @@ export function GroupView({
               years={years}
               note={
                 kind === "country"
-                  ? "Fiscal years run October to September. DOL printed the worker's citizenship on its old form, so the series runs FY2008 to FY2023; the form in use since mid-2023 doesn't carry it."
-                  : "Fiscal years run October to September. FY2016 to FY2023 come from DOL's closed-year files, FY2024 on from its current ones; the newest year is partial until DOL publishes its fourth quarter."
+                  ? "Fiscal years run October to September. DOL printed the worker's citizenship on its old form, so the series runs FY2008 to FY2023. The form in use since mid-2023 doesn't carry it."
+                  : "Fiscal years run October to September. FY2016 to FY2023 come from DOL's closed-year files, and FY2024 on from its current ones. The newest year is partial until DOL publishes its fourth quarter."
               }
             />
           </div>

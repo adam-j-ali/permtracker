@@ -128,8 +128,8 @@ function Determination({ d, perms = [] }: { d: PwdDisclosedRow; perms?: readonly
       ) : null}{" "}
       {until ? (
         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          The PERM must be filed, or recruitment started, before the determination expires. Every date after it is
-          arithmetic on this one; the{" "}
+          The PERM must be filed, or recruitment started, before the determination expires. Every later date is
+          arithmetic on this one, and the{" "}
           <Link href="/tools/perm-deadline-calculator" className="link">
             deadline calculator
           </Link>{" "}

@@ -145,10 +145,10 @@ export function EmployerPrograms({
           (&ldquo;too few&rdquo;).
           {" "}DOL publishes no employer number, so filings are matched by the employer&apos;s legal name
           {spellings && spellings > 1 ? `, read under the ${formatInt(spellings)} spellings DOL's files use for it` : ""}
-          ; another employer with the same legal name would be counted here too.{" "}
-          The PERM is the green-card step; the wage request comes months before
+          . Another employer with the same legal name would be counted here too.{" "}
+          The PERM is the green-card step. The wage request comes months before
           it, and the LCA is the separate form for an H-1B. DOL publishes each
-          in its own file, and its live record shows what is still open.
+          in its own file, and its live record shows what&apos;s still open.
           {seasonal
             ? ` Seasonal wages stay hourly, as DOL's H-2A, H-2B and CW-1 files quote them: a job lasting a season, annualised over a full year, would describe pay nobody earns.${seasonal.workersCertified ? ` DOL certified ${formatInt(seasonal.workersCertified)} workers across these filings.` : ""}`
             : ""}

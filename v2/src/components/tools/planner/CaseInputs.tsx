@@ -68,7 +68,7 @@ export function CaseInputs({ state, set }: { state: PlanUrlState; set: (patch: R
           </select>
         </Field>{" "}
         {state.where === "start" ? (
-          <Field id={ids("on")} label="Wage request filed on" hint="Or the day it will be">
+          <Field id={ids("on")} label="Wage request filed on" hint="Or the day you plan to file it">
             <DateInput id={ids("on")} value={state.startOn} onChange={(e) => set(planPatch({ startOn: e.target.value || null }))} className="mt-1.5" />
           </Field>
         ) : (

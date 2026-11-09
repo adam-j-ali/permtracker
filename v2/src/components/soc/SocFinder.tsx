@@ -236,7 +236,7 @@ function TitleResult({ title }: { title: TitleAnswer }) {
                 </Link>{" "}
                 {c.becameCodes.length ? (
                   <p className="text-sm text-soft">
-                    A 2010 code; BLS replaced it in 2018 with {c.becameCodes.join(" and ")}.
+                    A 2010 code. BLS replaced it in 2018 with {c.becameCodes.join(" and ")}.
                   </p>
                 ) : null}{" "}
                 {c.summary ? <p className="mb-1.5 max-w-2xl text-sm leading-relaxed text-soft">{c.summary}</p> : null}

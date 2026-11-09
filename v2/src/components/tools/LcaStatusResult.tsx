@@ -30,8 +30,8 @@ function statusMeaning(status: string): string {
   if (u === "IN PROCESS") return "DOL is reviewing it. Its target is seven business days from filing, and most LCAs are certified within that.";
   if (u.startsWith("CERTIFIED"))
     return "DOL has certified the wage and working-condition attestations. The employer can now file the H-1B petition, which gets its own USCIS receipt number.";
-  if (u === "WITHDRAWN") return "The employer withdrew it before a decision. A withdrawal isn't a denial; employers often refile with corrected details.";
-  if (u === "DENIED") return "DOL found a problem with the attestations. Employers usually correct and refile; the employer or attorney knows what happens next.";
+  if (u === "WITHDRAWN") return "The employer withdrew it before a decision. A withdrawal isn't a denial, and employers often refile with corrected details.";
+  if (u === "DENIED") return "DOL found a problem with the attestations. Employers usually correct and refile. The employer or attorney knows what happens next.";
   return "DOL's status for this case, as shown on its own case status page.";
 }
 

@@ -44,7 +44,7 @@ describe("Eb2VsEb3", () => {
   it("says a current line is current, not that it has fewer people", () => {
     render(<Eb2VsEb3 snapshot={twoLines(5000, 1000, { eb2: { kind: "current" } })} />);
     setDate("2031-01-01");
-    expect(screen.getByText("EB-2 is current for you; EB-3 isn't")).toBeInTheDocument();
+    expect(screen.getByText("EB-2 is current for you, and EB-3 isn't")).toBeInTheDocument();
   });
 
   it("prints each line's cutoffs as the bulletin states them", () => {

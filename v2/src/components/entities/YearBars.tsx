@@ -82,7 +82,7 @@ export function YearBars({
           className="flex h-44 items-end gap-1.5 border-b-2 border-border"
           style={{ minWidth: `${minWidth}px` }}
           role="img"
-          aria-label={`${noun} by fiscal year, FY${first} to FY${last}, ${formatInt(total)} in all. The table below has every figure.`}
+          aria-label={`${noun} by fiscal year, FY${first} to FY${last}, ${formatInt(total)} in all. Every figure is in the table after this chart.`}
         >
           {series.map((y, i) => {
             const t = totals[i]!;

@@ -144,7 +144,7 @@ export function chooseCategories(a: Answers): { fits: Fit[]; notes: string[] } {
 
   if (a.sponsor === "self" && fits.length === 0) {
     notes.push(
-      "Without an employer, the employment categories open to you are EB-1A and the national interest waiver, and nothing you ticked points to either.",
+      "Without an employer, EB-1A and the national interest waiver are the employment categories open to you, and nothing you ticked points to either.",
     );
   }
 

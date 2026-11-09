@@ -47,7 +47,7 @@ export function QueueMonthChart({
   if (months.length === 0) {
     return (
       <p className={cn("text-base text-muted-foreground", className)}>
-        Per-month queue figures are not loaded right now. DOL&apos;s own queue
+        Per-month queue figures aren&apos;t loaded right now. DOL&apos;s own queue
         position is on the{" "}
         <a
           href="/perm-processing-times"
@@ -194,7 +194,7 @@ export function QueueMonthChart({
               {formatInt(Math.round(a.neighbourMean))}
             </Fragment>
           ))}
-          . That is what the records contain, not a gap in them.
+          . That&apos;s what the records contain. It isn&apos;t a gap in them.
         </p>
       ) : null}
     </div>

@@ -207,7 +207,7 @@ export function H1bLotteryCalculator() {
         sites.map(async (s) => {
           const res = await fetch(`/api/wage-levels?soc=${encodeURIComponent(soc.trim())}&area=${s.area}&year=${seriesYear}`);
           const j = (await res.json().catch(() => null)) as { ok?: boolean; levels?: WageLevel[] | null; message?: string } | null;
-          if (!res.ok || !j?.ok) throw new Error(j?.message ?? "DOL could not be reached. Try again in a moment.");
+          if (!res.ok || !j?.ok) throw new Error(j?.message ?? "DOL couldn't be reached. Try again in a moment.");
           return { label: s.areaLabel || s.area, levels: j.levels ?? null };
         }),
       );
@@ -220,7 +220,7 @@ export function H1bLotteryCalculator() {
         sites: answers.map((a) => ({ ...a, at: a.levels ? levelAtSite(offer, unit, a.levels) : null })),
       });
     } catch (err) {
-      setResult({ kind: "error", message: err instanceof Error ? err.message : "That did not go through." });
+      setResult({ kind: "error", message: err instanceof Error ? err.message : "That didn't go through." });
     }
   }
 
@@ -396,7 +396,7 @@ export function H1bLotteryCalculator() {
                 {WEIGHTED_ESTIMATE.citation}
               </a>
               , in effect from {longDate(LOTTERY_RULE.effective)}, read {longDate(LOTTERY_RULE.read)}. DHS worked them out from past petitions assuming
-              employers keep their wages, before any weighted lottery had run; USCIS hasn&apos;t published results by level.
+              employers keep their wages, before any weighted lottery had run. USCIS hasn&apos;t published results by level.
               A person registered by several employers is entered at the lowest level among them.
             </p>
           </FinePrint>

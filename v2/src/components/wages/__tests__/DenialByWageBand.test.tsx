@@ -89,7 +89,7 @@ describe("DenialByWageBand", () => {
   it("states the robust claim and names the peak it actually measured", () => {
     render(<DenialByWageBand byYear={BY_YEAR} pooled={POOLED} />);
     const text = screen.getByText(/broadly falls/i).textContent ?? "";
-    expect(text).toMatch(/does not fall smoothly/i);
+    expect(text).toMatch(/doesn't fall smoothly/i);
     // Today's measured value: $40k to $50k at 7.26%, not the bottom of the
     // range. Pinned literally so a silent data shift is visible.
     expect(text).toContain("$40k to $50k");
@@ -179,7 +179,7 @@ describe("LadderByYear", () => {
         years={[year("2024", 756, 29_120), year("2025", 6_165, 26_000)]}
       />,
     );
-    expect(screen.getByText(/not measuring the same group/i)).toBeTruthy();
+    expect(screen.getByText(/aren't measuring the same group/i)).toBeTruthy();
   });
 
   it("stays quiet when the counts are comparable", () => {

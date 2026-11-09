@@ -126,7 +126,8 @@ export function LcaProfile({
             </ChartTips>{" "}
             <p className="mt-3 text-sm text-muted-foreground">
               Shares of the {formatInt(p.positions)} worker positions requested. These are positions on certified
-              LCAs, not people hired: DOL certifies an LCA before any petition, and many are never used.
+              LCAs. They don&apos;t count people hired, because DOL certifies an LCA before any petition, and many are
+              never used.
             </p>{" "}
             <FinePrint summary="What each box on the form means" className="mt-2">
               <ul className="mt-2 space-y-1.5 text-sm leading-relaxed text-soft">
@@ -166,7 +167,7 @@ export function LcaProfile({
               {leveled > 0
                 ? `Shares of the ${formatInt(leveled)} certified LCAs that named an OES level. `
                 : "None of its certified LCAs named an OES level. "}
-              The form asks for the level only when the employer set the wage from the OES survey itself;{" "}
+              The form asks for the level only when the employer set the wage from the OES survey itself.{" "}
               {formatInt(p.levelBlank)} of {formatInt(p.detailRows)} used another source, such as a DOL wage
               determination or another survey. Level I is entry, Level IV fully competent.
             </p>
@@ -198,8 +199,8 @@ export function LcaProfile({
             <div className="mt-2 space-y-2 text-sm leading-relaxed text-soft">
               <p>
                 <b className="font-bold">H-1B-dependent</b> (20 CFR 655.736(a)): 25 or fewer full-time-equivalent
-                employees in the US and more than 7 H-1B workers; 26 to 50 and more than 12; or 51 or more, with
-                H-1B workers equal to at least 15% of them.
+                employees in the US and more than 7 H-1B workers. Or 26 to 50 employees and more than 12 H-1B workers. Or
+                51 or more employees, with H-1B workers equal to at least 15% of them.
               </p>{" "}
               <p>
                 <b className="font-bold">Willful violator</b> (655.736(f)): DOL or the Justice Department found a

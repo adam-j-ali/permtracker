@@ -35,7 +35,7 @@ export const DATASET_COVERAGE: Readonly<Record<string, string>> = {
   entities:
     "Employers, law firms and occupations ranked from decided cases only.",
   "stage-cohorts":
-    "Filing-month durations over decided cases. How much of each month is still pending comes from the live sweep, not from here.",
+    "Filing-month durations over decided cases. The live sweep supplies how much of each month is still pending.",
   "nvc-timeframes":
     "The National Visa Center's own weekly figures: how far behind it creates cases and reviews documents. Not a wait for any one case, and nothing about the consulate's interview.",
   "perm-pwd-links":
@@ -47,15 +47,15 @@ export const DATASET_COVERAGE: Readonly<Record<string, string>> = {
   "perm-case-status-full":
     "The same live record, re-checked in full rather than only the pending half.",
   "pwd-status":
-    "Live status of prevailing wage requests, pending included. The wage itself is not here; it arrives with the quarterly file.",
+    "Live status of prevailing wage requests, pending included. The wage itself isn't here. It arrives with the quarterly file.",
   "lca-status":
     "Live status of H-1B labor condition applications, pending included.",
   "seasonal-postings":
-    "H-2A and H-2B applications and H-2A job orders DOL accepted, with the wage, workers, work period and worksite, from SeasonalJobs.dol.gov, accepted since February 6, 2024. Not the decision: that is the live status and, later, the quarterly file.",
+    "H-2A and H-2B applications and H-2A job orders DOL accepted, with the wage, workers, work period and worksite, from SeasonalJobs.dol.gov, accepted since February 6, 2024. The decision isn't here. It comes from the live status and, later, the quarterly file.",
   "seasonal-status":
     "Live status of H-2A, H-2B and CW-1 applications, H-2A job orders, and H-2B and CW-1 prevailing wage requests, pending included. No wage or worksite: those come from the quarterly files and SeasonalJobs.",
   "live-recent":
-    "The cases our sweep knows that DOL has not published yet, so they can be found by employer before any file lists them.",
+    "The cases our sweep knows that DOL hasn't published yet, so they can be found by employer before any file lists them.",
   "decisions-observed":
     "Status changes our sweep watched happen, from 26 August 2026 onward. Nothing earlier: DOL publishes a case's current status, never when it changed.",
   "review-stages":
@@ -65,7 +65,7 @@ export const DATASET_COVERAGE: Readonly<Record<string, string>> = {
 
   // --- DOL's own published position ---------------------------------------
   "processing-times":
-    "DOL's published queue position and average determination time. DOL's own figure, not ours.",
+    "DOL's published queue position and average determination time, as DOL computes them.",
 
   // --- other federal sources ----------------------------------------------
   "visa-bulletin":
@@ -73,21 +73,21 @@ export const DATASET_COVERAGE: Readonly<Record<string, string>> = {
   "visa-wait-times":
     "The wait for a NONIMMIGRANT visa interview at each U.S. embassy and consulate, as State's Global Visa Wait Times table prints it each month: the next appointment for visitors, students, petition-based workers (H, L, O, P, Q) and crew, and visitors' average wait. Interview waivers aren't in it, and neither is the immigrant visa (green card) interview.",
   "nvc-waiting-list":
-    "State's yearly count of applicants waiting for an immigrant visa at the National Visa Center, each November 1 since 2016, by category, spouses and children included; consular cases only, not adjustments at USCIS.",
+    "State's yearly count, each November 1 since 2016, of applicants waiting for an immigrant visa at the National Visa Center. It's by category, with spouses and children included. It covers consular cases only, so adjustments at USCIS aren't in it.",
   "visa-annual-limits":
     "The State Department's annual numerical limits and the prior year's usage.",
   "uscis-case-status":
     "USCIS's own case status text and dated history for a receipt number, read from its Case Status API at lookup time and kept twelve months after the last lookup. Nothing is estimated.",
   "i485-inventory":
-    "USCIS's count of pending I-485s by priority date and country. Employment-based only: USCIS does not publish a family-based equivalent.",
+    "USCIS's count of pending I-485s by priority date and country. Employment-based only: USCIS doesn't publish a family-based equivalent.",
   "uscis-i140-counts":
-    "USCIS I-140 receipts, approvals and denials by quarter. A denial here is not a PERM denial: different agency, different stage.",
+    "USCIS I-140 receipts, approvals and denials by quarter. A denial here isn't a PERM denial. It comes from a different agency at a different stage.",
   "uscis-i140-times":
-    "USCIS's published I-140 processing times, which are their own service-centre figures rather than anything measured here.",
+    "USCIS's published I-140 processing times, its own service-centre figures. This site measures none of them.",
   "i140-trends":
-    "I-140 volumes by fiscal quarter and classification, as USCIS publishes them. Counts of filings, not of people waiting.",
+    "I-140 volumes by fiscal quarter and classification, as USCIS publishes them. Counts of filings. They don't count the people waiting.",
   debarments:
-    "Employers and agents DOL has barred, for the period DOL states. Includes bars that have not started yet.",
+    "Employers and agents DOL has barred, for the period DOL states. Includes bars that haven't started yet.",
   "policy-notices":
     "Federal Register rules, proposed rules, notices and presidential documents that touch these programs, with the Register's own dates. Not guidance or internal memos.",
   "policy-notices-oflc":
@@ -97,21 +97,21 @@ export const DATASET_COVERAGE: Readonly<Record<string, string>> = {
   "policy-notices-pi":
     "Today's Federal Register public inspection list, kept by the policy feed's rules on the title: documents the Register files the business day before it publishes them, followed until published or withdrawn. No abstract until publication.",
   "policy-notices-wh":
-    "The White House's presidential actions on an immigration subject, the day they're posted, from its own feed. Replaced by the Federal Register's document once published; nothing on other subjects.",
+    "The White House's presidential actions on an immigration subject, the day they're posted, from its own feed. Replaced by the Federal Register's document once published. Nothing on other subjects.",
   "policy-notices-uscis":
     "USCIS's news releases and alerts on work-based immigration, from its newsroom feed. Fraud cases, naturalization and humanitarian-only items are left out.",
   "policy-comments":
-    "How many comments regulations.gov has posted on each proposed rule still open for comment. Posted, not received: an agency posts a comment after screening it, so the count trails what was sent.",
+    "How many comments regulations.gov has posted on each proposed rule still open for comment. It counts posted comments. An agency posts a comment after screening it, so the count trails what was sent.",
   "policy-notices-congress":
     "Bills and joint resolutions in the current Congress whose titles name a work-visa or employment-based green card subject, with each bill's latest action. Resolutions and bills on other subjects are left out.",
   "policy-notices-courts":
     "Federal court opinions that turn on PERM labor certification, H-1B, H-2A, H-2B, I-140 or employment-based green cards, from CourtListener's archive, with a person named in a caption shown by initials. State courts, criminal cases and petitions for review of removal orders are left out.",
   "policy-notices-dockets":
-    "The filings in a few court cases this site follows by name (scripts/data/court_dockets.json), from CourtListener's RECAP archive: opinions, judgments, rulings on a stay or an injunction, notices of appeal, and the government's status reports and sworn declarations. Each is named by its kind; an entry's own words, which name people, are never shown.",
+    "The filings in a few court cases this site follows by name (scripts/data/court_dockets.json), from CourtListener's RECAP archive: opinions, judgments, rulings on a stay or an injunction, notices of appeal, and the government's status reports and sworn declarations. Each is named by its kind. An entry's own words, which name people, are never shown.",
   "policy-notices-balca":
     "BALCA's decisions as OALJ lists them: every en banc PERM decision, and prevailing wage, H-2A and H-2B appeals decided since October 2024, with a sole proprietor shown by initials. OALJ keeps no list of ordinary PERM panel decisions, and its lists run weeks to months behind.",
   "policy-notices-doj":
-    "The Justice Department's actions against work-visa sponsors since January 2025: Civil Rights Division releases that name H-1B, H-2A, PERM or a job held for a visa worker, the Immigrant and Employee Rights Section's settlements that have no release, and OCAHO cases the government brought against a company IER names. Document-demand settlements and every case about a person are left out.",
+    "The Justice Department's actions against work-visa sponsors since January 2025. They include Civil Rights Division releases that name H-1B, H-2A, PERM or a job held for a visa worker. They also include the Immigrant and Employee Rights Section's settlements that have no release, and OCAHO cases the government brought against a company IER names. Document-demand settlements and every case about a person are left out.",
   "policy-notices-embassies":
     "The visa notices of the 20 U.S. embassies whose posts issued the most employment-based immigrant visas from March 2025 to February 2026, from each embassy's own Visas feed, read in a browser once a day: consular operations updates, interviews paused or resumed, appointments cancelled, and immigrant visa processing. Checklists, scam warnings, health alerts and visitor or student notices are left out, and a feed holds only an embassy's newest ten posts.",
   "policy-notices-state":
@@ -119,25 +119,25 @@ export const DATASET_COVERAGE: Readonly<Record<string, string>> = {
   "policy-notices-uscis-pm":
     "Every Policy Manual alert and technical update on the work-based parts of the manual since 2013, with the sections each one changed.",
   "rule-pipeline-agenda":
-    "Each agency's Unified Agenda listing for USCIS rules and immigration rules from DOL, State and DHS: the stage, the agency's own timetable for its next step as printed, and the abstract, from reginfo.gov's file for the newest edition. The timetable is the agency's plan, not a date this site predicts.",
+    "Each agency's Unified Agenda listing for USCIS rules and immigration rules from DOL, State and DHS: the stage, the agency's own timetable for its next step as printed, and the abstract, from reginfo.gov's file for the newest edition. The timetable is the agency's plan. This site doesn't predict the date.",
   "rule-pipeline":
     "Rules from USCIS, and immigration rules from DOL, State and DHS, from White House review (OIRA's own lists) through public inspection to the Federal Register. A rule OIRA doesn't review appears once it's on public inspection.",
   "whd-cases":
     "The Labor Department's concluded Wage and Hour compliance actions since FY2005, as DOL publishes them: violations, back wages the employer agreed to pay, workers owed and penalties, H-1B, H-2A and H-2B counted apart. Kept here are the cases matched to an employer page by legal name, and every case with an H-1B, H-2A or H-2B finding.",
   "osha-inspections":
-    "OSHA's and the state plans' workplace safety and health inspections opened since October 2016, matched to a PERM sponsor's page by name: why each was opened, when it opened and closed, and the violations cited with their type and penalty, counted as OSHA counts them. An open inspection's citations can still change.",
+    "Workplace safety and health inspections by OSHA and the state plans, opened since October 2016 and matched to a PERM sponsor's page by name. Each shows why it was opened and when it opened and closed. Its violations are listed with their type and penalty, counted as OSHA counts them. An open inspection's citations can still change.",
   "uscis-posted-times":
-    "Every figure USCIS's processing-times page has posted since March 2022, by form, subtype and office, with USCIS's own posting date: the time it took to decide 80% of the cases it decided in the past six months. Copied from USCIS's page each day by an open-source project; checked against a weekly reading of the page itself.",
+    "Every figure USCIS's processing-times page has posted since March 2022, by form, subtype and office, with USCIS's own posting date: the time it took to decide 80% of the cases it decided in the past six months. An open-source project copies USCIS's page each day, and this site checks it against a weekly reading of the page itself.",
   "ppp-loans":
-    "SBA's Paycheck Protection Program loans from 2020 and 2021, as SBA released them (its snapshot of September 30 2024): the amount approved and forgiven and the jobs the borrower reported then. Kept here are loans matched to a PERM sponsor's page by name and city; loans to people (sole proprietors, the self-employed) are never kept.",
+    "SBA's Paycheck Protection Program loans from 2020 and 2021, as SBA released them (its snapshot of September 30 2024): the amount approved and forgiven and the jobs the borrower reported then. Only loans matched to a PERM sponsor's page by name and city are kept. Loans to people (sole proprietors, the self-employed) are never kept.",
   "taa-petitions":
     "DOL's Trade Adjustment Assistance petitions decided from October 2012 to June 2022, when the program stopped: groups of workers DOL certified, or didn't, as losing their jobs to imports or work moved abroad. Kept here are petitions matched to a PERM sponsor's page by name and city, with DOL's own determination codes.",
   "sam-exclusions":
-    "Firms the federal government has excluded from contracts and certain assistance, from SAM.gov's daily public file: the excluding agency, the kind of exclusion and its dates. Kept here are firms matched to a PERM sponsor's page by name and state; people and vessels are never kept.",
+    "Firms the federal government has excluded from contracts and certain assistance, from SAM.gov's daily public file: the excluding agency, the kind of exclusion and its dates. Only firms matched to a PERM sponsor's page by name and state are kept. People and vessels are never kept.",
   "warn-notices":
     "State WARN layoff notices from 47 states and DC, each from the record its state publishes. Arkansas, New Hampshire and Wyoming publish no list.",
   "warn-notices-ca":
-    "California WARN notices, from the state's own spreadsheet. Layoffs the employer announced, not layoffs that happened.",
+    "California WARN notices, from the state's own spreadsheet. A notice records a layoff the employer announced, and it doesn't confirm that the layoff happened.",
   "warn-notices-ny":
     "New York WARN notices, taken from the state's dashboard export rather than its older HTML list.",
   "warn-notices-tx":
@@ -157,7 +157,7 @@ export const DATASET_COVERAGE: Readonly<Record<string, string>> = {
   "warn-notices-fl": "Florida WARN notices from FloridaCommerce's list for each year, since 2019.",
   "warn-notices-ga": "Georgia WARN notices from WorkSource Georgia's list, since 2023, dated by the day each was submitted.",
   "warn-notices-hi":
-    "Hawaii WARN notices since 2020. Notices from August 2026 carry their counts; earlier ones are letters, so they carry the company and date only.",
+    "Hawaii WARN notices since 2020. Notices from August 2026 carry their counts. Earlier ones are letters, so they carry the company and date only.",
   "warn-notices-ia": "Iowa WARN notices from the state's WARN log, since October 2021. An amendment is its own row.",
   "warn-notices-id":
     "Idaho WARN notices from the state's list, since 2019, counting Idaho's share where a notice covers several states.",
@@ -180,12 +180,12 @@ export const DATASET_COVERAGE: Readonly<Record<string, string>> = {
   "warn-notices-nd": "North Dakota WARN notices from Job Service's list, since 2019. The state updates it a few times a year.",
   "warn-notices-ne": "Nebraska WARN notices from the Department of Labor's list, since March 2023.",
   "warn-notices-nj":
-    "New Jersey WARN notices from the state's archive, since 2019. It prints the month a notice was posted, not the day, so the month is shown.",
+    "New Jersey WARN notices from the state's archive, since 2019. It prints only the month a notice was posted, so the month is shown.",
   "warn-notices-oh": "Ohio WARN notices from this year's list on the state's page. Earlier years aren't read.",
   "warn-notices-ok": "Oklahoma WARN notices, since 2019. Oklahoma prints no worker count, so none is shown.",
   "warn-notices-or": "Oregon WARN notices from the state's Rapid Response list, since late 2020.",
   "warn-notices-pa":
-    "Pennsylvania WARN notices, since 2023. The state lists each by the month it was posted, not the day, and a notice for several sites is a row per site.",
+    "Pennsylvania WARN notices, since 2023. The state lists each only by the month it was posted. A notice for several sites is a row per site.",
   "warn-notices-sc": "South Carolina WARN notices from the yearly reports, since 2022. Earlier reports print no notice date.",
   "warn-notices-sd": "South Dakota WARN notices, since 2019, dated by the day the state received each. No layoff date is printed.",
   "warn-notices-tn": "Tennessee WARN notices from the state's current page, dated by the day the state posted each.",
@@ -194,7 +194,7 @@ export const DATASET_COVERAGE: Readonly<Record<string, string>> = {
   "warn-notices-vt": "Vermont WARN notices from the state's job-center search, since 2019. Counts come from each notice's own page, newest first: a run reads the new ones, and the state's weekly read fills the rest, so an older notice can wait up to a week for its count.",
   "warn-notices-wi": "Wisconsin WARN notices, since 2020. Original notices only: the state's updates to a notice aren't read.",
   "warn-notices-mn":
-    "Minnesota WARN notices since 2023 from DEED's list, by the date DEED prints. The list gives no count, so none is shown. When DEED's page turns a script away, the Internet Archive's copy of it is read.",
+    "Minnesota WARN notices since 2023 from DEED's list, by the date DEED prints. The list gives no count, so none is shown. When DEED's page turns a script away, this site reads the Internet Archive's copy instead.",
   "warn-notices-ri":
     "Rhode Island WARN notices from DLT's workbook, since 2019. Where a notice covers several states, Rhode Island's share is kept.",
   "warn-notices-la":
@@ -210,45 +210,45 @@ export const DATASET_COVERAGE: Readonly<Record<string, string>> = {
 
   // --- USCIS quarterly performance workbooks --------------------------------
   "uscis-form-quarters":
-    "Every USCIS form's receipts, approvals, denials, pending count and MEDIAN months to a decision, per quarter, as USCIS publishes them. The median is not the 80th-percentile figure on USCIS's processing-times page.",
+    "Every USCIS form's receipts, approvals, denials, pending count and MEDIAN months to a decision, per quarter, as USCIS publishes them. The median isn't the 80th-percentile figure on USCIS's processing-times page.",
   "uscis-i485-offices":
     "I-485 applications received, approved, denied and pending at each USCIS field office and service center in the quarter, by category. Cells USCIS withholds as too small are left blank, never zero.",
   "uscis-eb-awaiting-visa":
-    "Approved I-140, I-360 and I-526 petitions whose beneficiary is still waiting for a visa number, by preference and country of birth, as of the month USCIS states. Primary beneficiaries only, dependents excluded.",
+    "Approved I-140, I-360 and I-526 petitions whose beneficiary is still waiting for a visa number. They're counted by preference and country of birth, as of the month USCIS states. Primary beneficiaries only, with dependents excluded.",
   "uscis-i140-class-country":
     "I-140 petitions by the fiscal year USCIS received them and their current status, all countries and the top five, with approvals by class. Counted by filing year, so a recent year is mostly still pending.",
   "uscis-rfe":
-    "I-129 petitions USCIS decided each month, by visa, and how many of them had a request for evidence, from FY2015. Initial decisions only, a petition with several RFEs counted once, and no figures for the I-140, the I-485 or any employer.",
+    "I-129 petitions USCIS decided each month from FY2015, by visa, and how many of them had a request for evidence. It covers initial decisions only, and a petition with several RFEs is counted once. There are no figures for the I-140, the I-485 or any employer.",
   // --- ICE SEVIS by the Numbers -------------------------------------------------
   "sevp-top-employers":
-    "The 200 employers with the most F-1 students on OPT or STEM OPT, and on CPT, for each year ICE published a list, under ICE's own employer names. Top 200 only; a student in two programs at one employer is counted in each.",
+    "The 200 employers with the most F-1 students on OPT or STEM OPT, and on CPT, for each year ICE published a list, under ICE's own employer names. Top 200 only. A student in two programs at one employer is counted in each.",
   // --- what a job is, pays and costs where it is (added Oct 5 2026) -----------
   onet:
-    "What O*NET says each occupation is and takes: its description, tasks, Job Zone and the education workers report. A description of the job everywhere, not of any one employer's opening.",
+    "O*NET's account of each occupation: its description, tasks, Job Zone and the education workers report. It describes the job in general. It doesn't describe any one employer's opening.",
   "bls-oews":
-    "What employers report paying everyone in each job, nationally, by state and by metro, from BLS's yearly survey (May of the year named). Citizens and immigrants alike; not PERM offers.",
+    "Pay employers report for everyone in each job, from BLS's yearly survey (May of the year named). It's shown nationally, by state and by metro. It covers citizens and immigrants alike, and it isn't drawn from PERM offers.",
   "bls-projections":
-    "BLS's ten-year projection of each job's employment and yearly openings, and the entry education it calls typical. A projection, not a count.",
+    "BLS's ten-year projection of each job's employment and yearly openings, and the entry education it calls typical. Each figure is a projection.",
   "oflc-wage-levels":
-    "The four prevailing wage levels DOL publishes for every job in every area, each wage year from 2021-22, as DOL's own tables print them. The floors an offer is held to, not what anyone was paid.",
+    "The four prevailing wage levels DOL publishes for every job in every area, each wage year from 2021-22, as DOL's own tables print them. They're the floors an offer is held to. They don't show what anyone was paid.",
   "census-geo":
-    "Where each worksite city sits: its county, metro area and DOL wage area, matched to Census's place and county files. A city Census lists in no single place is left unmatched rather than guessed.",
+    "Where each worksite city sits: its county, metro area and DOL wage area, matched to Census's place and county files. A city Census lists in no single place is left unmatched. This site doesn't guess it.",
   "bea-rpp":
     "BEA's regional price parities: what the same basket costs in a state or metro area against the national level of 100.",
   "visa-issuances":
-    "Immigrant visas State's consulates issued abroad each month, by visa class and by country or consulate. A green card granted inside the United States (adjustment of status at USCIS) is not in it, and for employment categories that is most of them.",
+    "Immigrant visas State's consulates issued abroad each month, by visa class and by country or consulate. A green card granted inside the United States (adjustment of status at USCIS) isn't in it. For employment categories, that's most of them.",
   "niv-issuances":
     "Nonimmigrant visas each US consulate issued each month, by visa class (H-1B, L-1, K-1 fiancé(e), visitors, students and the rest), from State's monthly tables, which State calls preliminary. Visas only: a change of status inside the United States isn't in it, and neither are refusals. Each month is checked against State's own grand total.",
   "visa-refusals":
-    "Visa applications consular officers found ineligible each fiscal year, by ground of the law, and how many findings were overcome, for immigrant and nonimmigrant visas apart, from State's yearly Report of the Visa Office. Worldwide only: State publishes no count by consulate or month. An application can be refused on several grounds, and a refusal overcome in a later year counts in that year.",
+    "Visa applications consular officers found ineligible each fiscal year, by ground of the law, from State's yearly Report of the Visa Office. It also shows how many findings were overcome, with immigrant and nonimmigrant visas kept apart. Worldwide only: State publishes no count by consulate or month. An application can be refused on several grounds, and a refusal overcome in a later year counts in that year.",
   "iv-scheduling":
-    "For each US consulate, the month of documentarily complete cases the National Visa Center is scheduling interviews for, in employment, family preference and immediate relative cases, as State's IV Scheduling Status Tool printed it at each monthly update. It's NVC's paperwork queue: it doesn't show an interview wait, or whether a post is holding interviews. Copied in a browser, since State's site refuses scripts.",
+    "For each US consulate, the month of documentarily complete cases the National Visa Center is scheduling interviews for, as State's IV Scheduling Status Tool printed it at each monthly update. It covers employment, family preference and immediate relative cases. It's NVC's paperwork queue, so it doesn't show an interview wait or whether a post is holding interviews. Copied in a browser, since State's site refuses scripts.",
   // --- USCIS H-1B Employer Data Hub -------------------------------------------
   "uscis-h1b-hub":
-    "H-1B workers USCIS approved and denied per petitioner, by the fiscal year of its FIRST decision, from FY2009. Appeals, revocations and pending petitions are excluded, and the address is the petitioner's mailing address, not where the work is.",
+    "H-1B workers USCIS approved and denied per petitioner from FY2009, by the fiscal year of its FIRST decision. Appeals, revocations and pending petitions are excluded. The address is the petitioner's mailing address, which doesn't show where the work is.",
   // --- Firm page claims ----------------------------------------------------------
   "firm-email-domains":
-    "The email DOMAINS DOL's newest PERM, wage-request and LCA files print beside each law firm, used only to check a claim on the firm's page. Never an address; personal mail and domains shared by many firms left out.",
+    "The email DOMAINS DOL's newest PERM, wage-request and LCA files print beside each law firm, used only to check a claim on the firm's page. Never an address. Personal mail and domains shared by many firms are left out.",
 };
 
 /**

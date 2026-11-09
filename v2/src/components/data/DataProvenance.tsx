@@ -125,10 +125,10 @@ function StaleLine({ r }: { r: DatasetFreshness }) {
       <WarningIcon className="mt-0.5 h-4 w-4 shrink-0 text-data-warn-ink" weight="fill" aria-hidden="true" />{" "}
       <span>
         <b className="font-bold text-data-warn-ink">
-          {label(r.dataset)} has not refreshed{agePhrase(r)}.
+          {label(r.dataset)} hasn&apos;t refreshed{agePhrase(r)}.
         </b>{" "}
-        It should update {r.cadence.toLowerCase()}, so the figures below are the last ones that arrived rather than
-        the current ones. Source: {r.source}
+        It should update {r.cadence.toLowerCase()}, so the figures below are the last ones that arrived and may be
+        out of date. Source: {r.source}
         {r.asOf ? <> · data through {fmt(r.asOf)}</> : null}.
       </span>
     </p>

@@ -116,7 +116,7 @@ export function PriorityDateRetentionCalculator() {
                   A withdrawal on {long(result.r.withdrawal.on)}, {formatInt(result.r.withdrawal.daysAfterApproval)} days after approval
                 </dt>{" "}
                 <dd className={`font-heading text-xl font-bold ${result.r.withdrawal.autoRevokes ? "text-muted-foreground" : ""}`}>
-                  {result.r.withdrawal.autoRevokes ? "Revokes the I-140 automatically" : "Does not revoke the I-140"}
+                  {result.r.withdrawal.autoRevokes ? "Revokes the I-140 automatically" : "Doesn't revoke the I-140"}
                 </dd>
               </div>
             ) : null}{" "}
@@ -127,8 +127,8 @@ export function PriorityDateRetentionCalculator() {
           </dl>{" "}
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
             Retained unless USCIS revoked the approval for fraud, willful misrepresentation, material error, or an invalidated
-            labor certification, which the dates cannot tell. Whether a new job is &ldquo;same or similar&rdquo; is USCIS&apos;s
-            finding on Supplement J, not arithmetic.
+            labor certification, which the dates can&apos;t tell. USCIS decides on Supplement J whether a new job is
+            &ldquo;same or similar&rdquo;, and arithmetic can&apos;t settle it.
           </p>{" "}
           <RuleNotes items={result.r.citations} />
         </div>

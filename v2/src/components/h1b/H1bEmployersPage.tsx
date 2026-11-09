@@ -45,7 +45,7 @@ export const H1B_PATH = "/h1b-employers";
 const FAQS = [
   {
     q: "What's the difference between an LCA and a USCIS approval?",
-    a: "An LCA is the Labor Condition Application DOL certifies before an employer can file an H-1B petition: it fixes the wage and the job's conditions. One LCA can cover several positions, and many are never used for a petition. A USCIS approval is the petition itself, approved. DOL's count shows how much H-1B hiring an employer prepared for; USCIS's shows how many workers it was approved to employ.",
+    a: "An LCA is the Labor Condition Application DOL certifies before an employer can file an H-1B petition: it fixes the wage and the job's conditions. One LCA can cover several positions, and many are never used for a petition. A USCIS approval is the petition itself, approved. DOL's count shows how much H-1B hiring an employer prepared for. USCIS's shows how many workers it was approved to employ.",
   },
   {
     q: "Why does a state show different employers on each ranking?",
@@ -53,7 +53,7 @@ const FAQS = [
   },
   {
     q: "Does a high rank mean the employer will sponsor me?",
-    a: "No. It shows how much H-1B work an employer filed, not who it will hire or sponsor next. Each employer's page shows its green card record, cases waiting with DOL, and any layoff notices or debarment.",
+    a: "No. It shows how much H-1B work an employer filed. It doesn't show who the employer hires or sponsors next. Each employer's page shows its green card record, cases waiting with DOL, and any layoff notices or debarment.",
   },
   {
     q: "What do the marks on a row mean?",
@@ -174,7 +174,7 @@ export async function H1bEmployersPage({ state }: { state: string }) {
         ) : (
           <p className="bg-sage p-5 text-base border-2 border-border">
             The rankings aren&apos;t built yet. They&apos;re made from DOL&apos;s LCA files and USCIS&apos;s Employer
-            Data Hub after each load; the <Link href="/lca-cases" className="link">LCA case search</Link> answers one employer at a time meanwhile.
+            Data Hub after each load. In the meantime, the <Link href="/lca-cases" className="link">LCA case search</Link> answers one employer at a time.
           </p>
         )}
       </section>{" "}
@@ -217,13 +217,13 @@ export async function H1bEmployersPage({ state }: { state: string }) {
         <p>
           DOL&apos;s figures count certified LCAs for the H-1B class only (H-1B1 and E-3 left out), in the fiscal year of
           DOL&apos;s decision, at the worksite&apos;s state. Positions are the workers each LCA covers. Median pay is the
-          middle yearly wage over the employer&apos;s certified LCAs, annualised from the unit DOL printed; an amount that
+          middle yearly wage over the employer&apos;s certified LCAs, annualised from the unit DOL printed. An amount that
           can&apos;t be pay for its unit is left out, and a median of fewer than five filings isn&apos;t shown.
           &quot;Senior roles&quot; is the share at wage level III or IV, over 20 or more leveled LCAs.
         </p>{" "}
         <p>
           USCIS&apos;s figures are the workers it approved and denied on its first decision, all six kinds of petition
-          together, at the petitioner&apos;s state; &quot;new jobs&quot; is new employment alone. Every spelling of an
+          together, at the petitioner&apos;s state. Its &quot;new jobs&quot; figure is new employment alone. Every spelling of an
           employer&apos;s name counts on one page. The newest year runs to the last quarter DOL and USCIS have published.
         </p>{" "}
         <p>

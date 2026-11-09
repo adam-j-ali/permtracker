@@ -242,7 +242,7 @@ export function ConsularReportForm({ post, name, className }: { post: string; na
         Share your interview
       </h3>{" "}
       <p className="mt-2 text-base leading-relaxed text-soft">
-        Had an appointment in {name}, or waiting for one? Add what happened, for any visa. No account, no name, no case
+        Had an appointment in {name}, or waiting for one? Add what happened, for any visa. You don&apos;t need an account, a name or a case
         number.
       </p>
 
@@ -291,7 +291,7 @@ export function ConsularReportForm({ post, name, className }: { post: string; na
                   blank="Not saying"
                   hint={
                     form.category === "family"
-                      ? "F1 a citizen's unmarried children 21 and over, F2A a green card holder's spouse or children under 21, F2B their unmarried children 21 and over, F3 a citizen's married children, F4 a citizen's brothers and sisters."
+                      ? "F1 is a citizen's unmarried children 21 and over. F2A is a green card holder's spouse or children under 21, and F2B their unmarried children 21 and over. F3 is a citizen's married children, and F4 a citizen's brothers and sisters."
                       : "As it appears on the case. Interviews are scheduled category by category."
                   }
                   onChange={(v) => set("line", v)}

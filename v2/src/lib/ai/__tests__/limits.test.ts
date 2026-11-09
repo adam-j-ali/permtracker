@@ -210,8 +210,8 @@ describe('annotateCaseQuery', () => {
 
   it('says when the account itself holds more cases than one search covers', () => {
     const r = annotateCaseQuery({ cases: [1, 2], count: 2, accountTruncated: true });
-    expect(r.note).toMatch(/oldest were not searched/);
-    expect(r._ai_instruction).toMatch(/oldest were not searched/);
+    expect(r.note).toMatch(/oldest weren't searched/);
+    expect(r._ai_instruction).toMatch(/oldest weren't searched/);
   });
 
   it('leaves a complete list, a count-only answer and an error alone', () => {

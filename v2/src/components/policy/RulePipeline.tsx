@@ -267,8 +267,8 @@ export function RulePipeline({
       </p>{" "}
       {ordered.length === 0 ? (
         <p className="mt-6 border-2 border-border bg-tint p-5 text-base">
-          No USCIS rule, and no immigration rule from DOL, State or DHS, is at OIRA or on public inspection today,
-          and none is open for comment.
+          No USCIS rule is at OIRA or on public inspection today, and neither is any immigration rule from DOL, State
+          or DHS. None is open for comment.
         </p>
       ) : (
         <ol className="mt-6 grid gap-6">

@@ -221,7 +221,7 @@ export function WageAcrossAreas({
           </ChartTips>{" "}
           <p className="mt-4 max-w-3xl text-sm text-muted-foreground">
             DOL&apos;s tables for July {load.kind === "ready" && load.wageYear ? `${load.wageYear} to June ${load.wageYear + 1}` : "this year"}, all
-            industries, at 2,080 hours a year. DOL sets a case&apos;s level from the job&apos;s requirements; this shows where a wage would
+            industries, at 2,080 hours a year. DOL sets a case&apos;s level from the job&apos;s requirements. This shows where a wage would
             sit against each area&apos;s four figures.
           </p>
         </>

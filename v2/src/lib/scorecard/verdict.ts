@@ -255,7 +255,7 @@ export function readOurs(
   const now = backtest?.passed?.today;
   if (rate && now && rate.cases >= 100 && rate.missAtLeastDays !== null && now.missAtLeastDays !== null) {
     out.push(
-      `On ${formatInt(rate.cases)} cases DOL's queue had already passed, counting the ones still waiting at the days they're late, our rate rule was at least ${dayWord(rate.missAtLeastDays)} off, against ${dayWord(now.missAtLeastDays)} for answering "today".`,
+      `On ${formatInt(rate.cases)} cases DOL's queue had already passed, our rate rule was at least ${dayWord(rate.missAtLeastDays)} off, against ${dayWord(now.missAtLeastDays)} for answering "today". That counts the ones still waiting at the days they're late.`,
     );
   }
   // The backtest's range check covers thousands of cases; the sample's, dozens.
@@ -426,7 +426,7 @@ export function readSupplyDivision(sd: SupplyDivision | null): string[] {
       ? ` Typical miss: the pace ${monthWord(g.pace.typicalMissMonths)}, the division ${monthWord(g.supply.typicalMissMonths)}.`
       : "";
     out.push(
-      `Dates ${words} past the cutoff that came current (${formatInt(g.pace.reached)} of ${formatInt(g.pace.readers)}): the pace was closer on ${formatInt(pace)}, the division on ${formatInt(supply)}${tie ? `, ${formatInt(tie)} tied` : ""}.${luck}${misses} Still waiting past the estimate: ${formatInt(g.pace.stillWaitingPastEstimate)} by the pace, ${formatInt(g.supply.stillWaitingPastEstimate)} by the division; each becomes a miss once it comes current.`,
+      `Dates ${words} past the cutoff that came current (${formatInt(g.pace.reached)} of ${formatInt(g.pace.readers)}): the pace was closer on ${formatInt(pace)}, the division on ${formatInt(supply)}${tie ? `, ${formatInt(tie)} tied` : ""}.${luck}${misses} Still waiting past the estimate: ${formatInt(g.pace.stillWaitingPastEstimate)} by the pace, ${formatInt(g.supply.stillWaitingPastEstimate)} by the division. Each becomes a miss once it comes current.`,
     );
   }
   return out;

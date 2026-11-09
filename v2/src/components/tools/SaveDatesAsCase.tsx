@@ -24,7 +24,7 @@ const REASONS = [
   },
   {
     Icon: ArrowsClockwiseIcon,
-    text: "Enter a recruitment step and every deadline that hangs on it is worked out again.",
+    text: "Enter a recruitment step and every deadline that hangs on that step is worked out again.",
   },
   {
     Icon: CalendarCheckIcon,

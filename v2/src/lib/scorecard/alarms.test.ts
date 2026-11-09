@@ -87,7 +87,7 @@ describe("scorecardAlarms", () => {
         { label: "The weekly H-2A, H-2B and CW-1 backtest", computedAt: at("2026-10-05") },
         { label: "The weekly wage-request backtest", computedAt: null },
       ]),
-    ).toEqual(["The weekly PERM backtest last ran 12 days ago; it runs weekly."]);
+    ).toEqual(["The weekly PERM backtest last ran 12 days ago, but it runs weekly."]);
   });
 
   it("holds a nightly test to its own clock", () => {
@@ -95,7 +95,7 @@ describe("scorecardAlarms", () => {
     const nightly = (d: string) => [{ label: "The nightly PERM backtest", computedAt: at(d), everyDays: 1 }];
     expect(scorecardAlarms([], "2026-10-08", nightly("2026-10-05"))).toEqual([]);
     expect(scorecardAlarms([], "2026-10-08", nightly("2026-10-04"))).toEqual([
-      "The nightly PERM backtest last ran 4 days ago; it runs every night.",
+      "The nightly PERM backtest last ran 4 days ago, but it runs every night.",
     ]);
   });
 });

@@ -218,7 +218,7 @@ export function SalaryExplorer({
         if (e instanceof DOMException && e.name === "AbortError") return;
         // Say what the reader can do, in the interface's voice. The previous
         // figures stay on screen behind this rather than blanking.
-        setError("Those figures could not be loaded. Change a filter to try again.");
+        setError("Those figures couldn't be loaded. Change a filter to try again.");
       })
       .finally(() => setLoading(false));
     return () => ctl.abort();
@@ -248,7 +248,7 @@ export function SalaryExplorer({
         </h2>{" "}
         <p className="mt-3 text-base leading-relaxed text-muted-foreground">
           Every offered wage in DOL&apos;s disclosure files, filtered. The
-          figures describe the {nounPlural} you select, not the whole corpus.
+          figures describe only the {nounPlural} you select.
         </p>
 
         <div className="mt-6 grid grid-cols-1 gap-4 [&>*]:min-w-0 sm:grid-cols-2 lg:grid-cols-4">
@@ -462,7 +462,7 @@ export function SalaryExplorer({
                     <>
                       {" "}
                       {formatInt(data.below + data.above)} {nounPlural} sit outside this range and are counted
-                      but not drawn, so the axis is not stretched by a handful of outliers.
+                      but not drawn, so the axis isn&apos;t stretched by a handful of outliers.
                     </>
                   ) : null}
                 </p>
@@ -501,7 +501,7 @@ export function SalaryExplorer({
                 <h3 className="font-heading text-xl font-bold">By worksite state</h3>{" "}
                 <p className="mt-2 text-base text-muted-foreground">
                   States with at least {MIN_FOR_MEDIAN} matching {nounPlural}, most first. Each bar runs from the 5th
-                  to the 95th percentile on one shared scale; the dark green mark is the median.
+                  to the 95th percentile on one shared scale, and the dark green mark is the median.
                 </p>
                 {/* THE SPREAD, DRAWN. Fifty-five rows of five numbers each made
                     a reader compare figures column by column; on one scale the

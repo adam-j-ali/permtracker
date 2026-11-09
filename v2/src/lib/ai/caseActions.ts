@@ -769,7 +769,7 @@ export async function prepareCreateCase(params: CreateCaseInput, token: string):
           needsInfo: true,
           changed: false,
           message:
-            `Nothing was created. A new case's stage follows its dates; with these it starts at ${stageWords(preview.caseStatus, preview.progressStatus)}. ` +
+            `Nothing was created. A new case's stage follows its dates, and with these it starts at ${stageWords(preview.caseStatus, preview.progressStatus)}. ` +
             `To start at ${stageWords(wantCase, wantProgress)}, I need ${dateNeededFor(wantCase, wantProgress)}. Ask the person for it, or call createCase with setStageByHand: true if they want the stage set without dates.`,
         },
       };
@@ -855,7 +855,7 @@ async function prepareReopenCase(params: ReopenCaseInput, token: string): Promis
   const c = await readCase(params.caseId, token);
   if (!c) return notFound();
   if (c.caseStatus !== 'closed') {
-    return { kind: 'answer', response: { changed: false, message: `${caseLabel(c)} isn't closed; it's at ${stageWords(c.caseStatus, c.progressStatus)}.` } };
+    return { kind: 'answer', response: { changed: false, message: `${caseLabel(c)} isn't closed. It's at ${stageWords(c.caseStatus, c.progressStatus)}.` } };
   }
   return {
     kind: 'plan',
@@ -967,7 +967,7 @@ async function resolveBulk(
   }
   if (picked.length === 0) return { kind: 'answer', response: { changed: false, message: 'No cases match.' } };
   if (picked.length > BULK_MAX) {
-    return { kind: 'answer', response: { error: `That's ${picked.length} cases; one change can cover ${BULK_MAX} at most.`, suggestion: 'Narrow it with filterByStatus or a selection.' } };
+    return { kind: 'answer', response: { error: `That's ${picked.length} cases, and one change can cover ${BULK_MAX} at most.`, suggestion: 'Narrow it with filterByStatus or a selection.' } };
   }
   return picked;
 }
@@ -1000,7 +1000,7 @@ async function prepareBulkStatus(params: BulkUpdateStatusInput, token: string): 
         ? 'Each keeps everything on it and can be reopened.'
         : reopening
           ? 'Each reopens at the stage its dates support.'
-          : 'Closed cases among them reopen at the stage their dates support; the rest have the stage set by hand and stop following their dates.',
+          : 'Closed cases among them reopen at the stage their dates support. The rest have the stage set by hand and stop following their dates.',
     ],
     permissionType: 'destructive',
   };

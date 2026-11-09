@@ -196,7 +196,7 @@ export const BADGE_DEFS: readonly BadgeDef[] = [
   // ---- DOL queues -------------------------------------------------------
   {
     ...queueMonth("PERM queue", "perm-queue", "/perm-queue",
-      "The filing month DOL's analysts are working through. The single number most people waiting on a PERM want.",
+      "The filing month DOL's analysts are working through, which shows how far the queue has moved.",
       (d) => d.permQueueMonths.analyst, "PERM queue"),
     // DOL's own month while its page prints one; since Oct 31 2026 it doesn't, and the month comes from our
     // daily read of DOL's case index, named as such, like the stage counts.

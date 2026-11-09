@@ -688,7 +688,7 @@ export function PermTimelineEstimator({
                   ? `${rangeNote} The other models are under “How this was worked out” below.`
                   : envelope && envelope.modelCount === 1
                     ? "One model has enough published data to answer for this month."
-                    : `The window comes from ${envelope?.modelCount ?? 0} models on different bases, spread across ${envelope?.spanMonths ?? 0} months. They are never averaged into one number, because the spread is the honest part. Open "How this was worked out" to see each.`}
+                    : `The window comes from ${envelope?.modelCount ?? 0} models on different bases, spread across ${envelope?.spanMonths ?? 0} months. They're never averaged into one number, because the spread is part of the answer. Open "How this was worked out" to see each.`}
               </p>{" "}
               {/* The next steps, right under the answer: hear when DOL reaches
                   this month, or read the case itself, which knows its stage. */}
@@ -897,12 +897,12 @@ export function PermTimelineEstimator({
                   {formatMonth(activeRange.from)} to {formatMonth(activeRange.to)}
                 </b>
                 : those months have decisions in them and aren&apos;t finished.
-                Months above are done, months below have not been reached.
+                Months above are done. Months below haven&apos;t been reached.
               </>
             ) : (
               <>
                 Every filing month, oldest first. Months at the top are done
-                and months at the bottom have not been reached.
+                and months at the bottom haven&apos;t been reached.
               </>
             )}
           </p>
@@ -952,7 +952,7 @@ export function PermTimelineEstimator({
               <span className="font-bold text-soft">Pending counts:</span>{" "}
               {queueSource}. DOL&apos;s own disclosure files carry a decision
               date on every record and no pending rows at all, so a count of
-              what is still in front of you cannot be read from them.
+              what&apos;s still in front of you can&apos;t be read from them.
             </p>
           ) : null}
         </div>

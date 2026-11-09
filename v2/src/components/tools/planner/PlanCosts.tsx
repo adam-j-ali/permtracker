@@ -159,7 +159,7 @@ export function PlanCosts({
             </div>
           </fieldset>{" "}
           <fieldset className="grid grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
-            <legend className="mb-2 text-sm text-soft">No schedule fixes these; each lands on its step&apos;s day</legend>
+            <legend className="mb-2 text-sm text-soft">No schedule fixes these. Each lands on its step&apos;s day</legend>
             {OWN_FIELDS.map((f) => (
               <NumberBox
                 key={f.key}

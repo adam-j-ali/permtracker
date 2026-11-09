@@ -78,7 +78,7 @@ export async function NivByPost({ pages, className }: { pages: ReadonlyMap<strin
     <FigurePlate
       title="H-1B, L-1 and K-1 visas issued, by consulate"
       subject={monthName(month)}
-      caption="Pick a visa. Each bar is one consulate's count in State's newest monthly table; the H-4 and L-2 visas of the families who come along are counted apart. A K-1 fiancé(e) visa is a nonimmigrant visa, so State's scheduling tool above doesn't list it, and this table does."
+      caption="Pick a visa. Each bar is one consulate's count in State's newest monthly table. The H-4 and L-2 visas of the families who come along are counted apart. A K-1 fiancé(e) visa is a nonimmigrant visa, so State's scheduling tool above doesn't list it, and this table does."
       source="U.S. Department of State, monthly nonimmigrant visa issuances by post"
       className={className}
     >
