@@ -389,8 +389,12 @@ export const FOOTER_COLUMNS: readonly FooterColumn[] = [
     pages: named("/perm-case-status", "/perm-case-alerts", "/case-search", "/perm-processing-times", "/visa-bulletin", "/perm-employers", "/perm-attorneys", "/tools", "/calculators"),
   },
   {
+    // The Learn menu, less About (the next column has it), with the corrections log
+    // beside the editorial standards. Read from LEARN_PAGES so the two can't drift.
     title: "Learn",
-    pages: named("/guides", "/blog", "/faq", "/perm-case-statuses", "/glossary", "/methodology", "/editorial-standards", "/changelog/corrections", "/changelog"),
+    pages: LEARN_PAGES.filter((p) => p.href !== "/about").flatMap((p) =>
+      p.href === "/editorial-standards" ? [p, ...named("/changelog/corrections")] : [p],
+    ),
   },
   {
     title: "PERM Tracker",
