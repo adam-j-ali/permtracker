@@ -45,22 +45,31 @@ function Picker({
       setFailed(false);
       return;
     }
+    // Only the answer to what's in the box now is shown: a slower answer to an earlier spelling is dropped.
+    let live = true;
     const t = setTimeout(async () => {
       setBusy(true);
       try {
         const { rows } = await searchEntities("employer", q, { onlyLive: false });
+        if (!live) return;
         setHits(rows.slice(0, 8));
         setSearchedFor(q);
         setFailed(false);
       } catch {
+        if (!live) return;
         setHits([]);
         setSearchedFor("");
         setFailed(true);
       } finally {
-        setBusy(false);
+        if (live) setBusy(false);
       }
     }, 250);
-    return () => clearTimeout(t);
+    return () => {
+      live = false;
+      clearTimeout(t);
+      // A dropped search is no longer running, whatever replaces it.
+      setBusy(false);
+    };
   }, [text, chosen]);
 
   // Nothing published under that spelling: the closest published sponsors,
@@ -112,7 +121,7 @@ function Picker({
               <button
                 type="button"
                 onClick={() => pick({ slug: h.slug, name: h.name })}
-                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-sage"
+                className="flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-sage focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
               >
                 <span className="font-semibold">{h.name}</span>{" "}
                 <span className="shrink-0 font-mono text-sm text-muted-foreground">
