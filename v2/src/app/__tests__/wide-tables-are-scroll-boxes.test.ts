@@ -14,7 +14,7 @@ const WIDE_TABLES = [
   "src/components/data/SevpRowsTable.tsx",
 ];
 
-const PLAIN_BOX = /<div\b[^>]*\boverflow-x-auto\b[^>]*>\s*(?:\{\/\*[\s\S]*?\*\/\}\s*)?<table\b/g;
+const PLAIN_BOX = /<div\b[^>]*\boverflow-x-auto\b[^>]*>\s*(?:\{\/\*[^*]*\*\/\}\s*)?<table\b/g;
 
 describe("wide tables are scroll boxes", () => {
   it("finds a plain sideways box around a table, comment and all", () => {
