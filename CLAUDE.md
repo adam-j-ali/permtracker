@@ -116,6 +116,7 @@ Each was decided once and holds until the owner changes it. The reasons are in t
 - Every employer with filings gets an indexable page, the live-only and no-PERM ones too (Sep 17, Oct 3). Sponsor profiles are ranked part by part, never one score (Oct 4).
 - A removal masks the name and keeps every row ("Law firm 1", a noindex neutral page); each request is the owner's decision (Nov 5, reversing Oct 17).
 - The ETA 9089 expiration is certification + 179 (Sep 29). The PERM range is never wider than 60 days, and the newest measurement is always used, with no fallback on age (Oct 8).
+- Recruitment may begin on the wage determination's own day, but the app keeps the day after on purpose (Nov 9). A denial's 30-day request moves to the next business day off a weekend or holiday, but the app keeps the 30th day on purpose, so it's never later than the real one (Nov 9).
 - A case alert keeps watching for a year after DOL decides (Oct 7). The green card line prints years by default (Sep 26).
 - The API and the MCP server are free: `PAYWALL_ENFORCED` stays unset until billing exists (Oct 8); exports count rows, 20,000 a day on Plus (Oct 10).
 - Nothing is posted or replied to on X or elsewhere for the site without the owner's yes for that post (Oct 11).
