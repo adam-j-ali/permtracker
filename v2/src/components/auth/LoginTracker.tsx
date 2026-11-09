@@ -31,7 +31,7 @@
 import { useEffect, useRef } from "react";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { analytics } from "@/lib/analytics";
+import { analytics, isAnalyticsOff } from "@/lib/analytics";
 import { captureError } from "@/lib/sentry";
 import { LAST_LOGIN_KEY } from "@/components/error/auth-error";
 
@@ -55,6 +55,9 @@ export function LoginTracker() {
   );
 
   // Handle PostHog opt-out for excluded users
+  // The account's flag follows the server: set while the account is excluded or switched off, cleared once it isn't.
+  // It never touches the person's own off for this browser (analytics.visitorOptOut), so clearing it can't turn a
+  // browser back on that the person switched off.
   useEffect(() => {
     if (isExcluded === undefined) return; // Still loading
     if (isExcluded) {
@@ -70,11 +73,18 @@ export function LoginTracker() {
     // Skip all analytics for excluded users
     if (isExcluded) return;
 
+    // A browser switched off by the person (the footer switch, or a Settings
+    // switch-off whose save failed) stays off: the login is still recorded,
+    // but nothing is sent to analytics, not even who signed in.
+    const browserOff = isAnalyticsOff();
+
     // Switch this browser from cookie-free counting to persistence first
     // (analytics.ts), then identify (idempotent) so later events are
     // attributed to the account.
-    analytics.consentForAccount();
-    analytics.identify(profile._id, { name: profile.fullName });
+    if (!browserOff) {
+      analytics.consentForAccount();
+      analytics.identify(profile._id, { name: profile.fullName });
+    }
 
     // Skip login recording + event if already recorded recently (by LoginPageClient)
     const lastLoginStr = localStorage.getItem(LAST_LOGIN_KEY);
@@ -84,7 +94,7 @@ export function LoginTracker() {
     hasFired.current = true;
     localStorage.setItem(LAST_LOGIN_KEY, String(Date.now()));
 
-    analytics.capture("user_logged_in", { auth_method: "oauth_or_password" });
+    if (!browserOff) analytics.capture("user_logged_in", { auth_method: "oauth_or_password" });
 
     recordMyLogin().catch((error) => {
       console.error("[LoginTracker] Failed to record login:", error);
