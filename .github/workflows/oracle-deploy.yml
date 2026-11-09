@@ -35,6 +35,7 @@ on:
       - "**"
       - "!**/*.md"
       - "!v2/scripts/**"
+      - "v2/scripts/data/**"
       - "!v2/workers/**"
       - "!v2/extension/store/**"
       - "!v2/**/__tests__/**"
@@ -375,6 +376,7 @@ jobs:
       # showed one, on every deploy. Prints counts only, never a page, because
       # this log is public. Never fails the deploy; a refusal shows red here.
       - name: Drop Cloudflare's copies of pages a withheld name was on
+        id: withheld_purge
         if: steps.plan.outputs.ship == 'true'
         continue-on-error: true
         env:
@@ -409,3 +411,12 @@ jobs:
       - name: Close the tunnel
         if: always()
         run: pkill -f "18080:127.0.0.1:8080" || true
+
+      # The purge carries on so the rest of the deploy finishes, but a run whose
+      # purge failed ends red: scripts/withhold.py reads the run's result before
+      # anyone is told their name is gone.
+      - name: Fail the run if a withheld name's pages are still in Cloudflare
+        if: steps.withheld_purge.outcome == 'failure'
+        run: |
+          echo "::error::Cloudflare still holds pages a withheld name was on. Rerun: python3 scripts/withhold.py purge"
+          exit 1

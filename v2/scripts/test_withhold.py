@@ -298,6 +298,10 @@ def main() -> int:
     check("$WITHHELD_EMPLOYERS\"" not in build.replace('[ -z "$WITHHELD_EMPLOYERS" ]', ""),
           "and the guard never prints a list", f)
 
+    fail = wf[wf.find("Fail the run if a withheld name's pages are still in Cloudflare"):]
+    check("id: withheld_purge" in step and "steps.withheld_purge.outcome == 'failure'" in fail and "exit 1" in fail,
+          "a failed purge turns the deploy red, so withhold.py never reports a name gone while Cloudflare holds it", f)
+
     print("\nALL PASS" if not f else f"\n{len(f)} FAILURE(S)")
     return 1 if f else 0
 

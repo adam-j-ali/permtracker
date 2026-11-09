@@ -31,6 +31,16 @@ def main() -> int:
     check(dp.plan("push", "", 4, code)[:2] == (True, True), "4 AM is inside it")
     check(dp.plan("push", "", 14, None)[:2] == (True, False), "an unreadable live commit still builds a push")
 
+    # The site imports files from scripts/data, so a change to one alone still builds and ships.
+    v2 = os.path.dirname(HERE)
+    imported = sorted({m for root in ("src", "convex") for dirpath, _, files in os.walk(os.path.join(v2, root))
+                       for f in files if f.endswith((".ts", ".tsx"))
+                       for m in re.findall(r"scripts/data/[A-Za-z0-9_.-]+", open(os.path.join(dirpath, f), errors="replace").read())})
+    check(len(imported) >= 7, f"found the data files the site imports ({len(imported)})")
+    for name in imported:
+        check(dp.site_changes([f"v2/{name}"]) == [f"v2/{name}"], f"a change to v2/{name} counts as a site change")
+    check(dp.site_changes(["v2/scripts/daily_monitor.py"]) == [], "a script beside them still doesn't")
+
     # The night run ships only what changed.
     check(dp.plan("workflow_dispatch", "night", 2, code)[:2] == (True, True), "the night run ships a code change")
     check(dp.plan("workflow_dispatch", "night", 2, docs)[:2] == (False, False), "and builds nothing for scripts and docs")
