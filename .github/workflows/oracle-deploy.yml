@@ -198,7 +198,14 @@ jobs:
           # the build prerenders pages too, so it needs the lists the server has.
           WITHHELD_EMPLOYERS: ${{ secrets.WITHHELD_EMPLOYERS }}
           WITHHELD_FIRMS: ${{ secrets.WITHHELD_FIRMS }}
-        run: pnpm build
+        # A secret that doesn't exist reads as an empty string, and an empty list masks nothing: after a move to a
+        # new repository the build would prerender every withheld name. So an empty list stops the build here.
+        run: |
+          if [ -z "$WITHHELD_EMPLOYERS" ] || [ -z "$WITHHELD_FIRMS" ]; then
+            echo "::error::WITHHELD_EMPLOYERS or WITHHELD_FIRMS is empty; the build would show names withheld at their owner's request"
+            exit 1
+          fi
+          pnpm build
 
       # A placeholder wider than its box on a 320px phone stops saying what the
       # box takes. The audit measures each with the Inter file this build ships,

@@ -340,3 +340,43 @@ describe("DOL's live answers, searches and refusals", () => {
     expect(none.isWithheldQuery("any", "Example Law Group")).toBe(false);
   });
 });
+
+describe("the spellings and rows that slipped past the masker until Nov 9 2026", () => {
+  const more = makeMasker([
+    ...entries,
+    ...parseWithheld("smith-jones-llp|Smith & Jones, LLP|Law firm||4", "firm"),
+    ...parseWithheld("j-q-sample|J Q Sample|Employer||5;societe-sample|Societe Sample|Employer||6;acme-cafe-inc|ACME CAFE, INC.|Employer||7", "employer"),
+  ]);
+
+  it("masks a SAM exclusion row on the neutral page, whatever its own kind column says", () => {
+    const row = { kind: "Prohibition/Restriction", name: "JANE Q EXAMPLE", exclusion_type: "Ineligible" };
+    const { rows } = read("SELECT kind, name, exclusion_type FROM sam_exclusions WHERE slug = ?", [neutralSlug(JANE)], [row]);
+    expect(rows[0]?.name).toBe("Private household employer 1");
+    expect(rows[0]?.exclusion_type).toBe("Ineligible");
+  });
+
+  it("still leaves a row alone when its kind names something that's never an entity", () => {
+    const row = { kind: "occupation", name: "Jane Q Example" };
+    expect(read("SELECT kind, name FROM perm_entities WHERE kind = ?", ["occupation"], [row]).rows[0]).toBe(row);
+  });
+
+  it("finds a name with an ampersand, spelled with the sign or the word", () => {
+    expect(more.scrubText("Matter of Smith & Jones, LLP, decided in 2026")).toBe("Matter of Law firm 4, decided in 2026");
+    expect(more.scrubText("Matter of Smith and Jones LLP")).toBe("Matter of Law firm 4");
+  });
+
+  it("finds a name whose initials print with or without spaces and periods", () => {
+    expect(more.scrubText("Filed by J. Q. Sample last year")).toBe("Filed by Employer 5 last year");
+    expect(more.scrubText("Filed by JQ Sample last year")).toBe("Filed by Employer 5 last year");
+    expect(more.shownName("J. Q. SAMPLE LLC")).toBe("Employer 5");
+  });
+
+  it("matches a name printed with accents the list doesn't have", () => {
+    expect(more.shownName("Société Sample")).toBe("Employer 6");
+  });
+
+  it("reads OSHA's and WHD's establishment and trade names as the employer's", () => {
+    const p = more.prepare("SELECT estab_name, trade_name FROM osha_inspections WHERE state = ?", ["CA"]);
+    expect(more.mask([{ estab_name: "ACME CAFE", trade_name: "Acme Cafe" }], p.ctx)).toEqual([{ estab_name: "Employer 7", trade_name: "Employer 7" }]);
+  });
+});
