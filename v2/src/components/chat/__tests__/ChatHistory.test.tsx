@@ -14,10 +14,13 @@ const many = Array.from({ length: 73 }, (_, i) => ({
 }));
 let list: typeof many | undefined = many;
 
+const mutation = vi.hoisted(() => ({ fn: (() => Promise.resolve(null)) as (...a: unknown[]) => Promise<unknown> }));
 vi.mock('convex/react', () => ({
   useQuery: vi.fn(() => list),
-  useMutation: vi.fn(() => vi.fn()),
+  useMutation: vi.fn(() => (...a: unknown[]) => mutation.fn(...a)),
 }));
+const handleOperationError = vi.fn();
+vi.mock('@/lib/errors', () => ({ handleOperationError: (...a: unknown[]) => handleOperationError(...a) }));
 vi.mock('@/lib/contexts/AuthContext', () => ({
   useAuthContext: () => ({ isSigningOut: false }),
 }));
@@ -98,5 +101,21 @@ describe('ChatHistory', () => {
     expect(screen.getByText('Loading your conversations…')).toBeInTheDocument();
     expect(screen.queryByText('No conversations yet')).not.toBeInTheDocument();
     list = many;
+  });
+
+  it('says so when a delete fails, one conversation or all of them, and starts nothing new', async () => {
+    // Arrange
+    list = many.slice(0, 2);
+    mutation.fn = () => Promise.reject(new Error('offline'));
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const onNewConversation = vi.fn();
+    render(<ChatHistory {...props} onNewConversation={onNewConversation} />);
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: 'Delete conversation Conversation 1' }));
+    fireEvent.click(screen.getByRole('button', { name: /Delete all/ }));
+    // Assert
+    await vi.waitFor(() => expect(handleOperationError).toHaveBeenCalledTimes(2));
+    expect(onNewConversation).not.toHaveBeenCalled();
+    mutation.fn = () => Promise.resolve(null);
   });
 });
