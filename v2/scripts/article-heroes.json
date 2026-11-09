@@ -1408,5 +1408,17 @@
   "credit": "Edward Penfield, April May June 1897 calendar, color lithograph. Library of Congress, Prints and Photographs Division",
   "source": "https://commons.wikimedia.org/wiki/File:April_May_June_1897_calendar_LCCN2015646485.jpg",
   "alt": "The calendar grid of a printed 1897 calendar by Edward Penfield, showing April, May and June, the stretch of the year when a new determination runs for 90 days"
+ },
+ "guides/uscis-congressional-inquiry": {
+  "photo": {
+   "file": "uscis-congressional-inquiry.jpg",
+   "focus": [
+    0.5,
+    0.5
+   ]
+  },
+  "credit": "Photo: Bill Koplitz, FEMA, December 4, 2007 / Wikimedia Commons, public domain",
+  "source": "https://commons.wikimedia.org/wiki/File:FEMA_-_34358_-_US_Capitol_from_the_West_Side.jpg",
+  "alt": "The U.S. Capitol's dome and columned west front, seen from below under a clear blue sky"
  }
 }
