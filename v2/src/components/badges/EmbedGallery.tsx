@@ -97,7 +97,13 @@ export function EmbedGallery({ origin }: { origin: string }) {
 function Snippet({ html }: { html: string }) {
   return (
     <div className="mt-3 flex items-start gap-2">
-      <pre className="min-w-0 flex-1 overflow-x-auto bg-tint p-2 text-sm border-2 border-border" translate="no">
+      <pre
+        role="region"
+        aria-label="Embed code"
+        tabIndex={0}
+        className="min-w-0 flex-1 overflow-x-auto bg-tint p-2 text-sm border-2 border-border"
+        translate="no"
+      >
         <code>{html}</code>
       </pre>{" "}
       <CopyButton text={html} />
