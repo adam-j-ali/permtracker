@@ -77,14 +77,8 @@ export function PwdDateEstimate({
               today={today}
               leftWord="to go"
               emptyHint="Pick the day it was filed"
-              marks={
-                reached
-                  ? []
-                  : [
-                      { at: dated.earliest, label: "Earliest" },
-                      { at: dated.latest, label: "Latest" },
-                    ]
-              }
+              // The ruler ends at the estimate, so only the earliest date sits on it; the latest is in the sentence above.
+              marks={reached ? [] : [{ at: dated.earliest, label: "Earliest" }]}
             />
           </>
         ) : (
