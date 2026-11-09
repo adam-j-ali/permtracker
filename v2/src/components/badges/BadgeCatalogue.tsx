@@ -213,16 +213,20 @@ function MatrixGroup({
                       <button
                         type="button"
                         aria-pressed={on}
-                        aria-label={`${cell.label}${on ? ", picked" : ""}`}
                         onClick={() => setPicked(cell.kind)}
                         className={
                           `flex min-h-11 w-full items-center justify-center border-2 px-1.5 py-2 [&_svg]:h-auto [&_svg]:max-w-full border-border ${ground} ` +
                           (on ? "border-primary outline outline-2 outline-offset-2 outline-primary" : "border-border")
                         }
-                        /* Our own string from the renderer; the trailing space
-                           keeps one cell's words off the next. */
-                        dangerouslySetInnerHTML={{ __html: `${cv.svg} ` }}
-                      />{" "}
+                      >
+                        {/* The button is named by its label alone, and the
+                            badge's own words stay out of the name: a name that
+                            leaves out visible text fails WCAG 2.5.3. */}
+                        <span className="sr-only">{`${cell.label} `}</span>
+                        {/* Our own string from the renderer; the trailing space
+                            keeps one cell's words off the next. */}
+                        <span aria-hidden="true" className="contents" dangerouslySetInnerHTML={{ __html: `${cv.svg} ` }} />
+                      </button>{" "}
                     </td>
                   );
                 })}
@@ -233,7 +237,12 @@ function MatrixGroup({
       </div>{" "}
       <div className="flex flex-col gap-2 border-t-2 border-border p-4 sm:flex-row sm:items-stretch [&>*]:min-w-0">
         <p className="shrink-0 self-center font-heading text-base font-bold sm:w-40">{row.label}</p>{" "}
-        <pre className="flex-1 overflow-x-auto whitespace-nowrap bg-tint px-3 py-2.5 font-mono text-sm leading-relaxed border-2 border-border">
+        <pre
+          role="region"
+          aria-label={`${row.label} code`}
+          tabIndex={0}
+          className="flex-1 overflow-x-auto whitespace-nowrap bg-tint px-3 py-2.5 font-mono text-sm leading-relaxed border-2 border-border"
+        >
           <code>{code}</code>
         </pre>{" "}
         <CopyButton text={code} />
@@ -347,7 +356,7 @@ export function BadgeCatalogue({ rows, origin }: { rows: BadgeRow[]; origin: str
                   <li className="flex flex-col bg-tint">
                     <div
                       className={
-                        "flex min-h-[4.5rem] items-center justify-center overflow-x-auto border-b-2 border-border px-4 py-4 " +
+                        "flex min-h-[4.5rem] items-center justify-center border-b-2 border-border px-4 py-4 [&_svg]:h-auto [&_svg]:max-w-full " +
                         (theme === "dark" ? "bg-black" : "bg-white")
                       }
                       /* Our own string from the renderer, which escapes its
@@ -372,7 +381,12 @@ export function BadgeCatalogue({ rows, origin }: { rows: BadgeRow[]; origin: str
                         </p>
                       ) : null}{" "}
                       <div className="mt-auto flex items-stretch gap-2 pt-4 [&>*]:min-w-0">
-                        <pre className="flex-1 overflow-x-auto whitespace-nowrap bg-tint px-3 py-2.5 font-mono text-sm leading-relaxed border-2 border-border">
+                        <pre
+                          role="region"
+                          aria-label={`${row.label} code`}
+                          tabIndex={0}
+                          className="flex-1 overflow-x-auto whitespace-nowrap bg-tint px-3 py-2.5 font-mono text-sm leading-relaxed border-2 border-border"
+                        >
                           <code>{code}</code>
                         </pre>{" "}
                         <CopyButton text={code} />
