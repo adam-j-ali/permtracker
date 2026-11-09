@@ -156,6 +156,18 @@ describe("the page", () => {
     expect(row!.clicks![row!.clicks!.length - 1]!.scanner).toBeUndefined();
   });
 
+  // The burst's first open looked like a person until the rest arrived: the review it queued goes when they do.
+  it("takes back the waiting review a scanner's first open queued", async () => {
+    const t = createTestContext();
+    await watching(t);
+    await open(t, 1);
+    const queued = await t.run((ctx) => ctx.db.query("siteReviews").collect());
+    expect(queued.filter((r) => r.source === "alert" && r.status === "pending")).toHaveLength(1);
+    for (const score of [2, 3, 4, 5]) await open(t, score);
+    const left = await t.run((ctx) => ctx.db.query("siteReviews").collect());
+    expect(left.filter((r) => r.source === "alert")).toHaveLength(0);
+  });
+
   it("never counts an open from a fetcher's browser line, or from none", async () => {
     for (const browser of ["python-requests/2.32.3", "Mozilla/5.0 (compatible; Barracuda Sentinel)", null]) {
       const t = createTestContext();
