@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { EventProps } from "react-big-calendar";
@@ -54,4 +54,19 @@ describe("a deadline on the calendar grid", () => {
     expect(screen.queryByText("eta9089")).not.toBeInTheDocument();
     expect(screen.queryByText("Progress")).not.toBeInTheDocument();
   });
+
+  it("lets a key press reach the page's own shortcuts while it has focus", async () => {
+    // Arrange: a document-level shortcut, like the app search's Cmd or Ctrl+K
+    const user = userEvent.setup();
+    const onKey = vi.fn();
+    document.addEventListener("keydown", onKey);
+    render(<CalendarEvent {...props} />);
+    await user.tab();
+    // Act
+    await user.keyboard("{Control>}k{/Control}");
+    // Assert: the k itself reached the page, not only the Control key's own press
+    expect(onKey.mock.calls.some(([e]) => (e as KeyboardEvent).key === "k" && (e as KeyboardEvent).ctrlKey)).toBe(true);
+    document.removeEventListener("keydown", onKey);
+  });
 });
+

@@ -67,7 +67,7 @@ interface EventPillProps extends Omit<React.AnchorHTMLAttributes<HTMLAnchorEleme
   title: string;
 }
 
-/** A link to the case, so a keyboard reaches it (the grid's own event box takes no focus) and it opens in a new tab. */
+/** A link to the case, so a keyboard reaches it (the grid's own event box takes no focus). */
 const EventPill = forwardRef<HTMLAnchorElement, EventPillProps>(({ href, color, urgent, title, style, className, ...rest }, ref) => (
   <Link
     ref={ref}
@@ -93,9 +93,8 @@ export function CalendarEvent({ event }: CalendarEventProps) {
             urgent={isUrgent(event)}
             title={event.title}
             aria-label={`${event.title}, ${countdownWords(event.daysUntil)}`}
-            // The grid's own handlers would also select the event; the link alone opens the case.
+            // The grid's own click handler would also select the event; the link alone opens the case.
             onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
           />
         </TooltipTrigger>
         <TooltipContent side="top" sideOffset={8} collisionPadding={10} className="overflow-hidden p-0 shadow-hard">
