@@ -1767,9 +1767,13 @@ export const togglePinned = mutation({
 /**
  * Turn the DOL live-status watch on or off for one saved case.
  *
- * `watchEnabled` absent means on, so this only ever writes `false` or clears
- * back to `true`. It never touches `caseStatus`/`progressStatus`. The 5-minute
- * sweep (convex/appCaseWatch.ts) stops reading a case whose watch is off.
+ * `watchEnabled` absent means on; this writes `true` or `false`. It never
+ * touches `caseStatus`/`progressStatus`. The 5-minute sweep
+ * (convex/appCaseWatch.ts) stops reading a case whose watch is off.
+ *
+ * A setting, not an edit, so it leaves `updatedAt` alone, as seedLiveStatus
+ * does: a bump would refuse a waiting chat card as "the case changed" and
+ * float the case to the top of recent activity.
  */
 export const setWatchEnabled = mutation({
   args: {
@@ -1781,7 +1785,7 @@ export const setWatchEnabled = mutation({
     const caseDoc = await ctx.db.get(args.id);
     await verifyOwnership(ctx, caseDoc, "case");
     if (caseDoc!.deletedAt !== undefined) throw new ConvexError("Cannot update deleted case");
-    await ctx.db.patch(args.id, { watchEnabled: args.enabled, updatedAt: Date.now() });
+    await ctx.db.patch(args.id, { watchEnabled: args.enabled });
     return args.enabled;
   },
 });
