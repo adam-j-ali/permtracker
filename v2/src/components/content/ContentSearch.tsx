@@ -24,11 +24,12 @@ export default function ContentSearch({
     <div className="relative">
       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <input
-        type="text"
+        type="search"
+        aria-label="Search articles"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full min-w-0 border-2 border-input bg-card py-2.5 pl-10 pr-12 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:border-primary focus:shadow-hard-sm"
+        className="w-full min-w-0 border-2 border-input bg-card py-2.5 pl-10 pr-12 text-base transition-colors [&::-webkit-search-cancel-button]:appearance-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:border-primary focus:shadow-hard-sm"
       />
       {value && (
           <button
