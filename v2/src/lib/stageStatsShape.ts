@@ -51,6 +51,8 @@ export interface StageDuration {
 export interface StageStats {
   asOf: string;
   source: string;
+  /** The first day a move or a stage entry is counted from: the day after the record's catch-up. Older docs lack it. */
+  since?: string;
   stages: StageStat[];
   exits: StageMove[];
   durations?: StageDuration[];

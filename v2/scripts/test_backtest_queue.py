@@ -5,7 +5,9 @@ import pathlib, sys
 from datetime import date
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from datetime import datetime, timedelta
-from backtest_queue import (ET, HORIZON_BUCKETS, MAX_BAND_DAYS, ATTORNEY_SLOW_DAYS, bound_range, rfi_clock, rfi_dates, survival_pct, RANGE_MIN_DECIDED, RANGE_ORIGINS_KEPT, Record, band, coverage,
+from lib_sqlite_shim import SqliteTurso
+import ingest_case_status_direct as core
+from backtest_queue import (rfi_followups, ET, HORIZON_BUCKETS, MAX_BAND_DAYS, ATTORNEY_SLOW_DAYS, bound_range, rfi_clock, rfi_dates, survival_pct, RANGE_MIN_DECIDED, RANGE_ORIGINS_KEPT, Record, band, coverage,
                             days_in_month, is_final_status, near_set, passed_section, predict, range_model,
                             range_samples, rival_c, score, score_floor, served_coverage, served_range,
                             straggler_rate)
@@ -236,6 +238,34 @@ lo, day, hi = rfi_dates(date(2026, 10, 1), clk)
 check(lo <= day <= hi and (day - date(2026, 10, 1)).days == 31 + clk["afterLeaveDays"]["p50"], "the date is RFI day + the two medians")
 lo2, _, hi2 = rfi_dates(date(2026, 10, 1), thin)
 check((hi2 - date(2026, 10, 1)).days == 31 + ATTORNEY_SLOW_DAYS, "unmeasured, the late end is the 30 days plus the attorney's two weeks")
+
+# ---- which RFIs the clock follows: none first seen during the sweep's catch-up (Nov 9 2026) ----
+shim = SqliteTurso()
+shim.conn.execute("""CREATE TABLE perm_case_events (case_number TEXT NOT NULL, changed_at INTEGER NOT NULL,
+    from_status TEXT NOT NULL, to_status TEXT NOT NULL, to_final INTEGER NOT NULL, source TEXT NOT NULL,
+    PRIMARY KEY (case_number, changed_at))""")
+for cn, d, frm, to, fin in [
+    ("G-A", date(2026, 8, 28), "ANALYST REVIEW", "RFI ISSUED", 0),   # first seen at an RFI in the catch-up
+    ("G-A", date(2026, 9, 20), "RFI ISSUED", "ANALYST REVIEW", 0),
+    ("G-B", date(2026, 8, 29), "ANALYST REVIEW", "RFI ISSUED", 0),   # the same, then a second RFI we did watch
+    ("G-B", date(2026, 9, 5), "RFI ISSUED", "ANALYST REVIEW", 0),
+    ("G-B", date(2026, 9, 15), "ANALYST REVIEW", "RFI ISSUED", 0),
+    ("G-C", date(2026, 8, 30), "ANALYST REVIEW", "RFI ISSUED", 0),   # the first day that counts
+    ("G-C", date(2026, 9, 30), "RFI ISSUED", "ANALYST REVIEW", 0),
+    ("G-C", date(2026, 10, 5), "ANALYST REVIEW", "CERTIFIED", 1),
+]:
+    shim.conn.execute("INSERT INTO perm_case_events VALUES (?, ?, ?, ?, ?, ?)", [cn, ms(d), frm, to, fin, core.SOURCE])
+shim.conn.commit()
+followed, since = rfi_followups(shim)
+by_case = {f["cn"]: f for f in followed}
+check(sorted(by_case) == ["G-B", "G-C"], f"an RFI first seen in the catch-up isn't followed: {sorted(by_case)}")
+check(by_case.get("G-B", {}).get("entered") == date(2026, 9, 15), "a later RFI on the same case is followed from its own day")
+check(by_case.get("G-C", {}).get("entered") == date(2026, 8, 30) and by_case.get("G-C", {}).get("left") == date(2026, 9, 30)
+      and by_case.get("G-C", {}).get("decided") == date(2026, 10, 5), "the day after the catch-up counts, with its exit and decision")
+check(since == date(2026, 8, 30), f"the clock says the day it watches from: {since}")
+bare = SqliteTurso()
+bare.conn.execute("""CREATE TABLE perm_case_events (case_number TEXT, changed_at INTEGER, from_status TEXT, to_status TEXT, to_final INTEGER, source TEXT)""")
+check(rfi_followups(bare) == ([], None), "no RFI on record: nothing followed, and no day to watch from")
 
 print(f"\n{len(fails)} failure(s)")
 sys.exit(1 if fails else 0)

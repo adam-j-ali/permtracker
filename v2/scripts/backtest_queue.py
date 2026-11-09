@@ -658,8 +658,9 @@ RFI_MIN_ELIGIBLE = 50
 
 
 def rfi_followups(db: Database) -> tuple[list[dict], date | None]:
-    """Each case watched entering RFI (after the log's first day, so the entry is
-    real): when it entered, when it left and to what, when DOL decided it."""
+    """Each case watched entering RFI (after the sweep's catch-up, `c.HISTORY_FROM`, so the
+    entry is real): when it entered, when it left and to what, when DOL decided it. With it comes
+    the first day an entry counts from."""
     rows = query_rows(
         db,
         "SELECT case_number, from_status, to_status, to_final, changed_at FROM perm_case_events "
@@ -667,16 +668,16 @@ def rfi_followups(db: Database) -> tuple[list[dict], date | None]:
         "ORDER BY changed_at",
         [c.SOURCE, c.SOURCE, RFI],
     )
-    first = query_rows(db, "SELECT MIN(changed_at) FROM perm_case_events WHERE source = ?", [c.SOURCE])
-    if not first or first[0][0] is None:
+    if not rows:
         return [], None
-    log_day = datetime.fromtimestamp(int(first[0][0]) / 1000, ET).date()
+    # A change seen through this day is the sweep's first sighting of the case, never a dated move.
+    catch_up = date.fromisoformat(c.HISTORY_FROM)
     ev: dict[str, list] = collections.defaultdict(list)
     for cn, fr, to, tf, at in rows:
         ev[cn].append((datetime.fromtimestamp(int(at) / 1000, ET).date(), (fr or "").upper(), (to or "").upper(), int(tf or 0)))
     out = []
     for cn, es in ev.items():
-        i = next((k for k, e in enumerate(es) if e[2] == RFI and e[1] != RFI and e[0] > log_day), None)
+        i = next((k for k, e in enumerate(es) if e[2] == RFI and e[1] != RFI and e[0] > catch_up), None)
         if i is None:
             continue
         entered = es[i][0]
@@ -684,7 +685,7 @@ def rfi_followups(db: Database) -> tuple[list[dict], date | None]:
         dec = next(((e[0], e[2]) for e in es[i + 1:] if e[3] and not is_final_status(e[1])), None)
         out.append({"cn": cn, "entered": entered, "left": left[0] if left else None, "leftTo": left[1] if left else None,
                     "decided": dec[0] if dec else None, "decidedTo": dec[1] if dec else None})
-    return out, log_day
+    return out, date.fromisoformat(c.WATCHED_FROM)
 
 
 def survival_pct(pairs: list[tuple[date, date | None]], asof: date, p: int) -> int | None:
