@@ -19,6 +19,7 @@ import {
   PERIODS,
   periodTotal,
   PROGRAM_NAMES,
+  RANGE_MAX_DAYS,
   shiftDay,
   shortDay,
   shortMonth,
@@ -60,7 +61,10 @@ export function FilingsExplorer({ asOf, windowFrom, programs }: { asOf: string; 
   const day = (v: string | null) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
   const to = custom ? (day(params.get("to")) ?? asOf) : asOf;
   const fromAsked = custom ? (day(params.get("from")) ?? shiftDay(to, -29)) : shiftDay(asOf, -((preset?.days ?? 30) - 1));
-  const from = fromAsked < FILINGS_FROM ? FILINGS_FROM : fromAsked > to ? to : fromAsked;
+  // The route serves RANGE_MAX_DAYS at most, first day and last counted, so From goes back no further than that.
+  const reach = shiftDay(to, -(RANGE_MAX_DAYS - 1));
+  const earliest = reach < FILINGS_FROM ? FILINGS_FROM : reach;
+  const from = fromAsked < earliest ? earliest : fromAsked > to ? to : fromAsked;
 
   // A period older than the page's own window is asked for; everything else is already here.
   const older = from < windowFrom;
@@ -147,7 +151,7 @@ export function FilingsExplorer({ asOf, windowFrom, programs }: { asOf: string; 
             <input
               type="date"
               name="from"
-              min={FILINGS_FROM}
+              min={earliest}
               max={asOf}
               value={from}
               onChange={(e) => e.target.value && setPeriod({ from: e.target.value })}
