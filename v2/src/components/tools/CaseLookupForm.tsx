@@ -213,16 +213,21 @@ function NoNumber({
   const panelId = useId();
   return (
     <div className="mt-2 text-sm text-muted-foreground">
-      <p>
-        Don&apos;t have the number?{" "}
-        <button type="button" aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((o) => !o)} className="link text-left">
+      {/* Two ways in, each its own full-height target: set in one sentence they sat on touching lines on a phone. */}
+      <p className="flex flex-wrap items-center gap-x-5">
+        <span>Don&apos;t have the number?</span>{" "}
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((o) => !o)}
+          className="link inline-flex min-h-11 items-center text-left"
+        >
           Find it by employer and filing date
-        </button>
-        .{" "}
-        <Link href={searchHref} className="link">
+        </button>{" "}
+        <Link href={searchHref} className="link inline-flex min-h-11 items-center">
           {searchLabel}
         </Link>
-        .
       </p>{" "}
       <div id={panelId} hidden={!open}>
         {open ? (

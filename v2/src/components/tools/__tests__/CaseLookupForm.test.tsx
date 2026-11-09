@@ -30,11 +30,11 @@ describe("CaseLookupForm", () => {
     const { container } = render(<CaseLookupForm source="faq" />);
     const opener = screen.getByRole("button", { name: "Find it by employer and filing date" });
     expect(opener).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("heading", { name: "Find your case without the number" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Find your case without the number" })).toBeNull();
 
     fireEvent.click(opener);
     expect(opener).toHaveAttribute("aria-expanded", "true");
-    const heading = await screen.findByRole("heading", { name: "Find your case without the number" });
+    const heading = await screen.findByRole("region", { name: "Find your case without the number" });
     // Its boxes are never sent with the number, and Enter in them submits nothing.
     expect(container.querySelector("form")?.contains(heading)).toBe(false);
     expect(container.querySelector("form")?.querySelectorAll("input")).toHaveLength(1);
@@ -42,7 +42,7 @@ describe("CaseLookupForm", () => {
 
     fireEvent.click(opener);
     expect(opener).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("heading", { name: "Find your case without the number" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Find your case without the number" })).toBeNull();
   });
 
   it("opens the finder with the employer's name on that employer's page", async () => {
@@ -63,6 +63,15 @@ describe("CaseLookupForm", () => {
     render(<CaseLookupForm finderProgram="lca" />);
     fireEvent.click(screen.getByRole("button", { name: "Find it by employer and filing date" }));
     expect(await screen.findByRole("button", { name: "H-1B LCA" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("gives each way in without the number its own full-height target", () => {
+    render(<CaseLookupForm />);
+    // In one sentence the two sat on touching lines on a phone, and the deploy's phone sweep refuses a 20px target.
+    const opener = screen.getByRole("button", { name: "Find it by employer and filing date" });
+    const search = opener.parentElement!.querySelector("a")!;
+    for (const way of [opener, search]) expect(way.className).toMatch(/\bmin-h-11\b/);
+    expect(opener.parentElement!.textContent).toMatch(/number\? Find it by employer and filing date \S/);
   });
 
   it("leaves the whole no-number line off where its host says so", () => {

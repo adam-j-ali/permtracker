@@ -22,6 +22,7 @@ import {
 } from "@/lib/perm";
 import type { ValidationState } from "@/hooks/useDateFieldValidation";
 import { CharLimit } from "@/components/ui/char-limit";
+import { DolNumberFinder } from "@/components/forms/DolNumberFinder";
 
 // ============================================================================
 // TYPES
@@ -414,6 +415,11 @@ export function ETA9089Section(props: ETA9089SectionProps) {
               />
             </CharLimit>
           </FormField>
+          {values.eta9089CaseNumber ? null : (
+            <div className="md:col-span-2">
+              <DolNumberFinder program="perm" day={values.eta9089FilingDate} onPick={(n) => onChange("eta9089CaseNumber", n)} />
+            </div>
+          )}
         </div>
 
         {/* ========== WARNINGS ========== */}
