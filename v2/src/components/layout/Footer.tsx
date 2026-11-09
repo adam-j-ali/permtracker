@@ -24,6 +24,8 @@ import {
   FacebookLogoIcon,
   InstagramLogoIcon,
   LinkedinLogoIcon,
+  ThreadsLogoIcon,
+  TiktokLogoIcon,
   XLogoIcon,
   YoutubeLogoIcon,
 } from "@phosphor-icons/react";
@@ -40,6 +42,8 @@ const SOCIAL_ICONS = {
   youtube: YoutubeLogoIcon,
   facebook: FacebookLogoIcon,
   instagram: InstagramLogoIcon,
+  threads: ThreadsLogoIcon,
+  tiktok: TiktokLogoIcon,
 } as const;
 
 const LINK = "text-soft transition-colors hover:text-foreground";

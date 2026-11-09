@@ -60,6 +60,8 @@ import {
   LINKEDIN_SABRINA_URL,
   MEDIUM_PROFILE_URL,
   PRODUCT_HUNT_URL,
+  THREADS_URL,
+  TIKTOK_URL,
   X_PROFILE_URL,
   YOUTUBE_URL,
 } from "@/lib/constants/externalLinks";
@@ -183,6 +185,8 @@ const ELSEWHERE = [
   { href: YOUTUBE_URL, label: "YouTube" },
   { href: FACEBOOK_URL, label: "Facebook" },
   { href: INSTAGRAM_URL, label: "Instagram" },
+  { href: THREADS_URL, label: "Threads" },
+  { href: TIKTOK_URL, label: "TikTok" },
   { href: CRUNCHBASE_URL, label: "Crunchbase" },
   { href: MEDIUM_PROFILE_URL, label: "Medium" },
   { href: PRODUCT_HUNT_URL, label: "Product Hunt" },

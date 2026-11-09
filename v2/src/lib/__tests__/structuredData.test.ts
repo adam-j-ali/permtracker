@@ -147,8 +147,9 @@ describe("getOrganizationSchema", () => {
     // own, since the earlier URLs carried a personal handle (site owner's
     // decision, 2026-09-07). The brand's LinkedIn page, X and Bluesky accounts
     // are brand-owned (Nov 8 2026), and so are the YouTube channel and the
-    // Facebook Page, the Instagram account and the Crunchbase company page.
-    expect(schema.sameAs).toHaveLength(9);
+    // Facebook Page, the Instagram, Threads and TikTok accounts and the
+    // Crunchbase company page.
+    expect(schema.sameAs).toHaveLength(11);
     for (const u of schema.sameAs) {
       expect(u).not.toMatch(/linkedin\.com\/in\/|github\.com|twitter\.com|x\.com\/(?!permtracker$)/);
     }
