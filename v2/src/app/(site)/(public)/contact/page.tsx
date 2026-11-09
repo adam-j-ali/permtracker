@@ -8,7 +8,7 @@
 
 import type { Metadata } from "next";
 import { withSocialCard } from "@/lib/socialCard";
-import { BugIcon, ChatTextIcon, EnvelopeIcon as Mail } from "@phosphor-icons/react/ssr";
+import { ArrowLeftIcon, BugIcon, ChatTextIcon, EnvelopeIcon as Mail } from "@phosphor-icons/react/ssr";
 import Link from "next/link";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { ContactForm } from "./ContactForm";
@@ -174,9 +174,10 @@ export default function ContactPage() {
       <div className="mt-10 text-center">
         <Link
           href="/"
-          className="inline-flex min-h-11 items-center underline-offset-4 hover:underline text-muted-foreground text-sm"
+          className="inline-flex min-h-11 items-center gap-1.5 underline-offset-4 hover:underline text-muted-foreground text-sm"
         >
-          &larr; Back to Home
+          <ArrowLeftIcon aria-hidden="true" weight="bold" className="size-4" />
+          Back to Home
         </Link>
       </div>
     </div>
