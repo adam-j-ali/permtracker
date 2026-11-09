@@ -1396,5 +1396,17 @@
   "credit": "John Carlin, account book, 1835 to 1856. The Metropolitan Museum of Art, via Wikimedia Commons, CC0",
   "source": "https://commons.wikimedia.org/wiki/File:Account_Book_Ledger_MET_DP214203.jpg",
   "alt": "An account book from the 1830s open to two pages of dated, handwritten entries in ruled columns, kept by the painter John Carlin"
+ },
+ "guides/why-prevailing-wage-ends-june-30": {
+  "photo": {
+   "file": "why-prevailing-wage-ends-june-30.jpg",
+   "focus": [
+    0.5,
+    0.85
+   ]
+  },
+  "credit": "Edward Penfield, April May June 1897 calendar, color lithograph. Library of Congress, Prints and Photographs Division",
+  "source": "https://commons.wikimedia.org/wiki/File:April_May_June_1897_calendar_LCCN2015646485.jpg",
+  "alt": "The calendar grid of a printed 1897 calendar by Edward Penfield, showing April, May and June, the stretch of the year when a new determination runs for 90 days"
  }
 }
