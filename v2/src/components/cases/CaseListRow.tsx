@@ -66,11 +66,11 @@ export const CaseListRow = memo(function CaseListRow({
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-2 truncate font-semibold" title={c.employerName}>
           {selectionMode ? (
-            <button type="button" onClick={() => onSelect?.(c._id)} className="truncate text-left after:absolute after:inset-0 focus-visible:outline-none">
+            <button type="button" onClick={() => onSelect?.(c._id)} className="truncate text-left after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring">
               {c.employerName}
             </button>
           ) : (
-            <Link href={`/cases/${c._id}`} className="truncate after:absolute after:inset-0 hover:text-primary-text focus-visible:outline-none">
+            <Link href={`/cases/${c._id}`} className="truncate after:absolute after:inset-0 hover:text-primary-text focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring">
               {c.employerName}
             </Link>
           )}

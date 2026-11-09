@@ -136,12 +136,12 @@ export const CaseCard = memo(function CaseCard({
               <button
                 type="button"
                 onClick={() => onSelect?.(c._id)}
-                className="text-left after:absolute after:inset-0 focus-visible:outline-none"
+                className="text-left after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring"
               >
                 {c.employerName}
               </button>
             ) : (
-              <Link href={`/cases/${c._id}`} className="after:absolute after:inset-0 hover:text-primary-text focus-visible:outline-none">
+              <Link href={`/cases/${c._id}`} className="after:absolute after:inset-0 hover:text-primary-text focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring">
                 {c.employerName}
               </Link>
             )}

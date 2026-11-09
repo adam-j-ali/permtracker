@@ -203,7 +203,7 @@ function NotificationListItem({
           type="button"
           onClick={handleClick}
           className={cn(
-            "line-clamp-2 text-left text-base after:absolute after:inset-0 focus-visible:outline-none",
+            "line-clamp-2 text-left text-base after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring",
             notification.isRead ? "text-soft" : "font-semibold text-foreground",
           )}
           title={notification.title}
