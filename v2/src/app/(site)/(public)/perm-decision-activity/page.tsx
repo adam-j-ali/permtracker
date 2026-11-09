@@ -109,7 +109,7 @@ export default async function DecisionActivityPage() {
     // per visitor. Six index seeks. It moves only when a quarterly file
     // lands or the sweep runs, so a hardcoded pair of dates would silently
     // under-report coverage for months.
-    getCoverageWindows().catch((): CoverageWindows => ({ decided: null, observed: null })),
+    getCoverageWindows().catch(softFail<CoverageWindows>("perm-decision-activity/page.getCoverageWindows", { decided: null, observed: null })),
     getSweepCoverage().catch(softFail("perm-decision-activity/page.getSweepCoverage", null)),
   ]);
 

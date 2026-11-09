@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getPermLine } from "@/lib/db/permLine";
 import { withSocialCard } from "@/lib/socialCard";
+import { softFail } from "@/lib/softRead";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -221,9 +222,9 @@ export async function CaseStatusPage({ raw }: { raw: string | undefined }) {
   const hasNumber = !!(pwdNumber || lcaNumber || seasonalNumber || caseNumber);
   // DOL's queue month and average, dated, in the "how long" answer; read on render, never typed.
   const [times, permBoard, permLine] = await Promise.all([
-    getProcessingTimes().catch(() => null),
-    getPermBoard().catch(() => null),
-    getPermLine().catch(() => null),
+    getProcessingTimes().catch(softFail("perm-case-status/getProcessingTimes", null)),
+    getPermBoard().catch(softFail("perm-case-status/getPermBoard", null)),
+    getPermLine().catch(softFail("perm-case-status/getPermLine", null)),
   ]);
   const howLong = howLongSentence(permBoard, times, permLine);
   const faqs = FAQS.map((f) => ({ ...f, a: f.a.replace(HOW_LONG, howLong) }));
@@ -333,7 +334,7 @@ export async function CaseStatusPage({ raw }: { raw: string | undefined }) {
  * for 89% of cases and a month boundary is exactly where the other 11% would
  * silently produce a cohort belonging to somebody else.
  *
- * Every read is defaulted rather than allowed to throw. A frontend deployed
+ * Every read is defaulted and recorded (softFail) rather than allowed to throw. A frontend deployed
  * ahead of its data hits precisely this window, and each section renders its
  * own absence.
  */
@@ -342,28 +343,28 @@ async function Lookup({ caseNumber }: { caseNumber: string }) {
 
   const [result, backlog, estimator, mirrorSize, decisionPace, sweep, stragglers, rangeCoverage, rfiClock, byDay] =
     await Promise.all([
-      lookupCase(caseNumber).catch(() => null),
-      getLiveBacklog().catch((): CohortMonth[] => []),
-      getEstimatorData().catch(() => null),
-      getLiveMirrorSize().catch(() => 0),
+      lookupCase(caseNumber).catch(softFail("perm-case-status/lookupCase", null)),
+      getLiveBacklog().catch(softFail("perm-case-status/getLiveBacklog", [] as CohortMonth[])),
+      getEstimatorData().catch(softFail("perm-case-status/getEstimatorData", null)),
+      getLiveMirrorSize().catch(softFail("perm-case-status/getLiveMirrorSize", 0)),
       // Both defaulted to null rather than allowed to throw: without them the
       // decision-pace model is omitted and the month-granular models answer,
       // which is exactly the behaviour that shipped before this existed.
-      getDecisionPace().catch(() => null),
-      getSweepCoverage().catch(() => null),
+      getDecisionPace().catch(softFail("perm-case-status/getDecisionPace", null)),
+      getSweepCoverage().catch(softFail("perm-case-status/getSweepCoverage", null)),
       // Null when stale or thin; a case behind the queue then gets no date.
-      getStragglerRates().catch(() => null),
+      getStragglerRates().catch(softFail("perm-case-status/getStragglerRates", null)),
       // The nightly backtest's measured range coverage, quoted under the range.
-      getRangeCoverage().catch(() => null),
+      getRangeCoverage().catch(softFail("perm-case-status/getRangeCoverage", null)),
       // The RFI clock, for a case at RFI ISSUED.
-      getRfiClock().catch(() => null),
+      getRfiClock().catch(softFail("perm-case-status/getRfiClock", null)),
       // The line by filing day, for the share of the case's own month ahead of it.
       getPermDayQueue(),
     ]);
   // Only an RFI case is dated from its RFI day; one point read when it is.
   const rfiEntered =
     result?.live?.status?.trim().toUpperCase() === "RFI ISSUED"
-      ? await rfiEnteredOn(caseNumber).catch(() => null)
+      ? await rfiEnteredOn(caseNumber).catch(softFail("perm-case-status/rfiEnteredOn", null))
       : null;
 
   // Inputs to the decision-pace model, both null-safe, from the SAME helper
@@ -420,29 +421,29 @@ async function Lookup({ caseNumber }: { caseNumber: string }) {
 
   const isDecided = result.decided !== null;
   const [monthBacklog, wage, duration, stageStats, sameDay, timeline, history, wageRequests] = await Promise.all([
-    month ? getMonthBacklog(month).catch(() => null) : Promise.resolve(null),
+    month ? getMonthBacklog(month).catch(softFail("perm-case-status/getMonthBacklog", null)) : Promise.resolve(null),
     // Only for a decided case: a pending one has no wage in DOL's files, and
     // asking for one is a round trip that can only ever return null.
     isDecided
-      ? getCaseWageContext(caseNumber).catch(() => null)
+      ? getCaseWageContext(caseNumber).catch(softFail("perm-case-status/getCaseWageContext", null))
       : Promise.resolve(null),
     isDecided && month
-      ? getCohortDuration(month).catch(() => null)
+      ? getCohortDuration(month).catch(softFail("perm-case-status/getCohortDuration", null))
       : Promise.resolve(null),
     // Measured stage ages. Absent, the estimate falls back to the table in
     // queueForecast, which is exactly what shipped before this existed.
-    getStageStats().catch(() => null),
+    getStageStats().catch(softFail("perm-case-status/getStageStats", null)),
     // Four bounded primary-key reads; a failure only drops the section.
-    getSameDay(result.caseNumber).catch(() => null),
+    getSameDay(result.caseNumber).catch(softFail("perm-case-status/getSameDay", null)),
     // A decided case's own dates: one primary-key read joined to its wage request. A failure
     // only drops the section, like the wage ladder above.
-    isDecided ? getDecidedTimeline(result.caseNumber).catch(() => null) : Promise.resolve(null),
+    isDecided ? getDecidedTimeline(result.caseNumber).catch(softFail("perm-case-status/getDecidedTimeline", null)) : Promise.resolve(null),
     // Every status change our checks saw: one primary-key read. A failure only drops the section.
-    getStatusHistory(result.caseNumber).catch(() => null),
+    getStatusHistory(result.caseNumber).catch(softFail("perm-case-status/getStatusHistory", null)),
     // A case DOL's file doesn't hold yet: the employer's wage requests for the same job, one of which is very
     // likely this case's (DOL's live record doesn't name it). A failure only drops the section.
     !isDecided && result.live
-      ? getEmployerWageRequests(result.caseNumber, result.live.jobTitle, result.live.filingDate).catch(() => null)
+      ? getEmployerWageRequests(result.caseNumber, result.live.jobTitle, result.live.filingDate).catch(softFail("perm-case-status/getEmployerWageRequests", null))
       : Promise.resolve(null),
   ]);
 
@@ -480,9 +481,9 @@ async function Lookup({ caseNumber }: { caseNumber: string }) {
 /** The page with nothing typed in: still the national picture, not a blank. */
 async function Empty() {
   const [backlog, estimator, mirrorSize] = await Promise.all([
-    getLiveBacklog().catch((): CohortMonth[] => []),
-    getEstimatorData().catch(() => null),
-    getLiveMirrorSize().catch(() => 0),
+    getLiveBacklog().catch(softFail("perm-case-status/getLiveBacklog", [] as CohortMonth[])),
+    getEstimatorData().catch(softFail("perm-case-status/getEstimatorData", null)),
+    getLiveMirrorSize().catch(softFail("perm-case-status/getLiveMirrorSize", 0)),
   ]);
   const front = findFront(backlog);
   const dol = estimator?.frontier && estimator.frontier.from !== "check" ? estimator.frontier : null;

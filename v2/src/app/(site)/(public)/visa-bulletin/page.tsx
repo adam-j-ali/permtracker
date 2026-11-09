@@ -193,7 +193,7 @@ export default async function VisaBulletinPage() {
     // "not available" for a day. Thrown, the last good page stays.
     getVisaBulletinSeries(),
     getBulletinBoard(),
-    getI485Cells().catch(() => ({}) as Record<string, [number, number, number, number][]>),
+    getI485Cells().catch(softFail("visa-bulletin/page.getI485Cells", {} as Record<string, [number, number, number, number][]>)),
     getVisaAnnualLimits().catch(softFail("visa-bulletin/page.getVisaAnnualLimits", null)),
     getUscisCharts(),
   ]);

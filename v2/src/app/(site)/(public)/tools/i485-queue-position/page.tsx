@@ -104,13 +104,13 @@ export default async function I485QueuePositionPage() {
   // client picks the cell with the same pairKey it already uses.
   const pace = paceByLine(board?.finalAction ?? [], (c) => `${I485_COUNTRY[c.country]}|${c.category === "EB5" ? "EB5U" : c.category}`);
   const [cells, options, trend, freshness, bulletins] = await Promise.all([
-    // Every read is defaulted rather than allowed to throw. A frontend
+    // Every read is defaulted and recorded rather than allowed to throw. A frontend
     // deployed ahead of its data hits exactly this window, and the component
     // renders its own empty state from an empty table.
-    getI485Cells().catch((): I485CellTable => ({})),
-    getI485Options().catch((): { country: string; categories: string[] }[] => []),
-    getI485Trend().catch((): { asOf: string; total: number }[] => []),
-    getFreshness().catch((): Record<string, DatasetFreshness> => ({})),
+    getI485Cells().catch(softFail<I485CellTable>("tools/i485-queue-position/page.getI485Cells", {})),
+    getI485Options().catch(softFail<{ country: string; categories: string[] }[]>("tools/i485-queue-position/page.getI485Options", [])),
+    getI485Trend().catch(softFail<{ asOf: string; total: number }[]>("tools/i485-queue-position/page.getI485Trend", [])),
+    getFreshness().catch(softFail<Record<string, DatasetFreshness>>("tools/i485-queue-position/page.getFreshness", {})),
     getVisaBulletinSeries().catch(softFail("tools/i485-queue-position/page.getVisaBulletinSeries", [])),
   ]);
 

@@ -311,7 +311,7 @@ async function OtherEmployerPage({ slug, record }: { slug: string; record: Other
       record.pwd && match ? searchPwdDeterminations({ text: record.name, match, limit: 5 }).catch(softFail("perm-employers/[slug]/page.searchPwdDeterminations", [])) : [],
       record.lca && match ? searchLcaDisclosed({ text: record.name, match, limit: 5 }).catch(softFail("perm-employers/[slug]/page.searchLcaDisclosed", [])) : [],
       record.h2a + record.h2b + record.cw1 > 0 && match
-        ? seasonalEmployerCases(match, SEASONAL_CASE_LIMIT).catch(() => empty)
+        ? seasonalEmployerCases(match, SEASONAL_CASE_LIMIT).catch(softFail("perm-employers/[slug]/page.seasonalEmployerCases", empty))
         : empty,
       record.lca ? getLcaProfile(slug).catch(softFail("perm-employers/[slug]/page.getLcaProfile", null)) : null,
       getUscisH1bRecord(slug).catch(softFail("perm-employers/[slug]/page.getUscisH1bRecord", null)),
@@ -605,7 +605,7 @@ export default async function EmployerPage({
       await Promise.all([
         getFreshness(),
         getEmployerStages().catch(softFail("perm-employers/[slug]/page.getEmployerStages", null)),
-        getEmployerWait(slug).catch(() => ({ n: 0, p25: null, p50: null, p75: null })),
+        getEmployerWait(slug).catch(softFail("perm-employers/[slug]/page.getEmployerWait", { n: 0, p25: null, p50: null, p75: null })),
         getFieldWait().catch(softFail("perm-employers/[slug]/page.getFieldWait", null)),
         getFiledTodayEstimate().catch(softFail("perm-employers/[slug]/page.getFiledTodayEstimate", null)),
         searchSeasonalCases({ text: live.record.name, match: liveMatch, limit: 5 }).catch(softFail("perm-employers/[slug]/page.searchSeasonalCases", [])),
@@ -742,7 +742,7 @@ export default async function EmployerPage({
       getEmployerStages().catch(softFail("perm-employers/[slug]/page.getEmployerStages", null)),
       debarmentsForSlug(canonicalSlug),
       warnForSlug(canonicalSlug),
-      getEmployerWait(canonicalSlug).catch(() => ({ n: 0, p25: null, p50: null, p75: null })),
+      getEmployerWait(canonicalSlug).catch(softFail("perm-employers/[slug]/page.getEmployerWait", { n: 0, p25: null, p50: null, p75: null })),
       getFieldWait().catch(softFail("perm-employers/[slug]/page.getFieldWait", null)),
       getFiledTodayEstimate().catch(softFail("perm-employers/[slug]/page.getFiledTodayEstimate", null)),
       // FY2008 onward, and the FY2020 to FY2023 cases: one PK read and one
@@ -820,10 +820,9 @@ export default async function EmployerPage({
   const topState = facets.state?.[0];
   // Depends on the facets above, so it runs after them: one small indexed
   // read per occupation (two at most).
-  const similar = await similarSponsors(canonicalSlug, facets.occupation ?? []).catch(() => ({
-    occupation: null,
-    sponsors: [],
-  }));
+  const similar = await similarSponsors(canonicalSlug, facets.occupation ?? []).catch(
+    softFail("perm-employers/[slug]/page.similarSponsors", { occupation: null, sponsors: [] }),
+  );
 
   // What the header says before any chapter: the hold, an appeal, layoff and
   // debarment notices, each a tag that jumps to where it is shown in full.
