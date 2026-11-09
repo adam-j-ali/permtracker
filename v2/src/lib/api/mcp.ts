@@ -17,7 +17,7 @@ import { McpServer, type AuthInfo } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 import type { ApiCaller } from "./auth";
-import { readBulletin, readCase, readEntity, readEstimate, readQueue, searchEntities, type ReadResult } from "./reads";
+import { findCases, readBulletin, readCase, readEntity, readEstimate, readQueue, searchEntities, type ReadResult } from "./reads";
 import { lookupSoc } from "./socLookup";
 import { ANONYMOUS_ACCOUNT, checkAllowance, countCall, takeMinute } from "./usage";
 
@@ -113,6 +113,26 @@ export function buildMcpServer(caller: ApiCaller): McpServer {
       annotations: readOnly,
     },
     async ({ case_number }) => answer(caller, () => readCase(case_number)),
+  );
+
+  server.registerTool(
+    "find_case",
+    {
+      title: "Find a case without its number",
+      description:
+        "The cases an employer filed on one day, each with its number, status and job title, and that day's totals: for someone who knows who filed and when, and never saw the number. " +
+        "PERM by default. The program may be pwd (prevailing wage), lca (H-1B) or seasonal (H-2A, H-2B, CW-1). With no match it returns the employers that filed that day under a close spelling. " +
+        'Example: {"employer": "Acme Robotics", "filed": "2026-01-30"}.',
+      inputSchema: z.object({
+        employer: z.string().max(120).describe("The employer's name or its start."),
+        filed: z.string().max(10).describe("The filing day, YYYY-MM-DD."),
+        program: z.string().max(12).optional().describe("perm (the default), pwd, lca or seasonal."),
+        job: z.string().max(80).optional().describe("Words of the job title, to narrow a long answer."),
+      }),
+      annotations: readOnly,
+    },
+    async ({ employer, filed, program, job }) =>
+      answer(caller, () => findCases({ employer, filed, program: program ?? null, job: job ?? null })),
   );
 
   server.registerTool(

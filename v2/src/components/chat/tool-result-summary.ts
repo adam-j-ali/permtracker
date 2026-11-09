@@ -73,6 +73,7 @@ export function summarizeToolResult(tool: string, result?: string): string {
       }
 
       case 'lookupDolCase':
+      case 'findDolCase':
       case 'estimateDecision':
       case 'dolQueue':
       case 'visaBulletin':

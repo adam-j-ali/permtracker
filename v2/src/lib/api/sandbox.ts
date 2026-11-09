@@ -249,6 +249,32 @@ const SAMPLE_BULLETIN = {
   sourceUrl: "https://travel.state.gov/",
 };
 
+/** The finder's sample: the pending sample case, found by its employer and filing day. */
+const SAMPLE_FOUND = {
+  filed: "2026-02-10",
+  program: "perm",
+  programName: "PERM labor certification",
+  day: { filed: 412, decided: 18, waiting: 394 },
+  matchedEmployer: 1,
+  matched: 1,
+  cases: [
+    {
+      caseNumber: "G-100-26000-000101",
+      status: "ANALYST REVIEW",
+      isFinal: false,
+      employer: "Example Robotics LLC",
+      jobTitle: "Software Engineer",
+      decisionDate: null,
+      worksiteState: null,
+      wageRequest: null,
+      url: `${SITE}/perm-case-status?case=G-100-26000-000101`,
+    },
+  ],
+  truncated: false,
+  closeNames: [],
+  dayListCapped: false,
+};
+
 const SAMPLE_ESTIMATE = {
   kind: "date",
   filingDate: "2026-02-10",
@@ -272,6 +298,7 @@ export function sandboxAnswer(url: URL, params: Record<string, string>): ReadRes
   if (head === "cases" && params.caseNumber) {
     return sandboxCase(params.caseNumber, { live: url.searchParams.get("live") === "1" });
   }
+  if (head === "cases") return { ok: true, data: SAMPLE_FOUND, meta: meta("/perm-queue/2026-02/10") };
   if (head === "queue") return { ok: true, data: SAMPLE_QUEUE, meta: meta("/perm-processing-times") };
   if (head === "visa-bulletin") return { ok: true, data: SAMPLE_BULLETIN, meta: meta("/visa-bulletin/2026-10", "2026-10-01") };
   if (head === "estimate") return { ok: true, data: SAMPLE_ESTIMATE, meta: meta("/tools/perm-timeline-calculator") };

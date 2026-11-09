@@ -48,6 +48,7 @@ export const TOOL_PERMISSIONS: Partial<Record<ChatToolName, PermissionLevel>> = 
 
   // Public records (read-only): the /v1 API's and the MCP server's reads
   lookupDolCase: 'autonomous',
+  findDolCase: 'autonomous',
   estimateDecision: 'autonomous',
   dolQueue: 'autonomous',
   visaBulletin: 'autonomous',

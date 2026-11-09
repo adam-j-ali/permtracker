@@ -17,7 +17,8 @@ const readQueue = vi.fn();
 const readBulletin = vi.fn();
 const readEntity = vi.fn();
 const searchEntities = vi.fn();
-vi.mock("@/lib/api/reads", () => ({ readCase, readEstimate, readQueue, readBulletin, readEntity, searchEntities }));
+const findCases = vi.fn();
+vi.mock("@/lib/api/reads", () => ({ readCase, readEstimate, readQueue, readBulletin, readEntity, searchEntities, findCases }));
 const lookupSoc = vi.fn();
 vi.mock("@/lib/api/socLookup", () => ({ lookupSoc }));
 
@@ -45,7 +46,7 @@ const say = (text: string) => ({
 
 describe("the chat's public-record tools", () => {
   beforeEach(() => {
-    for (const f of [readCase, readEstimate, readQueue, readBulletin, readEntity, searchEntities, lookupSoc]) f.mockReset();
+    for (const f of [readCase, readEstimate, readQueue, readBulletin, readEntity, searchEntities, findCases, lookupSoc]) f.mockReset();
   });
 
   it("covers every MCP tool, read-only, under the chat's own name", () => {
@@ -75,6 +76,23 @@ describe("the chat's public-record tools", () => {
     expect(second).toContain("U.S. Department of Labor, FLAG case status");
     expect(second).toContain("2026-10-31");
     expect(second).toContain("perm-case-status?case=G-100-26045-123456");
+  });
+
+  it("finds a case for someone with no number: the model asks by employer and day, and the next step sees the cases", async () => {
+    findCases.mockResolvedValue({
+      ok: true,
+      data: { filed: "2026-01-30", matched: 1, cases: [{ caseNumber: "G-100-26030-000123", status: "ANALYST REVIEW", jobTitle: "Controls Engineer" }] },
+      meta: { source: "U.S. Department of Labor, FLAG case status", asOf: "2026-11-09", url: "https://permtracker.app/perm-queue/2026-01/30" },
+    });
+    const model = new MockLanguageModelV4({
+      doGenerate: [call("findDolCase", { employer: "Acme Robotics", filed: "2026-01-30" }), say("Acme Robotics filed one PERM case that day: G-100-26030-000123.")],
+    });
+    const result = await generateText({ model, tools: createTools("token"), prompt: "I don't have my case number. Acme Robotics filed it on January 30.", stopWhen: stepCountIs(4) });
+    expect(findCases).toHaveBeenCalledExactlyOnceWith({ employer: "Acme Robotics", filed: "2026-01-30", program: null, job: null });
+    expect(result.text).toContain("G-100-26030-000123");
+    const second = JSON.stringify(model.doGenerateCalls[1]!.prompt);
+    expect(second).toContain("G-100-26030-000123");
+    expect(second).toContain("perm-queue/2026-01/30");
   });
 
   it("passes a refusal on in words, with the page, instead of a record", async () => {

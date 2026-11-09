@@ -40,9 +40,12 @@ vi.mock("@/lib/db/permEstimate", () => ({
   loadPermEstimateContext: vi.fn(async () => ({})),
 }));
 
+const getFiledOnProgram = vi.fn();
+vi.mock("@/lib/db/filingDay", () => ({ getFiledOnProgram: (...a: unknown[]) => getFiledOnProgram(...a) }));
+
 import { getLiveBacklog } from "@/lib/db/publicData";
 import { getProcessingTimes } from "@/lib/db/processingTimes";
-import { readCase, readEntity, readEstimate, readQueue, searchEntities } from "../reads";
+import { findCases, readCase, readEntity, readEstimate, readQueue, searchEntities } from "../reads";
 
 const adobe = {
   slug: "adobe-inc",
@@ -268,5 +271,106 @@ describe("readQueue", () => {
     expect(out.ok && out.data.pendingPermByFilingMonth).toEqual([
       { month: "2025-01", filed: 10, decided: 4, pending: 6, inAnalystReview: null },
     ]);
+  });
+});
+
+describe("findCases", () => {
+  const filing = (n: number, employer: string, over: Record<string, unknown> = {}) => ({
+    caseNumber: `G-100-26030-${String(n).padStart(6, "0")}`,
+    status: "ANALYST REVIEW",
+    employer,
+    employerSlug: null,
+    jobTitle: "Software Engineer",
+    final: false,
+    ...over,
+  });
+
+  beforeEach(() => {
+    getFiledOnProgram.mockReset().mockResolvedValue({ cases: [], capped: false });
+  });
+
+  it.each([
+    ["no employer", { filed: "2026-01-30" }, /employer must be 2 to 120/],
+    ["one letter of a name", { employer: "g", filed: "2026-01-30" }, /employer must be 2 to 120/],
+    ["a name past the length cap", { employer: "a".repeat(5000), filed: "2026-01-30" }, /employer must be 2 to 120/],
+    ["no day", { employer: "acme" }, /filed must be the filing day/],
+    ["a month for the day", { employer: "acme", filed: "2026-01" }, /filed must be the filing day/],
+    ["a day with a time on it", { employer: "acme", filed: "2026-01-30T00:00" }, /filed must be the filing day/],
+    ["a day before the day lists start", { employer: "acme", filed: "2019-09-30" }, /between 2019-10-01 and today/],
+    ["a day that hasn't come", { employer: "acme", filed: "2999-01-01" }, /between 2019-10-01 and today/],
+    ["a program that isn't one", { employer: "acme", filed: "2026-01-30", program: "h1b" }, /program must be one of perm, pwd, lca, seasonal/],
+    ["a job title past its cap", { employer: "acme", filed: "2026-01-30", job: "x".repeat(81) }, /job must be at most 80/],
+  ])("refuses %s as a bad request, before any read", async (_label, args, message) => {
+    const out = await findCases(args);
+    expect(out).toMatchObject({ ok: false, status: 400, code: "bad_request" });
+    expect(!out.ok && out.message).toMatch(message);
+    expect(getFiledOnProgram).not.toHaveBeenCalled();
+  });
+
+  it("lists the employer's cases that day with the day's totals, each case linked to its page", async () => {
+    getFiledOnProgram.mockResolvedValue({
+      cases: [
+        filing(1, "Acme Robotics, Inc.", { status: "CERTIFIED", final: true, decided: "2026-10-01", state: "WA", wageRequest: "P-100-25171-129387" }),
+        filing(2, "ACME ROBOTICS INC", { jobTitle: "Controls Engineer" }),
+        filing(3, "Other Co"),
+      ],
+      capped: false,
+    });
+    const out = await findCases({ employer: " Acme Robotics ", filed: "2026-01-30" });
+    // PERM unless another kind is asked for.
+    expect(getFiledOnProgram).toHaveBeenCalledWith("2026-01-30", "perm");
+    expect(out.ok && out.data).toMatchObject({
+      filed: "2026-01-30",
+      program: "perm",
+      day: { filed: 3, decided: 1, waiting: 2 },
+      matchedEmployer: 2,
+      matched: 2,
+      truncated: false,
+      closeNames: [],
+      dayListCapped: false,
+    });
+    const cases = (out.ok ? out.data.cases : []) as Record<string, unknown>[];
+    expect(cases[0]).toEqual({
+      caseNumber: "G-100-26030-000001",
+      status: "CERTIFIED",
+      isFinal: true,
+      employer: "Acme Robotics, Inc.",
+      jobTitle: "Software Engineer",
+      decisionDate: "2026-10-01",
+      worksiteState: "WA",
+      wageRequest: "P-100-25171-129387",
+      url: "https://permtracker.app/perm-case-status?case=G-100-26030-000001",
+    });
+    expect(cases[1]).toMatchObject({ caseNumber: "G-100-26030-000002", decisionDate: null, worksiteState: null, wageRequest: null });
+    expect(out.ok && out.meta.url).toBe("https://permtracker.app/perm-queue/2026-01/30");
+  });
+
+  it("narrows by the job title, and reads the kind of filing asked for", async () => {
+    getFiledOnProgram.mockResolvedValue({
+      cases: [filing(1, "Acme Robotics", { jobTitle: "Controls Engineer" }), filing(2, "Acme Robotics", { jobTitle: "Recruiter" })],
+      capped: true,
+    });
+    const out = await findCases({ employer: "acme", filed: "2026-01-30", program: "PWD", job: "controls" });
+    expect(getFiledOnProgram).toHaveBeenCalledWith("2026-01-30", "pwd");
+    expect(out.ok && out.data).toMatchObject({ program: "pwd", matchedEmployer: 2, matched: 1, dayListCapped: true });
+    expect(out.ok && out.meta.url).toBe("https://permtracker.app/perm-queue/2026-01/30?kind=pwd");
+  });
+
+  it("offers the close spellings that filed that day when the name fits none", async () => {
+    getFiledOnProgram.mockResolvedValue({ cases: [filing(1, "Acme Robotics, Inc."), filing(2, "Acme Robotics, Inc.")], capped: false });
+    const out = await findCases({ employer: "acmee robotcs", filed: "2026-01-30" });
+    expect(out.ok && out.data).toMatchObject({ matched: 0, cases: [], closeNames: [{ employer: "Acme Robotics, Inc.", cases: 2 }] });
+  });
+
+  it("lists the first fifty of a longer answer and says it was cut", async () => {
+    getFiledOnProgram.mockResolvedValue({ cases: Array.from({ length: 73 }, (_, i) => filing(i + 1, "Acme Robotics")), capped: false });
+    const out = await findCases({ employer: "acme", filed: "2026-01-30" });
+    expect(out.ok && (out.data.cases as unknown[]).length).toBe(50);
+    expect(out.ok && out.data).toMatchObject({ matched: 73, truncated: true });
+  });
+
+  it("throws when the day can't be read, so the route answers an error and never 'none'", async () => {
+    getFiledOnProgram.mockRejectedValue(new Error("fetch failed"));
+    await expect(findCases({ employer: "acme", filed: "2026-01-30" })).rejects.toThrow(/fetch failed/);
   });
 });

@@ -24,6 +24,7 @@ export const TOOL_ICONS: Record<string, PhosphorIcon> = {
 
   // Public records
   lookupDolCase: Search,
+  findDolCase: Search,
   estimateDecision: HourglassMediumIcon,
   dolQueue: ListNumbersIcon,
   visaBulletin: CalendarIcon,
@@ -138,6 +139,7 @@ export const TOOL_DISPLAY_NAMES: Record<string, string> = {
 
   // Public records
   lookupDolCase: 'DOL case lookup',
+  findDolCase: 'Case finder',
   estimateDecision: 'Decision estimate',
   dolQueue: 'DOL processing times',
   visaBulletin: 'Visa bulletin',
@@ -196,6 +198,7 @@ export const TOOL_LOADING_MESSAGES: Record<string, string> = {
 
   // Public records
   lookupDolCase: "Reading DOL's record...",
+  findDolCase: "Looking through that day's filings...",
   estimateDecision: 'Working out the estimate...',
   dolQueue: "Reading DOL's processing times...",
   visaBulletin: 'Reading the visa bulletin...',

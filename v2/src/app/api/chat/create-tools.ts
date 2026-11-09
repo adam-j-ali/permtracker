@@ -59,6 +59,7 @@ import {
   reopenCaseTool,
   deleteCaseTool,
   LookupDolCaseInputSchema,
+  FindDolCaseInputSchema,
   EstimateDecisionInputSchema,
   DolQueueInputSchema,
   VisaBulletinInputSchema,
@@ -66,7 +67,7 @@ import {
   SponsorProfileInputSchema,
   FindSocCodeInputSchema,
 } from '@/lib/ai/tools';
-import { readBulletin, readCase, readEntity, readEstimate, readQueue, searchEntities, type ReadResult } from '@/lib/api/reads';
+import { findCases, readBulletin, readCase, readEntity, readEstimate, readQueue, searchEntities, type ReadResult } from '@/lib/api/reads';
 import { lookupSoc } from '@/lib/api/socLookup';
 import type { ActionMode } from '@/lib/ai/tool-permissions';
 import { executeWithCache, createCacheStats, type CacheableToolName } from '@/lib/ai/cache';
@@ -145,6 +146,7 @@ function sanitizeBigInts<T>(data: T): T {
 /** The chat's name for each MCP tool: one read behind both, so the chat and an outside assistant can't disagree. */
 export const PUBLIC_RECORD_TOOLS = {
   lookup_case: 'lookupDolCase',
+  find_case: 'findDolCase',
   estimate_decision: 'estimateDecision',
   queue_status: 'dolQueue',
   visa_bulletin: 'visaBulletin',
@@ -608,6 +610,13 @@ AUTONOMOUS: No confirmation needed.`,
       description: 'Any DOL case by number, in DOL\'s own record: status, filing date, employer, job, and the decision once decided.',
       inputSchema: LookupDolCaseInputSchema,
       execute: async ({ caseNumber }: { caseNumber: string }) => publicRecord(() => readCase(caseNumber)),
+    },
+
+    findDolCase: {
+      description: "Find a DOL case without its number: the cases an employer filed on one day, each with its number, status and job. Pass the employer's name and the filing day.",
+      inputSchema: FindDolCaseInputSchema,
+      execute: async ({ employer, filed, program, job }: { employer: string; filed: string; program?: string; job?: string }) =>
+        publicRecord(() => findCases({ employer, filed, program: program ?? null, job: job ?? null })),
     },
 
     estimateDecision: {

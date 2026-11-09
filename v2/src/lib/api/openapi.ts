@@ -47,6 +47,19 @@ export const ENDPOINTS: EndpointDoc[] = [
     counted: true,
   },
   {
+    path: "/cases",
+    summary:
+      "Find a case without its number: the cases an employer filed on one day, each with its number, status and job, and that day's totals. With no match, the employers that did file that day under a close spelling.",
+    example: "/cases?employer=Acme&filed=2026-01-30",
+    params: [
+      { name: "employer", in: "query", required: true, description: "The employer's name or its start, 2 to 120 characters. Inc, LLC and punctuation don't matter." },
+      { name: "filed", in: "query", required: true, description: "The filing day, YYYY-MM-DD, from 2019-10-01 to today." },
+      { name: "program", in: "query", required: false, description: "perm (the default), pwd, lca or seasonal." },
+      { name: "job", in: "query", required: false, description: "Words of the job title, to narrow a long answer." },
+    ],
+    counted: true,
+  },
+  {
     path: "/estimate",
     summary: "When a pending PERM case is likely to be decided, with the range, the model and its caveats. It's an estimate and makes no promise.",
     example: "/estimate?filed=2026-02-15",
@@ -312,6 +325,7 @@ export function openApiDocument(): Record<string, unknown> {
 /** The assistant tools at /mcp, for the docs. A test holds this list to the tools the server registers. */
 export const MCP_TOOLS: { name: string; summary: string }[] = [
   { name: "lookup_case", summary: "One case by number, any of the four programs." },
+  { name: "find_case", summary: "The cases an employer filed on one day, for someone with no case number." },
   { name: "estimate_decision", summary: "When a pending PERM case is likely to be decided." },
   { name: "queue_status", summary: "DOL's processing times and the pending queue by filing month." },
   { name: "visa_bulletin", summary: "A visa bulletin's charts, the newest by default." },
