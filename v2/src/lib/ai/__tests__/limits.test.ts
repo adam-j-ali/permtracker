@@ -248,3 +248,13 @@ describe('chatIpLimitBody', () => {
     expect(b.message).toContain('55 minutes');
   });
 });
+
+describe("the daily web-search share", () => {
+  it("says today's searches are used up and when they come back, never 'in the last minute'", () => {
+    const r = rateLimitedToolResult({ data: { kind: 'RateLimited', name: 'webSearchPerDay', retryAfter: 5 * 3600 * 1000 } }, 'web searches');
+    expect(r?.error).toMatch(/^That's today's web searches used up\. They come back in /);
+    expect(r?.error).not.toMatch(/last minute/);
+    expect(r?.reason).toBe('rate_limited');
+  });
+});
+
