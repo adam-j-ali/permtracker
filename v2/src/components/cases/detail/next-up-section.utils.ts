@@ -125,13 +125,13 @@ function buildFilingWindowInput(caseData: NextUpCaseData) {
 // ============================================================================
 
 /**
- * Get today's date normalized to UTC midnight.
- * This ensures consistent date comparisons regardless of local timezone.
+ * The reader's own calendar date, at UTC midnight, so it compares with ISO
+ * dates (which parse as UTC midnight). Taking the UTC date instead made the
+ * count a day short every evening in the Americas, after about 8 PM Eastern.
  */
 function getTodayUTC(): Date {
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  return today;
+  const now = new Date();
+  return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 }
 
 /**
@@ -150,8 +150,9 @@ function calculateDaysUntil(dateStr: string): number {
  */
 function formatDaysText(daysUntil: number): string {
   if (daysUntil === 0) return "today";
-  if (daysUntil < 0) return `${Math.abs(daysUntil)} days ago`;
-  return `in ${daysUntil} days`;
+  const n = Math.abs(daysUntil);
+  const unit = n === 1 ? "day" : "days";
+  return daysUntil < 0 ? `${n} ${unit} ago` : `in ${n} ${unit}`;
 }
 
 // ============================================================================
