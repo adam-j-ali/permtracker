@@ -15,6 +15,7 @@
 
 import {
   BLUESKY_URL,
+  CRUNCHBASE_URL,
   DC_BAR_SABRINA_URL,
   FACEBOOK_URL,
   LINKEDIN_COMPANY_URL,
@@ -60,8 +61,8 @@ export const LIVE_SINCE = "2026-01";
  * The brand's owned surfaces, emitted as the Organization `sameAs`.
  *
  * BRAND-OWNED ONLY: the Medium publication, the Product Hunt product page, the
- * LinkedIn company page, the X and Bluesky accounts, the YouTube channel and the
- * Facebook Page carry the brand's name
+ * LinkedIn company page, the X and Bluesky accounts, the YouTube channel, the
+ * Facebook Page and the Crunchbase company page carry the brand's name
  * and nothing else. A personal profile sits on
  * that person's node above and is linked from the footer, never asserted as
  * the organization itself. `structuredData.test.ts` pins the rule. The source
@@ -76,6 +77,7 @@ export const ORGANIZATION_SAME_AS: readonly string[] = [
   BLUESKY_URL,
   YOUTUBE_URL,
   FACEBOOK_URL,
+  CRUNCHBASE_URL,
 ];
 
 /**
