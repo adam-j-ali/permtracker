@@ -16,7 +16,6 @@ const UTC_TODAY = /new Date\(\)\.toISOString\(\)\.(?:slice\(0, ?10\)|split\(["']
 const STILL_UTC: Record<string, number> = {
   "src/app/(site)/(public)/debarments/page.tsx": 1,
   "src/app/(site)/(public)/debarments/settlements/page.tsx": 1,
-  "src/app/(site)/(public)/estimate-scorecard/page.tsx": 1,
   "src/app/(site)/(public)/perm-attorneys/[slug]/page.tsx": 1,
   "src/app/(site)/(public)/perm-case-status/CaseStatusPage.tsx": 1,
   "src/app/(site)/(public)/perm-employers/[slug]/page.tsx": 3,
