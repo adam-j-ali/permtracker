@@ -811,3 +811,24 @@ the week before overshot on the last start day.
 **A `.pyc` kept a probe's mutation again**: a one-digit swap restored in the same second left the mutated
 bytecode, and two later probes went red for the wrong reason. Clear `scripts/__pycache__` before and after
 every Python probe.
+
+## Nov 9 2026: five date bugs people would act on, fixed
+
+From the overnight review (each test fails on the old code):
+- **The deadline calculator's "Notice of filing must be posted by"** printed the last day the notice may END (first
+  step + 150, or the PWD expiry less 30). Posting takes ten business days, so the date shown was about two weeks late;
+  a notice posted that day runs the 30-day wait past the window's close. It now subtracts `NOTICE_MIN_BUSINESS_DAYS`,
+  the same date the app's own deadline list (`extractActiveDeadlines`) gives.
+- **The case form's ETA 9089 window** capped the close at the raw wage-determination expiry. Under 20 CFR 656.40(c)
+  recruitment begun inside the determination's validity leaves the 180-day rule alone, so a June 30 expiry with a
+  Feb 8 first step read "Filing window has closed" on July 10 though it's open to Aug 7. `useSectionState` now passes
+  `pwdFilingLimitFromCase`, as `ETA9089Section` already did, and the window's last day reads "Window closes today".
+  Three old tests had locked in the wrong rule; their fixtures now date the determination after the first step.
+- **The PWD expiry** read a local-midnight date's UTC fields, the day before anywhere east of UTC: in India a July 1
+  determination expired Sept 29 instead of June 30 of the next year. `calculatePWDExpiration` reads the date from the
+  string itself.
+- **The queue estimate** parsed local midnight and printed UTC, a day early east of UTC. It parses UTC midnight and adds
+  days in UTC. `src/lib/__tests__/perm-time-zones.test.ts` runs both in Kolkata, Sydney and Los Angeles, each in a
+  child process with its own TZ (the suite's workers keep New York's).
+- **Dec 31 2027**, the observed New Year's Day when Jan 1 2028 is a Saturday, counted as a business day in both
+  `holidays.ts` and `scripts/lib_holidays.py`; a December date now also checks the next year's list.

@@ -281,3 +281,17 @@ describe("keeping the dates as a case (Oct 19 2026)", () => {
     expect(screen.getByRole("heading", { name: "Keep these dates with the case" }).closest("[data-embed-hide]")).not.toBeNull();
   });
 });
+
+describe("the notice of filing row", () => {
+  it("gives the day the notice must go up, ten business days before its last allowed end", () => {
+    render(<PermDeadlineCalculator />);
+    setDate(/prevailing wage determination date/i, "2026-01-02");
+    setDate(/first recruitment step/i, "2026-01-05");
+    // The notice may end no later than first step + 150 days (Thu June 4, 2026). It stays up ten business days,
+    // so it has to go up by Wed May 20: counting back from June 4 skips two weekends and Memorial Day (May 25).
+    // The app's own deadline list (extractActiveDeadlines) gives the same date.
+    const row = screen.getByText("Notice of filing must be posted by").closest("li,tr,dl,div");
+    expect(row?.textContent).toContain("May 20, 2026");
+    expect(row?.textContent).not.toContain("June 4, 2026");
+  });
+});
