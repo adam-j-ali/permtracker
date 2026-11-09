@@ -9,8 +9,8 @@ import { useSocProfile } from "@/hooks/useSocProfile";
 import { isSocCode, socGroup } from "@/lib/socCode";
 
 /**
- * The case's SOC code, under its position title (Sabrina, Nov 1 2026: "where we have job position, we can
- * have other entry for SOC code"). Focused while empty it offers the codes employers filed the position
+ * The case's SOC code, its own entry under the position title. Focused while empty it offers the codes employers
+ * filed the position
  * title under in DOL's files; a code typed whole works too. The case stores the seven-character code and its
  * title; text that isn't a code yet stores nothing, and the field says so.
  *

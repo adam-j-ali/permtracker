@@ -38,7 +38,7 @@ export function SourceNote({ className, compact = false }: { className?: string;
     </p>
   );
   if (compact) {
-    // Under a page's own figures (Adam, Oct 28 2026: no text boxes on top): the
+    // Under a page's own figures, never a text box on top of them: the
     // direction of the error in one line, where it comes from folded.
     return (
       <div className={className}>
