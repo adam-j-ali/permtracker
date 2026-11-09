@@ -114,6 +114,15 @@ describe("askDol tells a DOL answer from a DOL failure", () => {
     expect((await askDol("G-100-26125-868956", refused as never)).kind).toBe("unavailable");
   });
 
+  it("an answer without its list of cases is a changed answer, never 'no record'", async () => {
+    // DOL's search answers a miss with an empty list. Anything else (an error object served with a 200, a renamed
+    // field) would otherwise tell every visitor DOL has no record of their case.
+    expect((await askDol("G-100-26125-999999", vi.fn().mockImplementation(() => ok({ value: [] })) as never)).kind).toBe("none");
+    for (const body of [{}, { error: { message: "Service unavailable" } }, { values: DOL_HIT.value }, { value: null }]) {
+      expect((await askDol("G-100-26125-868956", vi.fn().mockImplementation(() => ok(body)) as never)).kind).toBe("unavailable");
+    }
+  });
+
   it("a discovery that DOL did not answer says so, and is not a miss", async () => {
     oneMock.mockResolvedValue({ n: 3 }); // budget well under cap, so DOL IS asked
     const down = vi.fn().mockRejectedValue(new Error("TimeoutError"));

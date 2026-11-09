@@ -121,10 +121,17 @@ export async function askDol(caseNumber: string, f: typeof fetch = fetch): Promi
         visaType?: string;
       }[];
     };
+    // A miss is an empty list. An answer with no list at all (an error object
+    // served with a 200, a renamed field) is a changed answer we can't read,
+    // never "DOL has no record", or every lookup would say so.
+    if (!Array.isArray(body?.value)) {
+      console.warn(`[caseDiscovery] DOL's answer had no list of cases; read as unavailable: ${JSON.stringify(body).slice(0, 200)}`);
+      return { kind: "unavailable" };
+    }
     // The endpoint is a SEARCH and can return scored neighbours. Only an
     // exact match may render: a near-miss shown as the visitor's case is
     // somebody else's record on their screen.
-    const hit = body.value?.find(
+    const hit = body.value.find(
       (v) => v.caseNumber?.toUpperCase() === caseNumber.toUpperCase(),
     );
     if (!hit?.caseStatus) return { kind: "none" };
