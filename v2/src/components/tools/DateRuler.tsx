@@ -93,7 +93,8 @@ export function DateRuler({
           <p className="text-sm text-muted-foreground">{fromLabel}{" "}</p>{" "}
           <p className="mt-0.5 font-heading text-lg font-bold tabular-nums">{ready ? short(from) : placeholder}{" "}</p>
         </div>{" "}
-        <div className="min-w-0 text-right">
+        {/* ml-auto: on a phone the end date wraps under the start, and stays at the ruler's right end. */}
+        <div className="ml-auto min-w-0 text-right">
           <p className="text-sm text-muted-foreground">{toLabel}{" "}</p>{" "}
           <p className="mt-0.5 font-heading text-2xl font-bold tabular-nums sm:text-3xl">{ready ? short(to) : placeholder}{" "}</p>
         </div>
