@@ -108,7 +108,8 @@ export function calculateOptUnemployment(input: OptUnemploymentInput): OptUnempl
     const since = day("unemployedSince", input.unemployedSince);
     // Every day without work counts, the first one and today included.
     current = Math.max(0, differenceInCalendarDays(today, since) + 1);
-    lastDay = iso(addDays(since, limit - before - 1));
+    // With the limit already used before this stretch, no day of it is inside: there's no last day to name.
+    lastDay = before < limit ? iso(addDays(since, limit - before - 1)) : null;
   }
   const used = before + current;
   return { limit, used, left: Math.max(0, limit - used), lastDay, over: used > limit };
