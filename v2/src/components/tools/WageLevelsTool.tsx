@@ -9,6 +9,7 @@ import { ChoiceRow } from "@/components/ui/choice-row";
 import { useFormDomSync } from "@/hooks/useFormDomSync";
 import { US_STATE_NAMES } from "@/lib/usStateNames";
 import { seriesYearFor, type WageLevel } from "@/lib/wageLevels";
+import { easternDay } from "@/lib/time";
 import { SOC_CODE_RE } from "@/lib/socCode";
 import { buttonVariants } from "@/components/ui/button";
 import { ScrollBox } from "@/components/ui/scroll-box";
@@ -144,7 +145,7 @@ export function WageLevelsTool({ initialSoc = "" }: { initialSoc?: string }) {
   const stateId = useId();
   const areaId = useId();
   const socId = useId();
-  const currentSeries = useMemo(() => seriesYearFor(new Date().toISOString().slice(0, 10)), []);
+  const currentSeries = useMemo(() => seriesYearFor(easternDay()), []);
   const [state, setState] = useState("");
   const [seriesYear, setSeriesYear] = useState(currentSeries);
   const [area, setArea] = useState("");
