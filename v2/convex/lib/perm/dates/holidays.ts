@@ -188,11 +188,18 @@ export function getFederalHolidays(year: number): FederalHoliday[] {
  * @returns True if the date is a federal holiday
  */
 export function isFederalHoliday(dateStr: string): boolean {
-  const date = new Date(dateStr + 'T00:00:00'); // Ensure local timezone
-  const year = date.getFullYear();
-  const holidays = getFederalHolidays(year);
+  return holidaysAround(dateStr).some((holiday) => holiday.date === dateStr);
+}
 
-  return holidays.some((holiday) => holiday.date === dateStr);
+/**
+ * The holidays that can fall on a date: its own year's, and for a December date the next year's too. When
+ * January 1 is a Saturday, New Year's Day is observed on December 31 of the year before (5 U.S.C. 6103(b);
+ * December 31, 2027 is the next one), and that observed date sits in the next year's list.
+ */
+function holidaysAround(dateStr: string): FederalHoliday[] {
+  const year = Number(dateStr.slice(0, 4));
+  const own = getFederalHolidays(year);
+  return dateStr.slice(5, 7) === '12' ? [...own, ...getFederalHolidays(year + 1)] : own;
 }
 
 /** How a holiday reads to a person: OPM's names, shortened where it lists a long one. */
@@ -212,8 +219,7 @@ const HOLIDAY_DISPLAY_NAMES: Record<string, string> = {
  * @param dateStr - ISO date string (YYYY-MM-DD)
  */
 export function federalHolidayName(dateStr: string): string | null {
-  const year = new Date(dateStr + 'T00:00:00').getFullYear();
-  const holiday = getFederalHolidays(year).find((h) => h.date === dateStr);
+  const holiday = holidaysAround(dateStr).find((h) => h.date === dateStr);
   if (!holiday) return null;
   return HOLIDAY_DISPLAY_NAMES[holiday.name] ?? holiday.name;
 }

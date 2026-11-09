@@ -53,5 +53,9 @@ check(decided_on(ms(2026, 10, 14, 15, 59)) == date(2026, 10, 13), "11:59 AM is s
 check(decided_on(ms(2026, 10, 14, 16, 0)) == date(2026, 10, 14), "noon is not")
 check(decided_on(ms(2027, 1, 2, 6, 0)) == date(2027, 1, 1), "1 AM EST on Jan 2, the day before, across a year")
 
+# New Year's Day 2028 is a Saturday, so it's observed Friday Dec 31, 2027, a date in 2028's list.
+check(not is_dol_workday(date(2027, 12, 31)), "Dec 31 2027 is the observed New Year's Day, not a workday")
+check(is_dol_workday(date(2027, 12, 30)), "the day before it still is")
+
 print(f"\n{len(fails)} failure(s)")
 sys.exit(1 if fails else 0)

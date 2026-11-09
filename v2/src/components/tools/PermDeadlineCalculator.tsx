@@ -27,10 +27,12 @@ import {
   calculatePWDExpiration,
   calculateStepDeadlineUnderPwd,
   calculateFilingWindow,
+  NOTICE_MIN_BUSINESS_DAYS,
   pwdBearing,
   pwdFilingLimit,
   pwdStepLimit,
   STEP_DEADLINE_CONFIGS,
+  subtractBusinessDays,
 } from "@/lib/perm";
 import {
   SHUTDOWN_ANNOUNCED,
@@ -136,8 +138,11 @@ export function PermDeadlineCalculator({ className }: PermDeadlineCalculatorProp
         const stepLimit = pwdStepLimit(pwd);
         const step = (i: 0 | 1 | 2) =>
           calculateStepDeadlineUnderPwd(firstRecruitment, stepLimit, STEP_DEADLINE_CONFIGS[i]).date ?? "";
+        // The step's deadline is the last day the notice may END. Posting takes ten business days, so it has
+        // to go up ten business days before that: the date the app's own deadline list shows.
+        const noticeEnd = step(1);
         const deadlines = {
-          notice_of_filing_deadline: step(1),
+          notice_of_filing_deadline: noticeEnd ? subtractBusinessDays(noticeEnd, NOTICE_MIN_BUSINESS_DAYS) : "",
           job_order_start_deadline: step(0),
           first_sunday_ad_deadline: step(2),
         };
@@ -168,7 +173,7 @@ export function PermDeadlineCalculator({ className }: PermDeadlineCalculatorProp
           {
             label: "Notice of filing must be posted by",
             date: deadlines.notice_of_filing_deadline,
-            detail: "Ten consecutive business days, and it has to finish inside the recruitment window.",
+            detail: "It stays up for ten consecutive business days. Posted by this date, it finishes inside the recruitment window.",
           },
           {
             label: "State job order must start by",

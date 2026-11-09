@@ -21,6 +21,7 @@ import {
   getLastRecruitmentDate,
   getFilingWindowStatus,
   isBasicRecruitmentComplete,
+  pwdFilingLimitFromCase,
   isProfessionalRecruitmentComplete,
   denialReviewDeadline,
 } from "@/lib/perm";
@@ -103,7 +104,10 @@ function getETA9089WindowStatus(values: Partial<CaseFormData>): WindowStatus {
     const status = getFilingWindowStatus({
       firstRecruitmentDate: getFirstRecruitmentDate(values),
       lastRecruitmentDate: getLastRecruitmentDate(values, values.isProfessionalOccupation ?? false),
-      pwdExpirationDate: values.pwdExpirationDate,
+      // The wage determination caps the window only while 20 CFR 656.40(c) says it does: recruitment begun
+      // inside its validity leaves the 180-day rule alone (convex/lib/perm/dates/pwdValidity.ts), as
+      // ETA9089Section already passes it.
+      pwdExpirationDate: pwdFilingLimitFromCase(values),
     });
 
     return {
@@ -280,8 +284,10 @@ export function useSectionState(values: Partial<CaseFormData>) {
     } else if (!eta9089Window.isOpen && eta9089Window.daysUntilOpen && eta9089Window.daysUntilOpen > 0) {
       eta9089DisabledReason = `30-day waiting period: ${eta9089Window.daysUntilOpen} days remaining`;
       eta9089StatusInfo = `Opens ${fmtDate(eta9089Window.opensOn)} · ${eta9089Window.daysUntilOpen}d remaining`;
-    } else if (eta9089Window.isOpen && eta9089Window.daysRemaining && eta9089Window.daysRemaining > 0) {
-      eta9089StatusInfo = `Window closes in ${eta9089Window.daysRemaining}d`;
+    } else if (eta9089Window.isOpen) {
+      // The window's last day is still open: 0 days left means it closes today, never that it has closed.
+      eta9089StatusInfo =
+        (eta9089Window.daysRemaining ?? 0) > 0 ? `Window closes in ${eta9089Window.daysRemaining}d` : "Window closes today";
     } else if (eta9089Window.daysRemaining !== undefined && eta9089Window.daysRemaining <= 0) {
       eta9089DisabledReason = 'Filing window has closed';
     }

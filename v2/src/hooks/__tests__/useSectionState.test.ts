@@ -159,7 +159,10 @@ describe('useSectionState', () => {
       });
 
       it('uses PWD expiration if earlier than 180 days from first recruitment', () => {
+        // Recruitment began (Jan 14) before the determination (Feb 1), so its expiry caps the window
+        // (20 CFR 656.40(c)). Begun inside the determination's validity, it wouldn't.
         const values = createCompleteBasicRecruitment({
+          pwdDeterminationDate: '2024-02-01',
           pwdExpirationDate: '2024-06-30',
         });
 
@@ -231,6 +234,7 @@ describe('useSectionState', () => {
       it('returns days remaining until window closes', () => {
         const values = createCompleteBasicRecruitment({
           jobOrderEndDate: '2024-01-30', // Window already open
+          pwdDeterminationDate: '2024-02-01', // after the first step, so the expiry caps the window
           pwdExpirationDate: '2024-06-30',
         });
 
@@ -253,7 +257,10 @@ describe('useSectionState', () => {
 
     describe('isPwdLimited flag', () => {
       it('is true when PWD expiration limits the window', () => {
+        // Recruitment began (Jan 14) before the determination (Feb 1), so the expiry caps the window
+        // (20 CFR 656.40(c)). Begun inside the determination's validity, it wouldn't.
         const values = createCompleteBasicRecruitment({
+          pwdDeterminationDate: '2024-02-01',
           pwdExpirationDate: '2024-05-01', // Earlier than 180-day limit
         });
 
@@ -364,6 +371,7 @@ describe('useSectionState', () => {
           jobOrderEndDate: '2024-01-01',
           noticeOfFilingStartDate: '2024-01-01',
           noticeOfFilingEndDate: '2024-01-15',
+          pwdDeterminationDate: '2024-01-05', // after the first step, so the expiry caps the window
           pwdExpirationDate: '2024-03-10',
         });
 
@@ -1068,5 +1076,43 @@ describe('useSectionState', () => {
 
       expect(result.current.eta9089WindowStatus.opensOn).toBe('2024-03-31');
     });
+  });
+});
+
+describe('the ETA 9089 window under the wage determination rule (20 CFR 656.40(c))', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // A determination that expires June 30, recruitment begun inside it on Feb 8: the 180-day rule closes the
+  // window on Aug 7, past the expiry. The form used to say it closed on June 30.
+  const insideValidity = () =>
+    createCompleteBasicRecruitment({
+      pwdDeterminationDate: '2026-01-15',
+      pwdExpirationDate: '2026-06-30',
+      sundayAdFirstDate: '2026-02-08',
+      sundayAdSecondDate: '2026-02-15',
+      jobOrderStartDate: '2026-02-09',
+      jobOrderEndDate: '2026-03-12',
+      noticeOfFilingStartDate: '2026-02-09',
+      noticeOfFilingEndDate: '2026-02-23',
+    });
+
+  it('stays open after the expiry when recruitment began inside it', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-10T16:00:00.000Z'));
+    const { result } = renderHook(() => useSectionState(insideValidity()));
+    expect(result.current.eta9089WindowStatus.isOpen).toBe(true);
+    expect(result.current.eta9089WindowStatus.closesOn).toBe('2026-08-07');
+    expect(result.current.eta9089WindowStatus.isPwdLimited).toBe(false);
+    expect(result.current.sectionStates.eta9089.disabledReason).toBeUndefined();
+  });
+
+  it('reads "closes today" on the last day, never "closed"', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-07T16:00:00.000Z'));
+    const { result } = renderHook(() => useSectionState(insideValidity()));
+    expect(result.current.sectionStates.eta9089.statusInfo).toBe('Window closes today');
+    expect(result.current.sectionStates.eta9089.disabledReason).toBeUndefined();
   });
 });
