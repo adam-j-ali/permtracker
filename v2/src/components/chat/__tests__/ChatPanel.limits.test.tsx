@@ -112,10 +112,16 @@ describe('ChatPanel as a dialog', () => {
   });
 
   it('locks the mode switch while a reply runs', () => {
+    // Marked unavailable rather than disabled, so keyboard focus stays on the switch; a press changes nothing.
+    const onActionModeChange = vi.fn();
     render(
-      <ChatPanel {...base} status="streaming" messages={convo({})} actionMode="confirm" onActionModeChange={() => {}} />
+      <ChatPanel {...base} status="streaming" messages={convo({})} actionMode="confirm" onActionModeChange={onActionModeChange} />
     );
-    for (const radio of screen.getAllByRole('radio')) expect(radio).toBeDisabled();
+    for (const radio of screen.getAllByRole('radio')) {
+      expect(radio).toHaveAttribute('aria-disabled', 'true');
+      fireEvent.click(radio);
+    }
+    expect(onActionModeChange).not.toHaveBeenCalled();
   });
 
   it('says the saved conversation is loading, not "Start a conversation"', () => {
