@@ -103,16 +103,66 @@ describe('ChatHistory', () => {
     list = many;
   });
 
+  // Deleting asks with a second press in the panel itself, never a browser dialog that blocks the page.
+  it('deletes a conversation only on a second press, with focus kept on the row', async () => {
+    // Arrange
+    list = many.slice(0, 2);
+    const calls: unknown[] = [];
+    mutation.fn = (...a: unknown[]) => {
+      calls.push(a[0]);
+      return Promise.resolve(null);
+    };
+    const confirmSpy = vi.spyOn(window, 'confirm');
+    render(<ChatHistory {...props} />);
+    // Act: the first press only asks, and focus moves to Keep it
+    fireEvent.click(screen.getByRole('button', { name: 'Delete conversation Conversation 1' }));
+    // Assert
+    expect(calls).toEqual([]);
+    expect(screen.getByRole('button', { name: 'Keep it' })).toHaveFocus();
+    // Backing out hands focus back to the trash button
+    fireEvent.click(screen.getByRole('button', { name: 'Keep it' }));
+    expect(screen.getByRole('button', { name: 'Delete conversation Conversation 1' })).toHaveFocus();
+    // Asking again and confirming deletes that conversation
+    fireEvent.click(screen.getByRole('button', { name: 'Delete conversation Conversation 1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Conversation 1 for good' }));
+    await vi.waitFor(() => expect(calls).toEqual([{ id: 'c0' }]));
+    expect(confirmSpy).not.toHaveBeenCalled();
+  });
+
+  it('deletes them all only on a second press, then starts a new conversation', async () => {
+    // Arrange
+    list = many.slice(0, 2);
+    const calls: unknown[] = [];
+    mutation.fn = (...a: unknown[]) => {
+      calls.push(a[0]);
+      return Promise.resolve(null);
+    };
+    const onNewConversation = vi.fn();
+    render(<ChatHistory {...props} onNewConversation={onNewConversation} />);
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: 'Delete all conversations' }));
+    // Assert: it says what it will do, and focus waits on Keep them
+    expect(calls).toEqual([]);
+    expect(screen.getByText("Delete all 2 conversations permanently? This can't be undone.")).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Keep them' })).toHaveFocus();
+    // Act: confirm
+    fireEvent.click(screen.getByRole('button', { name: 'Delete all for good' }));
+    // Assert
+    await vi.waitFor(() => expect(calls).toEqual([{}]));
+    await vi.waitFor(() => expect(onNewConversation).toHaveBeenCalled());
+  });
+
   it('says so when a delete fails, one conversation or all of them, and starts nothing new', async () => {
     // Arrange
     list = many.slice(0, 2);
     mutation.fn = () => Promise.reject(new Error('offline'));
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     const onNewConversation = vi.fn();
     render(<ChatHistory {...props} onNewConversation={onNewConversation} />);
     // Act
     fireEvent.click(screen.getByRole('button', { name: 'Delete conversation Conversation 1' }));
-    fireEvent.click(screen.getByRole('button', { name: /Delete all/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Conversation 1 for good' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete all conversations' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete all for good' }));
     // Assert
     await vi.waitFor(() => expect(handleOperationError).toHaveBeenCalledTimes(2));
     expect(onNewConversation).not.toHaveBeenCalled();

@@ -19,7 +19,7 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { useFocusNext } from "./useFocusNext";
+import { useFocusNext } from "@/components/ui/use-focus-next";
 
 export type InboxFilterData = FunctionReturnType<typeof api.inboundFilter.forAdmin>;
 type Row = InboxFilterData["held"][number];

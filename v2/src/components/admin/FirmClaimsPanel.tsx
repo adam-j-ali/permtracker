@@ -19,7 +19,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { focusLabel } from "@/lib/firmProfile";
 import { entityHref } from "@/lib/entityPayload";
-import { useFocusNext } from "./useFocusNext";
+import { useFocusNext } from "@/components/ui/use-focus-next";
 
 export type FirmClaimsData = FunctionReturnType<typeof api.firmClaims.listForAdmin>;
 type Claim = FirmClaimsData["review"][number];
