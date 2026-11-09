@@ -96,6 +96,14 @@ export async function GET(request: Request): Promise<NextResponse> {
       ? "no-store"
       : "public, s-maxage=900, stale-while-revalidate=3600";
     if (plan.csv) {
+      // A spreadsheet can't carry the page's warning, and a file missing a source reads as "nothing matched":
+      // refuse it, naming what couldn't be read, so the person tries again.
+      if (result.unread.length > 0) {
+        return NextResponse.json(
+          { error: `Part of the record couldn't be read just now (${result.unread.join(", ")}). Try the download again in a minute.` },
+          { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "60" } },
+        );
+      }
       return new NextResponse(casesToCsv(result.rows), {
         headers: {
           "Content-Type": "text/csv; charset=utf-8",

@@ -472,6 +472,9 @@ export const sweep = internalAction({
         if (result.status === "failed") {
           failed += 1;
           log.error("match send failed", { caseNumber: watch.caseNumber, error: result.error });
+          // A refusal no retry fixes (a 422, a full day the queue couldn't keep) reaches the owner, as the case
+          // and queue alert sweeps report theirs; a console line alone is read by nobody.
+          await recordError(ctx, "action", "pipelineMatches.sweep", new Error(`Resend: ${result.error}`));
           await release();
           continue;
         }

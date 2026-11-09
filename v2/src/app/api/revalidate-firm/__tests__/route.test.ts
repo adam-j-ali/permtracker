@@ -25,11 +25,15 @@ describe("POST /api/revalidate-firm", () => {
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
-  it("expires exactly the firm's page", async () => {
+  it("expires exactly the firm's page and the badges it embeds", async () => {
     const res = await POST(req({ slug: "smith-immigration-pllc" }));
     expect(res.status).toBe(200);
-    expect(revalidatePath).toHaveBeenCalledTimes(1);
-    expect(revalidatePath).toHaveBeenCalledWith("/perm-attorneys/smith-immigration-pllc");
+    expect(revalidatePath.mock.calls.map((c) => c[0])).toEqual([
+      "/perm-attorneys/smith-immigration-pllc",
+      "/badge/firm/smith-immigration-pllc.svg",
+      "/badge/firm/smith-immigration-pllc.light.svg",
+      "/badge/firm/smith-immigration-pllc.dark.svg",
+    ]);
   });
 
   it.each([["../../"], ["[slug]"], ["Smith"], [""], [123], [undefined]])("refuses slug %s", async (slug) => {

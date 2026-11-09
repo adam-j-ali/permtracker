@@ -109,3 +109,16 @@ describe("caseStepEstimate", () => {
     expect(caseStepEstimate({ corpus: null, eta9089FilingDate: "2026-01-15", today: TODAY }).step).toBeNull();
   });
 });
+
+describe("a closed case", () => {
+  it("gets no estimate, even with a PERM filed and undecided", () => {
+    expect(
+      caseStepEstimate({ corpus: CORPUS, caseStatus: "closed", eta9089FilingDate: "2026-01-15", today: TODAY }).step,
+    ).toBeNull();
+  });
+
+  it("gets none while its wage request was pending either", () => {
+    expect(caseStepEstimate({ corpus: CORPUS, caseStatus: "closed", pwdFilingDate: "2026-10-10", today: TODAY }).step).toBeNull();
+  });
+});
+

@@ -32,5 +32,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Expected { slug: string }" }, { status: 400 });
   }
   revalidatePath(entityHref("attorney", slug));
+  // The badge the firm embeds on its own site says "Verified firm" from the same profile, so it changes with it.
+  for (const file of [`${slug}.svg`, `${slug}.light.svg`, `${slug}.dark.svg`]) revalidatePath(`/badge/firm/${file}`);
   return NextResponse.json({ revalidated: entityHref("attorney", slug), now: Date.now() });
 }
