@@ -254,8 +254,10 @@ export const caseSummary = internalQuery({
           .withIndex("by_case", (q) => q.eq("caseNumber", caseNumber))
           .take(PER_CASE_READ)
       : [];
-    // People, not rows: each saved timeline is one, and older single reports count once per address.
-    const reporters = rows.length + new Set(legacy.map((m) => m.ipHash)).size;
+    // People, not rows: one address is one person, whether it saved timelines,
+    // older single reports or both. Counting rows let one connection post two
+    // timelines and read the real applicant's progress off the counts.
+    const reporters = new Set([...rows.map((r) => r.ipHash), ...legacy.map((m) => m.ipHash)]).size;
     const withheld = reporters < MIN_CASE_REPORTERS;
     const stops = CASE_STOPS.filter((s) => !s.verified).map((s) => ({
       id: s.id as string,

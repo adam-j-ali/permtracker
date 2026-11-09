@@ -279,6 +279,17 @@ describe("the case summary", () => {
     expect(s.timelines).toBe(0);
     expect(s.stops.every((x) => x.count === 0)).toBe(true);
   });
+
+  // One connection adding timelines of its own can't lift the floor and read the one real person's dates.
+  it("counts one address once, however many timelines it saved", async () => {
+    const t = createTestContext();
+    await t.mutation(internal.communityTimelines.save, save({ i140ApprovedOn: "2026-05-12" }));
+    await t.mutation(internal.communityTimelines.save, save({}, { key: "b".repeat(64), ip: IP_B }));
+    await t.mutation(internal.communityTimelines.save, save({}, { key: "d".repeat(64), ip: IP_B }));
+    const s = await t.query(internal.communityTimelines.caseSummary, { caseNumber: CASE });
+    expect(s.withheld).toBe(true);
+    expect(s.stops.every((x) => x.count === 0)).toBe(true);
+  });
 });
 
 describe("the HTTP layer", () => {
