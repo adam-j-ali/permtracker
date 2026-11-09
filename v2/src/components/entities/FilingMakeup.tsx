@@ -459,7 +459,7 @@ export function IndustryMix({
               <li className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
                 <span className="min-w-0 flex-1 text-sm font-bold leading-snug">{r.label}</span>{" "}
                 <span className="font-mono text-sm tabular-nums text-muted-foreground">
-                  <span className="mr-2 font-normal text-muted-foreground">{r.codes.join(", ")}</span>
+                  <span className="mr-2 font-normal text-muted-foreground">{r.codes.join(", ")}</span>{" "}
                   {formatInt(r.n)}
                 </span>
               </li>

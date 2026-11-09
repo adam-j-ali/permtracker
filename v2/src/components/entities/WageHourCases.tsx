@@ -92,7 +92,7 @@ export function WageHourCases({
         <ul className="mt-4 space-y-1" aria-label="Visa program findings">
           {visaFound.map(([label, t]) => (
             <li key={label} className="text-base">
-              <span className="mr-2 inline-block bg-soft-warn px-1.5 font-bold">{label}</span>
+              <span className="mr-2 inline-block bg-soft-warn px-1.5 font-bold">{label}</span>{" "}
               {plural(t.cases, "case")}, {plural(t.violations, "violation")}
               {t.backWages > 0 ? `, ${money(t.backWages)} in back wages to ${plural(t.workers, "worker")}` : ""}.{" "}
             </li>
