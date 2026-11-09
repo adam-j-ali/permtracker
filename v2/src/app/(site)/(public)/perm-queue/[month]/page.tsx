@@ -355,7 +355,7 @@ export default async function CohortPage({
           </>
         ) : (
           <p className="mt-6 bg-soft-good p-4 text-base border-2 border-border">
-            Every application filed in {label} has a decision. There is nothing
+            Every application filed in {label} has a decision. There&apos;s nothing
             left in the queue for this month.
           </p>
         )}
@@ -511,8 +511,8 @@ function WithdrawalNote({
   const other = total - withdrawn;
   return (
     <>
-      {formatInt(withdrawn)} of those are withdrawals, which an employer files rather
-      than DOL issuing a determination.{" "}
+      {formatInt(withdrawn)} of those are withdrawals, which the employer files. DOL
+      issues no determination on them.{" "}
       {other === 0 ? (
         <>Nothing filed this month has been certified or denied yet.</>
       ) : (

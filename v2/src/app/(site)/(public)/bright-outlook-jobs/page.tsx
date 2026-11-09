@@ -250,9 +250,9 @@ export default async function Page() {
       <FinePrint summary="How the list is made" className="mt-8">
         <p>
           O*NET marks occupations, some of them detailed jobs inside a code (15-1299.08 inside 15-1299). DOL&apos;s files record
-          the 7-digit code, so each row is the code, and where O*NET marks only detailed jobs inside it, the row names them.
+          the 7-digit code, so each row is the code. Where O*NET marks only the detailed jobs inside a code, the row names those jobs.
           Growth, openings and median pay are BLS&apos;s 2025-35 projections for the code. PERM cases are every decided case
-          under the code {span}, every job title together; the certified share needs 30 certified or denied. H-1B LCAs are
+          under the code {span}, every job title together. The certified share needs 30 certified or denied. H-1B LCAs are
           certified LCAs since October 2019 under the code, for codes with {lcaFloor ?? 30} or more.
         </p>
       </FinePrint>{" "}

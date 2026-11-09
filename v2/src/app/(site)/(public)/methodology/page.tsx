@@ -112,14 +112,14 @@ const TRACE: {
   {
     figure: "Queue advance rate",
     where: { href: "/perm-processing-times", label: "Processing times" },
-    how: "For each month of determinations, the filing month at their median; then the change in filing month divided by the change in calendar month. The range comes from rolling three-month windows, because adjacent months are lumpy enough to produce rates of 0 and 2.0 that describe scheduling rather than pace.",
-    population: "Every decided case in the unioned disclosure files. DOL publishes today's position and keeps no archive, so this cannot be read from DOL at all.",
+    how: "For each month of determinations, take the filing month at their median. Then divide the change in filing month by the change in calendar month. The range comes from rolling three-month windows, because adjacent months are lumpy enough to produce rates of 0 and 2.0 that come from scheduling and say nothing about pace.",
+    population: "Every decided case in the merged disclosure files. DOL publishes today's position and keeps no archive, so this can't be read from DOL at all.",
   },
   {
     figure: "Decisions per month",
     where: { href: "/perm-processing-times", label: "Processing times" },
     how: "A count of determinations by the month DOL issued them.",
-    population: "Every decided case in the unioned files. Lags the weekly queue page by a quarter.",
+    population: "Every decided case in the merged files. It lags the weekly queue page by a quarter.",
   },
   {
     figure: "Denial rate",
@@ -130,26 +130,26 @@ const TRACE: {
   {
     figure: "Share of denials",
     where: { href: "/perm-denial-risk", label: "Denial rates" },
-    how: "A group's denials divided by every denial in the corpus. Published next to the rate rather than instead of it, and never multiplied together into an expected count.",
+    how: "A group's denials divided by every denial in the corpus. It's published beside the rate and never multiplied with it into an expected count.",
     population: "The same decided cases the rate runs over.",
   },
   {
     figure: "95% range on a rate",
     where: { href: "/perm-denial-risk", label: "Denial rates" },
-    how: "A Wilson score interval on the denied count over the decided count. It's asymmetric near zero, which a plain plus-or-minus is not, and near zero is where most of these rates sit.",
+    how: "A Wilson score interval on the denied count over the decided count. It's asymmetric near zero, where most of these rates sit. A plain plus-or-minus isn't.",
     population: "That group's decided cases. Groups under the population floor carry no rate at all.",
   },
   {
     figure: "Filing concentration by state",
     where: { href: "/perm-by-state", label: "By state" },
-    how: "A state's biggest occupation or employer divided by its total filings. Occupations are grouped on the SOC code without its O*NET suffix, and employers on the slug rather than the spelling, because DOL writes the same firm and the same job several ways.",
-    population: "Every case with a worksite state, decided or withdrawn. It's a share of a census, so it needs no population floor; the counts are printed beside every bar.",
+    how: "A state's biggest occupation or employer divided by its total filings. Occupations are grouped on the SOC code without its O*NET suffix, and employers on one normalised name for every spelling, because DOL writes the same firm and the same job several ways.",
+    population: "Every case with a worksite state, decided or withdrawn. It's a share of a census, so it needs no population floor. The counts are printed beside every bar.",
   },
   {
     figure: "Median wage and wage percentiles",
     where: { href: "/perm-wages", label: "Wages" },
     how: "The offered wage annualised through its unit of pay, then kept only between $15,000 and $1,000,000. Outside that band a value is a data-entry artefact, most often an hourly rate recorded as an annual one.",
-    population: "Certified cases only. A denied case's offered wage is what an employer proposed and DOL rejected, which is not what the job pays. Cells with fewer than 50 wages carry no percentiles.",
+    population: "Certified cases only. A denied case's offered wage is what an employer proposed and DOL rejected, which isn't what the job pays. Cells with fewer than 50 wages carry no percentiles.",
   },
   {
     figure: "Median days to a decision",
@@ -160,7 +160,7 @@ const TRACE: {
   {
     figure: "Cases pending, by filing month",
     where: { href: "/perm-queue", label: "Live queue" },
-    how: "A count of cases whose status is not final. Pending is read off the case's own final flag, never off a list of status names: sixteen statuses appear in the data and a hardcoded list silently mis-buckets the next one DOL adds.",
+    how: "A count of cases whose status isn't final. Pending is read off the case's own final flag. It's never read off a list of status names: sixteen statuses appear in the data, and a hardcoded list silently mis-buckets the next one DOL adds.",
     population: "A per-case read of DOL's own case-status system. Every case is re-read each morning and the pending ones again each afternoon, so a status change is seen within a day. A different source from the quarterly files, which contain no pending cases at all.",
   },
   {
@@ -172,19 +172,19 @@ const TRACE: {
   {
     figure: "Every PERM deadline",
     where: { href: "/tools/perm-deadline-calculator", label: "Deadlines" },
-    how: "20 CFR 656 arithmetic, not an estimate. The filing window closes at the earlier of 180 days after the first recruitment step and the wage determination's expiry, and the tool says which one applied.",
+    how: "Exact arithmetic from 20 CFR 656, with no estimate in it. The filing window closes at the earlier of 180 days after the first recruitment step and the wage determination's expiry, and the tool says which one applied.",
     population: "Your dates only. Nothing about anyone else's case enters it.",
   },
   {
     figure: "Applications ahead of a priority date",
     where: { href: "/tools/i485-queue-position", label: "I-485 queue position" },
-    how: "USCIS suppresses its smallest counts, so a total built from published cells has a known floor and an unknown remainder. The answer is a floor and a ceiling, never a point.",
+    how: "USCIS suppresses its smallest counts, so a total built from published cells has a known floor and an unknown remainder. So the answer is a range, from a floor to a ceiling.",
     population: "USCIS's published employment-based adjustment inventory.",
   },
   {
     figure: "Visa bulletin cutoff history",
     where: { href: "/tools/priority-date-calculator", label: "Priority dates" },
-    how: "Parsed from the published charts. A cell reading C means the category was open to every priority date and U means it was shut to all of them; those are opposites, so they are drawn as different states rather than one shaded band.",
+    how: "Parsed from the published charts. A cell reading C means the category was open to every priority date. U means it was shut to all of them. Those are opposites, so they're drawn as two different states.",
     population: "Both charts, employment and family, as the State Department published them, read from its own pages each month as a bulletin appears. Months before the direct read came from the Internet Archive's copies of the same pages.",
   },
 ];
@@ -206,7 +206,7 @@ const SOURCES = [
     every: "Quarterly",
     seal: "/agency/dol-seal.png",
     sealAlt: "Seal of the US Department of Labor",
-    what: "Case-level decisions, the basis of the timeline calculator's cohort record. The files are unioned and de-duplicated by case number.",
+    what: "Case-level decisions, the basis of the timeline calculator's cohort record. The files are merged and de-duplicated by case number.",
     cadence: "Quarterly, when DOL publishes.",
     href: "https://www.dol.gov/agencies/eta/foreign-labor/performance",
   },
@@ -226,8 +226,8 @@ const SOURCES = [
     every: "Quarterly",
     seal: "/agency/dhs-seal.png",
     sealAlt: "Seal of the US Department of Homeland Security",
-    what: "Every form's median months to a decision, the I-485 by field office, approved I-140s awaiting a visa number by category and country, and I-140 approvals by class and country. Each sheet is reconciled against USCIS's own totals before it is written.",
-    cadence: "Quarterly, when USCIS publishes; discovered from USCIS's listing, never constructed.",
+    what: "Every form's median months to a decision, and the I-485 by field office. Approved I-140s awaiting a visa number by category and country, and I-140 approvals by class and country. Each sheet is reconciled against USCIS's own totals before it's written.",
+    cadence: "Quarterly, when USCIS publishes. Each file's address is taken from USCIS's own listing.",
     href: "https://www.uscis.gov/tools/reports-and-studies/immigration-and-citizenship-data",
   },
   {
@@ -236,7 +236,7 @@ const SOURCES = [
     every: "Per lookup",
     seal: "/agency/dhs-seal.png",
     sealAlt: "Seal of the US Department of Homeland Security",
-    what: `USCIS's own status text and dated history for one receipt number, read at lookup time under credentials USCIS issues to us. Off until USCIS grants access; the lookup page says so.`,
+    what: `USCIS's own status text and dated history for one receipt number, read at lookup time under credentials USCIS issues to us. Off until USCIS grants access, and the lookup page says so.`,
     cadence: "On demand, per lookup.",
     href: "https://developer.uscis.gov/api/case-status",
   },
@@ -246,7 +246,7 @@ const SOURCES = [
     every: "Monthly",
     seal: "/agency/dos-seal.png",
     sealAlt: "Seal of the US Department of State",
-    what: "Cutoff dates from every bulletin since October 2014 and most back to June 2005, read from the State Department's own pages as each one appears, with some months from the Internet Archive's copies of the same pages. A few older months are missing, where State's pages don't parse or aren't linked. Paces and backward steps are measured from October 2014. Nothing in it is forecast.",
+    what: "Cutoff dates from every bulletin since October 2014 and most back to June 2005, read from the State Department's own pages as each one appears, with some months from the Internet Archive's copies of the same pages. A few older months are missing, where State's pages don't parse or aren't linked. Paces and backward steps are measured from October 2014. Nothing here is a forecast.",
     cadence: "Monthly.",
     href: "https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin.html",
   },
@@ -306,9 +306,9 @@ export default async function MethodologyPage() {
             <em> decided</em> recently or cases <em>filed</em> in a month, and
             those are different populations. It can include audited cases or set
             them aside. It can run on this quarter&apos;s data or on a file from
-            March. And a tool built on crowd reports measures its own users
-            rather than the queue. None of these choices is wrong on its own. What
-            matters is saying which one produced the number.
+            March. And a tool built on crowd reports measures its own users. It
+            doesn&apos;t measure the queue. None of these choices is wrong on its
+            own. Each tool should say which one produced its number.
           </p>
         </MoreText>
       </section>
@@ -361,12 +361,12 @@ export default async function MethodologyPage() {
           {corpus !== null && window ? (
             <>
               Most of these run over the same corpus: {corpus.toLocaleString("en-US")}{" "}
-              unique cases from {window}, unioned and de-duplicated by case
+              unique cases from {window}, merged and de-duplicated by case
               number.{" "}
             </>
           ) : null}
-          Where a figure needs a rule that isn&apos;t obvious, the rule is here
-          rather than in a footnote on the page that uses it.
+          When a figure needs a rule that isn&apos;t obvious, this page holds
+          the rule.
         </p>
         {/* A REGISTER, NOT AN ESSAY. Each figure's rule stays in the DOM for
             search and opens on demand; the figure and where it lives are the
@@ -413,7 +413,7 @@ export default async function MethodologyPage() {
               <h3 className="font-heading text-lg font-bold leading-snug">O*NET, what a job is</h3>
             </div>{" "}
             <FinePrint summary="How it's used" className="mt-3">
-              <p className="mt-1 text-sm leading-relaxed text-soft">Descriptions, tasks, Job Zones and reported education from the O*NET Database, and the Bright Outlook list from O*NET OnLine, both by the U.S. Department of Labor, Employment and Training Administration (USDOL/ETA), used under the CC BY 4.0 license. O*NET® is a trademark of USDOL/ETA. What we changed: we show the six core tasks O*NET rates most important rather than every task, round the education shares to whole percents and leave out levels under 5%, and show eight of the titles workers report. Nothing is reworded. USDOL/ETA has not approved, endorsed, or tested these changes.</p>
+              <p className="mt-1 text-sm leading-relaxed text-soft">Descriptions, tasks, Job Zones and reported education come from the O*NET Database, and the Bright Outlook list from O*NET OnLine. Both are by the U.S. Department of Labor, Employment and Training Administration (USDOL/ETA), used under the CC BY 4.0 license. O*NET® is a trademark of USDOL/ETA. What we changed: we show only the six core tasks O*NET rates most important, round the education shares to whole percents and leave out levels under 5%, and show eight of the titles workers report. Nothing is reworded. USDOL/ETA has not approved, endorsed, or tested these changes.</p>
             </FinePrint>
           </li>{" "}
           <li className="flex flex-col bg-tint p-5">
@@ -446,7 +446,7 @@ export default async function MethodologyPage() {
               <h3 className="font-heading text-lg font-bold leading-snug">Census, where a city is</h3>
             </div>{" "}
             <FinePrint summary="How it's used" className="mt-3">
-              <p className="mt-1 text-sm leading-relaxed text-soft">A worksite city is matched to Census&apos;s place and county-subdivision files (which is where New England towns and New Jersey townships are), then to its county and metro area, then to the DOL wage area that county belongs to. A place in several counties takes the county nearest its center, and the page says so. Two places with the same name in one state, or a name Census doesn&apos;t list, stay unmatched rather than guessed.</p>
+              <p className="mt-1 text-sm leading-relaxed text-soft">A worksite city is matched to Census&apos;s place and county-subdivision files (which is where New England towns and New Jersey townships are), then to its county and metro area, then to the DOL wage area that county belongs to. A place in several counties takes the county nearest its center, and the page says so. Two places with the same name in one state, or a name Census doesn&apos;t list, stay unmatched. We don&apos;t guess them.</p>
             </FinePrint>
           </li>{" "}
           <li className="flex flex-col bg-tint p-5">

@@ -79,7 +79,7 @@ const BULLETIN_FIELDS: Array<[keyof BulletinRow, string]> = [
   ["category", "As the bulletin names it: EB1, EB2, EB3, F2A and so on."],
   ["country", "worldwide, china, india, mexico or philippines."],
   ["as_printed", "The cell exactly as State printed it: a date like 15JAN13, C or U."],
-  ["cutoff_date", "The printed date as YYYY-MM-DD; blank for C and U."],
+  ["cutoff_date", "The printed date as YYYY-MM-DD, blank for C and U."],
   ["status", "date, current (C: open to every priority date) or unavailable (U: shut to all)."],
 ];
 
@@ -87,7 +87,7 @@ const DOL_FIELDS: Array<[keyof DolRow, string]> = [
   ["as_of", "DOL's own as-of date for that reading, YYYY-MM-DD."],
   ["table", "perm_queue, perm_average_days, pwd_queue_oews, pwd_queue_non_oews or pwd_perm_backlog."],
   ["row", "The queue, determination or program DOL names on that line."],
-  ["month", "The month DOL printed, YYYY-MM; blank where DOL printed --, and on an average over a window."],
+  ["month", "The month DOL printed, as YYYY-MM. It's blank where DOL printed --, and on an average over a window."],
   ["calendar_days", "Average days to a determination (perm_average_days only)."],
   ["remaining_requests", "Wage requests still pending from that month (pwd_perm_backlog only)."],
   ["period", "The window an average covers, as DOL prints it (Last 30 Days); DOL's page since October 31, 2026."],

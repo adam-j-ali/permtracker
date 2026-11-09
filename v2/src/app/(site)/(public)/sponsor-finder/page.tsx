@@ -144,7 +144,7 @@ function ScheduleANote() {
       <Link href="/glossary#schedule-a" className="link">
         Schedule A
       </Link>{" "}
-      job: employers file it with USCIS, not with DOL, so DOL&rsquo;s PERM files hold only a few of these cases
+      job: employers file it straight with USCIS, so DOL&rsquo;s PERM files hold only a few of these cases
       and the list here is short.{" "}
       <Link href="/guides/green-card-sponsors-for-your-job" className="link">
         How to find these sponsors
@@ -332,7 +332,7 @@ export default async function SponsorFinderPage({
         <JobLine pick={pick} f={f} />{" "}
 
         <p className="mt-6 max-w-3xl border-l-4 border-primary pl-4 text-base text-soft">
-          These employers filed PERM cases. Whether one will sponsor you depends on the job and on them; DOL&apos;s
+          These employers filed PERM cases. Whether one will sponsor you depends on the job and on them. DOL&apos;s
           records can&apos;t say. Debarred employers are left out unless you ask for them.
         </p>
 
@@ -358,7 +358,7 @@ export default async function SponsorFinderPage({
                 <p className="mt-2 max-w-3xl text-base text-muted-foreground">
                   {narrowed
                     ? "Filings, approval, wage and typical decision are for this job and place, from DOL's published files. Waiting now and the newest filing are the whole employer, from DOL's live record."
-                    : "Waiting now and the newest filing come from DOL's live record; the rest from DOL's published files. Employers with no case decided yet are included."}
+                    : "Waiting now and the newest filing come from DOL's live record. The rest come from DOL's published files. Employers with no case decided yet are included."}
                 </p>{" "}
                 {/* A phone gets a card per sponsor, every figure labelled, from the same columns. */}
                 <ul className="mt-4 divide-y divide-border border-y border-border sm:hidden">
@@ -444,7 +444,7 @@ export default async function SponsorFinderPage({
           <Link href="/h1b-cap-exempt-employers" className="link">
             cap-exempt list
           </Link>
-          ), or else most of its PERM filings carry a college or university&apos;s industry code; USCIS decides who&apos;s
+          ), or else most of its PERM filings carry a college or university&apos;s industry code. USCIS decides who&apos;s
           exempt. With every state chosen, State is the one most of an employer&apos;s cases name.
         </p>
       </FinePrint>{" "}

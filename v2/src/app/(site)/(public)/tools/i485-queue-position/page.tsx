@@ -71,7 +71,7 @@ const FAQS = [
   },
   {
     q: "Why a range instead of one number?",
-    a: "USCIS replaces any cell holding between 1 and 10 applications with the letter D, to avoid identifying the people in it. So the exact total genuinely isn’t in the release. The low figure counts every withheld cell as 1 and the high figure counts every one as 10, and the truth is somewhere between them. Other tools resolve each D to 5 and publish a single number, which isn’t a figure USCIS released.",
+    a: "USCIS replaces any cell holding between 1 and 10 applications with the letter D, to avoid identifying the people in it. So the exact total isn’t in the release. The low figure counts every withheld cell as 1 and the high figure counts every one as 10, and the true total is somewhere between them. Other tools resolve each D to 5 and publish a single number, which isn’t a figure USCIS released.",
   },
   {
     q: "Does this count people who haven't filed yet?",

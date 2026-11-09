@@ -287,15 +287,15 @@ export default async function PermQueuePage() {
             {agrees ? (
               <p>
                 That&rsquo;s the month DOL publishes as its analyst-review
-                position, reached from the opposite direction: DOL states where
-                it is; this scan finds the oldest month that hasn&rsquo;t cleared.
-                Two measurements, one answer.
+                position, reached from the opposite direction. DOL states where it
+                is, and this scan finds the oldest month that hasn&rsquo;t cleared.
+                Two measurements give one answer.
               </p>
             ) : dolMonth !== null && front !== null ? (
               <p>
                 DOL publishes {formatMonth(dolMonth)} as its analyst-review
-                position; this scan measures {formatMonth(front.month)}. Both are
-                shown unadjusted; neither has been moved towards the other.
+                position, and this scan measures {formatMonth(front.month)}. Both are
+                shown unadjusted, and neither has been moved towards the other.
               </p>
             ) : null}
 
@@ -352,7 +352,7 @@ export default async function PermQueuePage() {
           What those {formatInt(census.pending)} cases were doing
         </h2>{" "}
         <p className="mt-2 max-w-3xl text-base leading-relaxed text-soft">
-          Analyst review moves in filing order; the other two don&rsquo;t.
+          Analyst review moves in filing order, and the other two don&rsquo;t.
         </p>{" "}
         {/* The whole line as one bar, each queue its share. */}
         <ChartTips label="Pending PERM cases by queue" className="mt-6">

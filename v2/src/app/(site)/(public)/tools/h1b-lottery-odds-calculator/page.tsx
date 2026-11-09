@@ -65,7 +65,7 @@ export default function H1bLotteryCalculatorPage() {
       <header>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">H-1B lottery odds for one job</h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          From the FY{WEIGHTED_FROM} cap the draw is weighted by wage. Put in the job, where it is and the offer, and see
+          From the FY{WEIGHTED_FROM} cap the draw is weighted by wage. Put in the job, its location and the offer, and see
           the level DOL&apos;s own figures give it and DHS&apos;s estimated chance at that level.
         </p>
       </header>

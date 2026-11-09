@@ -34,7 +34,7 @@ const usd = (n: number) => n.toLocaleString("en-US", { style: "currency", curren
 const FAQS = [
   {
     q: "What is the asylum program fee, and why is it on an I-140?",
-    a: `USCIS's 2024 fee rule attached a fee to every I-129 and I-140 to fund asylum processing. On the ${FEE_SCHEDULE.edition} schedule it is ${usd(FEE_SCHEDULE.asylumProgramFee.regular)} for a regular petitioner, ${usd(FEE_SCHEDULE.asylumProgramFee.small)} for a small employer with 25 or fewer full-time employees or a self-petitioner, and ${usd(FEE_SCHEDULE.asylumProgramFee.nonprofit)} for a nonprofit. It is paid with the I-140 fee, not instead of it.`,
+    a: `USCIS's 2024 fee rule attached a fee to every I-129 and I-140 to fund asylum processing. On the ${FEE_SCHEDULE.edition} schedule it's ${usd(FEE_SCHEDULE.asylumProgramFee.regular)} for a regular petitioner, ${usd(FEE_SCHEDULE.asylumProgramFee.small)} for a small employer with 25 or fewer full-time employees or a self-petitioner, and ${usd(FEE_SCHEDULE.asylumProgramFee.nonprofit)} for a nonprofit. It's paid on top of the I-140 fee.`,
   },
   {
     q: "Does the PERM cost anything to file?",
@@ -75,7 +75,7 @@ export default function GreenCardFeesPage() {
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           What USCIS charges for the employment-based green card, line by line
           from its own fee schedule, edition {FEE_SCHEDULE.edition}. The
-          attorney, the recruitment and the medical exam are not in it, and the
+          attorney, the recruitment and the medical exam aren&apos;t in it, and the
           page says so.
         </p>
       </header>
@@ -90,7 +90,7 @@ export default function GreenCardFeesPage() {
         currentHref="/tools/green-card-fees"
         reading={[
           { href: "/tools/green-card-timeline", label: "Green card timeline", note: "how long each of these stages takes" },
-          { href: "/tools/i140-calculator", label: "I-140 queue", note: "what premium processing actually skips" },
+          { href: "/tools/i140-calculator", label: "I-140 queue", note: "what premium processing skips" },
           { href: "/tools/i485-queue-position", label: "I-485 queue position", note: "the wait no fee shortens" },
         ]}
       />

@@ -37,7 +37,7 @@ export const revalidate = 86400;
 const FAQS = [
   {
     q: "When does this say one line is shorter?",
-    a: "Only when the whole range for one line sits below the whole range for the other. Where the two overlap, the counts can't tell them apart and the page says so rather than pick the lower midpoint.",
+    a: "Only when the whole range for one line sits below the whole range for the other. Where the two overlap, the counts can't tell them apart and the page says so and doesn't pick the lower midpoint.",
   },
   {
     q: "Does fewer people ahead mean a shorter wait?",
@@ -49,7 +49,7 @@ const FAQS = [
   },
   {
     q: "Why do the two counts include the same people?",
-    a: "Someone who has already downgraded holds an approved I-140 in each line, and USCIS counts petitions, not people. So both counts can include them. Nobody publishes how many.",
+    a: "Someone who has already downgraded holds an approved I-140 in each line, and USCIS counts petitions. It doesn't count people, so both counts can include them. Nobody publishes how many.",
   },
 ];
 

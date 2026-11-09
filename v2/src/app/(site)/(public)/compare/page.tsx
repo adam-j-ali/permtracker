@@ -33,7 +33,7 @@ import { withSocialCard } from "@/lib/socialCard";
 
 const TITLE = "PERM Trackers Compared: PERM Update, PERM Timeline and More";
 const DESCRIPTION =
-  "PERM case trackers and green card sites, each checked on its own pages: who each suits, where its data comes from, how fresh it is and what it costs.";
+  "PERM case trackers and green card sites, each checked on its own pages: who each suits, the source and age of its data, and what it costs.";
 
 export const metadata: Metadata = withSocialCard(
   {
@@ -137,7 +137,7 @@ export default async function ComparePage() {
             table says who each one suits.
           </p>{" "}
           <p className="mt-3 text-base leading-relaxed text-soft">
-            PERM Tracker made this page and is one of the sites on it. We chose the questions. Every mark on another
+            PERM Tracker made this page, picked its questions and is one of the sites on it. Every mark on another
             site rests on that site&apos;s own page, quoted at the end, as read on {checked}. Where another site does
             something we don&apos;t, its entry says so.
           </p>

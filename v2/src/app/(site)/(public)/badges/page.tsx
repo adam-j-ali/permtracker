@@ -120,7 +120,7 @@ export default async function BadgesPage() {
           ))}
         </ul>{" "}
         <p className="mt-6 tabular-nums text-sm leading-relaxed text-white/70">
-          {live} of {rows.length} carrying a figure right now. The rest say so rather than showing an old number.
+          {live} of {rows.length} carrying a figure right now. The rest say so and never show an old number.
         </p>
       </section>
 
@@ -129,14 +129,13 @@ export default async function BadgesPage() {
       <EmbedGallery origin={ORIGIN} />
 
       <section className="mt-12 max-w-3xl">
-        <h2 className="font-heading text-2xl font-bold">What a badge will not do</h2>{" "}
+        <h2 className="font-heading text-2xl font-bold">What a badge won&apos;t do</h2>{" "}
         <MoreText gist={"Each badge prints only a federal figure, with its publisher and date drawn in."} className="mt-3">
           <p className="text-base leading-relaxed text-soft">
-            It will not predict anything. Every figure is one a federal source printed or one this site counted from
-            federal files, and each badge draws the publisher and the date into the image, because a number on a page
-            that is not ours has to say where it came from. On a day nothing was published for a figure, that badge says
-            so rather than showing yesterday&apos;s, which is the only behaviour that is safe on a page nobody is
-            watching.
+            It won&apos;t predict anything. Every figure is one a federal source printed or one this site counted from
+            federal files. Each badge draws the publisher and the date into the image, because a number on a page
+            that isn&apos;t ours has to say where it came from. On a day nothing was published for a figure, that badge
+            says so and never shows yesterday&apos;s. That&apos;s the only safe behaviour on a page nobody is watching.
           </p>
         </MoreText>{" "}
         <p className="mt-3 text-base leading-relaxed text-soft">
@@ -149,7 +148,7 @@ export default async function BadgesPage() {
         </p>{" "}
         <p className="mt-3 text-base leading-relaxed text-soft">
           Hot-linking is fine and expected. Every variant is a static image cached for a day at the edge, so a badge on
-          a busy page costs this site one read, not one per viewer.
+          a busy page costs this site one read, however many people view it.
         </p>
       </section>
     </div>

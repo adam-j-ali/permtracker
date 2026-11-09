@@ -164,19 +164,19 @@ function moveLabel(m: SameMonthMove): string {
 const FAQS = [
   {
     q: "When does the next visa bulletin come out?",
-    a: "The State Department publishes each month's bulletin during the month before it, usually in the middle of the month, and does not announce a date. The only publication evidence this site holds is the day the Internet Archive first captured each bulletin, printed above as a floor: the bulletin existed by that day, and may have been out earlier.",
+    a: "The State Department publishes each month's bulletin during the month before it, usually in the middle of the month, and doesn't announce a date. The only publication evidence this site holds is the day the Internet Archive first captured each bulletin, printed above as a floor: the bulletin existed by that day, and may have been out earlier.",
   },
   {
     q: "Is this a prediction?",
-    a: "No. It is what every earlier bulletin for the same calendar month did, measured from the month before it, with the count of bulletins behind each figure. Seven data points describe seven years; they do not promise an eighth. The inventory column is USCIS's own count of applications ahead of the current cutoff.",
+    a: "No. It's what every earlier bulletin for the same calendar month did, measured from the month before it, with the count of bulletins behind each figure. Seven data points describe seven years. They don't promise an eighth. The inventory column is USCIS's own count of applications ahead of the current cutoff.",
   },
   {
     q: "Why does October matter more than other months?",
-    a: "The federal fiscal year starts October 1 with a fresh annual allocation of employment-based visa numbers, plus whatever family-sponsored numbers went unused in the year just ended. Categories that were shut or held for the last months of a fiscal year usually reopen or advance in October. How many spillover numbers there are is not known on the day the bulletin publishes.",
+    a: "The federal fiscal year starts October 1 with a fresh annual allocation of employment-based visa numbers, plus whatever family-sponsored numbers went unused in the year just ended. Categories that were shut or held for the last months of a fiscal year usually reopen or advance in October. The number of spillover visas isn't known on the day the bulletin publishes.",
   },
   {
     q: "What does 'applications ahead of the cutoff' mean?",
-    a: "USCIS publishes, monthly, how many adjustment-of-status applications it holds pending by category, country and priority-date month. The column counts the ones with a priority date earlier than the current cutoff, which is the queue a visa number has to clear before the cutoff can move past them. It is a floor: USCIS withholds small cells.",
+    a: "USCIS publishes, monthly, how many adjustment-of-status applications it holds pending by category, country and priority-date month. The column counts the ones with a priority date earlier than the current cutoff, which is the queue a visa number has to clear before the cutoff can move past them. It's a floor: USCIS withholds small cells.",
   },
 ] as const;
 
@@ -206,7 +206,7 @@ export default async function VisaBulletinPage() {
       <div className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6">
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">The next visa bulletin</h1>{" "}
         <p className="mt-4 text-base text-soft">
-          The bulletin archive is not available right now. The State Department publishes the current bulletin at{" "}
+          The bulletin archive isn&apos;t available right now. The State Department publishes the current bulletin at{" "}
           <a href="https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin.html" className="link" rel="noopener" target="_blank">travel.state.gov</a>.
         </p>
       </div>
@@ -327,7 +327,7 @@ export default async function VisaBulletinPage() {
       </h2>{" "}
       <MoreText gist={"One row per country: the newest cutoff, what this month did in past years, and the line ahead of it."} className="mt-3">
         <p className="max-w-3xl text-base leading-relaxed text-soft">
-          Each row is one country. The cutoff is the newest final action date we hold. The moves are every {monthName(targetMonth)} bulletin in the archive, measured against its own September; a median is printed only when there were date-to-date moves to take it over. &ldquo;Ahead of the cutoff&rdquo; is {inventoryAsOf ?? "USCIS's inventory"}: pending adjustment applications with an earlier priority date than the cutoff, a floor because USCIS withholds small cells.
+          Each row is one country. The cutoff is the newest final action date we hold. The moves are every {monthName(targetMonth)} bulletin in the archive, measured against its own September. A median is printed only when there were date-to-date moves to take it over. &ldquo;Ahead of the cutoff&rdquo; is {inventoryAsOf ?? "USCIS's inventory"}: pending adjustment applications with an earlier priority date than the cutoff, a floor because USCIS withholds small cells.
         </p>
       </MoreText>
 
@@ -406,7 +406,7 @@ export default async function VisaBulletinPage() {
       ))}
       </div>
 
-      <MoreText gist={"Bulletins are the State Department's; the line ahead is USCIS's monthly inventory."} className="mt-6">
+      <MoreText gist={"Bulletins are the State Department's. The line ahead is USCIS's monthly inventory."} className="mt-6">
         <p className="text-sm text-muted-foreground">
           Bulletin figures are the State Department&apos;s, one row per published bulletin since {monthLabel(series[0]!.bulletinMonth)}. Inventory figures are USCIS&apos;s monthly pending I-485 counts. Every month-by-month cutoff, both charts, is on the{" "}
           <Link href="/tools/priority-date-calculator" className="link">priority date page</Link>, and the queue ahead of your own date on the{" "}
@@ -472,21 +472,21 @@ export default async function VisaBulletinPage() {
           {usage ? (
             <MoreText gist={"Last year's use, counted from Table V of the Visa Office report."} className="mt-4">
               <p className="max-w-3xl text-base leading-relaxed text-soft">
-                The year before is counted, not estimated. In fiscal year {usage.fiscalYear}, {formatInt(usage.familyUsed)} family-sponsored
+                The year before is counted, with nothing estimated. In fiscal year {usage.fiscalYear}, {formatInt(usage.familyUsed)} family-sponsored
                 and {formatInt(usage.employmentUsed)} employment-based numbers were used, by Table V of the Department&apos;s Report of the
-                Visa Office {usage.fiscalYear}; the {formatInt(usage.familyUnused)} family numbers left unused against the{" "}
+                Visa Office {usage.fiscalYear}. The {formatInt(usage.familyUnused)} family numbers left unused against the{" "}
                 {formatInt(usage.familyBase)} floor are what fell to the employment side for fiscal year {usage.fiscalYear + 1}.
               </p>
             </MoreText>
           ) : null}{" "}
-          <MoreText gist={"Both from the State Department's own PDFs; no forecast."} className="mt-3">
+          <MoreText gist={"Both come from the State Department's own PDFs, and neither is a forecast."} className="mt-3">
             <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">
               Both figures are read from the Department&apos;s own PDFs, the{" "}
               <a href={spill.source} rel="noopener noreferrer" className="link">
                 annual numerical limits
               </a>{" "}
-              and the annual report, and nothing here is a forecast. The spillover for the fiscal year about to open is not published on
-              bulletin day; this page prints it when the Department posts its sheet, usually in the first weeks of the fiscal year.
+              and the annual report, and nothing here is a forecast. The spillover for the fiscal year about to open isn&apos;t published on
+              bulletin day. This page prints it when the Department posts its sheet, usually in the first weeks of the fiscal year.
             </p>
           </MoreText>
         </>
@@ -515,7 +515,7 @@ export default async function VisaBulletinPage() {
         reading={[
           { href: `/visa-bulletin/${last.bulletinMonth}`, label: `The ${monthLabel(last.bulletinMonth)} bulletin, every cutoff`, note: "both charts, all nine categories, five countries, and what each cell did since the month before" },
           { href: "/tools/priority-date-calculator", label: "Priority dates, every bulletin since 2014", note: "the month-by-month cutoffs both tables above are summarised from" },
-          { href: "/tools/i485-queue-position", label: "I-485 queue position", note: "the inventory ahead of your own priority date, not just the cutoff" },
+          { href: "/tools/i485-queue-position", label: "I-485 queue position", note: "the whole inventory ahead of your own priority date" },
           { href: "/tools/green-card-timeline", label: "Green card timeline", note: "the whole road from PERM to adjustment, with the wait at each stage" },
         ]}
       />

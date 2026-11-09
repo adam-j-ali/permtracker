@@ -30,8 +30,8 @@ describe("/visa-refusals", () => {
   it("leads with public charge, as State counted it in its newest year", async () => {
     const { text } = await html();
     expect(text).toContain("Why visas are refused");
-    expect(text).toMatch(/Public charge, immigrant visas, FY2024 1,008 found ineligible; 846 findings overcome/);
-    expect(text).toMatch(/Public charge, nonimmigrant visas, FY2024 74 found ineligible; 30 overcome/);
+    expect(text).toMatch(/Public charge, immigrant visas, FY2024 1,008 found ineligible, with 846 findings overcome/);
+    expect(text).toMatch(/Public charge, nonimmigrant visas, FY2024 74 found ineligible, with 30 overcome/);
     expect(text).toContain("3,010,544");
     expect(vi.mocked(refusalsYear)).toHaveBeenCalledWith(2024);
   });

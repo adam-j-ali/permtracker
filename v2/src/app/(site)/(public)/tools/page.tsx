@@ -157,7 +157,7 @@ export default async function ToolsPage() {
     </div>{" "}
     <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">
       <p className="mt-10 text-sm text-muted-foreground">
-        How every figure is computed:{" "}
+        Every figure&apos;s method is on{" "}
         <Link href="/methodology" className="link">
           the methodology page
         </Link>

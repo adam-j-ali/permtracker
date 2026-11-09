@@ -51,9 +51,9 @@ const STANDARDS = [
     title: "Every figure comes from a government record",
     body: (
       <>
-        The Department of Labor&apos;s case-status service, read every night; its quarterly disclosure files for decided
-        cases and their wages; its published processing times; the State Department&apos;s visa bulletins; and
-        USCIS&apos;s reports. Regulations are quoted as the eCFR prints them. Each figure carries the date it covers, and
+        The figures come from the Department of Labor&apos;s case-status service, read every night, and from DOL&apos;s
+        quarterly disclosure files for decided cases and their wages. DOL&apos;s published processing times, the State
+        Department&apos;s visa bulletins and USCIS&apos;s reports are the other sources. Regulations are quoted as the eCFR prints them. Each figure carries the date it covers, and
         the{" "}
         <Link href="/methodology" className="link">
           methodology
@@ -95,7 +95,7 @@ const STANDARDS = [
     body: (
       <>
         Each date is checked against its source before it&apos;s published. Each picture of a page or form is captured
-        from the real thing and credited. Every morning the live pages are checked as a browser renders them, for
+        from the page or form itself and credited. Every morning the live pages are checked as a browser renders them, for
         headings, links and accessibility (WCAG 2.1 AA). Each page shows the day it last changed.
       </>
     ),
@@ -157,7 +157,7 @@ export default function EditorialStandardsPage() {
           What we never take money for
         </h2>{" "}
         <p className="mt-3 text-base leading-relaxed text-soft">
-          No paid placement, no sponsored posts, no affiliate links and no advertising. No employer, law firm or rival
+          The site has no paid placement, sponsored posts, affiliate links or advertising. No employer, law firm or rival
           pays to be shown, ranked or left out.
         </p>{" "}
         <p className="mt-3 text-base leading-relaxed text-soft">{NOT_LEGAL_SERVICES}</p>

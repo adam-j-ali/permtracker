@@ -83,16 +83,16 @@ function faqsFor(enabled: boolean) {
   return [
     {
       q: "What is a USCIS receipt number?",
-      a: "The 13-character identifier USCIS assigns to a filing: three letters and ten digits, like EAC2190123456. USCIS's glossary says the letters are the office that took the case (EAC, WAC, LIN, SRC, NBC, MSC or IOE) and the ten digits are the number itself. It is the key to the case at USCIS, the way a G-100 number is the key to a PERM case at the Department of Labor.",
+      a: "The 13-character identifier USCIS assigns to a filing: three letters and ten digits, like EAC2190123456. USCIS's glossary says the letters are the office that took the case (EAC, WAC, LIN, SRC, NBC, MSC or IOE) and the ten digits are the number itself. It's the key to the case at USCIS, the way a G-100 number is the key to a PERM case at the Department of Labor.",
     },
     {
       q: "Where do I find my receipt number?",
-      a: "At the top of the I-797 notice USCIS mailed after the filing was accepted, and on every later notice about the same case. If the filing went through a USCIS online account, the receipt starts with IOE and is shown in the account. The employer's attorney has it if you do not.",
+      a: "At the top of the I-797 notice USCIS mailed after the filing was accepted, and on every later notice about the same case. If the filing went through a USCIS online account, the receipt starts with IOE and is shown in the account. The employer's attorney has it if you don't.",
     },
     {
       q: "Does this page show my case status?",
       a: enabled
-        ? "Yes. It asks USCIS's Case Status API for the receipt you type and shows USCIS's own status text and dates, with the time we last heard from USCIS printed beside them. A copy under six hours old is answered from our record rather than asking USCIS again."
+        ? "Yes. It asks USCIS's Case Status API for the receipt you type and shows USCIS's own status text and dates, with the time we last heard from USCIS printed beside them. A copy under six hours old is answered from our record, without asking USCIS again."
         : "No. It reads what the receipt number encodes. For the status itself, USCIS Case Status Online answers every receipt, and Emma, USCIS's virtual assistant, answers questions about a case. Both are linked on this page.",
     },
     {
@@ -101,7 +101,7 @@ function faqsFor(enabled: boolean) {
     },
     {
       q: "What do the digits mean?",
-      a: "USCIS does not publish a reading of them. The convention practitioners use is that the first two digits are the federal fiscal year, the next three are the workday of that year on which the case was receipted, and the last five are a sequence number. This page shows that reading and labels it a convention, because USCIS has not confirmed it.",
+      a: "USCIS doesn't publish a reading of them. The convention practitioners use is that the first two digits are the federal fiscal year, the next three are the workday of that year on which the case was receipted, and the last five are a sequence number. This page shows that reading and labels it a convention, because USCIS hasn't confirmed it.",
     },
     {
       q: "Do you store the receipt number I type in?",
@@ -116,7 +116,7 @@ const READING = [
   {
     href: "/guides/check-perm-case-status",
     label: "Check a PERM case at DOL",
-    note: "The other half of the same journey: the labor certification that comes before the I-140.",
+    note: "The other half of the same process: the labor certification that comes before the I-140.",
   },
   {
     href: "/tools/i140-calculator",
@@ -198,7 +198,7 @@ export default async function UscisCaseStatusPage({
         <p className="mt-6 flex items-start gap-2 border-2 border-data-warn bg-data-warn/8 px-4 py-3 text-base leading-relaxed text-soft">
           <WarningIcon className="mt-1 h-4 w-4 shrink-0 text-data-warn-ink" weight="fill" aria-hidden="true" />{" "}
           <span>
-            <b className="font-bold text-data-warn-ink">That is not the shape of a USCIS receipt number,</b>{" "}
+            <b className="font-bold text-data-warn-ink">That isn&apos;t the shape of a USCIS receipt number,</b>{" "}
             so nothing was looked up. {RECEIPT_SHAPE_MESSAGE}
           </span>
         </p>
@@ -207,8 +207,8 @@ export default async function UscisCaseStatusPage({
       {dolNumber ? (
         <div className="mt-6 bg-tint p-5 border-2 border-border">
           <p className="text-base leading-relaxed">
-            <b className="font-bold">That is a Department of Labor number.</b> USCIS has no record
-            under it; DOL does, and the PERM case page reads it.
+            <b className="font-bold">That&apos;s a Department of Labor number.</b> USCIS has no record
+            under it. DOL does, and the PERM case page reads it.
           </p>{" "}
           <p className="mt-3">
             <Link
@@ -230,8 +230,8 @@ export default async function UscisCaseStatusPage({
             <div>
               <dt className="font-bold text-muted-foreground">Prefix {decoded.prefix}</dt>{" "}
               <dd className="mt-1 text-base">
-                {decoded.office ? decoded.office.name : "An office USCIS's glossary does not name"}
-                {decoded.office?.source === "notices" ? " (seen on notices; not in USCIS's glossary list)" : ""}
+                {decoded.office ? decoded.office.name : "An office USCIS's glossary doesn't name"}
+                {decoded.office?.source === "notices" ? " (seen on notices, missing from USCIS's glossary list)" : ""}
               </dd>
             </div>{" "}
             {decoded.convention ? (
@@ -250,14 +250,14 @@ export default async function UscisCaseStatusPage({
             ) : (
               <div className="sm:col-span-2">
                 <dt className="font-bold text-muted-foreground">Digits</dt>{" "}
-                <dd className="mt-1 text-base">Masked by USCIS; nothing to read.</dd>
+                <dd className="mt-1 text-base">Masked by USCIS, so there&apos;s nothing to read.</dd>
               </div>
             )}
           </dl>{" "}
           <p className="border-t-2 border-border bg-tint px-5 py-3 text-sm text-muted-foreground sm:px-6">
-            The reading of the digits is a practitioner convention. USCIS publishes the
-            letters&apos; meaning and not the digits&apos;, so the year and day are labelled
-            as convention rather than fact.
+            The reading of the digits is a practitioner convention. USCIS publishes what the
+            letters mean. It doesn&apos;t publish what the digits mean, so the year and day
+            are labelled as a convention.
           </p>
         </section>
       ) : null}
@@ -280,7 +280,7 @@ export default async function UscisCaseStatusPage({
           <p className="max-w-2xl text-base leading-relaxed text-soft">
             USCIS&apos;s glossary names seven prefixes. One more, YSC, appears on
             notices from the Potomac Service Center and is listed here as seen on
-            notices rather than as USCIS&apos;s own definition. Any three letters
+            notices. USCIS doesn&apos;t define it. Any three letters
             are accepted by USCIS&apos;s own validation, so a new one would still
             look up.
           </p>
@@ -300,7 +300,7 @@ export default async function UscisCaseStatusPage({
                 </dt>{" "}
                 <dd className="text-base leading-relaxed text-soft">
                   {p.name}
-                  {p.source === "notices" ? " (seen on notices; not in USCIS's glossary list)" : ""}
+                  {p.source === "notices" ? " (seen on notices, missing from USCIS's glossary list)" : ""}
                   {p.note ? ` ${p.note}` : ""}{" "}
                 </dd>{" "}
               </div>
@@ -316,26 +316,25 @@ export default async function UscisCaseStatusPage({
 
       {enabled ? <DataProvenance datasets={["uscis-case-status"]} /> : null}
       {enabled ? (
-      <MoreText gist={"Statuses are USCIS's own words, timed; USCIS is the authority."} className="mt-2">
+      <MoreText gist={"Statuses are USCIS's own words, timed. USCIS is the authority."} className="mt-2">
         <p className="text-sm text-muted-foreground">
           Statuses on this page, when shown, are USCIS&apos;s own words from its Case
           Status API, with the time we last heard from USCIS printed beside them. USCIS
-          is the authority for any receipt and{" "}
+          is the authority for any receipt, and{" "}
           <a href={USCIS_STATUS_URL} rel="noopener noreferrer" className={link}>
             its own status page
           </a>{" "}
-          answers every receipt today. The office names come from USCIS&apos;s glossary;
-          the reading of the digits is a convention and is labelled as one. What a
-          lookup sends and what is kept is stated in{" "}
+          answers every receipt today. The office names come from USCIS&apos;s glossary.
+          The reading of the digits is a convention and is labelled as one.{" "}
           <Link href="/privacy#uscis-case-status" className={link}>
-            section 18 of the privacy policy
-          </Link>
-          .
+            Section 18 of the privacy policy
+          </Link>{" "}
+          states what a lookup sends and what&apos;s kept.
         </p>
       </MoreText>
       ) : (
         <p className="mt-10 text-sm text-muted-foreground">
-          The office names come from USCIS&apos;s glossary; the reading of the digits is a
+          The office names come from USCIS&apos;s glossary. The reading of the digits is a
           convention and is labelled as one. USCIS is the authority for any receipt, and{" "}
           <a href={USCIS_STATUS_URL} rel="noopener noreferrer" className={link}>
             its own status page

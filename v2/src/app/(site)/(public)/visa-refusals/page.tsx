@@ -138,12 +138,12 @@ export default async function VisaRefusalsPage() {
         <Figure
           label={`Public charge, immigrant visas, ${fyLabel(newest)}`}
           value={pcNow?.ivFound === null || !pcNow ? "N/A" : formatInt(pcNow.ivFound)}
-          note={pcNow?.ivOvercome !== null && pcNow ? `found ineligible; ${formatInt(pcNow.ivOvercome)} findings overcome` : "found ineligible"}
+          note={pcNow?.ivOvercome !== null && pcNow ? `found ineligible, with ${formatInt(pcNow.ivOvercome)} findings overcome` : "found ineligible"}
         />{" "}
         <Figure
           label={`Public charge, nonimmigrant visas, ${fyLabel(newest)}`}
           value={pcNow?.nivFound === null || !pcNow ? "N/A" : formatInt(pcNow.nivFound)}
-          note={pcNow?.nivOvercome !== null && pcNow ? `found ineligible; ${formatInt(pcNow.nivOvercome)} overcome` : "found ineligible"}
+          note={pcNow?.nivOvercome !== null && pcNow ? `found ineligible, with ${formatInt(pcNow.nivOvercome)} overcome` : "found ineligible"}
         />{" "}
         <Figure
           label={`214(b), ${fyLabel(newest)}`}
@@ -245,7 +245,7 @@ export default async function VisaRefusalsPage() {
         <FigurePlate
           title="Nonimmigrant visa applications found ineligible under 214(b) and 221(g)"
           subject={`${fyLabel(years[0]!)} to ${fyLabel(newest)}, worldwide`}
-          caption="Each column is one fiscal year; the newest is lime. Fiscal 2020 and 2021 fall in the months State's own note on those tables describes, when posts had suspended routine visa services for COVID-19."
+          caption="Each column is one fiscal year, and the newest is lime. Fiscal 2020 and 2021 fall in the months State's own note on those tables describes, when posts had suspended routine visa services for COVID-19."
           source="U.S. Department of State, Report of the Visa Office, ineligibilities by ground"
           className="mt-6"
         >
@@ -286,8 +286,8 @@ export default async function VisaRefusalsPage() {
             ground, so the grounds add up to more than the applications refused (State&apos;s footnote 1).
           </li>{" "}
           <li>
-            A refusal can be overcome in a later fiscal year, by evidence the ground doesn&apos;t apply, a waiver or other
-            relief, and each action counts in the year it happened. So a year&apos;s overcome figure can pass its findings
+            A refusal can be overcome in a later fiscal year by evidence the ground doesn&apos;t apply, a waiver or other
+            relief. Each action counts in the year it happened. So a year&apos;s overcome figure can pass its findings
             (State&apos;s footnote 2).
           </li>{" "}
           <li>N/A is State&apos;s dash: that ground can&apos;t apply to that kind of visa. It isn&apos;t a zero.</li>{" "}
@@ -296,7 +296,7 @@ export default async function VisaRefusalsPage() {
             {Object.values(summary.knownGaps).flat().map((g) => ` ${g.why}`).join("")}
           </li>{" "}
           <li>
-            The table moved from Table XX (to fiscal 2019) to Table XIX (from fiscal 2020) in State&apos;s report; it&apos;s
+            The table moved from Table XX (to fiscal 2019) to Table XIX (from fiscal 2020) in State&apos;s report. It&apos;s
             the same table, read by its title.
           </li>
         </ul>

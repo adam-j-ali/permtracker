@@ -162,7 +162,7 @@ export default async function PermByStatePage() {
             <>
               <section className="mt-12">
                 <h2 className="font-heading text-2xl font-bold">
-                  What each state actually files
+                  What each state files
                 </h2>{" "}
                 <p className="mt-2 max-w-3xl text-base leading-relaxed text-muted-foreground">
                   Shaded by volume, PERM looks like one national software
@@ -192,8 +192,7 @@ export default async function PermByStatePage() {
                 <FinePrint summary="How employers are grouped" className="mt-2">
                   <p>
                     DOL prints the same firm under several spellings, so these
-                    are grouped on the identity behind the name rather than the
-                    name itself. Washington&apos;s leader is one company written
+                    are grouped by the company behind each name. Washington&apos;s leader is one company written
                     two ways, which ranked as two until they were merged.
                   </p>
                 </FinePrint>{" "}
@@ -244,7 +243,7 @@ export default async function PermByStatePage() {
         <div >
           <h2 className="font-heading text-lg font-bold">Waiting on a case here?</h2>{" "}
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            The state doesn’t change your place in line. The filing month
+            Your state doesn’t change your place in line. The filing month
             does. The{" "}
             <Link href="/tools/perm-timeline-calculator" className="link">
               decision estimator

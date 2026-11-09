@@ -53,7 +53,7 @@ export async function GET(req: Request) {
     );
   } catch (e) {
     const timedOut = e instanceof Error && e.name === "AbortError";
-    return NextResponse.json({ ok: false, message: timedOut ? "DOL did not answer in time." : "DOL could not be reached." }, { status: 504, headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ ok: false, message: timedOut ? "DOL didn't answer in time." : "DOL couldn't be reached." }, { status: 504, headers: { "Cache-Control": "no-store" } });
   } finally {
     clearTimeout(timer);
   }

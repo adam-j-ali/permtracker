@@ -65,12 +65,12 @@ function faqs(doc: LayoffDoc | null) {
     {
       q: "Does a yes mean the case is denied?",
       a: y
-        ? `No. The rule allows the filing; it asks more of the employer. Of the applications decided in ${fyLabel(doc!)} that said yes, ${formatShareOf(y.yesOutcomes.certified, outcomeTotal(y.yesOutcomes))} were certified, against ${formatShareOf(y.noOutcomes.certified, outcomeTotal(y.noOutcomes))} of those that said no. That's an association, and says nothing about why any one case ended as it did.`
-        : "No. The rule allows the filing; it asks more of the employer.",
+        ? `No. The rule allows the filing, but it asks more of the employer. Of the applications decided in ${fyLabel(doc!)} that said yes, ${formatShareOf(y.yesOutcomes.certified, outcomeTotal(y.yesOutcomes))} were certified, against ${formatShareOf(y.noOutcomes.certified, outcomeTotal(y.noOutcomes))} of those that said no. That's an association, and says nothing about why any one case ended as it did.`
+        : "No. The rule allows the filing, but it asks more of the employer.",
     },
     {
       q: "Can an employer that laid people off still file PERM?",
-      a: "Yes. If it had a layoff in the job's occupation or a related one, in the area of intended employment, within the six months before filing, it must have notified and considered the laid-off U.S. workers who could do the job, and kept the record (20 CFR 656.17(k)). A layoff is any involuntary separation without cause, one person included.",
+      a: "Yes, if it had a layoff in the six months before filing, in the job's occupation or a related one and in the area of intended employment. Then it must have notified and considered the laid-off U.S. workers who could do the job, and kept the record (20 CFR 656.17(k)). A layoff is any involuntary separation without cause, one person included.",
     },
     {
       q: "Is this the same as a WARN notice?",
@@ -289,7 +289,7 @@ export default async function Page() {
         </p>{" "}
         <p>
           Cases count in the fiscal year DOL decided them, October to September. A year DOL is still publishing runs to the
-          last day its newest file reaches. Each employer&apos;s spellings are counted on one page; a name with no page is
+          last day its newest file reaches. Each employer&apos;s spellings are counted on one page. A name with no page is
           listed as DOL printed it, without a link.
         </p>
       </FinePrint>{" "}

@@ -133,9 +133,9 @@ export default function ContactPage() {
         <div className="mt-12 bg-tint p-6 border-2 border-black shadow-hard-sm">
           <h3 className="font-heading text-lg font-bold mb-2">Response time</h3>{" "}
           <p className="text-muted-foreground">
-            We typically respond to inquiries within 24-48 hours during business
-            days. For urgent matters related to case deadlines, please include
-            &quot;URGENT&quot; in your email subject.
+            We typically answer within 24 to 48 hours on business days. If it&apos;s
+            urgent and about a case deadline, put &quot;URGENT&quot; in the subject
+            line.
           </p>
         </div>
 
