@@ -54,6 +54,24 @@ describe("the CSPA calculator", () => {
     expect(screen.queryByLabelText("Chart USCIS named for filing")).toBeNull();
   });
 
+  it("says a filing entered after the year came too late, never to enter it again", async () => {
+    // Arrange: the line current every month of 2025 and 2026, and the child filed in June 2026
+    const months: Record<string, string> = {};
+    for (let i = 0; i < 24; i++) months[`${2025 + Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, "0")}`] = "C";
+    global.fetch = vi.fn(async () => new Response(JSON.stringify(line(months)))) as unknown as typeof fetch;
+    render(<CspaCalculator employmentCategories={["EB2"]} familyCategories={[]} />);
+    // Act
+    fill("The child's date of birth", "2008-04-12");
+    fill("Priority date", "2016-05-20");
+    fill("The parent's I-140 receipt date", "2017-01-10");
+    fill("Its approval date", "2017-06-30");
+    fill("When the child filed (optional)", "2026-06-01");
+    // Assert
+    await screen.findByText("The year to file passed");
+    expect(screen.getByText(/filed on June 1, 2026, after that year ended/)).toBeTruthy();
+    expect(screen.queryByText(/If the child did file, enter the date above/)).toBeNull();
+  });
+
   it("says why when the line didn't load", async () => {
     global.fetch = vi.fn(async () => new Response(JSON.stringify({ ok: false, message: "The bulletin archive couldn't be read just now." }), { status: 503 })) as unknown as typeof fetch;
     render(<CspaCalculator employmentCategories={["EB2"]} familyCategories={[]} />);
