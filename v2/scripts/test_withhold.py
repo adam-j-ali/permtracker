@@ -290,6 +290,14 @@ def main() -> int:
           "every deploy runs the purge with both private lists, and the LCA database", f)
     check("echo" not in step and "set -x" not in step, "and prints nothing of them", f)
 
+    build = wf[wf.find("- name: Build\n"):]
+    build = build[:build.find("- name:", 10)]
+    check('[ -z "$WITHHELD_EMPLOYERS" ] || [ -z "$WITHHELD_FIRMS" ]' in build and "exit 1" in build
+          and build.find("exit 1") < build.find("pnpm build"),
+          "an empty list (a secret missing after a repository move) stops the build before it prerenders", f)
+    check("$WITHHELD_EMPLOYERS\"" not in build.replace('[ -z "$WITHHELD_EMPLOYERS" ]', ""),
+          "and the guard never prints a list", f)
+
     print("\nALL PASS" if not f else f"\n{len(f)} FAILURE(S)")
     return 1 if f else 0
 

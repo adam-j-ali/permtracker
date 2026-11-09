@@ -257,7 +257,8 @@ export function roleOf(column: string): Role {
   let kind: Role["kind"];
   if (/case_?(number|no)$|^case$|^cn$/.test(c)) kind = "case";
   else if (/attorney|firm|atty/.test(c)) kind = "firm";
-  else if (/employer|sponsor|petitioner|compan(y|ies)|business_?name|^emp(_|slug|name|$)/.test(c)) kind = "employer";
+  // OSHA and WHD print the employer as `estab_name` and `trade_name`.
+  else if (/employer|sponsor|petitioner|compan(y|ies)|business_?name|^emp(_|slug|name|$)|estab|trade_?name/.test(c)) kind = "employer";
   else if (GENERIC.has(c)) kind = "generic";
   else kind = "other";
   const role = { kind, slugLike };
@@ -265,14 +266,21 @@ export function roleOf(column: string): Role {
   return role;
 }
 
-/** The kind a row's (or a JSON object's) own `facet` or `kind` says its generic cells are, or null. */
+/** Words for things that are never a firm or an employer: an occupation, a place, a newspaper, a program. */
+const NON_ENTITY = /occupation|job|soc|state|cit(y|ies)|industr|countr|newspaper|title|program/;
+
+/**
+ * The kind a row's (or a JSON object's) own `facet` or `kind` says its generic cells are, or null.
+ * Only a value known to name something else turns masking off: any other value (SAM's exclusion type,
+ * "Prohibition/Restriction") says nothing about the row, so its name is matched as the page's kind.
+ */
 function ownKind(o: Record<string, unknown>): KindMask | null {
   const v = typeof o.facet === "string" ? o.facet : typeof o.kind === "string" ? o.kind : null;
   if (v === null) return null;
   const k = v.toLowerCase();
   if (k === "attorney" || k === "firm") return FIRM;
   if (k === "employer") return EMPLOYER;
-  return NONE;
+  return NON_ENTITY.test(k) ? NONE : null;
 }
 
 /** The kind a JSON key says the objects under it are: `firms: [...]`, `topEmployers: [...]`. */
@@ -280,7 +288,7 @@ function keyKind(key: string): KindMask | null {
   const k = key.toLowerCase();
   if (/attorney|firm|atty/.test(k)) return FIRM;
   if (/employer|sponsor|compan/.test(k)) return EMPLOYER;
-  if (/occupation|job|soc|state|cit(y|ies)|industr|countr|newspaper|title|program/.test(k)) return NONE;
+  if (NON_ENTITY.test(k)) return NONE;
   return null;
 }
 
@@ -510,11 +518,30 @@ function escapeRe(s: string): string {
 
 const FORM_TAIL = `(?:[\\s,.]+(?:${[...FORM_WORDS].join("|")}|l\\.?\\s?l\\.?\\s?c|p\\.?\\s?l\\.?\\s?l\\.?\\s?c|l\\.?\\s?l\\.?\\s?p|p\\.?\\s?c)\\.?)*`;
 
-/** The name's words in order, with anything but letters and digits between them. */
+const SEP = "[^a-z0-9]{1,8}";
+
+/** A word as text prints it: a run of two or three letters may be initials the key merged ("jq" is "J. Q."). */
+function wordPattern(w: string): string {
+  return /^[a-z]{2,3}$/.test(w) ? w.split("").join("[^a-z0-9]{0,3}") : escapeRe(w);
+}
+
+/**
+ * The name's words in order, with anything but letters and digits between them. The key spells "&" as
+ * "and", so "and" may be missing from the text: "Smith & Jones" and "Smith and Jones" are one name.
+ */
 function flexName(name: string): string | null {
   const words = nameKey(name).split(" ").filter(Boolean);
   if (words.join("").length < MIN_KEY) return null;
-  return words.map(escapeRe).join("[^a-z0-9]{1,8}");
+  let out = wordPattern(words[0]!);
+  for (let i = 1; i < words.length; i++) {
+    const w = words[i]!;
+    if (w === "and" && i < words.length - 1) {
+      out += `${SEP}(?:and${SEP})?${wordPattern(words[++i]!)}`;
+      continue;
+    }
+    out += SEP + wordPattern(w);
+  }
+  return out;
 }
 
 export function makeMasker(entries: readonly WithheldEntry[]): Masker {
@@ -576,11 +603,11 @@ export function makeMasker(entries: readonly WithheldEntry[]): Masker {
     const n = pick(byName.get(lower), kinds);
     if (n) return { entry: n, how: "name" };
     if (exactOnly) return null;
-    const first = lower.split(/[^a-z0-9]+/).find(Boolean);
-    if (!first || !keyStarts.has(first)) {
-      // "The Example Law Group" starts with a word the keys drop.
-      if (first !== "the") return null;
-    }
+    // Accents off, as the keys have them ("Société" is "societe").
+    const first = lower.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").split(/[^a-z0-9]+/).find(Boolean);
+    if (!first) return null;
+    // "The Example Law Group" starts with a word the keys drop, and "J. Q. Example" with an initial they merge.
+    if (!keyStarts.has(first) && first !== "the" && first.length > 1) return null;
     const k = nameKey(value);
     const e = pick(byKey.get(k), kinds);
     if (!e) return null;
