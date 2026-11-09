@@ -9,7 +9,7 @@
  *   Tier 1, Google Gemini (primary, 1M context, a daily free allowance per model):
  *     1. Gemini 2.5 Flash
  *     2. Gemini 3.5 Flash Lite
- *     3. Gemini 3.8 Flash
+ *     3. Gemini 3.6 Flash
  *
  *   Tier 2, other providers:
  *     4. GPT-OSS 120B on Groq (8k tokens a minute free, so short conversations only)
@@ -19,6 +19,11 @@
  *
  * Mistral Small left the chain on Oct 29 2026: its free account had allowed
  * 0 requests a minute since at least Oct 12, so it never answered.
+ *
+ * Gemini 3.6 Flash took Gemini 3.8 Flash's place on Nov 9 2026: 3.8 stopped
+ * answering the daily check on Nov 7 (a 503, then nothing for two days, and
+ * a direct call timed out at 30 and 40 seconds) while Google still listed it.
+ * 3.6 answered in under six seconds.
  *
  * The summarizer (summarize.ts) uses Groq's GPT-OSS models directly.
  *
@@ -137,7 +142,7 @@ const MODEL_CONFIGS: ModelConfig[] = [
   // Tier 1: Google Gemini, 1M context
   { model: google('gemini-2.5-flash'), name: 'Gemini 2.5 Flash' },
   { model: google('gemini-3.5-flash-lite'), name: 'Gemini 3.5 Flash Lite' },
-  { model: google('gemini-3.8-flash'), name: 'Gemini 3.8 Flash' },
+  { model: google('gemini-3.6-flash'), name: 'Gemini 3.6 Flash' },
 
   // Tier 2: other providers' fallbacks
   {
@@ -382,7 +387,7 @@ export const SUPPORTED_MODELS = [
   // Tier 1: Google Gemini
   { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google', tier: 1 },
   { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite', provider: 'Google', tier: 1 },
-  { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash', provider: 'Google', tier: 1 },
+  { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash', provider: 'Google', tier: 1 },
 
   // Tier 2: other providers
   { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B', provider: 'Groq', tier: 2 },
