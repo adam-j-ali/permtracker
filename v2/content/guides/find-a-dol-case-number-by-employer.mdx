@@ -2,7 +2,7 @@
 title: "Find a case number you were never given"
 description: "Search by employer, job title and filing month across PERM, wage requests and H-1B LCAs to get the DOL case number nobody sent you."
 date: "2026-09-03"
-updated: "2026-09-26"
+updated: "2026-11-09"
 author: "PERM Tracker data desk"
 image: "/images/content/heroes/guides/find-a-dol-case-number-by-employer.webp"
 imageAlt: "The all-programs search on permtracker.app: PERM, wage requests, H-1B LCAs and seasonal filings counted, with a search by employer"
@@ -62,8 +62,8 @@ Use the legal name on the offer letter or the pay stub rather than the brand. Sh
 The field is "Job title contains", so one distinctive word does the work. "Engineer" and "Analyst" will still leave hundreds of rows. "Radiologic" or "Actuary" won't.
 </Step>
 
-<Step title="Set the filing month range">
-"Filed from" and "Filed to" take a month each. If you know the quarter, set both ends of it rather than guessing a single month.
+<Step title="Set the filing month range, or the exact day">
+"Filed from" and "Filed to" take a month each. If you know the quarter, set both ends of it rather than guessing a single month. If you know the day itself, "Filed on one day" takes it and lists that day alone.
 </Step>
 
 <Step title="Read the row">
@@ -87,6 +87,12 @@ And the parts most likely to differ sit at the end. "LLC", "L.L.C.", "Inc." and 
   step={2}
   aspectRatio={1600 / 1025}
 />
+
+## If you know the day it was filed
+
+There's a shorter route when you know the filing date. Under every case-number box on the site, "Find it by employer and filing date" opens a small finder. Type the employer's name and the date, and it lists the cases that employer filed that day, each linked to its status page. The [PERM timeline calculator](/tools/perm-timeline-calculator) has the same box under its date field.
+
+It also helps when the name or the date is a little off. If no case that day matches the name, it shows the employers that did file that day under a close spelling. It also shows the days in the week either side on which a name starting the same way filed.
 
 ## What to do when the employer files a lot
 

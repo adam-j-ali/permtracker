@@ -42,6 +42,14 @@ export function trackLookup(source: string, raw: string): void {
   analytics.capture("case_lookup_submitted", { source, shape: queryShape(raw) });
 }
 
+/**
+ * The no-number finder answered: an employer's name and a filing day were read against that
+ * day's list. `found` is how it ended ("cases", "close-names" or "none"), never the name.
+ */
+export function trackFinder(source: string, program: string, found: "cases" | "close-names" | "none"): void {
+  analytics.capture("case_finder_answered", { source, program, found });
+}
+
 /** A site-wide search box (header, palette, /case-search) was submitted. */
 export function trackSiteSearch(surface: string, raw: string): void {
   analytics.capture("site_search_submitted", { surface, shape: queryShape(raw) });
