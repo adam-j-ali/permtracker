@@ -172,7 +172,7 @@ import {
 } from "./lib/rateLimit";
 import { stageNewsFor, stageNewsletterFor } from "./lib/newsConsent";
 import { createLogger } from "./lib/logging";
-import { deliverAlert } from "./lib/alertDelivery";
+import { deliverAlert, deliveredSince } from "./lib/alertDelivery";
 import { dropQueued } from "./lib/alertOutboxStore";
 import {
   CASE_ALERT_KEY,
@@ -227,7 +227,7 @@ const alertGlobalBudget = () => windowFor("caseAlert");
  * emails a day instead of one per sweep.
  */
 const ALERT_COOLDOWN_MS = 6 * MS_PER_HOUR;
-/** A send claim older than this is a sweep that died mid-send; the row is free again. */
+/** A send claim older than this is a sweep that died mid-send: recorded if its alert went, free again if not. */
 export const ALERT_SEND_CLAIM_MS = 15 * MS_PER_MINUTE;
 
 /**
@@ -1103,26 +1103,46 @@ export const seedObserved = internalMutation({
  * claim, both email the same change. Mutations are serialised per document,
  * so exactly one claim wins. False when the subscriber has already heard of
  * this status, or another sweep holds a fresh claim on it.
+ *
+ * A claim on this status older than ALERT_SEND_CLAIM_MS is a sweep that died.
+ * If its alert reached the outbox (`deliveredSince`), the email went and only
+ * recordAlert was lost: the row is recorded as told here and nothing is sent.
+ * Otherwise the sweep died before its send, and this claim takes the row over.
  */
 export const claimAlertSend = internalMutation({
-  args: { id: v.id("caseStatusAlerts"), status: v.string() },
+  args: { id: v.id("caseStatusAlerts"), status: v.string(), isFinal: v.boolean() },
   returns: v.boolean(),
   handler: async (ctx, args) => {
     const row = await ctx.db.get(args.id);
     if (!row || row.confirmedAt === undefined || row.caseClosedAt !== undefined) return false;
     if (row.lastSeenStatus === args.status) return false;
     const now = Date.now();
-    if (
-      row.sendingStatus === args.status &&
-      row.sendingAt !== undefined &&
-      now - row.sendingAt < ALERT_SEND_CLAIM_MS
-    ) {
-      return false;
+    if (row.sendingStatus === args.status && row.sendingAt !== undefined) {
+      if (now - row.sendingAt < ALERT_SEND_CLAIM_MS) return false;
+      if (await deliveredSince(ctx, `case:${row._id}`, row.sendingAt)) {
+        await stampAlerted(ctx, row, args.status, args.isFinal, now);
+        return false;
+      }
     }
     await ctx.db.patch(args.id, { sendingStatus: args.status, sendingAt: now });
     return true;
   },
 });
+
+/** The row as told about `status`: after a delivery, or for a lapsed claim whose alert went. */
+async function stampAlerted(ctx: MutationCtx, row: Doc<"caseStatusAlerts">, status: string, isFinal: boolean, now: number) {
+  await ctx.db.patch(row._id, {
+    lastSeenStatus: status,
+    lastAlertSentAt: now,
+    lastCheckedAt: now,
+    alertCount: (row.alertCount ?? 0) + 1,
+    sendingStatus: undefined,
+    sendingAt: undefined,
+    // A decision starts the year of watching for an appeal or a reopening;
+    // a move back out of a final status ends it (patching undefined deletes).
+    decidedAt: isFinal ? now : undefined,
+  });
+}
 
 /** A claimed send that didn't go out: free the row for the next sweep. */
 export const releaseAlertSend = internalMutation({
@@ -1148,18 +1168,7 @@ export const recordAlert = internalMutation({
   handler: async (ctx, args) => {
     const row = await ctx.db.get(args.id);
     if (!row) return null;
-    const now = Date.now();
-    await ctx.db.patch(args.id, {
-      lastSeenStatus: args.status,
-      lastAlertSentAt: now,
-      lastCheckedAt: now,
-      alertCount: (row.alertCount ?? 0) + 1,
-      sendingStatus: undefined,
-      sendingAt: undefined,
-      // A decision starts the year of watching for an appeal or a reopening;
-      // a move back out of a final status ends it (patching undefined deletes).
-      decidedAt: args.isFinal ? now : undefined,
-    });
+    await stampAlerted(ctx, row, args.status, args.isFinal, Date.now());
     return null;
   },
 });
@@ -1687,7 +1696,7 @@ export const sweepCaseChanges = internalAction({
 
     for (const { sub, program, status, isFinal, observedAt } of sending) {
       // Another sweep is sending this one, or already has.
-      if (!(await ctx.runMutation(internal.caseAlerts.claimAlertSend, { id: sub._id, status }))) continue;
+      if (!(await ctx.runMutation(internal.caseAlerts.claimAlertSend, { id: sub._id, status, isFinal }))) continue;
       let delivered = false;
       try {
         const { slugify } = await import("../src/lib/entitySlug");
@@ -1945,7 +1954,8 @@ export const sweepCaseChanges = internalAction({
         }
 
         // Set before the record, as the queue and match sweeps do: if recordAlert throws, the claim stays
-        // (it lapses after ALERT_SEND_CLAIM_MS) instead of being freed for the next sweep to send again.
+        // instead of being freed for the next sweep to send again. Once it lapses, claimAlertSend finds this
+        // alert in the outbox and records it.
         delivered = true;
         await ctx.runMutation(internal.caseAlerts.recordAlert, {
           id: sub._id,

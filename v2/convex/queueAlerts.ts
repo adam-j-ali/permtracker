@@ -66,7 +66,7 @@ import { api, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { ReactElement } from "react";
 import { FROM_EMAIL, getResend, sendOrQueue } from "./lib/email";
-import { claimHolds, deliverAlert } from "./lib/alertDelivery";
+import { claimHolds, deliverAlert, deliveredSince } from "./lib/alertDelivery";
 import { dropQueued } from "./lib/alertOutboxStore";
 import { SITE_URL, actionUrl } from "./lib/links";
 import { prefsLink } from "./lib/prefsLink";
@@ -753,8 +753,9 @@ export const markNotified = internalMutation({
  * Claim a row's one alert before it is sent. False when the row is no longer due (told, opted out, unconfirmed)
  * or another run's claim still holds (SEND_CLAIM_MS): that run may already have sent it. Written in its own
  * mutation BEFORE deliverAlert, so a run that dies between the send and `markNotified` leaves the claim behind
- * and a run inside SEND_CLAIM_MS (a resume, a retry) skips the row. An older claim is read as a run that died
- * before its send, so the row is sent then; if that run had sent, the person gets the alert a second time.
+ * and a run inside SEND_CLAIM_MS (a resume, a retry) skips the row. An older claim is a run that died: if its
+ * alert reached the outbox (`deliveredSince`), the row is marked told here and nothing is sent; if not, the run
+ * died before its send and this claim takes the row over.
  */
 export const claimQueueSend = internalMutation({
   args: { id: v.id("dolQueueAlerts") },
@@ -766,6 +767,11 @@ export const claimQueueSend = internalMutation({
     }
     const now = Date.now();
     if (claimHolds(row.sendingAt, now)) return false;
+    if (row.sendingAt !== undefined && (await deliveredSince(ctx, `queue:${row._id}`, row.sendingAt))) {
+      // markNotified's own write: the one alert went.
+      await ctx.db.patch(args.id, { notifiedAt: now, sendingAt: undefined });
+      return false;
+    }
     await ctx.db.patch(args.id, { sendingAt: now });
     return true;
   },
@@ -970,7 +976,7 @@ export const notifyQueueReached = internalAction({
         log.error("alert send threw", { email: row.email, error });
         await recordError(ctx, "action", "queueAlerts.notifyQueueReached", error);
         // Free the row only if nothing went out. After a delivery the claim stays, so a run inside
-        // SEND_CLAIM_MS skips the row; after that it lapses like a crashed run's and the row is sent again.
+        // SEND_CLAIM_MS skips the row, and a later one finds this alert in the outbox and marks the row told.
         if (!delivered) {
           await ctx.runMutation(internal.queueAlerts.releaseQueueSend, { id: row._id }).catch(() => undefined);
         }

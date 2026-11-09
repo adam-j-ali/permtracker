@@ -657,14 +657,66 @@ describe("the change detector", () => {
     expect(row?.sendingStatus).toBeUndefined();
   });
 
+  it("records a lapsed claim whose alert reached the outbox, instead of sending it again", async () => {
+    // The run that claimed it sent the alert, wrote its outbox row, and died before recordAlert.
+    const t = createTestContext();
+    const { alerts } = stubMirrorAndResend({ cases: { [CASE]: { status: "RFI ISSUED", isFinal: false } } });
+    const id = await seededSubscription(t, "person@example.com", "ANALYST REVIEW");
+    const { ALERT_SEND_CLAIM_MS } = await import("../caseAlerts");
+    const claimedAt = Date.now() - ALERT_SEND_CLAIM_MS - 1;
+    await t.run(async (ctx) => {
+      await ctx.db.patch(id, { sendingStatus: "RFI ISSUED", sendingAt: claimedAt });
+      await ctx.db.insert("alertOutbox", {
+        email: "person@example.com",
+        kind: "case",
+        ref: `case:${id}`,
+        status: "sent",
+        subject: "Your PERM case is now RFI ISSUED",
+        summary: { title: CASE, line: "RFI ISSUED", url: "https://permtracker.app" },
+        createdAt: claimedAt + 1000,
+        sentAt: claimedAt + 1000,
+        direct: true,
+      });
+    });
+    await t.action(internal.caseAlerts.sweepCaseChanges, {});
+    expect(alerts(), "that alert went already").toHaveLength(0);
+    const row = await t.run(async (ctx) => ctx.db.get(id));
+    expect(row).toMatchObject({ lastSeenStatus: "RFI ISSUED", alertCount: 1 });
+    expect(row?.sendingStatus).toBeUndefined();
+  });
+
+  it("still sends a lapsed claim when the outbox holds only an older alert for the row", async () => {
+    const t = createTestContext();
+    const { alerts } = stubMirrorAndResend({ cases: { [CASE]: { status: "RFI ISSUED", isFinal: false } } });
+    const id = await seededSubscription(t, "person@example.com", "ANALYST REVIEW");
+    const { ALERT_SEND_CLAIM_MS } = await import("../caseAlerts");
+    const claimedAt = Date.now() - ALERT_SEND_CLAIM_MS - 1;
+    await t.run(async (ctx) => {
+      await ctx.db.patch(id, { sendingStatus: "RFI ISSUED", sendingAt: claimedAt });
+      await ctx.db.insert("alertOutbox", {
+        email: "person@example.com",
+        kind: "case",
+        ref: `case:${id}`,
+        status: "sent",
+        subject: "Your PERM case is now ANALYST REVIEW",
+        summary: { title: CASE, line: "ANALYST REVIEW", url: "https://permtracker.app" },
+        createdAt: claimedAt - 86_400_000,
+        sentAt: claimedAt - 86_400_000,
+        direct: true,
+      });
+    });
+    await t.action(internal.caseAlerts.sweepCaseChanges, {});
+    expect(alerts()).toHaveLength(1);
+  });
+
   it("lets exactly one of two claims on the same status win", async () => {
     const t = createTestContext();
     const id = await seededSubscription(t, "person@example.com", "ANALYST REVIEW");
-    const first = await t.mutation(internal.caseAlerts.claimAlertSend, { id, status: "RFI ISSUED" });
-    const second = await t.mutation(internal.caseAlerts.claimAlertSend, { id, status: "RFI ISSUED" });
+    const first = await t.mutation(internal.caseAlerts.claimAlertSend, { id, status: "RFI ISSUED", isFinal: false });
+    const second = await t.mutation(internal.caseAlerts.claimAlertSend, { id, status: "RFI ISSUED", isFinal: false });
     expect([first, second]).toEqual([true, false]);
     await t.mutation(internal.caseAlerts.releaseAlertSend, { id });
-    expect(await t.mutation(internal.caseAlerts.claimAlertSend, { id, status: "RFI ISSUED" })).toBe(true);
+    expect(await t.mutation(internal.caseAlerts.claimAlertSend, { id, status: "RFI ISSUED", isFinal: false })).toBe(true);
   });
 
   it("sends a moved case at once, even to an address already mailed today that follows more", async () => {
