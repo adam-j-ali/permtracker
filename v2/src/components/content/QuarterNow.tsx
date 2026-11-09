@@ -3,6 +3,7 @@ import { CurrencyDollarIcon, FilesIcon, HourglassMediumIcon, SealCheckIcon, Stam
 
 import { BarRows } from "@/components/data/BarRows";
 import { Figure, FigureRow } from "@/components/data/FigureRow";
+import { getPostBySlug } from "@/lib/content";
 import { getNewestQuarterKey, getQuarterReport } from "@/lib/db/quarterReport";
 import { formatDollars, formatInt, formatShare } from "@/lib/format";
 import {
@@ -182,10 +183,13 @@ function Programs({ r }: { r: QuarterReport }) {
 async function Newer({ r }: { r: QuarterReport }) {
   const newest = await getNewestQuarterKey().catch(() => null);
   if (!newest || newest === r.quarter.key) return null;
+  // DOL's file lands days before its post is written: the note waits for the post, or it links a 404.
+  const slug = `dol-perm-file-fy${newest.slice(0, 4)}-q${newest.slice(5)}`;
+  if (!getPostBySlug("blog", slug)) return null;
   return (
     <p className="not-prose prose-reset my-6 border-l-4 border-chart-blue bg-sage p-4 text-base">
       DOL has published a newer file since this one.{" "}
-      <Link href={`/blog/dol-perm-file-fy${newest.slice(0, 4)}-q${newest.slice(5)}`} className="link">
+      <Link href={`/blog/${slug}`} className="link">
         What the newest file says
       </Link>
     </p>
