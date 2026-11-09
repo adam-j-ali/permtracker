@@ -44,6 +44,7 @@ PATHS = [
     "**",
     "!**/*.md",
     "!v2/scripts/**",
+    "v2/scripts/data/**",  # the site imports these (consular facts, pay periods, NAICS titles...)
     "!v2/workers/**",
     "!v2/extension/store/**",
     "!v2/**/__tests__/**",
