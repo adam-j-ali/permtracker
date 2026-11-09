@@ -224,7 +224,9 @@ HONORIFIC = re.compile(r"\b(Mr|Ms|Mrs|Miss|Dr|Mx)\.?\s+((?:[A-Z][A-Za-z'’\-]+\
 SPLIT_V = re.compile(r"\s+(?:v\.|vs\.|versus|v)\s+", re.I)
 PREFIX = re.compile(r"^(In re|In the Matter of|Matter of|Ex parte|Petition of|Application of|Estate of)\s+", re.I)
 ET_AL = re.compile(r",?\s+et\s+al\.?\s*$", re.I)
-DBA = re.compile(r"\s*,?\s+(?:d/b/a|dba:?|d\.b\.a\.|a/k/a|aka)\s+", re.I)
+# "d/b/a" names a business; "a/k/a" names the same party again, often a person, so the two are kept apart.
+DBA = re.compile(r"\s*,?\s+(d/b/a|dba:?|d\.b\.a\.|a/k/a|aka)\s+", re.I)
+ALIAS = re.compile(r"^(?:a/k/a|aka)$", re.I)
 INITIALS = re.compile(r"^(?:[A-Z]\.){1,5}$")
 NAME_TOKEN = re.compile(r"^[A-Z][A-Za-z'’\-]*\.?$")
 
@@ -323,13 +325,16 @@ def caption_rule(caption: str, *, context: str, year: int | None, ruling: str | 
         sm = ET_AL.search(side)
         if sm:
             side_etal, side = " et al.", side[: sm.start()]
-        names = DBA.split(side)
+        pieces = DBA.split(side)
+        names, joins = pieces[0::2], pieces[1::2]
         printed = []
         for i, part in enumerate(names):
             kind, shown = classify(part, context=context, year=year, position=pos)
-            if i > 0 and kind != "keep":
+            alias = i > 0 and bool(ALIAS.match(joins[i - 1]))
+            if i > 0 and kind != "keep" and not alias:
                 # "X d/b/a Y": the business named after d/b/a is printed as
-                # it's registered; the person before it is not.
+                # it's registered; the person before it is not. A name after
+                # "a/k/a" is the same party again and follows the party's rule.
                 kind, shown = "keep", part.strip()
             if kind == "unknown" and ruling:
                 kind = "person" if ruling == "person" else "keep"
@@ -341,7 +346,10 @@ def caption_rule(caption: str, *, context: str, year: int | None, ruling: str | 
             else:
                 cap.orgs.update(_bare(w) for w in _words(part))
             printed.append(shown)
-        out_sides.append(" d/b/a ".join(printed) + side_etal)
+        joined = printed[0] if printed else ""
+        for j, shown_part in enumerate(printed[1:]):
+            joined += (" a/k/a " if ALIAS.match(joins[j]) else " d/b/a ") + shown_part
+        out_sides.append(joined + side_etal)
     cap.text = prefix + " v. ".join(out_sides)
     return cap
 
@@ -370,10 +378,12 @@ def redact_text(text: str | None, people: list[str]) -> str | None:
             continue
         ini = initials(person)
         whole = r"\s+".join(re.escape(w) for w in words)
-        out = re.sub(rf"((?:\b[A-Z][a-z'’\-]+\s+){{0,2}})\b{whole}\b", lambda m: _drop_given(m.group(1)) + ini, out)
+        # The name's own words match in any case ("SANJAY PATEL, Plaintiff" in a docket snippet); the given
+        # names before it still have to look like names.
+        out = re.sub(rf"((?:\b[A-Z][a-z'’\-]+\s+){{0,2}})\b(?i:{whole})\b", lambda m: _drop_given(m.group(1)) + ini, out)
         for w in words:
             if len(w) > 1:
-                out = re.sub(rf"((?:\b[A-Z][a-z'’\-]+\s+)?)\b{re.escape(w)}\b",
+                out = re.sub(rf"((?:\b[A-Z][a-z'’\-]+\s+)?)\b(?i:{re.escape(w)})\b",
                              lambda m: _drop_given(m.group(1)) + ini, out)
     return HONORIFIC.sub(lambda m: f"{m.group(1)}. {initials(m.group(2))}", out)
 
@@ -412,6 +422,9 @@ def safe_abstract(text: str | None, cap: Caption, *, limit: int = 600,
         return None, []
     red = " ".join(redact_text(text, cap.people).split())
     left = residual_names(red, cap.orgs, exempt_first=exempt_first)
+    # An all-caps acronym passes residual_names, so a caption person's word left in capitals is caught here.
+    person_words = {_bare(w) for p in cap.people for w in _words(p) if len(w) > 1} - NAME_PARTICLES - NAME_SUFFIXES
+    left += [w for w in re.findall(r"[A-Za-z][A-Za-z'’\-]*", red) if _bare(w) in person_words and w not in left]
     if left:
         return None, left
     if len(red) > limit:
