@@ -58,6 +58,18 @@ URL = "https://flag.dol.gov/recaptcha/caseStatus"
 BATCH = 50                      # measured ceiling; larger is silently truncated
 PACE_S = 0.35                   # ~3 req/s against a .gov
 SOURCE = "flag.dol.gov/recaptcha/caseStatus (DOL, direct)"
+# A CHANGE SEEN DURING THE CATCH-UP IS A FIRST SIGHTING, NEVER A MOVE WE WATCHED. This sweep's first
+# read of every case wrote 94,581 status changes on Aug 28 2026 and 46,508 on Aug 29, against about
+# a thousand on a normal day. Each is a case's status at DOL against the retired mirror's last word
+# for it: the day on the row is the day we looked, and one row can stand for several real moves
+# (185 cases "went from DENIED to BALCA APPEALS" in it, a move no denial has made in one step
+# since). So a stage's entry, a move out of a stage and an RFI's start count only from the day
+# after. MUST MATCH `HISTORY_FROM` in `src/lib/statusHistory.ts`, which dates a case's own history
+# by the same rule; `src/lib/__tests__/statusHistory.test.ts` reads this file and holds the two equal.
+HISTORY_FROM = "2026-08-29"
+# The first moment that counts: the start of the next Eastern day (EDT, four hours behind UTC).
+WATCHED_FROM = "2026-08-30"
+WATCHED_FROM_MS = int(datetime.datetime(2026, 8, 30, 4, 0, tzinfo=datetime.timezone.utc).timestamp() * 1000)
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
 
@@ -1105,11 +1117,10 @@ def write_stage_cohorts(db) -> None:
 
 
 RFI_PATH_SQL = """
-    WITH first_day AS (SELECT MIN(changed_at) AS t FROM perm_case_events WHERE source = ?),
-    entered AS (
+    WITH entered AS (
         SELECT case_number, MIN(changed_at) AS t0 FROM perm_case_events
          WHERE to_status = 'RFI ISSUED' AND from_status <> 'RFI ISSUED' AND source = ?
-           AND changed_at >= (SELECT t FROM first_day) + 86400000
+           AND changed_at >= ?
          GROUP BY case_number),
     replied AS (
         SELECT e.case_number, MIN(e.changed_at) AS tr
@@ -1144,19 +1155,17 @@ def _outcome_bucket(status) -> str:
 def rfi_path(db) -> dict | None:
     """Where the RFIs we watched DOL issue stand now, and how the decided ones ended.
 
-    Only RFIs whose start our sweep saw: the event log's first day is left out,
-    because a case already at an RFI then has no known start. "Replied" is the
+    Only RFIs whose start our sweep saw: the catch-up (through HISTORY_FROM) is left
+    out, because a case already at an RFI then has no known start. "Replied" is the
     case leaving RFI for a pending status (DOL has the employer's response and
     the case is back in review); "decided" is its first final status after the
     RFI, so a denial later reopened on appeal still counts as the denial it was.
     The decided shares are of cases decided SO FAR: the slow ones are still
     open, so they will move.
     """
-    rows = query_rows(db, RFI_PATH_SQL, [SOURCE, SOURCE, SOURCE, SOURCE])
+    rows = query_rows(db, RFI_PATH_SQL, [SOURCE, WATCHED_FROM_MS, SOURCE, SOURCE])
     if not rows:
         return None
-    first = query_rows(db, "SELECT MIN(changed_at) FROM perm_case_events WHERE source = ?", [SOURCE])
-    since_ms = int(first[0][0]) + 86_400_000 if first and first[0][0] is not None else None
     empty = {"certified": 0, "denied": 0, "withdrawn": 0, "other": 0}
     decided, after_reply = dict(empty), dict(empty)
     in_rfi = replied_waiting = 0
@@ -1171,9 +1180,7 @@ def rfi_path(db) -> dict | None:
         decided[bucket] += 1
         if tr is not None and int(tf) > int(tr):
             after_reply[bucket] += 1
-    since = (datetime.datetime.fromtimestamp(since_ms / 1000, ET).strftime("%Y-%m-%d")
-             if since_ms is not None else None)
-    return {"since": since, "entered": len(rows), "inRfi": in_rfi,
+    return {"since": WATCHED_FROM, "entered": len(rows), "inRfi": in_rfi,
             "repliedWaiting": replied_waiting, "decided": decided, "afterReply": after_reply}
 
 
@@ -1204,12 +1211,15 @@ def write_stage_stats(db) -> None:
     # Where a stage's cases go when they leave it. Left-truncated - the event
     # log opens 2026-08-26 and cannot see an entry before that - so this is
     # honest about DESTINATIONS and says nothing about how long the stage runs.
+    # Moves this sweep watched only: the catch-up's rows are first sightings
+    # (see HISTORY_FROM), and the retired mirror's rows are older still.
     exits = query_rows(db, """
         SELECT from_status AS f, to_status AS t, COUNT(*) AS n
           FROM perm_case_events
          WHERE from_status IS NOT NULL AND to_status IS NOT NULL
            AND from_status <> to_status
-         GROUP BY f, t HAVING n >= 3""")
+           AND source = ? AND changed_at >= ?
+         GROUP BY f, t HAVING n >= 3""", [SOURCE, WATCHED_FROM_MS])
 
     # How long a stage lasts, as a survival curve rather than an average.
     #
@@ -1221,11 +1231,15 @@ def write_stage_stats(db) -> None:
     # those had left by then. That handles the censoring and can never report a
     # median longer than the window; the reader picks the median off the curve,
     # so a stage starts reporting the day its own data crosses the line.
+    # An entry during the catch-up is the day we first looked, with the case's real stay already
+    # under way: 2,170 cases "entered" reconsideration on its two days, and counting them would
+    # date their exits from the wrong start.
     pairs = query_rows(db, """
         WITH ins AS (
             SELECT case_number, to_status AS stage, MIN(changed_at) AS t0
               FROM perm_case_events
              WHERE to_status IS NOT NULL AND to_final IN (0, '0')
+               AND source = ? AND changed_at >= ?
              GROUP BY case_number, to_status),
              outs AS (
             SELECT e.case_number, e.from_status AS stage, MIN(e.changed_at) AS t1
@@ -1239,7 +1253,7 @@ def write_stage_stats(db) -> None:
                     THEN CAST((outs.t1 - ins.t0) / 86400000 AS INT) END AS lasted
           FROM ins LEFT JOIN outs
             ON outs.case_number = ins.case_number AND outs.stage = ins.stage""",
-        [int(time.time() * 1000)])
+        [SOURCE, WATCHED_FROM_MS, int(time.time() * 1000)])
 
     by_stage: dict[str, list[tuple[int, int | None]]] = {}
     for stage, observed_for, lasted in pairs:
@@ -1270,7 +1284,7 @@ def write_stage_stats(db) -> None:
         log("NOT writing stage_stats: no pending stages returned")
         return
 
-    doc = {"asOf": et_today(), "source": SOURCE,
+    doc = {"asOf": et_today(), "source": SOURCE, "since": WATCHED_FROM,
            "stages": sorted(stages, key=lambda r: -r["pending"]),
            "exits": sorted(moves, key=lambda r: -r["n"]),
            "durations": sorted(dur, key=lambda r: -r["entered"])}

@@ -7,8 +7,8 @@ NO NETWORK and no production database: the real SQL in
 `ingest_case_status_direct.RFI_PATH_SQL` runs against in-memory SQLite through
 `lib_sqlite_shim`. What has to hold:
 
-  1. Only RFIs whose start the sweep saw are counted: one already at an RFI on
-     the log's first day has no known start and is left out.
+  1. Only RFIs whose start the sweep saw are counted: one already at an RFI
+     during the catch-up (through Aug 29 2026) has no known start and is left out.
   2. Each RFI sits in exactly one place: still at the RFI, replied and waiting,
      or decided (its first final status, so a denial reopened on appeal still
      counts as the denial).
@@ -66,9 +66,14 @@ def seeded(events: list[tuple[str, str, str, str]]) -> SqliteTurso:
 
 def main() -> int:
     db = seeded([
-        # The log's first day: this RFI's start is unknown, so it is left out.
+        # Seen during the catch-up: this RFI's start is unknown, so it is left out.
         ("G-1", "2026-08-27", "ANALYST REVIEW", "RFI ISSUED"),
         ("G-1", "2026-09-28", "RFI ISSUED", "ANALYST REVIEW"),
+        # The catch-up's last day: the same first read, left out too.
+        ("G-8", "2026-08-29", "ANALYST REVIEW", "RFI ISSUED"),
+        ("G-8", "2026-09-10", "RFI ISSUED", "ANALYST REVIEW"),
+        # The first day that counts.
+        ("G-9", "2026-08-30", "ANALYST REVIEW", "RFI ISSUED"),
         # Still at the RFI.
         ("G-2", "2026-09-20", "ANALYST REVIEW", "RFI ISSUED"),
         # Replied, not yet decided.
@@ -94,8 +99,8 @@ def main() -> int:
     check("a path is computed", p is not None)
     if p is None:
         return 1
-    check("the log's first day is left out of the count", p["entered"] == 5, str(p))
-    check("still at the RFI", p["inRfi"] == 1, str(p))
+    check("the catch-up is left out of the count, and the day after it counts", p["entered"] == 6, str(p))
+    check("still at the RFI", p["inRfi"] == 2, str(p))
     check("replied and waiting", p["repliedWaiting"] == 1, str(p))
     check("decided: the first final status counts",
           p["decided"] == {"certified": 1, "denied": 1, "withdrawn": 1, "other": 0}, str(p["decided"]))
@@ -103,7 +108,7 @@ def main() -> int:
           p["afterReply"] == {"certified": 1, "denied": 1, "withdrawn": 0, "other": 0}, str(p["afterReply"]))
     placed = p["inRfi"] + p["repliedWaiting"] + sum(p["decided"].values())
     check("every RFI sits in exactly one place", placed == p["entered"], f"{placed} of {p['entered']}")
-    check("the window starts the day after the log opened", p["since"] == "2026-08-28", str(p["since"]))
+    check("the window starts the day after the catch-up ended", p["since"] == "2026-08-30", str(p["since"]))
 
     empty = SqliteTurso()
     empty.conn.execute(EVENTS_DDL)

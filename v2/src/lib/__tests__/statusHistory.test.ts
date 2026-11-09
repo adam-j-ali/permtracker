@@ -1,6 +1,9 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
-import { statusHistory, type StatusEvent } from "../statusHistory";
+import { HISTORY_FROM, statusHistory, type StatusEvent } from "../statusHistory";
 
 // An instant at a given Eastern hour (EDT, UTC-4, in the autumn days these use).
 const at = (day: string, hourEt: number) => Date.parse(`${day}T${String(hourEt + 4).padStart(2, "0")}:00:00Z`);
@@ -61,5 +64,28 @@ describe("a case's status history", () => {
 
   it("shows nothing when nothing changed on our record", () => {
     expect(statusHistory([])).toEqual([]);
+  });
+});
+
+describe("the catch-up's last day, one rule in both languages", () => {
+  // The sweep's script leaves the catch-up's changes out of the stage statistics, the RFI path and the RFI clock by
+  // the same day this module leaves them undated. A drift wouldn't error: the page's history and its counts would
+  // quietly start disagreeing about which changes are real moves.
+  const script = readFileSync(path.join(process.cwd(), "scripts", "ingest_case_status_direct.py"), "utf8");
+
+  it("is the same day in the sweep's script", () => {
+    expect(script.match(/^HISTORY_FROM = "(\d{4}-\d{2}-\d{2})"$/m)?.[1]).toBe(HISTORY_FROM);
+  });
+
+  it("starts the watched record on the next Eastern day, as a date and as its first instant", () => {
+    const next = new Date(Date.parse(`${HISTORY_FROM}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+    expect(script.match(/^WATCHED_FROM = "(\d{4}-\d{2}-\d{2})"$/m)?.[1]).toBe(next);
+    // Midnight Eastern on that day, in daylight time: 04:00 UTC.
+    const [, y, m, d, h, min] = script.match(/^WATCHED_FROM_MS = int\(datetime\.datetime\((\d+), (\d+), (\d+), (\d+), (\d+), tzinfo=datetime\.timezone\.utc\)/m) ?? [];
+    expect(new Date(Date.UTC(Number(y), Number(m) - 1, Number(d), Number(h), Number(min))).toISOString()).toBe(`${next}T04:00:00.000Z`);
+    // That instant is the new Eastern day, and the millisecond before it is still the catch-up's last.
+    const easternDay = (ms: number) => new Date(ms).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+    expect(easternDay(Date.parse(`${next}T04:00:00Z`))).toBe(next);
+    expect(easternDay(Date.parse(`${next}T04:00:00Z`) - 1)).toBe(HISTORY_FROM);
   });
 });

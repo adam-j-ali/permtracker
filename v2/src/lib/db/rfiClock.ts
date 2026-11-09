@@ -4,6 +4,7 @@ import { cache } from "react";
 
 import type { RfiClock } from "@/lib/perm";
 import { parseRfiClock } from "@/lib/rfiClockDoc";
+import { HISTORY_FROM } from "@/lib/statusHistory";
 import { DIRECT_EVENT_SOURCE } from "./rfi";
 import { one } from "./client";
 import { softFail } from "@/lib/softRead";
@@ -17,7 +18,9 @@ export const getRfiClock = cache(async (): Promise<RfiClock | null> => {
 /**
  * The day our sweep saw this case enter RFI ISSUED, Eastern, or null. The newest
  * entry: a case can be asked twice, and the clock runs from the request it is
- * answering now.
+ * answering now. An entry seen during the record's catch-up (through HISTORY_FROM)
+ * is the day we first looked at a case already at its RFI, so it's no start day:
+ * null, and the page says the start isn't known.
  */
 export async function rfiEnteredOn(caseNumber: string): Promise<string | null> {
   const r = await one<{ at: number | string | null }>(
@@ -28,5 +31,6 @@ export async function rfiEnteredOn(caseNumber: string): Promise<string | null> {
   if (!r || r.at === null || r.at === undefined) return null;
   const ms = Number(r.at);
   if (!Number.isFinite(ms)) return null;
-  return new Date(ms).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const day = new Date(ms).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  return day <= HISTORY_FROM ? null : day;
 }

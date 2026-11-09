@@ -10,7 +10,11 @@ import { dolDayOf } from "@/lib/dolDay";
  * Aug 29, and that is the first step. Plain module: the page and its test read it.
  */
 
-/** The last day of the record's catch-up: a change seen on or before it says where a case stood, not when it moved. */
+/**
+ * The last day of the record's catch-up: a change seen on or before it says where a case stood, not when it moved.
+ * MUST MATCH `HISTORY_FROM` in `scripts/ingest_case_status_direct.py`, which leaves the same changes out of the
+ * stage statistics, the RFI path and the RFI clock; `statusHistory.test.ts` reads that file and holds the two equal.
+ */
 export const HISTORY_FROM = "2026-08-29";
 
 /** One change as the event log holds it. */

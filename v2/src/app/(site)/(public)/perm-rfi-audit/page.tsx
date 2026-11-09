@@ -356,7 +356,7 @@ export default async function PermRfiAuditPage() {
             <RfiJourney stats={stageStats} clock={rfiClock} observed={observedDays} />
             <h3 className="mt-10 font-heading text-xl font-bold">Where each step leads</h3>{" "}
             <div className="mt-4">
-              <StageMoves stats={stageStats} since={rfiClock?.watchedFrom ?? null} />
+              <StageMoves stats={stageStats} since={stageStats?.since ?? rfiClock?.watchedFrom ?? null} />
             </div>
           </Section>
         ) : null}
