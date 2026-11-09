@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { BulletinPushAlert } from "../BulletinPushAlert";
@@ -36,5 +36,23 @@ describe("BrowserPushAlert", () => {
     render(<CasePushAlert caseNumber="G-100-26020-571111" />);
     expect(await screen.findByText("Or a browser notification")).toBeTruthy();
     expect(screen.queryByText(/home screen first/)).toBeNull();
+  });
+
+  it("stops only its own kind of alert, says what the server did, and keeps the other kind's Stop", async () => {
+    // Arrange: a browser watching a case, saved before each kind had its own key, opens a bulletin page
+    ua("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/155.0 Safari/537.36");
+    Object.defineProperty(window, "PushManager", { value: function PushManager() {}, configurable: true });
+    if (!("serviceWorker" in navigator)) Object.defineProperty(navigator, "serviceWorker", { value: {}, configurable: true });
+    window.localStorage.setItem("pt-push-endpoint", "https://push.example.test/abc");
+    vi.spyOn(global, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ ok: true, message: "This browser wasn't watching anything.", closed: 0 })),
+    );
+    render(<BulletinPushAlert category="EB2" country="india" />);
+    // Act
+    fireEvent.click(await screen.findByRole("button", { name: "Stop notifying this browser" }));
+    // Assert: the server's own words, and the case alert's endpoint is still there for the case page's Stop
+    expect(await screen.findByText("This browser wasn't watching anything.")).toBeTruthy();
+    expect(window.localStorage.getItem("pt-push-endpoint")).toBe("https://push.example.test/abc");
+    window.localStorage.clear();
   });
 });
