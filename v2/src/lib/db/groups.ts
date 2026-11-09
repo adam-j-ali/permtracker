@@ -70,6 +70,17 @@ function summary(r: Row): GroupSummary {
   };
 }
 
+/**
+ * Empty only when the table isn't there yet (a fresh database). Any other failure throws, so a page keeps its last
+ * good render instead of caching a 404 or an empty list for its whole revalidate window.
+ */
+function absentTable<T>(empty: T) {
+  return (error: unknown): T => {
+    if (/no such table/i.test(String(error instanceof Error ? error.message : error))) return empty;
+    throw error;
+  };
+}
+
 const SUMMARY_COLS =
   "kind, slug, key, label, total, certified, denied, withdrawn, median_wage, fy_from, fy_to";
 
@@ -78,7 +89,7 @@ export const listGroups = cache(async (kind: GroupKind): Promise<GroupSummary[]>
   const got = await rows<Row>(
     `SELECT ${SUMMARY_COLS} FROM perm_groups WHERE kind = ? ORDER BY total DESC`,
     [kind],
-  ).catch(() => []);
+  ).catch(absentTable<Row[]>([]));
   return got.map(summary);
 });
 
@@ -87,7 +98,7 @@ export const getGroup = cache(
     const r = await one<Row>(
       `SELECT ${SUMMARY_COLS}, detail FROM perm_groups WHERE kind = ? AND slug = ?`,
       [kind, slug],
-    ).catch(() => null);
+    ).catch(absentTable<Row | null>(null));
     if (!r) return null;
     let detail: GroupDetail;
     try {
@@ -106,7 +117,7 @@ export async function countryYears(
   const got = await rows<{ fy: number; certified: number; denied: number; withdrawn: number }>(
     "SELECT fy, certified, denied, withdrawn FROM perm_country_years WHERE country = ? ORDER BY fy",
     [countryKey],
-  ).catch(() => []);
+  ).catch(absentTable<{ fy: number; certified: number; denied: number; withdrawn: number }[]>([]));
   return got.map((r) => ({
     fy: Number(r.fy),
     certified: Number(r.certified),
