@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import {
+  auditEntries,
   ChunkNotListed,
   entityEntries,
   groupEntries,
@@ -13,6 +14,8 @@ import {
 
 /**
  * One child sitemap: /sitemaps/pages.xml, /sitemaps/employer-1.xml, etc.
+ * Plus /sitemaps/audit.xml, this week's Site Audit list (lib/sitemap/audit.ts),
+ * which the index never lists.
  *
  * Children must live in the same directory as the index or below it, which a
  * root index satisfies for anything on the site.
@@ -28,7 +31,7 @@ export async function GET(
   const key = name.slice(0, -4);
 
   const entries =
-    key === "pages" ? await pagesEntries() : key === "groups" ? await groupEntries() : await (async () => {
+    key === "pages" ? await pagesEntries() : key === "groups" ? await groupEntries() : key === "audit" ? await auditEntries() : await (async () => {
       const parsed = parseChildName(key);
       // An unparseable name is a 404, not an empty sitemap. An empty urlset
       // for a typo would be indexed as a legitimately empty section.

@@ -41,6 +41,7 @@ import type { BulletinMonth } from "@/lib/perm";
 import { SITE_URL } from "@/lib/constants/site";
 import { bulletinMonthDate, employerOwnDate, pageDate, type DateSources } from "@/lib/pageDates";
 import { h1bAsOf as summaryAsOf } from "@/lib/h1bRanks";
+import { auditWeek, pickAuditPaths, splitPages, type AuditFamily } from "@/lib/sitemap/audit";
 import { FORM_PAGES } from "@/lib/uscisForms";
 import { getConsularIndex } from "@/lib/db/consularPosts";
 import { getSocTitlePages } from "@/lib/db/socTitles";
@@ -697,6 +698,47 @@ export async function otherEmployerEntries(chunk: number): Promise<Entry[]> {
     url: `${base}/perm-employers/${slug}`,
     lastModified: employerOwnDate(lastChanged, day),
   }));
+}
+
+/**
+ * This week's Site Audit list (`./audit` says what's in it and why): the
+ * static pages and groups split by template, then the first window of each
+ * entity family, the busiest pages first. Each entry keeps its own lastmod.
+ * A family that can't be read is left out and reported; the static pages
+ * failing fails the list, as it does the sitemap.
+ */
+export async function auditEntries(nowMs: number = Date.now()): Promise<Entry[]> {
+  const optional = (what: string, read: () => Promise<Entry[]>) =>
+    read().catch((e: unknown) => {
+      captureError(e instanceof Error ? e : new Error(`audit list: ${what} failed: ${String(e)}`));
+      return [] as Entry[];
+    });
+  const [pages, groups, ...entities] = await Promise.all([
+    pagesEntries(),
+    optional("groups", groupEntries),
+    optional("employer", () => entityEntries("employer", 0)),
+    optional("attorney", () => entityEntries("attorney", 0)),
+    optional("occupation", () => entityEntries("occupation", 0)),
+    optional("live-employer", () => liveEmployerEntries(0)),
+    optional("other-employer", () => otherEmployerEntries(0)),
+  ]);
+  const base = baseUrl();
+  const byPath = new Map<string, Entry>();
+  const pathsOf = (entries: Entry[]) =>
+    entries.map((e) => {
+      const path = e.url.slice(base.length) || "/";
+      byPath.set(path, e);
+      return path;
+    });
+  const { weekly, families } = splitPages(pathsOf([...pages, ...groups]));
+  const names = ["employer", "attorney", "occupation", "live-employer", "other-employer"];
+  const entityFamilies: AuditFamily[] = entities
+    .map((entries, i) => ({ name: names[i] ?? `family-${i}`, paths: pathsOf(entries) }))
+    .filter((f) => f.paths.length > 0);
+  return pickAuditPaths(weekly, [...families, ...entityFamilies], auditWeek(nowMs)).flatMap((path) => {
+    const entry = byPath.get(path);
+    return entry ? [entry] : [];
+  });
 }
 
 /** The child-sitemap families: three entity kinds, the live-only employers and those with no PERM record. */
