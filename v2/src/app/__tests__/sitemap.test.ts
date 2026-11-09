@@ -287,6 +287,15 @@ describe("sitemap.ts", () => {
     expect(urls).toContain("https://permtracker.app/perm-cities/seattle-wa");
   });
 
+  it("fails the groups child on a failed read, so the last good one stays rather than a day of an empty list", async () => {
+    const { listGroups } = await import("@/lib/db/groups");
+    vi.mocked(listGroups).mockRejectedValueOnce(new Error("SERVER_ERROR: database is locked"));
+    await expect(groupEntries()).rejects.toThrow(/locked/);
+    const { lcaOnlyCities } = await import("@/lib/db/lcaCities");
+    vi.mocked(lcaOnlyCities).mockRejectedValueOnce(new Error("fetch failed"));
+    await expect(groupEntries()).rejects.toThrow(/fetch failed/);
+  });
+
   it("lists every /perm-queue month holding a case, from the census, and OMITS an empty month (that page 404s)", async () => {
     vi.mocked(getAllPosts).mockReturnValue([mkPost("a", "blog", "2026-01-01")]);
     const entries = await sitemap();
