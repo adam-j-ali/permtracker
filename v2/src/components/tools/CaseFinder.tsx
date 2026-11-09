@@ -54,6 +54,8 @@ type NearbySearch = { rows?: { filedOn: string | null }[] };
 export interface CaseFinderProps {
   /** Which filings it looks through. One kind leaves the chooser off. */
   programs?: readonly FilingProgram[];
+  /** The kind the chooser opens on: a wage-request page's finder starts on wage requests. */
+  program?: FilingProgram;
   /** The host's filing day, `YYYY-MM-DD` or empty. Left out, the finder asks for the day itself. */
   day?: string;
   /** A nearby day the reader picked, for a host that owns the date. */
@@ -67,7 +69,7 @@ export interface CaseFinderProps {
   className?: string;
 }
 
-export function CaseFinder({ programs = ALL_PROGRAMS, day: hostDay, onDay, employer = "", source, heading, className }: CaseFinderProps) {
+export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hostDay, onDay, employer = "", source, heading, className }: CaseFinderProps) {
   const nameId = useId();
   const dayId = useId();
   const jobId = useId();
@@ -75,7 +77,7 @@ export function CaseFinder({ programs = ALL_PROGRAMS, day: hostDay, onDay, emplo
   const [typed, setTyped] = useState(employer);
   const [job, setJob] = useState("");
   const [ownDay, setOwnDay] = useState("");
-  const [picked, setPicked] = useState<FilingProgram | null>(null);
+  const [picked, setPicked] = useState<FilingProgram | null>(opensOn ?? null);
   const [allFor, setAllFor] = useState("");
   // Read once, so a list open across midnight keeps one idea of today.
   const [today] = useState(() => easternDay());
@@ -110,9 +112,10 @@ export function CaseFinder({ programs = ALL_PROGRAMS, day: hostDay, onDay, emplo
   const outcome = answer === null ? null : answer.ofEmployer > 0 ? "cases" : answer.close.length > 0 ? "close-names" : "none";
   useEffect(() => {
     if (!ready || outcome === null || rested !== name) return;
-    const key = `${day}|${program}|${name.toLowerCase()}`;
-    if (told.current === key) return;
-    told.current = key;
+    // Once a day, kind and outcome: a name typed in three sittings is one answer of that kind.
+    const answered = `${day}|${program}|${outcome}`;
+    if (told.current === answered) return;
+    told.current = answered;
     trackFinder(source, program, outcome);
   }, [ready, outcome, rested, name, day, program, source]);
 
@@ -128,7 +131,7 @@ export function CaseFinder({ programs = ALL_PROGRAMS, day: hostDay, onDay, emplo
     <section
       aria-labelledby={heading ? headingId : undefined}
       aria-label={heading ? undefined : "Find your case without its number"}
-      className={cn(heading && "border-2 border-border bg-card p-4 sm:p-5", className)}
+      className={cn("text-base", heading && "border-2 border-border bg-card p-4 sm:p-5", className)}
     >
       {heading ? (
         <h3 id={headingId} className="font-heading text-lg font-bold leading-tight">

@@ -59,6 +59,12 @@ describe("CaseLookupForm", () => {
     expect(screen.getByRole("link", { name: "Find it among their filings" })).toHaveAttribute("href", "/case-search?q=acme");
   });
 
+  it("opens the finder on the kind of filing its page lists", async () => {
+    render(<CaseLookupForm finderProgram="lca" />);
+    fireEvent.click(screen.getByRole("button", { name: "Find it by employer and filing date" }));
+    expect(await screen.findByRole("button", { name: "H-1B LCA" })).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("leaves the whole no-number line off where its host says so", () => {
     render(<CaseLookupForm searchHref={null} />);
     expect(screen.queryByText(/Don.t have the number/)).toBeNull();

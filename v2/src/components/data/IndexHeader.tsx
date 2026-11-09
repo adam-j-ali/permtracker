@@ -139,11 +139,14 @@ export function IndexLookup({
   source,
   searchHref = "/case-search",
   searchLabel,
+  program,
 }: {
   title: string;
   placeholder: string;
   note?: ReactNode;
   source: string;
+  /** The kind of filing this list is of: the finder under the box opens on it. */
+  program?: "perm" | "pwd" | "lca" | "seasonal";
   searchHref?: string;
   searchLabel?: string;
 }) {
@@ -155,6 +158,7 @@ export function IndexLookup({
         help={note ?? null}
         source={source}
         searchHref={searchHref}
+        finderProgram={program}
         // Left out, the box says its own words for the full search. This is a server file, so it
         // can't read a constant out of the box's browser-side module.
         {...(searchLabel ? { searchLabel } : {})}

@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 
 import { DateInput } from "@/components/forms/DateInput";
+import { CaseFinder } from "@/components/tools/CaseFinder";
 import { DateRuler } from "@/components/tools/DateRuler";
 import { Label } from "@/components/ui/label";
 import { formatInt } from "@/lib/format";
@@ -10,6 +11,9 @@ import { estimatePwdDay } from "@/lib/perm";
 import type { PwdDayData } from "@/lib/pwdDay";
 import { easternDay } from "@/lib/time";
 import { longDate, weekdayName } from "@convex/lib/months";
+
+/** This estimate is the wage request's, so its finder looks through wage requests alone. */
+const WAGE_REQUESTS = ["pwd"] as const;
 
 /**
  * When might a wage request filed on a given day be decided? The same
@@ -48,6 +52,8 @@ export function PwdDateEstimate({
     <div>
       <Label htmlFor={id}>The day the wage request was filed</Label>{" "}
       <DateInput id={id} value={filed} onChange={(e) => setFiled(e.target.value)} className="mt-1.5 max-w-xs" />{" "}
+      {/* No number: the employer's name and the day above find the request itself, with DOL's status for it. */}
+      <CaseFinder className="mt-5" programs={WAGE_REQUESTS} day={ok ? filed : ""} onDay={setFiled} source="pwd-day-estimate" />{" "}
       <div aria-live="polite" className="mt-5">
         {future ? (
           <p className="text-base text-soft">That day hasn&apos;t come yet. Pick the day it was filed.</p>
