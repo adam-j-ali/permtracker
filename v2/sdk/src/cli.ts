@@ -298,16 +298,21 @@ function invokedDirectly(): boolean {
 }
 const invoked = invokedDirectly();
 if (invoked) {
+  // exitCode, never exit(): Node writes to a pipe asynchronously, and process.exit() can cut off output still on its
+  // way to `| wc -l` or `| jq` (Node's process docs).
   run(process.argv.slice(2)).then(
-    (code) => process.exit(code),
+    (code) => {
+      process.exitCode = code;
+    },
     (err: unknown) => {
       if (err instanceof PermTrackerError) {
         process.stderr.write(`${err.message}${err.retryAfter ? ` (try again in ${err.retryAfter} seconds)` : ""}\n`);
         if (err.url) process.stderr.write(`${err.url}\n`);
-        process.exit(err.status === 404 ? 3 : 2);
+        process.exitCode = err.status === 404 ? 3 : 2;
+        return;
       }
       process.stderr.write(`${(err as Error).message}\n`);
-      process.exit(2);
+      process.exitCode = 2;
     },
   );
 }

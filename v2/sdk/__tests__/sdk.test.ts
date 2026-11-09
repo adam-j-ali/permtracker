@@ -27,6 +27,21 @@ describe("PermTracker", () => {
     expect(a.usage).toEqual({ perMinute: 10, remainingThisMinute: 9, today: 4, perDay: 300, month: 40, perMonth: 3000 });
   });
 
+  it("calls the global fetch with its own receiver, as browsers and Workers require", async () => {
+    // A browser's fetch throws "Illegal invocation" when called as a method of another object.
+    const strict = vi.fn(function (this: unknown, _url: URL | string, _init?: RequestInit) {
+      if (this !== undefined && this !== globalThis) throw new TypeError("Illegal invocation");
+      return Promise.resolve(new Response(JSON.stringify({ data: {}, meta: {} }), { status: 200 }));
+    });
+    vi.stubGlobal("fetch", strict);
+    try {
+      await new PermTracker({ apiKey: KEY }).case("G-100-26045-123456");
+      expect(strict).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("takes any number of trailing slashes off the base address", async () => {
     const f = fakeFetch(200, { data: {}, meta: {} });
     const pt = new PermTracker({ apiKey: KEY, baseUrl: "http://localhost:3000/v1///", fetch: f as unknown as typeof fetch });
