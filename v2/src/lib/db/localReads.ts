@@ -17,8 +17,12 @@ import { spawn as spawnProcess, type ChildProcess } from "node:child_process";
  * The reads run in a small pool of child processes, because node:sqlite is synchronous and one slow scan on the main
  * thread would hold up every request the copy is serving. Processes, not worker threads: a thread can't be stopped
  * inside a native SQLite call, so a runaway read would spin a core for good, while a process can always be killed.
- * A read past its deadline kills its process and a fresh one takes its place. Any other failure here is the
- * caller's cue to read through sqld instead, so a problem with the file costs speed, never a page.
+ * A read past its deadline kills its process and a fresh one takes its place. The deadline runs from when the read
+ * was asked, as it did on the HTTP path, so a read waiting behind slow ones is bounded too. Any other failure here is
+ * the caller's cue to read through sqld instead, so a problem with the file costs speed, never a page.
+ *
+ * Each process keeps its connection open, and checks the file's inode on every read: a restore or a rollback puts a
+ * new file in place by rename, and a kept-open handle would otherwise go on reading the old one until a restart.
  */
 
 export type LocalHome = "main" | "lca";
@@ -39,13 +43,21 @@ export class LocalDeadlineError extends Error {}
 // Plain CommonJS run with \`node -e\`, so no bundler has to find a second entry file.
 const WORKER_SOURCE = `
 const { DatabaseSync } = require("node:sqlite");
+const { statSync } = require("node:fs");
 const open = new Map();
 function conn(path) {
+  const ino = statSync(path).ino;
   let c = open.get(path);
+  if (c && c.ino !== ino) {
+    // Another file now sits at this path (a restore, a rollback): read that one.
+    try { c.db.close(); } catch {}
+    open.delete(path);
+    c = undefined;
+  }
   if (!c) {
     const db = new DatabaseSync(path, { readOnly: true });
     db.exec("PRAGMA query_only = 1");
-    c = { db, stmts: new Map() };
+    c = { db, stmts: new Map(), ino };
     open.set(path, c);
   }
   return c;
@@ -75,6 +87,8 @@ interface Job {
   sql: string;
   args: unknown[];
   deadlineMs: number;
+  /** When the read was asked: its deadline counts from here, the wait for a free process included. */
+  askedAt: number;
   resolve: (r: LocalResult) => void;
   reject: (e: Error) => void;
 }
@@ -132,19 +146,36 @@ function replace(slot: Slot): void {
   if (i >= 0) slots[i] = spawn();
 }
 
+function deadlineError(job: Job): LocalDeadlineError {
+  return new LocalDeadlineError(`database query deadline (${job.deadlineMs}ms, local read): ${job.sql.slice(0, 80)}`);
+}
+
+/** A queued read whose deadline passed while it waited is refused, never started. */
+function expireWaiting(now: number): void {
+  for (let i = queue.length - 1; i >= 0; i--) {
+    const job = queue[i] as Job;
+    if (now - job.askedAt >= job.deadlineMs) {
+      queue.splice(i, 1);
+      job.reject(deadlineError(job));
+    }
+  }
+}
+
 function pump(): void {
+  expireWaiting(Date.now());
   for (const slot of slots) {
     if (slot.job || queue.length === 0) continue;
     const job = queue.shift() as Job;
     slot.job = job;
+    const left = Math.max(1, job.deadlineMs - (Date.now() - job.askedAt));
     slot.timer = setTimeout(() => {
       if (slot.job !== job) return;
       finish(slot);
       replace(slot);
       slot.worker.kill("SIGKILL");
-      job.reject(new LocalDeadlineError(`database query deadline (${job.deadlineMs}ms, local read): ${job.sql.slice(0, 80)}`));
+      job.reject(deadlineError(job));
       pump();
-    }, job.deadlineMs);
+    }, left);
     slot.timer.unref?.();
     slot.worker.send({ id: job.id, path: job.path, sql: job.sql, args: job.args });
   }
@@ -159,8 +190,19 @@ function bindable(v: unknown): unknown {
 export function localRead(path: string, sql: string, args: unknown[], deadlineMs: number): Promise<LocalResult> {
   if (slots.length === 0) for (let i = 0; i < WORKERS; i++) slots.push(spawn());
   return new Promise<LocalResult>((resolve, reject) => {
-    queue.push({ id: nextId++, path, sql, args: args.map(bindable), deadlineMs, resolve, reject });
+    const job: Job = { id: nextId++, path, sql, args: args.map(bindable), deadlineMs, askedAt: Date.now(), resolve, reject };
+    queue.push(job);
     pump();
+    // Still waiting at its deadline: refused then, not when a process frees up.
+    if (queue.includes(job)) {
+      const t = setTimeout(() => {
+        const i = queue.indexOf(job);
+        if (i < 0) return;
+        queue.splice(i, 1);
+        job.reject(deadlineError(job));
+      }, deadlineMs);
+      t.unref?.();
+    }
   });
 }
 

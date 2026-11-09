@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, renameSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -70,6 +70,34 @@ describe("localRead", () => {
     writer.exec("INSERT INTO t (a, b) VALUES (3, 'three')");
     expect(objectsOf(await localRead(file, "SELECT COUNT(*) AS n FROM t", [], 5000))).toEqual([{ n: 3 }]);
     writer.exec("DELETE FROM t WHERE a = 3");
+  });
+
+  it("counts a read's deadline from when it was asked, so a read stuck behind slow ones can't wait without end", async () => {
+    const { LocalDeadlineError, localRead, objectsOf } = await import("../localReads");
+    const forever = "WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n) SELECT COUNT(*) FROM n";
+    // Both readers (DATABASE_LOCAL_WORKERS defaults to 2) busy for 3 s each.
+    const slow = [localRead(file, forever, [], 3000), localRead(file, forever, [], 3000)];
+    const asked = Date.now();
+    await expect(localRead(file, "SELECT b FROM t WHERE a = ?", [1], 400)).rejects.toBeInstanceOf(LocalDeadlineError);
+    expect(Date.now() - asked).toBeLessThan(2500);
+    await Promise.allSettled(slow);
+    expect(objectsOf(await localRead(file, "SELECT b FROM t WHERE a = ?", [2], 5000))).toEqual([{ b: "two" }]);
+  });
+
+  it("reads a database put in place of the old one, as a restore does, without a restart", async () => {
+    const { localRead, objectsOf } = await import("../localReads");
+    const live = join(dir, "restore-target.db");
+    const make = (path: string, v: string) => {
+      const db = new DatabaseSync(path);
+      db.exec(`CREATE TABLE r (v TEXT); INSERT INTO r VALUES ('${v}')`);
+      db.close();
+    };
+    make(live, "before");
+    expect(objectsOf(await localRead(live, "SELECT v FROM r", [], 5000))).toEqual([{ v: "before" }]);
+    const restored = join(dir, "restore.db");
+    make(restored, "restored");
+    renameSync(restored, live);
+    expect(objectsOf(await localRead(live, "SELECT v FROM r", [], 5000))).toEqual([{ v: "restored" }]);
   });
 
   it("stops a read at its deadline and keeps serving after", async () => {
