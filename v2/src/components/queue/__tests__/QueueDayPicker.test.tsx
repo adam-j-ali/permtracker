@@ -62,6 +62,27 @@ describe("QueueDayPicker", () => {
     expect(fetchMock.mock.calls.map((c) => c[0])).toEqual(["/api/queue-day?day=2026-09-01"]);
   });
 
+  it("never puts the day before's figures under a newly picked day's name when that day fails", async () => {
+    // Arrange: September 2 loads, September 1 fails
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) =>
+        url.endsWith("2026-09-02")
+          ? new Response(JSON.stringify(past), { status: 200 })
+          : new Response(JSON.stringify({ error: "the queue for that day couldn't be read" }), { status: 503 }),
+      ),
+    );
+    render(<QueueDayPicker days={["2026-09-01", "2026-09-02"]} today={today} />);
+    fireEvent.click(screen.getByRole("button", { name: "A day earlier" }));
+    await screen.findByText(/at the end of September 2, 2026/);
+    // Act
+    fireEvent.click(screen.getByRole("button", { name: "A day earlier" }));
+    await screen.findByRole("button", { name: /try again/i });
+    // Assert: no September 2 total under September 1, and the wall is today's
+    expect(screen.queryByText(/cases still pending at the end of/)).toBeNull();
+    expect(screen.queryByRole("listitem", { name: /700 of 1,000 still waiting/ })).toBeNull();
+  });
+
   it("says so when a day can't be read, and offers to try again", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ error: "the queue for that day couldn't be read" }), { status: 503 })));
     render(<QueueDayPicker days={["2026-09-02"]} today={today} />);

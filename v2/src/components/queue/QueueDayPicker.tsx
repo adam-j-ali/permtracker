@@ -100,16 +100,19 @@ export function QueueDayPicker({
           <span className="text-sm text-soft">Slide back as far as {longDate(days[0] ?? "")}</span>
         )}
       </div>{" "}
-      {day && shown ? (
+      {/* The figure names a day, so it waits for that day's own answer: the last day's, still on screen while
+          this one loads or after it failed, would sit under the wrong date. */}
+      {day && settled && q.data ? (
         <p className="mt-3 text-base text-soft">
-          {formatInt(total(shown.months))} cases still pending at the end of {label}, against {formatInt(total(today.months))} today.
+          {formatInt(total(q.data.months))} cases still pending at the end of {label}, against {formatInt(total(today.months))} today.
         </p>
       ) : null}{" "}
       {day && q.failed ? (
         <RequestFailed className="mt-4 bg-tint p-4 border-2 border-border" what={`The queue on ${label}`} failure={q.failure} onRetry={q.retry} />
       ) : null}{" "}
       <div className={cn("mt-4", day && !settled && !q.failed && "opacity-60")} aria-busy={day !== null && !settled && !q.failed}>
-        {day && shown ? (
+        {/* A failed day falls back to today's wall; one loading keeps the last day's, dimmed and marked busy. */}
+        {day && shown && !q.failed ? (
           <BacklogWall
             {...today}
             {...wallFor(shown.months)}
