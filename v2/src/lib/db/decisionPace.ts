@@ -4,6 +4,7 @@ import { cache } from "react";
 import { measurePace, type DecisionDay, type MeasuredPace } from "@/lib/perm";
 import { MS_PER_DAY } from "@/lib/time";
 import { rows } from "./client";
+import { softFail } from "@/lib/softRead";
 
 /**
  * How fast DOL is deciding right now, measured over our own observed series.
@@ -78,7 +79,7 @@ export const getDecisionPace = cache(
           AND date >= date('now', ?)
         ORDER BY date DESC`,
       [OBSERVED_SOURCE, `-${WINDOW_DAYS} day`],
-    ).catch(() => null);
+    ).catch(softFail("decisionPace.rows", null));
     if (!got || got.length === 0) return null;
 
     // THE MAXIMUM, NOT THE FIRST ROW. `through` is what the staleness guard
