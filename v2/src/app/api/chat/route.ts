@@ -416,9 +416,11 @@ export async function POST(req: Request) {
               // The person stopped the reply or left: not a provider failure.
               if (req.signal.aborted) return 'Stopped.';
               console.error(`[Chat API] [${sessionId}] UIMessageStream onError:`, msg.slice(0, 300));
-              // Distinct mid-stream telemetry: this fires AFTER doStream resolved,
-              // i.e. outside FallbackModel's connection-time retry loop — the
-              // unrecoverable mid-stream gap, tracked separately from allFailed.
+              // Mid-stream telemetry. This also receives FallbackModel's
+              // all-failed error (ai 7's streamText hands a failed first step to
+              // the stream rather than throwing it), which reportMidStreamFailure
+              // leaves to ai.fallback.allFailed, so this counts only the
+              // unrecoverable gap after a reply started.
               reportMidStreamFailure(error, {
                 modelUsed: requestModel.lastUsedModel,
                 attempts: requestModel.lastAttemptCount,
@@ -444,8 +446,9 @@ export async function POST(req: Request) {
 
       return createUIMessageStreamResponse({ stream: uiStream });
     } catch (error) {
-      // All models failed (FallbackModel exhausted all options)
-      // This fires when model.doStream() throws before streaming starts.
+      // A synchronous setup failure before the stream exists. A model failure
+      // never lands here: ai 7's streamText doesn't throw for one, it reaches
+      // the stream's onError above (the all-failed case included).
       // An abort (Stop, a closed tab) lands here too and isn't a failure.
       if (req.signal.aborted) {
         return new Response(null, { status: 499 });
