@@ -34,7 +34,22 @@ export async function GET(request: Request): Promise<NextResponse> {
     },
   });
 
-  await Sentry.flush(3000);
+  // captureException hands out an event id even with no client set up, so the id alone proves nothing: "sent" needs
+  // a client and a queue that drained.
+  const flushed = await Sentry.flush(3000);
+  if (!Sentry.getClient() || !flushed) {
+    return NextResponse.json(
+      {
+        status: "not sent",
+        eventId,
+        timestamp,
+        message: !Sentry.getClient()
+          ? "Sentry isn't set up on this server (no DSN), so nothing was sent."
+          : "Sentry didn't take the event within 3 seconds. Check the DSN and the network, then try again.",
+      },
+      { status: 503 },
+    );
+  }
 
   return NextResponse.json({
     status: "sent",
