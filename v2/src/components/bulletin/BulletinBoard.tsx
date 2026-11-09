@@ -277,7 +277,8 @@ export function BulletinBoard({ board, className }: BulletinBoardProps) {
           <ul className="space-y-3">
             {paced.map((c) => {
               const gaining = c.pace >= 1;
-              const pct = (c.pace / domainMax) * 100;
+              // A cutoff that moved back has a pace below zero: its bar stops at the track's left edge.
+              const pct = Math.max(0, (c.pace / domainMax) * 100);
               const left = gaining ? zeroPct : pct;
               const width = Math.max(Math.abs(pct - zeroPct), 0.5);
               return (
@@ -286,7 +287,7 @@ export function BulletinBoard({ board, className }: BulletinBoardProps) {
                   <li
                     data-tip={[
                       `${categoryLabel(c.category)} ${COUNTRY_LABELS[c.country]}`,
-                      `${c.pace.toFixed(2)}x: ${gaining ? "the queue shortened" : "the queue lengthened"}`,
+                      `${c.pace.toFixed(2)}x: ${c.pace < 0 ? "the cutoff moved back" : gaining ? "the queue shortened" : "the queue lengthened"}`,
                       c.movedDays !== null && c.spanMonths !== null
                         ? `${c.movedDays.toLocaleString("en-US")} cutoff days gained over ${c.spanMonths} ${c.spanMonths === 1 ? "month" : "months"}`
                         : null,
