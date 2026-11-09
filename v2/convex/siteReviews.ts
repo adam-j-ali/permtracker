@@ -348,6 +348,24 @@ export async function queueAlertRating(
   }
 }
 
+/**
+ * A rating that a scanner's burst voided takes back the waiting review its first open queued. Only a review still
+ * pending for that very rating goes: one the owner already decided, or one a newer rating took over, stays.
+ */
+export async function withdrawAlertRating(
+  ctx: MutationCtx,
+  args: { email: string; ratingId: Id<"alertRatings"> },
+): Promise<void> {
+  const raterKey = await raterKeyFor(args.email);
+  const rows = await ctx.db.query("siteReviews").withIndex("by_rater_key", (q) => q.eq("raterKey", raterKey)).take(20);
+  for (const r of rows) {
+    if (r.source === "alert" && r.status === "pending" && r.ratingId === args.ratingId) {
+      await ctx.db.delete(r._id);
+      log.info("a waiting rating was a mail scanner's, so it was taken back", { rating: r.rating });
+    }
+  }
+}
+
 // ============================================================================
 // Prefill
 // ============================================================================

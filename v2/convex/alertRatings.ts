@@ -36,7 +36,7 @@ import { SITE_URL } from "./lib/links";
 import { makeUnsubscribeToken, verifyUnsubscribeToken } from "./lib/unsubscribeToken";
 import { normaliseFlagCaseNumber } from "../src/lib/flagCaseNumber";
 import { MS_PER_DAY } from "./lib/time";
-import { queueAlertRating, raterKeyFor } from "./siteReviews";
+import { queueAlertRating, raterKeyFor, withdrawAlertRating } from "./siteReviews";
 
 /** Whether the last alert carries the rating row: the owner's switch. */
 export function ratingsOn(): boolean {
@@ -215,8 +215,10 @@ async function saveRating(
       updatedAt: now,
     });
   }
-  // A person's pick (never a scanner's) waits for the owner as a review with no words.
+  // A person's pick (never a scanner's) waits for the owner as a review with no words. A burst that shows the
+  // earlier open was a scanner's takes back the review that open queued.
   if (score !== undefined) await queueAlertRating(ctx, { email, score, at: now, ratingId });
+  else if (existing?.score !== undefined && ratingId) await withdrawAlertRating(ctx, { email, ratingId });
   return answer(counted, note !== undefined || existing?.note !== undefined);
 }
 
