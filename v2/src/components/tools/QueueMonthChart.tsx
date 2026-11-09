@@ -8,7 +8,7 @@ import { ChartTips } from "@/components/data/ChartTips";
 import { formatMonth } from "@/lib/dolFormat";
 import type { MonthQueue, VolumeAnomaly } from "@/lib/queueAhead";
 import { cn } from "@/lib/utils";
-import { formatInt } from "@/lib/format";
+import { formatInt, formatShareOf } from "@/lib/format";
 
 /**
  * How far DOL has got through every filing month, oldest first.
@@ -70,6 +70,8 @@ export function QueueMonthChart({
           const isSelected = m.filingMonth === selectedMonth;
           const isAhead = selectedMonth !== undefined && m.filingMonth < selectedMonth;
           const pct = m.decidedPct ?? 0;
+          // The words never say a clean 100% or 0% the counts don't have; the bar keeps the exact width.
+          const decidedShare = m.total > 0 ? formatShareOf(m.decided, m.total) : "0%";
           const label = formatMonth(m.filingMonth) ?? m.filingMonth;
           const isFlagged = flagged.has(m.filingMonth);
 
@@ -81,11 +83,11 @@ export function QueueMonthChart({
               {" "}
               <li
                 className="grid grid-cols-[6rem_1fr_2.75rem_4rem] items-center gap-2 sm:grid-cols-[9.5rem_1fr_3.5rem_5rem] sm:gap-3"
-                aria-label={`${label}: ${pct.toFixed(0)}% decided, ${formatInt(m.pending)} still pending${isFlagged ? ", far fewer cases were filed in this month" : ""}`}
+                aria-label={`${label}: ${decidedShare} decided, ${formatInt(m.pending)} still pending${isFlagged ? ", far fewer cases were filed in this month" : ""}`}
                 data-href={`/perm-queue/${m.filingMonth}`}
                 data-tip={[
                   `Filed in ${label}`,
-                  `${pct.toFixed(0)}% decided`,
+                  `${decidedShare} decided`,
                   `${formatInt(m.decided)} decided of ${formatInt(m.total)} filed`,
                   `${formatInt(m.pending)} still pending`,
                   m.analystReview !== undefined ? `${formatInt(m.analystReview)} in analyst review` : null,
@@ -141,7 +143,7 @@ export function QueueMonthChart({
                     isSelected ? "font-bold" : "text-muted-foreground",
                   )}
                 >
-                  {pct.toFixed(0)}%
+                  {decidedShare}
                 </span>{" "}
                 <span
                   className={cn(

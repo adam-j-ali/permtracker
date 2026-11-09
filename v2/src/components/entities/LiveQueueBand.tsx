@@ -7,7 +7,7 @@ import { statusMeaning } from "@/lib/caseStatusVocabulary";
 import { caseStatusTint, type CaseStatusTint } from "@/lib/statusTone";
 import type { EntityPending } from "@/lib/db/entityDetail";
 import { cn } from "@/lib/utils";
-import { formatInt } from "@/lib/format";
+import { formatInt, formatShareOf } from "@/lib/format";
 import { DAYS_PER_MONTH, MS_PER_DAY } from "@/lib/time";
 
 /**
@@ -132,7 +132,9 @@ export function LiveQueueBand({
               <dl className="space-y-4">
                 {stages.map((s) => {
                   const meaning = statusMeaning(s.status);
-                  const share = waiting > 0 ? (s.n / waiting) * 100 : 0;
+                  // Never a clean 0% or 100% the counts don't have: words in the tip, short marks in the cell.
+                  const share = waiting > 0 ? formatShareOf(s.n, waiting) : "0%";
+                  const shareShort = share.replace("under ", "<").replace("over ", ">");
                   return (
                     // Keyed Fragment with a leading space: array items render
                     // with NOTHING between them, so every stage name welded to
@@ -143,7 +145,7 @@ export function LiveQueueBand({
                     {/* One group per stage, as a <dl> allows: the name, its
                         count, and its rule and meaning as a second description. */}
                     <div
-                      data-tip={`${s.status}\n${formatInt(s.n)} waiting\n${share >= 0.5 ? `${share.toFixed(0)}%` : "Under 1%"} of the ${formatInt(waiting)} waiting${meaning ? `\n${meaning}` : ""}`}
+                      data-tip={`${s.status}\n${formatInt(s.n)} waiting\n${share.charAt(0).toUpperCase()}${share.slice(1)} of the ${formatInt(waiting)} waiting${meaning ? `\n${meaning}` : ""}`}
                       className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5"
                     >
                       <dt className="text-sm font-bold">
@@ -152,7 +154,7 @@ export function LiveQueueBand({
                       <dd className="font-mono text-sm font-bold tabular-nums">
                         {formatInt(s.n)}
                         <span className="ml-2 font-normal text-muted-foreground">
-                          {share >= 0.5 ? `${share.toFixed(0)}%` : "<1%"}
+                          {shareShort}
                         </span>
                       </dd>{" "}
                       <dd className="w-full">

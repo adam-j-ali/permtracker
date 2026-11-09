@@ -5,7 +5,7 @@ import { DataProvenance } from "@/components/data/DataProvenance";
 import { statusMeaning } from "@/lib/caseStatusVocabulary";
 import type { LiveCaseRow } from "@/lib/db/cases";
 import type { LiveEmployerRecord } from "@/lib/db/liveEmployers";
-import { formatInt } from "@/lib/format";
+import { formatInt, formatShareOf } from "@/lib/format";
 import { longDate } from "@convex/lib/months";
 import { FilingRows } from "@/components/entities/FilingRows";
 
@@ -159,7 +159,8 @@ export function UnpublishedEmployer({
           <dl className="mt-5 space-y-4">
             {stages.map((s) => {
               const meaning = statusMeaning(s.status);
-              const share = total > 0 ? (s.n / total) * 100 : 0;
+              // Never a clean 0% or 100% the counts don't have; short marks in the narrow cell.
+              const share = total > 0 ? formatShareOf(s.n, total).replace("under ", "<").replace("over ", ">") : "0%";
               return (
                 // Keyed Fragment with a leading space: array items render with
                 // NOTHING between them, so a stage name welds to the previous
@@ -173,7 +174,7 @@ export function UnpublishedEmployer({
                     <dd className="font-mono text-sm font-bold tabular-nums">
                       {formatInt(s.n)}
                       <span className="ml-2 font-normal text-muted-foreground">
-                        {share >= 0.5 ? `${share.toFixed(0)}%` : "<1%"}
+                        {share}
                       </span>
                     </dd>
                   </div>

@@ -31,6 +31,7 @@ import Link from "next/link";
 import { Label } from "@/components/ui/label";
 import { CaveatBox } from "@/components/ui/note";
 import { cn } from "@/lib/utils";
+import { formatShareOf } from "@/lib/format";
 
 export interface I140QueueEstimatorProps {
   subtypes: readonly I140QuarterStats[];
@@ -166,7 +167,7 @@ export function I140QueueEstimator({
             {estimate.pending.toLocaleString("en-US")}
           </p>{" "}
           <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-            {Math.round(estimate.shareOfAllPending * 100)}% of every I-140 USCIS
+            {formatShareOf(estimate.pending, subtypes.reduce((n, s) => n + s.pending, 0))} of every I-140 USCIS
             has pending.
           </p>
         </div>
