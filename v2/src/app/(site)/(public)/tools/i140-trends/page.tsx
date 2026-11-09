@@ -54,15 +54,15 @@ const FAQS = [
   },
   {
     q: "Why is the denial rate measured over decided petitions?",
-    a: "Because a rate over receipts moves with the backlog rather than with outcomes. In a quarter where USCIS simply decided fewer petitions, a receipts-based rate falls even though nothing about approvals or denials changed. Denied divided by approved plus denied answers the question people are actually asking.",
+    a: "Because a rate over receipts moves with the backlog. It doesn't track outcomes. In a quarter where USCIS decided fewer petitions, a receipts-based rate falls even though nothing about approvals or denials changed. Denied divided by approved plus denied answers the question people are actually asking.",
   },
   {
-    q: "Why can I not add the categories together?",
-    a: "Because they are a hierarchy. EB1 is the sum of E11, E12 and E13; EB2 is E21 plus NIW; EB3 is E31, E32 and EW3. Adding a preference to its own subtypes counts the same petition twice, so the selector keeps the two levels apart.",
+    q: "Why can't I add the categories together?",
+    a: "Because they're a hierarchy. EB1 is the sum of E11, E12 and E13. EB2 is E21 plus NIW, and EB3 is E31, E32 and EW3. Adding a preference to its own subtypes counts the same petition twice, so the selector keeps the two levels apart.",
   },
   {
-    q: "Why do some quarters not appear?",
-    a: "USCIS has not published them yet. An unreported quarter is left out rather than drawn as zero, because a bar at zero reads as filings collapsing rather than as data that does not exist.",
+    q: "Why don't some quarters appear?",
+    a: "USCIS hasn't published them yet. An unreported quarter is left out and never drawn as zero: a bar at zero would read as filings collapsing, when there's no data for that quarter yet.",
   },
 ];
 
@@ -107,8 +107,8 @@ export default async function I140TrendsPage() {
       {bothRates && ratio !== null ? (
         <section className="mt-8 bg-tint p-6 sm:p-8 border-2 shadow-hard border-border">
           <h2 className="font-heading text-xl font-bold sm:text-2xl">
-            An advanced degree and a national interest waiver are not the same
-            category
+            An advanced degree and a national interest waiver aren&apos;t the
+            same category
           </h2>{" "}
           <p className="mt-3 max-w-3xl text-base leading-relaxed text-soft">
             Both are EB-2, reported separately. Over these quarters,{" "}
@@ -116,7 +116,7 @@ export default async function I140TrendsPage() {
               E21 was denied {e21.denialRate!.toFixed(2)}% of the time and a national interest waiver{" "}
               {niw.denialRate!.toFixed(2)}%
             </b>
-            , about {ratio.toFixed(0)} times apart. E21 is employer-sponsored, which is where a PERM leads; a
+            , about {ratio.toFixed(0)} times apart. E21 is employer-sponsored, which is where a PERM leads. A
             waiver is a self-petition.
           </p>
         </section>
@@ -139,7 +139,7 @@ export default async function I140TrendsPage() {
           {
             href: "/tools/i140-calculator",
             label: "I-140 queue position",
-            note: "How deep the backlog is at a given priority date, rather than how outcomes have moved.",
+            note: "How deep the backlog is at a given priority date.",
           },
           {
             href: "/tools/green-card-timeline",

@@ -164,7 +164,7 @@ export default async function VisaIssuancesPage() {
       <FigurePlate
         title="Employment visas issued abroad, month by month"
         subject={`${monthName(sparkMonths[0] ?? newest)} to ${monthName(newest)}`}
-        caption="Each bar is one month's issuances in the category; the newest is the dark one. A category can fall to almost nothing late in a fiscal year (it ends in September) once its yearly numbers are used up, and picks up again in October."
+        caption="Each bar is one month's issuances in the category, and the newest is the dark one. A category can fall to almost nothing late in a fiscal year (it ends in September) once its yearly numbers are used up, and picks up again in October."
         source="U.S. Department of State, monthly immigrant visa issuances"
         className="mt-10"
       >
@@ -243,7 +243,7 @@ export default async function VisaIssuancesPage() {
           <FigurePlate
             title="Employment visas to nationals of the 75 countries, month by month"
             subject={`${monthName(pauseColumns[0]!.key)} to ${monthName(pauseColumns.at(-1)!.key)}`}
-            caption="Each column is one month, by country of chargeability as State counts it. Yellow months fall inside the pause, January 21 to August 21, 2026; January holds three weeks before it began. State's newest table is the last column, so the months since aren't shown yet."
+            caption="Each column is one month, by country of chargeability as State counts it. Yellow months fall inside the pause, January 21 to August 21, 2026. January holds three weeks before it began. State's newest table is the last column, so the months since aren't shown yet."
             source="U.S. Department of State, monthly immigrant visa issuances"
             className="mt-6"
           >
@@ -344,7 +344,7 @@ export default async function VisaIssuancesPage() {
 
       <section className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
         <div >
-          <h2 className="font-heading text-lg font-bold">Abroad, not in the US</h2>{" "}
+          <h2 className="font-heading text-lg font-bold">Visas issued abroad</h2>{" "}
           <p className="mt-2 text-base leading-relaxed text-muted-foreground">
             These are visas consulates issued to people outside the country. Someone in the US on an H-1B gets the
             green card from USCIS instead, which counts it in its own{" "}

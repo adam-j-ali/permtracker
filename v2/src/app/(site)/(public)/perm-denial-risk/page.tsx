@@ -267,7 +267,7 @@ export default async function PermDenialRiskPage() {
         name: "What raises the risk of a PERM denial?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "In DOL's own files the strongest correlates are a position that isn’t full time and a foreign worker with an ownership interest in the employer. Both are recorded on the ETA-9089 itself. These are group rates, not probabilities for an individual case.",
+          text: "In DOL's own files the strongest correlates are a position that isn’t full time and a foreign worker with an ownership interest in the employer. Both are recorded on the ETA-9089 itself. These are group rates. They aren’t probabilities for an individual case.",
         },
       },
       {
@@ -369,8 +369,8 @@ export default async function PermDenialRiskPage() {
             <CaveatBox
               title={<span id="rates-caveat">What these rates can and can’t tell you</span>}
             >
-              <p>Each bar is a group’s rate, not the odds on one case.</p>{" "}
-              <FinePrint summary="Why there is no single score" className="mt-3">
+              <p>Each bar is a group’s rate. It isn’t the odds on one case.</p>{" "}
+              <FinePrint summary="Why there’s no single score" className="mt-3">
                 <p>
                   The factors aren’t independent, so we don’t blend them into a
                   score. A rate over a small group is mostly noise, so the
@@ -408,12 +408,12 @@ export default async function PermDenialRiskPage() {
           {flagShare !== null && topWageByShare && topWageShare !== null && topWageReach !== null ? (
             <section id="where" className="mt-12">
               <h2 className="font-heading text-2xl font-bold">
-                Where the denials actually are
+                Where the denials are
               </h2>{" "}
               <p className="mt-2 max-w-3xl text-base leading-relaxed text-muted-foreground">
-                A rate is not a share: the declared factors carry the highest
-                rates and <strong>{flagShare.toFixed(1)}% of all denials</strong>;
-                the {topWageByShare.bucket.toLowerCase()} band a middling rate
+                A rate isn’t a share. The declared factors carry the highest
+                rates and <strong>{flagShare.toFixed(1)}% of all denials</strong>.
+                The {topWageByShare.bucket.toLowerCase()} band carries a middling rate
                 and <strong>{topWageShare.toFixed(0)}% of them</strong>.
               </p>
               <div className="mt-8 grid [&>*]:min-w-0 grid-cols-1 gap-8 lg:grid-cols-2">
@@ -494,7 +494,7 @@ export default async function PermDenialRiskPage() {
                   {FLAG_LABELS[protectiveFlag.bucket]?.label ?? protectiveFlag.bucket} is
                   denied {protectiveFlag.denialRate}% of the time, below the field,
                   on {protectiveFlag.decided.toLocaleString("en-US")} decided
-                  cases. That&apos;s an association, not a cause.
+                  cases. That&apos;s an association. It doesn&apos;t show a cause.
                 </p>
               ) : null}
             </div>
@@ -539,8 +539,8 @@ export default async function PermDenialRiskPage() {
                 </p>
               ) : null}
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                What the bumps mean isn&apos;t something this data can say: DOL
-                denies on the record, not on the salary.
+                This data can&apos;t say what the bumps mean, because DOL denies on
+                what the record shows. It doesn&apos;t deny on the salary.
               </p>
             </div>
           </section>
@@ -596,7 +596,7 @@ export default async function PermDenialRiskPage() {
                 />
               </div>
               <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                Only the occupations with the most cases; a rare job isn’t here.
+                This shows only the occupations with the most cases, so a rare job isn’t here.
                 Volume, median wage and processing days sit on the{" "}
                 <Link
                   href="/perm-wages"
@@ -659,8 +659,8 @@ export default async function PermDenialRiskPage() {
         <div >
           <h2 className="font-heading text-lg font-bold">Filing a case?</h2>{" "}
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            None of these changes what the regulations require, only what to
-            document. The{" "}
+            These factors change only what to document, and none of them
+            changes what the regulations require. The{" "}
             <Link href="/tools/perm-deadline-calculator" className="link">
               deadline calculator
             </Link>{" "}
@@ -670,7 +670,7 @@ export default async function PermDenialRiskPage() {
         <div className="bg-tint p-6 border-2 shadow-hard-sm border-border">
           <h2 className="font-heading text-lg font-bold">Waiting on one?</h2>{" "}
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Denials are rare; most of the wait is queue time. The{" "}
+            Denials are rare. Most of the wait is queue time. The{" "}
             <Link href="/tools/perm-timeline-calculator" className="link">
               decision estimator
             </Link>{" "}

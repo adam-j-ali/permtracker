@@ -51,11 +51,11 @@ const FAQS = [
   },
   {
     q: "Why is it 'about' the percentile?",
-    a: "The distribution comes as a histogram, so the position inside one bin is interpolated. It is accurate to a point or two, which is as precise as a comparison across thousands of different jobs should ever claim to be.",
+    a: "The distribution comes as a histogram, so the position inside one bin is interpolated. It's accurate to a point or two, which is as precise as a comparison across thousands of different jobs should ever claim to be.",
   },
   {
     q: "How does this relate to the prevailing wage level on my LCA?",
-    a: "Loosely. DOL sets Levels I to IV on the OES survey at roughly the 17th, 34th, 50th and 67th percentiles of everyone in the occupation. This page compares against what H-1B and PERM employers actually filed, which is a narrower and usually higher-paid population, so a Level II wage can sit below the median here.",
+    a: "Loosely. DOL sets Levels I to IV on the OES survey at roughly the 17th, 34th, 50th and 67th percentiles of everyone in the occupation. This page compares against what H-1B and PERM employers filed, which is a narrower and usually higher-paid population, so a Level II wage can sit below the median here.",
   },
 ];
 
@@ -81,7 +81,7 @@ export default async function CompareMyOfferPage() {
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           Pick the occupation and state on the filing, enter the offer, and
-          see where it sits among what employers actually filed: certified
+          see where it sits among what employers filed: certified
           H-1B LCAs and certified PERM offers, side by side.
         </p>
       </header>
@@ -117,7 +117,7 @@ export default async function CompareMyOfferPage() {
           {
             href: "/tools/pwd-calculator",
             label: "Prevailing wage queue",
-            note: "The determination that sets the floor an offer has to clear, and how long it is taking.",
+            note: "The determination that sets the floor an offer has to clear, and how long it's taking.",
           },
         ]}
       />

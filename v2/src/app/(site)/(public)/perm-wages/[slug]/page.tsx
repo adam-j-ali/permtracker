@@ -397,7 +397,7 @@ export default async function OccupationPage({
         dist={dist}
         standing={standing}
         medianDays={row.medianDays}
-        lead="Each bar counts occupations at that value. PERM runs two labour markets through one process, which is why the wage axis is two humps rather than a bell."
+        lead="Each bar counts occupations at that value. PERM runs two labour markets through one process, which is why the wage axis shows two humps."
         outOfCohortNote={`This occupation has ${formatInt(reliability.decided)} decided cases, so its wage and its median days are marked but left unranked, and no approval rate is drawn at all.`}
         first={
           <FieldPosition
@@ -424,7 +424,7 @@ export default async function OccupationPage({
         <FigurePlate
           title="The wage ladder, year by year"
           subject={`${displayTitle(row)}, certified offers`}
-          caption="A median answers whether pay moved. The whole ladder answers which part of it moved, and those are not the same question: a distribution can hold its middle while its top stretches away."
+          caption="A median answers whether pay moved. The whole ladder answers which part of it moved, and those aren't the same question: a distribution can hold its middle while its top stretches away."
           source="DOL PERM disclosure files, certified cases only"
           className="mt-10"
         >
@@ -439,7 +439,7 @@ export default async function OccupationPage({
         <FigurePlate
           title="The same job, state by state"
           subject={`${stateLadders.length} states filing enough of this occupation to publish a ladder`}
-          caption="One SOC code, one federal process, and a wage range that moves with the state. A state is included only when it files enough certified cases of this occupation to support seven percentiles; the rest are left out rather than drawn thin."
+          caption="One SOC code, one federal process, and a wage range that moves with the state. A state is included only when it files enough certified cases of this occupation to support seven percentiles. The rest are left out, so no state is drawn from too few cases."
           source="DOL PERM disclosure files, certified cases only"
           className="mt-10"
         >
@@ -603,7 +603,7 @@ export default async function OccupationPage({
       <section className="mt-6 bg-tint p-6 sm:p-8 border-2 shadow-hard-sm border-border">
         <h3 className="font-heading text-xl font-bold">Reading the wage</h3>{" "}
         <p className="mt-3 max-w-3xl text-base leading-relaxed text-soft">
-          A floor, not a salary survey: every level and metro mixed.
+          This wage is a floor set by the process, with every level and metro mixed. It isn&apos;t a salary survey.
           {row.code ? (
             <>
               {" "}
@@ -664,11 +664,11 @@ export default async function OccupationPage({
             ),
           },
           {
-            head: "Approval isn’t about the occupation",
+            head: "The occupation doesn’t decide approval",
             body: (
               <>
-                The denial rate moves with what happened in the filing rather
-                than with the job title, so nothing here is a property of{" "}
+                The denial rate moves with what happened in the filing. Job titles
+                don&apos;t drive it, so nothing here is a property of{" "}
                 {displayTitle(row)}. The measured factors are on the{" "}
                 <Link
                   href="/perm-denial-risk"

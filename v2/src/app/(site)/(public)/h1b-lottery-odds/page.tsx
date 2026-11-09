@@ -55,7 +55,7 @@ const FAQS = [
   },
   {
     q: "What are my odds at my wage level?",
-    a: "DHS estimated them in the final rule: about 15% at level I, 31% at level II, 46% at level III and 61% at level IV, against about 30% for everyone under the old random draw. That's DHS's estimate from past petitions, assuming employers keep their current wages, not a count of an actual lottery.",
+    a: "DHS estimated them in the final rule: about 15% at level I, 31% at level II, 46% at level III and 61% at level IV, against about 30% for everyone under the old random draw. That's DHS's estimate from past petitions, and it assumes employers keep their current wages. It isn't a count from a lottery that has run.",
   },
   {
     q: "Why did the odds jump in FY2025?",
@@ -112,7 +112,7 @@ export default function H1bLotteryOddsPage() {
           {newest.uniqueBeneficiaries && perBen
             ? ` USCIS counted about ${newest.uniqueBeneficiaries.toLocaleString("en-US")} unique beneficiaries, with ${perBen.toFixed(2)} registrations each on average, so one person's chance was close to this rate.`
             : ""}{" "}
-          The FY{WEIGHTED_FROM} lottery was the first weighted by wage; USCIS hasn&apos;t added it to its table (last revised{" "}
+          The FY{WEIGHTED_FROM} lottery was the first weighted by wage. USCIS hasn&apos;t added it to its table (last revised{" "}
           {H1B_REGISTRATION_REVISED}).
         </p>
 
@@ -159,7 +159,7 @@ export default function H1bLotteryOddsPage() {
         </ChartTips>{" "}
         <p className="mt-3 text-base text-soft">
           Yellow, the whole bar: eligible registrations. Green, the part inside it: selected. The share above each bar is selected over eligible. From FY
-          {BENEFICIARY_CENTRIC_FROM} USCIS drew people rather than registrations, which is why the FY2024 pile of
+          {BENEFICIARY_CENTRIC_FROM} USCIS drew people, where before it drew registrations, which is why the FY2024 pile of
           repeat registrations disappears.
         </p>
       </section>
@@ -199,7 +199,7 @@ export default function H1bLotteryOddsPage() {
           </ChartTips>{" "}
           <p className="mt-4 text-base text-soft">
             Blue dashed line: {WEIGHTED_ESTIMATE.randomPercent}%, DHS&apos;s figure for everyone under the random draw. Its
-            estimate ({WEIGHTED_ESTIMATE.citation}) assumes employers keep their wages and pools the two caps; DHS
+            estimate ({WEIGHTED_ESTIMATE.citation}) assumes employers keep their wages and pools the two caps. DHS
             notes it may understate selections at higher levels.{" "}
             <Link href="/tools/h1b-lottery-odds-calculator" className="link">
               Work out the level and the odds for one job
@@ -261,9 +261,9 @@ export default function H1bLotteryOddsPage() {
         <ul className="mt-3 list-disc space-y-2 pl-5 text-base leading-relaxed text-soft">
           <li>
             Your own odds. They depend on your wage level and on how many registrations came in at each level, which USCIS
-            hasn&apos;t published for FY{WEIGHTED_FROM}. The percentages above are DHS&apos;s estimate, not a count.
+            hasn&apos;t published for FY{WEIGHTED_FROM}. The percentages above are DHS&apos;s estimate. They aren&apos;t a count.
           </li>{" "}
-          <li>How the FY{WEIGHTED_FROM} lottery actually turned out. USCIS&apos;s table stops at FY{newest.fy}.</li>{" "}
+          <li>How the FY{WEIGHTED_FROM} lottery turned out. USCIS&apos;s table stops at FY{newest.fy}.</li>{" "}
           <li>
             How many of a year&apos;s selections came in a second round. The table gives the year&apos;s total and doesn&apos;t
             split it.

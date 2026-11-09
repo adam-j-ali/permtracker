@@ -67,23 +67,23 @@ export const revalidate = 604800;
 const FAQS = [
   {
     q: "Which USCIS field office is fastest for an employment-based I-485?",
-    a: "USCIS does not publish a wait per office, so no page can say it honestly. What it publishes is each office's pending pile and its quarter's approvals and denials. This page divides the two into quarters of work at that quarter's pace: an office with 5,000 pending that decided 1,000 in the quarter has five quarters of work in front of it. That is a comparison between offices, not a prediction of your interview date.",
+    a: "USCIS doesn't publish a wait per office, so any page that gives one is guessing. It publishes each office's pending pile and its quarter's approvals and denials. This page divides the two into quarters of work at that quarter's pace: an office with 5,000 pending that decided 1,000 in the quarter has five quarters of work in front of it. That compares offices. It doesn't predict your interview date.",
   },
   {
     q: "Why does my field office show so few employment-based approvals?",
-    a: "Most employment-based I-485s are decided without an interview, at the National Benefits Center and the service centers, which is why those rows carry the large approval counts. A field office decides the cases USCIS routed to it for an interview. USCIS's own column heading says employment-based applications are received at a service center first.",
+    a: "Most employment-based I-485s are decided without an interview, at the National Benefits Center and the service centers. That's why those rows carry the large approval counts. A field office decides the cases USCIS routed to it for an interview. USCIS's own column heading says employment-based applications are received at a service center first.",
   },
   {
     q: "What does 'withheld' mean?",
-    a: "USCIS prints a D where a cell holds between one and nine cases, because a count that small could identify a person. This page shows the cell as withheld rather than as zero, and the state and national totals are USCIS's own printed figures, so a withheld cell never makes a total wrong.",
+    a: "USCIS prints a D where a cell holds between one and nine cases, because a count that small could identify a person. This page marks the cell as withheld and never shows it as zero. The state and national totals are USCIS's own printed figures, so a withheld cell never makes a total wrong.",
   },
   {
     q: "Can I choose my field office?",
-    a: "No. USCIS assigns the office by the applicant's address, and moving during the case moves the case. This page is for understanding where a case stands and how busy that office is, not for picking one.",
+    a: "No. USCIS assigns the office by the applicant's address, and moving during the case moves the case. This page shows where a case stands and how busy that office is. It can't help you pick one.",
   },
   {
     q: "How current is this?",
-    a: "It is the quarter USCIS published most recently, named on every figure. USCIS posts a quarter roughly three months after it ends; this site checks monthly and loads a new quarter the day it appears.",
+    a: "It's the quarter USCIS published most recently, named on every figure. USCIS posts a quarter roughly three months after it ends. This site checks monthly and loads a new quarter the day it appears.",
   },
 ];
 
@@ -228,7 +228,7 @@ export default async function I485ByFieldOfficePage() {
                 <>
                   Applications awaiting a decision at each office on the quarter&apos;s
                   last day, with the change since the previous quarter where this site
-                  holds it. Field offices only; the service centers are Fig 03.
+                  holds it. Field offices only. The service centers are in Fig 03.
                 </>
               }
               source={<>USCIS, {data.sourceFile}, employment-based, pending as of {data.quarterEnd}.</>}
@@ -246,9 +246,8 @@ export default async function I485ByFieldOfficePage() {
                   <>
                     Pending divided by the quarter&apos;s approvals plus denials: how many
                     quarters the office would need at that pace to clear what it holds.
-                    A comparison of workload, not a wait for any one case, and an office
-                    that cleared old cases in a burst reads better than it will next
-                    quarter.
+                    It compares workload. It isn&apos;t a wait for any one case. An office
+                    that cleared old cases in a burst reads better this quarter than next.
                   </>
                 }
                 source={<>Arithmetic on USCIS&apos;s pending, approved and denied columns, {quarterLabel(data.fy, data.quarter)}.</>}
@@ -266,10 +265,10 @@ export default async function I485ByFieldOfficePage() {
                 <>
                   The service centers and the National Benefits Center approved{" "}
                   {centerApproved.total.toLocaleString("en-US")} employment-based I-485s in the
-                  quarter; every field office together approved{" "}
+                  quarter. Every field office together approved{" "}
                   {fieldApproved.total.toLocaleString("en-US")}
                   {fieldApproved.withheld ? ` (${fieldApproved.withheld} cells withheld)` : ""}. Most
-                  employment-based cases are decided without an interview, which is why the
+                  employment-based cases are decided without an interview. That&apos;s why the
                   field-office rows above carry small approval counts beside large piles.
                 </>
               }
@@ -284,7 +283,7 @@ export default async function I485ByFieldOfficePage() {
             <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
               {fieldOffices.length} field offices and {serviceCenters.length} service
               centers, busiest first. Search for yours, filter by state, or sort on
-              any column; every count is USCIS&apos;s, for the employment-based half,
+              any column. Every count is USCIS&apos;s own, for the employment-based half,
               with the family-based pending count beside it for scale.
             </p>{" "}
             <div className="mt-4">

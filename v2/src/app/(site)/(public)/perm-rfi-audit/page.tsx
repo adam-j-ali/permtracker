@@ -70,7 +70,7 @@ const TITLE = "PERM RFI, Audits and Appeals";
 // contraction-heavy and every apostrophe is six characters as an entity, so
 // reading the rendered attribute reports a false over-length.
 const DESCRIPTION =
-  "What an RFI, NORD, audit or BALCA appeal means, how many PERM cases sit at each stage right now, and what the data shows happens after an RFI.";
+  "What an RFI, NORD, audit or BALCA appeal means, how many PERM cases sit at each stage now and what the data shows happens after an RFI.";
 
 export const metadata: Metadata = withSocialCard({
   title: TITLE,
@@ -222,9 +222,9 @@ export default async function PermRfiAuditPage() {
           }
           more={
             <>
-              DOL&rsquo;s quarterly disclosure files contain only decided cases,
-              so these counts cannot be built from them at all: they come from
-              DOL&rsquo;s live status of every pending case.
+              DOL&rsquo;s quarterly disclosure files hold only decided cases, so
+              these counts can&rsquo;t come from them. They come from DOL&rsquo;s
+              live status of every pending case.
             </>
           }
         >
@@ -257,7 +257,7 @@ export default async function PermRfiAuditPage() {
           more={
             <>
               The stages are ordered by how old the case is, and the order
-              holds every time it is measured. Nothing here says how long a
+              holds every time it&rsquo;s measured. Nothing here says how long a
               stage lasts. It says where in a case&rsquo;s life you find it.
             </>
           }
@@ -281,10 +281,10 @@ export default async function PermRfiAuditPage() {
           />
           <MoreText gist={"Appeals sit late because a case has to be denied first."} className="mt-4">
             <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">
-              The appeal stages sit late for a mechanical reason rather than an
-              interesting one: a case cannot be at BALCA without first being
-              filed, reviewed and denied. Read the ladder as a map of the process,
-              not as a measure of delay at any one stage.
+              The appeal stages sit late for a mechanical reason: a case can&rsquo;t
+              be at BALCA without first being filed, reviewed and denied. So read
+              the ladder as a map of the process. It doesn&rsquo;t measure the
+              delay at any one stage.
             </p>
           </MoreText>
         </Section>
@@ -300,7 +300,7 @@ export default async function PermRfiAuditPage() {
           }
           more={
             <>
-              This is the one thing a snapshot of today cannot answer, because
+              This is the one thing a snapshot of today can&rsquo;t answer, because
               a case that answered its RFI is no longer showing one. It comes
               from a separate outcome tally over a different population.
             </>
@@ -317,13 +317,13 @@ export default async function PermRfiAuditPage() {
                       {funnel.medianDaysToDecision} days.
                     </b>{" "}
                     Half took longer, across{" "}
-                    {funnel.resolved.toLocaleString()} cases. It is not a
+                    {funnel.resolved.toLocaleString()} cases. It isn&rsquo;t a
                     schedule for any one of them.
                   </p>
                 ) : null}
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  Three different populations. Do not apply these percentages
-                  to each other.
+                  These are three different populations, so don&rsquo;t apply these
+                  percentages to each other.
                 </p>
                 <FinePrint summary="Which three">
                   <p>
@@ -402,9 +402,9 @@ export default async function PermRfiAuditPage() {
             }
           />
           <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-            By filing month, not RFIs issued per month, and one reading per
-            case: nothing here shows a case entering or leaving a stage. Those
-            are on the{" "}
+            This counts cases by filing month, one reading per case. It
+            doesn&rsquo;t count RFIs issued per month, so nothing here shows a
+            case entering or leaving a stage. Those are on the{" "}
             <Link href="/perm-decision-activity" className="link">
               decision activity
             </Link>{" "}
@@ -419,18 +419,18 @@ export default async function PermRfiAuditPage() {
             title="Which jobs are carrying the open RFIs"
             lede={
               <>
-                Not the ones most people expect: software roles draw few RFIs,
-                service jobs several times the field rate. A group&rsquo;s rate
-                isn&rsquo;t your case&rsquo;s chance.
+                Software roles draw few RFIs. Service jobs draw several times the
+                field rate. A group&rsquo;s rate isn&rsquo;t your case&rsquo;s
+                chance.
               </>
             }
             more={
               <>
-                Software roles draw an RFI at well under the field rate, and the
-                service occupations that make up a small share of PERM filings
-                carry rates several times it. These are measured rates for named
-                groups with their sizes shown, and a rate for a group you belong
-                to is not a probability for your case.
+                Software roles draw an RFI at well under the field rate. The service
+                occupations, a small share of PERM filings, carry rates several
+                times it. These are measured rates for named groups, with their
+                sizes shown. A rate for a group you belong to isn&rsquo;t a
+                probability for your case.
               </>
             }
           >
@@ -441,7 +441,7 @@ export default async function PermRfiAuditPage() {
         {/* 6. CONCENTRATION ----------------------------------------------- */}
         <Section
           id="concentration"
-          title="One of these stages is diffuse and the others are not"
+          title="One of these stages is spread out, and the others aren&rsquo;t"
         >
           <Concentration stages={stages} smallMax={SMALL_STAGE_MAX} />
         </Section>
@@ -449,7 +449,7 @@ export default async function PermRfiAuditPage() {
         {/* 7. GLOSSARY ---------------------------------------------------- */}
         <Section
           id="glossary"
-          title="What each status actually means"
+          title="What each status means"
           lede={
             <>
               <b className="font-bold text-foreground">
@@ -484,7 +484,7 @@ export default async function PermRfiAuditPage() {
         </Section>
 
         {/* 8. THE REFUSALS ------------------------------------------------ */}
-        <Section id="limits" title="What this page will not tell you">
+        <Section id="limits" title="What this page won&rsquo;t tell you">
           <Limits funnelTracked={funnel?.totalTracked ?? null} auditQueue={auditQueue} auditAsOf={dol?.permAsOf ?? null} />
         </Section>
 
@@ -640,18 +640,18 @@ function Concentration({
         </p>{" "}
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           The largest single filer has {least.topEmployerCases}. Whatever
-          triggers an RFI, it is not concentrated in a handful of companies the
-          way the other stages are.
+          triggers an RFI, it isn&rsquo;t concentrated in a handful of companies
+          the way the other stages are.
         </p>
       </div>
       <MoreText gist={"Counted by employer name, so one company under several spellings counts more than once."}>
         <p className="text-sm leading-relaxed text-muted-foreground lg:col-span-2">
-          Both figures count distinct employer NAMES, which overstates how many
-          separate organisations are involved: DOL prints one practice under
+          Both figures count distinct employer names, which overstates how many
+          separate organisations are involved. DOL prints one practice under
           several spellings, and the BALCA rows carry PricewaterhouseCoopers and
           PwC entities under eight of them. Merging them properly needs an entity
-          resolver, and a half-built one silently merges two genuinely different
-          companies, so nothing here attempts it.
+          resolver. A half-built one silently merges two different companies, so
+          nothing here attempts it.
         </p>
       </MoreText>
     </div>
@@ -673,11 +673,11 @@ function Limits({
       <Limit head="Whether your case will get an RFI">
         Nothing on this page is a probability for an individual case. The rates
         here describe named groups with their sizes shown, and belonging to a
-        group with a 9% rate does not make your case 9% likely to be pulled.
+        group with a 9% rate doesn&rsquo;t make your case 9% likely to be pulled.
       </Limit>
       <Limit head="A single risk score">
-        The factors are not independent, so blending them into one number would
-        read as precision the data cannot support. The same argument is made at
+        The factors aren&rsquo;t independent, so blending them into one number
+        would read as precision the data can&rsquo;t support. The same argument is made at
         greater length on{" "}
         <Link href="/perm-denial-risk" className="link">
           denial rates
@@ -685,21 +685,21 @@ function Limits({
         .
       </Limit>
       <Limit head="How many PERM cases get audited">
-        The outcome tally records zero audits ever, and zero is wrong rather
-        than surprising: DOL&rsquo;s processing-times page publishes a live
+        The outcome tally records zero audits ever, and that zero is wrong:
+        DOL&rsquo;s processing-times page publishes a live
         Audit Review queue
         {auditQueue ? (
           <>
             , working {monthName(auditQueue)} filings{auditAsOf ? <> as of {auditAsOf}</> : null}
           </>
         ) : null}
-        . An audit rate is not published anywhere we can source, so this page
-        defines the term and gives no number.
+        . No source we can cite publishes an audit rate, so this page defines
+        the term and gives no number.
       </Limit>
       <Limit head="Whether RFIs are becoming more common">
-        Each case in this snapshot carries one reading, so these counts cannot
+        Each case in this snapshot carries one reading, so these counts can&rsquo;t
         show a case entering or leaving a stage. Counting how many are at a
-        stage today is possible. Counting how many arrived last month is not,
+        stage today is possible. Counting how many arrived last month isn&rsquo;t,
         because the record of stage changes only starts when our daily sweep
         did.
       </Limit>
@@ -708,8 +708,8 @@ function Limits({
         {funnelTracked !== null
           ? `a watch list of ${funnelTracked.toLocaleString()} cases`
           : "a separate population"}
-        , and half of those took longer than it. It is a description of a
-        group, not a date for a case.
+        , and half of those took longer than it. It describes a group. It
+        doesn&rsquo;t date any one case.
       </Limit>
     </ul>
   );
@@ -735,7 +735,7 @@ function Limit({ head, children }: { head: string; children: React.ReactNode }) 
 function EmptyState({ what }: { what: string }) {
   return (
     <p className="bg-tint p-5 text-sm leading-relaxed border-2 border-border">
-      {what} is not loading right now. DOL publishes the underlying case
+      {what} isn&rsquo;t loading right now. DOL publishes the underlying case
       statuses at{" "}
       <a
         href="https://flag.dol.gov/processingtimes"
@@ -777,7 +777,7 @@ function RfiTiming({ rfiDay, decideDay }: { rfiDay: number; decideDay: number | 
     <figure className="m-0 mt-6 max-w-3xl">
       <figcaption className="sr-only">
         The median case at an RFI today was filed {rfiDay} days ago
-        {decideDay !== null ? `; DOL's own figure for an analyst-review determination is ${decideDay} calendar days` : ""}.
+        {decideDay !== null ? `. DOL's own figure for an analyst-review determination is ${decideDay} calendar days` : ""}.
       </figcaption>{" "}
       <div aria-hidden="true" className="relative h-[4.5rem] font-mono text-sm">
         <span className="absolute left-0 top-0 text-muted-foreground">Filed</span>{" "}

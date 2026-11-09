@@ -24,7 +24,7 @@ import { StageBand } from "@/components/scroll/StageBand";
 
 const TITLE = "PERM Tracker API and MCP Server";
 const DESCRIPTION =
-  "PERM, prevailing wage, H-1B and visa bulletin records as JSON, and the same reads as tools for Claude, Cursor and other AI assistants. Free keys.";
+  "PERM, prevailing wage, H-1B and visa bulletin records as JSON. The same reads work as tools for Claude, Cursor and other AI assistants. Free keys.";
 
 export const metadata: Metadata = withSocialCard(
   {
@@ -130,7 +130,7 @@ export default function DevelopersPage() {
     },
     {
       title: "Or connect an assistant",
-      body: "Add this address as a connector. It works without a key; a key gives an assistant your own limits.",
+      body: "Add this address as a connector. It works without a key, and a key gives an assistant your own limits.",
       code: MCP_URL,
     },
   ];
@@ -237,7 +237,7 @@ export default function DevelopersPage() {
           Endpoints
         </h2>{" "}
         <p className="mt-2 text-base text-soft">
-          All under <code className="font-mono">{API_BASE}</code>; GET unless marked. The{" "}
+          All under <code className="font-mono">{API_BASE}</code>, and GET unless marked. The{" "}
           <a href={`${API_BASE}/openapi.json`} className="font-bold link">
             OpenAPI description
           </a>{" "}
@@ -311,7 +311,7 @@ export default function DevelopersPage() {
               Scopes, lifetimes and rotation
             </h2>{" "}
             <p className="mt-2 max-w-2xl text-base leading-relaxed text-soft">
-              Each key says what it may do. Give a script only what it needs; a call outside its scopes answers 403 and
+              Each key says what it may do. Give a script only what it needs. A call outside its scopes answers 403 and
               isn&rsquo;t counted. Writing to your cases is reserved for the firm tools and can&rsquo;t be granted yet.
             </p>
           </div>{" "}
@@ -469,7 +469,7 @@ export default function DevelopersPage() {
           </Link>
           . Credit &ldquo;PERM Tracker (permtracker.app)&rdquo; where you show what it returns, keep your key out of
           public code, and don&rsquo;t use it to copy the whole compilation. The records come from DOL and the State
-          Department; estimates are ours and say so.
+          Department. Estimates are ours and say so.
         </p>
       </section>
     </div>

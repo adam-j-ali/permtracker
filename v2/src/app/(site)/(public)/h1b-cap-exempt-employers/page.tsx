@@ -49,11 +49,11 @@ const TITLE = "H-1B Cap-Exempt Employers";
 const FAQS = [
   {
     q: "Does this list prove an employer is cap-exempt?",
-    a: "No. It's the employer's own answer to DOL: on its wage requests it said the American Competitiveness and Workforce Improvement Act covers it, as a college or university, a nonprofit affiliated with one, or a research organization (20 CFR 656.40(e)). Those are the employers the H-1B cap leaves out (8 CFR 214.2(h)(8)(iii)(F)), but USCIS decides each petition.",
+    a: "No. It's the employer's own answer to DOL. On its wage requests it said the American Competitiveness and Workforce Improvement Act covers it as a college or university, a nonprofit affiliated with one, or a research organization (20 CFR 656.40(e)). The H-1B cap leaves those employers out (8 CFR 214.2(h)(8)(iii)(F)), but USCIS decides each petition.",
   },
   {
     q: "Why does cap-exempt matter?",
-    a: "A cap-exempt employer can file an H-1B petition any time of year, with no lottery. If that job ends and the worker has never been counted against the cap, a move to an employer that is subject to it needs a lottery selection (8 CFR 214.2(h)(8)(iii)(F)(5)). Working for a cap-subject employer at the same time as the cap-exempt one doesn't count against the cap (paragraph (F)(6)).",
+    a: "A cap-exempt employer can file an H-1B petition any time of year, with no lottery. If that job ends and the worker has never been counted against the cap, a move to an employer that's subject to it needs a lottery selection (8 CFR 214.2(h)(8)(iii)(F)(5)). Working for a cap-subject employer at the same time as the cap-exempt one doesn't count against the cap (paragraph (F)(6)).",
   },
   {
     q: "Why isn't a university I know listed?",

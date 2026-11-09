@@ -63,7 +63,7 @@ export const revalidate = 604800;
 const FAQS = [
   {
     q: "Is this what the job actually pays?",
-    a: "It is the wage the employer offered on the ETA-9089, which is the figure DOL publishes. It has to meet or beat the prevailing wage determination for that job in that area, so it is a floor set by the process rather than a market survey. Bonuses and equity are not in it. The determinations themselves are held too, about 634,000 of them, so a wage request looked up by its P- number shows the wage DOL actually set for that job.",
+    a: "It's the wage the employer offered on the ETA-9089, which is the figure DOL publishes. It has to meet or beat the prevailing wage determination for that job in that area, so it's a floor set by the process. It isn't a market survey. Bonuses and equity aren't in it. The determinations themselves are held too, about 634,000 of them, so a wage request looked up by its P- number shows the wage DOL set for that job.",
   },
   {
     q: "Why does a filter sometimes show no figures?",
@@ -71,11 +71,11 @@ const FAQS = [
   },
   {
     q: "Why is certified the default?",
-    a: "A denied case's offered wage was never agreed to by anyone. Benchmarking against wages that actually stood is the more useful comparison, and every other outcome is one filter away.",
+    a: "A denied case's offered wage was never agreed to by anyone. Benchmarking against certified wages is the more useful comparison, and every other outcome is one filter away.",
   },
   {
     q: "Why is the average higher than the median in most selections?",
-    a: "Because the top of the wage range runs much further from the middle than the bottom does. A handful of very high offers pull an average up and leave a median where it is, which is why both are shown rather than one.",
+    a: "Because the top of the wage range runs much further from the middle than the bottom does. A handful of very high offers pull an average up and leave a median where it is, which is why both are shown.",
   },
 ];
 
@@ -151,7 +151,7 @@ export default async function SalaryExplorerPage() {
               <SplitLadderNote ladders={stateLadders} className="mb-3" />
               Each row is one state&apos;s certified offers, cut at seven
               points, ordered by how many cases it files. These come from the
-              pre-computed cells rather than from the controls above, so they
+              pre-computed cells, and the controls above don&apos;t change them, so they
               cover the whole window and every state at once. The explorer
               recomputes the middle five over whatever you select.
             </>

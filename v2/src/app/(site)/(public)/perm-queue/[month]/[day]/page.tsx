@@ -91,7 +91,7 @@ export default async function FiledOnDayPage({ params }: { params: Promise<Param
         <SearchParamsBoundary>
           <FiledOnDay perm={perm} pwd={pwd} dayLabel={dayLabel} day={day} counts={counts} />
         </SearchParamsBoundary>
-        {capped ? <p className="mt-4 text-sm text-soft">This day holds more than the list shows; it lists the first of them by employer.</p> : null}
+        {capped ? <p className="mt-4 text-sm text-soft">This day holds more cases than the list shows. The list has the first of them, by employer.</p> : null}
       </section>{" "}
       <nav aria-label="Other days" className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-t-2 border-border pt-6">
         <Link href={href(before)} className="link inline-flex min-h-11 items-center gap-1.5">

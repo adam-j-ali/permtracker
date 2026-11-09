@@ -110,7 +110,7 @@ export function LoginPageClient() {
             reason: suspension.reason ?? "unknown",
           });
           toast.error(
-            "This account is temporarily locked due to unusual activity. Contact support@permtracker.app to appeal.",
+            "This account is temporarily locked because of unusual activity. Contact support@permtracker.app to appeal.",
           );
           setIsLoading(false);
           return;

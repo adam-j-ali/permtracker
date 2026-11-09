@@ -186,9 +186,9 @@ export default async function EmployersUnderReviewPage() {
 
       {!doc ? (
         <p className="mt-10 bg-tint p-5 text-base border-2 border-border">
-          The employer census has not been written yet, or is more than eight
-          days old. It is rebuilt by the daily sweep of DOL&apos;s case system;
-          until then the{" "}
+          The employer census hasn&apos;t been written yet, or it&apos;s more than
+          eight days old. The daily sweep of DOL&apos;s case system rebuilds it.
+          Until then the{" "}
           <Link href="/perm-rfi-audit" className="link">
             stage pages
           </Link>{" "}
@@ -300,7 +300,7 @@ export default async function EmployersUnderReviewPage() {
             <h2 className="font-heading text-xl font-bold">Nationwide, as of {longDate(doc.asOf)}</h2>{" "}
             <p className="mt-2 max-w-3xl text-base leading-relaxed text-soft">
               {formatInt(doc.pendingTotal)} PERM cases are pending. {formatInt(doc.nationwide[QUEUE_STATUS] ?? 0)} of them
-              are in analyst review; the rest sit at one of these stages.
+              are in analyst review. The rest sit at one of these stages.
             </p>{" "}
             <dl className="mt-5 border-t-2 border-border">
               {stages.map(([status, n]) => (
@@ -333,7 +333,7 @@ export default async function EmployersUnderReviewPage() {
             <h2 className="font-heading text-xl font-bold">Most cases outside the normal queue</h2>{" "}
             <p className="mt-2 max-w-3xl text-base leading-relaxed text-soft">
               By count. The biggest filers lead this list because they file the
-              most; the share list below corrects for size.
+              most. The share list below corrects for size.
             </p>{" "}
             <ChartTips label="Pending cases outside the normal queue, by employer" className="mt-4">
             <ol className="divide-y divide-border border-y-2 border-border">
@@ -389,7 +389,7 @@ export default async function EmployersUnderReviewPage() {
             <p className="mt-2 max-w-3xl text-base leading-relaxed text-soft">
               Employers with at least {SHARE_FLOOR} pending cases, ranked by the
               share outside the normal queue. Below that floor a share is noise:
-              two of two is not a pattern.
+              two of two isn&apos;t a pattern.
             </p>{" "}
             <ChartTips label="Share of each employer's queue outside the normal queue" className="mt-4">
             <ol className="divide-y divide-border border-y-2 border-border">
@@ -440,7 +440,7 @@ export default async function EmployersUnderReviewPage() {
             <h2 className="font-heading text-xl font-bold">Every employer with five or more pending cases</h2>{" "}
             <p className="mt-2 max-w-3xl text-base leading-relaxed text-soft">
               {formatInt(doc.employers.length)} employers. Search by name, sort any column, or
-              download the table. Each name opens the employer&apos;s page; to see the
+              download the table. Each name opens the employer&apos;s page. To see the
               cases themselves, open the{" "}
               <Link href={caseSearchHref({ stage: searchStageSlug(HOLD_STATUS) ?? "" })} className="link">
                 case search with a stage selected

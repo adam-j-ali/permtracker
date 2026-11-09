@@ -38,7 +38,7 @@ export async function GET(req: Request) {
     return NextResponse.json(answer, { headers: { "Cache-Control": "public, max-age=300" } });
   } catch (e) {
     console.error("[plan] read failed", e);
-    return NextResponse.json({ error: "the queues couldn't be read; try again in a minute" }, { status: 503 });
+    return NextResponse.json({ error: "the queues couldn't be read, so try again in a minute" }, { status: 503 });
   }
 }
 

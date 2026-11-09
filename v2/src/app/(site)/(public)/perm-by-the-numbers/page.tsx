@@ -364,7 +364,7 @@ export default async function PermByTheNumbersPage() {
           id="monthly"
           className="md:col-span-2 lg:col-span-12"
           claim="Filed and decided, month by month"
-          sub="Filed counts each case in the month it was filed; decided counts each decision in the month DOL made it. Each month opens its filing month."
+          sub="Filed counts each case in the month it was filed. Decided counts each decision in the month DOL made it. Each month opens its filing month."
         >
           <MonthlyFlow months={flow} gapReason={gapReason} />
         </Tile>{" "}
@@ -477,7 +477,7 @@ export default async function PermByTheNumbersPage() {
             className="lg:col-span-4"
             figure={monthYear(lastStep.month)}
             claim={`where DOL's line stood on ${monthDay(lastStep.asOf)}`}
-            sub={`Up ${moved} ${moved === 1 ? "month" : "months"} since ${monthDay(firstStep!.asOf)}. DOL replaces its page each time; we keep every reading.`}
+            sub={`Up ${moved} ${moved === 1 ? "month" : "months"} since ${monthDay(firstStep!.asOf)}. DOL replaces its page each time, and we keep every reading.`}
             more={{ href: "/perm-processing-times", label: "Processing times" }}
           >
             <ColumnChart

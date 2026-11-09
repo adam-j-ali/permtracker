@@ -45,7 +45,7 @@ import { softFail } from "@/lib/softRead";
 // Console, Oct 28 2026: this page took 833 of them at position 11.5 for one click).
 const TITLE = "What Each PERM Status Means";
 const DESCRIPTION =
-  "What each DOL status means for a PERM, wage request or LCA case, from Analyst Review to Certified, and how to check your own case for free.";
+  "What each DOL status means for a PERM, wage request or LCA case from Analyst Review to Certified, and how to check your own case for free.";
 const PATH = "/perm-case-statuses";
 
 export const metadata: Metadata = withSocialCard({
@@ -470,8 +470,8 @@ export default async function PermCaseStatusesPage() {
         <h2 className="font-heading text-2xl font-bold">Where these words come from</h2>{" "}
         <p className="mt-3 text-base leading-relaxed text-soft">
           DOL&apos;s case-status search shows one status per case and never explains it. The regulations (20 CFR
-          part 656 for PERM and wage requests, part 655 for LCAs, H-2A and H-2B) define the steps with a deadline;
-          the rest are workflow words, described here by what the workflow shows.
+          part 656 for PERM and wage requests, part 655 for LCAs, H-2A and H-2B) define the steps with a deadline.
+          The rest are workflow words, described here by what the workflow shows.
         </p>{" "}
         <p className="mt-3 text-base leading-relaxed text-soft">
           <Link href="/perm-case-status" className="link">

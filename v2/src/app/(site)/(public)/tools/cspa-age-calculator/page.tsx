@@ -22,7 +22,7 @@ import { withSocialCard } from "@/lib/socialCard";
 
 const TITLE = "CSPA Age Calculator";
 const DESCRIPTION =
-  "Will a child age out of a parent's green card? The CSPA age, the day the visa counted as available, and the last day to file, by USCIS's rules.";
+  "Will a child age out of a parent's green card? See the CSPA age, the day the visa counted as available and the last day to file, by USCIS's rules.";
 
 export const metadata: Metadata = withSocialCard({
   title: TITLE,
@@ -41,7 +41,7 @@ const FAQS = [
   },
   {
     q: "Which petition's pending time counts?",
-    a: "The petition the green card rests on: for a child on a parent's work-based case, the parent's I-140; for a family case, the I-130. It's the days from USCIS's receipt date to its approval date, administrative review included. If the parent's case moved to a second I-140, the second one counts, even when the priority date came from the first.",
+    a: "It's the petition the green card rests on. For a child on a parent's work-based case, that's the parent's I-140. For a family case, it's the I-130. It's the days from USCIS's receipt date to its approval date, administrative review included. If the parent's case moved to a second I-140, the second one counts, even when the priority date came from the first.",
   },
   {
     q: "When does a visa count as available?",

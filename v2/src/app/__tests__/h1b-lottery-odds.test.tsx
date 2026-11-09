@@ -15,7 +15,7 @@ describe("/h1b-lottery-odds", () => {
   it("leads with the newest year's selected share, and says FY2027 isn't in USCIS's table yet", () => {
     expect(text).toContain("FY2026 cap");
     expect(text).toContain("34.9%");
-    expect(text).toMatch(/FY2027 lottery was the first weighted by wage; USCIS hasn't added it/);
+    expect(text).toMatch(/FY2027 lottery was the first weighted by wage\. USCIS hasn't added it/);
   });
 
   it("prints every row of USCIS's table and every year on the chart", () => {

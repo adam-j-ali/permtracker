@@ -118,7 +118,7 @@ const FAQS = [
   },
   {
     q: "Can I get an email when my PERM case status changes?",
-    a: "Yes, free and with no account. A watched case is checked against DOL's record every 5 minutes on weekdays from 7 AM to 9 PM Eastern, and every half hour otherwise, and a status change is emailed at once. The watch carries on for a year after DOL decides, in case of an appeal or a reversal, and every email has a one-click way to stop. Wage requests and H-1B LCAs work the same way.",
+    a: "Yes, free and with no account. A watched case is checked against DOL's record every 5 minutes on weekdays from 7 AM to 9 PM Eastern, and every half hour otherwise. A status change is emailed at once. The watch carries on for a year after DOL decides, in case of an appeal or a reversal. Every email has a one-click way to stop. Wage requests and H-1B LCAs work the same way.",
   },
   {
     q: "How long does PERM take right now?",
@@ -126,27 +126,27 @@ const FAQS = [
   },
   {
     q: "Where do I find my PERM case number?",
-    a: "On the ETA-9089 filing receipt, and on any status notice DOL sent the employer. Current ones look like G-100-26125-868956; cases filed in 2022 and 2023 use a shorter form like A-23043-00641, and both work here. The employer's attorney has it if you don't.",
+    a: "On the ETA-9089 filing receipt, and on any status notice DOL sent the employer. Current ones look like G-100-26125-868956. Cases filed in 2022 and 2023 use a shorter form like A-23043-00641. Both work here. The employer's attorney has it if you don't.",
   },
   {
     q: "Is this DOL's official status?",
-    a: "It's DOL's own record, read from its case-status search: every pending case several times a day, every case at least once a day, and a case someone has an alert on every 5 minutes on weekdays. DOL publishes no documented API for it, so this is the same endpoint its search page uses. Between checks, a newly decided case shows at DOL first, and DOL is the authority for any single case.",
+    a: "It's DOL's own record, read from its case-status search: every pending case several times a day, every case at least once a day, and a case someone has an alert on every 5 minutes on weekdays. DOL publishes no documented API for it, so this is the same endpoint its search page uses. Between checks, a newly decided case shows at DOL first. DOL is the authority for any single case.",
   },
   {
     q: "Is the estimated decision date a prediction for my case?",
-    a: "It's an estimate, labeled as one. It counts the cases filed before yours that are still waiting and divides by how many DOL has been deciding a day, and its range comes from how far recent estimates landed from the real decisions. It's checkable arithmetic over DOL's own record, and it isn't a promise about any single case.",
+    a: "It's an estimate, labeled as one. It counts the cases filed before yours that are still waiting and divides by how many DOL has been deciding a day, and its range comes from how far recent estimates landed from the decisions DOL made. It's arithmetic you can check against DOL's own record. It doesn't promise anything about any single case.",
   },
   {
     q: "Why won't you tell me my odds of being certified?",
-    a: "A single odds figure would read as precision the data can't support. The measured denial factors aren't independent, so blending them into one score hides which one is doing the work. The denial-rate pages publish the measured rates separately and refuse the blend on purpose. What's real, and shown, is the employer's published record across its own decided cases.",
+    a: "A single odds figure would read as precision the data can't support. The measured denial factors aren't independent, so blending them into one score hides which one is doing the work. The denial-rate pages publish the measured rates separately and refuse the blend on purpose. This page shows what's measured instead: the employer's published record across its own decided cases.",
   },
   {
     q: "My case isn't here. Is something wrong?",
-    a: "Almost certainly not. If we don't already hold your number, we ask DOL's case system for it and record what comes back, so a recent filing usually turns up. A wrong digit still makes a well-formed number, so check that first. DOL's published files reach back to fiscal year 2016; a case older than that, and no longer in DOL's live search, may not be found.",
+    a: "Almost certainly not. If we don't already hold your number, we ask DOL's case system for it and record what comes back, so a recent filing usually turns up. A wrong digit still makes a well-formed number, so check that first. DOL's published files reach back to fiscal year 2016. A case older than that, and no longer in DOL's live search, may not be found.",
   },
   {
     q: "What does my case number actually mean?",
-    a: "The current format encodes its own filing date. In G-100-26125-868956, the 26 is the year and the 125 is the day of that year, so it decodes to May 5, 2026. Measured against 20,000 cases in DOL's records, that decoded date matches exactly 89% of the time and is a day or two off otherwise. The older three-part format, like A-23043-00641, doesn't: the same reading lands 13% of the time, so the lookup won't decode one rather than guess a filing month.",
+    a: "The current format encodes its own filing date. In G-100-26125-868956, the 26 is the year and the 125 is the day of that year: May 5, 2026. Measured against 20,000 cases in DOL's records, that decoded date matches exactly 89% of the time and is a day or two off otherwise. The older three-part format, like A-23043-00641, doesn't. The same reading lands 13% of the time, so the lookup doesn't guess a filing month for those numbers.",
   },
   {
     q: "Do you store the case number I type in?",
@@ -259,7 +259,7 @@ export async function CaseStatusPage({ raw }: { raw: string | undefined }) {
       {malformed && looksLikeReceipt(typed) ? (
         <div className="mt-4 bg-tint p-5 border-2 border-border">
           <p className="text-base leading-relaxed">
-            <b className="font-semibold">Holding a USCIS receipt number?</b> Three letters and ten digits, like EAC2190123456, is USCIS&apos;s record of the I-140 or I-485, not DOL&apos;s record of the PERM. It has its own page.
+            <b className="font-semibold">Holding a USCIS receipt number?</b> Three letters and ten digits, like EAC2190123456, is USCIS&apos;s record of the I-140 or I-485. DOL&apos;s PERM record uses a different number, and the USCIS receipt has its own page.
           </p>{" "}
           <p className="mt-3">
             <Link href="/uscis-case-status" className={buttonVariants({ variant: "outline" })}>
@@ -302,7 +302,7 @@ export async function CaseStatusPage({ raw }: { raw: string | undefined }) {
       <DataProvenance datasets={["perm-case-status", "perm-cases", "processing-times"]} />
       <MoreText gist="Read from DOL's own case-status search, every case daily. DOL is the authority." className="mt-2">
         <p className="text-sm text-muted-foreground">
-          These statuses are read from DOL directly. The FLAG case-status search answers a batch lookup, and we run it against every case once a day, against every undecided case at least twice a day (three times on weekdays), and against cases with an alert on them every 5 minutes on weekdays (every half hour at night and at weekends). DOL publishes no documented API for this, so it is the same endpoint their own search page uses rather than a supported one. The date shown on each case is when our check saw it, and it is a snapshot rather than a live feed. DOL is the authority for any case and this page is never a substitute for the determination letter.{" "}
+          These statuses come straight from DOL&apos;s FLAG case-status search, which answers a batch lookup. We run it against every case once a day, against every undecided case at least twice a day (three times on weekdays), and against cases with an alert on them every 5 minutes on weekdays (every half hour at night and at weekends). DOL publishes no documented or supported API for this, so we read the same endpoint its own search page uses. Each case shows the date our check saw it, so its status is a snapshot from then. DOL is the authority for any case, and this page never stands in for its determination letter.{" "}
           <a href="https://flag.dol.gov" rel="noopener noreferrer" className="link">
             Check it yourself at flag.dol.gov
           </a>

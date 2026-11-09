@@ -260,8 +260,8 @@ export default async function DecisionActivityPage() {
             either one, and pick a range to cross both.
           </p>{" "}
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              A change row is dated when our scan <b>saw</b> it, not when DOL
-              made it: a Friday determination read on Monday is a Monday row. A
+              A change row is dated when our scan <b>saw</b> it, which can be
+              after DOL made it: a Friday determination read on Monday is a Monday row. A
               decided row carries DOL&apos;s own determination date.
             </p>
           </details>{" "}
@@ -305,35 +305,35 @@ export default async function DecisionActivityPage() {
               ))}
             </ul>
           </nav>{" "}
-          <FinePrint summary="What this record covers, and what is left out">
+          <FinePrint summary="What this record covers, and what's left out">
             <p>
               DOL publishes no timestamp of its own. Observations begin{" "}
               {activity.calendar.observedSince
                 ? longDate(activity.calendar.observedSince)
                 : "recently"}
-              , the day the per-case scan started, and the record cannot be
+              , the day the per-case scan started, and the record can&apos;t be
               extended backwards: nothing before that date was ever observed, so
-              no amount of reading DOL now can recover it. This is a short record
-              that grows nightly rather than a history.
+              no amount of reading DOL now can recover it. It&apos;s a short record
+              that grows each night. It isn&apos;t a history.
             </p>{" "}
             <p>
               Prevailing wage and LCA changes join it later than PERM does.{" "}
               {activity.calendar.programSince.pwd
                 ? `Wage requests from ${longDate(activity.calendar.programSince.pwd)}`
-                : "Wage requests are not in it yet"}
-              {"; "}
+                : "Wage requests aren't in it yet"}
+              {", and "}
               {activity.calendar.programSince.lca
                 ? `LCAs from ${longDate(activity.calendar.programSince.lca)}`
-                : "LCAs are not in it yet"}
+                : "LCAs aren't in it yet"}
               . A day before those dates shows no rows for them because none were
-              observed, not because DOL was idle.
+              observed. It doesn&apos;t mean DOL was idle.
             </p>{" "}
             <p>
               Two kinds of row are left out of every day, and the count each one
-              costs that day is printed above the table rather than here, because
-              it changes with the day the reader picks. A certification whose
-              180-day I-140 window lapsed is a clock running out, not DOL acting
-              on a case. And a single timestamp carrying more than 5,000 changes
+              costs that day is printed above the table, because it changes with
+              the day the reader picks. A certification whose 180-day I-140
+              window lapsed is a clock running out. DOL didn{"\u2019"}t act on
+              the case. And a single timestamp carrying more than 5,000 changes
               is a scan catching up on months of history: DOL{"\u2019"}s heaviest
               measured day is under 2,000, and one sweep wrote 94,523 rows at
               once, so the whole of such a timestamp is dropped.
@@ -351,8 +351,8 @@ export default async function DecisionActivityPage() {
               A week at the floor and a break in the line mean opposite things.
               At the floor DOL decided nothing: October 2025 is three straight
               weeks there, two determinations in thirty days. The one break is
-              ours, not DOL{"\u2019"}s. Why October stopped is not established
-              here.
+              a gap in our own record. This page doesn{"\u2019"}t establish why
+              October stopped.
             </>
           }
           source="DOL PERM disclosure files and flag.dol.gov"
@@ -426,7 +426,7 @@ export default async function DecisionActivityPage() {
         <FigurePlate
           title="What happened to them"
           subject="Share of decided cases, by calendar quarter"
-          caption="Denial and withdrawal have moved in opposite directions. Neither is explained here: a share of decisions cannot separate a change in how DOL adjudicates from a change in who is filing."
+          caption="Denial and withdrawal have moved in opposite directions. Neither is explained here: a share of decisions can't separate a change in how DOL adjudicates from a change in who's filing."
           source="DOL PERM disclosure files and flag.dol.gov"
           className="mt-10"
         >
@@ -479,9 +479,10 @@ export default async function DecisionActivityPage() {
               </p>{" "}
               <FinePrint summary="Why a zero is a zero" className="mt-3">
                 <p>
-                  These are real days, not gaps. The series is counted from the
-                  case corpus, so a day with no cases decided produces no row,
-                  and those days are read as zero rather than as unmeasured.
+                  Each of these is a day DOL decided nothing, and none is a gap in
+                  the record. The series is counted from the case corpus, so a day
+                  with no cases decided produces no row, and that day is read as
+                  zero.
                 </p>
               </FinePrint>
             </>
@@ -493,14 +494,14 @@ export default async function DecisionActivityPage() {
         <div className="bg-sage p-6 border-2 shadow-hard-sm border-border">
           <h2 className="font-heading text-lg font-bold">Waiting on a case?</h2>{" "}
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Pace alone does not place a case in the queue. The{" "}
+            Pace alone doesn&apos;t place a case in the queue. The{" "}
             <Link
               href="/tools/perm-timeline-calculator"
               className="link"
             >
               decision estimator
             </Link>{" "}
-            reads how many filings sit ahead of your month;{" "}
+            reads how many filings sit ahead of your month, and{" "}
             <Link
               href="/perm-processing-times"
               className="link"

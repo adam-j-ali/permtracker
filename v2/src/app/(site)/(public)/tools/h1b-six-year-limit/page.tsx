@@ -35,11 +35,11 @@ export const dynamic = "force-static";
 const FAQS = [
   {
     q: "What is the 365-day rule?",
-    a: "AC21 section 106(a), at 8 CFR 214.2(h)(13)(iii)(D), lets an employer extend H-1B status in one-year increments beyond the six-year limit when a labor certification (the PERM) or an I-140 was filed at least 365 days before the extension would take effect, and the case has not been denied, withdrawn or abandoned. The PERM's filing date is DOL's receipt date, which is also the case's priority date.",
+    a: "AC21 section 106(a), at 8 CFR 214.2(h)(13)(iii)(D), lets an employer extend H-1B status in one-year increments beyond the six-year limit. It applies when a labor certification (the PERM) or an I-140 was filed at least 365 days before the extension would take effect, and the case hasn't been denied, withdrawn or abandoned. The PERM's filing date is DOL's receipt date, which is also the case's priority date.",
   },
   {
     q: "What if the PERM is filed inside the last 365 days?",
-    a: "The one-year extensions under 106(a) are not available on that filing. A three-year extension under section 104(c), at 8 CFR 214.2(h)(13)(iii)(E), needs an approved I-140 and a priority date that is not current; it does not depend on the 365 days. Time spent outside the United States during H-1B status can also be recaptured to push the limit later.",
+    a: "The one-year extensions under 106(a) aren't available on that filing. A three-year extension under section 104(c), at 8 CFR 214.2(h)(13)(iii)(E), needs an approved I-140 and a priority date that isn't current. It doesn't depend on the 365 days. Time spent outside the United States during H-1B status can also be recaptured to push the limit later.",
   },
   {
     q: "Does time in L-1 status count toward the six years?",
@@ -47,11 +47,11 @@ const FAQS = [
   },
   {
     q: "What is the 240-day rule?",
-    a: "8 CFR 274a.12(b)(20): when an H-1B extension by the same employer is filed before the I-94 ends, the worker may keep working for that employer for up to 240 days beginning on the day the stay expired, while the extension waits. A denial before then ends it. A new employer's petition works differently: under H-1B portability, 8 CFR 214.2(h)(2)(i)(H), an eligible worker may start the new job when its petition is filed, or on the start date it asks for if that is later.",
+    a: "8 CFR 274a.12(b)(20): when an H-1B extension by the same employer is filed before the I-94 ends, the worker may keep working for that employer for up to 240 days beginning on the day the stay expired, while the extension waits. A denial before then ends it. A new employer's petition works differently: under H-1B portability, 8 CFR 214.2(h)(2)(i)(H), an eligible worker may start the new job when its petition is filed, or on the start date it asks for if that's later.",
   },
   {
     q: "Is this legal advice?",
-    a: "No. It is arithmetic on the dates you enter, with the regulation each date comes from. Whether your particular history qualifies, including gaps, recapture and prior petitions, is a question for the attorney who files.",
+    a: "No. It's arithmetic on the dates you enter, with the regulation each date comes from. Whether your particular history qualifies, including gaps, recapture and prior petitions, is a question for the attorney who files.",
   },
 ];
 
@@ -71,8 +71,8 @@ export default function H1bSixYearLimitPage() {
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           The day H-1B status runs out, and the last day a PERM can be filed so
-          the one-year extensions stay open. Dates and citations, nothing
-          predicted.
+          the one-year extensions stay open. Every date comes with its
+          citation, and nothing is predicted.
         </p>
       </header>
       <section data-embed="h1b-six-year" className="mt-10">
@@ -97,7 +97,7 @@ export default function H1bSixYearLimitPage() {
         currentHref="/tools/h1b-six-year-limit"
         reading={[
           { href: "/tools/perm-deadline-calculator", label: "PERM deadline calculator", note: "every date in the PERM itself" },
-          { href: "/perm-processing-times", label: "PERM processing times", note: "how long the filing waits once it is in" },
+          { href: "/perm-processing-times", label: "PERM processing times", note: "how long the filing waits once it's in" },
           { href: "/guides/three-180-day-clocks", label: "The three 180-day clocks", note: "the rules that start after certification" },
         ]}
       />

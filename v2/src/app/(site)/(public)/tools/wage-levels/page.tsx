@@ -34,7 +34,7 @@ const FAQS = [
   },
   {
     q: "Which level will my case get?",
-    a: "The level is set from the job's requirements against what the occupation normally requires: education, experience, supervision, special skills. Level I is entry, Level IV fully competent. DOL decides it on the ETA-9141; this page shows the four figures so a determination can be read against them.",
+    a: "The level is set from the job's requirements against what the occupation normally requires: education, experience, supervision, special skills. Level I is entry, Level IV fully competent. DOL decides it on the ETA-9141. This page shows the four figures so a determination can be read against them.",
   },
   {
     q: "Why does the series matter?",
@@ -42,7 +42,7 @@ const FAQS = [
   },
   {
     q: "What if DOL prints no wage for my area?",
-    a: "Some occupation and area pairs have no OEWS estimate, and DOL's search answers with zeros. The page says so instead of showing zero dollars. The wage request itself can still be determined; the center uses a broader area or another source when the local estimate is missing.",
+    a: "Some occupation and area pairs have no OEWS estimate, and DOL's search answers with zeros. This page says so instead of showing zero dollars. The wage request itself can still be determined. The center uses a broader area or another source when the local estimate is missing.",
   },
 ];
 
@@ -76,7 +76,7 @@ export default async function WageLevelsPage({ searchParams }: { searchParams: P
         currentHref="/tools/wage-levels"
         reading={[
           { href: "/guides/how-dol-sets-a-prevailing-wage", label: "How DOL sets a prevailing wage", note: "the level rule and the survey behind it" },
-          { href: "/tools/salary-explorer", label: "Salary explorer", note: "what certified PERM jobs actually offered, by occupation and state" },
+          { href: "/tools/salary-explorer", label: "Salary explorer", note: "what certified PERM jobs offered, by occupation and state" },
           { href: "/tools/pwd-validity", label: "Wage determination validity", note: "when a determination expires" },
         ]}
       />

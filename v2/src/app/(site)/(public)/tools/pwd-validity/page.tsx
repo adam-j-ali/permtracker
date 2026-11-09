@@ -40,11 +40,11 @@ const FAQS = [
   },
   {
     q: "Can the determination be used for more than one filing?",
-    a: "It is issued for one employer, one occupation and one area of intended employment. A different job or worksite needs its own request.",
+    a: "It's issued for one employer, one occupation and one area of intended employment. A different job or worksite needs its own request.",
   },
   {
     q: "How long does a wage request take to come back?",
-    a: "That is a queue, not a rule. The prevailing wage queue calculator linked below reads DOL's published position for the month a request was filed.",
+    a: "That depends on DOL's queue. No rule fixes it. The prevailing wage queue calculator linked below reads DOL's published position for the month a request was filed.",
   },
 ];
 

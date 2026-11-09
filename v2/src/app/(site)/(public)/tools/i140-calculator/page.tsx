@@ -62,7 +62,7 @@ const FAQS = [
   },
   {
     q: "Does premium processing skip the queue?",
-    a: "Yes, that’s what it buys. USCIS commits to a first review within 15 business days for most I-140 categories, or 45 for EB-1C multinational executives and EB-2 national interest waivers. It guarantees a review, not an approval, and the clock restarts if USCIS issues a request for evidence.",
+    a: "Yes, that’s what it buys. USCIS commits to a first review within 15 business days for most I-140 categories, or 45 for EB-1C multinational executives and EB-2 national interest waivers. It guarantees a review. It doesn’t guarantee an approval, and the clock restarts if USCIS issues a request for evidence.",
   },
 ];
 
@@ -128,7 +128,7 @@ export default async function I140CalculatorPage() {
         </h2>{" "}
         <p className="mt-2 max-w-2xl text-base leading-relaxed text-soft">
           It buys a first decision within 15 business days (45 for multinational managers and national interest
-          waivers). It doesn&apos;t move the priority date, and a request for evidence stops the clock. It tends to
+          waivers). The priority date doesn&apos;t move, and a request for evidence stops the clock. It tends to
           pay for itself in three situations:
         </p>{" "}
         <ol className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3 [&>*]:min-w-0">
@@ -165,8 +165,8 @@ export default async function I140CalculatorPage() {
           </li>
         </ol>{" "}
         <p className="mt-4 text-sm text-muted-foreground">
-          Otherwise, a priority date that is years from current gains little from a faster I-140. The fee is the one
-          in force since March 1, 2026 (91 FR 1059). This is general information, not advice on a particular case.
+          Otherwise, a priority date that&apos;s years from current gains little from a faster I-140. The fee is the one
+          in force since March 1, 2026 (91 FR 1059). This is general information. It isn&apos;t advice on a particular case.
         </p>
       </section>
 

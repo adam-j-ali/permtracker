@@ -55,7 +55,7 @@ const FAQS = [
   },
   {
     q: "Why does the prevailing wage queue matter so much?",
-    a: "Because the determination date, not the filing date, is what the rest of the case is measured from. The recruitment window and the ETA-9089 filing window are both arithmetic on it, and the determination itself expires, so a long wage queue moves every deadline that follows.",
+    a: "Because the rest of the case is measured from the determination date. The filing date doesn't start any of those clocks. The recruitment window and the ETA-9089 filing window are both arithmetic on it, and the determination itself expires, so a long wage queue moves every deadline that follows.",
   },
   {
     q: "Why is there no estimated wait shown?",

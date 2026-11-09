@@ -120,7 +120,7 @@ export function ContactForm() {
         <CharLimit max={4000}>
           <textarea
             name="message"
-            placeholder="What you are trying to do, and what happened instead. A case number helps if it is about one."
+            placeholder="What you're trying to do, and what happened instead. A case number helps if it's about one."
             required
             minLength={10}
             rows={6}

@@ -157,7 +157,7 @@ export default async function SeasonalCasesPage() {
           )}{" "}
           {earliest ? (
             <p className="mt-3 text-sm text-muted-foreground">
-              Filings from {longDate(`${earliest}-01`) ?? earliest} on; checked {longDate(summary.asOf) ?? "daily"}.
+              Filings from {longDate(`${earliest}-01`) ?? earliest} on, checked {longDate(summary.asOf) ?? "daily"}.
             </p>
           ) : null}
         </section>
@@ -191,8 +191,8 @@ export default async function SeasonalCasesPage() {
           <div className="border-t-2 border-border p-4">
             <p className="text-base leading-relaxed text-soft">
               Every status comes from DOL&apos;s case system, pending ones included. The wage, the workers and the
-              worksite come from DOL&apos;s quarterly H-2A, H-2B and CW-1 files once a case is decided, and, for an
-              application DOL has accepted but not yet decided, from its SeasonalJobs feed.
+              worksite come from DOL&apos;s quarterly H-2A, H-2B and CW-1 files once a case is decided. For an application DOL
+              has accepted but not yet decided, they come from its SeasonalJobs feed.
             </p>{" "}
             {published.length > 0 ? (
               <ul className="mt-3 space-y-1 text-sm text-soft">

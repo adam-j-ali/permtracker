@@ -153,7 +153,7 @@ export default async function EadExtensionPage() {
           <a href={FINAL_RULE_URL} rel="noopener" className="link">
             91 FR 65306
           </a>
-          , kept both without changes; it took effect October 14, 2026.
+          , kept both without changes. It took effect October 14, 2026.
         </p>
       </section>
 

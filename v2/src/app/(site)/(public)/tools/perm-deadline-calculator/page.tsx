@@ -53,7 +53,7 @@ const FAQS = [
   },
   {
     q: "How long does the notice of filing have to be posted?",
-    a: "Ten consecutive business days, and it has to be completed inside the recruitment window rather than after it.",
+    a: "Ten consecutive business days, and it has to be completed inside the recruitment window.",
   },
   {
     q: "How do I put PERM deadlines in Outlook or Google Calendar?",
@@ -61,11 +61,11 @@ const FAQS = [
   },
   {
     q: "Can I copy the dates into a spreadsheet or Salesforce?",
-    a: "Yes. Copy all dates puts every deadline on the clipboard as plain text, one line each with its name, ready to paste into a spreadsheet, a case system such as Salesforce, or an email. Any warning about the dates entered is copied with them.",
+    a: "Yes. Copy all dates puts every deadline on the clipboard as plain text, one line each with its name. It's ready to paste into a spreadsheet, a case system such as Salesforce, or an email. Any warning about the dates entered is copied with them.",
   },
   {
     q: "Can I get reminders before each deadline?",
-    a: "Save the dates as a case in PERM Tracker, free for attorneys and paralegals, and it reminds you 30, 14, 7, 3 and 1 day before each deadline, by email and in the app. The calendar file carries its own reminder a week before each date.",
+    a: "Save the dates as a case in PERM Tracker, which is free for attorneys and paralegals. It reminds you 30, 14, 7, 3 and 1 day before each deadline, by email and in the app. The calendar file carries its own reminder a week before each date.",
   },
   {
     q: "Does this cover professional occupations?",
@@ -94,7 +94,7 @@ export default function PermDeadlineCalculatorPage() {
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           Every deadline in your case, calculated from your prevailing wage
-          determination. Nothing here’s a forecast.
+          determination. None of these dates is a forecast.
         </p>
       </header>
 
@@ -116,8 +116,8 @@ export default function PermDeadlineCalculatorPage() {
         <p className="mt-3 leading-relaxed text-muted-foreground">
           The hard part is a year later, when a determination date moves and
           every date after it moves with it. PERM Tracker recalculates the whole
-          chain when anything changes and warns you before a deadline rather
-          than after it.
+          chain when anything changes and warns you before each
+          deadline.
         </p>
         <Link
           href="/signup"

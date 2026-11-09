@@ -202,7 +202,7 @@ export default async function PermWagesPage() {
                 <>
                   <TwoMarketsNote ladders={ladders} className="mb-3" />
                   Each row is one occupation&apos;s certified offers, cut at
-                  seven points. Ordered by filing volume, not by pay. Hourly and
+                  seven points. Ordered by filing volume. Hourly and
                   other wage units are annualized first.
                 </>
               }
@@ -282,7 +282,7 @@ export default async function PermWagesPage() {
         <div >
           <h2 className="font-heading text-lg font-bold">Wondering about pace?</h2>{" "}
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            A case&apos;s speed depends on its filing month, not its wage. The{" "}
+            A case&apos;s speed depends on its filing month. Its wage doesn&apos;t change it. The{" "}
             <Link href="/perm-decision-activity" className="link">
               decision activity
             </Link>{" "}

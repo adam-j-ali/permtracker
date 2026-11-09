@@ -59,7 +59,7 @@ const EXPLORERS = [
     icon: CurrencyDollarIcon,
     kind: "Distribution",
     blurb:
-      "What certified PERM jobs actually pay, as a percentile ladder rather than one average.",
+      "What certified PERM jobs pay, as a ladder of percentiles.",
   },
   {
     href: "/lca-wages",
@@ -144,7 +144,7 @@ export default function CalculatorsPage() {
                 // A person with a live wage request was routed to a queue count only.
                 // Their first question is where THEIR request is, and that is a lookup.
                 { s: "Wage request filed, nothing since", q: "Where is mine right now?", href: "/perm-case-status", tool: "Case status (takes P- numbers)" },
-                { s: "Wage request filed, no number for it", q: "What is the case number?", href: "/pwd-cases", tool: "Wage request search" },
+                { s: "Wage request filed, no number for it", q: "What's the case number?", href: "/pwd-cases", tool: "Wage request search" },
                 { s: "Wage request filed, nothing since", q: "How many are ahead of mine?", href: "/tools/pwd-calculator", tool: "Prevailing wage queue" },
                 { s: "Determination in hand, planning recruitment", q: "By when must we file?", href: "/tools/perm-deadline-calculator", tool: "Deadline calculator" },
                 { s: "ETA-9089 filed, waiting", q: "When will DOL decide?", href: "/tools/perm-timeline-calculator", tool: "PERM timeline calculator" },
@@ -220,13 +220,13 @@ export default function CalculatorsPage() {
           Why some of these refuse to give you a number
         </h2>{" "}
         <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-          A queue estimate is a forecast; a deadline is arithmetic in the
+          A queue estimate is a forecast. A deadline is arithmetic set by the
           regulations, so those dates are exact.
         </p>{" "}
-        <FinePrint summary="What you get when DOL has not published enough" className="mt-3">
+        <FinePrint summary="What you get when DOL hasn’t published enough" className="mt-3">
           <p>
             Where DOL publishes enough, you get a figure and its source. Where
-            it doesn’t, you get the count that’s real and what’s missing.
+            it doesn’t, you get the count it does publish and what’s missing.
           </p>
         </FinePrint>{" "}
         <p className="mt-3 text-base leading-relaxed text-muted-foreground">

@@ -471,9 +471,9 @@ export default async function AttorneyPage({
           lead={
             <>
               Each bar counts firms at that value. Firms with fewer than{" "}
-              {dist.minDecided} decided cases are left out of the population
-              rather than plotted, because a rate over a handful of cases lands
-              wherever the handful landed.
+              {dist.minDecided} decided cases are left out of the population,
+              because a rate over a handful of cases lands wherever the handful
+              landed.
             </>
           }
           inCohortNote="The line marks this one. Approval rates pile up against 100%, so read the ties in the label rather than the position of the line."
@@ -561,15 +561,14 @@ export default async function AttorneyPage({
                   does, so a case still in the queue is in none of these counts.
                   The live tracker that does see pending cases records the
                   employer on each one and not the firm, so a firm&apos;s
-                  current queue cannot be broken out at all. Where the queue
-                  stands overall is on the{" "}
+                  current queue can&apos;t be broken out at all. The{" "}
                   <Link
                     href="/perm-processing-times"
                     className="link"
                   >
                     processing times page
-                  </Link>
-                  .
+                  </Link>{" "}
+                  shows where the queue stands overall.
                 </>
               ),
             },
@@ -602,7 +601,7 @@ export default async function AttorneyPage({
               body: (
                 <>
                   {thinMedian
-                    ? "That’s a middle of a handful, and it moves with which months those few cases were filed in rather than with the firm."
+                    ? "That’s a middle of a handful, and it moves entirely with which months those few cases were filed in."
                     : "DOL works one national queue, oldest first, whoever filed the case, so this says when the firm's cases were filed at least as much as anything about the firm."}{" "}
                   Where the queue stands today is on the{" "}
                   <Link

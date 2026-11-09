@@ -68,7 +68,7 @@ export default async function LcaWageSourcesPage() {
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Where H-1B prevailing wages come from</h1>{" "}
         <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
           {latest
-            ? `In FY${latest.fy}, ${formatShare(latest.OES / latest.total)} of LCAs set their prevailing wage from DOL's OES data and ${formatShare(latest.Survey / latest.total)} from a private salary survey. A union contract's rate applies where one covers the job; otherwise the employer picks the source, and DOL's file says which.`
+            ? `In FY${latest.fy}, ${formatShare(latest.OES / latest.total)} of LCAs set their prevailing wage from DOL's OES data and ${formatShare(latest.Survey / latest.total)} from a private salary survey. A union contract's rate applies where one covers the job. Otherwise the employer picks the source, and DOL's file says which.`
             : "Each H-1B labor condition application names where its prevailing wage came from: DOL's OES data, a private survey or a union contract."}
         </p>
       </header>
@@ -218,7 +218,7 @@ export default async function LcaWageSourcesPage() {
               source, or other legitimate sources of wage data.&quot; DOL&apos;s LCA file records the choice: the OES year,
               or the other source with the survey&apos;s publisher and name as the employer typed them. Spellings of one
               publisher are grouped (Radford, an Aon company, keeps its own line). These count {formatInt(doc.rows)} LCAs
-              whose wage source this site has read so far, decided through {doc.asOf}; the count grows as older quarters
+              whose wage source this site has read so far, decided through {doc.asOf}. The count grows as older quarters
               are read.
             </p>
           </FinePrint>

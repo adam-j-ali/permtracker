@@ -123,7 +123,7 @@ export default async function CompareEmployersPage({
     { label: "H-1B LCAs certified, last 24 months", value: (s) => partCell(s, "lca_24m", "none") },
     { label: "H-1B positions that were transfers", value: (s) => partCell(s, "transfer_share", "too few positions to rate"), note: "a change of employer, over the newest 24 months of LCA detail" },
     { label: "USCIS H-1B approval rate", value: (s) => partCell(s, "uscis_rate", "too few decisions to rate"), note: "last three fiscal years of USCIS's Employer Data Hub" },
-    { label: "PERM cases for every 100 new H-1B workers", value: (s) => partCell(s, "perm_per_h1b", "too few new H-1B workers to compare"), note: "PERM cases DOL decided against new H-1B workers USCIS approved, the same three fiscal years; a comparison, not a pass rate" },
+    { label: "PERM cases for every 100 new H-1B workers", value: (s) => partCell(s, "perm_per_h1b", "too few new H-1B workers to compare"), note: "PERM cases DOL decided, set against new H-1B workers USCIS approved in the same three fiscal years. This ratio isn't a pass rate." },
   ];
 
   const facetList = (s: Side, kind: "occupation" | "state") =>
@@ -186,7 +186,7 @@ export default async function CompareEmployersPage({
 
       {(slugA && !left) || (slugB && !right) ? (
         <p role="alert" className="mt-6 border-2 border-data-bad bg-soft-bad p-4 text-sm font-bold">
-          One of those employers is not in the index. Pick it again from the search.
+          One of those employers isn&apos;t in the index. Pick it again from the search.
         </p>
       ) : null}{" "}
 
@@ -246,9 +246,9 @@ export default async function CompareEmployersPage({
           <ul className="mt-3 list-disc space-y-2 pl-5 text-base leading-relaxed text-soft">
             <li>Before the I-140 is approved, a move usually means a new PERM with the new employer.</li>{" "}
             <li>
-              Once it&apos;s approved, the priority date stays yours for a later employment-based petition unless
-              USCIS revokes the approval for fraud or a willful misrepresentation, a revoked or invalidated labor
-              certification, or a material error (8 CFR 204.5(e)).
+              Once it&apos;s approved, the priority date stays yours for a later employment-based petition. The
+              exception is a revocation by USCIS for fraud or a willful misrepresentation, a revoked or invalidated
+              labor certification, or a material error (8 CFR 204.5(e)).
             </li>{" "}
             <li>
               If the old employer withdraws the I-140 180 days or more after approval, it stays approved (8 CFR
@@ -258,8 +258,8 @@ export default async function CompareEmployersPage({
               An I-485 pending 180 days or more can move to a same or similar job (INA 204(j); 8 CFR 245.25).
             </li>{" "}
             <li>
-              In H-1B status, you can start with the new employer once it files a nonfrivolous H-1B petition for you,
-              or on its requested start date, whichever is later (8 CFR 214.2(h)(2)(i)(H)).
+              In H-1B status, you can start with the new employer on the later of two dates: when it files a
+              nonfrivolous H-1B petition for you, or its requested start date (8 CFR 214.2(h)(2)(i)(H)).
             </li>
           </ul>{" "}
           <p className="mt-3 text-base">

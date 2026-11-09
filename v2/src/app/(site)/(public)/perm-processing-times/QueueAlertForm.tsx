@@ -248,7 +248,7 @@ export function QueueAlertForm({
         <div className="space-y-4 pb-1 pl-5">
           <div className="sm:max-w-sm">
             <Label htmlFor={roleId}>
-              You are <span className="font-normal text-muted-foreground">(optional)</span>
+              You&apos;re <span className="font-normal text-muted-foreground">(optional)</span>
             </Label>{" "}
             <SelectInput
               id={roleId}
@@ -265,7 +265,7 @@ export function QueueAlertForm({
           </div>{" "}
           <OptInBox id={newsId} kind="news" checked={news} onChange={setNews} />{" "}
           <p className="text-sm text-muted-foreground">
-            One address watches one filing month per queue; a new month replaces the old one.
+            One address watches one filing month per queue. A new month replaces the old one.
           </p>
         </div>
       </details>

@@ -37,6 +37,6 @@ export async function GET(req: Request) {
     });
   } catch (e) {
     console.error("[filed-on] read failed", e);
-    return NextResponse.json({ error: "that day's filings couldn't be read; try again in a minute" }, { status: 503 });
+    return NextResponse.json({ error: "that day's filings couldn't be read, so try again in a minute" }, { status: 503 });
   }
 }

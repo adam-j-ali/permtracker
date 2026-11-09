@@ -52,7 +52,7 @@ const FAQS = [
   },
   {
     q: "Which SOC code is right for my job?",
-    a: "The code follows the job's duties and requirements, not its title, and DOL's National Prevailing Wage Center decides it on the wage request. The split shown here is what employers chose for the same title; when it's split, the duties decide, and an immigration attorney should make the call.",
+    a: "The code follows the job's duties and requirements, whatever title the employer gives it. DOL's National Prevailing Wage Center decides it on the wage request. The split shown here is what employers chose for the same title. When a title is split, the duties decide, and an immigration attorney should make the call.",
   },
   {
     q: "Why does my title show more than one code?",

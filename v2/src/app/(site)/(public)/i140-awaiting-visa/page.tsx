@@ -52,7 +52,7 @@ import { ScrollBox } from "@/components/ui/scroll-box";
 
 const TITLE = "Approved I-140s Waiting for a Visa Number";
 const DESCRIPTION =
-  "How many approved I-140, I-360 and I-526 petitions are waiting for a visa number, by preference and country of birth, from USCIS's quarterly count.";
+  "How many approved I-140, I-360 and I-526 petitions are waiting for a visa number by preference and country of birth, from USCIS's quarterly count.";
 const PATH = "/i140-awaiting-visa";
 const SITE = SITE_URL;
 const USCIS_DATA_PAGE = "https://www.uscis.gov/tools/reports-and-studies/immigration-and-citizenship-data";
@@ -74,23 +74,23 @@ export const revalidate = 604800;
 const FAQS = [
   {
     q: "What does 'awaiting visa availability' mean?",
-    a: "The petition is approved, so USCIS agrees the person qualifies, but the visa bulletin's final action date for their category and country has not reached their priority date. Until it does they cannot file the I-485 or, if they filed early under a dates-for-filing chart, cannot be approved. This count is those people, primary beneficiaries only.",
+    a: "The petition is approved, so USCIS agrees the person qualifies. But the visa bulletin's final action date for their category and country hasn't reached their priority date. Until it does, they can't file the I-485. If they filed early under a dates-for-filing chart, they can't be approved. This count is those people, primary beneficiaries only.",
   },
   {
     q: "Is this the same as the I-485 inventory?",
-    a: "No, and the two sit on either side of one line. This page counts approved petitions whose beneficiary is still waiting to file. USCIS's monthly I-485 inventory counts applications already filed and pending. The queue position calculator on this site reads the inventory; this page reads the stage before it.",
+    a: "No. The two sit on either side of one line. This page counts approved petitions whose beneficiary is still waiting to file, while USCIS's monthly I-485 inventory counts applications already filed and pending. The queue position calculator on this site reads the inventory, and this page reads the stage before it.",
   },
   {
-    q: "Why does the page not say how many years the wait is?",
-    a: "Because the honest arithmetic needs figures nobody publishes: how many of these beneficiaries will still want the visa when their date comes, how many dependents each brings (USCIS excludes them here, the visa limit does not), and how the annual limit will be split. A years figure built on three guesses would read as a measurement. The count is the measurement; the visa bulletin page on this site shows how the cutoffs have actually moved.",
+    q: "Why doesn't the page say how many years the wait is?",
+    a: "Because the arithmetic needs figures nobody publishes: how many of these beneficiaries will still want the visa when their date comes, how many dependents each brings (USCIS leaves them out here, and the visa limit counts them), and how the annual limit will be split. A years figure built on three guesses would read as a measurement. The count is the measurement. The visa bulletin page on this site shows how the cutoffs have moved.",
   },
   {
     q: "Why is India so large and Mexico so small?",
-    a: "Each country is limited to about seven percent of the employment-based visas in a year regardless of demand, and India's demand in EB-2 and EB-3 is many times that share, so approved petitions accumulate. Mexico's employment-based demand is mostly in EB-3 other workers and EB-4, which is what its row shows.",
+    a: "Each country is limited to about seven percent of the employment-based visas in a year, whatever its demand. India's demand in EB-2 and EB-3 is many times that share, so approved petitions pile up. Mexico's demand is mostly in EB-3 other workers and EB-4, as its row shows.",
   },
   {
     q: "Where does the fiscal-year table come from?",
-    a: "From a second USCIS workbook: I-140 petitions by the fiscal year they were received and their current status, all countries and the top five. A recent year is mostly still pending because USCIS has not decided it yet, not because approvals fell.",
+    a: "From a second USCIS workbook: I-140 petitions by the fiscal year they were received and their current status, all countries and the top five. A recent year is mostly still pending because USCIS hasn't decided it yet. Approvals didn't fall.",
   },
 ];
 
@@ -117,7 +117,7 @@ export default async function I140AwaitingVisaPage() {
     "@type": "Dataset",
     name: "USCIS approved employment-based petitions awaiting visa availability",
     description:
-      "Approved Form I-140, I-360 and I-526 petitions awaiting a visa number, by employment preference category and country of birth, as counted by USCIS each quarter, with I-140 receipts by fiscal year, class and country.",
+      "Approved Form I-140, I-360 and I-526 petitions awaiting a visa number by employment preference category and country of birth, as counted by USCIS each quarter. It also holds I-140 receipts by fiscal year, class and country.",
     url: `${SITE}${PATH}`,
     ...(awaiting ? { dateModified: `${awaiting.asOf}-01` } : {}),
     isBasedOn: USCIS_DATA_PAGE,
@@ -178,7 +178,7 @@ export default async function I140AwaitingVisaPage() {
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           USCIS&apos;s count of approved I-140, I-360 and I-526 petitions whose beneficiary can&apos;t file
           for a green card yet, by category and country of birth
-          {awaiting ? `, as of ${monthLabel(awaiting.asOf)}` : ""}, and how it moved since the last count.
+          {awaiting ? `, as of ${monthLabel(awaiting.asOf)}` : ""}. This page also shows how the count moved since USCIS&apos;s last one.
         </p>
       </header>
 
@@ -190,7 +190,7 @@ export default async function I140AwaitingVisaPage() {
 
           <section id="by-country" className="mt-12 scroll-mt-24">
             <FigurePlate
-              title="Who is waiting, by category"
+              title="Who's waiting, by category"
               subject={`Approved petitions awaiting a visa number, as of ${monthLabel(awaiting.asOf)}`}
               caption={
                 <>
@@ -241,7 +241,7 @@ export default async function I140AwaitingVisaPage() {
                       </>
                     ) : null}
                     A cell falls when the visa bulletin advances past those beneficiaries
-                    and they file, or when petitions are withdrawn or revoked; it rises
+                    and they file, or when petitions are withdrawn or revoked. It rises
                     as new approvals join the wait. Dark bars rose, accent bars fell.
                   </>
                 }
@@ -286,10 +286,10 @@ export default async function I140AwaitingVisaPage() {
               <p>
                 Priority dates are judged against the final action dates chart of the
                 visa bulletin for the month named. A petitioner can file more than one
-                petition, so one person can appear twice. Petitions for people who have
-                since become permanent residents or citizens are excluded. Dependents are
-                not counted, and the annual visa limit counts them, so the visas these
-                petitions will consume is larger than the count.
+                petition, so one person can appear twice. People who&apos;ve since become
+                permanent residents or citizens are excluded. Dependents
+                aren&apos;t counted here, but the annual visa limit counts them, so these
+                petitions will use more visas than the count shows.
               </p>
             </FinePrint>
           </section>
@@ -304,12 +304,12 @@ export default async function I140AwaitingVisaPage() {
             caption={
               <>
                 How many I-140s USCIS received each fiscal year and where they stand
-                now. The bar is India&apos;s receipts; the figure beside it is India&apos;s
+                now. The bar is India&apos;s receipts, and the figure beside each bar is India&apos;s
                 share of every country&apos;s. A recent year is mostly pending because it
-                has not been decided yet, not because approvals fell.
+                hasn&apos;t been decided yet. Approvals didn&apos;t fall.
               </>
             }
-            source={<>USCIS, {classCountry.sourceFile}, by fiscal year received; the newest year is partial.</>}
+            source={<>USCIS, {classCountry.sourceFile}, by fiscal year received. The newest year is partial.</>}
           >
             <BarRows
               label="I-140 petitions by the year filed, India"

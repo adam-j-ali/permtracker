@@ -1079,9 +1079,9 @@ export default async function EmployerPage({
           lead={
             <>
               Each bar counts sponsors at that value. Sponsors with fewer than{" "}
-              {dist.minDecided} decided cases are left out of the population
-              rather than plotted, because a rate over a handful of cases lands
-              wherever the handful landed.
+              {dist.minDecided} decided cases are left out of the population,
+              because a rate over a handful of cases lands wherever the handful
+              landed.
             </>
           }
           outOfCohortNote={`This sponsor has ${formatInt(reliability.decided)} decided cases, so its median days is marked but left unranked, and no approval rate is drawn at all.`}
@@ -1217,8 +1217,8 @@ export default async function EmployerPage({
                   DOL prints whatever went on the form, and here that name ranks{" "}
                   {formatInt(row.rank)}. A group that files
                   through several subsidiaries appears as several rows, and one
-                  that files everything through a parent appears once, so a rank
-                  is a rank among printed names rather than among companies.
+                  that files everything through a parent appears once. So these ranks
+                  compare printed names. They don&apos;t compare companies.
                 </>
               ),
             },
@@ -1233,7 +1233,7 @@ export default async function EmployerPage({
               ),
             },
             {
-              head: "Two sources, and they do not add up",
+              head: "Two sources, and they don’t add up",
               body: (
                 <>
                   The filing counts come from DOL&apos;s disclosure files, where

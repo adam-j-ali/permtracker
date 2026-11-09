@@ -67,15 +67,15 @@ const FAQS = [
   },
   {
     q: "Can a cutoff move backwards?",
-    a: "Yes, and it does. Retrogression happens when demand in a category turns out higher than expected, and a date that was current one month can stop being current the next. That’s the main reason this page shows the whole series rather than just the latest number.",
+    a: "Yes, and it does. Retrogression happens when demand in a category turns out higher than expected, and a date that was current one month can stop being current the next. That’s the main reason this page shows the whole series.",
   },
   {
     q: "The cutoff moved forward. Why is the wait no shorter?",
-    a: "Because a cutoff has to advance about thirty days a month just for the queue to stay the same length. It moves forward while a month of real time passes, so anyone holding a fixed priority date only gains ground when it advances faster than that. Many employment-based queues moved slower than that, so the date on the page went up while the wait got longer. The pace figures on this page measure it, and the board says how many queues lost ground.",
+    a: "Because a cutoff has to advance about thirty days a month just for the queue to stay the same length. It moves forward while a calendar month passes, so anyone holding a fixed priority date only gains ground when it advances faster than that. Many employment-based queues moved slower than that, so the date on the page went up while the wait got longer. The pace figures on this page measure it, and the board says how many queues lost ground.",
   },
   {
     q: "Which chart should I use, final action or dates for filing?",
-    a: "Final action dates govern when a green card can actually be approved. Dates for filing govern when the adjustment application can be submitted, but only in months when USCIS says it’s honouring that chart, which it announces separately.",
+    a: "Final action dates govern when a green card can be approved. Dates for filing govern when the adjustment application can be submitted, but only in months when USCIS says it’s honouring that chart, which it announces separately.",
   },
 ];
 

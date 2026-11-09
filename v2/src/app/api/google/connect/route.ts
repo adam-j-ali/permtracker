@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
       if (error.message.includes("credentials not configured")) {
         errorCode = "credentials_not_configured";
         errorDetails = encodeURIComponent(
-          "Google Calendar OAuth credentials are not set up. Contact support."
+          "Google Calendar OAuth credentials aren't set up. Contact support."
         );
       } else if (error.message.includes("GOOGLE_CALENDAR")) {
         errorCode = "missing_env_vars";

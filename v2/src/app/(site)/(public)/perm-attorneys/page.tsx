@@ -105,7 +105,7 @@ export default async function PermAttorneysPage() {
             title="Filter law firms"
             action="/perm-attorneys#all"
             placeholder="Fragomen, Berry Appleman"
-            note="The start of the name is enough; a firm DOL spells several ways counts once."
+            note="The start of the name is enough, and a firm DOL spells several ways counts once."
             footer={
               <>
                 Looking for a sponsor instead?{" "}

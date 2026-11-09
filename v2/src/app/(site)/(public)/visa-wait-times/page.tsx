@@ -114,7 +114,7 @@ export default async function VisaWaitTimesPage() {
           own table, as it updated it on {readingDate}.
         </p>{" "}
         <p className="mt-3 text-base leading-relaxed text-soft">
-          These waits are for visitor, student and work visas. State&apos;s table has no immigrant visa column; for a
+          These waits are for visitor, student and work visas. State&apos;s table has no immigrant visa column. For a
           green card through a consulate,{" "}
           <Link href="/consular-posts" className="link">
             see where each consulate stands
@@ -160,7 +160,7 @@ export default async function VisaWaitTimesPage() {
       <PageSection
         id="work"
         title="The next work-visa interview, country by country"
-        lede="H-1B, L, O, P and Q visas share one column in State's table. A longer bar is a longer wait; the longest are drawn in yellow."
+        lede="H-1B, L, O, P and Q visas share one column in State's table. A longer bar is a longer wait, and the longest are drawn in yellow."
       >
         <ul className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {groups.map((g) => (
@@ -289,7 +289,7 @@ export default async function VisaWaitTimesPage() {
           </li>{" "}
           <li>Visitors&apos; average wait runs from paying the fee to the interview, over the month before, and State prints it only where the next appointment is more than three months out.</li>{" "}
           <li>Applicants who qualify for an interview waiver aren&apos;t in it.</li>{" "}
-          <li>State doesn&apos;t say what &ldquo;NA&rdquo; means; it&apos;s shown here as &ldquo;No figure&rdquo;.</li>{" "}
+          <li>State doesn&apos;t say what &ldquo;NA&rdquo; means. It&apos;s shown here as &ldquo;No figure&rdquo;.</li>{" "}
           <li>
             State updates it about once a month.{" "}
             <a href={STATE_PAGE} target="_blank" rel="noopener noreferrer" className="link">

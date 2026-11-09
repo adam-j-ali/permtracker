@@ -178,7 +178,7 @@ export default async function NvcWaitingListPage() {
             </h2>{" "}
             <p className="mt-2 max-w-3xl text-base text-soft">
               November {yearOf(series[0]!.asOf)} to November {yearOf(newest.asOf)}, one bar a year, all categories on one
-              scale. People counted here are waiting abroad; the{" "}
+              scale. People counted here are waiting abroad, and the{" "}
               <Link href="/tools/green-card-line" className="link">
                 green card line
               </Link>{" "}
@@ -225,10 +225,10 @@ export default async function NvcWaitingListPage() {
                 up) and against the report before it (its earlier column must match that report&apos;s own figures).
                 {wl.revisions.length === 0
                   ? " Every year matched exactly."
-                  : ` ${wl.revisions.length} year${wl.revisions.length === 1 ? " was" : "s were"} restated by a later report; the later figure is shown.`}
+                  : ` ${wl.revisions.length} year${wl.revisions.length === 1 ? " was" : "s were"} restated by a later report, and the later figure is shown.`}
               </p>{" "}
               <ul className="list-disc space-y-2 pl-5">
-                <li>How long anyone waits. The list is a count, not a queue position, and the adjusting half is missing.</li>{" "}
+                <li>How long anyone waits. The list is a count with no queue position, and the adjusting half is missing.</li>{" "}
                 <li>Anything after {dateLabel(newest.asOf)}. That&apos;s the newest report this site holds.</li>{" "}
                 <li>How many people were culled rather than issued visas between two Novembers.</li>
               </ul>{" "}

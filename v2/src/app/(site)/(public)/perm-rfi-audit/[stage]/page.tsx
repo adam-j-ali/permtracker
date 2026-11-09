@@ -270,8 +270,8 @@ export default async function StagePage({
               Which filing months these come from
             </h2>{" "}
             <p className="mt-2 max-w-3xl text-base leading-relaxed text-muted-foreground">
-              Where cases are held today, not how often DOL issues one: a live
-              status shows only where a case stands now.
+              This shows where cases are held today. It can&apos;t show how often
+              DOL issues one, because a live status shows only where a case stands now.
             </p>
             <ChartTips label={`${meta.label} cases by filing month`} className="mt-5">
             <ol className="space-y-1">
@@ -320,7 +320,7 @@ export default async function StagePage({
 
           {listing === "too-large" ? (
             <p className="mt-2 max-w-3xl text-base leading-relaxed">
-              {formatInt(cases)} cases: the ordinary queue, not a stage cases are pulled aside into. It&apos;s drawn
+              {formatInt(cases)} cases: this is the ordinary queue itself, and the other stages pull cases aside from it. It&apos;s drawn
               month by month on{" "}
               <Link
                 href="/perm-queue"

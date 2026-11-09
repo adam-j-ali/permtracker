@@ -56,7 +56,7 @@ export default async function GreenCardTimelinesPage() {
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Green card timelines</h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           How long each step after PERM took, from the people who went through it. The PERM dates are checked against
-          DOL&apos;s record; the rest is self-reported, because USCIS doesn&apos;t publish it case by case.
+          DOL&apos;s record. The rest is self-reported, because USCIS doesn&apos;t publish it case by case.
         </p>
       </header>
 
@@ -151,8 +151,8 @@ export default async function GreenCardTimelinesPage() {
               Requests for evidence
             </h2>{" "}
             <p className="mt-2 max-w-2xl text-base text-muted-foreground">
-              What the RFEs people reported asked about, and how they ended. Self-reported, and people who got one are
-              likelier to say so than people who didn&apos;t, so this is a list of reasons, not a rate.
+              What the RFEs people reported asked about, and how they ended. It&apos;s self-reported, and people who got one
+              are likelier to say so than people who didn&apos;t. So read it as a list of reasons. It isn&apos;t a rate.
             </p>
             <div className="mt-5">
               <RfeBars rfe={board.rfe} />
@@ -170,7 +170,7 @@ export default async function GreenCardTimelinesPage() {
           Add yours
         </h2>{" "}
         <p className="mt-3 text-base leading-relaxed text-soft">
-          Look up your PERM case and choose <b>Add your dates</b>. DOL supplies the PERM dates; you type the rest.
+          Look up your PERM case and choose <b>Add your dates</b>. DOL supplies the PERM dates, and you type the rest.
           No account: your browser keeps a key so you can edit it later, and it joins the board only if you tick
           the box.
         </p>{" "}
@@ -192,7 +192,7 @@ export default async function GreenCardTimelinesPage() {
           <p>
             <b>They aren&apos;t a sample of everyone.</b> People with a fast or a stuck case are likelier to add their
             dates than people whose case went as expected, and nobody can check a date after PERM. Read a median here
-            as what the people who reported saw, not as what will happen to a case.
+            as what the people who reported saw. It doesn&apos;t say what will happen to a case.
           </p>{" "}
           <p>
             <b>USCIS publishes its own medians.</b> For the office-wide picture, see{" "}

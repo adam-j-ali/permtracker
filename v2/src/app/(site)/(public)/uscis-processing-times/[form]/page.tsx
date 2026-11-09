@@ -299,7 +299,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
             ))}
           </ul>{" "}
           <p className="mt-3 text-sm text-soft">
-            FY2024 there covers October 2023 to January 2024 only (hatched), as USCIS&apos;s factsheet says; it&apos;s dated{" "}
+            FY2024 there covers October 2023 to January 2024 only (hatched), as USCIS&apos;s factsheet says. The factsheet is dated{" "}
             {history.asOf}.
           </p>
         </PageSection>
@@ -333,7 +333,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
         <p className="max-w-2xl text-base leading-relaxed">
           This is USCIS&apos;s median: half of the cases it finished in a quarter took less time than this. Its
           processing-times page prints a different figure, the time within which it finished 80% of recent cases, so it
-          reads longer. Both are USCIS&apos;s;{" "}
+          reads longer. Both are USCIS&apos;s, and{" "}
           <Link href="/uscis-processing-times" className="link">
             the hub
           </Link>{" "}

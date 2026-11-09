@@ -123,7 +123,7 @@ function paceSentence(cell: BoardCell): string {
   if (cell.latest.kind === "unavailable") return "The line is shut this month, so no pace is given for it.";
   if (cell.movedDays === null || cell.spanMonths === null || cell.spanMonths <= 0) {
     return cell.latest.kind === "current"
-      ? "Current in the newest bulletin; there's no dated run to measure."
+      ? "Current in the newest bulletin, so there's no dated run to measure."
       : "Too few dated bulletins to measure a pace.";
   }
   const months = Math.round(cell.movedDays / DAYS_PER_MONTH);
@@ -215,7 +215,7 @@ export default async function BulletinLinePage({ params }: { params: Promise<{ l
           </div>
         </dl>{" "}
         <p className="mt-3 text-base text-muted-foreground">
-          Final action decides when a green card can be approved; dates for filing, when USCIS allows it, decides when
+          Final action decides when a green card can be approved. Dates for filing, when USCIS allows it, decides when
           an I-485 can be filed.{" "}
           <Link href="/guides/how-the-visa-bulletin-works" className="link">
             How the visa bulletin works
@@ -326,7 +326,7 @@ export default async function BulletinLinePage({ params }: { params: Promise<{ l
             ) : null}
           </dl>{" "}
           <p className="mt-4 max-w-3xl text-base text-muted-foreground">
-            Approved counts are petitions, not people. I-485 counts are ranges (USCIS withholds cells of 1 to 10)
+            Approved counts count petitions. They don&apos;t count people. I-485 counts are ranges (USCIS withholds cells of 1 to 10)
             and leave out people getting their visa abroad.
           </p>{" "}
           {GREEN_CARD_LINE.has(category) ? (

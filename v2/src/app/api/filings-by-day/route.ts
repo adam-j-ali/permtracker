@@ -37,6 +37,6 @@ export async function GET(req: Request) {
     );
   } catch (e) {
     console.error("[filings-by-day] read failed", e);
-    return NextResponse.json({ error: "the daily counts couldn't be read; try again in a minute" }, { status: 503 });
+    return NextResponse.json({ error: "the daily counts couldn't be read, so try again in a minute" }, { status: 503 });
   }
 }
