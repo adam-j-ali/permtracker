@@ -9,6 +9,7 @@ import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
 import { WEIGHTED_ESTIMATE, WEIGHTED_FROM } from "@/lib/h1bLottery";
 import { LOTTERY_RULE } from "@/lib/h1bLotteryCalc";
 import { openGraphBase } from "@/lib/openGraphBase";
+import { withSocialCard } from "@/lib/socialCard";
 
 /**
  * The weighted H-1B lottery for one job. /h1b-lottery-odds is the record
@@ -23,13 +24,13 @@ const DESCRIPTION =
   "Your H-1B lottery level and odds under the wage-weighted draw: the OEWS level your offer meets, from DOL's wage search, and DHS's estimated chance at it.";
 const PATH = "/tools/h1b-lottery-odds-calculator";
 
-// No social card of its own yet (a card is a capture of the rendered page).
-export const metadata: Metadata = {
+// Borrows the lottery odds page's card until it has its own (a card is a capture of the rendered page).
+export const metadata: Metadata = withSocialCard({
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: PATH },
   openGraph: { ...openGraphBase, title: `${TITLE} | PERM Tracker`, description: DESCRIPTION, url: PATH },
-};
+}, "h1b-lottery-odds");
 
 export const dynamic = "force-static";
 
