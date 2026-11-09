@@ -17,8 +17,6 @@
  * and the rest of the file still renders. A partial map beats a 500.
  */
 
-import { fetchQuery } from "convex/nextjs";
-
 import { api } from "@convex/_generated/api";
 import { getAllPosts, latestPostDate } from "@/lib/content";
 import type { ContentType } from "@/lib/content/types";
@@ -32,6 +30,7 @@ import { longDate, MONTH_NAMES, monthYear } from "@convex/lib/months";
 import { RIVALS } from "@/lib/compare/rivals";
 import { checkedPhrase } from "@/lib/compare/trackers";
 import { FORM_PAGES } from "@/lib/uscisForms";
+import { queryStatic } from "@/lib/convexStatic";
 import { softFail } from "@/lib/softRead";
 
 const BASE_URL = SITE_URL;
@@ -566,7 +565,7 @@ export async function GET() {
 
   const [disclosure, dol, line] = await Promise.all([
     getDisclosureStats().catch(softFail("llms.txt/route.getDisclosureStats", null)),
-    fetchQuery(api.dolProcessingTimes.getLatest, {}).catch(softFail("llms.txt/route.fetchQuery", null)),
+    queryStatic(api.dolProcessingTimes.getLatest, {}, revalidate).catch(softFail("llms.txt/route.queryStatic", null)),
     // Where DOL is by our own daily check: the month once DOL's page stopped printing one (Oct 31 2026).
     getPermLine().catch(softFail("llms.txt/route.getPermLine", null)),
   ]);
