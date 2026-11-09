@@ -32,11 +32,12 @@ export const LINKEDIN_SABRINA_URL = "https://www.linkedin.com/in/sabrina-soltau-
  */
 export const DC_BAR_SABRINA_URL = "https://my.dcbar.org/directorymemberships?id=001Qr00000ShxeSIAR";
 /**
- * The X account the product posts from. A personal handle, so it is linked
- * (footer, About contact line) and never asserted as the Organization's
- * `sameAs`; `structuredData.test.ts` pins that.
+ * The brand's own X account (Nov 8 2026). Brand-owned, so it is linked in the
+ * footer and the About page and is also an Organization `sameAs`.
  */
-export const X_PROFILE_URL = "https://x.com/adamj3ali";
+export const X_PROFILE_URL = "https://x.com/permtracker";
+/** The brand's Bluesky account, handle verified by the domain's `_atproto` TXT record (Nov 8 2026). */
+export const BLUESKY_URL = "https://bsky.app/profile/permtracker.app";
 
 /**
  * Where people leave a review of the site: the form on /reviews (since Oct 23 2026; Senja's hosted form before,
@@ -62,7 +63,7 @@ export const FEATURE_REQUEST_URL = `mailto:${SUPPORT_EMAIL_ADDRESS}?subject=Feat
 export interface SocialLink {
   href: string;
   label: string;
-  icon: "twitter" | "linkedin";
+  icon: "twitter" | "linkedin" | "bluesky";
 }
 
 /**
@@ -85,6 +86,7 @@ export const SOCIAL_LINKS = [
     label: "LinkedIn",
     icon: "linkedin",
   },
+  { href: BLUESKY_URL, label: "Bluesky", icon: "bluesky" },
 ] as const satisfies readonly SocialLink[];
 
 /**

@@ -51,7 +51,9 @@ import {
   SABRINA,
 } from "@/lib/constants/about";
 import {
+  BLUESKY_URL,
   DC_BAR_SABRINA_URL,
+  LINKEDIN_COMPANY_URL,
   LINKEDIN_SABRINA_URL,
   MEDIUM_PROFILE_URL,
   PRODUCT_HUNT_URL,
@@ -172,6 +174,8 @@ const NOT_THIS = [
 
 const ELSEWHERE = [
   { href: X_PROFILE_URL, label: "X" },
+  { href: BLUESKY_URL, label: "Bluesky" },
+  { href: LINKEDIN_COMPANY_URL, label: "LinkedIn" },
   { href: MEDIUM_PROFILE_URL, label: "Medium" },
   { href: PRODUCT_HUNT_URL, label: "Product Hunt" },
 ] as const;
