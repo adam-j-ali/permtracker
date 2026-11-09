@@ -45,6 +45,17 @@ describe("QueueMonthChart", () => {
     ).toBeInTheDocument();
   });
 
+  // The percent column is about 44px on a phone: the words would wrap there, so the cell takes the short marks and
+  // the words stay in the accessible name.
+  it("prints a nearly decided month's share as a short mark that fits its column, words in its name", () => {
+    // Arrange: 13,950 of 14,000 decided, 50 still waiting
+    render(<QueueMonthChart months={[month("2025-05", 14_000, 13_950)]} />);
+    // Assert
+    const row = screen.getByLabelText("May 2025: over 99% decided, 50 still pending");
+    expect(row.textContent).toContain(">99%");
+    expect(row.textContent).not.toContain("over 99%");
+  });
+
   it("draws a finished month full and an untouched month empty", () => {
     const { container } = render(<QueueMonthChart months={SERIES} />);
     const bars = container.querySelectorAll("li > span > span");

@@ -9,6 +9,7 @@ import { formatMonth } from "@/lib/dolFormat";
 import type { MonthQueue, VolumeAnomaly } from "@/lib/queueAhead";
 import { cn } from "@/lib/utils";
 import { formatInt, formatShareOf } from "@/lib/format";
+import { shareMark } from "@/components/ui/share-mark";
 
 /**
  * How far DOL has got through every filing month, oldest first.
@@ -143,7 +144,7 @@ export function QueueMonthChart({
                     isSelected ? "font-bold" : "text-muted-foreground",
                   )}
                 >
-                  {decidedShare}
+                  {m.total > 0 ? shareMark(m.decided, m.total) : "0%"}
                 </span>{" "}
                 <span
                   className={cn(

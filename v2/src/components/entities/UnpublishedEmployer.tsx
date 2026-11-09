@@ -5,9 +5,10 @@ import { DataProvenance } from "@/components/data/DataProvenance";
 import { statusMeaning } from "@/lib/caseStatusVocabulary";
 import type { LiveCaseRow } from "@/lib/db/cases";
 import type { LiveEmployerRecord } from "@/lib/db/liveEmployers";
-import { formatInt, formatShareOf } from "@/lib/format";
+import { formatInt } from "@/lib/format";
 import { longDate } from "@convex/lib/months";
 import { FilingRows } from "@/components/entities/FilingRows";
+import { shareMark } from "@/components/ui/share-mark";
 
 /**
  * An employer's page when DOL has never published a thing about them.
@@ -160,7 +161,7 @@ export function UnpublishedEmployer({
             {stages.map((s) => {
               const meaning = statusMeaning(s.status);
               // Never a clean 0% or 100% the counts don't have; short marks in the narrow cell.
-              const share = total > 0 ? formatShareOf(s.n, total).replace("under ", "<").replace("over ", ">") : "0%";
+              const share = total > 0 ? shareMark(s.n, total) : "0%";
               return (
                 // Keyed Fragment with a leading space: array items render with
                 // NOTHING between them, so a stage name welds to the previous

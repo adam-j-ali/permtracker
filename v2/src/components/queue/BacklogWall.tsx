@@ -11,6 +11,7 @@ import { formatInt, formatShareOf } from "@/lib/format";
 
 import { StageBar } from "./StageBar";
 import { groupByStage } from "./stages";
+import { shareMark } from "@/components/ui/share-mark";
 
 /**
  * The wall: every filing month still carrying undecided cases.
@@ -272,7 +273,7 @@ function MonthRow({
         {formatInt(month.pending)}
       </span>{" "}
       <span className="text-right text-sm tabular-nums text-muted-foreground">
-        {decided}
+        {month.total > 0 ? shareMark(month.decided, month.total) : "0%"}
       </span>
     </li>
   );
