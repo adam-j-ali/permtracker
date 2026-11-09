@@ -643,82 +643,91 @@ export const sendBatch = internalAction({
   args: { weekOf: v.string() },
   returns: v.object({ sent: v.number(), failed: v.number(), done: v.boolean() }),
   handler: async (ctx, { weekOf }) => {
-    if (!sendingEnabled()) {
-      log.info("sending disabled; nothing sent", { weekOf });
-      return { sent: 0, failed: 0, done: true };
-    }
-    const issue = await ctx.runQuery(internal.newsletter.issueForWeek, { weekOf });
-    if (!issue || issue.status === "sent" || issue.status === "skipped") return { sent: 0, failed: 0, done: true };
-    const data = JSON.parse(issue.data) as DigestData;
-    const resend = getResend();
-    const secret = unsubscribeSecret();
+    // Anything that throws here reaches the owner; the loop below saves its progress first, so a run by hand
+    // carries on from the cursor without mailing anyone twice.
+    try {
+      if (!sendingEnabled()) {
+        log.info("sending disabled; nothing sent", { weekOf });
+        return { sent: 0, failed: 0, done: true };
+      }
+      const issue = await ctx.runQuery(internal.newsletter.issueForWeek, { weekOf });
+      if (!issue || issue.status === "sent" || issue.status === "skipped") return { sent: 0, failed: 0, done: true };
+      const data = JSON.parse(issue.data) as DigestData;
+      const resend = getResend();
+      const secret = unsubscribeSecret();
 
-    const personalise = async (email: string): Promise<{ token: string; data: DigestData }> => {
-      const token = await makeUnsubscribeToken(email, secret, "prefs");
-      const watched = await ctx.runQuery(internal.newsletter.watchedCaseFor, { email });
-      return {
-        token,
-        data: {
-          ...data,
-          prefsUrl: actionUrl("/prefs", token),
-          watchedCase: watched ? { ...watched, url: caseLookupUrl(watched.caseNumber) } : null,
-        },
+      const personalise = async (email: string): Promise<{ token: string; data: DigestData }> => {
+        const token = await makeUnsubscribeToken(email, secret, "prefs");
+        const watched = await ctx.runQuery(internal.newsletter.watchedCaseFor, { email });
+        return {
+          token,
+          data: {
+            ...data,
+            prefsUrl: actionUrl("/prefs", token),
+            watchedCase: watched ? { ...watched, url: caseLookupUrl(watched.caseNumber) } : null,
+          },
+        };
       };
-    };
 
-    const result = await runSendLoop(
-      {
-        nextBatch: (after, limit) => ctx.runQuery(internal.newsletter.confirmedAfter, { after, limit }),
-        charge: () => ctx.runMutation(internal.newsletter.chargeSend, {}),
-        send: async (email) => {
-          const { token, data: personal } = await personalise(email);
-          // The header Gmail and Apple Mail turn into their own Unsubscribe
-          // button. Every other subscriber mail carried it; the digest did not.
-          const oneClick = oneClickUnsubscribeUrl(token, "newsletter");
-          return await sendOrQueue(ctx, "digest", resend, {
-            from: FROM_EMAIL,
-            to: email,
-            subject: issue.subject,
-            headers: {
-              "List-Unsubscribe": `<${oneClick}>`,
-              "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-            },
-            text: composeText(personal),
-            html: await renderHtml(personal),
-          });
+      const result = await runSendLoop(
+        {
+          nextBatch: (after, limit) => ctx.runQuery(internal.newsletter.confirmedAfter, { after, limit }),
+          charge: () => ctx.runMutation(internal.newsletter.chargeSend, {}),
+          send: async (email) => {
+            const { token, data: personal } = await personalise(email);
+            // The header Gmail and Apple Mail turn into their own Unsubscribe
+            // button. Every other subscriber mail carried it; the digest did not.
+            const oneClick = oneClickUnsubscribeUrl(token, "newsletter");
+            return await sendOrQueue(ctx, "digest", resend, {
+              from: FROM_EMAIL,
+              to: email,
+              subject: issue.subject,
+              headers: {
+                "List-Unsubscribe": `<${oneClick}>`,
+                "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+              },
+              text: composeText(personal),
+              html: await renderHtml(personal),
+            });
+          },
+          wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+          onFailure: async (email, error, attempt) => {
+            if (attempt === 1) {
+              log.warn("send failed once; retrying", { weekOf, error: String(error) });
+              return;
+            }
+            log.warn("send failed twice; skipping this address", { weekOf, error: String(error) });
+            await recordError(
+              ctx,
+              "action",
+              `newsletter.sendBatch ${weekOf}`,
+              new Error(`newsletter send failed twice for one address: ${String(error)}`),
+            );
+            void email;
+          },
         },
-        wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-        onFailure: async (email, error, attempt) => {
-          if (attempt === 1) {
-            log.warn("send failed once; retrying", { weekOf, error: String(error) });
-            return;
-          }
-          log.warn("send failed twice; skipping this address", { weekOf, error: String(error) });
-          await recordError(
-            ctx,
-            "action",
-            `newsletter.sendBatch ${weekOf}`,
-            new Error(`newsletter send failed twice for one address: ${String(error)}`),
-          );
-          void email;
-        },
-      },
-      { cursor: issue.cursor, batch: BATCH, retryDelayMs: RETRY_DELAY_MS },
-    );
+        { cursor: issue.cursor, batch: BATCH, retryDelayMs: RETRY_DELAY_MS },
+      );
 
-    const done = !result.budgetHit;
-    await ctx.runMutation(internal.newsletter.markProgress, {
-      weekOf,
-      sent: result.sent,
-      cursor: result.cursor,
-      status: done ? "sent" : "sending",
-    });
-    log.info("batch finished", { weekOf, sent: result.sent, failed: result.failed, done });
-    // Progress-guarded: a day that sent nothing does not spin a timer.
-    if (!done && result.sent > 0) {
-      await ctx.scheduler.runAfter(MS_PER_DAY, internal.newsletter.sendBatch, { weekOf });
+      const done = !result.budgetHit && result.error === undefined;
+      await ctx.runMutation(internal.newsletter.markProgress, {
+        weekOf,
+        sent: result.sent,
+        cursor: result.cursor,
+        status: done ? "sent" : "sending",
+      });
+      // Progress-guarded: a day that sent nothing does not spin a timer. A run something stopped early
+      // carries on tomorrow the same way, and the throw below tells the owner.
+      if (!done && result.sent > 0) {
+        await ctx.scheduler.runAfter(MS_PER_DAY, internal.newsletter.sendBatch, { weekOf });
+      }
+      if (result.error !== undefined) throw result.error;
+      log.info("batch finished", { weekOf, sent: result.sent, failed: result.failed, done });
+      return { sent: result.sent, failed: result.failed, done };
+    } catch (error) {
+      await recordError(ctx, "action", `newsletter.sendBatch ${weekOf}`, error);
+      throw error;
     }
-    return { sent: result.sent, failed: result.failed, done };
   },
 });
 

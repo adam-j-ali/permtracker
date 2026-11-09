@@ -114,6 +114,52 @@ describe("runSendLoop", () => {
     expect(r.budgetHit).toBe(false);
   });
 
+  it("treats a send that throws like one that failed: retried once, then recorded and skipped", async () => {
+    // A per-reader render or a ledger call can throw; it must not end the run with the cursor unmoved.
+    const { deps, attempts, failures } = arrange(["a@x.test", "b@x.test"]);
+    const send = vi.fn(async (email: string) => {
+      attempts.push(email);
+      if (email === "a@x.test") throw new Error("render failed");
+      return {};
+    });
+    const r = await runSendLoop({ ...deps, send }, { batch: 25, retryDelayMs: 1 });
+    expect(attempts).toEqual(["a@x.test", "a@x.test", "b@x.test"]);
+    expect(failures).toEqual([
+      { email: "a@x.test", attempt: 1 },
+      { email: "a@x.test", attempt: 2 },
+    ]);
+    expect(r).toEqual({ sent: 1, failed: 1, cursor: "b@x.test", budgetHit: false });
+  });
+
+  it("stops when three addresses in a row fail twice, leaving them for the next run", async () => {
+    // That's the service or our own code failing, not three bad addresses: skipping on would lose the issue
+    // for everyone left on the list.
+    const { deps, attempts } = arrange(["a@x.test", "b@x.test", "c@x.test", "d@x.test", "e@x.test"]);
+    const send = vi.fn(async (email: string) => {
+      attempts.push(email);
+      if (email === "a@x.test") return {};
+      throw new Error("ledger unreachable");
+    });
+    const r = await runSendLoop({ ...deps, send }, { batch: 25, retryDelayMs: 1 });
+    expect(attempts).toEqual(["a@x.test", "b@x.test", "b@x.test", "c@x.test", "c@x.test", "d@x.test", "d@x.test"]);
+    expect(r).toMatchObject({ sent: 1, cursor: "a@x.test", budgetHit: false });
+    expect(String(r.error)).toMatch(/three addresses in a row/);
+  });
+
+  it("stops on any other throw with the cursor on the last address handled, and returns the error", async () => {
+    const { deps, attempts } = arrange(["a@x.test", "b@x.test", "c@x.test"]);
+    let charges = 0;
+    const charge = async () => {
+      charges += 1;
+      if (charges === 3) throw new Error("ledger unreachable");
+      return { allowed: true };
+    };
+    const r = await runSendLoop({ ...deps, charge }, { batch: 25, retryDelayMs: 1 });
+    expect(attempts).toEqual(["a@x.test", "b@x.test"]);
+    expect(r).toMatchObject({ sent: 2, failed: 0, cursor: "b@x.test", budgetHit: false });
+    expect(String(r.error)).toMatch(/ledger unreachable/);
+  });
+
   it("resumes after a stored cursor", async () => {
     const { deps, attempts } = arrange(["a@x.test", "b@x.test", "c@x.test"]);
     const r = await runSendLoop(deps, { cursor: "a@x.test", batch: 25, retryDelayMs: 1 });
