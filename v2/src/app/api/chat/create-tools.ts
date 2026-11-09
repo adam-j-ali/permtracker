@@ -500,6 +500,9 @@ export function createTools(
               if (unavailable) return unavailable;
               return sanitizeBigInts(result);
             } catch (error) {
+              // A per-account limit is an answer, not a fault: say when searches come back, and keep it out of Sentry.
+              const limited = rateLimitedToolResult(error, 'web searches');
+              if (limited) return limited;
               console.error(`[Chat API] searchWeb error:`, {
                 error,
                 errorMessage: error instanceof Error ? error.message : String(error),

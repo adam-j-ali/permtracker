@@ -567,4 +567,38 @@ describe("webSearch", () => {
       ).rejects.toThrow("Not authenticated");
     });
   });
+
+  describe("one account's share", () => {
+    it("stops an account after its daily share, before any provider is asked", async () => {
+      const t = createTestContext();
+      const user = await createAuthenticatedContext(t);
+      mockFetch.mockImplementation(async () => createTavilyResponse(1, false));
+      const start = new Date("2024-06-15T12:00:00Z").getTime();
+      for (let i = 0; i < 15; i++) {
+        // A minute apart, so the burst limit refills and only the daily share is under test.
+        vi.setSystemTime(new Date(start + i * 60_000));
+        await user.action(api.webSearch.searchWeb, { query: `q ${i}` });
+      }
+      const asked = mockFetch.mock.calls.length;
+      vi.setSystemTime(new Date(start + 15 * 60_000));
+      await expect(user.action(api.webSearch.searchWeb, { query: "one more" })).rejects.toThrow(/RateLimited|rate limit/i);
+      expect(mockFetch.mock.calls.length).toBe(asked);
+    });
+
+    it("leaves another account its own share", async () => {
+      const t = createTestContext();
+      const first = await createAuthenticatedContext(t, "First");
+      const second = await createAuthenticatedContext(t, "Second");
+      mockFetch.mockImplementation(async () => createTavilyResponse(1, false));
+      const start = new Date("2024-06-15T12:00:00Z").getTime();
+      for (let i = 0; i < 15; i++) {
+        vi.setSystemTime(new Date(start + i * 60_000));
+        await first.action(api.webSearch.searchWeb, { query: `q ${i}` });
+      }
+      vi.setSystemTime(new Date(start + 15 * 60_000));
+      const r = await second.action(api.webSearch.searchWeb, { query: "mine" });
+      expect(r.source).toBe("tavily");
+    });
+  });
 });
+
