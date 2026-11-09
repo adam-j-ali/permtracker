@@ -6,7 +6,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
-  "bin": { "permtracker": "./dist/cli.js" },
+  "bin": { "permtracker": "dist/cli.js" },
   "files": ["dist", "README.md", "LICENSE"],
   "engines": { "node": ">=18" },
   "keywords": ["perm", "dol", "immigration", "green card", "visa bulletin", "h-1b", "lca", "prevailing wage"],
