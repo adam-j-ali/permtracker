@@ -209,11 +209,20 @@ export function RfiJourney({
   );
 }
 
-export function StageMoves({ stats, since }: { stats: StageStats | null; since: string | null }) {
+export function StageMoves({
+  stats,
+  since,
+  only,
+}: {
+  stats: StageStats | null;
+  since: string | null;
+  /** The steps to show, by DOL's status word; every step when left out. The appeal guide shows the appeal's own. */
+  only?: readonly string[];
+}) {
   const exits = stats?.exits ?? [];
   // The RFI's stay is the "Time to reply" figure above, from the RFI clock; a
   // second reading of it here, rounded differently, would print 30 beside 31.
-  const rows = STEPS.map((s) => ({
+  const rows = STEPS.filter((s) => !only || only.includes(s.status)).map((s) => ({
     ...s,
     moves: movesFrom(exits, s.status),
     dwell: s.status === "RFI ISSUED" ? null : stageDurationFor(stats, s.status),
