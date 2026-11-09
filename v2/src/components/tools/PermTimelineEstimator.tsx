@@ -484,26 +484,27 @@ export function PermTimelineEstimator({
   /**
    * How far through the wait this case is, as a fraction.
    *
-   * Domain runs from the filing month to the LATEST bound, so the bar can
-   * never overflow its own track. Three traceable inputs: the month the user
-   * picked, today as resolved on the server, and a bound a model published.
+   * Domain runs from the filing month to the end of the window the headline
+   * prints, so the bar and the dates above it tell one story; a slower model's
+   * far bound stays under "How this was worked out". Three traceable inputs:
+   * the month the user picked, today as resolved on the server, and that window.
    */
   const progress = useMemo(() => {
-    if (!envelope) return null;
+    if (!shown) return null;
     const monthsBetween = (from: string, to: string) =>
       (Number(to.slice(0, 4)) - Number(from.slice(0, 4))) * 12 +
       (Number(to.slice(5, 7)) - Number(from.slice(5, 7)));
-    const total = monthsBetween(month, envelope.latest);
+    const total = monthsBetween(month, shown.latest);
     if (total <= 0) return null;
     const elapsed = Math.max(0, monthsBetween(month, today));
-    const toEarliest = Math.max(0, monthsBetween(month, envelope.earliest));
+    const toEarliest = Math.max(0, monthsBetween(month, shown.earliest));
     return {
       elapsedPct: Math.min(100, (elapsed / total) * 100),
       windowStartPct: Math.min(100, (toEarliest / total) * 100),
       elapsedMonths: elapsed,
       totalMonths: total,
     };
-  }, [envelope, month, today]);
+  }, [shown, month, today]);
 
   /** Measured, not projected: cases in line filed before the chosen month. */
   const queue = useMemo(() => deriveQueueAhead(months, month), [months, month]);
@@ -766,7 +767,7 @@ export function PermTimelineEstimator({
                 role="img"
                 aria-label={`${progress.elapsedMonths} of about ${progress.totalMonths} months elapsed since filing`}
               >
-                {/* The window every model lands inside. */}
+                {/* The window the headline prints. */}
                 <div
                   className="absolute inset-y-0 bg-hatch text-primary-text"
                   style={{
@@ -798,7 +799,22 @@ export function PermTimelineEstimator({
               red passed. The words carry the same meaning, so colour is never
               the only sign. */}
           <div className="mt-6 flex flex-wrap gap-3">
-            {pace ? (
+            {/* The rate the headline counted with when the counting model
+                leads, so the box and the sentence under "How this was worked
+                out" quote one number; the working-day figure otherwise. */}
+            {leadIsCounting && decisionPace ? (
+              <div className="min-w-0 flex-1 basis-60 bg-soft-wait p-4 border-2 border-border">
+                <p className="text-sm font-semibold text-muted-foreground">
+                  DOL pace
+                </p>{" "}
+                <p className="mt-1 font-heading text-2xl font-bold leading-none">
+                  {Math.round(decisionPace.pace).toLocaleString("en-US")}
+                </p>{" "}
+                <p className="mt-1 text-sm text-muted-foreground">
+                  decisions a day, weekends included, over {decisionPace.daysUsed} recent days
+                </p>
+              </div>
+            ) : pace ? (
               <div className="min-w-0 flex-1 basis-60 bg-soft-wait p-4 border-2 border-border">
                 <p className="text-sm font-semibold text-muted-foreground">
                   DOL pace

@@ -120,6 +120,28 @@ describe("the answer is shown at the resolution it earned", () => {
     expect(screen.queryByText(/models on different bases/i)).toBeNull();
   });
 
+  it("runs the progress bar to the end of the window it prints, not the slowest model's", () => {
+    // "5 of about 17 months elapsed" once sat under a window ending 8 months
+    // after filing: the bar ran to the latest date ANY model gave.
+    renderTool();
+    const win = screen.getByText(/Likely decision window/).textContent ?? "";
+    const end = /to\s*(?:\w{3}, )?(\w{3}) \d{1,2}, (\d{4})\s*$/.exec(win);
+    expect(end).not.toBeNull();
+    const monthIndex = "JanFebMarAprMayJunJulAugSepOctNovDec".indexOf(end![1]!) / 3;
+    const total = (Number(end![2]) - 2025) * 12 + monthIndex - 11;
+    expect(screen.getByText(/months\s+elapsed/).textContent).toMatch(new RegExp(`of about ${total} months`));
+  });
+
+  it("shows the pace the headline counted with, so the box and its sentence agree", () => {
+    // The box once read 644 a working day beside a sentence counting at 525 a
+    // day including weekends: two true figures that read as a contradiction.
+    renderTool();
+    const rate = Math.round(PACE.pace).toLocaleString("en-US");
+    expect(screen.getByText(/decisions a day, weekends included/)).toBeTruthy();
+    expect(screen.getByText(rate, { selector: "p" })).toBeTruthy();
+    expect(screen.getAllByText(new RegExp(`deciding about ${rate} a day including weekends`)).length).toBeGreaterThan(0);
+  });
+
   it("falls back to months when no counting model can run", () => {
     // No pace and no queue: the month-anchored models answer, and a day would
     // be precision they do not have.
