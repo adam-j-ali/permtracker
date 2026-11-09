@@ -74,7 +74,12 @@ export default function TableOfContents() {
                 const el = document.getElementById(heading.id);
                 if (el) {
                   const y = el.getBoundingClientRect().top + window.scrollY - 96;
-                  window.scrollTo({ top: y, behavior: "smooth" });
+                  // No glide for a reader whose system asks for less motion.
+                  const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+                  window.scrollTo({ top: y, behavior: still ? "auto" : "smooth" });
+                  // Focus goes to the heading too, so the next Tab starts in the section chosen.
+                  if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "-1");
+                  el.focus({ preventScroll: true });
                 }
               }}
               className={cn(
