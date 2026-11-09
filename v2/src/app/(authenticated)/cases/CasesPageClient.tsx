@@ -57,8 +57,9 @@ import { ImportModal } from "@/components/cases/ImportModal";
 import { ViewToggle, type ViewMode } from "@/components/cases/ViewToggle";
 import { CaseListView } from "@/components/cases/CaseListView";
 import { CaseCapNotice } from "@/components/cases/CaseCapNotice";
+import { CaseListEmptyState } from "@/components/cases/CaseListEmptyState";
 import { useNavigationLoading } from "@/hooks/useNavigationLoading";
-import { CasesLoadingSkeleton, NewUserEmptyState, NoResultsEmptyState } from "./components";
+import { CasesLoadingSkeleton, NewUserEmptyState } from "./components";
 import { sortCases } from "@convex/lib/caseListHelpers";
 import {
   exportFullCasesJSON,
@@ -907,32 +908,18 @@ export function CasesPageClient() {
     );
   }
 
-  // No cases match filters
-  if (processedCases.length === 0) {
-    return (
-      <div data-tour="cases-list">
-        <NoResultsEmptyState
-          filters={filters}
-          sort={sort}
-          pageSize={pageSize}
-          onAddCase={handleAddCase}
-          isAddingCase={isAddingCase}
-          onFiltersChange={handleFiltersChange}
-          onSortChange={handleSortChange}
-          onPageSizeChange={handlePageSizeChange}
-          onClearFilters={() => {
-            setFilters({});
-            setStoredFilters({}); // Persist cleared filters to localStorage
-            setSort(DEFAULT_SORT);
-            setStoredSort(DEFAULT_SORT); // Persist cleared sort to localStorage
-            setCurrentPage(1);
-            setLocalOrder([]);
-            updateURL({}, DEFAULT_SORT, 1);
-          }}
-        />
-      </div>
-    );
-  }
+  // No cases match the filters: the same page with the empty state in the list's place. The filter bar stays the
+  // same element, so a search that empties the list keeps the box, its focus and what's being typed.
+  const noResults = processedCases.length === 0;
+  const clearFilters = () => {
+    setFilters({});
+    setStoredFilters({}); // Persist cleared filters to localStorage
+    setSort(DEFAULT_SORT);
+    setStoredSort(DEFAULT_SORT); // Persist cleared sort to localStorage
+    setCurrentPage(1);
+    setLocalOrder([]);
+    updateURL({}, DEFAULT_SORT, 1);
+  };
 
   // ============================================================================
   // RENDER
@@ -947,7 +934,7 @@ export function CasesPageClient() {
         <div className="flex items-start gap-3">
           <div>
             <PageHeading
-              meta={`${totalCount} ${totalCount === 1 ? "case" : "cases"}`}
+              meta={noResults ? "No cases match your filters" : `${totalCount} ${totalCount === 1 ? "case" : "cases"}`}
               title="Cases"
             />
           </div>
@@ -1027,7 +1014,10 @@ export function CasesPageClient() {
         onPageSizeChange={handlePageSizeChange}
       />
 
-      {/* Case Cards/List View */}
+      {/* Case Cards/List View, or the empty state when the filters match nothing */}
+      {noResults ? (
+        <CaseListEmptyState type="no-results" onClearFilters={clearFilters} />
+      ) : (
       <div
         className="transition-opacity duration-150"
         style={{ opacity: isRefetching || isPending ? 0.6 : 1 }}
@@ -1085,6 +1075,7 @@ export function CasesPageClient() {
             )}
         </div>
       </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
