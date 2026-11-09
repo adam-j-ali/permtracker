@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { ROW_LINK } from "@/components/entities/caseRows";
 import { formatInt } from "@/lib/format";
+import { ScrollBox } from "@/components/ui/scroll-box";
 
 /**
  * The rows of one of ICE's top-200 lists. A client component on purpose: a
@@ -40,7 +41,7 @@ export function SevpRowsTable({
 }) {
   return (
     // A card ground of its own, so the sage bar tracks read on any panel.
-    <div className="overflow-x-auto border-t-2 border-[var(--object-border)] bg-card">
+    <ScrollBox label={opt ? "Employers of OPT and STEM OPT students" : "Employers of CPT students"} className="border-t-2 border-[var(--object-border)] bg-card">
       <table className="w-full min-w-[560px] text-left text-base">
         <thead className="border-b-2 border-border bg-sage">
           <tr>
@@ -86,6 +87,6 @@ export function SevpRowsTable({
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollBox>
   );
 }
