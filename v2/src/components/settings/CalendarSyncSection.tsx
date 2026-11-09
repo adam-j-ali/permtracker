@@ -456,7 +456,11 @@ export default function CalendarSyncSection({
 
       // Show detailed message about events cleared
       analytics.capture("calendar_sync_disabled");
-      if (data.eventsCleared && data.eventsCleared.eventsDeleted > 0) {
+      // Disconnected, but some deadline events stayed in Google Calendar: they won't be updated again, so the
+      // server's words say to delete them there, as a warning, never a plain success.
+      if (data.eventsLeft && typeof data.message === "string") {
+        toast.warning(data.message);
+      } else if (data.eventsCleared && data.eventsCleared.eventsDeleted > 0) {
         toast.success(
           `Google Calendar disconnected. ${data.eventsCleared.eventsDeleted} event${data.eventsCleared.eventsDeleted !== 1 ? "s" : ""} removed from calendar.`
         );

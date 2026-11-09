@@ -249,6 +249,23 @@ describe("CalendarSyncSection", () => {
       });
     });
 
+    it("warns, with the server's words, when deadline events were left in Google Calendar", async () => {
+      // Arrange: disconnected, but some events couldn't be removed
+      const message =
+        "Google Calendar is disconnected, but some PERM deadline events couldn't be removed from your Google Calendar. Delete them there, since they won't be updated again.";
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true, revoked: true, eventsCleared: { eventsDeleted: 2 }, eventsLeft: true, message }),
+      });
+      const user = userEvent.setup();
+      renderWithProviders(<CalendarSyncSection profile={connectedProfile} />);
+      // Act
+      await user.click(screen.getByRole("button", { name: /Disconnect/i }));
+      // Assert
+      await waitFor(() => expect(mockToastWarning).toHaveBeenCalledWith(message));
+      expect(mockToastSuccess).not.toHaveBeenCalled();
+    });
+
     it("shows error toast when disconnect fails", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
