@@ -9,6 +9,7 @@ import { rankFuzzy } from "@/lib/fuzzy";
 import { nextSort, sortRows, type SortState } from "@/lib/tableSort";
 import { CHANGE_PROGRAMS, PROGRAM_LABEL, type ChangeProgram } from "@/lib/changeProgram";
 import { formatInt } from "@/lib/format";
+import { longDate as monthsLongDate, weekdayName } from "@convex/lib/months";
 import { CHANGE_COLUMNS, ChangeTable } from "./ChangeTable";
 import { DECIDED_COLUMNS, DecidedTable } from "./DecidedTable";
 import { DecidedFilters } from "./DecidedFilters";
@@ -103,12 +104,9 @@ const UNAVAILABLE: { slug: string; label: string; why: string }[] = [
 ];
 
 function longDate(iso: string): string {
-  return new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  // No time zone arithmetic, so the server and every browser print the same day.
+  const day = monthsLongDate(iso);
+  return day ? `${weekdayName(iso)}, ${day}` : iso;
 }
 
 /** Transition chips shown before "Show all": the busiest kinds of change. */

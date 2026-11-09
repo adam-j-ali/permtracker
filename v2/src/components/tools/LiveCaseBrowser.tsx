@@ -18,7 +18,7 @@ import { formatInt } from "@/lib/format";
 import { CaseStatusChip } from "@/components/ui/badge";
 import { choiceVariants } from "@/components/ui/choice";
 import { ChoiceRow } from "@/components/ui/choice-row";
-import { ISO_MONTH_RE } from "@convex/lib/months";
+import { ISO_MONTH_RE, longDate as monthsLongDate } from "@convex/lib/months";
 import { entityHref } from "@/lib/entityPayload";
 
 /**
@@ -60,14 +60,9 @@ const KIND_LABEL: Record<LiveKind, string> = {
   decided: "Decided",
 };
 
-/** `2026-06-30` to `June 30, 2026`. */
+/** `2026-06-30` to `June 30, 2026`, with no time zone arithmetic, so the server and every browser print the same day. */
 function longDate(iso: string | null): string {
-  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso ?? "";
-  return new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  return monthsLongDate(iso) ?? iso ?? "";
 }
 
 

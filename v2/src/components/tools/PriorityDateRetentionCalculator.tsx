@@ -3,6 +3,7 @@
 import { useId, useMemo, useState } from "react";
 import { WarningIcon } from "@phosphor-icons/react";
 
+import { longDate } from "@convex/lib/months";
 import { DateInput } from "@/components/forms/DateInput";
 import { Label } from "@/components/ui/label";
 import { DateRuler } from "@/components/tools/DateRuler";
@@ -29,8 +30,8 @@ const localToday = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
-const long = (iso: string) =>
-  new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+/** "June 30, 2026", with no time zone arithmetic, so every reader sees the same day. */
+const long = (iso: string) => longDate(iso) ?? iso;
 
 export function PriorityDateRetentionCalculator() {
   const approvedId = useId();

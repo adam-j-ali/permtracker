@@ -9,6 +9,7 @@ import { DateRuler } from "@/components/tools/DateRuler";
 import { RuleNotes } from "@/components/tools/RuleNotes";
 import { calculateRFIDueDate, RFI_DUE_DAYS } from "@/lib/perm";
 import { daysBetween } from "@/lib/time";
+import { weekdayName } from "@convex/lib/months";
 
 /**
  * The RFI and audit response deadline, from the date on DOL's letter.
@@ -25,7 +26,8 @@ const localToday = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
-const WEEKDAY = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long" });
+/** The due day's weekday, with no time zone arithmetic. */
+const WEEKDAY = (iso: string) => weekdayName(iso) ?? "";
 
 export function RfiDeadlineCalculator() {
   const letterId = useId();
