@@ -19,6 +19,14 @@
  * - **Advance the cursor only after an address is handled** - sent, or failed
  *   twice - never after a single failure. That was the defect: a transient
  *   error advanced the cursor and the subscriber missed the issue for good.
+ * - **A send that throws is a failed attempt**, retried and recorded like an
+ *   `{ error }`. Any other throw (a batch read, a charge) stops the run and
+ *   comes back as `error` with the cursor on the last address handled, so the
+ *   caller can save the progress and report it: the addresses already mailed
+ *   aren't mailed again.
+ * - **Three addresses in a row failing twice stop the run**, the cursor put
+ *   back before them: that's Resend or our own code failing, and skipping on
+ *   would lose the issue for everyone left on the list.
  *
  * @module convex/lib/newsletterSend
  */
@@ -53,50 +61,79 @@ export interface SendLoopResult {
   cursor: string | undefined;
   /** True when the budget refused a charge and the run stopped early. */
   budgetHit: boolean;
+  /** What stopped the run early when something other than a send threw. */
+  error?: unknown;
 }
 
 /** Three seconds: long enough for a dropped connection, short enough that thirty of them fit an action. */
 export const RETRY_DELAY_MS = 3000;
+
+/** This many addresses in a row failing twice is no longer one bad address: the run stops. */
+const FAILED_IN_A_ROW_STOPS = 3;
 
 export async function runSendLoop(deps: SendLoopDeps, opts: SendLoopOptions): Promise<SendLoopResult> {
   let cursor = opts.cursor;
   let sent = 0;
   let failed = 0;
   let budgetHit = false;
-
-  outer: while (true) {
-    const batch = await deps.nextBatch(cursor, opts.batch);
-    if (batch.length === 0) break;
-    for (const email of batch) {
-      if (!(await deps.charge()).allowed) {
-        budgetHit = true;
-        break outer;
-      }
-      const first = await deps.send(email);
-      if (!first.error) {
-        sent += 1;
-        cursor = email;
-        continue;
-      }
-      await deps.onFailure(email, first.error, 1);
-      await deps.wait(opts.retryDelayMs);
-      // A retry is another request to Resend, so it is charged like one. If
-      // the budget refuses it, this address is NOT handled: leave the cursor
-      // where it was and let tomorrow's run start here.
-      if (!(await deps.charge()).allowed) {
-        budgetHit = true;
-        break outer;
-      }
-      const second = await deps.send(email);
-      if (second.error) {
-        await deps.onFailure(email, second.error, 2);
-        failed += 1;
-      } else {
-        sent += 1;
-      }
-      cursor = email;
+  /** Addresses in a row that failed twice, and the cursor before the first of them. */
+  let streak = 0;
+  let beforeStreak: string | undefined;
+  const attempt = async (email: string): Promise<{ error?: unknown }> => {
+    try {
+      return await deps.send(email);
+    } catch (error) {
+      return { error };
     }
-    if (batch.length < opts.batch) break;
+  };
+
+  try {
+    outer: while (true) {
+      const batch = await deps.nextBatch(cursor, opts.batch);
+      if (batch.length === 0) break;
+      for (const email of batch) {
+        if (!(await deps.charge()).allowed) {
+          budgetHit = true;
+          break outer;
+        }
+        const first = await attempt(email);
+        if (!first.error) {
+          sent += 1;
+          streak = 0;
+          cursor = email;
+          continue;
+        }
+        await deps.onFailure(email, first.error, 1);
+        await deps.wait(opts.retryDelayMs);
+        // A retry is another request to Resend, so it is charged like one. If
+        // the budget refuses it, this address is NOT handled: leave the cursor
+        // where it was and let tomorrow's run start here.
+        if (!(await deps.charge()).allowed) {
+          budgetHit = true;
+          break outer;
+        }
+        const second = await attempt(email);
+        if (second.error) {
+          await deps.onFailure(email, second.error, 2);
+          failed += 1;
+          if (streak === 0) beforeStreak = cursor;
+          streak += 1;
+          if (streak >= FAILED_IN_A_ROW_STOPS) {
+            // The fault is the service's or ours, not these addresses': leave them for the next run.
+            cursor = beforeStreak;
+            throw new Error(`three addresses in a row failed twice; stopped with the rest unsent: ${String(second.error)}`);
+          }
+        } else {
+          sent += 1;
+          streak = 0;
+        }
+        cursor = email;
+      }
+      if (batch.length < opts.batch) break;
+    }
+  } catch (error) {
+    // The cursor is still on the last address handled; the caller saves it.
+    return { sent, failed, cursor, budgetHit, error };
   }
 
   return { sent, failed, cursor, budgetHit };
