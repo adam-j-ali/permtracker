@@ -52,7 +52,28 @@ describe("BrowserPushAlert", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Stop notifying this browser" }));
     // Assert: the server's own words, and the case alert's endpoint is still there for the case page's Stop
     expect(await screen.findByText("This browser wasn't watching anything.")).toBeTruthy();
-    expect(window.localStorage.getItem("pt-push-endpoint")).toBe("https://push.example.test/abc");
+    expect(window.localStorage.getItem("pt-push-endpoint:/case-alert/push/stop")).toBe("https://push.example.test/abc");
+    window.localStorage.clear();
+  });
+
+  it("hands an endpoint saved before the split to the other kind once its own stop used it", async () => {
+    // Arrange: one push endpoint, from before each kind had its own key, watching both a case and a bulletin
+    ua("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/155.0 Safari/537.36");
+    Object.defineProperty(window, "PushManager", { value: function PushManager() {}, configurable: true });
+    if (!("serviceWorker" in navigator)) Object.defineProperty(navigator, "serviceWorker", { value: {}, configurable: true });
+    window.localStorage.setItem("pt-push-endpoint", "https://push.example.test/abc");
+    vi.spyOn(global, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ ok: true, message: "This browser won't be notified any more.", closed: 1 })),
+    );
+    render(<BulletinPushAlert category="EB2" country="india" />);
+    // Act: stop the bulletin alerts
+    fireEvent.click(await screen.findByRole("button", { name: "Stop notifying this browser" }));
+    await screen.findByText("This browser won't be notified any more.");
+    // Assert: the case box keeps its Stop
+    expect(window.localStorage.getItem("pt-push-endpoint")).toBeNull();
+    expect(window.localStorage.getItem("pt-push-endpoint:/case-alert/push/stop")).toBe("https://push.example.test/abc");
+    expect(window.localStorage.getItem("pt-push-endpoint:/bulletin-alert/push/stop")).toBeNull();
     window.localStorage.clear();
   });
 });
+
