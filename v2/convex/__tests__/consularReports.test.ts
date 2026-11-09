@@ -283,6 +283,27 @@ describe("the address hash", () => {
 describe("the HTTP routes", () => {
   const post = (t: T, path: string, body: unknown) =>
     t.fetch(path, { method: "POST", headers: { "x-forwarded-for": "203.0.113.7" }, body: JSON.stringify(body) });
+  // Every save checks its consulate against the mirror first: answer that check with the test's consulate, so no
+  // route test reaches for a database (the tests below that are about the check set their own answers).
+  const routesFetch = global.fetch;
+  beforeEach(() => {
+    vi.stubEnv("DATABASE_URL", "libsql://example.turso.io");
+    vi.stubEnv("DATABASE_AUTH_TOKEN", "stub-token");
+    global.fetch = (async (_url: unknown, init?: { body?: string }) => {
+      const body = JSON.parse(init?.body ?? "{}") as { requests: { type: string; stmt?: { sql: string } }[] };
+      const results = body.requests.map((req) => {
+        if (req.type !== "execute" || !req.stmt) return { type: "ok", response: { type: "close" } };
+        const scheduling = req.stmt.sql.includes("FROM iv_scheduling");
+        const cols = scheduling ? ["post_key", "post"] : ["group_key", "key"];
+        const rows = scheduling ? [[{ type: "text", value: POST }, { type: "text", value: "Mumbai (Bombay)" }]] : [];
+        return { type: "ok", response: { type: "execute", result: { cols: cols.map((name) => ({ name })), rows } } };
+      });
+      return new Response(JSON.stringify({ results }), { status: 200 });
+    }) as unknown as typeof fetch;
+  });
+  afterEach(() => {
+    global.fetch = routesFetch;
+  });
 
   it("saves, reads back and removes by the browser's key, which is never stored as sent", async () => {
     const t = createTestContext();
