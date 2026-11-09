@@ -51,10 +51,11 @@ export default function ThemeToggle() {
       }
       className="flex size-11 cursor-pointer items-center justify-center transition-[color,background-color,border-color,box-shadow,transform] duration-150 hover:bg-primary motion-safe:hover:-translate-x-0.5 motion-safe:hover:-translate-y-0.5 hover:border-primary motion-safe:active:translate-x-0 motion-safe:active:translate-y-0"
     >
-      {/* Both render; CSS picks one from the .dark class next-themes sets
-          before first paint. Never both, never neither, never a swap. */}
-      <SunIcon className={`${ICON} hidden dark:block`} aria-hidden="true" />
-      <MoonIcon className={`${ICON} block dark:hidden`} aria-hidden="true" />
+      {/* Both render; CSS picks one from the .dark class next-themes sets on the root element
+          before first paint (read there, not from the nearest .dark: the footer is always dark).
+          Never both, never neither, never a swap. */}
+      <SunIcon className={`${ICON} hidden [:root.dark_&]:block`} aria-hidden="true" />
+      <MoonIcon className={`${ICON} block [:root.dark_&]:hidden`} aria-hidden="true" />
     </button>
   );
 }
