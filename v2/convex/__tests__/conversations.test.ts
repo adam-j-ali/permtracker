@@ -4,6 +4,7 @@ import {
   createAuthenticatedContext,
   setupSchedulerTests,
   advanceTime,
+  finishScheduledFunctions,
 } from "../../test-utils/convex";
 import { api } from "../_generated/api";
 
@@ -358,6 +359,26 @@ describe("conversations", () => {
         id: conversationId,
       });
       expect(deletedConversation).toBeNull();
+    });
+  });
+
+  describe("deleteAll", () => {
+    it("deletes what was there when it was asked, and keeps a conversation started right after", async () => {
+      // The chat starts a fresh conversation as soon as "Delete all" returns, while the rest of the history is
+      // still being deleted in the background: that new one must survive.
+      const t = createTestContext();
+      const asUser = await createAuthenticatedContext(t, "Test User");
+      await t.run(async (ctx) => {
+        for (let i = 0; i < 12; i++) {
+          await ctx.db.insert("conversations", { userId: asUser.userId, title: `c${i}`, isArchived: false, createdAt: i, updatedAt: i });
+        }
+      });
+      expect(await asUser.mutation(api.conversations.deleteAll, {})).toBe(10);
+      advanceTime(1000);
+      const fresh = await asUser.mutation(api.conversations.create, {});
+      await finishScheduledFunctions(t);
+      const left = await t.run(async (ctx) => ctx.db.query("conversations").take(50));
+      expect(left.map((c) => c._id)).toEqual([fresh]);
     });
   });
 });

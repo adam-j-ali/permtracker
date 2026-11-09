@@ -225,13 +225,21 @@ export const deleteConversation = mutation({
 /** Conversations deleted per transaction by deleteAll; the rest follow. */
 const DELETE_ALL_BATCH = 10;
 
+/**
+ * One batch of a "Delete all", oldest first. `before` is when it was asked: only conversations created by then
+ * go, so one the chat starts right after (while the rest are still being deleted) survives. Undefined only for a
+ * batch scheduled before the cutoff existed.
+ */
 async function deleteAllBatch(
   ctx: MutationCtx,
   userId: Id<"users">,
+  before: number | undefined,
 ): Promise<{ deleted: number; more: boolean; firstId?: Id<"conversations"> }> {
   const conversations = await ctx.db
     .query("conversations")
-    .withIndex("by_user_id", (q) => q.eq("userId", userId))
+    .withIndex("by_user_id", (q) =>
+      before === undefined ? q.eq("userId", userId) : q.eq("userId", userId).lte("_creationTime", before),
+    )
     .take(DELETE_ALL_BATCH + 1);
   const batch = conversations.slice(0, DELETE_ALL_BATCH);
   for (const conversation of batch) {
@@ -239,7 +247,10 @@ async function deleteAllBatch(
   }
   const more = conversations.length > DELETE_ALL_BATCH;
   if (more) {
-    await ctx.scheduler.runAfter(0, internal.conversations.deleteAllRest, { userId });
+    await ctx.scheduler.runAfter(0, internal.conversations.deleteAllRest, {
+      userId,
+      ...(before === undefined ? {} : { before }),
+    });
   }
   return { deleted: batch.length, more, firstId: batch[0]?._id };
 }
@@ -257,7 +268,7 @@ export const deleteAll = mutation({
   args: {},
   handler: async (ctx) => {
     const userId = await getCurrentUserId(ctx);
-    const { deleted, more, firstId } = await deleteAllBatch(ctx, userId);
+    const { deleted, more, firstId } = await deleteAllBatch(ctx, userId, Date.now());
 
     // Audit: one summarized entry, counts only.
     if (firstId) {
@@ -272,10 +283,11 @@ export const deleteAll = mutation({
   },
 });
 
-/** The rest of a deleteAll, one batch at a time. */
+/** The rest of a deleteAll, one batch at a time, never past the moment it was asked. */
 export const deleteAllRest = internalMutation({
-  args: { userId: v.id("users") },
+  // `before` is optional only so a batch scheduled before it existed still runs.
+  args: { userId: v.id("users"), before: v.optional(v.number()) },
   handler: async (ctx, args) => {
-    await deleteAllBatch(ctx, args.userId);
+    await deleteAllBatch(ctx, args.userId, args.before);
   },
 });
