@@ -56,6 +56,19 @@ describe("BulletinBoard: the pace", () => {
     expect(screen.getByText(/Measured from October 2014 to September 2026, 2 of the 3 queues with a pace moved slower than that\./)).toBeInTheDocument();
   });
 
+  it("keeps a queue whose cutoff moved back inside its track, and says it moved back", () => {
+    // Arrange: a negative pace, the cutoff behind where it started
+    const { container } = render(
+      <BulletinBoard board={board([cell({ category: "EB3", country: "china", pace: -0.4, movedDays: -240 })])} />,
+    );
+    // Act
+    const row = [...container.querySelectorAll<HTMLElement>("li[data-tip]")].find((li) => /China/.test(li.textContent ?? ""))!;
+    const bar = row.querySelector<HTMLElement>("span.absolute.inset-y-0.block")!;
+    // Assert
+    expect(parseFloat(bar.style.left)).toBeGreaterThanOrEqual(0);
+    expect(row.getAttribute("data-tip")).toMatch(/the cutoff moved back/);
+  });
+
   it("puts the fastest queue first", () => {
     const { container } = render(
       <BulletinBoard
