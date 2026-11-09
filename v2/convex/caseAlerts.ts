@@ -813,7 +813,8 @@ export const sendConfirmation = internalAction({
           ...(status
             ? [
                 `DOL showed: ${status}${employer ? ` at ${employer}` : ""}`,
-                asOf ? `Last checked: ${asOf}` : "We don't have a check date for this case.",
+                // The same words as the html: asOf is the day this status was first seen, not a check.
+                asOf ? `Shown since at least ${asOf}` : "We don't have a date for this status yet.",
               ]
             : [
                 "We don't hold this case number yet. That's normal for a recent filing,",
