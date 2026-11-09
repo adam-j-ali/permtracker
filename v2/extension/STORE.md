@@ -86,7 +86,7 @@ The listing (producthunt.com/products/perm-tracker) takes a 240x240 thumbnail an
 | `activeTab` | When the user clicks the toolbar button on a job page outside the listed sites, lets the extension read that one page's posting, once. |
 | `scripting` | Injects the panel's script into that page after the click. Nothing runs on other sites without a click. |
 | Host permission `https://permtracker.app/*` | The one server the extension asks, for the employer's record. |
-| Content script matches (LinkedIn, Indeed, Glassdoor, Handshake, Wellfound) | Reads the employer's name on job postings on these five job sites. LinkedIn is matched whole because it opens a posting from the feed without loading a new page; on any LinkedIn page that isn't a posting the script reads nothing. |
+| Content script matches (LinkedIn, Indeed, Glassdoor, Handshake, Wellfound) | Reads the employer's name on job postings on these five job sites. LinkedIn is matched whole because it opens a posting from the feed without loading a new page. On any LinkedIn page that isn't a posting the script reads nothing. |
 
 **Remote code:** No. Every script the extension runs is in the package.
 
@@ -118,6 +118,6 @@ Certifications (all true):
 
 1. A Chrome Web Store developer account: https://chrome.google.com/webstore/devconsole, a one-time US$5 registration fee, signed in with the Google account that should own the listing.
 2. Publisher name: **PERM Tracker**, never a person's name.
-3. The trader question (EU Digital Services Act): Asolys LLC, doing business as PERM Tracker, offers this free, but the form asks whether you act as a trader; that answer, and the contact details a trader must show, are yours to give.
+3. The trader question (EU Digital Services Act): Asolys LLC, doing business as PERM Tracker, offers this free, but the form still asks whether you act as a trader. That answer, and the contact details a trader must show, are yours to give.
 4. Upload the zip, paste the fields above, add the screenshots, submit for review.
 5. Once it's published, put the listing's URL in `CHROME_STORE_URL` in `src/app/(site)/(public)/extension/page.tsx`.

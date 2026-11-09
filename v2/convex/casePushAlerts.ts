@@ -67,13 +67,13 @@ export const subscribe = internalMutation({
   returns: result,
   handler: async (ctx, a) => {
     const ref = normaliseFlagCaseNumber(a.caseNumber);
-    if (!ref) return { ok: false, message: "That does not look like a DOL case number." };
+    if (!ref) return { ok: false, message: "That doesn't look like a DOL case number." };
     const sub = parseSubscription(a.subscription);
-    if (!sub) return { ok: false, message: "The browser did not hand back a usable subscription." };
+    if (!sub) return { ok: false, message: "The browser didn't hand back a usable subscription." };
     if (a.endpointHash.length !== 64 || a.ipHash.length !== 64) return { ok: false, message: "Malformed request." };
 
     const perIp = await checkAndRecordRateLimit(ctx, a.ipHash, "push-subscribe", PER_IP);
-    if (!perIp.allowed) return { ok: false, throttled: true, message: "That is enough for one hour. Try again later." };
+    if (!perIp.allowed) return { ok: false, throttled: true, message: "That's enough for one hour. Try again later." };
 
     const existing = await ctx.db
       .query("caseStatusPushAlerts")
@@ -126,7 +126,7 @@ export const stop = internalMutation({
         closed++;
       }
     }
-    return { ok: true, message: closed > 0 ? "This browser will not be notified any more." : "This browser was not watching anything.", closed };
+    return { ok: true, message: closed > 0 ? "This browser won't be notified any more." : "This browser wasn't watching anything.", closed };
   },
 });
 

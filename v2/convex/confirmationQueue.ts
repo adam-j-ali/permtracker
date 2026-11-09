@@ -97,11 +97,11 @@ export async function confirmationWouldWait(ctx: MutationCtx, pool: BudgetName):
 /** Every address gets these same words, so the reply says nothing about the address. */
 export const QUEUED_REPLY =
   "We're sending a lot of email right now, so your confirmation is in a short queue. " +
-  "It goes out on its own, usually within minutes; on the busiest days it can wait until the evening. " +
+  "It goes out on its own, usually within minutes. On the busiest days it can wait until the evening. " +
   "There's nothing else to do.";
 export const QUEUED_LINK_REPLY =
   "We're sending a lot of email right now, so your link is in a short queue. " +
-  "It goes out on its own, usually within minutes; on the busiest days it can wait until the evening.";
+  "It goes out on its own, usually within minutes. On the busiest days it can wait until the evening.";
 
 /** A subscribe call's arguments as the queue keeps them: no IP, no replay flag. */
 export function replayArgs(args: Record<string, unknown>): Record<string, unknown> {
@@ -220,7 +220,7 @@ export function adminNoticeWords(
     };
   }
   return {
-    subject: `${b.label}: today's ${b.limit} are used; new requests are queued`,
+    subject: `${b.label}: today's ${b.limit} are used, and new requests are queued`,
     body:
       `At ${at} a ${b.label.toLowerCase()} request had to wait: that pool's ${b.limit} a day were used. New ` +
       `requests wait in a queue and go out as soon as the pool has room. ${tail}`,

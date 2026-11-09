@@ -319,17 +319,17 @@ export function generateNotificationMessage(
     case "rfi_alert": {
       if (context.daysUntilDeadline !== undefined) {
         if (context.daysUntilDeadline < 0) {
-          return `RFI response for ${caseLabel} is overdue. The DOL response deadline has passed. Submit response immediately.`;
+          return `RFI response for ${caseLabel} is overdue. DOL's response deadline has passed. Submit your response immediately.`;
         }
         if (context.daysUntilDeadline === 0) {
-          return `RFI response for ${caseLabel} is due today. Submit your response to the DOL immediately.`;
+          return `RFI response for ${caseLabel} is due today. Submit your response to DOL immediately.`;
         }
         if (context.daysUntilDeadline === 1) {
           return `RFI response for ${caseLabel} is due tomorrow. Prepare and submit your response soon.`;
         }
       }
       if (formattedDate) {
-        return `RFI response for ${caseLabel} is due on ${formattedDate}. Prepare your response to the DOL.`;
+        return `RFI response for ${caseLabel} is due on ${formattedDate}. Prepare your response to DOL.`;
       }
       return `RFI response for ${caseLabel} is due soon. Review the case for the response deadline.`;
     }
@@ -337,7 +337,7 @@ export function generateNotificationMessage(
     case "rfe_alert": {
       if (context.daysUntilDeadline !== undefined) {
         if (context.daysUntilDeadline < 0) {
-          return `RFE response for ${caseLabel} is overdue. The USCIS response deadline has passed. Submit response immediately.`;
+          return `RFE response for ${caseLabel} is overdue. USCIS's response deadline has passed. Submit your response immediately.`;
         }
         if (context.daysUntilDeadline === 0) {
           return `RFE response for ${caseLabel} is due today. Submit your response to USCIS immediately.`;

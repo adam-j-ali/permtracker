@@ -589,7 +589,7 @@ http.route({
     }
     return messagePage(
       "You're on the list",
-      `We'll email you when the Department of Labor's status changes for ${list}, each time it moves, and for a year after it's decided. Current figures are always on permtracker.app/perm-case-status.${matchNote}`,
+      `We'll email you each time the Department of Labor's status changes for ${list}, and for a year after it's decided. Current figures are always on permtracker.app/perm-case-status.${matchNote}`,
       undefined,
       offers,
     );
@@ -2078,7 +2078,7 @@ http.route({
     } catch {
       endpoint = null;
     }
-    if (!endpoint) return json({ ok: false, message: "The browser did not hand back a usable subscription." }, 400);
+    if (!endpoint) return json({ ok: false, message: "The browser didn't hand back a usable subscription." }, 400);
     const endpointHash = await sha256Hex(endpoint);
     const result = await ctx.runMutation(internal.casePushAlerts.subscribe, { caseNumber, subscription, endpointHash, ipHash });
     return json(result, result.ok ? 200 : result.throttled ? 429 : 400);
@@ -2156,7 +2156,7 @@ http.route({
     } catch {
       endpoint = null;
     }
-    if (!endpoint) return json({ ok: false, message: "The browser did not hand back a usable subscription." }, 400);
+    if (!endpoint) return json({ ok: false, message: "The browser didn't hand back a usable subscription." }, 400);
     const endpointHash = await sha256Hex(endpoint);
     const result = await ctx.runMutation(internal.bulletinPushAlerts.subscribe, { category, country, subscription, endpointHash, ipHash });
     return json(result, result.ok ? 200 : result.throttled ? 429 : 400);

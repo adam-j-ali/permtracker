@@ -150,7 +150,7 @@ describe("a full pool queues the request", () => {
     expect(site.body).toContain("Its own pool wasn't the limit");
     expect(site.subject).not.toContain(String(BUDGETS.queueConfirm.limit));
     const pool = adminNoticeWords("queued", "queueConfirm", 1, 12, now);
-    expect(pool.subject).toBe(`${BUDGETS.queueConfirm.label}: today's ${BUDGETS.queueConfirm.limit} are used; new requests are queued`);
+    expect(pool.subject).toBe(`${BUDGETS.queueConfirm.label}: today's ${BUDGETS.queueConfirm.limit} are used, and new requests are queued`);
     expect(pool.body).not.toContain("whole site");
   });
 

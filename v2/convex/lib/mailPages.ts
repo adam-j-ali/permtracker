@@ -171,7 +171,7 @@ export function ratingPage(action: string, picked: number | null): Response {
     .join(" ");
   const lead =
     picked === null
-      ? "Tap a number to send it: 1 is not useful, 5 is very useful."
+      ? "Tap a number to send it: 1 for not useful, 5 for very useful."
       : `You picked ${picked}. Tap it to send, or pick another.`;
   return htmlPage(
     "Rate your alerts",
@@ -211,7 +211,7 @@ export function ratingThanksPage(opts: {
   const { score, caseNumber, action, noted, anonymous, reviewUrl, status } = opts;
   const words = ratingWords(score);
   const caseUrl = `${SITE_URL}/perm-case-status?case=${encodeURIComponent(caseNumber)}`;
-  const lead = `You rated these alerts ${score} of 5.${noted ? (anonymous ? " Thanks for the note, kept without your email." : " Thanks for the note too.") : ""}`;
+  const lead = `You rated these alerts ${score} of 5.${noted ? (anonymous ? " Thanks for the note. We kept it without your email." : " Thanks for the note too.") : ""}`;
   // Everyone is asked, whatever they rated: inviting only the happy ones to review is what the FTC's Endorsement
   // Guides call deceptive (16 CFR 255.2, Example 11).
   const review = `<div class="review"><b>Would you leave a short review?</b><p class="muted">It helps other people waiting on a case decide whether to use the site. We show reviews whatever their stars.</p><p class="actions" style="margin-top:12px"><a class="btn go" href="${escapeHtml(reviewUrl)}">Leave a review</a></p></div>`;

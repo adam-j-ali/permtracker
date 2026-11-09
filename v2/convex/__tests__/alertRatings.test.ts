@@ -262,7 +262,7 @@ describe("the page", () => {
     await watching(t);
     await tap(t, { r: "2" });
     const html = await tap(t, { r: "2", note: "More detail on RFIs", anon: "1" });
-    expect(html).toMatch(/Thanks for the note, kept without your email/);
+    expect(html).toMatch(/Thanks for the note\. We kept it without your email/);
     expect(html).not.toContain("<textarea");
     expect((await ratings(t))[0]).toMatchObject({ score: 2, note: "More detail on RFIs", anonymous: true });
   });

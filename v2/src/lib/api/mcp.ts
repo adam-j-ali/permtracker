@@ -93,7 +93,7 @@ export function buildMcpServer(caller: ApiCaller): McpServer {
       instructions:
         "Federal records on U.S. employment-based immigration: PERM labor certification, prevailing wage requests, " +
         "H-1B LCAs, DOL processing times and the State Department visa bulletin. Every answer names its source and " +
-        "the page it came from; cite that page. Estimates are labelled as estimates, not promises.",
+        "the page it came from. Cite that page. Estimates are labelled as estimates and make no promise.",
       // Every tool takes a few short strings, so a call's arguments never hold
       // more than a handful of keys. Without a cap a 256 KB body of one big
       // array can exhaust memory during validation (GHSA-46jr-4wx8-v453).
@@ -121,7 +121,7 @@ export function buildMcpServer(caller: ApiCaller): McpServer {
       title: "Estimate a PERM decision date",
       description:
         "When a pending PERM case is likely to be decided, with a range, the model used and its caveats. " +
-        "Pass a case number, or a filing date for a case in analyst review. An estimate, not a promise. " +
+        "Pass a case number, or a filing date for a case in analyst review. It's an estimate and makes no promise. " +
         'Examples: {"case_number": "G-100-26045-123456"} or {"filed": "2026-01-15"}.',
       inputSchema: z.object({
         case_number: z.string().max(40).optional().describe("A PERM case number."),
@@ -150,7 +150,7 @@ export function buildMcpServer(caller: ApiCaller): McpServer {
     {
       title: "Visa bulletin",
       description:
-        "A visa bulletin's employment and family final action and dates for filing charts, as printed. The newest by default; months back to June 2005. " +
+        "A visa bulletin's employment and family final action and dates for filing charts, as printed. The newest by default, with months back to June 2005. " +
         'Examples: {} for the newest, or {"month": "2026-10"}.',
       inputSchema: z.object({ month: z.string().max(7).optional().describe("YYYY-MM. Leave out for the newest.") }),
       annotations: readOnly,
@@ -197,7 +197,7 @@ export function buildMcpServer(caller: ApiCaller): McpServer {
       title: "Find a job's SOC code",
       description:
         "The SOC occupation codes employers filed a job title under in DOL's PERM, prevailing wage and LCA files, with each " +
-        "code's share of the title's filings; or a code's title, and for a 2010 code the 2018 codes it became. " +
+        "code's share of the title's filings. Or a code's title, and for a 2010 code the 2018 codes it became. " +
         'Examples: {"query": "data scientist"} or {"query": "15-1132"}.',
       inputSchema: z.object({ query: z.string().min(2).max(80).describe("A job title or a SOC code, e.g. data scientist or 15-2051.") }),
       annotations: readOnly,

@@ -1,30 +1,30 @@
-# Security Policy
+# Security policy
 
-## Supported Versions
+## Supported versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 2.x     | :white_check_mark: |
-| < 2.0   | :x:                |
+| Version | Supported |
+| ------- | --------- |
+| 2.x     | Yes       |
+| < 2.0   | No        |
 
-## Reporting a Vulnerability
+## Reporting a vulnerability
 
-If you discover a security vulnerability in PERM Tracker, please report it responsibly.
+If you find a security vulnerability in PERM Tracker, please report it privately.
 
-**Do NOT open a public GitHub issue for security vulnerabilities.**
+**Don't open a public GitHub issue for a security vulnerability.**
 
-Instead, please email **security@permtracker.app** with:
+Email **security@permtracker.app** instead, with:
 
 - A description of the vulnerability
-- Steps to reproduce
-- Potential impact
-- Any suggested fixes (optional)
+- Steps to reproduce it
+- Its possible impact
+- Any fix you'd suggest (optional)
 
 You can expect:
 
-- Acknowledgment within **48 hours**
+- An acknowledgment within **48 hours**
 - A status update within **7 days**
-- A fix timeline based on severity
+- A timeline for the fix, set by severity
 
 ## Scope
 
@@ -32,21 +32,21 @@ This policy covers:
 
 - The PERM Tracker web application at [permtracker.app](https://permtracker.app)
 - The Convex backend functions
-- Authentication and authorization flows
-- Data handling and storage
+- Sign-in and access control
+- How data is handled and stored
 
-## Out of Scope
+## Out of scope
 
 - Third-party services (Convex, Vercel, Resend, Google OAuth)
 - Denial of service attacks
 - Social engineering
 
-## Data Sensitivity
+## Data sensitivity
 
-PERM Tracker handles immigration case management data. We take data security seriously and follow OWASP best practices including:
+PERM Tracker handles immigration case data. It follows OWASP guidance, including:
 
-- Server-side authentication on all API endpoints
+- Server-side authentication on every API endpoint
 - Input validation and sanitization
-- Encrypted data in transit (HTTPS/TLS)
-- Session management with inactivity timeouts
-- Audit logging for sensitive operations
+- Encryption in transit (HTTPS/TLS)
+- Sessions that time out after inactivity
+- Audit logs for sensitive operations

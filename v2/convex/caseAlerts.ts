@@ -393,7 +393,7 @@ export const subscribe = internalMutation({
     // Shape checks first: they are free, and rejecting here costs an attacker a
     // request without costing us a rate-limit row.
     if (!isPlausibleEmail(email)) {
-      return { ok: false, message: "That email address does not look right." };
+      return { ok: false, message: "That email address doesn't look right." };
     }
     // Shape-gated and classified in one step. The gate is the same
     // `normaliseCaseNumber` as before, so what may be stored as a key has not
@@ -404,7 +404,7 @@ export const subscribe = internalMutation({
       return {
         ok: false,
         message:
-          "That does not look like a DOL case number (G-, A-, P-, I-, H-, JO-A- or C-).",
+          "That doesn't look like a DOL case number (G-, A-, P-, I-, H-, JO-A- or C-).",
       };
     }
     const caseNumber = parsed.caseNumber;
@@ -816,8 +816,8 @@ export const sendConfirmation = internalAction({
                 asOf ? `Last checked: ${asOf}` : "We don't have a check date for this case.",
               ]
             : [
-                "We don't hold this case number yet, which is normal for a recent",
-                "filing and is also what a typo looks like. Check it against your receipt.",
+                "We don't hold this case number yet. That's normal for a recent filing,",
+                "and it's also what a typo looks like, so check it against your receipt.",
               ]),
           "",
           "Confirm here and we'll email you when its status changes:",
@@ -1912,7 +1912,7 @@ export const sweepCaseChanges = internalAction({
             `Open this case: ${caseUrl}`,
             "",
             isFinal
-              ? "DOL has decided this case. We'll keep watching it for a year in case it's appealed or reopened, and email you only if it moves."
+              ? "DOL has decided this case. We'll keep watching it for a year in case it's appealed or reopened, and we'll email you only if it moves."
               : "We'll email you again if it moves again.",
             ...(ratingUrl
               ? ["", `How useful were these alerts? Rate them from 1 to 5: ${ratingUrl}`]

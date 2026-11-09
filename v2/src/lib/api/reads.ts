@@ -97,7 +97,7 @@ export async function readCase(input: string): Promise<ReadResult<CaseRecord>> {
     status: 404,
     code: "not_found",
     message:
-      "No record of this case yet. New filings are found nightly; the case page on the site can ask DOL right now.",
+      "No record of this case yet. New filings are found nightly, and the case page on the site can ask DOL right now.",
     url,
   };
 
