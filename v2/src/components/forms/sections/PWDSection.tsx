@@ -9,6 +9,7 @@ import { usePWDSection } from "@/components/forms/useCaseFormSection";
 import type { DateConstraint } from "@/lib/forms/date-constraints";
 import type { ValidationState } from "@/hooks/useDateFieldValidation";
 import { CharLimit } from "@/components/ui/char-limit";
+import { DolNumberFinder } from "@/components/forms/DolNumberFinder";
 
 // ============================================================================
 // TYPES
@@ -249,7 +250,8 @@ export function PWDSection(props: PWDSectionProps) {
 
         {/* ========== ROW 2: CASE INFO FIELDS ========== */}
 
-        {/* PWD Case Number */}
+        {/* PWD Case Number, with the way to find it under it: one grid cell, so the fields beside it stay put. */}
+        <div className="min-w-0 space-y-2">
         <FormField
           label="PWD case number"
           name="pwdCaseNumber"
@@ -268,6 +270,14 @@ export function PWDSection(props: PWDSectionProps) {
             />
           </CharLimit>
         </FormField>
+        {values.pwdCaseNumber ? null : (
+          <DolNumberFinder
+            program="pwd"
+            day={values.pwdFilingDate}
+            onPick={(n) => (onChange as (field: string, value: string | undefined) => void)("pwdCaseNumber", n)}
+          />
+        )}
+        </div>
 
         {/* Wage Amount */}
         <FormField

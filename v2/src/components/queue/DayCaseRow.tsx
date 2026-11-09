@@ -11,9 +11,10 @@ import { longDate } from "@convex/lib/months";
 /**
  * One case in a list of a day's filings: its number (the case page), the employer (its page), the
  * job, what DOL's file adds, and the status in the site's status colours. One row for the day page
- * and for the finder that reads the same list, so a case looks the same wherever it's listed.
+ * and for the finder that reads the same list, so a case looks the same wherever it's listed. A host
+ * may add one control to a row (`action`).
  */
-export function DayCaseRow({ c }: { c: DayCase }) {
+export function DayCaseRow({ c, action }: { c: DayCase; action?: React.ReactNode }) {
   return (
     <li className="grid grid-cols-1 gap-x-4 gap-y-1 py-3 sm:grid-cols-[13rem_minmax(0,1fr)_auto] sm:items-center [&>*]:min-w-0">
       <Link href={caseHref(c.caseNumber)} className="link inline-flex min-h-11 items-center font-mono text-sm">
@@ -30,9 +31,17 @@ export function DayCaseRow({ c }: { c: DayCase }) {
         <span className="block text-sm text-soft">{c.jobTitle}</span>{" "}
         <CaseFacts c={c} />
       </span>{" "}
-      <span className={cn("justify-self-start px-2 py-1 text-sm font-semibold", CASE_STATUS_FILL[caseStatusTint(c.status)])}>
-        {prettyStatus(c.status)}
-      </span>{" "}
+      {action ? (
+        // A host that acts on a row (the case form's "Use this number") puts its control under the status.
+        <span className="flex flex-col items-start gap-2 justify-self-start">
+          <span className={cn("px-2 py-1 text-sm font-semibold", CASE_STATUS_FILL[caseStatusTint(c.status)])}>{prettyStatus(c.status)}</span>{" "}
+          {action}
+        </span>
+      ) : (
+        <span className={cn("justify-self-start px-2 py-1 text-sm font-semibold", CASE_STATUS_FILL[caseStatusTint(c.status)])}>
+          {prettyStatus(c.status)}
+        </span>
+      )}{" "}
     </li>
   );
 }

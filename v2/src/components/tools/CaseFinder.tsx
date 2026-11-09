@@ -62,14 +62,18 @@ export interface CaseFinderProps {
   onDay?: (day: string) => void;
   /** A name to open with: the employer whose page the finder is on. */
   employer?: string;
+  /** A host that takes a case from the list (the signed-in form fills its number in): each row gets one button. */
+  onPick?: (c: DayCase) => void;
+  /** That button's words. */
+  pickLabel?: string;
   /** Which page it's on, for the funnel's event. */
   source: string;
-  /** The heading over a finder that stands apart. Left out, it reads as one more field of its host's form. */
+  /** The title over a finder that stands apart, which names its region. Left out, it reads as one more field of its host's form. */
   heading?: string;
   className?: string;
 }
 
-export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hostDay, onDay, employer = "", source, heading, className }: CaseFinderProps) {
+export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hostDay, onDay, employer = "", onPick, pickLabel = "Use this case", source, heading, className }: CaseFinderProps) {
   const nameId = useId();
   const dayId = useId();
   const jobId = useId();
@@ -133,10 +137,12 @@ export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hos
       aria-label={heading ? undefined : "Find your case without its number"}
       className={cn("text-base", heading && "border-2 border-border bg-card p-4 sm:p-5", className)}
     >
+      {/* A line, never a heading: the finder opens under a box that can sit below an h1, in a card or in a
+          footer, and a heading here would skip a level on some of them. The section is named by it instead. */}
       {heading ? (
-        <h3 id={headingId} className="font-heading text-lg font-bold leading-tight">
+        <p id={headingId} className="font-heading text-lg font-bold leading-tight">
           {heading}
-        </h3>
+        </p>
       ) : null}{" "}
       {programs.length > 1 ? (
         <div role="group" aria-label="Kind of filing" className={cn("flex flex-wrap gap-2", heading && "mt-3")}>
@@ -242,7 +248,17 @@ export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hos
             {shown.length > 0 ? (
               <ul className="mt-2 divide-y-2 divide-border border-y-2 border-border">
                 {shown.map((c) => (
-                  <DayCaseRow key={c.caseNumber} c={c} />
+                  <DayCaseRow
+                    key={c.caseNumber}
+                    c={c}
+                    action={
+                      onPick ? (
+                        <button type="button" onClick={() => onPick(c)} aria-label={`${pickLabel}: ${c.caseNumber}`} className={choiceVariants({ on: false })}>
+                          {pickLabel}
+                        </button>
+                      ) : undefined
+                    }
+                  />
                 ))}
               </ul>
             ) : null}{" "}

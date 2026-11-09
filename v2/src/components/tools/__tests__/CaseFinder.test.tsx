@@ -178,7 +178,9 @@ describe("CaseFinder, standing apart", () => {
   it("asks for the day itself and lets the reader choose the kind of filing", async () => {
     const asked = stub({ cases: DAY });
     render(<CaseFinder source="lookup" heading="Find your case without the number" />);
-    expect(screen.getByRole("heading", { name: "Find your case without the number" })).toBeInTheDocument();
+    // Its title names the region and is no heading, so it can open at any depth of a page's outline.
+    expect(screen.getByRole("region", { name: "Find your case without the number" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading")).toBeNull();
     expect(screen.getByRole("button", { name: "PERM case" })).toHaveAttribute("aria-pressed", "true");
     type("google");
     fireEvent.change(screen.getByLabelText("Date it was filed"), { target: { value: "2026-01-30" } });
