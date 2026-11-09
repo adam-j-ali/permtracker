@@ -67,15 +67,36 @@ describe("AnalyticsToggle", () => {
     expect(mockSetOff).toHaveBeenCalledWith({ off: false });
   });
 
-  it("a failed save switches this browser back and says so", async () => {
+  it("a failed save to switch off keeps this browser off, and says only the account setting didn't save", async () => {
+    // Arrange: the reader asked for no tracking and the save fails
     mockSetOff.mockImplementation(async () => {
       calls.push("save");
       throw new Error("offline");
     });
     renderWithProviders(<AnalyticsToggle />);
+    // Act
     await userEvent.click(screen.getByRole("switch"));
+    // Assert: this browser is never turned back on
     await waitFor(() => expect(mockHandleError).toHaveBeenCalled());
-    expect(calls).toEqual(["optOut", "save", "optIn"]);
+    expect(calls).toEqual(["optOut", "save"]);
+    expect(mockHandleError.mock.calls[0]![1]).toEqual({
+      userMessage: "This browser has stopped sending analytics, but the setting for your account didn’t save. Try again.",
+    });
+  });
+
+  it("a failed save to switch on leaves this browser off", async () => {
+    // Arrange
+    profile = { analyticsOff: true };
+    mockSetOff.mockImplementation(async () => {
+      calls.push("save");
+      throw new Error("offline");
+    });
+    renderWithProviders(<AnalyticsToggle />);
+    // Act
+    await userEvent.click(screen.getByRole("switch"));
+    // Assert
+    await waitFor(() => expect(mockHandleError).toHaveBeenCalled());
+    expect(calls).toEqual(["save"]);
   });
 
   it("with the Global Privacy Control signal the switch is off and can't be turned on", () => {
