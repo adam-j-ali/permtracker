@@ -188,6 +188,13 @@ def main() -> int:
           == "M.T. d/b/a Testova Farms v. Mullin", rule("Mateo Testova d/b/a Testova Farms v. Mullin").text)
     check("the name after d/b/a is printed as registered", rule("Mateo Testova d/b/a Blue Heron v. Mullin").text
           == "M.T. d/b/a Blue Heron v. Mullin", rule("Mateo Testova d/b/a Blue Heron v. Mullin").text)
+    akaa = rule("Wei Zhang a/k/a David Zhang v. Blinken")
+    check("a name after a/k/a is the same person again, as initials", akaa.text == "W.Z. a/k/a D.Z. v. Blinken", akaa.text)
+    check("and none of its words is kept as an organization's", "david" not in akaa.orgs and "zhang" not in akaa.orgs,
+          str(akaa.orgs))
+    capped = cc.caption_rule("Patel v. Jaddou", context="court", year=2026)
+    red, left = cc.safe_abstract("SANJAY PATEL, Plaintiff, asks the court to compel a decision.", capped)
+    check("a party's surname in capitals is redacted too", red is None or "PATEL" not in red, str(red))
     check("two people joined by \"and\" are held", rule("Exampleton and Testova v. Rubio").held is not None)
     check("two people in capitals joined by AND are held", rule("MICHAEL SAMPLE AND HAROLD SAMPLE", "employer").held is not None,
           rule("MICHAEL SAMPLE AND HAROLD SAMPLE", "employer").text)

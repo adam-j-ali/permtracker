@@ -2640,3 +2640,12 @@ live with the Oct 29 2 AM run. Ledger: `~/.claude/plans/cozy-sniffing-pumpkin.md
   "what happened" line, the `EmployerMoved` body and employer alerts (the employer page isn't translated, so
   no `lang` is stored), the status-meaning sentence (behind an `@/` module Convex can't import), and the
   plaintext parts.
+
+## Nov 9 2026: two more ways a court caption could print a person's name
+
+`scripts/lib_case_captions.py`: "a/k/a" was split like "d/b/a", so the name after it was printed whole as if it were a
+business ("Wei Zhang a/k/a David Zhang" became "W.Z. d/b/a David Zhang"). An alias now follows the party's own rule
+(initials for a person) and keeps its "a/k/a". And `redact_text` matched a caption person's words case-sensitively,
+while `residual_names` lets short all-caps words through as acronyms, so "SANJAY PATEL, Plaintiff" in a docket
+snippet published PATEL; the name's words now match in any case, and `safe_abstract` refuses any caption person's word
+left in the text. Tests in `scripts/test_court_opinions.py` fail on the old code.
