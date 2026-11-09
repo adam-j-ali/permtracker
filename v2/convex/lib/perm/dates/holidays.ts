@@ -3,12 +3,12 @@
  *
  * Legal basis:
  * - 5 U.S.C. § 6103 - Federal holidays (11 standard holidays)
- * - D.C. Code § 28-2701 - Inauguration Day (Jan 20 every 4 years)
- *   Observed as federal holiday for employees in D.C. area
+ * - 5 U.S.C. § 6103(c) - Inauguration Day (Jan 20 every 4 years)
+ *   A holiday for federal employees in the Washington, D.C. area
  *
  * Includes:
  * - 11 standard federal holidays per 5 U.S.C. § 6103
- * - Inauguration Day (Jan 20 every 4 years, starting 2021)
+ * - Inauguration Day (Jan 20 every 4 years, starting 2021; Sunday moves to Monday, Saturday isn't observed)
  * - Weekend shift rules (Saturday → Friday, Sunday → Monday) per OPM guidelines
  */
 
@@ -170,12 +170,16 @@ export function getFederalHolidays(year: number): FederalHoliday[] {
     date: formatISODate(nthWeekdayOfMonth(year, 10, 4, 4)), // 4th Thursday in November
   });
 
-  // Special: Inauguration Day (Jan 20 every 4 years starting 2021)
+  // Inauguration Day, Jan 20 every 4 years from 2021 (5 U.S.C. 6103(c)). On a Sunday the next day is the holiday; on
+  // a Saturday it isn't observed on another day (OPM, for Jan 20, 2029), so it doesn't take the usual Friday.
   if ((year - 2021) % 4 === 0 && year >= 2021) {
-    holidays.push({
-      name: 'Inauguration Day',
-      date: formatISODate(shiftWeekendHoliday(new Date(year, 0, 20))),
-    });
+    const jan20 = new Date(year, 0, 20);
+    if (jan20.getDay() !== 6) {
+      holidays.push({
+        name: 'Inauguration Day',
+        date: formatISODate(shiftWeekendHoliday(jan20)),
+      });
+    }
   }
 
   return holidays;
