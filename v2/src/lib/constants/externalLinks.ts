@@ -38,6 +38,10 @@ export const DC_BAR_SABRINA_URL = "https://my.dcbar.org/directorymemberships?id=
 export const X_PROFILE_URL = "https://x.com/permtracker";
 /** The brand's Bluesky account, handle verified by the domain's `_atproto` TXT record (Nov 8 2026). */
 export const BLUESKY_URL = "https://bsky.app/profile/permtracker.app";
+/** The brand's YouTube channel, home of the explainer videos (Nov 8 2026). */
+export const YOUTUBE_URL = "https://www.youtube.com/@permtracker";
+/** The brand's Facebook Page (Nov 8 2026): a Page, never a person's profile. */
+export const FACEBOOK_URL = "https://www.facebook.com/permtracker";
 
 /**
  * Where people leave a review of the site: the form on /reviews (since Oct 23 2026; Senja's hosted form before,
@@ -63,7 +67,7 @@ export const FEATURE_REQUEST_URL = `mailto:${SUPPORT_EMAIL_ADDRESS}?subject=Feat
 export interface SocialLink {
   href: string;
   label: string;
-  icon: "twitter" | "linkedin" | "bluesky";
+  icon: "twitter" | "linkedin" | "bluesky" | "youtube" | "facebook";
 }
 
 /**
@@ -87,6 +91,8 @@ export const SOCIAL_LINKS = [
     icon: "linkedin",
   },
   { href: BLUESKY_URL, label: "Bluesky", icon: "bluesky" },
+  { href: YOUTUBE_URL, label: "YouTube", icon: "youtube" },
+  { href: FACEBOOK_URL, label: "Facebook", icon: "facebook" },
 ] as const satisfies readonly SocialLink[];
 
 /**

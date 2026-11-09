@@ -53,11 +53,13 @@ import {
 import {
   BLUESKY_URL,
   DC_BAR_SABRINA_URL,
+  FACEBOOK_URL,
   LINKEDIN_COMPANY_URL,
   LINKEDIN_SABRINA_URL,
   MEDIUM_PROFILE_URL,
   PRODUCT_HUNT_URL,
   X_PROFILE_URL,
+  YOUTUBE_URL,
 } from "@/lib/constants/externalLinks";
 import { SITE_URL } from "@/lib/constants/site";
 import { buttonVariants } from "@/components/ui/button";
@@ -176,6 +178,8 @@ const ELSEWHERE = [
   { href: X_PROFILE_URL, label: "X" },
   { href: BLUESKY_URL, label: "Bluesky" },
   { href: LINKEDIN_COMPANY_URL, label: "LinkedIn" },
+  { href: YOUTUBE_URL, label: "YouTube" },
+  { href: FACEBOOK_URL, label: "Facebook" },
   { href: MEDIUM_PROFILE_URL, label: "Medium" },
   { href: PRODUCT_HUNT_URL, label: "Product Hunt" },
 ] as const;
