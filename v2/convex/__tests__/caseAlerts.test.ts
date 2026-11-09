@@ -1362,6 +1362,20 @@ describe("the three FLAG programs", () => {
     expect(String(body.text)).toContain("status for an LCA changes");
   });
 
+  it("dates the confirmation's text part the way its html does: shown since, never last checked", async () => {
+    const t = createTestContext();
+    const { sends } = stubMirrorAndResend({ cases: { [CASE]: { status: "ANALYST REVIEW", isFinal: false } } });
+    await t.action(internal.caseAlerts.sendConfirmation, { email: "person@example.com", caseNumber: CASE });
+    const text = String(sends[0]!.text);
+    expect(text).toContain("Shown since at least August 5, 2026");
+    expect(text).not.toMatch(/last checked/i);
+
+    const t2 = createTestContext();
+    const second = stubMirrorAndResend({ cases: { [CASE]: { status: "ANALYST REVIEW", isFinal: false, seenAt: null } } });
+    await t2.action(internal.caseAlerts.sendConfirmation, { email: "person@example.com", caseNumber: CASE });
+    expect(String(second.sends[0]!.text)).toContain("We don't have a date for this status yet.");
+  });
+
   it("withholds the PERM regulatory gloss from a non-PERM alert", async () => {
     // `statusMeaning("CERTIFIED")` promises 180 days to file the I-140. That
     // is a PERM rule and it is simply untrue of a certified LCA. A plausible
