@@ -237,6 +237,50 @@ describe('runAction reads the case back', () => {
   });
 });
 
+describe('a case read that fails is never "not found" and never "not done"', () => {
+  const down = new Error('fetch failed');
+
+  it.each(['updateCase', 'archiveCase', 'reopenCase', 'deleteCase', 'syncToCalendar'] as const)(
+    '%s says the case could not be read, so nothing was changed',
+    async (tool) => {
+      fetchQuery.mockRejectedValue(down);
+      const out = await prepareAction(tool, tool === 'updateCase' ? params({ notes: 'x' }) : { caseId: ID }, 't');
+      expect(out.kind).toBe('answer');
+      const text = JSON.stringify(out);
+      expect(text).not.toMatch(/wasn't found|deleted, or the id/);
+      expect(text).toMatch(/couldn't be read just now/);
+    },
+  );
+
+  it('a closed case that cannot be read back is reported as closed, unconfirmed', async () => {
+    fetchMutation.mockResolvedValue({ successCount: 1, failedCount: 0, unchangedCount: 0, results: [] });
+    fetchQuery.mockRejectedValue(down);
+    const out = await runAction('archiveCase', { ids: [ID], status: 'closed', closureReason: 'manual' }, 't');
+    expect(String(out.result.message)).not.toMatch(/wasn't closed/);
+    expect(String(out.result.message)).toMatch(/couldn't be read back/);
+  });
+
+  it('a calendar change that cannot be read back says so, rather than a change that did not happen', async () => {
+    fetchMutation.mockResolvedValue(true);
+    fetchQuery.mockRejectedValue(down);
+    const out = await runAction('unsyncFromCalendar', { id: ID }, 't');
+    expect(String(out.result.message)).not.toMatch(/didn't change/);
+    expect(String(out.result.message)).toMatch(/couldn't be read back/);
+  });
+
+  it('a deleted case that cannot be read back is not claimed as gone', async () => {
+    fetchMutation.mockResolvedValue(null);
+    fetchQuery.mockResolvedValueOnce(caseDoc()).mockRejectedValueOnce(down);
+    const out = await runAction('deleteCase', { id: ID }, 't');
+    expect(String(out.result.message)).toMatch(/couldn't be read back/);
+  });
+
+  it('a case that is really gone is still "not found"', async () => {
+    fetchQuery.mockResolvedValue(null);
+    expect(JSON.stringify(await prepareAction('archiveCase', { caseId: ID }, 't'))).toMatch(/wasn't found/);
+  });
+});
+
 describe('prepareAction for closing and calendars', () => {
   it("won't propose closing a case that's already closed", async () => {
     fetchQuery.mockResolvedValue(caseDoc({ caseStatus: 'closed' }));
