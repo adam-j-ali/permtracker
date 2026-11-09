@@ -40,7 +40,9 @@ vi.mock("@/lib/db/permEstimate", () => ({
   loadPermEstimateContext: vi.fn(async () => ({})),
 }));
 
-import { readCase, readEntity, readEstimate, searchEntities } from "../reads";
+import { getLiveBacklog } from "@/lib/db/publicData";
+import { getProcessingTimes } from "@/lib/db/processingTimes";
+import { readCase, readEntity, readEstimate, readQueue, searchEntities } from "../reads";
 
 const adobe = {
   slug: "adobe-inc",
@@ -243,5 +245,28 @@ describe("readEstimate", () => {
     lookupCase.mockResolvedValue({ live: null, decided: { status: "CERTIFIED", decisionDate: "2025-09-01" } });
     const out = await readEstimate({ caseNumber: "G-100-25010-123456" });
     expect(out.ok && out.data.kind).toBe("decided");
+  });
+});
+
+describe("readQueue", () => {
+  const pt = { permAsOf: "2026-11-01", permQueues: [], permAverageDays: [], pwdAsOf: "2026-11-01", pwdQueues: [], pwdPermBacklog: null };
+  const pending = (out: Awaited<ReturnType<typeof readQueue>>) => (out.ok ? (out.data.perm as Record<string, unknown> | undefined) : undefined);
+
+  it("sends no pending count, never an empty list, when the backlog can't be read", async () => {
+    vi.mocked(getProcessingTimes).mockResolvedValue(pt as never);
+    vi.mocked(getLiveBacklog).mockRejectedValue(new Error("fetch failed"));
+    const out = await readQueue();
+    expect(out.ok).toBe(true);
+    expect(out.ok && out.data.pendingPermByFilingMonth).toBeNull();
+    expect(pending(out)?.asOf).toBe("2026-11-01");
+  });
+
+  it("lists the pending months when it can", async () => {
+    vi.mocked(getProcessingTimes).mockResolvedValue(pt as never);
+    vi.mocked(getLiveBacklog).mockResolvedValue([{ month: "2025-01", total: 10, decided: 4, pending: 6 }] as never);
+    const out = await readQueue();
+    expect(out.ok && out.data.pendingPermByFilingMonth).toEqual([
+      { month: "2025-01", filed: 10, decided: 4, pending: 6, inAnalystReview: null },
+    ]);
   });
 });

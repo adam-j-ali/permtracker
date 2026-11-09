@@ -26,6 +26,7 @@ import { lca } from "@/lib/db/lcaCases";
 import { lookupSeasonalPosting, lookupSeasonalRecord, seasonal } from "@/lib/db/seasonalCases";
 import { estimatePermCase, loadPermEstimateContext } from "@/lib/db/permEstimate";
 import { rfiEnteredOn } from "@/lib/db/rfiClock";
+import { softFail } from "@/lib/softRead";
 import { ISO_MONTH_RE } from "@convex/lib/months";
 
 export interface ApiMeta {
@@ -246,7 +247,8 @@ export async function readCase(input: string): Promise<ReadResult<CaseRecord>> {
 /* ------------------------------------------------------------------ */
 
 export async function readQueue(): Promise<ReadResult<Record<string, unknown>>> {
-  const [pt, backlog] = await Promise.all([getProcessingTimes(), getLiveBacklog().catch(() => [])]);
+  // A backlog that can't be read is sent as null, never as an empty list that reads as "nothing pending".
+  const [pt, backlog] = await Promise.all([getProcessingTimes(), getLiveBacklog().catch(softFail("api/reads.readQueue.getLiveBacklog", null))]);
   if (!pt) return { ok: false, status: 503, code: "unavailable", message: "DOL's processing times aren't loaded right now. Try again later." };
   return {
     ok: true,
@@ -267,13 +269,15 @@ export async function readQueue(): Promise<ReadResult<Record<string, unknown>>> 
         queues: pt.pwdQueues,
         permRequestsPending: pt.pwdPermBacklog,
       },
-      pendingPermByFilingMonth: backlog.map((m) => ({
-        month: m.month,
-        filed: m.total,
-        decided: m.decided,
-        pending: m.pending,
-        inAnalystReview: m.analystReview ?? null,
-      })),
+      pendingPermByFilingMonth: backlog
+        ? backlog.map((m) => ({
+            month: m.month,
+            filed: m.total,
+            decided: m.decided,
+            pending: m.pending,
+            inAnalystReview: m.analystReview ?? null,
+          }))
+        : null,
     },
     meta: {
       source: "U.S. Department of Labor, FLAG processing times; pending counts from PERM Tracker's sweep of DOL case statuses",
@@ -467,7 +471,7 @@ export async function readEstimate(args: { caseNumber?: string | null; filed?: s
     filingDate = r.live?.filingDate ?? null;
     status = r.live?.status ?? status;
     // An RFI case is dated from its own RFI day, as on the case page.
-    if (status?.trim().toUpperCase() === "RFI ISSUED") rfiEntered = await rfiEnteredOn(ref.caseNumber).catch(() => null);
+    if (status?.trim().toUpperCase() === "RFI ISSUED") rfiEntered = await rfiEnteredOn(ref.caseNumber).catch(softFail("api/reads.readEstimate.rfiEnteredOn", null));
   } else if (args.filed) {
     if (!DATE_RE.test(args.filed)) return bad("filed must look like 2026-02-15.");
     if (args.filed > today) return bad("filed can't be in the future.");
