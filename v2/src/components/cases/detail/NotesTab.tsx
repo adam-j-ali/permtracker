@@ -168,6 +168,19 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
 
   // A deleted note is gone for good, so the trash buttons only ask; the dialog's Delete does it.
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  // The dialog has no trigger of its own, so focus goes back by hand to the button that opened it, or to the filter
+  // when that button went with the deleted row.
+  const deleteOpener = useRef<HTMLElement | null>(null);
+  const filterRef = useRef<HTMLSelectElement>(null);
+  const askDelete = (id: string, opener?: HTMLElement | null) => {
+    deleteOpener.current = opener ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    setConfirmDeleteId(id);
+  };
+  const returnFocus = (e: Event) => {
+    e.preventDefault();
+    const el = deleteOpener.current;
+    (el?.isConnected ? el : filterRef.current)?.focus();
+  };
   const [deleting, setDeleting] = useState(false);
   const deleteNote = useCallback(async (noteId: string) => {
     if (!onUpdateNotes) return;
@@ -249,6 +262,7 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <label className="sr-only" htmlFor="notes-filter">Show</label>
               <select
+                ref={filterRef}
                 id="notes-filter"
                 value={filterCategory}
                 onChange={(e) => { setFilterCategory(e.target.value as NoteCategory | "all"); setPage(0); }}
@@ -307,7 +321,7 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
                               aria-label={`Delete note: ${noteName(note.content)}`}
                               disabled={!onUpdateNotes}
                               style={{ color: "var(--destructive)", padding: 4, opacity: onUpdateNotes ? 1 : 0.5 }}
-                              onClick={() => setConfirmDeleteId(note.id)}
+                              onClick={(e) => askDelete(note.id, e.currentTarget)}
                             >
                               <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                             </button>
@@ -463,7 +477,7 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
                       className="icon-btn icon-btn-danger"
                       style={{ width: "auto", padding: "4px 12px", gap: 6, display: "flex", alignItems: "center", color: "var(--destructive)" }}
                       disabled={!onUpdateNotes}
-                      onClick={() => setConfirmDeleteId(selectedNote.id)}
+                      onClick={(e) => askDelete(selectedNote.id, e.currentTarget)}
                     >
                       <Trash2 className="h-3.5 w-3.5" /> Delete
                     </button>
@@ -616,7 +630,7 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
 
       {/* Delete confirmation: a real dialog (focus kept inside, Escape closes). */}
       <AlertDialog open={confirmDeleteId !== null} onOpenChange={(open) => (open || deleting ? null : setConfirmDeleteId(null))}>
-        <AlertDialogContent>
+        <AlertDialogContent onCloseAutoFocus={returnFocus}>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this note?</AlertDialogTitle>
             <AlertDialogDescription>It&apos;s deleted for good and can&apos;t be brought back.</AlertDialogDescription>

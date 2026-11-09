@@ -67,4 +67,20 @@ describe("the held mail list", () => {
     expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument();
     expect(mutations.release).toHaveBeenCalledTimes(1);
   });
+
+  // Each press swaps buttons, which drops keyboard focus to the page unless it's moved on purpose.
+  it("keeps keyboard focus on the row through Delete, Keep it and Not spam", async () => {
+    // Arrange
+    render(<InboxFilterPanel data={data} />);
+    // Act, Assert: the first press hands focus to Keep it
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    expect(screen.getByRole("button", { name: "Keep it" })).toHaveFocus();
+    // Backing out hands it back to Delete
+    fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
+    expect(screen.getByRole("button", { name: "Delete" })).toHaveFocus();
+    // Not spam hands it to the line that says what happened
+    fireEvent.click(screen.getByRole("button", { name: "Not spam" }));
+    await waitFor(() => expect(screen.getByText("Sending to your inbox")).toHaveFocus());
+  });
 });
+
