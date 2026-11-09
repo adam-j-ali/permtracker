@@ -179,7 +179,9 @@ import { getBacklogCensus } from "@/lib/db/backlog";
 import { readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { BROWSE_BUCKETS, type BrowseBucket } from "@/lib/entityBrowse";
+import { AUDIT_BUDGET } from "@/lib/sitemap/audit";
 import {
+  auditEntries,
   ChunkNotListed,
   childNames,
   entityEntries,
@@ -193,6 +195,7 @@ import {
   urlsetXml,
 } from "@/lib/sitemap/build";
 import { revalidate } from "../sitemap.xml/route";
+import { GET as childSitemap } from "../sitemaps/[name]/route";
 
 /** The whole sitemap as one flat list, which is what the old tests asserted. */
 async function sitemap() {
@@ -919,5 +922,74 @@ describe("entity lastmod tracks the corpus, not the daily figure", () => {
       expect(e.lastModified).toBe(expected);
       if (expected !== "2026-08-20") expect(e.lastModified).not.toBe("2026-08-20");
     }
+  });
+});
+
+describe("the Site Audit list (/sitemaps/audit.xml)", () => {
+  const MONDAY = Date.UTC(2026, 10, 9);
+  const WEEK = 7 * 86_400_000;
+  beforeEach(() => {
+    vi.mocked(getAllPosts).mockReturnValue([mkPost("a", "blog", "2026-01-01"), mkPost("g", "guide", "2026-01-01")]);
+    vi.mocked(browseCounts).mockResolvedValue(bucketCounts());
+    arrangeEntities({ employer: 6000, attorney: 300, occupation: 200 });
+    vi.mocked(countLiveOnlyRanks).mockResolvedValue(0);
+    vi.mocked(getLiveOnlySlugWindow).mockResolvedValue([]);
+    vi.mocked(countOtherEmployerRanks).mockResolvedValue(0);
+    vi.mocked(getOtherEmployerSlugWindow).mockResolvedValue([]);
+  });
+
+  it("fits a weekly crawl inside the free credits, with the homepage and one page of each kind", async () => {
+    const urls = (await auditEntries(MONDAY)).map((e) => e.url);
+    expect(urls.length).toBeLessThanOrEqual(AUDIT_BUDGET);
+    expect(new Set(urls).size).toBe(urls.length);
+    const home = (await pagesEntries()).find((e) => /^https:\/\/permtracker\.app\/?$/.test(e.url))!;
+    expect(urls).toContain(home.url);
+    expect(urls).toContain("https://permtracker.app/perm-employers/employer-1");
+    expect(urls).toContain("https://permtracker.app/perm-attorneys/attorney-1");
+    expect(urls).toContain("https://permtracker.app/perm-wages/occupation-1");
+  });
+
+  it("keeps each page's own lastmod", async () => {
+    const pages = new Map((await pagesEntries()).map((e) => [e.url, e.lastModified]));
+    for (const e of await auditEntries(MONDAY)) {
+      if (pages.has(e.url)) expect(e.lastModified).toBe(pages.get(e.url));
+    }
+  });
+
+  it("crawls different employer pages next week", async () => {
+    const employers = async (now: number) =>
+      (await auditEntries(now)).map((e) => e.url).filter((u) => u.includes("/perm-employers/employer-") && !u.endsWith("employer-1"));
+    const thisWeek = await employers(MONDAY);
+    expect(thisWeek.length).toBeGreaterThan(0);
+    expect(await employers(MONDAY + WEEK)).not.toEqual(thisWeek);
+  });
+
+  it("still builds when one family can't be read, and reports it", async () => {
+    vi.mocked(getEntitySlugWindow).mockImplementation(async (kind: string) => {
+      if (kind === "attorney") throw new Error("read failed");
+      return [`${kind}-1`, ...Array.from({ length: 199 }, (_, i) => `${kind}-${i + 2}`)];
+    });
+    vi.mocked(captureError).mockClear();
+    const urls = (await auditEntries(MONDAY)).map((e) => e.url);
+    expect(urls).toContain("https://permtracker.app/perm-employers/employer-1");
+    expect(urls.some((u) => u.includes("/perm-attorneys/attorney-"))).toBe(false);
+    expect(captureError).toHaveBeenCalled();
+  });
+
+  it("answers at /sitemaps/audit.xml as an ordinary urlset", async () => {
+    const res = await childSitemap(new Request("https://permtracker.app/sitemaps/audit.xml"), {
+      params: Promise.resolve({ name: "audit.xml" }),
+    });
+    expect(res.status).toBe(200);
+    const xml = await res.text();
+    expect(xml).toContain("<urlset");
+    const count = (xml.match(/<loc>/g) ?? []).length;
+    expect(count).toBeGreaterThan(0);
+    expect(count).toBeLessThanOrEqual(AUDIT_BUDGET);
+  });
+
+  it("is never listed in the sitemap index, so search engines don't read it", async () => {
+    expect(await childNames()).not.toContain("audit");
+    expect(parseChildName("audit")).toBeNull();
   });
 });
