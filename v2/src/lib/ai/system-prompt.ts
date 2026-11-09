@@ -110,6 +110,7 @@ const TOOL_USAGE_GUIDELINES = `## Tool Selection
 - **searchKnowledge**: PERM regulations, deadline rules, app how-to
 - **searchWeb**: DOL/USCIS news and anything the records below don't hold
 - **lookupDolCase**: Any DOL case by number, in DOL's own record (not only the person's cases here)
+- **findDolCase**: A DOL case found without its number, from the employer's name and the filing day
 - **estimateDecision**: When a pending PERM case is likely to be decided (an estimate with a range, never a promise)
 - **dolQueue**: DOL's processing times today (use this, not searchWeb, for processing times)
 - **visaBulletin**: Priority date cutoffs, newest or any month since June 2005

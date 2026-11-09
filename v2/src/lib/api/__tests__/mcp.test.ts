@@ -8,6 +8,7 @@ const checkAllowance = vi.fn();
 const countCall = vi.fn();
 const readQueue = vi.fn();
 const readCase = vi.fn();
+const findCases = vi.fn();
 vi.mock("../auth", () => ({ authenticate: (...a: unknown[]) => authenticate(...a) }));
 vi.mock("../usage", () => ({
   ANONYMOUS_ACCOUNT: "anonymous",
@@ -18,6 +19,7 @@ vi.mock("../usage", () => ({
 vi.mock("../reads", () => ({
   readQueue: (...a: unknown[]) => readQueue(...a),
   readCase: (...a: unknown[]) => readCase(...a),
+  findCases: (...a: unknown[]) => findCases(...a),
   readBulletin: vi.fn(),
   readEntity: vi.fn(),
   readEstimate: vi.fn(),
@@ -79,6 +81,17 @@ describe("the MCP server at /mcp", () => {
     const { body } = await rpc("tools/call", { name: "find_soc_code", arguments: { query: "data scientist" } });
     expect(lookupSoc).toHaveBeenCalledExactlyOnceWith("data scientist");
     expect(JSON.parse(body.result.content[0].text)).toMatchObject({ page: meta.url });
+  });
+
+  it("finds a case without its number through the same read as /v1/cases", async () => {
+    findCases.mockReset().mockResolvedValue({ ok: true, data: { matched: 1, cases: [{ caseNumber: "G-100-26030-000001" }] }, meta });
+    const { body } = await rpc("tools/call", { name: "find_case", arguments: { employer: "Acme Robotics", filed: "2026-01-30" } });
+    // What the assistant left out goes to the read as missing, and the read picks PERM.
+    expect(findCases).toHaveBeenCalledExactlyOnceWith({ employer: "Acme Robotics", filed: "2026-01-30", program: null, job: null });
+    expect(JSON.parse(body.result.content[0].text)).toMatchObject({ page: meta.url, data: { matched: 1 } });
+
+    await rpc("tools/call", { name: "find_case", arguments: { employer: "Acme", filed: "2026-01-30", program: "pwd", job: "controls" } });
+    expect(findCases).toHaveBeenLastCalledWith({ employer: "Acme", filed: "2026-01-30", program: "pwd", job: "controls" });
   });
 
   it("tells the assistant when the shared pool is full, and reads nothing", async () => {

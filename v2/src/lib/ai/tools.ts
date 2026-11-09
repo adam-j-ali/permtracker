@@ -2058,6 +2058,12 @@ const SPONSOR_KINDS = ['employer', 'law firm', 'occupation'] as const;
 export const LookupDolCaseInputSchema = z.object({
   caseNumber: z.string().max(40).describe('A DOL case number as printed: G-100-26045-123456 (PERM), P-100-... (wage request), I-200-... (H-1B LCA), H-300-... (H-2A).'),
 });
+export const FindDolCaseInputSchema = z.object({
+  employer: z.string().min(2).max(120).describe("The employer's name or its start."),
+  filed: z.string().max(10).describe('The filing day, YYYY-MM-DD.'),
+  program: z.enum(['perm', 'pwd', 'lca', 'seasonal']).optional().describe('perm (the default), pwd (wage request), lca (H-1B) or seasonal (H-2A, H-2B, CW-1).'),
+  job: z.string().max(80).optional().describe('Words of the job title, to narrow a long answer.'),
+});
 export const EstimateDecisionInputSchema = z.object({
   caseNumber: z.string().max(40).optional().describe('A PERM case number.'),
   filed: z.string().max(10).optional().describe('A filing date, YYYY-MM-DD, when there is no case number.'),
@@ -2082,6 +2088,11 @@ export const lookupDolCaseTool = tool({
   description: `Look up any DOL case by its number in DOL's own record: status, filing date, employer, job, and DOL's decision once decided.
 Use for: a case number the person gives that isn't one of their own cases in this app, or to check DOL's live status.`,
   inputSchema: LookupDolCaseInputSchema,
+});
+export const findDolCaseTool = tool({
+  description: `Find a DOL case without its number: the cases an employer filed on one day, each with its number, status and job title.
+Use for: "I don't have my case number", when the person knows the employer and the filing date. With no match it returns close spellings that filed that day.`,
+  inputSchema: FindDolCaseInputSchema,
 });
 export const estimateDecisionTool = tool({
   description: `When a pending PERM case is likely to be decided, with a range, the model used and its caveats. An estimate, not a promise.
@@ -2119,6 +2130,7 @@ export const chatTools = {
 
   // Public records (autonomous): the API's and the MCP server's own reads
   lookupDolCase: lookupDolCaseTool,
+  findDolCase: findDolCaseTool,
   estimateDecision: estimateDecisionTool,
   dolQueue: dolQueueTool,
   visaBulletin: visaBulletinTool,

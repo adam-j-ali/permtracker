@@ -27,6 +27,11 @@ import { lookupSeasonalPosting, lookupSeasonalRecord, seasonal } from "@/lib/db/
 import { estimatePermCase, loadPermEstimateContext } from "@/lib/db/permEstimate";
 import { rfiEnteredOn } from "@/lib/db/rfiClock";
 import { softFail } from "@/lib/softRead";
+import { enoughTyped, findOnDay } from "@/lib/caseFinder";
+import { getFiledOnProgram } from "@/lib/db/filingDay";
+import { FILINGS_FROM } from "@/lib/filingDay";
+import { FILING_PROGRAMS, dayHref, type FilingProgram } from "@/lib/filingsByDay";
+import { easternDay } from "@convex/lib/time";
 import { ISO_MONTH_RE } from "@convex/lib/months";
 
 export interface ApiMeta {
@@ -509,5 +514,69 @@ export async function readEstimate(args: { caseNumber?: string | null; filed?: s
       caveats: estimate.caveats,
     },
     meta,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Finding a case without its number                                    */
+/* ------------------------------------------------------------------ */
+
+/** Cases one answer lists: a big employer files dozens a day, and a job title narrows them. */
+const FOUND_MAX = 50;
+
+/**
+ * The cases an employer filed on one day, for a caller with no case number: the same day list and the
+ * same name match as the site's finder (src/lib/caseFinder.ts), so the API, the MCP tool and the page
+ * answer the same question the same way. A failed read throws to the route's 500, never "none".
+ */
+export async function findCases(args: {
+  employer?: string | null;
+  filed?: string | null;
+  program?: string | null;
+  job?: string | null;
+}): Promise<ReadResult<Record<string, unknown>>> {
+  // Lengths first, then shapes: nothing below walks a string it hasn't capped.
+  const employer = (args.employer ?? "").slice(0, 121).trim();
+  const job = (args.job ?? "").slice(0, 81).trim();
+  const filed = (args.filed ?? "").slice(0, 11).trim();
+  const program = (args.program ?? "perm").slice(0, 12).trim().toLowerCase();
+  if (employer.length > 120 || !enoughTyped(employer)) return bad("employer must be 2 to 120 characters of the employer's name.");
+  if (job.length > 80) return bad("job must be at most 80 characters.");
+  if (!DATE_RE.test(filed)) return bad("filed must be the filing day, like 2026-01-30.");
+  if (!(FILING_PROGRAMS as readonly string[]).includes(program)) return bad(`program must be one of ${FILING_PROGRAMS.join(", ")}.`);
+  const today = easternDay();
+  if (filed < FILINGS_FROM || filed > today) return bad(`filed must be between ${FILINGS_FROM} and today.`);
+
+  const kind = program as FilingProgram;
+  const { cases, capped } = await getFiledOnProgram(filed, kind);
+  const found = findOnDay(cases, employer, job);
+  return {
+    ok: true,
+    data: {
+      filed,
+      program: kind,
+      programName: PROGRAM_NAMES[kind],
+      // The whole day, whatever was asked: how many DOL's record holds, decided and still waiting.
+      day: found.day,
+      matchedEmployer: found.ofEmployer,
+      matched: found.matches.length,
+      cases: found.matches.slice(0, FOUND_MAX).map((c) => ({
+        caseNumber: c.caseNumber,
+        status: c.status,
+        isFinal: c.final,
+        employer: c.employer,
+        jobTitle: c.jobTitle,
+        decisionDate: c.decided ?? null,
+        worksiteState: c.state ?? null,
+        wageRequest: c.wageRequest ?? null,
+        url: `${SITE_URL}/perm-case-status?case=${encodeURIComponent(c.caseNumber)}`,
+      })),
+      truncated: found.matches.length > FOUND_MAX,
+      // With no match: the employers that did file that day under a close spelling.
+      closeNames: found.close,
+      // The day's own list was cut at its cap, so a case can be missing from this answer.
+      dayListCapped: capped,
+    },
+    meta: { source: DOL_SOURCE, asOf: today, url: `${SITE_URL}${dayHref(filed, kind)}` },
   };
 }
