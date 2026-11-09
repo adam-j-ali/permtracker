@@ -180,7 +180,9 @@ case "$job" in
       printf '%s%s' "$code" "${reason:+ $reason}"
     }
     # A second apart: USCIS counts its 5 a second as one call every 200 ms (a 429 at 0.16 s, Nov 8 2026).
-    good="$(ask EAC9999103403)"; sleep 1; unknown="$(ask EAC9999100000)"
+    # The unknown one must be a number the sandbox has no case for: EAC9999100000 began answering as a made-up
+    # I-181 on Nov 9 2026 (so did WAC1990000001), while EAC0000000001 answered 404 that day.
+    good="$(ask EAC9999103403)"; sleep 1; unknown="$(ask EAC0000000001)"
     note="staging receipt $good, unknown receipt $unknown"
     echo "$note"
     case "$good|$unknown" in
