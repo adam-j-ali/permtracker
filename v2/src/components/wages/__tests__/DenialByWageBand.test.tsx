@@ -189,7 +189,7 @@ describe("LadderByYear", () => {
         years={[year("2024", 18_275, 134_992), year("2026", 23_460, 142_002)]}
       />,
     );
-    expect(screen.queryByText(/not measuring the same group/i)).toBeNull();
+    expect(screen.queryByText(/measuring the same group/i)).toBeNull();
   });
 
   it("reports the move rung by rung, not just at the median", () => {
