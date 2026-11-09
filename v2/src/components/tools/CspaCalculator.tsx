@@ -84,7 +84,8 @@ function ageWords(a: Age): string {
 type Tone = "good" | "bad" | "wait";
 
 /** The answer in one line, and a sentence under it saying what it rests on. */
-function verdict(r: CspaResult, pd: string): { tone: Tone; head: string; body: string } {
+/** `sought` is the filing date the reader entered, when it's a date. */
+function verdict(r: CspaResult, pd: string, sought: string | null): { tone: Tone; head: string; body: string } {
   const w = r.counted;
   const lastDay = r.lastQualifyingDay ? long(r.lastQualifyingDay) : null;
   switch (r.status) {
@@ -134,7 +135,9 @@ function verdict(r: CspaResult, pd: string): { tone: Tone; head: string; body: s
       return {
         tone: "bad",
         head: "The year to file passed",
-        body: `The visa was available every month from ${long(w!.availableFrom)} through ${long(w!.seekBy)}. If the child filed nothing in that year, the CSPA age no longer applies unless USCIS finds extraordinary circumstances. If the child did file, enter the date above.`,
+        body: sought
+          ? `The visa was available every month from ${long(w!.availableFrom)} through ${long(w!.seekBy)}, and the child filed on ${long(sought)}, after that year ended. The CSPA age no longer applies unless USCIS finds extraordinary circumstances.`
+          : `The visa was available every month from ${long(w!.availableFrom)} through ${long(w!.seekBy)}. If the child filed nothing in that year, the CSPA age no longer applies unless USCIS finds extraordinary circumstances. If the child did file, enter the date above.`,
       };
   }
 }
@@ -219,7 +222,7 @@ export function CspaCalculator({
     const words = cutoff.kind === "current" ? "Current (C)" : cutoff.kind === "unavailable" ? "Unavailable (U)" : long(cutoff.iso);
     return { month: last.month, words };
   }, [line.data, usedChart]);
-  const v = r ? verdict(r, pd) : null;
+  const v = r ? verdict(r, pd, DATE_RE.test(sought) ? sought : null) : null;
 
   return (
     <div className="object p-5 sm:p-8">
