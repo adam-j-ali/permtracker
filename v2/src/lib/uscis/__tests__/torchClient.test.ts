@@ -24,9 +24,12 @@ vi.mock("@/lib/db/client", () => ({
 // The client is server-only; the guard module throws outside a server
 // bundle, so it is stubbed for the test environment.
 vi.mock("server-only", () => ({}));
+const captureError = vi.fn();
+vi.mock("@/lib/sentry", () => ({ captureError: (...a: unknown[]) => captureError(...a) }));
 
 import {
   fetchCaseStatus,
+  resetUscisReports,
   fetchProcessingTimesRaw,
   normaliseCaseStatus,
   resetTokenCache,
@@ -86,6 +89,8 @@ beforeEach(() => {
   oneMock.mockReset().mockResolvedValue({ n: 1 });
   resetTokenCache();
   resetTpsBucket();
+  resetUscisReports();
+  captureError.mockReset();
 });
 
 afterEach(() => {
@@ -361,6 +366,34 @@ describe("USCIS's answers", () => {
     const { f } = fakeFetch(() => jsonRes(200, { case_status: { receiptNumber: "EAC9999103403" } }));
     const r = await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 });
     expect(r).toEqual({ kind: "unavailable", httpStatus: 200 });
+  });
+
+  // The route tells the visitor "the site's operator has been told": this is the telling.
+  it("tells the operator once when USCIS refuses the credentials, however the refusal comes", async () => {
+    setEnv("sandbox");
+    const tokenRefused = vi.fn(async () => jsonRes(401, { error: "invalid_client" })) as unknown as typeof fetch;
+    await fetchCaseStatus("EAC9999103403", { fetchImpl: tokenRefused, now: () => T0 });
+    await fetchCaseStatus("EAC9999103403", { fetchImpl: tokenRefused, now: () => new Date(T0.getTime() + 1000) });
+    const { f } = fakeFetch(() => jsonRes(403, { message: "Forbidden" }));
+    await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => new Date(T0.getTime() + 2000) });
+    expect(captureError).toHaveBeenCalledTimes(1);
+    expect(captureError.mock.calls[0]![1]).toMatchObject({ operation: "uscis.unauthorized" });
+  });
+
+  it("tells the operator once when a 200 has a shape it can't read", async () => {
+    setEnv("sandbox");
+    const { f } = fakeFetch(() => jsonRes(200, { case_status: { receiptNumber: "EAC9999103403" } }));
+    await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 });
+    await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => new Date(T0.getTime() + 1000) });
+    expect(captureError).toHaveBeenCalledTimes(1);
+    expect(captureError.mock.calls[0]![1]).toMatchObject({ operation: "uscis.unreadableAnswer" });
+  });
+
+  it("tells nobody about an ordinary answer or USCIS being down", async () => {
+    setEnv("sandbox");
+    await fetchCaseStatus("EAC9999103403", { fetchImpl: fakeFetch(() => jsonRes(200, CASE)).f, now: () => T0 });
+    await fetchCaseStatus("EAC9999103403", { fetchImpl: fakeFetch(() => jsonRes(503, {})).f, now: () => new Date(T0.getTime() + 1000) });
+    expect(captureError).not.toHaveBeenCalled();
   });
 });
 
