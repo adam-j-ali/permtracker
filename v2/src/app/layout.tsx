@@ -31,6 +31,7 @@ const jetbrainsMono = JetBrains_Mono({
 // Viewport configuration for proper mobile scaling
 import { SITE_URL } from "@/lib/constants/site";
 import { Preloader, PRELOADER_BOOT, PRELOADER_CSS } from "@/components/home/Preloader";
+import { JsonLdScript } from "@/components/seo/JsonLdScript";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -190,15 +191,8 @@ export default async function RootLayout({
           <style dangerouslySetInnerHTML={{ __html: PRELOADER_CSS }} />
           <script dangerouslySetInnerHTML={{ __html: PRELOADER_BOOT }} />
           <link rel="alternate" type="application/rss+xml" title="PERM Tracker RSS Feed" href="/feed.xml" />
-          {/* JSON-LD structured data for rich search results
-              Note: Using dangerouslySetInnerHTML is safe here because structuredData
-              is generated from hardcoded strings in structuredData.ts, not user input */}
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify(structuredData),
-            }}
-          />
+          {/* JSON-LD for rich results, through the one component that escapes "<" */}
+          <JsonLdScript schema={structuredData} />
         </head>
         <body
           className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} font-body antialiased`}

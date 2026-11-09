@@ -22,6 +22,7 @@ import { getPermBoard } from "@/lib/db/board";
 import { getPermLine } from "@/lib/db/permLine";
 import { getProcessingTimes } from "@/lib/db/processingTimes";
 import { softFail } from "@/lib/softRead";
+import { JsonLdScript } from "@/components/seo/JsonLdScript";
 
 const START_LINKS = [
   { href: "/perm-processing-times", label: "Processing times", note: "Which month DOL is reviewing now", Icon: ClockIcon },
@@ -205,7 +206,7 @@ export default async function FAQPage() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas) }} />
+      <JsonLdScript schema={schemas} />
 
       <section className="border-b-2 border-border bg-card">
         <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-4 py-10 sm:px-8 sm:py-14 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,28rem)] lg:items-start [&>*]:min-w-0">

@@ -12,6 +12,7 @@ import { ContentHero } from "@/components/content";
 import ContentListing from "@/components/content/ContentListing";
 import { TopicStack } from "@/components/content/TopicStack";
 import { openGraphBase } from "@/lib/openGraphBase";
+import { JsonLdScript } from "@/components/seo/JsonLdScript";
 
 export const dynamic = "force-static";
 
@@ -36,10 +37,7 @@ export default function BlogPage() {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas) }}
-      />
+      <JsonLdScript schema={schemas} />
       <ContentHero type="blog" postCount={posts.length} />
       <TopicStack posts={posts} type="blog" />
       <section className="mx-auto max-w-[1400px] px-4 py-8 sm:px-8 sm:py-10">
