@@ -140,7 +140,7 @@ export const ENDPOINTS: EndpointDoc[] = [
   {
     path: "/exports/{kind}",
     summary:
-      "A search's whole answer, past one page, as CSV (format=csv) or JSON: cases (the case search's parameters, such as q, firm, state, occupation, from, to, outcome), employers, law-firms or occupations (q). Needs the export scope. Plus exports up to 1,000 rows. Counted as one call.",
+      "A search's whole answer, past one page, as CSV (format=csv) or JSON: cases (the case search's parameters, such as q, firm, state, occupation, outcome, and from and to for the filing date as a month, YYYY-MM, or one day, YYYY-MM-DD), employers, law-firms or occupations (q). Needs the export scope. Plus exports up to 1,000 rows. Counted as one call.",
     example: "/exports/employers?q=acme&format=csv",
     params: [
       { name: "kind", in: "path", required: true, description: "cases, employers, law-firms or occupations." },

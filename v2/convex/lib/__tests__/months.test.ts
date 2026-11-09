@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { MONTH_ABBR, MONTH_NAMES, longDate, monthDay, monthYear, shortDate, weekdayName } from "../months";
+import { MONTH_ABBR, MONTH_NAMES, MONTH_OR_DAY_RE, boundEnd, boundStart, longDate, monthDay, monthYear, shortDate, weekdayName } from "../months";
 
 describe("the shared month names and date labels", () => {
   it("has twelve months, and the short forms are the long ones cut to three", () => {
@@ -37,5 +37,34 @@ describe("weekdayName", () => {
   it("names nothing for what isn't a date", () => {
     expect(weekdayName("2026-10")).toBeNull();
     expect(weekdayName(null)).toBeNull();
+  });
+});
+
+describe("a month or one day as a search bound", () => {
+  it("takes a whole month or one calendar day, and nothing shaped otherwise", () => {
+    for (const ok of ["2026-03", "2026-03-05", "2026-12-31", "2028-02-29"]) expect(MONTH_OR_DAY_RE.test(ok)).toBe(true);
+    for (const bad of ["2026", "2026-3", "2026-13", "2026-00", "2026-03-5", "2026-03-00", "2026-03-32", "2026-03-05T00:00", " 2026-03", "26-03-05"]) {
+      expect(MONTH_OR_DAY_RE.test(bad)).toBe(false);
+    }
+  });
+
+  it("starts a month on its first day and a day on itself", () => {
+    expect(boundStart("2026-03")).toBe("2026-03-01");
+    expect(boundStart("2026-03-05")).toBe("2026-03-05");
+  });
+
+  it("ends on the first day after: the next month's first, or the next day", () => {
+    expect(boundEnd("2026-03")).toBe("2026-04-01");
+    expect(boundEnd("2026-12")).toBe("2027-01-01");
+    expect(boundEnd("2026-03-05")).toBe("2026-03-06");
+    // The ends of a month and of a year, and February in a leap year and out of one.
+    expect(boundEnd("2026-01-31")).toBe("2026-02-01");
+    expect(boundEnd("2026-12-31")).toBe("2027-01-01");
+    expect(boundEnd("2028-02-28")).toBe("2028-02-29");
+    expect(boundEnd("2028-02-29")).toBe("2028-03-01");
+    expect(boundEnd("2026-02-28")).toBe("2026-03-01");
+    // The days the clocks change in the United States: stepped in UTC, so neither is skipped or doubled.
+    expect(boundEnd("2026-03-08")).toBe("2026-03-09");
+    expect(boundEnd("2026-11-01")).toBe("2026-11-02");
   });
 });

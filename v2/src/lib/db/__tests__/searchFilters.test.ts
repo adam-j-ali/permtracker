@@ -40,9 +40,21 @@ describe("narrowingClauses", () => {
     expect(narrowingClauses("x", { to: "2025-12" }).params).toEqual(["2026-01-01"]);
   });
 
+  it("takes one exact day on both ends, as that day alone", () => {
+    const n = narrowingClauses("filing_date", { from: "2026-01-30", to: "2026-01-30" });
+    expect(n.conds).toEqual(["filing_date >= ?", "filing_date < ?"]);
+    expect(n.params).toEqual(["2026-01-30", "2026-01-31"]);
+    // A month's last day rolls into the next month, and a leap day exists only in a leap year.
+    expect(narrowingClauses("x", { to: "2026-01-31" }).params).toEqual(["2026-02-01"]);
+    expect(narrowingClauses("x", { to: "2028-02-28" }).params).toEqual(["2028-02-29"]);
+    expect(narrowingClauses("x", { to: "2026-12-31" }).params).toEqual(["2027-01-01"]);
+  });
+
   it("refuses a malformed month or an over-long title before SQL", () => {
     expect(() => narrowingClauses("x", { from: "2026-13" })).toThrow();
     expect(() => narrowingClauses("x", { to: "26-04" })).toThrow();
+    expect(() => narrowingClauses("x", { from: "2026-01-32" })).toThrow();
+    expect(() => narrowingClauses("x", { from: "2026-1-5" })).toThrow();
     expect(() => narrowingClauses("x", { title: "a".repeat(81) })).toThrow();
   });
 });

@@ -149,6 +149,50 @@ describe("the worker, job and industry filters", () => {
   });
 });
 
+describe("one exact filing day", () => {
+  it("sends the day as both ends of the filed range", () => {
+    renderIt();
+    fireEvent.change(screen.getByLabelText("Employer or case number"), { target: { value: "acme" } });
+    fireEvent.change(screen.getByLabelText("Filed on one day"), { target: { value: "2026-01-30" } });
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    const q = lastAsked();
+    expect(q.get("from")).toBe("2026-01-30");
+    expect(q.get("to")).toBe("2026-01-30");
+  });
+
+  it("is one filter with the months: setting either empties the other, so the boxes show what's used", () => {
+    renderIt();
+    fireEvent.change(screen.getByLabelText("Employer or case number"), { target: { value: "acme" } });
+    fireEvent.change(screen.getByLabelText("Filed from"), { target: { value: "2026-01" } });
+    fireEvent.change(screen.getByLabelText("Filed to"), { target: { value: "2026-03" } });
+    fireEvent.change(screen.getByLabelText("Filed on one day"), { target: { value: "2026-02-14" } });
+    expect(screen.getByLabelText("Filed from")).toHaveValue("");
+    expect(screen.getByLabelText("Filed to")).toHaveValue("");
+
+    fireEvent.change(screen.getByLabelText("Filed from"), { target: { value: "2026-01" } });
+    expect(screen.getByLabelText("Filed on one day")).toHaveValue("");
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    const q = lastAsked();
+    expect(q.get("from")).toBe("2026-01");
+    expect(q.has("to")).toBe(false);
+  });
+
+  it("reads a shared address's day back into its box, and keeps a month range in the month boxes", () => {
+    address.params = new URLSearchParams("q=acme&from=2026-01-30&to=2026-01-30");
+    const { unmount } = renderIt();
+    expect(screen.getByLabelText("Filed on one day")).toHaveValue("2026-01-30");
+    expect(screen.getByLabelText("Filed from")).toHaveValue("");
+    expect(lastAsked().get("from")).toBe("2026-01-30");
+    unmount();
+
+    address.params = new URLSearchParams("q=acme&from=2026-01&to=2026-03");
+    renderIt();
+    expect(screen.getByLabelText("Filed on one day")).toHaveValue("");
+    expect(screen.getByLabelText("Filed from")).toHaveValue("2026-01");
+    expect(screen.getByLabelText("Filed to")).toHaveValue("2026-03");
+  });
+});
+
 describe("the answer", () => {
   it("says a PERM-only filter left the other programs out", () => {
     renderIt();

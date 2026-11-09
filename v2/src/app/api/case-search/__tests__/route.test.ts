@@ -186,6 +186,35 @@ describe("the prevailing wage source", () => {
   });
 });
 
+describe("the filed and decided dates", () => {
+  it("takes one exact filing day on both ends", async () => {
+    const r = await get("q=acme&from=2026-01-30&to=2026-01-30");
+    expect(r.status).toBe(200);
+    expect(lastNarrow()).toEqual({ from: "2026-01-30", to: "2026-01-30" });
+  });
+
+  it("still takes whole months, and a month on one end with a day on the other", async () => {
+    await get("q=acme&from=2026-01&to=2026-03");
+    expect(lastNarrow()).toEqual({ from: "2026-01", to: "2026-03" });
+    await get("q=acme&from=2026-01&to=2026-02-14&dfrom=2026-05&dto=2026-06");
+    expect(lastNarrow()).toEqual({ from: "2026-01", to: "2026-02-14", decidedFrom: "2026-05", decidedTo: "2026-06" });
+  });
+
+  it.each([
+    ["a day that doesn't exist", "from=2026-01-32"],
+    ["a day without its zeroes", "from=2026-1-5"],
+    ["a month that doesn't exist", "to=2026-13"],
+    ["a date with a time on it", "from=2026-01-30T00:00:00"],
+    ["a value far past any date's length", `to=${"2".repeat(5000)}`],
+    ["a day on the decided range, which takes months", "dfrom=2026-01-30"],
+  ])("400s on %s, saying which shapes it takes, before any search", async (_label, qs) => {
+    const r = await get(`q=acme&${qs}`);
+    expect(r.status).toBe(400);
+    expect((await r.json()).error).toBe("filed dates must be YYYY-MM or YYYY-MM-DD, decided dates YYYY-MM");
+    expect(unifiedSearch).not.toHaveBeenCalled();
+  });
+});
+
 describe("the order", () => {
   it("hands the chosen order to the search", async () => {
     await get("q=acme&order=wage-desc");

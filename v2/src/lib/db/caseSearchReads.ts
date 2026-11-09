@@ -29,7 +29,7 @@ import { tableColumns } from "./tableColumns";
 import { ANNUAL_WAGE_SQL } from "@/lib/wageFormat";
 import { socGroup, socGroupClause } from "@/lib/socCode";
 import { programOf } from "@/lib/flagCaseNumber";
-import { fiscalYearSpan, shiftMonth } from "@convex/lib/months";
+import { boundEnd, boundStart, fiscalYearSpan } from "@convex/lib/months";
 import { LIKE_ESCAPE, likeContains } from "./like";
 
 /**
@@ -1581,11 +1581,11 @@ function stageNarrowing(narrow: UnifiedNarrow): { conds: string[]; params: (stri
   const params: (string | number)[] = [];
   if (narrow.from) {
     conds.push("c.filing_date >= ?");
-    params.push(`${narrow.from}-01`);
+    params.push(boundStart(narrow.from));
   }
   if (narrow.to) {
     conds.push("c.filing_date < ?");
-    params.push(`${shiftMonth(narrow.to, 1)}-01`);
+    params.push(boundEnd(narrow.to));
   }
   if (narrow.title) {
     conds.push(`c.job_title LIKE ? ${LIKE_ESCAPE}`);
