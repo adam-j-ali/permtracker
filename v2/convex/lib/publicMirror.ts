@@ -189,6 +189,11 @@ export async function query(statements: Statement[]): Promise<Row[][]> {
     const ctx = prepared[out.length]?.ctx;
     out.push(ctx ? masker.mask(read, ctx) : read);
   }
+  // A 200 with a missing or short `results` would destructure as empty arrays,
+  // which reads as "no rows": the outcome the per-result check exists to stop.
+  if (out.length !== statements.length) {
+    throw new Error(`libsql returned ${out.length} results for ${statements.length} statements`);
+  }
   return out;
 }
 

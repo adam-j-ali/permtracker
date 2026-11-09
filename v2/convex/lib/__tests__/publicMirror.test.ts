@@ -139,6 +139,18 @@ describe("result decoding", () => {
     expect(firstRows).toEqual([{ a: 1 }]);
     expect(secondRows).toEqual([{ b: 2 }]);
   });
+
+  it("throws when a 200 answer holds fewer results than statements, never reading the gap as no rows", async () => {
+    // A proxy or tunnel answering 200 with an unexpected body would otherwise
+    // destructure as `[rows = [], events = []]`: "nothing moved".
+    for (const body of [{}, { results: [] }, { results: [{ type: "ok", response: { type: "execute", result: { cols: [], rows: [] } } }] }]) {
+      global.fetch = (async () => new Response(JSON.stringify(body), { status: 200 })) as unknown as typeof fetch;
+      await expect(
+        query([{ sql: "SELECT 1 AS first" }, { sql: "SELECT 2 AS second" }]),
+        JSON.stringify(body),
+      ).rejects.toThrow(/results for 2 statements/);
+    }
+  });
 });
 
 describe("a name withheld at its owner's request", () => {
