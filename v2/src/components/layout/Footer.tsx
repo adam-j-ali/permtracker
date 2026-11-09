@@ -19,7 +19,14 @@
 import { Fragment } from "react";
 import { IntentLink } from "@/components/ui/intent-link";
 
-import { ButterflyIcon, FacebookLogoIcon, LinkedinLogoIcon, XLogoIcon, YoutubeLogoIcon } from "@phosphor-icons/react";
+import {
+  ButterflyIcon,
+  FacebookLogoIcon,
+  InstagramLogoIcon,
+  LinkedinLogoIcon,
+  XLogoIcon,
+  YoutubeLogoIcon,
+} from "@phosphor-icons/react";
 import ThemeToggle from "./ThemeToggle";
 import { AnalyticsSwitch } from "./AnalyticsSwitch";
 import { NOT_LEGAL_SERVICES } from "@/lib/constants/about";
@@ -32,6 +39,7 @@ const SOCIAL_ICONS = {
   bluesky: ButterflyIcon,
   youtube: YoutubeLogoIcon,
   facebook: FacebookLogoIcon,
+  instagram: InstagramLogoIcon,
 } as const;
 
 const LINK = "text-soft transition-colors hover:text-foreground";
