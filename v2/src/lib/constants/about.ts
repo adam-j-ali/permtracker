@@ -23,6 +23,8 @@ import {
   LINKEDIN_SABRINA_URL,
   MEDIUM_PROFILE_URL,
   PRODUCT_HUNT_URL,
+  THREADS_URL,
+  TIKTOK_URL,
   X_PROFILE_URL,
   YOUTUBE_URL,
 } from "./externalLinks";
@@ -63,9 +65,8 @@ export const LIVE_SINCE = "2026-01";
  *
  * BRAND-OWNED ONLY: the Medium publication, the Product Hunt product page, the
  * LinkedIn company page, the X and Bluesky accounts, the YouTube channel, the
- * Facebook Page, the Instagram account and the Crunchbase company page carry the
- * brand's name
- * and nothing else. A personal profile sits on
+ * Facebook Page, the Instagram, Threads and TikTok accounts and the Crunchbase
+ * company page carry the brand's name and nothing else. A personal profile sits on
  * that person's node above and is linked from the footer, never asserted as
  * the organization itself. `structuredData.test.ts` pins the rule. The source
  * repository is no longer listed: its URL carries a personal handle, and the
@@ -80,6 +81,8 @@ export const ORGANIZATION_SAME_AS: readonly string[] = [
   YOUTUBE_URL,
   FACEBOOK_URL,
   INSTAGRAM_URL,
+  THREADS_URL,
+  TIKTOK_URL,
   CRUNCHBASE_URL,
 ];
 

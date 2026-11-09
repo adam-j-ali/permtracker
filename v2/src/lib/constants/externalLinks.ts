@@ -44,6 +44,10 @@ export const YOUTUBE_URL = "https://www.youtube.com/@permtracker";
 export const FACEBOOK_URL = "https://www.facebook.com/permtracker";
 /** The brand's Instagram business account (Nov 9 2026), linked to the Facebook Page. */
 export const INSTAGRAM_URL = "https://www.instagram.com/permtracker";
+/** The brand's Threads account (Nov 9 2026), run from the Instagram account. */
+export const THREADS_URL = "https://www.threads.com/@permtracker";
+/** The brand's TikTok account (Nov 9 2026). */
+export const TIKTOK_URL = "https://www.tiktok.com/@permtracker";
 /** The brand's Crunchbase company page (Nov 9 2026): a structured-data profile only, no footer icon. */
 export const CRUNCHBASE_URL = "https://www.crunchbase.com/organization/perm-tracker";
 
@@ -71,7 +75,7 @@ export const FEATURE_REQUEST_URL = `mailto:${SUPPORT_EMAIL_ADDRESS}?subject=Feat
 export interface SocialLink {
   href: string;
   label: string;
-  icon: "twitter" | "linkedin" | "bluesky" | "youtube" | "facebook" | "instagram";
+  icon: "twitter" | "linkedin" | "bluesky" | "youtube" | "facebook" | "instagram" | "threads" | "tiktok";
 }
 
 /**
@@ -98,6 +102,8 @@ export const SOCIAL_LINKS = [
   { href: YOUTUBE_URL, label: "YouTube", icon: "youtube" },
   { href: FACEBOOK_URL, label: "Facebook", icon: "facebook" },
   { href: INSTAGRAM_URL, label: "Instagram", icon: "instagram" },
+  { href: THREADS_URL, label: "Threads", icon: "threads" },
+  { href: TIKTOK_URL, label: "TikTok", icon: "tiktok" },
 ] as const satisfies readonly SocialLink[];
 
 /**

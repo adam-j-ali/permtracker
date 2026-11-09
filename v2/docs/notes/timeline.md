@@ -2220,3 +2220,4 @@ Ledger with every finding: [`.planning/audit-2026-11-04.md`](.planning/audit-202
 - **Nov 8 2026 (late night):** the brand's X, Bluesky, YouTube and Facebook accounts join the LinkedIn page in the footer, on About and in the Organization `sameAs` (seven brand-owned profiles, none personal).
 - **Nov 9 2026 (1 AM):** the brand's Crunchbase page and Instagram account join the Organization `sameAs` (nine brand-owned profiles); Instagram joins the footer and About too.
 - **Nov 9 2026 (2 AM):** five gaps in the name masker closed (row kinds, "&", initials, accents, OSHA names, the signed-in case search), and an empty masking secret stops the build.
+- **Nov 9 2026 (2:40 AM):** the brand's Threads and TikTok accounts join the footer, About and the Organization `sameAs` (eleven brand-owned profiles).
