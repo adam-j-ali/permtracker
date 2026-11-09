@@ -246,9 +246,12 @@ export class PermTracker {
     while (base.endsWith("/")) base = base.slice(0, -1);
     this.base = base;
     this.timeoutMs = options.timeoutMs ?? 20_000;
-    const f = options.fetch ?? (globalThis.fetch as typeof fetch | undefined);
-    if (!f) throw new Error("No fetch here: pass one in the options, or use Node 18 or later.");
-    this.fetchImpl = f;
+    if (!options.fetch && typeof globalThis.fetch !== "function") {
+      throw new Error("No fetch here: pass one in the options, or use Node 18 or later.");
+    }
+    // Called as this.fetchImpl(...), the global fetch would get the client as `this`, which browsers and
+    // Cloudflare Workers refuse ("Illegal invocation"), so it's wrapped to keep its own receiver.
+    this.fetchImpl = options.fetch ?? ((input, init) => globalThis.fetch(input, init));
   }
 
   /** GET a /v1 path. Exposed for endpoints this version doesn't wrap yet. */
