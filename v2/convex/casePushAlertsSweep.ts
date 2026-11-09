@@ -81,6 +81,10 @@ export const sweep = internalAction({
 
     if (!vapidReady()) {
       log.error("VAPID keys not configured; push sweep sent nothing", { rows: rows.length });
+      // Every run sends nothing until the keys are set: the owner hears of it once a day.
+      if (await ctx.runMutation(internal.systemErrors.claimDailyAlarm, { key: "push.vapidMissing" })) {
+        await recordError(ctx, "action", "casePushAlerts.sweep", new Error("VAPID keys are not set, so no browser notification goes out"));
+      }
       return out;
     }
 
@@ -110,9 +114,6 @@ export const sweep = internalAction({
       }
       try {
         await webpush.sendNotification(JSON.parse(r.subscription), payload, { TTL: 24 * 60 * 60 });
-        out.sent++;
-        await ctx.runMutation(internal.casePushAlerts.markSeen, { id: r._id as Id<"caseStatusPushAlerts">, status: cur.status, close: cur.isFinal });
-        if (cur.isFinal) out.closed++;
       } catch (e: unknown) {
         const code = (e as { statusCode?: number }).statusCode;
         if (code === 404 || code === 410) {
@@ -124,6 +125,16 @@ export const sweep = internalAction({
           await ctx.runMutation(internal.casePushAlerts.bumpFailure, { id: r._id });
           await recordError(ctx, "action", "casePushAlerts.sweep.delivery", e).catch(() => undefined);
         }
+        continue;
+      }
+      // The push went. The claim already moved the row to the new status, so a failed record below leaves it
+      // there: the next run doesn't send it again.
+      out.sent++;
+      try {
+        await ctx.runMutation(internal.casePushAlerts.markSeen, { id: r._id as Id<"caseStatusPushAlerts">, status: cur.status, close: cur.isFinal });
+        if (cur.isFinal) out.closed++;
+      } catch (e: unknown) {
+        await recordError(ctx, "action", "casePushAlerts.sweep.markSeen", e).catch(() => undefined);
       }
     }
     log.info("push sweep", out);

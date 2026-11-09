@@ -13,7 +13,8 @@ import { internal } from "./_generated/api";
 // mutation + the ErrorSource TS type all share one closed-set definition without
 // importing a Convex function module into broad consumers.
 import { errorSourceValidator } from "./lib/errorRecording";
-import { MS_PER_HOUR } from "./lib/time";
+import { MS_PER_DAY, MS_PER_HOUR } from "./lib/time";
+import { checkAndRecordRateLimit } from "./lib/rateLimit";
 
 /** Admin emails about unresolved errors, at most, per rolling hour. */
 const ERROR_EMAILS_PER_HOUR = 5;
@@ -65,4 +66,15 @@ export const record = internalMutation({
 
     return errorId;
   },
+});
+
+/**
+ * True at most once a day per `key`: for a stop that repeats every run (a cap reached, a key not set), so the
+ * owner hears of it once a day instead of every run, and never not at all.
+ */
+export const claimDailyAlarm = internalMutation({
+  args: { key: v.string() },
+  returns: v.boolean(),
+  handler: async (ctx, { key }) =>
+    (await checkAndRecordRateLimit(ctx, "all", `alarm:${key}`, { limit: 1, windowMs: MS_PER_DAY })).allowed,
 });
