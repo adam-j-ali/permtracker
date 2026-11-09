@@ -55,7 +55,7 @@ export function JobDescriptionField({
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
             aria-expanded={isExpanded}
-            className="text-left after:absolute after:inset-0 focus-visible:outline-none"
+            className="text-left after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring"
           >
             Job description
           </button>

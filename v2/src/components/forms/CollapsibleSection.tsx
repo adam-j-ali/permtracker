@@ -61,7 +61,7 @@ export function CollapsibleSection({
               aria-expanded={isOpen}
               aria-controls={contentId}
               aria-describedby={statusInfo || (isComplete && summary) ? statusId : undefined}
-              className="text-left after:absolute after:inset-0 focus-visible:outline-none"
+              className="text-left after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring"
             >
               {title}
             </button>
