@@ -27,6 +27,7 @@ import { fetchMutation, fetchQuery } from 'convex/nextjs';
 import { api } from '@convex/_generated/api';
 import type { Doc, Id } from '@convex/_generated/dataModel';
 import { calculateRFIDueDate } from '@/lib/perm';
+import { captureError } from '@/lib/sentry';
 import { DATE_RANGE_METHODS } from '@convex/lib/perm/recruitment/methodCategories';
 import { formatCaseStatus, formatProgressStatus } from '@convex/lib/notificationHelpers';
 import type { PermissionLevel } from './tool-permissions';
@@ -249,13 +250,40 @@ function badId(label: string): Answer {
   };
 }
 
+/**
+ * The case, or null when it isn't there (deleted, or another account's). A read that fails throws: a network blip
+ * isn't a fact about the case, so callers say it couldn't be read rather than that it's gone or wasn't changed.
+ */
 async function readCase(caseId: string, token: string): Promise<CaseDoc | null> {
+  return (await fetchQuery(api.cases.get, { id: caseId as Id<'cases'> }, { token })) as CaseDoc | null;
+}
+
+/** A read that failed, told apart from a case that isn't there. */
+const UNREADABLE = Symbol('unreadable');
+type Unreadable = typeof UNREADABLE;
+
+/** The case, null when it isn't there, or UNREADABLE when the read failed (recorded). */
+async function readCaseOrUnreadable(caseId: string, token: string): Promise<CaseDoc | null | Unreadable> {
   try {
-    return (await fetchQuery(api.cases.get, { id: caseId as Id<'cases'> }, { token })) as CaseDoc | null;
-  } catch {
-    return null;
+    return await readCase(caseId, token);
+  } catch (error) {
+    captureError(error, { operation: 'ai.caseActions.readCase' });
+    return UNREADABLE;
   }
 }
+
+function unreadable(): Answer {
+  return {
+    kind: 'answer',
+    response: {
+      error: "The case couldn't be read just now, so nothing was changed.",
+      suggestion: 'Try again in a moment.',
+    },
+  };
+}
+
+/** After a change that ran: the case couldn't be read back to confirm it. */
+const NOT_CONFIRMED = "but the case couldn't be read back to confirm it. Open it to check.";
 
 function notFound(): Answer {
   return {
@@ -545,7 +573,8 @@ export function buildCaseUpdate(
 
 export async function prepareUpdateCase(params: UpdateCaseInput, token: string): Promise<Prepared> {
   if (!CONVEX_ID.test(params.caseId)) return badId('case');
-  const current = await readCase(params.caseId, token);
+  const current = await readCaseOrUnreadable(params.caseId, token);
+  if (current === UNREADABLE) return unreadable();
   if (!current) return notFound();
   if (params.caseStatus === 'closed' && !params.setStageByHand) {
     return {
@@ -657,9 +686,9 @@ function sameValue(a: unknown, b: unknown): boolean {
 
 async function runUpdateCase(args: Args, token: string): Promise<ActionOutcome> {
   const id = args.id as string;
-  const before = await readCase(id, token);
+  const before = await readCase(id, token).catch(() => null);
   await fetchMutation(api.cases.update, args as Parameters<typeof fetchMutation<typeof api.cases.update>>[1], { token });
-  const after = await readCase(id, token);
+  const after = await readCaseOrUnreadable(id, token).then((c) => (c === UNREADABLE ? null : c));
   if (!after) {
     const message = "The update ran, but the case couldn't be read back to confirm it. Open the case to check.";
     return { ok: false, result: { success: false, caseId: id, message }, summary: message };
@@ -814,7 +843,7 @@ export async function prepareCreateCase(params: CreateCaseInput, token: string):
 
 async function runCreateCase(args: Args, token: string): Promise<ActionOutcome> {
   const id = await fetchMutation(api.cases.create, args as Parameters<typeof fetchMutation<typeof api.cases.create>>[1], { token });
-  const after = await readCase(id, token);
+  const after = await readCaseOrUnreadable(id, token).then((c) => (c === UNREADABLE ? null : c));
   const label = after ? caseLabel(after) : String(args.employerName);
   const stage = after ? stageWords(after.caseStatus, after.progressStatus) : 'unknown';
   const message = `Created a case: ${label}. Stage: ${stage}.`;
@@ -831,7 +860,8 @@ async function runCreateCase(args: Args, token: string): Promise<ActionOutcome> 
 
 async function prepareArchiveCase(params: ArchiveCaseInput, token: string): Promise<Prepared> {
   if (!CONVEX_ID.test(params.caseId)) return badId('case');
-  const c = await readCase(params.caseId, token);
+  const c = await readCaseOrUnreadable(params.caseId, token);
+  if (c === UNREADABLE) return unreadable();
   if (!c) return notFound();
   if (c.caseStatus === 'closed') {
     return { kind: 'answer', response: { changed: false, message: `${caseLabel(c)} is already closed.` } };
@@ -852,7 +882,8 @@ async function prepareArchiveCase(params: ArchiveCaseInput, token: string): Prom
 
 async function prepareReopenCase(params: ReopenCaseInput, token: string): Promise<Prepared> {
   if (!CONVEX_ID.test(params.caseId)) return badId('case');
-  const c = await readCase(params.caseId, token);
+  const c = await readCaseOrUnreadable(params.caseId, token);
+  if (c === UNREADABLE) return unreadable();
   if (!c) return notFound();
   if (c.caseStatus !== 'closed') {
     return { kind: 'answer', response: { changed: false, message: `${caseLabel(c)} isn't closed. It's at ${stageWords(c.caseStatus, c.progressStatus)}.` } };
@@ -870,7 +901,8 @@ async function prepareReopenCase(params: ReopenCaseInput, token: string): Promis
 
 async function prepareDeleteCase(params: DeleteCaseInput, token: string): Promise<Prepared> {
   if (!CONVEX_ID.test(params.caseId)) return badId('case');
-  const c = await readCase(params.caseId, token);
+  const c = await readCaseOrUnreadable(params.caseId, token);
+  if (c === UNREADABLE) return unreadable();
   if (!c) return notFound();
   return {
     kind: 'plan',
@@ -891,7 +923,8 @@ async function prepareDeleteCase(params: DeleteCaseInput, token: string): Promis
 
 async function prepareCalendar(caseId: string, enable: boolean, token: string): Promise<Prepared> {
   if (!CONVEX_ID.test(caseId)) return badId('case');
-  const c = await readCase(caseId, token);
+  const c = await readCaseOrUnreadable(caseId, token);
+  if (c === UNREADABLE) return unreadable();
   if (!c) return notFound();
   if (enable) {
     const profile = await fetchQuery(api.users.currentUserProfile, {}, { token }).catch(() => null);
@@ -1255,7 +1288,10 @@ export async function runAction(toolName: string, args: Args, token: string): Pr
       );
       const verb = args.status === 'closed' ? 'Closed' : 'Changed';
       if (toolName === 'archiveCase') {
-        const after = await readCase(ids[0]!, token);
+        const after = await readCaseOrUnreadable(ids[0]!, token);
+        if (after === UNREADABLE) {
+          return outcome(r.failedCount === 0, `The case was closed, ${NOT_CONFIRMED}`, { caseId: ids[0], action: 'case_closed' });
+        }
         const ok = after?.caseStatus === 'closed';
         return outcome(ok, ok ? `Closed ${caseLabel(after!)}. It can be reopened.` : "The case wasn't closed. Open it to check.", {
           caseId: ids[0],
@@ -1275,14 +1311,19 @@ export async function runAction(toolName: string, args: Args, token: string): Pr
     }
     case 'reopenCase': {
       const r = await fetchMutation(api.cases.reopenCase, { id: args.id as Id<'cases'> }, { token });
-      const after = await readCase(String(args.id), token);
+      const after = await readCase(String(args.id), token).catch(() => null);
       const stage = stageWords(r.newCaseStatus, r.newProgressStatus);
       return outcome(true, `Reopened ${after ? caseLabel(after) : 'the case'} at ${stage}.`, { caseId: args.id, action: 'reopened', stage });
     }
     case 'deleteCase': {
-      const before = await readCase(String(args.id), token);
+      const before = await readCase(String(args.id), token).catch(() => null);
       await fetchMutation(api.cases.remove, { id: args.id as Id<'cases'> }, { token });
-      const gone = (await readCase(String(args.id), token)) === null;
+      const after = await readCaseOrUnreadable(String(args.id), token);
+      if (after === UNREADABLE) {
+        // The delete ran (it throws when it fails); only the check that it's gone couldn't be made.
+        return outcome(true, `The delete ran, ${NOT_CONFIRMED}`, { caseId: args.id, action: 'permanently_deleted' });
+      }
+      const gone = after === null;
       return outcome(gone, gone ? `Deleted ${before ? caseLabel(before) : 'the case'} for good.` : "The case wasn't deleted.", {
         caseId: args.id,
         action: 'permanently_deleted',
@@ -1292,8 +1333,15 @@ export async function runAction(toolName: string, args: Args, token: string): Pr
     case 'unsyncFromCalendar': {
       const enable = toolName === 'syncToCalendar';
       await fetchMutation(enable ? api.cases.enableCalendarSync : api.cases.disableCalendarSync, { id: args.id as Id<'cases'> }, { token });
-      const after = await readCase(String(args.id), token);
-      const ok = Boolean(after?.calendarSyncEnabled) === enable;
+      const read = await readCaseOrUnreadable(String(args.id), token);
+      if (read === UNREADABLE) {
+        return outcome(true, `Calendar sync was turned ${enable ? 'on' : 'off'}, ${NOT_CONFIRMED}`, {
+          caseId: args.id,
+          action: enable ? 'calendar_sync_enabled' : 'calendar_sync_disabled',
+        });
+      }
+      const after = read;
+      const ok = after !== null && Boolean(after.calendarSyncEnabled) === enable;
       return outcome(
         ok,
         ok
