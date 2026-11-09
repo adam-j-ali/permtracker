@@ -11,6 +11,7 @@ import type { SortColumn, SortState } from "@/lib/tableSort";
 import type { CaseChange } from "@/lib/db/changes";
 import { PROGRAM_LABEL } from "@/lib/changeProgram";
 import { entityHref } from "@/lib/entityPayload";
+import { ScrollBox } from "@/components/ui/scroll-box";
 
 /**
  * Every column this table sorts on. Exported because the browser above needs
@@ -59,7 +60,7 @@ export function ChangeTable({
   sortable?: boolean;
 }) {
   return (
-    <div className="mt-4 overflow-x-auto">
+    <ScrollBox label={caption} className="mt-4">
       <table className="w-full min-w-[1040px] border-collapse text-left text-base">
         <caption className="sr-only">{caption}</caption>
         <SortableHeader
@@ -121,7 +122,7 @@ export function ChangeTable({
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollBox>
   );
 }
 

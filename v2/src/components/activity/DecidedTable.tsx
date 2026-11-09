@@ -15,6 +15,7 @@ import { comparableWage } from "@/lib/wageFormat";
 import { CaseStatusChip } from "@/components/ui/badge";
 import { entityHref } from "@/lib/entityPayload";
 import { Pagination } from "@/components/ui/pagination";
+import { ScrollBox } from "@/components/ui/scroll-box";
 
 /**
  * A wage, with the period DOL quoted it per.
@@ -105,7 +106,8 @@ export function DecidedTable({
   const slice = rows.slice((page - 1) * DECIDED_PER_PAGE, page * DECIDED_PER_PAGE);
   return (
     <>
-    <div ref={top} className="mt-4 scroll-mt-28 overflow-x-auto">
+    <div ref={top} className="mt-4 scroll-mt-28">
+    <ScrollBox label={caption}>
       <table className="w-full min-w-[1720px] border-collapse text-left text-base">
         <caption className="sr-only">{caption}</caption>
         <SortableHeader
@@ -182,6 +184,7 @@ export function DecidedTable({
           ))}
         </tbody>
       </table>
+    </ScrollBox>
     </div>{" "}
     {pageCount > 1 ? (
       <Pagination

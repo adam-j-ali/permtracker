@@ -7,6 +7,7 @@ import { shortDate } from "@convex/lib/months";
 import { CASE_STATUS_FILL, caseStatusTint } from "@/lib/statusTone";
 
 import { YearBars, fillYears } from "./YearBars";
+import { ScrollBox } from "@/components/ui/scroll-box";
 
 /**
  * An employer's PERM record by fiscal year, FY2008 onward (the shared
@@ -98,7 +99,7 @@ const SHOWN_CASES = 8;
 
 function CaseTable({ cases, head = true }: { cases: HistoryCase[]; head?: boolean }) {
   return (
-    <div className="mt-4 overflow-x-auto">
+    <ScrollBox label={head ? "Cases decided in FY2016 to FY2023" : "The other cases decided in FY2016 to FY2023"} className="mt-4">
       {/* Fixed columns, so the folded rows line up under the shown ones. */}
       <table className="w-full min-w-[44rem] table-fixed border-collapse text-left text-sm tabular-nums">
         <colgroup>
@@ -145,6 +146,6 @@ function CaseTable({ cases, head = true }: { cases: HistoryCase[]; head?: boolea
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollBox>
   );
 }
