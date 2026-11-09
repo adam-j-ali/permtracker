@@ -503,7 +503,7 @@ export function EntityDataGap({
           {backLabel}
         </Link>
         . The source files are on{" "}
-        <a
+        <a target="_blank"
           href="https://www.dol.gov/agencies/eta/foreign-labor/performance"
           className="link"
           rel="noopener noreferrer"

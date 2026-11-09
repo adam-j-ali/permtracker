@@ -11,7 +11,7 @@ export function FromDolLive({ className }: { className?: string }) {
   return (
     <p className={cn("mt-4 border-t-2 border-border pt-3 text-sm text-muted-foreground", className)}>
       Source: DOL&apos;s case-status service,{" "}
-      <a href={DOL_CASE_STATUS_URL} className="link">
+      <a target="_blank" rel="noopener noreferrer" href={DOL_CASE_STATUS_URL} className="link">
         flag.dol.gov
       </a>
       , where any of these numbers can be looked up.

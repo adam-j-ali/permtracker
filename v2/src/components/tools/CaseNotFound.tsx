@@ -106,7 +106,7 @@ export function CaseNotFound({
             Try again
           </a>{" "}
           or use{" "}
-          <a href={DOL_CASE_STATUS_URL} rel="noopener noreferrer" className="link">
+          <a target="_blank" href={DOL_CASE_STATUS_URL} rel="noopener noreferrer" className="link">
             DOL&apos;s own case-status search
           </a>
           .
@@ -136,7 +136,7 @@ export function CaseNotFound({
         hasn&apos;t got it, and{" "}
         {/* THE CASE-STATUS SEARCH, NOT THE PROCESSING-TIMES PAGE: the link says
             DOL's own system is the authority on THIS NUMBER. */}
-        <a href={DOL_CASE_STATUS_URL} rel="noopener noreferrer" className="link">
+        <a target="_blank" href={DOL_CASE_STATUS_URL} rel="noopener noreferrer" className="link">
           DOL&apos;s own case-status search
         </a>{" "}
         is the authority either way.

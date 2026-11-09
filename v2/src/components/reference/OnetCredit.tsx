@@ -35,12 +35,12 @@ function FullCredit({ version, note, className }: { version?: string | null; not
   return (
     <p className={cn("max-w-3xl text-sm leading-relaxed text-muted-foreground", className)}>
       This section includes information from the{" "}
-      <a href="https://www.onetcenter.org/database.html" className="link" rel="noopener">
+      <a target="_blank" href="https://www.onetcenter.org/database.html" className="link" rel="noopener">
         {`O*NET${version ? ` ${version}` : ""} Database`}
       </a>{" "}
       and O*NET OnLine by the U.S. Department of Labor, Employment and Training Administration (USDOL/ETA), used under
       the{" "}
-      <a href="https://creativecommons.org/licenses/by/4.0/" className="link" rel="noopener license">
+      <a target="_blank" href="https://creativecommons.org/licenses/by/4.0/" className="link" rel="noopener license">
         CC BY 4.0 license
       </a>
       . O*NET® is a trademark of USDOL/ETA. PERM Tracker has modified some of this information ({note});{" "}

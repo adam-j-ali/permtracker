@@ -123,7 +123,7 @@ export function SeasonalTimingPanel({
       {share !== null && view.ruleDay ? (
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-soft">
           The rule has DOL decide by {day(view.ruleDay)}, 30 days before the work (
-          <a href="https://www.ecfr.gov/current/title-20/chapter-V/part-655/section-655.160" className="link" rel="noopener">
+          <a target="_blank" href="https://www.ecfr.gov/current/title-20/chapter-V/part-655/section-655.160" className="link" rel="noopener">
             20 CFR 655.160
           </a>
           ), unless the application was modified. {share}% of the certifications met it.
@@ -139,7 +139,7 @@ export function SeasonalTimingPanel({
         <p className="mt-4 text-sm text-muted-foreground">
           From DOL&apos;s {view.group.season} H-2B assignment-group list, which puts the applications filed in the
           season&apos;s first three days in groups by lottery and works them in order (
-          <a href="https://www.federalregister.gov/documents/2019/03/04/2019-03809/selection-procedures-for-reviewing-applications-filed-by-employers-seeking-temporary-employment-of" className="link" rel="noopener">
+          <a target="_blank" href="https://www.federalregister.gov/documents/2019/03/04/2019-03809/selection-procedures-for-reviewing-applications-filed-by-employers-seeking-temporary-employment-of" className="link" rel="noopener">
             84 FR 7399
           </a>
           ), and DOL&apos;s decisions on the {view.group.previous} groups. It&apos;s an estimate from past cases. It isn&apos;t a promise.

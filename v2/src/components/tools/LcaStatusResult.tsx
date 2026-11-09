@@ -136,7 +136,7 @@ export async function LcaLookup({ caseNumber }: { caseNumber: string }) {
         }
       >
         DOL&apos;s case system answered and holds nothing under this number. Check it on{" "}
-        <a href="https://flag.dol.gov/case-status-search" className="link" rel="noopener">
+        <a target="_blank" href="https://flag.dol.gov/case-status-search" className="link" rel="noopener">
           DOL&apos;s case status page
         </a>
         , or find it by employer on the{" "}

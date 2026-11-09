@@ -56,7 +56,7 @@ export function H1bLotteryHistory({ years, className }: { years: LotteryYear[] |
       <p className="mt-3 text-sm text-muted-foreground">
         Green: selected. Yellow: not selected. From USCIS&apos;s registration records, obtained by Bloomberg News under
         FOIA and{" "}
-        <a href={SOURCE} rel="noopener noreferrer" className="link">
+        <a target="_blank" href={SOURCE} rel="noopener noreferrer" className="link">
           published by Bloomberg
         </a>{" "}
         (Apache-2.0). USCIS queried them in May 2024, and each year matches USCIS&apos;s own registration totals. Matched by

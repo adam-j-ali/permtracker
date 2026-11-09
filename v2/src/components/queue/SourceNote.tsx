@@ -30,7 +30,7 @@ export function SourceNote({ className, compact = false }: { className?: string;
   const where = (
     <p>
       Anything undecided here is read from{" "}
-      <a href={DOL_CASE_STATUS_URL} rel="noopener">
+      <a target="_blank" href={DOL_CASE_STATUS_URL} rel="noopener">
         DOL&rsquo;s own case-status search
       </a>
       , in batches: every case daily, and the undecided ones at least twice
