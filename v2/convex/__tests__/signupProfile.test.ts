@@ -18,7 +18,7 @@ vi.mock("@convex-dev/auth/providers/Password", () => ({
 vi.mock("@convex-dev/auth/server", () => ({
   convexAuth: () => ({ auth: {}, signIn: {}, signOut: {}, store: {}, isAuthenticated: {} }),
 }));
-vi.mock("@auth/core/providers/google", () => ({ default: { id: "google" } }));
+vi.mock("@auth/core/providers/google", () => ({ default: (options: unknown) => ({ id: "google", options }) }));
 vi.mock("../ResendOTP", () => ({ ResendOTP: {} }));
 vi.mock("../ResendPasswordReset", () => ({ ResendPasswordReset: {} }));
 
