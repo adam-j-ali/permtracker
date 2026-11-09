@@ -74,6 +74,8 @@ function FAQAccordionItem({ item, isOpen, onToggle, index }: FAQAccordionItemPro
         id={contentId}
         role="region"
         aria-labelledby={headerId}
+        // Folded by height and opacity only, so a closed answer's links would still take focus unseen.
+        inert={!isOpen}
         className={cn(
           "grid transition-colors duration-300 ease-out",
           isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
