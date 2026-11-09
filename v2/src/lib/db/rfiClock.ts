@@ -24,7 +24,7 @@ export async function rfiEnteredOn(caseNumber: string): Promise<string | null> {
     `SELECT MAX(changed_at) AS at FROM perm_case_events
       WHERE case_number = ? AND to_status = 'RFI ISSUED' AND from_status <> 'RFI ISSUED' AND source = ?`,
     [caseNumber.trim().toUpperCase(), DIRECT_EVENT_SOURCE],
-  ).catch(() => null);
+  ).catch(softFail("rfiClock.rfiEnteredOn", null));
   if (!r || r.at === null || r.at === undefined) return null;
   const ms = Number(r.at);
   if (!Number.isFinite(ms)) return null;

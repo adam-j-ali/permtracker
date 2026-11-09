@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { MS_PER_DAY } from "@/lib/time";
 import { one } from "./client";
+import { softFail } from "@/lib/softRead";
 
 /**
  * When our DOL sweep last finished, and how much of the corpus it answered.
@@ -33,7 +34,7 @@ export const getSweepCoverage = cache(async (): Promise<SweepCoverage | null> =>
   const r = await one<{ json: string; computed_at: number | string }>(
     "SELECT json, computed_at FROM perm_docs WHERE key = ?",
     ["sweep_coverage"],
-  ).catch(() => null);
+  ).catch(softFail("sweepCoverage.one", null));
   if (!r) return null;
   const computedAt = Number(r.computed_at);
   if (!Number.isFinite(computedAt) || Date.now() - computedAt > MAX_AGE_MS) return null;

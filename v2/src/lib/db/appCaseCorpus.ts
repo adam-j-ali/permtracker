@@ -59,7 +59,7 @@ export interface AppCaseCorpus {
 export async function getAppCaseCorpus(): Promise<AppCaseCorpus> {
   const [backlog, estimator, decisionPace, sweep, stragglers, rangeCoverage, rfiClock, byDay, stageStats, pwdDay] =
     await Promise.all([
-      getLiveBacklog().catch((): LiveCohortMonth[] => []),
+      getLiveBacklog().catch(softFail("appCaseCorpus.getLiveBacklog", [] as LiveCohortMonth[])),
       getEstimatorData().catch(softFail("appCaseCorpus.getEstimatorData", null)),
       getDecisionPace().catch(softFail("appCaseCorpus.getDecisionPace", null)),
       getSweepCoverage().catch(softFail("appCaseCorpus.getSweepCoverage", null)),

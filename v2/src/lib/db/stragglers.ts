@@ -4,6 +4,7 @@ import { cache } from "react";
 
 import { parseStragglerRates, type StragglerRates } from "@/lib/stragglerRates";
 import { one } from "./client";
+import { softFail } from "@/lib/softRead";
 
 /**
  * How fast DOL is deciding the in-line cases its queue has already passed,
@@ -14,6 +15,6 @@ import { one } from "./client";
 export const getStragglerRates = cache(async (): Promise<StragglerRates | null> => {
   const r = await one<{ json: string }>(
     "SELECT json FROM perm_docs WHERE key = 'straggler_rates'",
-  ).catch(() => null);
+  ).catch(softFail("stragglers.one", null));
   return r ? parseStragglerRates(r.json, new Date().toISOString().slice(0, 10)) : null;
 });

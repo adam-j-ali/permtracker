@@ -5,6 +5,7 @@ import { cache } from "react";
 import type { RangeCoverage } from "@/lib/perm";
 import { parseRangeCoverage } from "@/lib/rangeCoverage";
 import { one } from "./client";
+import { softFail } from "@/lib/softRead";
 
 /**
  * How often the printed pace range has held, from the nightly backtest's stored
@@ -16,7 +17,7 @@ import { one } from "./client";
 export const getRangeCoverage = cache(async (): Promise<RangeCoverage | null> => {
   const r = await one<{ json: string }>(
     "SELECT json FROM perm_docs WHERE key = 'estimator_backtest'",
-  ).catch(() => null);
+  ).catch(softFail("rangeCoverage.one", null));
   if (!r) return null;
   return parseRangeCoverage(r.json);
 });

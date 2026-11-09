@@ -5,6 +5,7 @@ import { cache } from "react";
 import { MS_PER_DAY } from "@/lib/time";
 
 import { one } from "./client";
+import { softFail } from "@/lib/softRead";
 import type { StageStats } from "@/lib/stageStatsShape";
 
 /**
@@ -43,7 +44,7 @@ const MAX_AGE_DAYS = 14;
 export const getStageStats = cache(async (): Promise<StageStats | null> => {
   const row = await one<{ json: string; computed_at: number }>(
     "SELECT json, computed_at FROM perm_docs WHERE key = 'stage_stats'",
-  ).catch(() => null);
+  ).catch(softFail("stageStats.one", null));
   if (!row?.json) return null;
   const ageDays = (Date.now() - Number(row.computed_at ?? 0)) / MS_PER_DAY;
   if (!Number.isFinite(ageDays) || ageDays > MAX_AGE_DAYS) return null;
