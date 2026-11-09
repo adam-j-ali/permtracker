@@ -42,6 +42,8 @@ export const BLUESKY_URL = "https://bsky.app/profile/permtracker.app";
 export const YOUTUBE_URL = "https://www.youtube.com/@permtracker";
 /** The brand's Facebook Page (Nov 8 2026): a Page, never a person's profile. */
 export const FACEBOOK_URL = "https://www.facebook.com/permtracker";
+/** The brand's Crunchbase company page (Nov 9 2026): a structured-data profile only, no footer icon. */
+export const CRUNCHBASE_URL = "https://www.crunchbase.com/organization/perm-tracker";
 
 /**
  * Where people leave a review of the site: the form on /reviews (since Oct 23 2026; Senja's hosted form before,
