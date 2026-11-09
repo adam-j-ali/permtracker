@@ -93,11 +93,14 @@ export function RfiJourney({
   stats,
   clock,
   observed = [],
+  narrow = false,
 }: {
   stats: StageStats | null;
   clock: RfiClock | null;
   /** Every PERM case our sweep saw end, a day each: the comparison for the RFI cases. */
   observed?: readonly ActivityDay[];
+  /** Inside an article's text column: two tiles across at most, never four. */
+  narrow?: boolean;
 }) {
   const path = parseRfiPath(stats?.rfiPath);
   const decided = path ? sumOutcomes(path.decided) : 0;
@@ -136,7 +139,7 @@ export function RfiJourney({
 
   return (
     <div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
+      <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${narrow ? "" : "lg:grid-cols-4"} [&>*]:min-w-0`}>
         {path ? (
           <Figure label="RFIs we watched DOL issue" value={int(path.entered)}>
             {int(path.inRfi)} waiting on the reply, {int(path.repliedWaiting)} replied and back in review,{" "}
@@ -145,7 +148,7 @@ export function RfiJourney({
         ) : null}{" "}
         {clock ? (
           <Figure label="Time to reply" value={`${clock.leaveDays.p50} days`}>
-            Half of the RFIs left RFI status by day {clock.leaveDays.p50}: DOL gives the employer 30 days to answer.
+            Half of the RFIs left RFI status by day {clock.leaveDays.p50}. The letter sets the date, and DOL usually gives 30 days.
           </Figure>
         ) : null}{" "}
         {clock ? (

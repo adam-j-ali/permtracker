@@ -24,6 +24,7 @@ import { EbSplitNow } from "@/components/content/EbSplitNow";
 import { JourneyNow } from "@/components/content/JourneyNow";
 import { QuarterName, QuarterNow } from "@/components/content/QuarterNow";
 import { OnHoldNow } from "@/components/content/OnHoldNow";
+import { RfiJourneyNow } from "@/components/content/RfiJourneyNow";
 import { DolNow } from "@/components/content/DolNow";
 import { RecruitmentNow } from "@/components/content/RecruitmentNow";
 import { BulletinReleaseNow } from "@/components/content/BulletinReleaseNow";
@@ -199,6 +200,8 @@ export const mdxComponents: MDXComponents = {
   QueueFigure,
   // An RFI as a siding off DOL's line, run forward on the measured RFI clock (an async server component).
   RfiFigure,
+  // The RFI page's step-by-step figures, today's values with their counts (an async server component).
+  RfiJourneyNow,
   // A visa bulletin cutoff as a gate on a rail of priority dates, stepped through one line's real bulletins (an async server component).
   BulletinFigure,
   // DOL's wage-request line as a conveyor, run forward in DOL's working days (an async server component).

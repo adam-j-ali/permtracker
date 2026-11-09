@@ -1,0 +1,105 @@
+---
+title: "PERM RFI response time and what happens next"
+description: "Measured from DOL's case status: how long PERM cases stay at RFI ISSUED, how soon DOL decides once a case is back in review and how many end certified."
+date: "2026-11-09"
+author: "PERM Tracker data desk"
+image: "/images/content/heroes/guides/perm-rfi-response-time.webp"
+imageAlt: "A thick stack of papers held in a ring binder, seen edge on, with a few blue, green and yellow sheets among the white"
+imageCredit: "Photo: Niklas Bildhauer / Wikimedia Commons, CC BY-SA 2.0"
+tags: ["perm", "rfi", "case-status", "processing-times", "dol", "data"]
+category: "queue"
+seoTitle: "PERM RFI Response Time and What Comes Next"
+seoDescription: "How long PERM cases sit at RFI ISSUED, how long DOL takes to decide after the reply, and the share certified, measured from DOL's case status each day."
+published: true
+---
+
+RFI ISSUED on a PERM case means DOL's analyst has asked the employer a question before deciding, and the case has left the ordinary line. RFI stands for request for information. This guide covers the clock that follows: how long cases stay at that status, how soon DOL decides once they're back in review, and how many end certified. PERM Tracker's free [RFI and audit page](/perm-rfi-audit) measures all three from its daily check of every pending PERM case, counting each RFI from the day it appeared.
+
+For what the status means and what to do while it's open, read [what to do when your PERM status says RFI issued](/guides/perm-rfi-issued-what-to-do). This guide sticks to the timing.
+
+## DOL publishes no RFI timing
+
+DOL's [processing times page](https://flag.dol.gov/processingtimes) publishes PERM averages for one queue only: analyst review, the ordinary line of cases waiting for an analyst. Its latest reads <DolNow show="average" />. DOL leaves out the averages for its other queues, naming audits and supervised recruitment, because those cases are a small share of the PERM workload. RFIs get no figure of their own.
+
+The rule behind an RFI sets no time either. [20 CFR 656.20(d)](https://www.ecfr.gov/current/title-20/chapter-V/part-656/subpart-C/section-656.20) says only that before a final determination "the Certifying Officer may: (1) Request supplemental information and/or documentation". The date for the reply is on the letter, and the RFI issued guide explains [where that deadline comes from](/guides/perm-rfi-issued-what-to-do#where-the-deadline-comes-from).
+
+So the public way to time an RFI is to watch DOL's own case status, case by case.
+
+## What the record measures
+
+Every day the site reads the status of every pending PERM case from DOL's case-status service. Each change goes into a log with its day. That lets the record see an RFI begin, see it end and see DOL decide the case.
+
+It counts only the RFIs it saw from their first day. An RFI that was already open when the record began is left out, because its start isn't known.
+
+Three measurements come out of that log. Each day in them is the day the site's check saw the change.
+
+| What's measured | Counted from | Counted to |
+|---|---|---|
+| Days at RFI | The day the status changed to RFI ISSUED | The day the status changed again |
+| Days to a decision after | The day the case went back to a pending status | The day DOL decided it |
+| How the RFIs ended | Every RFI the record saw decided | Its outcome: certified, withdrawn or denied |
+
+These are today's figures for all three, with the counts behind them, from the [step-by-step section of the RFI page](/perm-rfi-audit#step-by-step).
+
+<RfiJourneyNow />
+
+## How long a case stays at RFI
+
+The first figure is the nearest the public record comes to a response time, with one caution. DOL's status doesn't record the day the employer's answer went in. It changes when DOL moves the case. So the days at RFI measure how long the case held that status, and a reply sent in the first week looks the same as one sent on the last day.
+
+The letter sets the response window, so this figure tracks those windows more than the speed of any reply. The same page shows where cases went when they left RFI, in its chart of where each step leads. Some go back to analyst review and some go straight to a decision.
+
+## How soon DOL decides after an RFI
+
+The second figure starts when the case leaves RFI for a pending status and ends at DOL's decision. The page gives the day by which half were decided, and the day by which three in four were. Both are taken over every case the record has watched long enough, the undecided ones included, so the slow cases still count.
+
+The [case lookup](/perm-case-status) uses the first two figures to date a case that's at RFI. It starts from the day its check saw the RFI appear. It adds the typical days at RFI and the typical days to a decision after, and it puts a range around the result.
+
+The range's late end is the day by which 9 in 10 of the RFIs the record followed were decided after leaving RFI. Until the record has followed enough cases that long, the late end is an immigration attorney's estimate, and the case page says which one it's using. Once enough of those dates have come due, the case page also says how far off they've been.
+
+## How RFIs end
+
+The third figure sorts the decided RFIs by outcome, in two cuts. One covers every RFI the record saw decided. The other covers only the cases DOL decided after they went back to review with the reply in. Beside them, the page sets the certified share for every PERM case that ended over the same weeks.
+
+Read those shares with two cautions:
+
+- They count cases decided so far. The slow cases are still open, and their outcomes aren't in the shares yet, so the shares will move.
+- They describe a group. A share certified says nothing certain about any one case.
+
+The page also carries a separate outcome tally under "What happens after an RFI". It covers a different set of cases, so its figures won't match these, and the page says so.
+
+## Reading the clock on your own case
+
+Start from the day the RFI appeared and the date on the letter. Then watch for the move out of RFI, and ask the attorney once the range has passed.
+
+<StepByStep>
+<Step number={1} title="Find the day the RFI appeared">
+Look the case up in the [case lookup](/perm-case-status). For a case at RFI ISSUED, the estimate names the day the site's daily check saw DOL issue it.
+</Step>
+<Step number={2} title="Set it beside the letter">
+The attorney has the letter. Its date, and the date it sets for the reply, are what count for the answer. The day the status changed is what the site's timing counts from.
+</Step>
+<Step number={3} title="Watch for the move out of RFI">
+When the status leaves RFI, the second clock starts. The lookup can email you the day the status changes.
+</Step>
+<Step number={4} title="Past the range, ask the attorney">
+A case still waiting after the range's late end is among the slowest the record has seen. A different date on the letter, an extension or a second request would each explain it, and only the attorney can see which.
+</Step>
+</StepByStep>
+
+The [open RFIs](/perm-rfi-audit/rfi-issued) are listed case by case, with the filing months they come from.
+
+## What this can't tell you
+
+- The day the employer replied. DOL's status doesn't record it.
+- The reason DOL asked, or what the letter says. Only the letter has that.
+- Whether your case will be certified. The shares cover cases already decided.
+- Audit timing. An audit is a different status, PENDING AUDIT RESPONSE, with its own rule. [656.20(a)(2)](https://www.ecfr.gov/current/title-20/chapter-V/part-656/subpart-C/section-656.20) gives the employer a date "30 days from the date of the audit letter" to send the documents. The [audit stage page](/perm-rfi-audit/pending-audit-response) lists those cases.
+- What you should do. Nothing here is legal advice.
+
+## Related
+
+- [PERM status says RFI issued: what it means and what to do](/guides/perm-rfi-issued-what-to-do)
+- [Every case status, explained](/perm-case-statuses#rfi-issued)
+- [Why DOL's average wait isn't your wait](/guides/dol-average-vs-your-wait)
+- [How accurate are PERM estimates](/guides/how-accurate-are-perm-estimates)
