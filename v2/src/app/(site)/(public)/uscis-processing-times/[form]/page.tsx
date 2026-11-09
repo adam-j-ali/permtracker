@@ -306,7 +306,10 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
       ) : null}{" "}
       <PageSection id="next" title="Where to go next">
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {page.links.map((l) => (
+          {[
+            { href: `/tools/uscis-case-inquiry?form=${encodeURIComponent(page.form)}`, label: `Your own ${page.form} on the calendar, and the day you can ask USCIS` },
+            ...page.links,
+          ].map((l) => (
             <Fragment key={l.href}>
               <li>
                 <Link href={l.href} className="object flex min-h-[44px] items-center p-4 font-semibold hover:bg-tint">

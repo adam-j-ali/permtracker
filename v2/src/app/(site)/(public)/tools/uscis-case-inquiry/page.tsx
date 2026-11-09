@@ -4,6 +4,7 @@ import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { FaqList } from "@/components/tools/FaqList";
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
 import { UscisCaseTimeline, type InquiryRow } from "@/components/tools/UscisCaseTimeline";
+import { SearchParamsBoundary } from "@/hooks/useUrlSearchParams";
 import { getUscisPosted } from "@/lib/db/uscisPosted";
 import { getUscisFormQuarter } from "@/lib/db/uscisQuarterly";
 import { openGraphBase } from "@/lib/openGraphBase";
@@ -107,7 +108,9 @@ export default async function UscisCaseInquiryPage() {
       </header>
       <section data-embed="uscis-case-inquiry" className="mt-10">
         {rows.length > 0 && posted ? (
-          <UscisCaseTimeline rows={rows} published={posted.published} formNames={formNames} />
+          <SearchParamsBoundary>
+            <UscisCaseTimeline rows={rows} published={posted.published} formNames={formNames} />
+          </SearchParamsBoundary>
         ) : (
           <p className="object p-5 text-base leading-relaxed sm:p-8">
             USCIS&apos;s posted times aren&apos;t on file at the moment, so this page can&apos;t date a case. USCIS&apos;s own{" "}
