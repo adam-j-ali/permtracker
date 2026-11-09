@@ -67,6 +67,22 @@ describe("unconfirmed case-alert sign-ups", () => {
     const left = await t.run(async (ctx) => (await ctx.db.query("caseStatusAlerts").collect()).map((r) => r.email));
     expect(left).toEqual(["yes@example.com"]);
   });
+
+  it("never reschedules itself over young sign-ups it can't delete yet", async () => {
+    // More than a run reads, all inside the horizon: rescheduling on them would read the same rows forever.
+    const t = createTestContext();
+    await t.run(async (ctx) => {
+      for (let i = 0; i < 2_001; i++) {
+        await ctx.db.insert("caseStatusAlerts", { caseNumber: "G-100-25324-425560", email: `n${i}@example.com`, createdAt: Date.now() });
+      }
+    });
+    const res = await t.mutation(internal.retention.pruneOperationalLogs, { now: Date.now() });
+    expect(res.unconfirmedCaseAlerts).toBe(0);
+    const again = await t.run(async (ctx) =>
+      (await ctx.db.system.query("_scheduled_functions").collect()).filter((j) => j.name.includes("pruneOperationalLogs")),
+    );
+    expect(again).toEqual([]);
+  }, 120_000);
 });
 
 describe("unconfirmed queue, bulletin and employer sign-ups", () => {
@@ -95,6 +111,26 @@ describe("unconfirmed queue, bulletin and employer sign-ups", () => {
     ].map((r) => r.email).sort());
     expect(left).toEqual(["b-stopped@example.com", "e-yes@example.com", "q-new@example.com", "q-yes@example.com"]);
   });
+
+  it("reach an unconfirmed sign-up behind more confirmed ones than a run reads", async () => {
+    // Confirmed rows are never deleted, so a read of the oldest rows would stop on them every day.
+    const t = createTestContext();
+    const { UNCONFIRMED_CASE_ALERT_DAYS } = await import("../retention");
+    const now = Date.now();
+    const old = now - (UNCONFIRMED_CASE_ALERT_DAYS + 1) * DAY;
+    await t.run(async (ctx) => {
+      for (let i = 0; i < 2_001; i++) {
+        await ctx.db.insert("dolQueueAlerts", { email: `q${i}@example.com`, filingMonth: "2026-01", createdAt: old - 1, confirmedAt: old });
+      }
+      await ctx.db.insert("dolQueueAlerts", { email: "q-never@example.com", filingMonth: "2026-01", createdAt: old });
+    });
+    const res = await t.mutation(internal.retention.pruneOperationalLogs, { now });
+    expect(res.unconfirmedOtherAlerts).toBe(1);
+    const never = await t.run(async (ctx) =>
+      ctx.db.query("dolQueueAlerts").withIndex("by_email", (q) => q.eq("email", "q-never@example.com")).first(),
+    );
+    expect(never).toBeNull();
+  }, 120_000);
 });
 
 describe("tool cache cleanup", () => {

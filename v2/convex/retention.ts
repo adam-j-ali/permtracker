@@ -93,7 +93,10 @@ export const pruneOperationalLogs = internalMutation({
       if (old.length > BATCH) more = true;
     }
     // Never-checked live rows lead the sweep's index; the unconfirmed ones
-    // among them past the horizon go.
+    // among them past the horizon go. Equal index keys come in creation order,
+    // so the first row inside the horizon ends the read: every row after it is
+    // younger. A run reschedules only when it deleted something, so rows it
+    // can't delete (confirmed, waiting for their first check) never spin it.
     const staleBefore = now - UNCONFIRMED_CASE_ALERT_DAYS * MS_PER_DAY;
     let looked = 0;
     for await (const row of ctx.db
@@ -101,11 +104,12 @@ export const pruneOperationalLogs = internalMutation({
       .withIndex("by_alert_sweep", (q) =>
         q.eq("unsubscribedAt", undefined).eq("caseClosedAt", undefined).eq("lastCheckedAt", undefined),
       )) {
+      if (row._creationTime >= staleBefore) break;
       if (++looked > BATCH * 4) {
-        more = true;
+        if (out.unconfirmedCaseAlerts > 0) more = true;
         break;
       }
-      if (row.confirmedAt !== undefined || row._creationTime >= staleBefore) continue;
+      if (row.confirmedAt !== undefined) continue;
       await ctx.db.delete(row._id);
       if (++out.unconfirmedCaseAlerts >= BATCH) {
         more = true;
@@ -113,15 +117,20 @@ export const pruneOperationalLogs = internalMutation({
       }
     }
     // The queue, bulletin and employer sign-ups nobody confirmed go on the same horizon (audit, Nov 4 2026:
-    // they had been kept for good). These tables hold hundreds of rows, so a run reads at most
-    // OTHER_ALERTS_LOOK of the oldest; a run that stops on that limit doesn't reschedule (it would read the
-    // same confirmed rows again), and the next day's run carries on.
+    // they had been kept for good). Read through an index that leads with confirmedAt, so only unconfirmed
+    // rows past the horizon are read: confirmed rows, never deleted, can't fill the read. An unconfirmed row
+    // someone stopped is kept. A run reads at most OTHER_ALERTS_LOOK a table; whatever it deleted is gone,
+    // so the next day's run reads past it.
     const sources = [
-      ctx.db.query("dolQueueAlerts").withIndex("by_created", (q) => q.lt("createdAt", staleBefore)),
-      ctx.db.query("employerAlerts").withIndex("by_created", (q) => q.lt("createdAt", staleBefore)),
+      ctx.db
+        .query("dolQueueAlerts")
+        .withIndex("by_confirmed_created", (q) => q.eq("confirmedAt", undefined).lt("createdAt", staleBefore)),
+      ctx.db
+        .query("employerAlerts")
+        .withIndex("by_confirmed_created", (q) => q.eq("confirmedAt", undefined).lt("createdAt", staleBefore)),
       ctx.db
         .query("bulletinAlerts")
-        .withIndex("by_alert_sweep", (q) => q.eq("unsubscribedAt", undefined).lt("createdAt", staleBefore)),
+        .withIndex("by_confirmed_created", (q) => q.eq("confirmedAt", undefined).lt("createdAt", staleBefore)),
     ];
     for (const source of sources) {
       let seen = 0;
