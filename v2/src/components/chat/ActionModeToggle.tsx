@@ -124,12 +124,13 @@ export function ActionModeToggle({ mode, onChange, disabled = false, className }
               aria-checked={on}
               title={ACTION_MODE_NOTICE[m]}
               tabIndex={on ? 0 : -1}
-              disabled={disabled}
+              // Marked, not disabled: a disabled button drops keyboard focus to the page while the change saves.
+              aria-disabled={disabled || undefined}
               onClick={() => choose(m)}
               className={cn(
                 "flex min-h-11 items-center justify-center gap-1.5 border-r-2 border-black px-1 text-sm last:border-r-0 md:min-h-9 dark:border-[var(--object-border)]",
                 "transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
-                "disabled:cursor-not-allowed",
+                "aria-disabled:cursor-not-allowed",
                 on ? cn(fill, "font-bold") : "font-semibold text-soft hover:bg-accent hover:text-foreground",
               )}
             >

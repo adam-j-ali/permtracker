@@ -34,6 +34,7 @@ import { useAuthContext } from '@/lib/contexts/AuthContext';
 import { usePageContext } from '@/lib/ai/page-context';
 import { useOnboardingOptional } from '@/components/onboarding/OnboardingProvider';
 import { captureError } from '@/lib/sentry';
+import { handleOperationError } from '@/lib/errors';
 
 export function ChatWidgetConnected() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -69,6 +70,8 @@ export function ChatWidgetConnected() {
       setActionModeLoading(true);
       try {
         await updateActionMode({ actionMode: newMode });
+      } catch (error) {
+        handleOperationError(error, { userMessage: "Couldn’t change what the assistant may do. Try again." });
       } finally {
         setActionModeLoading(false);
       }
