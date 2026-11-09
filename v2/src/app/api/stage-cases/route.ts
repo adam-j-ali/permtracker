@@ -53,6 +53,8 @@ export async function GET(request: Request) {
   }
   const asOf = sweep?.finishedOn ?? null;
   const label = stageMeta(status).label;
+  // With no sweep date (unread or stale) the answer isn't held at the edge: a blank as_of would stand for six hours.
+  const cacheHeaders = asOf ? CACHE_HEADERS : { "Cache-Control": "no-store" };
 
   if (format === "csv") {
     const lines = [
@@ -63,7 +65,7 @@ export async function GET(request: Request) {
     ];
     return new NextResponse(lines.join("\n") + "\n", {
       headers: {
-        ...CACHE_HEADERS,
+        ...cacheHeaders,
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename="perm-${slug}-${asOf ?? "cases"}.csv"`,
       },
@@ -71,6 +73,6 @@ export async function GET(request: Request) {
   }
   return NextResponse.json(
     { stage: slug, status, label, asOf, count: rows.length, rows },
-    { headers: CACHE_HEADERS },
+    { headers: cacheHeaders },
   );
 }

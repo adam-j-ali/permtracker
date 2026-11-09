@@ -572,6 +572,8 @@ AUTONOMOUS: No confirmation needed.`,
             } catch (e) {
               console.error('[Chat API] Error fetching current case data:', e);
               captureError(e);
+              // Said to the model, so it never tells the person it can't see the case or answers from nothing.
+              result.currentCaseDataError = "The case on screen couldn't be read just now. Say so, and offer to try again.";
             }
           }
         }

@@ -66,6 +66,16 @@ describe("GET /api/stage-cases", () => {
     expect(lines[1]).toBe('G-100-26030-100001,2026-01-30,"Acme ""Widgets"", Inc.",Software Developer,RFI ISSUED,2026-09-08');
   });
 
+  it("never caches an answer with no sweep date, in JSON or CSV", async () => {
+    listStageCases.mockResolvedValue([row(1)]);
+    getSweepCoverage.mockResolvedValue(null);
+    for (const q of ["stage=rfi-issued", "stage=rfi-issued&format=csv"]) {
+      const res = await GET(get(q));
+      expect(res.status).toBe(200);
+      expect(res.headers.get("cache-control")).toBe("no-store");
+    }
+  });
+
   it("refuses a cohort above the listable ceiling instead of serving it", async () => {
     listStageCases.mockResolvedValue(Array.from({ length: 20_001 }, (_, i) => row(i)));
     const res = await GET(get("stage=rfi-issued"));
