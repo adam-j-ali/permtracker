@@ -135,17 +135,15 @@ async function readPending(): Promise<number | null> {
 
 /**
  * The week's employer-wide moves, from the census the daily sweep writes.
- * A missing or stale doc leaves the block out rather than failing the issue.
+ * A missing, stale or malformed doc leaves the block out rather than failing
+ * the issue (parseEmployerStagesDoc answers null). A read that fails throws:
+ * "no moves" would let a week whose only news was a move go unsent.
  */
-async function readEmployerMoves(weekOf: string): Promise<DigestEmployerMove[]> {
-  try {
-    const row = await one("SELECT json, computed_at FROM perm_docs WHERE key = 'employer_stages'");
-    if (!row || typeof row.json !== "string") return [];
-    const doc = parseEmployerStagesDoc(row.json, Number(row.computed_at), Date.now());
-    return doc ? pickEmployerMoves(employerMoves(doc), weekOf) : [];
-  } catch {
-    return [];
-  }
+export async function readEmployerMoves(weekOf: string): Promise<DigestEmployerMove[]> {
+  const row = await one("SELECT json, computed_at FROM perm_docs WHERE key = 'employer_stages'");
+  if (!row || typeof row.json !== "string") return [];
+  const doc = parseEmployerStagesDoc(row.json, Number(row.computed_at), Date.now());
+  return doc ? pickEmployerMoves(employerMoves(doc), weekOf) : [];
 }
 
 /** USCIS's newest quarterly workbook and the four medians the digest names from it. */
