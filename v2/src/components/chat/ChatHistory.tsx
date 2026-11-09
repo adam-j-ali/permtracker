@@ -18,7 +18,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@convex/_generated/api';
@@ -30,6 +30,7 @@ import type { Id } from '@convex/_generated/dataModel';
 import { useAuthContext } from '@/lib/contexts/AuthContext';
 import { CHAT_LIMITS } from '@convex/lib/chatLimits';
 import { handleOperationError } from '@/lib/errors';
+import { useFocusNext } from '@/components/ui/use-focus-next';
 
 /**
  * Conversations shown per page. The list grows with every conversation the
@@ -71,6 +72,16 @@ export function ChatHistory({
   // there may be older ones it doesn't show, and it says so.
   const atListLimit = (conversations?.length ?? 0) >= CHAT_LIMITS.conversationsListed;
 
+  // A delete asks with a second press in the panel, never a browser dialog that blocks the page. Each press swaps
+  // buttons, so focus moves to what replaced the pressed one.
+  const [sureId, setSureId] = useState<Id<'conversations'> | null>(null);
+  const [sureAll, setSureAll] = useState(false);
+  const focusNext = useFocusNext();
+  const keepRef = useRef<HTMLButtonElement>(null);
+  const keepAllRef = useRef<HTMLButtonElement>(null);
+  const deleteAllRef = useRef<HTMLButtonElement>(null);
+  const trashRefs = useRef(new Map<string, HTMLButtonElement>());
+
   const startNew = () => {
     Promise.resolve(onNewConversation()).catch((err: unknown) => {
       console.error('[ChatHistory] Could not start a new conversation:', err instanceof Error ? err.message : err);
@@ -78,24 +89,26 @@ export function ChatHistory({
   };
 
   const handleDeleteAll = async () => {
-    if (
-      conversations &&
-      conversations.length > 0 &&
-      confirm(
-        atListLimit
-          ? "Delete all your conversations permanently? This can't be undone."
-          : `Delete all ${conversations.length} conversation${conversations.length > 1 ? 's' : ''} permanently? This can't be undone.`
-      )
-    ) {
-      try {
-        await deleteAllConversations({});
-      } catch (error) {
-        handleOperationError(error, { userMessage: "Couldn’t delete your conversations. Try again." });
-        return;
-      }
-      startNew();
+    setSureAll(false);
+    try {
+      await deleteAllConversations({});
+    } catch (error) {
+      handleOperationError(error, { userMessage: "Couldn’t delete your conversations. Try again." });
+      return;
     }
+    startNew();
   };
+
+  const handleDelete = (id: Id<'conversations'>) => {
+    setSureId(null);
+    deleteConversation({ id }).catch((error: unknown) =>
+      handleOperationError(error, { userMessage: "Couldn’t delete that conversation. Try again." }),
+    );
+  };
+
+  const allQuestion = atListLimit
+    ? "Delete all your conversations permanently? This can't be undone."
+    : `Delete all ${conversations?.length ?? 0} conversation${(conversations?.length ?? 0) > 1 ? 's' : ''} permanently? This can't be undone.`;
 
   return (
     <DialogPrimitive.Root open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -193,21 +206,52 @@ export function ChatHistory({
                         on hover and keyboard focus on a desk, always on a phone. */}
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 max-md:opacity-100 transition-opacity">
                       <Button
+                        ref={(el) => {
+                          if (el) trashRefs.current.set(conv._id, el);
+                          else trashRefs.current.delete(conv._id);
+                        }}
                         variant="ghost"
                         size="icon"
                         className="h-11 w-11 md:h-9 md:w-9 text-destructive hover:text-destructive-text"
                         onClick={() => {
-                          if (confirm('Delete this conversation permanently?')) {
-                            deleteConversation({ id: conv._id }).catch((error: unknown) =>
-                              handleOperationError(error, { userMessage: "Couldn’t delete that conversation. Try again." }),
-                            );
-                          }
+                          focusNext(() => keepRef.current);
+                          setSureId(conv._id);
                         }}
                         aria-label={`Delete conversation ${conv.title}`}
+                        aria-expanded={sureId === conv._id}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       </Button>
                     </div>
+                    {sureId === conv._id ? (
+                      <div className="mt-1 flex flex-wrap items-center gap-2 border-2 border-destructive/40 bg-background p-2">
+                        <span className="text-sm">Delete this conversation permanently?</span>{" "}
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="h-11 md:h-9"
+                          aria-label={`Delete ${conv.title} for good`}
+                          onClick={() => handleDelete(conv._id)}
+                        >
+                          Delete
+                        </Button>{" "}
+                        <Button
+                          ref={keepRef}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-11 md:h-9"
+                          onClick={() => {
+                            const id = conv._id;
+                            focusNext(() => trashRefs.current.get(id) ?? null);
+                            setSureId(null);
+                          }}
+                        >
+                          Keep it
+                        </Button>
+                      </div>
+                    ) : null}
                   </div>
                 );
               })
@@ -236,14 +280,40 @@ export function ChatHistory({
           {/* Delete All Footer */}
           {conversations && conversations.length > 0 && (
             <div className="p-4 border-t-2 border-border">
-              <Button
-                variant="destructive"
-                className="w-full"
-                onClick={handleDeleteAll}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete all conversations
-              </Button>
+              {sureAll ? (
+                <div className="space-y-2">
+                  <p className="text-sm">{allQuestion}</p>{" "}
+                  <div className="flex gap-2">
+                    <Button variant="destructive" className="flex-1" onClick={() => void handleDeleteAll()}>
+                      Delete all for good
+                    </Button>{" "}
+                    <Button
+                      ref={keepAllRef}
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        focusNext(() => deleteAllRef.current);
+                        setSureAll(false);
+                      }}
+                    >
+                      Keep them
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  ref={deleteAllRef}
+                  variant="destructive"
+                  className="w-full"
+                  onClick={() => {
+                    focusNext(() => keepAllRef.current);
+                    setSureAll(true);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" aria-hidden="true" />
+                  Delete all conversations
+                </Button>
+              )}
             </div>
           )}
         </DialogPrimitive.Content>
