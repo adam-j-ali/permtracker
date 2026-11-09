@@ -113,7 +113,10 @@ export const forward = internalAction({
       text: row.message,
       extra: row.checkSignals,
     };
-    const ai = await aiOpinionFromWorker(mail);
+    let aiFailed = false;
+    const ai = await aiOpinionFromWorker(mail, () => {
+      aiFailed = true;
+    });
     const verdict = await ctx.runQuery(internal.inboundFilter.verdict, { ...mail, ai });
     const held = verdict.action === "hold";
     // Filed with the support mail, so supportEmail:replyToEmail answers it in a
@@ -130,6 +133,7 @@ export const forward = internalAction({
       held,
       spamScore: verdict.score,
       spamReasons: verdict.reasons,
+      ...(aiFailed ? { aiFailed: true } : {}),
     });
     if (held) return null;
     const to = getSecurityAlertEmail();

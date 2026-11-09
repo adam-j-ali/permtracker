@@ -155,7 +155,14 @@ export interface Facts {
   /** Reviews and alert-email ratings waiting for the owner (convex/siteReviews.ts), oldest first; absent in older reports. */
   reviewQueue?: { waiting: Array<{ source: "site" | "senja" | "alert"; rating: number; since: number }> };
   /** Mail the spam filter held (convex/inboundFilter.ts): subjects and sender domains only; absent in older reports. */
-  spamFilter?: { heldSince: number; waiting: number; newest: Array<{ subject: string; domain: string }> };
+  spamFilter?: {
+    heldSince: number;
+    waiting: number;
+    newest: Array<{ subject: string; domain: string }>;
+    /** Absent in reports before Nov 9 2026. */
+    forwardFailedSince?: number;
+    aiFailedSince?: number;
+  };
   /** Alert ratings given in the last 7 days (convex/alertRatings.ts); absent in older reports. */
   ratings?: {
     count: number;
@@ -358,14 +365,26 @@ function developerSection(f: Facts): ReportSection | null {
  */
 export function spamSection(f: Facts): ReportSection | null {
   const s = f.spamFilter;
-  if (!s || s.waiting === 0) return null;
+  if (!s) return null;
+  const lost = s.forwardFailedSince ?? 0;
+  const aiDown = s.aiFailedSince ?? 0;
+  if (s.waiting === 0 && lost === 0 && aiDown === 0) return null;
+  const parts = [`${s.heldSince} held in 24 h, ${s.waiting} on the held list`];
+  if (lost > 0) parts.push(`${lost} ${lost === 1 ? "message" : "messages"} never reached your inbox`);
+  if (aiDown > 0) parts.push(`the AI check failed on ${aiDown}`);
   return {
     key: "spam",
     title: "Spam filter",
-    status: "ok",
-    summary: `${s.heldSince} held in 24 h, ${s.waiting} on the held list`,
+    status: lost > 0 || aiDown > 0 ? "warn" : "ok",
+    summary: parts.join("; "),
     lines: [
       ...s.newest.map((m) => `${m.subject}${m.domain ? ` (from ${m.domain})` : ""}`),
+      ...(lost > 0
+        ? [`The mail Worker couldn't forward ${lost === 1 ? "one message" : `${lost} messages`} to your inbox, even on a second try. They're stored: read them at ${SITE_URL}/admin#alerts`]
+        : []),
+      ...(aiDown > 0
+        ? ["The spam check's AI model didn't answer, so the check ran on its rules alone. Its model may be retired or the free daily allowance spent: see workers/mail/README.md"]
+        : []),
       `Held mail is deleted 30 days after it was held. Check the list at ${SITE_URL}/admin#alerts`,
     ],
   };

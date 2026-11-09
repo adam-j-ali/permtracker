@@ -119,3 +119,95 @@ describe('the mail Worker', () => {
     expect(r.forwards).toEqual(['owner@example.com']);
   });
 });
+
+/** A delivery with every failure the Worker has to survive under the test's control. */
+async function deliverWith(o: {
+  verdict?: string;
+  storeStatus?: number[];
+  forwardFailures?: number;
+  ai?: unknown;
+  kvThrows?: boolean;
+  to?: string;
+  envelopeFrom?: string;
+  headerFrom?: string;
+}) {
+  const stored: Array<Record<string, unknown>> = [];
+  const storeStatus = [...(o.storeStatus ?? [200])];
+  vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
+    if (url.endsWith('/inbound-email/verdict')) return new Response(JSON.stringify({ ok: true, action: o.verdict ?? 'forward', score: 0, reasons: [] }));
+    if (url.endsWith('/inbound-email')) {
+      stored.push(JSON.parse(String(init.body)));
+      return new Response('{}', { status: storeStatus.length > 1 ? storeStatus.shift()! : storeStatus[0]! });
+    }
+    throw new Error(`unexpected fetch ${url}`);
+  });
+  const m = message();
+  if (o.to) m.to = o.to;
+  if (o.envelopeFrom) m.from = o.envelopeFrom;
+  if (o.headerFrom) m.headers.set('from', o.headerFrom);
+  let failuresLeft = o.forwardFailures ?? 0;
+  const attempts: string[] = [];
+  m.forward = async (to: string) => {
+    attempts.push(to);
+    if (failuresLeft > 0) {
+      failuresLeft -= 1;
+      throw new Error('upstream refused the forward');
+    }
+    m.forwards.push(to);
+  };
+  const e = env('ai' in o ? o.ai : aiSpam);
+  if (o.kvThrows) e.KEYS = { get: async () => { throw new Error('KV unavailable'); } };
+  const waits: Promise<unknown>[] = [];
+  await worker.email(m, e, { waitUntil: (p: Promise<unknown>) => waits.push(p) });
+  await Promise.all(waits);
+  return { forwards: m.forwards, attempts, stored };
+}
+
+describe('the mail Worker never loses a message quietly', () => {
+  it('forwards a held message to the owner when it can\'t be stored', async () => {
+    const r = await deliverWith({ verdict: 'hold', storeStatus: [500, 500] });
+    expect(r.stored.length).toBeGreaterThanOrEqual(1);
+    expect(r.forwards).toEqual(['owner@example.com']);
+  });
+
+  it('keeps a held message out of the inbox when the store takes it', async () => {
+    const r = await deliverWith({ verdict: 'hold' });
+    expect(r.stored[0]?.held).toBe(true);
+    expect(r.forwards).toEqual([]);
+  });
+
+  it('tries a refused forward once more before giving up', async () => {
+    const r = await deliverWith({ forwardFailures: 1 });
+    expect(r.attempts).toHaveLength(2);
+    expect(r.forwards).toEqual(['owner@example.com']);
+    expect(r.stored[0]?.forwarded).toBe(true);
+    expect(r.stored[0]?.forwardFailed).toBeUndefined();
+  });
+
+  it('records a forward that failed twice, so the morning report can count it', async () => {
+    const r = await deliverWith({ forwardFailures: 2 });
+    expect(r.forwards).toEqual([]);
+    expect(r.stored[0]?.forwarded).toBe(false);
+    expect(r.stored[0]?.forwardFailed).toBe(true);
+  });
+
+  it('records an AI check that failed, and still forwards', async () => {
+    const r = await deliverWith({ ai: { run: async () => { throw new Error('5028 model retired'); } } });
+    expect(r.forwards).toEqual(['owner@example.com']);
+    expect(r.stored[0]?.aiFailed).toBe(true);
+  });
+
+  it('forwards when the key store is down', async () => {
+    const r = await deliverWith({ kvThrows: true });
+    expect(r.forwards).toEqual(['owner@example.com']);
+  });
+
+  it('reads our own mail by its From header, since the envelope sender is the bounce address', async () => {
+    const r = await deliverWith({
+      to: 'demo@permtracker.app',
+      envelopeFrom: '010001-bounce@send.permtracker.app',
+      headerFrom: 'PERM Tracker <notifications@permtracker.app>',
+    });
+    expect(r.forwards).toEqual([]);
+  });
+});

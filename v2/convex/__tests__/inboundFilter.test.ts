@@ -210,6 +210,32 @@ describe("the contact form", () => {
     expect(calls).not.toHaveBeenCalled();
   });
 
+  it("flags a message whose AI check failed, so the morning report counts it", async () => {
+    vi.stubEnv("OWNER_MAIL_URL", "https://mail.example.com/owner");
+    vi.stubEnv("OWNER_MAIL_KEY", "key");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) =>
+        String(input).endsWith("/classify")
+          ? new Response(JSON.stringify({ verdict: null, error: "5028: model retired" }), { status: 200 })
+          : new Response(JSON.stringify({ ok: true }), { status: 200 }),
+      ),
+    );
+    const t = createTestContext();
+    const id = await t.run(async (ctx) =>
+      ctx.db.insert("contactMessages", {
+        name: "Maria Lopez",
+        email: "maria@gmail.com",
+        message: "Hi, my PERM case shows analyst review. What does that mean for my I-140?",
+        ip: "203.0.113.9",
+        createdAt: Date.now(),
+      }),
+    );
+    await t.action(internal.contactForm.forward, { id });
+    const [row] = await rows(t);
+    expect(row).toMatchObject({ fromEmail: "maria@gmail.com", aiFailed: true });
+  });
+
   it("refuses a Turnstile token that doesn't pass", async () => {
     vi.stubEnv("TURNSTILE_SECRET_KEY", "secret");
     vi.stubGlobal(

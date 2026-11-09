@@ -121,12 +121,31 @@ async function verdictFor(env, inboundKey, mail) {
   return within(res.json(), 1_000);
 }
 
+/** Forward to the owner, once more on a refusal. True once one went. */
+async function forwardToOwner(message, env) {
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      await message.forward(env.OWNER_EMAIL);
+      return true;
+    } catch (e) {
+      console.error(`forward failed (try ${attempt})`, e && e.message);
+    }
+  }
+  return false;
+}
+
 const worker = {
   async email(message, env, ctx) {
     const to = (message.to || "").toLowerCase();
     const envelopeFrom = message.from || "";
-    const forwardable = shouldForward(to, env.OWNER_EMAIL, envelopeFrom);
-    const { inbound } = await keys(env);
+    // Our own mail is known by its From header: the envelope sender of mail Resend sends is its bounce address on
+    // send.permtracker.app, never notifications@.
+    const forwardable = shouldForward(to, env.OWNER_EMAIL, message.headers.get("from") || envelopeFrom);
+    // The forward needs no key, so a key store that's down never stops one: a missing key means no verdict.
+    const inbound = await env.KEYS.get("inbound_key").catch((e) => {
+      console.error("key read failed", e && e.message);
+      return null;
+    });
     const h = (name) => message.headers.get(name) || undefined;
 
     // Read it first when it's small enough to read and check before the forward.
@@ -144,6 +163,7 @@ const worker = {
 
     // The check. Only a clear "hold" keeps it out of the inbox; anything else forwards.
     let verdict;
+    let aiFailed = false;
     if (forwardable && parsed) {
       try {
         const mail = {
@@ -156,7 +176,9 @@ const worker = {
           spamFlag: h("x-spam-flag"),
           thread: [parsed.inReplyTo, parsed.references].filter(Boolean).join(" ") || undefined,
         };
-        mail.ai = await aiOpinion(env, mail);
+        mail.ai = await aiOpinion(env, mail, () => {
+          aiFailed = true;
+        });
         verdict = await verdictFor(env, inbound, mail);
       } catch (e) {
         console.error("check failed", e && e.message);
@@ -166,14 +188,7 @@ const worker = {
 
     // Forward unless held: getting a person's message to the owner matters most.
     let forwarded = false;
-    if (forwardable && !held) {
-      try {
-        await message.forward(env.OWNER_EMAIL);
-        forwarded = true;
-      } catch (e) {
-        console.error("forward failed", e && e.message);
-      }
-    }
+    if (forwardable && !held) forwarded = await forwardToOwner(message, env);
 
     // A big message is read after the forward, for the stored copy, as before.
     if (!parsed && !readNow && message.rawSize <= PARSE_MAX_BYTES) {
@@ -195,25 +210,40 @@ const worker = {
       html: parsed?.html,
       forwarded,
       held,
+      // Read by the morning report (heldSummary in convex/inboundFilter.ts): a person's message that never reached
+      // the owner, and a spam check that ran without its AI.
+      ...(forwardable && !held && !forwarded ? { forwardFailed: true } : {}),
+      ...(aiFailed ? { aiFailed: true } : {}),
       notice: verdict?.action === "notice",
       spamScore: typeof verdict?.score === "number" ? verdict.score : undefined,
       spamReasons: Array.isArray(verdict?.reasons) ? verdict.reasons : undefined,
     };
 
-    // The forward doesn't wait on the store: a failed store is logged, and the
-    // sender isn't asked to send again (that would forward it twice). A held
-    // message lives only in the store, so a failed store of one is logged loudly.
-    ctx.waitUntil(
+    const store = () =>
       fetch(`${env.CONVEX_SITE}/inbound-email`, {
         method: "POST",
         headers: { "content-type": "application/json", "x-inbound-key": inbound || "" },
         body: JSON.stringify(record),
-      })
-        .then((r) => {
-          if (!r.ok) console.error(held ? "STORE OF HELD MAIL FAILED" : "store failed", r.status);
-        })
-        .catch((e) => console.error(held ? "STORE OF HELD MAIL FAILED" : "store failed", e && e.message)),
-    );
+      }).then(
+        (r) => {
+          if (!r.ok) console.error(held ? "store of held mail failed" : "store failed", r.status);
+          return r.ok;
+        },
+        (e) => {
+          console.error(held ? "store of held mail failed" : "store failed", e && e.message);
+          return false;
+        },
+      );
+
+    // A held message lives only in the store, so the handler waits for it, tries once more, and forwards it to the
+    // owner after all when it still can't be stored.
+    if (held) {
+      if (!(await store()) && !(await store())) await forwardToOwner(message, env);
+      return;
+    }
+    // A forwarded message doesn't wait on the store: a failed store is logged, and the sender isn't asked to send
+    // again (that would forward it twice).
+    ctx.waitUntil(store());
   },
 
   async fetch(request, env) {

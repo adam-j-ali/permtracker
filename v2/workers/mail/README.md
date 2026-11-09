@@ -22,7 +22,9 @@ same `x-inbound-key`) for the verdict, which weighs the rules in `convex/lib/spa
 sender and whether the mail answers one we sent (`convex/inboundFilter.ts`). Only a clear `hold` keeps it out
 of the inbox: the message is stored with `held: true` and listed on the admin page (Alerts and email, "Spam
 filter") with Not spam and Delete, and deleted 30 days later. A slow, missing or failed answer forwards, so the
-check can never lose a message.
+check can never lose a message. A held message the store can't take, on a second try too, is forwarded to the
+owner after all. A forward that fails twice is stored with `forwardFailed`, and a check that ran without its AI with
+`aiFailed`; the morning report's Spam filter section warns on either.
 
 `POST /classify` (the owner key): `{ from, subject, text? }` answers `{ verdict, error? }` from the same AI
 call. The contact form asks it (`aiOpinionFromWorker`), and it's how the check was calibrated on stored mail.
