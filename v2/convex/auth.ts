@@ -110,6 +110,12 @@ export const authCallbacks = {
         .first();
 
       if (existingUser) {
+        // Google's own answer on whether this address is the Google account's: linking an unverified address to an
+        // existing account (the admin's included: requireAdmin is email equality) would hand that account over.
+        // Only an explicit false refuses; a profile without the flag links as before.
+        if (args.type === "oauth" && args.profile.emailVerified === false) {
+          throw new ConvexError(UNVERIFIED_GOOGLE_EMAIL);
+        }
         // Link to the existing user account
         // Update profile info if available (Google may have newer name/image)
         const updates: Record<string, unknown> = {};
@@ -148,9 +154,26 @@ export const authCallbacks = {
   // createOrUpdateUser above.
 } satisfies NonNullable<ConvexAuthConfig["callbacks"]>;
 
+/** What a Google sign-in with an address Google hasn't verified is told. */
+export const UNVERIFIED_GOOGLE_EMAIL =
+  "Google hasn't verified this email address, so it can't sign in to an existing account. Verify it with Google, or sign in with your password.";
+
+/**
+ * Convex Auth's default OIDC profile, plus Google's email_verified claim, which the default drops. Same id (the
+ * account's `sub`), so every existing Google sign-in keeps its account.
+ */
+export function googleProfile(p: Record<string, unknown>) {
+  const out: Record<string, string | boolean> = { id: String(p.sub ?? p.id) };
+  if (typeof p.name === "string") out.name = p.name;
+  if (typeof p.email === "string") out.email = p.email;
+  if (typeof p.picture === "string") out.image = p.picture;
+  if (typeof p.email_verified === "boolean") out.emailVerified = p.email_verified;
+  return out as { id: string; name?: string; email?: string; image?: string; emailVerified?: boolean };
+}
+
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
-    Google,
+    Google({ profile: googleProfile }),
     Password<DataModel>({
       verify: ResendOTP,
       reset: ResendPasswordReset,
