@@ -560,6 +560,18 @@ describe("PriorityDateEstimator: can you file an I-485", () => {
     expect(v.textContent).toMatch(/Your date is 151 days later\./);
   });
 
+  it("says a date on the cutoff itself is not yet, and why, never \"0 days later\"", () => {
+    // Arrange: the Final Action cutoff for August is January 1, 2014
+    renderTool({ bulletins: WITH_AUG, currentBulletinMonth: "2026-08", currentEmploymentChart: "Final Action Dates" });
+    // Act
+    setPriorityDate("2014-01-01");
+    // Assert
+    const v = screen.getByTestId("i485-verdict");
+    expect(within(v).getByText("Not yet")).toBeInTheDocument();
+    expect(v.textContent).toMatch(/Yours is that day itself, and the bulletin counts only dates earlier than the cutoff\./);
+    expect(v.textContent).not.toMatch(/0 days later/);
+  });
+
   it("says the category is closed in a U month", () => {
     renderTool({ currentBulletinMonth: "2026-07", currentEmploymentChart: "Final Action Dates" });
     setPriorityDate("2010-01-01");

@@ -794,7 +794,13 @@ export function PriorityDateEstimator({
             {i485.cutoff.kind === "date" ? (
               <>
                 , and its cutoff for this line is <strong>{formatAsOf(i485.cutoff.iso)}</strong>.
-                {i485.can ? " Your date is earlier." : i485.daysLate !== null ? ` Your date is ${i485.daysLate.toLocaleString("en-US")} days later.` : ""}
+                {i485.can
+                  ? " Your date is earlier."
+                  : i485.daysLate === 0
+                    ? " Yours is that day itself, and the bulletin counts only dates earlier than the cutoff."
+                    : i485.daysLate !== null
+                      ? ` Your date is ${i485.daysLate.toLocaleString("en-US")} ${i485.daysLate === 1 ? "day" : "days"} later.`
+                      : ""}
               </>
             ) : i485.cutoff.kind === "current" ? (
               ", and this line is current: every priority date can file."
