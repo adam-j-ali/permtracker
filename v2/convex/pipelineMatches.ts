@@ -33,8 +33,8 @@
  * and recorded as told once it's sent or queued (`recordTold`); a failed send
  * frees it (`releaseTold`) and tries again tomorrow. A reservation holds for
  * SEND_CLAIM_MS, so a second run inside that time doesn't tell the same PERM.
- * The daily run finds it lapsed and takes it over: if the run that left it had
- * already sent, that PERM is told twice.
+ * A later run that finds it lapsed looks in the outbox (`deliveredSince`): if
+ * the email went, the PERM is recorded as told; if not, the run takes it over.
  *
  * @module convex/pipelineMatches
  */
@@ -44,7 +44,7 @@ import type { ReactElement } from "react";
 import { internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { claimHolds, deliverAlert } from "./lib/alertDelivery";
+import { claimHolds, deliverAlert, deliveredSince } from "./lib/alertDelivery";
 import { BUDGETS, noteRefusal, windowFor } from "./lib/alertBudgets";
 import { dayDolActed, isPermWageRequest } from "./lib/alertNextSteps";
 import { createLogger } from "./lib/logging";
@@ -109,7 +109,8 @@ export const issuedWageWatches = internalQuery({
 /**
  * What this address has already been told about, and which cases it already watches. A PERM a run is still
  * sending (a reservation younger than SEND_CLAIM_MS) counts as told; an older one was a run that died before it
- * recorded, and is free again. `now` is passed in: a query doesn't read the clock.
+ * recorded, and reserveTold settles it (told if that run's email reached the outbox, free again if not). `now` is
+ * passed in: a query doesn't read the clock.
  */
 export const toldAndWatched = internalQuery({
   args: { id: v.id("caseStatusAlerts"), email: v.string(), now: v.number() },
@@ -166,7 +167,8 @@ const toldCases = v.array(v.object({ caseNumber: v.string(), filingDate: v.strin
 /**
  * Reserve the PERMs an email is about to tell, before it is sent: a row per PERM with `sendingAt` set. Returns the
  * PERMs reserved; one already told, or reserved by a run whose claim still holds, is left out (that run may have
- * sent it), and one a dead run left is taken over once its claim lapses (SEND_CLAIM_MS), sent or not.
+ * sent it). One a dead run left, once its claim lapses (SEND_CLAIM_MS), is recorded as told when that run's email
+ * reached the outbox, and taken over when it didn't.
  */
 export const reserveTold = internalMutation({
   args: { id: v.id("caseStatusAlerts"), email: v.string(), pwdCaseNumber: v.string(), cases: toldCases },
@@ -180,6 +182,11 @@ export const reserveTold = internalMutation({
         .withIndex("by_email_perm", (q) => q.eq("email", args.email).eq("permCaseNumber", c.caseNumber))
         .first();
       if (held && (held.sendingAt === undefined || claimHolds(held.sendingAt, now))) continue;
+      if (held && held.sendingAt !== undefined && (await deliveredSince(ctx, `match:${held.subscriptionId}`, held.sendingAt))) {
+        // recordTold's own write: the email that reserved it went.
+        await ctx.db.patch(held._id, { sendingAt: undefined, toldAt: now });
+        continue;
+      }
       const row = {
         subscriptionId: args.id,
         email: args.email,
@@ -495,7 +502,7 @@ export const sweep = internalAction({
         log.error("match send threw", { caseNumber: watch.caseNumber, error });
         await recordError(ctx, "action", "pipelineMatches.sweep", error);
         // Free the PERMs only if nothing went out. After a delivery the reservation stays, so a run inside
-        // SEND_CLAIM_MS doesn't tell them again; after that it lapses like a crashed run's.
+        // SEND_CLAIM_MS doesn't tell them again, and a later one finds this email in the outbox and records them.
         if (!delivered) await release().catch(() => undefined);
       }
     }

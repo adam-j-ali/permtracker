@@ -1530,7 +1530,8 @@ export default defineSchema({
     /**
      * A sweep is sending this row's alert (`queueAlerts.claimQueueSend`), set before the send and cleared when
      * the alert is recorded or the send fails, so a run that dies between the two can't hand the same subscriber
-     * to the next run. A claim older than SEND_CLAIM_MS (convex/lib/alertDelivery.ts) is treated as abandoned.
+     * to the next run. A claim older than SEND_CLAIM_MS (convex/lib/alertDelivery.ts) is a run that died: marked
+     * told when its alert reached the outbox (`deliveredSince`), taken over when it didn't.
      */
     sendingAt: v.optional(v.number()),
     /** Set when they opt out. Rows are kept so a later re-subscribe is honest. */
@@ -1652,7 +1653,8 @@ export default defineSchema({
      * A sweep is sending the email for this status (`claimAlertSend`), so a
      * second sweep running at the same moment skips the row instead of
      * sending it twice. Cleared when the alert is recorded or the send fails;
-     * a claim older than ALERT_SEND_CLAIM_MS is treated as abandoned.
+     * a claim older than ALERT_SEND_CLAIM_MS is recorded as told when its
+     * alert reached the outbox, and taken over when it didn't.
      */
     sendingStatus: v.optional(v.string()),
     sendingAt: v.optional(v.number()),
@@ -1755,8 +1757,8 @@ export default defineSchema({
     /**
      * Set while a sweep is sending the email that tells it (`pipelineMatches.reserveTold`), cleared once the
      * email went (`recordTold`); the row is deleted if the send fails (`releaseTold`). A reservation counts as
-     * told for SEND_CLAIM_MS (convex/lib/alertDelivery.ts), so a run that dies between the send and the record
-     * can't tell it again on the next run.
+     * told for SEND_CLAIM_MS (convex/lib/alertDelivery.ts); after that a run that died between the send and the
+     * record is recorded as told when its email reached the outbox, and taken over when it didn't.
      */
     sendingAt: v.optional(v.number()),
   })

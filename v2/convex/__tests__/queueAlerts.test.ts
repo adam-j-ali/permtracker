@@ -544,6 +544,36 @@ describe("notifyQueueReached", () => {
     stubResend(200);
     expect((await t.action(internal.queueAlerts.notifyQueueReached, { frontier: "2025-09", asOf: "2026-08-20" })).sent).toBe(1);
   });
+
+  it("marks a lapsed claim told when its alert reached the outbox, and sends nothing", async () => {
+    // The run that claimed it got the alert out (or queued in the day's bundle), then died before markNotified.
+    const t = createTestContext();
+    await seedDue(t, 1);
+    const row = await onlyRow(t);
+    const claimedAt = Date.now() - 16 * 60 * 1000;
+    await t.run(async (ctx) => {
+      await ctx.db.patch(row._id, { sendingAt: claimedAt });
+      await ctx.db.insert("alertOutbox", {
+        email: row.email,
+        kind: "queue",
+        ref: `queue:${row._id}`,
+        status: "queued",
+        subject: "DOL reached your month",
+        text: "DOL reached your month.",
+        listUnsubscribe: "https://permtracker.app/unsubscribe",
+        summary: { title: "2025-09", line: "DOL reached your month", url: "https://permtracker.app" },
+        createdAt: claimedAt + 1000,
+        attempts: 0,
+      });
+    });
+    const calls = stubResend(200);
+    const res = await t.action(internal.queueAlerts.notifyQueueReached, { frontier: "2025-09", asOf: "2026-08-20" });
+    expect(res.sent).toBe(0);
+    expect(resendCalls(calls)).toEqual([]);
+    const after = await onlyRow(t);
+    expect(after.notifiedAt).toBeGreaterThan(0);
+    expect(after.sendingAt).toBeUndefined();
+  });
 });
 
 // ---------------------------------------------------------------------------

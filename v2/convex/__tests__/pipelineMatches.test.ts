@@ -384,4 +384,35 @@ describe("a send that dies before it's recorded", () => {
     expect(matches()).toHaveLength(1);
     expect((await notices(t)).map((r) => r.sendingAt)).toEqual([undefined]);
   });
+
+  it("marks a lapsed reservation told when its email reached the outbox, and sends nothing", async () => {
+    // The run that reserved it sent the email and wrote its outbox row, then died before recordTold.
+    const t = createTestContext();
+    const { matches } = stub({ pwd: { [PWD]: pwdRow }, perms: [permOf(PERM, "2026-10-13")] });
+    const id = await watch(t, "person@example.com");
+    await t.mutation(internal.pipelineMatches.reserveTold, {
+      id,
+      email: "person@example.com",
+      pwdCaseNumber: PWD,
+      cases: [{ caseNumber: PERM, filingDate: "2026-10-13" }],
+    });
+    const claimedAt = Date.now() - 16 * 60 * 1000;
+    await t.run(async (ctx) => {
+      for (const r of await ctx.db.query("permMatchNotices").collect()) await ctx.db.patch(r._id, { sendingAt: claimedAt });
+      await ctx.db.insert("alertOutbox", {
+        email: "person@example.com",
+        kind: "match",
+        ref: `match:${id}`,
+        status: "sent",
+        subject: "A PERM application that may be yours",
+        summary: { title: PERM, line: "a PERM", url: "https://permtracker.app" },
+        createdAt: claimedAt + 1000,
+        sentAt: claimedAt + 1000,
+        direct: true,
+      });
+    });
+    expect((await t.action(internal.pipelineMatches.sweep, {})).sent).toBe(0);
+    expect(matches()).toHaveLength(0);
+    expect((await notices(t)).map((r) => [r.permCaseNumber, r.sendingAt])).toEqual([[PERM, undefined]]);
+  });
 });

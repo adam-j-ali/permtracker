@@ -31,7 +31,7 @@
  */
 
 import { internal } from "../_generated/api";
-import type { ActionCtx } from "../_generated/server";
+import type { ActionCtx, MutationCtx } from "../_generated/server";
 import { FROM_EMAIL, getResend, sendOrQueue } from "./email";
 import { easternDay } from "./time";
 
@@ -45,14 +45,33 @@ export const IMMEDIATE_KINDS: ReadonlySet<AlertKind> = new Set<AlertKind>(["case
 /**
  * How long a sweep's claim on a send holds. A sweep writes its claim in a mutation BEFORE it calls deliverAlert
  * and records the alert AFTER, so a second run (or a retry) skips a row whose send may already have gone out; a
- * failed delivery clears the claim. A claim older than this is treated as abandoned (the run died) and the row is
- * free again. The same 15 minutes as case alerts' ALERT_SEND_CLAIM_MS (convex/caseAlerts.ts).
+ * failed delivery clears the claim. A claim older than this is a run that died: `deliveredSince` says whether its
+ * email went (the row is then recorded as told) or not (the row is free again). The same 15 minutes as case
+ * alerts' ALERT_SEND_CLAIM_MS (convex/caseAlerts.ts).
  */
 export const SEND_CLAIM_MS = 15 * 60 * 1000;
 
 /** True while a claim stamped at `at` still holds. */
 export function claimHolds(at: number | undefined, now: number): boolean {
   return at !== undefined && now - at < SEND_CLAIM_MS;
+}
+
+/**
+ * Whether the outbox holds an alert for `ref` sent or queued at or after `since`: a lapsed claim's stamp. Then the
+ * run that left the claim got its email out (or into the day's bundle) and died before recording it, so a sweep
+ * that finds the lapsed claim records the row as told instead of sending again. Without such a row the run died
+ * before its send, and the row is sent as before. Two indexed reads, the newest row of each status.
+ */
+export async function deliveredSince(ctx: Pick<MutationCtx, "db">, ref: string, since: number): Promise<boolean> {
+  for (const status of ["sent", "queued"] as const) {
+    const newest = await ctx.db
+      .query("alertOutbox")
+      .withIndex("by_ref_status", (q) => q.eq("ref", ref).eq("status", status))
+      .order("desc")
+      .first();
+    if (newest && newest.createdAt >= since) return true;
+  }
+  return false;
 }
 
 /**
