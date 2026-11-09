@@ -652,17 +652,18 @@ export async function liveEmployerEntries(chunk: number): Promise<Entry[]> {
 /**
  * Every city, industry and country page (perm_groups, a few thousand rows).
  * Dated by the published corpus, the only thing that moves these figures.
- * An empty table lists nothing rather than throwing: this family is new, and
- * a missing build must not take the sitemap index down with it.
+ * A table that isn't there yet lists nothing (both readers answer empty for
+ * it). Any other failed read throws, so the last good child stays instead of
+ * a day of an empty groups.xml.
  */
 export async function groupEntries(): Promise<Entry[]> {
   const base = baseUrl();
   const corpus = await corpusAsOf();
   const kinds: GroupKind[] = ["city", "industry", "country"];
   const [lists, h1bCities] = await Promise.all([
-    Promise.all(kinds.map((k) => listGroups(k).catch(() => []))),
+    Promise.all(kinds.map((k) => listGroups(k))),
     // Cities with 20+ H-1B LCAs and no PERM page have a page of their own (Oct 4 2026).
-    lcaOnlyCities().catch(() => []),
+    lcaOnlyCities(),
   ]);
   return [
     ...kinds.flatMap((k, i) =>
