@@ -90,3 +90,53 @@ describe("deleting a document", () => {
     await waitFor(() => expect(onDelete).toHaveBeenCalledWith("d1"));
   });
 });
+
+describe("paging and opening documents", () => {
+  // Fifteen documents: twelve general ones, then three for the PWD.
+  const docs = Array.from({ length: 15 }, (_, i) => ({
+    id: `d${i + 1}`,
+    name: `file-${i + 1}.pdf`,
+    url: `https://example.test/file-${i + 1}.pdf`,
+    mimeType: "application/pdf",
+    size: 1024,
+    uploadedAt: 1_790_000_000_000 + i,
+    category: i < 12 ? "general" : "pwd",
+  })) as never[];
+
+  it("opens a document from the keyboard, by its name", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    render(<DocumentsTab documents={docs} />);
+    // Act
+    screen.getByRole("button", { name: "file-1.pdf" }).focus();
+    await user.keyboard("{Enter}");
+    // Assert
+    expect(screen.getByRole("button", { name: "Next document" })).toBeInTheDocument();
+  });
+
+  it("names the pager's buttons, and pages while a preview is open", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    render(<DocumentsTab documents={docs} />);
+    await user.click(screen.getByRole("button", { name: "file-1.pdf" }));
+    // Act
+    await user.click(screen.getByRole("button", { name: "Next page" }));
+    // Assert
+    expect(screen.getByText("2 / 2")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "file-11.pdf" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Previous page" })).toBeEnabled();
+  });
+
+  it("shows the filter's documents when a filter is picked with a document open", async () => {
+    // Arrange: the 14th document is open, on the second page of all fifteen
+    const user = userEvent.setup();
+    render(<DocumentsTab documents={docs} />);
+    await user.click(screen.getByRole("button", { name: "Next page" }));
+    await user.click(screen.getByRole("button", { name: "file-14.pdf" }));
+    // Act: the PWD filter holds three documents, one page
+    await user.selectOptions(screen.getByLabelText("Show"), "pwd");
+    // Assert
+    expect(screen.getByRole("button", { name: "file-13.pdf" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "file-14.pdf" })).toBeInTheDocument();
+  });
+});

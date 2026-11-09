@@ -19,10 +19,29 @@ interface NotesTabProps {
 
 const ITEMS_PER_PAGE = 10;
 
+/** A select at the controls' height (44px), 16px on a phone so iOS doesn't zoom in. */
+const SELECT = "min-h-11 min-w-0 border border-input bg-card px-2 text-base md:text-sm font-semibold text-foreground";
+
+/** A note's first words, to name the buttons that act on it. */
+function noteName(content: string): string {
+  const line = content.trim().split("\n")[0] ?? "";
+  return line.length > 60 ? `${line.slice(0, 59)}…` : line;
+}
+
 import { fmtTimestamp } from "./case-detail-utils";
 import { CharLimit, CharLimitNote, useCharLimit } from "@/components/ui/char-limit";
 import { NOTES_PER_CASE_MAX, liveNotes, notesLimitMessage } from "@/components/forms/notesLimit";
 import { ChoiceRow } from "@/components/ui/choice-row";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const PRIORITY_LABELS: Record<NotePriority, string> = {
   high: "High",
@@ -95,17 +114,6 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
   const selectedNote = selectedId ? visibleNotes.find((n) => n.id === selectedId) || null : null;
   const isOpen = selectedNote !== null;
 
-  // Auto-advance page when selected note is on a different page
-  useEffect(() => {
-    if (selectedId) {
-      const idx = visibleNotes.findIndex((n) => n.id === selectedId);
-      if (idx >= 0) {
-        const notePage = Math.floor(idx / ITEMS_PER_PAGE);
-        if (notePage !== page) setPage(notePage);
-      }
-    }
-  }, [selectedId, visibleNotes, page]);
-
   // Reset page if it’s out of bounds after delete
   useEffect(() => {
     if (page > 0 && page >= totalPages) {
@@ -113,15 +121,18 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
     }
   }, [page, totalPages]);
 
+  const selectedIdx = visibleNotes.findIndex((n) => n.id === selectedId);
+
+  // The preview's arrows step through the list as it's shown, and the list turns to the page they land on.
+  // Paging and filtering never move the selection, so they never fight it.
   function navNote(dir: number) {
-    const idx = visibleNotes.findIndex((n) => n.id === selectedId);
-    if (idx < 0) return;
-    const next = idx + dir;
+    if (selectedIdx < 0) return;
+    const next = selectedIdx + dir;
     const target = visibleNotes[next];
-    if (next >= 0 && target) {
-      setSelectedId(target.id);
-      setIsEditing(false);
-    }
+    if (next < 0 || !target) return;
+    setSelectedId(target.id);
+    setIsEditing(false);
+    setPage(Math.floor(next / ITEMS_PER_PAGE));
   }
 
   function closePreview() {
@@ -155,8 +166,12 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
     setEditingContent("");
   }, []);
 
+  // A deleted note is gone for good, so the trash buttons only ask; the dialog's Delete does it.
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const deleteNote = useCallback(async (noteId: string) => {
     if (!onUpdateNotes) return;
+    setDeleting(true);
     try {
       await onUpdateNotes(
         liveNotes(notes).filter((n) => n.id !== noteId)
@@ -167,6 +182,9 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
       }
     } catch {
       // Parent handler already calls handleOperationError
+    } finally {
+      setDeleting(false);
+      setConfirmDeleteId(null);
     }
   }, [notes, onUpdateNotes, selectedId]);
 
@@ -229,19 +247,12 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
               Case notes
             </h2>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <label className="sr-only" htmlFor="notes-filter">Show</label>
               <select
+                id="notes-filter"
                 value={filterCategory}
                 onChange={(e) => { setFilterCategory(e.target.value as NoteCategory | "all"); setPage(0); }}
-                style={{
-                  height: 24,
-                  padding: "0 6px",
-                  border: "1px solid var(--border)",
-                  background: "var(--card)",
-                  color: "var(--foreground)",
-                  fontSize: "0.875rem",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
+                className={SELECT}
               >
                 <option value="all">All</option>
                 {NOTE_CATEGORIES.map((c) => (
@@ -268,31 +279,41 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
                   {pagedNotes.map((note) => {
                     const isDone = note.status === "done";
                     const isSelected = note.id === selectedId;
+                    const bodyId = `note-${note.id}-body`;
                     return (
                       <div
                         key={note.id}
-                        className={`note${isDone ? " note-done" : ""}${isSelected ? " selected" : ""}`}
-                        onClick={() => { setSelectedId(note.id); setIsEditing(false); }}
+                        className={`note relative${isDone ? " note-done" : ""}${isSelected ? " selected" : ""}`}
                       >
+                        {/* The row's one button, over the whole row and named by the note's text, so a keyboard opens it too. */}
+                        <button
+                          type="button"
+                          aria-labelledby={bodyId}
+                          aria-current={isSelected ? "true" : undefined}
+                          onClick={() => { setSelectedId(note.id); setIsEditing(false); }}
+                          className="absolute inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                        />
                         <div className="note-top">
                           <div className="note-badges">
                             {note.priority && <PriorityBadge priority={note.priority} />}
                             {note.category && <CategoryBadge category={note.category} />}
                           </div>
-                          <div className="note-actions" onClick={(e) => e.stopPropagation()}>
+                          <div className="note-actions relative z-10">
                             <span className="note-when">{fmtTimestamp(note.createdAt)}</span>
                             <button
+                              type="button"
                               className="icon-btn icon-btn-danger"
                               title="Delete note"
+                              aria-label={`Delete note: ${noteName(note.content)}`}
                               disabled={!onUpdateNotes}
                               style={{ color: "var(--destructive)", padding: 4, opacity: onUpdateNotes ? 1 : 0.5 }}
-                              onClick={() => deleteNote(note.id)}
+                              onClick={() => setConfirmDeleteId(note.id)}
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
+                              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                             </button>
                           </div>
                         </div>
-                        <div className="note-body" title={note.content}>{note.content}</div>
+                        <div id={bodyId} className="note-body" title={note.content}>{note.content}</div>
                         {note.dueDate && <div className="note-due">Due: {note.dueDate}</div>}
                       </div>
                     );
@@ -309,12 +330,12 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="pagination-bar">
-                  <button onClick={() => setPage((p) => p - 1)} disabled={page === 0}>
-                    <CaretLeftIcon className="h-3 w-3" />
+                  <button type="button" onClick={() => setPage((p) => p - 1)} disabled={page === 0} aria-label="Previous page">
+                    <CaretLeftIcon className="h-3 w-3" aria-hidden="true" />
                   </button>
                   <span>{page + 1} / {totalPages}</span>
-                  <button onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1}>
-                    <CaretRightIcon className="h-3 w-3" />
+                  <button type="button" onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1} aria-label="Next page">
+                    <CaretRightIcon className="h-3 w-3" aria-hidden="true" />
                   </button>
                 </div>
               )}
@@ -325,15 +346,15 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
                   {/* Nav */}
                   <div className="preview-nav">
                     <div className="preview-nav-btns">
-                      <button className="icon-btn" onClick={() => navNote(-1)} disabled={visibleNotes.findIndex((n) => n.id === selectedId) <= 0} title="Previous">
-                        <CaretLeftIcon className="h-3.5 w-3.5" />
+                      <button type="button" className="icon-btn" onClick={() => navNote(-1)} disabled={selectedIdx <= 0} title="Previous" aria-label="Previous note">
+                        <CaretLeftIcon className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
-                      <button className="icon-btn" onClick={() => navNote(1)} disabled={visibleNotes.findIndex((n) => n.id === selectedId) >= visibleNotes.length - 1} title="Next">
-                        <CaretRightIcon className="h-3.5 w-3.5" />
+                      <button type="button" className="icon-btn" onClick={() => navNote(1)} disabled={selectedIdx >= visibleNotes.length - 1} title="Next" aria-label="Next note">
+                        <CaretRightIcon className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
                     </div>
-                    <button className="icon-btn" onClick={closePreview} title="Close">
-                      <XIcon className="h-3.5 w-3.5" />
+                    <button type="button" className="icon-btn" onClick={closePreview} title="Close" aria-label="Close the note">
+                      <XIcon className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
                   </div>
 
@@ -362,6 +383,7 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
                         <textarea
                           ref={editTextareaRef}
                       placeholder="Edit the note…"
+                          aria-label="Note text"
                           value={editingContent}
                           onChange={(e) => setEditingContent(e.target.value)}
                           onKeyDown={(e) => {
@@ -441,7 +463,7 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
                       className="icon-btn icon-btn-danger"
                       style={{ width: "auto", padding: "4px 12px", gap: 6, display: "flex", alignItems: "center", color: "var(--destructive)" }}
                       disabled={!onUpdateNotes}
-                      onClick={() => deleteNote(selectedNote.id)}
+                      onClick={() => setConfirmDeleteId(selectedNote.id)}
                     >
                       <Trash2 className="h-3.5 w-3.5" /> Delete
                     </button>
@@ -460,6 +482,7 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
                   {...newNoteLimit.fieldProps}
                   className="note-input"
                   placeholder={`Add a case note... (${shortcutKey}+Enter)`}
+                  aria-label="New note"
                   value={newContent}
                   onChange={(e) => {
                     setNewContent(e.target.value);
@@ -523,19 +546,13 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
 
                   {/* Category */}
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <TagIcon className="h-3 w-3" style={{ color: "var(--muted-foreground)" }} />
+                    <TagIcon className="h-3 w-3" style={{ color: "var(--muted-foreground)" }} aria-hidden="true" />
+                    <label className="sr-only" htmlFor="new-note-category">Category</label>
                     <select
+                      id="new-note-category"
                       value={newCategory}
                       onChange={(e) => setNewCategory(e.target.value as NoteCategory)}
-                      style={{
-                        height: 26,
-                        padding: "0 6px",
-                        border: "1px solid var(--border)",
-                        background: "var(--background)",
-                        color: "var(--foreground)",
-                        fontSize: "0.875rem",
-                        fontWeight: 700,
-                      }}
+                      className={SELECT}
                     >
                       {NOTE_CATEGORIES.map((c) => (
                         <option key={c} value={c}>{NOTE_CATEGORY_LABELS[c]}</option>
@@ -545,41 +562,27 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
 
                   {/* Due Date */}
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <CalendarDotsIcon className="h-3 w-3" style={{ color: "var(--muted-foreground)" }} />
+                    <CalendarDotsIcon className="h-3 w-3" style={{ color: "var(--muted-foreground)" }} aria-hidden="true" />
+                    <label className="sr-only" htmlFor="new-note-due">Due date</label>
+                    {/* A flex item defaults to `min-width: auto`, so it will not shrink below its intrinsic width.
+                        WebKit's intrinsic width for a date control is wider than Blink's, so without min-w-0 the
+                        field overflows this row on iPhone while measuring correctly on a desktop. */}
                     <input
+                      id="new-note-due"
                       type="date"
                       value={newDueDate}
                       onChange={(e) => setNewDueDate(e.target.value)}
-                      style={{
-                        height: 26,
-                        // A flex item defaults to `min-width: auto`, so it will
-                        // not shrink below its intrinsic width. WebKit's
-                        // intrinsic width for a date control is wider than
-                        // Blink's, so without this the field overflows this row
-                        // on iPhone while measuring correctly on a desktop.
-                        minWidth: 0,
-                        padding: "0 6px",
-                        border: "1px solid var(--border)",
-                        background: "var(--background)",
-                        color: "var(--foreground)",
-                        fontSize: "0.875rem",
-                        fontWeight: 700,
-                      }}
+                      className="min-h-11 min-w-0 border border-input bg-card px-2 text-base md:text-sm font-semibold text-foreground"
                     />
                     {newDueDate && (
                       <button
+                        type="button"
+                        className="icon-btn"
                         onClick={() => setNewDueDate("")}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          color: "var(--muted-foreground)",
-                          padding: 2,
-                          display: "flex",
-                        }}
                         title="Clear due date"
+                        aria-label="Clear due date"
                       >
-                        <XIcon className="h-3 w-3" />
+                        <XIcon className="h-3 w-3" aria-hidden="true" />
                       </button>
                     )}
                   </div>
@@ -594,6 +597,7 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
                   type="text"
                   className="note-input"
                   placeholder="Add a case note..."
+                  aria-label="New note"
                   disabled
                   style={{ opacity: 0.5, cursor: "default" }}
                 />
@@ -609,6 +613,30 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
           )}
         </div>
       </div>
+
+      {/* Delete confirmation: a real dialog (focus kept inside, Escape closes). */}
+      <AlertDialog open={confirmDeleteId !== null} onOpenChange={(open) => (open || deleting ? null : setConfirmDeleteId(null))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this note?</AlertDialogTitle>
+            <AlertDialogDescription>It&apos;s deleted for good and can&apos;t be brought back.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Keep it</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (confirmDeleteId) void deleteNote(confirmDeleteId);
+              }}
+              disabled={deleting}
+              aria-busy={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

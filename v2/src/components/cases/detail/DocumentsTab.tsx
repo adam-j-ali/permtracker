@@ -294,27 +294,21 @@ export function DocumentsTab({
   const totalPages = Math.ceil(filteredDocs.length / ITEMS_PER_PAGE);
   const pagedDocs = filteredDocs.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE);
 
-  // Auto-advance page when selected doc is on a different page
-  useEffect(() => {
-    if (selectedId) {
-      const idx = documents.findIndex((d) => d.id === selectedId);
-      if (idx >= 0) {
-        const docPage = Math.floor(idx / ITEMS_PER_PAGE);
-        if (docPage !== page) setPage(docPage);
-      }
-    }
-  }, [selectedId, documents, page]);
-
   function closePreview() {
     setSelectedId(null);
   }
 
+  const selectedIdx = filteredDocs.findIndex((d) => d.id === selectedId);
+
+  // The preview's arrows step through the list as it's shown, and the list turns to the page they land on.
+  // Paging and filtering never move the selection, so they never fight it.
   function navDoc(dir: number) {
-    const idx = documents.findIndex((d) => d.id === selectedId);
-    if (idx < 0) return;
-    const next = idx + dir;
-    const target = documents[next];
-    if (next >= 0 && target) setSelectedId(target.id);
+    if (selectedIdx < 0) return;
+    const next = selectedIdx + dir;
+    const target = filteredDocs[next];
+    if (next < 0 || !target) return;
+    setSelectedId(target.id);
+    setPage(Math.floor(next / ITEMS_PER_PAGE));
   }
 
   function navFullscreen(dir: number) {
@@ -509,15 +503,19 @@ export function DocumentsTab({
                       ? DOCUMENT_CATEGORY_LABELS[doc.category]
                       : null;
                     return (
-                      <div
-                        key={doc.id}
-                        className={`doc-row${doc.id === selectedId ? " selected" : ""}`}
-                        onClick={() => setSelectedId(doc.id)}
-                      >
+                      // The name is the row's one button, stretched over the row, so a keyboard opens it too.
+                      <div key={doc.id} className={`doc-row relative${doc.id === selectedId ? " selected" : ""}`}>
                         <div className="doc-icon">{typeLabel}</div>
                         <div className="doc-info">
                           <div className="doc-name" title={doc.name}>
-                            {doc.name}
+                            <button
+                              type="button"
+                              onClick={() => setSelectedId(doc.id)}
+                              aria-current={doc.id === selectedId ? "true" : undefined}
+                              className="min-w-0 truncate text-left after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring"
+                            >
+                              {doc.name}
+                            </button>
                           </div>
                           <div className="doc-meta">
                             {typeLabel}
@@ -526,11 +524,7 @@ export function DocumentsTab({
                             {fmtTimestamp(doc.uploadedAt)}
                           </div>
                         </div>
-                        <div
-                          className="flex-row doc-actions"
-                          style={{ gap: 4, flexShrink: 0 }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                        <div className="flex-row doc-actions relative z-10" style={{ gap: 4, flexShrink: 0 }}>
                           <a
                             href={doc.url}
                             download={doc.name}
@@ -538,6 +532,7 @@ export function DocumentsTab({
                             rel="noopener noreferrer"
                             className="icon-btn"
                             title="Download"
+                            aria-label={`Download ${doc.name}`}
                             style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
                           >
                             <DownloadIcon className="h-3.5 w-3.5" />
@@ -576,12 +571,12 @@ export function DocumentsTab({
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="pagination-bar">
-                  <button onClick={() => setPage((p) => p - 1)} disabled={page === 0}>
-                    <CaretLeftIcon className="h-3 w-3" />
+                  <button type="button" onClick={() => setPage((p) => p - 1)} disabled={page === 0} aria-label="Previous page">
+                    <CaretLeftIcon className="h-3 w-3" aria-hidden="true" />
                   </button>
                   <span>{page + 1} / {totalPages}</span>
-                  <button onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1}>
-                    <CaretRightIcon className="h-3 w-3" />
+                  <button type="button" onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1} aria-label="Next page">
+                    <CaretRightIcon className="h-3 w-3" aria-hidden="true" />
                   </button>
                 </div>
               )}
@@ -613,26 +608,32 @@ export function DocumentsTab({
                   <div className="preview-nav">
                     <div className="preview-nav-btns">
                       <button
+                        type="button"
                         className="icon-btn"
                         onClick={() => navDoc(-1)}
-                        disabled={documents.findIndex((d) => d.id === selectedId) <= 0}
+                        disabled={selectedIdx <= 0}
                         title="Previous"
+                        aria-label="Previous document"
                       >
-                        <CaretLeftIcon className="h-3.5 w-3.5" />
+                        <CaretLeftIcon className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
                       <button
+                        type="button"
                         className="icon-btn"
                         onClick={() => navDoc(1)}
-                        disabled={documents.findIndex((d) => d.id === selectedId) >= documents.length - 1}
+                        disabled={selectedIdx < 0 || selectedIdx >= filteredDocs.length - 1}
                         title="Next"
+                        aria-label="Next document"
                       >
-                        <CaretRightIcon className="h-3.5 w-3.5" />
+                        <CaretRightIcon className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
                     </div>
                     <button
+                      type="button"
                       className="icon-btn"
                       onClick={closePreview}
                       title="Close"
+                      aria-label="Close the preview"
                     >
                       <XIcon className="h-3.5 w-3.5" />
                     </button>
