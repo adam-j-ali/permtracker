@@ -1,6 +1,6 @@
 ---
 title: "How to look up an immigration law firm's PERM record"
-description: "Search any firm that files PERM cases, read its volume and approval rate honestly, and see the one thing this record cannot tell you."
+description: "Search any firm that files PERM cases, read its volume and approval rate in context, and see the one thing this record can't tell you."
 date: "2026-09-03"
 updated: "2026-09-26"
 author: "PERM Tracker data desk"
@@ -16,7 +16,7 @@ published: true
 
 Every PERM application names the law firm that filed it, and the Department of Labor publishes that name. So every firm that has filed one has a page here, with its volume, its approval rate and its median time to a decision. No account is needed to read any of it. Find any firm in PERM Tracker's [law firm index](/perm-attorneys), where each page sets its H-1B and wage-request work beside its PERM record.
 
-Worth saying plainly first. If you're waiting on your own case, this is the least useful data page on the site. It's still good for one or two narrow things, and this covers those and what the record won't do for you.
+Here's the plain version first. If you're waiting on your own case, this is the least useful data page on the site. It's still good for one or two narrow things, and this covers those and what the record won't do for you.
 
 <Callout type="important" title="The short version">
 A firm's volume and approval rate describe cases DOL has already decided. They say nothing about how long your case will take, because DOL works one national queue in filing order no matter who filed.
@@ -43,20 +43,20 @@ A firm's page opens with five figures, and each one deserves a different amount 
 | Figure | Built from | How to read it |
 |---|---|---|
 | Filings | decided cases in DOL's published files | complete for the window, blind to everything still pending |
-| Certified and denied | the same files | counts, not rates |
+| Certified and denied | the same files | counts only |
 | Approval rate | certified over decided | only plotted against the field for firms with 30 or more decided cases |
 | Median days | filing to decision | follows when the cases were filed as much as who filed them |
-| Median wage | the offered wage on the form | the roles their clients file, not the firm |
+| Median wage | the offered wage on the form | follows the roles their clients file, and says nothing about the firm |
 
-Berry Appleman & Leiden is a fair example. 19,139 cases in DOL's current window, 18,072 certified and 188 denied, an approval rate of 99.0% against a field figure of 96.8%, and a median of 450 days against the field's 469.
+Berry Appleman & Leiden is a fair example. It has 19,139 cases in DOL's current window, with 18,072 certified and 188 denied. Its approval rate is 99.0% against a field figure of 96.8%, and its median is 450 days against the field's 469.
 
-Now the part that matters. That spread is close to the whole range. Across the 1,127 firms with enough decided cases to carry a rate, the median sits above 99% and hundreds have no denials at all. Placing near the top of that axis mostly means being level with everyone else. And a rate over a handful of cases lands wherever the handful landed, which is why firms under 30 decided cases are left out of the comparison population rather than plotted in it.
+The next point matters most. That spread is close to the whole range. Across the 1,127 firms with enough decided cases to carry a rate, the median sits above 99% and hundreds have no denials at all. Placing near the top of that axis mostly means being level with everyone else. And a rate over a handful of cases lands wherever the handful landed, which is why firms under 30 decided cases are left out of the comparison population rather than plotted in it.
 
 ## One firm, several spellings
 
 DOL prints whatever went on the form and nothing upstream tidies it. Spellings differing by punctuation, a legal suffix or one mistyped letter are pooled here, so a practice DOL prints several ways counts once. Anything more different stays separate, because merging on a guess is worse than showing you the split.
 
-Each firm page ends by naming both sets: the spellings folded into it, and the near-identical ones left alone. So a rank is a rank among printed names, not among practices.
+Each firm page ends by naming both sets: the spellings folded into it, and the near-identical ones left alone. So a rank compares printed names rather than practices.
 
 ## What to actually do with it
 
@@ -74,11 +74,11 @@ If you have a decided case, you can pull the firm's cases and see yours among th
   step={2}
 />
 
-And if what you really want is your own case, use the number rather than the firm. The [case status lookup](/perm-case-status) takes PERM numbers, `P-` wage requests and `I-` labor condition applications in one box, pending ones included. You can leave an email address there and hear when DOL's status changes. One email per change, confirmed by a click first, no account.
+And if you want your own case, use the number rather than the firm. The [case status lookup](/perm-case-status) takes PERM numbers, `P-` wage requests and `I-` labor condition applications in one box, pending ones included. You can leave an email address there and hear when DOL's status changes. You confirm with a click first, then get one email per change, and you don't need an account.
 
 ## Where the wait actually comes from
 
-Not from the firm. DOL works one national queue in filing order, so a case filed by the busiest practice in the country waits as long as one filed by a sole practitioner the same week. What moves is the queue, and that's on the [processing times page](/perm-processing-times).
+The firm doesn't set it. DOL works one national queue in filing order, so a case filed by the busiest practice in the country waits as long as one filed by a sole practitioner the same week. The queue moves, and its pace is on the [processing times page](/perm-processing-times).
 
 <ScreenshotFigure
   src="/images/content/figures/guides/look-up-a-law-firm-pace.webp"
@@ -90,14 +90,14 @@ Not from the firm. DOL works one national queue in filing order, so a case filed
   step={3}
 />
 
-## What this cannot tell you
+## What this can't tell you
 
 A firm's page can't see its pending cases, judge the quality of its work, show its fees or explain a denial.
 
-- **Anything about cases still waiting.** Every row in DOL's disclosure files carries a decision date, so a pending case is in none of these counts. The live per-case feed that does see pending cases records the employer, not the firm, so a firm's current queue can't be broken out at all.
+- **Anything about cases still waiting.** Every row in DOL's disclosure files carries a decision date, so a pending case is in none of these counts. The live per-case feed that does see pending cases records the employer without the firm. So a firm's current queue can't be broken out at all.
 - **Whether the firm is any good.** Volume is volume, and median days follows the client mix and when those cases were filed. None of it measures the advice, the responsiveness, or the care taken over a recruitment file.
 - **What they charge, or whether they'll take you on.** DOL publishes none of that, and neither do we.
-- **Why a case was denied.** DOL publishes the outcome and never the reasoning. We publish measured denial and audit rates and deliberately refuse to blend them into a single score, because the factors aren't independent and one number would read as precision the data can't support.
+- **Why a case was denied.** DOL publishes the outcome without the reasoning. We publish measured denial and audit rates and deliberately refuse to blend them into a single score. The factors aren't independent, and one number would read as precision the data can't support.
 - **Today.** Everything here refreshes daily from DOL, and the disclosure files behind the firm figures are quarterly, currently covering decisions through 30 June 2026. It isn't real time.
 - **A date you can lean on.** Where the site estimates a decision month, it's graded against real outcomes on the [estimate scorecard](/estimate-scorecard).
 
