@@ -114,12 +114,16 @@ describe("GET /api/cron/scorecard", () => {
     expect(writeScorecardDocs).toHaveBeenCalledWith("2026-09-27");
   });
 
-  it("a failure recording subscribers' cases costs only those", async () => {
+  it("a failure recording subscribers' cases costs only those, and turns the run red", async () => {
     predictWatched.mockRejectedValueOnce(new Error("doc unreadable"));
     const res = await call(`Bearer ${SECRET}`);
-    expect(res.status).toBe(200);
-    expect((await res.json()).watched).toBe(0);
+    // Everything else is recorded, graded and summarised; the timer still sees a failed run.
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.watched).toBe(0);
+    expect(body.watchedError).toMatch(/doc unreadable/);
     expect(recordPredictions.mock.calls[0]![1]).toEqual([{ id: 1 }, { id: "pwd", caseNumber: "P-100-26200-000001" }, { id: "seasonal" }]);
+    expect(writeScorecardDocs).toHaveBeenCalled();
   });
 
   it("reports a failed run as 500", async () => {

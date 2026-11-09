@@ -66,9 +66,12 @@ export async function GET(request: Request): Promise<NextResponse> {
     const { perm, pwd, sample, pendingBefore } = await predictOurs(today);
     const seasonal = await predictSeasonal(recordedOn);
     const release = await predictBulletinRelease(recordedOn).catch(softFail("api/cron/scorecard/route.predictBulletinRelease", []));
-    // Subscribers' own cases, once each; recorded with ours, never put to a rival.
-    const watched = await predictWatched(today).catch((e) => {
+    // Subscribers' own cases, once each; recorded with ours, never put to a rival. A failure costs only those, and
+    // the run still ends red so the timer and the morning report see it.
+    let watchedError = null as string | null;
+    const watched = await predictWatched(today).catch((e: unknown) => {
       console.error("[scorecard] watched cases not recorded", e);
+      watchedError = e instanceof Error ? e.message : String(e);
       return [];
     });
     const ours = await recordPredictions(recordedOn, [...perm, ...pwd, ...seasonal, ...release, ...watched]);
@@ -84,9 +87,10 @@ export async function GET(request: Request): Promise<NextResponse> {
       recordedOn, ours, perm: perm.length, pwd: pwd.length, seasonal: seasonal.length, release: release.length,
       watched: watched.length,
       rivals, failures, graded, open, rows,
+      ...(watchedError ? { watchedError } : {}),
     };
     console.log(`[scorecard] ${JSON.stringify(out)}`);
-    return NextResponse.json(out);
+    return NextResponse.json(out, { status: watchedError ? 500 : 200 });
   } catch (e) {
     console.error("[scorecard] failed", e);
     return NextResponse.json({ error: "scorecard run failed" }, { status: 500 });
