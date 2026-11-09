@@ -37,7 +37,9 @@ export default function ArticleHeader({ meta, type }: ArticleHeaderProps) {
         <div>
           {topic ? (
             <Link
-              href={`/${type}#${topic.id}`}
+              // The listing narrowed to the topic, as the topic cards link it: an anchor to its section can land
+              // on a page the listing's paging left it off.
+              href={`/${type}?topic=${topic.id}#articles`}
               className="link inline-flex min-h-11 items-center text-base"
             >
               {topic.label}
