@@ -53,11 +53,37 @@ describe("dailyReport.facts", () => {
       await ctx.db.insert("supportEmails", { ...base, fromEmail: "old@vendor.example", subject: "Old", messageId: "<2>", status: "held", heldAt: now - 3 * 86_400_000 });
     });
     const f = await t.query(internal.dailyReport.facts, {});
-    expect(f.spamFilter).toEqual({ heldSince: 1, waiting: 2, newest: [{ subject: "Reply to (an address)", domain: "vendor.example" }] });
+    expect(f.spamFilter).toEqual({
+      heldSince: 1,
+      waiting: 2,
+      newest: [{ subject: "Reply to (an address)", domain: "vendor.example" }],
+      forwardFailedSince: 0,
+      aiFailedSince: 0,
+    });
     expect(JSON.stringify(f.spamFilter)).not.toMatch(/@/);
     const section = spamSection(f);
     expect(section).toMatchObject({ key: "spam", status: "ok", summary: "1 held in 24 h, 2 on the held list" });
-    expect(spamSection({ ...f, spamFilter: { heldSince: 0, waiting: 0, newest: [] } })).toBeNull();
+    expect(
+      spamSection({ ...f, spamFilter: { heldSince: 0, waiting: 0, newest: [], forwardFailedSince: 0, aiFailedSince: 0 } }),
+    ).toBeNull();
+  });
+
+  it("warns when a message never reached the owner or the AI check failed, held list or not", async () => {
+    const t = createTestContext();
+    const now = Date.now();
+    await t.run(async (ctx) => {
+      const base = { toEmail: "support@permtracker.app", resendEmailId: "x", fromEmail: "person@example.org", subject: "Hi" };
+      await ctx.db.insert("supportEmails", { ...base, messageId: "<f1>", status: "received", createdAt: now - 1000, forwardFailed: true });
+      await ctx.db.insert("supportEmails", { ...base, messageId: "<a1>", status: "forwarded", createdAt: now - 2000, aiFailed: true });
+      await ctx.db.insert("supportEmails", { ...base, messageId: "<a2>", status: "forwarded", createdAt: now - 3000, aiFailed: true });
+      await ctx.db.insert("supportEmails", { ...base, messageId: "<old>", status: "received", createdAt: now - 3 * 86_400_000, forwardFailed: true });
+    });
+    const f = await t.query(internal.dailyReport.facts, {});
+    expect(f.spamFilter).toMatchObject({ waiting: 0, forwardFailedSince: 1, aiFailedSince: 2 });
+    const section = spamSection(f);
+    expect(section).toMatchObject({ key: "spam", status: "warn" });
+    expect(section?.summary).toMatch(/1 message never reached your inbox/);
+    expect(section?.summary).toMatch(/the AI check failed on 2/);
   });
 });
 

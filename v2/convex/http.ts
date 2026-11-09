@@ -2260,6 +2260,8 @@ http.route({
       forwarded: body.forwarded === true,
       held: body.held === true,
       notice: body.notice === true,
+      forwardFailed: body.forwardFailed === true,
+      aiFailed: body.aiFailed === true,
       spamScore: typeof body.spamScore === "number" && Number.isFinite(body.spamScore) ? body.spamScore : undefined,
       spamReasons: Array.isArray(body.spamReasons)
         ? body.spamReasons.filter((r): r is string => typeof r === "string").map((r) => r.slice(0, 200)).slice(0, 12)

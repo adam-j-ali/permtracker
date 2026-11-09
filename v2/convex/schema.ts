@@ -1012,6 +1012,10 @@ export default defineSchema({
     releasedAt: v.optional(v.number()),
     /** A service's own notices (Medium's): sent on, kept out of the admin page's list. */
     notice: v.optional(v.boolean()),
+    /** The mail Worker's forward to the owner failed twice: the message is stored but never reached the inbox. */
+    forwardFailed: v.optional(v.boolean()),
+    /** The spam check ran without its AI opinion (the model failed, was retired or ran out of allowance). */
+    aiFailed: v.optional(v.boolean()),
 
     // Admin reply (stored for history)
     replyBody: v.optional(v.string()),

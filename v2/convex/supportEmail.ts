@@ -95,6 +95,10 @@ export const storeCloudflareInbound = internalMutation({
     notice: v.optional(v.boolean()),
     spamScore: v.optional(v.number()),
     spamReasons: v.optional(v.array(v.string())),
+    /** The Worker's forward failed twice (the morning report counts these). */
+    forwardFailed: v.optional(v.boolean()),
+    /** The spam check ran without its AI opinion. */
+    aiFailed: v.optional(v.boolean()),
   },
   returns: v.boolean(),
   handler: async (ctx, args) => {
@@ -103,11 +107,13 @@ export const storeCloudflareInbound = internalMutation({
       .withIndex("by_message_id", (q) => q.eq("messageId", args.messageId))
       .first();
     if (existing) return false;
-    const { forwarded, held, notice, spamReasons, ...fields } = args;
+    const { forwarded, held, notice, spamReasons, forwardFailed, aiFailed, ...fields } = args;
     const now = Date.now();
     await ctx.db.insert("supportEmails", {
       ...fields,
       ...(notice ? { notice: true } : {}),
+      ...(forwardFailed ? { forwardFailed: true } : {}),
+      ...(aiFailed ? { aiFailed: true } : {}),
       ...(spamReasons && spamReasons.length > 0 ? { spamReasons: spamReasons.slice(0, 12) } : {}),
       ...(held ? { heldAt: now } : {}),
       resendEmailId: `cloudflare:${args.messageId}`.slice(0, 600),

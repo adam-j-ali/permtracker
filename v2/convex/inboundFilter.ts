@@ -92,7 +92,11 @@ export const verdict = internalQuery({
  * route, the same key as /owner). Undefined when the Worker isn't set up, is slow
  * or answers anything else: the rules then decide alone.
  */
-export async function aiOpinionFromWorker(mail: MailForCheck): Promise<AiOpinion | undefined> {
+export async function aiOpinionFromWorker(
+  mail: MailForCheck,
+  /** Hears why the AI gave no opinion, so the stored message carries `aiFailed` for the morning report. */
+  onFailure?: (why: string) => void,
+): Promise<AiOpinion | undefined> {
   const ownerUrl = process.env.OWNER_MAIL_URL;
   const key = process.env.OWNER_MAIL_KEY;
   if (!ownerUrl || !key) return undefined;
@@ -106,10 +110,16 @@ export async function aiOpinionFromWorker(mail: MailForCheck): Promise<AiOpinion
       body: JSON.stringify({ from: mail.from, subject: mail.subject, text: (mail.text ?? "").slice(0, 4_000) }),
       signal: controller.signal,
     });
-    if (!res.ok) return undefined;
-    const body = (await res.json()) as { verdict?: unknown };
-    return body.verdict === "spam" || body.verdict === "not_spam" || body.verdict === "unsure" ? body.verdict : undefined;
-  } catch {
+    if (!res.ok) {
+      onFailure?.(`the Worker's /classify answered ${res.status}`);
+      return undefined;
+    }
+    const body = (await res.json()) as { verdict?: unknown; error?: unknown };
+    if (body.verdict === "spam" || body.verdict === "not_spam" || body.verdict === "unsure") return body.verdict;
+    onFailure?.(typeof body.error === "string" ? body.error : "no verdict");
+    return undefined;
+  } catch (e) {
+    onFailure?.(e instanceof Error ? e.message : "the Worker didn't answer");
     return undefined;
   } finally {
     clearTimeout(timer);
@@ -318,13 +328,25 @@ export const pruneHeld = internalMutation({
 export async function heldSummary(
   ctx: QueryCtx,
   since: number,
-): Promise<{ heldSince: number; waiting: number; newest: Array<{ subject: string; domain: string }> }> {
+): Promise<{
+  heldSince: number;
+  waiting: number;
+  newest: Array<{ subject: string; domain: string }>;
+  forwardFailedSince: number;
+  aiFailedSince: number;
+}> {
   const waitingRows = await ctx.db
     .query("supportEmails")
     .withIndex("by_status", (q) => q.eq("status", "held"))
     .order("desc")
     .take(500);
   const recent = waitingRows.filter((r) => (r.heldAt ?? 0) >= since);
+  // The day's arrivals, for the two failures the mail Worker reports: a message that never reached the owner, and a
+  // check that ran without its AI. Bounded: a day brings far fewer than this.
+  const arrived = await ctx.db
+    .query("supportEmails")
+    .withIndex("by_created_at", (q) => q.gte("createdAt", since))
+    .take(2000);
   return {
     heldSince: recent.length,
     waiting: waitingRows.length,
@@ -333,5 +355,7 @@ export async function heldSummary(
       subject: r.subject.replace(/\S+@\S+/g, "(an address)").slice(0, 120),
       domain: r.fromEmail.split("@")[1] ?? "",
     })),
+    forwardFailedSince: arrived.filter((r) => r.forwardFailed === true).length,
+    aiFailedSince: arrived.filter((r) => r.aiFailed === true).length,
   };
 }
