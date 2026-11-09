@@ -1,5 +1,5 @@
-import { addDays, differenceInCalendarMonths } from 'date-fns';
-import { formatUTC, validateISODate } from '../dates/dateUtils';
+import { differenceInCalendarMonths } from 'date-fns';
+import { addDaysUTC, formatUTC, validateISODate } from '../dates/dateUtils';
 import { monthStart, monthsBetween } from '../dates/monthUtils';
 import { estimateByPace, type MeasuredPace, type MeasuredRangeRow } from './decisionPace';
 import { DAYS_PER_MONTH_2DP, MS_PER_DAY } from "../../time";
@@ -581,9 +581,18 @@ export function reportablePercentiles(
  * a valid and correct answer; callers must render it as "we cannot say" rather
  * than substituting a default.
  */
+/**
+ * A date as UTC midnight. Every date below is counted in UTC day numbers and printed with formatUTC, so a
+ * local-midnight parse put each estimate a day early for anyone east of UTC (India, Europe, China).
+ */
+function utcDay(s: string, field: string): Date {
+  validateISODate(s, field);
+  return new Date(`${s}T00:00:00Z`);
+}
+
 export function estimateQueueDecision(input: QueueEstimateInput): QueueEstimate {
-  const filed = validateISODate(input.filingDate, 'filingDate');
-  const today = validateISODate(input.today, 'today');
+  const filed = utcDay(input.filingDate, 'filingDate');
+  const today = utcDay(input.today, 'today');
   // Sliced from the validated string rather than formatted back out of the
   // Date. date-fns `format` renders in LOCAL time, so round-tripping a date
   // through it to recover its own month is a timezone bug waiting to happen.
@@ -727,7 +736,7 @@ export function estimateQueueDecision(input: QueueEstimateInput): QueueEstimate 
   ) {
     const monthsUntilReached = monthsBehind / rate;
     const daysUntilReached = Math.round(monthsUntilReached * DAYS_PER_MONTH_2DP);
-    const estimated = addDays(today, daysUntilReached);
+    const estimated = addDaysUTC(today, daysUntilReached);
 
     // The band comes from how much the rate itself has varied, not from a
     // fraction of the remaining days. Wait scales as 1/rate, so the FASTEST
@@ -737,8 +746,8 @@ export function estimateQueueDecision(input: QueueEstimateInput): QueueEstimate 
     let earliest: string | null = null;
     let latest: string | null = null;
     if (range && range.fastest > 0 && range.slowest > 0) {
-      earliest = formatUTC(addDays(today, Math.round((monthsBehind / range.fastest) * DAYS_PER_MONTH_2DP)));
-      latest = formatUTC(addDays(today, Math.round((monthsBehind / range.slowest) * DAYS_PER_MONTH_2DP)));
+      earliest = formatUTC(addDaysUTC(today, Math.round((monthsBehind / range.fastest) * DAYS_PER_MONTH_2DP)));
+      latest = formatUTC(addDaysUTC(today, Math.round((monthsBehind / range.slowest) * DAYS_PER_MONTH_2DP)));
     }
 
     models.push({
@@ -780,7 +789,7 @@ export function estimateQueueDecision(input: QueueEstimateInput): QueueEstimate 
       id: 'dol-average',
       label: "DOL's published average",
       basis: `DOL reports an average of ${avgDays} calendar days to a determination. That average is taken over cases decided recently, so audited and long-running cases pull it up.`,
-      estimatedDate: formatUTC(addDays(filed, avgDays)),
+      estimatedDate: formatUTC(addDaysUTC(filed, avgDays)),
       totalDays: avgDays,
       earliestDate: null,
       latestDate: null,
@@ -835,7 +844,7 @@ export function estimateQueueDecision(input: QueueEstimateInput): QueueEstimate 
       reportable: reportable.map((r) => ({
         percentile: r.percentile,
         days: r.days,
-        date: formatUTC(addDays(filed, r.days)),
+        date: formatUTC(addDaysUTC(filed, r.days)),
       })),
       truncatedBySurvivorship: median === undefined,
     };
@@ -847,10 +856,10 @@ export function estimateQueueDecision(input: QueueEstimateInput): QueueEstimate 
         id: 'cohort-percentile',
         label: 'Cases filed the same month',
         basis: `${cohortRow.decided.toLocaleString('en-US')} cases filed in ${cohortRow.cohortMonth} have been decided. Half took ${median.days} days or less.`,
-        estimatedDate: formatUTC(addDays(filed, median.days)),
+        estimatedDate: formatUTC(addDaysUTC(filed, median.days)),
         totalDays: median.days,
-        earliestDate: p25 ? formatUTC(addDays(filed, p25.days)) : null,
-        latestDate: p75 ? formatUTC(addDays(filed, p75.days)) : null,
+        earliestDate: p25 ? formatUTC(addDaysUTC(filed, p25.days)) : null,
+        latestDate: p75 ? formatUTC(addDaysUTC(filed, p75.days)) : null,
         source: 'DOL PERM disclosure data',
         facts: { id: 'cohort-percentile', decided: cohortRow.decided, month: cohortRow.cohortMonth, medianDays: median.days },
       });
@@ -876,7 +885,7 @@ export function estimateQueueDecision(input: QueueEstimateInput): QueueEstimate 
             `spread is narrow (5th to 95th percentile within about 5% of the middle), which is ` +
             `what lets the ${implied.fromPercentile}th percentile observed so far imply where the ` +
             `middle lands.`,
-          estimatedDate: formatUTC(addDays(filed, implied.days)),
+          estimatedDate: formatUTC(addDaysUTC(filed, implied.days)),
           totalDays: implied.days,
           earliestDate: null,
           latestDate: null,

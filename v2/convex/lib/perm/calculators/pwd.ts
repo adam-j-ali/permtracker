@@ -1,5 +1,4 @@
-import { format } from 'date-fns';
-import { addDaysUTC, validateISODate } from '../dates';
+import { addDaysUTC, formatUTC, validateISODate } from '../dates';
 
 /**
  * Calculate PWD expiration date based on determination date.
@@ -18,16 +17,18 @@ import { addDaysUTC, validateISODate } from '../dates';
  * calculatePWDExpiration('2024-02-05') // '2024-06-30' (Case 3: same June 30)
  */
 export function calculatePWDExpiration(determinationDate: string): string {
-  const date = validateISODate(determinationDate, 'determinationDate');
-  const month = date.getUTCMonth(); // 0-indexed (0 = Jan, 11 = Dec)
-  const day = date.getUTCDate();
-  const year = date.getUTCFullYear();
+  validateISODate(determinationDate, 'determinationDate');
+  // Read the calendar date from the string itself. validateISODate returns local midnight, and its UTC fields
+  // are the day before anywhere east of UTC: a July 1 determination read in India became June 30 (+90 days).
+  const [year, monthOneBased, day] = determinationDate.split('-').map(Number) as [number, number, number];
+  const month = monthOneBased - 1; // 0-indexed (0 = Jan, 11 = Dec)
+  const date = new Date(Date.UTC(year, month, day));
 
   // Case 1: April 2 - June 30 (90 days)
   const isApril2OrLater = month === 3 && day >= 2;
   const isMayOrJune = month === 4 || month === 5;
   if (isApril2OrLater || isMayOrJune) {
-    return format(addDaysUTC(date, 90), 'yyyy-MM-dd');
+    return formatUTC(addDaysUTC(date, 90));
   }
 
   // Case 2: July 1 - December 31 (June 30 of following year)

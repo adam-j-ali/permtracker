@@ -172,3 +172,17 @@ describe('federalHolidayName', () => {
     expect(federalHolidayName('2026-10-13')).toBeNull();
   });
 });
+
+describe("a New Year's Day observed in the year before", () => {
+  // January 1, 2028 is a Saturday, so it's observed on Friday, December 31, 2027 (5 U.S.C. 6103(b)).
+  test('counts Dec 31 2027 as the holiday', () => {
+    expect(isFederalHoliday('2027-12-31')).toBe(true);
+    expect(isBusinessDay('2027-12-31')).toBe(false);
+    expect(federalHolidayName('2027-12-31')).toBe("New Year's Day");
+  });
+
+  test('leaves the days around it alone', () => {
+    expect(isBusinessDay('2027-12-30')).toBe(true);
+    expect(isFederalHoliday('2028-01-01')).toBe(false);
+  });
+});

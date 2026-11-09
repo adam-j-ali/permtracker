@@ -70,11 +70,16 @@ def federal_holidays(year: int) -> list[tuple[str, date]]:
 _cache: dict[int, set[date]] = {}
 
 
+def _holidays_of(year: int) -> set[date]:
+    if year not in _cache:
+        _cache[year] = {h for _, h in federal_holidays(year)}
+    return _cache[year]
+
+
 def is_federal_holiday(d: date) -> bool:
-    """isFederalHoliday: looks in the date's own year's list, as the TypeScript does."""
-    if d.year not in _cache:
-        _cache[d.year] = {h for _, h in federal_holidays(d.year)}
-    return d in _cache[d.year]
+    """isFederalHoliday: the date's own year's list, and for a December date the next year's too, as the TypeScript
+    does. New Year's Day on a Saturday is observed on December 31 of the year before (Dec 31, 2027)."""
+    return d in _holidays_of(d.year) or (d.month == 12 and d in _holidays_of(d.year + 1))
 
 
 def is_dol_workday(d: date) -> bool:
