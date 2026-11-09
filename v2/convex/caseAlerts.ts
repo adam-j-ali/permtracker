@@ -1943,12 +1943,14 @@ export const sweepCaseChanges = internalAction({
           continue;
         }
 
+        // Set before the record, as the queue and match sweeps do: if recordAlert throws, the claim stays
+        // (it lapses after ALERT_SEND_CLAIM_MS) instead of being freed for the next sweep to send again.
+        delivered = true;
         await ctx.runMutation(internal.caseAlerts.recordAlert, {
           id: sub._id,
           status,
           isFinal,
         });
-        delivered = true;
         if (result.status === "sent") sent += 1;
         else queued += 1;
       } catch (error) {
@@ -1957,7 +1959,7 @@ export const sweepCaseChanges = internalAction({
         log.error("alert send threw", { caseNumber: sub.caseNumber, error });
         await recordError(ctx, "action", "caseAlerts.sweepCaseChanges", error);
       } finally {
-        // recordAlert cleared the claim on a delivery; anything else frees it.
+        // recordAlert cleared the claim on a delivery; a send that didn't go frees it.
         if (!delivered) {
           await ctx.runMutation(internal.caseAlerts.releaseAlertSend, { id: sub._id }).catch((e: unknown) => {
             log.error("releasing a send claim failed; it expires on its own", { caseNumber: sub.caseNumber, error: e });

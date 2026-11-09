@@ -831,6 +831,33 @@ describe("failure handling", () => {
     expect(alerts()).toHaveLength(1);
   });
 
+  it("keeps the send claim when the alert went but recording it failed, so the next sweep doesn't send it again", async () => {
+    const t = createTestContext();
+    const { alerts } = stubMirrorAndResend({
+      cases: { [CASE]: { status: "RFI ISSUED", isFinal: false } },
+    });
+    const id = await seededSubscription(t, "person@example.com", "ANALYST REVIEW");
+    // The record after a good send throws once, as a transient mutation failure would.
+    const mod = (await import("../caseAlerts")) as unknown as { recordAlert: { _handler: (...a: unknown[]) => unknown } };
+    const real = mod.recordAlert._handler;
+    mod.recordAlert._handler = async () => {
+      throw new Error("stubbed record failure");
+    };
+    try {
+      const res = await t.action(internal.caseAlerts.sweepCaseChanges, {});
+      expect(res.failed).toBe(1);
+    } finally {
+      mod.recordAlert._handler = real;
+    }
+    expect(alerts()).toHaveLength(1);
+    const row = await t.run(async (ctx) => ctx.db.get(id));
+    expect(row!.sendingStatus, "the claim stays: the email went").toBe("RFI ISSUED");
+
+    await t.run(async (ctx) => ctx.db.patch(id, { lastCheckedAt: 0 }));
+    await t.action(internal.caseAlerts.sweepCaseChanges, {});
+    expect(alerts(), "the next sweep finds the claim and sends nothing").toHaveLength(1);
+  });
+
   it("keeps watching a decided case for a year, then retires it", async () => {
     vi.stubEnv("ALERT_RATING_ENABLED", "1");
     const t = createTestContext();
