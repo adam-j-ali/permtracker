@@ -403,8 +403,23 @@ const CLOSED_TILE: Record<string, string> = {
 };
 
 /**
+ * A status's moves in a window, from the window's list of moves. The list names only statuses that saw a transition,
+ * so a status missing from a list that was read didn't move: a zero move. Only a list that couldn't be read
+ * (undefined) gives null, which the tile shows as "no reading".
+ */
+export function statusMoveOf(list: readonly StatusMove[] | undefined, status: string): StatusMove | null {
+  if (!list) return null;
+  return list.find((m) => m.status === status) ?? { status, in: 0, out: 0, net: 0 };
+}
+
+/** Whether a window's move has anything in it: a zero move is a quiet status, not a reason to show its tile. */
+export function moved(m: StatusMove | null): boolean {
+  return m !== null && (m.in > 0 || m.out > 0);
+}
+
+/**
  * A status's change: fewer waiting reads green, more reads amber; a closed status's new decisions are neither.
- * No reading for the window (null) says so: "same" would claim nothing moved.
+ * No reading for the window (null, a failed read) says so: "same" would claim nothing moved.
  */
 function Change({ value, label, neutral = false }: { value: number | null; label: string; neutral?: boolean }) {
   if (value === null) {

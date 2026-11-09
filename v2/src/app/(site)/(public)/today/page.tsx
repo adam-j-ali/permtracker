@@ -7,7 +7,9 @@ import {
   BulletinGrid,
   DecidedBar,
   FlowPair,
+  moved,
   Station,
+  statusMoveOf,
   StatusTiles,
   Track,
   WaitBar,
@@ -32,7 +34,6 @@ import {
   rulerOf,
   waitScaleDays,
   type SpanReading,
-  type StatusMove,
 } from "@/lib/board";
 import { cutoffLabel } from "@/lib/bulletinNext";
 import { DECISION_SPANS } from "@/lib/pulseStats";
@@ -114,13 +115,14 @@ export default async function TodayPage() {
     const k = r.status.trim().toUpperCase();
     nowByStatus.set(k, (nowByStatus.get(k) ?? 0) + r.n);
   }
-  const moveOf = (list: StatusMove[] | undefined, s: string) => list?.find((m) => m.status === s) ?? null;
+  // A status missing from a list that was read didn't move (a zero move); null is only a board that couldn't be read.
+  const moveOf = statusMoveOf;
   const waitingRows = WAITING.map((s) => ({
     status: s,
     now: census ? nowByStatus.get(s) ?? 0 : null,
     day: moveOf(perm?.movesDay, s),
     week: moveOf(perm?.movesWeek, s),
-  })).filter((r) => (r.now ?? 0) > 0 || r.day || r.week);
+  })).filter((r) => (r.now ?? 0) > 0 || moved(r.day) || moved(r.week));
   // A decided status counts what came into it: a certification lapsing isn't a decision undone.
   const decidedParts = DECIDED.map((s) => ({ status: s, n: moveOf(perm?.movesDay, s)?.in ?? 0 }));
   const decidedRows = DECIDED.map((s) => ({
