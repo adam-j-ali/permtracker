@@ -188,6 +188,31 @@ describe("CaseFinder, standing apart", () => {
     await screen.findByText(/DOL’s record holds 4 wage requests filed on January 30, 2026/);
   });
 
+  it("opens on the kind of filing its page is about", async () => {
+    const asked = stub({ cases: DAY });
+    render(<CaseFinder source="pwd-cases-finder" program="pwd" heading="Find your case without the number" />);
+    expect(screen.getByRole("button", { name: "Wage request" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "PERM case" })).toHaveAttribute("aria-pressed", "false");
+    type("google");
+    fireEvent.change(screen.getByLabelText("Date it was filed"), { target: { value: "2026-01-30" } });
+    await waitFor(() => expect(asked).toEqual(["/api/filed-on?day=2026-01-30&program=pwd"]));
+  });
+
+  it("counts an answer once a day, kind and outcome, however the name is retyped", async () => {
+    stub({ cases: DAY });
+    render(<CaseFinder programs={["perm"]} day="2026-01-30" source="t" />);
+    type("goo");
+    await waitFor(() => expect(trackFinder).toHaveBeenCalledTimes(1));
+    type("google");
+    await screen.findByText(/2 are from an employer matching “google”\./);
+    type("google llc");
+    await screen.findByText(/2 are from an employer matching “google llc”\./);
+    // Long enough for a rested name to have counted again, if it were going to.
+    await new Promise((r) => setTimeout(r, 600));
+    expect(trackFinder).toHaveBeenCalledTimes(1);
+    expect(trackFinder).toHaveBeenCalledWith("t", "perm", "cases");
+  });
+
   it("moves its own day to a nearby one the reader picks", async () => {
     const asked = stub({ cases: DAY }, [{ filedOn: "2026-01-28" }]);
     render(<CaseFinder source="lookup" heading="Find your case without the number" />);

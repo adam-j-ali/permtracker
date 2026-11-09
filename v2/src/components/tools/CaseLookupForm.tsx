@@ -58,6 +58,8 @@ export interface CaseLookupFormProps {
   searchLabel?: string;
   /** The employer whose page this is: the finder opens with the name filled in. */
   employerName?: string;
+  /** The kind of filing this page is about: the finder opens on it. PERM cases otherwise. */
+  finderProgram?: "perm" | "pwd" | "lca" | "seasonal";
   /** Which page sent the lookup, for the funnel's lookup event. */
   source?: string;
   /** Where the number goes. The embed answers inside its own frame. */
@@ -92,6 +94,7 @@ export function CaseLookupForm({
   searchHref = "/case-search",
   searchLabel = SEARCH_LABEL,
   employerName,
+  finderProgram,
   source,
   action = "/perm-case-status",
   placeholder = "G-100-26125-868956",
@@ -185,13 +188,27 @@ export function CaseLookupForm({
       </form>{" "}
       {/* Many people waiting never saw the receipt (the lawyer filed it). The finder sits outside
           the form, so its own boxes are never sent with the number and Enter in them submits nothing. */}
-      {searchHref ? <NoNumber searchHref={searchHref} searchLabel={searchLabel} employerName={employerName} source={source} /> : null}
+      {searchHref ? (
+        <NoNumber searchHref={searchHref} searchLabel={searchLabel} employerName={employerName} program={finderProgram} source={source} />
+      ) : null}
     </div>
   );
 }
 
 /** The way in without a number: the finder, opened in place, and the page the box's host names. */
-function NoNumber({ searchHref, searchLabel, employerName, source }: { searchHref: string; searchLabel: string; employerName?: string; source?: string }) {
+function NoNumber({
+  searchHref,
+  searchLabel,
+  employerName,
+  program,
+  source,
+}: {
+  searchHref: string;
+  searchLabel: string;
+  employerName?: string;
+  program?: "perm" | "pwd" | "lca" | "seasonal";
+  source?: string;
+}) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   return (
@@ -213,6 +230,7 @@ function NoNumber({ searchHref, searchLabel, employerName, source }: { searchHre
             className="mt-3 text-left text-foreground"
             heading="Find your case without the number"
             employer={employerName}
+            program={program}
             source={source ? `${source}-finder` : "case-lookup-finder"}
           />
         ) : null}

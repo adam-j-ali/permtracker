@@ -57,6 +57,25 @@ describe("PwdDateEstimate", () => {
     expect(screen.getByText("40 of the 800 requests filed that day are decided.")).toBeTruthy();
   });
 
+  it("finds the request itself for someone with no number: the employer's name and the same day", async () => {
+    const asked: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      asked.push(url);
+      const request = { caseNumber: "P-100-26226-000123", status: "IN PROCESS", employer: "Acme Robotics, Inc.", employerSlug: null, jobTitle: "Controls Engineer", final: false };
+      return new Response(JSON.stringify({ cases: [request], capped: false }), { status: 200 });
+    }));
+    const { unmount } = render(<PwdDateEstimate data={DATA} lineDay="2026-07-27" />);
+    fireEvent.change(screen.getByRole("textbox", { name: /employer/i }), { target: { value: "acme" } });
+    expect(asked).toEqual([]);
+    fireEvent.change(screen.getByLabelText("The day the wage request was filed"), { target: { value: "2026-08-14" } });
+    expect(await screen.findByRole("link", { name: "P-100-26226-000123" })).toHaveAttribute("href", "/perm-case-status?case=P-100-26226-000123");
+    // Wage requests alone, so no chooser, and the day's own list.
+    expect(asked).toEqual(["/api/filed-on?day=2026-08-14&program=pwd"]);
+    expect(screen.queryByRole("group", { name: "Kind of filing" })).toBeNull();
+    unmount();
+    vi.unstubAllGlobals();
+  });
+
   it("refuses a day that hasn't come", () => {
     render(<PwdDateEstimate data={DATA} lineDay="2026-07-27" />);
     fireEvent.change(screen.getByLabelText("The day the wage request was filed"), { target: { value: "2026-12-01" } });
