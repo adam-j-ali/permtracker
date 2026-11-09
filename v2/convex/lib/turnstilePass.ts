@@ -1,5 +1,6 @@
 /**
- * The one-time pass that ties the human check to the sign-up itself.
+ * The one-time pass that ties the human check to the sign-up, and to a
+ * password reset code (needsCodePass below).
  *
  * convex/turnstile.ts asks Cloudflare whether a Turnstile token is good.
  * Run only by the browser BEFORE calling signIn with flow "signUp", that
@@ -93,4 +94,36 @@ export async function requireSignupPass(
   if (!(await consumePass(ctx, args.profile.turnstilePass, Date.now()))) {
     throw new ConvexError(PASS_REFUSED);
   }
+}
+
+/**
+ * True for the two Password flows that send a code with no password to check:
+ * "reset", and "email-verification" asked for a new code (no code given).
+ * Anyone can call Convex Auth's signIn action directly, so without a pass a
+ * script could spend the day's code allowance (convex/lib/authMailGate.ts) and
+ * leave nobody able to reset a password or verify a new account. A sign-up's
+ * code rides the sign-up's own pass, a sign-in's code is sent only after the
+ * right password, and the -verification steps only check a code.
+ */
+export function needsCodePass(params: Record<string, unknown>): boolean {
+  if (params.flow === "reset") return true;
+  return params.flow === "email-verification" && (params.code === undefined || params.code === "");
+}
+
+/**
+ * A provider's authorize that uses up a pass before a code-sending flow runs.
+ * `consume` answers whether the pass was live (the consume mutation in
+ * convex/turnstilePasses.ts, run through the action ctx).
+ */
+export function guardCodeFlows<P extends Record<string, unknown>, C, R>(
+  authorize: (params: P, ctx: C) => Promise<R>,
+  consume: (ctx: C, pass: string | undefined) => Promise<boolean>,
+): (params: P, ctx: C) => Promise<R> {
+  return async (params, ctx) => {
+    if (needsCodePass(params)) {
+      const pass = typeof params.turnstilePass === "string" ? params.turnstilePass : undefined;
+      if (!(await consume(ctx, pass))) throw new ConvexError(PASS_REFUSED);
+    }
+    return authorize(params, ctx);
+  };
 }

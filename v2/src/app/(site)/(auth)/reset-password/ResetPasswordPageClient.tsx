@@ -31,6 +31,7 @@ import {
   isExpiredError,
   isBlockedResponseError,
   isMaskedServerError,
+  isSecurityCheckExpired,
   blockedResponseMessage,
 } from "@/lib/auth/auth-errors";
 import {
@@ -120,7 +121,9 @@ export function ResetPasswordPageClient() {
     setIsLoading(true);
 
     try {
-      // Pre-flight Turnstile — same pattern as signup.
+      // Pre-flight Turnstile — same pattern as signup. A passing check returns a one-time pass, and the reset
+      // request has to carry it: the server refuses to send a code without one (convex/lib/turnstilePass.ts).
+      let turnstilePass: string | undefined;
       try {
         const verifyResult = await verifyTurnstile({ token: turnstileToken! });
         if (!verifyResult.success) {
@@ -130,6 +133,7 @@ export function ResetPasswordPageClient() {
           setIsLoading(false);
           return;
         }
+        turnstilePass = verifyResult.pass;
       } catch (verifyError) {
         captureTurnstileServiceError(verifyError, "reset_password");
         trackTurnstileFail("reset_password", "service_error");
@@ -144,6 +148,7 @@ export function ResetPasswordPageClient() {
       const formData = new FormData();
       formData.set("email", email);
       formData.set("flow", "reset");
+      if (turnstilePass) formData.set("turnstilePass", turnstilePass);
 
       await signIn("password", formData);
       trackPasswordResetRequested();
@@ -158,6 +163,11 @@ export function ResetPasswordPageClient() {
       // was sent, which is false when the request never reached the proxy.
       if (isBlockedResponseError(message)) {
         toast.error(blockedResponseMessage(message));
+      } else if (isSecurityCheckExpired(message)) {
+        // The pass was missing, used or expired. The widget's token is spent too, so it runs again.
+        setTurnstileToken(null);
+        trackTurnstileFail("reset_password", "expired");
+        toast.error("The security check expired. Refresh the page and try again.");
       } else if (isRateLimitError(message)) {
         captureError(error, { operation: "resetPasswordRequest" });
         toast.error(authRateLimitText(message));

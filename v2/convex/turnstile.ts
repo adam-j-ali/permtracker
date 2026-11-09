@@ -6,12 +6,13 @@
  * Called by the sign-up, sign-in and reset forms BEFORE @convex-dev/auth's
  * signIn. If the token doesn't verify, the client refuses to proceed.
  *
- * A passing check also returns a one-time pass, and the sign-up must carry
- * it: the createOrUpdateUser hook in convex/auth.ts refuses a new password
- * account without one (convex/lib/turnstilePass.ts). Without that, a script
- * could skip this action and call signIn directly. The check itself can't
- * run inside the sign-up because Convex Auth's profile() is synchronous and
- * siteverify is a fetch.
+ * A passing check also returns a one-time pass, and two requests must carry
+ * it: a sign-up (the createOrUpdateUser hook in convex/auth.ts refuses a new
+ * password account without one) and a password reset, whose code the guarded
+ * Password provider won't send without one (convex/lib/turnstilePass.ts).
+ * Without that, a script could skip this action and call signIn directly. The
+ * check itself can't run inside signIn because Convex Auth's profile() is
+ * synchronous and siteverify is a fetch.
  *
  * Also in place:
  *   - convex/lib/nameValidation.ts (blocks the spam name pattern)

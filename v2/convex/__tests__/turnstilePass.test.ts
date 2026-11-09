@@ -5,16 +5,18 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createTestContext } from "../../test-utils/convex";
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 import type { MutationCtx } from "../_generated/server";
-import { authCallbacks } from "../auth";
+import { authCallbacks, passwordProvider } from "../auth";
 import {
   PASS_REFUSED,
   PASS_TTL_MS,
   PRUNE_PER_ISSUE,
   consumePass,
+  guardCodeFlows,
   hashPass,
   issuePass,
+  needsCodePass,
   newPass,
 } from "../lib/turnstilePass";
 import { isSecurityCheckExpired } from "../../src/lib/auth/auth-errors";
@@ -171,4 +173,72 @@ it("the browser recognises the refusal", () => {
   expect(isSecurityCheckExpired(PASS_REFUSED)).toBe(true);
   expect(isSecurityCheckExpired(`[CONVEX A(auth:signIn)] Uncaught ConvexError: ${PASS_REFUSED}`)).toBe(true);
   expect(isSecurityCheckExpired("Invalid credentials")).toBe(false);
+});
+
+describe("a code sent without a password needs a pass", () => {
+  it("names the two flows that send a code with no password to check", () => {
+    expect(needsCodePass({ flow: "reset", email: "a@example.com" })).toBe(true);
+    expect(needsCodePass({ flow: "email-verification", email: "a@example.com" })).toBe(true);
+    expect(needsCodePass({ flow: "email-verification", email: "a@example.com", code: "" })).toBe(true);
+    // Checking a code sends nothing; a sign-in's code needs the right password first; sign-up has its own pass.
+    expect(needsCodePass({ flow: "email-verification", code: "ABCDEF123456" })).toBe(false);
+    expect(needsCodePass({ flow: "reset-verification", code: "ABCDEF123456", newPassword: "x" })).toBe(false);
+    expect(needsCodePass({ flow: "signIn", password: "x" })).toBe(false);
+    expect(needsCodePass({ flow: "signUp", password: "x" })).toBe(false);
+  });
+
+  /** A wrapped authorize whose own work is a stub, so only the guard is under test. */
+  function guarded(t: ReturnType<typeof createTestContext>) {
+    const base = vi.fn(async () => null);
+    const authorize = guardCodeFlows(base, (_ctx: unknown, pass: string | undefined) =>
+      t.mutation(internal.turnstilePasses.consume, { pass }),
+    );
+    return { base, authorize };
+  }
+
+  it("refuses a reset with no pass, before anything is sent", async () => {
+    const t = createTestContext();
+    const { base, authorize } = guarded(t);
+    await expect(authorize({ flow: "reset", email: "a@example.com" }, {})).rejects.toThrow(PASS_REFUSED);
+    await expect(
+      authorize({ flow: "email-verification", email: "a@example.com" }, {}),
+    ).rejects.toThrow(PASS_REFUSED);
+    expect(base).not.toHaveBeenCalled();
+  });
+
+  it("lets a reset through with a live pass, once", async () => {
+    const t = createTestContext();
+    const { base, authorize } = guarded(t);
+    const pass = newPass();
+    await t.mutation(internal.turnstilePasses.issue, { hash: await hashPass(pass) });
+    await authorize({ flow: "reset", email: "a@example.com", turnstilePass: pass }, {});
+    expect(base).toHaveBeenCalledTimes(1);
+    await expect(
+      authorize({ flow: "reset", email: "a@example.com", turnstilePass: pass }, {}),
+    ).rejects.toThrow(PASS_REFUSED);
+    expect(base).toHaveBeenCalledTimes(1);
+  });
+
+  it("asks nothing of a code check, a sign-in or a sign-up", async () => {
+    const t = createTestContext();
+    const { base, authorize } = guarded(t);
+    await authorize({ flow: "email-verification", code: "ABCDEF123456" }, {});
+    await authorize({ flow: "reset-verification", code: "ABCDEF123456", newPassword: "a-long-pass" }, {});
+    await authorize({ flow: "signIn", email: "a@example.com", password: "a-long-pass" }, {});
+    await authorize({ flow: "signUp", email: "a@example.com", password: "a-long-pass" }, {});
+    expect(base).toHaveBeenCalledTimes(4);
+  });
+
+  it("is the guard the live Password provider runs", async () => {
+    const t = createTestContext();
+    const ctx = {
+      runMutation: (ref: unknown, args: Record<string, unknown>) =>
+        t.mutation(ref as typeof internal.turnstilePasses.consume, args as { pass?: string }),
+    } as unknown as Parameters<NonNullable<typeof passwordProvider.authorize>>[1];
+    // The authorize convexAuth() runs: `options` merged over the provider, as provider_utils.js does.
+    const live = { ...passwordProvider, ...passwordProvider.options };
+    await expect(live.authorize({ flow: "reset", email: "a@example.com" }, ctx)).rejects.toThrow(
+      PASS_REFUSED,
+    );
+  });
 });
