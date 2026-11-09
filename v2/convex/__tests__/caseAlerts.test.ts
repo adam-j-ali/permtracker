@@ -1428,6 +1428,23 @@ describe("the three FLAG programs", () => {
     expect(String(second.sends[0]!.text)).toContain("We don't have a date for this status yet.");
   });
 
+  it("says the check couldn't run when DOL's record can't be read, in both parts, never a possible typo", async () => {
+    const t = createTestContext();
+    const { sends } = stubMirrorAndResend({ cases: {} });
+    const resendOnly = global.fetch;
+    global.fetch = (async (url: unknown, init?: RequestInit) =>
+      String(url).includes("/v2/pipeline")
+        ? new Response("down", { status: 502 })
+        : resendOnly(url as string, init)) as typeof fetch;
+    await t.action(internal.caseAlerts.sendConfirmation, { email: "person@example.com", caseNumber: CASE });
+    const body = sends[0]!;
+    const text = String(body.text);
+    expect(text).toContain("We couldn't check this case number just now. Check it against your receipt before you confirm.");
+    expect(text).not.toMatch(/typo|don't hold this case number/);
+    expect(String(body.html)).toContain("We couldn’t check this case number just now");
+    expect(String(body.html)).not.toMatch(/typo/);
+  });
+
   it("withholds the PERM regulatory gloss from a non-PERM alert", async () => {
     // `statusMeaning("CERTIFIED")` promises 180 days to file the I-140. That
     // is a PERM rule and it is simply untrue of a certified LCA. A plausible

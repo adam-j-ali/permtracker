@@ -64,6 +64,11 @@ export interface CaseAlertConfirmProps {
   /** Optional, default off: links already in inboxes predate it. */
   includesNewsletter?: boolean;
   /**
+   * True when DOL's record couldn't be read for this email. A failed read is never "no record": the email says
+   * the check couldn't run, instead of calling a correct number what a typo looks like.
+   */
+  lookupFailed?: boolean;
+  /**
    * What to call this filing, with its article: "a PERM case", "a prevailing
    * wage request", "an LCA". From `programNounWithArticle` at the call site.
    *
@@ -85,6 +90,7 @@ export function CaseAlertConfirm({
   includesNews = false,
   includesNewsletter = false,
   nounWithArticle = "a PERM case",
+  lookupFailed = false,
 }: CaseAlertConfirmProps) {
   const known = currentStatus !== null;
 
@@ -93,7 +99,9 @@ export function CaseAlertConfirm({
       previewText={
         known
           ? `Confirm and we'll email you when DOL's status for this case changes.`
-          : `We don't hold this case number yet. Check it before you confirm.`
+          : lookupFailed
+            ? `We couldn't check this case number just now. Check it before you confirm.`
+            : `We don't hold this case number yet. Check it before you confirm.`
       }
       hideSettingsLink
       footerText={`This address was entered to be told when ${nounWithArticle}\u2019s status changes. It isn\u2019t confirmed yet, so nothing else will be sent.`}
@@ -111,6 +119,10 @@ export function CaseAlertConfirm({
                 : "We don\u2019t have a date for this status yet"}
             </Text>
           </>
+        ) : lookupFailed ? (
+          <Text className="em-text-secondary" style={styles.provenance}>
+            Couldn&rsquo;t check DOL&rsquo;s record just now
+          </Text>
         ) : (
           <Text className="em-text-secondary" style={styles.provenance}>
             Not in our records yet
@@ -133,6 +145,12 @@ export function CaseAlertConfirm({
             soon as we see it, and every alert says since when DOL&rsquo;s record has shown the status.
           </Text>
         </>
+      ) : lookupFailed ? (
+        <Text className="em-text-body" style={styles.body}>
+          We couldn&rsquo;t check this case number just now. Check it against
+          your receipt before you confirm. If you confirm, we&rsquo;ll start
+          watching it and email you the first time its status moves after that.
+        </Text>
       ) : (
         <Text className="em-text-body" style={styles.body}>
           We don&rsquo;t hold this case number yet. That&rsquo;s normal for a

@@ -751,11 +751,13 @@ export const sendConfirmation = internalAction({
       const confirmUrl = actionUrl("/case-alert/confirm", token);
 
       // Echo the case back so a typo is caught here rather than a year later.
-      // A mirror outage must not block the confirmation, so this degrades to
-      // the "we do not hold it yet" copy rather than throwing: a person who
-      // cannot confirm has no subscription at all.
+      // A mirror outage must not block the confirmation, so this degrades
+      // rather than throwing: a person who cannot confirm has no subscription
+      // at all. Both parts then say the check couldn't run, never "we don't
+      // hold it", which would call a correct number what a typo looks like.
       let current: Row | null = null;
       let asOf: string | null = null;
+      let lookupFailed = false;
       try {
         current = await one(
           `SELECT current_status, employer_name, fetched_at
@@ -766,6 +768,7 @@ export const sendConfirmation = internalAction({
         // freshness stamp, which would date every case alike.
         asOf = observedLabel(current?.fetched_at);
       } catch (error) {
+        lookupFailed = true;
         log.error("mirror unreadable during confirmation", {
           caseNumber: args.caseNumber,
         });
@@ -797,6 +800,7 @@ export const sendConfirmation = internalAction({
             includesNews,
             includesNewsletter,
             nounWithArticle: programNounWithArticle(program),
+            lookupFailed,
           });
         },
       );
@@ -816,10 +820,12 @@ export const sendConfirmation = internalAction({
                 // The same words as the html: asOf is the day this status was first seen, not a check.
                 asOf ? `Shown since at least ${asOf}` : "We don't have a date for this status yet.",
               ]
-            : [
-                "We don't hold this case number yet. That's normal for a recent filing,",
-                "and it's also what a typo looks like, so check it against your receipt.",
-              ]),
+            : lookupFailed
+              ? ["We couldn't check this case number just now. Check it against your receipt before you confirm."]
+              : [
+                  "We don't hold this case number yet. That's normal for a recent filing,",
+                  "and it's also what a typo looks like, so check it against your receipt.",
+                ]),
           "",
           "Confirm here and we'll email you when its status changes:",
           confirmUrl,
