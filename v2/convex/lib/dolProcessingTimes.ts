@@ -555,6 +555,12 @@ function parseWithoutQueue(
 ): DolProcessingTimesSnapshot {
   const rows = permTable.rows.filter((cells) => cells.length >= 3);
   const labels = rows.map((cells) => cells[0]!.trim());
+  // The label is printed once, in the middle of its group, so with two groups the rows above the second
+  // label can't be told from the first group's: refuse the table rather than give them the wrong name.
+  const distinct = [...new Set(labels.filter((l) => l.length > 0))];
+  if (distinct.length > 1) {
+    throw new DolParseError(`the PERM averages table has more than one group (${distinct.join(", ")})`);
+  }
   const firstLabel = labels.find((l) => l.length > 0) ?? "";
   let label = firstLabel;
   const permAverageDays: PermDeterminationRow[] = rows.map((cells, i) => {

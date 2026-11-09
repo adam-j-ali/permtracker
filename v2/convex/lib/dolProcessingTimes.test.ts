@@ -366,6 +366,18 @@ describe("DOL's page from Oct 31 2026: averages by reporting period, no PERM mon
     expect(() => parseProcessingTimes(renamed)).toThrow(/Analyst Review/);
   });
 
+  it("throws when a second group joins the averages, rather than giving its top rows the first group's label", () => {
+    // The label sits in each group's middle row, so a second group's first row can't be told from the first
+    // group's last: a wrong Analyst Review average is worse than none.
+    const audit =
+      '<tr><td headers="a">&nbsp;</td><td>Last 30 Days</td><td>400</td></tr>' +
+      '<tr><td headers="a">Audit Review</td><td>Last 90 Days</td><td>410</td></tr>' +
+      '<tr><td headers="a">&nbsp;</td><td>Last 180 Days</td><td>420</td></tr>';
+    const twoGroups = NOV_FIXTURE.replace(/(Last 180 Days&nbsp;<\/td>[\s\S]*?<\/tr>)(<\/tbody>)/, `$1${audit}$2`);
+    expect(twoGroups).not.toBe(NOV_FIXTURE);
+    expect(() => parseProcessingTimes(twoGroups)).toThrow(/more than one group/);
+  });
+
   it("throws when an average becomes unreadable", () => {
     const reworded = NOV_FIXTURE.replace(">315<", ">about 315<");
     expect(() => parseProcessingTimes(reworded)).toThrow(/unreadable count/);
