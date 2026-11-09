@@ -242,7 +242,7 @@ export async function PwdLookup({ caseNumber }: { caseNumber: string }) {
       >
         DOL&apos;s case system holds nothing under this number. It may be a typo, a filing from the last day, or a
         number from before DOL&apos;s current system. Check it on{" "}
-        <a href="https://flag.dol.gov/case-status-search" className="link" rel="noopener">
+        <a target="_blank" href="https://flag.dol.gov/case-status-search" className="link" rel="noopener">
           DOL&apos;s own case status page
         </a>
         , or find it by employer on the{" "}

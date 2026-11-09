@@ -111,7 +111,7 @@ export function UscisStatusResult({ receipt }: { receipt: string }) {
       <Refusal title="Nothing came back">
         The request to this site&apos;s own lookup route failed before USCIS was
         reached. Reload, or use{" "}
-        <a href={USCIS_STATUS_URL} rel="noopener noreferrer" className="link">
+        <a target="_blank" href={USCIS_STATUS_URL} rel="noopener noreferrer" className="link">
           USCIS&apos;s own status page
         </a>
         .
@@ -131,7 +131,7 @@ export function UscisStatusResult({ receipt }: { receipt: string }) {
     return (
       <Refusal title={title}>
         {state.data.error}{" "}
-        <a href={USCIS_STATUS_URL} rel="noopener noreferrer" className="link">
+        <a target="_blank" href={USCIS_STATUS_URL} rel="noopener noreferrer" className="link">
           USCIS&apos;s own status page
         </a>{" "}
         is the authority for any receipt.
@@ -216,7 +216,7 @@ export function UscisStatusResult({ receipt }: { receipt: string }) {
           the privacy policy
         </a>{" "}
         describes.{" "}
-        <a href={USCIS_STATUS_URL} rel="noopener noreferrer" className="link">
+        <a target="_blank" href={USCIS_STATUS_URL} rel="noopener noreferrer" className="link">
           Check the same receipt at USCIS
         </a>
         .

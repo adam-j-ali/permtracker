@@ -139,7 +139,7 @@ function SeasonalDetails({
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-soft">
           By rule DOL decides an H-2A application no later than 30 days before the first day of work, so this one by{" "}
           <b className="font-semibold text-foreground">{formatDay(decideBy)}</b>, unless the application was modified (
-          <a href="https://www.ecfr.gov/current/title-20/chapter-V/part-655/section-655.160" className="link" rel="noopener">
+          <a target="_blank" href="https://www.ecfr.gov/current/title-20/chapter-V/part-655/section-655.160" className="link" rel="noopener">
             20 CFR 655.160
           </a>
           ).
@@ -219,7 +219,7 @@ export async function SeasonalLookup({ caseNumber }: { caseNumber: string }) {
         }
       >
         DOL&apos;s case system answered and holds nothing under this number. Check it on{" "}
-        <a href="https://flag.dol.gov/case-status-search" className="link" rel="noopener">
+        <a target="_blank" href="https://flag.dol.gov/case-status-search" className="link" rel="noopener">
           DOL&apos;s case status page
         </a>
         .

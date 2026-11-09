@@ -49,7 +49,7 @@ export function DolUnanswered({
         Try again
       </a>{" "}
       or use{" "}
-      <a href={DOL_CASE_STATUS_URL} className="link" rel="noopener">
+      <a target="_blank" href={DOL_CASE_STATUS_URL} className="link" rel="noopener">
         DOL&apos;s own case status page
       </a>
       .

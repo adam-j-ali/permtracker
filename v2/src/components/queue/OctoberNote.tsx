@@ -159,14 +159,14 @@ export function OctoberNote() {
       </FinePrint>{" "}
 
       <p className="mt-4 flex flex-col gap-2 text-base leading-relaxed text-soft sm:flex-row sm:gap-6">
-        <a
+        <a target="_blank"
           href={ARCHIVED_NOTICE_URL}
           className="link"
           rel="noopener"
         >
           DOL&rsquo;s announcement of 5 November 2025, archived
         </a>{" "}
-        <a
+        <a target="_blank"
           href={FLAG_NOTICE_URL}
           className="link"
           rel="noopener"

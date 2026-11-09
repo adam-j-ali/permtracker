@@ -265,7 +265,7 @@ export function CaseStatusResult({
         <Notice title={`DOL showed this status ${check.ageDays} days ago`}>
           , on {formatAsOf(check.date)}, and it hasn&apos;t been checked since. A recent change shows first on{" "}
           {/* DOL's case-status search, not its processing-times page, which can't show one case. */}
-          <a href={DOL_CASE_STATUS_URL} rel="noopener noreferrer" className="link">
+          <a target="_blank" href={DOL_CASE_STATUS_URL} rel="noopener noreferrer" className="link">
             flag.dol.gov
           </a>
           , DOL&apos;s own status page.
@@ -278,7 +278,7 @@ export function CaseStatusResult({
           {decided.decisionDate ? <> on {formatAsOf(decided.decisionDate)}</> : null}. DOL&apos;s live status is now{" "}
           {prettyStatus(live.status).toLowerCase()}, which is current. That&apos;s normal: a denial can be appealed
           within 30 days under{" "}
-          <a href="https://www.ecfr.gov/current/title-20/section-656.24" rel="noopener noreferrer" className="link">
+          <a target="_blank" href="https://www.ecfr.gov/current/title-20/section-656.24" rel="noopener noreferrer" className="link">
             20 CFR 656.24(g)
           </a>
           .
@@ -1045,7 +1045,7 @@ function StatusExplainer({
       {/* Two standalone links under the meaning: each a 44px target (they measured 20px on a phone). */}
       <p className="mt-4 flex flex-wrap gap-x-6 text-sm">
         {meaning.cite ? (
-          <a href={meaning.cite.href} rel="noopener noreferrer" className={cn("inline-flex min-h-11 items-center font-mono", "link")}>
+          <a target="_blank" href={meaning.cite.href} rel="noopener noreferrer" className={cn("inline-flex min-h-11 items-center font-mono", "link")}>
             {meaning.cite.label}
           </a>
         ) : (

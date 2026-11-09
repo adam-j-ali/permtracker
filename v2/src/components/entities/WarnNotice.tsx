@@ -40,7 +40,7 @@ export function WarnNoticeBand({ rows, pageName }: { rows: Notice[]; pageName: s
             {r.employees !== null ? `, ${r.employees.toLocaleString("en-US")} ${r.employees === 1 ? "employee" : "employees"}` : ""}
             {r.county ? `, ${r.county}` : ""}
             {r.effectiveDate ? `, effective ${long(r.effectiveDate)}` : ""}.{" "}
-            <a href={r.sourceUrl} rel="noopener noreferrer" className="link">
+            <a target="_blank" href={r.sourceUrl} rel="noopener noreferrer" className="link">
               {warnStateName(r.state)} WARN report
             </a>{" "}
             {r.site ? <span className="block text-muted-foreground">{r.site}</span> : null}

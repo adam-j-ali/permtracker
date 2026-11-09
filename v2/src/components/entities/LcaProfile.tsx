@@ -212,7 +212,7 @@ export function LcaProfile({
                 recruit US workers before hiring H-1B workers (655.738, 655.739). They don&apos;t apply to an LCA
                 used only for exempt workers, paid at least $60,000 a year or holding a related master&apos;s
                 degree (655.737).{" "}
-                <a
+                <a target="_blank" rel="noopener noreferrer"
                   href={ECFR}
                   className="link"
                 >

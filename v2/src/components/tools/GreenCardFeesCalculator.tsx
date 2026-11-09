@@ -188,13 +188,13 @@ export function GreenCardFeesCalculator() {
       </table>{" "}
       <p className="mt-3 text-sm text-muted-foreground">
         USCIS&apos;s figures are from its Form G-1055, edition {result.edition}, read at{" "}
-        <a href={result.source} className="link" rel="noopener">
+        <a target="_blank" href={result.source} className="link" rel="noopener">
           uscis.gov/g-1055
         </a>
         {route === "cp" ? (
           <>
             ; State&apos;s visa fee from{" "}
-            <a href={STATE_FEES.source} className="link" rel="noopener">
+            <a target="_blank" href={STATE_FEES.source} className="link" rel="noopener">
               {STATE_FEES.citation}
             </a>
           </>
@@ -210,7 +210,7 @@ export function GreenCardFeesCalculator() {
             <>
               <li>
                 The I-693 medical exam: USCIS charges nothing, the civil surgeon does.{" "}
-                <a
+                <a target="_blank"
                   href="https://www.uscis.gov/tools/find-a-civil-surgeon"
                   rel="noopener"
                   className="link"
