@@ -8,6 +8,8 @@ import {
   MIN_REPORTS,
   POST_SLUG,
   ownerDigest,
+  postName,
+  postSlug,
   REPORT_FIELD_KEYS,
   isoToday,
   summarizeReports,
@@ -20,6 +22,7 @@ import { recordError } from "./lib/errorRecording";
 import { SITE_URL } from "./lib/links";
 import { createLogger } from "./lib/logging";
 import { sendOwnerMail } from "./lib/ownerMail";
+import { query as mirrorQuery } from "./lib/publicMirror";
 import { checkRateLimit, recordRateLimitAttempt } from "./lib/rateLimit";
 import { MS_PER_DAY, MS_PER_HOUR } from "./lib/time";
 
@@ -62,6 +65,32 @@ const CLEAR_BATCH = 500;
 const BUSIEST = 20;
 /** Reports the admin list shows, newest first. */
 const ADMIN_ROWS = 100;
+/**
+ * Rows each of the two post-name reads takes. State lists about 230 posts, and older spellings add a few more
+ * over the years, so this is far above the real count: it only keeps a malformed table from turning every
+ * report into a long read.
+ */
+const POST_NAMES_READ = 5_000;
+
+/**
+ * Whether a report's consulate is one the site lists: a post State's scheduling tool or issuance tables name,
+ * slugged as its page is (`postName`, `postSlug`). Looser than the pages' own list, which counts only the newest
+ * update and the last year's issuances: it refuses an invented slug and never a real page. Null when a read hit
+ * its cap without finding the slug, so the list may be cut. A failed read throws: the route lets the report
+ * through and records it, because reports post at once and are moderated after.
+ */
+export async function consulateListed(slug: string): Promise<boolean | null> {
+  const [scheduling = [], issuances = []] = await mirrorQuery([
+    { sql: `SELECT DISTINCT post_key, post FROM iv_scheduling LIMIT ${POST_NAMES_READ}` },
+    { sql: `SELECT DISTINCT group_key, key FROM visa_issuances WHERE dim = 'post' LIMIT ${POST_NAMES_READ}` },
+  ]);
+  const text = (x: unknown) => (typeof x === "string" && x.length > 0 ? x : null);
+  const slugs = new Set<string>();
+  for (const r of scheduling) slugs.add(postSlug(postName(String(r.post_key), null, text(r.post))));
+  for (const r of issuances) slugs.add(postSlug(postName(String(r.group_key), text(r.key), null)));
+  if (slugs.has(slug)) return true;
+  return scheduling.length >= POST_NAMES_READ || issuances.length >= POST_NAMES_READ ? null : false;
+}
 
 const HEX64 = /^[0-9a-f]{64}$/;
 
