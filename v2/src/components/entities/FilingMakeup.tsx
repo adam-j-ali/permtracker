@@ -278,7 +278,6 @@ export function PartyMix({
 }) {
   if (rows.length === 0) return null;
   const shown = rows.reduce((a, r) => a + r.n, 0);
-  const share = total > 0 ? (shown / total) * 100 : 0;
   return (
     <Shell
       title={title}
