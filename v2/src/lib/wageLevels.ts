@@ -86,6 +86,27 @@ export function parseWageRates(json: unknown): WageLevel[] | null {
   return out;
 }
 
+/**
+ * DOL's answer, told apart: four wages, DOL's own "nothing matched" (all four levels at zero), or a shape this
+ * reader doesn't know. Only the second is "DOL publishes no wage"; the third is a read that failed, never shown
+ * to anyone as DOL's answer.
+ */
+export type WageRatesRead = { kind: "levels"; levels: WageLevel[] } | { kind: "none" } | { kind: "unreadable" };
+
+export function readWageRates(json: unknown): WageRatesRead {
+  const levels = parseWageRates(json);
+  if (levels) return { kind: "levels", levels };
+  const rates = typeof json === "object" && json !== null ? (json as { rates?: unknown }).rates : undefined;
+  const allZero =
+    typeof rates === "object" &&
+    rates !== null &&
+    (["I", "II", "III", "IV"] as const).every((level) => {
+      const r = (rates as Record<string, unknown>)[level];
+      return typeof r === "object" && r !== null && Number((r as { hour?: unknown }).hour) === 0 && Number((r as { year?: unknown }).year) === 0;
+    });
+  return allZero ? { kind: "none" } : { kind: "unreadable" };
+}
+
 export interface AreaOption {
   value: number;
   label: string;

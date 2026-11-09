@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { AREA_RE, dolSearchYear, levelName, levelReached, parseAreaOptions, parseWageRates, seriesYearFor, wageSearchBody } from "../wageLevels";
+import { AREA_RE, dolSearchYear, levelName, levelReached, parseAreaOptions, parseWageRates, readWageRates, seriesYearFor, wageSearchBody } from "../wageLevels";
 import { SOC_CODE_RE } from "../socCode";
 
 // DOL's answer for 15-1252 in Los Angeles, series 2025, as probed on Sep 8 2026.
@@ -84,3 +84,14 @@ describe("the level a yearly wage reaches", () => {
     ]);
   });
 });
+
+describe("readWageRates", () => {
+  it("tells four wages, DOL's own no-match, and an answer it can't read apart", () => {
+    const zero = { hour: "0.00", year: "0.00" };
+    expect(readWageRates({ rates: { I: { hour: "1", year: "2" }, II: { hour: "1", year: "2" }, III: { hour: "1", year: "2" }, IV: { hour: "1", year: "2" } } }).kind).toBe("levels");
+    expect(readWageRates({ rates: { I: zero, II: zero, III: zero, IV: zero } })).toEqual({ kind: "none" });
+    expect(readWageRates({ rates: { I: { hour: "x", year: "y" } } })).toEqual({ kind: "unreadable" });
+    expect(readWageRates("nope")).toEqual({ kind: "unreadable" });
+  });
+});
+

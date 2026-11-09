@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { AREA_RE, parseWageRates, WAGE_SEARCH_PAGE, WAGE_SEARCH_URL, wageSearchBody } from "@/lib/wageLevels";
+import { AREA_RE, readWageRates, WAGE_SEARCH_PAGE, WAGE_SEARCH_URL, wageSearchBody } from "@/lib/wageLevels";
 import { SOC_CODE_RE, socGroup } from "@/lib/socCode";
 
 /**
@@ -40,7 +40,16 @@ export async function GET(req: Request) {
     if (!res.ok) {
       return NextResponse.json({ ok: false, message: `DOL answered ${res.status}.` }, { status: 502, headers: { "Cache-Control": "no-store" } });
     }
-    const levels = parseWageRates(await res.json());
+    const read = readWageRates(await res.json());
+    if (read.kind === "unreadable") {
+      // A changed answer from DOL must never read as "DOL publishes no wage": say it couldn't be read, cache nothing.
+      console.error("[wage-levels] DOL's wage search answered in a shape this reader doesn't know", { soc: socGroup(soc), area });
+      return NextResponse.json(
+        { ok: false, message: "DOL's answer couldn't be read just now. Try again in a minute." },
+        { status: 502, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    const levels = read.kind === "levels" ? read.levels : null;
     if (!levels) {
       return NextResponse.json(
         { ok: true, soc: socGroup(soc), area: Number(area), seriesYear: year, levels: null, source: WAGE_SEARCH_PAGE, message: "DOL publishes no wage for that occupation in that area for that series." },
