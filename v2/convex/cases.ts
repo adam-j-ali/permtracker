@@ -22,6 +22,7 @@ import { filterBySearch, projectCaseForCard, sortCases, determineReopenStatus } 
 import { calculateDerivedDates, resolveEta9089ExpirationDate } from "./lib/derivedCalculations";
 import { validateCase, mapToValidatorFormat, calculateAutoStatus } from "./lib/perm";
 import { shouldSendEmail, formatCaseStatus, formatProgressStatus, buildUserNotificationPrefs } from "./lib/notificationHelpers";
+import { normaliseFlagCaseNumber } from "../src/lib/flagCaseNumber";
 import { scheduleCalendarSync, scheduleCalendarSyncBulk } from "./lib/calendarSyncHelpers";
 import { loggers } from "./lib/logging";
 import { recordError } from "./lib/errorRecording";
@@ -101,6 +102,13 @@ const DEADLINE_RELEVANT_FIELDS = [
  * NOTE: This is a simple list query. For paginated lists with sorting,
  * use listFiltered instead.
  */
+
+/** One spelling per DOL number, so a reformatted number isn't read as a new case. */
+function dolNumberKey(n: unknown): string {
+  if (typeof n !== "string") return "";
+  return normaliseFlagCaseNumber(n)?.caseNumber ?? n.trim().toUpperCase();
+}
+
 export const list = query({
   args: {
     status: v.optional(
@@ -872,6 +880,15 @@ export const update = mutation({
     const updates: Record<string, unknown> = {};
     for (const [key, val] of Object.entries(rawUpdates)) {
       updates[key] = val === null ? undefined : val;
+    }
+
+    // A different DOL number is a different DOL case: its live status starts
+    // over, so the next sweep seeds it silently and never reports the old
+    // case's status as a change to this one.
+    if ("caseNumber" in updates && dolNumberKey(updates.caseNumber) !== dolNumberKey(caseDoc!.caseNumber)) {
+      updates.liveStatus = undefined;
+      updates.liveStatusSeenAt = undefined;
+      updates.liveStatusIsFinal = undefined;
     }
 
     // Encrypt FEIN if being updated
