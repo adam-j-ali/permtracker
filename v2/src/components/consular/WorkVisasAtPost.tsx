@@ -53,6 +53,9 @@ export function WorkVisasView({ data, name, className }: { data: PostNiv; name: 
   const newest = data.months.at(-1)!;
   const first = data.months[0]!;
   const rows = classRows(data.byMonth, data.held);
+  // The totals add only the months State has posted, so they say how many those are.
+  const allHeld = data.held.length === data.months.length;
+  const span = allHeld ? `the ${data.months.length} months` : `the ${data.held.length} months State posted of the ${data.months.length}`;
   const heading = (
     <h2 id="work-visas" className="font-heading text-2xl font-bold">
       Work visas issued here
@@ -83,12 +86,12 @@ export function WorkVisasView({ data, name, className }: { data: PostNiv; name: 
         <Figure
           label={`H-1B, ${monthName(newest)}`}
           value={formatInt(newestOf("H1B"))}
-          note={`${formatInt(sumOf(data.byMonth, data.held, ["H1B"]))} in the ${data.months.length} months to ${monthName(newest)}`}
+          note={`${formatInt(sumOf(data.byMonth, data.held, ["H1B"]))} in ${span} to ${monthName(newest)}`}
         />{" "}
         <Figure
           label={`L-1, ${monthName(newest)}`}
           value={formatInt(newestOf("L1"))}
-          note={`${formatInt(sumOf(data.byMonth, data.held, ["L1"]))} in the ${data.months.length} months`}
+          note={`${formatInt(sumOf(data.byMonth, data.held, ["L1"]))} in ${span}`}
         />{" "}
         <Figure
           label={`Every work visa, ${monthName(newest)}`}
@@ -130,13 +133,13 @@ export function WorkVisasView({ data, name, className }: { data: PostNiv; name: 
       </p>
       <ScrollBox label={`Nonimmigrant visas issued in ${name}, by class`} className="mt-3 border-t-2 border-[var(--object-border)] bg-card">
         <table className="w-full min-w-[36rem] text-left text-base">
-          <caption className="sr-only">Nonimmigrant visas issued in {name} by class, {monthName(newest)} and the {data.months.length} months to it{" "}</caption>
+          <caption className="sr-only">Nonimmigrant visas issued in {name} by class, {monthName(newest)} and {span} to it{" "}</caption>
           <thead className="border-b-2 border-border bg-sage">
             <tr>
               <th scope="col" className="px-4 py-3 font-bold">Visa{" "}</th>
               <th scope="col" className="px-4 py-3 font-bold">What it is{" "}</th>
               <th scope="col" className="px-4 py-3 text-right font-bold">{monthName(newest)}{" "}</th>
-              <th scope="col" className="px-4 py-3 text-right font-bold">{data.months.length} months{" "}</th>
+              <th scope="col" className="px-4 py-3 text-right font-bold">{data.held.length} {data.held.length === 1 ? "month" : "months"}{" "}</th>
             </tr>
           </thead>
           <tbody>

@@ -27,8 +27,9 @@ describe("work visas at a consulate", () => {
   it("leads with the newest month's H-1B, L-1 and every work visa", () => {
     const { text } = render();
     expect(text).toContain("Work visas issued here");
-    expect(text).toMatch(/H-1B, February 2026 61 153 in the 12 months to February 2026/);
-    expect(text).toMatch(/L-1, February 2026 11 26 in the 12 months/);
+    // A total over the months held says how many it covers: 153 is three months, not twelve.
+    expect(text).toMatch(/H-1B, February 2026 61 153 in the 3 months State posted of the 12 to February 2026/);
+    expect(text).toMatch(/L-1, February 2026 11 26 in the 3 months State posted of the 12/);
     // H-1B 61, H-4 30, L-1 11, L-2 12: K-1, visitors and students aren't work visas.
     expect(text).toMatch(/Every work visa, February 2026 114 /);
   });
