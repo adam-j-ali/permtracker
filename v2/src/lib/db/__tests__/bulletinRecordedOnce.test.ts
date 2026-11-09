@@ -16,16 +16,16 @@ describe("a bulletin's release day counts once", () => {
   it("keeps the first recording of each bulletin and leaves other programs alone", () => {
     // Arrange
     const rows = [
-      { program: "bulletin", caseNumber: "bulletin:2026-11", recordedOn: "2026-10-03" },
-      { program: "bulletin", caseNumber: "bulletin:2026-11", recordedOn: "2026-10-01" },
-      { program: "bulletin", caseNumber: "bulletin:2026-11", recordedOn: "2026-10-02" },
-      { program: "bulletin", caseNumber: "bulletin:2026-12", recordedOn: "2026-11-02" },
-      { program: "perm", caseNumber: "G-100-26001-000001", recordedOn: "2026-10-01" },
+      { program: "bulletin", case_number: "bulletin:2026-11", recorded_on: "2026-10-03" },
+      { program: "bulletin", case_number: "bulletin:2026-11", recorded_on: "2026-10-01" },
+      { program: "bulletin", case_number: "bulletin:2026-11", recorded_on: "2026-10-02" },
+      { program: "bulletin", case_number: "bulletin:2026-12", recorded_on: "2026-11-02" },
+      { program: "perm", case_number: "G-100-26001-000001", recorded_on: "2026-10-01" },
     ];
     // Act
     const out = firstRecordingEach(rows, "bulletin");
     // Assert
-    expect(out.map((r) => [r.caseNumber, r.recordedOn])).toEqual([
+    expect(out.map((r) => [r.case_number, r.recorded_on])).toEqual([
       ["bulletin:2026-11", "2026-10-01"],
       ["bulletin:2026-12", "2026-11-02"],
     ]);

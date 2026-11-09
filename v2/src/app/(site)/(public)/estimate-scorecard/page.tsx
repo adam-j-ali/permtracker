@@ -12,7 +12,6 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { daysToAnchor } from "@/lib/predictionLedger";
 import { HORIZONS, PWD_BEFORE_FIX, type Cell } from "@/lib/scorecard/score";
 import { EARLIER_VERSION_OF, RETIRED_METHODS, readMethods, readOurs } from "@/lib/scorecard/verdict";
-import { easternDay } from "@/lib/seasonalTiming";
 import { printedRangeCheck } from "@/lib/rangeCoverage";
 import { otherEstimateRows } from "@/lib/scorecard/otherEstimates";
 import { EstimateChecksList } from "@/components/scorecard/EstimateChecksList";
