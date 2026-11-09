@@ -727,15 +727,15 @@ export interface ScorecardDoc {
  * One row per thing predicted for a program whose rows name a shared subject (a bulletin, not a case): its first
  * recording. Before Nov 9 2026 the release day was written again each morning, so one bulletin read as several.
  */
-export function firstRecordingEach<T extends { program: string; caseNumber: string; recordedOn: string }>(
+export function firstRecordingEach<T extends { program: string; case_number: string; recorded_on: string }>(
   rows: readonly T[],
   program: string,
 ): T[] {
   const first = new Map<string, T>();
   for (const r of rows) {
     if (r.program !== program) continue;
-    const seen = first.get(r.caseNumber);
-    if (!seen || r.recordedOn < seen.recordedOn) first.set(r.caseNumber, r);
+    const seen = first.get(r.case_number);
+    if (!seen || r.recorded_on < seen.recorded_on) first.set(r.case_number, r);
   }
   return [...first.values()];
 }
@@ -765,7 +765,7 @@ export async function writeScorecardDocs(today: string): Promise<{ rows: number 
     perm: summarise(ours, today, "perm", countsAsCurrent),
     pwd: summarise(ours, today, "pwd", countsAsCurrent),
     seasonal: summarise(ours, today, "seasonal", countsAsCurrent),
-    bulletin: summarise(firstRecordingEach(ours, "bulletin"), today, "bulletin", countsAsCurrent),
+    bulletin: summarise(firstRecordingEach(all, "bulletin").filter((r) => r.source === "ours").map(toRow), today, "bulletin", countsAsCurrent),
     watched: {
       perm: summarise(watchedRows, today, "perm").bySource.watched?.all ?? null,
       pwd: summarise(watchedRows, today, "pwd").bySource.watched?.all ?? null,
