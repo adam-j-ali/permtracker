@@ -4,12 +4,14 @@
  * ViewToggle
  *
  * Two buttons that switch the case list between cards and rows. The chosen
- * one takes the tint; each says its name to a screen reader and on hover.
+ * one is lime, like every picked option; each says its name to a screen
+ * reader and on hover.
  *
  * @module components/cases/ViewToggle
  */
 
 import { ListIcon, SquaresFourIcon } from "@phosphor-icons/react/ssr";
+import { choiceVariants } from "@/components/ui/choice";
 import { cn } from "@/lib/utils";
 
 export type ViewMode = "card" | "list";
@@ -27,24 +29,21 @@ const VIEWS = [
 
 export function ViewToggle({ view, onChange, className }: ViewToggleProps) {
   return (
-    <div role="radiogroup" aria-label="View mode" className={cn("inline-flex border border-input", className)}>
+    // Two toggle buttons, each a tab stop: a radio group would promise arrow keys it doesn't have.
+    <div role="group" aria-label="View mode" className={cn("inline-flex gap-1", className)}>
       {VIEWS.map(({ id, label, Icon }) => {
         const on = view === id;
         return (
           <button
             key={id}
             type="button"
-            role="radio"
-            aria-checked={on}
+            aria-pressed={on}
             aria-label={label}
             title={label}
             onClick={() => {
               if (!on) onChange(id);
             }}
-            className={cn(
-              "flex size-11 items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
-              on ? "bg-tint text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
-            )}
+            className={choiceVariants({ on, className: "size-11 px-0" })}
           >
             <Icon className="size-5" aria-hidden="true" />
           </button>
