@@ -197,7 +197,7 @@ export default async function CohortPage({
     pace: pace?.pace ?? null,
     frontierMonth: estimator.frontier?.analystQueueMonth ?? null,
     sweepFinishedOn: sweep?.finishedOn ?? null,
-    today: new Date().toISOString().slice(0, 10),
+    today: easternDay(),
     rangeCoverage,
   });
 
