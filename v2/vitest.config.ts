@@ -211,7 +211,9 @@ export default defineConfig({
   plugins: [react()],
   ...sharedConfig,
   // Cache directory for Vite (vitest uses cacheDir/vitest internally)
-  cacheDir: "./node_modules/.vite",
+  // VITEST_CACHE_DIR gives a worktree that links the main tree's node_modules its own folder: a shared one is
+  // rebuilt under each run by the others, and test files fail to load (docs/notes/testing.md, Nov 9 2026).
+  cacheDir: process.env.VITEST_CACHE_DIR || "./node_modules/.vite",
   test: {
     // Reporter configuration
     reporters: process.env.CI ? ["json", "github-actions"] : ["default"],

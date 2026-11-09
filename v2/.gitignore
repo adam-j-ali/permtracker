@@ -105,3 +105,6 @@ changed-employer-slugs.json
 
 # The mail Worker bundle (node workers/mail/build.mjs)
 workers/mail/dist/
+
+# A worktree's own vitest cache (VITEST_CACHE_DIR, vitest.config.ts)
+/.vitest-cache/
