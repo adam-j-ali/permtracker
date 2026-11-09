@@ -94,11 +94,11 @@ const SENT: Array<[string, string]> = [
   ["What isn't", "The page's address, the job's title or text, anything you type, your browsing, and cookies: the request carries none, signed in or not."],
   ["What's kept", "Each answer, in your browser's session storage for six hours, so going back to a posting doesn't ask again. It's cleared when the browser closes."],
   ["On our side", "A daily count of lookups. Like any site, our web server keeps a request log for 14 days, and each line holds your connection's address and the name asked about. Nothing ties a lookup to an account, and nothing else is kept. Requests reach us through Cloudflare, like every visit to this site."],
-  ["Tracking", "None. No analytics, no ads, no third parties."],
+  ["Tracking", "None. There are no analytics, no ads and no third parties."],
 ];
 
 const PERMISSIONS: Array<[string, string]> = [
-  ["Read the five job sites", "To read the employer's name on a posting. On LinkedIn the whole site is matched, since it opens a posting from the feed without a new page; anywhere that isn't a posting, nothing is read."],
+  ["Read the five job sites", "To read the employer's name on a posting. On LinkedIn the whole site is matched, since it opens a posting from the feed without a new page. Anywhere that isn't a posting, nothing is read."],
   ["Active tab, and scripting", "Only when you click the toolbar button on another job page: it reads that one page's posting, once."],
   ["Storage", "The six-hour session cache above."],
   ["permtracker.app", "The one server it asks."],

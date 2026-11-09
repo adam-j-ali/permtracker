@@ -185,7 +185,7 @@ export default async function EstimateScorecardPage() {
           <p className="mt-3 max-w-2xl text-base leading-relaxed text-soft">
             Across {formatInt(cur.decided)} cases DOL decided between {longNoYear(backtest.t0)} and {long(backtest.end)},
             each dated from the queue as it stood on the first of those days, at DOL&apos;s measured pace. This scores
-            decided cases only; the daily sample below also counts the ones still waiting past their date.
+            decided cases only. The daily sample below also counts the ones still waiting past their date.
           </p>{" "}
           <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
             <Figure label="Within a week" value={pct(cur.within7Share)} note="of those decisions" />
@@ -195,8 +195,8 @@ export default async function EstimateScorecardPage() {
                 value={pct(rangeCheck.share)}
                 note={
                   rangeCheck.kind === "pace-rule"
-                    ? `of ${formatInt(rangeCheck.judged)} cases dated a week or more before the end; a case still waiting counts as a miss`
-                    : `of ${formatInt(rangeCheck.judged)} cases near the front, ${rangeCheck.kind === "out-of-sample" ? "tested on start days the range wasn't drawn from" : "on the recent cases it was measured on"}; ${pct(rangeCheck.stuckShare)} were still waiting two weeks after their date`
+                    ? `of ${formatInt(rangeCheck.judged)} cases dated a week or more before the end, with a case still waiting counted as a miss`
+                    : `of ${formatInt(rangeCheck.judged)} cases near the front, ${rangeCheck.kind === "out-of-sample" ? "tested on start days the range wasn't drawn from" : "on the recent cases it was measured on"}, and ${pct(rangeCheck.stuckShare)} were still waiting two weeks after their date`
                 }
               />
             ) : null}
@@ -341,10 +341,10 @@ export default async function EstimateScorecardPage() {
           <p className="mt-4 text-base text-soft">The first of these are recorded the morning after this section went live.</p>
         )}{" "}
         <FinePrint summary="How these are graded">
-          The wage-request estimate names a month, so it is graded against the middle of the month, and the month is its
+          The wage-request estimate names a month, so it&rsquo;s graded against the middle of the month, and the month is its
           range. An H-2A, H-2B or CW-1 range is the middle half of DOL&rsquo;s past certifications, so a well-judged one
-          catches about half; it is graded on certifications only, as the case page dates them. The past-filings column is
-          the weekly test of each method against the next quarter&rsquo;s real decisions.
+          catches about half. It&rsquo;s graded on certifications only, as the case page dates them. The past-filings column is
+          the weekly test of each method against the next quarter&rsquo;s decisions.
           {pwdBeforeFix ? (
             <>
               {" "}
@@ -368,13 +368,13 @@ export default async function EstimateScorecardPage() {
           </ul>
         ) : (
           <p>
-            {Object.keys(RETIRED_METHODS).length} earlier methods are retired; none has enough grades in the daily sample to
+            {Object.keys(RETIRED_METHODS).length} earlier methods are retired. None has enough grades in the daily sample to
             read yet.
           </p>
         )}{" "}
         <p>
           Before the daily sample began, a few cases were written down by hand, exactly as the case page printed them
-          then. Their windows are those earlier methods&apos; months-wide ranges, not today&apos;s.
+          then. Their windows are the months-wide ranges of those earlier methods.
         </p>{" "}
         <div className="overflow-x-auto">
         <table className="w-full min-w-[56rem] border-collapse text-left text-sm">
@@ -456,7 +456,7 @@ export default async function EstimateScorecardPage() {
         </p>{" "}
         <p>
           Entries are never edited. When the model changes after a prediction is recorded, the original prediction is
-          still the one scored. Case numbers are public federal records; nothing here identifies the person who watched a
+          still the one scored. Case numbers are public federal records. Nothing here identifies the person who watched a
           case.
         </p>
       </FinePrint>

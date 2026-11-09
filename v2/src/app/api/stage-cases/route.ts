@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     getSweepCoverage().catch(softFail("api/stage-cases/route.getSweepCoverage", null)),
   ]);
   if (rows.length > LISTABLE_STAGE_MAX) {
-    return bad("this stage is above the listable size; it is split by filing month on /perm-queue", 400);
+    return bad("this stage is above the listable size, so it's split by filing month on /perm-queue", 400);
   }
   const asOf = sweep?.finishedOn ?? null;
   const label = stageMeta(status).label;

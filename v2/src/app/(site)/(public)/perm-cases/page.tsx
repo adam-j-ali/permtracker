@@ -115,7 +115,7 @@ export default async function PermCasesPage() {
     ...(liveSummary
       ? [{ label: "Newer, from DOL's live service", value: formatInt(liveSummary.total), href: "#live", note: `${formatInt(liveSummary.pending)} still waiting` }]
       : []),
-    { label: "Not only PERM", value: "Search every program", href: "/case-search", note: "Wage requests, H-1B, H-2A and H-2B too" },
+    { label: "Beyond PERM", value: "Search every program", href: "/case-search", note: "Wage requests, H-1B, H-2A and H-2B too" },
   ];
   const chapters: ChapterItem[] = [
     { id: "by-day", label: "Decisions" },
@@ -131,7 +131,7 @@ export default async function PermCasesPage() {
         title="Every PERM case, decided and waiting"
         lede={
           <>
-            DOL&apos;s published decisions, with the wage and the days each took, and every newer case from
+            DOL&apos;s published decisions come with the wage and the days each took. Every newer case comes from
             DOL&apos;s own case-status service, still waiting or not.
           </>
         }
@@ -140,7 +140,7 @@ export default async function PermCasesPage() {
           <IndexLookup
             title="Have the number?"
             placeholder="G-100-26125-868956"
-            note="DOL's status today, the published record once there is one, and an estimated date."
+            note="DOL's status today, the published record once one exists, and an estimated date."
             source="perm-cases"
           />
         }
@@ -166,7 +166,7 @@ export default async function PermCasesPage() {
               dek={
                 <>
                   Each with its wage, law firm, worksite and the days it took. Cases still waiting aren&apos;t in
-                  these files, however recently they were filed; they&apos;re in the{" "}
+                  these files, however recently they were filed. They&apos;re in the{" "}
                   <Link href="#live" className="link">
                     live list
                   </Link>

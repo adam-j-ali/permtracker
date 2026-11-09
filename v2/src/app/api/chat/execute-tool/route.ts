@@ -79,8 +79,8 @@ export async function POST(request: Request) {
     args = JSON.parse(claimed.args) as Record<string, unknown>;
   } catch (error) {
     captureError(error);
-    await fetchMutation(api.chatConfirmations.finish, { toolCallId, ok: false, result: 'The stored change could not be read.' }, { token }).catch(() => {});
-    return NextResponse.json({ error: 'The stored change could not be read.' }, { status: 500 });
+    await fetchMutation(api.chatConfirmations.finish, { toolCallId, ok: false, result: "The stored change couldn't be read." }, { token }).catch(() => {});
+    return NextResponse.json({ error: "The stored change couldn't be read." }, { status: 500 });
   }
 
   try {

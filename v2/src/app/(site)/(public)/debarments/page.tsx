@@ -66,7 +66,7 @@ export default async function DebarmentsPage() {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pb-16 pt-10 sm:px-6 sm:pb-24 sm:pt-14">
       <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">
-        Who DOL will not accept a filing from
+        Who DOL won&apos;t accept a filing from
       </h1>{" "}
       <p className="mt-5 max-w-3xl text-lg leading-relaxed text-soft">
         Employers, attorneys and agents DOL has barred from a program for a set period, as DOL publishes
@@ -75,8 +75,8 @@ export default async function DebarmentsPage() {
 
       {all.length === 0 ? (
         <p className="mt-10 bg-tint p-5 text-base border-2 border-border">
-          The lists have not been read yet. The daily ingest reads DOL&apos;s
-          program-debarments document and the H-1B page; until it has run, the
+          The lists haven&apos;t been read yet. The daily ingest reads DOL&apos;s
+          program-debarments document and the H-1B page. Until it has run, the
           originals are at{" "}
           <a href="https://www.dol.gov/agencies/eta/foreign-labor/program-debarments" className="link" rel="noopener" target="_blank">
             dol.gov (OFLC)
@@ -133,23 +133,23 @@ export default async function DebarmentsPage() {
         <h2 className="font-heading text-xl font-bold sm:text-2xl">What a debarment is, and is not</h2>{" "}
         {/* The regulation behind the list, on demand. The rows above are what
             a reader came for; this stays in the DOM for search either way. */}
-        <FinePrint summary="The rule, and what this page does not count as one" className="mt-3">
+        <FinePrint summary="The rule, and what this page doesn't count as one" className="mt-3">
         <p className="mt-3 text-base leading-relaxed text-soft">
           Under 20 CFR 656.31(f), DOL may debar an employer, attorney or agent
           from PERM for one to three years for conduct the regulation lists,
-          including failing to respond to an audit. During the period OFLC will
-          not accept filings from that party under PERM or the H-1B, H-2A and
-          H-2B programs. A debarment is a decision DOL has made and published;
-          a case on hold or under audit is not one, and this site keeps the two
+          including failing to respond to an audit. During that period OFLC won&apos;t
+          accept filings from that party under PERM or the H-1B, H-2A and H-2B
+          programs. A debarment is a decision DOL has made and published. A case
+          on hold or under audit isn&apos;t one, and this site keeps the two
           apart. Employer and law-firm pages carry a notice when a name on these
           lists matches theirs.
         </p>{" "}
         <p className="mt-3 text-base leading-relaxed text-soft">
           Wage and Hour Division debarments arise from its own H-1B, H-2A and
           H-2B investigations, and the H-2A list also carries plea and settlement
-          agreements from criminal cases; the violation column says which. A
+          agreements from criminal cases. The violation column says which. A
           Farm Labor Contractor listing is a separate register at the Wage and
-          Hour Division and is not reproduced here.
+          Hour Division and isn&apos;t reproduced here.
         </p>
         </FinePrint>
       </section>{" "}

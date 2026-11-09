@@ -124,11 +124,11 @@ const FAQS = [
   },
   {
     q: "Which number should I plan around?",
-    a: "The median tells you what the typical case took last quarter. The processing-times figure tells you when USCIS will accept an inquiry about a case that is taking longer. A case that has passed the median is not late; a case that has passed the processing-times figure is one USCIS itself calls outside normal processing.",
+    a: "The median tells you what the typical case took last quarter. The processing-times figure tells you when USCIS will accept an inquiry about a case that's taking longer. A case that has passed the median isn't late. One that has passed the processing-times figure is what USCIS itself calls outside normal processing.",
   },
   {
     q: "Why do some forms show n/a?",
-    a: "Because USCIS printed N/A. Its note says a processing time may be unavailable because the form is pending a calculation or because one cannot be computed. This site prints nothing rather than a number USCIS did not.",
+    a: "Because USCIS printed N/A. Its note says a processing time may be unavailable because the form is pending a calculation or because one can't be computed. Where USCIS printed no number, this site prints none either.",
   },
   {
     q: "Why are there several I-485 and I-765 rows?",
@@ -136,7 +136,7 @@ const FAQS = [
   },
   {
     q: "How often does this update?",
-    a: "USCIS posts a quarter's file roughly three months after the quarter ends, and this site reads its data page on the 15th of every month and loads any quarter it does not already hold. The date on every figure is the quarter it describes, not the day it was read.",
+    a: "USCIS posts a quarter's file roughly three months after the quarter ends. This site reads its data page on the 15th of every month and loads any quarter it doesn't already hold. The date on every figure is the quarter it describes. It isn't the day the file was read.",
   },
 ];
 
@@ -500,7 +500,7 @@ export default async function UscisProcessingTimesPage() {
             <h2 className="font-heading text-2xl font-bold">Every form USCIS reports</h2>{" "}
             <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
               {forms.length} form lines in {categories.length} categories, as USCIS
-              groups them. Open a category for its table; the figures are the
+              groups them. Open a category for its table. The figures are the
               quarter&apos;s, and the median is the months from receipt to decision.
             </p>{" "}
             <div className="mt-4 space-y-3">
@@ -575,9 +575,9 @@ export default async function UscisProcessingTimesPage() {
             </div>{" "}
             <FinePrint summary="How USCIS defines these columns" className="mt-4">
               <p>
-                Received is new filings entered in the quarter; decided is approvals
-                plus denials, with a few forms also counting administrative closures;
-                pending is what was awaiting a decision on the quarter&apos;s last day.
+                Received is new filings entered in the quarter. Decided is approvals
+                plus denials, with a few forms also counting administrative closures.
+                Pending is what was awaiting a decision on the quarter&apos;s last day.
                 The median is the months from receipt to completion for the cases
                 completed that quarter, so a quarter that cleared old cases reads
                 slower than one that cleared new ones. USCIS&apos;s own notes on the

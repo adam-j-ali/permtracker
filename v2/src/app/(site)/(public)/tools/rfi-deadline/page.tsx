@@ -36,11 +36,11 @@ const FAQS = [
   },
   {
     q: "What happens if the deadline is missed?",
-    a: "The application is denied, and 20 CFR 656.20 lets the Certifying Officer require supervised recruitment on the employer's future applications for up to two years. Under 656.20(c) the Certifying Officer may grant one extension of up to 30 days at their discretion; there's no right to one, and a request has to go in before the deadline.",
+    a: "The application is denied, and 20 CFR 656.20 lets the Certifying Officer require supervised recruitment on the employer's future applications for up to two years. Under 656.20(c) the Certifying Officer may grant one extension of up to 30 days at their discretion. There's no right to one, and a request has to go in before the deadline.",
   },
   {
     q: "Does an RFI in FLAG follow the same rule?",
-    a: "The case status RFI ISSUED on flag.dol.gov is DOL's request for information on a filed application. The letter states its own response period; the 30 days here is the audit rule, and the letter governs if it says otherwise.",
+    a: "The case status RFI ISSUED on flag.dol.gov is DOL's request for information on a filed application. The letter states its own response period. This page's 30 days come from the audit rule, and the letter governs if it says otherwise.",
   },
   {
     q: "What does the deadline do to the case's place in line?",

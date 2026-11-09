@@ -73,12 +73,12 @@ const faqData = [
       {
         question: "How is this different from using a spreadsheet?",
         answer:
-          "Spreadsheets require manual deadline math, don’t send reminders, and break when regulations change. PERM Tracker auto-calculates 11 deadline types per case based on DOL regulations (20 CFR 656), sends proactive alerts, validates compliance, and updates all downstream dates when one date changes.",
+          "A spreadsheet needs its deadline math done by hand. It doesn’t send reminders, and it breaks when the regulations change. PERM Tracker works out 11 deadline types per case from DOL’s regulations (20 CFR 656) and sends an alert before each one. It checks each case against the rules, and when one date changes it updates every date that follows.",
       },
       {
         question: "What happens if DOL changes regulations?",
         answer:
-          "We monitor DOL regulatory changes and update the deadline calculations accordingly. When regulations change, your existing cases are recalculated automatically. You don’t need to manually update formulas or check for rule changes.",
+          "We watch for changes to DOL’s regulations and update the deadline calculations to match. Your existing cases are then recalculated automatically, so you don’t need to update formulas or check for rule changes yourself.",
       },
     ],
   },
@@ -88,42 +88,42 @@ const faqData = [
       {
         question: "What’s PERM labor certification?",
         answer:
-          "PERM (Program Electronic Review Management) is the process by which U.S. employers demonstrate to the Department of Labor that there are no qualified, willing, and available U.S. workers for a position offered to a foreign national. It’s typically the first step in the employment-based green card process for EB-2 and EB-3 categories.",
+          "PERM (Program Electronic Review Management) is how a U.S. employer shows the Department of Labor that there are no qualified, willing, and available U.S. workers for a job it’s offering a foreign national. It’s typically the first step toward an employment-based green card in the EB-2 and EB-3 categories.",
       },
       {
         question: "How long does the PERM process take?",
         answer:
-          "The complete PERM process typically runs 18 to 36 months end to end: the prevailing wage determination, the recruitment period (2-3 months), the 30-day quiet period, and DOL's own review of the ETA 9089. {howLong} Cases selected for audit take longer. The processing times page carries the live figure, and the case status page reads any specific case number.",
+          "The whole PERM process typically runs 18 to 36 months: the prevailing wage determination, the recruitment period (2 to 3 months), the 30-day quiet period, and DOL's own review of the ETA 9089. {howLong} Cases selected for audit take longer. The processing times page carries the live figure, and the case status page reads any specific case number.",
       },
       {
         question: "What are the main steps in the PERM process?",
         answer:
-          "The PERM process has five main stages: (1) Prevailing Wage Determination: submit to NPWC and receive the wage level for the position. (2) Recruitment: conduct required advertising including SWA job order, newspaper ads, and additional recruitment steps for professional occupations. (3) Filing: submit ETA Form 9089 electronically after the 30-day cooling-off period. (4) DOL Review: wait for DOL adjudication (approval, denial, or audit). (5) I-140 Filing: file the immigrant petition within 180 days of PERM certification.",
+          "There are five main stages. (1) The prevailing wage determination: the employer applies to the National Prevailing Wage Center (NPWC) and gets back the wage level for the job. (2) Recruitment: the required advertising, including the SWA job order, newspaper ads and extra steps for professional jobs. (3) Filing: ETA Form 9089 goes in electronically after the 30-day quiet period. (4) DOL’s review, which ends in an approval or a denial, or sends the case to audit. (5) The I-140: the immigrant petition, filed within 180 days of PERM certification.",
       },
       {
         question: "What’s a prevailing wage determination (PWD)?",
         answer:
-          "The National Prevailing Wage Center sets the minimum wage an employer must offer for the role, from its occupation, skill level and area. Validity is anchored to the wage year, not counted from the determination date: one issued 30 June 2026 is good for 90 days, one issued the next morning is good for 364. The PERM has to be filed before it expires. Track a request by putting its P- number into case status, or search by employer.",
+          "The National Prevailing Wage Center sets the minimum wage an employer must offer for the role, from its occupation, skill level and area. How long it stays valid depends on the wage year. It isn’t counted from the determination date: one issued 30 June 2026 is good for 90 days, and one issued the next morning is good for 364. The PERM has to be filed before it expires. Track a request by putting its P- number into case status, or search by employer.",
       },
       {
         question: "What recruitment steps are required for PERM?",
         answer:
-          "All PERM cases require: a State Workforce Agency (SWA) job order for 30 days, two print newspaper advertisements, and a 30-day internal company posting. Professional occupations (requiring a bachelor's degree or higher) also need three additional recruitment steps from a list including: job fairs, employer website posting, employee referral program, campus recruitment, trade/professional organizations, or private placement agencies.",
+          "Every PERM case needs a State Workforce Agency (SWA) job order for 30 days, two print newspaper ads and a 30-day internal posting at the company. Professional jobs (those requiring a bachelor's degree or higher) also need three more recruitment steps. They're chosen from a list that includes job fairs, the employer's website, an employee referral program, campus recruiting, trade or professional organizations and private placement agencies.",
       },
       {
         question: "What triggers a PERM audit?",
         answer:
-          "Common PERM audit triggers include: layoffs in the same occupation within 6 months, job requirements that exceed the norm for the occupation (such as requiring a specific degree or foreign language without business necessity), discrepancies between the job offer and the beneficiary's qualifications, unusual wage levels, and random selection. Clean documentation and well-justified job requirements reduce audit risk.",
+          "A layoff in the same occupation within 6 months is a common trigger. So are job requirements above the norm for the occupation, such as a specific degree or a foreign language with no business necessity. A mismatch between the job offer and the beneficiary's qualifications can draw one too, and so can an unusual wage level. DOL also picks some cases at random. Clean documentation and well-justified job requirements lower the risk.",
       },
       {
         question: "What’s the ETA 9089 filing window?",
         answer:
-          "The ETA 9089 can be filed once 30 days have passed since the last mandatory recruitment step, and no later than 180 days after the first one: under 20 CFR 656.17(e), no mandatory step may be more than 180 days old on the day you file. Filing too early is a denial, and missing the end means starting recruitment over. PERM Tracker works out this window from your recruitment dates.",
+          "The ETA 9089 can be filed once 30 days have passed since the last mandatory recruitment step, and no later than 180 days after the first one: under 20 CFR 656.17(e), no mandatory step may be more than 180 days old on the day you file. Filing too early is a denial. Missing the end means starting recruitment over. PERM Tracker works out this window from your recruitment dates.",
       },
       {
         question: "How long do I have to file the I-140 after PERM certification?",
         answer:
-          "The I-140 immigrant petition must be filed within 180 days of PERM certification. Missing this deadline means the PERM certification expires and the entire process must be restarted. PERM Tracker tracks this deadline automatically and sends notifications as it approaches.",
+          "The I-140 immigrant petition must be filed within 180 days of PERM certification. If it isn’t, the certification expires and everything starts over. PERM Tracker tracks this deadline automatically and sends reminders as it gets close.",
       },
     ],
   },
@@ -133,17 +133,17 @@ const faqData = [
       {
         question: "Is there any way to check my PERM status myself?",
         answer:
-          "Yes. Most advice says only the employer or the attorney can check a pending PERM, and that's wrong: DOL's own FLAG system answers a case number for anyone who has it, pending cases included. Put yours into case status for the live DOL status, your place in the queue, a stage-aware estimate and an optional email alert. Wage request (P-) and H-1B LCA (I-) numbers work the same way. The number is on the filing receipt, or search the employer by name.",
+          "Yes. A lot of advice says only the employer or the attorney can check a pending PERM. In fact DOL's own FLAG system answers a case number for anyone who has it, pending cases included. Put yours into case status for the live DOL status, your place in the queue, a stage-aware estimate and an optional email alert. Wage request (P-) and H-1B LCA (I-) numbers work the same way. The number is on the filing receipt. Without it, search the employer by name.",
       },
       {
         question: "Where do the processing time numbers come from?",
         answer:
-          "Straight from the Department of Labor. The queue position and average days come from DOL's own published processing times, refreshed automatically, and the medians come from DOL's quarterly disclosure files: 250,000+ real decided cases, unioned and de-duplicated by case number. The methodology page lists every source and how each figure is built.",
+          "Straight from the Department of Labor. The queue position and average days come from DOL's own published processing times, which refresh automatically. DOL's quarterly disclosure files supply the medians: 250,000+ decided cases, combined and de-duplicated by case number. The methodology page lists every source and how each figure is built.",
       },
       {
         question: "Which states file the most PERM cases?",
         answer:
-          "California and Texas lead by a wide margin, and volume tracks industry concentration rather than a faster or slower line: DOL works one national queue, oldest first. The interactive state map shows filings, approval rates, median days and median wages for every state, from DOL's own files.",
+          "California and Texas lead by a wide margin. Volume follows where the industries are, and no state has a faster or slower line: DOL works one national queue, oldest first. The interactive state map shows filings, approval rates, median days and median wages for every state, from DOL's own files.",
       },
       {
         question: "What do PERM cases pay?",
@@ -162,7 +162,7 @@ const faqData = [
       {
         question: "Which law firms file the most PERM cases?",
         answer:
-          "Fragomen files by far the most, followed by Berry Appleman & Leiden and Ogletree Deakins. Our law firms page ranks the most active firms with case volume, approval rate and median processing days, straight from the firm name DOL prints on every filing. One caution the page states too: DOL prints a single practice under several spellings, so a big firm's true total can span more than one row. Approval rates cluster above 99% across the whole list.",
+          "Fragomen files by far the most, followed by Berry Appleman & Leiden and Ogletree Deakins. Our law firms page ranks the most active firms with case volume, approval rate and median processing days, straight from the firm name DOL prints on every filing. The page carries one caution: DOL prints a single practice under several spellings, so a big firm's total can span more than one row. Approval rates cluster above 99% across the whole list.",
       },
       {
         question: "Which employers sponsor the most green cards?",

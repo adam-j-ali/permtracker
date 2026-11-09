@@ -27,7 +27,7 @@ import { softFail } from "@/lib/softRead";
 
 const TITLE = "Green Card Line: People Ahead of Your Date";
 const DESCRIPTION =
-  "How many people stand ahead of your priority date in EB-2, EB-3 and EB-3 Other Workers, and how many years that is at last year's green card pace.";
+  "How many people stand ahead of your priority date in EB-2, EB-3 and EB-3 Other Workers, and what that means in years at last year's green card pace.";
 const PATH = "/tools/green-card-line";
 
 export const metadata: Metadata = withSocialCard({
@@ -53,7 +53,7 @@ const FAQS = [
   },
   {
     q: "Why is the answer a range?",
-    a: "USCIS counts approved petitions waiting for a visa number but doesn't say which priority dates they hold, so they're spread by when USCIS approved I-140s, moved back by the time the PERM took. That time is measured for petitions filed since October 2023 and assumed for older ones, and a family's size varies by year. The range carries all of it, and it never goes below what USCIS actually counted.",
+    a: "USCIS counts approved petitions waiting for a visa number but doesn't say which priority dates they hold, so they're spread by when USCIS approved I-140s, moved back by the time the PERM took. That time is measured for petitions filed since October 2023 and assumed for older ones, and a family's size varies by year. The range carries all of it, and it never goes below USCIS's own count.",
   },
   {
     q: "Does it count my spouse and children?",
@@ -61,15 +61,15 @@ const FAQS = [
   },
   {
     q: "Where do the years come from?",
-    a: "The people ahead divided by the green cards the line got in fiscal 2024, from Table V of the State Department's Report of the Visa Office, the newest year published. That's one real year's pace, not a forecast. Unused family numbers spill into employment categories after the fact, the bulletin doesn't move at a steady rate, and the count runs high where people give up or hold two petitions, so read it as how long at last year's pace, never as a date.",
+    a: "It's the people ahead divided by the green cards the line got in fiscal 2024, from Table V of the State Department's Report of the Visa Office (the newest year published). That's the pace of one past year. It isn't a forecast. Unused family numbers spill into employment categories after the fact. The bulletin doesn't move at a steady rate. The count also runs high where people give up or hold two petitions. So read it as how long the wait would be at last year's pace, and never as a date.",
   },
   {
     q: "Why doesn't it subtract people who give up?",
-    a: "Because nobody publishes how many do. Some leave, some switch categories, some get a green card through marriage or another employer, and USCIS says one person can hold more than one approved petition. All of that makes the count run high. Other calculators assume a rate; this one says the count is high and shows where USCIS's own figures let it be checked.",
+    a: "Because nobody publishes how many do. Some leave, some switch categories, and some get a green card through marriage or another employer. USCIS also says one person can hold more than one approved petition. All of that makes the count run high. Other calculators assume a rate. This one says the count is high and shows where USCIS's own figures let you check it.",
   },
   {
     q: "Why does my line say the estimate is rough?",
-    a: "Where filing is open past the final action date, USCIS has counted everyone who filed, so the estimate can be checked against a real number. For EB-2, which mostly adjusts inside the US, a gap of more than double means the spread doesn't fit this line well, and the page shows what the estimate would be if it's off by the same amount everywhere.",
+    a: "Where filing is open past the final action date, USCIS has counted everyone who filed, so the estimate can be checked against an actual count. EB-2 mostly adjusts inside the US. For it, a gap of more than double means the spread doesn't fit this line well. The page then shows what the estimate would be if it's off by the same amount everywhere.",
   },
 ];
 
@@ -104,8 +104,8 @@ export default async function GreenCardLinePage() {
           Your place in the green card line
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          Everyone ahead of your priority date in EB-2, EB-3 or EB-3 Other Workers, counted from what USCIS and the
-          State Department publish, and how many years that is at the pace the line got green cards last year.
+          This counts everyone ahead of your priority date in EB-2, EB-3 or EB-3 Other Workers, from what USCIS and the
+          State Department publish. It also shows what that means in years at the pace the line got green cards last year.
         </p>
       </header>
       <ConsularPauseNote className="mt-6" />{" "}

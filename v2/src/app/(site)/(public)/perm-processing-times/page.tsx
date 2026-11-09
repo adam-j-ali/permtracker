@@ -98,7 +98,7 @@ export const metadata: Metadata = withSocialCard({
   // year in January.
   title: "PERM Processing Times 2026, Tracked Daily",
   description:
-    "PERM processing times now: the filing month DOL is deciding, average days to a decision, the audit and prevailing wage queues, with DOL's own as-of date.",
+    "PERM processing times now, with DOL's as-of date: the filing month DOL is deciding, average days to a decision, and the audit and prevailing wage queues.",
   alternates: { canonical: "/perm-processing-times" },
   openGraph: {
     ...openGraphBase,
@@ -116,17 +116,17 @@ const HOW_LONG_NOW = "{{howLong}}";
 const FAQ = [
   {
     question: "How long does PERM take right now?",
-    answer: `${HOW_LONG_NOW} DOL's average describes cases it finished recently, so it describes the past rather than forecasting your case. The case lookup dates your own case from the cases still waiting ahead of it.`,
+    answer: `${HOW_LONG_NOW} DOL's average describes cases it finished recently, so it tells you about the past. It doesn't forecast your case. The case lookup dates your own case from the cases still waiting ahead of it.`,
   },
   {
     question: "What does the analyst review priority date mean?",
     answer:
-      "It’s the month whose applications DOL is currently adjudicating. If the date reads September 2025, DOL is working through cases filed in September 2025. It’s a queue position, not a decision date, and it moves forward as DOL clears cases.",
+      "It’s the month whose applications DOL is currently adjudicating. If the date reads September 2025, DOL is working through cases filed in September 2025. It’s a queue position, and it moves forward as DOL clears cases. It doesn’t give a decision date.",
   },
   {
     question: "Why is the prevailing wage date different from the PERM date?",
     answer:
-      "They’re two separate queues at two separate stages. A prevailing wage determination comes before recruitment and before the ETA 9089 is filed, so it has its own backlog and its own published position. DOL also updates the two sections on different schedules, which is why they carry different as-of dates here.",
+      "They’re two separate queues at two separate stages. A prevailing wage determination comes before recruitment and before the ETA 9089 is filed, so it has its own backlog and its own published position. DOL also updates the two sections on different schedules, so they carry different as-of dates here.",
   },
   {
     question: "Can PERM be processed faster than the published average?",
@@ -505,7 +505,7 @@ export default async function PermProcessingTimesPage() {
                 label="Median days from filing to decision, by the month DOL decided"
               />{" "}
               <p className="mt-3 text-sm text-muted-foreground">
-                DOL&apos;s published PERM files through {longDate(waitTrend.filesThrough)}; from{" "}
+                DOL&apos;s published PERM files through {longDate(waitTrend.filesThrough)}. From{" "}
                 {monthYear(waitTrend.months.find((m) => m.from === "sweep")?.m ?? null) ?? "September 2026"}, every case our
                 daily check saw DOL decide, dated by the day DOL worked.
               </p>
@@ -550,7 +550,7 @@ export default async function PermProcessingTimesPage() {
                 <p>
                   Reconstructed from the determination dates in the disclosure
                   files: for each month DOL issued decisions, the filing month
-                  at their median. It is the same frontier the section above
+                  at their median. It&apos;s the same frontier the section above
                   tracks, measured a second way and much further back.
                 </p>
               </FinePrint>
@@ -580,14 +580,14 @@ export default async function PermProcessingTimesPage() {
                   months of filing queue cleared per calendar month, over the{" "}
                   {advance.pointsUsed} determination months to{" "}
                   {formatMonth(advance.toMonth) ?? advance.toMonth}. At 1.00× the
-                  queue holds station, so at {advance.rate.toFixed(2)}× it is{" "}
+                  queue holds station, so at {advance.rate.toFixed(2)}× it&apos;s{" "}
                   <strong className="text-foreground">{advanceVerdict}</strong>.
                 </p>
                 {advance.slowest !== null && advance.fastest !== null ? (
                   <p className="mt-3 max-w-2xl text-base leading-relaxed text-soft">
                     It has ranged from {advance.slowest.toFixed(2)}× to{" "}
                     {advance.fastest.toFixed(2)}× over rolling three-month
-                    windows, so it describes the past rather than predicting a case.
+                    windows, so it describes the past. It doesn&apos;t predict a case.
                   </p>
                 ) : null}
               </div>
@@ -751,7 +751,7 @@ export default async function PermProcessingTimesPage() {
             </>
           ) : (
             <p className="mt-2 max-w-2xl text-base text-muted-foreground">
-              Not enough reports yet for a median at any step. Add yours from a certified case&apos;s page; the PERM
+              Not enough reports yet for a median at any step. Add yours from a certified case&apos;s page. The PERM
               half is filled in from DOL&apos;s record.
             </p>
           )}{" "}

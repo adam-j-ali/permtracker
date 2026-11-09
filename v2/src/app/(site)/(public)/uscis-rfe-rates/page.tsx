@@ -388,10 +388,10 @@ export default async function UscisRfeRatesPage() {
               months earlier, and the RFE may have gone out in yet another month.
             </li>{" "}
             <li>
-              Why the H-1B share rose in FY2018 and FY2019. The files count RFEs; they give no reason for them.
+              Why the H-1B share rose in FY2018 and FY2019. The files count RFEs, but they give no reason for them.
             </li>{" "}
             <li>
-              Final outcomes. Approved and denied are USCIS&apos;s initial decisions; a later revocation or reopening
+              Final outcomes. Approved and denied are USCIS&apos;s initial decisions, so a later revocation or reopening
               isn&apos;t in them. Extensions and new petitions are counted together.
             </li>
           </ul>

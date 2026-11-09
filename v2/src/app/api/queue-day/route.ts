@@ -33,6 +33,6 @@ export async function GET(req: Request) {
     );
   } catch (e) {
     console.error("[queue-day] read failed", e);
-    return NextResponse.json({ error: "the queue for that day couldn't be read; try again in a minute" }, { status: 503 });
+    return NextResponse.json({ error: "the queue for that day couldn't be read, so try again in a minute" }, { status: 503 });
   }
 }

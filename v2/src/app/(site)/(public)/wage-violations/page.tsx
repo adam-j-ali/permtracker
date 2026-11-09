@@ -153,14 +153,14 @@ export default async function WageViolationsPage() {
       )}{" "}
       <FinePrint className="mt-10" summary="What DOL says about these figures">
         <p>
-          A case is a compliance action WHD concluded. Back wages are what the employer agreed to pay, not what was paid. The
-          findings period isn&apos;t when the case opened or closed; years here are federal fiscal years (October to
+          A case is a compliance action WHD concluded. Back wages are what the employer agreed to pay. They don&apos;t show what was paid. The
+          findings period isn&apos;t when the case opened or closed. Years here are federal fiscal years (October to
           September) of the findings&apos; end. DOL says counts loaded after October 1, 2025 aren&apos;t directly comparable
           with earlier ones.
         </p>{" "}
         <p>
           Names are as DOL printed them. A name links to an employer page only where it matched one by legal name and the
-          page files under the same program; a case that matched no page is listed with no link.
+          page files under the same program. A case that matched no page is listed with no link.
         </p>
       </FinePrint>{" "}
       <DataProvenance datasets={["whd-cases"]} className="mt-6" />{" "}

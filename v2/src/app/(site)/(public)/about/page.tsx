@@ -174,7 +174,7 @@ const NOT_THIS = [
   {
     Icon: FileXIcon,
     title: "Not your file",
-    line: "It doesn't file anything. Your attorney has the file; this site shows where the queue is.",
+    line: "It doesn't file anything. Your attorney has the file. This site shows where the queue is.",
   },
 ] as const;
 

@@ -155,7 +155,7 @@ export default async function FamilyBulletinPage() {
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           {board
             ? `Every family cutoff State printed in ${board.bulletinCount} bulletins from ${formatMonth(board.firstMonth)} to ${formatMonth(board.lastMonth)}, by category and country, with how far each moved and every month it went backwards.`
-            : "The family charts are being read from the bulletin archive; check back shortly."}
+            : "The family charts are being read from the bulletin archive. Check back shortly."}
         </p>{" "}
         <UscisChartNote charts={uscisCharts} only="family" className="mt-6" />
         <ConsularPauseNote className="mt-6" />{" "}
@@ -171,15 +171,15 @@ export default async function FamilyBulletinPage() {
           <Board
             cells={board.datesForFiling}
             title={`Dates for filing, ${formatMonth(board.lastMonth)}`}
-            note="The chart USCIS sometimes lets applicants file an I-485 against, ahead of final action. Whether it applies in a given month is USCIS's monthly call, not the bulletin's."
+            note="The chart USCIS sometimes lets applicants file an I-485 against, ahead of final action. USCIS decides each month whether it applies. The bulletin doesn't."
           />
         </>
       ) : null}
 
       <section className="mt-10 max-w-3xl">
-        <h2 className="font-heading text-2xl font-bold">What this page does not do</h2>{" "}
+        <h2 className="font-heading text-2xl font-bold">What this page doesn&apos;t do</h2>{" "}
         <p className="mt-3 text-base leading-relaxed text-soft">
-          No queue position and no forecast. USCIS publishes its I-485 inventory by priority date only for
+          It gives no queue position and no forecast. USCIS publishes its I-485 inventory by priority date only for
           employment categories, so a family &ldquo;queue position&rdquo; from any source is a guess. The history
           above is what can be measured.
         </p>{" "}

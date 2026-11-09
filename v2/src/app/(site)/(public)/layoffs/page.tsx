@@ -85,7 +85,7 @@ export default async function LayoffsPage() {
       </section>
 
       <section className="mt-10 max-w-3xl">
-        <h2 className="font-heading text-2xl font-bold">What is read, and what is not</h2>{" "}
+        <h2 className="font-heading text-2xl font-bold">What&apos;s read, and what isn&apos;t</h2>{" "}
         <MoreText gist={"Forty-seven states and DC are read. A sponsor with layoffs in the other three isn't cleared here."} className="mt-3">
           <p className="text-base leading-relaxed text-soft">
             Forty-seven states and the District of Columbia are read, each from the record it publishes, and each
@@ -95,7 +95,7 @@ export default async function LayoffsPage() {
             Oklahoma and Minnesota print no worker count, and Hawaii&apos;s notices before August 2026 and West
             Virginia&apos;s outside the list it compiled for 2022 to 2024 are letters, so those rows carry no count.
             Each state&apos;s newest notice is
-            checked against its own budget, so a source going quiet shows up as a stale date rather than a silent zero.
+            checked against its own budget, so a source going quiet shows up as a stale date and never as a silent zero.
           </p>{" "}
           <p className="mt-3 text-base leading-relaxed text-soft">
             Louisiana and New Mexico ask automated readers to stay off their files, Missouri puts a browser check in
@@ -108,17 +108,17 @@ export default async function LayoffsPage() {
           <p className="mt-3 text-base leading-relaxed text-soft">
             Three states aren&apos;t read, because none publishes a list. Arkansas keeps its notices confidential under
             state law, and New Hampshire&apos;s and Wyoming&apos;s agencies post none. A sponsor with layoffs in those
-            states, or before the window read here, isn&apos;t cleared by this page. A match means the filer&apos;s
+            states, or before the window read here, isn&apos;t cleared by this page. Matching means the filer&apos;s
             normalised name equals a PERM employer&apos;s, the same rule that groups DOL&apos;s own spellings of one
             company. A subsidiary filing under its own name doesn&apos;t match its parent, on purpose.
           </p>
         </MoreText>{" "}
         <p className="mt-3 text-base leading-relaxed text-soft">
-          A notice is not a finding about a PERM. What a layoff does to a filing, and to a pending case, is on{" "}
+          A notice isn&apos;t a finding about a PERM.{" "}
           <Link href="/guides/employer-layoffs-and-your-perm" className="link">
-            the layoffs guide
-          </Link>
-          .
+            The layoffs guide
+          </Link>{" "}
+          covers what a layoff does to a filing, and to a pending case.
         </p>
       </section>
     </div>

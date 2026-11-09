@@ -32,11 +32,11 @@ export const dynamic = "force-static";
 const FAQS = [
   {
     q: "Do I keep my priority date if my employer withdraws the I-140?",
-    a: "Under 8 CFR 204.5(e)(1) the priority date of an approved I-140 is retained for a later EB-1, EB-2 or EB-3 petition unless USCIS revoked the approval for fraud, willful misrepresentation, material error, or an invalidated labor certification. Since the rule that took effect January 17, 2017, an employer's withdrawal or closure does not cost the beneficiary the date.",
+    a: "Under 8 CFR 204.5(e)(1) the priority date of an approved I-140 is retained for a later EB-1, EB-2 or EB-3 petition unless USCIS revoked the approval for fraud, willful misrepresentation, material error, or an invalidated labor certification. Since the rule that took effect January 17, 2017, an employer's withdrawal or closure doesn't cost the beneficiary the date.",
   },
   {
     q: "What does 180 days after approval change?",
-    a: "8 CFR 205.1(a)(3)(iii)(C) and (D): a withdrawal or the employer's closure 180 days or more after the I-140 was approved, or after an I-485 based on it was filed, no longer revokes the approval automatically. Inside 180 days it does, which matters for extensions and for using the I-140 as the basis of a pending I-485, not for the priority date.",
+    a: "8 CFR 205.1(a)(3)(iii)(C) and (D): a withdrawal or the employer's closure 180 days or more after the I-140 was approved, or after an I-485 based on it was filed, no longer revokes the approval automatically. Inside 180 days it does, which matters for extensions and for using the I-140 as the basis of a pending I-485. It doesn't affect the priority date.",
   },
   {
     q: "When can I change employers on a pending I-485?",
@@ -68,7 +68,7 @@ export default function PriorityDateRetentionPage() {
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           Three dates decide what an employer&apos;s withdrawal costs and when a
-          job can change. Enter the ones you have; the rules do the rest.
+          job can change. Enter the ones you have, and the rules do the rest.
         </p>
       </header>
       <section data-embed="pd-retention" className="mt-10">

@@ -40,7 +40,7 @@ import { longDate, weekdayName } from "@convex/lib/months";
 
 const TITLE = "PERM Cases Filed Today and Each Day";
 const DESCRIPTION =
-  "How many PERM cases, wage requests and H-1B LCAs were filed today, yesterday and each day since 2019, from DOL's own records.";
+  "How many PERM cases, wage requests and H-1B LCAs were filed today, yesterday and each day since 2019. Every count comes from DOL's own records.";
 
 export const metadata: Metadata = withSocialCard(
   {
@@ -101,7 +101,7 @@ export default async function FilingsByDayPage() {
   const checked = easternTime(doc.computedAt);
 
   const tiles = [
-    { key: "today", n: perm.today, claim: "PERM cases filed today so far", sub: `As of ${checked}; it grows as the day's filings are found.`, href: dayHref(today) },
+    { key: "today", n: perm.today, claim: "PERM cases filed today so far", sub: `As of ${checked}. It grows as the day's filings are found.`, href: dayHref(today) },
     { key: "yesterday", n: perm.yesterday, claim: "Filed yesterday", sub: [weekdayName(yesterday), compare(perm.yesterday, usualFor(permDays, yesterday))].filter(Boolean).join(", "), href: dayHref(yesterday) },
     { key: "week", n: perm.week, claim: "Filed in the last 7 days", sub: `${longDate(shiftDay(today, -6))} to today` },
     { key: "month", n: perm.month, claim: "Filed in the last 30 days", sub: `${longDate(shiftDay(today, -29))} to today` },
@@ -173,7 +173,7 @@ export default async function FilingsByDayPage() {
         <h2 id="any-day" className="font-heading text-2xl font-bold">
           Any day or period
         </h2>{" "}
-        <p className="mt-2 max-w-2xl text-base text-soft">Pick a program and a period; each day opens its cases.</p>{" "}
+        <p className="mt-2 max-w-2xl text-base text-soft">Pick a program and a period, and each day opens its cases.</p>{" "}
         <div className="mt-5">
           <SearchParamsBoundary>
             <FilingsExplorer asOf={today} windowFrom={windowFrom} programs={windowed} />

@@ -206,7 +206,7 @@ export async function POST(req: Request) {
       return new Response(
         JSON.stringify({
           error: 'message_too_long',
-          message: `That message is ${messageContent.length.toLocaleString('en-US')} characters; the chat takes up to ${CHAT_LIMITS.userMessageChars.toLocaleString('en-US')}. Shorten it and send again.`,
+          message: `That message is ${messageContent.length.toLocaleString('en-US')} characters, and the chat takes up to ${CHAT_LIMITS.userMessageChars.toLocaleString('en-US')}. Shorten it and send again.`,
         }),
         { status: 413, headers: { 'Content-Type': 'application/json' } }
       );

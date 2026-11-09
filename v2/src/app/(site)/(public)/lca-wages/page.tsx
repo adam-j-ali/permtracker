@@ -59,15 +59,15 @@ const FAQS = [
   },
   {
     q: "Which filings are in the window?",
-    a: "The FY2026 disclosure files, which cover LCAs decided from October 1, 2025. Earlier fiscal years are loaded one at a time; the provenance line below says what is held today.",
+    a: "The FY2026 disclosure files, which cover LCAs decided from October 1, 2025. Earlier fiscal years are loaded one at a time. The provenance line below says what's held today.",
   },
   {
     q: "Why does a filter sometimes show no figures?",
-    a: `Because the selection is too thin. Below ${MIN_FOR_MEDIAN} filings a median moves by thousands when a single filing lands, so nothing is shown; between 30 and 100 the tails are withheld and the middle is kept.`,
+    a: `Because the selection is too thin. Below ${MIN_FOR_MEDIAN} filings a median moves by thousands when a single filing lands, so nothing is shown. Between 30 and 100 filings, the tails are withheld and the middle is kept.`,
   },
   {
     q: "Is this the same as a prevailing wage level?",
-    a: "No. DOL sets the four prevailing wage levels on the OES survey, at roughly the 17th, 34th, 50th and 67th percentiles of what everyone in the occupation earns. These are the wages employers actually attested on H-1B filings, a different population, and usually a higher one.",
+    a: "No. DOL sets the four prevailing wage levels on the OES survey, at roughly the 17th, 34th, 50th and 67th percentiles of what everyone in the occupation earns. These are the wages employers attested on H-1B filings, a different population, and usually a higher one.",
   },
 ];
 

@@ -136,7 +136,7 @@ export default async function SettlementsPage() {
           Each action, and DOL&apos;s record beside it
         </h2>{" "}
         <p className="mt-2 max-w-3xl text-base text-soft">
-          Newest first. The record is DOL&apos;s live case data for the company&apos;s page here; LCAs are
+          Newest first. The record is DOL&apos;s live case data for the company&apos;s page here. LCAs are
           counted from the day the action was announced. Nothing in these agreements stops a company filing
           LCAs: the one bar on filing, Cloudera&apos;s, covers PERM alone.
         </p>{" "}
@@ -150,13 +150,13 @@ export default async function SettlementsPage() {
         <FinePrint summary="Sources, counting and what isn't here" className="mt-3">
           <p>
             Each settlement was read in its own agreement, linked from the Justice Department&apos;s list of
-            its Immigrant and Employee Rights Section settlements, and in DOJ&apos;s release where there is
-            one; DOL&apos;s Cloudera suspension in DOL&apos;s release of May 12, 2026. Checked against both
-            lists on {shortDate(ENFORCEMENT_CHECKED)}.
+            its Immigrant and Employee Rights Section settlements, and in DOJ&apos;s release where one
+            exists. DOL&apos;s Cloudera suspension was read in DOL&apos;s release of May 12, 2026. Both lists
+            were checked on {shortDate(ENFORCEMENT_CHECKED)}.
           </p>{" "}
           <p>
             DOJ numbers nine of these in its releases as the 1st through the 15th of its settlements
-            protecting U.S. workers. Six have no release; their places are worked out from the dates on
+            protecting U.S. workers. Six have no release. Their places are worked out from the dates on
             DOJ&apos;s list and the counts its releases give.
           </p>{" "}
           <p>

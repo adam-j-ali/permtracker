@@ -398,14 +398,14 @@ export default async function BulletinMonthPage({
       <p className="mt-6 text-sm leading-relaxed text-soft">
         A date means applications with a priority date earlier than it can act
         that month. <strong className="font-semibold text-foreground">Current</strong> means
-        every priority date can; <strong className="font-semibold text-foreground">Unavailable</strong>{" "}
+        every priority date can. <strong className="font-semibold text-foreground">Unavailable</strong>{" "}
         means none can, usually because the fiscal year&apos;s numbers for that
         category and country are used up.{" "}
         {hasSetAsides
-          ? "The three EB-5 set-asides are the reserved rural, high-unemployment and infrastructure allocations created in 2022; USCIS publishes their I-485 inventory separately."
+          ? "The three EB-5 set-asides are the reserved rural, high-unemployment and infrastructure allocations created in 2022. USCIS publishes their I-485 inventory separately."
           : month < SET_ASIDES_FROM
-            ? "The EB-5 set-aside rows did not exist yet in this month's bulletin; they begin in May 2022."
-            : "This month's copy was read before the parser learned the three EB-5 set-aside rows; they will appear once it is re-read."}
+            ? "The EB-5 set-aside rows didn't exist yet in this month's bulletin. They begin in May 2022."
+            : "This month's copy was read before the parser learned the three EB-5 set-aside rows. They'll appear once it's re-read."}
       </p>{" "}
 
       <nav aria-label="Other bulletins" className="mt-8 flex flex-wrap items-center gap-3">
@@ -439,7 +439,7 @@ export default async function BulletinMonthPage({
         currentHref={`/visa-bulletin/${month}`}
         reading={[
           { href: "/visa-bulletin", label: "What the next bulletin usually does", note: "every earlier same-month bulletin, and the inventory ahead of each cutoff" },
-          { href: "/tools/i485-queue-position", label: "I-485 queue position", note: "the inventory ahead of your own priority date, not just the cutoff" },
+          { href: "/tools/i485-queue-position", label: "I-485 queue position", note: "the whole inventory ahead of your own priority date" },
           { href: "/tools/priority-date-calculator", label: "Priority dates, every bulletin since 2014", note: "the month-by-month cutoff history behind this table" },
         ]}
       />

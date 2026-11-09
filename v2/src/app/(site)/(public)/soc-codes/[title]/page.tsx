@@ -132,7 +132,7 @@ export default async function SocTitlePage({ params }: { params: Promise<{ title
       : []),
     {
       q: `Which code should ${article(a.title)} ${a.title} job use?`,
-      a: "The code follows the job's duties and requirements, not its title. DOL's National Prevailing Wage Center decides it on the wage request. When employers split a title between codes, the work decides which one fits.",
+      a: "The code follows the job's duties and requirements, whatever title the employer gives it. DOL's National Prevailing Wage Center decides it on the wage request. When employers split a title between codes, the work decides.",
     },
     // For the worker (Sabrina, Nov 1 2026: "to frame previous employment consistent with that position so previous
     // experience qualifies"). 8 CFR 204.5(g)(1), read on eCFR's Oct 19 2026 edition.

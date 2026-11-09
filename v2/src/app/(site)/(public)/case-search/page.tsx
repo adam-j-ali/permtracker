@@ -170,12 +170,12 @@ export default async function CaseSearchPage() {
       <section className="mt-12 max-w-3xl">
         <h2 className="font-heading text-2xl font-bold">How this search works</h2>{" "}
         <div className="mt-4 space-y-4 text-base leading-relaxed text-soft">
-          <MoreText gist={"Start with an employer, a law firm, a state or a job; everything else narrows it."}>
+          <MoreText gist={"Start with an employer, a law firm, a state or a job. Everything else narrows it."}>
             <p>
               <b className="font-bold">One field has to lead.</b> An employer name
               reaches every program, live and published. A law firm, a
               worksite state or an occupation reads DOL&apos;s published files,
-              because that is the only place those columns exist with an index on
+              because that&apos;s the only place those columns exist with an index on
               them{firstYear ? `, and for PERM they reach back to FY${firstYear}` : ""}.
               Everything else narrows whichever of those you gave.
               With a case number,{" "}
@@ -191,10 +191,10 @@ export default async function CaseSearchPage() {
           </MoreText>{" "}
           <FinePrint summary="Live versus published, merged records, and why a filing might be missing">
           <p>
-            <b className="font-bold">A number is live, a name is not.</b> A case
+            <b className="font-bold">Numbers are checked live, and names are read from a copy.</b> A case
             number is answered by asking DOL at that moment, so a filing made
-            yesterday resolves. A name is answered from this site&apos;s own
-            copy, rebuilt twice a day, so one from the last day may not appear
+            yesterday resolves. Names come from this site&apos;s own copy,
+            rebuilt twice a day, so one from the last day may not appear
             under its employer yet.
           </p>{" "}
           <p>
@@ -208,7 +208,7 @@ export default async function CaseSearchPage() {
               it, and a caveat repeated is a caveat skipped. */}
           <p>
             <b className="font-bold">Why a filing might be missing.</b> An open
-            one older than the backfill has reached is not there yet. DOL names
+            one older than the backfill has reached isn&apos;t there yet. DOL names
             the law firm and the worksite only at publication, so those are
             absent from anything still open. And an employer DOL spells several
             ways answers to the spelling on the filing, so a shorter name
@@ -232,7 +232,7 @@ export default async function CaseSearchPage() {
               the leads has to be filled.
             </p>{" "}
             <p>
-              DOL&apos;s case system answers numbers, not employers, and no
+              DOL&apos;s case system answers case numbers only, and no
               public endpoint searches it by name. So a name is answered from
               this site&apos;s own copy, which grows by walking forward into the
               numbers DOL has newly issued.

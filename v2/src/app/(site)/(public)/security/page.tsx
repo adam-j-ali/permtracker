@@ -110,7 +110,7 @@ export default function SecurityPage() {
           command="curl -sI https://permtracker.app"
           output={HEADERS}
           label="The security headers permtracker.app sends: a content security policy, strict transport security for two years with subdomains, no framing, no content sniffing, a referrer policy and a permissions policy with camera and location off."
-          caption={`Asked ${HEADERS_ASKED}; the security headers from the reply.`}
+          caption={`Asked ${HEADERS_ASKED}, with the security headers from the reply.`}
         />{" "}
         {/* An outside grade, dated: Qualys's own test of the site's HTTPS. */}
         <p className="mt-4 max-w-2xl text-base text-soft">
@@ -155,7 +155,7 @@ export default function SecurityPage() {
         </h2>{" "}
         <p className="mt-3 max-w-2xl text-base leading-relaxed text-soft">
           Email the issue, the steps to reproduce it and any proof of concept. We acknowledge every report within 72
-          hours and agree on disclosure timing with you. There&apos;s no paid bug bounty yet; reporters who want to be
+          hours and agree on disclosure timing with you. There&apos;s no paid bug bounty yet. Reporters who want to be
           named are credited in the record below.
         </p>{" "}
         <a
