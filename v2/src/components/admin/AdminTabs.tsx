@@ -79,7 +79,8 @@ export function AdminTabs({ tabs }: { tabs: AdminTab[] }) {
               className={choiceVariants({ on: selected })}
             >
               {t.label}
-              {t.badge ? <span className="text-muted-foreground tabular-nums"> {t.badge}</span> : null}
+              {/* On the lime pick the count takes the tab's own ink: grey there measured about 3:1. */}
+              {t.badge ? <span className={`tabular-nums ${selected ? "text-current" : "text-muted-foreground"}`}> {t.badge}</span> : null}
             </button>
           );
         })}

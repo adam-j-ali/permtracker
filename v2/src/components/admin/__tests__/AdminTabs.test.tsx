@@ -56,4 +56,16 @@ describe("AdminTabs", () => {
     });
     expect(selected()).toBe("Alerts and email");
   });
+
+  it("draws a picked tab's count in the tab's own ink, never grey on lime", () => {
+    // Arrange: grey on the lime pick measured about 3:1, and 1.2:1 in the dark theme
+    window.history.replaceState(null, "", "/admin#reviews");
+    render(<AdminTabs tabs={[tabs[0]!, { ...tabs[1]!, badge: "4" }, tabs[2]!]} />);
+    // Act
+    const badge = screen.getByText("4");
+    // Assert
+    expect(badge.className).not.toMatch(/text-muted-foreground/);
+    expect(badge.className).toMatch(/text-current/);
+  });
 });
+
