@@ -381,6 +381,7 @@ const earlier = (a: string, b: string) => (a < b ? a : b);
 const fixed = (day: string): DayRange => ({ low: day, mid: day, high: day });
 const shift = (r: DayRange, s: Span): DayRange => ({ low: plusDays(r.low, s.low), mid: plusDays(r.mid, s.mid), high: plusDays(r.high, s.high) });
 const laterRange = (a: DayRange, b: DayRange): DayRange => ({ low: later(a.low, b.low), mid: later(a.mid, b.mid), high: later(a.high, b.high) });
+const earlierRange = (a: DayRange, b: DayRange): DayRange => ({ low: earlier(a.low, b.low), mid: earlier(a.mid, b.mid), high: earlier(a.high, b.high) });
 export const monthsToDays = (months: number) => months * DAYS_PER_MONTH_2DP;
 
 /** A span with its ends in order and never negative. */
@@ -540,8 +541,10 @@ export function buildPlan(input: PlanInput, figures: PlanFigures): Plan {
   const settle = (m: Milestone): boolean => {
     const r = at[m];
     const idx = MILESTONE_ORDER.indexOf(m);
-    if (known[m] || !r || idx > reachedIdx) return false;
+    if (known[m] || idx > reachedIdx) return false;
+    // The step the case stands at is today even when nothing measured dates it, or every step after it goes blank.
     if (idx === reachedIdx) at[m] = fixed(today);
+    else if (!r) return false;
     else {
       const notAfterToday = (d: string) => (d > today ? today : d);
       at[m] = { low: notAfterToday(r.low), mid: notAfterToday(r.mid), high: notAfterToday(r.high) };
@@ -672,13 +675,17 @@ export function buildPlan(input: PlanInput, figures: PlanFigures): Plan {
       continue;
     }
     // The visa wait runs from the I-140's decision to the I-485; a current date has none,
-    // so it sits on the day the I-485 goes in.
+    // so it sits on the day the I-485 goes in. A cutoff that passes the date before the
+    // approval sends the I-485 in with the I-140, so the wait never starts after it ends.
+    const approvedOrFiled = at.i140Approved ?? at.i140Filed ?? at[startAt];
     const start =
       s.key !== 'visa'
         ? at[s.from]
         : current
           ? (at.i485Filed ?? (route === 'cp' ? at.i140Approved : at.i140Filed))
-          : (at.i140Approved ?? at.i140Filed ?? at[startAt]);
+          : approvedOrFiled && at.i485Filed
+            ? earlierRange(approvedOrFiled, at.i485Filed)
+            : approvedOrFiled;
     if (!start) {
       steps.push({ ...s, start: at[startAt]!, end: null, known: { start: false, end: false }, state: 'ahead', basis: basis[s.key] ?? 'Waits on the step before' });
       continue;
