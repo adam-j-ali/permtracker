@@ -1,4 +1,4 @@
-import { parseISO, isBefore, isAfter, getDay, differenceInCalendarDays, isValid } from 'date-fns';
+import { parseISO, isBefore, isAfter, getDay, differenceInCalendarDays, isValid, format } from 'date-fns';
 import type { ValidationResult, ValidationIssue, CaseData } from '../types';
 import { createValidationResult } from '../types';
 import { countBusinessDays } from '../dates/businessDays';
@@ -440,7 +440,7 @@ export function validateProfessionalMethods(
       if (endDate && maxRecruitmentDate) {
         const end = parseISO(endDate);
         if (isValid(end) && isAfter(end, maxRecruitmentDate)) {
-          const maxDateStr = maxRecruitmentDate.toISOString().split('T')[0];
+          const maxDateStr = format(maxRecruitmentDate, 'yyyy-MM-dd');
           const label = isSpecial ? 'extended deadline' : 'recruitment window closes';
           errors.push({
             ruleId: 'V-PROF-03',
@@ -470,7 +470,7 @@ export function validateProfessionalMethods(
 
         // V-PROF-05: sub-entry date must be within method's max date
         if (maxRecruitmentDate && isAfter(entryDate, maxRecruitmentDate)) {
-          const maxDateStr = maxRecruitmentDate.toISOString().split('T')[0];
+          const maxDateStr = format(maxRecruitmentDate, 'yyyy-MM-dd');
           const label = isSpecial ? 'extended deadline' : 'recruitment window closes';
           errors.push({
             ruleId: 'V-PROF-05',

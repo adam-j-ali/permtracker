@@ -14,6 +14,7 @@ import { afterAll, describe, expect, it } from "vitest";
  */
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../../..");
 const CALCULATORS = path.join(ROOT, "convex/lib/perm/calculators");
+const VALIDATORS = path.join(ROOT, "convex/lib/perm/validators");
 const JITI = path.join(ROOT, "node_modules/jiti/lib/jiti-cli.mjs");
 const dir = mkdtempSync(path.join(tmpdir(), "perm-tz-"));
 const probe = path.join(dir, "probe.ts");
@@ -21,12 +22,24 @@ writeFileSync(
   probe,
   `import { calculatePWDExpiration } from ${JSON.stringify(path.join(CALCULATORS, "pwd.ts"))};
 import { estimateQueueDecision } from ${JSON.stringify(path.join(CALCULATORS, "queueEstimate.ts"))};
+import { validateProfessionalMethods } from ${JSON.stringify(path.join(VALIDATORS, "recruitment.ts"))};
 const average = estimateQueueDecision({
   filingDate: "2026-03-02",
   today: "2026-03-10",
   frontier: { analystQueueMonth: "2025-09", officialAvgDays: 30, asOf: "2026-03-09" },
 }).models.find((m) => m.id === "dol-average");
+// First step Feb 1 2024: a method's last day is 150 days on (Jun 30), the latest method's 180 (Jul 30).
+const pastWindow = validateProfessionalMethods({
+  pwdDeterminationDate: "2024-01-15",
+  pwdExpirationDate: "2025-01-15",
+  firstRecruitmentDate: "2024-02-01",
+  methods: [
+    { method: "private_employment_firm", date: "", startDate: "2024-02-15", endDate: "2024-08-01" },
+    { method: "radio_ad", date: "", subEntries: [{ date: "2024-07-15", description: "" }] },
+  ],
+}).errors.map((e) => e.message);
 console.log(JSON.stringify({
+  pastWindow,
   offset: new Date(2026, 0, 15).getTimezoneOffset(),
   july1: calculatePWDExpiration("2026-07-01"),
   april2: calculatePWDExpiration("2026-04-02"),
@@ -56,5 +69,10 @@ describe.each([
     expect(got.april2).toBe("2026-07-01");
     expect(got.april1).toBe("2026-06-30");
     expect(got.average).toBe("2026-04-01");
+    // The recruitment validator names the last allowed day, the same day everywhere.
+    expect(got.pastWindow).toEqual([
+      "Method end date must be on or before 2024-07-30 (extended deadline)",
+      "Entry date must be on or before 2024-06-30 (recruitment window closes)",
+    ]);
   });
 });
