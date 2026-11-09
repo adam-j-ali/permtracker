@@ -1052,7 +1052,8 @@ export function UnifiedCaseSearch({
               >
                 <input
                   type="date"
-                  placeholder="YYYY-MM-DD"
+                  // No placeholder: a date box paints its own format in every engine and never shows one
+                  // (the month boxes keep theirs for Firefox, which draws them as plain text).
                   value={dayInput}
                   // A day and a month range are one filter: setting either empties the other, so
                   // what the boxes show is what the search uses.
