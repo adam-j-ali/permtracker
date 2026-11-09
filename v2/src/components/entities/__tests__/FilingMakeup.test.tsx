@@ -148,6 +148,13 @@ describe("IndustryMix", () => {
     expect(screen.getAllByText("Software Publishers")).toHaveLength(1);
     expect(screen.getByText(/NAICS 513210, 51121, 511210, 51321/)).toBeInTheDocument();
   });
+
+  it("keeps a word between a smaller industry's codes and its count", () => {
+    // Arrange, Act
+    const { container } = render(<IndustryMix rows={rows} />);
+    // Assert: "541511 40", never "54151140"
+    expect(container.textContent).toMatch(/541511 40/);
+  });
 });
 
 describe("RecruitmentMix", () => {
