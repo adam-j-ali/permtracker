@@ -9,6 +9,7 @@ import type { EntityPending } from "@/lib/db/entityDetail";
 import { cn } from "@/lib/utils";
 import { formatInt, formatShareOf } from "@/lib/format";
 import { DAYS_PER_MONTH, MS_PER_DAY } from "@/lib/time";
+import { shareMark } from "@/components/ui/share-mark";
 
 /**
  * Each stage's rule in the soft chart colour of what the stage means (round 3,
@@ -134,7 +135,7 @@ export function LiveQueueBand({
                   const meaning = statusMeaning(s.status);
                   // Never a clean 0% or 100% the counts don't have: words in the tip, short marks in the cell.
                   const share = waiting > 0 ? formatShareOf(s.n, waiting) : "0%";
-                  const shareShort = share.replace("under ", "<").replace("over ", ">");
+                  const shareShort = waiting > 0 ? shareMark(s.n, waiting) : "0%";
                   return (
                     // Keyed Fragment with a leading space: array items render
                     // with NOTHING between them, so every stage name welded to
