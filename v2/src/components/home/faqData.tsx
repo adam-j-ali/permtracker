@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRightIcon } from "@phosphor-icons/react/ssr";
 
 /**
  * The homepage FAQ, single-sourced: SIX questions, three per audience.
@@ -90,7 +91,7 @@ export const HOME_FAQS: HomeFaqItem[] = [
         hours and calendar sync. A weekly case summary arrives on Mondays in any week
         something changed, and an
         AI assistant answers questions over your own cases.{" "}
-        <Link href="/for-attorneys" className="link">How the software works &rarr;</Link>
+        <Link href="/for-attorneys" className="link">How the software works <ArrowRightIcon aria-hidden="true" weight="bold" className="inline size-4 align-[-0.125em]" /></Link>
       </>
     ),
   },
@@ -105,7 +106,7 @@ export const HOME_FAQS: HomeFaqItem[] = [
         other firm can see your cases. Privacy Mode hides sensitive fields during
         screen sharing. The public data pages carry only DOL&apos;s published
         records, with no client data at all.{" "}
-        <Link href="/security" className="link">Security details &rarr;</Link>
+        <Link href="/security" className="link">Security details <ArrowRightIcon aria-hidden="true" weight="bold" className="inline size-4 align-[-0.125em]" /></Link>
       </>
     ),
   },

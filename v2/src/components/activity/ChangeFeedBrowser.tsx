@@ -2,6 +2,7 @@
 
 import { Fragment, useId, useMemo, useState } from "react";
 import Link from "next/link";
+import { ArrowRightIcon } from "@phosphor-icons/react";
 
 import { DidYouMean } from "@/components/search/DidYouMean";
 import { usePublicQuery } from "@/hooks/usePublicQuery";
@@ -815,7 +816,7 @@ export function ChangeFeedBrowser({
                       <span className="text-muted-foreground">
                         {t.fromStatus}
                       </span>{" "}
-                      <span aria-hidden="true">&rarr;</span>{" "}
+                      <ArrowRightIcon aria-hidden="true" weight="bold" className="inline size-3.5 align-[-0.125em]" />{" "}
                       <span className="font-bold">{t.toStatus}</span>{" "}
                       <b className="ml-1 font-bold tabular-nums">{formatInt(t.n)}</b>
                     </button>
