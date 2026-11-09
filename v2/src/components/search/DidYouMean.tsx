@@ -81,18 +81,21 @@ export function DidYouMean({
   className,
   label = "Did you mean",
   loading = false,
+  loadingLabel = "Looking for close names…",
 }: {
   suggestions: Suggestion[];
   className?: string;
   label?: string;
   /** The close names are still being looked up: one line says so, so they don't pop in unannounced. */
   loading?: boolean;
+  /** That line's words, for a lookup that isn't of names. */
+  loadingLabel?: string;
 }) {
   if (suggestions.length === 0 && loading) {
     return (
       <p className={cn("flex items-center gap-2 text-sm text-muted-foreground", className)} role="status">
         <CircleNotchIcon aria-hidden="true" weight="bold" className="size-4 shrink-0 animate-spin motion-reduce:animate-none" />
-        Looking for close names…
+        {loadingLabel}
       </p>
     );
   }

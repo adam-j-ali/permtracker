@@ -35,6 +35,9 @@ import { formatMonth } from "@/lib/dolFormat";
 import { DateInput } from "@/components/forms/DateInput";
 
 /** "Tue 14 Oct 2026". UTC so the label cannot slide a day by timezone. */
+/** The estimator is PERM's, so its finder looks through PERM cases alone. */
+const FINDER_PROGRAMS = ["perm"] as const;
+
 function fmtDay(iso: string): string {
   const d = new Date(`${iso}T00:00:00Z`);
   return d.toLocaleDateString("en-US", {
@@ -58,6 +61,7 @@ import {
   aheadOfDay,
   measureFilingRate,
 } from "@/lib/queueAhead";
+import { CaseFinder } from "@/components/tools/CaseFinder";
 import { CaseNumberField } from "@/components/tools/CaseNumberField";
 import { QueueMonthChart } from "@/components/tools/QueueMonthChart";
 import { cn } from "@/lib/utils";
@@ -616,6 +620,9 @@ export function PermTimelineEstimator({
           onDecode={handleDecode}
           warning={caseWarning}
         />
+        {/* No number at all: the employer's name and the date above find the case itself, and a
+            nearby day picked there becomes the date the estimate is for. */}
+        <CaseFinder className="mt-6" programs={FINDER_PROGRAMS} day={hasDate ? filedOn : ""} onDay={setFiledOn} source="perm-estimator" />
       </div>
 
       {/* THE ANSWER, at the size the question was asked. Everything in this

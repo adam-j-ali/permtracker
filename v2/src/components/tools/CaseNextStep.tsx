@@ -19,6 +19,8 @@ export interface CaseNextStepProps {
   /** Where "Don't have the number?" goes. Defaults to the employer search. */
   searchHref?: string;
   searchLabel?: string;
+  /** On an employer's page, its name: the finder under the box opens with it filled in. */
+  employerName?: string;
   /** One more step this page offers, such as following the employer. */
   extra?: { href: string; label: string } | null;
   /** For the lookup event, so the funnel says which page sent the lookup. */
@@ -32,6 +34,7 @@ export function CaseNextStep({
   question,
   searchHref,
   searchLabel,
+  employerName,
   extra = null,
   source,
   numberKind = "PERM",
@@ -47,6 +50,7 @@ export function CaseNextStep({
         label={`Your ${numberKind} case number`}
         searchHref={searchHref}
         searchLabel={searchLabel}
+        employerName={employerName}
         source={source}
       />{" "}
       {extra ? (

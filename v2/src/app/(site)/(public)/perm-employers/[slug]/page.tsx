@@ -348,6 +348,7 @@ async function OtherEmployerPage({ slug, record }: { slug: string; record: Other
             question={`Waiting on a filing with ${record.name}?`}
             searchHref={nameSearch(slug, record.name)}
             searchLabel="Find it among their filings"
+            employerName={record.name}
             numberKind="DOL"
             source="employer-page-other"
           />
@@ -657,6 +658,7 @@ export default async function EmployerPage({
               question={`Waiting on a case with ${live.record.name}?`}
               searchHref={nameSearch(slug, live.record.name)}
               searchLabel="Find it among their filings"
+              employerName={live.record.name}
               extra={{ href: "#follow", label: "Or follow this employer by email" }}
               source="employer-page-live"
             />
@@ -919,6 +921,7 @@ export default async function EmployerPage({
             question={`Waiting on a case with ${row.name}?`}
             searchHref={byName}
             searchLabel="Find it among their filings"
+            employerName={row.name}
             extra={{ href: "#follow", label: "Or follow this employer by email" }}
             source="employer-page"
           />

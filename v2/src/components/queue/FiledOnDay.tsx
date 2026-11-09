@@ -1,21 +1,19 @@
 "use client";
 
-import Link from "next/link";
 import { Fragment, useEffect, useRef, useState } from "react";
 
+import { DayCaseRow } from "@/components/queue/DayCaseRow";
 import { RequestFailed } from "@/components/tools/RequestFailed";
 import { Pagination } from "@/components/ui/pagination";
 import { usePublicQuery } from "@/hooks/usePublicQuery";
 import { useUrlPatch, useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 import { INITIAL_RE } from "@/lib/employerInitial";
-import { entityHref } from "@/lib/entityPayload";
 import { DAY_PAGE_SIZE, DAY_SORTS, dayView, type DayCase, type DaySort } from "@/lib/filingDay";
 import { PROGRAM_NAMES, type FilingProgram } from "@/lib/filingsByDay";
 import { formatInt } from "@/lib/format";
 import { CASE_STATUS_FILL, caseStatusTint, prettyStatus } from "@/lib/statusTone";
 import { choiceVariants } from "@/components/ui/choice";
 import { cn } from "@/lib/utils";
-import { longDate } from "@convex/lib/months";
 
 /**
  * One filing day's cases, every program (owner, Oct 27 2026: a month opened down to the
@@ -196,23 +194,7 @@ export function FiledOnDay({
           </p>{" "}
           <ul className="mt-2 divide-y-2 divide-border border-y-2 border-border">
             {view.rows.map((r) => (
-              <li key={r.caseNumber} className="grid grid-cols-1 gap-x-4 gap-y-1 py-3 sm:grid-cols-[13rem_minmax(0,1fr)_auto] sm:items-center [&>*]:min-w-0">
-                <Link href={`/perm-case-status?case=${encodeURIComponent(r.caseNumber)}`} className="link inline-flex min-h-11 items-center font-mono text-sm">
-                  {r.caseNumber}
-                </Link>{" "}
-                <span className="leading-snug">
-                  {r.employer && r.employerSlug ? (
-                    <Link href={entityHref("employer", r.employerSlug)} className="link block font-semibold">
-                      {r.employer}
-                    </Link>
-                  ) : (
-                    <span className="block font-semibold">{r.employer || "Employer not named"}</span>
-                  )}{" "}
-                  <span className="block text-sm text-soft">{r.jobTitle}</span>{" "}
-                  <CaseFacts c={r} />
-                </span>{" "}
-                <span className={cn("justify-self-start px-2 py-1 text-sm font-semibold", fill(r.status))}>{prettyStatus(r.status)}</span>{" "}
-              </li>
+              <DayCaseRow key={r.caseNumber} c={r} />
             ))}
           </ul>{" "}
           {lazy && loaded?.capped ? (
@@ -233,26 +215,5 @@ export function FiledOnDay({
         </>
       )}
     </div>
-  );
-}
-
-/** What DOL's file adds to a case: its decision day, the worksite, the wage, and where the case is held. */
-function CaseFacts({ c }: { c: DayCase }) {
-  const facts = [
-    c.decided ? `Decided ${longDate(c.decided) ?? c.decided}` : null,
-    c.state,
-    c.wage,
-    c.source === "file" ? "Only in DOL's published files" : null,
-    c.fileDate ? `DOL's file dates it ${longDate(c.fileDate) ?? c.fileDate}` : null,
-  ].filter(Boolean);
-  if (facts.length === 0) return null;
-  return (
-    <span className="flex flex-wrap gap-x-4 text-sm text-soft">
-      {facts.map((f) => (
-        <Fragment key={f}>
-          <span>{f}</span>{" "}
-        </Fragment>
-      ))}
-    </span>
   );
 }

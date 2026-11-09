@@ -138,7 +138,7 @@ export function IndexLookup({
   note,
   source,
   searchHref = "/case-search",
-  searchLabel = "Find a case by employer name",
+  searchLabel,
 }: {
   title: string;
   placeholder: string;
@@ -155,7 +155,9 @@ export function IndexLookup({
         help={note ?? null}
         source={source}
         searchHref={searchHref}
-        searchLabel={searchLabel}
+        // Left out, the box says its own words for the full search. This is a server file, so it
+        // can't read a constant out of the box's browser-side module.
+        {...(searchLabel ? { searchLabel } : {})}
       />
     </div>
   );
