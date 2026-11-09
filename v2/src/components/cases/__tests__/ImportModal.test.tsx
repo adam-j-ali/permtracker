@@ -2,6 +2,9 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ImportModal } from "../ImportModal";
+import { toast } from "@/lib/toast";
+
+vi.mock("@/lib/toast", () => ({ toast: { error: vi.fn(), success: vi.fn(), warning: vi.fn(), info: vi.fn() } }));
 
 describe("ImportModal", () => {
   const mockOnImport = vi.fn();
@@ -39,13 +42,44 @@ describe("ImportModal", () => {
       expect(screen.getByText(/drag.*drop/i)).toBeInTheDocument();
     });
 
-    it("accepts only .json files", () => {
+    it("accepts a JSON file or a spreadsheet saved as CSV", () => {
       render(
         <ImportModal open={true} onOpenChange={mockOnOpenChange} onImport={mockOnImport} />
       );
 
       const input = screen.getByLabelText(/select file/i);
-      expect(input).toHaveAttribute("accept", ".json");
+      expect(input).toHaveAttribute("accept", ".json,.csv,text/csv,application/json");
+      expect(screen.getByRole("link", { name: "Download the template" })).toHaveAttribute(
+        "href",
+        "/templates/perm-case-import-template.csv",
+      );
+    });
+
+    it("previews the cases in a CSV file", async () => {
+      const user = userEvent.setup();
+      render(
+        <ImportModal open={true} onOpenChange={mockOnOpenChange} onImport={mockOnImport} />
+      );
+
+      const csv = "Employer,Foreign worker,Status,PWD filed\nTech Corp,John Doe,pwd,3/5/2026\n";
+      const file = new File([csv], "cases.csv", { type: "text/csv" });
+      await user.upload(screen.getByLabelText(/select file/i), file);
+
+      await waitFor(() => {
+        expect(screen.getByText("Tech Corp")).toBeInTheDocument();
+        expect(screen.getByText("Spreadsheet (CSV)")).toBeInTheDocument();
+      });
+    });
+
+    it("says so when a file can't be imported, instead of doing nothing", async () => {
+      const user = userEvent.setup({ applyAccept: false });
+      render(
+        <ImportModal open={true} onOpenChange={mockOnOpenChange} onImport={mockOnImport} />
+      );
+
+      await user.upload(screen.getByLabelText(/select file/i), new File(["x"], "cases.xlsx"));
+
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("saved as .csv"));
     });
 
     it("parses and previews valid JSON file", async () => {

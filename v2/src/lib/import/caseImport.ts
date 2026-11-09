@@ -19,6 +19,7 @@
 import type { CaseCardData } from "@convex/lib/caseListTypes";
 import { calculateI140FilingDeadline } from "@/lib/perm";
 import { captureError } from "@/lib/sentry";
+import { csvDate, csvToCases, looksLikeCsv } from "./csvImport";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -53,6 +54,7 @@ export type DetectedFormat =
   | "v1"                    // FastAPI snake_case format
   | "perm-tracker-new"      // Legacy Firebase camelCase format
   | "firebase-object"       // Legacy Firebase with ID keys
+  | "csv"                   // A spreadsheet saved as CSV, or this app's own CSV export
   | "unknown";
 
 export interface ImportResult {
@@ -352,16 +354,18 @@ function normalizeDate(value: unknown): string | undefined {
       }
     }
 
-    // Try parsing as date string
-    try {
-      const date = new Date(trimmed);
-      if (!isNaN(date.getTime())) {
-        return date.toISOString().split("T")[0];
-      }
-    } catch {
-      // User-provided date string is unparseable — expected for CSV imports
-      return undefined;
+    // A date written the way people write them (3/5/2026, March 5, 2026), read from
+    // the text itself. new Date() reads these as local midnight, and its UTC date is
+    // the day before anywhere east of UTC.
+    const fromText = csvDate(trimmed);
+    if (fromText) return fromText;
+
+    // Anything else the browser can read, taken as the calendar day it names locally.
+    const date = new Date(trimmed);
+    if (!isNaN(date.getTime())) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
     }
+    return undefined;
   }
 
   // Firestore timestamp object
@@ -638,10 +642,29 @@ export async function parseCaseImportFile(file: File): Promise<ImportResult> {
       text = await readFileAsText(file);
     }
 
-    // 2. Parse JSON
+    // 2. A spreadsheet: its rows become the same case objects a JSON file holds,
+    // so everything after this reads them alike.
+    let csvCases: unknown[] | null = null;
+    if (looksLikeCsv(file.name ?? "", text)) {
+      const sheet = csvToCases(text);
+      csvCases = sheet.cases;
+      for (const n of sheet.notes) {
+        result.warnings.push({ row: n.row, field: n.column, message: n.message, employerName: n.employerName });
+      }
+      if (sheet.matched.length === 0) {
+        result.errors.push({
+          row: 0,
+          field: "file",
+          message: "None of the spreadsheet's column headers match a case field. The first row should name the columns, such as Employer and Job title.",
+        });
+        return result;
+      }
+    }
+
+    // 3. Parse JSON
     let parsed: unknown;
     try {
-      parsed = JSON.parse(text);
+      parsed = csvCases ?? JSON.parse(text);
     } catch (parseError) {
       const errorDetail =
         parseError instanceof SyntaxError
@@ -656,10 +679,10 @@ export async function parseCaseImportFile(file: File): Promise<ImportResult> {
       return result;
     }
 
-    // 3. Detect format and extract cases array
-    const { format, cases } = detectFormat(parsed);
+    // 4. Detect format and extract cases array
+    const { format, cases } = csvCases ? { format: "csv" as const, cases: csvCases } : detectFormat(parsed);
     result.detectedFormat = format;
-    result.isLegacyFormat = format !== "v2" && format !== "unknown";
+    result.isLegacyFormat = format !== "v2" && format !== "csv" && format !== "unknown";
 
     if (format === "unknown" || cases.length === 0) {
       if (cases.length === 0 && format !== "unknown") {
@@ -678,7 +701,7 @@ export async function parseCaseImportFile(file: File): Promise<ImportResult> {
       return result;
     }
 
-    // 4. Process each case
+    // 5. Process each case
     cases.forEach((caseData, index) => {
       const { normalized, errors, warnings, needsBeneficiary } = normalizeAndValidateCase(
         caseData,

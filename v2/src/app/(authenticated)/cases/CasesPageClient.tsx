@@ -963,7 +963,7 @@ export function CasesPageClient() {
             <DropdownMenuContent align="end" className="w-72">
               <DropdownMenuItem onSelect={() => setImportModalOpen(true)} className="min-h-11 gap-2">
                 <UploadSimpleIcon className="size-4" aria-hidden="true" />
-                Import cases (JSON)
+                Import cases (JSON or CSV)
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="text-sm font-normal text-muted-foreground">
