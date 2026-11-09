@@ -1557,7 +1557,9 @@ export default defineSchema({
      * that position, so adding it would force `filingMonth` to equality.
      */
     .index("by_alert_sweep", ["notifiedAt", "unsubscribedAt", "filingMonth"])
-    .index("by_created", ["createdAt"]),
+    .index("by_created", ["createdAt"])
+    /** Retention's read of unconfirmed sign-ups past the horizon, so confirmed rows never stand in front. */
+    .index("by_confirmed_created", ["confirmedAt", "createdAt"]),
 
   /**
    * How useful a subscriber found their case alerts, sent from the 1-to-5 row
@@ -1843,7 +1845,9 @@ export default defineSchema({
      * thousands), so live rows are the only cut that matters; `confirmedAt`
      * is filtered in JS as on the sibling tables.
      */
-    .index("by_alert_sweep", ["unsubscribedAt", "createdAt"]),
+    .index("by_alert_sweep", ["unsubscribedAt", "createdAt"])
+    /** Retention's read of unconfirmed sign-ups past the horizon, so confirmed rows never stand in front. */
+    .index("by_confirmed_created", ["confirmedAt", "createdAt"]),
 
   /**
    * Occasional product-news consent for addresses WITHOUT an account.
@@ -2634,7 +2638,9 @@ export default defineSchema({
     .index("by_email_slug", ["email", "slug"])
     /** Live rows first, least recently checked first: the sweep's round-robin. */
     .index("by_alert_sweep", ["unsubscribedAt", "lastCheckedAt"])
-    .index("by_created", ["createdAt"]),
+    .index("by_created", ["createdAt"])
+    /** Retention's read of unconfirmed sign-ups past the horizon, so confirmed rows never stand in front. */
+    .index("by_confirmed_created", ["confirmedAt", "createdAt"]),
 
   /**
    * A law firm's claim on its `/perm-attorneys/<slug>` page (convex/firmClaims.ts).
