@@ -39,3 +39,27 @@ export function calculatePWDExpiration(determinationDate: string): string {
   // Case 3: January 1 - April 1 (June 30 of same year)
   return `${year}-06-30`;
 }
+
+/**
+ * A wage determination's last day on a decided case's record: the rule's day, read against the
+ * expiration DOL's wage disclosure file lists for it.
+ *
+ * THE FILE LISTS EACH EXPIRATION ONE DAY BEFORE THE DETERMINATION'S OWN (June 29 for June 30, +89
+ * days for +90). Checked on November 9, 2026 against the dates employers typed from their own
+ * determinations on the old ETA-9089: of 30,185 determinations in both sources, the file was
+ * exactly one day earlier on 30,116. So a file date that is the rule's day or the day before it is
+ * the rule's day. NEVER move `calculatePWDExpiration` to match the file.
+ *
+ * Any other file date is kept as DOL lists it and marked `asListed`, so the page can say whose
+ * date it is: the file may know something the determination date alone doesn't.
+ */
+export function pwdExpirationOnRecord(
+  determinationDate: string,
+  listed: string | null | undefined,
+): { date: string; asListed: boolean } {
+  const rule = calculatePWDExpiration(determinationDate);
+  if (!listed) return { date: rule, asListed: false };
+  const [y, m, d] = rule.split('-').map(Number) as [number, number, number];
+  const dayBefore = formatUTC(addDaysUTC(new Date(Date.UTC(y, m - 1, d)), -1));
+  return listed === rule || listed === dayBefore ? { date: rule, asListed: false } : { date: listed, asListed: true };
+}
