@@ -10,9 +10,11 @@ import { ConvexError } from "convex/values";
 const captured: { options?: Record<string, (...a: never[]) => unknown> } = {};
 
 vi.mock("@convex-dev/auth/providers/Password", () => ({
+  // The real provider keeps its config under `options`, with the credentials `authorize` there, which
+  // auth.ts wraps with the security-check guard.
   Password: (options: Record<string, (...a: never[]) => unknown>) => {
     captured.options = options;
-    return { id: "password" };
+    return { id: "password", options: { ...options, authorize: async () => null } };
   },
 }));
 vi.mock("@convex-dev/auth/server", () => ({
