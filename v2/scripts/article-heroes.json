@@ -1300,5 +1300,89 @@
   },
   "credit": "Screenshot of permtracker.app, November 5, 2026",
   "alt": "The consulates page: how far back each post is scheduling cases, with a switch for employment, family preference and immediate relative visas"
+ },
+ "guides/how-long-lca-certification-takes": {
+  "photo": {
+   "file": "how-long-lca-certification-takes.jpg",
+   "focus": [
+    0.47,
+    0.5
+   ]
+  },
+  "credit": "Photo: G. Edward Johnson / Wikimedia Commons, CC BY 4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Department_of_Labor_entrance_Washington_DC_2025-02-04_12-40-36.jpg",
+  "alt": "The fountain entrance of the Frances Perkins Building in Washington, the Department of Labor's headquarters, with DEPARTMENT OF LABOR lettered above the doors"
+ },
+ "guides/perm-rfi-response-time": {
+  "photo": {
+   "file": "perm-rfi-response-time.jpg",
+   "focus": [
+    0.45,
+    0.5
+   ]
+  },
+  "credit": "Photo: Niklas Bildhauer / Wikimedia Commons, CC BY-SA 2.0",
+  "source": "https://commons.wikimedia.org/wiki/File:FileStack.jpg",
+  "alt": "A thick stack of papers held in a ring binder, seen edge on, with a few blue, green and yellow sheets among the white"
+ },
+ "guides/remote-work-and-perm": {
+  "photo": {
+   "file": "remote-work-and-perm.jpg",
+   "focus": [
+    0.5,
+    0.5
+   ]
+  },
+  "credit": "Photo: Free-Photos / Pixabay, via Wikimedia Commons, CC0",
+  "source": "https://commons.wikimedia.org/wiki/File:Home-office-336377.jpg",
+  "alt": "A laptop, an open notebook with a pen, a phone and a cup of coffee on a wooden table, the kind of home desk a remote job is done from"
+ },
+ "guides/where-to-file-perm-worksite": {
+  "photo": {
+   "file": "where-to-file-perm-worksite.jpg",
+   "focus": [
+    0.5,
+    0.52
+   ]
+  },
+  "credit": "Photo: Tdorante10 / Wikimedia Commons, CC BY-SA 4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:South_Av_Corporate_Park_SI_td_(2025-07-28)_013a_-_Southport_Plaza_(1150_South_Avenue).jpg",
+  "alt": "Southport Plaza, a long beige office building behind a fence and a parking lot in the Staten Island Corporate Park, the kind of office campus a consultant can be placed at"
+ },
+ "guides/perm-experience-gained-with-employer": {
+  "photo": {
+   "file": "perm-experience-gained-with-employer.jpg",
+   "focus": [
+    0.5,
+    0.5
+   ]
+  },
+  "credit": "Photo: NASA Glenn Research Center, GRC-1955-C-39724, February 21, 1955 / Wikimedia Commons, public domain",
+  "source": "https://commons.wikimedia.org/wiki/File:NACA_Apprentice_is_Trained_on_the_Lab%27s_Altitude_Systems_(GRC-1955-C-39724).jpg",
+  "alt": "An apprentice works among the curved steel vanes of a large air duct at NACA's Lewis Flight Propulsion Laboratory in 1955, while a second worker stands on the vanes above"
+ },
+ "guides/green-card-job-future-job": {
+  "photo": {
+   "file": "green-card-job-future-job.jpg",
+   "focus": [
+    0.4,
+    0.25
+   ]
+  },
+  "credit": "Photo: Bradley Weber, May 10, 2011 / Wikimedia Commons, CC BY 2.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Help_Wanted_-_Nebraska_(44113871694).jpg",
+  "alt": "A hand-painted Help Wanted sign on a wooden post at the edge of a grass field in Nebraska, under a clear sky"
+ },
+ "guides/priority-date-retention-new-employer": {
+  "photo": {
+   "file": "priority-date-retention-new-employer.jpg",
+   "focus": [
+    0.45,
+    0.5
+   ]
+  },
+  "credit": "Photo: Carol M. Highsmith, April 5, 2016. Carol M. Highsmith Archive, Library of Congress, Prints and Photographs Division",
+  "source": "https://commons.wikimedia.org/wiki/File:Revolving_door._New_Carrollton_Federal_Office_Building,_New_Carrollton,_Maryland_LCCN2016648245.tif",
+  "alt": "A glass revolving door at the entrance of a federal office building in New Carrollton, Maryland, the way out of one workplace and into the next"
  }
 }
