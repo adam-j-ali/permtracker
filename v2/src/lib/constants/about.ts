@@ -15,6 +15,7 @@
 
 import {
   DC_BAR_SABRINA_URL,
+  LINKEDIN_COMPANY_URL,
   LINKEDIN_SABRINA_URL,
   MEDIUM_PROFILE_URL,
   PRODUCT_HUNT_URL,
@@ -54,8 +55,8 @@ export const LIVE_SINCE = "2026-01";
 /**
  * The brand's owned surfaces, emitted as the Organization `sameAs`.
  *
- * BRAND-OWNED ONLY: the Medium publication and the Product Hunt product page
- * both carry the brand's name and nothing else. A personal profile sits on
+ * BRAND-OWNED ONLY: the Medium publication, the Product Hunt product page and
+ * the LinkedIn company page carry the brand's name and nothing else. A personal profile sits on
  * that person's node above and is linked from the footer, never asserted as
  * the organization itself. `structuredData.test.ts` pins the rule. The source
  * repository is no longer listed: its URL carries a personal handle, and the
@@ -64,6 +65,7 @@ export const LIVE_SINCE = "2026-01";
 export const ORGANIZATION_SAME_AS: readonly string[] = [
   MEDIUM_PROFILE_URL,
   PRODUCT_HUNT_URL,
+  LINKEDIN_COMPANY_URL,
 ];
 
 /**

@@ -113,7 +113,7 @@ Each was decided once and holds until the owner changes it. The reasons are in t
 
 **What the site says and shows**
 - English only: translated pages answer 308 to their English pages (Oct 29, Oct 31). No DACA section (Oct 24).
-- Estimates, the scorecard and grades are the owner's tools: never pitched or listed as something the site offers (Oct 25). The public scorecard page may be linked and kept current; the rivals' head-to-head stays private (Nov 4).
+- Estimates are a feature: name them anywhere, posts and pitches included (Nov 8, correcting an over-read of Oct 25). The scorecard's grades aren't a selling point on pitch lists (Oct 25); the public scorecard page may be linked and kept current, and the rivals' head-to-head stays private (Nov 4).
 - `/compare` is the one page that names other trackers; everywhere else they're "a third party" (Oct 27).
 - The company's legal name appears only where the law needs a party (the Terms, the Privacy Policy, the API terms, the Organization's `legalName`); everywhere else it's PERM Tracker (Oct 31).
 - Official data stays available with caveats: a wage that can't be pay for its unit is shown as DOL printed it, with a note, and left out of every average (Oct 3).

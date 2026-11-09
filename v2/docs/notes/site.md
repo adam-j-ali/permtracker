@@ -1947,3 +1947,12 @@ Live 2:38 PM EDT (`af10f52b`, `-f when=now` on the owner's "live now"). Below 12
 dashboard picture; now `AttorneyHero` is an `@container` and the hub, the card and the reminder keep their places,
 sized by share of its width and in container units (`AppWindow fluid` for the window chrome). The captions read
 "Sample cases." and the firm badge shows one tile, swapped by theme. Rules in `docs/DESIGN_SYSTEM.md`, "Pictures".
+
+## Nov 8 2026: estimates may be named; the brand's LinkedIn page joins sameAs
+
+- **Estimates are a feature and may be named anywhere**, posts and pitches included. The Oct 25 line above ("the
+  scorecard, estimates and grades are for the owner") was an over-reading: the owner's words were about not listing
+  the scorecard and its grades as selling points. That part holds; the public scorecard page may be linked (Nov 4).
+- **`LINKEDIN_COMPANY_URL`** (`src/lib/constants/externalLinks.ts`, linkedin.com/company/permtracker) is the third
+  Organization `sameAs`. The structured-data test still refuses a person's `/in/` profile on the brand node; probed by
+  swapping one in (fails), then restored.

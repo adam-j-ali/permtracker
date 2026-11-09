@@ -2171,3 +2171,18 @@ Ten API answers were byte for byte the same from both copies, and the reading co
 idle (11%), sqld 0% of a core over 30 seconds (about 65%), each reader process about 80 MB.
 
 Still open: the page-cache cleanup (`permtracker-prune`) spent 8 minutes of every 30 walking the cache in disk wait.
+
+## Nov 8 2026: main's history was rewritten to remove personal identifiers
+
+The public history carried a few personal identifiers in old commit messages and old file versions (a local machine
+path, an earlier account handle, a personal address inside two old tests, and a surname used as test input). Every
+commit was rewritten with `git fast-export | filter | git fast-import`; the final tree is byte-identical, the commit
+count is the same (2,575), and a scan of every object in the new history finds none of them. `main` was force-pushed
+with a lease on the old tip, and the four leftover Dependabot branches were deleted. Old commit IDs cited in these
+notes no longer resolve on GitHub; a private map from old to new IDs is kept off the repository.
+
+- The server's jobs fetch and `reset --hard origin/main`, so they follow a rewritten main without help.
+- `scripts/deploy_plan.py` treats a live commit it can't find as "changed", so the first night run after a rewrite
+  redeploys once.
+- GitHub keeps old commits reachable by direct ID, and inside closed pull requests' refs, until its support team
+  purges them.
