@@ -52,14 +52,19 @@ export function SendEmailModal({ user, onClose }: SendEmailModalProps) {
     setIsSending(true);
 
     try {
-      await sendEmail({
+      const sent = await sendEmail({
         toEmail: user.email,
         toName: user.name ?? user.email.split("@")[0],
         subject: subject.trim(),
         body: body.trim(),
       });
 
-      toast.success(`Email sent to ${user.email}`);
+      // A queued email hasn't gone yet: the day's count was full or Resend couldn't take it.
+      if (sent.queued) {
+        toast.info(`The email to ${user.email} is queued. It goes out on its own once Resend can take it.`);
+      } else {
+        toast.success(`Email sent to ${user.email}`);
+      }
       onClose();
     } catch (error) {
       console.error("Failed to send email:", error);
