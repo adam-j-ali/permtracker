@@ -52,6 +52,8 @@ export default function robots(): MetadataRoute.Robots {
     '/case-search?',
     '/lca-cases?',
     '/pwd-cases?',
+    // Reads searchParams, so every ?job= and page variant renders per request; each names the bare page canonical.
+    '/sponsor-finder?',
     // A filing day's list of cases (/perm-queue/2026-01/15): thousands of small pages,
     // each noindex. The month pages above them stay open.
     '/perm-queue/*/',
