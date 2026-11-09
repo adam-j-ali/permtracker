@@ -74,6 +74,8 @@ try {
         } else {
           await f.fill(value);
           await f.dispatchEvent("blur").catch(() => {});
+          // And leave the field: a date box still in focus is drawn with its ring and its month picked out.
+          await f.blur().catch(() => {});
         }
       }
       // `wait`: more time for a page that loads its figures live after the inputs (DOL's wage search).

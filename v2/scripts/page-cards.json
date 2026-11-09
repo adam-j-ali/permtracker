@@ -947,6 +947,28 @@
   "maxWidth": 1100
  },
  {
+  "slug": "uscis-case-inquiry",
+  "path": "/tools/uscis-case-inquiry",
+  "title": "When can I ask USCIS about my case?",
+  "label": "When cases like yours were decided, and the day USCIS takes a question about yours.",
+  "shot": "uscis-case-inquiry.png",
+  "crop": [
+   0,
+   0,
+   2200,
+   1456
+  ],
+  "fill": [
+   [
+    "Receipt date",
+    "2026-06-09"
+   ]
+  ],
+  "mask": "figures",
+  "viewport": 1440,
+  "maxWidth": 1100
+ },
+ {
   "slug": "wage-levels",
   "path": "/tools/wage-levels",
   "title": "Prevailing wage levels",

@@ -402,6 +402,7 @@ export async function pagesEntries(): Promise<Entry[]> {
     { url: `${base}/opt-employers`, lastModified: at("/opt-employers") },
     { url: `${base}/sponsor-finder`, lastModified: at("/sponsor-finder") },
     { url: `${base}/tools/ead-extension`, lastModified: at("/tools/ead-extension") },
+    { url: `${base}/tools/uscis-case-inquiry`, lastModified: at("/tools/uscis-case-inquiry"), images: [`${base}/og/uscis-case-inquiry.jpg`] },
     { url: `${base}/lca-wage-sources`, lastModified: at("/lca-wage-sources") },
     { url: `${base}/perm-recruitment`, lastModified: at("/perm-recruitment") },
     { url: `${base}/perm-layoff-disclosures`, lastModified: at("/perm-layoff-disclosures"), images: [`${base}/og/perm-layoff-disclosures.jpg`] },

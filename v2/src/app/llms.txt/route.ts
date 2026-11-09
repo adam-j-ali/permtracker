@@ -384,6 +384,11 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     blurb: "The OEWS wage level an H-1B offer meets for its occupation and work areas, read live from DOL's wage search, the level 8 CFR 214.2(h)(8)(iii)(A)(4) assigns, and DHS's estimated chance of selection at that level.",
   },
   {
+    path: "/tools/uscis-case-inquiry",
+    label: "USCIS case inquiry date calculator",
+    blurb: "From a form, an office and a receipt date: the day half of such cases were decided by (USCIS's quarterly median), the day eight in ten were (its posted processing time), and the day USCIS will take a case inquiry (its 93% rule, or six months where it posts no time). Then the steps after: an e-Request, a congressional inquiry, the CIS Ombudsman and mandamus, with a note for a congressional office drafted in the browser.",
+  },
+  {
     path: "/tools/priority-date-retention",
     label: "Priority date retention and I-485 portability",
     blurb: "From an I-140 approval date: when an employer's withdrawal stops revoking it, when a pending I-485 becomes portable under INA 204(j), and whether the priority date is kept.",
