@@ -87,7 +87,7 @@ describe("the possible-PERM email", () => {
     expect(html).toContain("A PERM application that may be yours");
     expect(html).toContain("G-100-26286-296040");
     expect(html).toContain("#watch");
-    expect(html).toMatch(/the employer, the job title/);
+    expect(html).toMatch(/The employer, the job title/);
     expect(html).not.toMatch(/\bis your (PERM|case)\b|your PERM (was|has been) filed/i);
   });
 });
