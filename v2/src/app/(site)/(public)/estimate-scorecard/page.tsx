@@ -6,7 +6,8 @@ import { PlusIcon } from "@phosphor-icons/react/ssr";
 import { BarRows } from "@/components/data/BarRows";
 import { FinePrint } from "@/components/data/FinePrint";
 import { ScrollBox } from "@/components/ui/scroll-box";
-import { formatAsOf } from "@/lib/dolFormat";
+import { formatAsOf, formatDay } from "@/lib/dolFormat";
+import { easternDay } from "@convex/lib/time";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { daysToAnchor } from "@/lib/predictionLedger";
 import { HORIZONS, PWD_BEFORE_FIX, type Cell } from "@/lib/scorecard/score";
@@ -65,7 +66,8 @@ export const revalidate = 21600;
 
 const longNoYear = (iso: string) =>
   new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
-const long = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+// A calendar day, as given: the string formatter does no zone arithmetic, so no server zone can move it.
+const long = (iso: string) => formatDay(iso) ?? iso;
 const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 const pct = (x: number | null) => (x === null ? "none yet" : `${Math.round(x * 100)}%`);
 const days = (x: number | null) => (x === null ? "none yet" : `${Math.round(x)} ${Math.round(x) === 1 ? "day" : "days"}`);
@@ -208,7 +210,7 @@ export default async function EstimateScorecardPage() {
             <Figure label={"DOL\u2019s pace used"} value={`${formatInt(Math.round(backtest.pace))} a day`} note="the measured average before the first day" />
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            Recomputed every night. This run: {formatAsOf(new Date(backtest.computedAt).toISOString().slice(0, 10))}.
+            Recomputed every night. This run: {formatAsOf(easternDay(backtest.computedAt))}.
           </p>
         </section>
       ) : null}
