@@ -29,6 +29,10 @@ export interface DayCase {
   state?: string | null;
   /** The offered wage as DOL printed it, with its unit ("$145,000 a year"). */
   wage?: string | null;
+  /** The wage request DOL's file names on this filing: a decided PERM case's, or the one an LCA cites. */
+  wageRequest?: string | null;
+  /** On a wage request: the decided PERM cases DOL's file names it on. Left out when none, or when that couldn't be read. */
+  namedBy?: number | null;
 }
 
 export type DaySource = "live" | "both" | "file";

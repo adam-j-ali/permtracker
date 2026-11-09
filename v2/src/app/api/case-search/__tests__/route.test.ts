@@ -244,13 +244,30 @@ describe("format=csv", () => {
     expect(r.headers.get("content-disposition")).toMatch(/^attachment; filename=".+\.csv"$/);
     const [header, first, ...rest] = (await r.text()).trimEnd().split("\r\n");
     expect(header).toBe(
-      "case_number,program,form,record,status,filed,decided,days_to_decision,employer,job_title,occupation_code,occupation,worksite_state,worksite_city,law_firm,wage,wage_unit,wage_note,industry_naics,industry,worker_citizenship,worker_birth_country,worker_visa_at_filing,worker_education,worker_field_of_study,worker_school,job_minimum_education",
+      "case_number,program,form,record,status,filed,decided,days_to_decision,employer,job_title,occupation_code,occupation,worksite_state,worksite_city,law_firm,wage,wage_unit,wage_note,industry_naics,industry,worker_citizenship,worker_birth_country,worker_visa_at_filing,worker_education,worker_field_of_study,worker_school,job_minimum_education,wage_request,named_on_decided_perm_cases",
     );
     expect(first).toContain("G-100-19001-000001,perm,,\"published, FY2016-FY2023\",certified");
     expect(first).toContain("SEATTLE,,120000,Year,,541511");
     expect(rest).toEqual([]);
     // The same search the JSON answer makes, with the same filter.
     expect(lastNarrow()).toEqual({ citizenship: "INDIA" });
+  });
+
+  it("ends each row with the filings DOL's file ties it to: its wage request, or the PERM cases that name it", async () => {
+    unifiedSearch.mockResolvedValue(
+      result({
+        rows: [
+          row({ caseNumber: "G-100-25153-039450", wageRequest: "P-100-24318-472007", era: undefined }),
+          row({ caseNumber: "P-100-24318-472007", program: "pwd", namedBy: 2 }),
+          row({ caseNumber: "G-100-26030-000002", half: "live" }),
+        ],
+      }),
+    );
+    const [, perm, request, pending] = (await (await get("q=acme&format=csv")).text()).trimEnd().split("\r\n");
+    expect(perm).toMatch(/,P-100-24318-472007,$/);
+    expect(request).toMatch(/,,2$/);
+    // A case DOL's file ties to nothing ends on two empty cells, never a zero.
+    expect(pending).toMatch(/,,$/);
   });
 
   it("keeps DOL's amount and unit as printed, and marks one that looks like a yearly salary", async () => {

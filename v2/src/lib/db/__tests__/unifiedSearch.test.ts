@@ -24,6 +24,10 @@ vi.mock("../caseSearchReads", () => ({
   readFlagEmployerStage,
 }));
 
+// The count of decided PERM cases naming a wage request: its own read, so this file never opens a database.
+const permsNaming = vi.fn();
+vi.mock("../caseLinks", () => ({ permsNaming: (...a: unknown[]) => permsNaming(...a) }));
+
 const { compareBy, dedupeToOnePerCase, lcaOnlyFilters, permOnlyFilters, skippedSources, unifiedSearch, PER_SOURCE, UNIFIED_MAX } = await import(
   "../unifiedSearch"
 );
@@ -106,6 +110,7 @@ beforeEach(() => {
   readPermLive.mockResolvedValue(slice([]));
   readFlagLive.mockResolvedValue(slice([]));
   readFlagPublished.mockResolvedValue(slice([]));
+  permsNaming.mockResolvedValue(new Map());
   lookupUnifiedCase.mockResolvedValue({
     program: "perm",
     permPublished: null,
@@ -267,6 +272,50 @@ describe("unifiedSearch", () => {
       days: null,
       isFinal: false,
     });
+  });
+
+  it("carries a decided PERM case's wage request through, and none on a row whose file names none", async () => {
+    readPermPublished.mockResolvedValue(
+      slice([
+        permPub("G-100-25153-039450", { extras: { wageRequest: "P-100-24318-472007" } }),
+        permPub("G-100-25010-000001"),
+      ]),
+    );
+    const { rows } = await unifiedSearch({ lead: employerLead, programs: ["perm"] });
+    expect(rows.find((r) => r.caseNumber === "G-100-25153-039450")?.wageRequest).toBe("P-100-24318-472007");
+    expect(rows.find((r) => r.caseNumber === "G-100-25010-000001")?.wageRequest).toBeNull();
+    // No wage request was shown, so nothing was asked about any.
+    expect(permsNaming).not.toHaveBeenCalled();
+  });
+
+  it("says how many decided PERM cases name each published wage request shown, and asks about those rows alone", async () => {
+    readFlagPublished.mockImplementation(async (program: string) =>
+      slice(program === "pwd" ? [flagFile("P-100-24318-472007"), flagFile("P-100-24246-308380")] : program === "lca" ? [flagFile("I-200-25010-123456")] : []),
+    );
+    readFlagLive.mockImplementation(async (program: string) => slice(program === "pwd" ? [flagLive("P-100-26230-000009")] : []));
+    permsNaming.mockResolvedValue(new Map([["P-100-24318-472007", 2]]));
+
+    const { rows } = await unifiedSearch({ lead: employerLead });
+    expect(permsNaming).toHaveBeenCalledTimes(1);
+    expect([...(permsNaming.mock.calls[0]?.[0] as string[])].sort()).toEqual(["P-100-24246-308380", "P-100-24318-472007"]);
+    expect(rows.find((r) => r.caseNumber === "P-100-24318-472007")?.namedBy).toBe(2);
+    // None names it yet: left unset, never a zero.
+    expect(rows.find((r) => r.caseNumber === "P-100-24246-308380")).not.toHaveProperty("namedBy");
+    expect(rows.find((r) => r.caseNumber === "I-200-25010-123456")).not.toHaveProperty("namedBy");
+  });
+
+  it("still answers when those counts can't be read, with the count left unset and the failure recorded", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    readFlagPublished.mockImplementation(async (program: string) => slice(program === "pwd" ? [flagFile("P-100-24318-472008")] : []));
+    permsNaming.mockRejectedValue(new Error("fetch failed"));
+
+    const { rows, unread } = await unifiedSearch({ lead: employerLead, programs: ["pwd"] });
+    expect(rows.map((r) => r.caseNumber)).toEqual(["P-100-24318-472008"]);
+    expect(rows[0]).not.toHaveProperty("namedBy");
+    // The search's own sources were all read, so the answer isn't marked as missing a part.
+    expect(unread).toEqual([]);
+    expect(warn.mock.calls.flat().join(" ")).toContain("unifiedSearch/permsNaming");
+    warn.mockRestore();
   });
 
   it("orders newest filing first, with the case number breaking ties", async () => {

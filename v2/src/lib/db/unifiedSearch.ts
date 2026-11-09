@@ -3,6 +3,7 @@ import "server-only";
 import { MS_PER_DAY } from "@/lib/time";
 
 import type { LiveCaseRow } from "./cases";
+import { permsNaming } from "./caseLinks";
 import { keepLinkableSlugs } from "./entityLinks";
 import type { FlagCaseRow, FlagDisclosedRow } from "./flagCases";
 import {
@@ -23,6 +24,7 @@ import {
   type UnifiedNarrow,
 } from "./caseSearchReads";
 import { naicsTitle } from "@/lib/naicsTitles";
+import { softFail } from "@/lib/softRead";
 import { comparableWage } from "@/lib/wageFormat";
 
 export { SLICE_CAP };
@@ -127,6 +129,10 @@ export interface UnifiedCase {
   major?: string | null;
   institution?: string | null;
   jobEducation?: string | null;
+  /** The wage request DOL's file names on a decided PERM case. */
+  wageRequest?: string | null;
+  /** On a published wage request: the decided PERM cases DOL's file names it on. Unset when none, or unread. */
+  namedBy?: number;
 }
 
 // The order vocabulary lives in the pure plan module, because the page's sort
@@ -208,6 +214,7 @@ const fromPermPublished = (r: PermSearchRow): UnifiedCase => ({
   major: r.extras?.major ?? null,
   institution: r.extras?.institution ?? null,
   jobEducation: r.extras?.jobEducation ?? null,
+  wageRequest: r.extras?.wageRequest ?? null,
 });
 
 const fromPermLive = (r: LiveCaseRow): UnifiedCase => ({
@@ -559,6 +566,22 @@ async function addSeenDecided(rows: UnifiedCase[]): Promise<void> {
 }
 
 /**
+ * Attach, to each published wage request shown, how many decided PERM cases DOL's file names it on.
+ * After the slice, like the step above: one indexed read for the rows on the page. The answer stands
+ * without it, so a failed read is recorded and the count left unset, never shown as none.
+ */
+async function addNamedBy(rows: UnifiedCase[]): Promise<void> {
+  const requests = rows.filter((r) => r.program === "pwd" && r.half === "published");
+  if (requests.length === 0) return;
+  const naming = await permsNaming(requests.map((r) => r.caseNumber)).catch(softFail("unifiedSearch/permsNaming", null));
+  if (!naming) return;
+  for (const r of requests) {
+    const n = naming.get(r.caseNumber);
+    if (n) r.namedBy = n;
+  }
+}
+
+/**
  * An order over the merged rows. A row without the sort key goes last in both
  * directions: "no wage published" is not a low wage, and ranking it first in an
  * ascending sort would read as one.
@@ -597,6 +620,7 @@ async function finish(
     (r) => ({ ...r, firmSlug: null }),
   );
   await addSeenDecided(rows);
+  await addNamedBy(rows);
   const counts: Record<ChangeProgram, number> = { perm: 0, pwd: 0, lca: 0, seasonal: 0 };
   for (const r of rows) counts[r.program] += 1;
   return {

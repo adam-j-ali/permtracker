@@ -211,6 +211,35 @@ describe("the answer", () => {
     expect(screen.getAllByText("FY2008 to FY2023 file")).toHaveLength(1);
   });
 
+  it("links a decided case's wage request, and the PERM cases a wage request is named on", () => {
+    usePublicQuery.mockImplementation((url: string) =>
+      url === "skip"
+        ? { data: undefined, failed: false }
+        : {
+            data: answer({
+              rows: [
+                row("G-100-25153-039450", { wageRequest: "P-100-24318-472007" }),
+                row("P-100-24318-472007", { program: "pwd", namedBy: 2 }),
+                row("G-100-26030-000002", { half: "live", isFinal: false, status: "ANALYST REVIEW" }),
+              ],
+              counts: { perm: 2, pwd: 1, lca: 0, seasonal: 0 },
+              permOnly: [],
+              skipped: { live: false, published: false, because: [] },
+            }),
+            failed: false,
+          },
+    );
+    renderIt();
+    fireEvent.change(screen.getByLabelText("Employer or case number"), { target: { value: "acme" } });
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(screen.getAllByRole("link", { name: "Wage request P-100-24318-472007" })[0]).toHaveAttribute("href", "/perm-case-status?case=P-100-24318-472007");
+    expect(screen.getAllByRole("link", { name: "Named on 2 decided PERM cases" })[0]).toHaveAttribute("href", "/perm-case-status?case=P-100-24318-472007");
+    // One of each: the pending case's row names nothing.
+    const table = document.querySelector("tbody")!;
+    expect(table.querySelectorAll('a[href="/perm-case-status?case=P-100-24318-472007"]').length).toBeGreaterThanOrEqual(2);
+    expect(table.textContent?.match(/Wage request P-/g) ?? []).toHaveLength(1);
+  });
+
   it("orders the table as asked and says whether the order covers every match", () => {
     renderIt();
     fireEvent.change(screen.getByLabelText("Employer or case number"), { target: { value: "acme" } });

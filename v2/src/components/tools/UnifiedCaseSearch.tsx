@@ -60,6 +60,7 @@ import { CaseStatusChip } from "@/components/ui/badge";
 import { ISO_MONTH_RE } from "@convex/lib/months";
 import { ISO_DATE_REGEX } from "@convex/lib/dateValidation";
 import { entityHref } from "@/lib/entityPayload";
+import { caseHref, namedByLabel } from "@/lib/caseLinks";
 
 /**
  * Every DOL filing this site holds, in one search, with every filter the
@@ -337,12 +338,27 @@ function RowDetails({ r }: { r: UnifiedCase }) {
     r.visaClass ? `${r.visaClass} at filing` : null,
     r.education ? `${r.education}${r.major ? ` in ${titleCase(r.major)}` : ""}` : null,
   ].filter(Boolean) as string[];
-  if (where.length === 0 && who.length === 0 && !r.jobEducation) return null;
+  if (where.length === 0 && who.length === 0 && !r.jobEducation && !r.wageRequest && !r.namedBy) return null;
   return (
     <span className="mt-1 block text-sm leading-snug text-muted-foreground">
       {where.length > 0 ? <span className="block">{where.join(" · ")}</span> : null}{" "}
       {who.length > 0 ? <span className="block">Worker: {who.join(", ")}</span> : null}{" "}
-      {r.jobEducation ? <span className="block">Job requires: {r.jobEducation}</span> : null}
+      {r.jobEducation ? <span className="block">Job requires: {r.jobEducation}</span> : null}{" "}
+      {/* The filings DOL's file ties this one to, each a link to its own page. */}
+      {r.wageRequest ? (
+        <span className="block">
+          <Link href={caseHref(r.wageRequest)} className="link">
+            Wage request {r.wageRequest}
+          </Link>
+        </span>
+      ) : null}{" "}
+      {r.namedBy ? (
+        <span className="block">
+          <Link href={caseHref(r.caseNumber)} className="link">
+            {namedByLabel(r.namedBy)}
+          </Link>
+        </span>
+      ) : null}
     </span>
   );
 }
