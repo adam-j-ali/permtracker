@@ -60,7 +60,7 @@ export const LOOK: Partial<Record<DataGroup, BandLook>> = {
     caption: "Captured October 21, 2026, from USCIS's own quarterly counts.",
   },
   "Green card line": {
-    lead: "The visa bulletin decides when a priority date can move to a green card. These show who is ahead of yours and how the cutoff has moved.",
+    lead: "The visa bulletin decides when a priority date can move to a green card. These show who's ahead of yours and how the cutoff has moved.",
     picture: CALCULATOR_SHOTS.line,
     url: "permtracker.app/tools/green-card-line",
     caption: "Captured October 21, 2026, for a sample EB-2 India priority date of June 15, 2019.",

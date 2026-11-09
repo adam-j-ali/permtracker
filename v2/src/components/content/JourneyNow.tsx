@@ -78,7 +78,7 @@ export async function JourneyNow() {
             pace, plus your wait in the visa bulletin.
           </>
         ) : (
-          <>The steps&apos; lengths couldn&apos;t be read today; each step&apos;s own page carries its figure.</>
+          <>The steps&apos; lengths couldn&apos;t be read today. Each step&apos;s own page carries its figure.</>
         )}
       </div>{" "}
       <ConsularPauseNote className="mt-5" />{" "}
@@ -117,7 +117,7 @@ export async function JourneyNow() {
         <span className="font-mono text-2xl font-bold tabular-nums">{money(fees.total)}</span>
       </div>{" "}
       <figcaption className="mt-3 text-sm leading-relaxed text-soft">
-        {`Lengths from DOL's and USCIS's own records, read ${longDate(easternDay()) ?? "today"}; fees from USCIS's fee schedule, edition ${FEE_SCHEDULE.edition}, for one adult filing inside the US with a work permit and a travel document, sponsored by an employer of 26 or more. The PERM's own costs, its attorney and ads included, are the employer's by law (20 CFR 656.12(b)). `}
+        {`Lengths come from DOL's and USCIS's own records, read ${longDate(easternDay()) ?? "today"}. Fees come from USCIS's fee schedule, edition ${FEE_SCHEDULE.edition}, for one adult filing inside the US with a work permit and a travel document, sponsored by an employer of 26 or more. The PERM's own costs, its attorney and ads included, are the employer's by law (20 CFR 656.12(b)). `}
         <Link href="/tools/green-card-timeline" className="link">
           Date every step for your own case
         </Link>

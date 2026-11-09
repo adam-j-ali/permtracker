@@ -598,7 +598,7 @@ function getDenialReviewConstraints(v: {
       min: denial,
       max: v.todayStr,
       hint: reviewDue
-        ? `Due by ${formatDateForDisplay(reviewDue)}. Ask for reconsideration or BALCA review, not both`
+        ? `Due by ${formatDateForDisplay(reviewDue)}. Ask for reconsideration or BALCA review, but only one`
         : "Enter the denial date first",
     },
     eta9089ReconsiderationDeniedDate: {

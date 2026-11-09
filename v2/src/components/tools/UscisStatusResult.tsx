@@ -127,7 +127,7 @@ export function UscisStatusResult({ receipt }: { receipt: string }) {
           ? "Too many lookups right now"
           : state.httpStatus === 400
             ? "Not a receipt number"
-            : "USCIS could not be asked";
+            : "USCIS couldn't be asked";
     return (
       <Refusal title={title}>
         {state.data.error}{" "}
@@ -162,8 +162,8 @@ export function UscisStatusResult({ receipt }: { receipt: string }) {
         <p className="flex items-start gap-2 border-b-2 border-data-warn bg-data-warn/8 px-5 py-3 text-sm leading-relaxed text-soft sm:px-6">
           <WarningIcon className="mt-0.5 h-4 w-4 shrink-0 text-data-warn-ink" weight="fill" aria-hidden="true" />{" "}
           <span>
-            <b className="font-bold text-data-warn-ink">This is our stored copy.</b> USCIS could
-            not be asked just now ({failure ?? "unavailable"}), so the status above is as of{" "}
+            <b className="font-bold text-data-warn-ink">This is our stored copy.</b> USCIS couldn&apos;t
+            be asked just now ({failure ?? "unavailable"}), so the status above is as of{" "}
             {whenEt(status.seenAt)}.
           </span>
         </p>

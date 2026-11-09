@@ -153,7 +153,7 @@ export function I140Trends({ rows }: I140TrendsProps) {
             {
               k: "Pending",
               v: totals.pending === null ? "n/a" : formatInt(totals.pending),
-              n: "waiting at the newest quarter, not a sum",
+              n: "waiting as of the newest quarter alone",
             },
             { k: "Approval rate", v: pct(totals.approvalRate), n: "of petitions USCIS decided" },
             { k: "Denial rate", v: pct(totals.denialRate), n: "of petitions USCIS decided" },
@@ -175,8 +175,8 @@ export function I140Trends({ rows }: I140TrendsProps) {
 
         <p className="mt-4 text-base leading-relaxed text-muted-foreground">
           Both rates are over petitions USCIS{" "}
-          <b className="font-bold text-foreground">decided</b>, not over receipts, which would fall whenever
-          USCIS simply decided less. Pending is the newest quarter&apos;s snapshot, since summing it would count
+          <b className="font-bold text-foreground">decided</b>. A rate over receipts would fall whenever
+          USCIS decided less. Pending is the newest quarter&apos;s snapshot, since summing it would count
           one petition once per quarter.
         </p>
 
@@ -319,7 +319,7 @@ export function I140Trends({ rows }: I140TrendsProps) {
                   {split.children
                     .map((c) => `${c.code} ${formatInt(c.decided)}`)
                     .join(", ")}
-                  . These are rates over past petitions, not odds for a
+                  . These are rates over past petitions. They aren&apos;t odds for a
                   particular one.
                 </p>
               </section>
@@ -327,7 +327,7 @@ export function I140Trends({ rows }: I140TrendsProps) {
           </>
         ) : (
           <p className="mt-8 text-base text-muted-foreground">
-            USCIS has not reported any quarter for this category.
+            USCIS hasn&apos;t reported any quarter for this category.
           </p>
         )}
       </div>

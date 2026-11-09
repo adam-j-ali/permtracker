@@ -341,7 +341,7 @@ export function PriorityDateEstimator({
     const out: string[] = [];
     if (pdWellFormed && priorityDate > today) {
       out.push(
-        `A priority date of ${formatAsOf(priorityDate)} is in the future. The priority date is the day DOL received the PERM application, or USCIS received the I-140, so it cannot be later than today. Nothing is compared against the bulletin until that is corrected.`,
+        `A priority date of ${formatAsOf(priorityDate)} is in the future. The priority date is the day DOL received the PERM application, or USCIS received the I-140, so it can't be later than today. Nothing is compared against the bulletin until that's corrected.`,
       );
     }
     return out;
@@ -693,11 +693,11 @@ export function PriorityDateEstimator({
                 <>
                   <p className="mt-2 text-base leading-relaxed text-muted-foreground">
                     That&apos;s the newest bulletin this page holds. New ones are read from the State
-                    Department the day they&apos;re published, so a gap like this usually means a missed read;
+                    Department the day they&apos;re published, so a gap like this usually means a missed read.
                     State&apos;s own page has the current cutoff.
                   </p>{" "}
                   <p className="mt-2 text-base leading-relaxed text-muted-foreground">
-                    What the archive adds is the movement: {bulletins.length} bulletins of it, including the
+                    The archive adds the movement: {bulletins.length} bulletins of it, including the
                     months the cutoff went backwards.
                   </p>{" "}
                 </>
@@ -761,7 +761,7 @@ export function PriorityDateEstimator({
                   </p>{" "}
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                     Read from uscis.gov on {formatAsOf(today)}. It publishes
-                    which chart controls, not the cutoff dates themselves.{" "}
+                    which chart controls. It doesn&apos;t publish the cutoff dates themselves.{" "}
                     <a
                       href={USCIS_CHARTS_URL}
                       className="link"
@@ -969,7 +969,7 @@ export function PriorityDateEstimator({
                 role="img"
                 aria-label={
                   yDomain === null
-                    ? `${category} ${country} published no cutoff date in any bulletin from ${formatMonth(series[0]!.month)} to ${formatMonth(series[series.length - 1]!.month)}; each month was either current or closed.`
+                    ? `${category} ${country} published no cutoff date in any bulletin from ${formatMonth(series[0]!.month)} to ${formatMonth(series[series.length - 1]!.month)}. Each month was either current or closed.`
                     : `Cutoff dates for ${category} ${country} from ${formatMonth(series[0]!.month)} to ${formatMonth(series[series.length - 1]!.month)}. ${series.filter((s) => s.state === "unavailable").length} of the ${series.length} bulletins closed the category outright.`
                 }
               >
@@ -1115,7 +1115,7 @@ export function PriorityDateEstimator({
                         ? null
                         : s.state === "current" || priorityDate < s.iso!
                           ? "Your date was current"
-                          : "Your date was not yet current";
+                          : "Your date wasn't current yet";
                     return (
                       <ChartHit
                         key={`h${s.month}`}

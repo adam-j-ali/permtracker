@@ -34,7 +34,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     slug: "ac21",
     aka: ["American Competitiveness in the Twenty-first Century Act"],
     definition:
-      "The 2000 law behind three rules people still cite by section: 106(a), one-year H-1B extensions past six years when a PERM or I-140 has been on file 365 days; 104(c), three-year extensions on an approved I-140 with no visa number available; and 106(c), the I-485 portability now at INA 204(j).",
+      "The 2000 law behind three rules people still cite by section. Section 106(a) allows one-year H-1B extensions past six years when a PERM or I-140 has been on file 365 days. Section 104(c) allows three-year extensions on an approved I-140 with no visa number available. The I-485 portability now at INA 204(j) comes from section 106(c).",
     see: [{ label: "H-1B six-year limit calculator", href: "/tools/h1b-six-year-limit" }],
   },
   {
@@ -57,7 +57,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     term: "Analyst review",
     slug: "analyst-review",
     definition:
-      "DOL's status for a PERM in the ordinary queue: in line for a human analyst, with nothing asked of the employer. Most pending cases sit here, worked in filing order. Since October 31, 2026 DOL no longer prints which filing month its analysts have reached; PERM Tracker finds it from DOL's case statuses each day.",
+      "DOL's status for a PERM in the ordinary queue: in line for a human analyst, with nothing asked of the employer. Most pending cases sit here, worked in filing order. Since October 31, 2026 DOL no longer prints which filing month its analysts have reached. PERM Tracker finds it from DOL's case statuses each day.",
     see: [{ label: "The queue by month", href: "/perm-queue" }, { label: "Every status, explained", href: "/perm-case-statuses#analyst-review" }],
   },
   {
@@ -95,7 +95,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     term: "Certified",
     slug: "certified",
     definition:
-      "DOL granted the labor certification. It is not a green card and not a petition: it is the document the employer files with the I-140, and it expires if no I-140 is filed with it within 180 calendar days of the grant.",
+      "DOL granted the labor certification. It's the document the employer files with the I-140. It isn't a green card or a petition. It expires if no I-140 is filed with it within 180 calendar days of the grant.",
     cite: CFR656("656.30"),
     see: [{ label: "Every status, explained", href: "/perm-case-statuses#certified" }],
   },
@@ -112,14 +112,14 @@ export const GLOSSARY: GlossaryTerm[] = [
     slug: "chargeability",
     aka: ["cross-chargeability"],
     definition:
-      "The country a visa number is counted against, normally the applicant's country of birth, not citizenship. A spouse's country of birth can be used instead (cross-chargeability), which is how a family can move from an oversubscribed country's cutoff to the worldwide one.",
+      "The country a visa number is counted against, normally the applicant's country of birth. Citizenship doesn't decide it. A spouse's country of birth can be used instead (cross-chargeability), which is how a family can move from an oversubscribed country's cutoff to the worldwide one.",
     see: [{ label: "Priority date calculator", href: "/tools/priority-date-calculator" }],
   },
   {
     term: "Consular processing",
     slug: "consular-processing",
     definition:
-      "Finishing the green card at a U.S. consulate abroad instead of by I-485: the DS-260 application, an interview, and an immigrant visa. Its fees are State Department fees and are not on the USCIS schedule.",
+      "Finishing the green card at a U.S. consulate abroad instead of by I-485: the DS-260 application, an interview, and an immigrant visa. Its fees are State Department fees and aren't on the USCIS schedule.",
   },
   {
     term: "Current",
@@ -134,7 +134,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     slug: "cutoff-date",
     aka: ["final action date", "date for filing"],
     definition:
-      "The visa bulletin's line: a priority date earlier than it may proceed, one on or after it waits. The final action date governs approvals; the dates-for-filing chart, when USCIS says to use it, governs when an I-485 may be filed.",
+      "The visa bulletin's line: a priority date earlier than it may proceed, and one on or after it waits. The final action date governs approvals. Dates for filing, when USCIS says to use that chart, govern when an I-485 may be filed.",
     see: [{ label: "Priority date history", href: "/tools/priority-date-calculator" }],
   },
   {
@@ -172,7 +172,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     slug: "eb-categories",
     aka: ["EB-1", "EB-2", "EB-3"],
     definition:
-      "The five annual visa allotments for employment immigrants under INA 203(b). PERM cases are EB-2 (advanced degree or exceptional ability) or EB-3 (professionals, skilled and other workers); EB-1 and the EB-2 national interest waiver need no PERM.",
+      "The five annual visa allotments for employment immigrants under INA 203(b). PERM cases are EB-2 (advanced degree or exceptional ability) or EB-3 (professionals, skilled and other workers). EB-1 and the EB-2 national interest waiver need no PERM.",
     see: [{ label: "I-140 trends by category", href: "/tools/i140-trends" }],
   },
   {
@@ -180,7 +180,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     slug: "eta-9035",
     aka: ["LCA form"],
     definition:
-      "The labor condition application form for an H-1B, H-1B1 or E-3 petition, filed through FLAG and certified within seven working days. It attests to the wage and working conditions; it is not a labor certification.",
+      "The labor condition application form for an H-1B, H-1B1 or E-3 petition, filed through FLAG and certified within seven working days. It attests to the wage and working conditions. It isn't a labor certification.",
     cite: CFR655("655.730"),
     see: [{ label: "H-1B LCA search", href: "/lca-cases" }],
   },
@@ -207,7 +207,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     slug: "eta-9142",
     aka: ["H-2A application form", "H-2B application form", "Application for Temporary Employment Certification"],
     definition:
-      "The applications for temporary labor certification: 9142A for H-2A farm work, 9142B for H-2B non-farm work. FLAG numbers them H-300- and H-400-. The employer files them against a date of need: at least 45 days ahead for H-2A, 75 to 90 days ahead for H-2B. An H-2A job order (Form ETA-790/790A, JO-A-300- numbers) goes in first, 60 to 75 days ahead; CW-1's application is Form ETA-9142C (C-500-).",
+      "The applications for temporary labor certification: 9142A for H-2A farm work, 9142B for H-2B non-farm work. FLAG numbers them H-300- and H-400-. The employer files them against a date of need: at least 45 days ahead for H-2A, 75 to 90 days ahead for H-2B. An H-2A job order (Form ETA-790/790A, JO-A-300- numbers) goes in first, 60 to 75 days ahead. CW-1's application is Form ETA-9142C (C-500-).",
     cite: CFR655("655.15"),
     see: [{ label: "H-2A, H-2B and CW-1 case search", href: "/seasonal-cases" }],
   },
@@ -216,7 +216,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     slug: "flag",
     aka: ["Foreign Labor Application Gateway"],
     definition:
-      "DOL's filing system for PERM, prevailing wage, LCA, H-2A, H-2B and CW-1 cases, and the source of the status words on this site. Its case-status search answers by case number; it publishes no definitions of the words it returns.",
+      "DOL's filing system for PERM, prevailing wage, LCA, H-2A, H-2B and CW-1 cases, and the source of the status words on this site. Its case-status search answers by case number. It publishes no definitions of the words it returns.",
     see: [{ label: "Every status, explained", href: "/perm-case-statuses" }],
   },
   {
@@ -241,7 +241,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     term: "H-1B recapture",
     slug: "h1b-recapture",
     definition:
-      "Days spent outside the United States during H-1B status do not count toward the six-year limit and can be added back with proof of travel. The calculator takes the total as an input because only the passport holds it.",
+      "Days spent outside the United States during H-1B status don't count toward the six-year limit and can be added back with proof of travel. The calculator takes the total as an input because only the passport holds it.",
     see: [{ label: "H-1B six-year limit calculator", href: "/tools/h1b-six-year-limit" }],
   },
   {
@@ -249,7 +249,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     slug: "h-2a",
     aka: ["H2A", "temporary agricultural worker"],
     definition:
-      "The visa for temporary or seasonal farm work. DOL must first certify that no qualified U.S. workers are available and that hiring won't depress local wages; the application is decided no later than 30 days before the first date of need when it is complete.",
+      "The visa for temporary or seasonal farm work. DOL must first certify that no qualified U.S. workers are available and that hiring won't depress local wages. A complete application is decided no later than 30 days before the first date of need.",
     cite: CFR655("655.160"),
     see: [{ label: "H-2A, H-2B and CW-1 case search", href: "/seasonal-cases" }],
   },
@@ -258,7 +258,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     slug: "h-2b",
     aka: ["H2B", "temporary non-agricultural worker"],
     definition:
-      "The visa for temporary non-farm work: a one-time, seasonal, peakload or intermittent need, denied past nine months unless it is a one-time occurrence. The employer needs a prevailing wage determination (a P-400- number) before filing the 9142B.",
+      "The visa for temporary non-farm work: a one-time, seasonal, peakload or intermittent need, denied past nine months unless it's a one-time occurrence. The employer needs a prevailing wage determination (a P-400- number) before filing the 9142B.",
     cite: CFR655("655.6"),
     see: [{ label: "H-2A, H-2B and CW-1 case search", href: "/seasonal-cases" }],
   },
@@ -266,14 +266,14 @@ export const GLOSSARY: GlossaryTerm[] = [
     term: "I-140",
     slug: "i-140",
     definition:
-      "The immigrant petition the employer files with USCIS on the certified PERM. Its approval fixes the priority date and the category; USCIS publishes quarterly receipt, approval and denial counts, and premium processing is available.",
+      "The immigrant petition the employer files with USCIS on the certified PERM. Its approval fixes the priority date and the category. USCIS publishes quarterly receipt, approval and denial counts. Premium processing is available.",
     see: [{ label: "I-140 queue", href: "/tools/i140-calculator" }],
   },
   {
     term: "I-693",
     slug: "i-693",
     definition:
-      "The medical examination report a civil surgeon signs for the I-485. One signed on or after November 1, 2023 no longer expires. USCIS charges nothing for the form; the civil surgeon charges for the exam.",
+      "The medical examination report a civil surgeon signs for the I-485. One signed on or after November 1, 2023 no longer expires. USCIS charges nothing for the form, but the civil surgeon charges for the exam.",
     see: [{ label: "The I-693 medical exam", href: "/guides/i693-medical-exam" }],
   },
   {
@@ -290,7 +290,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     slug: "labor-certification",
     aka: ["LC"],
     definition:
-      "DOL's finding that no able, willing, qualified and available U.S. worker was found for the job at the prevailing wage, and that hiring the foreign worker will not adversely affect U.S. workers. The PERM is the process that produces it.",
+      "DOL's finding that no able, willing, qualified and available U.S. worker was found for the job at the prevailing wage, and that hiring the foreign worker won't adversely affect U.S. workers. The PERM is the process that produces it.",
     cite: CFR656("656.1"),
   },
   {
@@ -298,7 +298,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     slug: "lca",
     aka: ["labor condition application"],
     definition:
-      "The wage-and-conditions attestation an H-1B petition needs, filed on ETA-9035. DOL certifies it within seven working days on a review of completeness rather than of the wage, and publishes the wage attested in its quarterly files.",
+      "The wage-and-conditions attestation an H-1B petition needs, filed on ETA-9035. DOL certifies it within seven working days after checking only that it's complete, and publishes the wage attested in its quarterly files.",
     cite: CFR655("655.740"),
     see: [{ label: "H-1B salary explorer", href: "/lca-wages" }],
   },
@@ -349,7 +349,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     slug: "oflc",
     aka: ["Office of Foreign Labor Certification"],
     definition:
-      "The DOL office that runs PERM, prevailing wage and LCA programs, publishes the processing-time page and the quarterly disclosure files, and keeps the debarment list.",
+      "The DOL office that runs the PERM, prevailing wage and LCA programs. It publishes the processing-time page and the quarterly disclosure files, and it keeps the debarment list.",
     see: [{ label: "Debarments", href: "/debarments" }],
   },
   {
@@ -357,7 +357,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     slug: "perm",
     aka: ["Program Electronic Review Management"],
     definition:
-      "The labor certification process for most employment-based green cards since 2005: a prevailing wage determination, employer recruitment, and an ETA-9089 that DOL decides in filing order. The certification, not the green card, is what it produces.",
+      "The labor certification process for most employment-based green cards since 2005: a prevailing wage determination, employer recruitment, and an ETA-9089 that DOL decides in filing order. It produces the certification. It doesn't produce the green card.",
     cite: CFR656("656.17"),
     see: [{ label: "The complete PERM guide", href: "/guides/complete-perm-filing-guide" }],
   },
@@ -375,7 +375,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     slug: "premium-processing",
     aka: ["I-907"],
     definition:
-      "USCIS's paid faster decision on an I-140, requested on Form I-907. It shortens the petition's wait and nothing else: not the PERM, not the visa bulletin, not the I-485, for which it is not offered.",
+      "USCIS's paid faster decision on an I-140, requested on Form I-907. It shortens the petition's wait and nothing else. The PERM, the visa bulletin and the I-485 keep their own pace, and it isn't offered for the I-485.",
     see: [{ label: "Green card fees", href: "/tools/green-card-fees" }],
   },
   {
@@ -418,7 +418,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     term: "Reconsideration",
     slug: "reconsideration",
     definition:
-      "Asking the Certifying Officer who denied a PERM to look again, within 30 days of the denial. It can only use documents DOL already had or that existed at filing and were kept on file; the officer may instead forward it to BALCA.",
+      "Asking the Certifying Officer who denied a PERM to look again, within 30 days of the denial. It can only use documents DOL already had or that existed at filing and were kept on file. The officer may instead forward it to BALCA.",
     cite: CFR656("656.24"),
     see: [{ label: "Appealing a denial", href: "/guides/perm-appeal-reconsideration-balca" }],
   },
@@ -443,7 +443,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     slug: "rfi",
     aka: ["RFI"],
     definition:
-      "DOL's question to the employer before deciding a PERM, under the officer's power to request supplemental information. Lighter than an audit; the letter sets its own deadline, and the regulation sets none.",
+      "DOL's question to the employer before deciding a PERM, under the officer's power to request supplemental information. It's lighter than an audit. The letter sets its own deadline, and the regulation sets none.",
     cite: CFR656("656.20"),
     see: [{ label: "RFI issued: what to do", href: "/guides/perm-rfi-issued-what-to-do" }],
   },
@@ -451,7 +451,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     term: "Retrogression",
     slug: "retrogression",
     definition:
-      "A cutoff date moving backwards from one visa bulletin to the next, so a priority date that was current stops being current. It happens when demand at the earlier dates exceeds the numbers left in the year, and it is visible in the cutoff history.",
+      "A cutoff date moving backwards from one visa bulletin to the next, so a priority date that was current stops being current. It happens when demand at the earlier dates exceeds the numbers left in the year. It's visible in the cutoff history.",
     see: [{ label: "Priority date history", href: "/tools/priority-date-calculator" }],
   },
   {
@@ -490,7 +490,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     term: "Spillover",
     slug: "spillover",
     definition:
-      "Visa numbers a preference category or country cannot use in a fiscal year being made available to another under the INA's ordering rules. The State Department reports the year's totals after the fact; this site prints no spillover forecast because no figure for the coming year exists.",
+      "Visa numbers a preference category or country can't use in a fiscal year being made available to another under the INA's ordering rules. The State Department reports the year's totals after the fact. This site prints no spillover forecast because no figure for the coming year exists.",
     see: [{ label: "The next visa bulletin", href: "/visa-bulletin" }],
   },
   {
@@ -506,14 +506,14 @@ export const GLOSSARY: GlossaryTerm[] = [
     slug: "supplement-j",
     aka: ["I-485J", "I-485 Supplement J"],
     definition:
-      "The form filed with an employment-based I-485 to confirm the I-140 job offer is still valid, or to port under INA 204(j) to a same-or-similar job once the I-485 has been pending 180 days. An approval of it is about the job, not the green card; the I-485 still needs a visa number.",
+      "The form filed with an employment-based I-485 to confirm the I-140 job offer is still valid, or to port under INA 204(j) to a same-or-similar job once the I-485 has been pending 180 days. Its approval covers the job. It doesn't grant the green card, and the I-485 still needs a visa number.",
     see: [{ label: "I-485 vs I-485J", href: "/guides/i485-vs-i485j-supplement-j" }],
   },
   {
     term: "Three 180-day clocks",
     slug: "three-180-day-clocks",
     definition:
-      "Three unrelated rules that share a number: a certified PERM expires 180 days after the grant if no I-140 is filed; an approved I-140 survives the employer's withdrawal after 180 days; a pending I-485 becomes portable after 180 days.",
+      "Three unrelated rules that share a number. A certified PERM expires 180 days after the grant if no I-140 is filed. An approved I-140 survives the employer's withdrawal after 180 days. A pending I-485 becomes portable after 180 days.",
     see: [{ label: "The three 180-day clocks", href: "/guides/three-180-day-clocks" }],
   },
   {
@@ -536,21 +536,21 @@ export const GLOSSARY: GlossaryTerm[] = [
     slug: "wage-level",
     aka: ["Level I", "Level II", "Level III", "Level IV"],
     definition:
-      "The four OEWS wage tiers a prevailing wage determination is set at, chosen from the job's requirements against what the occupation normally needs. Level I is entry, Level IV fully competent. The level, not the survey, is where most wage disputes live.",
+      "The four OEWS wage tiers a prevailing wage determination is set at, chosen from the job's requirements against what the occupation normally needs. Level I is entry, Level IV fully competent. Most wage disputes turn on the level.",
     see: [{ label: "How DOL sets a prevailing wage", href: "/guides/how-dol-sets-a-prevailing-wage" }],
   },
   {
     term: "WARN notice",
     slug: "warn-notice",
     definition:
-      "The public notice of a mass layoff or plant closing that the Worker Adjustment and Retraining Notification Act requires 60 days ahead, filed with the state. Where a state publishes them, it is the record of a layoff that DOL's PERM files do not carry.",
+      "The public notice of a mass layoff or plant closing that the Worker Adjustment and Retraining Notification Act requires 60 days ahead, filed with the state. Where a state publishes them, the notice is the record of a layoff that DOL's PERM files don't carry.",
     see: [{ label: "Layoffs and your PERM", href: "/guides/employer-layoffs-and-your-perm" }],
   },
   {
     term: "Withdrawn",
     slug: "withdrawn",
     definition:
-      "The employer withdrew the application before a decision. DOL records no reason. A withdrawal is not a denial and does not count against anyone; a PERM withdrawn is simply a job offer that is no longer being certified.",
+      "The employer withdrew the application before a decision. DOL records no reason. A withdrawal isn't a denial, and it doesn't count against anyone. A withdrawn PERM is a job offer that's no longer being certified.",
     see: [{ label: "Every status, explained", href: "/perm-case-statuses#withdrawn" }],
   },
 ];

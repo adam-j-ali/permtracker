@@ -92,11 +92,11 @@ export function CapGapPart() {
       />{" "}
       {r ? (
         <div className="mt-4">
-          {!r.gap ? <Note>The OPT runs past the H-1B start, so there is no gap to bridge.</Note> : null}
+          {!r.gap ? <Note>The OPT runs past the H-1B start, so there&apos;s no gap to bridge.</Note> : null}
           {!r.optValidAtFiling ? (
             <Note>
               The OPT had ended by the day the petition was filed. The rule extends the student&apos;s status and the OPT work
-              authorization the student holds; with the OPT over, there&apos;s none to extend. Ask the school&apos;s DSO what
+              authorization the student holds. With the OPT over, there&apos;s none to extend. Ask the school&apos;s DSO what
               the record shows.
             </Note>
           ) : null}
@@ -211,7 +211,7 @@ export function OptDaysPart() {
         <div className="mt-4">
           <RuleNotes
             items={[
-              "8 CFR 214.2(f)(10)(ii)(E): no more than 90 days of unemployment in all during post-completion OPT; 150 in all once a 24-month STEM extension is granted, the first OPT period included.",
+              "8 CFR 214.2(f)(10)(ii)(E): no more than 90 days of unemployment in all during post-completion OPT. The limit is 150 in all once a 24-month STEM extension is granted, the first OPT period included.",
               "The rule counts days of unemployment, not working days. Which days count as employment is the record the school's DSO keeps.",
             ]}
           />

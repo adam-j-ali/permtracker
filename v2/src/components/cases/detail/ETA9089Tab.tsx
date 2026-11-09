@@ -128,9 +128,9 @@ export function ETA9089Tab({
                       <strong className="text-foreground">{fmtISODate(reviewDue.date)}</strong>, 30 days after the {reviewDue.kind === "review" ? "denial" : "notice"}.
                     </>
                   ) : denialStep === "reconsidering"
-                    ? "ETA 9089 denied. Reconsideration requested; awaiting the Certifying Officer."
+                    ? "ETA 9089 denied. Reconsideration requested, now awaiting the Certifying Officer."
                     : denialStep === "at-balca"
-                      ? "ETA 9089 denied. BALCA review requested; awaiting BALCA."
+                      ? "ETA 9089 denied. BALCA review requested, now awaiting BALCA."
                       : isFiled
                         ? "ETA 9089 filed. Awaiting DOL decision."
                         : "Awaiting filing. Recruitment must be completed first."}

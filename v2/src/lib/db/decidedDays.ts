@@ -483,7 +483,7 @@ export async function getDecidedFeed(args: {
       cases: [],
       totals: null,
       capped: false,
-      refused: "That is not a valid date range.",
+      refused: "That isn't a valid date range.",
     };
   }
 
@@ -495,7 +495,7 @@ export async function getDecidedFeed(args: {
       totals: null,
       capped: false,
       refused:
-        `A wage filter has to be checked on every case in the range, so it is ` +
+        `A wage filter has to be checked on every case in the range, so it's ` +
         `limited to ${RANGE_MAX_DAYS_UNINDEXED} days. This range is ${span}. ` +
         `Narrow the dates, or drop the wage filter.`,
     };

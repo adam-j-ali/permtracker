@@ -26,7 +26,7 @@ describe("the employer page's Wage and Hour section", () => {
     expect(html).toContain("$15,501");
     expect(html).toMatch(/H-1B<\/span>1 case, 2 violations, \$12,500 in back wages to 3 workers/);
     expect(html).toContain("No violations found.");
-    expect(html).toContain("agreed to pay, not what was paid");
+    expect(html).toContain("agreed to pay, which can differ from what was paid");
   });
 
   it("draws nothing for an employer with no cases", () => {

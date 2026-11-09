@@ -52,7 +52,7 @@ export function JobDescriptionCard({ caseData, jobDescProps }: { caseData: CaseD
       setEditing(false);
     } catch (error) {
       // The words stay in the editor, so nothing typed is lost.
-      handleOperationError(error, { userMessage: "Couldn’t save the job description. Your text is still here; try again." });
+      handleOperationError(error, { userMessage: "Couldn’t save the job description. Your text is still here. Try again." });
     } finally {
       setSaving(false);
     }

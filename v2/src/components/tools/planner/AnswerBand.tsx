@@ -20,9 +20,9 @@ export function AnswerBand({ plan, today, noDateWhy }: { plan: Plan; today: stri
         <Figure
           label="From today"
           value={wait === null ? "Not dated" : wait <= 0 ? "Done" : aboutMonths(wait).replace(/^about /, "")}
-          note={wait === null ? "Every step before the bulletin is dated below" : wait <= 0 ? "Approved" : "Typical; the range is in your dates"}
+          note={wait === null ? "Every step before the bulletin is dated below" : wait <= 0 ? "Approved" : "Typical. The range is in your dates"}
         />{" "}
-        <Figure label="Cost" value={usd(plan.totals.all)} note={hasOwn ? "Government fees and your own costs" : "Government fees; add your own costs below"} />
+        <Figure label="Cost" value={usd(plan.totals.all)} note={hasOwn ? "Government fees and your own costs" : "Government fees. Add your own costs below"} />
       </dl>
     </section>
   );

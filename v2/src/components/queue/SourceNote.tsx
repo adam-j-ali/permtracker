@@ -60,9 +60,8 @@ export function SourceNote({ className, compact = false }: { className?: string;
     // `<details>` keeps it in the DOM for anything that reads the page.
     <NoteBanner alert className={className}>
       <p>
-        This is a sweep, not a live reading, so a case decided between sweeps
-        still counts as waiting here: the backlog figures run a little high
-        rather than a little low.
+        These figures come from a sweep. A case decided between sweeps still
+        counts as waiting here, so the backlog figures run a little high.
       </p>{" "}
       <FinePrint summary="Where these come from" className="mt-2">
         {where}

@@ -339,7 +339,7 @@ export function calculateRecruitmentStatus(
     if (today <= effectiveWindowCloses) {
       return {
         status: "ready",
-        message: `Ready to file! ${Math.max(0, daysRemainingInWindow)} days remaining`,
+        message: `Ready to file. ${Math.max(0, daysRemainingInWindow)} days remaining`,
       };
     }
 

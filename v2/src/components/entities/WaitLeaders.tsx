@@ -73,7 +73,7 @@ export function WaitLeaders({ field, className }: { field: FieldWait | null; cla
         <p className="max-w-3xl text-base leading-relaxed text-soft">
           Filing to decision, median, over the last {field.windowDays} days, for the {formatInt(field.employersRanked ?? 0)}{" "}
           sponsors with at least {field.minDecisions ?? 20} decisions in that time. A sponsor well under the
-          all-employers figure had cases decided out of filing order; one well over it usually had audits or requests
+          all-employers figure had cases decided out of filing order. One well over it usually had audits or requests
           for information. DOL doesn&apos;t say why.
         </p>
       </MoreText>{" "}

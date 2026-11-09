@@ -74,7 +74,7 @@ describe("RateBars", () => {
 describe("RateBars tooltips", () => {
   it("adds what the row does not print: the denied count and the 95% range", () => {
     expect(rateTip({ label: "Layoff", rate: 0.59, decided: 9519, denied: 56 }, 2.57)).toBe(
-      "Layoff\n0.59% denied\n56 denied of 9,519 decided\n95% range 0.45–0.76%\nField baseline 2.57%",
+      "Layoff\n0.59% denied\n56 denied of 9,519 decided\n95% range 0.45 to 0.76%\nField baseline 2.57%",
     );
   });
 

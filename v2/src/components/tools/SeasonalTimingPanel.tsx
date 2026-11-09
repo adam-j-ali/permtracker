@@ -126,7 +126,7 @@ export function SeasonalTimingPanel({
           <a href="https://www.ecfr.gov/current/title-20/chapter-V/part-655/section-655.160" className="link" rel="noopener">
             20 CFR 655.160
           </a>
-          ), unless the application was modified; {share}% of the certifications met it.
+          ), unless the application was modified. {share}% of the certifications met it.
         </p>
       ) : null}{" "}
       {checked ? (
@@ -142,7 +142,7 @@ export function SeasonalTimingPanel({
           <a href="https://www.federalregister.gov/documents/2019/03/04/2019-03809/selection-procedures-for-reviewing-applications-filed-by-employers-seeking-temporary-employment-of" className="link" rel="noopener">
             84 FR 7399
           </a>
-          ), and DOL&apos;s decisions on the {view.group.previous} groups. An estimate from past cases, not a promise.
+          ), and DOL&apos;s decisions on the {view.group.previous} groups. It&apos;s an estimate from past cases. It isn&apos;t a promise.
         </p>
       ) : (
       <p className="mt-4 text-sm text-muted-foreground">
@@ -152,7 +152,7 @@ export function SeasonalTimingPanel({
           : view.decidedFrom && view.decidedTo
             ? `, decided ${day(view.decidedFrom)} to ${day(view.decidedTo)}`
             : ""}
-        . An estimate from past cases, not a promise.
+        . It&apos;s an estimate from past cases. It isn&apos;t a promise.
       </p>
       )}
     </PageSection>

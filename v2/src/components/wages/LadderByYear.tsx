@@ -131,18 +131,18 @@ export function LadderByYear({
         {composition ? (
           <>
             <b className="font-bold text-data-warn-ink">
-              These years are not measuring the same group of filings.
+              These years aren&apos;t measuring the same group of filings.
             </b>{" "}
             The count moves by {ratio.toFixed(1)} times between the largest year
             and the smallest, so a change in the ladder is at least partly a
-            change in which employers filed rather than a change in what the
-            work pays. Read the shape, not the difference.
+            change in which employers filed. It isn&apos;t only a change in what the
+            work pays. Read the shape of each year, because the difference between years can mislead.
           </>
         ) : (
           <>
             Each row is that fiscal year&apos;s certified filings, counted on
-            their own. A percentile is over the year, so a year with far fewer
-            cases behind it is a thinner measurement than one with more.
+            their own. A percentile is over the year, so a year resting on far fewer
+            cases is a thinner measurement than one with more.
           </>
         )}
       </p>

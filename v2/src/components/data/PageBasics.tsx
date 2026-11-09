@@ -81,8 +81,8 @@ export const BASICS: Record<string, BasicsEntry[]> = {
         <>
           The annual wage an employer committed to on the ETA-9089 filing, as
           published in the Department of Labor&apos;s own disclosure files. It
-          isn&apos;t a survey estimate or a self-report: every figure on this
-          page came off a federal filing: every decided case in DOL&apos;s
+          isn&apos;t a survey estimate or a self-report. Every figure on this
+          page came off a federal filing, from the decided cases in DOL&apos;s
           published files from FY2024 on.
         </>
       ),
@@ -109,8 +109,8 @@ export const BASICS: Record<string, BasicsEntry[]> = {
         <>
           Search it above. Each employer&apos;s page shows filings by year and
           pending cases in the live queue, so a sponsorship pause shows up as
-          filings stopping. The data records what was filed, never company
-          policy: it can&apos;t say whether a pause ends.
+          filings stopping. The data records what was filed. It doesn&apos;t
+          record company policy, so it can&apos;t say whether a pause ends.
         </>
       ),
     },
@@ -120,8 +120,8 @@ export const BASICS: Record<string, BasicsEntry[]> = {
         <>
           Names appear exactly as DOL prints them, and DOL prints one company
           under several legal entities and spellings. PERM Tracker links the
-          spellings it can match on each employer&apos;s page rather than
-          silently merging federal records.
+          spellings it can match on each employer&apos;s page, and it never
+          merges federal records silently.
         </>
       ),
     },
@@ -131,8 +131,8 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "What does the law firm on a filing actually do?",
       a: (
         <>
-          The firm named on a PERM filing represents the employer, not the
-          worker - which is why applicants so often hear nothing. Your case
+          The firm named on a PERM filing represents the employer. It doesn&apos;t
+          represent the worker, which is why applicants so often hear nothing. Your case
           number still works without them:{" "}
           <Link href="/perm-case-status" className={link}>
             check it yourself
@@ -158,10 +158,9 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "Is PERM faster in some states?",
       a: (
         <>
-          No. DOL works one national queue, oldest filings first, so the
-          worksite state changes the wage and the volume, not the wait. The
-          differences on this page are about industry concentration, not a
-          faster line.
+          No. DOL works one national queue, oldest filings first. The worksite
+          state changes the wage and the volume, and the wait stays the same.
+          The differences on this page come from industry concentration.
         </>
       ),
     },
@@ -205,7 +204,7 @@ export const BASICS: Record<string, BasicsEntry[]> = {
         <>
           Decided ones: everything DOL has published in its quarterly
           disclosure files, FY2024 to FY2026. A case still pending has no
-          disclosure row yet - for those,{" "}
+          disclosure row yet. For those,{" "}
           <Link href="/perm-case-status" className={link}>
             the case status page
           </Link>{" "}
@@ -219,10 +218,10 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "My case got audited. Is that bad?",
       a: (
         <>
-          An audit is a request for proof, not a denial: DOL asks for the
-          recruitment file and the case waits in a separate, slower queue
-          while it answers. Most audited cases are still certified - the
-          funnel above shows the measured outcomes rather than a guess.
+          An audit is a request for proof. It isn&apos;t a denial. DOL asks for
+          the recruitment file, and the case waits in a separate, slower queue
+          while the employer answers. Most audited cases are still certified,
+          and the funnel above shows the measured outcomes.
         </>
       ),
     },
@@ -231,9 +230,9 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       a: (
         <>
           People say &quot;audit&quot; for both, but DOL treats them
-          differently: an audit review is the formal documentation check under
-          20 CFR 656.20, while a request for information (RFI) is a narrower
-          question about one part of the filing - and DOL has leaned toward
+          differently. An audit review is the formal documentation check under
+          20 CFR 656.20. A request for information (RFI) is a narrower
+          question about one part of the filing, and DOL has leaned toward
           RFIs since 2025. Supervised recruitment is a third, rarer escalation
           with its own clock.
         </>
@@ -246,9 +245,9 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       a: (
         <>
           Before an employer can file a PERM, it has to ask the Department of
-          Labor what the job legally has to pay. That request is form ETA-9141,
+          Labor what the job legally has to pay. That request is form ETA-9141.
           DOL answers with a prevailing wage determination, and the PERM
-          offer cannot come in under it. Case numbers start with{" "}
+          offer can&apos;t come in under it. Case numbers start with{" "}
           <b className="font-bold">P-</b>. PERM Tracker holds every decided
           wage request in DOL&apos;s published files, from October 2023 to the
           end of DOL&apos;s newest file.
@@ -261,9 +260,9 @@ export const BASICS: Record<string, BasicsEntry[]> = {
         <>
           Yes. DOL answers per case for anything still moving, so a{" "}
           <b className="font-bold">P-</b> number that has no decision yet still
-          resolves here, and PERM Tracker asks DOL directly if it has not seen
-          the number before. What a pending record cannot show is the wage
-          itself: DOL publishes that only when the case reaches a quarterly
+          resolves here, and PERM Tracker asks DOL directly if it hasn&apos;t seen
+          the number before. A pending record can&apos;t show the wage itself,
+          because DOL publishes that only when the case reaches a quarterly
           disclosure file. Look one up on{" "}
           <Link href="/perm-case-status" className={link}>
             case status
@@ -276,7 +275,7 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "How long does a prevailing wage determination take?",
       a: (
         <>
-          DOL publishes the filing month it is currently working rather than an
+          DOL publishes the filing month it&apos;s currently working rather than an
           average wait, and it runs two separate queues: one for jobs priced
           from the OEWS survey and a slower one for everything else. The{" "}
           <Link href="/tools/pwd-calculator" className={link}>
@@ -308,7 +307,7 @@ export const BASICS: Record<string, BasicsEntry[]> = {
           A Labor Condition Application, form ETA-9035, is what an employer
           files before petitioning for an H-1B. It commits them to a wage and a
           named worksite, and DOL certifies it in days rather than months.
-          An H-1B number starts with <b className="font-bold">I-200</b>;{" "}
+          An H-1B number starts with <b className="font-bold">I-200</b>.{" "}
           <b className="font-bold">I-201</b> and <b className="font-bold">I-202</b> are the H-1B1 for Chile and
           Singapore, and <b className="font-bold">I-203</b> the E-3 for Australians. PERM Tracker holds every LCA in
           DOL&apos;s disclosure files from FY2020 to the newest quarter.
@@ -320,15 +319,15 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       a: (
         <>
           No, and the gap matters. An LCA is a wage-and-worksite promise
-          certified by the Department of Labor; the H-1B petition itself is
-          decided later by USCIS, a different agency. A certified LCA means the
-          employer cleared the first step, not that anyone has been approved to
-          work.
+          certified by the Department of Labor. USCIS, a different agency,
+          decides the H-1B petition itself later. A certified LCA means the
+          employer cleared the first step. It doesn&apos;t mean anyone has been
+          approved to work.
         </>
       ),
     },
     {
-      q: "What does an LCA show that a PERM does not?",
+      q: "What does an LCA show that a PERM doesn't?",
       a: (
         <>
           The wage an employer offered for a specific job at a specific
@@ -355,7 +354,7 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "What are H-2A, H-2B and CW-1?",
       a: (
         <>
-          Temporary work visas. H-2A covers seasonal or temporary farm work;
+          Temporary work visas. H-2A covers seasonal or temporary farm work.
           H-2B covers non-farm work with a one-time, seasonal, peakload or
           intermittent need, usually up to nine months (20 CFR 655.6). Before
           USCIS can approve either petition, the Department of Labor must
@@ -390,7 +389,7 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "What does a status like NOD issued or accepted, pending recruitment mean?",
       a: (
         <>
-          A notice of deficiency (NOD) means DOL found something to fix; the
+          A notice of deficiency (NOD) means DOL found something to fix. The
           employer has 5 business days (H-2A) or 10 (H-2B) to send a corrected
           application. Accepted, pending recruitment means DOL accepted it and
           the employer is now recruiting U.S. workers before the decision. The{" "}
@@ -405,10 +404,10 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "Where do the wage and the number of workers come from?",
       a: (
         <>
-          DOL&apos;s case lookup never returns them. Once a case is decided they
-          come from DOL&apos;s quarterly H-2A, H-2B and CW-1 disclosure files,
-          and for an H-2A or H-2B job DOL has accepted but not yet decided, from
-          its SeasonalJobs feed. A case newer than both shows the status,
+          DOL&apos;s case lookup never returns them. Once a case is decided, they
+          come from DOL&apos;s quarterly H-2A, H-2B and CW-1 disclosure files.
+          For an H-2A or H-2B job DOL has accepted but not yet decided, they
+          come from its SeasonalJobs feed. A case newer than both shows the status,
           employer, job title and filing date DOL&apos;s own system reports.
         </>
       ),
@@ -417,7 +416,7 @@ export const BASICS: Record<string, BasicsEntry[]> = {
     whyMissing(
       <>
         These forms joined the live record on October 1, 2026, and it&apos;s
-        still filling in earlier filings backwards; DOL&apos;s quarterly files
+        still filling in earlier filings backwards. DOL&apos;s quarterly files
         reach further back. One filed today shows up after the next check.
       </>,
     ),
@@ -427,7 +426,7 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "Can I search PERM, wage requests, LCAs and H-2A, H-2B and CW-1 at once?",
       a: (
         <>
-          That is what this page is for. DOL runs these programs on one
+          That&apos;s what this page is for. DOL runs these programs on one
           case-number counter but publishes them in separate files, so an
           employer&apos;s record is normally split across several searches. Here
           one employer name reaches them all, and each result says which
@@ -451,11 +450,12 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "Why do some results have no wage or law firm?",
       a: (
         <>
-          Because DOL returns five fields on a case that is still moving: the
+          Because DOL returns five fields on a case that&apos;s still moving: the
           number, the employer, the job title, the filing date and the status.
           The wage, the worksite, the occupation and the firm arrive only when
           the case is published in a quarterly disclosure file. A blank column
-          on an open filing is DOL withholding it, not a gap in the record.
+          on an open filing means DOL is withholding it. It isn&apos;t a gap in
+          the record.
         </>
       ),
     },
@@ -465,7 +465,7 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "How many PERM cases does DOL decide a day?",
       a: (
         <>
-          The chart above is the measured answer, working day by working day,
+          This page&apos;s chart is the measured answer, working day by working day,
           from the per-case status feed. Output is a weekday affair with a
           strong weekly shape, which is why estimates on this site count
           business days rather than calendar ones.
@@ -478,14 +478,14 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "Are these estimates or deadlines?",
       a: (
         <>
-          Both live here, and they are different things. The timeline tools
-          estimate from measured queues and say so, with their spread shown;
-          the{" "}
+          Both live here, and they&apos;re different things. The timeline tools
+          estimate from measured queues and say so, with their spread shown.
+          The{" "}
           <Link href="/tools/perm-deadline-calculator" className={link}>
             deadline calculator
           </Link>{" "}
-          computes the regulatory dates themselves (20 CFR 656), which are
-          not estimates at all.
+          computes the regulatory dates themselves (20 CFR 656), which
+          aren&apos;t estimates at all.
         </>
       ),
     },
@@ -493,10 +493,10 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "Why does a tool sometimes refuse to answer?",
       a: (
         <>
-          Because the honest answer is sometimes &quot;too early to say&quot;.
+          Because sometimes the answer is &quot;too early to say&quot;.
           A filing month DOL has barely started can&apos;t support a median,
           and a nearly-finished one is dominated by audits with a different
-          clock - so the tools withhold there instead of printing a confident
+          clock. The tools withhold there instead of printing a confident
           wrong number. The{" "}
           <Link href="/methodology" className={link}>
             methodology page
@@ -587,7 +587,7 @@ export const BASICS: Record<string, BasicsEntry[]> = {
           The one USCIS assigns by the applicant&apos;s address. Employment-based
           applications are received at a service center and routed from there,
           and many are decided at the National Benefits Center without an
-          interview; a field office decides the cases sent to it for one. USCIS
+          interview. A field office decides the cases sent to it for one. USCIS
           publishes each office&apos;s counts every quarter, which is what this
           page shows.
         </>
@@ -624,10 +624,10 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "Does a busy office mean a longer wait?",
       a: (
         <>
-          Usually, but the file does not say by how much. It gives each
-          office&apos;s pending pile and its quarter&apos;s decisions; dividing
-          them is quarters of work at that pace, which this page shows as a
-          comparison between offices, never as a date for one case.
+          Usually, but the file doesn&apos;t say by how much. It gives each
+          office&apos;s pending pile and its quarter&apos;s decisions. Dividing
+          them gives quarters of work at that pace, which this page shows as a
+          comparison between offices. It&apos;s never a date for one case.
         </>
       ),
     },
@@ -641,8 +641,8 @@ export const BASICS: Record<string, BasicsEntry[]> = {
           {f.indiaEb2 && f.asOf
             ? `USCIS counted ${f.indiaEb2} approved petitions for India-born beneficiaries in EB-2 as of ${f.asOf}${f.indiaEb2Share ? `, ${f.indiaEb2Share} of everyone waiting in that category` : ""}, before dependents.`
             : "USCIS counts approved petitions for India-born beneficiaries in EB-2 every quarter, before dependents, and the newest count is at the top of this page."}{" "}
-          The count, not a wait in years, is what USCIS
-          publishes; the{" "}
+          USCIS publishes the count. It doesn&apos;t publish a wait in years.
+          The{" "}
           <Link href="/tools/green-card-line" className={link}>
             green card line
           </Link>{" "}
@@ -656,7 +656,7 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       ),
     },
     {
-      q: "Why are dependents not counted?",
+      q: "Why aren't dependents counted?",
       a: (
         <>
           USCIS counts petitions, and a petition names one beneficiary. The

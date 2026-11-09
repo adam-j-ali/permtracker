@@ -51,7 +51,7 @@ export function RfiDeadlineCalculator() {
         <div>
           <Label htmlFor={letterId}>Date on DOL&apos;s letter</Label>{" "}
           <DateInput id={letterId} value={letter} onChange={(e) => setLetter(e.target.value)} className="mt-1.5" />{" "}
-          <p className="mt-1 text-sm text-muted-foreground">The date printed on the RFI or audit letter, not the day it was opened.</p>
+          <p className="mt-1 text-sm text-muted-foreground">The date printed on the RFI or audit letter. The day it was opened doesn&apos;t count here.</p>
         </div>
       </div>{" "}
 
@@ -70,7 +70,7 @@ export function RfiDeadlineCalculator() {
           {result.weekend ? (
             <p className="mb-4 flex items-start gap-2 bg-tint p-3 text-sm border-2 border-border">
               <WarningIcon size={18} weight="bold" className="mt-0.5 shrink-0" aria-hidden="true" /> The 30th day is a {result.weekday}. The
-              regulation does not move a deadline that lands on a weekend; send the response before it.
+              regulation doesn&apos;t move a deadline that lands on a weekend, so send the response before it.
             </p>
           ) : null}{" "}
           {result.left < 0 ? (
@@ -82,7 +82,7 @@ export function RfiDeadlineCalculator() {
           <RuleNotes
             items={[
               "20 CFR 656.20(a)(2): the audit letter sets a date 30 days from the date of the letter.",
-              "20 CFR 656.20: an application whose employer does not respond is denied, and the employer may be placed in supervised recruitment for up to two years.",
+              "20 CFR 656.20: an application whose employer doesn't respond is denied, and the employer may be placed in supervised recruitment for up to two years.",
             ]}
           />
         </div>

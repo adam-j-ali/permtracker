@@ -72,7 +72,7 @@ export function WorkerMix({
         {subject === "employer" ? "Who they sponsored, FY2016 to FY2023" : "Who filled these jobs, FY2016 to FY2023"}
       </h3>{" "}
       <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-        DOL&apos;s old form recorded the worker; the one in use since mid-2023 doesn&apos;t. Top six of each.
+        DOL&apos;s old form recorded the worker, but the one in use since mid-2023 doesn&apos;t. Top six of each.
       </p>
       <div className="mt-4 grid grid-cols-1 gap-x-8 gap-y-6 [&>*]:min-w-0 md:grid-cols-2 xl:grid-cols-3">
         {panels.map((p) => (

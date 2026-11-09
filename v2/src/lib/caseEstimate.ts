@@ -210,7 +210,7 @@ export function buildCaseEstimate(input: CaseEstimateInput): CaseEstimate | null
         clock.slowEndFrom === "measured"
           ? `The late end allows ${clock.slowEndDays} days after the 30, the slowest tenth of the RFIs we've followed.`
           : `The late end allows ${clock.slowEndDays} days after the 30, an immigration attorney's estimate, until our record has followed enough RFIs that long to measure it.`,
-        "An employer can ask for more time, and DOL can ask a second time; either moves the date, and the status above will show it.",
+        "An employer can ask for more time, and DOL can ask a second time. Either moves the date, and the status above will show it.",
       ];
       if (clock.test && clock.test.decided >= 30 && clock.test.typicalMissDays !== null) {
         caveats.push(
@@ -229,7 +229,7 @@ export function buildCaseEstimate(input: CaseEstimateInput): CaseEstimate | null
         basis:
           `Our daily check saw DOL issue a request for information on this case on ${longDay(entered)}. ` +
           `Of the ${clock.watched.toLocaleString("en-US")} RFIs we've followed from their first day, nearly all moved on day ${clock.leaveDays.p50} of our record ` +
-          `(the 30-day response window; the check sees each move a day after DOL makes it), most went back to analyst review, ` +
+          `(the 30-day response window, plus the day the check takes to see each move), most went back to analyst review, ` +
           `and DOL decided those a median ${clock.afterLeaveDays.p50} days later.`,
         source: "PERM Tracker's daily check of every pending PERM case on DOL's FLAG system, measured again every night",
         stage: null,

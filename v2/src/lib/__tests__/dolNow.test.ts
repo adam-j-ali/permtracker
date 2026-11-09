@@ -155,6 +155,6 @@ describe("how long PERM takes right now (Oct 29 2026)", () => {
   });
 
   it("says where DOL's figures are when it has neither reading", () => {
-    expect(howLongSentence(null, null)).toBe("DOL's figures couldn't be read just now; DOL's own page, flag.dol.gov/processingtimes, has them.");
+    expect(howLongSentence(null, null)).toBe("DOL's figures couldn't be read just now. DOL's own page, flag.dol.gov/processingtimes, has them.");
   });
 });

@@ -82,7 +82,7 @@ export function CatchingUp({ day, week, noun }: { day: FlowSpan; week: FlowSpan;
       ) : null}{" "}
       {f.issued !== null && f.withdrawn !== null ? (
         <p className="mt-1 text-sm text-muted-foreground">
-          DOL issued {formatInt(f.issued)}; employers withdrew {formatInt(f.withdrawn)}.
+          DOL issued {formatInt(f.issued)}, and employers withdrew {formatInt(f.withdrawn)}.
         </p>
       ) : null}
     </div>

@@ -153,7 +153,7 @@ export function UnpublishedEmployer({
           </h2>{" "}
           <p className="mt-2 max-w-3xl text-base leading-relaxed text-muted-foreground">
             DOL&apos;s own status on each case, counted. Ordered biggest first:
-            these are not steps in a sequence, and a case can reach an audit
+            these aren&apos;t steps in a sequence, and a case can reach an audit
             without an RFI or re-enter after a decision.
           </p>
           <dl className="mt-5 space-y-4">
@@ -269,7 +269,7 @@ export function UnpublishedEmployer({
 
       <p className="mt-8 max-w-3xl text-sm leading-relaxed text-muted-foreground">
         This page is rebuilt periodically, so a status on it can lag DOL by
-        days. The case lookup does not lag: it asks DOL at the moment you ask
+        days. The case lookup doesn&apos;t lag, because it asks DOL at the moment you ask
         it.
       </p>
 

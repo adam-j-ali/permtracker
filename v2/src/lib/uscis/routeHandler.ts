@@ -98,7 +98,7 @@ export function makeUscisCaseStatusHandler(deps: HandlerDeps) {
 
     // 3. May the keys answer this caller.
     if (!(await deps.enabled(req))) {
-      return refuse(503, "USCIS access is pending; this page will check live once USCIS issues API keys.", "disabled");
+      return refuse(503, "USCIS access is pending. This page will check live once USCIS issues API keys.", "disabled");
     }
 
     // 4. Per-IP.
@@ -135,9 +135,9 @@ export function makeUscisCaseStatusHandler(deps: HandlerDeps) {
       case "unauthorized":
         return refuse(503, "USCIS refused our credentials. The site's operator has been told.", "unauthorized");
       case "disabled":
-        return refuse(503, "USCIS access is pending; this page will check live once USCIS issues API keys.", "disabled");
+        return refuse(503, "USCIS access is pending. This page will check live once USCIS issues API keys.", "disabled");
       case "unavailable":
-        return refuse(503, "USCIS did not answer. Their own status page may still.", "unavailable");
+        return refuse(503, "USCIS didn't answer. Their own status page may still.", "unavailable");
     }
   };
 }

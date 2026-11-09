@@ -190,7 +190,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       console.error("Failed to skip tour:", error);
       captureError(error, { operation: "skipTour" });
     });
-    toast("Tour skipped. You can replay it anytime from Settings \u2192 Support.", { icon: "\uD83D\uDCA1" });
+    toast("Tour skipped. You can replay it anytime from Support in Settings.");
   }, [updateStep, createSampleCaseMutation]);
 
   const advanceTourPhase = useCallback(() => {
@@ -206,7 +206,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         console.error("Failed to complete tour:", error);
         captureError(error, { operation: "completeTour" });
       });
-      toast.success("Tour complete. You can replay it anytime from Settings \u2192 Support.");
+      toast.success("Tour complete. You can replay it anytime from Support in Settings.");
     } else {
       setTourPhase(TOUR_PHASE_ORDER[nextIndex] ?? null);
     }

@@ -111,7 +111,7 @@ export function scorecardAlarms(
     const age = Math.floor((now - b.computedAt) / 86_400_000);
     const every = b.everyDays ?? 7;
     if (age > (every === 7 ? BACKTEST_DAYS : every + 2)) {
-      out.push(`${b.label} last ran ${age} days ago; it runs ${every === 1 ? "every night" : "weekly"}.`);
+      out.push(`${b.label} last ran ${age} days ago, but it runs ${every === 1 ? "every night" : "weekly"}.`);
     }
   }
   return out;

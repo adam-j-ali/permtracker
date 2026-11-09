@@ -23,9 +23,9 @@ export interface NotLegalAdviceNoticeProps {
 }
 
 const COPY: Record<NotLegalAdviceNoticeProps["variant"], string> = {
-  chat: "AI-generated information, not legal advice. PERM Tracker isn’t a law firm; verify with a licensed attorney.",
+  chat: "AI-generated information, not legal advice. PERM Tracker isn’t a law firm. Verify with a licensed attorney.",
   deadline:
-    "Calculated estimate, verify all dates with official DOL/USCIS sources and a licensed attorney.",
+    "Calculated estimate. Verify all dates with official DOL/USCIS sources and a licensed attorney.",
 };
 
 export function NotLegalAdviceNotice({

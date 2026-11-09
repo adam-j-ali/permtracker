@@ -27,7 +27,7 @@ export function PwdToPerm({
   const gapRow = (key: string, label: BarRow["label"], r: typeof mine, tone?: BarRow["tone"]): BarRow => ({
     key,
     label,
-    sub: `half took ${formatInt(r.pwdToPerm.p25)} to ${formatInt(r.pwdToPerm.p75)} days; ${formatInt(r.linked)} cases`,
+    sub: `half took ${formatInt(r.pwdToPerm.p25)} to ${formatInt(r.pwdToPerm.p75)} days, over ${formatInt(r.linked)} cases`,
     value: r.pwdToPerm.p50,
     text: `${formatInt(r.pwdToPerm.p50)} days`,
     tone,
@@ -35,7 +35,7 @@ export function PwdToPerm({
   const quickRow = (key: string, label: BarRow["label"], q: NonNullable<typeof mine.quiet>, tone?: BarRow["tone"]): BarRow => ({
     key,
     label,
-    sub: `typically ${formatInt(q.p50)} days after it ended; ${formatInt(q.n)} cases`,
+    sub: `typically ${formatInt(q.p50)} days after it ended, over ${formatInt(q.n)} cases`,
     value: (q.within / q.n) * 100,
     text: formatShareOf(q.within, q.n),
     tone,

@@ -113,11 +113,11 @@ export const ENTRIES: Entry[] = [
     gloss:
       "The analyst wants something clarified before deciding.",
     what:
-      "The analyst reviewing the application wants something clarified before deciding it. In DOL's queue language this is a request for information, and it is lighter than an audit: it asks a question rather than calling in the whole recruitment file.",
+      "The analyst reviewing the application wants something clarified before deciding it. In DOL's queue language this is a request for information. It's lighter than an audit, because it asks a question instead of calling in the whole recruitment file.",
     next:
       "The employer or its attorney answers and the case goes back to the analyst for a determination. Of the ones that have reached a decision, most were certified.",
     unsourced:
-      "The words \u201crequest for information\u201d and the acronym RFI appear nowhere in 20 CFR 656. The nearest regulatory hook is 656.20(d), which lets the certifying officer request supplemental information before making a determination, and it sets no deadline. That is why no response window is quoted here: the letter itself states the date, and that date is the one that counts. An audit is the separate, formal instrument under 656.20(a), with its own status and its own queue.",
+      "The words \u201crequest for information\u201d and the acronym RFI appear nowhere in 20 CFR 656. The nearest regulatory hook is 656.20(d), which lets the certifying officer request supplemental information before making a determination, and it sets no deadline. That's why no response window is quoted here. The letter itself states the date, and that date is the one that counts. An audit is the separate, formal instrument under 656.20(a), with its own status and its own queue.",
   },
   {
     status: null,
@@ -127,15 +127,15 @@ export const ENTRIES: Entry[] = [
     what:
       "A formal demand for the documentation behind the application: the recruitment report, the tear sheets, the notice of filing, the resumes, and why each U.S. applicant was rejected. The certifying officer can order one after reviewing the case, and some applications are selected at random for quality control.",
     next:
-      "The officer reviews what arrives and certifies or denies. Two different consequences hang off a failure to respond, and they are worth keeping apart: simply missing the date denies this application, while a substantial failure to provide the documentation can also require the employer to run supervised recruitment on its FUTURE filings for up to two years.",
+      "The officer reviews what arrives and certifies or denies. Two different consequences hang off a failure to respond, and they're worth keeping apart. Missing the date denies this application. A substantial failure to provide the documentation can also require the employer to run supervised recruitment on its FUTURE filings for up to two years.",
     deadline:
-      "30 days from the date on the audit letter. The officer may grant one extension of up to 30 days, at their discretion. Missing it costs more than the application: not responding in time counts as a refusal to exhaust administrative remedies, and the appeal to BALCA is then not available at all.",
+      "30 days from the date on the audit letter. The officer may grant one extension of up to 30 days, at their discretion. Missing it costs more than the application. Not responding in time counts as a refusal to exhaust administrative remedies, and the appeal to BALCA then isn't available at all.",
     cite: { label: "20 CFR 656.20", section: "656.20" },
   },
   {
     status: "PENDING AUDIT RESPONSE",
     gloss:
-      "The audit letter has gone out; DOL is waiting on documents.",
+      "The audit letter has gone out, and DOL is waiting on documents.",
     what:
       "An audit letter has gone out and DOL is waiting on the employer's documents.",
     next: "The certifying officer decides once the response arrives.",
@@ -150,14 +150,14 @@ export const ENTRIES: Entry[] = [
       "A notice about a deficiency DOL found in the recruitment the employer ran before filing.",
     next: "The employer responds and the analyst decides.",
     unsourced:
-      "We could not confirm what NORD stands for from any DOL or OFLC publication, so this page does not expand the acronym rather than guess at it. What is measurable is where these cases sit: every one of them was filed inside a single four-month window, which is the signature of a batch review rather than of something that happens continuously.",
+      "We couldn't confirm what NORD stands for from any DOL or OFLC publication, so this page doesn't expand the acronym or guess at it. The data does show where these cases sit: every one of them was filed inside a single four-month window. That's the signature of a batch review.",
   },
   {
     status: "SUPERVISED RECRUITMENT",
     gloss:
       "DOL takes over the recruitment and approves every step.",
     what:
-      "DOL takes over the recruitment. The employer drafts an advertisement, the certifying officer approves it and decides where it runs, applicants send their resumes to the officer rather than to the employer, and the employer reports back on each one.",
+      "DOL takes over the recruitment. The employer drafts an advertisement, and the certifying officer approves it and decides where it runs. Applicants send their resumes to the officer instead of the employer, and the employer reports back on each one.",
     next:
       "The officer reviews the recruitment report and decides. A newspaper advertisement has to run three consecutive days, one of them a Sunday.",
     deadline:
@@ -168,9 +168,9 @@ export const ENTRIES: Entry[] = [
     status: "APPLICATION ON HOLD",
     gloss:
       "Not moving, and no determination has been made.",
-    what: "The application is not moving and no determination has been made.",
+    what: "The application isn't moving, and no determination has been made.",
     unsourced:
-      "DOL publishes no definition of this status. It is worth knowing that almost every case carrying it belongs to a single employer, so it is unlikely to describe a condition that applies broadly.",
+      "DOL publishes no definition of this status. Almost every case carrying it belongs to a single employer, so it's unlikely to describe a condition that applies broadly.",
   },
   {
     status: "RECONSIDERATION APPEALS",
@@ -179,16 +179,16 @@ export const ENTRIES: Entry[] = [
     what:
       "After a denial, the employer asks the same certifying officer to look again. The request can only carry documents DOL already received, or documents the employer had no earlier chance to submit that existed when the application was filed and were kept on file.",
     next:
-      "The officer either reconsiders, or treats the request as a request for review and sends it to the Board. Reconsideration is not available at all where the denial came from disregarding a system prompt or a direct instruction.",
+      "The officer either reconsiders, or treats the request as a request for review and sends it to the Board. Reconsideration isn't available at all where the denial came from disregarding a system prompt or a direct instruction.",
     deadline: "30 days from the date the denial was issued.",
     cite: { label: "20 CFR 656.24(g)", section: "656.24" },
   },
   {
     status: "REQUEST FOR REVIEW",
     gloss:
-      "Asks a judge to look at the denial, not the officer.",
+      "Asks a judge, instead of the officer, to look at the denial.",
     what:
-      "The step that puts a denial in front of the Board. It goes to the certifying officer who issued the denial rather than to the Board directly, and the officer forwards the file. Reconsideration asks that officer to change their mind; a request for review asks a judge to.",
+      "The step that puts a denial in front of the Board. It goes to the certifying officer who issued the denial rather than to the Board directly, and the officer forwards the file. Reconsideration asks that officer to change their mind, and a request for review asks a judge to.",
     deadline:
       "30 days from the date of the determination. It has to identify the determination, set out the grounds, and attach the Final Determination. Letting both this window and the reconsideration window pass counts as a failure to exhaust administrative remedies, and the denial then becomes the final determination of the Secretary, which forecloses a federal court looking at it later.",
     cite: { label: "20 CFR 656.26", section: "656.26" },
@@ -382,9 +382,9 @@ export function StageGlossary({
         .
       </p>{" "}
       <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-        Deadlines run from the date on the letter, not from the day the status
-        changed or the day you read it here. This is a description of a federal
-        process and not legal advice.
+        Deadlines run from the date on the letter. The day the status changed
+        and the day you read it here don&apos;t count. This describes a federal
+        process and isn&apos;t legal advice.
       </p>
     </div>
   );

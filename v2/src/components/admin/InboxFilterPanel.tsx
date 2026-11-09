@@ -148,7 +148,7 @@ export function InboxFilterPanel({ data }: { data: InboxFilterData | undefined }
           Spam filter
         </h2>{" "}
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Mail to our addresses and the contact form. Held mail never reached your inbox; it&apos;s deleted 30 days
+          Mail to our addresses and the contact form. Held mail never reached your inbox, and it&apos;s deleted 30 days
           after it was held.
         </p>
       </div>

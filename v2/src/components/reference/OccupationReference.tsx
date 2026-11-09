@@ -127,7 +127,7 @@ export async function OccupationReference({
           subject={`${series ? `BLS ${series}` : "BLS"}${levelYear ? `, DOL wage year ${wageYearLabel(levelYear)}` : ""}`}
           caption={
             <>
-              The block is the middle half of what employers report paying everyone in this job, citizen or not; the
+              The block is the middle half of what employers report paying everyone in this job, citizen or not. The
               ticks under it are DOL&apos;s four prevailing wage levels for that metro, the floors a PERM or H-1B offer
               is held to.
               {permMedian != null ? " The marker on the national line is the median PERM offer above." : ""}
@@ -170,9 +170,9 @@ export async function OccupationReference({
           </ScrollBox>
           <FinePrint summary="How these figures fit together" className="mt-3">
             <p>
-              BLS surveys employers on what they pay everyone in a job; DOL builds its four levels from the same survey a
-              year later (the July 2026 wage year uses BLS&apos;s May 2025 estimates). DOL publishes levels by area, not
-              nationally, so the United States line has none. Levels are hourly in DOL&apos;s tables; here they&apos;re
+              BLS surveys employers on what they pay everyone in a job. DOL builds its four levels from the same survey a
+              year later (the July 2026 wage year uses BLS&apos;s May 2025 estimates). DOL publishes levels only by area,
+              so the United States line has none. Levels are hourly in DOL&apos;s tables, and here they&apos;re
               shown a year at 2,080 hours, as DOL computes them. The metros are the ones holding the most of this
               job&apos;s PERM filings, placed by Census&apos;s county files.
             </p>
@@ -186,7 +186,7 @@ export async function OccupationReference({
             DOL&apos;s levels for this job in {busiest.name}, year by year
           </h3>{" "}
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-            Each July DOL resets the four levels from BLS&apos;s newest survey; a determination keeps its year&apos;s.
+            Each July DOL resets the four levels from BLS&apos;s newest survey, and a determination keeps its year&apos;s.
           </p>
           {(() => {
             const years = [...history].sort((a, b) => b.wageYear - a.wageYear || (a.asCode ?? "").localeCompare(b.asCode ?? ""));

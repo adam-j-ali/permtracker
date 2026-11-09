@@ -214,7 +214,7 @@ function Provenance({ funnel }: { funnel: RfiFunnel | BlendedRfiFunnel }) {
         <b className="font-bold text-foreground">Two windows, pooled.</b>{" "}
         {base.everIssued.toLocaleString()} RFIs, {base.resolved.toLocaleString()}{" "}
         of them resolved, come from a third-party aggregate frozen at{" "}
-        {fmtDay(base.observedAt)}. On top of that we have watched{" "}
+        {fmtDay(base.observedAt)}. On top of that we&apos;ve watched{" "}
         {observed.newIssued.toLocaleString()} more be issued and{" "}
         {observed.resolved.toLocaleString()} resolve ourselves{since}.{" "}
         {observed.resolved > 0
@@ -223,7 +223,7 @@ function Provenance({ funnel }: { funnel: RfiFunnel | BlendedRfiFunnel }) {
           // this share moves slowly.
           ? `Our own observations are ${observedShare.toFixed(1)}% of the resolved total. An RFI takes months to resolve, so that share moves slowly.`
           : "None of ours have resolved yet, so the percentage above is still entirely theirs."}{" "}
-        The two windows do not overlap: the frozen half is never re-read, so no
+        The two windows don&apos;t overlap: the frozen half is never re-read, so no
         case is counted twice.
       </p>
     </MoreText>

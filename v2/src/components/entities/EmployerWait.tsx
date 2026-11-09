@@ -93,7 +93,7 @@ export function EmployerWait({
         </p>
       ) : null}{" "}
       <FinePrint summary="How this is counted" className="mt-2">
-        <p>Filing to decision, over decisions this site watched DOL make in the last {field?.windowDays ?? 90} days; withdrawals left out.</p>
+        <p>Filing to decision, over decisions this site watched DOL make in the last {field?.windowDays ?? 90} days, with withdrawals left out.</p>
       </FinePrint>
     </section>
   );

@@ -104,7 +104,7 @@ export function WarnOverview({ rows }: { rows: WarnNotice[] }) {
         {rest.length > 0 ? (
           <p className="mt-4 text-sm text-muted-foreground">
             {formatInt(rest.length)} more {rest.length === 1 ? "state" : "states"} hold {formatInt(restNotices)}{" "}
-            {restNotices === 1 ? "notice" : "notices"} from sponsors; filter the table by state to see them.
+            {restNotices === 1 ? "notice" : "notices"} from sponsors. Filter the table by state to see them.
           </p>
         ) : null}
       </figure>{" "}

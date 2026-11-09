@@ -204,5 +204,5 @@ export function howLongSentence(reading: DecidedReading | null, t: ProcessingTim
   const n = dolNow(t, line);
   const dol = n.days === null && n.frontier === null ? null : queueSentence(n);
   const parts = [waited, dol].filter((p): p is string => p !== null);
-  return parts.length ? parts.join(" ") : "DOL's figures couldn't be read just now; DOL's own page, flag.dol.gov/processingtimes, has them.";
+  return parts.length ? parts.join(" ") : "DOL's figures couldn't be read just now. DOL's own page, flag.dol.gov/processingtimes, has them.";
 }

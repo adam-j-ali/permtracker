@@ -193,7 +193,7 @@ describe("PriorityDateEstimator: USCIS chart guidance", () => {
     // Dated and attributed, or it is just an assertion.
     expect(screen.getByText(/read from uscis\.gov on August 25, 2026/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/publishes which chart controls, not the cutoff dates themselves/i),
+      screen.getByText(/publishes which chart controls\. It doesn't publish the cutoff dates themselves/i),
     ).toBeInTheDocument();
   });
 

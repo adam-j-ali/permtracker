@@ -45,8 +45,8 @@ export function DebarmentNotice({
     active.length > 0
       ? `A name matching ${pageName} is barred from filing today.`
       : upcoming.length > 0
-        ? `A name matching ${pageName} is barred from filing from ${day(upcoming[0]!.startDate)}. The period has not started yet.`
-        : `A name matching ${pageName} was barred from filing in the past; the period has ended.`;
+        ? `A name matching ${pageName} is barred from filing from ${day(upcoming[0]!.startDate)}. The period hasn't started yet.`
+        : `A name matching ${pageName} was barred from filing in the past. The period has ended.`;
   return (
     <aside id="debarment" className={cn(className, "border-2 border-foreground bg-card p-5 sm:p-6 shadow-hard")} aria-label="Debarment notice">
       <p className="text-sm font-bold text-muted-foreground">

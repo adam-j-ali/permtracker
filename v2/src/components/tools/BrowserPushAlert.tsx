@@ -101,7 +101,7 @@ export function BrowserPushAlert({ subscribePath, stopPath, fields, summary, exp
         message: /denied/i.test(m)
           ? "Notifications are blocked for this site in the browser's settings."
           : /not supported/i.test(m)
-            ? "This browser cannot receive notifications. On an iPhone, add the site to the home screen first."
+            ? "This browser can't receive notifications. On an iPhone, add the site to the home screen first."
             : /timed out/i.test(m)
               ? "The browser didn't answer. Reload the page and try once more."
               : "That didn't go through. Try again in a moment.",
@@ -125,7 +125,7 @@ export function BrowserPushAlert({ subscribePath, stopPath, fields, summary, exp
           // Nothing to do: the server side is what matters.
         }
         setStored(null);
-        setState({ kind: "off", message: "This browser will not be notified any more." });
+        setState({ kind: "off", message: "This browser won't be notified any more." });
       } else {
         setState({ kind: "refused", message: "That didn't go through. Try again in a moment." });
       }

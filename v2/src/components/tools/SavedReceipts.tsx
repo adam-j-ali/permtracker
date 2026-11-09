@@ -134,7 +134,7 @@ export function SavedReceipts({ current }: { current: string | null }) {
       ) : null}{" "}
       {list.length >= MAX_SAVED ? (
         <p className="mt-2 text-sm text-muted-foreground">
-          The list keeps {MAX_SAVED}; saving another drops the oldest.
+          The list keeps {MAX_SAVED}, so saving another drops the oldest.
         </p>
       ) : null}{" "}
       {blocked ? (

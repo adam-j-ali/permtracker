@@ -57,7 +57,7 @@ const REASON_LABEL = Object.fromEntries(REASONS.map((x) => [x.id, x.label])) as 
 const SOURCE_NOTE: Record<Row["source"], string> = {
   site: "",
   senja: ", on Senja",
-  alert: ", tapped in a case's alert email (stars only; shows as Case alert reader with the month)",
+  alert: ", tapped in a case's alert email (stars only, shown as Case alert reader with the month)",
 };
 
 type Filter = "all" | "waiting" | "posted" | "declined";
@@ -104,7 +104,7 @@ function ReviewCard({ r }: { r: Row }) {
       )}{" "}
       {r.privateNote ? (
         <div className="mt-3 border-2 border-dashed border-border p-3">
-          <p className="text-sm font-bold">Private note from the reviewer (never shown; deleted after 90 days)</p>{" "}
+          <p className="text-sm font-bold">Private note from the reviewer (never shown, and deleted after 90 days)</p>{" "}
           <p className="mt-1 whitespace-pre-line text-sm [overflow-wrap:anywhere]">{r.privateNote}</p>
         </div>
       ) : null}{" "}
@@ -143,7 +143,7 @@ function ReviewCard({ r }: { r: Row }) {
       </dl>{" "}
       {r.replaces ? (
         <p className="mt-2 text-sm">
-          {`It replaces this person's ${r.replaces.rating}-star tap from an alert email (${when(r.replaces.createdAt)}). Approving it removes the tap, so they count once; declining it puts the tap back in the queue.`}
+          {`It replaces this person's ${r.replaces.rating}-star tap from an alert email (${when(r.replaces.createdAt)}). Approving it removes the tap, so they count once. Declining it puts the tap back in the queue.`}
         </p>
       ) : null}{" "}
       {r.maybeSameAs ? (
@@ -187,7 +187,7 @@ function ReviewCard({ r }: { r: Row }) {
         <div className="mt-3">
           <p className="text-sm font-bold">
             Delete this review and its note for good? Use it when the reviewer asks, or for a test. Declining keeps the
-            rating and reason; this keeps nothing.
+            rating and reason, but deleting keeps nothing.
           </p>{" "}
           <div className="mt-2 flex flex-wrap gap-2">
             <button type="button" disabled={busy} onClick={() => run(() => remove({ id }))} className={`${BTN} bg-background`}>

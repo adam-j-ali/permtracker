@@ -38,7 +38,7 @@ describe('summarizeToolResult and limits', () => {
   it("says what a write did, from the server's read-back", () => {
     expect(summarizeToolResult('updateCase', JSON.stringify({ success: true, stage: 'ETA 9089, filed' }))).toBe('Saved, stage ETA 9089, filed');
     expect(summarizeToolResult('updateCase', JSON.stringify({ success: false, notSaved: ['Stage'] }))).toBe('Partly saved');
-    expect(summarizeToolResult('updateCase', JSON.stringify({ needsInfo: true, message: 'Need the date' }))).toBe('Needs a detail first; nothing changed');
+    expect(summarizeToolResult('updateCase', JSON.stringify({ needsInfo: true, message: 'Need the date' }))).toBe('Needs a detail first, so nothing changed');
     // A bulk close closes; it had read "Deleted".
     expect(summarizeToolResult('bulkArchiveCases', JSON.stringify({ successCount: 2 }))).toBe('Closed 2 cases');
   });

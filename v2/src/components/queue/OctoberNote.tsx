@@ -128,14 +128,14 @@ export function OctoberNote() {
           labor certifications using the FLAG system&hellip; between October 1,
           2025, through October 31, 2025&rdquo;. It extended affected response
           deadlines by 33 calendar days, the span during which staff,
-          &ldquo;officially recalled back to work on November 3&rdquo;, could
-          not accept or process applications.
+          &ldquo;officially recalled back to work on November 3&rdquo;,
+          couldn&rsquo;t accept or process applications.
         </p>{" "}
         <p>
           Our own counts land on those dates without being fitted to them. The
-          last ordinary day of determinations is 30 September; there are two in
-          the 30 days that follow; the filing system reopens on 31 October, the
-          day DOL announced the resumption; and ordinary volume returns on 3
+          last ordinary day of determinations is 30 September, and there are two in
+          the 30 days that follow. The filing system reopens on 31 October, the
+          day DOL announced the resumption. Ordinary volume returns on 3
           November, the day DOL says staff came back.
         </p>{" "}
         <p>

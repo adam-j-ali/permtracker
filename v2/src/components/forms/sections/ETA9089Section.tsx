@@ -110,7 +110,7 @@ function denialStatusLine(values: Partial<CaseFormData>): { text: string; late: 
     return {
       text: late
         ? `${what} was due ${date}, ${whenFromToday(due.date)}. With no request in time the denial is final, and a new application may be filed.`
-        : `${what} is due ${date}, ${whenFromToday(due.date)}. Request it in FLAG${due.kind === "review" ? ": one or the other, not both" : ""}.`,
+        : `${what} is due ${date}, ${whenFromToday(due.date)}. Request it in FLAG${due.kind === "review" ? ": only one of the two" : ""}.`,
       late,
     };
   }

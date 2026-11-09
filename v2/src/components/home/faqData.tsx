@@ -30,15 +30,15 @@ export const HOME_FAQS: HomeFaqItem[] = [
   {
     question: "What exactly does PERM Tracker do?",
     answer:
-      "Two things, both free. For anyone waiting on a case: look up a PERM, prevailing wage or H-1B LCA number, pending ones included, see the federal record and where DOL's queue stands, get an email when the status changes, and search every filing by employer, law firm, state or occupation, with no account. For attorneys, paralegals and HR teams: a case-management app that computes every deadline per case, with reminders, calendar sync, import and encrypted client data.",
+      "Two things, both free. Anyone waiting on a case can look up a PERM, prevailing wage or H-1B LCA number, pending ones included. They see the federal record and where DOL's queue stands, and they can get an email when the status changes. They can also search every filing by employer, law firm, state or occupation, with no account. For attorneys, paralegals and HR teams, there's a case-management app that computes every deadline per case, with reminders, calendar sync, import and encrypted client data.",
     rich: (
       <>
-        Two things, both free. For anyone waiting on a case:{" "}
+        Two things, both free. Anyone waiting on a case can{" "}
         <Link href="/perm-case-status" className="link">look up a PERM, prevailing wage or H-1B LCA number</Link>,
-        pending ones included, see the federal record and where DOL&apos;s queue
-        stands, get an email when the status changes, and search every filing by
+        pending ones included. They see the federal record and where DOL&apos;s queue
+        stands, and they can get an email when the status changes. They can also search every filing by
         employer, law firm, state or occupation, with no account. For attorneys,
-        paralegals and HR teams:{" "}
+        paralegals and HR teams, there&apos;s{" "}
         <Link href="/for-attorneys" className="link">a case-management app</Link>{" "}
         that computes every deadline per case, with reminders, calendar sync,
         import and encrypted client data.
@@ -48,13 +48,13 @@ export const HOME_FAQS: HomeFaqItem[] = [
   {
     question: "Is PERM Tracker really free?",
     answer:
-      "Yes. No credit card and no case limit. Looking up a case, reading the data pages and setting an email alert need no account at all; managing your own caseload with computed deadlines takes a free account. Optional paid features may come later; the data, the lookup, the calculators and the core deadline tracking stay free.",
+      "Yes. No credit card and no case limit. Looking up a case, reading the data pages and setting an email alert need no account at all. Managing your own caseload with computed deadlines takes a free account. Optional paid features may come later, but the data, the lookup, the calculators and the core deadline tracking stay free.",
     rich: (
       <>
         Yes. No credit card and no case limit. Looking up a case, reading the
-        data pages and setting an email alert need no account at all; managing
+        data pages and setting an email alert need no account at all. Managing
         your own caseload with computed deadlines takes a free account. Optional
-        paid features may come later; the data, the lookup, the calculators and
+        paid features may come later, but the data, the lookup, the calculators and
         the core deadline tracking stay free.
       </>
     ),
@@ -62,14 +62,14 @@ export const HOME_FAQS: HomeFaqItem[] = [
   {
     question: "Can I check my PERM status without an account?",
     answer:
-      "Yes. Enter the case number on the homepage or on the case status page and it shows DOL's current status, when it was last seen, how many cases DOL is working ahead of yours, and an estimate when the data supports one. It takes all three DOL numbers: a PERM case (G- or A-), a prevailing wage request (P-), or an H-1B LCA (I-). From there you can set a free email alert for the next change.",
+      "Yes. Enter the case number on the homepage or on the case status page, and it shows DOL's current status and when it was last seen. It also shows how many cases DOL is working ahead of yours, and an estimate when the data supports one. It takes all three DOL numbers: a PERM case (G- or A-), a prevailing wage request (P-), or an H-1B LCA (I-). From there you can set a free email alert for the next change.",
     rich: (
       <>
         Yes. Enter the case number on the homepage or on{" "}
         <Link href="/perm-case-status" className="link">the case status page</Link>{" "}
-        and it shows DOL&apos;s current status, when it was last seen, how many
-        cases DOL is working ahead of yours, and an estimate when the data
-        supports one. It takes all three DOL numbers: a PERM case (G- or A-), a
+        and it shows DOL&apos;s current status and when it was last seen. It also
+        shows how many cases DOL is working ahead of yours, and an estimate when
+        the data supports one. It takes all three DOL numbers: a PERM case (G- or A-), a
         prevailing wage request (P-), or an H-1B LCA (I-). From there you can
         set a free email alert for the next change.
       </>
@@ -79,7 +79,7 @@ export const HOME_FAQS: HomeFaqItem[] = [
   {
     question: "What does the case-management app do for attorneys and HR teams?",
     answer:
-      "Enter a case's dates once and every deadline comes out computed under 20 CFR 656: prevailing wage expiration, recruitment clocks, the 30-180 day ETA 9089 filing window, audit and RFI response dates, and the I-140 filing cutoff. Change one date and the downstream dates recalculate. Email and push reminders run 1 to 30 days out with quiet hours and calendar sync, a weekly case summary arrives on Mondays in any week something changed, and an AI assistant answers questions over your own cases.",
+      "Enter a case's dates once and every deadline comes out computed under 20 CFR 656: prevailing wage expiration, recruitment clocks, the 30-180 day ETA 9089 filing window, audit and RFI response dates, and the I-140 filing cutoff. Change one date and the downstream dates recalculate. Email and push reminders run 1 to 30 days out with quiet hours and calendar sync. A weekly case summary arrives on Mondays in any week something changed, and an AI assistant answers questions over your own cases.",
     rich: (
       <>
         Enter a case&apos;s dates once and every deadline comes out computed
@@ -87,7 +87,7 @@ export const HOME_FAQS: HomeFaqItem[] = [
         30-180 day ETA 9089 filing window, audit and RFI response dates, and the
         I-140 filing cutoff. Change one date and the downstream dates
         recalculate. Email and push reminders run 1 to 30 days out with quiet
-        hours and calendar sync, a weekly case summary arrives on the same day each
+        hours and calendar sync. A weekly case summary arrives on the same day each
         week, and an
         AI assistant answers questions over your own cases.{" "}
         <Link href="/for-attorneys" className="link">How the software works &rarr;</Link>
@@ -97,14 +97,14 @@ export const HOME_FAQS: HomeFaqItem[] = [
   {
     question: "Is my client data secure?",
     answer:
-      "Yes. Case data is encrypted at rest with AES-256-GCM, sessions expire after 30 minutes of inactivity, and access is isolated per account: no other firm can see your cases. Privacy Mode hides sensitive fields during screen sharing. The public data pages carry no client data at all, only DOL's published records.",
+      "Yes. Case data is encrypted at rest with AES-256-GCM, and sessions expire after 30 minutes of inactivity. Access is isolated per account, so no other firm can see your cases. Privacy Mode hides sensitive fields during screen sharing. The public data pages carry only DOL's published records, with no client data at all.",
     rich: (
       <>
-        Yes. Case data is encrypted at rest with AES-256-GCM, sessions expire
-        after 30 minutes of inactivity, and access is isolated per account: no
+        Yes. Case data is encrypted at rest with AES-256-GCM, and sessions expire
+        after 30 minutes of inactivity. Access is isolated per account, so no
         other firm can see your cases. Privacy Mode hides sensitive fields during
-        screen sharing. The public data pages carry no client data at all, only
-        DOL&apos;s published records.{" "}
+        screen sharing. The public data pages carry only DOL&apos;s published
+        records, with no client data at all.{" "}
         <Link href="/security" className="link">Security details &rarr;</Link>
       </>
     ),

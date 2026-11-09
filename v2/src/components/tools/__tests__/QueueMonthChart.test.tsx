@@ -72,7 +72,7 @@ describe("QueueMonthChart", () => {
       .toBeInTheDocument();
     // The cliff is described as real data, not apologised for as a gap.
     expect(
-      screen.getByText(/what the records contain, not a gap in them/),
+      screen.getByText(/what the records contain\. It isn't a gap in them/),
     ).toBeInTheDocument();
   });
 

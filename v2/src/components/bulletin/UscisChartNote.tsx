@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { monthYear } from "@convex/lib/months";
 
 const MEANS: Record<UscisChart, string> = {
-  "Dates for Filing": "A priority date before this chart's cutoff can file now; approval still waits for the Final Action date.",
+  "Dates for Filing": "A priority date before this chart's cutoff can file now, but approval still waits for the Final Action date.",
   "Final Action Dates": "A priority date has to be before the Final Action cutoff to file.",
 };
 

@@ -423,7 +423,7 @@ export default function ApiKeysSection() {
           <DialogHeader>
             <DialogTitle>Revoke {confirm?.name}?</DialogTitle>
             <DialogDescription>
-              Anything using it stops working within a minute. This can&apos;t be undone; you can make a new key after.
+              Anything using it stops working within a minute. This can&apos;t be undone, but you can make a new key after.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

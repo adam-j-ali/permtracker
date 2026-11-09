@@ -227,13 +227,13 @@ export function refusalText(why: Refusal): string {
         "worksite state or occupation."
       );
     case "one-case":
-      return "A case number finds one case, so there is nothing left to narrow.";
+      return "A case number finds one case, so there's nothing left to narrow.";
     case "number-names-program":
       return "The case number already says which program it is.";
     case "stage-live-only":
       // Short on purpose: it prints under up to seven controls at once. The
       // full explanation sits once, under the stage select.
-      return "Not on DOL's live record; it arrives when DOL publishes the case.";
+      return "Not on DOL's live record. It arrives when DOL publishes the case.";
     case "stage-pending":
       return "A case at a review stage is still open by definition, so the outcome is pending.";
     case "stage-perm":

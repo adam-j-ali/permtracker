@@ -64,7 +64,7 @@ function Headline({ r }: { r: QuarterReport }) {
         icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />}
         trend={quarterDaysMoved(t.medianDays, p.medianDays)}
         value={t.medianDays === null ? "None" : formatInt(t.medianDays)}
-        note={t.p90Days === null ? "the median" : `the median; one in ten took ${formatInt(t.p90Days)} or more`}
+        note={t.p90Days === null ? "the median" : `the median, and one in ten took ${formatInt(t.p90Days)} or more`}
       />{" "}
       <Figure
         label="Offered wage, certified cases"

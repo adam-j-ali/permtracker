@@ -292,11 +292,11 @@ describe("FilterableStatTable", () => {
     // empty-state cell, and it spans every column rather than filling them.
     const body = bodyOrder();
     expect(body).toHaveLength(1);
-    expect(body[0]).toMatch(/There is more below/);
+    expect(body[0]).toMatch(/There's more below/);
     // And the empty cell must not say "nothing matches that" over results
     // that are sitting directly underneath it.
     expect(screen.queryByText(/Nothing matches that/)).not.toBeInTheDocument();
-    expect(screen.getByText(/There is more below/)).toBeInTheDocument();
+    expect(screen.getByText(/There's more below/)).toBeInTheDocument();
   });
 
   it("keeps the ordinary empty message when there is nothing extra either", async () => {
@@ -319,7 +319,7 @@ describe("FilterableStatTable", () => {
     await waitFor(() =>
       expect(screen.getByText(/Nothing matches that/)).toBeInTheDocument(),
     );
-    expect(screen.queryByText(/There is more below/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/There's more below/)).not.toBeInTheDocument();
   });
 
   /**

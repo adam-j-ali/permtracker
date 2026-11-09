@@ -82,7 +82,7 @@ export function rateTip(r: RateRow, baseline: number): string {
     r.denied === undefined
       ? `${formatInt(r.decided)} decided`
       : `${formatInt(r.denied)} denied of ${formatInt(r.decided)} decided`,
-    ci ? `95% range ${ci.lo.toFixed(2)}–${ci.hi.toFixed(2)}%` : null,
+    ci ? `95% range ${ci.lo.toFixed(2)} to ${ci.hi.toFixed(2)}%` : null,
     `Field baseline ${baseline.toFixed(2)}%`,
   ]
     .filter(Boolean)
@@ -269,7 +269,7 @@ export function RateTable({
                 {" "}</td>
                 <td className="px-3 py-2.5 text-right tabular-nums">{r.rate.toFixed(2)}%{" "}</td>
                 <td className="hidden px-3 py-2.5 text-right tabular-nums text-muted-foreground sm:table-cell">
-                  {ci ? `${ci.lo.toFixed(2)}–${ci.hi.toFixed(2)}%` : "—"}
+                  {ci ? `${ci.lo.toFixed(2)} to ${ci.hi.toFixed(2)}%` : "—"}
                 {" "}</td>
                 <td className="px-3 py-2.5 text-right tabular-nums">
                   {r.denied === undefined ? "—" : formatInt(r.denied)}
@@ -408,7 +408,7 @@ export function RankedRateViews({
         },
         render: (r) => {
           const ci = wilsonInterval(r.denied, r.decided);
-          return ci ? `${ci.lo.toFixed(2)}–${ci.hi.toFixed(2)}%` : "—";
+          return ci ? `${ci.lo.toFixed(2)} to ${ci.hi.toFixed(2)}%` : "—";
         },
       },
       {

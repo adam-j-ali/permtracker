@@ -82,8 +82,8 @@ export function ChatHistory({
       conversations.length > 0 &&
       confirm(
         atListLimit
-          ? 'Delete all your conversations permanently? This cannot be undone.'
-          : `Delete all ${conversations.length} conversation${conversations.length > 1 ? 's' : ''} permanently? This cannot be undone.`
+          ? "Delete all your conversations permanently? This can't be undone."
+          : `Delete all ${conversations.length} conversation${conversations.length > 1 ? 's' : ''} permanently? This can't be undone.`
       )
     ) {
       await deleteAllConversations({});

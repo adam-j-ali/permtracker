@@ -73,7 +73,7 @@ export const PREDICTIONS: Prediction[] = [
     windowFrom: "2026-09-01",
     windowTo: "2026-11-30",
     note:
-      "The first case recorded by hand, as /perm-case-status showed it on August 28, 2026. The next day the estimator gained a measured employer-initial shift, worth +2 days for this employer; the prediction of record is the earlier one and the shift does not move it outside its window.",
+      "The first case recorded by hand, as /perm-case-status showed it on August 28, 2026. The next day the estimator gained a measured employer-initial shift, worth +2 days for this employer. The prediction of record is the earlier one, and the shift doesn't move it outside its window.",
   },
   {
     recorded: "2026-09-13",
@@ -91,7 +91,7 @@ export const PREDICTIONS: Prediction[] = [
         anchorIso: "2026-09-20",
         upperIso: "2026-09-21",
         lowerIso: null,
-        model: "cases ahead / 650 a day; upper bound is remaining x 1.15, and they publish no lower bound",
+        model: "cases ahead / 650 a day. Upper bound is remaining x 1.15, and they publish no lower bound",
       },
       {
         site: "rival-b",
@@ -118,7 +118,7 @@ export const PREDICTIONS: Prediction[] = [
         anchorIso: "2026-10-26",
         upperIso: "2026-11-01",
         lowerIso: null,
-        model: "cases ahead / 650 a day; upper bound is remaining x 1.15, and they publish no lower bound",
+        model: "cases ahead / 650 a day. Upper bound is remaining x 1.15, and they publish no lower bound",
       },
       {
         site: "rival-b",
@@ -145,7 +145,7 @@ export const PREDICTIONS: Prediction[] = [
         anchorIso: "2026-11-17",
         upperIso: "2026-11-26",
         lowerIso: null,
-        model: "cases ahead / 650 a day; upper bound is remaining x 1.15, and they publish no lower bound",
+        model: "cases ahead / 650 a day. Upper bound is remaining x 1.15, and they publish no lower bound",
       },
       {
         site: "rival-b",
@@ -172,7 +172,7 @@ export const PREDICTIONS: Prediction[] = [
         anchorIso: "2026-12-23",
         upperIso: "2027-01-07",
         lowerIso: null,
-        model: "cases ahead / 650 a day; upper bound is remaining x 1.15, and they publish no lower bound",
+        model: "cases ahead / 650 a day. Upper bound is remaining x 1.15, and they publish no lower bound",
       },
       {
         site: "rival-b",

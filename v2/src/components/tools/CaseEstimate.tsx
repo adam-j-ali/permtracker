@@ -100,7 +100,7 @@ export function CaseEstimatePanel({
             {" "}(the median).{" "}
             <span className="text-muted-foreground">
               Measured over {est.stageDuration.eligible.toLocaleString("en-US")} cases followed from arrival: time
-              at this stage, not time to a decision.
+              at this stage. It isn&apos;t time to a decision.
             </span>
           </p>
         ) : null}{" "}
@@ -110,7 +110,7 @@ export function CaseEstimatePanel({
             <b className="font-semibold text-foreground">
               {Math.round(est.nextStep.share * 100)}%
             </b>{" "}
-            of the {est.nextStep.observed.toLocaleString("en-US")} cases we have
+            of the {est.nextStep.observed.toLocaleString("en-US")} cases we&apos;ve
             watched leave this stage went to{" "}
             <b className="font-semibold text-foreground">
               {est.nextStep.to.toLowerCase()}
@@ -119,7 +119,7 @@ export function CaseEstimatePanel({
               ? ", back into the ordinary queue, where the line's position applies again."
               : "."}{" "}
             <span className="text-muted-foreground">
-              How long that takes is not something we can measure yet.
+              We can&apos;t measure how long that takes yet.
             </span>
           </p>
         ) : null}
@@ -152,7 +152,7 @@ export function CaseEstimatePanel({
             <b>{fmtDate(est.earliestDate)}</b> and <b>{fmtDate(est.latestDate)}</b>.{" "}
           </>
         ) : null}
-        {est.totalDays.toLocaleString("en-US")} days from filing. An estimate, not a promise.
+        {est.totalDays.toLocaleString("en-US")} days from filing. It&apos;s an estimate. It isn&apos;t a promise.
       </p>{" "}
       {est.stage ? (
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-soft">{est.stage.note}</p>

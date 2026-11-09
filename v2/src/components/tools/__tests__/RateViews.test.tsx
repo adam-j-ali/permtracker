@@ -69,7 +69,7 @@ describe("wilsonInterval", () => {
 describe("RateTable", () => {
   it("prints the interval beside every rate", () => {
     render(<RateTable rows={SMALL} baseline={2.57} caption="Test" />);
-    expect(screen.getByText("49.30–59.23%")).toBeInTheDocument();
+    expect(screen.getByText("49.30 to 59.23%")).toBeInTheDocument();
   });
 
   it("re-orders the rows when a column heading is pressed", () => {

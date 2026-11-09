@@ -76,7 +76,7 @@ export function CaseNumberField({ onDecode, warning, className }: CaseNumberFiel
       <div id={helpId}>
         {showError ? (
           <p className="mt-2 text-sm font-bold text-destructive">
-            That is not a PERM case number. They look like G-100-26125-868956.
+            That isn&apos;t a PERM case number. They look like G-100-26125-868956.
           </p>
         ) : parsed ? (
           <>

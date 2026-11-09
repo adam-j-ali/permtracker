@@ -1275,7 +1275,7 @@ export function UnifiedCaseSearch({
               <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-l-4 border-border pl-3">
                 <p className="text-sm font-semibold leading-relaxed">
                   The worker&apos;s details are off while a prevailing wage source is set: that field is in
-                  DOL&apos;s LCA file, and they are in the PERM file. Clear the wage source to use them.
+                  DOL&apos;s LCA file, and they&apos;re in the PERM file. Clear the wage source to use them.
                 </p>{" "}
                 {/* The way out, right where it's named, rather than a hunt for the control further down. */}
                 <button
@@ -1407,7 +1407,7 @@ export function UnifiedCaseSearch({
           <p className="text-base leading-relaxed">
             <b className="font-bold">{typedCaseNumber} is a case number.</b>{" "}
             The search below reads this site&apos;s own copy of DOL&apos;s
-            records. If it is not there, the status lookup asks DOL live and
+            records. If it isn&apos;t there, the status lookup asks DOL live and
             answers even for a filing nothing here has seen yet.
           </p>{" "}
           <p className="mt-3">
@@ -1431,8 +1431,8 @@ export function UnifiedCaseSearch({
           <span>
             <b className="font-bold">
               {unreadMonths.length === 1
-                ? `"${unreadMonths[0]}" was not used.`
-                : `${unreadMonths.join(" and ")} were not used.`}
+                ? `"${unreadMonths[0]}" wasn't used.`
+                : `${unreadMonths.join(" and ")} weren't used.`}
             </b>{" "}
             Those boxes take a month written as YYYY-MM, so 2026-03 rather than
             March 2026. Anything else is left out of the search.
@@ -1446,8 +1446,8 @@ export function UnifiedCaseSearch({
           <span>
             <b className="font-bold">
               {unreadFields.length === 1
-                ? `"${unreadFields[0]}" was not used.`
-                : `${unreadFields.slice(0, -1).join(", ")} and ${unreadFields.at(-1)} were not used.`}
+                ? `"${unreadFields[0]}" wasn't used.`
+                : `${unreadFields.slice(0, -1).join(", ")} and ${unreadFields.at(-1)} weren't used.`}
             </b>{" "}
             A NAICS code is 2 to 6 digits. The other boxes take up to 60 letters,
             digits, spaces and the punctuation names use (. , &apos; ( ) &amp; / -).
@@ -1565,8 +1565,8 @@ export function UnifiedCaseSearch({
         <div className="bg-tint p-4 border-2 border-border">
           <p className="text-base font-bold">
             {droppedList.length === 1
-              ? "One filter was not applied."
-              : `${droppedList.length} filters were not applied.`}
+              ? "One filter wasn't applied."
+              : `${droppedList.length} filters weren't applied.`}
           </p>{" "}
           <ul className="mt-2 space-y-1">
             {droppedList.map((k) => (
@@ -1592,8 +1592,8 @@ export function UnifiedCaseSearch({
                 programs. */}
             {data.skipped.live ? (
               <>
-                <b className="font-bold">Open filings are not in this answer.</b>{" "}
-                DOL does not put the {data.skipped.because.join(", ")} on a case
+                <b className="font-bold">Open filings aren&apos;t in this answer.</b>{" "}
+                DOL doesn&apos;t put the {data.skipped.because.join(", ")} on a case
                 until it publishes it in a quarterly file, so searching by that
                 reads the published record only.
               </>
@@ -1613,8 +1613,8 @@ export function UnifiedCaseSearch({
         <div role="status" className="bg-tint p-4 border-2 border-border">
           <p className="text-base leading-relaxed">
             <b className="font-bold">Part of the record couldn&apos;t be read just now:</b>{" "}
-            {data.unread?.join(", ")}. This answer may be missing cases from it.
-            Searching again in a minute usually reaches it.
+            {data.unread?.join(", ")}. This answer may be missing cases from it, and searching
+            again in a minute usually reaches it.
           </p>
         </div>
       ) : null}
@@ -1625,7 +1625,7 @@ export function UnifiedCaseSearch({
             <b className="font-bold">Only published PERM cases are in this answer.</b>{" "}
             The {data.permOnly?.join(", ")}{" "}
             {data.permOnly?.length === 1 ? "is a field" : "are fields"} of
-            DOL&apos;s PERM file alone; wage requests, LCAs and H-2A, H-2B and CW-1 filings don&apos;t carry{" "}
+            DOL&apos;s PERM file alone. Wage requests, LCAs and H-2A, H-2B and CW-1 filings don&apos;t carry{" "}
             {data.permOnly?.length === 1 ? "it" : "them"}.
           </p>
         </div>
@@ -1635,7 +1635,7 @@ export function UnifiedCaseSearch({
         <div className="bg-tint p-4 border-2 border-border">
           <p className="text-base leading-relaxed">
             <b className="font-bold">Only published H-1B LCAs are in this answer.</b>{" "}
-            The prevailing wage source is a field of DOL&apos;s LCA file alone; PERM,
+            The prevailing wage source is a field of DOL&apos;s LCA file alone. PERM,
             wage requests and H-2A, H-2B and CW-1 filings don&apos;t carry it.
           </p>
         </div>
@@ -1854,8 +1854,8 @@ export function UnifiedCaseSearch({
 
           {data.windowed ? (
             <p className="mt-4 max-w-3xl bg-tint p-4 text-base leading-relaxed border-2 border-border">
-              <b className="font-bold">These filters covered this employer&apos;s newest filings, not its whole
-              record.</b>{" "}
+              <b className="font-bold">These filters covered only this employer&apos;s newest
+              filings.</b>{" "}
               Give the full employer name, or add a filing month, to reach older ones.
             </p>
           ) : null}{" "}
@@ -1868,10 +1868,10 @@ export function UnifiedCaseSearch({
               : ""}{" "}
             {data.orderScope === "complete"
               ? `${ORDER_LABEL[data.order ?? "filed-desc"]} covers every match, because every match is here.`
-              : `${ORDER_LABEL[data.order ?? "filed-desc"]} arranges the rows fetched, not every case that matched, so "highest wage" means highest among these rows.`}{" "}
+              : `${ORDER_LABEL[data.order ?? "filed-desc"]} arranges only the rows fetched, so "highest wage" means highest among these rows.`}{" "}
             A column header reorders this page without searching again. A wage,
             a law firm, a worksite and an occupation appear once DOL has
-            published the case in a quarterly file; open filings carry none of
+            published the case in a quarterly file. Open filings carry none of
             them.
           </p>
         </section>
@@ -1887,7 +1887,7 @@ export function UnifiedCaseSearch({
         <figure className="border-2 border-dashed border-foreground/40 p-4 sm:p-5">
           <figcaption className="font-heading text-lg font-bold">One row per case, from every program</figcaption>{" "}
           <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Open filings come from DOL&apos;s case-status service; decided ones carry the wage from its quarterly
+            Open filings come from DOL&apos;s case-status service. Decided ones carry the wage from its quarterly
             files. A case in both shows once.
           </p>{" "}
           <div aria-hidden="true" className="mt-4 space-y-2">

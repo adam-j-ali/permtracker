@@ -126,7 +126,7 @@ export function BulletinRelease({ rows, summary, next, measured, today: todayPro
           {summary.setAside > 0
             ? ` ${summary.setAside} more ${summary.setAside === 1 ? "was" : "were"} first captured only after their month began, mostly because the archive didn't crawl these pages before December 2017, so they say nothing about the day and aren't counted. A bulletin published in a month's last days could be missed the same way, which makes these days read a little early.`
             : ""}{" "}
-          Measured {measured}; the archive has captured no bulletin since July 2026, when the State Department began
+          Measured {measured}. The archive has captured no bulletin since July 2026, when the State Department began
           refusing its crawler.
         </p>
       </MoreText>

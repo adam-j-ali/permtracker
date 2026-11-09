@@ -586,7 +586,7 @@ export function CaseBrowser({
              disclosure files cannot show for another quarter. */
           <div className="mt-4 bg-tint p-4 border-2 border-border">
             <p className="text-base font-bold">
-              Found in DOL&apos;s live system - not yet in the published files.
+              Found in DOL&apos;s live system, and not yet in the published files.
             </p>{" "}
             <p className="mt-2 text-base leading-relaxed text-muted-foreground">
               {liveHit.employerName ?? "This case"}
@@ -918,8 +918,8 @@ export function CaseBrowser({
           <div className="mt-4 bg-tint p-4 border-2 border-border">
             <p className="text-base font-bold">
               {narrow.title || narrow.from || narrow.to
-                ? "Matching filings - live from DOL, not yet in the published files"
-                : "Newest filings - live from DOL, not yet in the published files"}
+                ? "Matching filings, live from DOL and not yet in the published files"
+                : "Newest filings, live from DOL and not yet in the published files"}
             </p>{" "}
             <ul className="mt-2 divide-y divide-border/60">
               {liveHits.map((h) => (

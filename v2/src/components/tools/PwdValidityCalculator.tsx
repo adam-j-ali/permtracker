@@ -57,7 +57,7 @@ export function PwdValidityCalculator() {
         <div>
           <Label htmlFor={detId}>Determination date</Label>{" "}
           <DateInput id={detId} value={det} onChange={(e) => setDet(e.target.value)} className="mt-1.5" />{" "}
-          <p className="mt-1 text-sm text-muted-foreground">The date on the ETA-9141 determination, not the date it was requested.</p>
+          <p className="mt-1 text-sm text-muted-foreground">The date on the ETA-9141 determination. The day it was requested doesn&apos;t count here.</p>
         </div>
       </div>{" "}
 

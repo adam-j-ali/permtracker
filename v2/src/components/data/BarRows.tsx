@@ -211,7 +211,7 @@ export function QuarterlyEmpty({ file, children }: { file: string; children?: Re
     <section className="mt-8 bg-sage p-6 sm:p-8 border-2 border-border">
       <h2 className="font-heading text-xl font-bold">Nothing loaded yet</h2>{" "}
       <p className="mt-3 max-w-2xl leading-relaxed text-muted-foreground">
-        USCIS&apos;s quarterly file ({file}) has not been read into this site&apos;s
+        USCIS&apos;s quarterly file ({file}) hasn&apos;t been read into this site&apos;s
         record yet, so there are no figures to show. The file itself is on{" "}
         <a
           href="https://www.uscis.gov/tools/reports-and-studies/immigration-and-citizenship-data"

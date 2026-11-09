@@ -205,7 +205,7 @@ describe("readOurs on the cases the queue had passed", () => {
       },
     };
     const out = readOurs(cell({ graded: 0 }), null, null, bt).join(" ");
-    expect(out).toContain('On 1,180 cases DOL\'s queue had already passed, counting the ones still waiting at the days they\'re late, our rate rule was at least 6 days off, against 11 days for answering "today".');
+    expect(out).toContain('On 1,180 cases DOL\'s queue had already passed, our rate rule was at least 6 days off, against 11 days for answering "today". That counts the ones still waiting at the days they\'re late.');
   });
 });
 

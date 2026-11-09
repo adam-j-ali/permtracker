@@ -528,7 +528,7 @@ export function SearchPalette({
 
           {articlesFailed && articles.length === 0 ? (
             <p className="px-3 py-2 text-sm text-muted-foreground">
-              Articles couldn&apos;t load this time; close search and open it again to retry.
+              Articles couldn&apos;t load this time. Close search and open it again to retry.
             </p>
           ) : null}
           {articles.length > 0 ? (

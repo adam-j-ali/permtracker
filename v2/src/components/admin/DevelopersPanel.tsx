@@ -113,8 +113,8 @@ export function DevelopersPanel() {
         {(webhooks.paused > 0 || webhooks.failedSince > 0) && (
           <p className="mt-2 text-base text-destructive">
             {webhooks.paused > 0
-              ? `${formatInt(webhooks.paused)} endpoint${webhooks.paused === 1 ? " is" : "s are"} paused after a day of failures; its owner was emailed once.`
-              : "Some deliveries failed in the last day; they're retried for 24 hours."}
+              ? `${formatInt(webhooks.paused)} endpoint${webhooks.paused === 1 ? " is" : "s are"} paused after a day of failures, and its owner was emailed once.`
+              : "Some deliveries failed in the last day. They're retried for 24 hours."}
           </p>
         )}
       </section>{" "}

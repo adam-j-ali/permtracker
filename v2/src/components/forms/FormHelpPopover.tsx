@@ -76,7 +76,7 @@ export function FormHelpPanel() {
               This form tracks dates through the four stages of the PERM labor certification process. Fill in dates as you get them, you don&rsquo;t need to complete everything at once.
             </p>
             <ul className="mt-2 space-y-1 text-muted-foreground list-disc pl-4">
-              <li>Sections unlock progressively as you enter prerequisite dates</li>{" "}
+              <li>Each section opens once you enter the dates it depends on</li>{" "}
               <li>Some dates auto-calculate (marked with an &ldquo;auto&rdquo; badge)</li>{" "}
               <li>Save anytime and come back later</li>{" "}
               <li>A green checkmark appears when a section is complete</li>
@@ -91,11 +91,11 @@ export function FormHelpPanel() {
             </p>
             <FieldList items={[
               { field: "Filing date", desc: "When you submitted the PWD request to DOL" },
-              { field: "Determination date", desc: "When DOL issued the determination. Entering this unlocks the Recruitment section." },
+              { field: "Determination date", desc: "When DOL issued the determination. Entering this opens the Recruitment section." },
               { field: "Expiration date", desc: "Auto-calculated: determination + 1 year. All recruitment must complete before this date." },
               { field: "Wage Amount & Level", desc: "The prevailing wage amount and level (I-IV) from the determination" },
             ]} />
-            <Example>Enter the determination date first, it triggers the expiration auto-calculation and unlocks Recruitment.</Example>
+            <Example>Enter the determination date first. It fills in the expiration and opens Recruitment.</Example>
           </section>
 
           {/* Recruitment Section */}
@@ -121,12 +121,12 @@ export function FormHelpPanel() {
           <section>
             <SectionHeading>3. ETA 9089 (PERM Application)</SectionHeading>
             <p className="text-muted-foreground mb-2">
-              The PERM application itself. This section unlocks when all recruitment is complete AND the 30-day quiet period has passed.
+              The PERM application itself. This section opens when all recruitment is complete AND the 30-day quiet period has passed.
             </p>
             <FieldList items={[
               { field: "Filing date", desc: "When the ETA 9089 was filed with DOL" },
               { field: "Case number", desc: "The DOL case number (e.g., A-12345-67890)" },
-              { field: "Certification date", desc: "When DOL certified the application. Fills in the expiration (certification + 179 days, the date DOL prints) and unlocks I-140." },
+              { field: "Certification date", desc: "When DOL certified the application. Fills in the expiration (certification + 179 days, the date DOL prints) and opens I-140." },
               { field: "Audit", desc: "If DOL audits the case, enter the audit received and submitted dates" },
             ]} />
             <h5 className="font-bold text-sm mt-3 mb-1">RFI (Request for Information)</h5>{" "}
@@ -170,7 +170,7 @@ export function FormHelpPanel() {
               Fields with an &ldquo;auto&rdquo; badge calculate automatically when you enter their trigger date:
             </p>
             <ul className="space-y-1 text-muted-foreground list-disc pl-4">
-              <li><strong className="text-foreground">PWD expiration</strong>: determined Apr 2 to Jun 30, 90 days later; otherwise the next June 30 (20 CFR 656.40(c))</li>{" "}
+              <li><strong className="text-foreground">PWD expiration</strong>: determined Apr 2 to Jun 30, 90 days later. Otherwise, the next June 30 (20 CFR 656.40(c))</li>{" "}
               <li><strong className="text-foreground">Job order end</strong>: Start date + 30 calendar days</li>{" "}
               <li><strong className="text-foreground">NOF end</strong>: Start date + 10 business days (skips weekends & federal holidays)</li>{" "}
               <li><strong className="text-foreground">ETA 9089 expiration</strong>: Certification date + 179 days (the date DOL prints)</li>{" "}
@@ -183,9 +183,9 @@ export function FormHelpPanel() {
           <section>
             <SectionHeading>Tips</SectionHeading>
             <ul className="space-y-1.5 text-muted-foreground list-disc pl-4">
-              <li>Enter the PWD determination date first, everything else depends on it</li>{" "}
+              <li>Enter the PWD determination date first, because everything else depends on it</li>{" "}
               <li>The 30-day quiet period between recruitment and ETA 9089 filing is calculated automatically</li>{" "}
-              <li>Filing window = 180 days from first recruitment activity. Recruitment has to begin before the PWD expires; once it has, the expiry no longer limits the filing</li>{" "}
+              <li>Filing window = 180 days from first recruitment activity. Recruitment has to begin before the PWD expires. Once it has, the expiry no longer limits the filing</li>{" "}
               <li>Use the progress bar at the top to see how far along the case is</li>{" "}
               <li>Click any section header to open/close it, even if prerequisites aren&rsquo;t met</li>
             </ul>

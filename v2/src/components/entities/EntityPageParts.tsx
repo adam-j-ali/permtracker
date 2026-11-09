@@ -318,7 +318,7 @@ export function wageIsTheJobLimit({
   filers: string;
 }): { head: string; body: ReactNode } {
   return {
-    head: "The wage is the job, not the payer",
+    head: "The wage follows the job",
     body: (
       <>
         {topOccupation ? (
@@ -330,7 +330,7 @@ export function wageIsTheJobLimit({
         {`The median offered wage moves almost entirely with what roles ${filers}`}
         {" "}
         file. A software developer and a poultry cutter are different
-        numbers wherever they are filed, so this figure is not plotted
+        numbers wherever they&apos;re filed, so this figure isn&apos;t plotted
         against the field and no percentile is given for it: that
         comparison would rank occupation mix and call it pay. Wages by
         occupation are on the{" "}

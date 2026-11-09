@@ -181,7 +181,7 @@ const STAGE_PLACEMENT: Readonly<Record<string, StagePlacement>> = {
   "BALCA APPEALS": {
     percentile: null,
     observedAgeDays: 714,
-    note: "A BALCA appeal is a different forum entirely, not a slow PERM decision. Nothing in the filing-month data can date it.",
+    note: "A BALCA appeal is a different forum entirely, so it isn't a slow PERM decision. Nothing in the filing-month data can date it.",
   },
 };
 

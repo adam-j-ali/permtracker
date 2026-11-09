@@ -41,7 +41,7 @@ describe("wageGapSentence", () => {
     expect(s).toContain("$125,000 across 2,000 LCAs");
     expect(s).toContain("25% higher");
     expect(s).toContain("$100,000 across 40 cases");
-    expect(s).toContain("not a finding");
+    expect(s).toContain("It isn't a finding.");
   });
 
   it("calls a gap under two percent a match rather than a direction", () => {

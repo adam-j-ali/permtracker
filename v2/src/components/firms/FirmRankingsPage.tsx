@@ -70,7 +70,7 @@ const PROGRAM = {
 const FAQS = [
   {
     q: "How are the firms ranked?",
-    a: "By how many cases DOL decided with the firm named on them, in one fiscal year (October to September). PERM counts every decision, certified, denied or withdrawn; H-1B counts certified LCAs for the H-1B class. Each firm's spellings in DOL's files count as one firm.",
+    a: "By how many cases DOL decided with the firm named on them, in one fiscal year (October to September). PERM counts every decision: certified, denied or withdrawn. H-1B counts certified LCAs for the H-1B class. Each firm's spellings in DOL's files count as one firm.",
   },
   {
     q: "Is a busier firm a better firm?",
@@ -369,11 +369,11 @@ export async function FirmRankingsPage({ state }: { state: string }) {
           </>
         ) : (
           <p className="mt-8 border-2 border-border bg-sage p-5 text-base">
-            The rankings aren&apos;t built yet. They&apos;re made from DOL&apos;s PERM and LCA files after each load; the{" "}
+            The rankings aren&apos;t built yet. They&apos;re made from DOL&apos;s PERM and LCA files after each load. In the meantime, the{" "}
             <Link href="/perm-attorneys" className="link">
               law firm list
             </Link>{" "}
-            ranks every firm by its PERM filings meanwhile.
+            ranks every firm by its PERM filings.
           </p>
         )}{" "}
         {states.length > 0 ? (
@@ -418,7 +418,7 @@ export async function FirmRankingsPage({ state }: { state: string }) {
             PERM counts every case DOL decided in the fiscal year with the firm named on it: certified, denied or withdrawn.
             The certified share leaves withdrawals out, because a withdrawal isn&apos;t a decision on the case. Days to
             certify run from filing to certification, shown when a firm has ten or more certifications. A case counts in
-            the state of its job; where DOL&apos;s older files print no worksite, the employer&apos;s state.
+            the state of its job. Where DOL&apos;s older files print no worksite, it counts in the employer&apos;s state.
           </p>{" "}
           <p>
             H-1B counts certified LCAs for the H-1B class only (H-1B1 and E-3 left out), in the state of the job. Positions

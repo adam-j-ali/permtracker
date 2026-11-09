@@ -127,8 +127,8 @@ export function UscisH1bRecord({
         <div className="mt-2 space-y-2 text-sm leading-relaxed text-soft">
           <p>
             Counts of workers on USCIS&apos;s first decision, by the fiscal year USCIS recorded it. Appeals, revocations
-            and petitions still pending aren&apos;t in them, and the location is the employer&apos;s mailing address,
-            not where the work is.
+            and petitions still pending aren&apos;t in them. The location is the employer&apos;s mailing address, which
+            doesn&apos;t show where the work is.
           </p>{" "}
           <ul className="space-y-1.5">
             {H1B_KINDS.map((k) => (
