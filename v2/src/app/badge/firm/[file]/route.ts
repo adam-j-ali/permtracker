@@ -21,7 +21,9 @@ export function generateStaticParams() {
 
 const HEADERS = {
   "Content-Type": "image/svg+xml; charset=utf-8",
-  "Cache-Control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400",
+  // The edge asks again within the hour, so a revoked or new verification shows the same day; the server still
+  // renders once a day and on every revalidate-firm call.
+  "Cache-Control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
 };
 
 export async function GET(_req: Request, { params }: { params: Promise<{ file: string }> }) {
@@ -29,9 +31,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ file: s
   if (!parsed) return new Response("Not found", { status: 404 });
   const found = await resolveEntity("attorney", parsed.slug);
   if (!found) return new Response("Not found", { status: 404 });
-  const profile = await queryStatic(api.firmClaims.publishedProfile, { slug: found.canonicalSlug }, revalidate).catch(
-    () => null,
-  );
+  // No catch: a failed read must never render a verified firm's badge as unverified for a day. queryStatic never
+  // stores a failure, and a regeneration that throws keeps serving the last good badge.
+  const profile = await queryStatic(api.firmClaims.publishedProfile, { slug: found.canonicalSlug }, revalidate);
   const spec = firmBadgeSpec(found.row.name, found.canonicalSlug, profile != null);
   return new Response(renderBadge(spec, "shield", parsed.theme), { headers: HEADERS });
 }

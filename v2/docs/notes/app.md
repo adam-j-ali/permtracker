@@ -674,3 +674,20 @@ the employer lookup, the SOC lookup by title and by code, and a keyed route with
 metadata names PERM Tracker and `support@permtracker.app`, links permtracker.app/developers, and carries no repository
 link, so nothing points at a GitHub account. **Still unpublished**: npm and PyPI need accounts on the press mailbox
 first. When they're published, the developers page gets a short "Packages" section (it names neither today).
+
+## Nov 9 2026: six quiet failures from the overnight review, fixed
+
+Each with a test that fails on the old code:
+- `convex/pipelineMatches.ts`: a possible-PERM email Resend refused for good only wrote a console line; it now calls
+  `recordError`, as the case and queue alert sweeps do.
+- `src/lib/db/embedLookup.ts`: when the embed's live-check counter couldn't be written, the widget said "Neither DOL nor
+  PERM Tracker returned a record"; nobody had asked DOL. It now says DOL didn't answer and shows what we hold.
+- `src/app/api/case-search/route.ts`: the CSV download wrote a file with a failed source silently missing; it now
+  answers 503 naming the source, uncached.
+- `src/app/badge/firm/[file]/route.ts`: one failed read rendered a verified firm's badge as unverified for a day, and a
+  revoked firm kept "Verified firm" for a day. The catch is gone (a failed regeneration keeps the last good badge),
+  `/api/revalidate-firm` now expires the three badge files too, and the edge keeps a badge an hour.
+- `src/lib/caseStepEstimate.ts`: a case the firm closed still showed "When DOL could decide". Closed cases get none.
+- The JS SDK called the global `fetch` as its own method, which browsers and Cloudflare Workers refuse ("Illegal
+  invocation"); the CLI called `process.exit` right after writing, which can cut off piped output. The SDK needs a
+  new npm release (owner's call) for users to get these.

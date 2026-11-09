@@ -199,6 +199,14 @@ describe("the order", () => {
 });
 
 describe("format=csv", () => {
+  it("refuses a file with a source missing, naming it, so it never reads as nothing matched", async () => {
+    unifiedSearch.mockResolvedValue(result({ rows: [row()], unread: ["H-1B LCAs"] }));
+    const r = await get("q=acme&format=csv");
+    expect(r.status).toBe(503);
+    expect(r.headers.get("cache-control")).toBe("no-store");
+    expect(((await r.json()) as { error: string }).error).toContain("H-1B LCAs");
+  });
+
   it("returns the same search's rows as CSV, every column named", async () => {
     unifiedSearch.mockResolvedValue(result({ rows: [row()] }));
     const r = await get("q=acme&cit=INDIA&format=csv");
