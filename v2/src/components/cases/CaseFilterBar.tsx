@@ -344,54 +344,65 @@ export function CaseFilterBar({
             aria-label="Filters"
             className="max-h-[var(--radix-popover-content-available-height)] w-[min(20rem,calc(100vw-1rem))] overflow-y-auto border-2 border-border p-4"
           >
-            <fieldset>
-              <legend className={PANEL_LEGEND}>Stage</legend>{" "}
-              <div className="mt-1">
-                <RadioRow
-                  name={`${uid}-stage`}
-                  value="all"
-                  checked={stageValue === "all"}
-                  onPick={() => handleCaseStatusChange("all")}
-                  label="Any stage"
-                />
-                {STAGES.map((st) => (
-                  <Fragment key={st}>
-                    {" "}
-                    <RadioRow
-                      name={`${uid}-stage`}
-                      value={st}
-                      checked={stageValue === st}
-                      onPick={() => handleCaseStatusChange(st)}
-                      label={formatCaseStatus(st)}
-                    />
-                  </Fragment>
-                ))}
-              </div>
-            </fieldset>{" "}
-            <fieldset className="mt-4">
-              <legend className={PANEL_LEGEND}>Progress</legend>{" "}
-              <div className="mt-1">
-                <RadioRow
-                  name={`${uid}-progress`}
-                  value="all"
-                  checked={progressValue === "all"}
-                  onPick={() => handleProgressStatusChange("all")}
-                  label="Any progress"
-                />
-                {PROGRESS.map((pr) => (
-                  <Fragment key={pr}>
-                    {" "}
-                    <RadioRow
-                      name={`${uid}-progress`}
-                      value={pr}
-                      checked={progressValue === pr}
-                      onPick={() => handleProgressStatusChange(pr)}
-                      label={formatProgressStatus(pr)}
-                    />
-                  </Fragment>
-                ))}
-              </div>
-            </fieldset>{" "}
+            {/* Closed and Completed are stages themselves: a stage picked here would replace the tab's and list
+                other cases under its name, so on those tabs the panel says so in place of the choice. */}
+            {tabSetsStatus ? (
+              <p className="text-sm text-soft">
+                The {activeTab === "closed" ? "Closed" : "Completed"} tab sets the stage. Pick All to filter by stage.
+              </p>
+            ) : (
+              <fieldset>
+                <legend className={PANEL_LEGEND}>Stage</legend>{" "}
+                <div className="mt-1">
+                  <RadioRow
+                    name={`${uid}-stage`}
+                    value="all"
+                    checked={stageValue === "all"}
+                    onPick={() => handleCaseStatusChange("all")}
+                    label="Any stage"
+                  />
+                  {STAGES.map((st) => (
+                    <Fragment key={st}>
+                      {" "}
+                      <RadioRow
+                        name={`${uid}-stage`}
+                        value={st}
+                        checked={stageValue === st}
+                        onPick={() => handleCaseStatusChange(st)}
+                        label={formatCaseStatus(st)}
+                      />
+                    </Fragment>
+                  ))}
+                </div>
+              </fieldset>
+            )}{" "}
+            {/* Completed is the approved I-140s, so its progress is set too. */}
+            {activeTab === "completed" ? null : (
+              <fieldset className="mt-4">
+                <legend className={PANEL_LEGEND}>Progress</legend>{" "}
+                <div className="mt-1">
+                  <RadioRow
+                    name={`${uid}-progress`}
+                    value="all"
+                    checked={progressValue === "all"}
+                    onPick={() => handleProgressStatusChange("all")}
+                    label="Any progress"
+                  />
+                  {PROGRESS.map((pr) => (
+                    <Fragment key={pr}>
+                      {" "}
+                      <RadioRow
+                        name={`${uid}-progress`}
+                        value={pr}
+                        checked={progressValue === pr}
+                        onPick={() => handleProgressStatusChange(pr)}
+                        label={formatProgressStatus(pr)}
+                      />
+                    </Fragment>
+                  ))}
+                </div>
+              </fieldset>
+            )}{" "}
             <label className="mt-3 flex min-h-11 cursor-pointer items-center gap-3 border-t-2 border-border pt-3 text-base">
               <input
                 type="checkbox"
