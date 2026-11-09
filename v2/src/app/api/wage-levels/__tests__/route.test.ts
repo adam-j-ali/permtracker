@@ -56,6 +56,17 @@ describe("GET /api/wage-levels", () => {
     expect(((await res.json()) as { levels: unknown }).levels).toBeNull();
   });
 
+  it("never calls an answer it can't read DOL's 'no wage': 502, uncached", async () => {
+    // DOL starts sending wages as money strings, or renames a field: the old reader called both "no wage".
+    for (const body of [{ rates: { I: { hour: "$49.21", year: "$102,357" }, II: DOL.rates.II, III: DOL.rates.III, IV: DOL.rates.IV } }, { wages: DOL.rates }]) {
+      fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(body), { status: 200 }));
+      const res = await GET(get("/api/wage-levels?soc=15-1252&area=99999&year=2026"));
+      expect(res.status).toBe(502);
+      expect(res.headers.get("cache-control")).toBe("no-store");
+      expect(((await res.json()) as { message: string }).message).not.toMatch(/publishes no wage/);
+    }
+  });
+
   it("passes a DOL failure through as 502, uncached", async () => {
     fetchMock.mockResolvedValue(new Response("nope", { status: 500 }));
     const res = await GET(get("/api/wage-levels?soc=15-1252&area=31080&year=2026"));
