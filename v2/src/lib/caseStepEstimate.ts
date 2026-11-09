@@ -89,6 +89,8 @@ function decodeDay(num: string | null | undefined): string | null {
 export function caseStepEstimate(input: CaseStepInput): CaseStepResult {
   const { corpus, today } = input;
   if (!corpus) return { step: null };
+  // A case the firm closed (withdrawn, abandoned, finished) waits on nothing, whatever dates it still holds.
+  if (input.caseStatus === "closed") return { step: null };
 
   const watched = input.caseNumber?.trim() || null;
   const watchedProgram = watched ? programOf(watched) : null;

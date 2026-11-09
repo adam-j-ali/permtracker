@@ -198,7 +198,8 @@ export async function lookupForEmbed(
       : { ...base, found: false, status: null, filingDate: null, decisionDate: null, employerName: null, jobTitle: null, source: null, checkedAt: null, capped, dolUnavailable };
 
   const charge = await chargeEmbedLive(site, now);
-  if (charge !== "ok") return fromStored(charge === "capped");
+  // A budget that couldn't be counted (a write refused) means DOL wasn't asked: say so, never "DOL has no record".
+  if (charge !== "ok") return fromStored(charge === "capped", charge === "error");
 
   if (stored) {
     // A case we hold: read DOL's status now, charge the site-wide budget,

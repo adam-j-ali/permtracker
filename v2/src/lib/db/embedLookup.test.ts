@@ -145,6 +145,15 @@ describe("lookupForEmbed", () => {
     for (const [sql] of execSpy.mock.calls) expect(String(sql)).toMatch(/INSERT INTO perm_docs/);
   });
 
+  it("says DOL wasn't asked, never that DOL has no record, when the counter can't be written", async () => {
+    execSpy.mockImplementationOnce(() => {
+      throw new Error("database refused the write");
+    });
+    const a = await lookupForEmbed(CN, "example.com", NOW);
+    expect(a).toMatchObject({ source: "stored", capped: false, dolUnavailable: true });
+    expect(fetchDolCase).not.toHaveBeenCalled();
+  });
+
   it("serves the stored record once the site's checks are used up, without asking DOL", async () => {
     await seed({ all: 10, "example.com": EMBED_SITE_DAILY_LIVE });
     const a = await lookupForEmbed(CN, "example.com", NOW);
