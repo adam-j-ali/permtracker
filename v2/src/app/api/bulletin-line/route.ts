@@ -32,7 +32,8 @@ export async function GET(req: Request) {
   let series;
   try {
     series = set === "family" ? await getFamilyBulletinSeries() : await getVisaBulletinSeries();
-  } catch {
+  } catch (e) {
+    console.error("[bulletin-line] read failed", e);
     return NextResponse.json({ ok: false, message: "The bulletin archive couldn't be read just now. Try again in a minute." }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
   const held = categoriesIn(series);

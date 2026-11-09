@@ -24,7 +24,8 @@ export async function GET(req: Request) {
   try {
     summary = await refusalSummary();
     grounds = summary?.years.includes(fy) ? await refusalsYear(fy) : [];
-  } catch {
+  } catch (e) {
+    console.error("[visa-refusals] read failed", e);
     return NextResponse.json(
       { ok: false, message: "State's refusal tables couldn't be read just now. Try again in a minute." },
       { status: 503, headers: { "Cache-Control": "no-store" } },

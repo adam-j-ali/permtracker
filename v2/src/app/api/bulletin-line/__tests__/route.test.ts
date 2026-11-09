@@ -61,10 +61,13 @@ describe("GET /api/bulletin-line", () => {
     expect((await res.json()).message).toMatch(/holds EB2/);
   });
 
-  it("says a failed read, never an empty line", async () => {
+  it("says a failed read, never an empty line, and logs why", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     getVisaBulletinSeries.mockRejectedValue(new Error("SQLITE_BUSY"));
     const res = await get("category=EB2&country=india");
     expect(res.status).toBe(503);
     expect(res.headers.get("cache-control")).toBe("no-store");
+    expect(logged).toHaveBeenCalledWith(expect.stringContaining("[bulletin-line]"), expect.objectContaining({ message: "SQLITE_BUSY" }));
+    logged.mockRestore();
   });
 });

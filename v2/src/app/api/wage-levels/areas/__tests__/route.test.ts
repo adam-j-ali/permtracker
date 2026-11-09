@@ -30,10 +30,13 @@ describe("GET /api/wage-levels/areas", () => {
     expect(res.headers.get("cache-control")).toContain("s-maxage=86400");
   });
 
-  it("says the tables couldn't be read, never an empty state, when the read fails", async () => {
+  it("says the tables couldn't be read, never an empty state, when the read fails, and logs why", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     inState.mockRejectedValue(new Error("database down"));
     const res = await get("soc=15-1252&state=TX");
     expect(res.status).toBe(503);
     expect(res.headers.get("cache-control")).toBe("no-store");
+    expect(logged).toHaveBeenCalledWith(expect.stringContaining("[wage-levels/areas]"), expect.objectContaining({ message: "database down" }));
+    logged.mockRestore();
   });
 });
