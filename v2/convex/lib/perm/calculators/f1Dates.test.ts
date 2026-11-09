@@ -52,6 +52,13 @@ describe("OPT unemployment, 8 CFR 214.2(f)(10)(ii)(E)", () => {
     expect(calculateOptUnemployment({ stem: false, usedBefore: 88, unemployedSince: "2026-10-30", today: "2026-10-31" }).over).toBe(false);
   });
 
+  it("names no last day once the earlier days used up the limit, never a day before the stretch began", () => {
+    expect(calculateOptUnemployment({ stem: false, usedBefore: 90, unemployedSince: "2026-10-01", today: "2026-10-05" })).toMatchObject({ lastDay: null, over: true });
+    expect(calculateOptUnemployment({ stem: false, usedBefore: 120, unemployedSince: "2026-10-01", today: "2026-10-05" }).lastDay).toBeNull();
+    // One day left: the stretch's own first day is the last one inside the limit.
+    expect(calculateOptUnemployment({ stem: false, usedBefore: 89, unemployedSince: "2026-10-01", today: "2026-10-01" }).lastDay).toBe("2026-10-01");
+  });
+
   it("counts only the days already used when working now", () => {
     expect(calculateOptUnemployment({ stem: false, usedBefore: 30, today: "2026-10-31" })).toMatchObject({ used: 30, left: 60, lastDay: null });
   });
