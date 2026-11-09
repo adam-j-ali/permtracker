@@ -402,8 +402,19 @@ const CLOSED_TILE: Record<string, string> = {
   WITHDRAWN: "bg-soft-purple",
 };
 
-/** A status's change: fewer waiting reads green, more reads amber; a closed status's new decisions are neither. */
-function Change({ value, label, neutral = false }: { value: number; label: string; neutral?: boolean }) {
+/**
+ * A status's change: fewer waiting reads green, more reads amber; a closed status's new decisions are neither.
+ * No reading for the window (null) says so: "same" would claim nothing moved.
+ */
+function Change({ value, label, neutral = false }: { value: number | null; label: string; neutral?: boolean }) {
+  if (value === null) {
+    return (
+      <span className="inline-flex items-center gap-1 text-sm">
+        <span className="text-soft">{label}</span>{" "}
+        <span className="text-soft">no reading</span>
+      </span>
+    );
+  }
   const Icon = value > 0 ? ArrowUpIcon : value < 0 ? ArrowDownIcon : null;
   const tone = neutral ? "" : value < 0 ? "text-data-good-ink" : value > 0 ? "text-data-warn-ink" : "";
   return (
@@ -430,7 +441,7 @@ export function StatusTiles({
   dayLabel: string;
   closed?: boolean;
 }) {
-  const changeOf = (m: StatusMove | null) => (closed ? (m?.in ?? 0) : (m?.net ?? 0));
+  const changeOf = (m: StatusMove | null) => (m === null ? null : closed ? m.in : m.net);
   return (
     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 [&>*]:min-w-0">
       {rows.map((r, i) => (
