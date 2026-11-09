@@ -111,6 +111,14 @@ describe("LiveQueueBand", () => {
     expect(screen.getByText("1.0%")).toBeInTheDocument();
   });
 
+  it("keeps a word between a stage's count and its share", () => {
+    // Arrange, Act
+    const { container } = render(<LiveQueueBand pending={pending()} subject="sponsor" asOf="2026-08-26" />);
+    // Assert: a count and the share beside it, never one number welded to the other
+    const dd = [...container.querySelectorAll("dd")].find((d) => /%/.test(d.textContent ?? ""))!;
+    expect(dd.textContent).toMatch(/\d [<>]?\d+(\.\d)?%/);
+  });
+
   it("never sets a total beside the waiting count to subtract from", () => {
     render(<LiveQueueBand pending={pending()} subject="sponsor" asOf="2026-08-26" />);
     // The two corpora have different as-of dates, and a sponsor's pending count

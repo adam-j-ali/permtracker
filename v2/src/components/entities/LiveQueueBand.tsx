@@ -153,7 +153,7 @@ export function LiveQueueBand({
                         {s.status}
                       </dt>{" "}
                       <dd className="font-mono text-sm font-bold tabular-nums">
-                        {formatInt(s.n)}
+                        {formatInt(s.n)}{" "}
                         <span className="ml-2 font-normal text-muted-foreground">
                           {shareShort}
                         </span>
