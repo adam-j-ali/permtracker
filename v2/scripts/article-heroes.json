@@ -1384,5 +1384,17 @@
   "credit": "Photo: Carol M. Highsmith, April 5, 2016. Carol M. Highsmith Archive, Library of Congress, Prints and Photographs Division",
   "source": "https://commons.wikimedia.org/wiki/File:Revolving_door._New_Carrollton_Federal_Office_Building,_New_Carrollton,_Maryland_LCCN2016648245.tif",
   "alt": "A glass revolving door at the entrance of a federal office building in New Carrollton, Maryland, the way out of one workplace and into the next"
+ },
+ "guides/perm-case-tracking-spreadsheet": {
+  "photo": {
+   "file": "perm-case-tracking-spreadsheet.jpg",
+   "focus": [
+    0.5,
+    0.5
+   ]
+  },
+  "credit": "John Carlin, account book, 1835 to 1856. The Metropolitan Museum of Art, via Wikimedia Commons, CC0",
+  "source": "https://commons.wikimedia.org/wiki/File:Account_Book_Ledger_MET_DP214203.jpg",
+  "alt": "An account book from the 1830s open to two pages of dated, handwritten entries in ruled columns, kept by the painter John Carlin"
  }
 }
