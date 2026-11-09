@@ -15,7 +15,7 @@ seoDescription: "The quarterly disclosure files, the case status system and the 
 published: true
 ---
 
-The Department of Labor already publishes a lot about PERM. The trouble is that it comes out in three separate places, each built for a different purpose, and none of them is complete on its own. Here's what each one holds, what it leaves out, and why the ordinary question of where a case stands needs all three. To check one case's status, type its number into PERM Tracker's free [case lookup](/perm-case-status), which asks DOL's own case-status service, pending cases included.
+The Department of Labor already publishes a lot about PERM. The trouble is that it comes out in three separate places, each built for a different purpose. None of them is complete on its own. Here's what each one holds, what it leaves out, and why the ordinary question of where a case stands needs all three. To check one case's status, type its number into PERM Tracker's free [case lookup](/perm-case-status). It asks DOL's own case-status service, pending cases included.
 
 ## The three sources, side by side
 
@@ -32,16 +32,16 @@ DOL publishes three sources: quarterly disclosure files of decided cases, a case
 
 Four times a year DOL publishes a spreadsheet of every PERM case it has finished. The current one is `PERM_Disclosure_Data_FY2026_Q3.xlsx`, covering decisions through 30 June 2026. One row per case, and the row is generous: employer name, job title, worksite state, the occupation code DOL assigned, the filing date, the decision date, the outcome, the law firm that filed it, and the wage the employer committed to pay.
 
-Almost every population-level figure you'll see anywhere comes from these files. Approval rates by employer, median wages by occupation, how long cases filed in a given month actually took. [The wage pages](/perm-wages), [the employer records](/perm-employers) and [the denial rates](/perm-denial-risk) all read them.
+Almost every population-level figure you'll see anywhere comes from these files. That includes approval rates by employer, median wages by occupation and how long cases filed in a given month actually took. [The wage pages](/perm-wages), [the employer records](/perm-employers) and [the denial rates](/perm-denial-risk) all read them.
 
-What the files omit is the entire present. A case only enters a disclosure file once it's finished, so every row has a decision date and there are no pending rows at all. You can't count the backlog from them, and you can't find a case in them until DOL has already decided it.
+The files leave out the present entirely. A case only enters a disclosure file once it's finished, so every row has a decision date and there are no pending rows at all. You can't count the backlog from them, and you can't find a case in them until DOL has already decided it.
 
-DOL publishes prevailing wage determinations the same way. That's about 634,600 decided determinations on record here, each with the wage DOL set, the occupation, the worksite state and how long the determination stays valid, going back to received dates in 2021.
+DOL publishes prevailing wage determinations the same way. About 634,600 decided determinations are on record here, going back to received dates in 2021. Each has the wage DOL set, the occupation, the worksite state and how long the determination stays valid.
 
 <ScreenshotFigure
   src="/images/content/shots/tools-overview.webp"
   alt="The data hub: the month DOL is deciding, its average and the wage requests still pending, above a case lookup"
-  caption="The figures across the top are DOL's own live ones. The pages built on its quarterly files hold only decided cases, which is why none of those, on their own, can say anything about a case still waiting."
+  caption="The figures across the top are DOL's own live ones. The pages built on its quarterly files hold only decided cases. That's why none of them, on their own, can say anything about a case still waiting."
   step={1}
   aspectRatio={1600 / 1025}
 />
@@ -56,12 +56,12 @@ It also covers more than PERM. The same system holds prevailing wage requests (`
 You'll read in a lot of places that DOL only exposes decided prevailing wage records, so a pending request can't be tracked. That isn't right. DOL's case status system answers for pending requests too, and for pending LCAs.
 </Callout>
 
-What it omits is everything except status. No wage, no occupation, no worksite, no law firm, and no history of how a case reached the status it's showing. It also can't be browsed. You need a number before you can ask it anything, so it says nothing about the queue as a whole.
+It leaves out everything except status. There's no wage, occupation, worksite or law firm, and no history of how a case reached the status it's showing. It also can't be browsed. You need a number before you can ask it anything, so it says nothing about the queue as a whole.
 
 <ScreenshotFigure
   src="/images/content/figures/blog/what-dol-publishes-about-perm-certified-case.webp"
   alt="The answer for a PERM case DOL has certified, filed May 18, 2026"
-  caption="What the status system gives: the status word, here Certified, and the filing date. The queue figure beside it is ours, worked out from DOL's position."
+  caption="What the status system gives: the status word, here Certified, and the filing date. We work out the queue figure beside it from DOL's position."
   credit="Screenshot of permtracker.app, October 15, 2026"
   creditHref="/perm-case-status?case=G-100-26138-922734"
   aspectRatio={1600 / 583}
@@ -72,9 +72,9 @@ There are about 414,000 PERM case statuses held here, plus 20,000 live wage requ
 
 ## What's on the processing times page
 
-DOL's FLAG site publishes a short page of queue figures. Until October 31, 2026 it named the filing month each queue was working. On its 28 August 2026 reading, analyst review was on November 2025, the average to a determination was 336 days, audit review was on December 2025, and the two prevailing wage queues sat at April 2026 and March 2026. On October 31, 2026 DOL changed the PERM half. It now prints the average days to a decision over the last 30, 90 and 180 days, 300, 315 and 360 days that day, and no filing month or audit figure. The prevailing wage half still names its months.
+DOL's FLAG site publishes a short page of queue figures. Until October 31, 2026 it named the filing month each queue was working. On its 28 August 2026 reading, analyst review was on November 2025 and audit review on December 2025. The average to a determination was 336 days. The two prevailing wage queues sat at April 2026 and March 2026. On October 31, 2026 DOL changed the PERM half. It now prints the average days to a decision over the last 30, 90 and 180 days (300, 315 and 360 days that day). It prints no filing month or audit figure. The prevailing wage half still names its months.
 
-Those last two are one stage, split. DOL runs two prevailing wage queues, one for requests priced off the standard federal wage survey and one for everything else, and they move at different speeds. A case record doesn't say which queue a request is in, so both figures have to be shown.
+Those last two are one stage, split. DOL runs two prevailing wage queues, one for requests priced off the standard federal wage survey and one for everything else. They move at different speeds. A case record doesn't say which queue a request is in, so both figures have to be shown.
 
 <ScreenshotFigure
   src="/images/content/figures/blog/what-dol-publishes-about-perm-movement.webp"
@@ -86,28 +86,28 @@ Those last two are one stage, split. DOL runs two prevailing wage queues, one fo
   step={3}
 />
 
-The omission here is time. DOL replaces the figures in place, which means its own site can never tell you how fast the queue is moving or where it stood last month. Since October 31, 2026 it doesn't say where the PERM line is at all; that now has to come from the case status system, case by case. Keeping every reading is the only way to get that, and it's what [the processing times page here](/perm-processing-times) adds.
+The omission here is time. DOL replaces the figures in place, which means its own site can never tell you how fast the queue is moving or where it stood last month. Since October 31, 2026 it doesn't say where the PERM line is at all. That now has to come from the case status system, case by case. Keeping every reading is the only way to get that, and it's what [the processing times page here](/perm-processing-times) adds.
 
 ## Why the picture needs all three
 
 Take one ordinary question. An employer filed in January 2026. When will there be an answer?
 
 - The **case status system** says what DOL currently thinks of that specific case. Still in analyst review, out for audit, or already decided.
-- The **processing times page** gives DOL's average wait. Where the front of the line is, and how many filing months sit ahead of January 2026, now comes from the case status system, read case by case.
+- The **processing times page** gives DOL's average wait. Reading the case status system case by case now shows where the front of the line is and how many filing months sit ahead of January 2026.
 - The **disclosure files** say what happened to the cases that were in the same position a year earlier. How long they took, how many were audited, how many were denied.
 
-Drop any one of the three and you lose something the other two can't reconstruct. A status with no queue is a phrase with no context. A queue with no history is a position with no pace. A history with no status is other people's cases.
+Drop any one of the three and you lose something the other two can't reconstruct. A status means little without the queue around it, and a queue's position says nothing about pace without its history. The history alone is only other people's cases.
 
 ## What none of this can tell you
 
 None of it gives a decision date, DOL's reasons, your odds, or anything after DOL's decision.
 
 - **A decision date.** Nobody has one, DOL included. Ours is labelled as an estimate wherever it appears, and graded in public on the [estimate scorecard](/estimate-scorecard).
-- **Why.** DOL publishes outcomes, not reasoning. A denial shows up as a denial. There's no field explaining what went wrong and no way to work it out from the file.
+- **Why.** DOL publishes outcomes. It doesn't publish its reasoning. A denial shows up as a denial. There's no field explaining what went wrong and no way to work it out from the file.
 - **Which wage queue a request is in.** DOL reports both queue positions but doesn't tag the case.
-- **Your odds.** We publish the measured denial and audit rates and deliberately refuse to blend them into a single score, because the factors aren't independent and one number would hide which one is doing the work.
+- **Your odds.** We publish the measured denial and audit rates. We keep them out of a single score on purpose, because the factors aren't independent and one number would hide which one is doing the work.
 - **Anything after DOL.** The record ends at DOL's decision. The I-140 and I-485 stages are USCIS data, and priority dates are the State Department's.
-- **Some very recent filings.** DOL indexes cases on its own schedule, so a filing from the last few days can be genuinely pending and genuinely absent.
+- **Some very recent filings.** DOL indexes cases on its own schedule, so a filing from the last few days can be pending and still absent.
 
 ## Related
 
