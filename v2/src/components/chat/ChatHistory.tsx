@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import type { Id } from '@convex/_generated/dataModel';
 import { useAuthContext } from '@/lib/contexts/AuthContext';
 import { CHAT_LIMITS } from '@convex/lib/chatLimits';
+import { handleOperationError } from '@/lib/errors';
 
 /**
  * Conversations shown per page. The list grows with every conversation the
@@ -86,7 +87,12 @@ export function ChatHistory({
           : `Delete all ${conversations.length} conversation${conversations.length > 1 ? 's' : ''} permanently? This can't be undone.`
       )
     ) {
-      await deleteAllConversations({});
+      try {
+        await deleteAllConversations({});
+      } catch (error) {
+        handleOperationError(error, { userMessage: "Couldn’t delete your conversations. Try again." });
+        return;
+      }
       startNew();
     }
   };
@@ -192,7 +198,9 @@ export function ChatHistory({
                         className="h-11 w-11 md:h-9 md:w-9 text-destructive hover:text-destructive-text"
                         onClick={() => {
                           if (confirm('Delete this conversation permanently?')) {
-                            deleteConversation({ id: conv._id });
+                            deleteConversation({ id: conv._id }).catch((error: unknown) =>
+                              handleOperationError(error, { userMessage: "Couldn’t delete that conversation. Try again." }),
+                            );
                           }
                         }}
                         aria-label={`Delete conversation ${conv.title}`}
