@@ -49,6 +49,15 @@ for a in audit_articles.py audit_contrast.py audit_page_registration.py; do
   "$PY" "scripts/$a" > /dev/null 2>&1 || { echo "FAILED $a"; "$PY" "scripts/$a" 2>&1 | tail -20; exit 1; }
 done
 node scripts/every_test_file_runs.mjs
+# The placeholder audit measures text in the built Inter file, which a build or the dev server leaves in
+# .next. The deploy's workflow runs it after its build; with a font on disk it runs here first, so a
+# placeholder that doesn't fit, or one on a box that never shows it, fails before the push (Nov 9 2026:
+# two builds failed on a date box's placeholder that this gate had no way to see).
+if [ -n "$(find .next/static/media .next/dev/static/media -name '*.woff2' -print -quit 2>/dev/null)" ] && "$PY" -c "import fontTools" 2>/dev/null; then
+  "$PY" scripts/audit_placeholders.py > /dev/null 2>&1 || { echo "FAILED audit_placeholders.py"; "$PY" scripts/audit_placeholders.py 2>&1 | tail -20; exit 1; }
+else
+  echo "   audit_placeholders.py not run: no built font in .next, or no fontTools. The deploy's build runs it."
+fi
 took
 
 echo "== 5/6 eslint on the changed files"
