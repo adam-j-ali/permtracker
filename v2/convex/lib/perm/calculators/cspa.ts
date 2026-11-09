@@ -117,7 +117,9 @@ function checkDate(name: string, value: string | undefined): void {
 export function ageBetween(from: string, to: string): Age {
   const a = day(from);
   const b = day(to);
-  const years = differenceInYears(b, a);
+  let years = differenceInYears(b, a);
+  // A February 29 birthday comes round on February 28 in a common year, the day `turns21` names, so count it there.
+  if (iso(addYears(a, years + 1)) <= to) years += 1;
   const afterYears = addYears(a, years);
   const months = differenceInMonths(b, afterYears);
   const afterMonths = addMonths(afterYears, months);
