@@ -182,6 +182,19 @@ export function InChatConfirmationCard({
     }
   }, [status]);
 
+  // One answer per card: the buttons stay on screen while the card leaves, and a second press there sent the
+  // answer again. A card that comes back to pending can be answered afresh.
+  const submitted = useRef(false);
+  useEffect(() => {
+    if (status === 'pending') submitted.current = false;
+  }, [status]);
+  const answer = (send: () => void) => {
+    if (submitted.current) return;
+    submitted.current = true;
+    answered.current = true;
+    send();
+  };
+
   // Border styles by status
   // Status reads from the whole 2px outline, the site's own card language,
   // not a thick left bar.
@@ -379,10 +392,7 @@ export function InChatConfirmationCard({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  answered.current = true;
-                  onDeny();
-                }}
+                onClick={() => answer(onDeny)}
                 disabled={busy}
                 className="gap-1.5 h-11 md:h-9 px-4"
               >
@@ -392,10 +402,7 @@ export function InChatConfirmationCard({
               <Button
                 variant={isDestructive ? 'destructive' : 'default'}
                 size="sm"
-                onClick={() => {
-                  answered.current = true;
-                  onApprove();
-                }}
+                onClick={() => answer(onApprove)}
                 disabled={busy}
                 className="gap-1.5 h-11 md:h-9 px-4"
               >
