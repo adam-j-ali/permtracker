@@ -18,8 +18,8 @@ const TITLES_SHOWN = 3;
  * One SOC code at a glance, for the signed-in case page and the homepage's job band (the case form shows the
  * same facts as `SocCodeBrief`, below): its title, the job's median offered
  * wage and approval rate in DOL's PERM files, the titles other employers filed it under, and one line to the
- * code's own page (Sabrina's words, Nov 1 2026: "for more info about this positions median wage, how other
- * employers titles the position, and success rates visit our SOC code database").
+ * code's own page, which says what's there: the median wage, how other employers title the position and how
+ * often DOL approves it.
  *
  * The link opens a new tab in the app, so a form with unsaved edits is never left. A figure under the site's floors
  * (MIN_DECIDED_FOR_RATE, MIN_DECIDED_FOR_MEDIAN) says why it's missing instead of printing a thin number.
@@ -84,7 +84,7 @@ export function SocCodeSummary({
   );
 }
 
-/** The line to the code's own page, in Sabrina's words: its pay, how employers title it, how often DOL approves it. */
+/** The line to the code's own page, naming what's there: its pay, how employers title it, how often DOL approves it. */
 function CodePageLink({ profile, newTab }: { profile: SocProfile; newTab: boolean }) {
   const text = `${profile.soc} in the SOC code database`;
   return newTab ? (

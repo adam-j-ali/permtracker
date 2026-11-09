@@ -2,7 +2,7 @@
 /**
  * The site search palette's three feedback states.
  *
- * Adam: "no feedback? ... also no loading states? for the searching". Every
+ * A search always says what it's doing: looking, found nothing, or failed. Every
  * case pinned here was a real defect in this component:
  *
  *  - The corpus lookup's spinner lived inside `Command.Empty`, which renders

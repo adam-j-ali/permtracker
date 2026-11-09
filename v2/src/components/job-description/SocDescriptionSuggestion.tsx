@@ -21,8 +21,8 @@ import { buildSocDescription, placeDescription, SHOWN_TASKS, type PlaceHow, type
 import { toast } from "@/lib/toast";
 
 /**
- * A job description to start from, drawn from the case's SOC code (Sabrina, Nov 1 2026: "for job description
- * suggest the description and they choose if they want it or no", "based on SOC code"). O*NET's description
+ * A job description to start from, drawn from the case's SOC code and offered, never applied: the person chooses
+ * whether to use it. O*NET's description
  * of the job and its core tasks, the first SHOWN_TASKS ticked and the rest folded, unticked, so nothing goes in
  * unseen. The person keeps the tasks that fit and adds them, or puts them in place of what's there, which asks
  * first. Either way Undo puts the old words back, and the text is ordinary text to edit afterwards.

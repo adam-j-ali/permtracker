@@ -7,9 +7,8 @@ import { JobCodeTabs, type JobCodeStep } from "./JobCodeTabs";
  * "From a job title to a job description": the case app's SOC code work in one band, three steps as one switch over
  * one app window (JobCodeTabs), each step a real capture of the sample firm (src/components/tour/,
  * scripts/capture-tour.mjs). A real sequence, so the steps are numbered: the code from the position title, the
- * description the code suggests, and the code's figures on the case page (Sabrina's three asks, Nov 1 2026).
- * One window instead of three stacked pictures, so the page grows by one band (owner, Nov 2 2026: "don't want
- * the page to be too long").
+ * description the code suggests, and the code's figures on the case page.
+ * One window instead of three stacked pictures, so the page grows by one band and stays short.
  */
 const STEPS: JobCodeStep[] = [
   {

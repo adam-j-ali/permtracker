@@ -9,7 +9,7 @@ import { JobLookupBox } from "./JobLookupBox";
  * "What does DOL call this job?": a job title box beside one real code's card, the busiest PERM code in DOL's
  * files, drawn from the same profile the signed-in case form shows (lib/db/socProfile.ts). For the person
  * hiring (what to call the role, what it pays), the person preparing the case (the code and its description)
- * and the worker (what the job usually involves), as Sabrina put it on Nov 1 2026.
+ * and the worker (what the job usually involves).
  *
  * A failed read drops the specimen and keeps the box; nothing here is typed by hand.
  */

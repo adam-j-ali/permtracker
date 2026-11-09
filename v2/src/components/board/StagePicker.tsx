@@ -25,8 +25,8 @@ export interface StageCard {
 
 /**
  * Pick a step: the six steps to a green card as tabs, each opening who files,
- * the form, how long it takes now, what happens and the one thing to watch
- * (Sabrina, Oct 27 2026, after H1BPerm's "pick a stage"). Every panel is in the
+ * the form, how long it takes now, what happens and the one thing to watch,
+ * so a reader picks the stage they're at. Every panel is in the
  * HTML, so search and the palette read all six; only the chosen one shows.
  */
 export function StagePicker({ stages, initial = 0 }: { stages: StageCard[]; initial?: number }) {

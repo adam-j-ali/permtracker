@@ -34,8 +34,8 @@ const SELECT =
   "min-h-11 w-full min-w-0 border-2 border-input bg-background px-2 text-base md:text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
 /**
- * The bulletin's step on the board, for the reader's own line (Sabrina's notes, Oct 27
- * 2026: pick a category and a country). Every line is drawn on the server and the
+ * The bulletin's step on the board, for the reader's own line: they pick a category
+ * and a country. Every line is drawn on the server and the
  * switch only picks one, so nothing is fetched and the page works before its script.
  */
 export function BulletinStation({
