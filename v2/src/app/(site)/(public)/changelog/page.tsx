@@ -14,6 +14,7 @@ import ChangelogListing from "@/components/content/ChangelogListing";
 import { sortPosts } from "@/lib/content/listing";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { SITE_URL } from "@/lib/constants/site";
+import { JsonLdScript } from "@/components/seo/JsonLdScript";
 
 export const dynamic = "force-static";
 
@@ -51,7 +52,7 @@ export default function ChangelogPage() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas) }} />
+      <JsonLdScript schema={schemas} />
       {/* One short line (round 3, Oct 15 2026). The longer description, which
           names the corrections log, stays the changelog's line in llms.txt. */}
       <ContentHero type="changelog" postCount={posts.length} description="Product updates and new features." />
