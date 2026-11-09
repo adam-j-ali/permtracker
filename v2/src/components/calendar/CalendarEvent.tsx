@@ -10,10 +10,10 @@
 
 import { forwardRef } from "react";
 import type { EventProps } from "react-big-calendar";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { type CalendarEvent as CalendarEventType, STAGE_COLORS } from "@/lib/calendar/types";
-import { formatCaseStatus, formatProgressStatus } from "@convex/lib/notificationHelpers";
+import { formatCaseStatus } from "@convex/lib/notificationHelpers";
 import { countdownWords } from "@/components/cases/case-card.utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -39,12 +39,6 @@ function CaseSummary({ event }: { event: CalendarEventType }) {
         ) : null}
       </div>
       <dl className="space-y-1 px-3 py-2 text-sm">
-        {event.caseStatus ? (
-          <div className="flex items-center justify-between gap-3">
-            <dt className="text-muted-foreground">Progress</dt>{" "}
-            <dd className="font-semibold">{formatProgressStatus(event.caseStatus)}</dd>
-          </div>
-        ) : null}{" "}
         <div className="flex items-center justify-between gap-3">
           <dt className="text-muted-foreground">Stage</dt>{" "}
           <dd className="font-semibold">{formatCaseStatus(event.stage)}</dd>
@@ -65,38 +59,43 @@ function CaseSummary({ event }: { event: CalendarEventType }) {
   );
 }
 
-interface EventPillProps extends React.HTMLAttributes<HTMLDivElement> {
+interface EventPillProps extends Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href"> {
+  href: string;
   /** The stage's colour, drawn on the pill's left edge and in its wash. */
   color: string;
   urgent: boolean;
   title: string;
 }
 
-const EventPill = forwardRef<HTMLDivElement, EventPillProps>(({ color, urgent, title, style, ...rest }, ref) => (
-  <div ref={ref} className="calendar-event" style={{ ...style, ["--event-color" as string]: color }} {...rest}>
+/** A link to the case, so a keyboard reaches it (the grid's own event box takes no focus) and it opens in a new tab. */
+const EventPill = forwardRef<HTMLAnchorElement, EventPillProps>(({ href, color, urgent, title, style, className, ...rest }, ref) => (
+  <Link
+    ref={ref}
+    href={href}
+    className={cn("calendar-event focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary", className)}
+    style={{ ...style, ["--event-color" as string]: color }}
+    {...rest}
+  >
     {urgent ? <span aria-hidden="true" className="size-2 shrink-0 bg-destructive" /> : null}
     <span className="event-title">{title}</span>
-  </div>
+  </Link>
 ));
 EventPill.displayName = "EventPill";
 
 export function CalendarEvent({ event }: CalendarEventProps) {
-  const router = useRouter();
-
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    router.push(`/cases/${event.caseId}`);
-  };
-
   return (
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>
           <EventPill
+            href={`/cases/${event.caseId}`}
             color={STAGE_COLORS[event.stage] ?? "var(--muted-foreground)"}
             urgent={isUrgent(event)}
             title={event.title}
-            onClick={handleClick}
+            aria-label={`${event.title}, ${countdownWords(event.daysUntil)}`}
+            // The grid's own handlers would also select the event; the link alone opens the case.
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
           />
         </TooltipTrigger>
         <TooltipContent side="top" sideOffset={8} collisionPadding={10} className="overflow-hidden p-0 shadow-hard">
