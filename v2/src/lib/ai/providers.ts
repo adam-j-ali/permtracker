@@ -65,6 +65,10 @@ function getApiKey(name: string): string {
   return value || '';
 }
 
+// The three Gemini models read their key from the environment when they're called (the SDK's default provider), so
+// it's checked here at load like the others: a missing key is one report at deploy time, not a quiet fall to Groq.
+getApiKey('GOOGLE_GENERATIVE_AI_API_KEY');
+
 export const groq = createGroq({
   apiKey: getApiKey('GROQ_API_KEY'),
 });
@@ -194,9 +198,27 @@ function reportModelGone(name: string, error: unknown): void {
   });
 }
 
+/**
+ * A key the provider refuses (401, or 403 for one without access) fails every request to that model until it's
+ * replaced, and the chain hides it while a later, smaller model answers. Reported once per model per process.
+ */
+const reportedRefused = new Set<string>();
+
+function reportKeyRefused(name: string, error: unknown): void {
+  const e = error as ErrorLike | undefined;
+  const status = Number(e?.statusCode ?? e?.status);
+  if (reportedRefused.has(name) || (status !== 401 && status !== 403)) return;
+  reportedRefused.add(name);
+  captureError(new Error(`AI model refused our key: ${name}. ${formatError(error)}`), {
+    operation: 'ai.fallback.keyRefused',
+    tags: { model: name },
+  });
+}
+
 /** Test hook: forget which models were reported. */
 export function resetReportedGone(): void {
   reportedGone.clear();
+  reportedRefused.clear();
 }
 
 // =============================================================================
@@ -302,6 +324,7 @@ export class FallbackModel implements LanguageModelV4 {
         const errorStr = formatError(error);
         errors.push({ name: config.name, error: errorStr });
         reportModelGone(config.name, error);
+        reportKeyRefused(config.name, error);
         console.warn(`[Fallback] ${config.name} FAILED (${mode}): ${errorStr}`);
         addBreadcrumb({ category: 'ai.fallback', message: `${config.name} FAILED (${mode})`, level: 'warning', data: { modelIndex: i, error: errorStr } });
       }

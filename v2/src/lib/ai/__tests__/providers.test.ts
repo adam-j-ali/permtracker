@@ -518,6 +518,54 @@ describe('FallbackModel', () => {
     expect(String((reports[0]![0] as Error).message)).toContain('Retired');
   });
 
+  it('reports a refused key once per model, even when a later model answers', async () => {
+    const { FallbackModel, resetReportedGone } = await import('../providers');
+    const { captureError } = await import('@/lib/sentry');
+    resetReportedGone();
+    vi.mocked(captureError).mockClear();
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const refusing = (status: number) => ({
+      specificationVersion: 'v4' as const, provider: 'test', modelId: `refused-${status}`, supportedUrls: {},
+      doGenerate: vi.fn(), doStream: vi.fn().mockRejectedValue(Object.assign(new Error('API key not valid.'), { statusCode: status })),
+    });
+    const live = {
+      specificationVersion: 'v4' as const, provider: 'test', modelId: 'live', supportedUrls: {},
+      doGenerate: vi.fn(), doStream: vi.fn().mockResolvedValue({ stream: 'ok' }),
+    };
+    const fallback = new FallbackModel([
+      { model: refusing(401), name: 'Revoked' },
+      { model: refusing(403), name: 'Forbidden' },
+      { model: live, name: 'Live' },
+    ]);
+    await fallback.doStream({ prompt: [] } as any);
+    await fallback.doStream({ prompt: [] } as any);
+    const reports = vi.mocked(captureError).mock.calls.filter(
+      ([, ctx]) => (ctx as { operation?: string } | undefined)?.operation === 'ai.fallback.keyRefused',
+    );
+    expect(reports.map(([e]) => String((e as Error).message).split('.')[0])).toEqual([
+      'AI model refused our key: Revoked',
+      'AI model refused our key: Forbidden',
+    ]);
+  });
+
+  it('reports a missing Gemini key when it loads, as it does the other providers', async () => {
+    const saved = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    try {
+      vi.resetModules();
+      const { captureError } = await import('@/lib/sentry');
+      vi.mocked(captureError).mockClear();
+      await import('../providers');
+      const missing = vi.mocked(captureError).mock.calls
+        .filter(([, ctx]) => (ctx as { operation?: string } | undefined)?.operation === 'ai.providers.missingEnvVar')
+        .map(([, ctx]) => (ctx as { tags?: { envVar?: string } }).tags?.envVar);
+      expect(missing).toContain('GOOGLE_GENERATIVE_AI_API_KEY');
+    } finally {
+      if (saved !== undefined) process.env.GOOGLE_GENERATIVE_AI_API_KEY = saved;
+    }
+  });
+
   it('tells a retired model from a busy one', async () => {
     const { isModelGone } = await import('../providers');
     expect(isModelGone(Object.assign(new Error('gone'), { statusCode: 404 }))).toBe(true);
