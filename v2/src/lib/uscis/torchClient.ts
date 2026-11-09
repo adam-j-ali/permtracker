@@ -3,6 +3,7 @@ import "server-only";
 import { exec, one } from "@/lib/db/client";
 import { secretMatches } from "@/lib/secretMatch";
 import { easternDay } from "@/lib/time";
+import { captureError } from "@/lib/sentry";
 
 /**
  * The USCIS Torch API client: OAuth client-credentials, one endpoint that is
@@ -166,6 +167,23 @@ let cached: CachedToken | null = null;
 /** Test hook: forget the cached token. */
 export function resetTokenCache(): void {
   cached = null;
+}
+
+/**
+ * The route tells a visitor refused for our credentials that "the site's operator has been told", so this tells
+ * him: once per process for each kind, so a revoked key fails every lookup without filling Sentry. A 200 that won't
+ * read is the other one nobody would otherwise see.
+ */
+const reported = new Set<string>();
+function reportOnce(kind: "unauthorized" | "unreadableAnswer", detail: string): void {
+  if (reported.has(kind)) return;
+  reported.add(kind);
+  captureError(new Error(`USCIS case status: ${detail}`), { operation: `uscis.${kind}` });
+}
+
+/** Test hook: forget what was reported. */
+export function resetUscisReports(): void {
+  reported.clear();
 }
 
 /**
@@ -346,7 +364,9 @@ export async function fetchCaseStatus(receipt: string, deps: ClientDeps = {}): P
   } catch (e) {
     // Only a refusal from USCIS is "unauthorized"; a timeout or a dropped
     // connection while fetching the token is USCIS being unavailable.
-    return e instanceof UscisAuthError ? { kind: "unauthorized" } : { kind: "unavailable", httpStatus: null };
+    if (!(e instanceof UscisAuthError)) return { kind: "unavailable", httpStatus: null };
+    reportOnce("unauthorized", `the token endpoint refused our credentials (${env})`);
+    return { kind: "unauthorized" };
   }
 
   let res: Response;
@@ -362,7 +382,11 @@ export async function fetchCaseStatus(receipt: string, deps: ClientDeps = {}): P
   if (res.status === 200) {
     const json = (await res.json().catch(() => null)) as { case_status?: RawCaseStatus } | null;
     const status = json?.case_status ? normaliseCaseStatus(json.case_status, receipt) : null;
-    if (!status) return { kind: "unavailable", httpStatus: 200 };
+    if (!status) {
+      // The field names only: the body can carry a person's case.
+      reportOnce("unreadableAnswer", `a 200 without a readable case status (${env}), fields: ${Object.keys(json ?? {}).join(", ") || "none"}`);
+      return { kind: "unavailable", httpStatus: 200 };
+    }
     return { kind: "ok", status, raw: json };
   }
   if (res.status === 404) return { kind: "not_found" };
@@ -370,6 +394,7 @@ export async function fetchCaseStatus(receipt: string, deps: ClientDeps = {}): P
   if (res.status === 401 || res.status === 403) {
     // A stale token is the common cause; drop it so the next call refreshes.
     cached = null;
+    reportOnce("unauthorized", `case status answered ${res.status} (${env})`);
     return { kind: "unauthorized" };
   }
   if (res.status === 429) return { kind: "rate_limited", where: "uscis" };
@@ -397,7 +422,9 @@ export async function fetchProcessingTimesRaw(
   } catch (e) {
     // Only a refusal from USCIS is "unauthorized"; a timeout or a dropped
     // connection while fetching the token is USCIS being unavailable.
-    return e instanceof UscisAuthError ? { kind: "unauthorized" } : { kind: "unavailable", httpStatus: null };
+    if (!(e instanceof UscisAuthError)) return { kind: "unavailable", httpStatus: null };
+    reportOnce("unauthorized", `the token endpoint refused our credentials (${env})`);
+    return { kind: "unauthorized" };
   }
   let res: Response;
   try {
