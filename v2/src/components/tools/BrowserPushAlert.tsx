@@ -20,11 +20,14 @@ import { convexSiteUrl } from "@/lib/convexSite";
 
 /**
  * Where this browser's endpoint is kept, one key per kind of alert (by its stop route), so the bulletin box can't
- * offer to stop a case alert. Endpoints saved before the split sit under the bare key, kind unknown: they're offered,
- * and kept unless the stop actually closed something.
+ * offer to stop a case alert. An endpoint saved before the split sits under the bare key, kind unknown, and one push
+ * endpoint can watch both kinds: it's offered by each box, and once a stop has used it, it moves to the other kinds'
+ * keys, so their boxes keep their Stop.
  */
 const LEGACY_KEY = "pt-push-endpoint";
 const keyFor = (stopPath: string) => `${LEGACY_KEY}:${stopPath}`;
+/** Every kind's stop route, for handing a shared endpoint on. */
+const STOP_PATHS = ["/case-alert/push/stop", "/bulletin-alert/push/stop"] as const;
 
 type State =
   | { kind: "idle" }
@@ -132,8 +135,18 @@ export function BrowserPushAlert({ subscribePath, stopPath, fields, summary, exp
       if (res.ok) {
         try {
           window.localStorage.removeItem(keyFor(stopPath));
-          // An endpoint from before the split may be the other kind's: it stays unless this stop closed something.
-          if (storedLegacy && body?.closed !== 0) window.localStorage.removeItem(LEGACY_KEY);
+          // An endpoint from before the split may watch the other kind too: it moves to the other kinds' keys.
+          if (storedLegacy) {
+            const shared = window.localStorage.getItem(LEGACY_KEY);
+            if (shared) {
+              for (const other of STOP_PATHS) {
+                if (other !== stopPath && window.localStorage.getItem(keyFor(other)) === null) {
+                  window.localStorage.setItem(keyFor(other), shared);
+                }
+              }
+            }
+            window.localStorage.removeItem(LEGACY_KEY);
+          }
         } catch {
           // Nothing to do: the server side is what matters.
         }
