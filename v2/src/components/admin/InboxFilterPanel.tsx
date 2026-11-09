@@ -66,6 +66,9 @@ function HeldRow({ r }: { r: Row }) {
   const release = useMutation(api.inboundFilter.release);
   const remove = useMutation(api.inboundFilter.deleteHeld);
   const { busy, error, run } = useAct();
+  // Held mail is the only copy, so Delete asks for a second press; once Not spam has sent it on, nothing more is offered.
+  const [sure, setSure] = useState(false);
+  const [released, setReleased] = useState(false);
   const id = r.id as Id<"supportEmails">;
   return (
     <li className="border-2 border-border bg-card p-4 shadow-hard-sm">
@@ -83,14 +86,41 @@ function HeldRow({ r }: { r: Row }) {
           {typeof r.score === "number" ? ` (score ${r.score})` : ""}
         </p>
       ) : null}
-      <div className="mt-3 flex flex-wrap gap-3">
-        <button type="button" className={BTN} disabled={busy} onClick={() => run(() => release({ id }))}>
-          Not spam
-        </button>{" "}
-        <button type="button" className={BTN} disabled={busy} onClick={() => run(() => remove({ id }))}>
-          Delete
-        </button>
-      </div>
+      {released ? (
+        <p role="status" className="mt-3 text-sm font-bold">
+          Sending to your inbox
+        </p>
+      ) : (
+        <div className="mt-3 flex flex-wrap gap-3">
+          <button
+            type="button"
+            className={BTN}
+            disabled={busy}
+            onClick={() =>
+              run(async () => {
+                await release({ id });
+                setReleased(true);
+              })
+            }
+          >
+            Not spam
+          </button>{" "}
+          {sure ? (
+            <>
+              <button type="button" className={`${BTN} bg-destructive text-destructive-foreground`} disabled={busy} onClick={() => run(() => remove({ id }))}>
+                Delete for good
+              </button>{" "}
+              <button type="button" className={BTN} disabled={busy} onClick={() => setSure(false)}>
+                Keep it
+              </button>
+            </>
+          ) : (
+            <button type="button" className={BTN} disabled={busy} onClick={() => setSure(true)}>
+              Delete
+            </button>
+          )}
+        </div>
+      )}
       {error ? (
         <p role="alert" className="mt-2 text-sm font-bold text-destructive">
           {error}

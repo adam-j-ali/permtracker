@@ -57,6 +57,7 @@ function ClaimCard({ c }: { c: Claim }) {
   const revoke = useMutation(api.firmClaims.revokeClaim);
   const hide = useMutation(api.firmClaims.setProfileHidden);
   const site = useMutation(api.firmClaims.approveWebsite);
+  const [sureRevoke, setSureRevoke] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const run = async (fn: () => Promise<unknown>) => {
@@ -121,8 +122,18 @@ function ClaimCard({ c }: { c: Claim }) {
             Reject
           </button>
         ) : null}
-        {c.status === "verified" ? (
-          <button type="button" disabled={busy} onClick={() => run(() => revoke({ claimId: id }))} className={`${BTN} bg-background`}>
+        {/* Revoking can take the firm's profile down, so it asks for a second press. */}
+        {c.status === "verified" && sureRevoke ? (
+          <>
+            <button type="button" disabled={busy} onClick={() => run(() => revoke({ claimId: id }))} className={`${BTN} bg-destructive text-destructive-foreground`}>
+              Revoke it for good
+            </button>{" "}
+            <button type="button" disabled={busy} onClick={() => setSureRevoke(false)} className={`${BTN} bg-background`}>
+              Keep it
+            </button>
+          </>
+        ) : c.status === "verified" ? (
+          <button type="button" disabled={busy} onClick={() => setSureRevoke(true)} className={`${BTN} bg-background`}>
             Revoke the claim
           </button>
         ) : null}
