@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { calculateCspa, type CspaInput } from "./cspa";
+import { ageBetween, calculateCspa, type CspaInput } from "./cspa";
 import type { BulletinMonth } from "./priorityDate";
 
 /**
@@ -84,6 +84,24 @@ describe("pending time and the CSPA age (INA 203(h)(1))", () => {
     const after = calculateCspa({ ...base, bulletins: series("2026-09", "2026-09", { "2026-09": "C" }), petitionApproved: "2026-09-08", petitionFiled: "2026-03-10" });
     expect(after.pendingDays).toBe(182);
     expect(after.counted?.underTwentyOne).toBe(false);
+  });
+
+  it("gives a February 29 child the same 21st birthday in the age as in the verdict", () => {
+    // In a common year the 21st birthday is February 28, the day turns21 names, so that day reads 21, never 20.
+    expect(ageBetween("2004-02-29", "2025-02-28")).toEqual({ years: 21, months: 0, days: 0 });
+    expect(ageBetween("2004-02-29", "2025-02-27")).toEqual({ years: 20, months: 11, days: 29 });
+    expect(ageBetween("2004-02-29", "2025-03-01")).toEqual({ years: 21, months: 0, days: 1 });
+    const r = calculateCspa({
+      ...base,
+      birthDate: "2004-02-29",
+      petitionFiled: "2025-02-28",
+      petitionApproved: "2025-02-28",
+      bulletins: series("2025-02", "2025-02", { "2025-02": "C" }),
+      today: "2025-03-15",
+    });
+    expect(r.turns21).toBe("2025-02-28");
+    expect(r.counted?.underTwentyOne).toBe(false);
+    expect(r.counted?.cspaAge.years).toBe(21);
   });
 });
 
