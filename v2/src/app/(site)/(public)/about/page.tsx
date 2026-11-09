@@ -52,6 +52,7 @@ import {
 } from "@/lib/constants/about";
 import {
   BLUESKY_URL,
+  CRUNCHBASE_URL,
   DC_BAR_SABRINA_URL,
   FACEBOOK_URL,
   LINKEDIN_COMPANY_URL,
@@ -180,6 +181,7 @@ const ELSEWHERE = [
   { href: LINKEDIN_COMPANY_URL, label: "LinkedIn" },
   { href: YOUTUBE_URL, label: "YouTube" },
   { href: FACEBOOK_URL, label: "Facebook" },
+  { href: CRUNCHBASE_URL, label: "Crunchbase" },
   { href: MEDIUM_PROFILE_URL, label: "Medium" },
   { href: PRODUCT_HUNT_URL, label: "Product Hunt" },
 ] as const;
