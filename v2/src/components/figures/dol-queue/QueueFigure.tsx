@@ -8,6 +8,7 @@ import { getLiveBacklog } from "@/lib/db/publicData";
 import { getDecisionPace } from "@/lib/db/decisionPace";
 import { getEstimatorData } from "@/lib/db/estimate";
 import { getSweepCoverage } from "@/lib/db/sweepCoverage";
+import { easternDay } from "@/lib/time";
 import dynamic from "next/dynamic";
 import { buildQueueRun } from "./model";
 
@@ -28,7 +29,7 @@ export async function QueueFigure() {
     // The caption names DOL's own month and date only when they're DOL's (our check stands in from Oct 31 2026).
     dolAsOf: estimator?.frontier && estimator.frontier.from !== "check" ? estimator.frontier.asOf : null,
     sweepFinishedOn: sweep?.finishedOn ?? null,
-    today: new Date().toISOString().slice(0, 10),
+    today: easternDay(),
   });
   if (!run || !sweep?.finishedOn) return null;
   return <QueueConveyorFigure run={run} census={sweep.finishedOn} />;

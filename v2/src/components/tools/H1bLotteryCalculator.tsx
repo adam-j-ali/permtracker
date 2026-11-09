@@ -23,6 +23,7 @@ import {
 } from "@/lib/h1bLotteryCalc";
 import { US_STATE_NAMES } from "@/lib/usStateNames";
 import { seriesYearFor, WAGE_SEARCH_PAGE, type WageLevel } from "@/lib/wageLevels";
+import { easternDay } from "@/lib/time";
 import { SOC_CODE_RE, socGroup } from "@/lib/socCode";
 import { buttonVariants } from "@/components/ui/button";
 import { ScrollBox } from "@/components/ui/scroll-box";
@@ -162,7 +163,7 @@ export function H1bLotteryCalculator() {
   const socId = useId();
   const offerId = useId();
   const siteId = useId();
-  const currentSeries = useMemo(() => seriesYearFor(new Date().toISOString().slice(0, 10)), []);
+  const currentSeries = useMemo(() => seriesYearFor(easternDay()), []);
   // An occupation page or a shared link can name the job (?soc=15-1252); a code it can't read is ignored.
   const params = useUrlSearchParams();
   const [soc, setSoc] = useState(() => {

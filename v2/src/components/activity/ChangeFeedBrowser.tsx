@@ -9,6 +9,7 @@ import { rankFuzzy } from "@/lib/fuzzy";
 import { nextSort, sortRows, type SortState } from "@/lib/tableSort";
 import { CHANGE_PROGRAMS, PROGRAM_LABEL, type ChangeProgram } from "@/lib/changeProgram";
 import { formatInt } from "@/lib/format";
+import { easternDay } from "@/lib/time";
 import { longDate as monthsLongDate, weekdayName } from "@convex/lib/months";
 import { CHANGE_COLUMNS, ChangeTable } from "./ChangeTable";
 import { DECIDED_COLUMNS, DecidedTable } from "./DecidedTable";
@@ -177,7 +178,7 @@ export function ChangeFeedBrowser({
   const [seenDayParam, setSeenDayParam] = useState<string | null>(null);
   if (dayParam !== seenDayParam) {
     setSeenDayParam(dayParam);
-    if (dayParam && /^\d{4}-\d{2}-\d{2}$/.test(dayParam) && dayParam <= new Date().toISOString().slice(0, 10)) {
+    if (dayParam && /^\d{4}-\d{2}-\d{2}$/.test(dayParam) && dayParam <= easternDay()) {
       setDate(dayParam);
       setRangeTo(dayParam);
       setPage(0);
@@ -206,7 +207,7 @@ export function ChangeFeedBrowser({
     (v): v is string => typeof v === "string",
   );
   const floor = starts.length ? starts.reduce((a, b) => (a < b ? a : b)) : undefined;
-  const ceiling = new Date().toISOString().slice(0, 10);
+  const ceiling = easternDay();
 
   // WHICH RECORD CAN ANSWER DECIDES WHICH CONTROLS ARE LIVE, per selection.
   // Not a blanket rule: the four fields below exist on every published case,
