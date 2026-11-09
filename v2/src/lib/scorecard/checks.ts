@@ -36,7 +36,7 @@ const days = (n: number, unit = "day") => `${n % 1 === 0 ? n : n.toFixed(1)} ${n
 const day = (iso: unknown) => (typeof iso === "string" ? (longDate(iso) ?? iso) : null);
 
 /** A check's cell as the Python backtests write it; every field is checked before it's used. */
-type Cell = { decided?: unknown; typicalMissDays?: unknown; within7Share?: unknown };
+type Cell = { cases?: unknown; decided?: unknown; typicalMissDays?: unknown; within7Share?: unknown; missAtLeastDays?: unknown };
 
 export interface ChecksInput {
   /** perm_docs['estimator_backtest'] as read (src/lib/db/predictions.ts). */
@@ -44,7 +44,7 @@ export interface ChecksInput {
     t0?: unknown;
     end?: unknown;
     current?: { decided?: unknown; typicalMissDays?: unknown; within7Share?: unknown } | null;
-    passed?: { rate?: Cell | null; dolAverage?: Cell | null } | null;
+    passed?: { rate?: Cell | null; dolAverage?: Cell | null; today?: Cell | null } | null;
     rfiClock?: { test?: (Cell & { insideShare?: unknown }) | null } | null;
   } | null;
   /** The printed range near the front (printedRangeCheck in src/lib/rangeCoverage.ts). */
@@ -101,17 +101,19 @@ export function estimateChecks(input: ChecksInput): CheckRow[] {
     });
   }
 
+  // Against answering "today", the way a rival dates these cases, with the ones still waiting counted at the days
+  // they're late: DOL's published average, the old comparison, was retired from the case page on Oct 7 2026.
   const rate = p?.passed?.rate ?? null;
-  const dol = p?.passed?.dolAverage ?? null;
-  const rateMiss = num(rate?.typicalMissDays);
-  const rateDecided = num(rate?.decided);
-  if (rateMiss !== null && rateDecided !== null && rateDecided > 0) {
-    const dolMiss = num(dol?.typicalMissDays);
+  const now = p?.passed?.today ?? null;
+  const rateFloor = num(rate?.missAtLeastDays);
+  const nowFloor = num(now?.missAtLeastDays);
+  const rateCases = num(rate?.cases);
+  if (rateFloor !== null && rateCases !== null && rateCases > 0) {
     out.push({
       key: "perm-passed",
       estimate: "When DOL decides a PERM case its line has already passed",
-      result: `${days(rateMiss)} typically${dolMiss !== null ? `, where DOL's own average was ${days(dolMiss)} off` : ""}`,
-      basis: `${formatInt(rateDecided)} such cases DOL decided${t0 && end ? ` ${dayRange(String(p?.t0), String(p?.end))}` : ""}`,
+      result: `At least ${days(rateFloor)} off${nowFloor !== null ? `, where answering "today" was at least ${days(nowFloor)}` : ""}`,
+      basis: `${formatInt(rateCases)} such cases, the ones still waiting counted at the days they're late${t0 && end ? `, ${dayRange(String(p?.t0), String(p?.end))}` : ""}`,
     });
   }
 

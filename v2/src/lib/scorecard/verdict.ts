@@ -230,6 +230,8 @@ export function readOurs(
   byHorizon: Record<Horizon, Cell> | null,
   since: string | null,
   backtest: BacktestFigures | null,
+  /** The Eastern day the sentences are read on: a start date already past isn't printed as coming. */
+  today: string | null = null,
 ): string[] {
   const out: string[] = [];
   const bt = backtest?.current ?? null;
@@ -242,7 +244,7 @@ export function readOurs(
   }
   if (sampleLean && btLean && Math.sign(ours.biasDays!) === Math.sign(bt!.biasDays!)) {
     out.push(
-      `Both checks say our dates run ${ours.biasDays! < 0 ? "late" : "early"}: in the backtest ${btLean}, and in the daily sample ${sampleLean.replace(/^DOL usually decided /, "")}.`,
+      `Both checks agree that DOL usually decides ${ours.biasDays! < 0 ? "before" : "after"} our date: by about ${dayWord(Math.abs(bt!.biasDays!))} in the backtest, and about ${dayWord(Math.abs(ours.biasDays!))} in the daily sample.`,
     );
   } else if (btLean) {
     out.push(`In the backtest, ${btLean}.`);
@@ -290,7 +292,7 @@ export function readOurs(
       );
     }
   }
-  if (since && ours.settled === 0) {
+  if (since && ours.settled === 0 && (!today || settlesFrom(since) > today)) {
     out.push(
       `The fair test, which counts a case still waiting a month past its date as a miss, begins about ${format(parseISO(settlesFrom(since)), "MMMM d")}.`,
     );
@@ -330,6 +332,19 @@ export const RETIRED_METHODS: Record<string, string> = {
 export const isCurrentMethod = (model: string) => !(model in RETIRED_METHODS);
 
 /**
+ * A retired method that was an earlier version of one in use, with that one's name. The case page never stopped
+ * dating cases this way, only refined the arithmetic, so its grades count in every "methods in use today" figure.
+ * Without this the Nov 4 2026 rename of the main method left the public sample and the head-to-head grading none
+ * of the main method's dates.
+ */
+export const EARLIER_VERSION_OF: Record<string, string> = {
+  "decision-pace": "decision-pace-calendar",
+};
+
+/** Whether a method's grades count as today's: in use, or an earlier version of one that is. */
+export const countsAsCurrent = (model: string) => isCurrentMethod(model) || model in EARLIER_VERSION_OF;
+
+/**
  * One sentence per method with at least `min` grades, busiest first. The
  * public page leaves the retired ones out (`retired: false`); the admin page
  * and the morning report keep them, each saying it's retired.
@@ -341,14 +356,18 @@ export function readMethods(
 ): string[] {
   if (!byModel) return [];
   return Object.entries(byModel)
-    .filter(([m, c]) => c.graded >= min && c.typicalMissDays !== null && (retired || isCurrentMethod(m)))
+    .filter(([m, c]) => c.graded >= min && c.typicalMissDays !== null && (retired || countsAsCurrent(m)))
     .sort((a, b) => b[1].graded - a[1].graded)
     .map(([m, c]) => {
       const far = c.within14Share === null ? 0 : c.graded - Math.round(c.within14Share * c.graded);
       const lean = c.biasDays !== null && Math.abs(c.biasDays) >= 2
         ? `, and its dates run ${c.biasDays < 0 ? "late" : "early"}`
         : "";
-      const retired = RETIRED_METHODS[m] ? ` Retired ${RETIRED_METHODS[m]}: the case page no longer dates cases this way.` : "";
+      const retired = !RETIRED_METHODS[m]
+        ? ""
+        : EARLIER_VERSION_OF[m]
+          ? ` Replaced ${RETIRED_METHODS[m]} by the refined version of the same method.`
+          : ` Retired ${RETIRED_METHODS[m]}: the case page no longer dates cases this way.`;
       return `${METHOD_NAME[m] ?? m}: ${formatInt(c.graded)} graded, typically ${dayWord(c.typicalMissDays!)} off${far ? `, ${formatInt(far)} more than two weeks off` : ""}${lean}.${retired}`;
     });
 }

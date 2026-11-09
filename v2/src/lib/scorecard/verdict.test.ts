@@ -8,6 +8,7 @@ import {
   parseNextCutoff,
   parseSupplyDivision,
   readMethods,
+  countsAsCurrent,
   readNextCutoff,
   readOurs,
   readRival,
@@ -132,9 +133,9 @@ describe("readOurs", () => {
   };
 
   it("leads with the backtest and says both checks lean the same way", () => {
-    const out = readOurs(cell({}), horizons(31, 2), "2026-09-26", backtest);
+    const out = readOurs(cell({}), horizons(31, 2), "2026-09-26", backtest, "2026-10-20");
     expect(out[0]).toBe("On 11,473 real DOL decisions (the nightly backtest), our dates were typically 4 days off, and 78% landed within a week.");
-    expect(out[1]).toContain("Both checks say our dates run late");
+    expect(out[1]).toContain("Both checks agree that DOL usually decides before our date");
     expect(out.join(" ")).toContain("Only 29% of 8,023 decisions landed inside the range");
     expect(out.join(" ")).toContain("31 of our 33 grades are for dates within a month; 2 are further out");
     expect(out.join(" ")).toContain("begins about October 27");
@@ -147,6 +148,12 @@ describe("readOurs", () => {
 
   it("drops the fair-test date once predictions have settled", () => {
     expect(readOurs(cell({ settled: 12 }), null, "2026-09-26", null).join(" ")).not.toContain("fair test");
+  });
+
+  it("never prints the fair-test date as coming once it has passed", () => {
+    // It said "begins about October 27" on November 9.
+    expect(readOurs(cell({}), null, "2026-09-26", null, "2026-11-09").join(" ")).not.toContain("fair test");
+    expect(readOurs(cell({}), null, "2026-09-26", null, "2026-10-26").join(" ")).toContain("begins about October 27");
   });
 });
 
@@ -175,9 +182,25 @@ describe("readMethods", () => {
     expect(out[1]).toBe("Our main method (cases ahead of yours, at DOL's measured pace, walked over its calendar): 11 graded, typically 4 days off, and its dates run late.");
   });
 
-  it("reads the flat-pace main method as retired from Nov 4 2026", () => {
+  it("reads the flat-pace main method as the earlier version of the one in use", () => {
     const out = readMethods({ "decision-pace": cell({ graded: 30, typicalMissDays: 3 }) });
-    expect(out[0]).toContain("Retired November 4, 2026");
+    expect(out[0]).toContain("Replaced November 4, 2026 by the refined version of the same method");
+  });
+
+  it("keeps an earlier version of a method in use on the public page, where retired ones are left out", () => {
+    const out = readMethods(
+      { "decision-pace": cell({ graded: 30, typicalMissDays: 3 }), "dol-average": cell({ graded: 19, typicalMissDays: 6 }) },
+      3,
+      { retired: false },
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0]).toContain("Our main method before Nov 4 2026");
+  });
+
+  it("counts an earlier version of a method in use as today's, and a retired one not", () => {
+    expect(countsAsCurrent("decision-pace")).toBe(true);
+    expect(countsAsCurrent("decision-pace-calendar")).toBe(true);
+    expect(countsAsCurrent("dol-average")).toBe(false);
   });
 
   it("leaves the retired methods out when asked, for the public page", () => {

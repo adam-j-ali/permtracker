@@ -19,7 +19,7 @@ import {
 import { scorecardAlarms } from "@/lib/scorecard/alarms";
 import type { BacktestRangeFields } from "@/lib/rangeCoverage";
 import type { PassedScore } from "@/lib/scorecard/verdict";
-import { isCurrentMethod, parseNextCutoff, parseSupplyDivision, readMethods, readNextCutoff, readOurs, readRival, readSupplyDivision } from "@/lib/scorecard/verdict";
+import { countsAsCurrent, parseNextCutoff, parseSupplyDivision, readMethods, readNextCutoff, readOurs, readRival, readSupplyDivision } from "@/lib/scorecard/verdict";
 import { SETTLED_BY_FILE_STATUSES } from "@/lib/seasonalDetails";
 import { timingView, viewEstimate } from "@/lib/seasonalTiming";
 import { BULLETIN_FIRST_CAPTURES } from "@/lib/bulletinCaptures";
@@ -335,6 +335,12 @@ export async function predictBulletinRelease(recordedOn: string): Promise<NewPre
   const bulletin = shiftMonth(String(held.m), 1);
   const est = releaseEstimate(bulletin, BULLETIN_FIRST_CAPTURES);
   if (!est || recordedOn > est.early) return [];
+  // Once: a second morning's row would grade the same bulletin twice.
+  const already = await one<{ n: number }>(
+    "SELECT 1 AS n FROM estimate_predictions WHERE source = 'ours' AND program = 'bulletin' AND case_number = ? LIMIT 1",
+    [`bulletin:${bulletin}`],
+  );
+  if (already) return [];
   return [
     {
       source: "ours",
@@ -717,6 +723,23 @@ export interface ScorecardDoc {
   }[];
 }
 
+/**
+ * One row per thing predicted for a program whose rows name a shared subject (a bulletin, not a case): its first
+ * recording. Before Nov 9 2026 the release day was written again each morning, so one bulletin read as several.
+ */
+export function firstRecordingEach<T extends { program: string; caseNumber: string; recordedOn: string }>(
+  rows: readonly T[],
+  program: string,
+): T[] {
+  const first = new Map<string, T>();
+  for (const r of rows) {
+    if (r.program !== program) continue;
+    const seen = first.get(r.caseNumber);
+    if (!seen || r.recordedOn < seen.recordedOn) first.set(r.caseNumber, r);
+  }
+  return [...first.values()];
+}
+
 /** Recompute both docs from the table. Ours only in the public one. */
 export async function writeScorecardDocs(today: string): Promise<{ rows: number }> {
   const all = await rows<StoredRow>(
@@ -727,7 +750,7 @@ export async function writeScorecardDocs(today: string): Promise<{ rows: number 
   const ours = mapped.filter((r) => r.source === "ours");
   const watchedRows = mapped.filter((r) => r.source === "watched");
   const recent = all
-    .filter((r) => r.source === "ours" && r.program === "perm" && r.decided_on && isGradedOutcome(r.outcome) && isCurrentMethod(r.model))
+    .filter((r) => r.source === "ours" && r.program === "perm" && r.decided_on && isGradedOutcome(r.outcome) && countsAsCurrent(r.model))
     .sort((a, b) => (a.decided_on! < b.decided_on! ? 1 : -1))
     .slice(0, 8)
     .map((r) => ({
@@ -739,23 +762,23 @@ export async function writeScorecardDocs(today: string): Promise<{ rows: number 
       outcome: r.outcome!,
     }));
   const pub: ScorecardDoc = {
-    perm: summarise(ours, today, "perm", isCurrentMethod),
-    pwd: summarise(ours, today, "pwd", isCurrentMethod),
-    seasonal: summarise(ours, today, "seasonal", isCurrentMethod),
-    bulletin: summarise(ours, today, "bulletin", isCurrentMethod),
+    perm: summarise(ours, today, "perm", countsAsCurrent),
+    pwd: summarise(ours, today, "pwd", countsAsCurrent),
+    seasonal: summarise(ours, today, "seasonal", countsAsCurrent),
+    bulletin: summarise(firstRecordingEach(ours, "bulletin"), today, "bulletin", countsAsCurrent),
     watched: {
       perm: summarise(watchedRows, today, "perm").bySource.watched?.all ?? null,
       pwd: summarise(watchedRows, today, "pwd").bySource.watched?.all ?? null,
     },
     recent,
   };
-  const perm = summarise(mapped, today, "perm", isCurrentMethod);
+  const perm = summarise(mapped, today, "perm", countsAsCurrent);
   // The same cases, ours against each rival: neither side scored on an easier
   // sample. Ours as the case page dates them now: a case one of our retired
   // methods dated is left out of the comparison (its grades stay in byModel).
   const h2h = headToHead(
     all
-      .filter((r) => r.source !== "ours" || isCurrentMethod(r.model))
+      .filter((r) => r.source !== "ours" || countsAsCurrent(r.model))
       .map((r) => ({ ...toRow(r), caseNumber: r.case_number })),
     today,
   );
@@ -789,7 +812,7 @@ export async function writeScorecardDocs(today: string): Promise<{ rows: number 
     // morning report, which is Python, quotes them instead of re-deriving them.
     readings: {
       ours: mine
-        ? [...readOurs(mine.current ?? mine.all, mine.currentByHorizon ?? mine.byHorizon, perm.since, backtest), ...readMethods(mine.byModel)]
+        ? [...readOurs(mine.current ?? mine.all, mine.currentByHorizon ?? mine.byHorizon, perm.since, backtest, today), ...readMethods(mine.byModel)]
         : [],
       rivals: Object.entries(h2h).map(([src, h]) => readRival(src, h)),
       // Priority dates: our pace against dividing by yearly visas, on the same
