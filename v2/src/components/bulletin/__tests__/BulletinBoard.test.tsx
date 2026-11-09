@@ -67,6 +67,9 @@ describe("BulletinBoard: the pace", () => {
     // Assert
     expect(parseFloat(bar.style.left)).toBeGreaterThanOrEqual(0);
     expect(row.getAttribute("data-tip")).toMatch(/the cutoff moved back/);
+    // The days it moved are counted as lost, never as a negative gain.
+    expect(row.getAttribute("data-tip")).toMatch(/240 cutoff days lost over 35 months/);
+    expect(row.getAttribute("data-tip")).not.toMatch(/-240|gained/);
   });
 
   it("puts the fastest queue first", () => {

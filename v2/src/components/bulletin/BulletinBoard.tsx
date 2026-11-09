@@ -289,7 +289,7 @@ export function BulletinBoard({ board, className }: BulletinBoardProps) {
                       `${categoryLabel(c.category)} ${COUNTRY_LABELS[c.country]}`,
                       `${c.pace.toFixed(2)}x: ${c.pace < 0 ? "the cutoff moved back" : gaining ? "the queue shortened" : "the queue lengthened"}`,
                       c.movedDays !== null && c.spanMonths !== null
-                        ? `${c.movedDays.toLocaleString("en-US")} cutoff days gained over ${c.spanMonths} ${c.spanMonths === 1 ? "month" : "months"}`
+                        ? `${Math.abs(c.movedDays).toLocaleString("en-US")} cutoff days ${c.movedDays < 0 ? "lost" : "gained"} over ${c.spanMonths} ${c.spanMonths === 1 ? "month" : "months"}`
                         : null,
                       c.retrogressions.length > 0
                         ? `Went back or shut ${c.retrogressions.length} ${c.retrogressions.length === 1 ? "time" : "times"}`
