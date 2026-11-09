@@ -143,12 +143,13 @@ describe("getOrganizationSchema", () => {
     expect(schema.sameAs).toEqual([...ORGANIZATION_SAME_AS]);
     expect(schema.sameAs[0]).toBe(MEDIUM_PROFILE_URL);
     // Every owned surface, and nothing personal on the brand node: no
-    // person's LinkedIn (/in/), and no GitHub or X at all, since those URLs
-    // carried a personal handle (site owner's decision, 2026-09-07). The
-    // brand's own LinkedIn company page is brand-owned (Nov 8 2026).
-    expect(schema.sameAs).toHaveLength(3);
+    // person's LinkedIn (/in/), no GitHub, and no X account but the brand's
+    // own, since the earlier URLs carried a personal handle (site owner's
+    // decision, 2026-09-07). The brand's LinkedIn page, X and Bluesky accounts
+    // are brand-owned (Nov 8 2026).
+    expect(schema.sameAs).toHaveLength(5);
     for (const u of schema.sameAs) {
-      expect(u).not.toMatch(/linkedin\.com\/in\/|github\.com|x\.com|twitter\.com/);
+      expect(u).not.toMatch(/linkedin\.com\/in\/|github\.com|twitter\.com|x\.com\/(?!permtracker$)/);
     }
   });
 
@@ -170,7 +171,7 @@ describe("getOrganizationSchema", () => {
       // page). A person's handle (x.com, linkedin.com/in/) belongs on a Person
       // node, never here.
       expect(ORGANIZATION_SAME_AS).toContain(url);
-      expect(url).not.toMatch(/x\.com|twitter\.com|linkedin\.com\/in\//);
+      expect(url).not.toMatch(/twitter\.com|linkedin\.com\/in\/|x\.com\/(?!permtracker$)/);
     }
   });
 });
