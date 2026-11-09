@@ -161,17 +161,22 @@ export type SendOutcome =
  *    and no error, because the email is no longer its to lose.
  * 4. A failure no retry can fix (a blocklisted recipient, a malformed request)
  *    comes back as an error, as before.
+ *
+ * `noQueue` is for mail that's worthless later (a test email): at the ceiling,
+ * or on a failure a retry could fix, it comes back as an error and never takes
+ * a place in the shared retry queue.
  */
 export async function sendOrQueue(
   ctx: SendCtx,
   kind: string,
   resend: Resend,
   params: SendEmailParams,
-  opts: { priority?: "high" | "public"; refs?: string[] } = {},
+  opts: { priority?: "high" | "public"; refs?: string[]; noQueue?: boolean } = {},
 ): Promise<SendOutcome> {
   const recipients = [...toRecipientArray(params.to), ...toRecipientArray(params.cc), ...toRecipientArray(params.bcc)];
   const firstTo = recipients[0] ?? "";
   const keep = async (error: { name: string; message: string }, quota: boolean): Promise<SendOutcome | null> => {
+    if (opts.noQueue) return null;
     const r: { ok: boolean; reason?: string } = await ctx.runMutation(internal.emailLedger.enqueueRetry, {
       kind,
       to: firstTo,
@@ -211,7 +216,12 @@ export async function sendOrQueue(
     if (used >= ceiling) {
       const kept = await keep({ name: "daily_ceiling", message: `today's count is ${used} of ${ceiling}` }, true);
       if (kept) return kept;
-      return { error: { name: "daily_ceiling", message: "today's email count is full and the retry queue could not keep it" } };
+      return {
+        error: {
+          name: "daily_ceiling",
+          message: opts.noQueue ? "today's email count is full" : "today's email count is full and the retry queue could not keep it",
+        },
+      };
     }
   }
 

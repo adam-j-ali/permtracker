@@ -4,6 +4,7 @@ import type { Id } from "./_generated/dataModel";
 import { getCurrentUserId, verifyOwnership } from "./lib/auth";
 import { recordError } from "./lib/errorRecording";
 import { newEntryId } from "./lib/ids";
+import { rateLimiter } from "./rateLimitConfig";
 import {
   ALLOWED_DOCUMENT_EXTENSIONS,
   ALLOWED_DOCUMENT_CONTENT_TYPES,
@@ -26,10 +27,12 @@ export const generateUploadUrl = mutation({
     fileSize: v.number(),
   },
   handler: async (ctx, args) => {
-    await getCurrentUserId(ctx);
+    const userId = await getCurrentUserId(ctx);
     const caseDoc = await ctx.db.get(args.caseId);
     await verifyOwnership(ctx, caseDoc, "case");
     if (!caseDoc) throw new ConvexError("Case not found");
+    await rateLimiter.limit(ctx, "documentUpload", { key: userId, throws: true });
+    await rateLimiter.limit(ctx, "documentUploadDaily", { key: userId, throws: true });
 
     // Validate extension
     const ext = args.fileName.split(".").pop()?.toLowerCase();

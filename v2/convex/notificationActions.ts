@@ -39,6 +39,7 @@ import type { DigestContent } from "./lib/digestHelpers";
 import type { DeadlineDigestItem } from "./lib/reminderDigest";
 import { weeklyUnsubscribeUrl } from "./lib/prefsLink";
 import { extractUserIdFromAction } from "./lib/auth";
+import { rateLimiter } from "./rateLimitConfig";
 import { SITE_URL } from "./lib/links";
 import { deadlineDigestWords } from "./lib/deadlineDigestWords";
 
@@ -562,6 +563,9 @@ export const sendTestEmail = action({
     if (!allowed) {
       throw new Error("Test email can only be sent to your own verified address.");
     }
+    // A few a day per account: each one spends the allowance case alerts use.
+    await rateLimiter.limit(ctx, "testEmail", { key: callerId, throws: true });
+    await rateLimiter.limit(ctx, "testEmailDaily", { key: callerId, throws: true });
 
     const appUrl = getAppUrl();
     const settingsUrl = `${appUrl}/settings/notifications`;
@@ -577,7 +581,7 @@ export const sendTestEmail = action({
       to: [args.email],
       subject: "PERM Tracker: your test email arrived",
       html,
-    });
+    }, { priority: "public", noQueue: true });
 
     if (error) {
       log.error('Failed to send test email', { error: error.message, to: args.email });

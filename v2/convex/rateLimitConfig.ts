@@ -72,6 +72,17 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   webSearchPerDay: { kind: "fixed window", rate: 15, period: DAY },
 
   // Push subscription management (low churn expected)
+  // Mail a signed-in account can send itself at will (convex/notificationActions.ts:
+  // sendTestEmail). It spends the same daily allowance as case alerts, so one
+  // account can't use the day up.
+  testEmail: { kind: "token bucket", rate: 3, period: HOUR, capacity: 3 },
+  testEmailDaily: { kind: "fixed window", rate: 6, period: DAY },
+
+  // Upload links for case documents (convex/documents.ts). A link is a write to
+  // file storage whether or not the upload is ever saved to a case.
+  documentUpload: { kind: "token bucket", rate: 60, period: HOUR, capacity: 20 },
+  documentUploadDaily: { kind: "fixed window", rate: 200, period: DAY },
+
   pushSubscriptionSave: { kind: "token bucket", rate: 10, period: MINUTE, capacity: 3 },
 
   // GLOBAL signup-burst tripwire (no per-user key) — counts verified new-account
