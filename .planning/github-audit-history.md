@@ -56,6 +56,13 @@
 - **A local full-suite run stops at the first failure** (`bail: 1` outside CI). For a review-sized change run `pnpm test:run --bail=0`, or one stale assertion hides every failure behind it (Audit 12: the first run stopped at file 329 of 666).
 - **Prove a guard ran by the rows it writes** (Audit 12). The per-IP sign-in limit sat in the proxy's handler, which Convex Auth's middleware never calls for `/api/auth`; production held 0 `ip_auth` rows. A review that reads the guard's code can't see that; a count of its rows can.
 
+## Audit 13: 2026-11-09
+- **range reviewed:** cb88285f..5bac17a0 (the 969 commits after Audit 12's e706b8fc, renamed by the Nov 9 history rewrite), in six areas by code, silent-failure and test-coverage reviewers, plus two source-only security audit runs and a third. Three area reports were still being finished at 5:40 AM EST.
+- **items_fixed:** dates people act on (the notice posting date, the ETA 9089 window, the same answers in every time zone, a December holiday), the masker, caption privacy, five quiet failures, JSON-LD escaping, per-account limits (web search, test email, upload links), Google sign-in linking, the wage lookup's unreadable answer, a group page's failed read, /llms.txt caching, the badge picker's accessibility.
+- **deployed:** Convex 1b430bff at 5:16 AM EST; the site 1b430bff by a dispatched run after the page checks passed.
+- **history:** main was rewritten on Nov 9 2026 to drop internal notes; old commit IDs in this file no longer resolve on GitHub.
+- **open:** listed in the owner's private notes with a reason each.
+
 ## Audit 12 — 2026-10-10
 - **health_before:** 89/100 by rubric (`pnpm audit`: 1 high `braces` and 1 moderate `sprintf-js`, both dev-only with no patched release; 0 Dependabot alerts, 0 secret scanning, protection intact, PR #46 open). Not scored: **43 open code-scanning alerts**.
 - **health_after:** 89/100 by rubric, unchanged: `braces` and `sprintf-js` still have no patched release. 39 alerts dismissed with a reason each; the 4 fixed in code closed on e706b8fc's scan; CodeQL then raised 1 on a new test's fake fetch (a substring host check), fixed in the follow-up push. PR #46 closed as superseded (same v1.0.241 commit).
