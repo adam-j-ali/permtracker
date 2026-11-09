@@ -35,7 +35,7 @@ import {
 } from "@/lib/db/unifiedSearch";
 import { SEARCH_TEXT_MAX, SEARCH_TEXT_MIN } from "@/lib/search/limits";
 import { CHANGE_PROGRAMS, isChangeProgram, type ChangeProgram } from "@/lib/changeProgram";
-import { ISO_MONTH_RE } from "@convex/lib/months";
+import { ISO_MONTH_RE, MONTH_OR_DAY_RE } from "@convex/lib/months";
 import { isWithheldQuery } from "@/lib/privacy/withheld";
 
 const STATE_RE = /^[A-Z]{2}$/;
@@ -48,10 +48,11 @@ const MAX_WAGE = 100_000_000;
 
 
 /** A month parameter, or null. Throws nothing: the caller reports the 400. */
-function month(p: URLSearchParams, key: string): { ok: true; value: string } | { ok: false } {
+function month(p: URLSearchParams, key: string, shape: RegExp = ISO_MONTH_RE): { ok: true; value: string } | { ok: false } {
   const raw = (p.get(key) ?? "").trim();
   if (!raw) return { ok: true, value: "" };
-  return ISO_MONTH_RE.test(raw) ? { ok: true, value: raw } : { ok: false };
+  // The cap comes before the pattern: no bound is longer than a full date.
+  return raw.length <= 10 && shape.test(raw) ? { ok: true, value: raw } : { ok: false };
 }
 
 /**
@@ -152,12 +153,13 @@ export async function planCaseSearch(
   if (state && !STATE_RE.test(state)) return fail("state must be two letters");
   if (fy && !FY_RE.test(fy)) return fail("fy must be a four-digit year");
 
-  const from = month(p, "from");
-  const to = month(p, "to");
+  // Filed takes a month or one exact day (the "find my case" lookups know the day); decided takes months.
+  const from = month(p, "from", MONTH_OR_DAY_RE);
+  const to = month(p, "to", MONTH_OR_DAY_RE);
   const dFrom = month(p, "dfrom");
   const dTo = month(p, "dto");
   if (!from.ok || !to.ok || !dFrom.ok || !dTo.ok) {
-    return fail("dates must be YYYY-MM");
+    return fail("filed dates must be YYYY-MM or YYYY-MM-DD, decided dates YYYY-MM");
   }
 
   const wMin = wage(p, "wmin");

@@ -58,6 +58,7 @@ import { choiceVariants } from "@/components/ui/choice";
 import { buttonVariants } from "@/components/ui/button";
 import { CaseStatusChip } from "@/components/ui/badge";
 import { ISO_MONTH_RE } from "@convex/lib/months";
+import { ISO_DATE_REGEX } from "@convex/lib/dateValidation";
 import { entityHref } from "@/lib/entityPayload";
 
 /**
@@ -533,6 +534,8 @@ export function UnifiedCaseSearch({
   const [titleInput, setTitleInput] = useState(param("title"));
   const [fromInput, setFromInput] = useState(month("from"));
   const [toInput, setToInput] = useState(month("to"));
+  // One exact filing day rides the same two parameters, both set to that day.
+  const [dayInput, setDayInput] = useState(ISO_DATE_REGEX.test(param("from")) && param("to") === param("from") ? param("from") : "");
   const [dFromInput, setDFromInput] = useState(month("dfrom"));
   const [dToInput, setDToInput] = useState(month("dto"));
   const [fyInput, setFyInput] = useState(param("fy"));
@@ -666,8 +669,13 @@ export function UnifiedCaseSearch({
     if (occValue) s.set("occupation", occValue);
     if (outcome && outcomes.includes(outcome)) s.set("outcome", outcome);
     if (titleInput.trim()) s.set("title", titleInput.trim());
-    if (ISO_MONTH_RE.test(fromInput)) s.set("from", fromInput);
-    if (ISO_MONTH_RE.test(toInput)) s.set("to", toInput);
+    if (ISO_DATE_REGEX.test(dayInput)) {
+      s.set("from", dayInput);
+      s.set("to", dayInput);
+    } else {
+      if (ISO_MONTH_RE.test(fromInput)) s.set("from", fromInput);
+      if (ISO_MONTH_RE.test(toInput)) s.set("to", toInput);
+    }
     if (ISO_MONTH_RE.test(dFromInput)) s.set("dfrom", dFromInput);
     if (ISO_MONTH_RE.test(dToInput)) s.set("dto", dToInput);
     if (fyInput) s.set("fy", fyInput);
@@ -736,7 +744,7 @@ export function UnifiedCaseSearch({
   // How many filters each fold holds, said on its closed summary so a set
   // filter is never hidden from the reader who set it.
   const narrowCount =
-    [outcome, stageInput, titleInput.trim(), fromInput, toInput, fyInput, dFromInput, dToInput, wMinInput.trim(), wMaxInput.trim()].filter(
+    [outcome, stageInput, titleInput.trim(), dayInput, fromInput, toInput, fyInput, dFromInput, dToInput, wMinInput.trim(), wMaxInput.trim()].filter(
       Boolean,
     ).length +
     (programs.length < CHANGE_PROGRAMS.length ? 1 : 0) +
@@ -767,6 +775,8 @@ export function UnifiedCaseSearch({
   )
     .filter(([, v]) => v.trim() !== "" && !ISO_MONTH_RE.test(v))
     .map(([label]) => label);
+  /** The exact-day box holding something that isn't a day: said, like the months, never dropped in silence. */
+  const unreadDay = dayInput.trim() !== "" && !ISO_DATE_REGEX.test(dayInput);
 
   /** Worker, job and industry boxes holding something the search would refuse. */
   const unreadFields = [
@@ -1020,6 +1030,30 @@ export function UnifiedCaseSearch({
                   ancestor grid is what actually stops the iOS overflow, and it
                   has `grid-cols-1` and `[&>*]:min-w-0` above. */}
               <Field
+                label="Filed on one day"
+                state={can.filed}
+                describedBy={`${uid}-filedon-why`}
+              >
+                <input
+                  type="date"
+                  placeholder="YYYY-MM-DD"
+                  value={dayInput}
+                  // A day and a month range are one filter: setting either empties the other, so
+                  // what the boxes show is what the search uses.
+                  onChange={(e) => {
+                    setDayInput(e.target.value);
+                    if (e.target.value) {
+                      setFromInput("");
+                      setToInput("");
+                    }
+                  }}
+                  disabled={!can.filed.on}
+                  aria-label="Filed on one day"
+                  aria-describedby={can.filed.on ? undefined : `${uid}-filedon-why`}
+                  className={CONTROL + " min-w-0"}
+                />
+              </Field>{" "}
+              <Field
                 label="Filed from"
                 state={can.filed}
                 describedBy={`${uid}-filed-why`}
@@ -1040,7 +1074,10 @@ export function UnifiedCaseSearch({
                      paint their own edit fields and ignore both. */
                   placeholder="YYYY-MM"
                   value={fromInput}
-                  onChange={(e) => setFromInput(e.target.value)}
+                  onChange={(e) => {
+                    setFromInput(e.target.value);
+                    if (e.target.value) setDayInput("");
+                  }}
                   disabled={!can.filed.on}
                   aria-label="Filed from"
                   aria-describedby={can.filed.on ? undefined : `${uid}-filed-why`}
@@ -1068,7 +1105,10 @@ export function UnifiedCaseSearch({
                      paint their own edit fields and ignore both. */
                   placeholder="YYYY-MM"
                   value={toInput}
-                  onChange={(e) => setToInput(e.target.value)}
+                  onChange={(e) => {
+                    setToInput(e.target.value);
+                    if (e.target.value) setDayInput("");
+                  }}
                   disabled={!can.filed.on}
                   aria-label="Filed to"
                   aria-describedby={can.filed.on ? undefined : `${uid}-filed2-why`}
@@ -1437,6 +1477,16 @@ export function UnifiedCaseSearch({
             </b>{" "}
             Those boxes take a month written as YYYY-MM, so 2026-03 rather than
             March 2026. Anything else is left out of the search.
+          </span>
+        </p>
+      ) : null}
+
+      {unreadDay ? (
+        <p className="flex items-start gap-2 bg-data-warn/10 p-4 text-base leading-relaxed border-2 border-border">
+          <WarningIcon className="mt-1 size-4 shrink-0 text-data-warn-ink" weight="fill" aria-hidden="true" />{" "}
+          <span>
+            <b className="font-bold">&quot;Filed on one day&quot; wasn&apos;t used.</b> That box takes a day written as YYYY-MM-DD,
+            so 2026-03-05 for March 5, 2026.
           </span>
         </p>
       ) : null}

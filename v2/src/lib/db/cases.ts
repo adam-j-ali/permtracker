@@ -41,7 +41,7 @@ import { slugify } from "@/lib/entitySlug";
 
 import { getCasesMeta } from "./publicData";
 import { one, rows, rowsPaged } from "./client";
-import { ISO_MONTH_RE, shiftMonth } from "@convex/lib/months";
+import { MONTH_OR_DAY_RE, boundEnd, boundStart } from "@convex/lib/months";
 import { LIKE_ESCAPE, likeContains } from "./like";
 
 export type DisclosureOutcome = "certified" | "denied" | "withdrawn";
@@ -469,15 +469,16 @@ export function narrowingClauses(
     conds.push(`job_title LIKE ? ${LIKE_ESCAPE}`);
     params.push(likeContains(title));
   }
+  // A bound is a month or one day; either way the range is half-open, so `from` and `to` on the same day is that day.
   if (args.from) {
-    if (!ISO_MONTH_RE.test(args.from)) throw new Error(`not a month: ${args.from}`);
+    if (!MONTH_OR_DAY_RE.test(args.from)) throw new Error(`not a month or a day: ${args.from}`);
     conds.push(`${dateColumn} >= ?`);
-    params.push(`${args.from}-01`);
+    params.push(boundStart(args.from));
   }
   if (args.to) {
-    if (!ISO_MONTH_RE.test(args.to)) throw new Error(`not a month: ${args.to}`);
+    if (!MONTH_OR_DAY_RE.test(args.to)) throw new Error(`not a month or a day: ${args.to}`);
     conds.push(`${dateColumn} < ?`);
-    params.push(`${shiftMonth(args.to, 1)}-01`);
+    params.push(boundEnd(args.to));
   }
   return { conds, params };
 }

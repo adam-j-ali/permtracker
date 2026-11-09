@@ -16,6 +16,24 @@ export function shiftMonth(month: string, delta: number): string {
   return monthFromIndex(monthIndex(month) + delta);
 }
 
+/** A filing bound as the searches take it: a whole month (`2026-03`) or one day (`2026-03-05`). */
+export const MONTH_OR_DAY_RE = /^\d{4}-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?$/;
+
+/** The first day a month-or-day bound includes: the month's first, or the day itself. */
+export function boundStart(bound: string): string {
+  return bound.length === 7 ? `${bound}-01` : bound;
+}
+
+/**
+ * The first day AFTER a month-or-day bound, for a half-open range (`>= start AND < end`): the next month's first
+ * day, or the next day. The day is stepped in UTC from its own text, so no reader's time zone moves it.
+ */
+export function boundEnd(bound: string): string {
+  if (bound.length === 7) return `${shiftMonth(bound, 1)}-01`;
+  const [y, m, d] = bound.split("-").map(Number) as [number, number, number];
+  return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
+}
+
 /** A month as a whole number, so months subtract: `2026-01` less `2025-12` is 1. Reads any ISO date's month. */
 export function monthIndex(iso: string): number {
   return Number(iso.slice(0, 4)) * 12 + Number(iso.slice(5, 7)) - 1;
