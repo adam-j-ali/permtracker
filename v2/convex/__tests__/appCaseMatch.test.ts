@@ -40,4 +40,20 @@ describe("suggestDolCase", () => {
     expect(rows).toHaveBeenCalledTimes(1);
     expect(got.candidates.map((c) => c.caseNumber)).toEqual(["G-100-25001-000002"]);
   });
+
+  it("reads the cases filed nearest the date first, so the cut at 60 never drops a close one", async () => {
+    const user = await createAuthenticatedContext(createTestContext());
+    await user.action(api.appCaseMatch.suggestDolCase, { employerName: "Acme Corp", filingDate: "2025-01-02", program: "perm" });
+    const [sql, args] = rows.mock.calls[0] as [string, unknown[]];
+    expect(sql).toMatch(/ORDER BY abs\(julianday\(filing_date\) - julianday\(\?\)\)\s+LIMIT 60/);
+    expect(args.at(-1)).toBe("2025-01-02");
+  });
+
+  it("fails when DOL's record can't be read, never answering that no case matches", async () => {
+    rows.mockRejectedValue(new Error("libsql HTTP 502 Bad Gateway"));
+    const user = await createAuthenticatedContext(createTestContext());
+    await expect(
+      user.action(api.appCaseMatch.suggestDolCase, { employerName: "Acme Corp", filingDate: "2025-01-02", program: "perm" }),
+    ).rejects.toThrow(/couldn't read DOL's record/);
+  });
 });

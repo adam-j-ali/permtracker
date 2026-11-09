@@ -64,17 +64,22 @@ export const suggestDolCase = action({
     const table = program === "pwd" ? "pwd_case_status" : "perm_case_status";
     const prefix = program === "pwd" ? "P-100-%" : "G-%";
 
+    // Nearest filing date first, so the cut at 60 keeps every case close to the date: a big employer's
+    // unordered 60 could hold one close case and leave out the rest, and that one would read as the match.
+    // A failed read throws rather than answering "no case matches": the card shows nothing either way, and
+    // the failure stays a failure in the function's log.
     let mirror;
     try {
       mirror = await rows(
         `SELECT case_number, current_status, employer_name, job_title, filing_date
            FROM ${table}
           WHERE employer_name LIKE ? AND filing_date BETWEEN ? AND ? AND case_number LIKE ?
+          ORDER BY abs(julianday(filing_date) - julianday(?))
           LIMIT 60`,
-        [like, from, to, prefix],
+        [like, from, to, prefix, filingDate],
       );
-    } catch {
-      return EMPTY;
+    } catch (e) {
+      throw new Error(`suggestDolCase couldn't read DOL's record: ${e instanceof Error ? e.message : String(e)}`);
     }
 
     return rankCandidates(
