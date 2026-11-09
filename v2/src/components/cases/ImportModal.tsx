@@ -1,10 +1,10 @@
 /**
  * ImportModal Component
- * Modal dialog for importing cases from JSON files.
+ * Modal dialog for importing cases from a JSON file or a spreadsheet saved as CSV.
  *
  * Features:
  * - Drag & drop file upload
- * - JSON file validation
+ * - JSON and CSV file validation (a CSV's headers are matched to case fields)
  * - Preview table with inline editing
  * - Validation error highlighting
  * - Auto-detect format (v2, v1, perm-tracker-new, Firebase)
@@ -142,7 +142,9 @@ export function ImportModal({
   // ============================================================================
 
   const handleFileSelect = useCallback(async (file: File) => {
-    if (!file.name.endsWith(".json")) {
+    if (!/\.(json|csv)$/i.test(file.name)) {
+      // Said out loud: a dropped file that does nothing reads as a broken import.
+      toast.error("That file can't be imported. Choose a .json file or a spreadsheet saved as .csv.");
       return;
     }
 
@@ -396,6 +398,10 @@ export function ImportModal({
         label: "Firebase (Object)",
         color: "bg-tint text-foreground",
       },
+      csv: {
+        label: "Spreadsheet (CSV)",
+        color: "text-foreground",
+      },
       unknown: {
         label: "Unknown",
         color: "bg-muted text-muted-foreground",
@@ -448,7 +454,7 @@ export function ImportModal({
               ? "Your cases have been imported. Review any validation warnings below."
               : showDuplicateStep
                 ? "Choose how to handle duplicate cases found in your import."
-                : "Upload a JSON file to import cases into your database."}
+                : "Upload a JSON file, or a spreadsheet saved as CSV, to import cases."}
           </DialogDescription>
         </DialogHeader>
 
@@ -471,7 +477,7 @@ export function ImportModal({
               >
                 <input
                   type="file"
-                  accept=".json"
+                  accept=".json,.csv,text/csv,application/json"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) handleFileSelect(file);
@@ -492,12 +498,19 @@ export function ImportModal({
                 ) : (
                   <>
                     <UploadIcon className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                    <p className="text-lg font-medium mb-2">Drag & drop your JSON file here</p>{" "}
+                    <p className="text-lg font-medium mb-2">Drag & drop a JSON or CSV file here</p>{" "}
                     <p className="text-sm text-muted-foreground">or click to browse</p>{" "}
-                    <p className="text-sm text-muted-foreground mt-2">Accepts .json files only</p>
+                    <p className="text-sm text-muted-foreground mt-2">A spreadsheet works too: save it as CSV from Excel, Google Sheets or Numbers.</p>
                   </>
                 )}
-              </div>
+              </div>{" "}
+              <p className="text-sm text-muted-foreground">
+                Starting a sheet?{" "}
+                <a href="/templates/perm-case-import-template.csv" download className="link">
+                  Download the template
+                </a>{" "}
+                with a column for every date the app reads.
+              </p>
 
               {/* Format Detection & Warnings */}
               {parseResult && (
@@ -644,7 +657,7 @@ export function ImportModal({
                               <span className="text-muted-foreground font-mono shrink-0 min-w-[80px]">
                                 {warning.employerName
                                   ? `"${warning.employerName.slice(0, 12)}${warning.employerName.length > 12 ? "…" : ""}"`
-                                  : `Row ${warning.row + 1}`}
+                                  : warning.row < 0 ? "File" : `Row ${warning.row + 1}`}
                                 :
                               </span>{" "}
                               <span className="text-foreground">{warning.message}</span>
@@ -686,7 +699,7 @@ export function ImportModal({
                                 <span className="text-muted-foreground font-mono shrink-0 min-w-[80px]">
                                   {warning.employerName
                                     ? `"${warning.employerName.slice(0, 12)}${warning.employerName.length > 12 ? "…" : ""}"`
-                                    : `Row ${warning.row + 1}`}
+                                    : warning.row < 0 ? "File" : `Row ${warning.row + 1}`}
                                   :
                                 </span>{" "}
                                 <span className="text-foreground">{warning.message}</span>
