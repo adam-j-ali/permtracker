@@ -60,7 +60,8 @@ function getWindowStatus(window: FilingWindowData): WindowStatus {
     return "not_open";
   }
 
-  if (window.daysRemaining !== undefined && window.daysRemaining <= 0) {
+  // The close date is the last day to file: an open window with 0 days left closes today, it hasn't closed.
+  if (window.daysRemaining !== undefined && (window.daysRemaining < 0 || (window.daysRemaining === 0 && !window.isOpen))) {
     return "closed";
   }
 
@@ -184,6 +185,10 @@ export function FilingWindowIndicator({ window, label, className }: FilingWindow
           <span className={cn("font-heading text-lg font-bold tabular-nums", config.ink)}>{window.daysRemaining}</span> days remaining
         </p>
       )}
+
+      {(status === "open" || status === "closing_soon") && window.daysRemaining === 0 && (
+        <p className="text-sm font-semibold text-data-warn-ink">Today is the last day to file</p>
+      )}{" "}
 
       {status === "closed" && <p className="text-sm font-semibold text-destructive-text">Window has closed</p>}
 

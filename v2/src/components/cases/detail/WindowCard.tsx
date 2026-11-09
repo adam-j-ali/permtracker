@@ -33,7 +33,7 @@ export function WindowCard({ ws, title, stageColor, startDate, endDate }: Window
             <div className="win-hero">
               <div>
                 <span className="win-hero-num" style={{ color: stageColor }}>{ws.days}</span>{" "}
-                <span className="win-hero-unit">days</span>
+                <span className="win-hero-unit">{ws.days === 1 ? "day" : "days"}</span>
               </div>
               <div className="win-hero-label">{ws.label}</div>
             </div>

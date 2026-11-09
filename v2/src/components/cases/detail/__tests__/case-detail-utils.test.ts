@@ -87,14 +87,13 @@ describe("computeWindowStatus", () => {
   });
 
   it("returns 'Upcoming' when now is before window start", () => {
-    vi.setSystemTime(new Date("2025-01-01T00:00:00Z"));
+    vi.setSystemTime(new Date(2025, 0, 1, 9, 0));
     const result = computeWindowStatus("2025-02-01", "2025-08-01");
     expect(result).not.toBeNull();
     expect(result!.chip).toBe("Upcoming");
     expect(result!.label).toBe("until window opens");
     expect(result!.pct).toBe(0);
-    expect(result!.days).toBeGreaterThanOrEqual(30);
-    expect(result!.days).toBeLessThanOrEqual(31);
+    expect(result!.days).toBe(31);
   });
 
   it("returns 'Active' when inside the window", () => {
@@ -107,6 +106,29 @@ describe("computeWindowStatus", () => {
     expect(result!.days).toBeLessThan(110);
     expect(result!.pct).toBeGreaterThan(0);
     expect(result!.pct).toBeLessThan(100);
+  });
+
+  // The window is open through its end date: in the afternoon of that day it's still the last day to file.
+  it("reads the end date itself as the window's last day, never 'Expired'", () => {
+    vi.setSystemTime(new Date(2025, 5, 30, 15, 0));
+    const result = computeWindowStatus("2025-01-01", "2025-06-30");
+    expect(result!.chip).toBe("Active");
+    expect(result!.days).toBeNull();
+    expect(result!.label).toBe("Today is the last day of this window");
+  });
+
+  it("counts whole calendar days left, late in the day included", () => {
+    vi.setSystemTime(new Date(2025, 5, 28, 23, 30));
+    const result = computeWindowStatus("2025-01-01", "2025-06-30");
+    expect(result!.chip).toBe("Active");
+    expect(result!.days).toBe(2);
+  });
+
+  it("reads 'Expired' from the day after the end date", () => {
+    vi.setSystemTime(new Date(2025, 6, 1, 0, 30));
+    const result = computeWindowStatus("2025-01-01", "2025-06-30");
+    expect(result!.chip).toBe("Expired");
+    expect(result!.days).toBe(1);
   });
 
   it("returns 'Expired' when past the window end", () => {
@@ -162,12 +184,11 @@ describe("computeWindowStatus", () => {
     expect(result!.pct).toBe(100);
   });
 
-  it("handles zero-length window on current day (expired by noon)", () => {
-    // parseISO creates midnight local; by noon the zero-length window is past
+  it("reads a one-day window as open all that day", () => {
     vi.setSystemTime(new Date("2025-03-15T12:00:00"));
     const result = computeWindowStatus("2025-03-15", "2025-03-15");
     expect(result).not.toBeNull();
-    expect(result!.chip).toBe("Expired");
-    expect(result!.pct).toBe(100);
+    expect(result!.chip).toBe("Active");
+    expect(result!.days).toBeNull();
   });
 });

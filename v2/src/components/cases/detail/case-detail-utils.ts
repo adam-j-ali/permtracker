@@ -5,6 +5,7 @@
  * shared by all case detail tab components and the NextUp section.
  */
 import { format, parseISO, differenceInDays } from "date-fns";
+
 import type React from "react";
 
 /** ISO date string -> "MMM d, yyyy" */
@@ -65,7 +66,9 @@ export function computeWindowStatus(
   const start = parseISO(startDate);
   const end = parseISO(endDate);
   if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
-  const now = new Date();
+  // Whole calendar days in the reader's own date: a window is open through its
+  // last day, so the end date itself is still "Active", never "Expired".
+  const now = parseISO(format(new Date(), "yyyy-MM-dd"));
   const total = differenceInDays(end, start);
 
   if (options?.filed) {
@@ -92,8 +95,8 @@ export function computeWindowStatus(
     const remaining = differenceInDays(end, now);
     const elapsed = differenceInDays(now, start);
     return {
-      days: remaining,
-      label: "remaining in window",
+      days: remaining === 0 ? null : remaining,
+      label: remaining === 0 ? "Today is the last day of this window" : "remaining in window",
       pct: total > 0 ? Math.min(100, Math.max(0, (elapsed / total) * 100)) : 0,
       chip: "Active",
       chipStyle: { background: "var(--primary)", color: "var(--primary-foreground)" },
