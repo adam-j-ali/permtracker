@@ -4,10 +4,13 @@ import { cache } from "react";
 
 import type { DayCase, DayTally } from "@/lib/filingDay";
 import type { FilingProgram } from "@/lib/filingsByDay";
+import { wageRequestNumber } from "@/lib/caseLinks";
+import { softFail } from "@/lib/softRead";
 import { formatWage, looksYearly, LOOKS_YEARLY_SHORT } from "@/lib/wageFormat";
 
 import { shiftMonth } from "@convex/lib/months";
 
+import { permsNaming } from "./caseLinks";
 import { rows } from "./client";
 import { keepLinkableSlugs } from "./entityLinks";
 
@@ -42,6 +45,7 @@ type LiveRow = {
   state: string | null;
   wage: number | null;
   wage_unit: string | null;
+  wage_request?: string | null;
 };
 
 type FileRow = {
@@ -55,6 +59,7 @@ type FileRow = {
   state: string | null;
   wage: number | null;
   wage_unit: string | null;
+  wage_request?: string | null;
 };
 
 const statusWord = (s: string | null) => String(s ?? "").trim().toUpperCase() || "UNKNOWN";
@@ -81,6 +86,7 @@ const fromLive = (day: string) => (r: LiveRow): DayCase => {
     decided: dayOf(r.decided),
     state: r.state ? String(r.state).trim().toUpperCase() : null,
     wage: wageText(r.wage, r.wage_unit),
+    wageRequest: wageRequestNumber(r.wage_request),
   };
 };
 
@@ -96,12 +102,14 @@ const fromFile = (r: FileRow): DayCase => ({
   decided: dayOf(r.decided),
   state: r.state ? String(r.state).trim().toUpperCase() : null,
   wage: wageText(r.wage, r.wage_unit),
+  wageRequest: wageRequestNumber(r.wage_request),
 });
 
 // The published columns each file names its own way: PERM's wage is yearly and has no unit column.
 const FILE_COLS = {
   perm: "p.status AS status, p.state AS state, p.wage AS wage, 'Year' AS wage_unit",
-  flag: "p.case_status AS status, p.worksite_state AS state, p.wage AS wage, p.wage_unit AS wage_unit",
+  // `pw_case` is the wage request a filing cites: a few H-1B LCAs do, and the cell is empty everywhere else.
+  flag: "p.case_status AS status, p.worksite_state AS state, p.wage AS wage, p.wage_unit AS wage_unit, p.pw_case AS wage_request",
 };
 
 async function permDay(day: string): Promise<DayCase[]> {
@@ -112,7 +120,8 @@ async function permDay(day: string): Promise<DayCase[]> {
             COALESCE(lr.employer_slug, pc.employer_slug, h.employer_slug) AS employer_slug,
             COALESCE(pc.received_date, h.received_date) AS file_date,
             COALESCE(pc.decision_date, h.decision_date) AS decided,
-            COALESCE(pc.state, h.state) AS state, COALESCE(pc.wage, h.wage) AS wage, 'Year' AS wage_unit
+            COALESCE(pc.state, h.state) AS state, COALESCE(pc.wage, h.wage) AS wage, 'Year' AS wage_unit,
+            pc.pwd_number AS wage_request
        FROM perm_case_status s
        LEFT JOIN perm_live_recent lr ON lr.case_number = s.case_number
        LEFT JOIN perm_cases pc ON pc.case_number = s.case_number
@@ -124,7 +133,8 @@ async function permDay(day: string): Promise<DayCase[]> {
   const notLive = "NOT EXISTS (SELECT 1 FROM perm_case_status s WHERE s.case_number = p.case_number)";
   const cols = `p.case_number, p.employer_name, p.employer_slug, p.job_title, p.received_date, p.decision_date AS decided, ${FILE_COLS.perm}`;
   const [files, history] = await Promise.all([
-    rows<FileRow>(`SELECT ${cols} FROM perm_cases p WHERE p.received_date = ? AND ${notLive} LIMIT ?`, [day, DAY_MAX_ROWS]),
+    // The current file names each case's wage request; the FY2016 to FY2023 history file has no such column.
+    rows<FileRow>(`SELECT ${cols}, p.pwd_number AS wage_request FROM perm_cases p WHERE p.received_date = ? AND ${notLive} LIMIT ?`, [day, DAY_MAX_ROWS]),
     rows<FileRow>(
       `SELECT ${cols} FROM perm_cases_history p WHERE p.received_date = ? AND ${notLive}
           AND NOT EXISTS (SELECT 1 FROM perm_cases x WHERE x.case_number = p.case_number) LIMIT ?`,
@@ -140,7 +150,7 @@ async function flagDay(day: string, live: string, file: string): Promise<DayCase
     rows<LiveRow>(
       `SELECT s.case_number, s.current_status, s.employer_name, s.employer_slug, s.job_title, s.is_final,
               p.received_date AS file_date, p.decision_date AS decided,
-              p.worksite_state AS state, p.wage AS wage, p.wage_unit AS wage_unit
+              p.worksite_state AS state, p.wage AS wage, p.wage_unit AS wage_unit, p.pw_case AS wage_request
          FROM ${live} s LEFT JOIN ${file} p ON p.case_number = s.case_number
         WHERE s.filing_date = ? ORDER BY s.employer_name, s.case_number LIMIT ?`,
       [day, DAY_MAX_ROWS],
@@ -153,7 +163,12 @@ async function flagDay(day: string, live: string, file: string): Promise<DayCase
       [day, DAY_MAX_ROWS],
     ),
   ]);
-  return [...liveRows.map(fromLive(day)), ...fileRows.map(fromFile)];
+  const cases = [...liveRows.map(fromLive(day)), ...fileRows.map(fromFile)];
+  if (file !== "pwd_cases") return cases;
+  // A wage request is named by the decided PERM cases filed on it. The day's list stands without the
+  // counts, so a failed read of them is recorded and they're left out, never shown as none.
+  const naming = await permsNaming(cases.map((c) => c.caseNumber)).catch(softFail("filingDay/permsNaming", null));
+  return naming ? cases.map((c) => (naming.get(c.caseNumber) ? { ...c, namedBy: naming.get(c.caseNumber)! } : c)) : cases;
 }
 
 /**
@@ -199,6 +214,7 @@ async function lcaDay(day: string): Promise<DayCase[]> {
       state: f?.state ?? null,
       wage: f?.wage ?? null,
       wage_unit: f?.wage_unit ?? null,
+      wage_request: f?.wage_request ?? null,
     });
   });
   const fileOnly = file.filter((r) => !liveNumbers.has(String(r.case_number))).map(fromFile);

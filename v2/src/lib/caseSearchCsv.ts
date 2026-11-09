@@ -46,6 +46,10 @@ export const CSV_COLUMNS: readonly { key: string; label: string; get: (r: Unifie
   { key: "major", label: "worker_field_of_study", get: (r) => r.major },
   { key: "institution", label: "worker_school", get: (r) => r.institution },
   { key: "job_education", label: "job_minimum_education", get: (r) => r.jobEducation },
+  // The filings DOL's file ties this one to: a decided PERM case's wage request, and, on a wage
+  // request, how many decided PERM cases name it.
+  { key: "wage_request", label: "wage_request", get: (r) => r.wageRequest },
+  { key: "named_on_perm_cases", label: "named_on_decided_perm_cases", get: (r) => r.namedBy },
 ];
 
 export function csvCell(v: unknown): string {

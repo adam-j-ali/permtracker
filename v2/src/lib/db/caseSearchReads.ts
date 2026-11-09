@@ -26,6 +26,7 @@ import {
 import type { Lead, Outcome, WageSourceKey } from "@/lib/caseSearchPlan";
 import { PWD_VISA_CLASS, type ChangeProgram } from "@/lib/changeProgram";
 import { tableColumns } from "./tableColumns";
+import { wageRequestNumber } from "@/lib/caseLinks";
 import { ANNUAL_WAGE_SQL } from "@/lib/wageFormat";
 import { socGroup, socGroupClause } from "@/lib/socCode";
 import { programOf } from "@/lib/flagCaseNumber";
@@ -512,6 +513,8 @@ export const PERM_EXTRA_COLS = [
   "major",
   "institution",
   "job_education",
+  // The wage request the case was filed on. The current file names it; the FY2016 to FY2023 file doesn't.
+  "pwd_number",
 ] as const;
 type ExtraCol = (typeof PERM_EXTRA_COLS)[number];
 
@@ -525,6 +528,7 @@ export interface PermExtras {
   major: string | null;
   institution: string | null;
   jobEducation: string | null;
+  wageRequest: string | null;
 }
 
 export type SearchDbRow = CaseDbRow & Partial<Record<ExtraCol, string | null>>;
@@ -555,6 +559,7 @@ const toSearchRow =
       major: r.major ?? null,
       institution: r.institution ?? null,
       jobEducation: r.job_education ?? null,
+      wageRequest: wageRequestNumber(r.pwd_number),
     },
   });
 

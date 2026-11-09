@@ -162,6 +162,23 @@ describe("FiledOnDay, every program and both sources", () => {
     expect(screen.getByText("Only in DOL's published files")).toBeInTheDocument();
   });
 
+  it("links the filings DOL's file ties a case to: a decided case's wage request, and the PERM cases naming a wage request", () => {
+    const perm = [mk(1, { status: "CERTIFIED", final: true, wageRequest: "P-100-25171-129387" }), mk(2)];
+    const pwd = [mk(3, { caseNumber: "P-100-26015-000003", namedBy: 2 }), mk(4, { caseNumber: "P-100-26015-000004", namedBy: 1 }), mk(5, { caseNumber: "P-100-26015-000005" })];
+    render(<FiledOnDay perm={perm} pwd={pwd} dayLabel="January 15, 2026" />);
+    const decided = screen.getByRole("link", { name: "G-100-26015-200001" }).closest("li")!;
+    expect(within(decided).getByRole("link", { name: "Wage request P-100-25171-129387" })).toHaveAttribute("href", "/perm-case-status?case=P-100-25171-129387");
+    // A pending case names nothing in DOL's record, so its row offers no such link.
+    const pending = screen.getByRole("link", { name: "G-100-26015-200002" }).closest("li")!;
+    expect(within(pending).queryByText(/Wage request/)).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /Wage requests/ }));
+    const named = screen.getByRole("link", { name: "P-100-26015-000003" }).closest("li")!;
+    expect(within(named).getByRole("link", { name: "Named on 2 decided PERM cases" })).toHaveAttribute("href", "/perm-case-status?case=P-100-26015-000003");
+    expect(screen.getByRole("link", { name: "Named on 1 decided PERM case" })).toBeInTheDocument();
+    expect(within(screen.getByRole("link", { name: "P-100-26015-000005" }).closest("li")!).queryByText(/Named on/)).toBeNull();
+  });
+
   it("orders by the newest decision when asked", () => {
     act(() => nav.set("sort=decided"));
     render(
