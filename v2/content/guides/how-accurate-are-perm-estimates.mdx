@@ -15,23 +15,23 @@ featured: true
 published: true
 ---
 
-On one day in August 2026, six public PERM tools were asked the same headline question, how long a PERM takes, and answered between 335 and 503 days. DOL's own published average that day was 372. The spread is five months, far beyond rounding, on a wait that people plan their lives around. This guide is what an estimate can know, what it can't, and what we measured when we checked our own. PERM Tracker's [processing times page](/perm-processing-times) shows DOL's own published figures beside our own daily check of where DOL is actually deciding.
+On one day in August 2026, six public PERM tools were asked the same question (how long a PERM takes) and answered between 335 and 503 days. DOL's own published average that day was 372. The spread is five months, far beyond rounding, on a wait that people plan their lives around. This guide is what an estimate can know, what it can't, and what we measured when we checked our own. PERM Tracker's [processing times page](/perm-processing-times) shows DOL's own published figures beside our own daily check of where DOL is deciding.
 
 ## What an estimate actually is
 
-Every PERM estimator does the same arithmetic underneath. DOL works cases roughly in filing order, so there's a filing month it's deciding now, and your case has a filing month. The estimate is the distance between the two, converted to days using how fast the queue has been moving. Everything else a tool adds, an employer's initial, a "confidence" label, a colour, sits on top of that one subtraction. DOL printed the month it was deciding until October 31, 2026; since then it has to be found from DOL's own case statuses, which this site does every day.
+Every PERM estimator does the same arithmetic underneath. DOL works cases roughly in filing order, so there's a filing month it's deciding now, and your case has a filing month. The estimate is the distance between the two, converted to days using how fast the queue has been moving. Everything else a tool adds sits on top of that one subtraction: an employer's initial, a "confidence" label, a colour. DOL printed the month it was deciding until October 31, 2026. Since then it has to be found from DOL's own case statuses, which this site does every day.
 
-Ours counts instead of subtracting months: the cases in DOL's normal queue filed before yours, divided by the rate DOL has actually been deciding them, walked over the days DOL works. A weekend, a federal holiday or the slow days around Thanksgiving and the new year move a date the way they move DOL. Cases on hold, at a request for information or on appeal are out of line, so they aren't counted as ahead of you.
+Ours counts instead of subtracting months: the cases in DOL's normal queue filed before yours, divided by the rate DOL has been deciding them, walked over the days DOL works. A weekend, a federal holiday or the slow days around Thanksgiving and the new year move a date the way they move DOL. Cases on hold, at a request for information or on appeal are out of line, so they aren't counted as ahead of you.
 
 That's also why estimates fail the same way. When DOL's queue slows, every tool built on the previous pace is late together. When DOL reorders work, as it did after the October 2025 shutdown, every tool is wrong in the same direction at once.
 
 ## What we measured
 
-Every night the site rebuilds DOL's line as it stood a few weeks earlier, works out the date it would have given each case then, and sets each one against the day DOL actually decided it. It does the same for every other kind of date it gives: a case DOL's line has already passed, a case at a request for information, a wage request, a priority date waiting on the visa bulletin, and H-2A, H-2B and CW-1 applications. Here is how each check came out, read live:
+Every night the site rebuilds DOL's line as it stood a few weeks earlier and works out the date it would have given each case then. It sets each one against the day DOL decided it. It does the same for every other kind of date it gives: a case DOL's line has already passed, a case at a request for information, a wage request, a priority date waiting on the visa bulletin, and H-2A, H-2B and CW-1 applications. Here's how each check came out, read live:
 
 <EstimateChecksNow />
 
-The [estimate scorecard](/estimate-scorecard) shows each check in full, with a fresh random sample of pending cases recorded every morning before DOL decides them. When the first of these checks ran, on September 13, 2026, counting every pending case as ahead (the rule until September 26, 2026, which also counted cases on hold or at an RFI) missed by nine days where counting only the line missed by three. That's why only the line counts now.
+The [estimate scorecard](/estimate-scorecard) shows each check in full, with a fresh random sample of pending cases recorded every morning before DOL decides them. The first of these checks ran on September 13, 2026. Counting every pending case as ahead (the rule until September 26, 2026, which also counted cases on hold or at an RFI) missed by nine days. Counting only the line missed by three. That's why only the line counts now.
 
 Those figures are for dates within about a month. A date further out has more that can change before it arrives, and the daily sample will show by how much as it fills.
 
@@ -81,7 +81,7 @@ Start from the most likely date, read the cases-ahead line, and check where DOL'
 <StepByStep>
 <Step number={1} title="Start from the most likely date">
 
-The estimate leads with the single date the strongest model gives, then the window under it. The window is the honest part; the date is the anchor so you have something to plan against.
+The estimate leads with the single date the strongest model gives, then the window under it. That window shows the uncertainty. The date is there as an anchor, so you have something to plan against.
 
 <ScreenshotFigure
   src="/images/content/shots/timeline-calculator.webp"
@@ -103,7 +103,7 @@ The estimate is anchored to where DOL's line is. Since October 31, 2026 DOL no l
 <ScreenshotFigure
   src="/images/content/shots/queue-frontier.webp"
   alt="The queue page showing which filing month DOL is deciding and how the frontier has moved"
-  caption="The frontier is the whole estimate. Watch it move; the countdown follows from it."
+  caption="The frontier is the whole estimate. Watch it move, and the countdown follows from it."
   aspectRatio={1600 / 795}
 />
 
@@ -115,19 +115,19 @@ The estimate is anchored to where DOL's line is. Since October 31, 2026 DOL no l
 We print no date for a case on appeal, for an RFI that's run past its window, or for a passed filing month when the rate DOL finishes those cases can't be read.
 
 <Callout type="important" title="If DOL has already passed your filing month">
-The filing-month arithmetic has nothing left to say: its date has gone by. A case page then dates the case by the rate DOL has actually been finishing the cases its line left behind, which the check above holds to account. The processing time calculator, which knows only a month and not a case, gives no date; it says how that month's cases are splitting and the rate they're finishing at. A case still pending well behind the line is often in an audit, a request for information or a hold, and the case lookup shows the status DOL actually holds.
+The filing-month arithmetic has nothing left to say: its date has gone by. A case page then dates the case by the rate DOL has been finishing the cases its line left behind, which the check above holds to account. The processing time calculator, which knows only a month and not a case, gives no date. It says how that month's cases are splitting and the rate they're finishing at. A case still pending well behind the line is often in an audit, a request for information or a hold, and the case lookup shows the status DOL holds.
 </Callout>
 
-An appeal is a separate proceeding, so its page shows how long such cases have waited and gives no date. An RFI is dated from its own RFI day, through the 30 days the employer has to answer and the days DOL usually takes after; once it has run past both, it usually has an extension or a second request, and neither can be dated. A blank is a true answer, and a confident wrong date isn't one.
+An appeal is a separate proceeding, so its page shows how long such cases have waited and gives no date. An RFI is dated from its own RFI day, through the 30 days the employer has to answer and the days DOL usually takes after. Once it has run past both, it usually has an extension or a second request, and neither can be dated. A blank is a true answer, and a confident wrong date isn't one.
 
 ## What this can't tell you
 
-This guide can't tell you your decision date, whether your case will be audited, anything about a case DOL hasn't received, or how another tool got its number.
+This guide can't tell you your decision date or whether your case will be audited. It also can't speak to a case DOL hasn't received, or explain how another tool got its number.
 
-- Your decision date. Near the front of the queue our dates have typically landed within a few days; further out there's more room to miss, and the [estimate scorecard](/estimate-scorecard) shows how much.
+- Your decision date. Near the front of the queue our dates have typically landed within a few days. Further out there's more room to miss, and the [estimate scorecard](/estimate-scorecard) shows how much.
 - Whether your case will be audited. Nothing can, until DOL issues it.
 - Anything about a case DOL hasn't received. An estimate needs a filing month, which needs a filing.
-- How another tool got its number. Where a rival publishes a method we describe it; where it doesn't, we say so on the [methodology page](/methodology).
+- How another tool got its number. Where a rival publishes a method, we describe it. Where it doesn't, we say so on the [methodology page](/methodology).
 
 ## Related
 

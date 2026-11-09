@@ -20,12 +20,12 @@ Plenty of law-firm pages say only the employer or the attorney can check a pendi
 
 ## Where your case number comes from
 
-The case number is on the ETA-9089 filing receipt, and it appears on every status notice DOL sends the employer, so whoever filed the case has it. That's the employer's immigration attorney, or the HR or global-mobility contact at the company. Asking for it is an ordinary request, and it's the one piece of information you need.
+The case number is on the ETA-9089 filing receipt and on every status notice DOL sends the employer, so whoever filed the case has it. That's the employer's immigration attorney, or the HR or global-mobility contact at the company. Ask for it. That's an ordinary request, and the number is the one piece of information you need.
 
 PERM case numbers come in two shapes, and only one of them carries a date:
 
 - **The current four-part form**, like `G-100-26125-868956`. The middle block encodes the day the case entered DOL's system: `26` is the year and `125` is the 125th day of it, so that case was filed on May 5, 2026. Measured against 20,000 cases in DOL's own records, that decoding matches DOL's recorded receipt date exactly about 89% of the time and runs a day or two late otherwise.
-- **The older three-part form** used for cases filed in 2022 and 2023, like `A-23043-00641`. PERM Tracker looks these up, and it refuses to read a filing date out of one: the same decoding lands 13% of the time on this format, so a queue position built on it would be a guess wearing a number.
+- **The older three-part form** used for cases filed in 2022 and 2023, like `A-23043-00641`. PERM Tracker looks these up but won't read a filing date out of one. The same decoding lands 13% of the time on this format, so a queue position built on it would be a guess wearing a number.
 
 If your number comes back with nothing attached, the likeliest explanation is a mistyped digit in the serial, which still produces a well-formed case number. If the number isn't already in our records, we ask DOL for it right then and show what comes back, so a filing from this week is still findable.
 
@@ -39,27 +39,27 @@ DOL shows a case one string in capitals and explains none of them. Here's what t
   headers={["DOL's status", "What it means", "Who acts, and by when"]}
   rows={[
     ["ANALYST REVIEW", "The ordinary queue. An analyst works through it in filing order, and nothing about the case changes until they reach it. Almost every pending case is here.", "Nobody. Waiting is the whole of it."],
-    ["RFI ISSUED", "DOL asked the employer for more information before deciding. Under 20 CFR 656.20(d), the Certifying Officer can request supplemental information at any point before a final determination. An RFI is not an audit.", "The employer answers. The letter itself sets the deadline."],
-    ["PENDING AUDIT RESPONSE", "The case was selected for audit, either because the review raised something or at random for quality control, and DOL is waiting on documents.", "The employer, within 30 days of the audit letter (20 CFR 656.20(a)(2)). One extension of up to 30 more days is discretionary."],
-    ["SUPERVISED RECRUITMENT", "DOL has taken over the recruitment. The employer advertises again where DOL directs, in wording the Certifying Officer approves first, and applications go to the Officer rather than to the employer.", "The employer supplies a draft advertisement within 30 days of being told supervised recruitment is required (20 CFR 656.21(b)(1))."],
-    ["CERTIFIED", "DOL granted the labor certification, which ends the PERM stage. A certification is the document an employer files an I-140 with. It is neither a green card nor a petition on its own.", "The employer files the I-140 within 180 calendar days (20 CFR 656.30(b)(1))."],
-    ["CERTIFIED - EXPIRED", "DOL granted the certification and the 180-day window has passed on the calendar.", "See the note below. This status does not mean nobody filed."],
+    ["RFI ISSUED", "DOL asked the employer for more information before deciding. Under 20 CFR 656.20(d), the Certifying Officer can request supplemental information at any point before a final determination. An RFI isn't an audit.", "The employer answers. The letter itself sets the deadline."],
+    ["PENDING AUDIT RESPONSE", "The case was selected for audit, either because the review raised something or at random for quality control. DOL is waiting on documents.", "The employer, within 30 days of the audit letter (20 CFR 656.20(a)(2)). One extension of up to 30 more days is discretionary."],
+    ["SUPERVISED RECRUITMENT", "DOL has taken over the recruitment. The employer advertises again where DOL directs, in wording the Certifying Officer approves first. Applications go to the Officer rather than to the employer.", "The employer supplies a draft advertisement within 30 days of being told supervised recruitment is required (20 CFR 656.21(b)(1))."],
+    ["CERTIFIED", "DOL granted the labor certification, which ends the PERM stage. A certification is the document an employer files an I-140 with. It's neither a green card nor a petition on its own.", "The employer files the I-140 within 180 calendar days (20 CFR 656.30(b)(1))."],
+    ["CERTIFIED - EXPIRED", "DOL granted the certification and the 180-day window has passed on the calendar.", "See the note below. This status doesn't mean nobody filed."],
     ["DENIED", "The Certifying Officer refused the application. The letter states the grounds.", "The employer can request reconsideration or ask BALCA to review, within 30 days either way."],
     ["WITHDRAWN", "The employer withdrew the application. DOL records no reason. A withdrawal isn't a denial and counts against nobody.", "Nobody."]
   ]}
 />
 
-<Callout type="important" title="CERTIFIED - EXPIRED is not what it sounds like">
-  Expiry here is a calendar event, not a finding that nothing was filed. DOL grants the certification, USCIS receives the I-140, and nothing suggests DOL is told when one arrives. So a case where the employer filed on day 30 and a case where nobody ever filed both end up carrying this status. If an I-140 went in inside the window, it's unaffected. The employer's attorney knows which of the two happened, and no public page can.
+<Callout type="important" title="CERTIFIED - EXPIRED isn't what it sounds like">
+  Expiry here is a calendar event. It isn't a finding that nothing was filed. DOL grants the certification, USCIS receives the I-140, and nothing suggests DOL is told when one arrives. So a case where the employer filed on day 30 and a case where nobody ever filed both end up carrying this status. If an I-140 went in inside the window, it's unaffected. The employer's attorney knows which of the two happened, and no public page can.
 </Callout>
 
-Two of DOL's statuses have no published definition at all. `IN PROCESS` and `APPLICATION ON HOLD` are both pending states, and DOL publishes nothing that separates either from analyst review. PERM Tracker says so on the page rather than filling the gap, because a plausible wrong explanation of a government status is worse than no explanation: from the outside you can't tell the two apart, and you'd act on it.
+Two of DOL's statuses have no published definition at all. `IN PROCESS` and `APPLICATION ON HOLD` are both pending states, and DOL publishes nothing that separates either from analyst review. PERM Tracker says so on the page rather than filling the gap. A plausible wrong explanation of a government status is worse than no explanation. From the outside you can't tell the two apart, and you'd act on it.
 
 ## Getting told when the status changes
 
 On a case that hasn't been decided, [PERM case status](/perm-case-status) takes an email address and sends an email each time the status changes. The same alert works on a prevailing wage request or an LCA number. It's double opt-in, so nothing is sent until you confirm the address. Once DOL decides, it keeps watching for a year, because a decision can still be appealed or reversed.
 
-On November 1, 2026, 87,429 of the PERM cases PERM Tracker tracks this way were still pending. It re-checks the undecided ones against DOL's own case-status search three times a day: at 4:10 AM and 3:40 PM every day, and at 10:40 AM on weekdays, Eastern time. A case someone has asked to be emailed about is checked every 5 minutes on weekdays from 7 AM to 9 PM Eastern. That's still a sweep rather than a live reading: a case decided minutes ago shows at DOL first, and DOL is the authority for any single case.
+On November 1, 2026, 87,429 of the PERM cases PERM Tracker tracks this way were still pending. It re-checks the undecided ones against DOL's own case-status search three times a day: at 4:10 AM and 3:40 PM every day, and at 10:40 AM on weekdays, Eastern time. A case someone has asked to be emailed about is checked every 5 minutes on weekdays from 7 AM to 9 PM Eastern. That's still a sweep rather than a live reading. A case decided minutes ago shows at DOL first, and DOL is the authority for any single case.
 
 ## Where your case sits in the queue
 
@@ -67,13 +67,13 @@ The status says what's happening. It doesn't say how far off a decision is, and 
 
 Subtract your own filing month from the month DOL is working and you have a rough distance in queue terms. [The backlog page](/perm-queue) shows how many cases are still undecided in each filing month, which DOL's quarterly files can't show because they contain no pending rows at all. [The timeline calculator](/tools/perm-timeline-calculator) puts several models of the same question side by side and lets them disagree.
 
-What none of them will do is give you odds. PERM Tracker records when DOL changes a status, but it publishes no transition rate, and a number of that shape printed next to a real case number would be read as a forecast for that specific case.
+None of them will give you odds. PERM Tracker records when DOL changes a status, but it publishes no transition rate. A number of that shape printed next to a real case number would be read as a forecast for that specific case.
 
 ## What you can't see, and why
 
-PERM applications are filed by the employer, not the worker: under [20 CFR 656.17(a)(1)](https://www.ecfr.gov/current/title-20/chapter-V/part-656/subpart-C/section-656.17) it's the employer who applies, on the worker's behalf. That single fact decides what's visible to whom.
+The employer files a PERM application on the worker's behalf. Under [20 CFR 656.17(a)(1)](https://www.ecfr.gov/current/title-20/chapter-V/part-656/subpart-C/section-656.17), it's the employer who applies. That single fact decides what's visible to whom.
 
-The documents, the recruitment file, the audit letter, the RFI, the denial letter and all correspondence with DOL go to the employer and its attorney. Every deadline in this article runs on their desk, not yours. The public record shows the status, the dates, and the employer's own track record across its decided cases. It doesn't show what's in the file, and asking the attorney is the only route to that.
+The documents, the recruitment file, the audit letter, the RFI, the denial letter and all correspondence with DOL go to the employer and its attorney. Every deadline in this guide is theirs to meet. The public record shows the status, the dates, and the employer's own track record across its decided cases. It doesn't show what's in the file, and asking the attorney is the only route to that.
 
 ## Related
 

@@ -1,6 +1,6 @@
 ---
 title: "Find a case number you were never given"
-description: "Search the employer, the job title and the filing month across PERM, wage requests and H-1B LCAs, and get the DOL case number nobody sent you."
+description: "Search by employer, job title and filing month across PERM, wage requests and H-1B LCAs to get the DOL case number nobody sent you."
 date: "2026-09-03"
 updated: "2026-09-26"
 author: "PERM Tracker data desk"
@@ -17,7 +17,7 @@ published: true
 
 You know who filed it and roughly when. You don't have the number, and the person who does isn't answering. PERM Tracker's free [case search](/case-search) looks across PERM, wage requests and LCAs at once, pending ones included. It takes the employer name, and if that isn't enough on its own, a word from the job title and the month it went in.
 
-The companion guide, [how to find your PERM, PWD or LCA case number](/guides/find-your-dol-case-number), covers what each prefix means and why asking the employer is still the fastest route. This page is the walkthrough: which search to open, how the matching actually works, and where it comes up empty.
+The companion guide on [how to find your PERM, PWD or LCA case number](/guides/find-your-dol-case-number) covers what each prefix means and why asking the employer is still the fastest route. This page is the walkthrough: which search to open, how the matching works, and where it comes up empty.
 
 ## Which search covers which filing
 
@@ -25,8 +25,8 @@ The companion guide, [how to find your PERM, PWD or LCA case number](/guides/fin
 the PERM, the wage request and the LCA together, open cases included, filtered
 by job title, filing month or outcome and sorted on any column.
 
-Each program also has its own page, and the table below is why you might want
-one: the three do not reach equally far back.
+Each program also has its own page, and this table shows why you might want
+one. The three don't reach equally far back.
 
 | Filing | Number starts with | Search page | How far back the employer search reaches |
 |---|---|---|---|
@@ -46,20 +46,20 @@ No account is needed for any of them.
 
 ## The search, step by step
 
-Open the page that matches the filing, type the start of the employer's legal name, narrow by a job title word and the filing months, and read the row.
+Open the page that matches the filing and type the start of the employer's legal name. Narrow it by a job title word and the filing months, then read the row.
 
 <StepByStep>
 
 <Step title="Open the page that matches the filing">
-Use the table above. If you are not sure which form was filed, the wage request comes first, the PERM follows it, and the LCA belongs to an H-1B rather than the green card.
+Use the first table on this page. If you aren't sure which form was filed, go by the order: the wage request comes first and the PERM follows it. The LCA belongs to an H-1B rather than the green card.
 </Step>
 
 <Step title="Type the start of the employer's legal name">
-Not the brand, the legal name on the offer letter or the pay stub. Short is better than complete, for the reason in the next section.
+Use the legal name on the offer letter or the pay stub rather than the brand. Short is better than complete, for the reason in the next section.
 </Step>
 
 <Step title="Add a job title word if the list is long">
-The field is "Job title contains", so one distinctive word does the work. "Engineer" and "Analyst" will still leave hundreds of rows. "Radiologic" or "Actuary" will not.
+The field is "Job title contains", so one distinctive word does the work. "Engineer" and "Analyst" will still leave hundreds of rows. "Radiologic" or "Actuary" won't.
 </Step>
 
 <Step title="Set the filing month range">
@@ -76,7 +76,7 @@ Each result carries the case number, the employer, the job title, the filing dat
 
 The match runs against the start of the name DOL recorded, and DOL keeps whatever the employer typed on the form. That has two consequences.
 
-A word from the middle will not find it. Searching "Services" will not return "Amazon.com Services LLC", because the match starts at the beginning of the name.
+A word from the middle won't find it. Searching "Services" won't return "Amazon.com Services LLC", because the match starts at the beginning of the name.
 
 And the parts most likely to differ sit at the end. "LLC", "L.L.C.", "Inc." and "Corporation" all appear, sometimes for the same company in different quarters. Cut them. Type the first distinctive word or two and let the list be longer than you wanted.
 
@@ -94,11 +94,11 @@ Large sponsors file hundreds of cases a month, so the employer name on its own r
 
 The job title word is the strongest filter, because DOL stores the title the employer wrote and those are specific. The month range is the second. On PERM only, you can also search by law firm instead of employer, which helps when you know who prepared it but not which entity signed.
 
-If the list is still too long to read, you are probably looking for a case that has not been decided yet. Those are all in the live half of the page, and there are far fewer of them.
+If the list is still too long to read, you're probably looking for a case that hasn't been decided yet. Those are all in the live half of the page, and there are far fewer of them.
 
 ## What comes back, and what a live row is missing
 
-A row from DOL's daily case check and a row from DOL's published files are not the same record.
+A row from DOL's daily case check and a row from DOL's published files aren't the same record.
 
 | | Live row, from the daily check | Published row, from DOL's quarterly file |
 |---|---|---|
@@ -106,34 +106,34 @@ A row from DOL's daily case check and a row from DOL's published files are not t
 | The wage | no | yes |
 | Law firm, worksite state, decision date | no | yes |
 
-That is DOL's doing, not a gap in the ingest. DOL names the law firm and the wage at publication, so a case still waiting has neither, anywhere.
+That gap is DOL's doing. Nothing is lost on this site's side. DOL names the law firm and the wage at publication, so a case still waiting has neither, anywhere.
 
 <ScreenshotFigure
   src="/images/content/figures/guides/find-a-dol-case-number-by-employer-lca-search.webp"
   alt="The LCA search for Google: newest filings first, each with its case number, status, job title and the day it was filed"
-  caption="Type the start of the employer's name and narrow by job title or month. A live row has the number, status, title and date; the wage comes later, with DOL's quarterly file."
+  caption="Type the start of the employer's name and narrow by job title or month. A live row has the number, status, title and date. The wage comes later, with DOL's quarterly file."
   credit="Screenshot of permtracker.app, October 15, 2026"
   creditHref="/lca-cases?q=Google"
   aspectRatio={1600 / 1549}
   step={3}
 />
 
-## What this cannot tell you
+## What this can't tell you
 
-This search can't find you by name, show a filing from today, or tell you why DOL acted on a case, and an older LCA may not be there yet.
+This search can't find you by name, show a filing from today or tell you why DOL acted on a case. An older LCA may not be there yet.
 
-- **It cannot find you by name.** Nothing in DOL's public record here carries the beneficiary. You are matching on employer, title and month, and if the employer filed six similar jobs in one month, the search cannot say which row is yours. The employer and its attorney can.
-- **An older LCA may not be there.** That half is live-only, it reaches back to filings from August 2026, and the walk through earlier ones is still running. The number itself still works in the lookup.
-- **A filing from today is not there yet.** Everything refreshes daily from DOL. Not instantly.
-- **No wage, firm or worksite on a pending case**, per the table above.
-- **Nothing about why.** No audit letter, no RFI text, no reasoning. Those go to the employer and its attorney.
+- **It can't find you by name.** Nothing in DOL's public record here carries the beneficiary. You're matching on employer, title and month. If the employer filed six similar jobs in one month, the search can't say which row is yours. The employer and its attorney can.
+- **An older LCA may not be there.** That half is live-only. It reaches back to filings from August 2026, and the walk through earlier ones is still running. The number itself still works in the lookup.
+- **A filing from today isn't there yet.** Everything refreshes from DOL once a day.
+- **No wage, firm or worksite on a pending case**, as this page's second table shows.
+- **Nothing about why.** The record holds no audit letter, RFI text or reasoning. Those go to the employer and its attorney.
 - **Any date on the site is an estimate**, graded against real outcomes on the [estimate scorecard](/estimate-scorecard).
 
 ## Once you have the number
 
-Paste it into the [case status lookup](/perm-case-status). The same box takes all three prefixes, pending cases included. If the number is not already held, the site asks DOL's own case system at that moment and records the answer.
+Paste it into the [case status lookup](/perm-case-status). The same box takes all three prefixes, pending cases included. If the site doesn't already hold the number, it asks DOL's own case system at that moment and records the answer.
 
-You can leave an email address there and hear when the status changes. It works for all three programs, it confirms the address first, it sends one email per change, and it needs no account.
+You can leave an email address there and hear when the status changes. It works for all three programs and needs no account. It confirms the address first, then sends one email per change.
 
 ## Related
 

@@ -16,7 +16,7 @@ published: true
 
 Every PERM application waits in the same line, and the line is ordered by the month the application was filed. That's the whole model. Everything else is detail sitting on top of it. PERM Tracker's [PERM queue](/perm-queue) page counts every case still waiting in that line by filing month, a count DOL doesn't publish.
 
-This walks through what "roughly first in, first out" means in practice, what the one number the Department of Labor publishes actually says, and where the model stops being useful.
+This walks through what "roughly first in, first out" means in practice, what the one number the Department of Labor publishes says, and where the model stops being useful.
 
 ## Who gets decided first?
 
@@ -24,11 +24,11 @@ Applications in analyst review are taken in filing-month order, earliest month f
 
 <QueueFigure />
 
-DOL's analyst review queue works in filing order. An application filed in October 2025 is looked at before one filed in December 2025, whatever the employer, the job, the state, or how urgent it is for the person waiting.
+DOL's analyst review queue works in filing order. An application filed in October 2025 is looked at before one filed in December 2025, whatever the employer, the job or the state, and however urgent the case is for the person waiting.
 
 "Analyst review" is the status DOL's case system gives a PERM application while it waits in that line, and most applications carry it from filing until a decision. It doesn't mean anything is wrong with the case. How long it lasts depends on how far your filing month is from the one DOL is working: <DolNow show="queue" />
 
-It's filing month order, not filing day order. DOL clears a month over several weeks. Inside the month it has tended to go roughly alphabetically by employer name, though not reliably (more on that below).
+The order goes by filing month rather than filing day, and DOL clears a month over several weeks. Inside the month it has tended to go roughly alphabetically by employer name, though not reliably (more on that below).
 
 Not every case rides that queue the whole way. On our daily sweep in late September 2026, the cases DOL hadn't decided yet split like this:
 
@@ -38,13 +38,13 @@ Not every case rides that queue the whole way. On our daily sweep in late Septem
 | Out of filing order | 3,074 | an audit, an information request, supervised recruitment or a hold |
 | Under appeal or review | 2,721 | went to appeal after an adverse determination |
 
-Only the first group moves in filing order. That's the honest answer to "DOL has passed my month and I still have nothing": a case in the second or third group has left the line, and its filing month stopped predicting anything the day it did.
+Only the first group moves in filing order. That answers "DOL has passed my month and I still have nothing". A case in the second or third group has left the line, and its filing month stopped predicting anything the day it did.
 
 ## What is the frontier?
 
 The frontier is the filing month DOL's analysts are working through, shown above from PERM Tracker's daily check of DOL's own case statuses. Until October 31, 2026, DOL printed that month on its processing times page every week or two. It now prints only the average days to a decision over the last 30, 90 and 180 days, and no audit figure.
 
-That is the frontier. It's the front of the line, and it's the single most useful public fact about where a case stands. Subtract your filing month from it and you have your distance in queue terms.
+That's the frontier. It's the front of the line, and it's the single most useful public fact about where a case stands. Subtract your filing month from it and you have your distance in queue terms.
 
 Two things about it catch people out.
 
@@ -108,7 +108,7 @@ Over the six months of determinations to June 2026, DOL cleared 1.8 months of fi
 
 The arithmetic people reach for first doesn't work either. Take the 19,787 determinations DOL issued in June 2026 against the roughly 96,000 cases waiting at the time. Dividing one into the other gives about five months and means little: it counts cases filed after yours, and cases on hold or at an RFI that aren't in the line at all.
 
-What a date here does instead is count the cases in DOL's normal queue filed before yours and divide by the pace DOL has actually been deciding them over the last four weeks. Every date is graded against real decisions on the [estimate scorecard](/estimate-scorecard). A single date quoted without a range and a record behind it is a guess with the error bars taken off.
+A date here instead counts the cases in DOL's normal queue filed before yours and divides by the pace DOL has been deciding them over the last four weeks. Every date is graded against real decisions on the [estimate scorecard](/estimate-scorecard). A single date quoted without a range or a track record is a guess with the error bars taken off.
 
 ## Where does my case sit?
 
@@ -128,9 +128,9 @@ The [case status lookup](/perm-case-status) takes a case number and shows what D
 
 ## What this can't tell you
 
-- **When a specific case will be decided.** A filing month gives you an order, not a date.
-- **Which of the three groups a case is in**, unless DOL's own status says so. That comes from the case number, not from the queue.
-- **Why DOL prioritises the way it does.** The order inside a month is observable. The reasoning behind a reprioritisation isn't published.
+- **When a specific case will be decided.** A filing month gives you an order but no date.
+- **Which of the three groups a case is in**, unless DOL's own status says so. That comes from the case number. The queue can't show it.
+- **Why DOL prioritises the way it does.** The order inside a month is observable, but the reasoning behind a reprioritisation isn't published.
 - **Anything about the last few hours.** These figures are refreshed daily from DOL. A case decided this morning shows on DOL's system first.
 - **Whether the current pace holds.** Every rate on this page describes what already happened. None of them is a commitment by anyone.
 

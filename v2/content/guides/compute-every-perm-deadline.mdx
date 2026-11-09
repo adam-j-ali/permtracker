@@ -14,13 +14,13 @@ seoDescription: "Enter the prevailing wage determination date and your recruitme
 published: true
 ---
 
-If you know the date on your prevailing wage determination, every other date in the PERM stage follows from it. None of it is a forecast. These are fixed rules in [20 CFR 656](https://www.ecfr.gov/current/title-20/chapter-V/part-656), so a wrong date here is an arithmetic error rather than a bad guess about DOL.
+If you know the date on your prevailing wage determination, every other date in the PERM stage follows from it. Nothing here is a forecast. These are fixed rules in [20 CFR 656](https://www.ecfr.gov/current/title-20/chapter-V/part-656), so a wrong date here is an arithmetic error rather than a bad guess about DOL.
 
 This walks through getting them from PERM Tracker's free [deadline calculator](/tools/perm-deadline-calculator), which can copy every date or add it to a calendar. It also covers what the calculator deliberately refuses to tell you.
 
 ## Where the determination date comes from
 
-The chain starts at the wage determination, not at the PERM filing. If you have the ETA-9141 case number, the one starting with `P-100-`, put it into the [case lookup](/perm-case-status) and you get DOL's own record, including the determination and how long it stays valid.
+The chain starts at the wage determination, and the PERM filing comes later. If you have the ETA-9141 case number (the one starting with `P-100-`), put it into the [case lookup](/perm-case-status). You get DOL's own record, including the determination and how long it stays valid.
 
 <ScreenshotFigure
   src="/images/content/figures/guides/compute-every-perm-deadline-determination.webp"
@@ -32,7 +32,7 @@ The chain starts at the wage determination, not at the PERM filing. If you have 
   step={1}
 />
 
-No account is needed for that, and if the number isn't already held here, the site asks DOL at that moment and records the answer.
+No account is needed for that. If the number isn't already held here, the site asks DOL at that moment and records the answer.
 
 ## Enter the dates
 
@@ -41,15 +41,15 @@ You enter up to three dates: the determination date, which is required, and the 
 <StepByStep>
 
 <Step title="The determination date">
-The only required input. On its own it gives you the date the determination expires, which is the day recruitment has to begin by.
+It's the only required input. On its own it gives you the date the determination expires, which is the day recruitment has to begin by.
 </Step>
 
 <Step title="The first recruitment step">
-Optional, but it unlocks most of the page. The recruitment deadlines and the close of the filing window all hang off this one.
+It's optional, but the recruitment deadlines and the close of the filing window all hang off this one.
 </Step>
 
 <Step title="The last recruitment step">
-Optional. Needed only for the date the filing window opens, because that runs from the end of recruitment rather than the start.
+It's optional, and it's needed only for the date the filing window opens. That date runs from the end of recruitment rather than the start.
 </Step>
 
 </StepByStep>
@@ -57,7 +57,7 @@ Optional. Needed only for the date the filing window opens, because that runs fr
 <ScreenshotFigure
   src="/images/content/shots/deadline-calculator.webp"
   alt="The PERM deadline calculator with three date inputs and the computed deadlines below"
-  caption="Three inputs, and the dates recompute as you type. Nothing is stored and there is no sign-in."
+  caption="The dates recompute as you type in the three inputs. Nothing is stored, and there's no sign-in."
   step={2}
   aspectRatio={1600 / 1025}
 />
@@ -75,11 +75,11 @@ Each date is measured from recruitment. The wage expiry adds a second cap only w
 | ETA-9089 filing window opens | last step plus 30 days | not applicable |
 | ETA-9089 filing window closes | first step plus 180 days | the expiry itself |
 
-The wage expiry is not a fixed number of days, which is why it can't be done in your head. Under [656.40(c)](https://www.ecfr.gov/current/title-20/chapter-V/part-656/subpart-D/section-656.40) a determination issued in July is good until 30 June of the following year, one issued in January is good until 30 June of that same year, and one issued in May lasts about 90 days. Same employer, same job, very different amount of room.
+The wage expiry isn't a fixed number of days, which is why it can't be done in your head. Under [656.40(c)](https://www.ecfr.gov/current/title-20/chapter-V/part-656/subpart-D/section-656.40), a determination issued in July is good until 30 June of the following year. One issued in January is good until 30 June of that same year, and one issued in May lasts about 90 days. The same employer with the same job can get very different amounts of room.
 
 ## When the wage expiry closes the window
 
-[20 CFR 656.40(c)](https://www.ecfr.gov/current/title-20/chapter-V/part-656/subpart-D/section-656.40) asks employers to "file their applications or begin the recruitment period" while the determination is valid. Either one is enough. So when the first recruitment step falls on or after the determination date and on or before its expiry, the filing window closes 180 days after that first step, even if that's after the determination expires. The Board of Alien Labor Certification Appeals read the rule this way en banc in *Karl Storz Endoscopy-America* (2011-PER-00040, December 1, 2011). The notice of filing doesn't count as beginning recruitment for this. The [prevailing wage expiry guide](/guides/file-perm-after-prevailing-wage-expires) sets out both Board decisions, and the [worked example](/guides/perm-filing-window-worked-example) runs a whole case through the dates.
+[20 CFR 656.40(c)](https://www.ecfr.gov/current/title-20/chapter-V/part-656/subpart-D/section-656.40) asks employers to "file their applications or begin the recruitment period" while the determination is valid. Either one is enough. So when the first recruitment step falls on or after the determination date and on or before its expiry, the filing window closes 180 days after that first step, even if that's after the determination expires. The Board of Alien Labor Certification Appeals read the rule this way en banc in *Karl Storz Endoscopy-America* (2011-PER-00040, December 1, 2011). For this purpose, the notice of filing doesn't count as beginning recruitment. The [prevailing wage expiry guide](/guides/file-perm-after-prevailing-wage-expires) sets out both Board decisions, and the [worked example](/guides/perm-filing-window-worked-example) runs a whole case through the dates.
 
 The wage expiry closes the window early in one case: recruitment that began before the determination was issued. Then the window closes at the earlier of 180 days after the first step and the determination's expiry, and the tool says so on the date itself.
 
@@ -89,22 +89,22 @@ We've changed this rule twice. The calculator once ignored the wage expiry altog
 
 ## When it warns instead of answering
 
-Some combinations of dates are not a timeline, they are a problem, and computing them quietly would hide it. Three cases get a warning band above the dates rather than below:
+Some combinations of dates can't make a valid timeline, and computing them quietly would hide the problem. Three cases get a warning band above the dates rather than below:
 
 - The first recruitment step falls after the determination expired. Recruitment has to begin while the determination is valid, so nothing computed from it can support a filing.
 - The last step is earlier than the first. The window is withheld entirely here, because reversed dates still produce plausible looking output.
-- The window opens after it closes. The 30-day quiet period runs past the filing deadline, so as entered there is no day on which the case could be filed.
+- The window opens after it closes. The 30-day quiet period runs past the filing deadline, so as entered there's no day on which the case could be filed.
 
-The warnings sit above the results on purpose. A date computed from suspect input should not read as more authoritative than the doubt about the input.
+The warnings sit above the results on purpose. A date computed from suspect input shouldn't read as more authoritative than the doubt about the input.
 
 ## What this can't tell you
 
-- **When DOL will decide the case.** That is a queue forecast, not arithmetic, and it lives in the [processing time calculator](/tools/perm-timeline-calculator). How close it lands is on the [estimate scorecard](/estimate-scorecard).
+- **When DOL will decide the case.** That takes a queue forecast, which lives in the [processing time calculator](/tools/perm-timeline-calculator). How close it lands is on the [estimate scorecard](/estimate-scorecard).
 - **Whether the recruitment you ran was adequate.** The tool works out the standard windows. Professional roles need three additional steps beyond the ones listed, and supervised recruitment runs on a different set of rules.
-- **Whether an audit or a request for information is coming.** We publish measured audit and denial rates, and we refuse to blend them into a single risk score, because the factors are not independent.
-- **Anything about the employer's intent.** A valid determination is a legal step, not a commitment to file.
+- **Whether an audit or a request for information is coming.** We publish measured audit and denial rates, and we refuse to blend them into a single risk score, because the factors aren't independent.
+- **Anything about the employer's intent.** A valid determination is a legal step. It doesn't commit the employer to file.
 
-None of it is legal advice.
+Nothing here is legal advice.
 
 The timeline calculator is a forecast, and the site checks its dates every night against what DOL then did:
 
