@@ -87,8 +87,8 @@ export const HOME_FAQS: HomeFaqItem[] = [
         30-180 day ETA 9089 filing window, audit and RFI response dates, and the
         I-140 filing cutoff. Change one date and the downstream dates
         recalculate. Email and push reminders run 1 to 30 days out with quiet
-        hours and calendar sync. A weekly case summary arrives on the same day each
-        week, and an
+        hours and calendar sync. A weekly case summary arrives on Mondays in any week
+        something changed, and an
         AI assistant answers questions over your own cases.{" "}
         <Link href="/for-attorneys" className="link">How the software works &rarr;</Link>
       </>
