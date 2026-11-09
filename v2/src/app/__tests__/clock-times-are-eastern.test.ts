@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 /**
  * A clock time on the site names its zone: Eastern, the zone DOL and the site count in, as "Nov 9, 7:10 AM EST".
  *
- * A time formatted in the viewer's own zone, with no zone named, reads as Eastern to the owner and to every reader
+ * A time formatted in the viewer's own zone, with no zone named, reads as Eastern to every reader
  * who compares it with DOL's day, and the admin panels' send and sign-in times disagreed with the emails they
  * describe. Any component that formats an hour passes `timeZone`.
  */
