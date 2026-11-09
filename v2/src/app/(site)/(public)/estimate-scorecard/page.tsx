@@ -11,7 +11,8 @@ import { easternDay } from "@convex/lib/time";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { daysToAnchor } from "@/lib/predictionLedger";
 import { HORIZONS, PWD_BEFORE_FIX, type Cell } from "@/lib/scorecard/score";
-import { RETIRED_METHODS, readMethods, readOurs } from "@/lib/scorecard/verdict";
+import { EARLIER_VERSION_OF, RETIRED_METHODS, readMethods, readOurs } from "@/lib/scorecard/verdict";
+import { easternDay } from "@/lib/seasonalTiming";
 import { printedRangeCheck } from "@/lib/rangeCoverage";
 import { otherEstimateRows } from "@/lib/scorecard/otherEstimates";
 import { EstimateChecksList } from "@/components/scorecard/EstimateChecksList";
@@ -51,6 +52,8 @@ const TITLE = "PERM Estimate Scorecard";
 const DESCRIPTION =
   "How close our PERM decision dates land: a nightly backtest over thousands of real DOL decisions, and a daily sample recorded before the outcome.";
 const PATH = "/estimate-scorecard";
+/** The methods retired outright; an earlier version of one in use reads beside it instead. */
+const RETIRED_ONLY = Object.keys(RETIRED_METHODS).filter((m) => !(m in EARLIER_VERSION_OF));
 
 /** The verdict (the backtest, then which way our dates lean) shows; the rest folds. */
 const LEAD_READINGS = 2;
@@ -106,7 +109,7 @@ export default async function EstimateScorecardPage() {
     getSeasonalCheck().catch(softFail("estimate-scorecard/page.getSeasonalCheck", null)),
     getEstimateChecks().catch(softFail("estimate-scorecard/page.getEstimateChecks", [])),
   ]);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = easternDay();
   const asOf = sweep?.finishedOn ?? null;
   const perm = sample?.perm.bySource.ours ?? null;
   const pwd = sample?.pwd.bySource.ours ?? null;
@@ -135,11 +138,11 @@ export default async function EstimateScorecardPage() {
   // The same sentences the admin scorecard and the morning report print, less
   // the retired methods, which have their own place at the foot.
   const shortAnswer = [
-    ...(perm && permNow ? readOurs(permNow, permNowByHorizon, sample?.perm.since ?? null, backtest) : []),
+    ...(perm && permNow ? readOurs(permNow, permNowByHorizon, sample?.perm.since ?? null, backtest, today) : []),
     ...(perm ? readMethods(perm.byModel, 3, { retired: false }) : []),
   ];
   const retiredReadings = perm
-    ? Object.keys(RETIRED_METHODS).flatMap((m) => (perm.byModel[m] ? readMethods({ [m]: perm.byModel[m] }, 1) : []))
+    ? RETIRED_ONLY.flatMap((m) => (perm.byModel[m] ? readMethods({ [m]: perm.byModel[m] }, 1) : []))
     : [];
 
   return (
@@ -370,7 +373,7 @@ export default async function EstimateScorecardPage() {
           </ul>
         ) : (
           <p>
-            {Object.keys(RETIRED_METHODS).length} earlier methods are retired. None has enough grades in the daily sample to
+            {RETIRED_ONLY.length} earlier methods are retired. None has enough grades in the daily sample to
             read yet.
           </p>
         )}{" "}

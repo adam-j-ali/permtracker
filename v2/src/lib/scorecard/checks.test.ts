@@ -9,8 +9,9 @@ const STORED: ChecksInput = {
     end: "2026-11-03",
     current: { decided: 10119, typicalMissDays: 3, within7Share: 0.869 },
     passed: {
-      rate: { cases: 5636, decided: 4526, typicalMissDays: 8.0, within7Share: 0.531 },
+      rate: { cases: 5636, decided: 4526, typicalMissDays: 8.0, within7Share: 0.531, missAtLeastDays: 9.0 },
       dolAverage: { cases: 5636, decided: 4526, typicalMissDays: 35.0, within7Share: 0.193 },
+      today: { cases: 5636, decided: 4526, typicalMissDays: 4.0, missAtLeastDays: 3.0 },
     },
     rfiClock: { test: { judged: 199, decided: 149, typicalMissDays: 4, insideShare: 0.392 } },
   },
@@ -33,7 +34,7 @@ describe("estimateChecks", () => {
       result: "3 days typically, 87% within a week",
       basis: "10,119 cases DOL decided from October 14 to November 3, 2026, each dated as the line stood on the first day",
     });
-    expect(by["perm-passed"]!.result).toBe("8 days typically, where DOL's own average was 35 days off");
+    expect(by["perm-passed"]!.result).toBe('At least 9 days off, where answering "today" was at least 3 days');
     expect(by["perm-rfi"]!.result).toBe("4 days typically, 39% inside the range");
     expect(by["pwd-day"]!.result).toBe("1 day typically, 99% within a week");
     expect(by["bulletin"]!.result).toBe("7.7 months typically, 23% within a quarter");
