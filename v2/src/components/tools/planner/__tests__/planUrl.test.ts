@@ -70,4 +70,15 @@ describe("planHref", () => {
     expect(readPlanUrl(new URL(certified, "https://x").searchParams, TODAY).known).toEqual({ permFiled: "2025-10-20", permCertified: "2026-09-01" });
     expect(planHref({ permFiled: "2026-01-15" })).toBe("/tools/green-card-timeline?where=perm-filed&pd=2026-01-15");
   });
+
+  it("sends a certified case with no decision date yet in as certified, never as still waiting on PERM", () => {
+    // Arrange: certified in DOL's live system, not yet in a quarterly file, so no decision date
+    const href = planHref({ permFiled: "2026-01-15", permCertified: null, certified: true });
+    // Act
+    const state = readPlanUrl(new URL(href, "https://x").searchParams, TODAY);
+    // Assert
+    expect(href).toBe("/tools/green-card-timeline?where=perm-certified&pd=2026-01-15");
+    expect(state.where).toBe("perm-certified");
+    expect(state.known).toEqual({ permFiled: "2026-01-15" });
+  });
 });
