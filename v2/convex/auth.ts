@@ -9,7 +9,7 @@ import { internal } from "./_generated/api";
 import type { MutationCtx } from "./_generated/server";
 import { recordError } from "./lib/errorRecording";
 import { validateUserName } from "./lib/nameValidation";
-import { requireSignupPass } from "./lib/turnstilePass";
+import { guardCodeFlows, requireSignupPass } from "./lib/turnstilePass";
 
 /**
  * Post-auth hook: ensure user profile exists and record login.
@@ -171,54 +171,91 @@ export function googleProfile(p: Record<string, unknown>) {
   return out as { id: string; name?: string; email?: string; image?: string; emailVerified?: boolean };
 }
 
+const password = Password<DataModel>({
+  verify: ResendOTP,
+  reset: ResendPasswordReset,
+  profile(params) {
+    // Server-side name validation — rejects URLs, emojis, excessive length, etc.
+    // Throws on violation → Convex Auth surfaces the error to the client
+    // WITHOUT creating a user record or firing any emails.
+    // See convex/lib/nameValidation.ts for the full rule set.
+    //
+    // The Turnstile check runs in convex/turnstile.ts (profile() is sync,
+    // so it can't call Cloudflare). A passing check returns a one-time
+    // pass; the form sends it as `turnstilePass`, it rides the profile to
+    // createOrUpdateUser below, which uses it up and refuses a new
+    // password account without one. It is never written to the user.
+    // Its refusal as a ConvexError, like the password rule below: a plain Error is masked as
+    // "Server Error" in production, which the sign-up page reads as "this email already has an
+    // account" (isExistingAccountError), so a name the server refused said the wrong thing.
+    let validatedName: string;
+    try {
+      validatedName = validateUserName(params.name as string | undefined);
+    } catch (e) {
+      throw new ConvexError(e instanceof Error ? e.message : "Invalid name");
+    }
+    // Normalize email at the source: the Password provider uses the returned
+    // email as the account id, and createOrUpdateUser links accounts by an
+    // exact email-index match. Without normalization, "Name@X.com" (password)
+    // and "name@x.com" (Google) become two accounts, and mixed-case emails
+    // dodge the suspension lookup (which lowercases). Lowercase + trim here
+    // and in createOrUpdateUser so stored value, account id, and lookup agree.
+    return {
+      email: (params.email as string).trim().toLowerCase(),
+      name: validatedName || undefined,
+      ...(typeof params.turnstilePass === "string" ? { turnstilePass: params.turnstilePass } : {}),
+    };
+  },
+  validatePasswordRequirements(password: string | undefined) {
+    // Skip validation if password is undefined (happens during reset flow initial step)
+    // eslint-disable-next-line security/detect-possible-timing-attacks -- not a secret comparison: this is an existence check (=== undefined) for the reset-flow initial step, no constant-time guarantee needed
+    if (password === undefined) return;
+    if (password.length < 8) {
+      // A ConvexError, so production shows this message instead of masking it as "Server Error".
+      throw new ConvexError("Password must be at least 8 characters");
+    }
+  },
+});
+
+/**
+ * The Password provider, its authorize guarded: "reset" and a code-less "email-verification" send a code
+ * without checking a password, so each first uses up a pass from a passed Turnstile check
+ * (needsCodePass and guardCodeFlows in convex/lib/turnstilePass.ts). The reset form sends the pass as
+ * `turnstilePass`. Exported so tests drive the live provider.
+ */
+/** The provider as convexAuth() reads it: its real settings, guarded authorize included, under `options`. */
+type GuardedPassword = typeof password & {
+  options: { authorize: NonNullable<typeof password.authorize> };
+};
+
+// Annotated, so this module's types don't depend on `internal`, whose types are built from this module.
+export const passwordProvider: GuardedPassword = guardPasswordProvider(password);
+
+/**
+ * ConvexCredentials keeps the provider's real settings under `options` (its top-level authorize is a stub
+ * returning null), and convexAuth() merges `options` over the provider (provider_utils.js). So the guard
+ * wraps `options.authorize`, the one that runs.
+ */
+function guardPasswordProvider(provider: typeof password): GuardedPassword {
+  const { options } = provider as unknown as {
+    options: { authorize: NonNullable<typeof password.authorize> };
+  };
+  return {
+    ...provider,
+    options: {
+      ...options,
+      authorize: guardCodeFlows(
+        options.authorize,
+        (ctx, pass): Promise<boolean> => ctx.runMutation(internal.turnstilePasses.consume, { pass }),
+      ),
+    },
+  };
+}
+
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
     Google({ profile: googleProfile }),
-    Password<DataModel>({
-      verify: ResendOTP,
-      reset: ResendPasswordReset,
-      profile(params) {
-        // Server-side name validation — rejects URLs, emojis, excessive length, etc.
-        // Throws on violation → Convex Auth surfaces the error to the client
-        // WITHOUT creating a user record or firing any emails.
-        // See convex/lib/nameValidation.ts for the full rule set.
-        //
-        // The Turnstile check runs in convex/turnstile.ts (profile() is sync,
-        // so it can't call Cloudflare). A passing check returns a one-time
-        // pass; the form sends it as `turnstilePass`, it rides the profile to
-        // createOrUpdateUser below, which uses it up and refuses a new
-        // password account without one. It is never written to the user.
-        // Its refusal as a ConvexError, like the password rule below: a plain Error is masked as
-        // "Server Error" in production, which the sign-up page reads as "this email already has an
-        // account" (isExistingAccountError), so a name the server refused said the wrong thing.
-        let validatedName: string;
-        try {
-          validatedName = validateUserName(params.name as string | undefined);
-        } catch (e) {
-          throw new ConvexError(e instanceof Error ? e.message : "Invalid name");
-        }
-        // Normalize email at the source: the Password provider uses the returned
-        // email as the account id, and createOrUpdateUser links accounts by an
-        // exact email-index match. Without normalization, "Name@X.com" (password)
-        // and "name@x.com" (Google) become two accounts, and mixed-case emails
-        // dodge the suspension lookup (which lowercases). Lowercase + trim here
-        // and in createOrUpdateUser so stored value, account id, and lookup agree.
-        return {
-          email: (params.email as string).trim().toLowerCase(),
-          name: validatedName || undefined,
-          ...(typeof params.turnstilePass === "string" ? { turnstilePass: params.turnstilePass } : {}),
-        };
-      },
-      validatePasswordRequirements(password: string | undefined) {
-        // Skip validation if password is undefined (happens during reset flow initial step)
-        // eslint-disable-next-line security/detect-possible-timing-attacks -- not a secret comparison: this is an existence check (=== undefined) for the reset-flow initial step, no constant-time guarantee needed
-        if (password === undefined) return;
-        if (password.length < 8) {
-          // A ConvexError, so production shows this message instead of masking it as "Server Error".
-          throw new ConvexError("Password must be at least 8 characters");
-        }
-      },
-    }),
+    passwordProvider,
   ],
   callbacks: authCallbacks,
 });

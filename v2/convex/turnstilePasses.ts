@@ -1,12 +1,12 @@
 /**
- * Stores a pass issued by convex/turnstile.ts. Kept apart from that file
+ * Stores a pass issued by convex/turnstile.ts, and uses one up. Kept apart from that file
  * because it runs in Node ("use node"), and a mutation can't.
  *
  * @module convex/turnstilePasses
  */
 import { v } from "convex/values";
 import { internalMutation } from "./_generated/server";
-import { issuePass } from "./lib/turnstilePass";
+import { consumePass, issuePass } from "./lib/turnstilePass";
 
 export const issue = internalMutation({
   args: { hash: v.string() },
@@ -15,4 +15,11 @@ export const issue = internalMutation({
     await issuePass(ctx, hash, Date.now());
     return null;
   },
+});
+
+/** Use up a pass for a code-sending sign-in flow (guardCodeFlows in convex/auth.ts). */
+export const consume = internalMutation({
+  args: { pass: v.optional(v.string()) },
+  returns: v.boolean(),
+  handler: async (ctx, { pass }) => consumePass(ctx, pass, Date.now()),
 });
