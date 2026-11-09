@@ -24,6 +24,7 @@ import type { EditableField } from "./InlineEdit";
 import type { UserSummary } from "@/lib/admin/types";
 import { AUDIENCE_LABEL } from "@/lib/audience";
 import { captureError } from "@/lib/sentry";
+import { EASTERN_TIMEZONE } from "@/lib/time";
 import { useState } from "react";
 
 interface UsersTableProps {
@@ -50,8 +51,10 @@ const formatTimestamp = (ts: number | null): string => {
     month: "short",
     day: "numeric",
     year: "numeric",
-    hour: "2-digit",
+    hour: "numeric",
     minute: "2-digit",
+    timeZone: EASTERN_TIMEZONE,
+    timeZoneName: "short",
   });
 };
 
@@ -61,6 +64,7 @@ const formatDate = (ts: number | null): string => {
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: EASTERN_TIMEZONE,
   });
 };
 

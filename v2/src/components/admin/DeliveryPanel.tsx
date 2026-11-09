@@ -22,7 +22,7 @@ import { entityHref } from "@/lib/entityPayload";
 export type Delivery = FunctionReturnType<typeof api.adminDelivery.getDelivery>;
 
 const when = (ms: number) =>
-  new Date(ms).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  new Date(ms).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: EASTERN_TIMEZONE, timeZoneName: "short" });
 
 function ago(ms: number): string {
   const h = Math.floor((Date.now() - ms) / MS_PER_HOUR);

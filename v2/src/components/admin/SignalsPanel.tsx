@@ -19,12 +19,13 @@ import { useMemo, useState } from "react";
 import type { FunctionReturnType } from "convex/server";
 import type { api } from "@convex/_generated/api";
 import { between, sourceWords } from "./elapsed";
+import { EASTERN_TIMEZONE } from "@/lib/time";
 
 export type Signals = FunctionReturnType<typeof api.adminSignals.getSignals>;
 type Sub = Signals["subscriptions"]["caseAlerts"][number];
 
 const when = (ms: number) =>
-  new Date(ms).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  new Date(ms).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: EASTERN_TIMEZONE, timeZoneName: "short" });
 
 const STATUS_CLASS: Record<string, string> = {
   confirmed: "bg-primary text-primary-foreground",
