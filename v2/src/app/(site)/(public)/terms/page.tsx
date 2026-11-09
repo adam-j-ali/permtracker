@@ -7,7 +7,7 @@
  */
 
 import type { Metadata } from "next";
-import { PlusIcon } from "@phosphor-icons/react/ssr";
+import { ArrowLeftIcon, PlusIcon } from "@phosphor-icons/react/ssr";
 import { withSocialCard } from "@/lib/socialCard";
 import { SectionIndex } from "@/components/legal/SectionIndex";
 import { LEGAL_DBA, LEGAL_FORM, POSTAL_ADDRESS } from "@/lib/constants/about";
@@ -921,9 +921,10 @@ export default function TermsPage() {
         <div className="mt-12 text-center">
           <Link
             href="/"
-            className="inline-flex min-h-11 items-center underline-offset-4 hover:underline text-muted-foreground text-sm"
+            className="inline-flex min-h-11 items-center gap-1.5 underline-offset-4 hover:underline text-muted-foreground text-sm"
           >
-            &larr; Back to Home
+            <ArrowLeftIcon aria-hidden="true" weight="bold" className="size-4" />
+            Back to Home
           </Link>
         </div>
       </div>

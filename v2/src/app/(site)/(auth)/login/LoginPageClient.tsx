@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuthActions } from "@convex-dev/auth/react";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { useMutation, useConvex } from "convex/react";
 import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -301,9 +302,10 @@ export function LoginPageClient() {
           <div className="pt-4 text-center border-t-2 border-border">
             <button
               onClick={() => setStep("login")}
-              className="text-sm font-bold hover:text-primary-text hover:underline hover:underline-offset-4 transition-colors"
+              className="inline-flex min-h-11 items-center gap-1.5 text-sm font-bold hover:text-primary-text hover:underline hover:underline-offset-4 transition-colors"
             >
-              &larr; Back to sign in
+              <ArrowLeftIcon aria-hidden="true" weight="bold" className="size-4" />
+              Back to sign in
             </button>
             <p className="mt-2 text-sm text-muted-foreground">
               Didn&apos;t get the code? Go back and sign in again to resend it.

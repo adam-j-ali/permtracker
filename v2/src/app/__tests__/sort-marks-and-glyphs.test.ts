@@ -47,6 +47,14 @@ const offending = (src: string) =>
     .split("\n")
     .filter((l) => GLYPHS.test(l));
 
+/** The same arrows typed as HTML entities ("&larr; Back to Home"), which the character scan can't see. */
+const ARROW_ENTITIES = /&(?:[lrudh]arr|[lrudh]Arr|#(?:x219[0-9a-f]|x21d[0-4]|859[2-6]|865[6-9]|8660));/i;
+
+const entityArrows = (src: string) =>
+  stripComments(src)
+    .split("\n")
+    .filter((l) => ARROW_ENTITIES.test(l));
+
 describe("the scan finds what it's for", () => {
   it("flags a typed sort arrow and leaves a comment about one alone", () => {
     expect(offending(`<span>{active ? "↑" : "↕"}</span>`)).toHaveLength(1);
@@ -54,6 +62,14 @@ describe("the scan finds what it's for", () => {
     expect(offending(`{/* was ← Back */}<ArrowLeftIcon />`)).toEqual([]);
     expect(offending(`<p>O*NET® is a trademark</p>`)).toEqual([]);
     expect(offending(`1. Enter the date → the app works it out`)).toHaveLength(1);
+  });
+
+  it("flags an arrow typed as an entity, and leaves other entities and a comment alone", () => {
+    expect(entityArrows(`<Link href="/">&larr; Back to Home</Link>`)).toHaveLength(1);
+    expect(entityArrows(`<a>Security details &rarr;</a>`)).toHaveLength(1);
+    expect(entityArrows(`<span>&#8594;</span>`)).toHaveLength(1);
+    expect(entityArrows(`<p>Didn&apos;t get it? &ldquo;Resend&rdquo; &amp; wait</p>`)).toEqual([]);
+    expect(entityArrows(`{/* was &larr; Back */}<ArrowLeftIcon />`)).toEqual([]);
   });
 });
 
@@ -76,6 +92,13 @@ describe("icons are icons", () => {
 
   it("no component types an arrow or an emoji-prone symbol into what it renders", () => {
     const found = components.flatMap((p) => offending(readFileSync(p, "utf8")).map((l) => `${relative(ROOT, p)}: ${l.trim().slice(0, 90)}`));
+    expect(found).toEqual([]);
+  });
+
+  // The pages under src/app, for now: three components still type "&rarr;" and are being changed on their own.
+  it("no page types an arrow as an HTML entity either", () => {
+    const pages = components.filter((p) => p.startsWith(join(ROOT, "src", "app")));
+    const found = pages.flatMap((p) => entityArrows(readFileSync(p, "utf8")).map((l) => `${relative(ROOT, p)}: ${l.trim().slice(0, 90)}`));
     expect(found).toEqual([]);
   });
 
