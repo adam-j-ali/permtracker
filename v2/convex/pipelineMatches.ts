@@ -299,17 +299,20 @@ async function wageRequests(caseNumbers: string[]): Promise<Map<string, WageRequ
 
 /**
  * The employer's PERM filings on or after `since`, every spelling of it
- * included. Falls back to its own slug when the page map can't be read.
+ * included, and whether the read stopped at PERMS_READ (older ones then go
+ * unseen). Falls back to its own slug when the page map can't be read.
  */
-async function permsSince(slug: string, since: string): Promise<PermCandidate[]> {
-  const toRows = (rows: Row[]): PermCandidate[] =>
-    rows.flatMap((r) => {
+async function permsSince(slug: string, since: string): Promise<{ rows: PermCandidate[]; cut: boolean }> {
+  const toRows = (rows: Row[]) => ({
+    rows: rows.flatMap((r): PermCandidate[] => {
       const caseNumber = str(r.case_number);
       const filingDate = str(r.filing_date);
       return caseNumber && filingDate
         ? [{ caseNumber, filingDate: filingDate.slice(0, 10), employerName: str(r.employer_name), jobTitle: str(r.job_title) }]
         : [];
-    });
+    }),
+    cut: rows.length >= PERMS_READ,
+  });
   try {
     const [rows = []] = await query([
       {
@@ -373,11 +376,12 @@ export const sweep = internalAction({
         now: Date.now(),
       });
       if (state.toldForRequest >= MATCH_CAP) continue;
-      const rows = await permsSince(request.slug, request.issuedOn);
+      const { rows, cut } = await permsSince(request.slug, request.issuedOn);
       const pick = pickCandidates({
         pwdTitle: request.jobTitle,
         since: request.issuedOn,
         rows,
+        cut,
         told: new Set(state.told),
         watched: new Set(state.watched),
         toldCount: state.toldForRequest,

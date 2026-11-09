@@ -98,7 +98,7 @@ export interface MatchPick {
   send: PermCandidate[];
   /** Every PERM matching the title since the wage, told or not. */
   matched: number;
-  /** Too many matches to point at anyone. */
+  /** Too many matches to point at anyone, or too many filings read to count them. */
   ambiguous: boolean;
 }
 
@@ -108,7 +108,9 @@ export interface MatchPick {
  * `rows` are the employer's PERM filings on or after `since` (the day DOL
  * issued the wage), in any order. `told` holds the PERMs this address has
  * already been told about; `watched` the cases it already watches, which it
- * has evidently found.
+ * has evidently found. `cut` says the read stopped at its cap, so older
+ * filings since the wage may be missing: the title's count is then unknown
+ * and may be over three, so it's treated as ambiguous.
  */
 export function pickCandidates(opts: {
   pwdTitle: string | null | undefined;
@@ -117,12 +119,13 @@ export function pickCandidates(opts: {
   told: ReadonlySet<string>;
   watched: ReadonlySet<string>;
   toldCount: number;
+  cut?: boolean;
 }): MatchPick {
   const matches = opts.rows
     .filter((r) => r.filingDate >= opts.since && titlesMatch(opts.pwdTitle, r.jobTitle))
     .filter((r, i, all) => all.findIndex((o) => o.caseNumber === r.caseNumber) === i)
     .sort((a, b) => (a.filingDate === b.filingDate ? b.caseNumber.localeCompare(a.caseNumber) : b.filingDate.localeCompare(a.filingDate)));
-  const ambiguous = matches.length > MATCH_AMBIGUOUS_OVER;
+  const ambiguous = opts.cut === true || matches.length > MATCH_AMBIGUOUS_OVER;
   const room = Math.max(0, MATCH_CAP - opts.toldCount);
   const send = ambiguous
     ? []

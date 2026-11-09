@@ -83,9 +83,13 @@ function stub(fixture: Fixture, opts: { sendStatus?: number } = {}) {
           const since = args[args.length - 1]!;
           const slugs = new Set([slug, ...(fixture.spellings?.[slug] ?? [])]);
           permReads.push([...slugs, since]);
+          // The SQL's ORDER BY filing_date DESC LIMIT n, so a big employer's read is cut as the mirror cuts it.
+          const limit = Number(/LIMIT (\d+)/.exec(sql)?.[1] ?? Infinity);
           return hranaResult(
             fixture.perms
               .filter((p) => slugs.has(p.employer_slug) && p.filing_date >= since)
+              .sort((a, b) => b.filing_date.localeCompare(a.filing_date))
+              .slice(0, limit)
               .map(({ employer_slug: _s, ...p }) => p),
           );
         }
@@ -222,6 +226,22 @@ describe("the wage request to PERM match", () => {
     const res = await t2.action(internal.pipelineMatches.sweep, {});
     expect(res.sent + res.queued).toBe(0);
     expect(second.matches()).toHaveLength(0);
+  });
+
+  it("says nothing when the employer filed more since the wage than one read holds", async () => {
+    // 198 newer filings for other jobs and two matches fill the read; three more matches sit behind it, so the
+    // title has five since the wage and points at no one.
+    const t = createTestContext();
+    const others = Array.from({ length: 198 }, (_, i) =>
+      permOf(`G-100-26293-${String(i).padStart(6, "0")}`, "2026-10-20", "Accountant"),
+    );
+    const near = [permOf("G-100-26288-1", "2026-10-15"), permOf("G-100-26288-2", "2026-10-15")];
+    const behind = [1, 2, 3].map((i) => permOf(`G-100-26253-${i}`, "2026-09-10"));
+    const { matches } = stub({ pwd: { [PWD]: pwdRow }, perms: [...others, ...near, ...behind] });
+    await watch(t, "person@example.com");
+    const res = await t.action(internal.pipelineMatches.sweep, {});
+    expect(res.sent + res.queued).toBe(0);
+    expect(matches()).toHaveLength(0);
   });
 
   it("stops looking once three have been told", async () => {
