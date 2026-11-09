@@ -145,6 +145,7 @@ export {
 export {
   // PWD
   calculatePWDExpiration,
+  pwdExpirationOnRecord,
   // ETA 9089
   calculateETA9089Window,
   calculateETA9089Expiration,

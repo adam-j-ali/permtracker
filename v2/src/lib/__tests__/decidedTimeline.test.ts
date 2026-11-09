@@ -34,8 +34,21 @@ describe("a decided case's own dates", () => {
   it("dates the wage's last day by the central rule when DOL's file prints none", () => {
     // A March determination runs to June 30 of the same year (calculatePWDExpiration).
     expect(decidedTimeline(BASE).steps.find((s) => s.key === "pwd-expires")?.date).toBe("2025-06-30");
+    expect(decidedTimeline(BASE).steps.find((s) => s.key === "pwd-expires")?.detail).toBeUndefined();
+  });
+
+  it("shows the determination's own last day when DOL's file lists the day before it, as the file does", () => {
+    const listed = { ...BASE, pwd: { ...BASE.pwd!, expires: "2025-06-29" } };
+    const step = decidedTimeline(listed).steps.find((s) => s.key === "pwd-expires");
+    expect(step?.date).toBe("2025-06-30");
+    expect(step?.detail).toBeUndefined();
+  });
+
+  it("keeps a date in DOL's file that differs by more than that day, and says whose it is", () => {
     const printed = { ...BASE, pwd: { ...BASE.pwd!, expires: "2025-07-15" } };
-    expect(decidedTimeline(printed).steps.find((s) => s.key === "pwd-expires")?.date).toBe("2025-07-15");
+    const step = decidedTimeline(printed).steps.find((s) => s.key === "pwd-expires");
+    expect(step?.date).toBe("2025-07-15");
+    expect(step?.detail).toBe("As DOL's wage file lists it");
   });
 
   it("names the wage and its level, and the additional steps by DOL's own names", () => {

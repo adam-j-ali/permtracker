@@ -5,7 +5,7 @@
  * based on 20 CFR § 656.40 regulations.
  */
 
-export { calculatePWDExpiration } from './pwd';
+export { calculatePWDExpiration, pwdExpirationOnRecord } from './pwd';
 export {
   calculateETA9089Window,
   calculateETA9089Expiration,

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculatePWDExpiration } from './pwd';
+import { calculatePWDExpiration, pwdExpirationOnRecord } from './pwd';
 
 describe('calculatePWDExpiration', () => {
   describe('Case 1: April 2 - June 30 (determination + 90 days)', () => {
@@ -86,5 +86,32 @@ describe('calculatePWDExpiration', () => {
     it('should handle year transition for Case 3 (Jan 15, 2025 → Jun 30, 2025)', () => {
       expect(calculatePWDExpiration('2025-01-15')).toBe('2025-06-30');
     });
+  });
+});
+
+describe('pwdExpirationOnRecord', () => {
+  it('is the rule\'s day when DOL\'s file lists the day before it, as the file does', () => {
+    // June 30 determinations: the file lists June 29.
+    expect(pwdExpirationOnRecord('2024-09-10', '2025-06-29')).toEqual({ date: '2025-06-30', asListed: false });
+    // Determination + 90 days: the file lists + 89 (determined 2023-04-14, typed 2023-07-13, listed 2023-07-12).
+    expect(pwdExpirationOnRecord('2023-04-14', '2023-07-12')).toEqual({ date: '2023-07-13', asListed: false });
+  });
+
+  it('is the rule\'s day when the file lists that day, or lists nothing', () => {
+    expect(pwdExpirationOnRecord('2024-09-10', '2025-06-30')).toEqual({ date: '2025-06-30', asListed: false });
+    expect(pwdExpirationOnRecord('2024-09-10', null)).toEqual({ date: '2025-06-30', asListed: false });
+    expect(pwdExpirationOnRecord('2024-09-10', undefined)).toEqual({ date: '2025-06-30', asListed: false });
+    expect(pwdExpirationOnRecord('2024-09-10', '')).toEqual({ date: '2025-06-30', asListed: false });
+  });
+
+  it('keeps any other date DOL lists, and says it is the file\'s', () => {
+    expect(pwdExpirationOnRecord('2024-09-10', '2025-07-15')).toEqual({ date: '2025-07-15', asListed: true });
+    // Two days early isn't the file's known habit, so it isn't explained away.
+    expect(pwdExpirationOnRecord('2024-09-10', '2025-06-28')).toEqual({ date: '2025-06-28', asListed: true });
+  });
+
+  it('steps back across a month and a year boundary to find the day before', () => {
+    // Determined April 2, 2024: + 90 days is July 1, and the file's day before is June 30.
+    expect(pwdExpirationOnRecord('2024-04-02', '2024-06-30')).toEqual({ date: '2024-07-01', asListed: false });
   });
 });

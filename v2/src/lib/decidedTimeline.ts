@@ -1,4 +1,4 @@
-import { calculateFilingWindowFromCase, calculatePWDExpiration, type FilingWindow } from "@/lib/perm";
+import { calculateFilingWindowFromCase, pwdExpirationOnRecord, type FilingWindow } from "@/lib/perm";
 import { formatWage } from "@/lib/wageFormat";
 import { daysBetween } from "@convex/lib/time";
 
@@ -94,6 +94,8 @@ export function decidedTimeline(r: DecidedRecord): DecidedTimeline {
   };
   const pwd = r.pwd;
   const determined = iso(pwd?.determined);
+  // DOL's wage file lists each expiration a day before the determination's own: see pwdExpirationOnRecord.
+  const expiry = determined ? pwdExpirationOnRecord(determined, iso(pwd?.expires)) : null;
   if (pwd) {
     const filed = iso(pwd.filed);
     if (filed) add({ key: "pwd-filed", date: filed, label: "Wage request filed", detail: pwd.number, tone: "pwd" });
@@ -122,7 +124,9 @@ export function decidedTimeline(r: DecidedRecord): DecidedTimeline {
     additionalRecruitmentMethods: extra.map(([, from, to]) => ({ startDate: from, endDate: to ?? undefined })),
     isProfessionalOccupation: extra.length > 0,
     pwdDeterminationDate: determined ?? undefined,
-    pwdExpirationDate: iso(pwd?.expires) ?? (determined ? calculatePWDExpiration(determined) : undefined),
+    // The determination's own last day (the file lists the day before it). With no determination date on
+    // record, the file's date stands: a day early is the safe side of a window's close.
+    pwdExpirationDate: expiry?.date ?? iso(pwd?.expires) ?? undefined,
   });
   const quietEnd = window?.opens ?? null;
   if (quietEnd) add({ key: "quiet", date: quietEnd, label: "Quiet period ended", detail: "The first day the PERM could be filed", tone: "quiet" });
@@ -140,9 +144,14 @@ export function decidedTimeline(r: DecidedRecord): DecidedTimeline {
       tone: "filed",
     });
   }
-  if (determined) {
-    const expires = iso(pwd?.expires) ?? calculatePWDExpiration(determined);
-    add({ key: "pwd-expires", date: expires, label: "Wage determination's last day", tone: "pwd" });
+  if (expiry) {
+    add({
+      key: "pwd-expires",
+      date: expiry.date,
+      label: "Wage determination's last day",
+      detail: expiry.asListed ? "As DOL's wage file lists it" : undefined,
+      tone: "pwd",
+    });
   }
   const decided = iso(r.decisionDate);
   if (decided && r.status) add({ key: "decided", date: decided, label: sentence(r.status), tone: decidedTone(r.status) });
