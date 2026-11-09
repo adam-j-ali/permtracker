@@ -222,9 +222,9 @@ function MatrixGroup({
                         {/* The button is named by its label alone, and the
                             badge's own words stay out of the name: a name that
                             leaves out visible text fails WCAG 2.5.3. */}
-                        <span className="sr-only">{`${cell.label} `}</span>
                         {/* Our own string from the renderer; the trailing space
                             keeps one cell's words off the next. */}
+                        <span className="sr-only">{`${cell.label} `}</span>{" "}
                         <span aria-hidden="true" className="contents" dangerouslySetInnerHTML={{ __html: `${cv.svg} ` }} />
                       </button>{" "}
                     </td>
