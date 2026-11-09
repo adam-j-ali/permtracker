@@ -109,6 +109,7 @@ export default async function GreenCardTimelinePage() {
           { href: "/today", label: "Where every step stands today", note: "the live figures the plan is built on" },
           { href: "/tools/green-card-line", label: "Your place in the line", note: "how many people stand ahead of your date" },
           { href: "/tools/i485-queue-position", label: "How many are ahead of you", note: "who already holds a place in your category and country" },
+          { href: "/tools/uscis-case-inquiry", label: "Your USCIS case on its own calendar", note: "when cases like yours were decided, and the day you can ask" },
           { href: "/guides/ultimate-perm-guide-2026", label: "The full PERM guide", note: "the steps in detail, and the rules behind the ones you control" },
         ]}
       />

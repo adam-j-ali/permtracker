@@ -7,6 +7,7 @@ import { CheckIcon, CopyIcon } from "@phosphor-icons/react";
 import { longDate } from "@convex/lib/months";
 import { DateInput } from "@/components/forms/DateInput";
 import { Label } from "@/components/ui/label";
+import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 import { DateRuler, type RulerMark } from "@/components/tools/DateRuler";
 import { SelectedInFull } from "@/components/tools/SelectedInFull";
 import { caseMarks, congressNote, inquiryAnswer, ombudsmanFrom, OMBUDSMAN, postedInSentence, type InquiryAnswer } from "@/lib/uscisInquiry";
@@ -58,7 +59,11 @@ const OMBUDSMAN_PAGE = "https://www.dhs.gov/case-assistance";
 export function UscisCaseTimeline({ rows, published, formNames }: { rows: InquiryRow[]; published: string; formNames: Record<string, string> }) {
   const ids = { form: useId(), subtype: useId(), office: useId(), receipt: useId(), name: useId(), number: useId(), asked: useId(), ref: useId(), extra: useId() };
   const forms = useMemo(() => [...new Set(rows.map((r) => r.form))].sort((a, b) => a.localeCompare(b, "en", { numeric: true })), [rows]);
-  const [form, setForm] = useState(forms.includes("I-485") ? "I-485" : (forms[0] ?? ""));
+  // A link from a form's own page opens on that form (`?form=I-140`). The address is only read: nothing typed here
+  // goes into it.
+  const linkedForm = (useUrlSearchParams().get("form") ?? "").trim().toUpperCase();
+  const [pickedForm, setForm] = useState<string | null>(null);
+  const form = pickedForm ?? (forms.includes(linkedForm) ? linkedForm : forms.includes("I-485") ? "I-485" : (forms[0] ?? ""));
   const subtypes = useMemo(() => [...new Map(rows.filter((r) => r.form === form).map((r) => [r.subtype, r.label])).entries()], [rows, form]);
   const [subtype, setSubtype] = useState("");
   // USCIS lists the family-based adjustment first; this site's readers are on the employment-based one.
@@ -318,7 +323,7 @@ function Verdict({ tone, headline, children }: { tone: "good" | "warn" | "wait";
 
 function Step({ n, title, now = false, children }: { n: number; title: string; now?: boolean; children: React.ReactNode }) {
   return (
-    <li className="grid grid-cols-[2.75rem_minmax(0,1fr)] gap-3">
+    <li className="grid grid-cols-[2.75rem_minmax(0,1fr)] gap-3 [&>*]:min-w-0">
       <span className={`flex size-11 items-center justify-center border-2 border-foreground font-heading text-lg font-bold ${now ? "bg-primary text-primary-foreground" : ""}`} aria-hidden="true">
         {n}
       </span>

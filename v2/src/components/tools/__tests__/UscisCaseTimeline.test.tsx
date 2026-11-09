@@ -1,7 +1,18 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { UscisCaseTimeline, type InquiryRow } from "../UscisCaseTimeline";
+
+// The address the tool reads its opening form from.
+const nav = vi.hoisted(() => ({ params: new URLSearchParams() }));
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => nav.params,
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  usePathname: () => "/tools/uscis-case-inquiry",
+}));
+beforeEach(() => {
+  nav.params = new URLSearchParams();
+});
 
 /**
  * A USCIS case on its calendar: the day half of such cases were decided by, the day eight in ten were, and the
@@ -47,6 +58,19 @@ describe("UscisCaseTimeline", () => {
     expect(screen.getByLabelText("Category")).toHaveValue("131A");
     expect(screen.getByText("Enter the receipt date on your notice to see your case's dates.")).toBeInTheDocument();
     expect(screen.queryByText(/Half of cases like yours/)).toBeNull();
+  });
+
+  it("opens on the form a link names, and on its usual form when the link names one USCIS doesn't post", () => {
+    nav.params = new URLSearchParams("form=i-140");
+    const { unmount } = render(<UscisCaseTimeline rows={ROWS} published="2026-10-19" formNames={NAMES} />);
+    expect(screen.getByLabelText("Form")).toHaveValue("I-140");
+    // The reader's own pick wins over the address from then on.
+    fireEvent.change(screen.getByLabelText("Form"), { target: { value: "I-90" } });
+    expect(screen.getByLabelText("Form")).toHaveValue("I-90");
+    unmount();
+    nav.params = new URLSearchParams("form=I-999");
+    render(<UscisCaseTimeline rows={ROWS} published="2026-10-19" formNames={NAMES} />);
+    expect(screen.getByLabelText("Form")).toHaveValue("I-485");
   });
 
   it("opens on the employment-based adjustment even though USCIS lists the family-based one first", () => {

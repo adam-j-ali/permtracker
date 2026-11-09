@@ -598,6 +598,11 @@ export default async function UscisProcessingTimesPage() {
         <h2 className="font-heading text-2xl font-bold">Read next</h2>{" "}
         <ul className="mt-4 space-y-2">
           <li>
+            <Link href="/tools/uscis-case-inquiry" className="link">
+              Your own case on the calendar, and the day you can ask USCIS
+            </Link>
+          </li>{" "}
+          <li>
             <Link href="/guides/uscis-processing-times-median-vs-80-percent" className="link">
               Median or 80 percent: which USCIS processing time is which
             </Link>
