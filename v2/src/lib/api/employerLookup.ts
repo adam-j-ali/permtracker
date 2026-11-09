@@ -98,15 +98,21 @@ const day = (v: unknown): string | null => (v ? String(v).slice(0, 10) : null);
 
 let mapKeyIndexed: Promise<boolean> | null = null;
 let mapKeyCheckedAt = 0;
-/** Whether `employer_page_map` has its index on `key` yet. Rechecked hourly. */
+/**
+ * Whether `employer_page_map` has its index on `key` yet. Rechecked hourly. A failed check is an error, never kept:
+ * kept as "no index", it hid every live-only and other-program page from the lookup for the hour, and each answer
+ * it gave was remembered for another.
+ */
 function mapHasKeyIndex(now = Date.now()): Promise<boolean> {
   if (!mapKeyIndexed || now - mapKeyCheckedAt > 3_600_000) {
     mapKeyCheckedAt = now;
-    mapKeyIndexed = one<{ n: number }>(
+    const check = one<{ n: number }>(
       "SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'index' AND name = 'employer_page_map_key'",
-    )
-      .then((r) => Number(r?.n ?? 0) > 0)
-      .catch(() => false);
+    ).then((r) => Number(r?.n ?? 0) > 0);
+    mapKeyIndexed = check;
+    check.catch(() => {
+      if (mapKeyIndexed === check) mapKeyIndexed = null;
+    });
   }
   return mapKeyIndexed;
 }
