@@ -78,11 +78,10 @@ export const SOCIAL_LINKS = [
   // glyph is already the X mark. Label names the platform but keeps the old
   // name for recognition, since the icon alone is still ambiguous to many users.
   { href: X_PROFILE_URL, label: "X (formerly Twitter)", icon: "twitter" },
-  // A personal profile, not a company page. She is the one person the site
-  // names (the About page). Articles and emails are signed by the team. Swap it
-  // for a company page if one is ever created.
+  // The brand's company page (Nov 8 2026). Her own profile stays where the site
+  // is about her: the About page and her Person node.
   {
-    href: LINKEDIN_SABRINA_URL,
+    href: LINKEDIN_COMPANY_URL,
     label: "LinkedIn",
     icon: "linkedin",
   },
