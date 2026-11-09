@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { RequestFailed } from "@/components/tools/RequestFailed";
 import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 import { usePublicQuery } from "@/hooks/usePublicQuery";
-import { formatInt } from "@/lib/format";
+import { formatInt, formatShareOf } from "@/lib/format";
 import {
   firstLcaYear,
   concentration,
@@ -50,7 +50,8 @@ const FIELD =
   "min-h-[44px] w-full border-2 border-input bg-background px-3 text-base focus:outline-none focus:ring-2 focus:ring-primary";
 const money = (n: number) => `$${formatInt(Math.round(n))}`;
 const rankOf = (r: H1bRankRow, by: H1bBasis) => (by === "lca" ? r.rankLca : r.rankUscis);
-const pct = (part: number, whole: number) => (whole > 0 ? `${Math.round((part / whole) * 100)}%` : "");
+/** A share that never rounds to a clean 0% or 100% the counts don't have. */
+const pct = (part: number, whole: number) => (whole > 0 ? formatShareOf(part, whole) : "");
 
 interface Column {
   label: string;

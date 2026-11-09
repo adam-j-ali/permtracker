@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import Link from "next/link";
 
-import { formatInt, formatShare } from "@/lib/format";
+import { formatInt, formatShareOf } from "@/lib/format";
 import type { LcaCity } from "@/lib/db/lcaCities";
 import { entityHref } from "@/lib/entityPayload";
 
@@ -24,7 +24,7 @@ export function CityH1b({ city, className = "mt-10" }: { city: LcaCity | null; c
         <span className="font-heading text-2xl font-bold tabular-nums text-foreground">{formatInt(city.total)}</span>{" "}
         labor condition applications name a worksite here{span ? `, ${span}` : ""}, and DOL certified{" "}
         {formatInt(city.certified)}
-        {city.total > 0 ? ` (${formatShare(city.certified / city.total)})` : ""}. An LCA is the employer&apos;s wage
+        {city.total > 0 ? ` (${formatShareOf(city.certified, city.total)})` : ""}. An LCA is the employer&apos;s wage
         attestation before an H-1B petition, so it counts positions offered. It doesn&apos;t count people hired.
       </p>{" "}
       <div className="mt-5 grid grid-cols-1 gap-8 sm:grid-cols-2 [&>*]:min-w-0">

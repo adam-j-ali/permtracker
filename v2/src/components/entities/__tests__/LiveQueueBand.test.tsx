@@ -106,8 +106,9 @@ describe("LiveQueueBand", () => {
     // visible, but the percentage beside each count is the true share and is
     // what the reader is given to read.
     expect(screen.getByText("96%")).toBeInTheDocument();
-    expect(screen.getByText("3%")).toBeInTheDocument();
-    expect(screen.getByText("1%")).toBeInTheDocument();
+    // formatShareOf, the one rule for shares: one decimal under 10%.
+    expect(screen.getByText("3.0%")).toBeInTheDocument();
+    expect(screen.getByText("1.0%")).toBeInTheDocument();
   });
 
   it("never sets a total beside the waiting count to subtract from", () => {

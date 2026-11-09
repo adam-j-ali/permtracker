@@ -7,7 +7,7 @@ import { formatMonth, formatMonthShort } from "@/lib/dolFormat";
 import type { VolumeAnomaly } from "@/lib/queueAhead";
 import { cn } from "@/lib/utils";
 import type { BacklogMonth } from "@/lib/backlogMonths";
-import { formatInt } from "@/lib/format";
+import { formatInt, formatShareOf } from "@/lib/format";
 
 import { StageBar } from "./StageBar";
 import { groupByStage } from "./stages";
@@ -225,7 +225,8 @@ function MonthRow({
   // spaced it would have been the same month printed twice.
   const label = formatMonth(month.month) ?? month.month;
   const short = formatMonthShort(month.month) ?? month.month;
-  const pct = month.decidedPct ?? 0;
+  // Never a clean 100% with cases still waiting, or 0% with some decided.
+  const decided = month.total > 0 ? formatShareOf(month.decided, month.total) : "0%";
 
   return (
     <li
@@ -234,7 +235,7 @@ function MonthRow({
       // put 39 targets on a 24px pitch, which is the floor of WCAG 2.5.8 and
       // well under this project's own. The bar stays 20px; the ROW grew.
       className="grid min-h-11 grid-cols-[5rem_1fr_3.5rem_3rem] items-center gap-2 [&>*]:min-w-0 sm:grid-cols-[7rem_1fr_5rem_4rem] sm:gap-3"
-      aria-label={`${label}: ${formatInt(month.pending)} of ${formatInt(month.total)} still waiting, ${pct.toFixed(0)} percent decided${outline ? `; ${formatInt(outline.n)} ${outline.label.toLowerCase()}` : ""}`}
+      aria-label={`${label}: ${formatInt(month.pending)} of ${formatInt(month.total)} still waiting, ${decided} decided${outline ? `; ${formatInt(outline.n)} ${outline.label.toLowerCase()}` : ""}`}
     >
       <span className="flex min-h-11 items-center gap-1 truncate">
         {anomaly ? (
@@ -251,10 +252,10 @@ function MonthRow({
         </Link>
       </span>{" "}
       {outline === undefined ? (
-        <StageBar stages={stages} scale={scale} tipHeading={`${label}, ${pct.toFixed(0)}% decided`} />
+        <StageBar stages={stages} scale={scale} tipHeading={`${label}, ${decided} decided`} />
       ) : (
         <span className="relative block">
-          <StageBar stages={stages} scale={scale} tipHeading={`${label}, ${pct.toFixed(0)}% decided`} />
+          <StageBar stages={stages} scale={scale} tipHeading={`${label}, ${decided} decided`} />
           <span
             aria-hidden="true"
             className="pointer-events-none absolute inset-y-0 left-0 border-2 border-dashed border-foreground"
@@ -271,7 +272,7 @@ function MonthRow({
         {formatInt(month.pending)}
       </span>{" "}
       <span className="text-right text-sm tabular-nums text-muted-foreground">
-        {pct.toFixed(0)}%
+        {decided}
       </span>
     </li>
   );

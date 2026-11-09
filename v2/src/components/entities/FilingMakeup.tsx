@@ -155,7 +155,7 @@ export function OccupationMix({
       <p className="mt-1.5 font-mono text-sm tabular-nums text-muted-foreground">
         {lead.code ? <>SOC {lead.code} &middot; </> : null}
         <Count row={lead} href={filingsHref} />
-        {leadShare >= 1 ? `, ${leadShare.toFixed(0)}% of everything they file` : null}
+        {leadShare >= 1 ? `, ${formatShareOf(lead.n, total)} of everything they file` : null}
         {approvedNote(lead)}
       </p>
 
@@ -284,7 +284,7 @@ export function PartyMix({
       title={title}
       note={
         <>
-          {note} {formatInt(shown)} of {formatInt(total)} filings, {share.toFixed(0)}% of the
+          {note} {formatInt(shown)} of {formatInt(total)} filings, {total > 0 ? formatShareOf(shown, total) : "0%"} of the
           total.
         </>
       }

@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import Link from "next/link";
 
-import { formatInt, formatShare } from "@/lib/format";
+import { formatInt, formatShareOf } from "@/lib/format";
 import type { FirmProgramLine, FirmPrograms as FirmProgramsData } from "@/lib/db/firmPrograms";
 import { entityHref } from "@/lib/entityPayload";
 import { ROW_LINK } from "@/components/entities/caseRows";
@@ -35,7 +35,7 @@ function Column({ label, noun, line }: { label: string; noun: string; line: Firm
         <span className="text-sm text-muted-foreground">
           {noun}
           {line.certified !== null && line.filings > 0
-            ? `, ${formatShare(line.certified / line.filings)} certified`
+            ? `, ${formatShareOf(line.certified, line.filings)} certified`
             : ""}
         </span>
       </p>{" "}
