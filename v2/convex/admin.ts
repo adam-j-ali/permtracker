@@ -812,13 +812,14 @@ export const sendAdminEmail = action({
     const resend = getResend();
 
     // Send email with both HTML and plain text fallback
-    const { error } = await sendOrQueue(ctx, "admin-email", resend, {
+    const result = await sendOrQueue(ctx, "admin-email", resend, {
       from: FROM_EMAIL,
       to: [args.toEmail],
       subject: args.subject,
       html,
       text: args.body,
     });
+    const { error } = result;
 
     if (error) {
       log.error("sendAdminEmail failed", { error: error.message, toEmail: args.toEmail });
@@ -826,7 +827,10 @@ export const sendAdminEmail = action({
       throw new Error(`Email failed: ${error.message}`);
     }
 
-    log.info("Admin email sent", { toEmail: args.toEmail, subject: args.subject });
-    return { success: true };
+    // `queued`: the day's count was full or Resend couldn't take it yet, so it waits in the retry queue and the
+    // admin screen mustn't say it was sent. `success` stays for callers that read only that.
+    const queued = "queued" in result && result.queued === true;
+    log.info(queued ? "Admin email queued for retry" : "Admin email sent", { toEmail: args.toEmail, subject: args.subject });
+    return { success: true, queued };
   },
 });
