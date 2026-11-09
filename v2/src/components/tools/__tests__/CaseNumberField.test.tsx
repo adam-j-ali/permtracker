@@ -40,7 +40,7 @@ describe("CaseNumberField", () => {
     const { onDecode, input } = setup();
     fireEvent.change(input, { target: { value: "not-a-case-number" } });
     expect(onDecode).not.toHaveBeenCalled();
-    expect(screen.getByText(/not a PERM case number/)).toBeInTheDocument();
+    expect(screen.getByText(/isn't a PERM case number/)).toBeInTheDocument();
     expect(input).toHaveAttribute("aria-invalid", "true");
   });
 
@@ -48,7 +48,7 @@ describe("CaseNumberField", () => {
     const { input } = setup();
     fireEvent.change(input, { target: { value: VALID } });
     fireEvent.change(input, { target: { value: "" } });
-    expect(screen.queryByText(/not a PERM case number/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/isn't a PERM case number/)).not.toBeInTheDocument();
     expect(input).not.toHaveAttribute("aria-invalid");
   });
 

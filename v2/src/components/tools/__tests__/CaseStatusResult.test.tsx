@@ -351,7 +351,7 @@ describe("CaseStatusResult, pending case", () => {
       .closest("details")!;
     const text = section.textContent ?? "";
     // 7 of 7 certified is worth knowing and is not a 100% approval rate.
-    expect(text).toMatch(/it is not a rate/);
+    expect(text).toMatch(/it isn't a rate/);
     expect(text).not.toMatch(/\d+(\.\d)?%/);
     expect(screen.getByRole("link", { name: /Psomagen Inc/ })).toHaveAttribute(
       "href",
