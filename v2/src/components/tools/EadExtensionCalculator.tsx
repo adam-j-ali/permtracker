@@ -2,6 +2,7 @@
 
 import { useId, useMemo, useState } from "react";
 
+import { longDate } from "@convex/lib/months";
 import { DateInput } from "@/components/forms/DateInput";
 import { Label } from "@/components/ui/label";
 import { DateRuler } from "@/components/tools/DateRuler";
@@ -20,8 +21,8 @@ function categoryLabel(c: { code: string; label: string }): string {
  */
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const long = (iso: string) =>
-  new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+/** "June 30, 2026", with no time zone arithmetic, so every reader sees the same day. */
+const long = (iso: string) => longDate(iso) ?? iso;
 
 /** The reader's own calendar date. `toISOString()` is UTC, which after about 8 PM Eastern is already tomorrow. */
 const localToday = () => {
