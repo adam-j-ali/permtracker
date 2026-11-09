@@ -49,6 +49,8 @@ describe("SiteHeader", () => {
     expect(container.querySelector("#data-menu")).not.toHaveAttribute("inert");
     fireEvent.keyDown(document, { key: "Escape" });
     expect(button).toHaveAttribute("aria-expanded", "false");
+    // Escape hands focus back to the button that opened the menu, never to the page.
+    expect(button).toHaveFocus();
   });
 
   it("marks Data as where you are on a data page", () => {
