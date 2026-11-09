@@ -566,6 +566,30 @@ describe('FallbackModel', () => {
     }
   });
 
+  it("counts a chain that never started as all-failed, never as a mid-stream failure", async () => {
+    // The SDK hands the chain's own failure to the stream's onError, so the mid-stream report has to tell it apart.
+    const { FallbackModel, reportMidStreamFailure, resetReportedGone } = await import('../providers');
+    const { captureError } = await import('@/lib/sentry');
+    resetReportedGone();
+    vi.mocked(captureError).mockClear();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const busy = {
+      specificationVersion: 'v4' as const, provider: 'test', modelId: 'busy', supportedUrls: {},
+      doGenerate: vi.fn(), doStream: vi.fn().mockRejectedValue(Object.assign(new Error('high demand'), { statusCode: 503 })),
+    };
+    const chain = new FallbackModel([{ model: busy, name: 'Busy' }]);
+    const failure = await chain.doStream({ prompt: [] } as any).catch((e: unknown) => e);
+    reportMidStreamFailure(failure, { modelUsed: 'Busy', attempts: 1 });
+    const ops = vi.mocked(captureError).mock.calls.map(([, ctx]) => (ctx as { operation?: string } | undefined)?.operation);
+    expect(ops).toContain('ai.fallback.allFailed');
+    expect(ops).not.toContain('ai.fallback.midStream');
+
+    vi.mocked(captureError).mockClear();
+    reportMidStreamFailure(new Error('connection reset mid-reply'), { modelUsed: 'Busy', attempts: 1 });
+    expect(vi.mocked(captureError).mock.calls.map(([, ctx]) => (ctx as { operation?: string }).operation)).toEqual(['ai.fallback.midStream']);
+  });
+
   it('tells a retired model from a busy one', async () => {
     const { isModelGone } = await import('../providers');
     expect(isModelGone(Object.assign(new Error('gone'), { statusCode: 404 }))).toBe(true);

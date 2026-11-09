@@ -337,7 +337,7 @@ export class FallbackModel implements LanguageModelV4 {
       { operation: 'ai.fallback.allFailed', extra: { mode, modelCount: this.configs.length, errors: JSON.stringify(errors) } }
     );
     const lastErr = errors[errors.length - 1];
-    throw new Error(
+    throw new AllModelsFailedError(
       `All ${this.configs.length} AI models failed. Last: ${lastErr ? lastErr.error : 'unknown'}`
     );
   }
@@ -354,6 +354,18 @@ export class FallbackModel implements LanguageModelV4 {
 // =============================================================================
 // Mid-stream failure telemetry
 // =============================================================================
+
+/**
+ * Every model in the chain failed before a reply started. Already reported as `ai.fallback.allFailed`. The SDK
+ * (ai 7) never throws it from streamText: it hands it to the stream's onError, so the mid-stream report below tells
+ * it apart by this name.
+ */
+export class AllModelsFailedError extends Error {
+  override name = 'AllModelsFailedError';
+}
+
+const isAllModelsFailed = (error: unknown): boolean =>
+  error instanceof AllModelsFailedError || (error as Error | undefined)?.name === 'AllModelsFailedError';
 
 /**
  * Report an UNRECOVERABLE mid-stream failure, an error that surfaced AFTER a
@@ -373,6 +385,8 @@ export function reportMidStreamFailure(
   error: unknown,
   context: { modelUsed?: string; attempts?: number; sessionId?: string } = {},
 ): void {
+  // A chain that never started isn't a mid-stream gap, and it's already counted as all-failed.
+  if (isAllModelsFailed(error)) return;
   const err = error instanceof Error ? error : new Error(String(error));
   addBreadcrumb({
     category: 'ai.fallback',
