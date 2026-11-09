@@ -92,6 +92,17 @@ describe("the review form's route", () => {
     expect(await rows(t)).toHaveLength(1);
   });
 
+  it("keeps two people with the same name and rating apart when their addresses differ", async () => {
+    const t = createTestContext();
+    const same = { rating: 5, text: "", name: "Raj", elapsed: 30_000 };
+    expect((await post(t, { ...same, email: "raj.one@example.com" })).status).toBe(200);
+    expect((await post(t, { ...same, email: "raj.two@example.com" }, "198.51.100.9")).status).toBe(200);
+    expect((await rows(t)).map((r) => r.email).sort()).toEqual(["raj.one@example.com", "raj.two@example.com"]);
+    // The same person sending twice is still one review.
+    expect((await post(t, { ...same, email: "raj.one@example.com" })).status).toBe(200);
+    expect(await rows(t)).toHaveLength(2);
+  });
+
   it("refuses a bad review with the field and the reason, and stores nothing", async () => {
     const t = createTestContext();
     const res = await post(t, { ...REVIEW, rating: 9 });

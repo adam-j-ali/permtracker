@@ -109,6 +109,7 @@ export const submit = internalMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const takesNote = args.noteKey !== undefined && args.rating <= NOTE_UP_TO;
+    const sentFrom = args.email ?? args.linkEmail ?? null;
     let today = 0;
     for await (const row of ctx.db.query("siteReviews").withIndex("by_created", (q) => q.gte("createdAt", now - MS_PER_DAY))) {
       // The day's budget is the form's: ratings queued from alert emails and Senja copies don't use it up.
@@ -118,11 +119,11 @@ export const submit = internalMutation({
         row.createdAt >= now - DUPLICATE_WINDOW_MS &&
         row.rating === args.rating &&
         // A blank name was stored under its label, so without a name the address has to match too: two strangers'
-        // nameless fives a minute apart are two reviews.
+        // nameless fives a minute apart are two reviews. With a name, two different addresses are two people
+        // who share it.
         (args.name
-          ? row.name === args.name
-          : (row.name === ALERT_READER_NAME || row.name === UNNAMED_REVIEWER) &&
-            (row.email ?? null) === (args.email ?? args.linkEmail ?? null)) &&
+          ? row.name === args.name && (row.email === undefined || sentFrom === null || row.email === sentFrom)
+          : (row.name === ALERT_READER_NAME || row.name === UNNAMED_REVIEWER) && (row.email ?? null) === sentFrom) &&
         row.text === args.text
       ) {
         log.info("duplicate review ignored", { rating: args.rating });
