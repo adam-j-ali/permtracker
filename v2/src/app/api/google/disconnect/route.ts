@@ -43,6 +43,8 @@ export async function POST(request: NextRequest) {
       casesCleaned: 0,
       errors: 0,
     };
+    // Once the token is revoked below, nothing here can remove an event, so one left behind is said and reported.
+    let eventsLeft = false;
 
     // Step 1: Clear all calendar events from Google Calendar (if requested)
     if (clearEvents) {
@@ -62,17 +64,25 @@ export async function POST(request: NextRequest) {
           console.log(
             `[Google OAuth] Cleared ${clearResult.eventsDeleted} events from ${clearResult.casesCleaned} cases`
           );
-        } else {
-          // Log but continue - we still want to disconnect even if event clearing fails
-          console.warn(
-            "[Google OAuth] Failed to clear events:",
-            clearResult.error
-          );
+          if (clearResult.errors > 0) {
+            eventsLeft = true;
+            captureError(new Error(`[Google OAuth] ${clearResult.errors} calendar events couldn't be removed before disconnecting`), {
+              operation: "google.disconnect.clearEvents",
+            });
+          }
+        } else if (clearResult.error !== "Google Calendar not connected") {
+          // Still disconnect: a refresh token Google no longer honours would otherwise keep the person connected for good.
+          eventsLeft = true;
+          console.warn("[Google OAuth] Failed to clear events:", clearResult.error);
+          captureError(new Error(`[Google OAuth] Failed to clear events before disconnecting: ${clearResult.error}`), {
+            operation: "google.disconnect.clearEvents",
+          });
         }
       } catch (clearError) {
-        // Log but continue - we still want to disconnect even if event clearing fails
+        // Still disconnect, as above.
+        eventsLeft = true;
         console.warn("[Google OAuth] Error clearing events:", clearError);
-        captureError(clearError);
+        captureError(clearError, { operation: "google.disconnect.clearEvents" });
       }
     }
 
@@ -94,11 +104,14 @@ export async function POST(request: NextRequest) {
       success: true,
       revoked: result.revoked,
       eventsCleared: clearEvents ? eventsCleared : null,
-      message: result.revoked
-        ? clearEvents
-          ? `Google Calendar disconnected: ${eventsCleared.eventsDeleted} events removed from calendar`
-          : "Google Calendar disconnected and OAuth token revoked"
-        : "Google Calendar disconnected (token may have already been revoked)",
+      eventsLeft,
+      message: eventsLeft
+        ? "Google Calendar is disconnected, but some PERM deadline events couldn't be removed from your Google Calendar. Delete them there, since they won't be updated again."
+        : result.revoked
+          ? clearEvents
+            ? `Google Calendar disconnected: ${eventsCleared.eventsDeleted} events removed from calendar`
+            : "Google Calendar disconnected and OAuth token revoked"
+          : "Google Calendar disconnected (token may have already been revoked)",
     });
   } catch (error) {
     console.error("[Google OAuth] Disconnect error:", error);
