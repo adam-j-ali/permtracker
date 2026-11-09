@@ -271,6 +271,26 @@ describe("calculateNextAction", () => {
 
 // calculateNextDeadline
 
+describe("the Next up sentence's day count", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // 9 PM in New York is already the next day in UTC: the count follows the reader's own date.
+  it("counts from the reader's date in the evening", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 10, 9, 21, 0));
+    const result = calculateNextAction({
+      ...baseCaseData,
+      ...recruitmentDone,
+      caseStatus: "eta9089",
+      eta9089FilingDate: "2026-10-01",
+      rfiEntries: [{ receivedDate: "2026-10-15", responseDueDate: "2026-11-10" }],
+    });
+    expect(result!.description).toBe("RFI response due in 1 day");
+  });
+});
+
 describe("calculateNextDeadline", () => {
   beforeEach(() => {
     vi.useFakeTimers();
