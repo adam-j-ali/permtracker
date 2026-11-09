@@ -62,7 +62,8 @@ def federal_holidays(year: int) -> list[tuple[str, date]]:
         ("Columbus Day", _nth_weekday(year, 10, 0, 2)),
         ("Thanksgiving", _nth_weekday(year, 11, 3, 4)),
     ]
-    if year >= 2021 and (year - 2021) % 4 == 0:
+    # Inauguration Day (5 U.S.C. 6103(c)): a Sunday moves to Monday; a Saturday isn't observed on another day (OPM, 2029).
+    if year >= 2021 and (year - 2021) % 4 == 0 and date(year, 1, 20).weekday() != 5:
         out.append(("Inauguration Day", _observed(date(year, 1, 20))))
     return out
 

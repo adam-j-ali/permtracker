@@ -70,11 +70,18 @@ describe('getFederalHolidays', () => {
     expect(inauguration).toBeUndefined();
   });
 
-  test('Inauguration Day 2029 shifts from Saturday to Friday', () => {
+  test('Inauguration Day 2029, a Saturday, is not observed on another day', () => {
+    // OPM's federal holidays page: "In this instance, Inauguration Day is not observed on another day."
     const holidays = getFederalHolidays(2029);
-    const inauguration = holidays.find((h) => h.name === 'Inauguration Day');
-    // Jan 20, 2029 is Saturday, so it shifts to Friday, Jan 19
-    expect(inauguration?.date).toBe('2029-01-19');
+    expect(holidays.find((h) => h.name === 'Inauguration Day')).toBeUndefined();
+    expect(holidays.some((h) => h.date === '2029-01-19')).toBe(false);
+    expect(holidays.length).toBe(11);
+  });
+
+  test('Inauguration Day 2041, a Sunday, moves to Monday, January 21', () => {
+    // 5 U.S.C. 6103(c): on a Sunday, the next succeeding day is the holiday.
+    const inauguration = getFederalHolidays(2041).find((h) => h.name === 'Inauguration Day');
+    expect(inauguration?.date).toBe('2041-01-21');
   });
 
   test('all 11 standard holidays present in 2024', () => {
