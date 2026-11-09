@@ -67,9 +67,8 @@ import {
   buildUserNotificationPrefs,
   shouldSendEmail,
 } from "./lib/notificationHelpers";
-import { emailStamp, MS_PER_DAY } from "./lib/time";
+import { emailStamp } from "./lib/time";
 import { recordError } from "./lib/errorRecording";
-import { checkAndRecordRateLimit } from "./lib/rateLimit";
 import { createLogger } from "./lib/logging";
 
 const log = createLogger("appCaseWatch");
@@ -208,14 +207,6 @@ export const watchableCases = internalQuery({
   },
 });
 
-/** True at most once a day: whether this run of the sweep reports the cap to the owner. */
-export const claimCapAlarm = internalMutation({
-  args: {},
-  returns: v.boolean(),
-  handler: async (ctx) =>
-    (await checkAndRecordRateLimit(ctx, "all", "app_watch_capped", { limit: 1, windowMs: MS_PER_DAY })).allowed,
-});
-
 /** `str`: a value that is a non-empty string, else null. */
 function str(value: string | number | null | undefined): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
@@ -279,7 +270,7 @@ export const sweepAppCaseStatuses = internalAction({
       });
       // The read starts at the same place every run, so the same cases are left out every time: the owner hears
       // of it, once a day, rather than a console line nobody reads.
-      if (await ctx.runMutation(internal.appCaseWatch.claimCapAlarm, {})) {
+      if (await ctx.runMutation(internal.systemErrors.claimDailyAlarm, { key: "appCaseWatch.capped" })) {
         await recordError(
           ctx,
           "action",
