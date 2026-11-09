@@ -628,7 +628,7 @@ export default function TermsPage() {
               Turnstile on our sign-up, password-reset and contact forms to
               prevent automated abuse; it processes limited device and
               interaction signals but doesn’t read the contents of form fields.
-              We additionally enforce per-IP and per-email rate limits on these
+              We also enforce per-IP and per-email rate limits on these
               forms and on sign-in. By using the Service, you consent to
               this data collection as described in our{" "}
               <a href="/privacy" className="link">

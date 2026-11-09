@@ -39,9 +39,9 @@ export function EmailPreferencesLink({ prefsUrl }: EmailPreferencesLinkProps) {
       footerText="This link was requested from the email preferences page. If it wasn't you, ignore this message: nothing changes unless the link is used."
     >
       <Text className="em-text-body" style={styles.body}>
-        Here is your link to see everything PERM Tracker sends to this address.
-        The page lists each alert separately and lets you turn any of them off,
-        or stop all of it at once.
+        Here&rsquo;s your link to see everything PERM Tracker sends to this
+        address. The page lists each alert separately. You can turn any of them
+        off there, or stop all of it at once.
       </Text>
 
       <Text className="em-text-secondary" style={styles.note}>

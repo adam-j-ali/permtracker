@@ -169,7 +169,7 @@ export function CaseStatusChanged({
       settingsLabel="Email preferences"
       footerText={
         isFinal
-          ? `You asked to be told when DOL's status for ${caseNumber} changed. DOL has decided it; we'll keep watching for a year in case it's appealed or reopened, and email you only if it moves.`
+          ? `You asked to be told when DOL's status for ${caseNumber} changed. DOL has decided it. We'll keep watching for a year in case it's appealed or reopened, and we'll email you only if it moves.`
           : `You asked to be told when DOL's status for ${caseNumber} changed. We'll email you again if it moves again.`
       }
       footerExtra={
@@ -275,9 +275,9 @@ export function CaseStatusChanged({
             publish the I-140 or the I-485 case by case, so the only way the
             next person learns how long they take is from people who went
             through them. When yours move, you can add the dates to this case.
-            PERM Tracker checks your PERM dates against DOL, keeps the case
-            number off the public board, and shows your timeline there only if
-            you tick the box.
+            PERM Tracker checks your PERM dates against DOL and keeps the case
+            number off the public board. Your timeline shows there only if you
+            tick the box.
           </Text>
           <EmailButton href={timelineUrl} variant="outline">
             Add your dates when they come

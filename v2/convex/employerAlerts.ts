@@ -185,7 +185,7 @@ export const subscribe = internalMutation({
   handler: async (ctx, args) => {
     const email = args.email.trim().toLowerCase();
     if (!isPlausibleEmail(email)) {
-      return { ok: false, message: "That email address does not look right." };
+      return { ok: false, message: "That email address doesn't look right." };
     }
     if (!SLUG_RE.test(args.slug)) {
       return { ok: false, message: "We don't know that employer." };
@@ -710,7 +710,7 @@ export const sweep = internalAction({
                 ]
               : []),
             `These are DOL's own case statuses, read from its case system and counted on ${asOf}.`,
-            "DOL gives no reason for a hold or a batch, and neither do we. None of it is a prediction of any one case.",
+            "DOL gives no reason for a hold or a batch, and neither do we. None of it predicts any one case.",
             "",
             `Every figure for ${sub.employerName}: ${url}`,
             "",

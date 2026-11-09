@@ -32,12 +32,12 @@ export function ReengagementNudge({
   settingsUrl = `${SITE_URL}/settings`,
   unsubscribeUrl,
 }: ReengagementNudgeProps) {
-  const previewText = "Your PERM cases are still tracked, here’s a quick way back in.";
+  const previewText = "Your PERM cases are still tracked. Here’s a quick way back in.";
 
   const caseLine =
     activeCaseCount && activeCaseCount > 0
-      ? `your ${activeCaseCount} PERM ${activeCaseCount === 1 ? "case is" : "cases are"} still being tracked, and we’re still watching every deadline for you.`
-      : "your PERM cases are still being tracked, and we’re still watching every deadline for you.";
+      ? `Your ${activeCaseCount} PERM ${activeCaseCount === 1 ? "case is" : "cases are"} still being tracked, and we’re still watching every deadline for you.`
+      : "Your PERM cases are still being tracked, and we’re still watching every deadline for you.";
 
   return (
     <EmailLayout previewText={previewText} settingsUrl={settingsUrl}>
@@ -46,10 +46,10 @@ export function ReengagementNudge({
           Hi {userName},
         </Text>
         <Text className="em-text-secondary" style={styles.lead}>
-          It&#39;s been a while since you last checked in. Good news: {caseLine}
+          It&#39;s been a while since you last checked in. {caseLine}
         </Text>
         <Text className="em-text-secondary" style={styles.lead}>
-          Pick up right where you left off.
+          Pick up where you left off.
         </Text>
         <Text className="em-text-muted" style={styles.note}>
           If we don&#39;t hear from you, we&#39;ll pause your weekly case summary to keep your inbox clear. Your deadline reminders keep coming, and you can turn the summary back on anytime in settings.

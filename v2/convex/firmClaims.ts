@@ -138,9 +138,9 @@ export function autoReview(_profile: FirmProfile, _domain: string): { decision: 
 }
 
 export const NEUTRAL_REPLY =
-  "Check your inbox. If the address can claim this page, a link to confirm is on its way; it works for 7 days.";
+  "Check your inbox. If the address can claim this page, a link to confirm is on its way. It works for 7 days.";
 export const EDIT_LINK_REPLY =
-  "Check your inbox. If that address holds a confirmed claim on this firm's page, an edit link is on its way; it works for 2 days.";
+  "Check your inbox. If that address holds a confirmed claim on this firm's page, an edit link is on its way. It works for 2 days.";
 
 function secret(): string {
   const s = process.env.UNSUBSCRIBE_SECRET;

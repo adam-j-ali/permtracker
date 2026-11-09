@@ -117,7 +117,7 @@ export default async function PolicyChangesPage() {
       {empty ? (
         <p className="mt-10 bg-tint p-5 text-base border-2 border-border">
           No documents are held yet. The feed reads the Federal Register every
-          morning; until it has run, the Register&apos;s own search is at{" "}
+          morning. Until it has run, the Register&apos;s own search is at{" "}
           <a href="https://www.federalregister.gov/documents/search?conditions%5Bterm%5D=%22labor+certification%22" className={LINK} rel="noopener" target="_blank">federalregister.gov</a>.
         </p>
       ) : (
@@ -151,7 +151,7 @@ export default async function PolicyChangesPage() {
             <h2 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">The last twelve months</h2>{" "}
             <p className="mt-2 max-w-3xl text-base leading-relaxed text-soft">
               One mark per document, on the day it was published. The bar under a
-              proposed rule is its comment window, lime while it is open.
+              proposed rule is its comment window, lime while it&apos;s open.
             </p>{" "}
             <PolicyStrip strip={strip} />{" "}
             <StripLegend />{" "}
@@ -221,8 +221,8 @@ export default async function PolicyChangesPage() {
           <section className="mt-12">
             <h2 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">How documents are selected</h2>{" "}
             <p className="mt-2 max-w-3xl text-base leading-relaxed text-soft">
-              By rule, not by judgement. A document that is missing was not
-              matched, which is different from not mattering.
+              Documents are picked by the rules below. A missing document
+              wasn&apos;t matched, and that doesn&apos;t mean it doesn&apos;t matter.
             </p>{" "}
             <FinePrint summary="The selection rules in full" className="mt-3 max-w-3xl">
               <p>
@@ -243,14 +243,14 @@ export default async function PolicyChangesPage() {
                 actions are kept when the title names an immigration subject or the
                 text names a work visa at least three times, and are replaced by the
                 Register&apos;s document once it&apos;s published. USCIS and DOL
-                announcements are kept when they touch work-based immigration; every
+                announcements are kept when they touch work-based immigration, and every
                 OFLC announcement is listed. Bills and joint resolutions in the
                 current Congress are kept when the title names a work visa or an
                 employment-based green card. Federal court opinions come from
                 CourtListener when the passage that matched names labor
                 certification, H-1B, H-2A, H-2B, I-140, ETA 9089, an
                 employment-based category or the visa bulletin, from federal courts
-                only; criminal cases and petitions for review of removal orders are
+                only. Criminal cases and petitions for review of removal orders are
                 left out. BALCA&apos;s decisions are OALJ&apos;s own lists: every en
                 banc PERM decision, and prevailing wage, H-2A and H-2B appeals
                 decided since October 2024. A person named in a case is shown by

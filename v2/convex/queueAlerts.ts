@@ -234,7 +234,7 @@ export const subscribe = internalMutation({
     // Shape checks first: they are free, and rejecting here costs an attacker
     // a request without costing us a rate-limit row.
     if (!isPlausibleEmail(email)) {
-      return { ok: false, message: "That email address does not look right." };
+      return { ok: false, message: "That email address doesn't look right." };
     }
     if (!isPlausibleFilingMonth(args.filingMonth)) {
       return { ok: false, message: "Pick the month your case was filed." };
@@ -932,7 +932,7 @@ export const notifyQueueReached = internalAction({
             "",
             `Current figures: ${SITE_URL}/perm-processing-times`,
             "",
-            "This was the only email you signed up for, and it will not repeat.",
+            "This was the only email you signed up for, and it won't repeat.",
             `Opt out entirely: ${unsubUrl}`,
             "",
             "PERM Tracker",

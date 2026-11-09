@@ -54,7 +54,7 @@ export function PossiblePermMatch({
       hideSettingsLink={!prefsUrl}
       settingsUrl={prefsUrl}
       settingsLabel="Email preferences"
-      footerText={`You're watching ${pwdCaseNumber}. After DOL issues a PERM job's wage, we look for the PERM application that follows it, tell you about three at most, and stop if the employer files more than three for this job title.`}
+      footerText={`You're watching ${pwdCaseNumber}. After DOL issues a PERM job's wage, we look for the PERM application that follows it. We tell you about three at most, and we stop if the employer files more than three for this job title.`}
       footerExtra={
         <Text className="em-text-secondary" style={styles.footerExtra}>
           <Link href={unsubscribeUrl} className="em-link" style={styles.footerLink}>
@@ -99,9 +99,9 @@ export function PossiblePermMatch({
       ))}
 
       <Text className="em-text-body" style={styles.body}>
-        {`While a PERM is pending, DOL's record doesn't name the worker or say which wage request it uses (DOL names the wage request only once it decides the case), so we can't tell whether ${
+        {`While a PERM is pending, DOL's record doesn't name the worker or say which wage request it uses. DOL names the wage request only once it decides the case, so for now we can't tell whether ${
           one ? "this one is" : "one of these is"
-        } yours. What matches is the employer, the job title (${jobTitle}) and a filing date after your wage. Your employer or attorney can confirm the case number.`}
+        } yours. The employer, the job title (${jobTitle}) and a filing date after your wage all match. Your employer or attorney can confirm the case number.`}
       </Text>
       <Text className="em-text-secondary" style={styles.caveat}>
         Watching a case starts its own alerts, and asks you to confirm by email first.

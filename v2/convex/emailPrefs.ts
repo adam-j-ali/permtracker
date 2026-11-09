@@ -242,7 +242,7 @@ export const requestLink = internalMutation({
   handler: async (ctx, args) => {
     const email = args.email.trim().toLowerCase();
     if (!isPlausibleEmail(email)) {
-      return { ok: false, message: "That email address does not look right." };
+      return { ok: false, message: "That email address doesn't look right." };
     }
 
     const ip = args.ip?.trim();
@@ -318,7 +318,7 @@ export const sendLink = internalAction({
         subject: "Your PERM Tracker email preferences",
         html,
         text: [
-          "Here is the link to see and change everything PERM Tracker sends to this address:",
+          "Here's the link to see and change everything PERM Tracker sends to this address:",
           "",
           url,
           "",

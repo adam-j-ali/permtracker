@@ -75,8 +75,8 @@ export function AutoClosure({
 
       <Section className="em-info-box" style={styles.infoBox}>
         <Text className="em-info-text" style={styles.infoText}>
-          This case was automatically closed because a critical deadline was
-          missed. If this was in error, you can reopen the case from the case
+          This case was closed automatically because a critical deadline was
+          missed. If that&apos;s a mistake, you can reopen the case from its
           details page.
         </Text>
       </Section>

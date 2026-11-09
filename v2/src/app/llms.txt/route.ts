@@ -44,7 +44,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/perm-case-status",
     label: "Case status lookup (PERM, prevailing wage and LCA)",
     blurb:
-      "Check a case number for its live DOL status, its place in the queue, and a stage-aware decision estimate. Takes every DOL program on the same case-number counter: PERM (G-), prevailing wage requests (P-), labor condition applications for H-1B, H-1B1 and E-3 workers (I-200 to I-203), and H-2A, H-2B and CW-1 applications (H-300-, H-400-, C-500-). Works for PENDING cases, not just decided ones, because it asks DOL directly rather than reading the quarterly files. Free, no account, and it emails when the status changes. No case number? Search by employer name instead.",
+      "Check a case number for its live DOL status, its place in the queue, and a stage-aware decision estimate. Takes every DOL program on the same case-number counter: PERM (G-), prevailing wage requests (P-), labor condition applications for H-1B, H-1B1 and E-3 workers (I-200 to I-203), and H-2A, H-2B and CW-1 applications (H-300-, H-400-, C-500-). Works for PENDING cases as well as decided ones, because it asks DOL directly instead of reading the quarterly files. Free, no account, and it emails when the status changes. No case number? Search by employer name instead.",
   },
   {
     path: "/uscis-case-status",
@@ -74,7 +74,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/debarments/settlements",
     label: "Visa sponsor settlements and suspensions",
     blurb:
-      "Every Justice Department settlement with an H-1B, H-2A or PERM sponsor since June 2025 (OpenAI, Cloudera and Instacart among them), DOL's suspension of Cloudera's PERM processing and the 24 months without PERM it agreed to, each beside what DOL's case record shows for the company.",
+      "Every Justice Department settlement with an H-1B, H-2A or PERM sponsor since June 2025 (OpenAI, Cloudera and Instacart among them), and DOL's suspension of Cloudera's PERM processing with the 24 months without PERM it agreed to. Each sits beside what DOL's case record shows for the company.",
   },
   {
     path: "/perm-employers/under-review",
@@ -104,19 +104,19 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/perm-processing-times",
     label: "PERM processing times",
     blurb:
-      "Which filing month DOL is currently deciding, from PERM Tracker's daily check of DOL's case-status service, DOL's own average days to a decision, and how the queue frontier has moved.",
+      "Which filing month DOL is deciding now (from PERM Tracker's daily check of DOL's case-status service), DOL's own average days to a decision, and how the queue frontier has moved.",
   },
   {
     path: "/perm-denial-risk",
     label: "PERM approval and denial rates",
     blurb:
-      "How often DOL approves PERM, from its own disclosure files with the count and dates, beside the newest 30 days of decisions PERM Tracker's daily check saw; then denial rates by ETA-9089 answer, offered wage band, occupation, state and fiscal year. Group rates only: there is deliberately no per-case risk score.",
+      "How often DOL approves PERM, from its own disclosure files with the count and dates, beside the newest 30 days of decisions PERM Tracker's daily check saw. Then denial rates by ETA-9089 answer, offered wage band, occupation, state and fiscal year. Group rates only: there's deliberately no per-case risk score.",
   },
   {
     path: "/perm-wages",
     label: "PERM salaries by occupation",
     blurb:
-      "Median offered annual wage for every occupation in the disclosure window, with filing volume and approval rate. These are wages employers committed to in a federal filing, not survey estimates.",
+      "Median offered annual wage for every occupation in the disclosure window, with filing volume and approval rate. These are wages employers committed to in a federal filing. They aren't survey estimates.",
   },
   {
     path: "/perm-employers",
@@ -158,13 +158,13 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/seasonal-cases",
     label: "H-2A, H-2B and CW-1 case search",
     blurb:
-      "Find an H-2A application (ETA-9142A, H-300- numbers) or job order (ETA-790A, JO-A-300-), an H-2B application (ETA-9142B, H-400-), a CW-1 application (ETA-9142C, C-500-) or an H-2B or CW-1 prevailing wage request (P-400-, P-500-) by employer, job title and filing month, with DOL's current status. Read daily from DOL's case-status service, pending included; no wage or worker count.",
+      "Find an H-2A application (ETA-9142A, H-300- numbers) or job order (ETA-790A, JO-A-300-), an H-2B application (ETA-9142B, H-400-), a CW-1 application (ETA-9142C, C-500-) or an H-2B or CW-1 prevailing wage request (P-400-, P-500-) by employer, job title and filing month, with DOL's current status. Read daily from DOL's case-status service, pending included. These records carry no wage or worker count.",
   },
   {
     path: "/case-search",
     label: "Search every DOL program at once",
     blurb:
-      "One employer, law firm, worksite state or occupation searched across PERM, prevailing wage requests, H-1B LCAs and H-2A, H-2B and CW-1 filings together. DOL runs them all off one case-number counter but publishes them separately, so an employer's record is normally split across several searches; this returns them together, each result labelled with the program it came from.",
+      "One employer, law firm, worksite state or occupation searched across PERM, prevailing wage requests, H-1B LCAs and H-2A, H-2B and CW-1 filings together. DOL runs them all off one case-number counter but publishes them separately, so an employer's record is normally split across several searches. This page returns them together, each result labelled with the program it came from.",
   },
   {
     path: "/calculators",
@@ -220,7 +220,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/h1b-employers",
     label: "Top H-1B employers by year and state",
     blurb:
-      "The 100 busiest H-1B employers each fiscal year, nationally and in each state, ranked two ways: certified LCAs from DOL's disclosure files (by worksite; the page names the first year held) and approvals from USCIS's H-1B Employer Data Hub (FY2009 on, by the petitioner's address), with positions, median yearly wage and each employer's full record.",
+      "The 100 busiest H-1B employers each fiscal year, nationally and in each state, ranked two ways: certified LCAs from DOL's disclosure files (by worksite, and the page names the first year held) and approvals from USCIS's H-1B Employer Data Hub (FY2009 on, by the petitioner's address), with positions, median yearly wage and each employer's full record.",
   },
   {
     path: "/perm-case-alerts",
@@ -232,13 +232,13 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/h1b-cap-exempt-employers",
     label: "H-1B cap-exempt employers",
     blurb:
-      "The colleges and universities, affiliated nonprofits and research organizations whose wage requests tell DOL that ACWIA covers them, the kinds of employer the H-1B cap leaves out (8 CFR 214.2(h)(8)(iii)(F)): each employer's kind, state, certified H-1B LCAs and USCIS approvals, and their LCAs month by month against everyone else's, from DOL's and USCIS's own files.",
+      "The colleges and universities, affiliated nonprofits and research organizations whose wage requests tell DOL that ACWIA covers them. These are the kinds of employer the H-1B cap leaves out (8 CFR 214.2(h)(8)(iii)(F)). For each: its kind, state, certified H-1B LCAs and USCIS approvals, and its LCAs month by month against everyone else's, from DOL's and USCIS's own files.",
   },
   {
     path: "/law-firm-rankings",
     label: "Top immigration law firms by year and state",
     blurb:
-      "The 100 busiest immigration law firms each fiscal year, nationally and in each state: PERM decisions from DOL's disclosure files (FY2016 on) with the certified share and median days to certify, and certified H-1B LCAs (FY2020 on) with positions, each counted where the job is. Firms only, never individual attorneys; volume and outcomes, never a rating.",
+      "The 100 busiest immigration law firms each fiscal year, nationally and in each state: PERM decisions from DOL's disclosure files (FY2016 on) with the certified share and median days to certify, and certified H-1B LCAs (FY2020 on) with positions, each counted where the job is. It ranks firms only and names no individual attorney. It shows volume and outcomes and gives no rating.",
   },
   {
     path: "/policy-changes",
@@ -250,7 +250,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/perm-employers/compare",
     label: "Compare two employers",
     blurb:
-      "Two PERM sponsors side by side from DOL's own files: filings, certification and denial counts with their interval, median days, median wage, what is pending now, and the occupations and states each files for.",
+      "Two PERM sponsors side by side from DOL's own files: filings, certification and denial counts with their interval, median days, median wage, what's pending now, and the occupations and states each files for.",
   },
   {
     path: "/tools/compare-my-offer",
@@ -352,7 +352,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
   {
     path: "/sponsor-finder",
     label: "Green card sponsor finder",
-    blurb: "Employers that file PERM cases for a job, typed in plain words: each employer's filings, approval rate, median offered wage and typical time to a decision for that job and state, filtered and sorted by any of them, and by industry, cases waiting with DOL now, H-1B transfers and likely cap-exempt status. Each links to its full record.",
+    blurb: "Employers that file PERM cases for a job, typed in plain words: each employer's filings, approval rate, median offered wage and typical time to a decision for that job and state. The list filters and sorts by any of them, and by industry, cases waiting with DOL now, H-1B transfers and likely cap-exempt status. Each employer links to its full record.",
   },
   {
     path: "/perm-by-the-numbers",
@@ -362,7 +362,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
   {
     path: "/today",
     label: "Where every green card step stands today",
-    blurb: "The wage request, PERM, I-140 and visa bulletin on one board: how long each step is taking now, from DOL's, USCIS's and the State Department's own records, whether each line moved forward or back, the day's PERM decisions by outcome, every status cases wait in, and the newest bulletin's moves for every employment category.",
+    blurb: "The wage request, PERM, I-140 and visa bulletin on one board: how long each step is taking now (from DOL's, USCIS's and the State Department's own records), whether each line moved forward or back, the day's PERM decisions by outcome, every status cases wait in, and the newest bulletin's moves for every employment category.",
   },
   {
     path: "/perm-recruitment",
@@ -402,7 +402,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
   {
     path: "/soc-codes",
     label: "SOC code lookup",
-    blurb: "A job title in, the SOC occupation codes employers filed it under in DOL's PERM, prevailing wage and LCA files out, with each code's share of the filings; a code in, its title, and for a 2010 code the 2018 codes it became. Each common title has its own page.",
+    blurb: "Type a job title to get the SOC occupation codes employers filed it under in DOL's PERM, prevailing wage and LCA files, with each code's share of the filings. Type a code to get its title, and for a 2010 code the 2018 codes it became. Each common title has its own page.",
   },
   {
     path: "/tools/green-card-fees",
@@ -431,19 +431,19 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/tools/eb2-vs-eb3",
     label: "EB-2 vs EB-3 for one priority date",
     blurb:
-      "EB-2 and EB-3 side by side for one country and priority date: this month's final action and dates-for-filing cutoffs, and the people ahead in each line as a range. Names one line as shorter only when the ranges don't overlap, and compares people, not waits.",
+      "EB-2 and EB-3 side by side for one country and priority date: this month's final action and dates-for-filing cutoffs, and the people ahead in each line as a range. Names one line as shorter only when the ranges don't overlap. It compares the people ahead in each line and makes no claim about waits.",
   },
   {
     path: "/tools/which-green-card",
     label: "Which employment green card category fits",
     blurb:
-      "A few questions (sponsor, the job's minimum requirement, the person's qualifications, five statements) matched against 8 CFR 204.5's definitions and USCIS's national interest waiver test: which of EB-1A, EB-1B, EB-1C, EB-2, the EB-2 waiver, EB-3 and EB-3 Other Workers could apply, and what each needs. Information, not legal advice.",
+      "A few questions (sponsor, the job's minimum requirement, the person's qualifications, five statements) matched against 8 CFR 204.5's definitions and USCIS's national interest waiver test: which of EB-1A, EB-1B, EB-1C, EB-2, the EB-2 waiver, EB-3 and EB-3 Other Workers could apply, and what each needs. It's general information and isn't legal advice.",
   },
   {
     path: "/h1b-lottery-odds",
     label: "H-1B lottery odds by year",
     blurb:
-      "USCIS's H-1B cap registration and selection counts for FY2021 to FY2026, the share selected each year, and DHS's own estimate (90 FR 60864) of a beneficiary's chance at each OEWS wage level under the weighted lottery that began with FY2027. Labelled as an estimate; no FY2027 count is published yet.",
+      "USCIS's H-1B cap registration and selection counts for FY2021 to FY2026, the share selected each year, and DHS's own estimate (90 FR 60864) of a beneficiary's chance at each OEWS wage level under the weighted lottery that began with FY2027. Labelled as an estimate. No FY2027 count is published yet.",
   },
   {
     path: "/perm-cities",
@@ -461,37 +461,37 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/perm-countries",
     label: "PERM by the worker's country of citizenship",
     blurb:
-      "Each country's PERM decisions by fiscal year from FY2008, and its sponsors, jobs, cities, industries, education and visa at filing from FY2016. From DOL's old-form files; the form in use since mid-2023 doesn't publish citizenship.",
+      "Each country's PERM decisions by fiscal year from FY2008, and its sponsors, jobs, cities, industries, education and visa at filing from FY2016. From DOL's old-form files, because the form in use since mid-2023 doesn't publish citizenship.",
   },
   {
     path: "/nvc-waiting-list",
     label: "The NVC immigrant visa waiting list",
     blurb:
-      "The State Department's yearly count of immigrant visa applicants waiting at the National Visa Center, by family and employment category, reconciled report against report. Consular cases only, families included; adjustments at USCIS are not in it.",
+      "The State Department's yearly count of immigrant visa applicants waiting at the National Visa Center, by family and employment category, reconciled report against report. Consular cases only, families included. Adjustments at USCIS aren't in it.",
   },
   {
     path: "/visa-issuances",
     label: "Immigrant visas issued abroad, by month",
     blurb:
-      "Every immigrant visa State's consulates issued each month since March 2017, by employment and family category, by country of chargeability and by consulate, from State's own tables, each month checked against State's grand total. Consular issuances only: a green card granted inside the US isn't in it.",
+      "Every immigrant visa State's consulates issued each month since March 2017, by employment and family category, by country of chargeability and by consulate, from State's own tables. Each month is checked against State's grand total. Consular issuances only: a green card granted inside the US isn't in it.",
   },
   {
     path: "/consular-posts",
     label: "Where each US consulate stands for immigrant visas",
     blurb:
-      "State's IV Scheduling Status Tool at every monthly update this site holds: for each consulate, the month of completed cases NVC is scheduling for employment, family preference and immediate relative visas, beside the immigrant visas that post issued each month, with the worldwide interview pause since about August 25 2026 dated from State's sworn court filings. A paperwork queue: it doesn't show an interview wait. Each consulate's page also has the work visas it issued (H-1B, L-1 and the rest) and every nonimmigrant class, K-1 fiancé(e) included, from State's monthly nonimmigrant tables, and the index ranks the consulates by H-1B, L-1 and K-1 visas.",
+      "State's IV Scheduling Status Tool at every monthly update this site holds: for each consulate, the month of completed cases NVC is scheduling for employment, family preference and immediate relative visas, beside the immigrant visas that post issued each month. The worldwide interview pause since about August 25 2026 is dated from State's sworn court filings. A paperwork queue: it doesn't show an interview wait. Each consulate's page also has the work visas it issued (H-1B, L-1 and the rest) and every nonimmigrant class, K-1 fiancé(e) included, from State's monthly nonimmigrant tables, and the index ranks the consulates by H-1B, L-1 and K-1 visas.",
   },
   {
     path: "/visa-refusals",
     label: "Why visas are refused, by ground",
     blurb:
-      "State's yearly table of visa ineligibilities by ground of the law, from the Report of the Visa Office, each year reconciled against State's own total line: public charge (212(a)(4)), 221(g) and 214(b) across the years, and every ground, for immigrant and nonimmigrant visas apart, found ineligible and overcome. Worldwide and yearly only; State's dash (not applicable) is never shown as zero.",
+      "State's yearly table of visa ineligibilities by ground of the law, from the Report of the Visa Office, with each year reconciled against State's own total line. It covers public charge (212(a)(4)), 221(g) and 214(b) across the years, and every ground, for immigrant and nonimmigrant visas apart, found ineligible and overcome. Worldwide and yearly only. State's dash (not applicable) is never shown as zero.",
   },
   {
     path: "/visa-wait-times",
     label: "Visa interview wait times by consulate",
     blurb:
-      "The State Department's Global Visa Wait Times table, read each month: the next interview for work visas (H-1B, L, O, P, Q), students, visitors and crew at every U.S. embassy and consulate, with each Indian consulate's work-visa wait month by month since November 2025. Nonimmigrant visas only; State's NA is kept as no figure.",
+      "The State Department's Global Visa Wait Times table, read each month: the next interview for work visas (H-1B, L, O, P, Q), students, visitors and crew at every U.S. embassy and consulate, with each Indian consulate's work-visa wait month by month since November 2025. Nonimmigrant visas only. State's NA is kept as no figure.",
   },
   {
     path: "/green-card-timelines",
@@ -503,7 +503,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/uscis-processing-times",
     label: "USCIS processing times, the median, by form",
     blurb:
-      "The median months USCIS took to decide every form last quarter, from its quarterly performance workbook, beside receipts, completions and pending, and the historical medians back to FY2016. A different number from USCIS's processing-times page, and both are shown. DACA is Form I-821D there; its pending count, and its work permit's, include first-time requests USCIS accepts but doesn't process.",
+      "The median months USCIS took to decide every form last quarter, from its quarterly performance workbook, beside receipts, completions and pending, and the historical medians back to FY2016. A different number from USCIS's processing-times page, and both are shown. DACA is Form I-821D there. Its pending count, and its work permit's, include first-time requests USCIS accepts but doesn't process.",
   },
   {
     path: "/uscis-processing-times/i-485",
@@ -515,7 +515,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/i485-by-field-office",
     label: "The I-485 by USCIS field office",
     blurb:
-      "Employment-based I-485 applications received, approved, denied and pending at every USCIS field office and service center per quarter, the busiest offices, and quarters of work at each office's pace. From USCIS's quarterly count; withheld cells stay withheld.",
+      "Employment-based I-485 applications received, approved, denied and pending at every USCIS field office and service center per quarter, the busiest offices, and quarters of work at each office's pace. From USCIS's quarterly count. Withheld cells stay withheld.",
   },
   {
     path: "/i140-awaiting-visa",
@@ -533,13 +533,13 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/visa-bulletin",
     label: "The next visa bulletin",
     blurb:
-      "What every earlier bulletin for the coming month did, per employment category and country, beside USCIS's count of I-485 applications ahead of each cutoff. Measured from the archive, not predicted, and it rolls forward when the next bulletin lands.",
+      "What every earlier bulletin for the coming month did, per employment category and country, beside USCIS's count of I-485 applications ahead of each cutoff. Measured from the archive and never predicted. It rolls forward when the next bulletin lands.",
   },
   {
     path: "/methodology",
     label: "Methodology",
     blurb:
-      "Where every figure on this site comes from, how it is computed, and what it cannot tell you.",
+      "Where every figure on this site comes from, how it's computed, and what it can't tell you.",
   },
 ];
 
@@ -586,12 +586,12 @@ export async function GET() {
   const lines: string[] = [
     "# PERM Tracker",
     "",
-    "> PERM Tracker (permtracker.app) is a free web app for the US Department of Labor PERM (Program Electronic Review Management) labor certification process, for both the person waiting on a case and the attorney managing one. Without an account: look a case up by NUMBER across every DOL program - PERM (G-), prevailing wage request (P-), labor condition application for H-1B, H-1B1 or E-3 (I-200 to I-203) and H-2A, H-2B and CW-1 (H-300/H-400/C-500) - for its live DOL status and a stage-aware decision estimate (with email alerts on changes); or, with no case number at all, find it by employer name, law firm, worksite state or occupation. Use timeline calculators for every green-card stage (PWD, PERM, I-140, I-485), and browse DOL's own disclosure and queue data as searchable datasets. With a free account: case-management software that computes every interdependent PERM deadline per case.",
+    "> PERM Tracker (permtracker.app) is a free web app for the US Department of Labor PERM (Program Electronic Review Management) labor certification process, for both the person waiting on a case and the attorney managing one. Without an account, you can look a case up by NUMBER for its live DOL status and a stage-aware decision estimate, with email alerts on changes. The lookup takes every DOL program: PERM (G-), prevailing wage request (P-), labor condition application for H-1B, H-1B1 or E-3 (I-200 to I-203) and H-2A, H-2B and CW-1 (H-300/H-400/C-500). With no case number at all, you can find a case by employer name, law firm, worksite state or occupation. Timeline calculators cover every green-card stage (PWD, PERM, I-140, I-485), and DOL's own disclosure and queue data can be browsed as searchable datasets. With a free account: case-management software that computes every interdependent PERM deadline per case.",
     "",
     DISAMBIGUATION,
     "",
     ...(newest ? [`Last updated: ${longDate(newest)}.`, ""] : []),
-    "Where the figures come from: the Department of Labor's own records (its FLAG case-status service, read every night; its quarterly OFLC disclosure files; its published processing times), the State Department's visa bulletins, and USCIS's published reports. Each figure carries the date or window it covers, and how each is counted is on the methodology page. Where the data can't support a number, the site says so rather than guessing one: there is no per-case denial-risk score.",
+    "Where the figures come from: the Department of Labor's own records (its FLAG case-status service, read every night; its quarterly OFLC disclosure files; its published processing times), the State Department's visa bulletins, and USCIS's published reports. Each figure carries the date or window it covers, and how each is counted is on the methodology page. Where the data can't support a number, the site says so instead of guessing one. There's no per-case denial-risk score.",
     "",
     `How figures are made: ${BASE_URL}/methodology. Corrections, each dated: ${BASE_URL}/changelog/corrections. Who runs it: ${BASE_URL}/about.`,
     "",
@@ -602,11 +602,11 @@ export async function GET() {
     `- Name: PERM Tracker, at ${BASE_URL}. Not affiliated with other sites of similar names.`,
     `- Run by: PERM Tracker. The person named on the site is ${SABRINA.name}, an ${SABRINA.jobTitle.toLowerCase()}.`,
     `- Online since: ${monthYear(LIVE_SINCE)}.`,
-    "- Cost: free. A case lookup, the calculators and the data pages need no account; the attorney deadline app needs a free one.",
+    "- Cost: free. A case lookup, the calculators and the data pages need no account. The attorney deadline app needs a free one.",
     "- Source of every case status: the Department of Labor's own FLAG case-status service, read every night, plus DOL's quarterly OFLC disclosure files for decided cases.",
     "- Programs covered: PERM, prevailing wage requests, H-1B, H-1B1 and E-3 labor condition applications, and H-2A, H-2B and CW-1 applications.",
     `- Not legal advice: ${NOT_LEGAL_SERVICES}`,
-    `- Contact: ${PRESS_EMAIL} for the press; corrections through ${BASE_URL}/contact.`,
+    `- Contact: ${PRESS_EMAIL} for the press, and corrections through ${BASE_URL}/contact.`,
     "",
   ];
 
@@ -624,7 +624,7 @@ export async function GET() {
       );
     } else if (line) {
       figures.push(
-        `- DOL is issuing PERM determinations for cases filed in ${fmtMonth(line.month)} (PERM Tracker's daily check of DOL's case-status service, ${line.asOf}; DOL's processing-times page has printed no filing month since October 31, 2026).`,
+        `- DOL is issuing PERM determinations for cases filed in ${fmtMonth(line.month)} (PERM Tracker's daily check of DOL's case-status service, ${line.asOf}). DOL's processing-times page has printed no filing month since October 31, 2026.`,
       );
     }
     const avg = (dol.permAverageDays ?? [])[0];
@@ -675,14 +675,14 @@ export async function GET() {
     "## Product",
     "",
     `- [Home](${BASE_URL}/): What the product does, for the person waiting and the person managing cases`,
-    `- [About](${BASE_URL}/about): Who runs PERM Tracker (an immigration attorney), since when, and what it is not`,
+    `- [About](${BASE_URL}/about): Who runs PERM Tracker (an immigration attorney), since when, and what it isn't`,
     `- [Press](${BASE_URL}/press): What DOL's records on this site can tell a reporter, how to credit PERM Tracker, and the press contact`,
     `- [Reviews](${BASE_URL}/reviews): Every review left by someone outside the team, newest first, with the average rating`,
     `- [PERM trackers compared](${BASE_URL}/compare): ${RIVALS.length} other PERM case trackers and green card sites checked beside this one on their own pages (${checkedPhrase(RIVALS.map((t) => t.checkedOn))}): what each looks up, where its data comes from, how fresh it is and what it costs, each mark quoted and linked`,
-    `- [For professionals](${BASE_URL}/for-attorneys): The case-management side for attorneys, paralegals and HR teams - every deadline computed per case, reminders, calendar sync`,
+    `- [For professionals](${BASE_URL}/for-attorneys): The case-management side for attorneys, paralegals and HR teams, with every deadline computed per case, reminders and calendar sync`,
     `- [FAQ](${BASE_URL}/faq): Questions about PERM and about this site`,
     `- [Email preferences](${BASE_URL}/email-preferences): See and stop everything the site emails an address`,
-    `- [Sign Up](${BASE_URL}/signup): Create a free account`,
+    `- [Sign up](${BASE_URL}/signup): Create a free account`,
     `- [Contact](${BASE_URL}/contact): Get in touch`,
     "",
   );

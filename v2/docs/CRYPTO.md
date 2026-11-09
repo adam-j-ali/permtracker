@@ -1,28 +1,28 @@
-# Cryptographic Security Documentation
+# Cryptographic security
 
 > **Module:** `convex/lib/crypto.ts`
 > **Last Updated:** 2026-01-03
 
-This document describes the cryptographic utilities used in PERM Tracker v2 for secure token generation and OAuth credential encryption.
+The cryptographic utilities PERM Tracker v2 uses to generate secure tokens and encrypt OAuth credentials.
 
 ---
 
-## Overview
+## What it does
 
-The crypto module provides two main capabilities:
+The crypto module does two things:
 
-1. **Secure Random String Generation** - For OTPs and verification tokens
-2. **Token Encryption** - For storing OAuth refresh tokens securely
+1. Secure random strings, for OTPs and verification tokens
+2. Token encryption, for storing OAuth refresh tokens securely
 
 ---
 
-## 1. Secure Random String Generation
+## 1. Secure random strings
 
 ### Algorithm
 
 Uses `@oslojs/crypto/random` with the Web Crypto API (`crypto.getRandomValues()`) for cryptographically secure random number generation.
 
-### Secure Alphabet
+### Secure alphabet
 
 ```typescript
 const SECURE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
@@ -50,41 +50,41 @@ const numericPin = generateRandomString(6, "0123456789");
 
 ---
 
-## 2. OAuth Token Encryption
+## 2. OAuth token encryption
 
 OAuth refresh tokens are encrypted at rest using AES-256-GCM authenticated encryption.
 
-### Algorithm Specifications
+### Algorithm
 
 | Property | Value |
 |----------|-------|
 | Algorithm | AES-256-GCM |
-| Key Size | 256 bits (32 bytes) |
-| IV Size | 96 bits (12 bytes) |
-| Auth Tag | 128 bits (16 bytes) |
+| Key size | 256 bits (32 bytes) |
+| IV size | 96 bits (12 bytes) |
+| Auth tag | 128 bits (16 bytes) |
 | Encoding | Base64 |
 
-### Security Properties
+### Security properties
 
-1. **Authenticated Encryption** - GCM mode provides both confidentiality and integrity
-2. **Random IV** - Each encryption uses a fresh random IV (never reused)
-3. **Key Isolation** - Encryption key stored separately from encrypted data
-4. **Tamper Detection** - Any modification to ciphertext will cause decryption to fail
+1. Authenticated encryption: GCM mode gives both confidentiality and integrity
+2. Random IV: each encryption uses a fresh random IV (never reused)
+3. Key isolation: the encryption key is stored apart from the encrypted data
+4. Tamper detection: any change to the ciphertext makes decryption fail
 
-### Ciphertext Format
+### Ciphertext format
 
 ```
 | IV (12 bytes) | Ciphertext | Auth Tag (16 bytes) |
 |---------------|------------|---------------------|
 ```
 
-All components are concatenated and Base64-encoded for storage.
+The parts are joined in that order and Base64-encoded for storage.
 
 ---
 
-## 3. Key Generation
+## 3. Key generation
 
-### Generating an Encryption Key
+### Generating an encryption key
 
 Run this command to generate a new 256-bit encryption key:
 
@@ -98,12 +98,12 @@ Or using OpenSSL:
 openssl rand -hex 32
 ```
 
-**Output example:**
+**Example output:**
 ```
 a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456
 ```
 
-### Environment Configuration
+### Environment configuration
 
 Set the key in Convex environment variables:
 
@@ -119,24 +119,24 @@ OAUTH_ENCRYPTION_KEY=a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1
 
 ---
 
-## 4. Error Handling
+## 4. Error handling
 
-### Encryption Errors
+### Encryption errors
 
 | Error | Cause | Resolution |
 |-------|-------|------------|
 | `OAUTH_ENCRYPTION_KEY environment variable is not set` | Missing env var | Add key to Convex dashboard |
 | `OAUTH_ENCRYPTION_KEY must be 64 hex characters` | Wrong key format | Regenerate with correct length |
 
-### Decryption Errors
+### Decryption errors
 
 | Error | Cause | Resolution |
 |-------|-------|------------|
-| `OperationError` (Web Crypto) | Tampered ciphertext | Data integrity violation - re-encrypt |
+| `OperationError` (Web Crypto) | Tampered ciphertext | Data integrity violation: re-encrypt |
 | `OperationError` (Web Crypto) | Wrong key | Verify correct key is configured |
 | Invalid base64 | Corrupted data | Re-encrypt the token |
 
-### Handling Decryption Failures
+### Handling decryption failures
 
 ```typescript
 try {
@@ -159,7 +159,7 @@ try {
 
 ---
 
-## 5. Token Migration
+## 5. Token migration
 
 The `isEncryptedToken()` helper identifies encrypted vs legacy plain tokens:
 
@@ -174,31 +174,31 @@ if (!isEncryptedToken(storedToken)) {
 }
 ```
 
-**Migration criteria:**
+**How it tells them apart:**
 - Encrypted tokens decode to at least 12 bytes (IV length)
 - Plain tokens fail base64 decode or are too short
 
 ---
 
-## 6. Security Best Practices
+## 6. Handling keys and tokens
 
-### Key Management
+### Key management
 
-1. **Rotation** - Rotate keys annually or after suspected compromise
-2. **Separation** - Use different keys per environment (dev/staging/prod)
-3. **Access** - Limit key access to production admins only
-4. **Backup** - Store backup in secure vault (not git)
+1. Rotation: rotate keys once a year, or after a suspected compromise
+2. Separation: use a different key for each environment (dev/staging/prod)
+3. Access: give key access to production admins only
+4. Backup: keep a backup in a secure vault (never in git)
 
-### Implementation Notes
+### Implementation notes
 
-1. **Never log tokens** - Neither encrypted nor decrypted values
-2. **Memory cleanup** - Tokens processed in-memory only, not persisted in logs
-3. **Key derivation** - Consider HKDF if deriving multiple keys from master
-4. **IV uniqueness** - Guaranteed by `crypto.getRandomValues()`
+1. Never log tokens, encrypted or decrypted
+2. Memory: tokens are processed in memory only and never written to logs
+3. Key derivation: consider HKDF if you derive several keys from a master key
+4. IV uniqueness: guaranteed by `crypto.getRandomValues()`
 
 ---
 
-## 7. API Reference
+## 7. API reference
 
 ### Functions
 

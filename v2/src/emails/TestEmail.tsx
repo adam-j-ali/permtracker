@@ -27,7 +27,7 @@ export function TestEmail({
   return (
     <EmailLayout
       previewText="PERM Tracker: your test email arrived"
-      footerText="This is a test email from PERM Tracker. You received this because you requested a test email."
+      footerText="This is a test email from PERM Tracker, sent because you asked for one."
       hideSettingsLink
       settingsUrl={settingsUrl}
     >
@@ -37,8 +37,8 @@ export function TestEmail({
           Your test email arrived
         </Text>
         <Text className="em-text-body" style={styles.subtitle}>
-          Your email notifications are working correctly. You will receive
-          deadline reminders, status updates, and alerts at this email address.
+          Your email notifications are working. You&apos;ll get deadline
+          reminders, status updates and alerts at this address.
         </Text>
       </Section>
 

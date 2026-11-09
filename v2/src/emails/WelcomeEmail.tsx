@@ -132,8 +132,8 @@ export function WelcomeEmail({
       {/* Review Ask */}
       <Section style={styles.reviewSection}>
         <Text className="em-text-body" style={styles.bodyText}>
-          PERM Tracker changes with what people tell us. What&apos;s working,
-          and what would you like next?{" "}
+          PERM Tracker changes with what people tell us, so we&apos;d like to
+          hear what&apos;s working and what you&apos;d like next.{" "}
           <Link
             href={REVIEW_URL}
             className="em-link-blue"

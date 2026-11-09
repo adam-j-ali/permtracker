@@ -23,13 +23,13 @@
 - [Scheduled Jobs](#scheduled-jobs)
 - [Internal Actions](#internal-actions)
 - [Error Handling](#error-handling)
-- [Best Practices](#best-practices)
+- [Patterns to follow](#patterns-to-follow)
 
 ---
 
 ## Overview
 
-The PERM Tracker v2 API is built on [Convex](https://convex.dev), providing real-time, reactive database operations with built-in authentication and type safety.
+The PERM Tracker v2 API runs on [Convex](https://convex.dev): real-time, reactive database operations with built-in authentication and type safety.
 
 > **This file covers the app's Convex functions** (cases, notifications, the dashboard and the rest of the
 > signed-in app). **The public developer API is documented elsewhere:** the `/v1` JSON API, the `/mcp`
@@ -98,9 +98,9 @@ const deadlines = useQuery(api.dashboard.getDeadlines);
 
 All API functions require authentication via Convex Auth. The codebase uses two primary authentication helpers:
 
-### `getCurrentUserId(ctx)` - Strict Authentication
+### `getCurrentUserId(ctx)`: strict authentication
 
-Throws an error if user is not authenticated. Use for mutations and operations that must fail if unauthorized.
+Throws an error if the user isn't authenticated. Use it for mutations and operations that must fail if unauthorized.
 
 ```typescript
 import { getCurrentUserId } from "./lib/auth";
@@ -122,12 +122,12 @@ export const create = mutation({
 
 **Use when:**
 - Creating, updating, or deleting data
-- Operations that must not proceed without authentication
+- Operations that can't go ahead without authentication
 - Any mutation
 
-### `getCurrentUserIdOrNull(ctx)` - Graceful Authentication
+### `getCurrentUserIdOrNull(ctx)`: graceful authentication
 
-Returns `null` if user is not authenticated. Use for queries that should gracefully handle sign-out transitions.
+Returns `null` if the user isn't authenticated. Use it for queries that must handle sign-out without throwing.
 
 ```typescript
 import { getCurrentUserIdOrNull } from "./lib/auth";
@@ -156,7 +156,7 @@ export const list = query({
 - Operations where empty results are acceptable
 - Preventing UI errors during auth transitions
 
-### `verifyOwnership(ctx, doc, entityName)` - Ownership Verification
+### `verifyOwnership(ctx, doc, entityName)`: ownership check
 
 Verifies the current user owns a document. Throws if document is null or owned by another user.
 
@@ -194,7 +194,7 @@ Core CRUD operations for PERM cases with validation, audit logging, and notifica
 
 ---
 
-#### `list` - Query
+#### `list` (query)
 
 List cases for the current user with optional filters.
 
@@ -211,9 +211,9 @@ list(args?: {
 | `status` | `CaseStatus` | No | Filter by case status |
 | `favoritesOnly` | `boolean` | No | Only return favorited cases |
 
-**Returns:** `Case[]` - Array of case documents (empty array if not authenticated)
+**Returns:** `Case[]`: Array of case documents (empty array if not authenticated)
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns empty array if unauthenticated (graceful sign-out handling)
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns empty array if unauthenticated (graceful sign-out handling)
 
 **Example:**
 ```typescript
@@ -233,7 +233,7 @@ const allCases = useQuery(api.cases.list);
 
 ---
 
-#### `get` - Query
+#### `get` (query)
 
 Get a single case by ID with ownership verification.
 
@@ -248,14 +248,14 @@ get(args: {
 |-----------|------|----------|-------------|
 | `id` | `Id<"cases">` | Yes | The case document ID |
 
-**Returns:** `Case | null` - The case document or `null`
+**Returns:** `Case | null`: The case document or `null`
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns `null` in all failure cases for security
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns `null` in all failure cases for security
 
 **Returns `null` when:**
-- User is not authenticated
+- The user isn't authenticated
 - Case not found in database (may have been deleted)
-- User does not own the case
+- The user doesn't own the case
 
 **Example:**
 ```typescript
@@ -278,7 +278,7 @@ return <CaseDetails case={caseDoc} />;
 
 ---
 
-#### `listFiltered` - Query
+#### `listFiltered` (query)
 
 Paginated list with search, sorting, and multiple filter options.
 
@@ -324,7 +324,7 @@ interface CaseListResponse {
 }
 ```
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns empty results if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns empty results if unauthenticated
 
 **Example:**
 ```typescript
@@ -349,7 +349,7 @@ const allCases = useQuery(api.cases.listFiltered, { pageSize: 0 });
 
 ---
 
-#### `checkDuplicates` - Query
+#### `checkDuplicates` (query)
 
 Check for duplicate cases before importing or creating.
 
@@ -381,7 +381,7 @@ interface DuplicateMatch {
 }
 ```
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns empty duplicates if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns empty duplicates if unauthenticated
 
 **Example:**
 ```typescript
@@ -411,7 +411,7 @@ const { duplicates } = await checkDuplicates({
 
 ---
 
-#### `create` - Mutation
+#### `create` (mutation)
 
 Create a new PERM case with full validation.
 
@@ -445,12 +445,12 @@ create(args: {
 }): Promise<Id<"cases">>
 ```
 
-**Returns:** `Id<"cases">` - The created case ID
+**Returns:** `Id<"cases">`: The created case ID
 
-**Authentication:** Uses `getCurrentUserId()` - throws `"Not authenticated"` if unauthenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws `"Not authenticated"` if unauthenticated
 
 **Side Effects:**
-1. **Validation:** Runs full PERM validation rules - throws on validation failure
+1. **Validation:** Runs full PERM validation rules and throws on validation failure
 2. **Derived Dates:** Auto-calculates `recruitmentStartDate`, `recruitmentEndDate`, `filingWindowOpens`, `filingWindowCloses`, `recruitmentWindowCloses`
 3. **Audit Log:** Creates audit log entry for case creation
 4. **Notification:** Creates "New Case Created" notification
@@ -489,7 +489,7 @@ Validation failed: [V-PWD-01] pwd_filing_date: PWD filing date must be before de
 
 ---
 
-#### `update` - Mutation
+#### `update` (mutation)
 
 Update an existing case with validation and status change notifications.
 
@@ -506,16 +506,16 @@ update(args: {
 }): Promise<Id<"cases">>
 ```
 
-**Returns:** `Id<"cases">` - The updated case ID
+**Returns:** `Id<"cases">`: The updated case ID
 
-**Authentication:** Uses `verifyOwnership()` - throws if not authenticated or not owner
+**Authentication:** Uses `verifyOwnership()`, which throws if not authenticated or not owner
 
 **Throws:**
-- `"Not authenticated"` - User not logged in
-- `"Case not found"` - Case ID doesn't exist
-- `"Access denied: you do not own this case"` - User doesn't own the case
-- `"Cannot update deleted case"` - Case was soft-deleted
-- `"Validation failed: ..."` - PERM validation errors
+- `"Not authenticated"`: User not logged in
+- `"Case not found"`: Case ID doesn't exist
+- `"Access denied: you do not own this case"`: User doesn't own the case
+- `"Cannot update deleted case"`: Case was soft-deleted
+- `"Validation failed: ..."`: PERM validation errors
 
 **Side Effects:**
 1. **Validation:** Runs full PERM validation with merged data
@@ -538,7 +538,7 @@ await updateCase({
 
 ---
 
-#### `remove` - Mutation
+#### `remove` (mutation)
 
 Permanently delete a case and all associated data.
 
@@ -548,9 +548,9 @@ remove(args: {
 }): Promise<Id<"cases">>
 ```
 
-**Returns:** `Id<"cases">` - The deleted case ID
+**Returns:** `Id<"cases">`: The deleted case ID
 
-**Authentication:** Uses `verifyOwnership()` - throws if not authenticated or not owner
+**Authentication:** Uses `verifyOwnership()`, which throws if not authenticated or not owner
 
 **Side Effects:**
 1. **Cascade Delete:** Deletes all notifications associated with this case
@@ -569,7 +569,7 @@ toast.success("Case deleted permanently");
 
 ---
 
-#### `bulkRemove` - Mutation
+#### `bulkRemove` (mutation)
 
 Permanently delete multiple cases at once with graceful error handling.
 
@@ -585,7 +585,7 @@ bulkRemove(args: {
 
 **Returns:** Object with success/failure counts and error messages
 
-**Authentication:** Uses `getCurrentUserId()` - throws if not authenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws if not authenticated
 
 **Side Effects:**
 - **Cascade Delete:** Deletes notifications for each removed case
@@ -608,7 +608,7 @@ toast.success(`${result.successCount} cases deleted`);
 
 ---
 
-#### `bulkUpdateStatus` - Mutation
+#### `bulkUpdateStatus` (mutation)
 
 Update status for multiple cases with notifications.
 
@@ -625,7 +625,7 @@ bulkUpdateStatus(args: {
 
 **Returns:** Object with success/failure counts and error messages
 
-**Authentication:** Uses `getCurrentUserId()` - throws if not authenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws if not authenticated
 
 **Side Effects:**
 - **Audit Log:** Creates update audit log for each case
@@ -647,7 +647,7 @@ toast.success(`${result.successCount} cases closed`);
 
 ---
 
-#### `toggleFavorite` - Mutation
+#### `toggleFavorite` (mutation)
 
 Toggle the favorite status of a case.
 
@@ -657,9 +657,9 @@ toggleFavorite(args: {
 }): Promise<boolean>
 ```
 
-**Returns:** `boolean` - The new favorite state
+**Returns:** `boolean`: The new favorite state
 
-**Authentication:** Uses `verifyOwnership()` - throws if not authenticated or not owner
+**Authentication:** Uses `verifyOwnership()`, which throws if not authenticated or not owner
 
 **Example:**
 ```typescript
@@ -671,7 +671,7 @@ toast.success(newState ? "Added to favorites" : "Removed from favorites");
 
 ---
 
-#### `togglePinned` - Mutation
+#### `togglePinned` (mutation)
 
 Toggle the pinned status of a case.
 
@@ -681,13 +681,13 @@ togglePinned(args: {
 }): Promise<boolean>
 ```
 
-**Returns:** `boolean` - The new pinned state
+**Returns:** `boolean`: The new pinned state
 
-**Authentication:** Uses `verifyOwnership()` - throws if not authenticated or not owner
+**Authentication:** Uses `verifyOwnership()`, which throws if not authenticated or not owner
 
 ---
 
-#### `toggleCalendarSync` - Mutation
+#### `toggleCalendarSync` (mutation)
 
 Toggle calendar sync for a case.
 
@@ -697,15 +697,15 @@ toggleCalendarSync(args: {
 }): Promise<boolean>
 ```
 
-**Returns:** `boolean` - The new calendar sync enabled state
+**Returns:** `boolean`: The new calendar sync enabled state
 
-**Authentication:** Uses `verifyOwnership()` - throws if not authenticated or not owner
+**Authentication:** Uses `verifyOwnership()`, which throws if not authenticated or not owner
 
-**Throws:** `"Cannot update deleted case"` - Case was soft-deleted
+**Throws:** `"Cannot update deleted case"`: Case was soft-deleted
 
 ---
 
-#### `importCases` - Mutation
+#### `importCases` (mutation)
 
 Bulk import cases with duplicate resolution support.
 
@@ -735,7 +735,7 @@ importCases(args: {
 
 **Returns:** Import statistics with counts
 
-**Authentication:** Uses `getCurrentUserId()` - throws if not authenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws if not authenticated
 
 **Side Effects:**
 - **Validation:** Logs warnings but doesn't reject cases
@@ -766,7 +766,7 @@ toast.success(`Imported ${result.importedCount} cases`);
 
 ---
 
-#### `reopenCase` - Mutation
+#### `reopenCase` (mutation)
 
 Reopen a closed case with automatic status recalculation.
 
@@ -782,11 +782,11 @@ reopenCase(args: {
 
 **Returns:** Object with success flag and calculated statuses
 
-**Authentication:** Uses `verifyOwnership()` - throws if not authenticated or not owner
+**Authentication:** Uses `verifyOwnership()`, which throws if not authenticated or not owner
 
 **Throws:**
-- `"Case is not closed"` - Case isn't in closed status
-- `"Cannot reopen deleted case"` - Case was soft-deleted
+- `"Case is not closed"`: Case isn't in closed status
+- `"Cannot reopen deleted case"`: Case was soft-deleted
 
 **Side Effects:**
 - **Status Calculation:** Determines appropriate status based on case data
@@ -811,7 +811,7 @@ Real-time notification system with bell badge, dropdown, and full page support.
 
 ---
 
-#### `getUnreadCount` - Query
+#### `getUnreadCount` (query)
 
 Get count of unread notifications for the notification bell badge.
 
@@ -819,9 +819,9 @@ Get count of unread notifications for the notification bell badge.
 getUnreadCount(): Promise<number>
 ```
 
-**Returns:** `number` - Count of unread notifications (0-1000), or 0 if not authenticated
+**Returns:** `number`: Count of unread notifications (0-1000), or 0 if not authenticated
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns 0 if unauthenticated (graceful sign-out handling)
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns 0 if unauthenticated (graceful sign-out handling)
 
 **Performance:** Uses `by_user_and_unread` index for efficient counting (limited to 1000)
 
@@ -840,7 +840,7 @@ return (
 
 ---
 
-#### `getRecentNotifications` - Query
+#### `getRecentNotifications` (query)
 
 Get the most recent N notifications for the dropdown menu.
 
@@ -876,7 +876,7 @@ interface NotificationWithCase {
 }
 ```
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns empty array if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns empty array if unauthenticated
 
 **Example:**
 ```typescript
@@ -897,7 +897,7 @@ return (
 
 ---
 
-#### `getNotifications` - Query
+#### `getNotifications` (query)
 
 Get paginated notifications with optional filters for the full notifications page.
 
@@ -935,9 +935,9 @@ interface PaginatedNotifications {
 }
 ```
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns empty results if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns empty results if unauthenticated
 
-**Cursor Format:** `{timestamp}|{_id}` - compound format ensures unique cursors even with identical timestamps
+**Cursor Format:** `{timestamp}|{_id}`: compound format ensures unique cursors even with identical timestamps
 
 **Example:**
 ```typescript
@@ -960,7 +960,7 @@ const loadMore = async () => {
 
 ---
 
-#### `getNotificationStats` - Query
+#### `getNotificationStats` (query)
 
 Get notification statistics for dashboard display.
 
@@ -981,7 +981,7 @@ interface NotificationStats {
 }
 ```
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns zeros if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns zeros if unauthenticated
 
 **Example:**
 ```typescript
@@ -998,7 +998,7 @@ return (
 
 ---
 
-#### `markAsRead` - Mutation
+#### `markAsRead` (mutation)
 
 Mark a single notification as read.
 
@@ -1015,12 +1015,12 @@ markAsRead(args: {
 
 **Returns:** `{ success: true }`
 
-**Authentication:** Uses `getCurrentUserId()` - throws `"Not authenticated"` if unauthenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws `"Not authenticated"` if unauthenticated
 
 **Throws:**
-- `"Not authenticated"` - User not logged in
-- `"Notification not found"` - Notification doesn't exist
-- `"Access denied: you do not own this notification"` - User doesn't own the notification
+- `"Not authenticated"`: User not logged in
+- `"Notification not found"`: Notification doesn't exist
+- `"Access denied: you do not own this notification"`: User doesn't own the notification
 
 **Side Effects:** Sets `isRead: true`, `readAt: now`, `updatedAt: now`
 
@@ -1036,7 +1036,7 @@ const handleNotificationClick = async (notificationId: Id<"notifications">) => {
 
 ---
 
-#### `markAllAsRead` - Mutation
+#### `markAllAsRead` (mutation)
 
 Mark all notifications as read for the current user (batched operation).
 
@@ -1055,7 +1055,7 @@ interface MarkAllResult {
 }
 ```
 
-**Authentication:** Uses `getCurrentUserId()` - throws `"Not authenticated"` if unauthenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws `"Not authenticated"` if unauthenticated
 
 **Batching:** Processes 100 notifications per call to prevent timeouts. Call repeatedly until `hasMore: false`.
 
@@ -1079,7 +1079,7 @@ const handleMarkAllAsRead = async () => {
 
 ---
 
-#### `deleteNotification` - Mutation
+#### `deleteNotification` (mutation)
 
 Delete a single notification (hard delete).
 
@@ -1096,18 +1096,18 @@ deleteNotification(args: {
 
 **Returns:** `{ success: true }`
 
-**Authentication:** Uses `getCurrentUserId()` - throws `"Not authenticated"` if unauthenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws `"Not authenticated"` if unauthenticated
 
 **Throws:**
-- `"Not authenticated"` - User not logged in
-- `"Notification not found"` - Notification doesn't exist
-- `"Access denied: you do not own this notification"` - User doesn't own the notification
+- `"Not authenticated"`: User not logged in
+- `"Notification not found"`: Notification doesn't exist
+- `"Access denied: you do not own this notification"`: User doesn't own the notification
 
 **Notes:** This is a hard delete (no soft delete for notifications)
 
 ---
 
-#### `deleteAllRead` - Mutation
+#### `deleteAllRead` (mutation)
 
 Delete all read notifications for the current user (batched operation).
 
@@ -1126,7 +1126,7 @@ interface DeleteAllResult {
 }
 ```
 
-**Authentication:** Uses `getCurrentUserId()` - throws `"Not authenticated"` if unauthenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws `"Not authenticated"` if unauthenticated
 
 **Batching:** Processes 100 notifications per call. Call repeatedly until `hasMore: false`.
 
@@ -1149,7 +1149,7 @@ const handleClearRead = async () => {
 
 ---
 
-#### `createNotification` - Internal Mutation
+#### `createNotification` (internal mutation)
 
 Create a notification from server-side code.
 
@@ -1183,7 +1183,7 @@ type NotificationType =
 
 ---
 
-#### `cleanupCaseNotifications` - Internal Mutation
+#### `cleanupCaseNotifications` (internal mutation)
 
 Delete all notifications for a deleted case (batched).
 
@@ -1198,7 +1198,7 @@ cleanupCaseNotifications(args: {
 
 ---
 
-#### `markEmailSent` - Internal Mutation
+#### `markEmailSent` (internal mutation)
 
 Mark a notification as having been sent via email.
 
@@ -1223,7 +1223,7 @@ Dashboard metrics including deadlines, case summaries, and recent activity.
 
 ---
 
-#### `getDeadlines` - Query
+#### `getDeadlines` (query)
 
 Get all case deadlines grouped by urgency level.
 
@@ -1260,15 +1260,15 @@ interface DeadlineItem {
 | `thisMonth` | `8 <= daysUntil <= 30` |
 | `later` | `daysUntil > 30` |
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns empty groups if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns empty groups if unauthenticated
 
 **Deadline Types Extracted:**
-- `pwd_expiration` - PWD expiration date
-- `eta9089_filing` - ETA 9089 filing window deadline
-- `eta9089_expiration` - ETA 9089 certification expiration (urgent, <30 days)
-- `i140_filing_window` - I-140 filing deadline (not urgent)
-- `rfi_response` - RFI response due date
-- `rfe_response` - RFE response due date
+- `pwd_expiration`: PWD expiration date
+- `eta9089_filing`: ETA 9089 filing window deadline
+- `eta9089_expiration`: ETA 9089 certification expiration (urgent, <30 days)
+- `i140_filing_window`: I-140 filing deadline (not urgent)
+- `rfi_response`: RFI response due date
+- `rfe_response`: RFE response due date
 
 **Example:**
 ```typescript
@@ -1296,7 +1296,7 @@ return (
 
 ---
 
-#### `getSummary` - Query
+#### `getSummary` (query)
 
 Get case counts by status with progress breakdowns for dashboard cards.
 
@@ -1326,7 +1326,7 @@ getSummary(): Promise<{
 | `closed` | `caseStatus === "closed"` | "Archived" | 100% |
 | `duplicates` | `duplicateOf !== undefined` | "Marked as duplicate" | 0% |
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns zero counts if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns zero counts if unauthenticated
 
 **Performance:** Single-pass aggregation (O(n)) instead of multiple filter calls
 
@@ -1359,7 +1359,7 @@ return (
 
 ---
 
-#### `getRecentActivity` - Query
+#### `getRecentActivity` (query)
 
 Get the 5 most recently updated cases for the activity feed.
 
@@ -1381,7 +1381,7 @@ interface RecentActivityItem {
 }
 ```
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns empty array if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns empty array if unauthenticated
 
 **Performance:** Uses `by_user_and_updated_at` index for efficient ordering
 
@@ -1410,7 +1410,7 @@ return (
 
 ---
 
-#### `getUpcomingDeadlines` - Query
+#### `getUpcomingDeadlines` (query)
 
 Get deadlines within N days (includes overdue).
 
@@ -1425,9 +1425,9 @@ getUpcomingDeadlines(args?: {
 |-----------|------|----------|---------|-------------|
 | `days` | `number` | No | `30` | Number of days ahead (clamped to 1-365) |
 
-**Returns:** `DeadlineItem[]` - Sorted by urgency (most urgent first)
+**Returns:** `DeadlineItem[]`: Sorted by urgency (most urgent first)
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns empty array if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns empty array if unauthenticated
 
 **Includes:**
 - Overdue deadlines (negative `daysUntil`)
@@ -1459,7 +1459,7 @@ Calendar integration with case deadline visualization and preferences.
 
 ---
 
-#### `getCalendarEvents` - Query
+#### `getCalendarEvents` (query)
 
 Get cases with all deadline-relevant fields for calendar display.
 
@@ -1528,7 +1528,7 @@ interface CalendarEventData {
 }
 ```
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns empty array if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns empty array if unauthenticated
 
 **Filters Applied:**
 - Always excludes soft-deleted cases
@@ -1567,13 +1567,13 @@ const calendarEvents = events?.flatMap((caseData) => {
 ```
 
 **Notes:**
-- Returns raw case data - client is responsible for extracting calendar events
+- Returns raw case data. The client is responsible for extracting calendar events
 - All date fields are ISO strings (YYYY-MM-DD)
 - Limited to 1000 cases per query
 
 ---
 
-#### `getCalendarPreferences` - Query
+#### `getCalendarPreferences` (query)
 
 Get user's calendar visibility preferences.
 
@@ -1591,7 +1591,7 @@ interface CalendarPreferences {
 }
 ```
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns defaults if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns defaults if unauthenticated
 
 **Default Values:**
 ```typescript
@@ -1620,7 +1620,7 @@ const [showCompleted, setShowCompleted] = useState(preferences?.showCompleted ??
 
 ---
 
-#### `updateCalendarPreferences` - Mutation
+#### `updateCalendarPreferences` (mutation)
 
 Update user's calendar visibility preferences.
 
@@ -1641,9 +1641,9 @@ updateCalendarPreferences(args?: {
 | `showCompleted` | `boolean` | No | Show I-140 approved cases |
 | `showClosed` | `boolean` | No | Show closed/archived cases |
 
-**Returns:** `Id<"userProfiles">` - The user profile ID (creates profile if needed)
+**Returns:** `Id<"userProfiles">`: The user profile ID (creates profile if needed)
 
-**Authentication:** Uses `getCurrentUserId()` - throws `"Not authenticated"` if unauthenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws `"Not authenticated"` if unauthenticated
 
 **Behavior:**
 - Only updates fields that are provided (partial update)
@@ -1700,7 +1700,7 @@ Timeline visualization showing case progression over time.
 
 ---
 
-#### `getPreferences` - Query
+#### `getPreferences` (query)
 
 Get user's timeline preferences (or defaults).
 
@@ -1727,7 +1727,7 @@ interface TimelinePreferences {
 }
 ```
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns defaults if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns defaults if unauthenticated
 
 **Example:**
 ```typescript
@@ -1739,7 +1739,7 @@ const isAllSelected = preferences?.selectedCaseIds === null;
 
 ---
 
-#### `getCasesForTimeline` - Query
+#### `getCasesForTimeline` (query)
 
 Get cases with all timeline-relevant data for visualization.
 
@@ -1791,7 +1791,7 @@ interface TimelineCaseData {
 }
 ```
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns empty array if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns empty array if unauthenticated
 
 **Filters Applied:**
 - Excludes soft-deleted cases
@@ -1816,7 +1816,7 @@ const events = timelineCases?.flatMap((caseData) => {
 
 ---
 
-#### `updatePreferences` - Mutation
+#### `updatePreferences` (mutation)
 
 Update user's timeline preferences.
 
@@ -1833,9 +1833,9 @@ updatePreferences(args?: {
 | `selectedCaseIds` | `Id<"cases">[] \| null` | No | Cases to show (null = all active) |
 | `timeRange` | `3 \| 6 \| 12 \| 24` | No | Months to display |
 
-**Returns:** `Id<"timelinePreferences">` - The preferences document ID
+**Returns:** `Id<"timelinePreferences">`: The preferences document ID
 
-**Authentication:** Uses `getCurrentUserId()` - throws if unauthenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws if unauthenticated
 
 **Behavior:** Creates preferences if they don't exist, otherwise updates only provided fields
 
@@ -1855,7 +1855,7 @@ await updatePreferences({ selectedCaseIds: null });
 
 ---
 
-#### `addCaseToTimeline` - Mutation
+#### `addCaseToTimeline` (mutation)
 
 Add a single case to the timeline selection.
 
@@ -1870,11 +1870,11 @@ addCaseToTimeline(args: {
 |-----------|------|----------|-------------|
 | `caseId` | `Id<"cases">` | Yes | Case to add to timeline |
 
-**Returns:** `Id<"timelinePreferences">` - The preferences document ID
+**Returns:** `Id<"timelinePreferences">`: The preferences document ID
 
-**Authentication:** Uses `getCurrentUserId()` - throws if unauthenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws if unauthenticated
 
-**Throws:** `"Case not found"` - Case doesn't exist, is deleted, or not owned
+**Throws:** `"Case not found"`: Case doesn't exist, is deleted, or not owned
 
 **Behavior:**
 - If `selectedCaseIds` is null (all cases), converts to explicit list with all active cases + new case
@@ -1893,7 +1893,7 @@ const handleAddToTimeline = async (caseId: Id<"cases">) => {
 
 ---
 
-#### `removeCaseFromTimeline` - Mutation
+#### `removeCaseFromTimeline` (mutation)
 
 Remove a single case from the timeline selection.
 
@@ -1908,9 +1908,9 @@ removeCaseFromTimeline(args: {
 |-----------|------|----------|-------------|
 | `caseId` | `Id<"cases">` | Yes | Case to remove from timeline |
 
-**Returns:** `Id<"timelinePreferences">` - The preferences document ID
+**Returns:** `Id<"timelinePreferences">`: The preferences document ID
 
-**Authentication:** Uses `getCurrentUserId()` - throws if unauthenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws if unauthenticated
 
 **Behavior:**
 - If `selectedCaseIds` is null (all cases), converts to explicit list with all active cases minus this case
@@ -1936,7 +1936,7 @@ User profile management and authentication helpers.
 
 ---
 
-#### `currentUser` - Query
+#### `currentUser` (query)
 
 Get the currently authenticated user document.
 
@@ -1944,9 +1944,9 @@ Get the currently authenticated user document.
 currentUser(): Promise<User | null>
 ```
 
-**Returns:** `User | null` - The user document or null if not authenticated
+**Returns:** `User | null`: The user document or null if not authenticated
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns null if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns null if unauthenticated
 
 **Example:**
 ```typescript
@@ -1959,7 +1959,7 @@ if (user) {
 
 ---
 
-#### `currentUserProfile` - Query
+#### `currentUserProfile` (query)
 
 Get the current user's profile with notification preferences.
 
@@ -1967,9 +1967,9 @@ Get the current user's profile with notification preferences.
 currentUserProfile(): Promise<UserProfile | null>
 ```
 
-**Returns:** `UserProfile | null` - The profile document or null
+**Returns:** `UserProfile | null`: The profile document or null
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns null if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns null if unauthenticated
 
 **Example:**
 ```typescript
@@ -1982,7 +1982,7 @@ const timezone = profile?.timezone ?? "America/New_York";
 
 ---
 
-#### `ensureUserProfile` - Mutation
+#### `ensureUserProfile` (mutation)
 
 Ensure a user profile exists for the current user (idempotent).
 
@@ -1990,9 +1990,9 @@ Ensure a user profile exists for the current user (idempotent).
 ensureUserProfile(): Promise<Id<"userProfiles">>
 ```
 
-**Returns:** `Id<"userProfiles">` - The profile ID (existing or newly created)
+**Returns:** `Id<"userProfiles">`: The profile ID (existing or newly created)
 
-**Authentication:** Uses `getCurrentUserId()` - throws if unauthenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws if unauthenticated
 
 **Behavior:** Creates profile with default values if it doesn't exist, returns existing ID if it does
 
@@ -2027,7 +2027,7 @@ useEffect(() => {
 
 ---
 
-#### `updateUserProfile` - Mutation
+#### `updateUserProfile` (mutation)
 
 Update the current user's profile with partial fields.
 
@@ -2073,11 +2073,11 @@ updateUserProfile(args: {
 }): Promise<Id<"userProfiles">>
 ```
 
-**Returns:** `Id<"userProfiles">` - The updated profile ID
+**Returns:** `Id<"userProfiles">`: The updated profile ID
 
-**Authentication:** Uses `getCurrentUserId()` - throws if unauthenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws if unauthenticated
 
-**Throws:** `"User profile not found"` - Profile doesn't exist (call `ensureUserProfile` first)
+**Throws:** `"User profile not found"`: Profile doesn't exist (call `ensureUserProfile` first)
 
 **Security:** OAuth tokens are automatically encrypted before storage
 
@@ -2103,7 +2103,7 @@ await updateUserProfile({
 
 ---
 
-#### `savePushSubscription` - Mutation
+#### `savePushSubscription` (mutation)
 
 Save push subscription for current user.
 
@@ -2120,12 +2120,12 @@ savePushSubscription(args: {
 
 **Returns:** `{ success: true }`
 
-**Authentication:** Uses `getCurrentUserId()` - throws if unauthenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws if unauthenticated
 
 **Throws:**
-- `"User profile not found"` - Profile doesn't exist
-- `"Invalid push subscription format: not valid JSON"` - Invalid JSON
-- `"Invalid push subscription: missing required fields"` - Missing endpoint, keys.p256dh, or keys.auth
+- `"User profile not found"`: Profile doesn't exist
+- `"Invalid push subscription format: not valid JSON"`: Invalid JSON
+- `"Invalid push subscription: missing required fields"`: Missing endpoint, keys.p256dh, or keys.auth
 
 **Side Effects:** Sets `pushSubscription` and enables `pushNotificationsEnabled`
 
@@ -2146,7 +2146,7 @@ const enablePush = async () => {
 
 ---
 
-#### `removePushSubscription` - Mutation
+#### `removePushSubscription` (mutation)
 
 Remove push subscription for current user.
 
@@ -2156,7 +2156,7 @@ removePushSubscription(): Promise<{ success: true }>
 
 **Returns:** `{ success: true }`
 
-**Authentication:** Uses `getCurrentUserId()` - throws if unauthenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws if unauthenticated
 
 **Side Effects:** Clears `pushSubscription` and disables `pushNotificationsEnabled`
 
@@ -2180,7 +2180,7 @@ Audit trail for compliance and debugging.
 
 ---
 
-#### `listMine` - Query
+#### `listMine` (query)
 
 List audit logs for the current user.
 
@@ -2197,9 +2197,9 @@ listMine(args?: {
 | `tableName` | `string` | No | - | Filter by table (e.g., "cases") |
 | `limit` | `number` | No | `50` | Maximum logs to return |
 
-**Returns:** `AuditLog[]` - Array of audit logs, ordered by timestamp desc
+**Returns:** `AuditLog[]`: Array of audit logs, ordered by timestamp desc
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns empty array if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns empty array if unauthenticated
 
 **Example:**
 ```typescript
@@ -2215,7 +2215,7 @@ return (
 
 ---
 
-#### `forDocument` - Query
+#### `forDocument` (query)
 
 Get audit logs for a specific document.
 
@@ -2232,9 +2232,9 @@ forDocument(args: {
 | `documentId` | `string` | Yes | The document ID to get logs for |
 | `tableName` | `string` | Yes | The table name (e.g., "cases") |
 
-**Returns:** `AuditLog[]` - Array of audit logs for the document, ordered by timestamp desc
+**Returns:** `AuditLog[]`: Array of audit logs for the document, ordered by timestamp desc
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns empty array if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns empty array if unauthenticated
 
 **Security:** Only returns logs for documents owned by the current user
 
@@ -2252,7 +2252,7 @@ return (
 
 ---
 
-#### `byDateRange` - Query
+#### `byDateRange` (query)
 
 Get audit logs within a date range.
 
@@ -2271,9 +2271,9 @@ byDateRange(args: {
 | `endDate` | `number` | Yes | End timestamp (Unix ms) |
 | `tableName` | `string` | No | Filter by table name |
 
-**Returns:** `AuditLog[]` - Array of audit logs in range, ordered by timestamp desc
+**Returns:** `AuditLog[]`: Array of audit logs in range, ordered by timestamp desc
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns empty array if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns empty array if unauthenticated
 
 **Performance:** Uses `by_user_and_timestamp` compound index for efficient range queries
 
@@ -2298,7 +2298,7 @@ Automated deadline monitoring and case auto-closure.
 
 ---
 
-#### `isEnforcementEnabled` - Query
+#### `isEnforcementEnabled` (query)
 
 Check if deadline enforcement is enabled for the current user.
 
@@ -2306,9 +2306,9 @@ Check if deadline enforcement is enabled for the current user.
 isEnforcementEnabled(): Promise<boolean>
 ```
 
-**Returns:** `boolean` - True if auto deadline enforcement is enabled
+**Returns:** `boolean`: True if auto deadline enforcement is enabled
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns false if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns false if unauthenticated
 
 **Usage:** Check before calling `checkAndEnforceDeadlines` on login
 
@@ -2325,7 +2325,7 @@ useEffect(() => {
 
 ---
 
-#### `getAutoClosureAlerts` - Query
+#### `getAutoClosureAlerts` (query)
 
 Get unread auto-closure alerts for dashboard display.
 
@@ -2348,7 +2348,7 @@ interface AutoClosureAlert {
 }
 ```
 
-**Authentication:** Uses `getCurrentUserIdOrNull()` - returns empty array if unauthenticated
+**Authentication:** Uses `getCurrentUserIdOrNull()`, which returns empty array if unauthenticated
 
 **Example:**
 ```typescript
@@ -2365,7 +2365,7 @@ if (alerts && alerts.length > 0) {
 
 ---
 
-#### `checkAndEnforceDeadlines` - Mutation
+#### `checkAndEnforceDeadlines` (mutation)
 
 Check and enforce deadlines for the current user's cases.
 
@@ -2389,7 +2389,7 @@ interface EnforcementResult {
 }
 ```
 
-**Authentication:** Uses `getCurrentUserId()` - throws if unauthenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws if unauthenticated
 
 **Enforcement Rules:**
 | Violation Type | Condition | Action |
@@ -2417,7 +2417,7 @@ if (result.casesClosed > 0) {
 
 ---
 
-#### `dismissAutoClosureAlert` - Mutation
+#### `dismissAutoClosureAlert` (mutation)
 
 Dismiss a single auto-closure alert by marking it as read.
 
@@ -2434,16 +2434,16 @@ dismissAutoClosureAlert(args: {
 
 **Returns:** `{ success: true }`
 
-**Authentication:** Uses `getCurrentUserId()` - throws if unauthenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws if unauthenticated
 
 **Throws:**
-- `"Notification not found"` - Notification doesn't exist
-- `"Access denied"` - User doesn't own the notification
-- `"Not an auto-closure notification"` - Wrong notification type
+- `"Notification not found"`: Notification doesn't exist
+- `"Access denied"`: User doesn't own the notification
+- `"Not an auto-closure notification"`: Wrong notification type
 
 ---
 
-#### `dismissAllAutoClosureAlerts` - Mutation
+#### `dismissAllAutoClosureAlerts` (mutation)
 
 Dismiss all auto-closure alerts for the current user.
 
@@ -2456,7 +2456,7 @@ dismissAllAutoClosureAlerts(): Promise<{
 
 **Returns:** `{ success: true, dismissedCount: number }`
 
-**Authentication:** Uses `getCurrentUserId()` - throws if unauthenticated
+**Authentication:** Uses `getCurrentUserId()`, which throws if unauthenticated
 
 ---
 
@@ -2522,7 +2522,7 @@ export default crons;
 
 ---
 
-### `checkDeadlineReminders` - Internal Action
+### `checkDeadlineReminders` (internal action)
 
 Daily job to check all cases for upcoming deadlines and create notifications.
 
@@ -2554,7 +2554,7 @@ checkDeadlineReminders(): Promise<{
 
 ---
 
-### `cleanupOldNotifications` - Internal Action
+### `cleanupOldNotifications` (internal action)
 
 Hourly job to delete read notifications older than 90 days.
 
@@ -2576,7 +2576,7 @@ cleanupOldNotifications(): Promise<{
 
 ---
 
-### `sendWeeklyDigest` - Internal Action
+### `sendWeeklyDigest` (internal action)
 
 Weekly job to send summary emails on Mondays.
 
@@ -2633,12 +2633,12 @@ Server-side actions using Node.js runtime for external integrations.
 All email actions use [Resend](https://resend.com) for delivery with React Email templates.
 
 **Environment Variables:**
-- `AUTH_RESEND_KEY` - Resend API key
-- `APP_URL` - Application URL for email links (defaults to `https://permtracker.app`)
+- `AUTH_RESEND_KEY`: Resend API key
+- `APP_URL`: Application URL for email links (defaults to `https://permtracker.app`)
 
 ---
 
-#### `sendDeadlineReminderEmail` - Internal Action
+#### `sendDeadlineReminderEmail` (internal action)
 
 Send a deadline reminder email.
 
@@ -2665,7 +2665,7 @@ sendDeadlineReminderEmail(args: {
 
 ---
 
-#### `sendStatusChangeEmail` - Internal Action
+#### `sendStatusChangeEmail` (internal action)
 
 Send a case status change notification email.
 
@@ -2689,7 +2689,7 @@ sendStatusChangeEmail(args: {
 
 ---
 
-#### `sendAutoClosureEmail` - Internal Action
+#### `sendAutoClosureEmail` (internal action)
 
 Send a case auto-closure notification email.
 
@@ -2710,7 +2710,7 @@ sendAutoClosureEmail(args: {
 
 **Subject:** `"CASE CLOSED: {beneficiaryName} at {companyName} - {violationType}"`
 
-**Priority:** Always urgent - auto-closure emails bypass quiet hours
+**Priority:** Always urgent: auto-closure emails bypass quiet hours
 
 ---
 
@@ -2719,12 +2719,12 @@ sendAutoClosureEmail(args: {
 Uses Web Push API with VAPID for browser push notifications.
 
 **Environment Variables:**
-- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` - VAPID public key
-- `VAPID_PRIVATE_KEY` - VAPID private key
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY`: VAPID public key
+- `VAPID_PRIVATE_KEY`: VAPID private key
 
 ---
 
-#### `sendPushNotification` - Internal Action
+#### `sendPushNotification` (internal action)
 
 Send a Web Push notification to a user.
 
@@ -2860,8 +2860,8 @@ export const myMutation = mutation({
 ```
 
 **When to use which:**
-- `getCurrentUserIdOrNull()` - Queries that should gracefully handle sign-out
-- `getCurrentUserId()` - Mutations that require authentication
+- `getCurrentUserIdOrNull()`: Queries that should gracefully handle sign-out
+- `getCurrentUserId()`: Mutations that require authentication
 
 ---
 
@@ -3368,7 +3368,7 @@ const cases = await ctx.db
 
 ---
 
-## Best Practices
+## Patterns to follow
 
 ### 1. Use Reactive Queries
 

@@ -41,14 +41,14 @@ export const ENDPOINTS: EndpointDoc[] = [
         in: "query",
         required: false,
         description:
-          "1 to ask DOL now when our records don't hold the number yet. Needs the live_lookup scope; Plus has 200 a day, and every account together 20,000.",
+          "1 to ask DOL now when our records don't hold the number yet. Needs the live_lookup scope. Plus has 200 a day, and every account together 20,000.",
       },
     ],
     counted: true,
   },
   {
     path: "/estimate",
-    summary: "When a pending PERM case is likely to be decided, with the range, the model and its caveats. An estimate, not a promise.",
+    summary: "When a pending PERM case is likely to be decided, with the range, the model and its caveats. It's an estimate and makes no promise.",
     example: "/estimate?filed=2026-02-15",
     params: [
       { name: "case", in: "query", required: false, description: "A PERM case number. Its own status and filing date are used." },
@@ -131,7 +131,7 @@ export const ENDPOINTS: EndpointDoc[] = [
   {
     path: "/lookup/soc",
     summary:
-      "The SOC codes employers filed a job title under in DOL's PERM, prevailing wage and LCA files, with each code's share of the title's filings; or, for a code, its title, O*NET's description and core tasks, the titles employers filed most under it, and its PERM approval rate and median offered wage (under the site's floors); for a 2010 code, the 2018 codes it became. No key, under the same shared limits as the employer lookup.",
+      "The SOC codes employers filed a job title under in DOL's PERM, prevailing wage and LCA files, with each code's share of the title's filings. For a code: its title, O*NET's description and core tasks, the titles employers filed most under it, and its PERM approval rate and median offered wage (under the site's floors). For a 2010 code: the 2018 codes it became. No key, under the same shared limits as the employer lookup.",
     example: "/lookup/soc?q=data%20scientist",
     params: [{ name: "q", in: "query", required: true, description: "A job title or a SOC code (15-1252, 15-1252.00 or 151252), 2 to 80 characters." }],
     counted: false,
@@ -140,7 +140,7 @@ export const ENDPOINTS: EndpointDoc[] = [
   {
     path: "/exports/{kind}",
     summary:
-      "A search's whole answer, past one page, as CSV (format=csv) or JSON: cases (the case search's parameters, such as q, firm, state, occupation, from, to, outcome), employers, law-firms or occupations (q). Needs the export scope; Plus exports up to 1,000 rows. Counted as one call.",
+      "A search's whole answer, past one page, as CSV (format=csv) or JSON: cases (the case search's parameters, such as q, firm, state, occupation, from, to, outcome), employers, law-firms or occupations (q). Needs the export scope. Plus exports up to 1,000 rows. Counted as one call.",
     example: "/exports/employers?q=acme&format=csv",
     params: [
       { name: "kind", in: "path", required: true, description: "cases, employers, law-firms or occupations." },

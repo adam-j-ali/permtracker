@@ -121,23 +121,24 @@ export function CaseAlertConfirm({
       {known ? (
         <>
           <Text className="em-text-body" style={styles.body}>
-            If that&rsquo;s your case, confirm below and we&rsquo;ll email you
-            every time DOL&rsquo;s status for it changes, and for a year after
-            it&rsquo;s decided, in case it&rsquo;s appealed or reopened. If it
-            isn&rsquo;t your case, ignore this and enter the number again.
+            If that&rsquo;s your case, confirm below. We&rsquo;ll email you
+            every time DOL&rsquo;s status for it changes, and we&rsquo;ll keep
+            watching for a year after it&rsquo;s decided, in case it&rsquo;s
+            appealed or reopened. If it isn&rsquo;t your case, ignore this and
+            enter the number again.
           </Text>
           <Text className="em-text-secondary" style={styles.lag}>
             We ask DOL about watched cases every 5 minutes on weekdays from 7 AM
-            to 9 PM Eastern, and every half hour otherwise, and email a change as
-            soon as we see it. Every alert says since when DOL&rsquo;s record has shown the status.
+            to 9 PM Eastern, and every half hour otherwise. We email a change as
+            soon as we see it, and every alert says since when DOL&rsquo;s record has shown the status.
           </Text>
         </>
       ) : (
         <Text className="em-text-body" style={styles.body}>
-          We don&rsquo;t hold this case number yet, which is normal for a recent
-          filing and is also what a typo looks like. Check it against your
-          receipt first. Confirm and we&rsquo;ll start watching it, then email
-          you the first time its status moves after that.
+          We don&rsquo;t hold this case number yet. That&rsquo;s normal for a
+          recent filing, and it&rsquo;s also what a typo looks like, so check it
+          against your receipt first. If you confirm, we&rsquo;ll start watching
+          it and email you the first time its status moves after that.
         </Text>
       )}
 

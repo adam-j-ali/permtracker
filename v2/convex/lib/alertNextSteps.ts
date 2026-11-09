@@ -162,7 +162,7 @@ function permCertified(input: NextStepInput): NextSteps {
       {
         title: "The I-140",
         body: due
-          ? `The employer files it with USCIS. Going by the day DOL's record changed, the 180 days run to about ${longDate(due)}; the exact last day is the expiration DOL printed on the certification.`
+          ? `The employer files it with USCIS. Going by the day DOL's record changed, the 180 days run to about ${longDate(due)}. The exact last day is the expiration DOL printed on the certification.`
           : "The employer files it with USCIS. The exact last day is the expiration DOL printed on the certification.",
       },
       {
@@ -191,7 +191,7 @@ function permDenied(status: string): NextSteps {
         },
         {
           title: "We're still watching",
-          body: "If the employer asks, DOL's record moves to RECONSIDERATION APPEALS or BALCA APPEALS. We watch this case for a year after the decision and will email you when it moves.",
+          body: "If the employer asks, DOL's record moves to RECONSIDERATION APPEALS or BALCA APPEALS. We watch this case for a year after the decision, and we'll email you when it moves.",
         },
       ],
       button: null,
@@ -257,7 +257,7 @@ function lcaCertified(caseNumber: string): NextSteps {
     visa === "H-1B"
       ? {
           title: "The H-1B petition",
-          body: "The employer files it with USCIS on Form I-129, with this certified LCA. USCIS then sends a receipt number; our USCIS page reads what that number encodes and links to USCIS's own status page, but it can't show the status itself yet.",
+          body: "The employer files it with USCIS on Form I-129, with this certified LCA. USCIS then sends a receipt number. Our USCIS page reads what that number encodes and links to USCIS's own status page, but it can't show the status itself yet.",
         }
       : {
           title: `The ${visa} visa`,

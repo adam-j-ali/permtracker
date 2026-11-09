@@ -6,7 +6,7 @@ outside Resend's 100 emails a day:
 | job | how |
 |---|---|
 | **Inbound**: every message to an `@permtracker.app` address | the zone's catch-all rule hands it to the Worker's `email` handler, which forwards it to the owner's verified Gmail and posts it to Convex `POST /inbound-email` (stored in `supportEmails`, `resendEmailId` = `cloudflare:<Message-ID>`) |
-| **Owner mail**: every email to one of the owner's inboxes (alerts, admin notices, the morning report, the contact form, the site's own mail to the owner's accounts) | `POST https://permtracker-mail.permtracker.workers.dev/owner` with `x-owner-mail-key` and JSON `{ subject, text, html?, to?, replyTo? }`; `to` must be `OWNER_EMAIL` or listed in `OWNER_ADDRESSES` (else 403), and the `OWNER` send binding can only send to Cloudflare-verified addresses |
+| **Owner mail**: every email to one of the owner's inboxes (alerts, admin notices, the morning report, the contact form, the site's own mail to the owner's accounts) | `POST https://permtracker-mail.permtracker.workers.dev/owner` with `x-owner-mail-key` and JSON `{ subject, text, html?, to?, replyTo? }`. `to` must be `OWNER_EMAIL` or listed in `OWNER_ADDRESSES` (else 403), and the `OWNER` send binding can only send to Cloudflare-verified addresses |
 
 Callers: `convex/lib/ownerMail.ts` (`OWNER_MAIL_URL`, `OWNER_MAIL_KEY` on Convex),
 `permtracker-alarm` and `permtracker-defend` on the server
@@ -16,9 +16,9 @@ Worker isn't set up or doesn't answer.
 ## The spam check (since Oct 25 2026)
 
 Before it forwards, the `email` handler reads a message up to `CHECK_MAX_BYTES` (256 KB) and asks two things,
-each with a 4-second limit: Cloudflare's AI (`env.AI`, model `AI_MODEL` in `rules.mjs` or the `AI_MODEL`
-binding) for "spam", "not_spam" or "unsure", then Convex `POST /inbound-email/verdict` (the same
-`x-inbound-key`) for the verdict, which weighs the rules in `convex/lib/spamCheck.ts`, the owner's word on the
+each with a 4-second limit. First it asks Cloudflare's AI (`env.AI`, model `AI_MODEL` in `rules.mjs` or the
+`AI_MODEL` binding) for "spam", "not_spam" or "unsure". Then it asks Convex `POST /inbound-email/verdict` (the
+same `x-inbound-key`) for the verdict, which weighs the rules in `convex/lib/spamCheck.ts`, the owner's word on the
 sender and whether the mail answers one we sent (`convex/inboundFilter.ts`). Only a clear `hold` keeps it out
 of the inbox: the message is stored with `held: true` and listed on the admin page (Alerts and email, "Spam
 filter") with Not spam and Delete, and deleted 30 days later. A slow, missing or failed answer forwards, so the
@@ -27,16 +27,17 @@ check can never lose a message.
 `POST /classify` (the owner key): `{ from, subject, text? }` answers `{ verdict, error? }` from the same AI
 call. The contact form asks it (`aiOpinionFromWorker`), and it's how the check was calibrated on stored mail.
 
-The plain `@cf/meta/llama-3.1-8b-instruct` was retired May 30 2026 (the binding answered error 5028);
+The plain `@cf/meta/llama-3.1-8b-instruct` was retired May 30 2026 (the binding answered error 5028).
 `@cf/meta/llama-3.3-70b-instruct-fp8-fast` is on Cloudflare's JSON-mode list, measured about 7 neurons a message
 against 10,000 free a day. Cloudflare's Workers AI data-usage page (updated Oct 16 2026): inputs and outputs aren't
 kept after the request and aren't used for training.
 
 ## Files
 
-- `worker.mjs`: the two handlers. `rules.mjs`: forwarding rule (held to
-  `convex/lib/supportEmailForward.ts` by `src/lib/__tests__/mailWorkerRules.test.ts`),
-  key checks. `mime.mjs`: a small MIME reader for the stored copy.
+- `worker.mjs`: the two handlers.
+- `rules.mjs`: the forwarding rule (held to `convex/lib/supportEmailForward.ts` by
+  `src/lib/__tests__/mailWorkerRules.test.ts`) and the key checks.
+- `mime.mjs`: a small MIME reader for the stored copy.
 - `node workers/mail/build.mjs` (from `v2/`) writes `dist/worker.js`, about 6 KB.
 
 ## Bindings
@@ -45,7 +46,7 @@ kept after the request and aren't used for training.
 `OWNER_ADDRESSES` (comma-separated, more of the owner's inboxes), `FROM_EMAIL`
 (`alerts@permtracker.app`), `CONVEX_SITE`, `KEYS`, the KV namespace
 `permtracker-mail-keys` holding `owner_mail_key` and `inbound_key`, and `AI` (`{ "type": "ai", "name": "AI" }`,
-the spam check's second opinion; without it the rules decide alone). Optional `AI_MODEL` names another model.
+the spam check's second opinion, and without it the rules decide alone). Optional `AI_MODEL` names another model.
 
 ## Keys
 
@@ -60,16 +61,20 @@ inside a rotation window: an upload carrying the plain-text binding
 `rules.mjs`). Without that gate, anyone could set keys of their own while the
 old ones were deleted.
 
-To rotate: generate new files; upload with `PROVISION_UNTIL` 15 minutes ahead;
-delete the two KV entries (Cloudflare API, KV namespace `permtracker-mail-keys`);
-provision; upload again WITHOUT `PROVISION_UNTIL`; then pipe the new values to
-Convex (`npx convex env set NAME --prod < file`) and the server file.
+To rotate:
+
+1. Generate new files.
+2. Upload with `PROVISION_UNTIL` 15 minutes ahead.
+3. Delete the two KV entries (Cloudflare API, KV namespace `permtracker-mail-keys`).
+4. Provision.
+5. Upload again **without** `PROVISION_UNTIL`.
+6. Pipe the new values to Convex (`npx convex env set NAME --prod < file`) and the server file.
 
 ## Upload
 
 The script goes up through the Cloudflare API as a multipart PUT to
-`/accounts/<account>/workers/scripts/permtracker-mail` with the bindings above;
-compare the uploaded code's SHA-256 with the local `dist/worker.js`.
+`/accounts/<account>/workers/scripts/permtracker-mail` with the bindings above.
+Then compare the uploaded code's SHA-256 with the local `dist/worker.js`.
 
 ## DNS
 
@@ -80,11 +85,11 @@ include:amazonses.com -all`. DKIM: `cf2024-1._domainkey`. `send.permtracker.app`
 
 ## A second inbox for the owner
 
-1. Cloudflare dashboard, Email Routing, Destination addresses: add it; Cloudflare emails it a link, and the
-   owner clicks it.
+1. In the Cloudflare dashboard, under Email Routing, Destination addresses, add it. Cloudflare emails it a
+   link, and the owner clicks it.
 2. Upload with the `OWNER` binding as `allowed_destination_addresses: [main, second]` (in place of
    `destination_address`) and a plain-text `OWNER_ADDRESSES` naming the second.
-3. Add it to `OWNER_INBOXES` on Convex (comma-separated); `sendOrQueue` then sends its mail here.
+3. Add it to `OWNER_INBOXES` on Convex (comma-separated). `sendOrQueue` then sends its mail here.
    Note `npx convex env get` exits 0 even for a variable that isn't set: read its output.
 
 ## Changing the owner's address

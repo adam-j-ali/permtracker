@@ -82,7 +82,7 @@ export function BulletinWeekly(d: DigestData) {
               rows={queueRows}
               provenance={
                 d.dolAsOf
-                  ? `DOL's processing-times page as of ${dateLabel(d.dolAsOf)}; the live record as of the week of ${dateLabel(d.weekOf)}.`
+                  ? `DOL's processing-times page as of ${dateLabel(d.dolAsOf)}. The live record as of the week of ${dateLabel(d.weekOf)}.`
                   : `The live record as of the week of ${dateLabel(d.weekOf)}.`
               }
             />
@@ -102,7 +102,7 @@ export function BulletinWeekly(d: DigestData) {
           </Text>
           {d.bulletinRepeat ? (
             <Text className="em-text-secondary" style={styles.small}>
-              Same bulletin as last week&apos;s issue; nothing has moved since. The next one is normally out mid-month.{" "}
+              Same bulletin as last week&apos;s issue. Nothing has moved since, and the next one is normally out mid-month.{" "}
               <Link href={`${site}/visa-bulletin/${d.bulletinMonth}`} style={styles.link}>
                 Every cutoff
               </Link>
@@ -140,7 +140,7 @@ export function BulletinWeekly(d: DigestData) {
             </tbody>
           </table>
           <Text className="em-text-secondary" style={styles.small}>
-            Final action dates, of {d.bulletinMoves.total} category and country cells, against the bulletin before it.{" "}
+            Final action dates in {d.bulletinMoves.total} category and country cells, compared with the bulletin before it.{" "}
             <Link href={`${site}/visa-bulletin/${d.bulletinMonth}`} style={styles.link}>
               Every cutoff and what moved
             </Link>

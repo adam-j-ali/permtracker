@@ -128,7 +128,7 @@ export function EmployerMoved({
       ) : null}
 
       <Text className="em-text-body" style={styles.bodyText}>
-        {`These are DOL's own case statuses, read from its case system and counted on ${asOf}. DOL gives no reason for a hold or a batch, and neither do we. None of it is a prediction of any one case.`}
+        {`These are DOL's own case statuses, read from its case system and counted on ${asOf}. DOL gives no reason for a hold or a batch, and neither do we. None of it predicts any one case.`}
       </Text>
       <Link href={employerUrl} className="em-link" style={styles.open}>
         {`See every figure for ${employerName}`}

@@ -63,7 +63,7 @@ export const subscribe = internalMutation({
   handler: async (ctx, args) => {
     const email = args.email.trim().toLowerCase();
     if (!isPlausibleEmail(email)) {
-      return { ok: false, message: "That email address does not look right." };
+      return { ok: false, message: "That email address doesn't look right." };
     }
 
     const ip = args.ip?.trim();

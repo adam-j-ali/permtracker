@@ -50,7 +50,7 @@ export function DailyUpdate({ items, prefsUrl, stopUrl, moreWaiting = false }: D
       previewText={items.map((i) => `${i.title}: ${i.line}`).join(" · ").slice(0, 140)}
       settingsUrl={prefsUrl}
       settingsLabel="Email preferences"
-      footerText="A change to a case comes at once; other alerts from one day come together, in one email like this. Each row links to the full picture."
+      footerText="A change to a case comes at once. Other alerts from one day come together in one email like this, and each row links to the full picture."
       footerExtra={
         <Text className="em-text-secondary" style={styles.footerExtra}>
           <Link href={stopUrl} className="em-link" style={styles.footerLink}>
@@ -105,8 +105,8 @@ export function DailyUpdate({ items, prefsUrl, stopUrl, moreWaiting = false }: D
 
       <Text className="em-text-secondary" style={styles.note}>
         Every figure here is the Department of Labor&rsquo;s or the State
-        Department&rsquo;s own published record. None of it is a prediction of
-        your case.
+        Department&rsquo;s own published record. None of it predicts your
+        case.
       </Text>
     </EmailLayout>
   );

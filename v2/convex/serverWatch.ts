@@ -42,7 +42,7 @@ export const check = internalAction({
       });
       const body = mail.kind === "clear"
         ? `As of ${when}, the server's health report is fresh again and its disk has room. It had been: ${mail.reason}.`
-        : `As of ${when}, ${mail.reason}.\n\nThis check runs on Convex, outside the server, every 15 minutes, so it works when the server itself cannot report. The server's own alarm (permtracker-alarm) covers the disk, memory and failed jobs from inside. It emails again every 6 hours while this lasts, and once when it clears.`;
+        : `As of ${when}, ${mail.reason}.\n\nThis check runs on Convex, outside the server, every 15 minutes, so it works when the server itself can't report. The server's own alarm (permtracker-alarm) covers the disk, memory and failed jobs from inside. It emails again every 6 hours while this lasts, and once when it clears.`;
       await ctx.scheduler.runAfter(0, internal.notificationActions.sendAdminNotificationEmail, { subject, body });
     }
     return null;

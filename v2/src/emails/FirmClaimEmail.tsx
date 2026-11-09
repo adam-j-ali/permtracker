@@ -40,7 +40,7 @@ const COPY: Record<
     preview: (f) => `Confirm your claim on ${f}'s PERM Tracker page.`,
     body: (_f, auto) =>
       auto
-        ? "Confirm, and we'll check your profile before it goes up on the firm's page, marked as the firm's own words, next to DOL's figures. We'll email you when it's up."
+        ? "Confirm, and we'll check your profile before it goes up on the firm's page. It sits next to DOL's figures, marked as the firm's own words, and we'll email you when it's up."
         : "Confirm and we'll check the claim by hand, because DOL's files don't tie this address's domain to the firm. We'll email you when it's done.",
     button: "Confirm the claim",
   },

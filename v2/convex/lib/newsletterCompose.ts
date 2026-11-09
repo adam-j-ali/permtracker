@@ -319,7 +319,7 @@ export function composeText(d: DigestData): string {
     lines.push(`THE ${monthLabel(d.bulletinMonth).toUpperCase()} VISA BULLETIN`);
     lines.push(
       d.bulletinRepeat
-        ? "Same bulletin as last week's issue; nothing has moved since. The next one is normally out mid-month."
+        ? "Same bulletin as last week's issue. Nothing has moved since, and the next one is normally out mid-month."
         : `Final action dates: ${m.advanced} advanced, ${m.held} unchanged, ${m.retrogressed} went backwards, of ${m.total} cells.`,
     );
     lines.push(`${SITE_URL}/visa-bulletin/${d.bulletinMonth}`);
@@ -328,7 +328,7 @@ export function composeText(d: DigestData): string {
   if (uscisIsNews(d)) {
     lines.push(`USCIS'S QUARTERLY MEDIANS, ${d.uscisQuarter}`);
     for (const m of d.uscisMedians ?? []) lines.push(`${m.label}: ${monthsLabel(m.medianMonths)} months to a decision`);
-    lines.push("Median months in the quarter, from USCIS's own workbook; the 80% figure on USCIS's processing-times page is a different measure.");
+    lines.push("Median months in the quarter, from USCIS's own workbook. The 80% figure on USCIS's processing-times page is a different measure.");
     lines.push(`${SITE_URL}/uscis-processing-times`);
     lines.push("");
   }

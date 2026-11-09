@@ -1,6 +1,6 @@
-# v2 Testing Guide
+# v2 testing guide
 
-## Quick Start
+## Quick start
 
 ```bash
 pnpm test:run      # Run all unit tests
@@ -11,9 +11,9 @@ pnpm test:all      # Run all tests
 
 ---
 
-## Recommended Dev Workflow
+## Recommended dev workflow
 
-Use the right command for the situation - you rarely need the full 10-minute suite:
+Use the right command for the situation. You rarely need the full 10-minute suite:
 
 | When | Command | Time | Tests |
 |------|---------|------|-------|
@@ -37,18 +37,18 @@ pnpm test:changed
 pnpm test src/hooks/useDebounce.test.ts
 ```
 
-**Tip:** Watch mode (`pnpm test`) is the most efficient - it detects file changes and only re-runs affected tests instantly.
+**Tip:** Watch mode (`pnpm test`) is the quickest. It detects file changes and re-runs only the affected tests right away.
 
 ---
 
-## Test Projects
+## Test projects
 
 The test suite is organized into **four Vitest projects** for optimal performance:
 
 | Project | Environment | Test Location | Timeout | Notes |
 |---------|-------------|---------------|---------|-------|
 | `unit` | jsdom | `src/lib/**`, `src/hooks/**` | 5s | `isolate: false` for speed |
-| `perm-unit` | jsdom | `convex/lib/perm/**`, `convex/lib/*.test.ts` | 5s | `isolate: false` - pure functions |
+| `perm-unit` | jsdom | `convex/lib/perm/**`, `convex/lib/*.test.ts` | 5s | `isolate: false`, pure functions |
 | `components` | jsdom | `src/components/**`, `src/app/**`, `src/emails/**` | 15s | Full isolation |
 | `convex` | edge-runtime | `convex/*.test.ts`, `convex/__tests__/**` | 15s | Integration tests only |
 
@@ -62,9 +62,9 @@ pnpm test:convex      # Convex integration tests only
 
 ---
 
-## Available Test Scripts
+## Available test scripts
 
-### Quick Reference
+### Quick reference
 
 | Command | Purpose | When to Use |
 |---------|---------|-------------|
@@ -72,44 +72,44 @@ pnpm test:convex      # Convex integration tests only
 | `pnpm test:perm` | PERM business logic only | Working on calculators/validators |
 | `pnpm check` | Typecheck, data scripts, and the tests affected since `origin/main` | Before a push |
 | `pnpm test:changed` | The vitest tests affected since `origin/main` | While working |
-| `pnpm test:run` | Full suite (all 5 projects) | When a change is broad; CI runs it on every push and the deploy waits for it |
+| `pnpm test:run` | Full suite (all 5 projects) | When a change is broad. CI runs it on every push and the deploy waits for it |
 
-### All Scripts
+### All scripts
 
 **Basic:**
-- `pnpm test` - Watch mode
-- `pnpm test:run` - Run all tests once
-- `pnpm test:watch` - Explicit watch mode
+- `pnpm test`: watch mode
+- `pnpm test:run`: run all tests once
+- `pnpm test:watch`: explicit watch mode
 
 **By Project:**
-- `pnpm test:unit` - Unit tests (src/lib, src/hooks)
-- `pnpm test:perm-unit` - PERM pure function tests (convex/lib/perm)
-- `pnpm test:components` - Component tests
-- `pnpm test:convex` - Convex integration tests
+- `pnpm test:unit`: unit tests (src/lib, src/hooks)
+- `pnpm test:perm-unit`: PERM pure function tests (convex/lib/perm)
+- `pnpm test:components`: component tests
+- `pnpm test:convex`: Convex integration tests
 
 **PERM-Specific:**
-- `pnpm test:perm` - All PERM calculators and validators
-- `pnpm test:validators` - Validation rules only
-- `pnpm test:calculators` - Deadline calculators only
+- `pnpm test:perm`: all PERM calculators and validators
+- `pnpm test:validators`: validation rules only
+- `pnpm test:calculators`: deadline calculators only
 
 **Smart Testing:**
-- `pnpm test:changed` - Tests that import a file changed since `origin/main` (a test that reads source as a file, like the src/ scanning gates, isn't picked; CI runs everything)
-- `pnpm test:related` - Tests related to changed files
+- `pnpm test:changed`: tests that import a file changed since `origin/main` (a test that reads source as a file, like the src/ scanning gates, isn't picked, but CI runs everything)
+- `pnpm test:related`: tests related to changed files
 
 **Coverage:**
-- `pnpm test:coverage` - Full coverage report
-- `pnpm test:coverage:perm` - PERM logic coverage only
+- `pnpm test:coverage`: full coverage report
+- `pnpm test:coverage:perm`: PERM logic coverage only
 
 **CI/E2E:**
-- `pnpm test:ci` - CI pipeline (JSON output + GitHub Actions)
-- `pnpm test:e2e` - E2E tests (Playwright)
-- `pnpm test:e2e:ui` - E2E with UI runner
-- `pnpm test:e2e:debug` - E2E debug mode
-- `pnpm test:all` - Unit + E2E
+- `pnpm test:ci`: CI pipeline (JSON output + GitHub Actions)
+- `pnpm test:e2e`: E2E tests (Playwright)
+- `pnpm test:e2e:ui`: E2E with UI runner
+- `pnpm test:e2e:debug`: E2E debug mode
+- `pnpm test:all`: unit + E2E
 
 ---
 
-## Unit Tests (Vitest + convex-test)
+## Unit tests (Vitest + convex-test)
 
 ```bash
 pnpm test          # Watch mode
@@ -122,7 +122,7 @@ pnpm test:coverage # With coverage
 - React component tests: `src/**/*.test.tsx`
 - Test utilities tests: `test-utils/*.test.ts`
 
-## E2E Tests (Playwright)
+## E2E tests (Playwright)
 
 ```bash
 pnpm test:e2e       # Headless (starts servers automatically)
@@ -139,7 +139,7 @@ pnpm test:e2e:debug # Debug mode
 4. Runs Playwright tests
 5. Cleans up servers
 
-## Test Utilities
+## Test utilities
 
 See `test-utils/convex.ts` for Convex testing helpers:
 
@@ -161,7 +161,7 @@ See `src/lib/testUtils.tsx` for React component testing helpers.
 
 ---
 
-## Timer Utilities
+## Timer utilities
 
 Use centralized timer utilities from `test-utils/timer-utils.ts` to eliminate duplicated fake timer boilerplate.
 
@@ -224,7 +224,7 @@ describe("FormTests", () => {
 });
 ```
 
-### Available Controls
+### Available controls
 
 All timer utilities return these controls:
 
@@ -242,7 +242,7 @@ All timer utilities return these controls:
 
 ## Coverage
 
-### CI Thresholds
+### CI thresholds
 
 In CI environments, coverage is enforced with these thresholds:
 
@@ -253,7 +253,7 @@ In CI environments, coverage is enforced with these thresholds:
 | Statements | 75% |
 | Branches | 70% |
 
-### Running Coverage
+### Running coverage
 
 ```bash
 pnpm test:coverage        # Full coverage report
@@ -261,16 +261,16 @@ pnpm test:coverage:perm   # PERM logic coverage only
 open coverage/index.html  # View HTML report
 ```
 
-### Coverage Output
+### Coverage output
 
 Coverage reports are generated in `./coverage/`:
-- `coverage/index.html` - Interactive HTML report
-- `coverage/lcov.info` - LCOV format (for CI tools)
-- `coverage/coverage-summary.json` - JSON summary
+- `coverage/index.html`: interactive HTML report
+- `coverage/lcov.info`: LCOV format (for CI tools)
+- `coverage/coverage-summary.json`: JSON summary
 
 ---
 
-## ⚠️ Critical Pitfalls to Avoid
+## Pitfalls to avoid
 
 ### 1. Never put `import.meta.glob` in convex/ directory
 
@@ -282,7 +282,7 @@ Error: import.meta unsupported at <anonymous> (../../convex/lib/someFile.ts)
 ```
 
 **Solution:** Keep test utilities using `import.meta.glob` OUTSIDE the `convex/` directory.
-That's why `test-utils/convex.ts` exists - it's excluded from Convex deployment.
+That's why `test-utils/convex.ts` exists. It's excluded from Convex deployment.
 
 ### 2. tsconfig.json must exclude test files
 
@@ -349,7 +349,7 @@ v2/
 └── run-e2e-tests.sh         # E2E test runner script
 ```
 
-## Current Test Counts
+## Current test counts
 
 | Project | Tests | Files | Description |
 |---------|-------|-------|-------------|
@@ -359,9 +359,9 @@ v2/
 | `convex` | ~1890 | 12 | Convex integration tests |
 | **Total** | **3603** | **118** | |
 
-### PERM Engine Test Breakdown
+### PERM engine test breakdown
 
-The PERM Engine is a comprehensive TypeScript library for PERM deadline calculations and validation with 100% test coverage:
+The PERM Engine is a TypeScript library for PERM deadline calculations and validation, with 100% test coverage:
 
 | Module | Tests | Description |
 |--------|-------|-------------|
@@ -398,8 +398,8 @@ The PERM Engine is a comprehensive TypeScript library for PERM deadline calculat
 
 ## Python ingest tests (CI, added to this doc 2026-09-07)
 
-The ingest scripts have no typechecker; pyflakes plus these self-contained
-tests are their gate, and `.github/workflows/test.yml` runs every one of them.
+The ingest scripts have no typechecker. Their gate is pyflakes plus these
+self-contained tests, and `.github/workflows/test.yml` runs every one of them.
 Run any of them locally with the miniconda python (the system `python3` is
 3.9 and lacks the libraries):
 

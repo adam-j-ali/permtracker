@@ -775,7 +775,7 @@ export const notifyOwner = internalAction({
         "",
         `Approve or decline on the admin page: ${SITE_URL}/admin#reviews`,
         "",
-        "Decline only spam or fake reviews, abuse, someone's personal information, or a review of something else; never a review for its stars.",
+        "Decline only spam or fake reviews, abuse, someone's personal information, or a review of something else. Never decline a review for its stars.",
         "You get this at most once a day.",
       ].join("\n");
       const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

@@ -39,11 +39,11 @@ export const subscribe = internalMutation({
   returns: result,
   handler: async (ctx, a) => {
     if (!isCategory(a.category) || !isCountry(a.country)) return { ok: false, message: "Pick a category and a country from the list." };
-    if (!parseSubscription(a.subscription)) return { ok: false, message: "The browser did not hand back a usable subscription." };
+    if (!parseSubscription(a.subscription)) return { ok: false, message: "The browser didn't hand back a usable subscription." };
     if (a.endpointHash.length !== 64 || a.ipHash.length !== 64) return { ok: false, message: "Malformed request." };
 
     const perIp = await checkAndRecordRateLimit(ctx, a.ipHash, "bulletin-push-subscribe", PER_IP);
-    if (!perIp.allowed) return { ok: false, throttled: true, message: "That is enough for one hour. Try again later." };
+    if (!perIp.allowed) return { ok: false, throttled: true, message: "That's enough for one hour. Try again later." };
 
     const existing = await ctx.db
       .query("bulletinPushAlerts")
@@ -89,7 +89,7 @@ export const stop = internalMutation({
         closed++;
       }
     }
-    return { ok: true, message: closed > 0 ? "This browser will not be notified of bulletins any more." : "This browser wasn't following a line.", closed };
+    return { ok: true, message: closed > 0 ? "This browser won't be notified of bulletins any more." : "This browser wasn't following a line.", closed };
   },
 });
 

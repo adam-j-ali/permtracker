@@ -129,7 +129,7 @@ export async function runExport(kind: ExportKind, url: URL, plan: ApiPlan): Prom
     if (plan2.kind === "noMatch") return { ok: false, status: 404, code: "not_found", message: NO_MATCH_MESSAGE[plan2.field] };
     const result = await unifiedSearch(plan2.args);
     const notes = [
-      result.truncated ? `More cases matched than this export holds (${limit.toLocaleString("en-US")}); narrow the search to reach the rest.` : null,
+      result.truncated ? `More cases matched than this export holds (${limit.toLocaleString("en-US")}). Narrow the search to reach the rest.` : null,
       result.capped ? "A source hit its own row limit, so these are the newest of a larger set." : null,
       result.unread.length ? `Part of the record couldn't be read just now and is missing from this export: ${result.unread.join(", ")}.` : null,
       plan2.dropped.length ? `Filters this search can't carry were left out: ${plan2.dropped.join(", ")}.` : null,
@@ -161,7 +161,7 @@ export async function runExport(kind: ExportKind, url: URL, plan: ApiPlan): Prom
     csv: entitiesToCsv(rows),
     cap,
     truncated: found.data.more,
-    note: found.data.more ? `More matched than this export holds (${limit.toLocaleString("en-US")}); search with more of the name.` : null,
+    note: found.data.more ? `More matched than this export holds (${limit.toLocaleString("en-US")}). Search with more of the name.` : null,
     meta: found.meta,
   };
 }

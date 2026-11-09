@@ -1,9 +1,9 @@
 # PERM Tracker design system
 
 **The middle ground, Oct 15 2026.** The calm system of Oct 14 with its character
-back: the few things that matter on a screen are solid objects, everything else
+back. The few things that matter on a screen are solid objects, and everything else
 sits quietly on the page. The owner's brief for the calm pass was "super simple,
-not crowded, readable, breathable"; on Oct 15 he found it "too plain" and asked
+not crowded, readable, breathable". On Oct 15 he found it "too plain" and asked
 for the live site's character without its clutter.
 
 The tokens live in `src/app/globals.css`, the rules are held by
@@ -32,15 +32,15 @@ When this file and the code disagree, the code is right and this file is stale.
    things that are round by nature: dots, spinners, the switch.
 6. **Sentence case everywhere.** No `uppercase`, no wide letter spacing.
 7. **Mono only for case numbers, dates, the board and figures** in tables and ticks.
-8. **One moment of motion at most.** Hover changes a colour or an underline; press
-   darkens a fill; nothing lifts or scales. The queue tape fills once on scroll.
+8. **One moment of motion at most.** Hover changes a colour or an underline, and press
+   darkens a fill. Nothing lifts or scales. The queue tape fills once on scroll.
 9. **The floor:** 16px body, 14px smallest text, 4.5:1 text contrast (3:1 large),
    3:1 for anything a reader must see to understand (control outlines, chart
    marks), 44px tap targets, full keyboard use, reduced motion honoured.
 
 ## Colour
 
-Light values; dark values are in the `.dark` block beside them.
+Light values here. The dark values are in the `.dark` block beside them.
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
@@ -72,8 +72,8 @@ Light values; dark values are in the `.dark` block beside them.
   so text on it turns white.
 - **Stage colours** (`--stage-pwd`, `--stage-recruitment`, `--stage-eta9089`,
   `--stage-i140`, `--stage-closed`, each with an `-ink` twin) mark a case's stage:
-  timelines, the case card and folder tab, the homepage's road and docket, the wage
-  request row that is the PWD stage. Never a spare colour, never a pale wash (the
+  timelines, the case card and folder tab, the homepage's road and docket, and the
+  wage request row (the PWD stage). They're never a spare colour or a pale wash (the
   fee breakdown's six fills are the one named exception).
 - **Hatching** (`bg-hatch`, `bg-hatch-reverse`) means "not decided yet", "not known"
   or "withheld". It takes the text colour: `text-muted-foreground` for a placeholder,
@@ -102,7 +102,7 @@ never black-weight. Prose runs at 68 characters at most (`max-w-prose` or
 ## Space and layout
 
 - Steps of 4, 8, 12, 16, 24, 32, 48, 64 and 96px. Blocks on a page sit 48px apart on
-  a phone and 64px on a desktop; cards have 16 or 24px inside.
+  a phone and 64px on a desktop. Cards have 16 or 24px inside.
 - Widths: text 68ch; single-job pages (the case lookup, calculators, articles,
   settings) 960px; wide pages (data, entity pages, the dashboard, cases, calendar)
   1200px.
@@ -117,8 +117,8 @@ never black-weight. Prose runs at 68 characters at most (`max-w-prose` or
 - **Phones with a notch** (Oct 24 2026): the page runs edge to edge (`viewport-fit=cover`), colours
   fill the screen, and words and buttons keep clear by the inset the device reports. A new wide
   column uses `mx-auto` with one of the listed widths (globals.css, "The device's own insets") or is
-  added to that list; a new control pinned to an edge adds `env(safe-area-inset-*)` to its offset
-  (`device-insets.test.ts`). Chrome on iPhone keeps pages inside the safe area anyway; leave its
+  added to that list. A new control pinned to an edge adds `env(safe-area-inset-*)` to its offset
+  (`device-insets.test.ts`). Chrome on iPhone keeps pages inside the safe area anyway, so leave its
   side strips alone.
 
 ## Parts
@@ -129,7 +129,7 @@ never black-weight. Prose runs at 68 characters at most (`max-w-prose` or
 | `choiceVariants({ on })` | `ui/choice.ts` | every row of choices (filters, views, tabs on a page): the chosen one has a green-ink edge on the tint and `aria-pressed`. |
 | step switch | `home/JobCodeTabs.tsx` | a few steps that each show one picture: one bar holding every choice, a single lime block that slides to the picked one, the rest plain and pressable (owner, Nov 2 2026: a column of cards, then a joined tab strip, didn't read as something you switch). Tabs pattern, left and right arrows. |
 | `.link` | `globals.css` | every text link: green ink, 1px underline, 2px on hover. Use `[&_a]:link` for links inside prose you don't render. |
-| `StatusBadge`, `ToneBadge` | `ui/badge.tsx` | a muted chip with a coloured square; DOL's status words as DOL prints them. |
+| `StatusBadge`, `ToneBadge` | `ui/badge.tsx` | a muted chip with a coloured square, holding DOL's status words as DOL prints them. |
 | `Input`, `Textarea`, `Switch`, `Checkbox` | `ui/` | 1px `--input` outline, 16px text at every width (iOS zooms below that). |
 | `Dialog`, `Popover`, `DropdownMenu`, `Tooltip` | `ui/` | the only things with a shadow; they fade in 120 to 150ms. |
 | `Skeleton`, `.skeleton-pulse` | `ui/skeleton.tsx`, `globals.css` | each page's own loading shape at measured heights, with a quiet sweep. |
@@ -152,10 +152,10 @@ work so the server and every browser print the same day
   numbers right-aligned in tabular mono. On a phone a table becomes a list of short
   cards (the case browsers: number and status, then who, then when), CSS only where
   the rows can be restacked, so they exist once.
-- **Charts:** a sentence-case title, at most four horizontal gridlines, one highlight
-  colour for the reader's own thing (their case, DOL's current month), status and
-  stage colours only where they mean something, a readout on hover, focus and tap
-  (`ChartTips`). SVG `<text>` carries a trailing space so labels don't glue.
+- **Charts:** a sentence-case title and at most four horizontal gridlines. One highlight
+  colour marks the reader's own thing (their case, DOL's current month). Status and
+  stage colours appear only where they mean something. A readout shows on hover, focus
+  and tap (`ChartTips`). SVG `<text>` carries a trailing space so labels don't glue.
 - **A month tick says it's a month:** "Jun ’25" from `monthTick` (`convex/lib/months.ts`);
   "Jun 25" reads as a day. A readout names a day with `shortDate`.
 - **Every figure carries its date** and names its source (`DataProvenance`).
@@ -169,17 +169,17 @@ Nothing animates on load or on scroll. What moves, and why:
 | Hover, press | colour or underline, 150ms | says the thing can be pressed |
 | Menus, dialogs, popovers | fade, 120 to 150ms | shows where a new layer came from |
 | Folds | the browser's own `<details>` | shows what opened |
-| Loading skeleton | a faint band, 2.8s cycle, starting after 0.4s | a fast load never sweeps; a slow one doesn't look frozen |
+| Loading skeleton | a faint band, 2.8s cycle, starting after 0.4s | a fast load never sweeps, and a slow one doesn't look frozen |
 | Spinner | inside a working button | the button keeps its label and width |
 
-`MotionConfig reducedMotion="user"` wraps the site (`shared-providers.tsx`); under
+`MotionConfig reducedMotion="user"` wraps the site (`shared-providers.tsx`). Under
 reduced motion the sweep stops and the skeleton keeps its still ground. The gate
 fails on `whileInView`, `whileHover`, `whileTap`, hover lifts, `transition-all`,
 `animate-bounce/ping/pulse` and any looping animation but the sweep and the spinner.
 
 ## Words
 
-Sentence case; sentences of 20 words or fewer; buttons start with a verb and run to
+Sentence case, and sentences of 20 words or fewer. Buttons start with a verb and run to
 four words at most ("Check", "Email me changes", "Add case"). One term per thing:
 case number, case alert, follow, queue alert, estimated decision; "wage request" in
 public, "PWD" in the app. Numbers with separators; "October 27, 2026" in sentences and
@@ -188,7 +188,7 @@ sits under its field, with a summary at the top of the form.
 
 ## Pictures
 
-**Image-led, by the owner's direction (Oct 21 2026):** a section leads with its picture and says little; its motion,
+**Image-led, by the owner's direction (Oct 21 2026):** a section leads with its picture and says little. Its motion,
 if any, is one scroll-scrubbed move the reader drives (a list that lights with its picture, a photo that grows, cards that
 stack), with the finished layout under reduced motion and a simple stack on phones. The patterns and which fit this site:
 `~/.claude/explanations/20261021_details_so/RELEVANCE-PERMTRACKER.md`. The case box stays above the fold.
@@ -225,8 +225,8 @@ drawings go and where they don't is `.planning/anatomy-figures-plan.md`. Every p
 
 - is labelled when it isn't the live thing ("Example case", "Demo account", "Sample firm");
 - carries its source and date in the credit line (`article-pictures.test.ts` fails on an uncredited figure or a repeat);
-- has one job: it sits beside the sentence it proves, cropped to the part that matters, with the spot to look at
-  marked, and a caption that says what to see;
+- has one job: it sits beside the sentence it proves, cropped to the part that matters. The spot to look at is
+  marked, and a caption says what to see;
 - has alt text saying what it shows and what it means, and any text inside it readable on a phone at 4.5:1;
 - is looked at full size before it ships, and taken again when the page it shows changes.
 
@@ -265,11 +265,11 @@ swapped by theme** (`FirmSiteSection`), never light and dark side by side.
 | `one-month-list.test.ts` | one list of month names |
 | `scroll-targets.test.ts` | every place the assistant can scroll to exists |
 | `no-controls-in-summary.test.ts` | nothing pressable inside a `<summary>` (a fold's toggle): a count that links goes inside the entry |
-| `scripts/audit_axe.mjs` | axe-core to WCAG 2.2 AA over rendered pages, both themes, 1440 and 390; exits 1 on anything serious. Run it against the dev server on production data |
+| `scripts/audit_axe.mjs` | axe-core to WCAG 2.2 AA over rendered pages, both themes, 1440 and 390. It exits 1 on anything serious. Run it against the dev server on production data |
 
 ## Storybook
 
-`pnpm storybook` (:6006). Every UI part has stories in light and dark; the app's real
+`pnpm storybook` (:6006). Every UI part has stories in light and dark. The app's real
 pages are drawn from a recorded sample firm under "Tour/App pages"
-(`src/components/tour/`). Theme is a class on `<html>`; a capture of the dark theme
+(`src/components/tour/`). Theme is a class on `<html>`, so a capture of the dark theme
 has to set it.
