@@ -55,4 +55,16 @@ describe("DecidedFilters", () => {
     expect(screen.getByRole("option", { name: "Firm 259 (1)" })).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("1 of 260 law firms");
   });
+
+  // The filter compares wages as yearly figures (applyDecidedFilters, comparableWage), so the boxes and the note
+  // say yearly: "wage at most 60" read as an hourly rate had dropped every hourly row.
+  it("says its wage bounds are yearly, as the filter compares them", () => {
+    // Arrange, Act
+    render(<DecidedFilters rows={[c({})]} value={{}} onChange={() => {}} />);
+    // Assert
+    expect(screen.getByLabelText("Yearly wage at least")).toBeInTheDocument();
+    expect(screen.getByLabelText("Yearly wage at most")).toBeInTheDocument();
+    expect(screen.queryByText(/Wages are as filed/)).toBeNull();
+    expect(screen.getByText(/an hourly wage counts as its yearly equivalent/)).toBeInTheDocument();
+  });
 });

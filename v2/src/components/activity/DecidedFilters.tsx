@@ -112,7 +112,7 @@ export function DecidedFilters({
         ))}{" "}
         <div>
           <label htmlFor={`${id}-wmin`} className={LABEL}>
-            Wage at least
+            Yearly wage at least
           </label>{" "}
           <input
             id={`${id}-wmin`}
@@ -130,7 +130,7 @@ export function DecidedFilters({
         </div>{" "}
         <div>
           <label htmlFor={`${id}-wmax`} className={LABEL}>
-            Wage at most
+            Yearly wage at most
           </label>{" "}
           <input
             id={`${id}-wmax`}
@@ -149,8 +149,8 @@ export function DecidedFilters({
       </div>{" "}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm leading-relaxed text-soft">
-          Filters run over the rows loaded for these dates. Wages are as filed,
-          so an hourly and a yearly figure compare as numbers.
+          Filters run over the rows loaded for these dates. Wages compare as yearly
+          figures: an hourly wage counts as its yearly equivalent.
           {missing.length > 0
             ? ` Not published for any loaded case: ${missing.join(", ")}. DOL prints the worker's citizenship and education only on its old form.`
             : ""}
