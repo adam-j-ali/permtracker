@@ -81,9 +81,17 @@ interface Row {
 
 let ensured: Promise<void> | null = null;
 
-/** Create the table once per process. Idempotent at the database too. */
+/** Create the table once per process. Idempotent at the database too. A failed create is tried again next time. */
 export function ensureUscisTable(): Promise<void> {
-  if (!ensured) ensured = exec(TABLE_DDL).then(() => undefined);
+  if (!ensured) {
+    ensured = exec(TABLE_DDL).then(
+      () => undefined,
+      (err: unknown) => {
+        ensured = null;
+        throw err;
+      },
+    );
+  }
   return ensured;
 }
 
