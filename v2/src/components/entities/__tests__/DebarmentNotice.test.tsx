@@ -8,7 +8,7 @@ import type { Debarment } from "@/lib/db/debarments";
  * The notice tells a reader, in a sentence, whether a sponsor is barred.
  *
  * It classified anything not in force TODAY as finished and said so in words:
- * "was barred from filing in the past; the period has ended". For a debarment
+ * "was barred from filing in the past. The period has ended." For a debarment
  * that has not started that is false in every clause, on the page of a sponsor
  * somebody may be about to sign with.
  *
@@ -66,7 +66,7 @@ describe("DebarmentNotice", () => {
       />,
     );
     const body = document.body.textContent ?? "";
-    expect(body).toMatch(/the period has ended/);
+    expect(body).toMatch(/The period has ended/);
     expect(body).toMatch(/\(ended\)/);
   });
 

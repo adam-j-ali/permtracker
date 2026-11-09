@@ -26,7 +26,7 @@ describe("/h1b-lottery-odds", () => {
   it("labels the wage-level odds as DHS's estimate, with the rule's citation", () => {
     expect(text).toContain("61.2%");
     expect(text).toContain("90 FR 60864");
-    expect(text).toContain("not a count");
+    expect(text).toMatch(/n't a count/);
   });
 
   it("keeps table cells apart in textContent (the glued-text class)", () => {

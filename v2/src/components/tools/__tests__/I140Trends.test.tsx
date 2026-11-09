@@ -74,7 +74,7 @@ describe("I140Trends", () => {
     // 580 denied of 23,000 decided = 2.52%. Over 24,500 receipts it would
     // read 2.37%, and that figure would move whenever USCIS decided less.
     expect(screen.getByText("2.52%")).toBeInTheDocument();
-    expect(screen.getByText(/not over\s+receipts/)).toBeInTheDocument();
+    expect(screen.getByText(/A rate over\s+receipts/)).toBeInTheDocument();
   });
 
   it("takes pending from the newest quarter and says so", () => {
