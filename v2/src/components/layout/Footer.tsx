@@ -19,14 +19,20 @@
 import { Fragment } from "react";
 import { IntentLink } from "@/components/ui/intent-link";
 
-import { ButterflyIcon, LinkedinLogoIcon, XLogoIcon } from "@phosphor-icons/react";
+import { ButterflyIcon, FacebookLogoIcon, LinkedinLogoIcon, XLogoIcon, YoutubeLogoIcon } from "@phosphor-icons/react";
 import ThemeToggle from "./ThemeToggle";
 import { AnalyticsSwitch } from "./AnalyticsSwitch";
 import { NOT_LEGAL_SERVICES } from "@/lib/constants/about";
 import { SOCIAL_LINKS } from "@/lib/constants/externalLinks";
 import { APP_FOOTER, FOOTER_COLUMNS, FOOTER_LEGAL } from "@/lib/siteMap";
 
-const SOCIAL_ICONS = { twitter: XLogoIcon, linkedin: LinkedinLogoIcon, bluesky: ButterflyIcon } as const;
+const SOCIAL_ICONS = {
+  twitter: XLogoIcon,
+  linkedin: LinkedinLogoIcon,
+  bluesky: ButterflyIcon,
+  youtube: YoutubeLogoIcon,
+  facebook: FacebookLogoIcon,
+} as const;
 
 const LINK = "text-soft transition-colors hover:text-foreground";
 
