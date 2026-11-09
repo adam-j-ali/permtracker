@@ -107,6 +107,7 @@ export type DataSection =
   | "i485-position"
   | "fees"
   | "ead-extension"
+  | "uscis-inquiry"
   | "lottery-calculator"
   | "six-year-limit"
   | "cspa-age"
@@ -176,6 +177,7 @@ export const SECTIONS: DataNavSection[] = [
   t("rfi-deadline", "PERM", "RFI deadline", "/tools/rfi-deadline", "Thirty days from the date on DOL's letter."),
 
   s("uscis-times", "I-140", "USCIS processing times", "/uscis-processing-times"),
+  t("uscis-inquiry", "I-140", "USCIS case inquiry date", "/tools/uscis-case-inquiry", "When USCIS decides cases like yours, and when you can ask."),
   t("i140-wait", "I-140", "I-140 wait", "/tools/i140-calculator", "Petitions waiting against how fast USCIS clears them."),
   t("i140-trends", "I-140", "I-140 trends", "/tools/i140-trends", "Petitions received, approved and denied, by quarter."),
   s("awaiting-visa", "I-140", "I-140s awaiting a visa", "/i140-awaiting-visa"),

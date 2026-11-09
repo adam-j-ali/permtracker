@@ -69,6 +69,7 @@ export const PAGE_CARD_ALT = {
   "perm-by-the-numbers": "PERM by the numbers: the totals DOL's own case records add up to, from cases waiting by stage to holds, decisions per day and new filings.",
   "perm-recruitment": "Where PERM employers recruit, and when. Sunday ads, the newspapers by state, additional steps and the notice of filing, from DOL's own records.",
   "lca-wage-sources": "Where H-1B prevailing wages come from. The split between DOL's OES data, private salary surveys and union contracts by fiscal year, from DOL's LCA files.",
+  "uscis-case-inquiry": "USCIS case inquiry date calculator. When cases like yours were decided, and the day USCIS will take a question about yours, from its own posted times.",
   "ead-extension": "Was my work permit extended? Whether a renewal automatically extended an expiring EAD, and to when, from 8 CFR 274a.13.",
   "wage-levels": "Prevailing wage levels by occupation and area. DOL's four wage levels for an occupation in a metro or non-metro area, read live from the OFLC wage search.",
   "about": "About PERM Tracker. A free, independent site on DOL's own data, run by an immigration attorney.",
