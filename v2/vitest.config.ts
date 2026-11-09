@@ -54,6 +54,7 @@ const ISOLATED_UNIT_FILES = [
   // Mocks the database client so a group read can fail on cue (Nov 9 2026).
   "src/lib/db/__tests__/groups-failed-read.test.ts",
   "src/lib/db/__tests__/estimateReadsRecorded.test.ts",
+  "src/lib/db/__tests__/seasonalScoreFailedRead.test.ts",
   // Added 2026-11-04: mocks the database client under consularPosts; in the shared pool a file that
   // loaded consularPosts first left the real client in place (CI red on 714e620f).
   "src/lib/db/__tests__/embassyNotices.test.ts",

@@ -48,7 +48,6 @@ const DB_REMAINING: Record<string, number> = {
   "src/lib/db/monthDetail.ts": 1,
   "src/lib/db/nameSuggest.ts": 2,
   "src/lib/db/openData.ts": 1,
-  "src/lib/db/predictions.ts": 8,
   "src/lib/db/publicData.ts": 1,
   "src/lib/db/recordCounts.ts": 2,
   "src/lib/db/reference.ts": 8,

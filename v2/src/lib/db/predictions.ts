@@ -252,22 +252,26 @@ export async function predictSeasonal(recordedOn: string): Promise<NewPrediction
                            WHERE e.case_number = s.case_number AND e.program = 'seasonal')
         ORDER BY random() LIMIT ?`,
       [prefix, `${prefix.slice(0, -1)}.`, since, SEASONAL_PER_FORM],
-    ).catch(() => []);
+    ).catch(softFail("predictions.predictSeasonal.pick", [] as { case_number: string; filed: string }[]));
     picked.push(...got);
   }
   if (picked.length === 0) return [];
   const nums = picked.map((p) => p.case_number);
   const marks = nums.map(() => "?").join(",");
-  const [postings, records] = await Promise.all([
+  // Each case is recorded once, so it's recorded with its inputs or not at all that day: one dated without its
+  // first day of work would stay dated by the wrong clock for good. The next run picks it again.
+  const inputs = await Promise.all([
     rows<{ case_number: string; begin_date: string | null }>(
       `SELECT case_number, begin_date FROM seasonal_postings WHERE case_number IN (${marks})`,
       nums,
-    ).catch(() => []),
+    ),
     rows<{ case_number: string; begin_date: string | null }>(
       `SELECT case_number, begin_date FROM seasonal_cases WHERE case_number IN (${marks})`,
       nums,
-    ).catch(() => []),
-  ]);
+    ),
+  ]).catch(softFail("predictions.predictSeasonal.firstDays", null));
+  if (!inputs) return [];
+  const [postings, records] = inputs;
   const begin = new Map<string, string>();
   // The page reads the posting first, then the published record.
   for (const r of records) if (r.begin_date) begin.set(r.case_number, r.begin_date.slice(0, 10));
@@ -275,15 +279,15 @@ export async function predictSeasonal(recordedOn: string): Promise<NewPrediction
   // H-2B applications in DOL's assignment groups are dated by their group, as
   // the page dates them.
   const h2b = nums.filter((n) => n.startsWith("H-400-"));
-  const [groupRows, groupTiming] = h2b.length
-    ? await Promise.all([
-        rows<{ case_number: string; peak: string; grp: string }>(
-          `SELECT case_number, peak, grp FROM h2b_groups WHERE case_number IN (${h2b.map(() => "?").join(",")})`,
-          h2b,
-        ).catch(() => []),
-        getH2bGroupTiming().catch(softFail("predictions.getH2bGroupTiming", null)),
-      ])
-    : [[], null];
+  const groupRead = h2b.length
+    ? await rows<{ case_number: string; peak: string; grp: string }>(
+        `SELECT case_number, peak, grp FROM h2b_groups WHERE case_number IN (${h2b.map(() => "?").join(",")})`,
+        h2b,
+      ).catch(softFail("predictions.predictSeasonal.h2bGroups", null))
+    : [];
+  if (!groupRead) return [];
+  const groupRows = groupRead;
+  const groupTiming = h2b.length ? await getH2bGroupTiming().catch(softFail("predictions.getH2bGroupTiming", null)) : null;
   const groupOf = new Map(groupRows.map((r) => [r.case_number, r]));
   const out: NewPrediction[] = [];
   for (const c of picked) {
@@ -326,7 +330,7 @@ export async function predictSeasonal(recordedOn: string): Promise<NewPrediction
  * later would already know the bulletin hadn't come out by then.
  */
 export async function predictBulletinRelease(recordedOn: string): Promise<NewPrediction[]> {
-  const held = await one<{ m: string | null }>("SELECT MAX(bulletin_month) AS m FROM visa_bulletins").catch(() => null);
+  const held = await one<{ m: string | null }>("SELECT MAX(bulletin_month) AS m FROM visa_bulletins").catch(softFail("predictions.predictBulletinRelease", null));
   if (!held?.m) return [];
   const bulletin = shiftMonth(String(held.m), 1);
   const est = releaseEstimate(bulletin, BULLETIN_FIRST_CAPTURES);
@@ -399,7 +403,7 @@ export async function predictOurs(today: string): Promise<{
           AND s.current_status = 'RFI ISSUED' AND s.is_final = 0
         GROUP BY e.case_number ORDER BY random() LIMIT ?`,
       [DIRECT_EVENT_SOURCE, since, RFI_PER_DAY],
-    ).catch(() => []);
+    ).catch(softFail("predictions.predictOurs.rfiCases", [] as { case_number: string; at: number | string; filing_date: string | null }[]));
     for (const x of rfiRows) {
       if (!x.filing_date) continue;
       const c = { filingDate: x.filing_date, status: "RFI ISSUED", rfiEnteredOn: easternDay(Number(x.at)) };
@@ -624,7 +628,10 @@ export async function gradeOpenPredictions(): Promise<{ graded: number; open: nu
         const pub = await rows<{ case_number: string; case_status: string; decision_date: string | null }>(
           `SELECT case_number, case_status, decision_date FROM seasonal_cases WHERE case_number IN (${fq})`,
           finals.map((f) => f.case_number),
-        ).catch(() => []);
+        ).catch(softFail("predictions.gradeOpenPredictions.seasonalCases", null));
+        // Unread, a case DOL's file settled would be graded with its pending word, which never counts and is never
+        // graded again: leave the chunk open for the next run.
+        if (!pub) continue;
         for (const r of pub) published.set(r.case_number, { status: r.case_status, decided: r.decision_date });
       }
       for (const f of finals) {
@@ -757,9 +764,10 @@ export async function writeScorecardDocs(today: string): Promise<{ rows: number 
   const bulletinDoc = await one<{ json: string }>(
     `SELECT json FROM perm_docs WHERE key = 'bulletin_backtest'`,
   ).catch(softFail("predictions.one", null));
+  // No catch: unread, every backtest-staleness alarm below would go quiet for the run. The run fails instead.
   const ages = await rows<{ key: string; computed_at: number | string }>(
     `SELECT key, computed_at FROM perm_docs WHERE key IN ('estimator_backtest', 'seasonal_backtest', 'pwd_backtest')`,
-  ).catch(() => []);
+  );
   const ageOf = (key: string) => {
     const r = ages.find((a) => a.key === key);
     return r ? Number(r.computed_at) : null;
