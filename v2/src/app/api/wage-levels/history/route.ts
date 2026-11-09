@@ -44,7 +44,8 @@ export async function GET(req: Request) {
       },
       { headers: { "Cache-Control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400" } },
     );
-  } catch {
+  } catch (e) {
+    console.error("[wage-levels/history] read failed", e);
     return NextResponse.json({ ok: false, message: "The stored wage tables couldn't be read just now." }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
 }

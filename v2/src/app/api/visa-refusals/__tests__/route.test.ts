@@ -48,10 +48,13 @@ describe("GET /api/visa-refusals", () => {
     expect(refusalsYear).not.toHaveBeenCalled();
   });
 
-  it("says a failed read is one, never an empty year", async () => {
+  it("says a failed read is one, never an empty year, and logs why", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     refusalSummary.mockRejectedValue(new Error("fetch failed"));
     const res = await get("fy=2024");
     expect(res.status).toBe(503);
     expect(res.headers.get("Cache-Control")).toBe("no-store");
+    expect(logged).toHaveBeenCalledWith(expect.stringContaining("[visa-refusals]"), expect.objectContaining({ message: "fetch failed" }));
+    logged.mockRestore();
   });
 });
