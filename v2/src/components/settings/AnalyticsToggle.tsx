@@ -45,9 +45,12 @@ export default function AnalyticsToggle() {
         analytics.consentForAccount();
       }
     } catch (error) {
-      if (!checked) analytics.optIn();
+      // A reader who asked for no tracking is never tracked again because a save failed: this browser stays off,
+      // and only the account's setting, for the other devices, waits on a retry.
       handleOperationError(error, {
-        userMessage: "Couldn’t save the analytics setting. Try again.",
+        userMessage: checked
+          ? "Couldn’t save the analytics setting. Try again."
+          : "This browser has stopped sending analytics, but the setting for your account didn’t save. Try again.",
       });
     } finally {
       setIsUpdating(false);
