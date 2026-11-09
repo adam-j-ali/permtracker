@@ -317,3 +317,25 @@ charges anyone.
   number or email address; a link to a case lookup had carried its case number in the elements chain's href.
   posthog-js's own `mask_all_text` wasn't used: the SDK copies it into the click recorder through an internal
   refresh, so flipping it per page can't be trusted. `APP_SEGMENTS` is held to `src/app/(authenticated)` by test.
+
+## Nov 9 2026: five ways a withheld name could still print, closed
+
+A review of the masker (`convex/lib/withheldNames.ts`) found names withheld at their owner's request still reachable:
+- A row whose own `kind` column held something other than an entity word (SAM's exclusion type,
+  "Prohibition/Restriction") switched masking off for that row's name. Now only a kind known to name something else
+  (occupation, place, newspaper, program: the shared `NON_ENTITY` list) does; any other value falls back to the page's kind.
+- Text matching built its pattern from the name's key, which spells "&" as "and" and merges initials ("J Q" is "jq"),
+  so "Smith & Jones" and "J. Q. Sample" in prose (a BALCA title in the newsletter) never matched. The pattern now
+  takes "and" as optional and a two- or three-letter word as initials with or without spaces and periods.
+- The first-word shortcut in `match` compared accented text against unaccented keys, and a single initial against
+  merged ones. It now strips accents and lets a one-letter first word through.
+- OSHA's and WHD's `estab_name` and `trade_name` columns counted as "other" text (exact match only). They're read
+  as the employer's now.
+- The signed-in "Is this your DOL case?" search (`convex/appCaseMatch.ts`) searched by the first two words of a
+  name, so it never saw a whole withheld name and returned the label with its cases. It now returns nothing for a
+  withheld employer.
+
+And the deploy's Build step stops when either masking secret is empty: a secret that doesn't exist reads as an empty
+string, so after a move to a new repository the build would have prerendered every withheld name (both secrets were
+recreated on Nov 7, 8:31 PM, so it didn't happen). Tests: `withheldNames.test.ts` ("the spellings and rows that slipped
+past the masker"), `convex/__tests__/appCaseMatch.test.ts`, `scripts/test_withhold.py`. Each new test fails on the old code.

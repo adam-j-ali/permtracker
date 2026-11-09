@@ -16,6 +16,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 import { rows } from "./lib/publicMirror";
+import { maskerForEnv } from "./lib/withheldNames";
 import {
   dateWindow,
   employerLike,
@@ -52,6 +53,8 @@ export const suggestDolCase = action({
 
     // Cheap shape gates before the read.
     if (employerName.length > 200 || !/^\d{4}-\d{2}-\d{2}$/.test(filingDate)) return EMPTY;
+    // A withheld employer's name finds nothing: its cases under the label would tie the name to it.
+    if (maskerForEnv(process.env).isWithheldQuery("employer", employerName)) return EMPTY;
     const like = employerLike(employerName);
     if (!like) return EMPTY;
 
