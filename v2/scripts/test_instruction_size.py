@@ -7,7 +7,8 @@ Every Claude Code session in this project loads ../CLAUDE.md and v2/CLAUDE.md
 before anything else. By Nov 7 2026 the two had grown to 972 KB (10,742 lines
 in v2 alone) because every session appended its lessons there, and a reopened
 session failed with "Prompt is too long". The history moved word for word to
-docs/notes/, one file per area. This test keeps it there: a lesson goes in its
+docs/notes/, one file per area, which stays on the owner's machine (gitignored
+since Nov 9 2026); in a checkout without it, only the sizes are checked. This test keeps it there: a lesson goes in its
 notes file, and only a standing decision or a rule every change follows goes
 in a CLAUDE.md, one line each.
 """
@@ -52,6 +53,13 @@ def main() -> int:
 
     files = sorted(p.name for p in NOTES.glob("*.md") if p.name != "README.md")
     print(f"notes files: {len(files)}")
+    if not files:
+        # The notes are gitignored (the repository is public), so a fresh
+        # checkout, CI's included, holds the two CLAUDE.md files alone.
+        print("the notes aren't in this checkout; only the sizes are checked")
+        for f in fails:
+            print("FAIL", f)
+        return 1 if fails else 0
     if len(files) < 9:
         fails.append(f"only {len(files)} notes files in {NOTES.relative_to(ROOT)}; expected the ten areas")
 

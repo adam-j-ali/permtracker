@@ -7,10 +7,9 @@
  * month; export rows; live lookups) and the pages that print the limits, so
  * they can't disagree.
  *
- * Free is the plan every account starts on. Plus is the one paid plan (owner's
- * call, Oct 2 2026: one plan first, a price set when billing opens, priced on
- * the site once billing exists). Until billing exists an account reaches Plus
- * only when set by hand (apiKeys.setPlan), for comped accounts.
+ * Free is the plan every account starts on. Plus is the one paid plan, priced
+ * on the site once billing exists. Until then an account reaches Plus only
+ * when set by hand (apiKeys.setPlan), for comped accounts.
  *
  * THE PAYWALL SWITCH. `PAYWALL_ENFORCED` on the Convex deployment, unset by
  * default. While it's off every account gets Plus's limits and features

@@ -128,3 +128,13 @@ incident-report-*/
 .planning/state-copies/
 .planning/bulletin-copies/
 .planning/iv-tool-copies/
+
+# Private notes: kept on this machine, never in the public repository (Nov 9 2026)
+/CLAUDE.local.md
+/.private/
+/.planning/*
+!/.planning/codebase/
+!/.planning/github-audit-history.md
+/.seo-audit-*/
+/v2/.planning/
+/v2/docs/notes/
