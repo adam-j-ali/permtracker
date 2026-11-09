@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { softFail } from "@/lib/softRead";
 import Link from "next/link";
 
 import { getFreshness } from "@/lib/db/publicData";
@@ -35,7 +36,7 @@ export const revalidate = 21600;
 
 
 export default async function LayoffsPage() {
-  const [matched, totals, freshness] = await Promise.all([matchedWarn(), warnTotals(), getFreshness().catch(() => ({}) as Record<string, { asOf: string | null } | undefined>)]);
+  const [matched, totals, freshness] = await Promise.all([matchedWarn(), warnTotals(), getFreshness().catch(softFail("layoffs/page.getFreshness", {} as Record<string, { asOf: string | null } | undefined>))]);
   const asOf = freshness["warn-notices"]?.asOf ?? null;
 
   return (

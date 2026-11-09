@@ -41,6 +41,7 @@
  */
 
 import type { Metadata } from "next";
+import { softFail } from "@/lib/softRead";
 import { withSocialCard } from "@/lib/socialCard";
 import { Fragment } from "react";
 import Link from "next/link";
@@ -149,7 +150,7 @@ export default async function StagePage({
   const [stages, cohorts, fresh] = await Promise.all([
     getReviewStages(),
     getStageCohorts([status]),
-    getFreshness().catch(() => ({}) as Record<string, { asOf: string | null }>),
+    getFreshness().catch(softFail("perm-rfi-audit/[stage]/page.getFreshness", {} as Record<string, { asOf: string | null }>)),
   ]);
 
   const row = stages.find((s) => s.status === status) ?? null;

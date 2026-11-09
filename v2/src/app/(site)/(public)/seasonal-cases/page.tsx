@@ -77,8 +77,9 @@ export default async function SeasonalCasesPage() {
   const [summary, published, ...decided] = await Promise.all([
     getSeasonalSummary(),
     getSeasonalPublishedSummary().catch(softFail("seasonal-cases/page.getSeasonalPublishedSummary", [])),
-    // A series that can't be read draws nothing; the page never fails for it.
-    ...DECIDED_SERIES.map((s) => getDailyDecisions(s.source).catch(() => [] as DailyDecisions[])),
+    // No catch: one visa's series missing would make the combined chart and its rates leave that visa out, so a
+    // failed read fails the render and the last good page stays.
+    ...DECIDED_SERIES.map((s) => getDailyDecisions(s.source)),
   ]);
   // Each visa's outcomes over the whole file: the chart above them carries the
   // rate, so one rate is printed and the cards can't disagree with it.
