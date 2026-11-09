@@ -30,6 +30,12 @@ def check(ok: bool, msg: str) -> None:
 LINKS = "".join(f'<a href="/p{i}">Page {i}</a>' for i in range(25))
 
 
+class Server(http.server.ThreadingHTTPServer):
+    # The audit fetches 8 pages at once; the default listen queue of 5 refused one when the machine was busy
+    # (pnpm check, Nov 8 2026), and a refused connection reads as a dead link.
+    request_queue_size = 64
+
+
 def site(missing: str | None, busy: str | None) -> http.server.ThreadingHTTPServer:
     """Three source pages linking 25 good pages, plus one missing and one busy page."""
     extra = "".join(f'<a href="{p}">Other page</a>' for p in (missing, busy) if p)
@@ -58,7 +64,7 @@ def site(missing: str | None, busy: str | None) -> http.server.ThreadingHTTPServ
             self.end_headers()
             self.wfile.write(body.encode())
 
-    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    srv = Server(("127.0.0.1", 0), Handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     return srv
 
