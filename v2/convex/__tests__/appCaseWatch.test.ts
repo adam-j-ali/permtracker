@@ -408,4 +408,55 @@ describe("the watchable read is bounded (collectWatchableCases)", () => {
       { caseId: live2, userId: u, caseNumber: "P-100-26100-444444", liveStatus: "IN PROCESS" },
     ]);
   });
+
+  it("keeps watching when an account has two profile rows, instead of failing the read for everyone", async () => {
+    const t = createTestContext();
+    const u = await makeUser(t);
+    await makeProfile(t, u);
+    await makeProfile(t, u);
+    const c = await makeCase(t, u, { caseNumber: "G-100-26100-111111" });
+    const res = await t.query(internal.appCaseWatch.watchableCases, {});
+    expect(res.rows.map((r) => r.caseId)).toEqual([c]);
+  });
+
+  it("tells the owner, once a day, when the watch stops at its cap and leaves cases out", async () => {
+    const t = createTestContext();
+    const u = await makeUser(t);
+    const { APP_WATCH_CAP } = await import("../appCaseWatch");
+    await t.run(async (ctx) => {
+      const now = Date.now();
+      for (let i = 0; i <= APP_WATCH_CAP; i++) {
+        await ctx.db.insert("cases", {
+          userId: u,
+          employerName: "ACME Robotics",
+          positionTitle: "Software Engineer",
+          beneficiaryIdentifier: "A. Nguyen",
+          caseNumber: `G-100-26100-${String(100000 + i)}`,
+          caseStatus: "recruitment",
+          progressStatus: "working",
+          rfiEntries: [],
+          rfeEntries: [],
+          notes: [],
+          isProfessionalOccupation: false,
+          isFavorite: false,
+          priorityLevel: "normal",
+          tags: [],
+          calendarSyncEnabled: true,
+          documents: [],
+          recruitmentApplicantsCount: 0,
+          additionalRecruitmentMethods: [],
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    });
+    const recorded = () =>
+      t.run(async (ctx) =>
+        (await ctx.db.system.query("_scheduled_functions").collect()).filter((j) => j.name.includes("systemErrors")),
+      );
+    expect((await sweep(t)).capped).toBe(true);
+    expect(await recorded()).toHaveLength(1);
+    await sweep(t);
+    expect(await recorded(), "a second run the same day stays quiet").toHaveLength(1);
+  }, 120_000);
 });
