@@ -311,6 +311,67 @@ describe("the HTTP routes", () => {
     expect(await charges(t)).toHaveLength(0);
   });
 
+  describe("the consulate the report names", () => {
+    const originalFetch = global.fetch;
+    const cell = (v: string) => ({ type: "text", value: v });
+    /** The mirror's two post tables: the scheduling tool's names and the issuance tables' names. */
+    function stubPosts(answer: "ok" | "down") {
+      global.fetch = (async (_url: unknown, init?: { body?: string }) => {
+        if (answer === "down") return new Response("down", { status: 502 });
+        const body = JSON.parse(init?.body ?? "{}") as { requests: { type: string; stmt?: { sql: string } }[] };
+        const results = body.requests.map((req) => {
+          if (req.type !== "execute" || !req.stmt) return { type: "ok", response: { type: "close" } };
+          const scheduling = req.stmt.sql.includes("FROM iv_scheduling");
+          const cols = scheduling ? ["post_key", "post"] : ["group_key", "key"];
+          const found = scheduling ? [["mumbai", "Mumbai (Bombay)"]] : [["rio de janeiro", "Rio de Janeiro"]];
+          return {
+            type: "ok",
+            response: { type: "execute", result: { cols: cols.map((name) => ({ name })), rows: found.map((r) => r.map(cell)) } },
+          };
+        });
+        return new Response(JSON.stringify({ results }), { status: 200 });
+      }) as unknown as typeof fetch;
+    }
+    beforeEach(() => {
+      vi.stubEnv("DATABASE_URL", "libsql://example.turso.io");
+      vi.stubEnv("DATABASE_AUTH_TOKEN", "stub-token");
+    });
+    afterEach(() => {
+      global.fetch = originalFetch;
+    });
+    const report = (post: string) => ({ post, key: "c".repeat(64), category: "h1b", outcome: "waiting", scheduledOn: daysAgo(3) });
+
+    it("refuses a consulate this site doesn't list, before anything is stored or charged", async () => {
+      const t = createTestContext();
+      stubPosts("ok");
+      const res = await post(t, "/consular-report/save", report("made-up-post"));
+      expect(res.status).toBe(400);
+      expect(await res.json()).toMatchObject({ ok: false, message: "That isn't a consulate this site lists." });
+      expect(await rows(t)).toHaveLength(0);
+      expect(await charges(t)).toHaveLength(0);
+    });
+
+    it("takes a consulate named by either of State's tables", async () => {
+      const t = createTestContext();
+      stubPosts("ok");
+      expect((await post(t, "/consular-report/save", report("mumbai"))).status).toBe(200);
+      expect((await post(t, "/consular-report/save", { ...report("rio-de-janeiro"), key: "d".repeat(64) })).status).toBe(200);
+      expect((await rows(t)).map((r) => r.post).sort()).toEqual(["mumbai", "rio-de-janeiro"]);
+    });
+
+    it("lets the report through when the list can't be read, and records the failed read", async () => {
+      // Reports post at once and are moderated after: a lost report is worse than a junk slug removed later.
+      const t = createTestContext();
+      stubPosts("down");
+      expect((await post(t, "/consular-report/save", report("made-up-post"))).status).toBe(200);
+      expect(await rows(t)).toHaveLength(1);
+      const recorded = await t.run(async (ctx) =>
+        (await ctx.db.system.query("_scheduled_functions").collect()).filter((j) => j.name.includes("systemErrors")),
+      );
+      expect(recorded).toHaveLength(1);
+    });
+  });
+
   it("answers a refusal by a limit with 429", async () => {
     const t = createTestContext();
     await fillRateWindow(t, "all", "consular-report-global", GLOBAL_BUDGET.limit);

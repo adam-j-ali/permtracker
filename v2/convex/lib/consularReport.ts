@@ -164,8 +164,37 @@ export const YES_NO_UNSURE = [
 ] as const;
 export type YesNoUnsureId = (typeof YES_NO_UNSURE)[number]["id"];
 
-/** A consulate page's address segment (src/lib/consular/scheduling.ts `postSlug`). */
+/** A consulate page's address segment, the shape `postSlug` makes. */
 export const POST_SLUG = /^[a-z0-9-]{2,60}$/;
+
+// A consulate's page name and address segment, from State's names for it: one rule for the site's pages
+// (src/lib/consular/scheduling.ts re-exports both) and for the report route's check that a report names a
+// consulate the site lists (convex/http.ts, /consular-report/save).
+
+/** A post's page address: State's name, plain. */
+export function postSlug(name: string): string {
+  return name
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/\s*\(.*?\)/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** State's issuance tables call some posts by another name than the one people use. */
+const DISPLAY: Record<string, string> = { "ait taipei": "Taipei" };
+
+/**
+ * A post's name for the page: State's issuance spelling when the post issues visas (it's the
+ * tidier one: "Rio de Janeiro", "Port-au-Prince"), else the scheduling table's, without its
+ * parenthetical ("Mumbai (Bombay)").
+ */
+export function postName(key: string, issuanceLabel: string | null | undefined, toolName: string | null | undefined): string {
+  if (DISPLAY[key]) return DISPLAY[key];
+  if (issuanceLabel) return issuanceLabel;
+  return (toolName ?? key).replace(/\s*\(.*?\)/g, "").trim();
+}
 
 /** Every figure prints only over at least this many reports: the timelines' floor. */
 export const MIN_REPORTS = MIN_CASE_REPORTERS;

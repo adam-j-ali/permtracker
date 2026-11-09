@@ -41,27 +41,5 @@ export function behindLabel(cell: IvCell | null | undefined, asOf: string): stri
   return `${Number.isInteger(years) ? years : years.toFixed(1)} years back`;
 }
 
-/** A post's page address: State's name, plain. */
-export function postSlug(name: string): string {
-  return name
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/\s*\(.*?\)/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-/** State's issuance tables call some posts by another name than the one people use. */
-const DISPLAY: Record<string, string> = { "ait taipei": "Taipei" };
-
-/**
- * A post's name for the page: State's issuance spelling when the post issues visas (it's the
- * tidier one: "Rio de Janeiro", "Port-au-Prince"), else the scheduling table's, without its
- * parenthetical ("Mumbai (Bombay)").
- */
-export function postName(key: string, issuanceLabel: string | null | undefined, toolName: string | null | undefined): string {
-  if (DISPLAY[key]) return DISPLAY[key];
-  if (issuanceLabel) return issuanceLabel;
-  return (toolName ?? key).replace(/\s*\(.*?\)/g, "").trim();
-}
+/** A post's page address and name: one rule, shared with Convex (convex/lib/consularReport.ts). */
+export { postName, postSlug } from "@convex/lib/consularReport";

@@ -2,8 +2,8 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { TimelineWire } from "./communityTimelines";
-import type { ReportWire } from "./consularReports";
-import { REPORT_FIELD_KEYS } from "./lib/consularReport";
+import { consulateListed, type ReportWire } from "./consularReports";
+import { POST_SLUG, REPORT_FIELD_KEYS } from "./lib/consularReport";
 import { auth } from "./auth";
 import { recordError } from "./lib/errorRecording";
 import { isLiveContactEventType } from "./marketingWebhook";
@@ -1991,6 +1991,18 @@ http.route({
       if (x === undefined || x === null || x === "") continue;
       if (typeof x !== "string" || x.length > 24) return json({ ok: false, message: "Malformed request." }, 400);
       input[k] = x;
+    }
+    // A report names a consulate the site lists, checked after the cheap shape tests. When the list can't be
+    // read, the report goes through and the owner is told: reports post at once and are moderated after, so a
+    // lost report is worse than a junk slug the moderator removes.
+    if (POST_SLUG.test(b.post as string)) {
+      let listed: boolean | null = null;
+      try {
+        listed = await consulateListed(b.post as string);
+      } catch (error) {
+        await recordError(ctx, "webhook", "http.consularReport.postList", error);
+      }
+      if (listed === false) return json({ ok: false, message: "That isn't a consulate this site lists." }, 400);
     }
     const [ipHash, editKeyHash] = await Promise.all([
       hashIp("consular", callerIp(req)),
