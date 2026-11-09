@@ -79,4 +79,17 @@ describe("deleting a note", () => {
     await waitFor(() => expect(onUpdateNotes).toHaveBeenCalledTimes(1));
     expect(onUpdateNotes.mock.calls[0]![0].map((n: NoteEntry) => n.id)).toEqual(["n1"]);
   });
+
+  it("puts focus back on the trash button when the dialog is closed with Keep it", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    render(<NotesTab notes={notes.slice(0, 2)} onUpdateNotes={vi.fn()} />);
+    const trash = screen.getByRole("button", { name: "Delete note: Note number 2" });
+    // Act
+    await user.click(trash);
+    await user.click(await screen.findByRole("button", { name: "Keep it" }));
+    // Assert
+    await waitFor(() => expect(trash).toHaveFocus());
+  });
 });
+

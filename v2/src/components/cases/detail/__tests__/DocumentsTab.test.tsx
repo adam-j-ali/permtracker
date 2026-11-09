@@ -91,6 +91,21 @@ describe("deleting a document", () => {
   });
 });
 
+describe("the delete dialog and focus", () => {
+  it("puts focus back on the trash button when the dialog is closed with Keep it", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    const doc = { id: "d1", name: "offer.pdf", url: "https://example.test/offer.pdf", mimeType: "application/pdf", size: 10, uploadedAt: 1, category: "general" } as never;
+    render(<DocumentsTab documents={[doc]} onDelete={vi.fn()} />);
+    const trash = screen.getByRole("button", { name: "Delete offer.pdf" });
+    // Act
+    await user.click(trash);
+    await user.click(await screen.findByRole("button", { name: "Keep it" }));
+    // Assert
+    await waitFor(() => expect(trash).toHaveFocus());
+  });
+});
+
 describe("paging and opening documents", () => {
   // Fifteen documents: twelve general ones, then three for the PWD.
   const docs = Array.from({ length: 15 }, (_, i) => ({

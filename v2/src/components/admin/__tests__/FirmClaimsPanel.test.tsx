@@ -55,4 +55,15 @@ describe("a verified firm claim", () => {
     // Assert
     await waitFor(() => expect(revoke).toHaveBeenCalledWith({ claimId: "k1" }));
   });
+
+  it("keeps keyboard focus on the card through Revoke and Keep it", () => {
+    // Arrange
+    render(<FirmClaimsPanel data={data} />);
+    // Act, Assert
+    fireEvent.click(screen.getByRole("button", { name: "Revoke the claim" }));
+    expect(screen.getByRole("button", { name: "Keep it" })).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
+    expect(screen.getByRole("button", { name: "Revoke the claim" })).toHaveFocus();
+  });
 });
+

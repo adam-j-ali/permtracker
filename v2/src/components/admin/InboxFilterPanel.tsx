@@ -13,11 +13,13 @@
 
 import { useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Skeleton } from "@/components/ui/skeleton";
+
+import { useFocusNext } from "./useFocusNext";
 
 export type InboxFilterData = FunctionReturnType<typeof api.inboundFilter.forAdmin>;
 type Row = InboxFilterData["held"][number];
@@ -69,6 +71,11 @@ function HeldRow({ r }: { r: Row }) {
   // Held mail is the only copy, so Delete asks for a second press; once Not spam has sent it on, nothing more is offered.
   const [sure, setSure] = useState(false);
   const [released, setReleased] = useState(false);
+  // Each press swaps buttons; focus moves to what replaced the pressed one, never to the page.
+  const focusNext = useFocusNext();
+  const keepRef = useRef<HTMLButtonElement>(null);
+  const deleteRef = useRef<HTMLButtonElement>(null);
+  const statusRef = useRef<HTMLParagraphElement>(null);
   const id = r.id as Id<"supportEmails">;
   return (
     <li className="border-2 border-border bg-card p-4 shadow-hard-sm">
@@ -87,7 +94,7 @@ function HeldRow({ r }: { r: Row }) {
         </p>
       ) : null}
       {released ? (
-        <p role="status" className="mt-3 text-sm font-bold">
+        <p ref={statusRef} tabIndex={-1} role="status" className="mt-3 text-sm font-bold focus-visible:outline-2 focus-visible:outline-primary">
           Sending to your inbox
         </p>
       ) : (
@@ -99,6 +106,7 @@ function HeldRow({ r }: { r: Row }) {
             onClick={() =>
               run(async () => {
                 await release({ id });
+                focusNext(() => statusRef.current);
                 setReleased(true);
               })
             }
@@ -110,12 +118,30 @@ function HeldRow({ r }: { r: Row }) {
               <button type="button" className={`${BTN} bg-destructive text-destructive-foreground`} disabled={busy} onClick={() => run(() => remove({ id }))}>
                 Delete for good
               </button>{" "}
-              <button type="button" className={BTN} disabled={busy} onClick={() => setSure(false)}>
+              <button
+                ref={keepRef}
+                type="button"
+                className={BTN}
+                disabled={busy}
+                onClick={() => {
+                  focusNext(() => deleteRef.current);
+                  setSure(false);
+                }}
+              >
                 Keep it
               </button>
             </>
           ) : (
-            <button type="button" className={BTN} disabled={busy} onClick={() => setSure(true)}>
+            <button
+              ref={deleteRef}
+              type="button"
+              className={BTN}
+              disabled={busy}
+              onClick={() => {
+                focusNext(() => keepRef.current);
+                setSure(true);
+              }}
+            >
               Delete
             </button>
           )}

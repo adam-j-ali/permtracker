@@ -403,6 +403,20 @@ export function DocumentsTab({
     }
   }, [onDelete, confirmDeleteId, selectedId, fullscreenId]);
 
+  // The dialog has no trigger of its own, so focus goes back by hand to the button that opened it, or to the filter
+  // when that button went with the deleted row.
+  const deleteOpener = useRef<HTMLElement | null>(null);
+  const filterRef = useRef<HTMLSelectElement>(null);
+  const askDelete = (id: string, opener?: HTMLElement | null) => {
+    deleteOpener.current = opener ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    setConfirmDeleteId(id);
+  };
+  const returnFocus = (e: Event) => {
+    e.preventDefault();
+    const el = deleteOpener.current;
+    (el?.isConnected ? el : filterRef.current)?.focus();
+  };
+
   const fullscreenIdx = fullscreenDoc ? documents.findIndex((d) => d.id === fullscreenDoc.id) : -1;
 
   return (
@@ -417,6 +431,7 @@ export function DocumentsTab({
             <div className="flex flex-wrap items-center gap-2">
               <label className="sr-only" htmlFor="documents-filter">Show</label>
               <select
+                ref={filterRef}
                 id="documents-filter"
                 value={filterCategory}
                 onChange={(e) => { setFilterCategory(e.target.value as DocumentCategory | "all"); setPage(0); }}
@@ -543,7 +558,7 @@ export function DocumentsTab({
                               title="Delete"
                               aria-label={`Delete ${doc.name}`}
                               style={{ color: "var(--destructive)" }}
-                              onClick={() => setConfirmDeleteId(doc.id)}
+                              onClick={(e) => askDelete(doc.id, e.currentTarget)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
@@ -719,7 +734,7 @@ export function DocumentsTab({
                           alignItems: "center",
                           color: "var(--destructive)",
                         }}
-                        onClick={() => setConfirmDeleteId(selectedDoc.id)}
+                        onClick={(e) => askDelete(selectedDoc.id, e.currentTarget)}
                       >
                         <Trash2 className="h-3.5 w-3.5" /> Delete
                       </button>
@@ -734,7 +749,7 @@ export function DocumentsTab({
 
       {/* Delete confirmation: a real dialog (focus kept inside, Escape closes). */}
       <AlertDialog open={confirmDeleteId !== null} onOpenChange={(open) => (open || deleting ? null : setConfirmDeleteId(null))}>
-        <AlertDialogContent>
+        <AlertDialogContent onCloseAutoFocus={returnFocus}>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this document?</AlertDialogTitle>
             <AlertDialogDescription>It&apos;s deleted for good and can&apos;t be brought back.</AlertDialogDescription>
@@ -764,7 +779,7 @@ export function DocumentsTab({
           onNav={navFullscreen}
           hasPrev={fullscreenIdx > 0}
           hasNext={fullscreenIdx < documents.length - 1}
-          onDelete={onDelete ? (id) => setConfirmDeleteId(id) : undefined}
+          onDelete={onDelete ? (id) => askDelete(id) : undefined}
         />
       )}
     </div>

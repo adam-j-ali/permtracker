@@ -12,13 +12,14 @@
 
 import { useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { focusLabel } from "@/lib/firmProfile";
 import { entityHref } from "@/lib/entityPayload";
+import { useFocusNext } from "./useFocusNext";
 
 export type FirmClaimsData = FunctionReturnType<typeof api.firmClaims.listForAdmin>;
 type Claim = FirmClaimsData["review"][number];
@@ -58,6 +59,10 @@ function ClaimCard({ c }: { c: Claim }) {
   const hide = useMutation(api.firmClaims.setProfileHidden);
   const site = useMutation(api.firmClaims.approveWebsite);
   const [sureRevoke, setSureRevoke] = useState(false);
+  // Each press swaps buttons; focus moves to what replaced the pressed one, never to the page.
+  const focusNext = useFocusNext();
+  const keepRef = useRef<HTMLButtonElement>(null);
+  const revokeRef = useRef<HTMLButtonElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const run = async (fn: () => Promise<unknown>) => {
@@ -128,12 +133,30 @@ function ClaimCard({ c }: { c: Claim }) {
             <button type="button" disabled={busy} onClick={() => run(() => revoke({ claimId: id }))} className={`${BTN} bg-destructive text-destructive-foreground`}>
               Revoke it for good
             </button>{" "}
-            <button type="button" disabled={busy} onClick={() => setSureRevoke(false)} className={`${BTN} bg-background`}>
+            <button
+              ref={keepRef}
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                focusNext(() => revokeRef.current);
+                setSureRevoke(false);
+              }}
+              className={`${BTN} bg-background`}
+            >
               Keep it
             </button>
           </>
         ) : c.status === "verified" ? (
-          <button type="button" disabled={busy} onClick={() => setSureRevoke(true)} className={`${BTN} bg-background`}>
+          <button
+            ref={revokeRef}
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              focusNext(() => keepRef.current);
+              setSureRevoke(true);
+            }}
+            className={`${BTN} bg-background`}
+          >
             Revoke the claim
           </button>
         ) : null}
