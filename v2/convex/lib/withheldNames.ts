@@ -516,6 +516,21 @@ function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/**
+ * Two keys of a summary that name one withheld entity fold into one: counts add, lists join, objects
+ * merge field by field, and any other value keeps the first. Dropping either would lose its figures.
+ */
+function mergeFolded(a: unknown, b: unknown): unknown {
+  if (typeof a === "number" && typeof b === "number") return a + b;
+  if (Array.isArray(a) && Array.isArray(b)) return [...a, ...b];
+  if (a && b && typeof a === "object" && typeof b === "object" && !Array.isArray(a) && !Array.isArray(b)) {
+    const out: Record<string, unknown> = { ...(a as Record<string, unknown>) };
+    for (const [k, v] of Object.entries(b as Record<string, unknown>)) out[k] = k in out ? mergeFolded(out[k], v) : v;
+    return out;
+  }
+  return a;
+}
+
 const FORM_TAIL = `(?:[\\s,.]+(?:${[...FORM_WORDS].join("|")}|l\\.?\\s?l\\.?\\s?c|p\\.?\\s?l\\.?\\s?l\\.?\\s?c|l\\.?\\s?l\\.?\\s?p|p\\.?\\s?c)\\.?)*`;
 
 const SEP = "[^a-z0-9]{1,8}";
@@ -700,7 +715,7 @@ export function makeMasker(entries: readonly WithheldEntry[]): Masker {
       const hit = matchExact(k, objKind);
       if (!hit) continue;
       const to = hit.how === "slug" ? (neutralSlug(hit.entry) ?? shownLabel(hit.entry)) : shownLabel(hit.entry);
-      if (!(to in o)) o[to] = o[k];
+      o[to] = to in o ? mergeFolded(o[to], o[k]) : o[k];
       delete o[k];
       changed = true;
     }

@@ -277,6 +277,21 @@ describe("stored summaries", () => {
     expect(JSON.parse(out!.json)).toEqual({ bySlug: { "private-household-employer-1": { held: 2 }, "acme-corp": { held: 5 } } });
   });
 
+  it("folds two spellings of one name into one key without losing either's figures", () => {
+    const doc = {
+      bySlug: {
+        "example-law-group-pllc": { held: 2, cases: ["A"], name: "Example Law Group, PLLC" },
+        "example-law-group-pllc-2": { held: 3, cases: ["B"], name: "Example Law Group, PLLC" },
+      },
+      byName: { "Example Law Group, PLLC": 4, "EXAMPLE LAW GROUP PLLC": 1 },
+    };
+    const [out] = read("SELECT json FROM perm_docs WHERE key = ?", ["holds"], [{ json: JSON.stringify(doc) }]).rows as { json: string }[];
+    expect(JSON.parse(out!.json)).toEqual({
+      bySlug: { "law-firm-3": { held: 5, cases: ["A", "B"], name: "Law firm 3" } },
+      byName: { "Law firm 3": 5 },
+    });
+  });
+
   it("scrubs a long text that isn't JSON", () => {
     const text = "Filed by EXAMPLE LAW GROUP, P.L.L.C. for clients; see /perm-attorneys/example-law-group-pllc for the record.";
     const [out] = read("SELECT note FROM policy_notices WHERE id = ?", [1], [{ note: text }]).rows as { note: string }[];
