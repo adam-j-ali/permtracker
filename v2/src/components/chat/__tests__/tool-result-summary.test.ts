@@ -43,3 +43,31 @@ describe('summarizeToolResult and limits', () => {
     expect(summarizeToolResult('bulkArchiveCases', JSON.stringify({ successCount: 2 }))).toBe('Closed 2 cases');
   });
 });
+
+describe('summarizeToolResult reads the shapes the actions return', () => {
+  it('counts the settings saved, and says which part did not save', () => {
+    // Arrange: the settings action returns saved and notSaved lists
+    const ok = JSON.stringify({ success: true, action: 'settings_updated', saved: ['Email alerts: on', 'Digest: weekly'], notSaved: [] });
+    const part = JSON.stringify({ success: false, action: 'settings_updated', saved: ['Email alerts: on'], notSaved: ['Digest'] });
+    // Act / Assert
+    expect(summarizeToolResult('updateSettings', ok)).toBe('Updated 2 settings');
+    expect(summarizeToolResult('updateSettings', part)).toBe('Some settings didn\'t save');
+  });
+
+  it('says calendar sync was turned on when it was', () => {
+    // Arrange
+    const on = JSON.stringify({ success: true, action: 'bulk_calendar_sync_enabled', successCount: 3, failedCount: 0 });
+    const off = JSON.stringify({ success: true, action: 'bulk_calendar_sync_disabled', successCount: 1, failedCount: 0 });
+    // Act / Assert
+    expect(summarizeToolResult('bulkCalendarSync', on)).toBe('Synced 3 cases');
+    expect(summarizeToolResult('bulkCalendarSync', off)).toBe('Unsynced 1 case');
+  });
+
+  it('shows a change already made as done, for any tool', () => {
+    // Arrange: another tab made the change first
+    const r = JSON.stringify({ alreadyDone: true, message: 'Deleted the notification already.' });
+    // Act / Assert
+    expect(summarizeToolResult('deleteNotification', r)).toBe('Deleted the notification already.');
+    expect(summarizeToolResult('updateSettings', r)).toBe('Deleted the notification already.');
+  });
+});

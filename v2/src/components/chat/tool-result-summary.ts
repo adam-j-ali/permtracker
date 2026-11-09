@@ -51,6 +51,9 @@ export function summarizeToolResult(tool: string, result?: string): string {
         : parsed.error;
     }
 
+    // A change another tab or an identical card made first: the card says what was done, whatever the tool.
+    if (parsed && parsed.alreadyDone === true && typeof parsed.message === 'string') return truncate(parsed.message, 60);
+
     // A write that needs a date or a detail first changed nothing.
     if (parsed && parsed.needsInfo === true) return 'Needs a detail first, so nothing changed';
     if (parsed && parsed.changed === false && typeof parsed.message === 'string') return truncate(parsed.message, 60);
@@ -148,10 +151,10 @@ export function summarizeToolResult(tool: string, result?: string): string {
 
       // Settings tools
       case 'updateSettings': {
-        const count = parsed.updatedCount ?? Object.keys(parsed.settings || {}).length ?? 0;
-        return parsed.success !== false
-          ? `Updated ${count} setting${count !== 1 ? 's' : ''}`
-          : 'Update failed';
+        // The action reads the settings back: `saved` lists each one asked for, `notSaved` the ones that didn't take.
+        const count = Array.isArray(parsed.saved) ? parsed.saved.length : 0;
+        if (parsed.success === false) return Array.isArray(parsed.notSaved) && parsed.notSaved.length ? "Some settings didn't save" : 'Update failed';
+        return `Updated ${count} setting${count !== 1 ? 's' : ''}`;
       }
       case 'getSettings':
         return parsed.category
@@ -172,8 +175,9 @@ export function summarizeToolResult(tool: string, result?: string): string {
         return `Permanently deleted ${r.successCount || 0} cases`;
       }
       case 'bulkCalendarSync': {
-        const r = parsed as { successCount?: number; enabled?: boolean };
-        return `${r.enabled ? 'Synced' : 'Unsynced'} ${r.successCount || 0} cases`;
+        const r = parsed as { successCount?: number; action?: string };
+        const n = r.successCount || 0;
+        return `${r.action === 'bulk_calendar_sync_enabled' ? 'Synced' : 'Unsynced'} ${n} case${n === 1 ? '' : 's'}`;
       }
 
       default:
