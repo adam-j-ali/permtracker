@@ -18,7 +18,13 @@ import { convexSiteUrl } from "@/lib/convexSite";
  * site installed to the home screen first, and the message says so rather than failing quietly.
  */
 
-const STORAGE_KEY = "pt-push-endpoint";
+/**
+ * Where this browser's endpoint is kept, one key per kind of alert (by its stop route), so the bulletin box can't
+ * offer to stop a case alert. Endpoints saved before the split sit under the bare key, kind unknown: they're offered,
+ * and kept unless the stop actually closed something.
+ */
+const LEGACY_KEY = "pt-push-endpoint";
+const keyFor = (stopPath: string) => `${LEGACY_KEY}:${stopPath}`;
 
 type State =
   | { kind: "idle" }
@@ -44,6 +50,7 @@ export interface BrowserPushAlertProps {
 export function BrowserPushAlert({ subscribePath, stopPath, fields, summary, explanation, onMessage, className }: BrowserPushAlertProps) {
   const [supported, setSupported] = useState<boolean | null>(null);
   const [stored, setStored] = useState<string | null>(null);
+  const [storedLegacy, setStoredLegacy] = useState(false);
   const [state, setState] = useState<State>({ kind: "idle" });
   // An iPhone or iPad delivers a site's notifications only once the site is on the home screen (iOS 16.4 on),
   // and in Safari the push API isn't there until then, so this box would hide itself. It says how instead.
@@ -55,11 +62,13 @@ export function BrowserPushAlert({ subscribePath, stopPath, fields, summary, exp
     setNeedsHomeScreen(ios && !installed);
     setSupported((isPushSupported() || (ios && !installed)) && Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY));
     try {
-      setStored(window.localStorage.getItem(STORAGE_KEY));
+      const own = window.localStorage.getItem(keyFor(stopPath));
+      setStored(own ?? window.localStorage.getItem(LEGACY_KEY));
+      setStoredLegacy(own === null);
     } catch {
       setStored(null);
     }
-  }, []);
+  }, [stopPath]);
 
   const subscribeUrl = convexSiteUrl(subscribePath);
   const stopUrl = convexSiteUrl(stopPath);
@@ -85,8 +94,9 @@ export function BrowserPushAlert({ subscribePath, stopPath, fields, summary, exp
       if (res.ok) {
         try {
           const ep = (JSON.parse(subscription) as { endpoint?: string }).endpoint ?? null;
-          if (ep) window.localStorage.setItem(STORAGE_KEY, ep);
+          if (ep) window.localStorage.setItem(keyFor(stopPath), ep);
           setStored(ep);
+          setStoredLegacy(false);
         } catch {
           // Storage unavailable: the subscription still works, only the "stop" shortcut is lost.
         }
@@ -118,14 +128,17 @@ export function BrowserPushAlert({ subscribePath, stopPath, fields, summary, exp
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ endpoint: stored }),
       });
+      const body = (await res.json().catch(() => null)) as { message?: string; closed?: number } | null;
       if (res.ok) {
         try {
-          window.localStorage.removeItem(STORAGE_KEY);
+          window.localStorage.removeItem(keyFor(stopPath));
+          // An endpoint from before the split may be the other kind's: it stays unless this stop closed something.
+          if (storedLegacy && body?.closed !== 0) window.localStorage.removeItem(LEGACY_KEY);
         } catch {
           // Nothing to do: the server side is what matters.
         }
         setStored(null);
-        setState({ kind: "off", message: "This browser won't be notified any more." });
+        setState({ kind: "off", message: body?.message ?? "This browser won't be notified any more." });
       } else {
         setState({ kind: "refused", message: "That didn't go through. Try again in a moment." });
       }
