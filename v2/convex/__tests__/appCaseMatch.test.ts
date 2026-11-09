@@ -46,7 +46,7 @@ describe("suggestDolCase", () => {
     await user.action(api.appCaseMatch.suggestDolCase, { employerName: "Acme Corp", filingDate: "2025-01-02", program: "perm" });
     const [sql, args] = rows.mock.calls[0] as [string, unknown[]];
     expect(sql).toMatch(/ORDER BY abs\(julianday\(filing_date\) - julianday\(\?\)\)\s+LIMIT 60/);
-    expect(args.at(-1)).toBe("2025-01-02");
+    expect(args[args.length - 1]).toBe("2025-01-02");
   });
 
   it("fails when DOL's record can't be read, never answering that no case matches", async () => {
