@@ -67,6 +67,9 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
 
   // External-API-spend action paths (Tavily, Brave search for knowledge)
   knowledgeSearch: { kind: "token bucket", rate: 20, period: MINUTE, capacity: 5 },
+  // One account's share of the site's daily web-search allowance (Tavily 30 + Brave 60 a day, shared by everyone):
+  // without it one account could spend the whole day's in minutes.
+  webSearchPerDay: { kind: "fixed window", rate: 15, period: DAY },
 
   // Push subscription management (low churn expected)
   pushSubscriptionSave: { kind: "token bucket", rate: 10, period: MINUTE, capacity: 3 },

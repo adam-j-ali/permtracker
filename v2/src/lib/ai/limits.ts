@@ -111,6 +111,16 @@ export function rateLimitedToolResult(error: unknown, action?: string) {
   if (!limit) return null;
   const what = action ?? LIMIT_ACTIONS[limit.name] ?? 'requests';
   const wait = formatWait(limit.retryAfterMs);
+  if (limit.name === 'webSearchPerDay') {
+    return {
+      error: `That's today's web searches used up. They come back in ${wait}.`,
+      reason: 'rate_limited' as const,
+      retryAfterSeconds: Math.max(1, Math.ceil(limit.retryAfterMs / 1000)),
+      _ai_instruction:
+        `Tell the person plainly that they've used today's web searches and they come back in ${wait}. ` +
+        'Answer from the knowledge base meanwhile. Do not suggest rewording the request.',
+    };
+  }
   return {
     error: `Too many ${what} in the last minute. Try again in ${wait}.`,
     reason: 'rate_limited' as const,

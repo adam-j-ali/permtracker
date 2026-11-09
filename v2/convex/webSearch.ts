@@ -19,11 +19,13 @@
  * @module webSearch
  */
 
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { DAILY_LIMITS } from "./apiUsage";
 import { recordError } from "./lib/errorRecording";
+import { rateLimiter } from "./rateLimitConfig";
 
 // =============================================================================
 // TYPES
@@ -215,8 +217,12 @@ export const searchWeb = action({
     query: v.string(),
   },
   handler: async (ctx, { query }): Promise<SearchResponse> => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    // Charged before any provider is asked: the knowledge search's burst limit (it spends the same providers) and
+    // this account's daily share. Called directly, this action skips the chat route's own quota.
+    await rateLimiter.limit(ctx, "knowledgeSearch", { key: userId, throws: true });
+    await rateLimiter.limit(ctx, "webSearchPerDay", { key: userId, throws: true });
 
     // Did any provider get asked and fail? Decides "error" over "quota" below.
     let attemptFailed = false;
