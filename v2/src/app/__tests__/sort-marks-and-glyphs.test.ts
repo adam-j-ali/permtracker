@@ -116,10 +116,10 @@ describe("icons are icons", () => {
     expect(found).toEqual([]);
   });
 
-  // The pages under src/app, for now: three components still type "&rarr;" and are being changed on their own.
-  it("no page types an arrow as an HTML entity either", () => {
-    const pages = components.filter((p) => p.startsWith(join(ROOT, "src", "app")));
-    const found = pages.flatMap((p) => entityArrows(readFileSync(p, "utf8")).map((l) => `${relative(ROOT, p)}: ${l.trim().slice(0, 90)}`));
+  // Every page under src/app and every component under src/components.
+  it("no page or component types an arrow as an HTML entity either", () => {
+    expect(components.filter((p) => p.startsWith(join(ROOT, "src", "components"))).length).toBeGreaterThan(200);
+    const found = components.flatMap((p) => entityArrows(readFileSync(p, "utf8")).map((l) => `${relative(ROOT, p)}: ${l.trim().slice(0, 90)}`));
     expect(found).toEqual([]);
   });
 

@@ -816,7 +816,7 @@ export function ChangeFeedBrowser({
                       <span className="text-muted-foreground">
                         {t.fromStatus}
                       </span>{" "}
-                      <ArrowRightIcon aria-hidden="true" weight="bold" className="inline size-3.5 align-[-0.125em]" />{" "}
+                      <ArrowRightIcon aria-hidden="true" weight="bold" className="inline size-4 align-[-0.125em]" />{" "}
                       <span className="font-bold">{t.toStatus}</span>{" "}
                       <b className="ml-1 font-bold tabular-nums">{formatInt(t.n)}</b>
                     </button>
