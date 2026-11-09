@@ -173,6 +173,14 @@ describe("recordStatus", () => {
     expect(args).toHaveLength(11);
   });
 
+  it("tries the table again after a failed create, rather than failing every store until a restart", async () => {
+    execMock.mockRejectedValueOnce(new Error("SERVER_ERROR: database is locked"));
+    await expect(recordStatus(LIVE, NOW)).rejects.toThrow(/locked/);
+    await recordStatus(LIVE, NOW);
+    expect(execMock.mock.calls.filter(([sql]) => String(sql) === TABLE_DDL)).toHaveLength(2);
+    expect(execMock.mock.calls.some(([sql]) => /INSERT INTO uscis_case_status/.test(String(sql)))).toBe(true);
+  });
+
   it("stores the columns the privacy policy names, and nothing about the reader", async () => {
     await recordStatus(LIVE, NOW);
     const insert = execMock.mock.calls.find(([sql]) => /INSERT INTO uscis_case_status/.test(String(sql)));
