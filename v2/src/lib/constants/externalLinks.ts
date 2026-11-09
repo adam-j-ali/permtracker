@@ -17,10 +17,12 @@
  * The brand's owned surfaces. Each one is a page Google can read and
  * corroborate the name against ("web references to the site" is the last
  * source in its site-names doc), and each is emitted as an Organization
- * `sameAs` in structured data. Both resolve and name PERM Tracker.
+ * `sameAs` in structured data. Each resolves and names PERM Tracker.
  */
 export const MEDIUM_PROFILE_URL = "https://medium.com/@permtracker";
 export const PRODUCT_HUNT_URL = "https://www.producthunt.com/products/perm-tracker";
+/** The brand's LinkedIn company page (Nov 8 2026): a /company/ page, never a person's /in/ profile. */
+export const LINKEDIN_COMPANY_URL = "https://www.linkedin.com/company/permtracker";
 /** A personal profile, declared on the Person node, never on the Organization. */
 export const LINKEDIN_SABRINA_URL = "https://www.linkedin.com/in/sabrina-soltau-5b2682171";
 /**
