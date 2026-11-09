@@ -89,7 +89,15 @@ export function AutoReveal() {
       held.set(el, rises);
       io.observe(el);
     }
+    // A held section's first frame (opacity 0) applies in print too, so a print or a PDF made from the top of the
+    // page had blank gaps. Before printing, every section takes its last frame and the page stops holding any.
+    const showAll = () => {
+      io.disconnect();
+      for (const rises of held.values()) for (const rise of rises) rise.finish();
+    };
+    window.addEventListener("beforeprint", showAll);
     return () => {
+      window.removeEventListener("beforeprint", showAll);
       io.disconnect();
       for (const rises of held.values()) for (const rise of rises) rise.cancel();
     };
