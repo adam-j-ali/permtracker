@@ -213,7 +213,11 @@ export default function SiteHeader() {
   React.useEffect(() => {
     if (menu === null) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenu(null);
+      if (e.key !== "Escape") return;
+      // Focus goes back to the button that opened the menu, not to the page.
+      const trigger = barRef.current?.querySelector<HTMLElement>(`[aria-controls="${menu}-menu"]`);
+      setMenu(null);
+      trigger?.focus();
     };
     const onDown = (e: MouseEvent) => {
       if (barRef.current && !barRef.current.contains(e.target as Node)) setMenu(null);
