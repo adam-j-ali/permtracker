@@ -30,9 +30,11 @@
  * the case alert's own stop link (and the preference page) turns it off. Each
  * email claims one unit of the `pipelineMatch` pool before it's built. Each
  * PERM is reserved in `permMatchNotices` before the email goes (`reserveTold`)
- * and recorded as told once it's sent or queued (`recordTold`), so a run that
- * dies between the two can't tell it again; a failed send frees it
- * (`releaseTold`) and tries again tomorrow.
+ * and recorded as told once it's sent or queued (`recordTold`); a failed send
+ * frees it (`releaseTold`) and tries again tomorrow. A reservation holds for
+ * SEND_CLAIM_MS, so a second run inside that time doesn't tell the same PERM.
+ * The daily run finds it lapsed and takes it over: if the run that left it had
+ * already sent, that PERM is told twice.
  *
  * @module convex/pipelineMatches
  */
@@ -164,8 +166,7 @@ const toldCases = v.array(v.object({ caseNumber: v.string(), filingDate: v.strin
 /**
  * Reserve the PERMs an email is about to tell, before it is sent: a row per PERM with `sendingAt` set. Returns the
  * PERMs reserved; one already told, or reserved by a run whose claim still holds, is left out (that run may have
- * sent it), and one a dead run left is taken over. A run that dies between the send and `recordTold` leaves its
- * reservations, so the next run doesn't tell the same PERM again.
+ * sent it), and one a dead run left is taken over once its claim lapses (SEND_CLAIM_MS), sent or not.
  */
 export const reserveTold = internalMutation({
   args: { id: v.id("caseStatusAlerts"), email: v.string(), pwdCaseNumber: v.string(), cases: toldCases },
@@ -390,8 +391,8 @@ export const sweep = internalAction({
     let queued = 0;
     let failed = 0;
     for (const { watch, request, send: picked } of due.slice(0, granted)) {
-      // Reserved before the email is built or sent, recorded after: a run that dies in between leaves the
-      // reservation, and the next run doesn't tell these PERMs again. One another run holds is that run's.
+      // Reserved before the email is built or sent, recorded after: a run inside SEND_CLAIM_MS of one that died
+      // in between doesn't tell these PERMs again. One another run holds is that run's.
       const toldRef = { id: watch._id, email: watch.email, pwdCaseNumber: watch.caseNumber };
       const reserved = new Set(
         await ctx.runMutation(internal.pipelineMatches.reserveTold, {
@@ -489,8 +490,8 @@ export const sweep = internalAction({
         failed += 1;
         log.error("match send threw", { caseNumber: watch.caseNumber, error });
         await recordError(ctx, "action", "pipelineMatches.sweep", error);
-        // Free the PERMs only if nothing went out. After a delivery the reservation stays, so the record that
-        // failed can't turn into a second email; it lapses after SEND_CLAIM_MS like a crashed run's.
+        // Free the PERMs only if nothing went out. After a delivery the reservation stays, so a run inside
+        // SEND_CLAIM_MS doesn't tell them again; after that it lapses like a crashed run's.
         if (!delivered) await release().catch(() => undefined);
       }
     }
