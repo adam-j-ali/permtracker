@@ -20,6 +20,8 @@ vi.mock("@/lib/analytics", () => ({
   analytics: {
     optOut: () => calls.push("optOut"),
     optIn: () => calls.push("optIn"),
+    visitorOptOut: () => calls.push("visitorOptOut"),
+    visitorOptIn: () => calls.push("visitorOptIn"),
     consentForAccount: () => calls.push("consent"),
     capture: () => calls.push("capture"),
   },
@@ -63,7 +65,8 @@ describe("AnalyticsToggle", () => {
     profile = { analyticsOff: true };
     renderWithProviders(<AnalyticsToggle />);
     await userEvent.click(screen.getByRole("switch"));
-    await waitFor(() => expect(calls).toEqual(["save", "optIn", "consent"]));
+    // Switching on clears this browser's own off too, which a failed save to switch off may have left.
+    await waitFor(() => expect(calls).toEqual(["save", "optIn", "visitorOptIn", "consent"]));
     expect(mockSetOff).toHaveBeenCalledWith({ off: false });
   });
 
@@ -78,7 +81,9 @@ describe("AnalyticsToggle", () => {
     await userEvent.click(screen.getByRole("switch"));
     // Assert: this browser is never turned back on
     await waitFor(() => expect(mockHandleError).toHaveBeenCalled());
-    expect(calls).toEqual(["optOut", "save"]);
+    // The account's flag is the server's to keep, and LoginTracker clears it on the next load while the account says
+    // "on": the person's own off goes in the browser's own flag, which nothing but a switch clears.
+    expect(calls).toEqual(["optOut", "save", "visitorOptOut"]);
     expect(mockHandleError.mock.calls[0]![1]).toEqual({
       userMessage: "This browser has stopped sending analytics, but the setting for your account didn’t save. Try again.",
     });

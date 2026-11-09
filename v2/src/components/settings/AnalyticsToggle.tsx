@@ -42,11 +42,16 @@ export default function AnalyticsToggle() {
       await setAnalyticsOff({ off: !checked });
       if (checked) {
         analytics.optIn();
+        // Switching on clears this browser's own off too, which a failed switch-off may have left.
+        analytics.visitorOptIn();
         analytics.consentForAccount();
       }
     } catch (error) {
-      // A reader who asked for no tracking is never tracked again because a save failed: this browser stays off,
-      // and only the account's setting, for the other devices, waits on a retry.
+      // A reader who asked for no tracking is never tracked again because a save failed. The account's flag
+      // follows the server, which still says on, so LoginTracker would clear it on the next load: the off goes in
+      // this browser's own flag too, which only a switch clears. Only the account's setting, for the other
+      // devices, waits on a retry.
+      if (!checked) analytics.visitorOptOut();
       handleOperationError(error, {
         userMessage: checked
           ? "Couldn’t save the analytics setting. Try again."
