@@ -117,6 +117,23 @@ describe("lookupEmployer", () => {
     expect(unindexed.ok && unindexed.data.match).toBe("none");
   });
 
+  it("never keeps a failed index check as 'no index', so one blip can't hide the map's pages for an hour", async () => {
+    db({ perm: null, mapIndexed: true, mapped: { page_slug: "acme-staffing", page_kind: "other" } });
+    const answer = one.getMockImplementation()!;
+    one.mockImplementation(async (sql: string) => {
+      if (sql.includes("sqlite_master")) throw new Error("SERVER_ERROR: database is locked");
+      return answer(sql);
+    });
+    otherEmployerRecord.mockResolvedValue({ slug: "acme-staffing", name: "ACME STAFFING", lca: 50, pwd: 4, perm: 0 });
+    // The failed read is an error, never a remembered "none".
+    await expect(lookupEmployer("Acme Staffing")).rejects.toThrow(/locked/);
+    // The next request checks again and finds the page.
+    one.mockImplementation(answer);
+    const r = await lookupEmployer("Acme Staffing");
+    expect(r.ok && r.data.match).toBe("exact");
+    expect(r.ok && r.data.employer!.page).toBe("other");
+  });
+
   it("offers a possible match, named, when only a longer name fits", async () => {
     db({ perm: null });
     const labs = { slug: "metamorphosis-labs", name: "METAMORPHOSIS LABS", total: 900, certified: 800, denied: 10, recent12m: 40 };
