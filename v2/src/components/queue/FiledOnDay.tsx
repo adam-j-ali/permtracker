@@ -216,7 +216,7 @@ export function FiledOnDay({
             ))}
           </ul>{" "}
           {lazy && loaded?.capped ? (
-            <p className="mt-4 text-sm text-soft">This day holds more than the list shows; it lists the first of them by employer.</p>
+            <p className="mt-4 text-sm text-soft">This day holds more than the list shows, so it lists the first of them by employer.</p>
           ) : null}
           {view.pageCount > 1 ? (
             <Pagination

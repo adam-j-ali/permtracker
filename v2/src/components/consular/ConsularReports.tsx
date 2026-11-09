@@ -149,7 +149,7 @@ export function ConsularReports({
         <ChatsCircleIcon aria-hidden="true" weight="bold" className="size-6 shrink-0" /> What people report
       </h2>{" "}
       <p className="mt-2 max-w-3xl text-base leading-relaxed text-muted-foreground">
-        What people who had an appointment in {name} report, for any visa. {SELF_REPORTED}; a figure shows once{" "}
+        What people who had an appointment in {name} report, for any visa. {SELF_REPORTED}. A figure shows once{" "}
         {MIN_REPORTS} people have reported.
       </p>
 
@@ -187,7 +187,7 @@ export function ConsularReports({
           <FigurePlate
             title="Interviews held, week by week"
             subject={`The last ${REPORT_WEEKS} weeks, every kind of visa`}
-            caption={`Each column is a week of interviews people reported held; cancelled and moved interviews and drop boxes are left out. The newest is lime and hatched while it's still filling. A dashed outline is a week with fewer than ${MIN_REPORTS} reports.`}
+            caption={`Each column is a week of interviews people reported held. Cancelled and moved interviews and drop boxes are left out. The newest is lime and hatched while it's still filling. A dashed outline is a week with fewer than ${MIN_REPORTS} reports.`}
             source={`${SELF_REPORTED}.`}
             className="mt-10"
           >

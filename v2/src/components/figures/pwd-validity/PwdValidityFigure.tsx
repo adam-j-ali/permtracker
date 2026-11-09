@@ -23,7 +23,7 @@ import { MotionToggle } from "../MotionToggle";
 import { CAPTION_CLASS, FIGURE_CLASS, READOUT_CLASS, SUMMARY_CLASS } from "../frame";
 
 const LABEL =
-  "An illustration of a prevailing wage determination's validity as a bench. A lime band on the ruler runs from the determination date to its expiry. A carriage marks the first recruitment step, and an arm runs from it to the last day to file. A gate at the expiry rises when the expiry still limits the filing.";
+  "An illustration of a prevailing wage determination's validity as a bench. A lime band on the ruler runs from the determination date to its expiry. A carriage marks the first recruitment step, and an arm runs from it to the last day to file. At the expiry, a gate rises when the expiry still limits the filing.";
 
 /** Seconds for one sweep from end to end, and the pause at each end. */
 const SWEEP_S = 6;
@@ -272,7 +272,7 @@ export default function PwdValidityFigure() {
         <details>
           <summary className={SUMMARY_CLASS}>What this shows</summary>{" "}
           <p className="mt-1 leading-relaxed">
-        {`An illustration, on an example determination issued ${longDate(DETERMINED)} and valid through ${longDate(EXPIRES)}. Drag the carriage, or scroll, to move the first recruitment step. A first step on or between those dates begins recruitment inside the validity, so only the 180-day rule closes the window: a first step on ${longDate(inside.first)} means filing by ${longDate(inside.closes)}, after the determination has expired. A first step before ${longDate(DETERMINED)}, such as ${longDate(before.first)}, means filing by ${longDate(before.closes)}. A first step after ${longDate(EXPIRES)} can't use this determination. Here the job order is the first step; a notice of filing doesn't begin recruitment for this test. The dates come from the same rule the app uses on every case.`}
+        {`An illustration, on an example determination issued ${longDate(DETERMINED)} and valid through ${longDate(EXPIRES)}. Drag the carriage, or scroll, to move the first recruitment step. A first step on or between those dates begins recruitment inside the validity, so only the 180-day rule closes the window: a first step on ${longDate(inside.first)} means filing by ${longDate(inside.closes)}, after the determination has expired. A first step before ${longDate(DETERMINED)}, such as ${longDate(before.first)}, means filing by ${longDate(before.closes)}. A first step after ${longDate(EXPIRES)} can't use this determination. Here the job order is the first step. A notice of filing doesn't begin recruitment for this test. The dates come from the same rule the app uses on every case.`}
       </p>
         </details>
       </figcaption>

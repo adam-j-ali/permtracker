@@ -99,7 +99,7 @@ export function CaseNumberPlate({
               every figure on this page uses.
             </>
           ) : null}{" "}
-          {letter === "G" ? "The G is PERM; DOL publishes no key for the number after it." : null}
+          {letter === "G" ? "The G is PERM. DOL publishes no key for the number after it." : null}
         </p>
       </div>
     </div>

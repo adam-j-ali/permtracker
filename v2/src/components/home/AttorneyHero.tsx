@@ -28,7 +28,7 @@ import { buttonVariants } from "@/components/ui/button";
 const HUB_WIDE = { light: TOUR_SHOTS.hub.light, dark: TOUR_SHOTS.hub.dark };
 
 const HUB_ALT =
-  "The dashboard's Deadlines panel for eight sample cases: none overdue, an RFI response due this week, an I-140 filing and a filing window this month, and nine deadlines later.";
+  "The dashboard's Deadlines panel for eight sample cases, with none overdue. An RFI response is due this week, an I-140 filing and a filing window fall this month, and nine deadlines come later.";
 const CARD_ALT =
   "A sample case's card on the cases page: Juniper Biologics, ETA 9089 stage, RFI response due in 7 days.";
 
@@ -66,7 +66,7 @@ export function AttorneyHero() {
           </h1>{" "}
           <div className="lg:col-span-5 lg:pb-2">
             <p className="max-w-xl text-lg leading-relaxed text-white/80 sm:text-xl dark:text-soft">
-              Free case management for immigration attorneys and paralegals. Enter a case&apos;s dates once; the
+              Free case management for immigration attorneys and paralegals. Enter a case&apos;s dates once, and the
               deadlines, reminders and calendar follow.
             </p>{" "}
             <div className="mt-6 flex flex-wrap gap-4">

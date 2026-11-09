@@ -187,7 +187,7 @@ export function PermDeadlineCalculator({ className }: PermDeadlineCalculatorProp
         // timeline, it is a problem, and the dates below it would be fiction.
         if (bearing === "began-after") {
           warnings.push(
-            `The first recruitment step is after the prevailing wage determination expires (${pwdExpiration}). Recruitment has to begin during the determination's validity, so these dates cannot support a filing as entered.`,
+            `The first recruitment step is after the prevailing wage determination expires (${pwdExpiration}). Recruitment has to begin during the determination's validity, so these dates can't support a filing as entered.`,
           );
         }
 
@@ -198,7 +198,7 @@ export function PermDeadlineCalculator({ className }: PermDeadlineCalculatorProp
           // opens < closes, so nothing downstream would look wrong. Warn and
           // withhold the window instead of printing arithmetic on nonsense.
           warnings.push(
-            "The last recruitment step is before the first one. Check the order of the two dates; the filing window isn’t shown until they make sense.",
+            "The last recruitment step is before the first one. Check the order of the two dates, because the filing window isn’t shown until they make sense.",
           );
         } else {
           // The app's canonical model, not the raw calculator: the window
@@ -424,7 +424,7 @@ export function PermDeadlineCalculator({ className }: PermDeadlineCalculatorProp
               </blockquote>{" "}
               <p className="mt-3 text-base leading-relaxed text-muted-foreground">
                 FLAG shows a warning on such a filing and accepts it, and a denial on those grounds can go back
-                to the Certifying Officer. The dates below still follow 20 CFR 656; the exception covers only that
+                to the Certifying Officer. The dates below still follow 20 CFR 656, and the exception covers only that
                 33-day window.
               </p>{" "}
               <a

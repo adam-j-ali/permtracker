@@ -38,8 +38,8 @@ export function AboutSection({
               crawlers get it here too, readers aren't shown it twice. */}
           <p className="sr-only">{ABOUT_ONE_LINER}</p>{" "}
           <p className="mt-4 text-base leading-relaxed text-soft sm:text-lg">
-            PERM Tracker was founded by {SABRINA.name}, an immigration attorney. PERM Tracker is not affiliated
-            with any law firms and nothing on the site constitutes legal advice.{" "}
+            PERM Tracker was founded by {SABRINA.name}, an immigration attorney. PERM Tracker isn&apos;t affiliated
+            with any law firms, and nothing on the site constitutes legal advice.{" "}
             <Link href="/about" className="link">
               More about us
             </Link>

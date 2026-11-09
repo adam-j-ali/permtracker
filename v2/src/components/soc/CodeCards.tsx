@@ -98,7 +98,7 @@ export function CodeCards({
       <p className="mt-2 max-w-3xl text-base text-soft">
         {described.length === 1
           ? `O*NET's description of the code ${title} is filed under.`
-          : "O*NET's description of each code. The job's duties decide which one fits, not its title."}
+          : "O*NET's description of each code. The job's duties decide which one fits. Its title doesn't."}
       </p>
       <div className="mt-6">{grid(shown)}</div>{" "}
       {rest.length ? (

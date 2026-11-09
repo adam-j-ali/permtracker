@@ -157,10 +157,10 @@ const BROWSE_NOTE: Record<EntityKind, ReactNode> = {
   attorney: (
     <>
       A practice can appear here several times over, and unlike the employer
-      index these are not pooled. DOL prints Fragomen under six different
-      spellings, and each one takes its own page with its own rank, so a firm
-      page counts the filings under the spelling it matched rather than
-      everything the practice filed. Read a single firm&apos;s total as a floor.
+      index these aren&apos;t pooled. DOL prints Fragomen under six different
+      spellings, and each one takes its own page with its own rank. A firm
+      page counts only the filings under the spelling it matched, so read a
+      single firm&apos;s total as a floor.
     </>
   ),
   occupation: (
@@ -322,14 +322,14 @@ export async function BrowseLetterBody({
             >
               {busiest.name}
             </Link>{" "}
-            with {formatInt(busiest.total)} {cfg.unit}; the smallest carry{" "}
+            with {formatInt(busiest.total)} {cfg.unit}, and the smallest carry{" "}
             {formatInt(smallest)}. Every name is DOL&apos;s own spelling from the
             disclosure files.
           </p>
         ) : (
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
             DOL&apos;s disclosure files name no {cfg.singular} beginning with{" "}
-            {phrase}, so there is nothing to list under {label}. Every other
+            {phrase}, so there&apos;s nothing to list under {label}. Every other
             letter is one click away.
           </p>
         )}
@@ -354,7 +354,7 @@ export async function BrowseLetterBody({
           </p>{" "}
           {capped ? (
             <p className="mt-3 max-w-3xl border-l-4 border-primary bg-sage px-4 py-3 text-base text-soft">
-              This letter holds {formatInt(bucketTotal)} {cfg.plural}; the list stops at {formatInt(shown)}. The other{" "}
+              This letter holds {formatInt(bucketTotal)} {cfg.plural}, and the list stops at {formatInt(shown)}. The other{" "}
               {formatInt(bucketTotal - shown)} still have their own pages.{" "}
               <Link href={cfg.base} className="link">
                 Search {cfg.plural} by name

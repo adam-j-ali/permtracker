@@ -139,7 +139,7 @@ describe("LadderComb", () => {
 describe("TwoMarketsNote", () => {
   it("states the separation when the ladders really are disjoint", () => {
     render(<TwoMarketsNote ladders={[software, meat, fastFood]} />);
-    const text = screen.getByText(/do not meet/i).textContent ?? "";
+    const text = screen.getByText(/don't meet/i).textContent ?? "";
     expect(text).toContain("$89,565");
     // 89,565 / 31,408 = 2.85.
     expect(text).toContain("2.9 times");
@@ -150,7 +150,7 @@ describe("TwoMarketsNote", () => {
     // must not leave a claim on the page that the data no longer supports.
     const overlapping: Ladder = { ...meat, p95: 120_000, p90: 110_000 };
     render(<TwoMarketsNote ladders={[software, overlapping]} />);
-    expect(screen.queryByText(/do not meet/i)).toBeNull();
+    expect(screen.queryByText(/don't meet/i)).toBeNull();
     expect(screen.getByText(/now overlap/i)).toBeTruthy();
   });
 

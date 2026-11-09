@@ -263,7 +263,7 @@ export function USStateMap({
           label="Min cases"
           value={String(floor)}
           onChange={(v) => setFloor(Number(v))}
-          hint="States with fewer cases than this are left uncoloured on rates and medians, because a rate over a handful of cases is noise. Counts are never withheld, and the table below always shows every state."
+          hint="States with fewer cases than this are left uncoloured on rates and medians, because a rate over a handful of cases is noise. Counts are never withheld, and the table of states always lists every state."
           options={STATE_FLOORS.map((n) => ({
             value: String(n),
             label: n === 0 ? "No floor" : `${formatInt(n)}+`,

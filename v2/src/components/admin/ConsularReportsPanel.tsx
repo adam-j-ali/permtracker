@@ -149,7 +149,7 @@ export function ConsularReportsPanel({ data }: { data: ConsularReportsData | und
       </h2>{" "}
       <p className="mt-1 max-w-3xl text-base text-muted-foreground">
         What visitors reported about their visa appointments, newest first. Reports show on the site at once. Hide takes
-        one off every figure and keeps it here; Delete removes it for good.
+        one off every figure and keeps it here. Delete removes it for good.
       </p>
       {data === undefined ? (
         <Skeleton className="mt-4 h-32 w-full" />

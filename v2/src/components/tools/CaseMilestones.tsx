@@ -211,7 +211,7 @@ export function CaseMilestones({ caseNumber, className }: { caseNumber: string; 
       id="timeline"
       title="After PERM"
       className={className}
-      lede="USCIS doesn't publish the I-140 or the I-485 case by case, so this part comes from the people waiting. Their dates are self-reported; the PERM dates come from DOL's own record."
+      lede="USCIS doesn't publish the I-140 or the I-485 case by case, so this part comes from the people waiting. Their dates are self-reported. The PERM dates come from DOL's own record."
     >
       {summary ? (
         <p className="text-base leading-relaxed text-soft">
@@ -389,7 +389,7 @@ export function CaseMilestones({ caseNumber, className }: { caseNumber: string; 
                 onChange={(e) => set("public", e.target.checked)}
               />
               <span>
-                <b className="font-semibold">Show my timeline on the public board.</b> The case number and employer never show there; it lists
+                <b className="font-semibold">Show my timeline on the public board.</b> The case number and employer never show there. It lists
                 the filing month and how many days each step took.
               </span>
             </label>{" "}

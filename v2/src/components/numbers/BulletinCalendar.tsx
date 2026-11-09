@@ -25,7 +25,7 @@ export function BulletinCalendar({ years, className }: { years: readonly Bulleti
         <div
           className="mt-1 grid gap-[2px]"
           role="img"
-          aria-label={`Visa bulletins held from ${years[0]!.year} to ${years[years.length - 1]!.year}; a blank square is a month not held.`}
+          aria-label={`Visa bulletins held from ${years[0]!.year} to ${years[years.length - 1]!.year}. A blank square is a month not held.`}
         >
           {years.map((y) => (
             <div key={y.year} className="grid grid-cols-[2.75rem_repeat(12,minmax(0,1fr))] items-center gap-[3px] leading-none">

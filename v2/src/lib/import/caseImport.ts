@@ -672,7 +672,7 @@ export async function parseCaseImportFile(file: File): Promise<ImportResult> {
         result.errors.push({
           row: 0,
           field: "file",
-          message: "Could not detect file format. Expected JSON array or object with cases.",
+          message: "Couldn't detect file format. Expected JSON array or object with cases.",
         });
       }
       return result;
@@ -922,7 +922,7 @@ function normalizeAndValidateCase(
         warnings.push({
           row: rowIndex,
           field: dateField,
-          message: `Could not parse date value "${value}" - field will be empty`,
+          message: `Couldn't parse date value "${value}", so the field will be empty`,
           employerName: typeof employerName === "string" ? employerName : undefined,
           originalValue: String(value),
         });
@@ -1057,7 +1057,7 @@ function normalizeAndValidateCase(
       warnings.push({
         row: rowIndex,
         field: "additionalRecruitmentMethods",
-        message: `Could not parse additionalRecruitmentMethods JSON string: "${jsonStr.substring(0, 50)}..."`,
+        message: `Couldn't parse additionalRecruitmentMethods JSON string: "${jsonStr.substring(0, 50)}..."`,
         employerName: typeof employerName === "string" ? employerName : undefined,
       });
       normalized.additionalRecruitmentMethods = [];

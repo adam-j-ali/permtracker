@@ -56,7 +56,7 @@ describe("I140Trends: the subtype split", () => {
     expect(within(panel).getByText(/NIW 47,291, E21 81,602/)).toBeInTheDocument();
     // And it is a rate over past petitions, never odds for one.
     expect(
-      within(panel).getByText(/rates over past petitions, not odds for a particular one/i),
+      within(panel).getByText(/rates over past petitions\. They aren't odds for a particular one/i),
     ).toBeInTheDocument();
   });
 

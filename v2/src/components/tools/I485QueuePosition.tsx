@@ -496,7 +496,7 @@ export function I485QueuePosition({
                           At the pace the final action cutoff moved over the last {reach.basis.spanMonths} months
                           ({Math.round(reach.basis.movedDays / reach.basis.spanMonths)} days per calendar month), it would reach this date in about{" "}
                           <strong className="font-semibold">{reach.months >= 24 ? `${(reach.months / 12).toFixed(1)} years` : `${reach.months} months`}</strong>.
-                          {reach.basis.retrogressions > 0 ? ` It retrogressed ${reach.basis.retrogressions} ${reach.basis.retrogressions === 1 ? "time" : "times"} inside that window, which is why this is arithmetic and not a promise.` : " That is arithmetic over a closed window, not a promise."}
+                          {reach.basis.retrogressions > 0 ? ` It retrogressed ${reach.basis.retrogressions} ${reach.basis.retrogressions === 1 ? "time" : "times"} inside that window, so this is only arithmetic. It isn't a promise.` : " That's arithmetic over a closed window. It isn't a promise."}
                           {(() => {
                             const tested = bulletinCheckSentence(check, reach.gapDays);
                             return tested ? <> {tested}</> : null;
@@ -703,7 +703,7 @@ const LIMITS = [
   "When you'll be reached. That depends on how many visa numbers your category and country receive, which the visa bulletin governs and this inventory doesn't.",
   "This counts applications already filed. Someone with an earlier priority date who could file and hasn't is ahead of you and isn't in this figure, and USCIS publishes nothing that would size that group.",
   "The queue is a snapshot taken once a month. Applications ahead of you leave it by being approved, denied or withdrawn, and new ones can arrive with earlier priority dates when someone transfers an approved petition.",
-  "Every family member files their own adjustment application, so a household appears here more than once. These are applications, not cases.",
+  "Every family member files their own adjustment application, so a household appears here more than once. These are counts of applications.",
   `Priority dates earlier than ${FIRST_YEAR} sit in a single "prior years" column, so a date before then counts as the front of the queue.`,
 ];
 
@@ -715,7 +715,7 @@ const LIMITS = [
  * the result says what it assumes.
  */
 const SUPPLY_ANCHORS = [
-  { label: "7% of one category", value: 2803, note: "7% of the 40,040 a category gets from the 140,000 floor; the rule of thumb many trackers use as a floor" },
+  { label: "7% of one category", value: 2803, note: "7% of the 40,040 a category gets from the 140,000 floor, the rule of thumb many trackers use as a floor" },
   { label: "Per-country cap", value: 25620, note: "the statutory 7% of the 366,000 family and employment total, across every preference category" },
   { label: "A whole category", value: 40040, note: "28.6% of the 140,000 employment floor, before any unused family numbers are added" },
 ] as const;
@@ -738,8 +738,8 @@ function SupplyScenario({ low, high }: { low: number; high: number }) {
         If the supply were
       </p>{" "}
       <p className="mt-2 text-sm leading-relaxed text-soft">
-        A scenario, not a forecast: choose how many visas a year reach this line and the queue ahead is
-        divided by it. Nobody publishes that supply in advance; the presets are the statute&apos;s figures.
+        This is a scenario. Choose how many visas a year reach this line, and the queue ahead is divided by it.
+        It isn&apos;t a forecast, because nobody publishes that supply in advance. The presets are the statute&apos;s figures.
       </p>{" "}
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <div className="min-w-0">
@@ -773,7 +773,7 @@ function SupplyScenario({ low, high }: { low: number; high: number }) {
           would take about{" "}
           <strong className="font-semibold">{fmt(lo) === fmt(hi) ? fmt(lo) : `${fmt(lo)} to ${fmt(hi)}`}</strong>.
           That assumes every number goes to an applicant ahead of you and none to anyone
-          behind, which is why it is a scenario.
+          behind, which is why it&apos;s a scenario.
         </p>
       ) : null}
     </div>

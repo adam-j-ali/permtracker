@@ -183,7 +183,7 @@ export async function planCaseSearch(
   const wageSource = wsrcRaw && isWageSource(wsrcRaw) ? wsrcRaw : null;
   // No file carries both halves, so the pair can only answer "nothing"; say why instead.
   if (wageSource && (naicsRaw || [city, citizenship, birthCountry, visaClass, education, jobEducation].some(Boolean))) {
-    return fail("a prevailing wage source is in DOL's LCA file, and industry, city and the worker's fields are in the PERM file; use one side");
+    return fail("a prevailing wage source is in DOL's LCA file, and industry, city and the worker's fields are in the PERM file. Use one side");
   }
 
   const orderRaw = (p.get("order") ?? "").trim();

@@ -82,7 +82,7 @@ export function Pager({
   const reason = loading
     ? "Loading…"
     : !hasNext && !hasPrevious
-      ? `That is every ${noun} in this list.`
+      ? `That's every ${noun} in this list.`
       : !hasNext
         ? `${nextLabel} is off: this is the last page.`
         : !hasPrevious

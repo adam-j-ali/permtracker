@@ -163,7 +163,7 @@ export function BulletinBoard({ board, className }: BulletinBoardProps) {
             </h2>{" "}
             <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted-foreground">
               A cutoff that advances thirty days in a month has stood still:
-              everyone waiting behind it is exactly as far back as they were.{" "}
+              everyone waiting behind the cutoff is exactly as far back as they were.{" "}
               {paceLine}
             </p>
           </div>{" "}
@@ -270,7 +270,7 @@ export function BulletinBoard({ board, className }: BulletinBoardProps) {
           </h3>{" "}
           <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted-foreground">
             Between the first and last bulletin with a real cutoff for each line. At 1.00 the cutoff keeps
-            pace with the calendar; below it, the wait got longer even as the date moved forward.
+            pace with the calendar. Below it, the wait got longer even as the date moved forward.
           </p>{" "}
 
           <ChartTips label="Cutoff days gained per calendar month, by queue" className="mt-6">
@@ -358,7 +358,7 @@ export function BulletinBoard({ board, className }: BulletinBoardProps) {
           {openLines.length > 0 ? (
             <>
               <p className="mt-5 text-base text-muted-foreground">
-                These published no cutoff date in this window; each was open to every priority date:
+                These published no cutoff date in this window. Each was open to every priority date:
               </p>{" "}
               <ul className="mt-3 flex flex-wrap gap-2">
                 {openLines.map((g) => (

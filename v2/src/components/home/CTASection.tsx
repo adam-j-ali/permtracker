@@ -21,7 +21,7 @@ export function CTASection({ lead = "lookup" }: { lead?: "lookup" | "app" }) {
           Check a case, or track a caseload
         </h2>{" "}
         <p className="mx-auto mt-3 max-w-lg text-base leading-relaxed">
-          Both free. The lookup needs no account; the app takes a few minutes to set up.
+          Both free. The lookup needs no account, and the app takes a few minutes to set up.
         </p>{" "}
         <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link

@@ -24,4 +24,4 @@ export const MIRROR_COMPLETE = true;
 
 /** Shown wherever a figure from the mirror is displayed while it loads. */
 export const PROVISIONAL_NOTICE =
-  "These counts come from a per-case scan that is still loading, so they are provisional: a filing month can look less decided than it is simply because its decided cases have not arrived yet. Nothing here is a published DOL figure.";
+  "These counts come from a per-case scan that's still loading, so they're provisional. A filing month's decided share can look low because its decided cases haven't arrived yet. Nothing here is a published DOL figure.";

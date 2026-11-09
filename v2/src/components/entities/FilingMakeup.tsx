@@ -133,9 +133,9 @@ export function OccupationMix({
           These are the {rows.length === 1 ? "occupation" : `${rows.length} occupations`} with
           the most filings, {formatInt(shown)} of {formatInt(total)} cases between them.
           The occupation on a PERM is the SOC code on the form, which is the
-          job as DOL classifies it rather than the job title on the offer. DOL
+          job as DOL classifies it. It can differ from the job title on the offer. DOL
           still accepts two SOC vintages, so one job can appear twice under
-          two codes; the code is printed for exactly that reason.
+          two codes. That&apos;s why the code is printed.
         </>
       }
       className={className}

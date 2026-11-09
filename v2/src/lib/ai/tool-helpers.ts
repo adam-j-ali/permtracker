@@ -129,7 +129,7 @@ export function validateConvexId(
   // MongoDB ObjectIds are exactly 24 hex chars — AI sometimes hallucinates these
   if (/^[0-9a-f]{24}$/.test(value)) {
     return {
-      error: `Invalid ${label}: "${value}" is not a valid case ID`,
+      error: `Invalid ${label}: "${value}" isn't a valid case ID`,
       suggestion: `The ID appears to be in the wrong format. Use the queryCases tool to find the correct case ID.`,
     };
   }

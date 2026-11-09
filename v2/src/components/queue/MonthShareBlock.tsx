@@ -76,7 +76,7 @@ export function MonthShareBlock({ month, label, alt }: { month: string; label: s
         Share {label}
       </h2>{" "}
       <p className="mt-2 text-base leading-relaxed text-soft">
-        Where the month stands as one picture, dated to the day it was counted.
+        The month&apos;s position as one picture, dated to the day it was counted.
       </p>{" "}
       <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,1fr)_13rem] [&>*]:min-w-0">
         {/* A plain img: the picture is drawn by our own route and already sized. */}

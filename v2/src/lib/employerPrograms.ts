@@ -78,5 +78,5 @@ export function wageGapSentence(gap: WageGap): string {
     return `Its median H-1B wage (${formatDollars(gap.lcaMedian)} across ${gap.lcaN.toLocaleString("en-US")} LCAs) and its median PERM wage (${formatDollars(gap.permMedian)} across ${gap.permN.toLocaleString("en-US")} cases) are within 2% of each other.`;
   }
   const dir = gap.dollars > 0 ? "higher" : "lower";
-  return `Its median H-1B wage is ${formatDollars(gap.lcaMedian)} across ${gap.lcaN.toLocaleString("en-US")} LCAs, ${pct} ${dir} than its median PERM wage of ${formatDollars(gap.permMedian)} across ${gap.permN.toLocaleString("en-US")} cases. Different forms, different years and different jobs sit behind the two medians, so this is a gap in what was filed, not a finding.`;
+  return `Its median H-1B wage is ${formatDollars(gap.lcaMedian)} across ${gap.lcaN.toLocaleString("en-US")} LCAs. That's ${pct} ${dir} than its median PERM wage of ${formatDollars(gap.permMedian)} across ${gap.permN.toLocaleString("en-US")} cases. Different forms, different years and different jobs sit behind the two medians, so this gap describes what was filed. It isn't a finding.`;
 }

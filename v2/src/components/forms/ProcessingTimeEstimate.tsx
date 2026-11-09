@@ -152,7 +152,7 @@ export function ProcessingTimeEstimate({
           {isPremiumProcessing
             ? "Premium processing guarantees a first review inside the window. It doesn’t guarantee approval, and the clock restarts if USCIS issues a request for evidence."
             : range.subtypes.length > 1
-              ? "Each figure is the time USCIS took to finish 80% of the petitions of that kind it decided over the past six months; the top line spans the fastest and slowest."
+              ? "Each figure is the time USCIS took to finish 80% of the petitions of that kind it decided over the past six months. The top line spans the fastest and slowest."
               : "The time USCIS took to finish 80% of the petitions of this kind it decided over the past six months."}{" "}
           Read from USCIS&apos;s page on {formatAsOf(PROCESSING_TIMES_AS_OF)}.{" "}
           <a

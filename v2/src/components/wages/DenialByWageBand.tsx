@@ -173,11 +173,11 @@ export function DenialByWageBand({
               {highest.band.toLowerCase()} band
             </>
           ) : null}
-          . It does not fall smoothly.{" "}
+          . It doesn&apos;t fall smoothly.{" "}
           {peak ? (
             <>
               The highest rate here is {peak.band.toLowerCase()} at{" "}
-              {(peak.deniedPct as number).toFixed(2)}%, not the bottom of the
+              {(peak.deniedPct as number).toFixed(2)}%. That band isn&apos;t the bottom of the
               range.{" "}
             </>
           ) : null}
@@ -220,7 +220,7 @@ export function DenialByWageBand({
           The same cases in five wide bands
         </p>{" "}
         <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-          Summed from the eleven above, not measured separately. It averages the{" "}
+          It&apos;s summed from the eleven above. It averages the{" "}
           {peak ? peak.band.toLowerCase() : "peak"} band with its quieter
           neighbours, so a plateau appears where the finer view has a peak.
         </p>
@@ -237,8 +237,8 @@ export function DenialByWageBand({
       {/* The denominator changes how every rate reads, so it stays visible.
           How the drawing works is provenance, and collapses. */}
       <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-        Withdrawn cases are excluded: a withdrawal is the employer stopping, not
-        a decision going against anyone. A band with fewer than{" "}
+        Withdrawn cases are excluded, because a withdrawal is the employer stopping.
+        It isn&apos;t a decision going against anyone. A band with fewer than{" "}
         {MIN_DECIDED_FOR_BAND_RATE.toLocaleString("en-US")} decided cases is
         withheld rather than drawn.
       </p>{" "}

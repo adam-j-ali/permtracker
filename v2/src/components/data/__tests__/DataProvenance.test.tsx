@@ -43,7 +43,7 @@ describe("DataProvenance", () => {
     await renderProvenance({ "perm-month-stats": row() });
     expect(screen.getByText("Pending case counts:")).toBeInTheDocument();
     expect(screen.getByText(/example\.test \(mirror\)/)).toBeInTheDocument();
-    expect(screen.queryByText(/has not refreshed/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/hasn't refreshed/)).not.toBeInTheDocument();
   });
 
   it("dates a news feed by when we checked it, with its newest item beside it", async () => {
@@ -73,7 +73,7 @@ describe("DataProvenance", () => {
       "perm-month-stats": row({ stale: true, ageDays: 41, maxAgeDays: 7 }),
     });
     expect(
-      screen.getByText(/Pending case counts has not refreshed in 41 days\./),
+      screen.getByText(/Pending case counts hasn't refreshed in 41 days\./),
     ).toBeInTheDocument();
     expect(screen.getByText(/should update daily/)).toBeInTheDocument();
   });
@@ -91,15 +91,15 @@ describe("DataProvenance", () => {
     await renderProvenance({
       "perm-month-stats": row({ ageDays: null, maxAgeDays: null, stale: false }),
     });
-    expect(screen.queryByText(/has not refreshed/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/hasn't refreshed/)).not.toBeInTheDocument();
   });
 
   it("degrades to a plain sentence when stale but the age is unreadable", async () => {
     await renderProvenance({
       "perm-month-stats": row({ stale: true, ageDays: null }),
     });
-    // Never "has not refreshed in null days".
-    expect(screen.getByText(/has not refreshed\./)).toBeInTheDocument();
+    // Never "hasn't refreshed in null days".
+    expect(screen.getByText(/hasn't refreshed\./)).toBeInTheDocument();
     expect(screen.queryByText(/null/)).not.toBeInTheDocument();
   });
 
@@ -107,7 +107,7 @@ describe("DataProvenance", () => {
     await renderProvenance({
       "perm-month-stats": row({ stale: true, ageDays: 1 }),
     });
-    expect(screen.getByText(/has not refreshed in a day\./)).toBeInTheDocument();
+    expect(screen.getByText(/hasn't refreshed in a day\./)).toBeInTheDocument();
   });
 
   it("keeps what a dataset includes in the page, folded under the source lines", async () => {
@@ -149,7 +149,7 @@ describe("DataProvenance", () => {
         source: "flag.dol.gov",
       }),
     });
-    expect(screen.getAllByText(/has not refreshed/)).toHaveLength(1);
+    expect(screen.getAllByText(/hasn't refreshed/)).toHaveLength(1);
     // Named once in its source line and once in the coverage fold.
     expect(screen.getAllByText("Case data:")).toHaveLength(2);
   });

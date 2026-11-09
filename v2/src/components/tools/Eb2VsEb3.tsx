@@ -210,7 +210,7 @@ function Verdict({
     const mine = cmp[fewer];
     head =
       mine.kind === "current"
-        ? `${LINE_NAME[fewer]} is current for you; ${LINE_NAME[other]} isn't`
+        ? `${LINE_NAME[fewer]} is current for you, and ${LINE_NAME[other]} isn't`
         : `${LINE_NAME[fewer]} has fewer people ahead of you`;
     const theirs = cmp[other];
     body =
@@ -354,7 +354,7 @@ function LineCard({
               <span>
                 Wide for this line: counting every approved petition gives{" "}
                 {rangeText(result.peopleAhead.low, result.peopleAhead.high)}, which runs{" "}
-                {result.check.ratio.toFixed(1)} times USCIS&apos;s own count where both exist; one person can hold
+                {result.check.ratio.toFixed(1)} times USCIS&apos;s own count where both exist. One person can hold
                 several petitions. Scaled down by that, it&apos;s{" "}
                 {rangeText(result.check.scaled.low, result.check.scaled.high)}.
               </span>

@@ -76,7 +76,7 @@ const MEANINGS: Record<string, Omit<StatusMeaning, "status" | "label">> = {
   "APPLICATION ON HOLD": {
     kind: "queue",
     summary:
-      "The case is pending and has been set aside from the ordinary queue. DOL publishes no definition for this state, so what put a particular case into it is not something this page can tell you.",
+      "The case is pending and has been set aside from the ordinary queue. DOL publishes no definition for this state, so this page can't tell you what put a particular case into it.",
     action:
       "The employer's attorney can ask DOL directly. Nothing on a public page will answer it.",
     deadline: null,
@@ -85,9 +85,9 @@ const MEANINGS: Record<string, Omit<StatusMeaning, "status" | "label">> = {
   "RFI ISSUED": {
     kind: "action",
     summary:
-      "DOL has asked the employer for more information before it decides. The regulation lets the Certifying Officer request supplemental information or documentation at any point before a final determination. An RFI is not an audit: an audit is a formal instrument under a different subsection with a fixed 30-day clock, and DOL runs the two as separate statuses in separate queues.",
+      "DOL has asked the employer for more information before it decides. The regulation lets the Certifying Officer request supplemental information or documentation at any point before a final determination. An RFI isn't an audit. An audit is a formal instrument under a different subsection with a fixed 30-day clock, and DOL runs the two as separate statuses in separate queues.",
     action:
-      "The employer has to answer. The letter itself sets the deadline, and missing it is how a case that was going to be certified gets denied instead.",
+      "The employer has to answer by the deadline the letter itself sets. A missed deadline is how a case that was going to be certified gets denied instead.",
     deadline:
       "Whatever the letter says. The regulation sets no fixed window for this one, unlike an audit.",
     cite: { label: "20 CFR 656.20(d)(1)", href: CFR("656.20") },
@@ -97,7 +97,7 @@ const MEANINGS: Record<string, Omit<StatusMeaning, "status" | "label">> = {
     summary:
       "The case was selected for audit, either because the review raised something or at random for quality control, and DOL is waiting on the documents.",
     action:
-      "The employer has to send the documentation the audit letter lists. Missing the date does not just risk a denial, it counts as a refusal to exhaust administrative remedies, and that closes the door on a BALCA appeal.",
+      "The employer has to send the documentation the audit letter lists. Missing the date risks a denial. It also counts as a refusal to exhaust administrative remedies, which closes the door on a BALCA appeal.",
     deadline:
       "30 days from the date of the audit letter. The Certifying Officer may grant one extension of up to 30 more days, at their discretion.",
     cite: { label: "20 CFR 656.20(a)(2)", href: CFR("656.20") },
@@ -105,7 +105,7 @@ const MEANINGS: Record<string, Omit<StatusMeaning, "status" | "label">> = {
   "SUPERVISED RECRUITMENT": {
     kind: "action",
     summary:
-      "DOL has taken over the recruitment. The employer has to advertise again, where DOL tells it to, with wording DOL approves first, and applications go to the Certifying Officer rather than to the employer.",
+      "DOL has taken over the recruitment. The employer has to advertise again where DOL tells it to, with wording DOL approves first. Applications go to the Certifying Officer instead of the employer.",
     action:
       "The employer has to supply a draft advertisement to the Certifying Officer for approval.",
     deadline:
@@ -115,7 +115,7 @@ const MEANINGS: Record<string, Omit<StatusMeaning, "status" | "label">> = {
   "NORD ISSUED": {
     kind: "action",
     summary:
-      "DOL does not publish an expansion of this acronym or a definition of the state, so this page will not put one on it. What is measurable is that it is a pending state, and that it holds very few cases.",
+      "DOL publishes no expansion of this acronym and no definition of the state, so this page won't put one on it. The data shows only that it's a pending state, and that it holds very few cases.",
     action:
       "The notice itself says what DOL wants and by when. The employer's attorney has it.",
     deadline: null,
@@ -124,7 +124,7 @@ const MEANINGS: Record<string, Omit<StatusMeaning, "status" | "label">> = {
   "DETERMINATION ISSUED": {
     kind: "queue",
     summary:
-      "A decision has been issued on the case, and the live status has not yet settled to the outcome. DOL publishes no definition for this intermediate state.",
+      "A decision has been issued on the case, and the live status hasn't settled to the outcome yet. DOL publishes no definition for this intermediate state.",
     action: null,
     deadline: null,
     cite: null,
@@ -159,7 +159,7 @@ const MEANINGS: Record<string, Omit<StatusMeaning, "status" | "label">> = {
   "DENIED - BALCA DISMISSED": {
     kind: "appeal",
     summary:
-      "A denied case whose appeal to BALCA ended without the Board ruling on its merits. DOL publishes no definition of this status, and the words dismiss and dismissal do not appear in the section governing BALCA decisions at all, which lists only affirming the denial, directing the officer to grant, or ordering a hearing. One case in the whole snapshot carries it.",
+      "A denied case whose appeal to BALCA ended without the Board ruling on its merits. DOL publishes no definition of this status. The words dismiss and dismissal don't appear anywhere in the section governing BALCA decisions. That section lists only three outcomes: affirming the denial, directing the officer to grant, or ordering a hearing. One case in the whole snapshot carries it.",
     action: null,
     deadline: null,
     cite: null,
@@ -167,7 +167,7 @@ const MEANINGS: Record<string, Omit<StatusMeaning, "status" | "label">> = {
   "DENIED - BALCA AFFIRMED": {
     kind: "decided",
     summary:
-      "The employer appealed the denial to the Board of Alien Labor Certification Appeals, and the Board affirmed it. The Board reviews the record the decision was made on and must affirm the denial, direct the Certifying Officer to grant the certification, or order a hearing; this is the first of the three. The regulation names no further step inside DOL.",
+      "The employer appealed the denial to the Board of Alien Labor Certification Appeals, and the Board affirmed it. The Board reviews the record the decision was made on and must affirm the denial, direct the Certifying Officer to grant the certification, or order a hearing. Here it took the first of the three. The regulation names no further step inside DOL.",
     action: null,
     deadline: null,
     cite: { label: "20 CFR 656.27(c)", href: CFR("656.27") },
@@ -175,9 +175,9 @@ const MEANINGS: Record<string, Omit<StatusMeaning, "status" | "label">> = {
   CERTIFIED: {
     kind: "decided",
     summary:
-      "DOL granted the labor certification. That is the end of the PERM stage. It is not a green card and it is not a petition: it is the document an employer files an I-140 with.",
+      "DOL granted the labor certification. That ends the PERM stage, and the certification is the document an employer files an I-140 with. It isn't a green card or a petition.",
     action:
-      "The employer has to file the I-140 while the certification is still valid. A certification that is not filed in time expires and the whole PERM stage has to be done again.",
+      "The employer has to file the I-140 while the certification is still valid. A certification that isn't filed in time expires, and the whole PERM stage has to be done again.",
     deadline:
       "180 calendar days from the date DOL granted it, to file in support of a Form I-140.",
     cite: { label: "20 CFR 656.30(b)(1)", href: CFR("656.30") },
@@ -185,9 +185,9 @@ const MEANINGS: Record<string, Omit<StatusMeaning, "status" | "label">> = {
   "CERTIFIED - EXPIRED": {
     kind: "decided",
     summary:
-      "DOL granted the certification and the 180-day window to file an I-140 with it has passed. The regulation is explicit: a certification expires if it is not filed in support of an I-140 petition within 180 calendar days of the date DOL granted it.",
+      "DOL granted the certification and the 180-day window to file an I-140 with it has passed. The regulation is explicit: a certification expires if it isn't filed in support of an I-140 petition within 180 calendar days of the date DOL granted it.",
     action:
-      "This is our reading rather than DOL's, because DOL publishes no note on it: expiry is a calendar event, not a finding that nothing was filed. DOL grants the certification, USCIS receives the I-140, and nothing suggests DOL is told when one arrives. So a case where the employer filed on day 30 and a case where nobody ever filed both end up here. If an I-140 went in inside the window it is unaffected. The employer's attorney knows which of the two happened; this page cannot.",
+      "This is our reading rather than DOL's, because DOL publishes no note on it. Expiry is a calendar event. It doesn't mean nothing was filed. DOL grants the certification and USCIS receives the I-140. Nothing suggests DOL is told when one arrives. So a case where the employer filed on day 30 and a case where nobody ever filed both end up here. If an I-140 went in inside the window, it's unaffected. The employer's attorney knows which of the two happened, and this page can't.",
     deadline: null,
     cite: { label: "20 CFR 656.30(b)(1)", href: CFR("656.30") },
   },
@@ -204,7 +204,7 @@ const MEANINGS: Record<string, Omit<StatusMeaning, "status" | "label">> = {
   WITHDRAWN: {
     kind: "decided",
     summary:
-      "The employer withdrew the application. DOL records no reason, so nothing here can say why. A withdrawal is not a denial and it does not count against anybody.",
+      "The employer withdrew the application. DOL records no reason, so nothing here can say why. A withdrawal isn't a denial, and it doesn't count against anybody.",
     action: null,
     deadline: null,
     cite: null,

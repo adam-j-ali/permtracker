@@ -37,13 +37,13 @@ function verdictText(v: EadVerdict, expires: string): { head: string; body: stri
         head: `Extended through ${long(v.through)}`,
         body: v.byI94
           ? `Up to ${EXTENSION_DAYS} days after the card's date, but this category also ends with the I-94, which comes first. The card and the I-797C receipt together are the proof (8 CFR 274a.13(d)(4)). A denial of the renewal ends it at once.`
-          : `${EXTENSION_DAYS} days after ${long(expires)}, unless USCIS decides the renewal sooner; a denial ends it at once (8 CFR 274a.13(d)(3)). The card and the I-797C receipt together are the proof (8 CFR 274a.13(d)(4)).`,
+          : `${EXTENSION_DAYS} days after ${long(expires)}, unless USCIS decides the renewal sooner. A denial ends it at once (8 CFR 274a.13(d)(3)). The card and the I-797C receipt together are the proof (8 CFR 274a.13(d)(4)).`,
       };
     case "after-cutoff":
       return {
         ok: false,
         head: "Not extended",
-        body: "A renewal received on or after October 30, 2025 doesn't extend the card (8 CFR 274a.13(e), added by the interim final rule at 90 FR 48799). The card is good through the date printed on it; after that, work authorization waits for the new card unless your status itself authorizes work.",
+        body: "A renewal received on or after October 30, 2025 doesn't extend the card (8 CFR 274a.13(e), added by the interim final rule at 90 FR 48799). The card is good through the date printed on it. After that, work authorization waits for the new card unless your status itself authorizes work.",
       };
     case "filed-late":
       return {

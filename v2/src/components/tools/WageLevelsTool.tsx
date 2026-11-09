@@ -208,7 +208,7 @@ export function WageLevelsTool({ initialSoc = "" }: { initialSoc?: string }) {
       const res = await fetch(`/api/wage-levels?soc=${encodeURIComponent(soc.trim())}&area=${area}&year=${seriesYear}`);
       const j = (await res.json().catch(() => null)) as { ok?: boolean; levels?: WageLevel[] | null; message?: string; soc?: string; seriesYear?: number; source?: string } | null;
       if (!res.ok || !j?.ok) {
-        setResult({ kind: "error", message: j?.message ?? "DOL could not be reached. Try again in a moment." });
+        setResult({ kind: "error", message: j?.message ?? "DOL couldn't be reached. Try again in a moment." });
         return;
       }
       if (!j.levels) {
@@ -217,7 +217,7 @@ export function WageLevelsTool({ initialSoc = "" }: { initialSoc?: string }) {
       }
       setResult({ kind: "levels", levels: j.levels, seriesYear: j.seriesYear ?? seriesYear, soc: j.soc ?? soc, areaLabel: areas?.find((a) => String(a.value) === area)?.label ?? area, source: j.source ?? "https://flag.dol.gov/wage-data/wage-search" });
     } catch {
-      setResult({ kind: "error", message: "That did not go through, which usually means the connection dropped." });
+      setResult({ kind: "error", message: "That didn't go through, which usually means the connection dropped." });
     }
   }
 

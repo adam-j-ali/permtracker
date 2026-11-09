@@ -244,7 +244,7 @@ export default function ProfileSection({
         <FormField
           label="What describes you"
           name="role"
-          hint="Sets what the app shows you. Picked at setup; change it any time."
+          hint="Sets what the app shows you. Picked at setup, and you can change it any time."
         >
           <SelectInput
             id="role"

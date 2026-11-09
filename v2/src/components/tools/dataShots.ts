@@ -9,7 +9,7 @@ export const DATA_SHOTS: Record<DataShot, { shots: WindowShots; alt: string; cap
       light: { src: "/images/data/cases-light.webp", width: 1800, height: 1725 },
       dark: { src: "/images/data/cases-dark.webp", width: 1800, height: 1725 },
     },
-    alt: "The PERM cases page: 373,939 decided cases in DOL's published files, October 2023 to June 2026, and 160,716 newer from DOL's live service, with the cases DOL decides each month since 2015.",
+    alt: "The PERM cases page: 373,939 decided cases in DOL's published files from October 2023 to June 2026, and 160,716 newer ones from DOL's live service. A chart shows the cases DOL decides each month since 2015.",
     captured: "2026-10-21",
   },
   "wait": {
@@ -25,7 +25,7 @@ export const DATA_SHOTS: Record<DataShot, { shots: WindowShots; alt: string; cap
       light: { src: "/images/data/pwd-light.webp", width: 1800, height: 1725 },
       dark: { src: "/images/data/pwd-dark.webp", width: 1800, height: 1725 },
     },
-    alt: "The wage request page: PERM wage requests taking 3 to 4 months by DOL's figure of September 30, 2026, 47,494 waiting and 886,809 decided, DOL deciding requests filed in June 2026, and a search by employer.",
+    alt: "The wage request page. PERM wage requests take 3 to 4 months by DOL's figure of September 30, 2026, with 47,494 waiting and 886,809 decided. DOL is deciding requests filed in June 2026, and there's a search by employer.",
     captured: "2026-10-28",
   },
   "recruitment": {
@@ -33,7 +33,7 @@ export const DATA_SHOTS: Record<DataShot, { shots: WindowShots; alt: string; cap
       light: { src: "/images/data/recruitment-light.webp", width: 1800, height: 1725 },
       dark: { src: "/images/data/recruitment-dark.webp", width: 1800, height: 1725 },
     },
-    alt: "The PERM recruitment page, from 276,788 decided cases through June 30, 2026: a median 120 days from the first step to filing, 97% Sunday newspapers, 65% a job search website, 98% the notice posted at the workplace, and how long before filing each step ran.",
+    alt: "The PERM recruitment page, from 276,788 decided cases through June 30, 2026. It shows a median 120 days from the first step to filing, and how long before filing each step ran. Of the cases, 97% used Sunday newspapers, 65% a job search website and 98% the notice posted at the workplace.",
     captured: "2026-10-28",
   },
   "employers": {
@@ -73,7 +73,7 @@ export const DATA_SHOTS: Record<DataShot, { shots: WindowShots; alt: string; cap
       light: { src: "/images/data/i140-light.webp", width: 1800, height: 1725 },
       dark: { src: "/images/data/i140-dark.webp", width: 1800, height: 1725 },
     },
-    alt: "The USCIS processing times page for April to June 2026: 3.9 months to decide an I-140, 6 for an employment-based I-485, 6.4 for a work permit and 5.8 for advance parole, with 12,807,907 applications pending at USCIS.",
+    alt: "The USCIS processing times page for April to June 2026. It shows 3.9 months to decide an I-140, 6 for an employment-based I-485, 6.4 for a work permit and 5.8 for advance parole. 12,807,907 applications are pending at USCIS.",
     captured: "2026-10-28",
   },
   "students": {

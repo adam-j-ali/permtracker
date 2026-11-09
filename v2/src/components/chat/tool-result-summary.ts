@@ -52,7 +52,7 @@ export function summarizeToolResult(tool: string, result?: string): string {
     }
 
     // A write that needs a date or a detail first changed nothing.
-    if (parsed && parsed.needsInfo === true) return 'Needs a detail first; nothing changed';
+    if (parsed && parsed.needsInfo === true) return 'Needs a detail first, so nothing changed';
     if (parsed && parsed.changed === false && typeof parsed.message === 'string') return truncate(parsed.message, 60);
 
     switch (tool) {

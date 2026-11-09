@@ -533,7 +533,7 @@ export default function NotificationPreferencesSection({
                 Watch saved cases on DOL
               </Label>
               <p className="text-sm text-muted-foreground">
-                Check DOL for each saved case that has a case number, and flag it when its status changes. DOL&rsquo;s status shows on the case; it never changes the stage you set. An email is sent only when status updates above are on.
+                Check DOL for each saved case that has a case number, and flag it when its status changes. DOL&rsquo;s status shows on the case, and it never changes the stage you set. An email is sent only when status updates above are on.
               </p>
             </div>
             <Switch

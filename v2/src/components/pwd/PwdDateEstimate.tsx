@@ -61,7 +61,7 @@ export function PwdDateEstimate({
             <p className="mt-2 text-base text-soft">
               {reached
                 ? `DOL is already deciding requests filed that day. One still waiting may have an RFI or another review.`
-                : `Most likely between ${longDate(dated.earliest)} and ${longDate(dated.latest)}. ${formatInt(dated.requestsAhead)} requests filed before it are still waiting; DOL finishes about ${formatInt(Math.round(dated.pace))} a working day.`}
+                : `Most likely between ${longDate(dated.earliest)} and ${longDate(dated.latest)}. ${formatInt(dated.requestsAhead)} requests filed before it are still waiting, and DOL finishes about ${formatInt(Math.round(dated.pace))} a working day.`}
             </p>{" "}
             {sameDay !== null && sameDay > 0 && decidedThatDay !== null ? (
               <p className="mt-2 text-base">
@@ -92,7 +92,7 @@ export function PwdDateEstimate({
         )}
       </div>{" "}
       <p className="mt-4 text-sm text-muted-foreground">
-        An estimate from DOL&apos;s recent pace, not a promise. Have the number? The lookup above checks the request itself.
+        It&apos;s an estimate from DOL&apos;s recent pace. It isn&apos;t a promise. Have the number? The lookup above checks the request itself.
       </p>
     </div>
   );

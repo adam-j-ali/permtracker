@@ -148,7 +148,7 @@ export function DecisionPaceChart({
           viewBox={`0 0 ${W} ${H}`}
           className="block h-auto w-full min-w-[44rem]"
           role="img"
-          aria-label={`Decisions per week from ${(monthTick(weekNames[0] ?? "") ?? weekNames[0] ?? "")} to ${(monthTick(weekNames[weekNames.length - 1] ?? "") ?? weekNames[weekNames.length - 1] ?? "")}, peaking at ${max.toLocaleString("en-US")} in one week. A week DOL decided nothing is drawn at zero; a break in the line separates two different sources rather than marking a stoppage.`}
+          aria-label={`Decisions per week from ${(monthTick(weekNames[0] ?? "") ?? weekNames[0] ?? "")} to ${(monthTick(weekNames[weekNames.length - 1] ?? "") ?? weekNames[weekNames.length - 1] ?? "")}, peaking at ${max.toLocaleString("en-US")} in one week. A week DOL decided nothing is drawn at zero, and a break in the line separates two different sources rather than marking a stoppage.`}
         >
           {yTicks.map((v) => (
             <g key={v}>

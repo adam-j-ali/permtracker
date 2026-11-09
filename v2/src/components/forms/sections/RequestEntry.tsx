@@ -252,7 +252,7 @@ function RequestEntryComponent({
         if (currentDueDate && value > currentDueDate) {
           setInlineErrors((prev) => ({
             ...prev,
-            responseSubmittedDate: `Response submitted date cannot be after due date (${currentDueDate})`,
+            responseSubmittedDate: `Response submitted date can't be after due date (${currentDueDate})`,
           }));
         } else {
           setInlineErrors((prev) => {

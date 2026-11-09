@@ -77,8 +77,8 @@ export function UscisReceiptForm({ defaultValue = "", className, live = false }:
       <p id={helpId} className="mt-2 text-sm text-muted-foreground">
         {isDol ? (
           <span className="font-bold text-data-warn-ink">
-            That is a Department of Labor number, not a USCIS receipt. Submitting
-            takes you to the PERM case page, which reads it.
+            That&apos;s a Department of Labor number. Submitting takes you to the
+            PERM case page, which reads it.
           </span>
         ) : malformed ? (
           <span className="font-bold text-data-bad-ink">{RECEIPT_SHAPE_MESSAGE}</span>
@@ -87,7 +87,7 @@ export function UscisReceiptForm({ defaultValue = "", className, live = false }:
             It&apos;s at the top of every I-797 notice USCIS mailed. The number goes
             into this page&apos;s address so you can bookmark or share the result.
             The receipt number and USCIS&apos;s answer are kept for twelve months
-            after the last lookup; nothing about you is.
+            after the last lookup. Nothing about you is kept.
           </>
         ) : (
           <>

@@ -253,8 +253,8 @@ export function StageMoves({ stats, since }: { stats: StageStats | null; since: 
       <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">
         Every status change our sweep has seen{since ? ` since ${formatAsOf(since)}` : ""}, from DOL&apos;s case-status
         service, for every PERM case. A move is counted whether or not we saw the case arrive at the step, so this
-        says where cases go, not how long they stay; the typical stay is shown only where we watched enough cases
-        arrive.
+        says where cases go. It doesn&apos;t say how long they stay, and the typical stay is shown only where we watched
+        enough cases arrive.
       </p>
     </div>
   );

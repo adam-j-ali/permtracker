@@ -21,7 +21,7 @@ const STEPS: JobCodeStep[] = [
   },
   {
     title: "Take a description",
-    text: "O*NET's description and tasks for the code, to take or leave. Keep the tasks that fit; the requirements stay the employer's.",
+    text: "O*NET's description and tasks for the code, to take or leave. Keep the tasks that fit. The requirements stay the employer's.",
     url: "permtracker.app/cases/new",
     shots: TOUR_SHOTS["job-suggestion"],
     alt: "The description O*NET gives SOC 15-2031, Operations Research Analysts, suggested on the case form with its tasks ticked to include and the buttons Use this description and Not now.",

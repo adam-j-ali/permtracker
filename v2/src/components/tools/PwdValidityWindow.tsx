@@ -102,8 +102,8 @@ export function PwdValidityWindow({ className }: { className?: string }) {
           days. One issued {formatAsOf(cliffAfter)} is valid {longDays}.
         </p>{" "}
         <p className="mt-3 max-w-2xl text-base leading-relaxed text-soft">
-          Validity follows the wage year, not your determination date, and recruitment and the 30-day quiet
-          period must fit inside it. Which side of 30 June yours lands on decides how tight that is.
+          Validity follows the wage year, and recruitment and the 30-day quiet period must fit inside it. Which
+          side of 30 June your determination lands on decides how tight that is.
         </p>
       </div>
 

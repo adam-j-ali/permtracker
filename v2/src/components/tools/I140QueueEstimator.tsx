@@ -214,7 +214,7 @@ export function I140QueueEstimator({
             <p className="mt-3 text-base leading-relaxed text-muted-foreground">
               Half of every I-140 decided in {quarterlyMedian.quarterLabel} took less
               {quarterlyMedian.completed !== null ? `, over ${quarterlyMedian.completed.toLocaleString("en-US")} decisions` : ""}.
-              One median across every subtype; the figure beside it is per subtype and covers 80% of cases.{" "}
+              This is one median across every subtype. The figure beside it covers 80% of cases, per subtype.{" "}
               <Link href="/uscis-processing-times" className="link">
                 Every form&apos;s median
               </Link>

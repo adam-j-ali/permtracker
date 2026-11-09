@@ -82,7 +82,7 @@ describe("I140Trends", () => {
     fireEvent.change(screen.getByLabelText("Category"), { target: { value: "E21" } });
     // 31,000, not 30,000 + 31,000.
     expect(screen.getByText("31,000")).toBeInTheDocument();
-    expect(screen.getByText(/waiting at the newest quarter, not a sum/)).toBeInTheDocument();
+    expect(screen.getByText(/waiting as of the newest quarter alone/)).toBeInTheDocument();
   });
 
   it("omits a quarter USCIS has not reported rather than drawing it at zero", () => {
@@ -109,6 +109,6 @@ describe("I140Trends", () => {
 
   it("says nothing rather than drawing an empty category", () => {
     render(<I140Trends rows={[r(2026, 3, "EB2", "Second Preference", 0, 0, 0, 0)]} />);
-    expect(screen.getByText(/has not reported any quarter/)).toBeInTheDocument();
+    expect(screen.getByText(/hasn't reported any quarter/)).toBeInTheDocument();
   });
 });

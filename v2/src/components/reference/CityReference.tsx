@@ -121,9 +121,9 @@ export async function CityReference({
               <dd className="mt-1 text-base font-bold">{geo.countyName}</dd>{" "}
               <dd className="mt-1 text-sm text-muted-foreground">
                 {geo.countyBasis === "nearest"
-                  ? "The place spans several counties; this one is nearest its center"
+                  ? "The place spans several counties, and this one is nearest its center"
                   : geo.countyBasis === "nearest-in-state"
-                    ? "The nearest county; Census lists the place in none current"
+                    ? "The nearest county, since Census lists the place in no current one"
                     : `Census places ${geo.placeName ?? label} ${placed} it`}
               </dd>
             </div>
@@ -143,7 +143,7 @@ export async function CityReference({
               <dd className="mt-1 text-base font-bold">{geo.wageAreaName}</dd>{" "}
               <dd className="mt-1 text-sm text-muted-foreground">
                 {split
-                  ? `For ${geo.countyName ?? "the county"}, at the city's center; its counties sit in ${countWord(geo.wageAreas ?? 0)} wage areas`
+                  ? `For ${geo.countyName ?? "the county"}, at the city's center. Its counties sit in ${countWord(geo.wageAreas ?? 0)} wage areas`
                   : geo.wageYear
                     ? `The area DOL sets prevailing wages for, wage year ${wageYearLabel(geo.wageYear)}`
                     : "The area DOL sets prevailing wages for"}
@@ -166,7 +166,7 @@ export async function CityReference({
         <FigurePlate
           title={`What these jobs pay in ${geo.wageAreaName ?? geo.cbsaTitle ?? label}`}
           subject={`${series ? `BLS ${series}` : "BLS"}${year ? `, DOL wage year ${wageYearLabel(year)}` : ""}`}
-          caption={`The jobs filed most in ${label}: what employers in the metro report paying everyone in each, and DOL's four prevailing wage levels there.${split ? ` ${label} spans ${countWord(geo.wageAreas ?? 0)} of DOL's wage areas; these figures are for ${geo.wageAreaName}, which takes in its center.` : ""}`}
+          caption={`The jobs filed most in ${label}: what employers in the metro report paying everyone in each, and DOL's four prevailing wage levels there.${split ? ` ${label} spans ${countWord(geo.wageAreas ?? 0)} of DOL's wage areas. These figures are for ${geo.wageAreaName}, which takes in its center.` : ""}`}
           source="BLS Occupational Employment and Wage Statistics; DOL OFLC wage tables"
           className="mt-10"
         >

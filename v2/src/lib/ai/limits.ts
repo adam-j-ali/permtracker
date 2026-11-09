@@ -196,7 +196,7 @@ export function annotateCaseQuery<T>(result: T): T & { note?: string; _ai_instru
   // reads the newest 5,000), so even `count` leaves the oldest out.
   const accountNote =
     r.accountTruncated === true
-      ? 'This account holds more cases than one search covers, so the oldest were not searched.'
+      ? "This account holds more cases than one search covers, so the oldest weren't searched."
       : undefined;
   if (!note && !accountNote) return result as Annotated;
   const instructions = [
