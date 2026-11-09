@@ -63,6 +63,35 @@ describe("CaseFilterBar's Filters panel", () => {
   });
 });
 
+describe("CaseFilterBar on the Closed and Completed tabs", () => {
+  // Each of those tabs is a stage itself, so a stage picked in the panel would quietly list other cases under it.
+  it.each(["Closed", "Completed"])("offers no stage to pick on %s, and says why", async (tab) => {
+    // Arrange
+    const user = userEvent.setup();
+    render(<Bar />);
+    // Act
+    await user.click(screen.getByRole("button", { name: tab }));
+    await user.click(screen.getByRole("button", { name: "Filters" }));
+    // Assert
+    const panel = within(screen.getByRole("dialog", { name: "Filters" }));
+    expect(panel.queryByRole("group", { name: "Stage" })).not.toBeInTheDocument();
+    expect(panel.getByText(`The ${tab} tab sets the stage. Pick All to filter by stage.`)).toBeInTheDocument();
+  });
+
+  it("offers no progress on Completed, which is the approved I-140s", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    render(<Bar />);
+    // Act
+    await user.click(screen.getByRole("button", { name: "Completed" }));
+    await user.click(screen.getByRole("button", { name: "Filters" }));
+    // Assert
+    const panel = within(screen.getByRole("dialog", { name: "Filters" }));
+    expect(panel.queryByRole("group", { name: "Progress" })).not.toBeInTheDocument();
+    expect(panel.getByRole("checkbox", { name: "Duplicates only" })).toBeInTheDocument();
+  });
+});
+
 describe("CaseFilterBar's Sort panel", () => {
   it("takes the order and the page size without closing, the size in one tap", async () => {
     // Arrange
