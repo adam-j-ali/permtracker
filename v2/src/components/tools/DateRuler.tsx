@@ -78,7 +78,11 @@ export function DateRuler({
   const span = ready ? Math.max(1, daysBetween(from, to)) : 1;
   const pct = (iso: string) => (ready ? Math.min(100, Math.max(0, (daysBetween(from, iso) / span) * 100)) : 0);
   const todayPct = ready && today && today >= from ? pct(today) : null;
-  const left = ready && today ? daysBetween(today, to) : null;
+  // Before the period starts, the count is how long until it does: days "left" from today would include days
+  // the period doesn't hold, and read as more than it has in all.
+  const startsIn = ready && today && today < from ? daysBetween(today, from) : null;
+  const left = ready && today && startsIn === null ? daysBetween(today, to) : null;
+  const inAll = formatInt(inclusive ? span + 1 : span);
   const shown = ready ? marks.filter((m) => m.at >= from && m.at <= to) : [];
   const placeholder = <span aria-hidden="true" className="inline-block h-6 w-28 bg-foreground/10 align-middle" />;
 
@@ -139,12 +143,18 @@ export function DateRuler({
         </ul>
       ) : null}{" "}
 
+      {startsIn !== null ? (
+        <p className="mt-4 border-t-2 border-border pt-3 text-base">
+          <span className="font-heading text-3xl font-bold tabular-nums">{formatInt(startsIn)}</span>{" "}
+          {startsIn === 1 ? "day" : "days"} until it starts, then {inAll} in all.
+        </p>
+      ) : null}
       {left !== null ? (
         <p className="mt-4 border-t-2 border-border pt-3 text-base">
           {left >= 0 ? (
             <>
               <span className="font-heading text-3xl font-bold tabular-nums">{formatInt(left)}</span>{" "}
-              {left === 1 ? "day" : "days"} {leftWord}, of {formatInt(inclusive ? span + 1 : span)} in all.
+              {left === 1 ? "day" : "days"} {leftWord}, of {inAll} in all.
             </>
           ) : (
             <>
