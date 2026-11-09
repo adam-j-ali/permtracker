@@ -329,6 +329,14 @@ describe("the per-case watch toggle (cases.setWatchEnabled)", () => {
       other.ctx.mutation(api.cases.setWatchEnabled, { id: caseId, enabled: false }),
     ).rejects.toThrow();
   });
+
+  it("isn't an edit of the case: its last-changed time stays, so a waiting chat card still applies", async () => {
+    const t = createTestContext();
+    const owner = await createAuthenticatedContext(t, "Owner");
+    const caseId = await makeCase(t, owner.userId, { updatedAt: 1_000 });
+    await owner.ctx.mutation(api.cases.setWatchEnabled, { id: caseId, enabled: false });
+    expect((await getCase(t, caseId))?.updatedAt).toBe(1_000);
+  });
 });
 
 describe("overlapping runs (recordLiveChange)", () => {
