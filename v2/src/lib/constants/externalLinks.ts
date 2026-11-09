@@ -42,6 +42,8 @@ export const BLUESKY_URL = "https://bsky.app/profile/permtracker.app";
 export const YOUTUBE_URL = "https://www.youtube.com/@permtracker";
 /** The brand's Facebook Page (Nov 8 2026): a Page, never a person's profile. */
 export const FACEBOOK_URL = "https://www.facebook.com/permtracker";
+/** The brand's Instagram business account (Nov 9 2026), linked to the Facebook Page. */
+export const INSTAGRAM_URL = "https://www.instagram.com/permtracker";
 /** The brand's Crunchbase company page (Nov 9 2026): a structured-data profile only, no footer icon. */
 export const CRUNCHBASE_URL = "https://www.crunchbase.com/organization/perm-tracker";
 
@@ -69,7 +71,7 @@ export const FEATURE_REQUEST_URL = `mailto:${SUPPORT_EMAIL_ADDRESS}?subject=Feat
 export interface SocialLink {
   href: string;
   label: string;
-  icon: "twitter" | "linkedin" | "bluesky" | "youtube" | "facebook";
+  icon: "twitter" | "linkedin" | "bluesky" | "youtube" | "facebook" | "instagram";
 }
 
 /**
@@ -95,6 +97,7 @@ export const SOCIAL_LINKS = [
   { href: BLUESKY_URL, label: "Bluesky", icon: "bluesky" },
   { href: YOUTUBE_URL, label: "YouTube", icon: "youtube" },
   { href: FACEBOOK_URL, label: "Facebook", icon: "facebook" },
+  { href: INSTAGRAM_URL, label: "Instagram", icon: "instagram" },
 ] as const satisfies readonly SocialLink[];
 
 /**
