@@ -114,7 +114,7 @@ export default function Footer({ audience = "public" }: { audience?: "public" | 
               <ul className="mt-2">
                 {col.pages.map((p) => (
                   <li key={p.href}>
-                    <IntentLink href={p.href} className={`flex min-h-10 items-center text-base ${LINK}`}>
+                    <IntentLink href={p.href} className={`flex min-h-11 items-center text-base ${LINK}`}>
                       <span className="hover-underline">{p.name}</span>
                     </IntentLink>{" "}
                   </li>

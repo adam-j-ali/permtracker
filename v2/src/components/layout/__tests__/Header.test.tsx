@@ -129,4 +129,20 @@ describe("ThemeToggle", () => {
     renderWithProviders(<ThemeToggle />, { providerProps: { theme } });
     expect(screen.getByRole("button", { name: expectedLabel })).toBeInTheDocument();
   });
+
+  // The footer is always dark (a `.dark` scope of its own), so an icon picked by `dark:` showed the sun there in
+  // both themes. The icon follows the page's theme on the root element, not the nearest dark scope.
+  it("picks its icon from the page's theme, not the dark footer around it", () => {
+    // Arrange, Act
+    const { container } = renderWithProviders(
+      <footer className="dark">
+        <ThemeToggle />
+      </footer>,
+    );
+    // Assert
+    const icons = [...container.querySelectorAll("svg")].map((s) => s.getAttribute("class") ?? "");
+    expect(icons).toHaveLength(2);
+    for (const c of icons) expect(c).not.toMatch(/(^|\s)dark:/);
+    expect(icons.some((c) => /\[:root\.dark_&\]:block/.test(c))).toBe(true);
+  });
 });
