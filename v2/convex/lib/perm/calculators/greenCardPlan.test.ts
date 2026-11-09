@@ -86,6 +86,16 @@ describe('buildPlan', () => {
       const filedOnly = buildPlan({ ...certifiedNoDate, reached: 'permFiled' }, FIGURES);
       expect(step(filedOnly, 'perm').end!.mid > base.today).toBe(true);
     });
+
+    it('still dates the rest of the plan when nothing measures the step it reached', () => {
+      // No PERM wait to date the certification by: the reader says it happened, so it's today at the latest.
+      const noPermSpan = { ...FIGURES, spans: { ...FIGURES.spans, perm: null } };
+      const plan = buildPlan(certifiedNoDate, noPermSpan);
+      expect(step(plan, 'perm').end).toEqual({ low: base.today, mid: base.today, high: base.today });
+      expect(step(plan, 'perm').basis).toMatch(/date not given/i);
+      expect(step(plan, 'i140Prep').end).toEqual({ low: '2026-11-27', mid: '2026-11-27', high: '2026-11-27' }); // today + 30
+      expect(plan.greenCard).not.toBeNull();
+    });
   });
 
   describe('the chain of steps', () => {
@@ -240,6 +250,17 @@ describe('buildPlan', () => {
       // 258 days at 30 days a month is 8.6 months.
       const plan = buildPlan(past, { ...FIGURES, paceDaysPerMonth: 30 });
       expect(plan.bulletin.byPace!.mid).toBe(8.6);
+    });
+
+    it('never ends the bulletin wait before it starts when the cutoff passes the date before the approval', () => {
+      // 30 days past the Apr 1 2025 cutoff at 15 days a month: two months from the Nov 2026 bulletin, so the
+      // I-485 goes in around Jan 1 2027, while the I-140 filed Dec 1 2026 isn't approved until March.
+      const plan = buildPlan({ ...base, known: { permFiled: '2025-05-01', i140Filed: '2026-12-01' } }, FIGURES);
+      expect(plan.current).toBe(false);
+      const visa = step(plan, 'visa');
+      expect(plan.milestones.i485Filed!.mid < plan.milestones.i140Approved!.mid).toBe(true);
+      for (const t of ['low', 'mid', 'high'] as const) expect(visa.start[t] <= visa.end![t]).toBe(true);
+      expect(visa.start).toEqual(plan.milestones.i485Filed);
     });
 
     it('files the I-485 with the I-140 when the priority date is already current', () => {
