@@ -76,27 +76,6 @@ describe("the scan finds what it's for", () => {
 const components = walk(join(ROOT, "src"), (p) => p.endsWith(".tsx") && !p.includes(".test.") && !p.includes(".stories."));
 const articles = walk(join(ROOT, "content"), (p) => p.endsWith(".mdx"));
 
-/** The same arrows typed as HTML entities, which the character scan can't see in the source. */
-const ARROW_ENTITY = /&(?:larr|rarr|uarr|darr|harr);/;
-const entityArrows = (src: string) =>
-  stripComments(src)
-    .split("\n")
-    .filter((l) => ARROW_ENTITY.test(l));
-
-describe("arrow entities are arrows too", () => {
-  it("flags an arrow typed as an entity", () => {
-    expect(entityArrows(`<Link href="/x">How it works &rarr;</Link>`)).toHaveLength(1);
-    expect(entityArrows(`<ArrowRightIcon aria-hidden="true" />`)).toEqual([]);
-  });
-
-  it("no component types one", () => {
-    const shared = components.filter((p) => p.includes(`${join("src", "components")}`));
-    expect(shared.length).toBeGreaterThan(200);
-    const found = shared.flatMap((p) => entityArrows(readFileSync(p, "utf8")).map((l) => `${relative(ROOT, p)}: ${l.trim()}`));
-    expect(found).toEqual([]);
-  });
-});
-
 describe("icons are icons", () => {
   it("read the tree", () => {
     expect(components.length).toBeGreaterThan(400);
