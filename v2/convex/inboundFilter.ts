@@ -18,7 +18,7 @@ import { getSecurityAlertEmail, requireAdmin } from "./lib/admin";
 import { getResend } from "./lib/email";
 import { recordError } from "./lib/errorRecording";
 import { sendOwnerMail } from "./lib/ownerMail";
-import { HELD_KEEP_DAYS, senderKey, verdictFor, type AiOpinion, type MailForCheck, type SenderLists } from "./lib/spamCheck";
+import { HELD_KEEP_DAYS, isSenderKey, senderKey, senderKeys, verdictFor, type AiOpinion, type MailForCheck, type SenderLists } from "./lib/spamCheck";
 import { MS_PER_DAY } from "./lib/time";
 
 /** The message ids a thread header names, at most ten. */
@@ -26,13 +26,14 @@ function threadIds(thread: string | undefined): string[] {
   return [...new Set((thread ?? "").match(/<[^<>\s]{3,300}>/g) ?? [])].slice(0, 10);
 }
 
-/** The owner's word on a sender (address first, then its domain), and whether the mail answers us. */
+/**
+ * The owner's word on a sender, and whether the mail answers us. The address is read first, then its domain, then
+ * each parent domain, so a word on a service's domain covers the subdomains it writes from.
+ */
 export async function senderListsFor(ctx: QueryCtx, from: string, thread?: string): Promise<SenderLists> {
-  const address = from.trim().toLowerCase();
-  const keys = [...new Set([address, senderKey(address)])];
   let allowed = false;
   let blocked = false;
-  for (const key of keys) {
+  for (const key of senderKeys(from)) {
     const row = await ctx.db
       .query("mailSenderVerdicts")
       .withIndex("by_key", (q) => q.eq("key", key))
@@ -40,7 +41,7 @@ export async function senderListsFor(ctx: QueryCtx, from: string, thread?: strin
     if (!row) continue;
     if (row.verdict === "allow") allowed = true;
     else blocked = true;
-    break; // the address's own word outranks its domain's
+    break; // the nearest word wins: the address's own, then its domain's, then a parent domain's
   }
   let answersUs = false;
   for (const id of threadIds(thread)) {
@@ -203,6 +204,34 @@ async function setVerdict(
   if (existing) await ctx.db.patch(existing._id, { verdict, at: now });
   else await ctx.db.insert("mailSenderVerdicts", { key, verdict, at: now });
 }
+
+/**
+ * The owner's word on a sender, set or taken back from the command line: the way to let a service through before its
+ * first message, and to undo a "Not spam" or a "Spam" pressed by mistake.
+ * `npx convex run inboundFilter:setSenderVerdict '{"key":"@service.example","verdict":"allow"}' --prod`. The key is
+ * one address, or "@" and a domain; a free-mail domain is refused, because it would cover everyone who uses it.
+ */
+export const setSenderVerdict = internalMutation({
+  args: { key: v.string(), verdict: v.union(v.literal("allow"), v.literal("block"), v.literal("clear")) },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const key = args.key.trim().toLowerCase();
+    const shape = isSenderKey(key);
+    if (shape === "free-mail") throw new Error(`"${key}" is a free-mail domain: name the one address instead`);
+    if (shape !== "ok") throw new Error(`"${key}" isn't an address or @domain`);
+    if (args.verdict !== "clear") {
+      await setVerdict(ctx, key, args.verdict);
+      return `${key}: ${args.verdict}`;
+    }
+    const existing = await ctx.db
+      .query("mailSenderVerdicts")
+      .withIndex("by_key", (q) => q.eq("key", key))
+      .first();
+    if (!existing) return "nothing to clear";
+    await ctx.db.delete(existing._id);
+    return "cleared";
+  },
+});
 
 /**
  * "Not spam": send the held message to the owner now, and let this sender's mail
