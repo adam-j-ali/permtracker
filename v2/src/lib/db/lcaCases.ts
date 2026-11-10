@@ -1,4 +1,6 @@
 import "server-only";
+import { wageRequestNumber } from "@/lib/caseLinks";
+import { one } from "./client";
 import { makeFlagProgram } from "./flagCases";
 
 /**
@@ -48,3 +50,16 @@ export const getLcaSummary = lca.getSummary;
 export const lookupLcaDisclosed = lca.lookupDisclosed;
 export const searchLcaDisclosed = lca.searchDisclosed;
 export const getLcaDisclosureSummary = lca.getDisclosureSummary;
+
+/**
+ * The wage request an LCA cites, as DOL's quarterly file prints it. A few do (the cell is empty on
+ * nearly every row), so this is its own one-row read: the shared column list is also read from the
+ * older files' table, which has no such column. Null when the file holds no such LCA or names no
+ * wage request; a failed read throws, so the page can say it couldn't read it.
+ */
+export async function lookupLcaWageRequest(input: string): Promise<string | null> {
+  const caseNumber = lca.normalise(input);
+  if (!caseNumber) return null;
+  const row = await one<{ pw_case: string | null }>("SELECT pw_case FROM lca_cases WHERE case_number = ? LIMIT 1", [caseNumber]);
+  return wageRequestNumber(row?.pw_case);
+}
