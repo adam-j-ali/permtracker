@@ -57,6 +57,26 @@ describe("getLcaProfile", () => {
     expect(one).not.toHaveBeenCalled();
   });
 
+  it("keeps the panel when the declarations read fails, and records the failure", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    tableColumns.mockResolvedValue(new Set(["case_number", "workers"]));
+    one.mockImplementation(async (sql: string) => {
+      if (sql === lcaNewestFlagsSql(W)) throw new Error("database query deadline");
+      return { filings: 2, detail_rows: 2, positions: 3, new_employment: 1, change_employer: 2, visa_h1b: 2 };
+    });
+    const p = await getLcaProfile("acme");
+    expect(p?.newest).toBeNull();
+    expect(p?.kinds.find((k) => k.kind.key === "changeEmployer")?.n).toBe(2);
+    expect(warn.mock.calls.some((c) => String(c[0]).includes("[soft-read] lcaProfile.newestFlags failed"))).toBe(true);
+    warn.mockRestore();
+  });
+
+  it("throws when the counts themselves can't be read", async () => {
+    tableColumns.mockResolvedValue(new Set(["case_number", "workers"]));
+    one.mockRejectedValue(new Error("database query deadline"));
+    await expect(getLcaProfile("acme")).rejects.toThrow("database query deadline");
+  });
+
   it("names exactly the columns the pure half reads", () => {
     const aliases = [...lcaProfileSql(true, W).matchAll(/ AS ([a-z0-9_]+)/g)].map((m) => m[1]!).sort();
     // Shape a row carrying each alias as a distinct value and check every one lands somewhere.

@@ -53,7 +53,7 @@ async function prefixMatch(slug: string): Promise<EmployerMatch | null> {
   const entity = await one<{ merge_key: string | null }>(
     "SELECT merge_key FROM perm_entities WHERE kind = 'employer' AND slug = ?",
     [slug],
-  ).catch(() => null);
+  );
   const range = slugRange(entity?.merge_key ? String(entity.merge_key) : slug);
   return range
     ? { where: "employer_slug >= ? AND employer_slug < ?", args: [range.lo, range.hi], basis: "prefix", spellings: null }

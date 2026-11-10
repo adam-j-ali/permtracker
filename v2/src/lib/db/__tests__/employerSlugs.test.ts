@@ -31,6 +31,12 @@ describe("employerMatch", () => {
     expect(rows).not.toHaveBeenCalled();
   });
 
+  it("throws when the fallback's own read fails, instead of guessing a prefix from the slug", async () => {
+    tableColumns.mockResolvedValue(new Set());
+    one.mockRejectedValue(new Error("database query deadline"));
+    await expect(employerMatch("intel-corporation-read-fails")).rejects.toThrow("database query deadline");
+  });
+
   it("reads exactly the spellings the map assigns the page", async () => {
     tableColumns.mockResolvedValue(new Set(["source_slug", "page_slug"]));
     rows.mockResolvedValue([{ source_slug: "salesforce-com-inc" }, { source_slug: "salesforce-inc" }]);
