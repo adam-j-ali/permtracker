@@ -1,5 +1,4 @@
 import { Fragment } from "react";
-import Link from "next/link";
 
 import {
   BROWSE_BUCKETS,
@@ -219,7 +218,7 @@ export function BrowseList({
       {entries.map((e) => (
         <Fragment key={e.slug}>{" "}
           <li>
-            <Link translate="no" href={`${base}/${e.slug}`}>{e.name}</Link>{" "}
+            <IntentLink translate="no" href={`${base}/${e.slug}`}>{e.name}</IntentLink>{" "}
             <span title={`${formatInt(e.total)} ${unit}`}>{formatInt(e.total)}</span>
           </li>
         </Fragment>

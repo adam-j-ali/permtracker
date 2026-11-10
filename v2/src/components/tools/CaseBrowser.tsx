@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useId, useMemo, useState } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/intent-link";
 import { usePathname, useRouter } from "next/navigation";
 import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 // A public page has no ConvexProvider above it by design, and the database
@@ -596,13 +596,13 @@ export function CaseBrowser({
               Details like the law firm and wage appear when DOL publishes the
               decided case.
             </p>{" "}
-            <Link
+            <IntentLink
               href={`/perm-case-status?case=${encodeURIComponent(liveHit.caseNumber)}`}
               className={buttonVariants({ variant: "outline", className: "mt-3" })}
             >
               <LinkPending />
               View the live status
-            </Link>
+            </IntentLink>
           </div>
         ) : null}
         {caseQuery !== "" && lookupData && !caseHit && !liveHit ? (
@@ -936,9 +936,9 @@ export function CaseBrowser({
                     {h.caseNumber}
                   </PendingLink>{" "}
                   {h.employerSlug ? (
-                    <Link href={entityHref("employer", h.employerSlug)} className="link font-medium">
+                    <IntentLink href={entityHref("employer", h.employerSlug)} className="link font-medium">
                       {h.employerName}
-                    </Link>
+                    </IntentLink>
                   ) : (
                     <span className="font-medium">{h.employerName}</span>
                   )}{" "}
@@ -1199,14 +1199,14 @@ function CaseTable({
             {" "}</td>
             <td className="px-3 py-3">
               {r.employerSlug ? (
-                <Link
+                <IntentLink
                   href={entityHref("employer", r.employerSlug)}
                   // On a phone card the employer and firm links sit one above
                   // the other; each is a 44px target, the site's floor.
                   className="link max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
                 >
                   {r.employerName}
-                </Link>
+                </IntentLink>
               ) : (
                 <span className="font-bold">{r.employerName}</span>
               )}
@@ -1215,12 +1215,12 @@ function CaseTable({
                   {" "}
                   <span className="block text-sm text-muted-foreground">
                     {r.attorneySlug ? (
-                      <Link
+                      <IntentLink
                         href={entityHref("attorney", r.attorneySlug)}
                         className="link max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
                       >
                         {r.attorneyName}
-                      </Link>
+                      </IntentLink>
                     ) : (
                       r.attorneyName
                     )}
@@ -1234,9 +1234,9 @@ function CaseTable({
             <td className="whitespace-nowrap px-3 py-3 max-sm:hidden">{r.state || "—"}{" "}</td>
             <td className="px-3 py-3 max-sm:hidden">
               {r.socSlug && (r.socTitle || r.socCode) ? (
-                <Link href={`/perm-wages/${r.socSlug}`} className="link">
+                <IntentLink href={`/perm-wages/${r.socSlug}`} className="link">
                   {r.socTitle || r.socCode}
-                </Link>
+                </IntentLink>
               ) : (
                 r.socTitle || r.socCode || "—"
               )}

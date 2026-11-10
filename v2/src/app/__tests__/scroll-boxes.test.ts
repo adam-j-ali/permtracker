@@ -14,7 +14,7 @@ import { join } from "node:path";
  */
 
 const BOX = /<div\s+className="[^"]*\boverflow-x-auto\b[^"]*"\s*>\s*<table\b/g;
-const CONTROL = /<(Link|a|button|Button|input|select|textarea|PendingLink)\b|href=/;
+const CONTROL = /<(Link|IntentLink|PendingLink|a|button|Button|input|select|textarea)\b|href=/;
 /** Boxes whose table holds a control the scan can't see, drawn by a helper. */
 const HOLDS_A_CONTROL_ELSEWHERE: Record<string, string> = {
   "src/components/tools/RateBars.tsx": "its header cells are sort buttons, drawn by a helper above the table",
@@ -54,6 +54,7 @@ describe("sideways-scrolling tables a keyboard can reach", () => {
     expect(files.length).toBeGreaterThan(200);
     expect(plainBoxes("x.tsx", '<div className="mt-4 overflow-x-auto">\n<table><tr><td>1</td></tr></table></div>')).toHaveLength(1);
     expect(plainBoxes("x.tsx", '<div className="overflow-x-auto"><table><tr><td><Link href="/a">a</Link></td></tr></table></div>')).toHaveLength(0);
+    expect(plainBoxes("x.tsx", '<div className="overflow-x-auto"><table><tr><td><IntentLink {...row}>a</IntentLink></td></tr></table></div>')).toHaveLength(0);
     expect(plainBoxes("x.tsx", '<ScrollBox label="Rows" className="mt-4"><table><tr><td>1</td></tr></table></ScrollBox>')).toHaveLength(0);
   });
 

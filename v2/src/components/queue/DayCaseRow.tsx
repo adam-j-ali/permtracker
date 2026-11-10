@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/intent-link";
 import { Fragment } from "react";
 
 import { caseHref, namedByLabel } from "@/lib/caseLinks";
@@ -29,14 +29,14 @@ export function DayCaseRow({
 }) {
   return (
     <li className="grid grid-cols-1 gap-x-4 gap-y-1 py-3 sm:grid-cols-[13rem_minmax(0,1fr)_auto] sm:items-center [&>*]:min-w-0">
-      <Link href={caseHref(c.caseNumber)} className="link inline-flex min-h-11 items-center font-mono text-sm">
+      <IntentLink href={caseHref(c.caseNumber)} className="link inline-flex min-h-11 items-center font-mono text-sm">
         {c.caseNumber}
-      </Link>{" "}
+      </IntentLink>{" "}
       <span className="leading-snug">
         {c.employer && c.employerSlug ? (
-          <Link href={entityHref("employer", c.employerSlug)} className="link block font-semibold">
+          <IntentLink href={entityHref("employer", c.employerSlug)} className="link block font-semibold">
             {c.employer}
-          </Link>
+          </IntentLink>
         ) : (
           <span className="block font-semibold">{c.employer || "Employer not named"}</span>
         )}{" "}
@@ -80,9 +80,9 @@ function CaseFacts({ c, filed, firm }: { c: DayCase; filed: boolean; firm: boole
     facts.push({
       key: "wage-request",
       node: (
-        <Link href={caseHref(c.wageRequest)} className="link">
+        <IntentLink href={caseHref(c.wageRequest)} className="link">
           Wage request {c.wageRequest}
-        </Link>
+        </IntentLink>
       ),
     });
   }
@@ -90,9 +90,9 @@ function CaseFacts({ c, filed, firm }: { c: DayCase; filed: boolean; firm: boole
     facts.push({
       key: "named-by",
       node: (
-        <Link href={caseHref(c.caseNumber)} className="link">
+        <IntentLink href={caseHref(c.caseNumber)} className="link">
           {namedByLabel(c.namedBy)}
-        </Link>
+        </IntentLink>
       ),
     });
   }

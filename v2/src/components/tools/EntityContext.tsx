@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/intent-link";
 
 import { cn } from "@/lib/utils";
 import { MoreText, firstSentence, plainText, wordCount } from "@/components/data/MoreText";
@@ -304,7 +304,7 @@ export function PeerList({
           <Fragment key={p.slug}>
             {" "}
             <li className="min-w-0">
-              <Link
+              <IntentLink
                 href={`${hrefBase}/${p.slug}`}
                 className="group grid min-h-11 grid-cols-[3.5rem_minmax(0,1fr)] items-baseline gap-x-3 gap-y-0.5 py-2 no-underline hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:grid-cols-[3.5rem_minmax(0,1fr)_auto]"
               >
@@ -317,7 +317,7 @@ export function PeerList({
                   {formatInt(p.total)} {unit}
                   {p.denied > 0 ? ` · ${formatInt(p.denied)} denied` : " · none denied"}
                 </span>
-              </Link>
+              </IntentLink>
             </li>
           </Fragment>
         ))}
@@ -380,12 +380,12 @@ export function RankLadder({
                 {r.label}
               </dt>{" "}
               <dd className="mt-1 min-w-0">
-                <Link
+                <IntentLink
                   href={`${hrefBase}/${r.item.slug}`}
                   className="link inline-flex min-h-[44px] items-center text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
                   {r.item.name}
-                </Link>{" "}
+                </IntentLink>{" "}
                 <span className="block font-mono text-sm tabular-nums text-muted-foreground">
                   {formatInt(r.item.total)} {unit}
                 </span>
@@ -496,12 +496,12 @@ export function EntityDataGap({
         {what} is in DOL&apos;s disclosure files, but this page couldn’t read
         the current figures. That’s usually a few minutes around a data
         refresh rather than anything missing. Reload, or start from{" "}
-        <Link
+        <IntentLink
           href={backHref}
           className="link"
         >
           {backLabel}
-        </Link>
+        </IntentLink>
         . The source files are on{" "}
         <a target="_blank"
           href="https://www.dol.gov/agencies/eta/foreign-labor/performance"

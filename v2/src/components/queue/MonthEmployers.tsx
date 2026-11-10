@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/intent-link";
 
 import { ChartTips } from "@/components/data/ChartTips";
 import { entityHref } from "@/lib/entityPayload";
@@ -29,9 +29,9 @@ function Rows({ rows, max, start }: { rows: readonly MonthEmployer[]; max: numbe
                 {r.slug ? (
                   // A 44px tap target, its extra height taken back by the margin.
                   <span className="-my-3 flex min-w-0 text-base">
-                    <Link href={entityHref("employer", r.slug)} className="link truncate py-3">
+                    <IntentLink href={entityHref("employer", r.slug)} className="link truncate py-3">
                       {r.name}
-                    </Link>
+                    </IntentLink>
                   </span>
                 ) : (
                   <span className="min-w-0 truncate text-base">{r.name}</span>

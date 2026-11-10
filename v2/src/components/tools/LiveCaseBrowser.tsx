@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/intent-link";
 import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 
 import { usePublicQuery } from "@/hooks/usePublicQuery";
@@ -340,12 +340,12 @@ export function LiveCaseBrowser({
                     {" "}</td>
                     <td className="px-3 py-3">
                       {r.employerSlug ? (
-                        <Link
+                        <IntentLink
                           href={entityHref("employer", r.employerSlug)}
                           className="link max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
                         >
                           {r.employerName}
-                        </Link>
+                        </IntentLink>
                       ) : (
                         <span className="font-bold">{r.employerName}</span>
                       )}

@@ -13,7 +13,8 @@ import { join } from "node:path";
  * the row as text and the link sits inside the opened entry.
  */
 
-const CONTROL = /<(Link|a|button|Button|input|select|textarea)\b/;
+// The site's own links count too: each draws a next/link.
+const CONTROL = /<(Link|IntentLink|PendingLink|NavLink|a|button|Button|input|select|textarea)\b/;
 
 function sourceFiles(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -39,6 +40,9 @@ describe("no control inside a <summary>", () => {
     expect(files.length).toBeGreaterThan(200);
     expect(controlsInSummaries('<summary className="x"><b>965</b> <Link href="/a">cases</Link></summary>')).toHaveLength(1);
     expect(controlsInSummaries('<summary className="x"><b>965</b> cases</summary>')).toHaveLength(0);
+    for (const tag of ["IntentLink", "PendingLink", "NavLink"]) {
+      expect(controlsInSummaries(`<summary><${tag} href="/a">cases</${tag}></summary>`)).toHaveLength(1);
+    }
   });
 
   it("holds for every component and page", () => {

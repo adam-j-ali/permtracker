@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/intent-link";
 
 import { YearlyPayNote } from "@/components/data/YearlyPayNote";
 import { FromDolLive } from "@/components/entities/FromDolLive";
@@ -45,9 +45,9 @@ export function WageAndLcaFilings({
           <div className="mt-5">
             <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
               <h3 className="text-base font-bold">{list.label}</h3>{" "}
-              <Link href={list.href} className={`${ROW_LINK} text-sm font-semibold`}>
+              <IntentLink href={list.href} className={`${ROW_LINK} text-sm font-semibold`}>
                 {list.all} by this employer
-              </Link>
+              </IntentLink>
             </div>{" "}
             {list.rows.length > 0 ? (
               <FilingRows

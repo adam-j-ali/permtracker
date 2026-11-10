@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useId, useMemo, useState } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/intent-link";
 import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 
 import { STAGE_PROGRAM_LABEL, searchStages } from "@/lib/searchStages";
@@ -347,16 +347,16 @@ function RowDetails({ r }: { r: UnifiedCase }) {
       {/* The filings DOL's file ties this one to, each a link to its own page. */}
       {r.wageRequest ? (
         <span className="block">
-          <Link href={caseHref(r.wageRequest)} className="link">
+          <IntentLink href={caseHref(r.wageRequest)} className="link">
             Wage request {r.wageRequest}
-          </Link>
+          </IntentLink>
         </span>
       ) : null}{" "}
       {r.namedBy ? (
         <span className="block">
-          <Link href={caseHref(r.caseNumber)} className="link">
+          <IntentLink href={caseHref(r.caseNumber)} className="link">
             {namedByLabel(r.namedBy)}
-          </Link>
+          </IntentLink>
         </span>
       ) : null}
     </span>
@@ -384,9 +384,9 @@ function PhoneRow({ r }: { r: UnifiedCase }) {
       </div>{" "}
       <p className="text-base">
         {r.employerSlug ? (
-          <Link href={entityHref("employer", r.employerSlug)} className="link">
+          <IntentLink href={entityHref("employer", r.employerSlug)} className="link">
             {r.employerName ?? "Employer not given"}
-          </Link>
+          </IntentLink>
         ) : (
           (r.employerName ?? "Employer not given")
         )}
@@ -1431,9 +1431,9 @@ export function UnifiedCaseSearch({
             <p className="mb-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">
               Where the employer&apos;s prevailing wage came from is a field of DOL&apos;s
               published LCA file alone, so setting it reads published LCAs only.{" "}
-              <Link href="/lca-wage-sources" className="link">
+              <IntentLink href="/lca-wage-sources" className="link">
                 How often each source is used
-              </Link>
+              </IntentLink>
             </p>{" "}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 [&>*]:min-w-0">
               <Field label={FILTER_LABEL.wageSource} state={can.wageSource} describedBy={`${uid}-wsrc-why`}>
@@ -1469,13 +1469,13 @@ export function UnifiedCaseSearch({
             answers even for a filing nothing here has seen yet.
           </p>{" "}
           <p className="mt-3">
-            <Link
+            <IntentLink
               href={`/perm-case-status?case=${encodeURIComponent(typedCaseNumber)}`}
               className={buttonVariants({ variant: "outline" })}
             >
               <LinkPending />
               Check {typedCaseNumber} with DOL
-            </Link>
+            </IntentLink>
           </p>
         </div>
       ) : null}
@@ -1728,12 +1728,12 @@ export function UnifiedCaseSearch({
           />{" "}
           <p className="mt-3 text-base leading-relaxed">
             Have a case number instead?{" "}
-            <Link
+            <IntentLink
               href="/perm-case-status"
               className="link"
             >
               The status lookup
-            </Link>{" "}
+            </IntentLink>{" "}
             takes every prefix and asks DOL directly.
           </p>
         </div>
@@ -1820,12 +1820,12 @@ export function UnifiedCaseSearch({
                     {" "}</td>
                     <td className="px-3 py-3 text-sm">
                       {r.employerSlug ? (
-                        <Link
+                        <IntentLink
                           href={entityHref("employer", r.employerSlug)}
                           className="link"
                         >
                           {r.employerName ?? "—"}
-                        </Link>
+                        </IntentLink>
                       ) : (
                         (r.employerName ?? "—")
                       )}
@@ -1838,12 +1838,12 @@ export function UnifiedCaseSearch({
                     <td className="whitespace-nowrap px-3 py-3 text-sm">{r.state ?? "—"}{" "}</td>
                     <td className="px-3 py-3 text-sm">
                       {r.firmSlug && r.firmName ? (
-                        <Link
+                        <IntentLink
                           href={entityHref("attorney", r.firmSlug)}
                           className="link"
                         >
                           {r.firmName}
-                        </Link>
+                        </IntentLink>
                       ) : (
                         (r.firmName ?? "—")
                       )}
