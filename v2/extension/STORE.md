@@ -46,14 +46,14 @@ forms ask. The upload is `extension/permtracker-extension-<version>.zip`, made b
 Made by `node extension/store/build.mjs` (add `--fetch` to ask the live lookup again first, `--site` for the
 Product Hunt pages of the site). The panel in each screenshot is the extension's own code (`src/panel.ts`,
 `src/model.ts`, `src/api.ts`, bundled into the page) showing a real answer from
-`GET https://permtracker.app/v1/lookup/employer`, saved in `extension/store/data/` (fetched Oct 21 2026, 6:45 PM
-EDT). The posting beneath is a plain page made for the picture, labelled "Example job posting", copying no job
+`GET https://permtracker.app/v1/lookup/employer`, saved in `extension/store/data/` (fetched Nov 10 2026, 5:08 PM
+EST). The posting beneath is a plain page made for the picture, labelled "Example job posting", copying no job
 site's layout or branding. Remake them when the panel or the numbers change.
 
 | File | Size | Shows |
 |---|---|---|
 | `store/cws-screenshot-1-record.png` | 1280x800 | The panel on an example posting for Microsoft Corporation: 6,875 PERM cases published, 99% certified, 598 waiting at DOL, newest filing Sep 16 2026, 58,652 H-1B LCAs |
-| `store/cws-screenshot-2-possible-match.png` | 1280x800 | A posting that says "Amazon": the panel says "Possible match: Amazon.com Services LLC" and asks the reader to check it's the same company |
+| `store/cws-screenshot-2-possible-match.png` | 1280x800 | A posting that says "Amazon": the panel says "Possible match: Amazon.com Services LLC" and asks the reader to check it's the same company (2,271 PERM cases published, 215 waiting at DOL, newest filing Nov 10 2026) |
 | `store/cws-screenshot-3-no-record.png` | 1280x800 | A posting for a made-up company: no PERM or H-1B record, and that a company may file under its legal name |
 | `store/cws-promo-small-440x280.png` | 440x280 | Small promo tile: the name, one line from the description, and the drawing below |
 | `store/cws-promo-marquee-1400x560.png` | 1400x560 | Marquee promo tile, the same at a larger size |
@@ -68,9 +68,10 @@ The listing (producthunt.com/products/perm-tracker) takes a 240x240 thumbnail an
 | File | Size | Shows |
 |---|---|---|
 | `store/ph-thumbnail-240.png` | 240x240 | The brand mark, as `public/icon.svg` draws it, square |
-| `store/ph-gallery-1-case-lookup.png` | 1270x760 | A case lookup answering. **Not made yet:** the live case page answers a script with a browser check, so take it from the dev server on production data: `node extension/store/build.mjs --site --base http://localhost:3000` |
+| `store/ph-gallery-1-case-lookup.png` | 1270x760 | A case lookup answering: a case in analyst review, its place in DOL's line and an estimated decision date, captured Oct 26 2026. The live case page answers a script with a browser check, so retake it from the dev server on production data: `node extension/store/build.mjs --site --base http://localhost:3000` |
 | `store/ph-gallery-2-employer.png` | 1270x760 | Microsoft Corporation's employer page on permtracker.app, captured Oct 21 2026 |
 | `store/ph-gallery-3-extension.png` | 1270x760 | The extension's panel on an example posting, as in the first screenshot |
+| `store/ph-gallery-4-dashboard.png` | 1270x760 | The signed-in dashboard's deadlines for a sample account with made-up employers, captured Oct 26 2026 |
 
 ## Privacy practices
 
