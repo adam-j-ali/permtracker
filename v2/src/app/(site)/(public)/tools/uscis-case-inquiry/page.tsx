@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { DataProvenance } from "@/components/data/DataProvenance";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { FaqList } from "@/components/tools/FaqList";
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
@@ -125,6 +126,7 @@ export default async function UscisCaseInquiryPage() {
         <h2 className="font-heading text-2xl font-bold">FAQs</h2>
         <FaqList items={FAQS} />
       </section>
+      <DataProvenance datasets={["uscis-posted-times", "uscis-form-quarters"]} />
       <ToolPageFooter
         currentHref="/tools/uscis-case-inquiry"
         reading={[

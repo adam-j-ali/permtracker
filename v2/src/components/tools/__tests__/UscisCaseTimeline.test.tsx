@@ -85,6 +85,24 @@ describe("UscisCaseTimeline", () => {
     expect(screen.getByLabelText("Category")).toHaveValue("136A-E21");
   });
 
+  it("opens the work permit, the travel paper and the I-140 on the category a green card case holds", () => {
+    const more = [
+      row({ form: "I-765", subtype: "147-C10", label: "Suspension of deportation [(c)(10)]", office: "SCD", officeLabel: "Service Center Operations" }),
+      row({ form: "I-765", subtype: "147-C9", label: "Based on a pending I-485 adjustment application [(c)(9)]", office: "SCD", officeLabel: "Service Center Operations" }),
+      row({ form: "I-131", subtype: "141A-RT", label: "Re-entry permit or refugee travel document", office: "SCD", officeLabel: "Service Center Operations" }),
+      row({ form: "I-131", subtype: "141B-OTH", label: "Advance parole", office: "SCD", officeLabel: "Service Center Operations" }),
+      row({ form: "I-140", subtype: "136A-E11", label: "Extraordinary ability (E11)", office: "SCD", officeLabel: "Service Center Operations" }),
+    ];
+    render(<UscisCaseTimeline rows={[...more, ...ROWS]} published="2026-10-19" formNames={NAMES} />);
+    for (const [form, opens] of [["I-765", "147-C9"], ["I-131", "141B-OTH"], ["I-140", "136A-E21"]] as const) {
+      fireEvent.change(screen.getByLabelText("Form"), { target: { value: form } });
+      expect(screen.getByLabelText("Category"), form).toHaveValue(opens);
+    }
+    // A form with no such preference opens on USCIS's first.
+    fireEvent.change(screen.getByLabelText("Form"), { target: { value: "I-90" } });
+    expect(screen.getByLabelText("Category")).toHaveValue("90A");
+  });
+
   it("puts USCIS's two figures and the inquiry day on the case's calendar, each with where it comes from", () => {
     mount();
     receipt("2026-06-09");
