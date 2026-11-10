@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CaseLookupForm } from "../CaseLookupForm";
+import { FinderDock, FinderDockPanel } from "../FinderDock";
 
 // The finder loads when it's first opened. Loaded here once, so no test's wait depends on how long
 // the first import of it takes on a busy machine.
@@ -78,5 +79,89 @@ describe("CaseLookupForm", () => {
     render(<CaseLookupForm searchHref={null} />);
     expect(screen.queryByText(/Don.t have the number/)).toBeNull();
     expect(screen.queryByRole("button", { name: "Find it by employer and filing date" })).toBeNull();
+  });
+});
+
+/**
+ * One finder, three places to open: flat in a box's foot, as its own card on a bare page, and in a header's dock
+ * when the box is a narrow side column. A box never holds a second frame.
+ */
+describe("where the finder opens", () => {
+  it("opens flat inside a box's tinted foot, with no second frame", async () => {
+    render(
+      <div className="object p-5">
+        <CaseLookupForm boxed />
+      </div>,
+    );
+    const opener = screen.getByRole("button", { name: "Find it by employer and filing date" });
+    // The foot reaches the box's edges on the tint, and asks its question as a label.
+    const foot = opener.closest("div")!;
+    expect(foot.className).toMatch(/\bbg-tint\b/);
+    expect(foot.className).toMatch(/(^|\s)-mx-5(\s|$)/);
+    expect(screen.getByText(/Don.t have the number\?/).className).toMatch(/\bfont-semibold\b/);
+    fireEvent.click(opener);
+    const finder = await screen.findByRole("region", { name: "Find your case without the number" });
+    expect(foot.contains(finder)).toBe(true);
+    expect(finder.className).not.toMatch(/\bbg-card\b/);
+    expect(finder.className).not.toMatch(/(^|\s)border-2(\s|$)/);
+  });
+
+  it("stands as its own card when the form stands free on a page", async () => {
+    render(<CaseLookupForm />);
+    const opener = screen.getByRole("button", { name: "Find it by employer and filing date" });
+    expect(opener.closest("div")!.className).not.toMatch(/\bbg-tint\b/);
+    fireEvent.click(opener);
+    const finder = await screen.findByRole("region", { name: "Find your case without the number" });
+    expect(finder.className).toMatch(/\bbg-card\b/);
+  });
+
+  it("opens in the header's dock when the box is a side column, outside the box and at the page's width", async () => {
+    render(
+      <FinderDock>
+        <div data-testid="side" className="object p-5">
+          <CaseLookupForm boxed finderProgram="lca" />
+        </div>
+        <FinderDockPanel className="mt-6" />
+      </FinderDock>,
+    );
+    const opener = screen.getByRole("button", { name: "Find it by employer and filing date" });
+    const panel = document.getElementById(opener.getAttribute("aria-controls") ?? "")!;
+    expect(panel).not.toBeNull();
+    expect(panel.hidden).toBe(true);
+    expect(panel.className).toBe("");
+    expect(screen.getByTestId("side").contains(panel)).toBe(false);
+
+    fireEvent.click(opener);
+    expect(opener).toHaveAttribute("aria-expanded", "true");
+    const finder = await screen.findByRole("region", { name: "Find your case without the number" });
+    expect(panel.contains(finder)).toBe(true);
+    expect(panel.hidden).toBe(false);
+    expect(panel.className).toMatch(/\bmt-6\b/);
+    expect(screen.getByTestId("side").contains(finder)).toBe(false);
+    // Out of the box it is a card again, and it still opens on the box's own kind of filing.
+    expect(finder.className).toMatch(/\bbg-card\b/);
+    expect(await screen.findByRole("button", { name: "H-1B LCA" })).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(opener);
+    expect(opener).toHaveAttribute("aria-expanded", "false");
+    expect(panel.hidden).toBe(true);
+    expect(screen.queryByRole("region", { name: "Find your case without the number" })).toBeNull();
+  });
+
+  it("lists a host's own ways in after the two every box offers, then a quiet last line", () => {
+    render(<CaseLookupForm boxed more={[{ href: "#follow", label: "Follow this employer by email" }]} footnote="Free, and no account needed." />);
+    const links = screen.getAllByRole("link");
+    expect(links.map((a) => a.textContent)).toEqual(["Search every filing by employer", "Follow this employer by email"]);
+    // In a box each way is a row as wide as the box, a full-height target, the finder first and heavier.
+    const opener = screen.getByRole("button", { name: "Find it by employer and filing date" });
+    for (const row of [opener, ...links]) {
+      expect(row.className).toMatch(/\bmin-h-11\b/);
+      expect(row.className).toMatch(/\bw-full\b/);
+    }
+    expect(opener.className).toMatch(/\bfont-semibold\b/);
+    for (const a of links) expect(a.className).not.toMatch(/\bfont-semibold\b/);
+    const rows = [...opener.closest("ul")!.querySelectorAll("li")].map((li) => li.textContent?.trim());
+    expect(rows).toEqual(["Find it by employer and filing date", "Search every filing by employer", "Follow this employer by email"]);
+    expect(screen.getByText("Free, and no account needed.")).toBeInTheDocument();
   });
 });

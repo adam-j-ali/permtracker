@@ -8,6 +8,7 @@ import { DayCaseRow } from "@/components/queue/DayCaseRow";
 import { DidYouMean } from "@/components/search/DidYouMean";
 import { RequestFailed } from "@/components/tools/RequestFailed";
 import { choiceVariants } from "@/components/ui/choice";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDebounce } from "@/hooks/useDebounce";
 import { usePublicQuery } from "@/hooks/usePublicQuery";
@@ -70,14 +71,26 @@ export interface CaseFinderProps {
   source: string;
   /** The title over a finder that stands apart, which names its region. Left out, it reads as one more field of its host's form. */
   heading?: string;
+  /**
+   * A titled finder that opens inside a box draws no box of its own: a card in a card is two frames around one
+   * thing. It sits flat on its host's ground.
+   */
+  flat?: boolean;
+  /**
+   * Opened by a press: the cursor goes to the first field still empty. A finder can be drawn a screen away from
+   * the link that opened it (under a header, at the page's width), and the cursor is where the eye lands.
+   */
+  autoFocus?: boolean;
   className?: string;
 }
 
-export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hostDay, onDay, employer = "", onPick, pickLabel = "Use this case", source, heading, className }: CaseFinderProps) {
+export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hostDay, onDay, employer = "", onPick, pickLabel = "Use this case", source, heading, flat = false, autoFocus = false, className }: CaseFinderProps) {
   const nameId = useId();
   const dayId = useId();
   const jobId = useId();
   const headingId = useId();
+  const hintId = useId();
+  const nameRef = useRef<HTMLInputElement>(null);
   const [typed, setTyped] = useState(employer);
   const [job, setJob] = useState("");
   const [ownDay, setOwnDay] = useState("");
@@ -85,6 +98,13 @@ export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hos
   const [allFor, setAllFor] = useState("");
   // Read once, so a list open across midnight keeps one idea of today.
   const [today] = useState(() => easternDay());
+
+  // On an employer's own page the name comes filled in, so the day is the first thing still to give.
+  const opensOnDay = employer.trim() !== "" && hostDay === undefined;
+  useEffect(() => {
+    if (!autoFocus) return;
+    (opensOnDay ? document.getElementById(dayId) : nameRef.current)?.focus();
+  }, [autoFocus, opensOnDay, dayId]);
 
   const program: FilingProgram = picked && programs.includes(picked) ? picked : (programs[0] ?? "perm");
   const hosted = hostDay !== undefined;
@@ -135,7 +155,7 @@ export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hos
     <section
       aria-labelledby={heading ? headingId : undefined}
       aria-label={heading ? undefined : "Find your case without its number"}
-      className={cn("@container text-base", heading && "border-2 border-border bg-card p-4 sm:p-5", className)}
+      className={cn("@container text-base", heading && !flat && "border-2 border-border bg-card p-5", className)}
     >
       {/* A line, never a heading: the finder opens under a box that can sit below an h1, in a card or in a
           footer, and a heading here would skip a level on some of them. The section is named by it instead. */}
@@ -158,13 +178,16 @@ export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hos
       {/* `grid-cols-1` and `[&>*]:min-w-0`: a date control in a grid sizes from its content on iOS without them.
           The two fields share a row by the finder's own width, never the screen's: in a list page's side box the
           name field was left a few characters wide. */}
-      <div className={cn("grid grid-cols-1 gap-x-4 gap-y-3 [&>*]:min-w-0", !hosted && "@md:grid-cols-[minmax(0,1fr)_12rem]", (heading || programs.length > 1) && "mt-4")}>
+      <div className={cn("grid grid-cols-1 gap-x-4 gap-y-3 [&>*]:min-w-0", !hosted && "@md:grid-cols-[minmax(0,26rem)_12rem] @md:justify-start", (heading || programs.length > 1) && "mt-4")}>
         <div>
           <Label htmlFor={nameId} className="text-sm font-bold">
             {hosted ? "No number? Type your employer’s name" : "Employer’s name"}
           </Label>{" "}
-          <input
+          {/* The site's own text field, on the date control's ground beside it: the pair reads as one form. */}
+          <Input
             id={nameId}
+            ref={nameRef}
+            aria-describedby={!hosted && !enoughTyped(name) ? hintId : undefined}
             type="text"
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
@@ -172,7 +195,7 @@ export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hos
             spellCheck={false}
             enterKeyHint="search"
             maxLength={120}
-            className={cn("mt-2 block min-h-11 w-full min-w-0 border-2 border-input bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2", hosted && "sm:max-w-sm")}
+            className={cn("mt-2 bg-background", hosted && "sm:max-w-sm")}
           />
         </div>{" "}
         {hosted ? null : (
@@ -195,9 +218,16 @@ export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hos
       </div>{" "}
       {/* Only the one-line answers are announced: a live region around the list would read every row on each key. */}
       <div className="text-base leading-relaxed">
-        {!enoughTyped(name) ? null : !isDay ? (
+        {!enoughTyped(name) ? (
+          // What the two boxes are for, until the first is used. A host that owns the date says it in its own label.
+          hosted ? null : (
+            <p id={hintId} className="mt-3 text-sm text-muted-foreground">
+              Type the employer&apos;s name and the day it was filed. Its filings from that day show here.
+            </p>
+          )
+        ) : !isDay ? (
           <p className="mt-3 text-sm text-muted-foreground" role="status">
-            {hosted ? "Pick the filing date above and that day’s cases from this employer list here." : "Add the filing date and that day’s cases from this employer list here."}
+            {hosted ? "Pick the filing date above to see this employer’s cases from that day." : "Add the filing date to see this employer’s cases from that day."}
           </p>
         ) : tooEarly ? (
           <p className="mt-3 text-sm text-muted-foreground" role="status">
@@ -234,7 +264,7 @@ export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hos
                 <Label htmlFor={jobId} className="text-sm font-bold">
                   Job title, to narrow these
                 </Label>{" "}
-                <input
+                <Input
                   id={jobId}
                   type="text"
                   value={job}
@@ -243,7 +273,7 @@ export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hos
                   spellCheck={false}
                   enterKeyHint="search"
                   maxLength={80}
-                  className="mt-2 block min-h-11 w-full min-w-0 border-2 border-input bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 sm:max-w-sm"
+                  className="mt-2 bg-background sm:max-w-sm"
                 />
               </div>
             ) : null}{" "}

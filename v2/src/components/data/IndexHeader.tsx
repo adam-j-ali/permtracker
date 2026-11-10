@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { CaseLookupForm } from "@/components/tools/CaseLookupForm";
+import { FinderDock, FinderDockPanel } from "@/components/tools/FinderDock";
 import { TrendChip, type FigureTrend } from "@/components/data/FigureRow";
 
 /**
@@ -16,6 +17,22 @@ import { TrendChip, type FigureTrend } from "@/components/data/FigureRow";
  * which the table reads on load (`queryFromUrl`), so the answer opens already
  * filtered with no script of its own.
  */
+
+/** A form or visa code is one word ("H-2A", "CW-1", "I-140"): a line must never end on its hyphen. */
+const CODE = /([A-Z]{1,3}-\d[0-9A-Z]*)/;
+
+/** A heading's words with each code kept whole. Split on a captured group, so the codes are the odd pieces. */
+export function wholeCodes(text: string): ReactNode[] {
+  return text.split(CODE).map((piece, i) =>
+    i % 2 === 1 ? (
+      <span key={i} className="whitespace-nowrap">
+        {piece}
+      </span>
+    ) : (
+      piece
+    ),
+  );
+}
 
 export interface IndexFigure {
   label: string;
@@ -40,13 +57,20 @@ export function IndexHeader({
   className?: string;
 }) {
   return (
-    <header className={cn("pt-8 sm:pt-10", className)}>
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)] lg:items-start [&>*]:min-w-0">
-        <div>
-          <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">{title}</h1>{" "}
+    // Two columns by the header's own width, never the screen's: beside the data rail a 1024px screen leaves the
+    // title a 256px column, and a heading on four lines.
+    <header className={cn("@container pt-8 sm:pt-10", className)}>
+      {/* The case box's finder opens in the dock's panel, under both columns: the box is too narrow to hold it. */}
+      <FinderDock>
+      {/* Side by side, the two columns share a top and a bottom: the box's top edge meets the top of the heading's
+          capitals (the 9px), and the figures stand on the line of the box's bottom edge whenever the box is the
+          taller of the two. A title block with nothing under it beside a taller box read as unfinished. */}
+      <div className="grid grid-cols-1 gap-8 @[52rem]:grid-cols-[minmax(0,1.15fr)_minmax(25rem,1fr)] [&>*]:min-w-0">
+        <div className="flex flex-col">
+          <h1 className="text-balance font-heading text-4xl font-bold leading-tight sm:text-5xl">{wholeCodes(title)}</h1>{" "}
           <p className="mt-4 max-w-2xl text-lg leading-relaxed text-soft">{lede}</p>{" "}
           {figures.length > 0 ? (
-            <dl className="mt-6 flex flex-wrap gap-x-10 gap-y-5">
+            <dl className="mt-6 flex flex-wrap gap-x-10 gap-y-5 @[52rem]:mt-auto @[52rem]:pt-6">
               {figures.map((f) => (
                 <div key={f.label} className="min-w-0">
                   <dt className="text-sm font-semibold">{f.label}</dt>{" "}
@@ -72,8 +96,10 @@ export function IndexHeader({
             </dl>
           ) : null}
         </div>{" "}
-        {aside ? <div>{aside}</div> : null}
-      </div>
+        {aside ? <div className="@[52rem]:mt-[9px] @[52rem]:self-start">{aside}</div> : null}
+      </div>{" "}
+      <FinderDockPanel className="mt-6" />
+      </FinderDock>
     </header>
   );
 }
@@ -159,6 +185,7 @@ export function IndexLookup({
         source={source}
         searchHref={searchHref}
         finderProgram={program}
+        boxed
         // Left out, the box says its own words for the full search. This is a server file, so it
         // can't read a constant out of the box's browser-side module.
         {...(searchLabel ? { searchLabel } : {})}

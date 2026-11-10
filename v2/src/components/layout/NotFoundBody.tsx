@@ -42,7 +42,7 @@ export function NotFoundBody() {
         This page doesn&apos;t exist or has moved. If you were after a case, put its number here.
       </p>{" "}
       <div className="object mt-6 p-5 sm:p-6">
-        <CaseLookupForm className="max-w-xl" label="Case number" compact source="not-found" help={null} />{" "}
+        <CaseLookupForm label="Case number" compact source="not-found" help={null} flatFinder />{" "}
         <NotFoundSuggestions />
       </div>{" "}
 

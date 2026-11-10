@@ -20,6 +20,7 @@ import Link from "next/link";
 import { TrackerMatrix, MARK_WORD, MarkIcon } from "@/components/compare/TrackerMatrix";
 import { BarRows, type BarRow } from "@/components/data/BarRows";
 import { CaseLookupForm } from "@/components/tools/CaseLookupForm";
+import { FinderDock, FinderDockPanel } from "@/components/tools/FinderDock";
 import { HOME_SHOTS } from "@/lib/compare/homeShots";
 import { RIVALS } from "@/lib/compare/rivals";
 import { checkedPhrase, compareFaq, GROUPS, PERM_TRACKER, ROWS, type Tracker } from "@/lib/compare/trackers";
@@ -127,6 +128,8 @@ export default async function ComparePage() {
     // Wider than most pages: the grid is the page's picture, and every site needs its column.
     <div className="mx-auto w-full max-w-[1320px] px-4 pb-20 pt-10 sm:px-6 sm:pt-14">
       <JsonLdScript schema={faqSchema} />
+      {/* The side box's finder opens in the dock's panel, under both columns, at the page's width. */}
+      <FinderDock>
       <header className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-end [&>*]:min-w-0">
         <div>
           <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">PERM trackers compared</h1>{" "}
@@ -142,11 +145,13 @@ export default async function ComparePage() {
             something we don&apos;t, its entry says so.
           </p>
         </div>{" "}
-        <div className="object p-5">
+        <div className="object p-5 sm:p-6">
           <p className="font-heading text-lg font-bold">Check your case here</p>{" "}
-          <CaseLookupForm compact label="Case number or employer" names help={null} source="compare-top" />
+          <CaseLookupForm className="mt-2" compact label="Case number or employer" names help={null} source="compare-top" boxed />
         </div>
       </header>{" "}
+      <FinderDockPanel className="mt-6" />
+      </FinderDock>{" "}
       <section aria-labelledby="fit" className="mt-12">
         <h2 id="fit" className="font-heading text-2xl font-bold">
           Who each one suits
@@ -312,7 +317,7 @@ export default async function ComparePage() {
             Straight from DOL&apos;s case-status service, with an email when it changes. Free, and no account needed.
           </p>
         </div>{" "}
-        <CaseLookupForm compact label="Case number or employer" names help={null} source="compare" />
+        <CaseLookupForm compact label="Case number or employer" names help={null} source="compare" flatFinder />
       </section>{" "}
       <details className="mt-14 border-t-2 border-border pt-6">
         <summary className="cursor-pointer py-2">

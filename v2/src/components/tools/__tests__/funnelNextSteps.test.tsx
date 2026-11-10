@@ -32,7 +32,7 @@ describe("CaseNextStep", () => {
         question="Waiting on a case with Adobe Inc.?"
         searchHref="/case-search?q=Adobe%20Inc."
         searchLabel="Find it among their filings"
-        extra={{ href: "#follow", label: "Or follow this employer by email" }}
+        extra={{ href: "#follow", label: "Follow this employer by email" }}
         source="employer-page"
       />,
     );
@@ -46,7 +46,7 @@ describe("CaseNextStep", () => {
       "href",
       "/case-search?q=Adobe%20Inc.",
     );
-    expect(screen.getByRole("link", { name: "Or follow this employer by email" })).toHaveAttribute("href", "#follow");
+    expect(screen.getByRole("link", { name: "Follow this employer by email" })).toHaveAttribute("href", "#follow");
   });
 
   // The two reasons people come (owner, Oct 15 2026): when it'll be

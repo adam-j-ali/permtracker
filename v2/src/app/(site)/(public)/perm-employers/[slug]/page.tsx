@@ -659,7 +659,7 @@ export default async function EmployerPage({
               searchHref={nameSearch(slug, live.record.name)}
               searchLabel="Find it among their filings"
               employerName={live.record.name}
-              extra={{ href: "#follow", label: "Or follow this employer by email" }}
+              extra={{ href: "#follow", label: "Follow this employer by email" }}
               source="employer-page-live"
             />
           }
@@ -922,7 +922,7 @@ export default async function EmployerPage({
             searchHref={byName}
             searchLabel="Find it among their filings"
             employerName={row.name}
-            extra={{ href: "#follow", label: "Or follow this employer by email" }}
+            extra={{ href: "#follow", label: "Follow this employer by email" }}
             source="employer-page"
           />
         }

@@ -42,7 +42,7 @@ export function CaseNextStep({
 }: CaseNextStepProps) {
   return (
     <section aria-label="Check your case" className={cn("object p-5 sm:p-6", className)}>
-      <h2 className="font-heading text-xl font-bold leading-tight">{question}</h2>{" "}
+      <h2 className="text-balance font-heading text-xl font-bold leading-tight">{question}</h2>{" "}
       <CasePromises className="mt-4" />{" "}
       <CaseLookupForm
         className="mt-4"
@@ -52,14 +52,9 @@ export function CaseNextStep({
         searchLabel={searchLabel}
         employerName={employerName}
         source={source}
-      />{" "}
-      {extra ? (
-        <p className="mt-1 text-sm">
-          <a href={extra.href} className="link inline-flex min-h-11 items-center">
-            {extra.label}
-          </a>
-        </p>
-      ) : null}
+        more={extra ? [extra] : undefined}
+        boxed
+      />
     </section>
   );
 }

@@ -224,3 +224,41 @@ describe("CaseFinder, standing apart", () => {
     await waitFor(() => expect(asked).toContain("/api/filed-on?day=2026-01-28&program=perm"));
   });
 });
+
+describe("CaseFinder, opened by a press", () => {
+  it("says what its two boxes are for until the first is used, then what's still missing", () => {
+    stub({ cases: DAY });
+    render(<CaseFinder source="test" heading="Find your case without the number" />);
+    const name = screen.getByRole("textbox", { name: "Employer’s name" });
+    const hint = screen.getByText(/Type the employer.s name and the day it was filed\. Its filings from that day show here\./);
+    expect(name).toHaveAttribute("aria-describedby", hint.id);
+    type("go");
+    expect(screen.queryByText(/Type the employer.s name and the day it was filed/)).toBeNull();
+    expect(name).not.toHaveAttribute("aria-describedby");
+    expect(screen.getByText("Add the filing date to see this employer’s cases from that day.")).toBeInTheDocument();
+  });
+
+  it("puts the cursor in the first field still empty: the name, or the day on an employer's own page", () => {
+    stub({ cases: DAY });
+    const first = render(<CaseFinder source="test" heading="Find your case without the number" autoFocus />);
+    expect(screen.getByRole("textbox", { name: "Employer’s name" })).toHaveFocus();
+    first.unmount();
+    render(<CaseFinder source="test" heading="Find your case without the number" autoFocus employer="Google LLC" />);
+    expect(screen.getByLabelText("Date it was filed")).toHaveFocus();
+  });
+
+  it("leaves the cursor where it was unless it was opened by a press", () => {
+    stub({ cases: DAY });
+    render(<CaseFinder source="test" heading="Find your case without the number" />);
+    expect(screen.getByRole("textbox", { name: "Employer’s name" })).not.toHaveFocus();
+  });
+
+  it("draws no frame of its own inside a box", () => {
+    stub({ cases: DAY });
+    const { unmount } = render(<CaseFinder source="test" heading="Find your case without the number" flat />);
+    expect(screen.getByRole("region", { name: "Find your case without the number" }).className).not.toMatch(/\bbg-card\b|(^|\s)border-2(\s|$)/);
+    unmount();
+    render(<CaseFinder source="test" heading="Find your case without the number" />);
+    expect(screen.getByRole("region", { name: "Find your case without the number" }).className).toMatch(/\bbg-card\b/);
+  });
+});
