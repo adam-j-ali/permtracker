@@ -29,6 +29,7 @@ import { pickGroup } from "@/lib/h2bGroups";
 import { SeasonalTimingPanel } from "@/components/tools/SeasonalTimingPanel";
 import { formatDay } from "@/lib/dolFormat";
 import { prettyStatus } from "@/components/queue/stages";
+import { softFail } from "@/lib/softRead";
 
 /**
  * An H-2A application (`H-300-`), an H-2B application (`H-400-`) or an H-2B
@@ -152,14 +153,14 @@ function SeasonalDetails({
 export async function SeasonalLookup({ caseNumber }: { caseNumber: string }) {
   const isH2b = caseNumber.trim().toUpperCase().startsWith("H-400-");
   const [outcome, record, posting, timing, checks, groupOf, groupTiming] = await Promise.all([
-    lookupSeasonalCaseOutcome(caseNumber).catch(() => ({ row: null, dolMiss: "records" as const })),
-    lookupSeasonalRecord(caseNumber).catch(() => null),
-    lookupSeasonalPosting(caseNumber).catch(() => null),
-    getSeasonalTiming().catch(() => null),
-    getSeasonalCheck().catch(() => null),
+    lookupSeasonalCaseOutcome(caseNumber).catch(softFail("SeasonalStatusResult.lookupSeasonalCaseOutcome", { row: null, dolMiss: "records" as const })),
+    lookupSeasonalRecord(caseNumber).catch(softFail("SeasonalStatusResult.lookupSeasonalRecord", null)),
+    lookupSeasonalPosting(caseNumber).catch(softFail("SeasonalStatusResult.lookupSeasonalPosting", null)),
+    getSeasonalTiming().catch(softFail("SeasonalStatusResult.getSeasonalTiming", null)),
+    getSeasonalCheck().catch(softFail("SeasonalStatusResult.getSeasonalCheck", null)),
     // DOL's H-2B assignment group, for an application filed in a season's first days.
-    isH2b ? h2bGroupOf(caseNumber).catch(() => null) : Promise.resolve(null),
-    isH2b ? getH2bGroupTiming().catch(() => null) : Promise.resolve(null),
+    isH2b ? h2bGroupOf(caseNumber).catch(softFail("SeasonalStatusResult.h2bGroupOf", null)) : Promise.resolve(null),
+    isH2b ? getH2bGroupTiming().catch(softFail("SeasonalStatusResult.getH2bGroupTiming", null)) : Promise.resolve(null),
   ]);
   const { row, dolMiss } = outcome;
   const form = formOf(caseNumber);

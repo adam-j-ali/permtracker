@@ -9,6 +9,7 @@ import { getStageStats } from "@/lib/db/stageStats";
 import { parseRfiPath } from "@/lib/stageMoves";
 import dynamic from "next/dynamic";
 import { buildRfiRun } from "./model";
+import { softFail } from "@/lib/softRead";
 
 // The drawing and its kit load only on the articles that use it.
 const RfiPathFigure = dynamic(() => import("./RfiPathFigure"));
@@ -17,7 +18,7 @@ const RfiPathFigure = dynamic(() => import("./RfiPathFigure"));
 const todayUtc = () => new Date().toISOString().slice(0, 10);
 
 export async function RfiFigure() {
-  const [clock, stats] = await Promise.all([getRfiClock().catch(() => null), getStageStats().catch(() => null)]);
+  const [clock, stats] = await Promise.all([getRfiClock().catch(softFail("RfiFigure.getRfiClock", null)), getStageStats().catch(softFail("RfiFigure.getStageStats", null))]);
   const run = buildRfiRun({ clock, path: parseRfiPath(stats?.rfiPath), today: todayUtc() });
   if (!run) return null;
   return <RfiPathFigure run={run} />;

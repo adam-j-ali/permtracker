@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
  * Nov 4 2026 sweep moved 220 such reads to `softFail` (src/lib/softRead.ts), which keeps the fallback and records
  * the failure; the case status page still held 24 of them on Nov 9, and nothing stopped new ones.
  *
- * So: no server file under src/app may have one, and src/lib/db may not gain one. The readers listed below still
+ * So: no server file under src/app or src/components may have one, and src/lib/db may not gain one. The readers listed below still
  * hold theirs (each a reviewed read, a cache eviction or a parse guard, or not yet moved); a count may only fall,
  * and when it falls this list is lowered with it.
  *
@@ -25,6 +25,11 @@ const COMMENTS = /\/\*[\s\S]*?\*\/|(^|\s)\/\/.*$/gm;
 const APP_ALLOWED: Record<string, number> = {
   "src/app/api/client-error/route.ts": 1,
   "src/app/api/chat/execute-tool/route.ts": 1,
+};
+
+/** Under src/components, the one deliberate kind: an error screen's own report, which must never throw a second error. */
+const COMPONENTS_ALLOWED: Record<string, number> = {
+  "src/components/error/recovery.ts": 2,
 };
 
 /** The database readers' remaining ones, Nov 9 2026. Lower an entry when its file loses one. */
@@ -54,10 +59,13 @@ const DB_REMAINING: Record<string, number> = {
   "src/lib/db/scorecard.ts": 2,
   "src/lib/db/socTitles.ts": 2,
   "src/lib/db/uscisCaseStatus.ts": 2,
-  "src/lib/db/uscisQuarterly.ts": 12,
+  "src/lib/db/uscisQuarterly.ts": 10,
   "src/lib/db/visaIssuances.ts": 2,
   "src/lib/db/warn.ts": 2,
 };
+
+/** Fewer server files than this under src/components means the walk has stopped seeing them. */
+const SERVER_COMPONENTS_FLOOR = 250;
 
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -88,6 +96,7 @@ describe("a failed server read is recorded, never a silent fallback", () => {
   it("sees the trees it guards", () => {
     expect(serverFiles("src/app").length).toBeGreaterThan(300);
     expect(serverFiles("src/lib/db").length).toBeGreaterThan(100);
+    expect(serverFiles("src/components").length).toBeGreaterThan(SERVER_COMPONENTS_FLOOR);
   });
 
   it("catches the pattern it's meant to, and not a recorded fallback or a comment", () => {
@@ -103,6 +112,10 @@ describe("a failed server read is recorded, never a silent fallback", () => {
 
   it("has none in a server file under src/app", () => {
     expect(counts("src/app")).toEqual(APP_ALLOWED);
+  });
+
+  it("has none in a server file under src/components, beyond an error screen's own report", () => {
+    expect(counts("src/components")).toEqual(COMPONENTS_ALLOWED);
   });
 
   it("has no new one in src/lib/db, and the list is lowered when one goes", () => {

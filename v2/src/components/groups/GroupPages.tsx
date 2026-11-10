@@ -21,6 +21,7 @@ import { CityH1b } from "./CityH1b";
 import { GroupIndexTable, type GroupIndexRow } from "./GroupIndexTable";
 import { GroupView } from "./GroupView";
 import { industryName, industryTitle } from "@/lib/industryTitle";
+import { softFail } from "@/lib/softRead";
 
 /**
  * The shared body of the six browse routes (an index and a detail page per
@@ -317,7 +318,7 @@ export async function GroupDetailPage({ kind, slug }: { kind: GroupKind; slug: s
   }
   const c = COPY[kind];
   const years = kind === "country" ? await countryYears(g.key) : undefined;
-  const h1b = kind === "city" ? await lcaCityByKey(g.key).catch(() => null) : null;
+  const h1b = kind === "city" ? await lcaCityByKey(g.key).catch(softFail("GroupPages.lcaCityByKey", null)) : null;
   const breadcrumb = breadcrumbSchema(`${GROUP_PATH[kind]}/${slug}`, g.label);
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-12 sm:px-6 sm:pb-16">
@@ -353,6 +354,6 @@ export async function GroupDetailPage({ kind, slug }: { kind: GroupKind; slug: s
 
 /** The busiest groups, prerendered at build; the rest render on first visit. */
 export async function groupStaticParams(kind: GroupKind, n = 25): Promise<{ slug: string }[]> {
-  const groups = await listGroups(kind).catch(() => []);
+  const groups = await listGroups(kind).catch(softFail("GroupPages.listGroups", []));
   return groups.slice(0, n).map((g) => ({ slug: g.slug }));
 }

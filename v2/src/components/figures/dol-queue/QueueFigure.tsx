@@ -11,16 +11,17 @@ import { getSweepCoverage } from "@/lib/db/sweepCoverage";
 import { easternDay } from "@/lib/time";
 import dynamic from "next/dynamic";
 import { buildQueueRun } from "./model";
+import { softFail } from "@/lib/softRead";
 
 // The drawing and its kit load only on the articles that use it.
 const QueueConveyorFigure = dynamic(() => import("./QueueConveyorFigure"));
 
 export async function QueueFigure() {
   const [backlog, pace, estimator, sweep] = await Promise.all([
-    getLiveBacklog().catch(() => []),
-    getDecisionPace().catch(() => null),
-    getEstimatorData().catch(() => null),
-    getSweepCoverage().catch(() => null),
+    getLiveBacklog().catch(softFail("QueueFigure.getLiveBacklog", [])),
+    getDecisionPace().catch(softFail("QueueFigure.getDecisionPace", null)),
+    getEstimatorData().catch(softFail("QueueFigure.getEstimatorData", null)),
+    getSweepCoverage().catch(softFail("QueueFigure.getSweepCoverage", null)),
   ]);
   const run = buildQueueRun({
     backlog,

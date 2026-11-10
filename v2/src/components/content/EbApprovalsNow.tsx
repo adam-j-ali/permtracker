@@ -6,6 +6,7 @@ import { EB_LINE_COLOURS } from "@/components/queue/ebLineColours";
 import { getI140ClassCountry } from "@/lib/db/uscisQuarterly";
 import { formatInt, formatShareOf } from "@/lib/format";
 import { countryOrder, permLineYears } from "@/lib/uscisQuarterlyShape";
+import { softFail } from "@/lib/softRead";
 
 const EB2_FILL = EB_LINE_COLOURS.EB2.fill;
 const EB3_FILL = EB_LINE_COLOURS.EB3.fill;
@@ -22,7 +23,7 @@ const countryName = (c: string) => (c === ALL ? "Every country" : c);
  * left out: it needs no PERM.
  */
 export async function EbApprovalsNow({ country }: { country?: string }) {
-  const data = await getI140ClassCountry().catch(() => null);
+  const data = await getI140ClassCountry().catch(softFail("EbApprovalsNow.getI140ClassCountry", null));
   if (!data || data.years.length < 2) {
     return (
       <p>

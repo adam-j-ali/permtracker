@@ -13,8 +13,11 @@ import type { FormQuarterRow } from "@/lib/uscisForms";
  * receipts by class and country of birth, plus the historical median
  * factsheet in `perm_docs`.
  *
- * Every reader returns null when the table is empty or unreachable, and the
- * pages render a visible empty state naming the file that has not arrived.
+ * A reader returns null when its table is empty, and the pages render a
+ * visible empty state naming the file that has not arrived. The newest
+ * quarter's read throws when the database can't be read, so a page keeps its
+ * last good render and never stores "not arrived" for a file that has; the
+ * older readers below still answer empty for that, until each is moved.
  * Nothing here falls back to a slower query: there is no slower query, the
  * workbook is the only source, and a page that quietly showed last quarter's
  * figure under this quarter's date would be the defect these ingests exist
@@ -68,11 +71,17 @@ function formRow(r: Record<string, unknown>): UscisFormRow {
   };
 }
 
-/** The newest quarter held, with every form USCIS listed in it. */
+/** A table the first load hasn't made yet holds nothing. Any other failed read is a failure, and throws. */
+const beforeFirstLoad = <T>(empty: T) => (error: unknown): T => {
+  if (/no such table/i.test(String((error as Error)?.message ?? error))) return empty;
+  throw error;
+};
+
+/** The newest quarter held, with every form USCIS listed in it. Null only when none is held. */
 export const getUscisFormQuarter = cache(async (): Promise<UscisFormQuarter | null> => {
   const head = await one<{ fy: number; quarter: number }>(
     "SELECT fy, quarter FROM uscis_form_quarters ORDER BY fy DESC, quarter DESC LIMIT 1",
-  ).catch(() => null);
+  ).catch(beforeFirstLoad(null));
   if (!head) return null;
   const list = await rows<Record<string, unknown>>(
     `SELECT form, title, category, quarter_start, quarter_end, source_file,
@@ -81,7 +90,7 @@ export const getUscisFormQuarter = cache(async (): Promise<UscisFormQuarter | nu
        FROM uscis_form_quarters WHERE fy = ? AND quarter = ?
        ORDER BY rowid`,
     [head.fy, head.quarter],
-  ).catch(() => []);
+  ).catch(beforeFirstLoad<Record<string, unknown>[]>([]));
   if (list.length === 0) return null;
   const first = list[0]!;
   const all = list.map(formRow);

@@ -32,6 +32,7 @@ import { SiteBreadcrumbs } from "@/components/layout/SiteBreadcrumbs";
 import { US_STATE_NAMES } from "@/lib/usStateNames";
 import { choiceVariants } from "@/components/ui/choice";
 import { buttonVariants } from "@/components/ui/button";
+import { softFail } from "@/lib/softRead";
 
 /**
  * /h1b-employers and /h1b-employers/<state>: the busiest H-1B employers by
@@ -74,7 +75,7 @@ export async function h1bMetadata(state: string): Promise<Metadata> {
   if (summary && state !== NATION) {
     const y = defaultYear(summary, state);
     const by: H1bBasis = hasBasis(y, "lca", state) ? "lca" : "uscis";
-    const view = await getH1bView(y.fy, state, by, summary).catch(() => null);
+    const view = await getH1bView(y.fy, state, by, summary).catch(softFail("H1bEmployersPage.getH1bView", null));
     const top = view ? rankedRows(view.rows, by)[0] : undefined;
     const name = placeName(state);
     const lead = top

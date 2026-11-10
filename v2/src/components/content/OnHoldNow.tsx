@@ -6,6 +6,7 @@ import { HOLD_STATUS, holdSincePhrase, longDate } from "@/lib/employerStages";
 import { getEmployerStages } from "@/lib/db/employerStages";
 import { formatInt, formatShare } from "@/lib/format";
 import { entityHref } from "@/lib/entityPayload";
+import { softFail } from "@/lib/softRead";
 
 /**
  * The on-hold guide's numbers, read live from the census the sweep writes.
@@ -25,7 +26,7 @@ import { entityHref } from "@/lib/entityPayload";
 const NAMED_FLOOR = 25;
 
 export async function OnHoldNow() {
-  const doc = await getEmployerStages().catch(() => null);
+  const doc = await getEmployerStages().catch(softFail("OnHoldNow.getEmployerStages", null));
   if (!doc) {
     return (
       <p>

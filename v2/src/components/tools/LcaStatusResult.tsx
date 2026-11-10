@@ -11,6 +11,7 @@ import { RecordList } from "@/components/data/RecordList";
 import { isLookupGap } from "@/lib/dolMiss";
 import { formatDay } from "@/lib/dolFormat";
 import { prettyStatus } from "@/components/queue/stages";
+import { softFail } from "@/lib/softRead";
 
 /**
  * A labor condition application (ETA-9035) by number: DOL's own status,
@@ -82,8 +83,8 @@ function Disclosed({ d }: { d: LcaDisclosedRow }) {
 export async function LcaLookup({ caseNumber }: { caseNumber: string }) {
   const [{ row, dolMiss }, disclosed] = await Promise.all([
     // A failure to read our own table is also "could not settle it", never "no record".
-    lookupLcaCaseOutcome(caseNumber).catch(() => ({ row: null, dolMiss: "records" as const })),
-    lookupLcaDisclosed(caseNumber).catch(() => null),
+    lookupLcaCaseOutcome(caseNumber).catch(softFail("LcaStatusResult.lookupLcaCaseOutcome", { row: null, dolMiss: "records" as const })),
+    lookupLcaDisclosed(caseNumber).catch(softFail("LcaStatusResult.lookupLcaDisclosed", null)),
   ]);
   const label = (n: string) => (
     <>

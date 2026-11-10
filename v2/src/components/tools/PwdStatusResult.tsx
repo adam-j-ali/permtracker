@@ -31,6 +31,7 @@ import { getPermsNamingPwd, type PermNamingPwd } from "@/lib/db/decidedTimeline"
 import { getEmployerPermsForWageRequest } from "@/lib/db/employerWageRequests";
 import { EmployerPermCasesForWage } from "@/components/tools/EmployerWageRequests";
 import { WAGE_ISSUED_RE } from "@/lib/employerWageRequests";
+import { softFail } from "@/lib/softRead";
 
 /**
  * A prevailing wage request (ETA-9141) by number: DOL's own status for it,
@@ -143,12 +144,12 @@ function Determination({ d, perms = [] }: { d: PwdDisclosedRow; perms?: readonly
 export async function PwdLookup({ caseNumber }: { caseNumber: string }) {
   const [{ row, dolMiss }, disclosed, est, dayData, perms, line] = await Promise.all([
     // A failure to read our own table is also "could not settle it", never "no record".
-    lookupPwdCaseOutcome(caseNumber).catch(() => ({ row: null, dolMiss: "records" as const })),
-    lookupPwdDetermination(caseNumber).catch(() => null),
-    getPwdEstimatorData().catch(() => null),
-    getPwdDayData().catch(() => null),
+    lookupPwdCaseOutcome(caseNumber).catch(softFail("PwdStatusResult.lookupPwdCaseOutcome", { row: null, dolMiss: "records" as const })),
+    lookupPwdDetermination(caseNumber).catch(softFail("PwdStatusResult.lookupPwdDetermination", null)),
+    getPwdEstimatorData().catch(softFail("PwdStatusResult.getPwdEstimatorData", null)),
+    getPwdDayData().catch(softFail("PwdStatusResult.getPwdDayData", null)),
     // The PERM that followed, on its own index; a failure only drops the link.
-    getPermsNamingPwd(caseNumber).catch((): PermNamingPwd[] => []),
+    getPermsNamingPwd(caseNumber).catch(softFail<PermNamingPwd[]>("PwdStatusResult.getPermsNamingPwd", [])),
     // Where DOL really is in the line, by our own daily check; DOL's table trails it by weeks.
     getPwdLine(),
   ]);
@@ -165,7 +166,7 @@ export async function PwdLookup({ caseNumber }: { caseNumber: string }) {
             decided: disclosed?.decisionDate ?? null,
             filed: row?.filingDate ?? disclosed?.receivedDate ?? null,
           },
-        ).catch(() => null)
+        ).catch(softFail("PwdStatusResult.getEmployerPermsForWageRequest", null))
       : null;
   const likelyPermsSection = (
     <EmployerPermCasesForWage

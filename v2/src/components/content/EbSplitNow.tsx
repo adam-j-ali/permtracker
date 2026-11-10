@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { EbSplit } from "@/components/queue/EbSplit";
 import { getEbSplit } from "@/lib/db/ebSplit";
+import { softFail } from "@/lib/softRead";
 
 /**
  * How many PERM jobs in DOL's line meet the EB-2 bar, live, inside an article:
@@ -9,7 +10,7 @@ import { getEbSplit } from "@/lib/db/ebSplit";
  * (scripts/build_eb_split.py). What the jobs could file, never what they did.
  */
 export async function EbSplitNow() {
-  const split = await getEbSplit().catch(() => null);
+  const split = await getEbSplit().catch(softFail("EbSplitNow.getEbSplit", null));
   if (!split) {
     return (
       <p>
