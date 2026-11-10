@@ -83,14 +83,18 @@ for f in $( { git diff --name-only --relative "$base" 2>/dev/null; git ls-files 
   extra="$extra $(grep -rlF --include='*.test.ts' --include='*.test.tsx' -- "$needle" src convex test-utils sdk extension 2>/dev/null | xargs -n1 basename 2>/dev/null | tr '\n' ' ')"
 done
 extra=$(printf '%s\n' $extra | sort -u | tr '\n' ' ')
-pnpm exec vitest run --changed "$base"
+# Shuffled, as GitHub's run is (vitest.config.ts shuffles only when CI is set). Nov 10 2026: a test that passed
+# in its written order here failed there, because an earlier test had already used up what it waited for. A
+# failure prints its seed: rerun that file with --sequence.shuffle --sequence.seed=<seed> to see the same order.
+shuffle="--sequence.shuffle"
+pnpm exec vitest run $shuffle --changed "$base"
 # A second run, because vitest treats file arguments beside --changed as a
 # filter on the changed set, not an addition to it. Basenames, because the
 # arguments are regexes and a route-group path like (site) matches nothing.
 if [ -n "$(printf '%s' "$extra" | tr -d ' ')" ]; then
   echo "   and the tests that read a changed file as text:"
   # shellcheck disable=SC2086
-  pnpm exec vitest run $extra
+  pnpm exec vitest run $shuffle $extra
 fi
 # The gates that walk the whole tree (glued text, grid tracks, nothing pressable
 # in a summary, every page in the palette...) name no file, so neither run above
@@ -102,7 +106,7 @@ if { git diff --name-only --relative "$base" 2>/dev/null; git ls-files --others 
   walkers=$(grep -rlE "readdirSync|globSync|readdir\(|opendirSync" --include='*.test.ts' --include='*.test.tsx' src convex test-utils 2>/dev/null | xargs -n1 basename | sort -u | tr '\n' ' ')
   echo "   and the gates that walk the whole tree:"
   # shellcheck disable=SC2086
-  pnpm exec vitest run $walkers
+  pnpm exec vitest run $shuffle $walkers
 fi
 # An article is read from disk by the tests that hold it (its picture, its title and description, its
 # links, the opening's mention), through helpers that neither --changed nor a search by name follows,
@@ -110,7 +114,7 @@ fi
 # article test here. Any change to an article or its pictures runs them all: about three minutes.
 if { git diff --name-only --relative "$base" 2>/dev/null; git ls-files --others --exclude-standard; } | grep -qE '^(content|public/images/content)/'; then
   echo "   and the tests that hold the articles:"
-  pnpm exec vitest run src/app/__tests__ src/lib/content
+  pnpm exec vitest run $shuffle src/app/__tests__ src/lib/content
 fi
 took
 echo "== passed in $(( $(date +%s) - t0 ))s"

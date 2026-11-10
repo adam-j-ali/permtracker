@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { softFail } from "../softRead";
+import { forgetSoftReads, softFail } from "../softRead";
 
 describe("softFail", () => {
   afterEach(() => vi.restoreAllMocks());
@@ -18,6 +18,16 @@ describe("softFail", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     for (let i = 0; i < 5; i++) await Promise.reject(new Error("x")).catch(softFail("testRead-b", []));
     await Promise.reject(new Error("y")).catch(softFail("testRead-c", 0));
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+
+  it("records a read again once what was recorded is forgotten", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await Promise.reject(new Error("x")).catch(softFail("testRead-e", null));
+    await Promise.reject(new Error("x")).catch(softFail("testRead-e", null));
+    expect(warn).toHaveBeenCalledTimes(1);
+    forgetSoftReads();
+    await Promise.reject(new Error("x")).catch(softFail("testRead-e", null));
     expect(warn).toHaveBeenCalledTimes(2);
   });
 

@@ -10,6 +10,14 @@
 const QUIET_MS = 10 * 60_000;
 const lastLogged = new Map<string, number>();
 
+/**
+ * Forgets what has been recorded. For tests: the quiet window lives for the whole process, so without this a test
+ * that expects a read's line passes or fails by which test failed that read first, and only a shuffled run shows it.
+ */
+export function forgetSoftReads(): void {
+  lastLogged.clear();
+}
+
 export function softFail<T>(label: string, fallback: T): (error: unknown) => T {
   return (error: unknown) => {
     try {
