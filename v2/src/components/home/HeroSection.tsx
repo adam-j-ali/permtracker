@@ -227,7 +227,7 @@ export function HeroSection({ wait = null, board, months = [], trends = {}, appr
             chart fill: the case box in two thirds, what the site is in the
             last third. Each had stopped at 768px with nothing beside it,
             leaving the right of the hero empty (owner, Oct 27 2026). */}
-        <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-center lg:gap-12 [&>*]:min-w-0">
+        <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start lg:gap-12 [&>*]:min-w-0">
         <div className="object p-5 sm:p-6">
           <p className="font-heading text-lg font-bold">Check a case</p>{" "}
           {/* What the number gets: the two reasons people come (owner, Oct 15). */}
@@ -243,8 +243,9 @@ export function HeroSection({ wait = null, board, months = [], trends = {}, appr
             searchHref="/tools/perm-timeline-calculator"
             searchLabel="Estimate your wait from your filing month"
             source="home-hero"
-          />{" "}
-          <p className="mt-3 text-sm text-soft">Free, and no account needed.</p>
+            footnote="Free, and no account needed."
+            boxed
+          />
         </div>{" "}
         {/* What the site is, both halves, after the answer: search engines
             still read it in the first section, and people meet the answer

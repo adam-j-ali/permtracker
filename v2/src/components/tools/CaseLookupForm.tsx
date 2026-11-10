@@ -1,12 +1,15 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { ArrowRightIcon, CaretDownIcon } from "@phosphor-icons/react";
 
 import { trackLookup } from "@/lib/funnelEvents";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useFinderDock } from "@/components/tools/FinderDock";
 import { normaliseCaseNumber } from "@/lib/caseNumberShape";
 import { looksLikeReceipt } from "@/lib/uscis/receipt";
 
@@ -56,6 +59,20 @@ export interface CaseLookupFormProps {
    */
   searchHref?: string | null;
   searchLabel?: string;
+  /** More ways in for someone with no number, after the two every box offers (an employer's page: follow it by email). */
+  more?: ReadonlyArray<{ href: string; label: string }>;
+  /** A quiet last line under the ways in ("Free, and no account needed."). */
+  footnote?: ReactNode;
+  /**
+   * The form is the last thing inside a box padded `p-5 sm:p-6` (`.object`): the no-number part becomes the box's
+   * tinted foot, edge to edge, and a finder opened in it is drawn flat. A box holds one frame, never a second.
+   */
+  boxed?: boolean;
+  /**
+   * The form sits in a box some other way (a box with its own ground or padding, or with more under the form):
+   * no foot is drawn, and a finder opened here is still flat, so the box holds one frame.
+   */
+  flatFinder?: boolean;
   /** The employer whose page this is: the finder opens with the name filled in. */
   employerName?: string;
   /** The kind of filing this page is about: the finder opens on it. PERM cases otherwise. */
@@ -82,6 +99,8 @@ export interface CaseLookupFormProps {
 
 /** The button's one word, everywhere a case number is asked for. */
 export const CHECK_LABEL = "Check";
+/** The opener's words, the same under every box. */
+const FINDER_LABEL = "Find it by employer and filing date";
 /** The words for the full search, under every box that doesn't name its own next page. */
 const SEARCH_LABEL = "Search every filing by employer";
 
@@ -93,6 +112,10 @@ export function CaseLookupForm({
   stack = false,
   searchHref = "/case-search",
   searchLabel = SEARCH_LABEL,
+  more,
+  footnote,
+  boxed = false,
+  flatFinder = false,
   employerName,
   finderProgram,
   source,
@@ -189,57 +212,138 @@ export function CaseLookupForm({
       {/* Many people waiting never saw the receipt (the lawyer filed it). The finder sits outside
           the form, so its own boxes are never sent with the number and Enter in them submits nothing. */}
       {searchHref ? (
-        <NoNumber searchHref={searchHref} searchLabel={searchLabel} employerName={employerName} program={finderProgram} source={source} />
+        <NoNumber
+          searchHref={searchHref}
+          searchLabel={searchLabel}
+          more={more}
+          footnote={footnote}
+          boxed={boxed}
+          flatFinder={flatFinder}
+          employerName={employerName}
+          program={finderProgram}
+          source={source}
+        />
       ) : null}
     </div>
   );
 }
 
-/** The way in without a number: the finder, opened in place, and the page the box's host names. */
+/**
+ * A box's foot: the tint from edge to edge, cancelling the box's own `p-5 sm:p-6` on three sides. The tone step
+ * parts "have the number" from "don't have it" with no line between them.
+ */
+const BOX_FOOT = "-mx-5 -mb-5 mt-5 bg-tint px-5 pb-2 pt-4 dark:bg-muted sm:-mx-6 sm:-mb-6 sm:px-6";
+/** One way in, in a line of them: a full-height target at every width, so two never sit on touching lines. */
+const WAY = "link inline-flex min-h-11 items-center gap-1.5 text-left";
+/**
+ * One way in, in a box's foot: a row as wide as the box, its words at the left edge every row shares and its mark
+ * at the right (a caret opens something here, an arrow goes to a page). The underline comes with the pointer.
+ */
+const ROW = "group flex min-h-11 w-full items-center justify-between gap-3 text-left text-base text-foreground";
+const ROW_WORDS = "text-balance underline-offset-4 group-hover:underline";
+const ROW_MARK = "size-4 shrink-0 text-primary-text";
+
+/**
+ * The ways in without a number: the finder, the page the box's host names, and any more the host adds.
+ *
+ * The finder opens in one of three places. Under a dock (a list page's or a profile's header, whose box is a
+ * narrow side column) it opens in the dock's panel, below the header at the page's full width. In a box with no
+ * dock it opens flat inside the box's foot. Standing free on a page, it opens under the form as its own card.
+ */
 function NoNumber({
   searchHref,
   searchLabel,
+  more = [],
+  footnote,
+  boxed,
+  flatFinder,
   employerName,
   program,
   source,
 }: {
   searchHref: string;
   searchLabel: string;
+  more?: ReadonlyArray<{ href: string; label: string }>;
+  footnote?: ReactNode;
+  boxed: boolean;
+  flatFinder: boolean;
   employerName?: string;
   program?: "perm" | "pwd" | "lca" | "seasonal";
   source?: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const panelId = useId();
+  const dock = useFinderDock();
+  const [ownOpen, setOwnOpen] = useState(false);
+  const ownPanelId = useId();
+  const open = dock ? dock.open : ownOpen;
+  const toggle = dock ? dock.toggle : () => setOwnOpen((o) => !o);
+  const controls = dock ? dock.panelId : ownPanelId;
+  const flat = (boxed || flatFinder) && !dock;
+  const finder = open ? (
+    <CaseFinder
+      className={cn("text-left text-foreground", flat ? "mt-1 border-t-2 border-border pb-2 pt-4" : dock ? undefined : "mt-3")}
+      heading="Find your case without the number"
+      flat={flat}
+      autoFocus
+      employer={employerName}
+      program={program}
+      source={source ? `${source}-finder` : "case-lookup-finder"}
+    />
+  ) : null;
   return (
-    <div className="mt-2 text-sm text-muted-foreground">
-      {/* Two ways in, each its own full-height target: set in one sentence they sat on touching lines on a phone. */}
-      <p className="flex flex-wrap items-center gap-x-5">
-        <span>Don&apos;t have the number?</span>{" "}
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-controls={panelId}
-          onClick={() => setOpen((o) => !o)}
-          className="link inline-flex min-h-11 items-center text-left"
-        >
-          Find it by employer and filing date
-        </button>{" "}
-        <Link href={searchHref} className="link inline-flex min-h-11 items-center">
-          {searchLabel}
-        </Link>
-      </p>{" "}
-      <div id={panelId} hidden={!open}>
-        {open ? (
-          <CaseFinder
-            className="mt-3 text-left text-foreground"
-            heading="Find your case without the number"
-            employer={employerName}
-            program={program}
-            source={source ? `${source}-finder` : "case-lookup-finder"}
-          />
-        ) : null}
-      </div>
+    <div className={cn("text-sm", boxed ? BOX_FOOT : "mt-2")}>
+      {boxed ? (
+        <>
+          {/* In a box the question is the foot's label and each way in is a row under it: one left edge, one
+              rhythm, the finder first and heavier because it's the one that answers here. */}
+          <p className="font-semibold text-foreground">Don&apos;t have the number?</p>{" "}
+          <ul className="mt-1">
+            <li>
+              <button type="button" aria-expanded={open} aria-controls={controls} onClick={toggle} className={cn(ROW, "font-semibold")}>
+                <span className={ROW_WORDS}>{FINDER_LABEL}</span>
+                <CaretDownIcon aria-hidden="true" weight="bold" className={cn(ROW_MARK, open && "rotate-180")} />
+              </button>
+            </li>{" "}
+            {[{ href: searchHref, label: searchLabel }, ...more].map((m) => (
+              <li key={m.href}>
+                <Link href={m.href} className={ROW}>
+                  <span className={ROW_WORDS}>{m.label}</span>
+                  <ArrowRightIcon aria-hidden="true" weight="bold" className={ROW_MARK} />
+                </Link>{" "}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        // On a bare page they run in one line with the question. Each is still its own full-height target: set
+        // in one sentence they sat on touching lines on a phone.
+        <p className="flex flex-wrap items-center gap-x-5">
+          <span className="text-muted-foreground">Don&apos;t have the number?</span>{" "}
+          <button type="button" aria-expanded={open} aria-controls={controls} onClick={toggle} className={WAY}>
+            {FINDER_LABEL}
+            <CaretDownIcon aria-hidden="true" weight="bold" className={cn("size-4 shrink-0", open && "rotate-180")} />
+          </button>{" "}
+          <Link href={searchHref} className={WAY}>
+            {searchLabel}
+          </Link>
+          {more.map((m) => (
+            <span key={m.href} className="contents">
+              {" "}
+              <Link href={m.href} className={WAY}>
+                {m.label}
+              </Link>
+            </span>
+          ))}
+        </p>
+      )}{" "}
+      {footnote ? <p className="pb-1 text-muted-foreground">{footnote}</p> : null}
+      {dock ? (
+        // The dock's panel is on the page from the first render; the finder is drawn into it once it's opened.
+        finder && dock.panel ? createPortal(finder, dock.panel) : null
+      ) : (
+        <div id={ownPanelId} hidden={!open}>
+          {finder}
+        </div>
+      )}
     </div>
   );
 }

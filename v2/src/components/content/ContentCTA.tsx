@@ -16,7 +16,8 @@ import { CaseNextStep } from "@/components/tools/CaseNextStep";
  */
 export default function ContentCTA() {
   return (
-    <section className="bg-tint border-y-2 border-border">
+    // On the page's own ground: the box's foot is the tint, and on a tinted band the box looked open at the bottom.
+    <section className="border-y-2 border-border bg-background">
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-8 sm:py-12">
         <CaseNextStep question="Waiting on a PERM case?" numberKind="DOL" source="article-end" />{" "}
         <p className="mt-6 text-base text-soft">

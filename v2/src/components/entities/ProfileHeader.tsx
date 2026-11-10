@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Fragment, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { FinderDock, FinderDockPanel } from "@/components/tools/FinderDock";
 
 /**
  * The top of an entity page: what this is, what is true of it right now, and
@@ -54,8 +55,12 @@ export function ProfileHeader({
   figures?: ReactNode;
 }) {
   return (
-    <header className="pt-6 sm:pt-8">
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)] lg:items-start [&>*]:min-w-0">
+    // Two columns by the header's own width, never the screen's: beside the data rail a 1024px screen leaves the
+    // title a 256px column.
+    <header className="@container pt-6 sm:pt-8">
+      {/* The case box's finder opens in the dock's panel, under both columns: the box is too narrow to hold it. */}
+      <FinderDock>
+      <div className="grid grid-cols-1 gap-8 @[52rem]:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)] @[52rem]:items-start [&>*]:min-w-0">
         <div>
           <p className="text-sm text-muted-foreground">{eyebrow}</p>{" "}
           <h1
@@ -105,6 +110,8 @@ export function ProfileHeader({
         </div>{" "}
         {aside ? <div>{aside}</div> : null}
       </div>{" "}
+      <FinderDockPanel className="mt-6" />
+      </FinderDock>{" "}
       {figures ? <div className="mt-8">{figures}</div> : null}
     </header>
   );

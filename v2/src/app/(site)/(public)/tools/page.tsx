@@ -116,7 +116,8 @@ export default async function ToolsPage() {
           source="data-hub"
           help={null}
           searchHref="/tools/perm-timeline-calculator"
-          searchLabel="Estimate your wait from the month you filed"
+          searchLabel="Estimate your wait from your filing month"
+          flatFinder
         />
       </section>
 
