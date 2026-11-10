@@ -84,6 +84,26 @@ describe("the answer and the figures at the top of the homepage", () => {
     expect(cols[2]!.tip).toContain("No cases on DOL's record");
   });
 
+  it("puts the case box right after the answer, then the steps after PERM, the chart and the figures (Nov 10 2026)", () => {
+    const order = ["</h1>", "Check a case", "Past PERM already?", "Still waiting", "In the PERM backlog"].map((needle) => html.indexOf(needle));
+    expect(order.every((at) => at > -1)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    // One copy of each part: a second, hidden copy reaches a search engine as repeated or glued words.
+    for (const once of ["Check a case", "Past PERM already?", "In the PERM backlog"]) expect(html.split(once)).toHaveLength(2);
+  });
+
+  it("offers the three steps after PERM as links, each name written once", () => {
+    const nav = html.match(/<nav aria-label="The steps after PERM"[^>]*>([\s\S]*?)<\/nav>/)?.[1] ?? "";
+    expect([...nav.matchAll(/<a [^>]*href="([^"]+)"/g)].map((m) => m[1])).toEqual(["/uscis-processing-times/i-140", "/visa-bulletin", "/uscis-processing-times/i-485"]);
+    expect(textOf(nav)).toBe("Past PERM already? I-140 times Visa bulletin I-485 times ");
+  });
+
+  it("opens the wage request wait from the wage requests figure, and links no other figure", () => {
+    const withWage = renderToStaticMarkup(<HeroSection board={{ ...board, pwdPending: 46298 }} months={months} />);
+    expect(withWage).toMatch(/<a [^>]*href="\/tools\/pwd-calculator"[^>]*>46,298<\/a>/);
+    expect(heroFigures({ ...board, pwdPending: 46298 }, null).filter((f) => f.href).map((f) => f.label)).toEqual(["Wage requests waiting"]);
+  });
+
   it("draws no chart without months, and keeps the case box", () => {
     const bare = renderToStaticMarkup(<HeroSection board={board} />);
     expect(bare).not.toContain("still waiting");

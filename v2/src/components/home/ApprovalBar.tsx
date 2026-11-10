@@ -18,8 +18,10 @@ export function ApprovalBar({ parts }: { parts: ApprovalParts }) {
   const from = monthYear(parts.from.slice(0, 7));
   const to = monthYear(parts.to.slice(0, 7));
   return (
-    <figure className="mt-6 max-w-3xl">
-      <div aria-hidden="true" className="flex h-5 w-full overflow-hidden border-2 border-foreground">
+    <figure className="mt-10 max-w-3xl">
+      {/* The words people search, as a heading: a bar with no name answered nobody's "PERM approval rate". */}
+      <h2 className="font-heading text-xl font-bold sm:text-2xl">PERM approval rate</h2>{" "}
+      <div aria-hidden="true" className="mt-3 flex h-5 w-full overflow-hidden border-2 border-foreground">
         {parts.outcomes.map((o) =>
           o.n ? (
             <div key={o.key} className={cn("h-full", FILL[o.key])} style={{ width: `${(o.n / parts.total) * 100}%`, minWidth: "4px" }} />
