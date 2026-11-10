@@ -1,5 +1,6 @@
 import { formatMonth } from "@/lib/dolFormat";
 import { formatInt } from "@/lib/format";
+import { monthsLabel } from "@/lib/uscisQuarterlyShape";
 
 import { RoadStage, type RoadStop } from "./RoadStage";
 
@@ -35,10 +36,18 @@ export interface RoadSectionProps {
   pwdPending: number | null;
   /** The filing month DOL's analysts are deciding, "YYYY-MM" (a day part is ignored). */
   frontierMonth: string | null;
+  /** USCIS's newest quarterly median for the I-140, in months. Without it the stop keeps its plain line. */
+  i140MedianMonths?: number | null;
+}
+
+/** "Half decided within 3.9 months", from USCIS's quarterly median; null when there's no usable figure. */
+function i140Fact(months: number | null | undefined): string | null {
+  if (months === null || months === undefined || !Number.isFinite(months) || months <= 0) return null;
+  return `Half decided within ${months === 1 ? "1 month" : `${monthsLabel(months)} months`}`;
 }
 
 
-function stops({ pwdPending, frontierMonth }: RoadSectionProps): RoadStop[] {
+function stops({ pwdPending, frontierMonth, i140MedianMonths }: RoadSectionProps): RoadStop[] {
   return [
     {
       n: 1,
@@ -85,7 +94,7 @@ function stops({ pwdPending, frontierMonth }: RoadSectionProps): RoadStop[] {
         w: 560,
         h: 449,
       },
-      fact: "How deep USCIS's queue is",
+      fact: i140Fact(i140MedianMonths) ?? "How deep USCIS's queue is",
       href: "/tools/i140-calculator",
       doc: "Form I-140, from USCIS",
       cta: "I-140 timeline",
