@@ -17,6 +17,7 @@ import {
   type RankedEntry,
 } from "@/lib/quarterReport";
 import { US_STATE_NAMES } from "@/lib/usStateNames";
+import { softFail } from "@/lib/softRead";
 
 /**
  * One part of a quarter's post, every figure read from that quarter's report
@@ -181,7 +182,7 @@ function Programs({ r }: { r: QuarterReport }) {
 }
 
 async function Newer({ r }: { r: QuarterReport }) {
-  const newest = await getNewestQuarterKey().catch(() => null);
+  const newest = await getNewestQuarterKey().catch(softFail("QuarterNow.getNewestQuarterKey", null));
   if (!newest || newest === r.quarter.key) return null;
   // DOL's file lands days before its post is written: the note waits for the post, or it links a 404.
   const slug = `dol-perm-file-fy${newest.slice(0, 4)}-q${newest.slice(5)}`;
@@ -197,7 +198,7 @@ async function Newer({ r }: { r: QuarterReport }) {
 }
 
 export async function QuarterNow({ quarter, part }: { quarter: string; part: QuarterPart }) {
-  const r = await getQuarterReport(quarter).catch(() => null);
+  const r = await getQuarterReport(quarter).catch(softFail("QuarterNow.getQuarterReport", null));
   if (!r) {
     return (
       <p>
@@ -233,6 +234,6 @@ export async function QuarterNow({ quarter, part }: { quarter: string; part: Qua
 
 /** The quarter in words, for a post's own sentences: "April to June 2026 (fiscal 2026, Q3)". */
 export async function QuarterName({ quarter }: { quarter: string }) {
-  const r = await getQuarterReport(quarter).catch(() => null);
+  const r = await getQuarterReport(quarter).catch(softFail("QuarterNow.getQuarterReport", null));
   return r ? <>{`${quarterMonths(r.quarter)} (${quarterName(r.quarter)})`}</> : <>this quarter</>;
 }

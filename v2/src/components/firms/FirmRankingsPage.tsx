@@ -41,6 +41,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { pageDate } from "@/lib/pageDates";
 import { getDatasetSchema } from "@/lib/structuredData";
 import { US_STATE_NAMES } from "@/lib/usStateNames";
+import { softFail } from "@/lib/softRead";
 
 /**
  * /law-firm-rankings and /law-firm-rankings/<state>: the busiest immigration law
@@ -102,7 +103,7 @@ export async function firmRanksMetadata(state: string): Promise<Metadata> {
   let lead = "";
   const fy = summary ? shownYear(summary, "perm") : null;
   if (summary && fy !== null) {
-    const top = (await getFirmRanks("perm", fy, state).catch(() => []))[0];
+    const top = (await getFirmRanks("perm", fy, state).catch(softFail("FirmRankingsPage.getFirmRanks", [])))[0];
     if (top) lead = `${top.name} led ${name} in FY${fy} with ${formatInt(top.filings)} PERM decisions.`;
   }
   const description = firstThatFits([

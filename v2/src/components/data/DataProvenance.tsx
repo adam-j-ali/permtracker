@@ -9,6 +9,7 @@ import { coverageFor, datasetLabel, isNewsFeed } from "@/lib/datasetCoverage";
 import { cn } from "@/lib/utils";
 import { MONTH_ABBR } from "@convex/lib/months";
 import { easternDay } from "@convex/lib/time";
+import { softFail } from "@/lib/softRead";
 
 /**
  * Where a page's figures came from, rendered beside them: one visible line
@@ -25,7 +26,7 @@ import { easternDay } from "@convex/lib/time";
  * scripts/audit_trust.py finds this block by `data-provenance`).
  */
 export async function DataProvenance({ datasets, className }: { datasets: string[]; className?: string }) {
-  const all: Record<string, DatasetFreshness> = await getFreshness().catch(() => ({}));
+  const all: Record<string, DatasetFreshness> = await getFreshness().catch(softFail<Record<string, DatasetFreshness>>("DataProvenance.getFreshness", {}));
   // A type-guard filter: .filter(Boolean) doesn't narrow away the
   // `| undefined` that noUncheckedIndexedAccess puts on all[d].
   const rows = datasets

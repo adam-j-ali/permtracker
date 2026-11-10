@@ -4,6 +4,7 @@ import { getProcessingTimes } from "@/lib/db/processingTimes";
 import { getPwdLine } from "@/lib/db/pwdDayQueue";
 import { lineSentence, lineWait } from "@/lib/pwdLine";
 import { longDate, monthDay } from "@convex/lib/months";
+import { softFail } from "@/lib/softRead";
 
 /**
  * DOL's current figures inside an article's sentence, read when the page is
@@ -37,10 +38,10 @@ export async function DolNow({
 }: {
   show?: "average" | "queue" | "pwd" | "pwdWait" | "pwdMonth" | "month" | "auditMonth" | "pwdFullMonth" | "pwdOtherMonth";
 }) {
-  const t = await getProcessingTimes().catch(() => null);
+  const t = await getProcessingTimes().catch(softFail("DolNow.getProcessingTimes", null));
   if (show === "average") return <span>{averagePhrase(dolNow(t))}</span>;
   // The month DOL is working leads with our own daily check (lib/permLine.ts), dated by it.
-  const permLine = show === "queue" || show === "month" ? await getPermLine().catch(() => null) : null;
+  const permLine = show === "queue" || show === "month" ? await getPermLine().catch(softFail("DolNow.getPermLine", null)) : null;
   if (show === "queue") return <span>{queueSentence(dolNow(t, permLine))}</span>;
   if (show === "month") return <span>{dolNow(t, permLine).frontier ?? NOT_READ}</span>;
   if (show === "auditMonth") return <span>{dolNow(t).auditFrontier ?? AUDIT_NOT_PRINTED}</span>;

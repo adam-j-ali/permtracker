@@ -3,6 +3,7 @@ import { BULLETIN_CAPTURES_MEASURED, BULLETIN_FIRST_CAPTURES } from "@/lib/bulle
 import { releaseByDay, releaseSummary } from "@/lib/bulletinRelease";
 import { getVisaBulletins } from "@/lib/db/publicData";
 import { shiftMonth } from "@convex/lib/months";
+import { softFail } from "@/lib/softRead";
 
 /**
  * When the next visa bulletin usually comes out, for an article: the same
@@ -14,7 +15,7 @@ import { shiftMonth } from "@convex/lib/months";
 export async function BulletinReleaseNow() {
   const summary = releaseSummary(BULLETIN_FIRST_CAPTURES);
   if (!summary) return null;
-  const held = await getVisaBulletins().catch(() => []);
+  const held = await getVisaBulletins().catch(softFail("BulletinReleaseNow.getVisaBulletins", []));
   const newest = held.map((b) => b.bulletinMonth).sort().pop();
   if (!newest) return null;
   return (

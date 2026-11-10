@@ -10,7 +10,6 @@ import { getUscisPosted } from "@/lib/db/uscisPosted";
 import { getUscisFormQuarter } from "@/lib/db/uscisQuarterly";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
-import { softFail } from "@/lib/softRead";
 import { medianLineFor, pickMedian } from "@/lib/uscisInquiry";
 import { quarterLabel } from "@/lib/uscisQuarterlyShape";
 import { longDate } from "@convex/lib/months";
@@ -69,7 +68,8 @@ const FAQS = [
 export default async function UscisCaseInquiryPage() {
   const [posted, quarter] = await Promise.all([
     getUscisPosted(),
-    getUscisFormQuarter().catch(softFail("uscis-case-inquiry/getUscisFormQuarter", null)),
+    // Both reads throw when the database can't be read: the page then keeps its last good render for the week.
+    getUscisFormQuarter(),
   ]);
   const medians = quarter?.forms ?? [];
   const quarterName = quarter ? quarterLabel(quarter.fy, quarter.quarter) : "";

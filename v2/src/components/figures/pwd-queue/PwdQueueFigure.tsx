@@ -11,12 +11,13 @@ import { getPwdDayData } from "@/lib/db/pwdDayQueue";
 import { getPwdEstimatorData } from "@/lib/db/estimate";
 import { easternDay } from "@/lib/seasonalTiming";
 import { buildPwdQueueRun } from "./model";
+import { softFail } from "@/lib/softRead";
 
 // The drawing and its kit load only on the articles that use it.
 const PwdQueueConveyorFigure = dynamic(() => import("./PwdQueueConveyorFigure"));
 
 export async function PwdQueueFigure() {
-  const [day, estimator] = await Promise.all([getPwdDayData().catch(() => null), getPwdEstimatorData().catch(() => null)]);
+  const [day, estimator] = await Promise.all([getPwdDayData().catch(softFail("PwdQueueFigure.getPwdDayData", null)), getPwdEstimatorData().catch(softFail("PwdQueueFigure.getPwdEstimatorData", null))]);
   const run = buildPwdQueueRun({
     queue: day?.queue ?? null,
     dolMonth: estimator?.frontier?.oewsMonth ?? null,

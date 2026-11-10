@@ -7,12 +7,13 @@
 import dynamic from "next/dynamic";
 import { getVisaBulletinSeries } from "@/lib/db/publicData";
 import { buildBulletinRun } from "./model";
+import { softFail } from "@/lib/softRead";
 
 // The drawing and its kit load only on the articles that use it.
 const BulletinCutoffFigure = dynamic(() => import("./BulletinCutoffFigure"));
 
 export async function BulletinFigure() {
-  const bulletins = await getVisaBulletinSeries().catch(() => []);
+  const bulletins = await getVisaBulletinSeries().catch(softFail("BulletinFigure.getVisaBulletinSeries", []));
   const run = buildBulletinRun({ bulletins });
   if (!run) return null;
   return <BulletinCutoffFigure run={run} />;

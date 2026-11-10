@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Eb2VsEb3 } from "@/components/tools/Eb2VsEb3";
 import { getLineSnapshot } from "@/lib/db/greenCardLine";
 import type { CountryKey } from "@/lib/perm";
+import { softFail } from "@/lib/softRead";
 
 /**
  * EB-2 and EB-3 side by side, live, inside an article: the same comparison the
@@ -11,7 +12,7 @@ import type { CountryKey } from "@/lib/perm";
  * here instead of typing a cutoff that's wrong next month.
  */
 export async function EbLinesNow({ country = "india" }: { country?: CountryKey }) {
-  const snapshot = await getLineSnapshot().catch(() => null);
+  const snapshot = await getLineSnapshot().catch(softFail("EbLinesNow.getLineSnapshot", null));
   if (!snapshot) {
     return (
       <p>
