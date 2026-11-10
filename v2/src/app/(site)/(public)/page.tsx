@@ -57,6 +57,7 @@ import { getSweepCoverage } from "@/lib/db/sweepCoverage";
 import { getBacklogMatrix } from "@/lib/db/backlog";
 import { getPermBoard } from "@/lib/db/board";
 import { getPermLine } from "@/lib/db/permLine";
+import { getUscisFormMedian } from "@/lib/db/uscisQuarterly";
 import { rulerOf } from "@/lib/board";
 import type { HeroTrends, HeroWait } from "@/components/home/HeroSection";
 import { backlogTrend, dayTrend, waitTrend } from "@/lib/homeTrends";
@@ -153,7 +154,7 @@ export default async function HomePage() {
   // The pulse reads our own sweep's record, a third clock: it moves when the
   // sweep finishes, and /api/revalidate-sweep expires this page then. Either
   // read failing drops the band, never the page.
-  const [snapshot, disclosure, record, observed, coverage, siteReviews, backlog, permBoard, line, pwdSummary, casesMeta] = await Promise.all([
+  const [snapshot, disclosure, record, observed, coverage, siteReviews, backlog, permBoard, line, pwdSummary, casesMeta, i140Median] = await Promise.all([
     getProcessingTimes(),
     getDisclosureStats(),
     getRecordCounts(),
@@ -172,6 +173,8 @@ export default async function HomePage() {
     getPwdSummary().catch(softFail("home/page.getPwdSummary", null)),
     // DOL's files' outcome totals, for the approval-rate sentence; a failed read drops only the sentence.
     getCasesMeta<CasesMeta>().catch(softFail("home/page.getCasesMeta", null)),
+    // USCIS's newest quarterly median for the I-140, for the road's third stop; a failed read leaves its plain line.
+    getUscisFormMedian("I-140").catch(softFail("home/page.getUscisFormMedian", null)),
   ]);
   const analyst = snapshot
     ? analystReviewQueue(snapshot.permQueues)
@@ -227,7 +230,7 @@ export default async function HomePage() {
       <LiveDataBand>
         <PermPulse variant="charts" days={observed} checkedAt={coverage?.checkedAt ?? null} />
       </LiveDataBand>
-      <RoadSection pwdPending={pwdPending} frontierMonth={workingMonth} />
+      <RoadSection pwdPending={pwdPending} frontierMonth={workingMonth} i140MedianMonths={i140Median?.medianMonths ?? null} />
       <DataShelf figures={deriveFigures(disclosure)} />
       <JobLookupBand />
       <AudienceBlocks />

@@ -116,6 +116,16 @@ describe("RoadSection", () => {
     const bare = textOf(renderToStaticMarkup(<RoadSection pwdPending={null} frontierMonth={null} />));
     expect(bare).not.toMatch(/requests waiting|Deciding/);
   });
+
+  it("gives the I-140 stop USCIS's own median when it has one, and its plain line when it doesn't", () => {
+    const withMedian = textOf(renderToStaticMarkup(<RoadSection pwdPending={47941} frontierMonth="2025-12-01" i140MedianMonths={3.9} />));
+    expect(withMedian).toContain("Half decided within 3.9 months");
+    expect(withMedian).not.toContain("How deep USCIS's queue is");
+    expect(textOf(renderToStaticMarkup(<RoadSection pwdPending={null} frontierMonth={null} i140MedianMonths={1} />))).toContain("Half decided within 1 month");
+    expect(textOf(html)).toContain("How deep USCIS's queue is");
+    expect(textOf(renderToStaticMarkup(<RoadSection pwdPending={null} frontierMonth={null} i140MedianMonths={null} />))).toContain("How deep USCIS's queue is");
+    expect(textOf(renderToStaticMarkup(<RoadSection pwdPending={null} frontierMonth={null} i140MedianMonths={Number.NaN} />))).toContain("How deep USCIS's queue is");
+  });
 });
 
 describe("ExplainerFilm", () => {
