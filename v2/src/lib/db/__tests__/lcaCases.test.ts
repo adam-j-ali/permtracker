@@ -19,7 +19,7 @@ vi.mock("../client", () => ({
   },
 }));
 
-const { LCA_FINAL_STATUSES, listLcaCases, lookupLcaDisclosed, normaliseLcaCaseNumber, searchLcaCases, searchLcaDisclosed } =
+const { LCA_FINAL_STATUSES, listLcaCases, lookupLcaDisclosed, lookupLcaWageRequest, normaliseLcaCaseNumber, searchLcaCases, searchLcaDisclosed } =
   await import("../lcaCases");
 const { BROAD_NAME_ROWS } = await import("../flagCases");
 
@@ -123,6 +123,35 @@ describe("the published LCA file: a name with a job title counts the title's mat
     one.mockResolvedValueOnce(null);
     await searchLcaDisclosed({ text: "EMC", title: "Engineer" });
     expect(rows.mock.calls[0]![0]).toContain("INDEXED BY lca_cases_emp_title");
+  });
+});
+
+describe("the wage request an LCA cites in DOL's file", () => {
+  it("answers the number as the file printed it, cleaned", async () => {
+    one.mockResolvedValueOnce({ pw_case: " p-100-25340-123456 " });
+    await expect(lookupLcaWageRequest(" i-200-26055-173457 ")).resolves.toBe("P-100-25340-123456");
+    const [sql, args] = one.mock.calls[0]!;
+    expect(sql).toContain("SELECT pw_case FROM lca_cases WHERE case_number = ?");
+    expect(args).toEqual(["I-200-26055-173457"]);
+  });
+
+  it("answers nothing for an empty cell, a cell that isn't a wage request, or a number the file doesn't hold", async () => {
+    one.mockResolvedValueOnce({ pw_case: null });
+    await expect(lookupLcaWageRequest("I-200-26055-1")).resolves.toBeNull();
+    one.mockResolvedValueOnce({ pw_case: "N/A" });
+    await expect(lookupLcaWageRequest("I-200-26055-1")).resolves.toBeNull();
+    one.mockResolvedValueOnce(null);
+    await expect(lookupLcaWageRequest("I-200-26055-1")).resolves.toBeNull();
+  });
+
+  it("never asks about something that isn't an LCA number", async () => {
+    await expect(lookupLcaWageRequest("G-100-26055-173457")).resolves.toBeNull();
+    expect(one).not.toHaveBeenCalled();
+  });
+
+  it("lets a failed read fail, so the page can say it couldn't read it", async () => {
+    one.mockRejectedValueOnce(new Error("query deadline"));
+    await expect(lookupLcaWageRequest("I-200-26055-1")).rejects.toThrow(/deadline/);
   });
 });
 

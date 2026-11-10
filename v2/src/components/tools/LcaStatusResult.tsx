@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { SocCodeLink } from "@/components/soc/SocCodeLink";
 import { DolUnanswered } from "@/components/tools/DolUnanswered";
-import { lookupLcaCaseOutcome, lookupLcaDisclosed, type LcaDisclosedRow } from "@/lib/db/lcaCasesTypes";
+import { lookupLcaCaseOutcome, lookupLcaDisclosed, lookupLcaWageRequest, type LcaDisclosedRow } from "@/lib/db/lcaCasesTypes";
 import { formatWage } from "@/lib/wageFormat";
 import { YearlyPayNote } from "@/components/data/YearlyPayNote";
 import { WatchThisNumber } from "@/components/tools/WatchThisNumber";
@@ -12,6 +12,7 @@ import { isLookupGap } from "@/lib/dolMiss";
 import { formatDay } from "@/lib/dolFormat";
 import { prettyStatus } from "@/components/queue/stages";
 import { softFail } from "@/lib/softRead";
+import { caseHref } from "@/lib/caseLinks";
 
 /**
  * A labor condition application (ETA-9035) by number: DOL's own status,
@@ -46,8 +47,11 @@ function employerLink(name: string | null) {
   );
 }
 
-/** The decided record from DOL's quarterly LCA file: what the live endpoint never says. */
-function Disclosed({ d }: { d: LcaDisclosedRow }) {
+/**
+ * The decided record from DOL's quarterly LCA file: what the live endpoint never says. A few LCAs cite the
+ * wage request their wage came from, and that one links to its own page.
+ */
+function Disclosed({ d, wageRequest }: { d: LcaDisclosedRow; wageRequest: string | null }) {
   const wage = formatWage(d.wage, d.wageUnit);
   return (
     <PageSection title="DOL's record" lede="From DOL's quarterly disclosure file: the wage and the job, which the live record never says.">
@@ -74,6 +78,19 @@ function Disclosed({ d }: { d: LcaDisclosedRow }) {
           ...(d.visaClass ? [{ label: "Visa class", value: d.visaClass }] : []),
           { label: "Received by DOL", value: formatDay(d.receivedDate) ?? "Unknown" },
           { label: "Decided", value: formatDay(d.decisionDate) ?? "Unknown" },
+          ...(wageRequest
+            ? [
+                {
+                  label: "Wage request it cites",
+                  raw: true,
+                  value: (
+                    <Link href={caseHref(wageRequest)} className="link font-mono">
+                      {wageRequest}
+                    </Link>
+                  ),
+                },
+              ]
+            : []),
         ]}
       />
     </PageSection>
@@ -81,10 +98,12 @@ function Disclosed({ d }: { d: LcaDisclosedRow }) {
 }
 
 export async function LcaLookup({ caseNumber }: { caseNumber: string }) {
-  const [{ row, dolMiss }, disclosed] = await Promise.all([
+  const [{ row, dolMiss }, disclosed, wageRequest] = await Promise.all([
     // A failure to read our own table is also "could not settle it", never "no record".
     lookupLcaCaseOutcome(caseNumber).catch(softFail("LcaStatusResult.lookupLcaCaseOutcome", { row: null, dolMiss: "records" as const })),
     lookupLcaDisclosed(caseNumber).catch(softFail("LcaStatusResult.lookupLcaDisclosed", null)),
+    // The record stands without this link, so a failed read is recorded and the row is left out.
+    lookupLcaWageRequest(caseNumber).catch(softFail("LcaStatusResult.lookupLcaWageRequest", null)),
   ]);
   const label = (n: string) => (
     <>
@@ -107,7 +126,7 @@ export async function LcaLookup({ caseNumber }: { caseNumber: string }) {
           </b>
           . Its live case system didn&apos;t return the number, so the record below is from the quarterly file.
         </AnswerPanel>
-        <Disclosed d={disclosed} />
+        <Disclosed d={disclosed} wageRequest={wageRequest} />
         <PageSection title="The record">
           <RecordList
             rows={[
@@ -176,7 +195,7 @@ export async function LcaLookup({ caseNumber }: { caseNumber: string }) {
         .{filed ? ` It was filed ${filed}.` : ""} {statusMeaning(row.status)}
       </AnswerPanel>
 
-      {disclosed ? <Disclosed d={disclosed} /> : null}
+      {disclosed ? <Disclosed d={disclosed} wageRequest={wageRequest} /> : null}
 
       <PageSection title="The record" lede="As DOL holds it.">
         <RecordList
