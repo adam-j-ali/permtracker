@@ -135,7 +135,7 @@ export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hos
     <section
       aria-labelledby={heading ? headingId : undefined}
       aria-label={heading ? undefined : "Find your case without its number"}
-      className={cn("text-base", heading && "border-2 border-border bg-card p-4 sm:p-5", className)}
+      className={cn("@container text-base", heading && "border-2 border-border bg-card p-4 sm:p-5", className)}
     >
       {/* A line, never a heading: the finder opens under a box that can sit below an h1, in a card or in a
           footer, and a heading here would skip a level on some of them. The section is named by it instead. */}
@@ -155,8 +155,10 @@ export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hos
           ))}
         </div>
       ) : null}{" "}
-      {/* `grid-cols-1` and `[&>*]:min-w-0`: a date control in a grid sizes from its content on iOS without them. */}
-      <div className={cn("grid grid-cols-1 gap-x-4 gap-y-3 [&>*]:min-w-0", !hosted && "sm:grid-cols-[minmax(0,1fr)_12rem]", (heading || programs.length > 1) && "mt-4")}>
+      {/* `grid-cols-1` and `[&>*]:min-w-0`: a date control in a grid sizes from its content on iOS without them.
+          The two fields share a row by the finder's own width, never the screen's: in a list page's side box the
+          name field was left a few characters wide. */}
+      <div className={cn("grid grid-cols-1 gap-x-4 gap-y-3 [&>*]:min-w-0", !hosted && "@md:grid-cols-[minmax(0,1fr)_12rem]", (heading || programs.length > 1) && "mt-4")}>
         <div>
           <Label htmlFor={nameId} className="text-sm font-bold">
             {hosted ? "No number? Type your employer’s name" : "Employer’s name"}

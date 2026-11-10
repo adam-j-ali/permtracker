@@ -5,6 +5,7 @@ import { PlusIcon } from "@phosphor-icons/react/ssr";
 import { ChartTips } from "@/components/data/ChartTips";
 import { PageBasics } from "@/components/data/PageBasics";
 import { DataProvenance } from "@/components/data/DataProvenance";
+import { IndexHeader, IndexLookup } from "@/components/data/IndexHeader";
 import { FlagCaseBrowser, SEASONAL_PROGRAM } from "@/components/tools/FlagCaseBrowser";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
@@ -97,16 +98,19 @@ export default async function SeasonalCasesPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">
-      <div className="pt-10 sm:pt-12" />
-
-      <header className="max-w-3xl">
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">
-          Find an H-2A, H-2B or CW-1 filing
-        </h1>{" "}
-        <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-          Seasonal farm and non-farm work. Search the employer to get the number, the job and DOL&apos;s status.
-        </p>
-      </header>
+      <IndexHeader
+        title="Find an H-2A, H-2B or CW-1 filing"
+        lede="Seasonal farm and non-farm work. Search the employer to get the number, the job and DOL's status."
+        aside={
+          <IndexLookup
+            title="Have the number?"
+            placeholder="H-300-26188-123456"
+            note="DOL is asked live, and the case page can email you when it moves."
+            source="seasonal-cases"
+            program="seasonal"
+          />
+        }
+      />
 
       {summary ? (
         <section aria-label="What DOL has confirmed so far" className="mt-8">
