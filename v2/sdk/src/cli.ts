@@ -30,8 +30,9 @@ Usage: permtracker <command> [arguments] [--json] [--key <key>]
                            --live asks DOL now when our records don't hold it yet
   estimate <number>        when a pending PERM case is likely to be decided
   estimate --filed <date>  the same for a filing date, YYYY-MM-DD
-  find <employer> --filed <date>   a case without its number: that employer's filings from one day;
-                           --program pwd, lca or seasonal (perm by default); --job <words> narrows a long list
+  find [employer]          a case without its number, from any of: the employer, --job <words>, --firm <name>,
+                           and --filed <date> for one day or --from <date> --to <date> for a range;
+                           --program pwd, lca or seasonal (perm by default)
   queue                    DOL's processing times and the pending queue
   bulletin [YYYY-MM]       a visa bulletin, the newest by default
   employers <name>         search employers      employer <slug>   one employer
@@ -75,6 +76,9 @@ export interface Parsed {
   json: boolean;
   key: string | undefined;
   filed: string | undefined;
+  from: string | undefined;
+  to: string | undefined;
+  firm: string | undefined;
   live: boolean;
   employer: string | undefined;
   program: string | undefined;
@@ -84,7 +88,7 @@ export interface Parsed {
   help: boolean;
 }
 
-const VALUE_FLAGS = ["key", "filed", "employer", "program", "job", "format", "out"] as const;
+const VALUE_FLAGS = ["key", "filed", "from", "to", "firm", "employer", "program", "job", "format", "out"] as const;
 type ValueFlag = (typeof VALUE_FLAGS)[number];
 
 export function parseArgs(argv: string[]): Parsed {
@@ -94,6 +98,9 @@ export function parseArgs(argv: string[]): Parsed {
     json: false,
     key: undefined,
     filed: undefined,
+    from: undefined,
+    to: undefined,
+    firm: undefined,
     live: false,
     employer: undefined,
     program: undefined,
@@ -209,9 +216,12 @@ export async function run(argv: string[]): Promise<number> {
       answer = p.filed ? await pt.estimate({ filed: p.filed }) : await pt.estimate({ case: need(a, "a case number, or --filed YYYY-MM-DD") });
       break;
     case "find": {
-      if (!p.filed) throw new PermTrackerError(400, "missing_argument", "Give the filing day: --filed YYYY-MM-DD.", null, null);
-      // The API names the programs it takes when this one isn't among them.
-      answer = await pt.findCases({ employer: need(a, "the employer's name"), filed: p.filed, program: p.program as FilingProgram | undefined, job: p.job });
+      const employer = a.join(" ").trim() || p.employer;
+      if (!employer && !p.job && !p.firm && !p.filed && !p.from && !p.to) {
+        throw new PermTrackerError(400, "missing_argument", "Give at least one of: the employer's name, --job, --firm, --filed, or --from and --to.", null, null);
+      }
+      // The API names the programs it takes when this one isn't among them, and says what a range needs.
+      answer = await pt.findCases({ employer, job: p.job, firm: p.firm, filed: p.filed, from: p.from, to: p.to, program: p.program as FilingProgram | undefined });
       break;
     }
     case "queue": answer = await pt.queue(); break;

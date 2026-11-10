@@ -33,6 +33,10 @@ export interface DayCase {
   wageRequest?: string | null;
   /** On a wage request: the decided PERM cases DOL's file names it on. Left out when none, or when that couldn't be read. */
   namedBy?: number | null;
+  /** The day it was filed, on a row from a window of days (the finder). A day's own list leaves it out: the page is the day. */
+  filedOn?: string;
+  /** The law firm or agent DOL's file names, on a finder's row. */
+  firm?: string | null;
 }
 
 export type DaySource = "live" | "both" | "file";

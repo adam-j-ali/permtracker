@@ -302,6 +302,34 @@ def main() -> int:
     check("id: withheld_purge" in step and "steps.withheld_purge.outcome == 'failure'" in fail and "exit 1" in fail,
           "a failed purge turns the deploy red, so withhold.py never reports a name gone while Cloudflare holds it", f)
 
+    # The live check asks both searches by the withheld name: the case search and the finder under every case box.
+    asked: list[str] = []
+
+    def fake_fetch(path: str, found: bool = False) -> tuple[int, str]:
+        asked.append(path)
+        if path.startswith("/api/case-search"):
+            return 200, json.dumps({"rows": [{"caseNumber": "G-1"}] if found else [], "noMatch": None if found else {"field": "employer"}})
+        if path.startswith("/api/find-case"):
+            return 200, json.dumps({"cases": [{"caseNumber": "G-1"}] if found else [], "matched": 1 if found else 0})
+        return 404, ""
+
+    real_fetch = w.fetch
+    for kind, name, param in (("employer", "Zzyx Farms LLC", "employer"), ("firm", "Zzyx & Partners LLP", "firm")):
+        entry = Entry(kind=kind, slug="zzyx", name=name, label="", number=9)
+        for found in (False, True):
+            asked.clear()
+            w.fetch = lambda path, found=found: fake_fetch(path, found)
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                w.check_live([entry], [entry], [])
+            said = out.getvalue()
+            check(any(a.startswith(f"/api/find-case?{param}=Zzyx") for a in asked), f"the live check asks the case finder by a withheld {kind}'s name", f)
+            check(("the case finder by the name answers 200, finds nothing" in said) == (not found)
+                  and ("<- it found cases" in said) == found,
+                  f"and says so when the finder {'finds cases' if found else 'finds nothing'} for a {kind}", f)
+            check("Zzyx" not in said, "and never prints the name", f)
+    w.fetch = real_fetch
+
     print("\nALL PASS" if not f else f"\n{len(f)} FAILURE(S)")
     return 1 if f else 0
 

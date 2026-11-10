@@ -60,6 +60,9 @@ const ISOLATED_UNIT_FILES = [
   // Each mocks the database client under the links DOL's files draw between filings (Nov 9 2026).
   "src/lib/db/__tests__/caseLinks.test.ts",
   "src/lib/db/__tests__/filingDayLinks.test.ts",
+  // The finder's window read and the one function that answers an ask: each stands in for the database (Nov 10 2026).
+  "src/lib/db/__tests__/filedWindow.test.ts",
+  "src/lib/__tests__/findCase.test.ts",
   // Mocks the database client to answer the day a case's RFI began (Nov 9 2026).
   "src/lib/db/__tests__/rfiEnteredOn.test.ts",
   // Added 2026-11-04: mocks the database client under consularPosts; in the shared pool a file that

@@ -120,19 +120,26 @@ export function buildMcpServer(caller: ApiCaller): McpServer {
     {
       title: "Find a case without its number",
       description:
-        "The cases an employer filed on one day, each with its number, status and job title, and that day's totals: for someone who knows who filed and when, and never saw the number. " +
-        "PERM by default. The program may be pwd (prevailing wage), lca (H-1B) or seasonal (H-2A, H-2B, CW-1). With no match it returns the employers that filed that day under a close spelling. " +
-        'Example: {"employer": "Acme Robotics", "filed": "2026-01-30"}.',
+        "A DOL case found without its number, from what someone knows about it: any of the employer's name, words of the job title and the law firm, with one filing day, a range of days or no date. One of them is enough. " +
+        "Each case comes with its number, status, job title and filing day, and the answer says what DOL's record holds for the days read. " +
+        "PERM by default. The program may be pwd (prevailing wage), lca (H-1B) or seasonal (H-2A, H-2B, CW-1). A law firm finds decided cases only, since DOL names it at the decision. " +
+        "A range longer than three months needs an employer or a firm. With no employer fitting in a month or less it returns the employers that filed in those days under a close spelling. " +
+        'Examples: {"employer": "Acme Robotics", "filed": "2026-01-30"}, {"job": "controls engineer", "from": "2026-01-05", "to": "2026-02-28"}.',
       inputSchema: z.object({
-        employer: z.string().max(120).describe("The employer's name or its start."),
-        filed: z.string().max(10).describe("The filing day, YYYY-MM-DD."),
+        employer: z.string().max(120).optional().describe("The employer's name."),
+        job: z.string().max(80).optional().describe("Words of the job title."),
+        firm: z.string().max(120).optional().describe("The law firm's or agent's name. Decided cases only."),
+        filed: z.string().max(10).optional().describe("One filing day, YYYY-MM-DD. Not with from or to."),
+        from: z.string().max(10).optional().describe("The first filing day of a range, YYYY-MM-DD."),
+        to: z.string().max(10).optional().describe("The last filing day of a range, YYYY-MM-DD."),
         program: z.string().max(12).optional().describe("perm (the default), pwd, lca or seasonal."),
-        job: z.string().max(80).optional().describe("Words of the job title, to narrow a long answer."),
       }),
       annotations: readOnly,
     },
-    async ({ employer, filed, program, job }) =>
-      answer(caller, () => findCases({ employer, filed, program: program ?? null, job: job ?? null })),
+    async ({ employer, job, firm, filed, from, to, program }) =>
+      answer(caller, () =>
+        findCases({ employer: employer ?? null, job: job ?? null, firm: firm ?? null, filed: filed ?? null, from: from ?? null, to: to ?? null, program: program ?? null }),
+      ),
   );
 
   server.registerTool(

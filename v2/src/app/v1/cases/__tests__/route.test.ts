@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { API_PLANS } from "@convex/lib/apiPlans";
 
 /**
- * GET /v1/cases: a case found without its number. The route hands the four parameters to the one
+ * GET /v1/cases: a case found without its number. The route hands its seven parameters to the one
  * read the MCP tool and the chat use, counts an answer, and a sandbox key gets the fixed sample.
  */
 const authenticate = vi.fn();
@@ -49,15 +49,20 @@ describe("GET /v1/cases", () => {
   it("hands the employer, the day, the kind and the job to the read, and answers with its source and page", async () => {
     const res = await call("?employer=Acme%20Robotics&filed=2026-01-30&program=pwd&job=controls");
     expect(res.status).toBe(200);
-    expect(findCases).toHaveBeenCalledExactlyOnceWith({ employer: "Acme Robotics", filed: "2026-01-30", program: "pwd", job: "controls" });
+    expect(findCases).toHaveBeenCalledExactlyOnceWith({ employer: "Acme Robotics", filed: "2026-01-30", from: null, to: null, program: "pwd", job: "controls", firm: null });
     expect(await res.json()).toEqual({ data: { matched: 1, cases: [{ caseNumber: "G-100-26030-000001" }] }, meta });
     expect(countCall).toHaveBeenCalledTimes(1);
+  });
+
+  it("hands a range of days and a law firm on too, with no employer", async () => {
+    await call("?job=controls%20engineer&firm=Smith%20Immigration&from=2026-01-05&to=2026-02-28");
+    expect(findCases).toHaveBeenCalledExactlyOnceWith({ employer: null, filed: null, from: "2026-01-05", to: "2026-02-28", program: null, job: "controls engineer", firm: "Smith Immigration" });
   });
 
   it("passes what's missing as missing, so the read says which parameter it needs", async () => {
     findCases.mockResolvedValue({ ok: false, status: 400, code: "bad_request", message: "filed must be the filing day, like 2026-01-30." });
     const res = await call("?employer=Acme");
-    expect(findCases).toHaveBeenCalledWith({ employer: "Acme", filed: null, program: null, job: null });
+    expect(findCases).toHaveBeenCalledWith({ employer: "Acme", filed: null, from: null, to: null, program: null, job: null, firm: null });
     expect(res.status).toBe(400);
     expect((await res.json()).error.message).toContain("filed must be the filing day");
     // A refusal isn't an answer: nothing is counted against the caller.

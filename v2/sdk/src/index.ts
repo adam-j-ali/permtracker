@@ -124,29 +124,49 @@ export interface FoundCase {
   isFinal: boolean;
   employer: string;
   jobTitle: string;
+  /** The day it was filed, YYYY-MM-DD. */
+  filedOn: string | null;
   decisionDate: string | null;
   worksiteState: string | null;
   /** On a decided PERM case, the wage request it names. */
   wageRequest: string | null;
+  /** The law firm or agent DOL's file names, once the case is decided. */
+  lawFirm: string | null;
   /** The case's page on permtracker.app. */
   url: string;
 }
 
-/** What `findCases` answers: the day, the employer's cases on it, and close names when nothing matched. */
+/** What `findCases` answers: the days read, the cases that fit, and close names when no employer did. */
 export interface FoundCases {
-  filed: string;
   program: FilingProgram;
-  /** The whole day in DOL's record, whatever was asked. */
-  day: { filed: number; decided: number; waiting: number };
-  /** Cases from an employer matching the name, before `job` narrows them. */
-  matchedEmployer: number;
-  /** Cases matching the name and the job words. `cases` holds the first 50. */
+  /**
+   * How it was read. "window": every case filed in the days read, an employer matched by any word of its name.
+   * "index": the case search's index for the employer (the start of its name) or the law firm, over any dates.
+   */
+  readBy: "window" | "index";
+  /** The days read, or null when an index answered with no dates given. `assumed` is the newest three months. */
+  window: { from: string; to: string; assumed: boolean } | null;
+  /** The one day read, when it was one day. */
+  filed?: string;
+  /** What DOL's record holds for the days read, whatever was asked. Null with no dates. */
+  period: { filed: number; decided: number; waiting: number } | null;
+  /** The same as `period`, for one day. */
+  day?: { filed: number; decided: number; waiting: number };
+  /** In a "window" read with an employer given: cases its name fits, before `job` narrows them. */
+  matchedEmployer: number | null;
+  /** Cases that fit everything asked. `cases` holds the first 50. */
   matched: number;
   cases: FoundCase[];
   truncated: boolean;
-  /** With no match: the employers that filed that day under a close spelling. */
+  /** With no employer fitting in a month or less: the employers that filed in those days under a close spelling. */
   closeNames: Array<{ employer: string; cases: number }>;
-  /** The day's own list was cut at its cap, so a case can be missing from this answer. */
+  /** The firm a `firm` ask's words named, with the other firms they could mean. */
+  lawFirm: { name: string; alternatives: string[] } | null;
+  /** A `firm` was given and names no firm we hold. */
+  lawFirmUnknown: boolean;
+  /** A `firm` was asked for: DOL names it only at the decision, so no pending case is listed. */
+  decidedOnly: boolean;
+  /** A read stopped at its limit, so a case can be missing from this answer. */
   dayListCapped: boolean;
   [field: string]: unknown;
 }
@@ -369,12 +389,14 @@ export class PermTracker {
   }
 
   /**
-   * A case without its number: the cases an employer filed on one day (YYYY-MM-DD). `program` is
-   * "perm" unless given; `job` narrows a long list by words of the job title. With no match, the
-   * answer's `closeNames` are the employers that filed that day under a close spelling.
+   * A case without its number, from what you know about it: any of `employer`, `job` (words of the job title)
+   * and `firm` (the law firm), with one filing day (`filed`), a range (`from`, `to`) or no date. One of them is
+   * enough. `program` is "perm" unless given. A firm finds decided cases only, and a range longer than three
+   * months needs an employer or a firm. With no employer fitting in a month or less, the answer's `closeNames`
+   * are the employers that filed in those days under a close spelling.
    */
-  findCases(by: { employer: string; filed: string; program?: FilingProgram; job?: string }): Promise<Answer<FoundCases>> {
-    return this.get("/cases", { employer: by.employer, filed: by.filed, program: by.program, job: by.job });
+  findCases(by: { employer?: string; job?: string; firm?: string; filed?: string; from?: string; to?: string; program?: FilingProgram }): Promise<Answer<FoundCases>> {
+    return this.get("/cases", { employer: by.employer, job: by.job, firm: by.firm, filed: by.filed, from: by.from, to: by.to, program: by.program });
   }
 
   queue(): Promise<Answer<Record<string, unknown>>> {

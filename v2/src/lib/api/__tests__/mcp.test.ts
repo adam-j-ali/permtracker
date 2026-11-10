@@ -87,11 +87,15 @@ describe("the MCP server at /mcp", () => {
     findCases.mockReset().mockResolvedValue({ ok: true, data: { matched: 1, cases: [{ caseNumber: "G-100-26030-000001" }] }, meta });
     const { body } = await rpc("tools/call", { name: "find_case", arguments: { employer: "Acme Robotics", filed: "2026-01-30" } });
     // What the assistant left out goes to the read as missing, and the read picks PERM.
-    expect(findCases).toHaveBeenCalledExactlyOnceWith({ employer: "Acme Robotics", filed: "2026-01-30", program: null, job: null });
+    expect(findCases).toHaveBeenCalledExactlyOnceWith({ employer: "Acme Robotics", job: null, firm: null, filed: "2026-01-30", from: null, to: null, program: null });
     expect(JSON.parse(body.result.content[0].text)).toMatchObject({ page: meta.url, data: { matched: 1 } });
 
     await rpc("tools/call", { name: "find_case", arguments: { employer: "Acme", filed: "2026-01-30", program: "pwd", job: "controls" } });
-    expect(findCases).toHaveBeenLastCalledWith({ employer: "Acme", filed: "2026-01-30", program: "pwd", job: "controls" });
+    expect(findCases).toHaveBeenLastCalledWith({ employer: "Acme", job: "controls", firm: null, filed: "2026-01-30", from: null, to: null, program: "pwd" });
+
+    // No employer at all: a job title and a law firm over a range of days is an ask of its own.
+    await rpc("tools/call", { name: "find_case", arguments: { job: "controls engineer", firm: "Smith Immigration", from: "2026-01-05", to: "2026-02-28" } });
+    expect(findCases).toHaveBeenLastCalledWith({ employer: null, job: "controls engineer", firm: "Smith Immigration", filed: null, from: "2026-01-05", to: "2026-02-28", program: null });
   });
 
   it("tells the assistant when the shared pool is full, and reads nothing", async () => {

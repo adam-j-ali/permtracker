@@ -98,6 +98,15 @@ describe("PermTracker", () => {
     expect(Object.fromEntries(new URL(String(f.mock.calls[1]![0])).searchParams)).toEqual({ employer: "Acme", filed: "2026-01-30", program: "lca", job: "software engineer" });
   });
 
+  it("finds a case with no employer: a job title and a law firm over a range of days, each part left out when not given", async () => {
+    const f = fakeFetch(200, { data: { program: "perm", readBy: "index", window: { from: "2026-01-05", to: "2026-02-28", assumed: false }, matched: 0, cases: [], closeNames: [], lawFirm: null, lawFirmUnknown: false, decidedOnly: true }, meta: { source: "DOL", asOf: "2026-11-10" } });
+    const pt = new PermTracker({ apiKey: KEY, fetch: f as unknown as typeof fetch });
+    const a = await pt.findCases({ job: "controls engineer", firm: "Smith Immigration", from: "2026-01-05", to: "2026-02-28" });
+    expect(Object.fromEntries(new URL(String(f.mock.calls[0]![0])).searchParams)).toEqual({ job: "controls engineer", firm: "Smith Immigration", from: "2026-01-05", to: "2026-02-28" });
+    expect(a.data.decidedOnly).toBe(true);
+    expect(a.data.window).toEqual({ from: "2026-01-05", to: "2026-02-28", assumed: false });
+  });
+
   it("reads usage headers that are missing as unknown, not zero", () => {
     expect(usageFrom(new Headers())).toEqual({ perMinute: null, remainingThisMinute: null, today: null, perDay: null, month: null, perMonth: null });
   });
@@ -184,6 +193,15 @@ describe("the CLI", () => {
       filed: "2026-01-30",
       program: "pwd",
       job: "software engineer",
+    });
+    expect(parseArgs(["find", "--job", "controls engineer", "--firm=Smith Immigration", "--from", "2026-01-05", "--to", "2026-02-28"])).toMatchObject({
+      command: "find",
+      args: [],
+      job: "controls engineer",
+      firm: "Smith Immigration",
+      from: "2026-01-05",
+      to: "2026-02-28",
+      filed: undefined,
     });
     expect(parseArgs(["export", "cases", "q=acme", "state=CA", "--format", "json", "--out", "a.json"])).toMatchObject({
       command: "export",

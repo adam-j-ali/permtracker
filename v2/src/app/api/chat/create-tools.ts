@@ -613,10 +613,12 @@ AUTONOMOUS: No confirmation needed.`,
     },
 
     findDolCase: {
-      description: "Find a DOL case without its number: the cases an employer filed on one day, each with its number, status and job. Pass the employer's name and the filing day.",
+      description: "Find a DOL case without its number, from what the person knows: any of the employer's name, the job title and the law firm, with one filing day, a range of days or no date. One of them is enough.",
       inputSchema: FindDolCaseInputSchema,
-      execute: async ({ employer, filed, program, job }: { employer: string; filed: string; program?: string; job?: string }) =>
-        publicRecord(() => findCases({ employer, filed, program: program ?? null, job: job ?? null })),
+      execute: async ({ employer, job, firm, filed, from, to, program }: { employer?: string; job?: string; firm?: string; filed?: string; from?: string; to?: string; program?: string }) =>
+        publicRecord(() =>
+          findCases({ employer: employer ?? null, job: job ?? null, firm: firm ?? null, filed: filed ?? null, from: from ?? null, to: to ?? null, program: program ?? null }),
+        ),
     },
 
     estimateDecision: {

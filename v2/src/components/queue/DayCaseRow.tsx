@@ -14,7 +14,19 @@ import { longDate } from "@convex/lib/months";
  * and for the finder that reads the same list, so a case looks the same wherever it's listed. A host
  * may add one control to a row (`action`).
  */
-export function DayCaseRow({ c, action }: { c: DayCase; action?: React.ReactNode }) {
+export function DayCaseRow({
+  c,
+  action,
+  filed = false,
+  firm = false,
+}: {
+  c: DayCase;
+  action?: React.ReactNode;
+  /** Say the day it was filed: for a list that spans more than one day. */
+  filed?: boolean;
+  /** Name the law firm DOL's file gives: for a list found by one. */
+  firm?: boolean;
+}) {
   return (
     <li className="grid grid-cols-1 gap-x-4 gap-y-1 py-3 sm:grid-cols-[13rem_minmax(0,1fr)_auto] sm:items-center [&>*]:min-w-0">
       <Link href={caseHref(c.caseNumber)} className="link inline-flex min-h-11 items-center font-mono text-sm">
@@ -29,7 +41,7 @@ export function DayCaseRow({ c, action }: { c: DayCase; action?: React.ReactNode
           <span className="block font-semibold">{c.employer || "Employer not named"}</span>
         )}{" "}
         <span className="block text-sm text-soft">{c.jobTitle}</span>{" "}
-        <CaseFacts c={c} />
+        <CaseFacts c={c} filed={filed} firm={firm} />
       </span>{" "}
       {action ? (
         // A host that acts on a row (the case form's "Use this number") puts its control under the status.
@@ -47,13 +59,16 @@ export function DayCaseRow({ c, action }: { c: DayCase; action?: React.ReactNode
 }
 
 /**
- * What DOL's file adds to a case: its decision day, the worksite, the wage, where the case is held,
+ * What a row says under the job: the day it was filed and the firm that filed it where a host asks for them,
+ * then what DOL's file adds to a case: its decision day, the worksite, the wage, where the case is held,
  * and the filings the file ties it to (a decided PERM case's wage request, the decided PERM cases a
  * wage request is named on), each a link to that filing's own page.
  */
-function CaseFacts({ c }: { c: DayCase }) {
+function CaseFacts({ c, filed, firm }: { c: DayCase; filed: boolean; firm: boolean }) {
   const facts: { key: string; node: React.ReactNode }[] = [
+    filed && c.filedOn ? `Filed ${longDate(c.filedOn) ?? c.filedOn}` : null,
     c.decided ? `Decided ${longDate(c.decided) ?? c.decided}` : null,
+    firm && c.firm ? `Filed by ${c.firm}` : null,
     c.state,
     c.wage,
     c.source === "file" ? "Only in DOL's published files" : null,

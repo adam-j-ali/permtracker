@@ -2059,10 +2059,13 @@ export const LookupDolCaseInputSchema = z.object({
   caseNumber: z.string().max(40).describe('A DOL case number as printed: G-100-26045-123456 (PERM), P-100-... (wage request), I-200-... (H-1B LCA), H-300-... (H-2A).'),
 });
 export const FindDolCaseInputSchema = z.object({
-  employer: z.string().min(2).max(120).describe("The employer's name or its start."),
-  filed: z.string().max(10).describe('The filing day, YYYY-MM-DD.'),
+  employer: z.string().min(2).max(120).optional().describe("The employer's name."),
+  job: z.string().max(80).optional().describe('Words of the job title.'),
+  firm: z.string().min(2).max(120).optional().describe("The law firm's name. It finds decided cases only."),
+  filed: z.string().max(10).optional().describe('One filing day, YYYY-MM-DD. Not with from or to.'),
+  from: z.string().max(10).optional().describe('The first filing day of a range, YYYY-MM-DD.'),
+  to: z.string().max(10).optional().describe('The last filing day of a range, YYYY-MM-DD.'),
   program: z.enum(['perm', 'pwd', 'lca', 'seasonal']).optional().describe('perm (the default), pwd (wage request), lca (H-1B) or seasonal (H-2A, H-2B, CW-1).'),
-  job: z.string().max(80).optional().describe('Words of the job title, to narrow a long answer.'),
 });
 export const EstimateDecisionInputSchema = z.object({
   caseNumber: z.string().max(40).optional().describe('A PERM case number.'),
@@ -2090,8 +2093,8 @@ Use for: a case number the person gives that isn't one of their own cases in thi
   inputSchema: LookupDolCaseInputSchema,
 });
 export const findDolCaseTool = tool({
-  description: `Find a DOL case without its number: the cases an employer filed on one day, each with its number, status and job title.
-Use for: "I don't have my case number", when the person knows the employer and the filing date. With no match it returns close spellings that filed that day.`,
+  description: `Find a DOL case without its number, from what the person knows: any of the employer's name, words of the job title and the law firm, with one filing day, a range of days or no date. One of them is enough. Each case comes with its number, status, job title and filing day.
+Use for: "I don't have my case number". Ask for whatever they know and pass it. A law firm finds decided cases only. A range longer than three months needs the employer or the firm. With no employer fitting in a month or less it returns close spellings that filed in those days.`,
   inputSchema: FindDolCaseInputSchema,
 });
 export const estimateDecisionTool = tool({

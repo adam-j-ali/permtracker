@@ -1,7 +1,7 @@
 ---
 title: "The answer and the case box first, and USCIS's posted time by category"
 seoTitle: "The answer first, and USCIS times by category"
-description: "The homepage now opens with the month DOL is working on and the case box together. Each USCIS form page lists the posted time for every category."
+description: "The homepage now opens with the month DOL is working on and the case box. The case finder takes a date range, a job title or a law firm."
 date: "2026-11-11"
 author: "PERM Tracker team"
 image: "/images/content/heroes/changelog/the-answer-first-and-uscis-times-by-category.webp"
@@ -31,6 +31,14 @@ This release moves the answer and the case box to the top of the homepage. It al
 
 - The [I-140 deadline guide](/guides/eta-9089-expiration-and-i140-deadline) now says what USCIS does when a certification's last day falls on a Saturday, a Sunday or a federal holiday. A paper petition is on time the next business day. One filed online gets no extra day.
 - The [rules roundup](/blog/rule-changes-since-august-2026) names the policy alert of September 23, 2026 that set this. It took effect on October 23, 2026.
+
+## Find a case from whatever you know
+
+- The finder under every case number box now takes a range of dates, the job title and the law firm as well as the employer. [Open it](/perm-case-status), fill in what you know, and one box is enough. Before, it needed the employer and the exact day.
+- One date looks at that day. Two dates look at every day between them, up to three months apart.
+- A search by law firm lists decided cases only, because DOL names the firm at the decision. The finder says so when you use it.
+- It works the same for PERM cases, wage requests, H-1B LCAs and the seasonal programs.
+- The same search is in the [API](/developers) (`GET /v1/cases`), the MCP server (`find_case`) and the chat assistant.
 
 ## Filings that point at each other
 
