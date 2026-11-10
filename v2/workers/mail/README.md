@@ -40,7 +40,7 @@ kept after the request and aren't used for training.
 - `rules.mjs`: the forwarding rule (held to `convex/lib/supportEmailForward.ts` by
   `src/lib/__tests__/mailWorkerRules.test.ts`) and the key checks.
 - `mime.mjs`: a small MIME reader for the stored copy.
-- `node workers/mail/build.mjs` (from `v2/`) writes `dist/worker.js`, about 6 KB.
+- `node workers/mail/build.mjs` (from `v2/`) writes `dist/worker.js`, about 11 KB.
 
 ## Bindings
 

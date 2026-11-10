@@ -1420,5 +1420,27 @@
   "credit": "Photo: Bill Koplitz, FEMA, December 4, 2007 / Wikimedia Commons, public domain",
   "source": "https://commons.wikimedia.org/wiki/File:FEMA_-_34358_-_US_Capitol_from_the_West_Side.jpg",
   "alt": "The U.S. Capitol's dome and columned west front, seen from below under a clear blue sky"
+ },
+ "changelog/find-a-case-without-its-number": {
+  "capture": {
+   "url": "/perm-case-status",
+   "wait": 4000,
+   "open": "button:has-text(\"Find it by employer and filing date\")",
+   "fill": [
+    {
+     "sel": "input[autocomplete=\"organization\"]",
+     "text": "UBS"
+    },
+    {
+     "sel": "section:has(> p:text-is(\"Find your case without the number\")) input[type=\"date\"]",
+     "text": "2026-01-05",
+     "wait": 2500
+    }
+   ],
+   "clip": "sel:main div:has(> form[method=\"get\"])",
+   "maxHeight": 1100
+  },
+  "credit": "Screenshot of permtracker.app, November 10, 2026",
+  "alt": "The case finder open under the case number box on permtracker.app, listing one employer's four PERM cases filed on January 5, 2026, each with its status"
  }
 }
