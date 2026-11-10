@@ -14,6 +14,7 @@ vi.mock("../employerSlugs", () => ({
 
 const { getLcaProfile, lcaProfileSql, lcaNewestFlagsSql } = await import("../lcaProfile");
 const { shapeLcaProfile } = await import("../../lcaProfile");
+const { forgetSoftReads } = await import("@/lib/softRead");
 
 /**
  * The LCA panel's read. Two things it must get right that a type can't see:
@@ -25,6 +26,8 @@ describe("getLcaProfile", () => {
   beforeEach(() => {
     one.mockReset();
     tableColumns.mockReset();
+    // A failed read is recorded once per ten minutes, so each test starts with nothing recorded.
+    forgetSoftReads();
   });
 
   it("asks only for the visa line, and skips the declarations read, until the detail columns exist", async () => {
@@ -73,7 +76,11 @@ describe("getLcaProfile", () => {
 
   it("throws when the counts themselves can't be read", async () => {
     tableColumns.mockResolvedValue(new Set(["case_number", "workers"]));
-    one.mockRejectedValue(new Error("database query deadline"));
+    // Only the counts fail: the declarations read answers, so the throw can only be the counts' own.
+    one.mockImplementation(async (sql: string) => {
+      if (sql === lcaNewestFlagsSql(W)) return { h1b_dependent: 0, willful_violator: 0, filed: "2026-05-01" };
+      throw new Error("database query deadline");
+    });
     await expect(getLcaProfile("acme")).rejects.toThrow("database query deadline");
   });
 

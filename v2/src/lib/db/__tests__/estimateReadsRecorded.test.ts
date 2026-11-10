@@ -17,12 +17,15 @@ const { getRangeCoverage } = await import("../rangeCoverage");
 const { getStragglerRates } = await import("../stragglers");
 const { getStageStats } = await import("../stageStats");
 const { rfiEnteredOn } = await import("../rfiClock");
+const { forgetSoftReads } = await import("@/lib/softRead");
 
 let warn: ReturnType<typeof vi.spyOn>;
 beforeEach(() => {
   one.mockReset().mockRejectedValue(new Error("SERVER_ERROR: database is locked"));
   rows.mockReset().mockRejectedValue(new Error("SERVER_ERROR: database is locked"));
   warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  // A failed read is recorded once per ten minutes, so each test starts with nothing recorded.
+  forgetSoftReads();
 });
 afterEach(() => warn.mockRestore());
 
