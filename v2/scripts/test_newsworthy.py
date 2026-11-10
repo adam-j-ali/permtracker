@@ -257,6 +257,39 @@ def main() -> int:
     check("the real article is found by its RIN", "/blog/proposed-perm-rule-rin-1205-ac29" in found.get("1205-AC29", []))
     check("a compared rule is found too", "/blog/proposed-perm-rule-rin-1205-ac29" in found.get("1205-AC30", []))
 
+    # A Policy Manual chapter USCIS changed: the line names the articles that cite that chapter, so the text
+    # gets read against the change (the "definition of day" update sat 18 days before a guide said it, Nov 10 2026).
+    pm_seen = ms(2026, 10, 27, 9, 30)
+    by_link = {"document_number": "uscis-pm-2026-10-27-a", "publication_date": "2026-10-27", "type": "Policy Manual update",
+               "title": "Definition of Day for Purposes of Filing Deadlines", "source": "uscis-policy-manual",
+               "html_url": "https://www.uscis.gov/policy-manual/volume-1-part-b-chapter-6", "citation": "1 USCIS-PM B.6",
+               "action": "Technical update", "first_seen_at": pm_seen}
+    by_cite = {"document_number": "uscis-pm-2026-10-27-b", "publication_date": "2026-10-27", "type": "Policy Manual update",
+               "title": "Fee Guidance for L-1 Intracompany Transferees", "source": "uscis-policy-manual",
+               "html_url": "https://www.uscis.gov/sites/default/files/document/policy-manual-updates/20261027-Fees.pdf",
+               "citation": "2 USCIS-PM L.7", "action": "Policy alert", "first_seen_at": pm_seen}
+    uncited = dict(by_link, document_number="uscis-pm-2026-10-27-c", title="A chapter no article cites",
+                   html_url="https://www.uscis.gov/policy-manual/volume-9-part-z-chapter-9", citation="9 USCIS-PM Z.9")
+    cites = {"volume-1-part-b-chapter-6": ["/blog/rule-changes-since-august-2026", "/guides/eta-9089-expiration-and-i140-deadline"],
+             "volume-2-part-l-chapter-7": ["/guides/l1-fees"]}
+    got = nw.newsworthy(nw.Inputs(documents=[by_link, by_cite, uncited], chapter_articles=cites), morning, now)
+    words = {i["what"].split(":")[0] + "|" + i["what"] for i in got}
+    day_line = next((w for w in words if "Definition of Day" in w), "")
+    fee_line = next((w for w in words if "Fee Guidance" in w), "")
+    bare_line = next((w for w in words if "no article cites" in w), "")
+    check("a changed chapter names the articles that cite it, by the chapter's address",
+          "/blog/rule-changes-since-august-2026, /guides/eta-9089-expiration-and-i140-deadline" in day_line
+          and "check" in day_line, day_line)
+    check("a policy alert whose link is a PDF is matched by its citation", "/guides/l1-fees" in fee_line, fee_line)
+    check("a chapter no article cites names none", bool(bare_line) and "/guides/" not in bare_line and "/blog/" not in bare_line, bare_line)
+    check("the chapter is read from the link, then from the citation, else there is none",
+          nw.chapter_of(by_link) == "volume-1-part-b-chapter-6" and nw.chapter_of(by_cite) == "volume-2-part-l-chapter-7"
+          and nw.chapter_of({"html_url": "https://www.uscis.gov/newsroom/alerts/x", "citation": "7 USCIS-PM A"}) is None)
+    held = nw.articles_by_chapter()
+    check("the real articles are found by the chapter they link",
+          "/guides/eta-9089-expiration-and-i140-deadline" in held.get("volume-6-part-e-chapter-6", [])
+          and "/guides/eta-9089-expiration-and-i140-deadline" in held.get("volume-1-part-b-chapter-6", []), str(sorted(held)))
+
     print(f"\n{len(FAILS)} failed" if FAILS else "\nall passed")
     return 1 if FAILS else 0
 

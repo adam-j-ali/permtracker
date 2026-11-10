@@ -72,6 +72,8 @@ class Inputs:
     documents: list[dict] = field(default_factory=list)
     rule_documents: set[str] = field(default_factory=set)  # Register numbers the rule watch follows
     articles: dict[str, list[str]] = field(default_factory=dict)  # RIN -> the articles that follow it
+    # A Policy Manual chapter ("volume-1-part-b-chapter-6") -> the articles that cite it
+    chapter_articles: dict[str, list[str]] = field(default_factory=dict)
     debarments: list[dict] = field(default_factory=list)  # program, entity, start_date, end_date, first_seen_at
 
 
@@ -151,6 +153,36 @@ def articles_by_rin(content: pathlib.Path = CONTENT) -> dict[str, list[str]]:
         for m in ARTICLE_RIN.finditer(text):
             out.setdefault(m.group(1) or m.group(2), []).append(f"/{f.parent.name}/{f.stem}")
     return {rin: sorted(set(paths)) for rin, paths in out.items()}
+
+
+# How an article cites a chapter of USCIS's Policy Manual: by the chapter's own address.
+ARTICLE_CHAPTER = re.compile(r"uscis\.gov/policy-manual/(volume-\d+-part-[a-z]+-chapter-\d+)")
+# How USCIS's updates list names one: "1 USCIS-PM B.6" is volume 1, part B, chapter 6.
+PM_CITATION = re.compile(r"^\s*(\d+)\s+USCIS-PM\s+([A-Z]+)\.(\d+)\b")
+
+
+def chapter_of(d: dict) -> str | None:
+    """The one chapter a Policy Manual update changes, as the chapter's address ends: from its link when the link
+    is the chapter, else from its citation. None for an update that names a whole part or several chapters. Pure."""
+    m = ARTICLE_CHAPTER.search(d.get("html_url") or "")
+    if m:
+        return m.group(1)
+    m = PM_CITATION.match(d.get("citation") or "")
+    return f"volume-{m.group(1)}-part-{m.group(2).lower()}-chapter-{m.group(3)}" if m else None
+
+
+def articles_by_chapter(content: pathlib.Path = CONTENT) -> dict[str, list[str]]:
+    """Every article that links a Policy Manual chapter, by chapter, as its path on the site. Unlike a rule an
+    article follows by RIN, nothing in such an article updates itself: its words say what the chapter said the
+    day it was read."""
+    out: dict[str, list[str]] = {}
+    for f in sorted(content.glob("*/*.mdx")):
+        text = f.read_text(encoding="utf8", errors="ignore")
+        if "policy-manual/" not in text:
+            continue
+        for chapter in set(ARTICLE_CHAPTER.findall(text)):
+            out.setdefault(chapter, []).append(f"/{f.parent.name}/{f.stem}")
+    return {chapter: sorted(paths) for chapter, paths in out.items()}
 
 
 def _rule_items(inputs: Inputs, since_ms: int, now_ms: int) -> list[dict]:
@@ -450,7 +482,13 @@ def _document_items(inputs: Inputs, since_ms: int, now_ms: int) -> list[dict]:
         when = d.get("pi_filed") if d.get("status") == "public-inspection" else d.get("publication_date")
         if (when or "") < floor or d.get("document_number") in inputs.rule_documents:
             continue
-        out.append({"kind": "document", "when": when, "what": document_sentence(d),
+        what = document_sentence(d)
+        if d.get("source") == "uscis-policy-manual":
+            pages = inputs.chapter_articles.get(chapter_of(d) or "", [])
+            if pages:
+                what += (f" It changes a chapter these articles cite, so read it and check their words: "
+                         f"{', '.join(pages)}.")
+        out.append({"kind": "document", "when": when, "what": what,
                     "source": DOC_SOURCES.get(d.get("source") or "", "the Federal Register")})
     return out
 
@@ -509,7 +547,7 @@ def read_inputs(db, since_ms: int) -> Inputs:
     try:
         inputs.documents = query_dicts(
             db, "SELECT document_number, publication_date, type, title, agencies, source, status, pi_filed, action, "
-                "comments_close_on, effective_on, first_seen_at, fetched_at, dates FROM policy_notices "
+                "comments_close_on, effective_on, first_seen_at, fetched_at, dates, html_url, citation FROM policy_notices "
                 "WHERE (first_seen_at >= ? OR (source = 'congress' AND fetched_at >= ?)) AND superseded_by IS NULL "
                 "ORDER BY first_seen_at", [since_ms, since_ms])
     except Exception as exc:  # noqa: BLE001
@@ -520,6 +558,7 @@ def read_inputs(db, since_ms: int) -> Inputs:
         "SELECT proposed_document FROM rule_pipeline WHERE proposed_document IS NOT NULL UNION "
         "SELECT final_document FROM rule_pipeline WHERE final_document IS NOT NULL", []) if r.get("n")}
     inputs.articles = articles_by_rin()
+    inputs.chapter_articles = articles_by_chapter()
     # A table without first_seen_at (before Nov 1 2026) reads as no new debarments.
     try:
         inputs.debarments = query_dicts(
