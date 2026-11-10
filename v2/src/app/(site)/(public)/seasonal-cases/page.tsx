@@ -101,6 +101,22 @@ export default async function SeasonalCasesPage() {
       <IndexHeader
         title="Find an H-2A, H-2B or CW-1 filing"
         lede="Seasonal farm and non-farm work. Search the employer to get the number, the job and DOL's status."
+        figures={
+          summary
+            ? [
+                {
+                  label: "Waiting at DOL now",
+                  value: formatInt(summary.pending),
+                  ...(longDate(summary.asOf) ? { note: `Checked ${longDate(summary.asOf)}` } : {}),
+                },
+                {
+                  label: "Decided",
+                  value: formatInt(summary.decided),
+                  ...(earliest && longDate(`${earliest}-01`) ? { note: `Filed since ${longDate(`${earliest}-01`)}` } : {}),
+                },
+              ]
+            : []
+        }
         aside={
           <IndexLookup
             title="Have the number?"
@@ -112,9 +128,8 @@ export default async function SeasonalCasesPage() {
         }
       />
 
-      {summary ? (
-        <section aria-label="What DOL has confirmed so far" className="mt-8">
-          {hasForms ? (
+      {summary && hasForms ? (
+        <section aria-label="DOL's filings, form by form" className="mt-10">
             <ChartTips label="Each form's share of the filings DOL has confirmed">
             <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
               {FORM_ORDER.map((p) => {
@@ -144,41 +159,15 @@ export default async function SeasonalCasesPage() {
               })}
             </ul>
             </ChartTips>
-          ) : (
-            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3 [&>*]:min-w-0">
-              <div className="bg-sage p-4 border-2 shadow-hard border-border">
-                <dt className="text-sm font-bold text-muted-foreground">Confirmed in DOL&apos;s case status</dt>{" "}
-                <dd className="mt-1 font-heading text-3xl font-bold">{formatInt(summary.total)}</dd>
-              </div>{" "}
-              <div className="bg-sage p-4 border-2 shadow-hard border-border">
-                <dt className="text-sm font-bold text-muted-foreground">Still in process</dt>{" "}
-                <dd className="mt-1 font-heading text-3xl font-bold">{formatInt(summary.pending)}</dd>
-              </div>{" "}
-              <div className="bg-sage p-4 border-2 shadow-hard border-border">
-                <dt className="text-sm font-bold text-muted-foreground">Decided</dt>{" "}
-                <dd className="mt-1 font-heading text-3xl font-bold">{formatInt(summary.decided)}</dd>
-              </div>
-            </dl>
-          )}{" "}
-          {earliest ? (
-            <p className="mt-3 text-sm text-muted-foreground">
-              Filings from {longDate(`${earliest}-01`) ?? earliest} on, checked {longDate(summary.asOf) ?? "daily"}.
-            </p>
-          ) : null}
         </section>
       ) : null}
 
-      {/* The way in for someone holding a number stays in view; where the
-          figures come from folds under one line. It had been a tinted block
-          of five paragraphs above the search. */}
+      {/* Which numbers the box at the top takes, and where each status is explained; where the figures come
+          from folds under one line. It had been a tinted block of five paragraphs above the search. */}
       <section className="mt-8 max-w-3xl">
         <p className="text-base leading-relaxed text-soft">
-          Have the number? The{" "}
-          <Link href="/perm-case-status" className="link">
-            status lookup
-          </Link>{" "}
-          takes H-300, JO-A-300, H-400, P-400, C-500 and P-500 numbers, asks DOL directly, and can email you when the
-          status changes. What each status means, and when DOL decides:{" "}
+          The box at the top takes any H-300, JO-A-300, H-400, P-400, C-500 or P-500 number. What each status means,
+          and when DOL decides:{" "}
           <Link href="/guides/h2a-case-status-and-timing" className="link">
             H-2A
           </Link>{" "}
