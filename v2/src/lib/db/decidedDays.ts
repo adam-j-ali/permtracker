@@ -22,6 +22,7 @@ import {
 } from "@/lib/dateCoverage";
 import { tableColumns } from "./tableColumns";
 import { HISTORY_DECIDED_LAST } from "./caseSearchReads";
+import { beforeFirstLoad } from "./firstLoad";
 
 export * from "@/lib/dateCoverage";
 
@@ -247,10 +248,10 @@ export async function getCoverageWindows(): Promise<CoverageWindows> {
         const [lo, hi] = await Promise.all([
           rows<{ v: string | null }>(
             `SELECT MIN(decision_date) AS v FROM ${table}`,
-          ).catch(() => []),
+          ).catch(beforeFirstLoad([])),
           rows<{ v: string | null }>(
             `SELECT MAX(decision_date) AS v FROM ${table}`,
-          ).catch(() => []),
+          ).catch(beforeFirstLoad([])),
         ]);
         return [{ lo: lo[0]?.v ?? null, hi: hi[0]?.v ?? null }];
       }),
@@ -260,10 +261,10 @@ export async function getCoverageWindows(): Promise<CoverageWindows> {
         const [lo, hi] = await Promise.all([
           rows<{ v: number | null }>(
             `SELECT MIN(changed_at) AS v FROM ${p}_case_events`,
-          ).catch(() => []),
+          ).catch(beforeFirstLoad([])),
           rows<{ v: number | null }>(
             `SELECT MAX(changed_at) AS v FROM ${p}_case_events`,
-          ).catch(() => []),
+          ).catch(beforeFirstLoad([])),
         ]);
         return [{ lo: lo[0]?.v ?? null, hi: hi[0]?.v ?? null }];
       }),
@@ -319,7 +320,7 @@ export async function getCoverageWindows(): Promise<CoverageWindows> {
 async function historyStart(): Promise<string | null> {
   const r = await rows<{ json: string }>(
     "SELECT json FROM perm_docs WHERE key = 'perm_history'",
-  ).catch(() => []);
+  ).catch(beforeFirstLoad([]));
   try {
     const doc = JSON.parse(r[0]?.json ?? "{}") as {
       files?: Record<string, { fy?: number; caseRows?: number }>;

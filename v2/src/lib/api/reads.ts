@@ -306,7 +306,7 @@ export async function readBulletin(month?: string | null): Promise<ReadResult<Re
   if (!r) {
     const span = await one<{ first: string | null; last: string | null }>(
       "SELECT min(bulletin_month) AS first, max(bulletin_month) AS last FROM visa_bulletins",
-    ).catch(() => null);
+    ).catch(softFail("api/reads.bulletinSpan", null));
     return {
       ok: false,
       status: 404,
@@ -372,7 +372,7 @@ function entityData(kind: EntityKind, page: string, e: NonNullable<Awaited<Retur
  * failing the answer.
  */
 async function entityDates(): Promise<{ disclosedThrough: string | null; sweptOn: string | null }> {
-  const f = await getFreshness().catch(() => ({}) as Record<string, { asOf: string | null } | undefined>);
+  const f = await getFreshness().catch(softFail("api/reads.getFreshness", {} as Record<string, { asOf: string | null } | undefined>));
   return { disclosedThrough: day(f["perm-cases"]?.asOf), sweptOn: day(f["perm-case-status"]?.asOf) };
 }
 
@@ -383,7 +383,7 @@ export async function readEntity(kind: EntityKind, slug: string): Promise<ReadRe
   const [e, dates, live] = await Promise.all([
     getEntityBySlug(kind, slug),
     entityDates(),
-    entityPending(kind, slug).catch(() => null),
+    entityPending(kind, slug).catch(softFail("api/reads.entityPending", null)),
   ]);
   if (!e) return { ok: false, status: 404, code: "not_found", message: "No page by that name. Search by name to find the right one." };
   return {

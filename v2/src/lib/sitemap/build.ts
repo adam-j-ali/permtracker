@@ -43,6 +43,7 @@ import { bulletinMonthDate, employerOwnDate, pageDate, type DateSources } from "
 import { h1bAsOf as summaryAsOf } from "@/lib/h1bRanks";
 import { auditWeek, pickAuditPaths, splitPages, type AuditFamily } from "@/lib/sitemap/audit";
 import { FORM_PAGES } from "@/lib/uscisForms";
+import { softFail } from "@/lib/softRead";
 import { getConsularIndex } from "@/lib/db/consularPosts";
 import { getSocTitlePages } from "@/lib/db/socTitles";
 
@@ -110,7 +111,7 @@ export function baseUrl(): string {
 async function permAsOf(): Promise<string | null> {
   return getProcessingTimes()
     .then((s) => s?.permAsOf ?? null)
-    .catch(() => null);
+    .catch(softFail("sitemap.permAsOf", null));
 }
 
 /**
@@ -129,7 +130,7 @@ async function permAsOf(): Promise<string | null> {
 async function corpusAsOf(): Promise<string | null> {
   return getFreshness()
     .then((f) => f["perm-cases"]?.asOf ?? null)
-    .catch(() => null);
+    .catch(softFail("sitemap.corpusAsOf", null));
 }
 
 /**
@@ -190,7 +191,7 @@ export async function pagesEntries(): Promise<Entry[]> {
   } catch {
     queueMonths = [];
   }
-  const queueAsOf = (await getSweepCoverage().catch(() => null))?.finishedOn ?? null;
+  const queueAsOf = (await getSweepCoverage().catch(softFail("sitemap.getSweepCoverage", null)))?.finishedOn ?? null;
   // The top H-1B employer state pages: one per state the default year ranks,
   // from the SAME summary the route's generateStaticParams reads (an unranked
   // state 404s there). Dated by the newest day either source covers.
@@ -202,8 +203,8 @@ export async function pagesEntries(): Promise<Entry[]> {
       h1bStates = rankedStates(summary);
       h1bAsOf = summaryAsOf(summary);
     }
-  } catch {
-    h1bStates = [];
+  } catch (error) {
+    h1bStates = softFail<string[]>("sitemap.h1bStates", [])(error);
   }
   // The law firm ranking state pages: the same summary the route's
   // generateStaticParams reads, dated by the newest decision its years hold.
@@ -227,7 +228,7 @@ export async function pagesEntries(): Promise<Entry[]> {
     socTitleSlugs = [];
   }
   // The cap-exempt employer page, dated by the newest day its figures cover.
-  const capExemptDay = capExemptAsOf(await getCapExempt().catch(() => null));
+  const capExemptDay = capExemptAsOf(await getCapExempt().catch(softFail("sitemap.getCapExempt", null)));
   // The reviews page is dated by its newest review, from the same read the page makes (never throws).
   const reviewsAsOf = newestReviewDay((await getSiteReviews()).reviews);
   const allPosts = getAllPosts();
@@ -275,7 +276,7 @@ export async function pagesEntries(): Promise<Entry[]> {
     corpus: await corpusAsOf(),
     reviews: reviewsAsOf,
     // The day this site first held the newest bulletin, the bulletin pages' own day (the layout reads the same).
-    bulletin: await bulletinDay().catch(() => null),
+    bulletin: await bulletinDay().catch(softFail("sitemap.bulletinDay", null)),
   };
   const at = (route: string) => pageDate(route, sources);
   const statics: Entry[] = [
@@ -562,7 +563,7 @@ export class ChunkNotListed extends Error {}
  */
 async function pastLastChunk(chunk: number, count: () => Promise<number>): Promise<boolean> {
   if (chunk === 0) return false;
-  const n = await count().catch(() => null);
+  const n = await count().catch(softFail("sitemap.chunkCount", null));
   return n !== null && chunk >= Math.ceil(n / SITEMAP_CHUNK);
 }
 
@@ -642,7 +643,7 @@ export async function liveEmployerEntries(chunk: number): Promise<Entry[]> {
     captureError(new Error(detail));
     throw new Error(detail);
   }
-  const swept = (await getSweepCoverage().catch(() => null))?.finishedOn ?? null;
+  const swept = (await getSweepCoverage().catch(softFail("sitemap.getSweepCoverage", null)))?.finishedOn ?? null;
   const day = { sweep: swept, corpus: await corpusAsOf() };
   return slugs.map(({ slug, lastChanged }) => ({
     url: `${base}/perm-employers/${slug}`,
@@ -694,7 +695,7 @@ export async function otherEmployerEntries(chunk: number): Promise<Entry[]> {
     captureError(new Error(detail));
     throw new Error(detail);
   }
-  const swept = (await getSweepCoverage().catch(() => null))?.finishedOn ?? null;
+  const swept = (await getSweepCoverage().catch(softFail("sitemap.getSweepCoverage", null)))?.finishedOn ?? null;
   const day = { sweep: swept, corpus: await corpusAsOf() };
   return slugs.map(({ slug, lastChanged }) => ({
     url: `${base}/perm-employers/${slug}`,

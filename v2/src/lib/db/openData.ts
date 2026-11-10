@@ -14,6 +14,7 @@ import "server-only";
 
 import { rows } from "./client";
 import type { BulletinRecord, DolReading } from "@/lib/openData";
+import { beforeFirstLoad } from "./firstLoad";
 
 const parse = (v: string | null | undefined) => (v ? JSON.parse(v) : null);
 
@@ -42,7 +43,8 @@ export async function getProcessingTimesArchive(): Promise<DolReading[]> {
   const read = (sql: string) => rows<{ json: string; fetched_at: number }>(sql);
   let r = await read(
     "SELECT json, fetched_at FROM processing_time_readings ORDER BY perm_as_of, pwd_as_of LIMIT 5000",
-  ).catch(() => []);
+    // A failed read throws: the older table holds fewer readings, and must never stand in for a failure.
+  ).catch(beforeFirstLoad([]));
   if (r.length === 0) r = await read("SELECT json, fetched_at FROM processing_times ORDER BY perm_as_of LIMIT 5000");
   return r.map((x) => ({ ...(JSON.parse(x.json) as object), fetchedAt: Number(x.fetched_at) }) as DolReading);
 }

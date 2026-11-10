@@ -8,9 +8,9 @@ import { describe, expect, it } from "vitest";
  * Nov 4 2026 sweep moved 220 such reads to `softFail` (src/lib/softRead.ts), which keeps the fallback and records
  * the failure; the case status page still held 24 of them on Nov 9, and nothing stopped new ones.
  *
- * So: no server file under src/app or src/components may have one, and src/lib/db may not gain one. The readers listed below still
- * hold theirs (each a reviewed read, a cache eviction or a parse guard, or not yet moved); a count may only fall,
- * and when it falls this list is lowered with it.
+ * So: no server file under src/app, src/components or src/lib may have one. The few listed below aren't reads of a
+ * record answered with nothing (a cache dropping a failed load, a request or response body that isn't JSON), and
+ * each list says what its entries are. A new entry needs the same kind of reason.
  *
  *   fine:     getX().catch(softFail("page.getX", null))
  *   fine:     getX()                                  // throws, so the last good render stays
@@ -32,26 +32,29 @@ const COMPONENTS_ALLOWED: Record<string, number> = {
   "src/components/error/recovery.ts": 2,
 };
 
-/** The database readers' remaining ones, Nov 9 2026. Lower an entry when its file loses one. */
+/**
+ * The database readers' deliberate ones, each not a read answered with nothing: a cache dropping a load that failed,
+ * so it isn't served for hours (entities, entityBrowse, nameSuggest, socTitles), and the embed's lookup, which turns
+ * a failure into the named miss "unavailable" that the embed prints. Every other reader records or throws
+ * (Nov 10 2026: 60 listed that morning, these 7 by the evening). A new one here needs the same kind of reason.
+ */
 const DB_REMAINING: Record<string, number> = {
-  "src/lib/db/bulletinLine.ts": 1,
-  "src/lib/db/caseSearchReads.ts": 2,
-  "src/lib/db/dateSources.ts": 1,
-  "src/lib/db/decidedDays.ts": 5,
   "src/lib/db/embedLookup.ts": 2,
-  "src/lib/db/employerPrograms.ts": 2,
   "src/lib/db/entities.ts": 1,
   "src/lib/db/entityBrowse.ts": 1,
-  "src/lib/db/greenCardLine.ts": 1,
-  "src/lib/db/h1bRanks.ts": 1,
-  "src/lib/db/nameSuggest.ts": 2,
-  "src/lib/db/openData.ts": 1,
-  "src/lib/db/publicData.ts": 1,
-  "src/lib/db/recordCounts.ts": 2,
-  "src/lib/db/reference.ts": 8,
+  "src/lib/db/nameSuggest.ts": 1,
   "src/lib/db/socTitles.ts": 2,
-  "src/lib/db/uscisCaseStatus.ts": 2,
-  "src/lib/db/visaIssuances.ts": 2,
+};
+
+/**
+ * The rest of src/lib (the sitemap, the badges, the public API, the chat's tools): a body that isn't JSON read as
+ * none (a request's or USCIS's answer), and the employer lookup's cache dropping a check that failed.
+ */
+const LIB_ALLOWED: Record<string, number> = {
+  "src/lib/api/employerLookup.ts": 1,
+  "src/lib/api/webhooksApi.ts": 1,
+  "src/lib/auth/authGate.ts": 1,
+  "src/lib/uscis/torchClient.ts": 2,
 };
 
 /** Fewer server files than this under src/components means the walk has stopped seeing them. */
@@ -108,7 +111,15 @@ describe("a failed server read is recorded, never a silent fallback", () => {
     expect(counts("src/components")).toEqual(COMPONENTS_ALLOWED);
   });
 
-  it("has no new one in src/lib/db, and the list is lowered when one goes", () => {
+  it("has none in src/lib/db beyond the deliberate ones", () => {
     expect(counts("src/lib/db")).toEqual(DB_REMAINING);
+  });
+
+  it("has none in the rest of src/lib beyond the deliberate ones", () => {
+    const all = counts("src/lib");
+    const rest = Object.fromEntries(Object.entries(all).filter(([file]) => !file.startsWith("src/lib/db/")));
+    expect(rest).toEqual(LIB_ALLOWED);
+    // The walk must still be seeing the readers, or the line above says nothing.
+    expect(Object.keys(all).filter((file) => file.startsWith("src/lib/db/")).length).toBe(Object.keys(DB_REMAINING).length);
   });
 });

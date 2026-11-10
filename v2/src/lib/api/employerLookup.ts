@@ -43,6 +43,7 @@ import { otherEmployerRecord } from "@/lib/db/otherEmployers";
 import { getEntityBySlug, getFreshness } from "@/lib/db/publicData";
 import type { ReadResult } from "./reads";
 import { certifiedShare } from "./share";
+import { softFail } from "@/lib/softRead";
 
 /** Below this many decided cases the site prints no certified share. */
 export const MIN_DECIDED_FOR_SHARE = 30;
@@ -141,17 +142,17 @@ async function exactMappedPage(name: string): Promise<{ slug: string; kind: Page
 
 /** Counts over the employer's own spellings, from the tables' employer indexes. */
 async function spellingCounts(slug: string): Promise<{ lcas: number | null; newestFiling: string | null; livePending: number | null }> {
-  const match = await employerMatch(slug).catch(() => null);
+  const match = await employerMatch(slug).catch(softFail("api/employerLookup.employerMatch", null));
   if (!match) return { lcas: null, newestFiling: null, livePending: null };
   const [lca, live] = await Promise.all([
     one<{ n: number }>(`SELECT COUNT(*) AS n FROM lca_cases INDEXED BY lca_cases_emp WHERE ${match.where}`, match.args).catch(
-      () => null,
+      softFail("api/employerLookup.lcaCount", null),
     ),
     one<{ newest: string | null; pending: number }>(
       "SELECT MAX(filing_date) AS newest, SUM(CASE WHEN is_final = 0 THEN 1 ELSE 0 END) AS pending " +
         `FROM perm_live_recent INDEXED BY perm_live_recent_emp WHERE ${match.where}`,
       match.args,
-    ).catch(() => null),
+    ).catch(softFail("api/employerLookup.livePending", null)),
   ]);
   return { lcas: num(lca?.n), newestFiling: day(live?.newest), livePending: num(live?.pending) };
 }
@@ -161,7 +162,7 @@ async function describe(slug: string, kind: PageKind): Promise<LookupEmployer | 
   if (kind === "perm") {
     const [e, pending, counts] = await Promise.all([
       getEntityBySlug("employer", slug),
-      entityPending("employer", slug).catch(() => null),
+      entityPending("employer", slug).catch(softFail("api/employerLookup.entityPending", null)),
       spellingCounts(slug),
     ]);
     if (!e) return null;
@@ -256,7 +257,7 @@ export async function resolveEmployer(query: string): Promise<Resolved> {
   const exactOrBusier = async (employer: LookupEmployer): Promise<Resolved> => {
     const own = employer.perm.published;
     if (own >= SMALL_EXACT) return { match: "exact", employer };
-    const best = await possible().catch(() => null);
+    const best = await possible().catch(softFail("api/employerLookup.possible", null));
     if (!best || best.slug === employer.slug || best.total < Math.max(BUSIER_BY * own, BUSY_FLOOR)) {
       return { match: "exact", employer };
     }
@@ -301,7 +302,7 @@ export async function lookupEmployer(raw: string, now = Date.now()): Promise<Rea
     hit = { at: now, value };
     remembered.set(memo, hit);
   }
-  const f = await getFreshness().catch(() => ({}) as Record<string, { asOf: string | null } | undefined>);
+  const f = await getFreshness().catch(softFail("api/employerLookup.getFreshness", {} as Record<string, { asOf: string | null } | undefined>));
   return {
     ok: true,
     data: { query, ...hit.value, shareFloor: MIN_DECIDED_FOR_SHARE },

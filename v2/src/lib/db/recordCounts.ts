@@ -4,6 +4,7 @@ import { cache } from "react";
 
 import { deriveRecordCounts, type RecordFigure } from "../recordCounts";
 import { one, rows } from "./client";
+import { softFail } from "@/lib/softRead";
 
 /**
  * The record this site is built on, read as five point reads.
@@ -20,10 +21,10 @@ export const getRecordCounts = cache(async (): Promise<RecordFigure[]> => {
     rows<{ key: string; json: string }>(
       `SELECT key, json FROM perm_docs WHERE key IN (${KEYS.map(() => "?").join(", ")})`,
       [...KEYS],
-    ).catch(() => [] as { key: string; json: string }[]),
+    ).catch(softFail("recordCounts.docs", [] as { key: string; json: string }[])),
     one<{ n: number | string; latest: string | null }>(
       "SELECT COUNT(*) AS n, MAX(bulletin_month) AS latest FROM visa_bulletins",
-    ).catch(() => null),
+    ).catch(softFail("recordCounts.bulletins", null)),
   ]);
   const byKey = new Map(docs.map((d) => [d.key, String(d.json)]));
   return deriveRecordCounts({

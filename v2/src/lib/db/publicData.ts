@@ -31,6 +31,7 @@ import { one, rows } from "./client";
 import { wageView } from "./wageViews";
 import { socGroupClause } from "@/lib/socCode";
 import { getLiveCensus, type CensusMatrixRow } from "./liveCensus";
+import { softFail } from "@/lib/softRead";
 
 interface EntityDbRow {
   slug: string;
@@ -228,7 +229,7 @@ export async function getLiveOnlySlugWindow(chunk: number, size: number): Promis
 export async function liveOnlyLastChanged(slug: string): Promise<string | null> {
   const r = await one<{ d: string | null }>("SELECT last_changed AS d FROM perm_live_only_index WHERE slug = ?", [
     slug,
-  ]).catch(() => null);
+  ]).catch(softFail("publicData.liveOnlyLastChanged", null));
   return r?.d ? String(r.d) : null;
 }
 

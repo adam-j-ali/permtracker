@@ -11,6 +11,7 @@ import {
 } from "@/lib/h1bRanks";
 
 import { one, rows } from "./client";
+import { beforeFirstLoad } from "./firstLoad";
 
 /**
  * Reads for /h1b-employers: the summary doc and one view's ranked rows from
@@ -24,8 +25,9 @@ const COLS =
   "uscis_new, uscis_appr, uscis_den, dependent, willful, on_hold, warn_2y, debarred";
 
 export const getH1bSummary = cache(async (): Promise<H1bSummary | null> => {
+  // Not built yet is null. A read that failed throws, so the rankings keep their last good render.
   const r = await one<{ json: string }>("SELECT json FROM perm_docs WHERE key = 'h1b_ranks_summary'").catch(
-    () => null,
+    beforeFirstLoad(null),
   );
   return r ? parseH1bSummary(String(r.json)) : null;
 });
