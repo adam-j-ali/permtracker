@@ -1,6 +1,7 @@
 import "server-only";
 
 import { rows } from "./client";
+import { beforeFirstLoad } from "./firstLoad";
 
 /**
  * An employer's PERM record year by year, FY2008 onward, and its decided
@@ -30,12 +31,16 @@ export interface HistoryCase {
   wage: number | null;
 }
 
-/** Every year this employer has, oldest first. Empty when the table is absent. */
+/**
+ * Every year this employer has, oldest first. Empty when the table is absent. Like the two reads below, a failed
+ * read throws: an employer's page is kept for up to 30 days, and must never store "no history" for an employer that
+ * has one.
+ */
 export async function employerYears(slug: string): Promise<EmployerYear[]> {
   const got = await rows<{ fy: number; certified: number; denied: number; withdrawn: number }>(
     "SELECT fy, certified, denied, withdrawn FROM perm_employer_years WHERE slug = ? ORDER BY fy",
     [slug],
-  ).catch(() => []);
+  ).catch(beforeFirstLoad([]));
   return got.map((r) => ({
     fy: Number(r.fy),
     certified: Number(r.certified),
@@ -57,7 +62,7 @@ export async function employerHistoryCases(slug: string, limit = 25): Promise<Hi
     "SELECT case_number, status, decision_date, job_title, state, wage FROM perm_cases_history "
       + "WHERE employer_slug = ? ORDER BY decision_date DESC LIMIT ?",
     [slug, limit],
-  ).catch(() => []);
+  ).catch(beforeFirstLoad([]));
   return got.map((r) => ({
     caseNumber: r.case_number,
     status: r.status,
@@ -90,7 +95,7 @@ export async function workerFacets(
   const got = await rows<{ facet: string; key: string; label: string; n: number }>(
     "SELECT facet, key, label, n FROM perm_history_facets WHERE kind = ? AND slug = ? ORDER BY facet, pos",
     [kind, slug],
-  ).catch(() => []);
+  ).catch(beforeFirstLoad([]));
   const out: Partial<Record<WorkerFacet, WorkerFacetRow[]>> = {};
   for (const r of got) {
     const f = r.facet as WorkerFacet;
