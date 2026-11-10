@@ -290,6 +290,12 @@ case "$action" in
     systemd-run --quiet --no-block --collect --unit="permtracker-release-prune-$(date +%s)" \
       -p Nice=15 -p IOSchedulingClass=idle "$(readlink -f "$0")" prune-releases \
       || "$(readlink -f "$0")" prune-releases
+    # The stored documents (the queue census, the stage figures, the employer map) were built at the end of the
+    # last sweep, by the rules of the release before this one. Rebuild them now from the tables, in the
+    # background: it asks DOL nothing and gives way to a sweep that is about to run. Best effort: the site is
+    # already live, the next sweep rebuilds them whatever happens here, and a deploy never fails over it.
+    systemctl start --no-block permtracker-sweep@case-status-docs.service 2>/dev/null \
+      || log "could not start the stored documents' rebuild; the next sweep rebuilds them"
     log "deployed $rel" ;;
   prune-releases)
     # Keep the ten newest releases and every one a slot runs from; drop build

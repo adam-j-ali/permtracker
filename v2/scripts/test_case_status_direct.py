@@ -458,6 +458,44 @@ def main() -> int:
         csd.discover_and_record = real_dar
     check("the walk step carries the pass's cap and deadline",
           seen == {"cap": 7, "deadline": 1.0}, str(seen))
+
+    # --docs: after a deploy, the stored documents rebuilt from the tables alone. A release that changes how a
+    # document is built would otherwise print the old figures under the new words until the next sweep
+    # (Nov 10 2026: a corrected count stayed wrong on a live page for three hours).
+    real_tail, real_lcs, real_rr = csd.tail_steps, csd.last_complete_sweep, csd.record_run
+    walked: list[bool] = []
+    days: list[str] = []
+    rows: list[dict] = []
+
+    def boom() -> None:
+        raise RuntimeError("the census read failed")
+
+    csd.tail_steps = lambda _db, *, discover, **_kw: walked.append(discover) or [
+        ("one", lambda: days.append(csd.as_of_day())), ("two", boom), ("three", lambda: days.append(csd.as_of_day()))]
+    csd.last_complete_sweep = lambda _db, _program, modes=None: {"finished_on": "2026-11-09", "mode": "pending"}
+    csd.record_run = lambda _db, script, **kw: rows.append({"script": script, **kw})
+    try:
+        failed_docs = csd.rebuild_docs(WalkDB())
+        check("a documents-only rebuild never walks for new filings", walked == [False], str(walked))
+        check("its documents keep the day of the last complete sweep, since that's when DOL was read",
+              days == ["2026-11-09", "2026-11-09"], str(days))
+        check("one document failing is returned and recorded as partial, and the ones after it still ran",
+              [k for k, _ in failed_docs] == ["two"] and len(rows) == 1
+              and rows[0]["script"] == "ingest_case_status_direct.py --docs" and rows[0]["status"] == "partial"
+              and "failed: two" in rows[0]["note"] and "no DOL request" in rows[0]["note"], str(rows))
+        check("the day is today's again once the rebuild ends, so a sweep after it stamps its own",
+              csd.as_of_day() == csd.et_today())
+        csd.tail_steps = lambda _db, *, discover, **_kw: [("one", lambda: days.append(csd.as_of_day()))]
+        csd.last_complete_sweep = lambda _db, _program, modes=None: None
+        clean = csd.rebuild_docs(WalkDB())
+        check("with no complete sweep on record the documents are dated today, and a clean run records ok",
+              clean == [] and days[-1] == csd.et_today() and rows[-1]["status"] == "ok", str(rows[-1]))
+    finally:
+        csd.tail_steps, csd.last_complete_sweep, csd.record_run = real_tail, real_lcs, real_rr
+    src_text = pathlib.Path(csd.__file__).read_text()
+    check("no document stamps today's date itself: each asks as_of_day",
+          '"asOf": et_today()' not in src_text and "perm_day_queue_doc(rows, et_today())" not in src_text
+          and src_text.count('"asOf": as_of_day()') == 6)
     import pathlib as _pl, re as _re
     wf = (_pl.Path(__file__).resolve().parents[2] / ".github/workflows/case-status-direct.yml").read_text()
     m_pass = _re.search(r'timeout (\d+)m python3 scripts/ingest_case_status_direct.py --"\$MODE"', wf)

@@ -540,6 +540,17 @@ _AGE_DAYS = """CASE
 END"""
 
 
+# The day a document says its figures are as of. A sweep has just read DOL, so it's today. A rebuild with no
+# sweep before it (`--docs`, run after a deploy) keeps the day the statuses were last read: a document must never
+# claim a newer reading than it holds.
+_DOCS_AS_OF: str | None = None
+
+
+def as_of_day() -> str:
+    """Today's Eastern day, or the day `rebuild_docs` pinned for the rebuild in progress."""
+    return _DOCS_AS_OF or et_today()
+
+
 def write_review_stages(db) -> None:
     """Precompute the pending review-stage census into perm_docs['review_stages'].
 
@@ -636,7 +647,7 @@ def write_review_stages(db) -> None:
             f"{pending_total:,} (a concurrent write landed mid-run)")
         return
 
-    doc = {"asOf": et_today(), "source": SOURCE,
+    doc = {"asOf": as_of_day(), "source": SOURCE,
            "pendingTotal": pending_total, "stages": stages}
     payload = json.dumps(doc, separators=(",", ":"))
     db.execute("""CREATE TABLE IF NOT EXISTS perm_docs (
@@ -1039,7 +1050,7 @@ def write_sweep_coverage(db) -> None:
         log("NOT writing sweep_coverage: no complete sweep recorded yet")
         return
     doc = {
-        "asOf": et_today(),
+        "asOf": as_of_day(),
         "program": "perm",
         "source": SOURCE,
         "mode": sweep["mode"],
@@ -1098,7 +1109,7 @@ def write_stage_cohorts(db) -> None:
         log(f"NOT writing stage_cohorts: matrix {summed:,} != total {total:,}")
         return
 
-    doc = {"asOf": et_today(), "source": SOURCE,
+    doc = {"asOf": as_of_day(), "source": SOURCE,
            "total": total, "rows": matrix}
     payload = json.dumps(doc, separators=(",", ":"))
     db.execute("""CREATE TABLE IF NOT EXISTS perm_docs (
@@ -1284,7 +1295,7 @@ def write_stage_stats(db) -> None:
         log("NOT writing stage_stats: no pending stages returned")
         return
 
-    doc = {"asOf": et_today(), "source": SOURCE, "since": WATCHED_FROM,
+    doc = {"asOf": as_of_day(), "source": SOURCE, "since": WATCHED_FROM,
            "stages": sorted(stages, key=lambda r: -r["pending"]),
            "exits": sorted(moves, key=lambda r: -r["n"]),
            "durations": sorted(dur, key=lambda r: -r["entered"])}
@@ -1369,7 +1380,7 @@ def write_perm_day_queue(db) -> None:
          WHERE current_status = 'ANALYST REVIEW'
            AND filing_date IS NOT NULL AND filing_date <> ''
          GROUP BY filing_date""")
-    doc = perm_day_queue_doc(rows, et_today())
+    doc = perm_day_queue_doc(rows, as_of_day())
     if not doc["byDay"]:
         log(f"NOT writing {DAY_QUEUE_KEY}: no case in analyst review")
         return
@@ -1413,7 +1424,7 @@ def write_live_census(db) -> None:
             f"{no_filing:,} != total {total:,}")
         return
 
-    doc = {"asOf": et_today(), "totalCases": total,
+    doc = {"asOf": as_of_day(), "totalCases": total,
            "noFilingDate": no_filing, "source": SOURCE, "matrix": matrix}
     payload = json.dumps(doc, separators=(",", ":"))
     db.execute("""CREATE TABLE IF NOT EXISTS perm_docs (
@@ -1454,7 +1465,7 @@ def write_decided_percentiles(db) -> None:
     if not months:
         log("NOT writing decided_month_percentiles: perm_cases is empty here")
         return
-    doc = {"asOf": et_today(), "months": months}
+    doc = {"asOf": as_of_day(), "months": months}
     payload = json.dumps(doc, separators=(",", ":"))
     write_doc(db, "decided_month_percentiles", payload)
     log(f"wrote     decided_month_percentiles ({len(months)} months)")
@@ -1934,6 +1945,30 @@ def tail_steps(db, *, discover: bool, cap: int = DISCOVERY_REQUEST_CAP,
     return steps
 
 
+def rebuild_docs(db) -> list[tuple[str, str]]:
+    """Rebuild every stored document from what the tables already hold. No request goes to DOL.
+
+    For the minutes after a deploy. The documents were written at the end of the last sweep by the rules of the
+    release before this one, so a release that changes how one is built would print the old figures under the
+    new words until the next sweep. Each document keeps the day of the last complete sweep as its date, since
+    that is the day its statuses were read. Returns the steps that failed, as `run_independently` does.
+    """
+    global _DOCS_AS_OF
+    sweep = last_complete_sweep(db, "perm", modes=("full", "pending"))
+    _DOCS_AS_OF = sweep["finished_on"] if sweep and sweep.get("finished_on") else None
+    try:
+        log(f"rebuilding the stored documents as of {as_of_day()}"
+            + ("" if _DOCS_AS_OF else " (no complete sweep recorded; dated today)"))
+        failed = run_independently(tail_steps(db, discover=False))
+        record_run(db, "ingest_case_status_direct.py --docs", status="ok" if not failed else "partial",
+                   rows_written=0,
+                   note=f"stored documents rebuilt from the tables, as of {as_of_day()}, with no DOL request"
+                        + (f"; failed: {', '.join(k for k, _ in failed)}" if failed else ""))
+        return failed
+    finally:
+        _DOCS_AS_OF = None
+
+
 def main() -> int:
     t0 = time.monotonic()          # the discovery budget counts from here
     ap = argparse.ArgumentParser(description=__doc__)
@@ -1963,9 +1998,20 @@ def main() -> int:
         "--reconcile", action="store_true",
         help="Correct statuses but write NO events, for a pass against stale data.",
     )
+    ap.add_argument(
+        "--docs", action="store_true",
+        help="Only rebuild the stored documents from what the tables already hold, and exit. "
+             "Nothing is asked of DOL. Run after a deploy (permtracker-sweep case-status-docs).")
     args = ap.parse_args()
+    if args.docs and (args.full or args.pending or args.discover or args.reconcile or args.limit or args.offset):
+        ap.error("--docs runs alone: it reads the tables and asks DOL nothing")
 
     db = Database()
+
+    if args.docs:
+        failed = rebuild_docs(db)
+        log("stored documents rebuilt" if not failed else f"stored documents rebuilt; {len(failed)} failed")
+        return 0 if not failed else 1
 
     if args.discover and not (args.full or args.pending):
         res = run_discovery(db, cap=args.discover_cap, frontier_override=args.frontier,

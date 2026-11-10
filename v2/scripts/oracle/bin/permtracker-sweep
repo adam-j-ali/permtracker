@@ -1,5 +1,5 @@
 #!/bin/bash
-# permtracker-sweep <case-status-full|case-status-pending|pwd-pending|pwd-full|pwd-active|ingest-health>
+# permtracker-sweep <case-status-full|case-status-pending|case-status-docs|pwd-pending|pwd-full|pwd-active|ingest-health>
 #
 # The DOL sweeps that ran on GitHub's runners until Nov 7 2026, now here: flag.dol.gov answers this
 # server, and GitHub's Actions terms are for building, testing and shipping the software, not for
@@ -7,22 +7,43 @@
 # as the workflows they replace (case-status-direct.yml, pwd-status-direct.yml, ingest-health.yml);
 # the pages they expire are asked through nginx (both web copies) instead of the public address.
 # One run of a job at a time (flock), so a slow full pass and the next timer never overlap.
+# case-status-docs is started by permtracker-deploy after a release goes live: it rebuilds the stored
+# documents from the tables, asks DOL nothing, and gives way to any sweep that is about to run.
 set -uo pipefail
-job="${1:-}"; R=/srv/permtracker/repo; V2=$R/v2
+job="${1:-}"; R="${PT_REPO:-/srv/permtracker/repo}"; V2=$R/v2; ENV_DIR="${PT_ENV_DIR:-/srv/permtracker/app/env}"
 exec 9>"/run/lock/permtracker-sweep-${job%%-*}.lock" 2>/dev/null || exec 9>"/tmp/permtracker-sweep-${job%%-*}.lock"
 flock -n 9 || { echo "$job: another ${job%%-*} sweep is still running; skipping this one"; exit 0; }
 git -C "$R" fetch -q origin main && git -C "$R" reset -q --hard origin/main
-set -a; . /srv/permtracker/app/env/uscis.env; set +a
+set -a; . "$ENV_DIR/uscis.env"; set +a
 cd "$V2"
 note="oracle timer ($job)"
 failed=()   # steps that failed and let the run carry on; the run still ends red
 fail(){ python3 scripts/record_ingest_failure.py --script "$1" --note "$note: $2" || echo "could not record the failure row"; }
-secret="$(sed -n 's/^REVALIDATE_SECRET=//p' /srv/permtracker/app/env/production.env | head -1 | tr -d '"')"
+secret="$(sed -n 's/^REVALIDATE_SECRET=//p' "$ENV_DIR/production.env" | head -1 | tr -d '"')"
 expire(){  # expire <route> [json-file]: through nginx, which sends it to both web copies
   [ -n "$secret" ] || { echo "REVALIDATE_SECRET not readable; skipping $1"; return 0; }
   local args=(-fsS -m 120 -X POST -H "Host: permtracker.app" -H "x-revalidate-secret: $secret")
   [ -n "${2:-}" ] && args+=(-H "content-type: application/json" --data "@$2")
   curl "${args[@]}" "http://127.0.0.1:8081/api/$1" >/dev/null || { echo "revalidation call failed ($1)"; failed+=("$1"); }
+}
+
+builders(){  # what every pass rebuilds from the tables: the live remainder, the employer map, the sponsor
+  # index, the LCA cities and the wage sources, in the workflow's order: each reads the one before.
+  timeout 15m nice -n 10 python3 scripts/build_entity_detail.py --live-recent-only || failed+=("build_entity_detail.py")
+  timeout 30m nice -n 10 python3 scripts/build_employer_map.py || failed+=("build_employer_map.py")
+  timeout 10m nice -n 10 python3 scripts/build_sponsor_index.py || failed+=("build_sponsor_index.py")
+  timeout 10m nice -n 10 python3 scripts/build_lca_cities.py || failed+=("build_lca_cities.py")
+  timeout 10m nice -n 10 python3 scripts/build_wage_sources.py || failed+=("build_wage_sources.py")
+}
+
+derived(){  # the full pass's summaries that read only the tables
+  timeout 5m nice -n 10 python3 scripts/build_straggler_rates.py || fail build_straggler_rates.py "stragglers"
+  timeout 10m nice -n 10 python3 scripts/build_census_days.py || fail build_census_days.py "census days"
+  timeout 10m nice -n 10 python3 scripts/build_wait_trends.py || fail build_wait_trends.py "wait trends"
+}
+
+filings_by_day(){
+  timeout 10m nice -n 10 python3 scripts/build_filings_by_day.py || { fail build_filings_by_day.py "filings by day"; failed+=("filings-by-day"); }
 }
 
 case_status(){  # case_status <full|pending>
@@ -33,19 +54,11 @@ case_status(){  # case_status <full|pending>
   if ! timeout 140m nice -n 10 python3 scripts/ingest_case_status_direct.py --"$mode"; then
     fail "ingest_case_status_direct.py --$mode" "the pass failed or ran past 140m"; failed+=("sweep")
   fi
-  # The live remainder, the employer map, the sponsor index, the LCA cities and the wage sources, in
-  # the workflow's order: each reads the one before.
-  timeout 15m nice -n 10 python3 scripts/build_entity_detail.py --live-recent-only || failed+=("build_entity_detail.py")
-  timeout 30m nice -n 10 python3 scripts/build_employer_map.py || failed+=("build_employer_map.py")
-  timeout 10m nice -n 10 python3 scripts/build_sponsor_index.py || failed+=("build_sponsor_index.py")
-  timeout 10m nice -n 10 python3 scripts/build_lca_cities.py || failed+=("build_lca_cities.py")
-  timeout 10m nice -n 10 python3 scripts/build_wage_sources.py || failed+=("build_wage_sources.py")
+  builders
   if [ "$mode" = full ]; then
     timeout 25m nice -n 10 python3 scripts/sweep_serial_gaps.py --window 90 --cap 600 || fail sweep_serial_gaps.py "gap sweep"
     timeout 10m nice -n 10 python3 scripts/sync_published_live.py --cap 400 || fail sync_published_live.py "published sync"
-    timeout 5m nice -n 10 python3 scripts/build_straggler_rates.py || fail build_straggler_rates.py "stragglers"
-    timeout 10m nice -n 10 python3 scripts/build_census_days.py || fail build_census_days.py "census days"
-    timeout 10m nice -n 10 python3 scripts/build_wait_trends.py || fail build_wait_trends.py "wait trends"
+    derived
     # The estimator backtests: a failure only warns (the server reruns them at 7:05 AM ET).
     timeout 20m nice -n 10 python3 scripts/backtest_queue.py --write || echo "warning: estimator backtest failed"
     timeout 10m nice -n 10 python3 scripts/backtest_pwd.py --write || echo "warning: wage-request backtest failed"
@@ -54,7 +67,7 @@ case_status(){  # case_status <full|pending>
       timeout 5m nice -n 10 python3 scripts/backtest_bulletin.py --write || echo "warning: bulletin backtest failed"
     fi
   fi
-  timeout 10m nice -n 10 python3 scripts/build_filings_by_day.py || { fail build_filings_by_day.py "filings by day"; failed+=("filings-by-day"); }
+  filings_by_day
   # Employer pages whose live rows moved, busiest first, expired by path and told to IndexNow.
   if [ -s changed-employer-slugs.json ]; then
     n=$(python3 -c "import json;print(len(json.load(open('changed-employer-slugs.json'))['slugs']))" 2>/dev/null || echo 0)
@@ -66,6 +79,41 @@ case_status(){  # case_status <full|pending>
       rm -f "$urls"
     else echo "no employer pages changed"; fi
   fi
+  [ ${#failed[@]} -eq 0 ] && expire revalidate-sweep
+}
+
+# A sweep due within this many minutes rebuilds every document itself. The rebuild's own unit is stopped at 40
+# minutes (TimeoutStartSec in its drop-in), under this, so it can never hold the lock when a sweep's timer fires:
+# a sweep that finds the lock taken skips its run.
+DOCS_GIVE_WAY=45
+
+minutes_to_next_case_sweep(){  # whole minutes until the next case-status timer fires; 9999 when none can be read
+  local soonest=9999 t at mins now; now=$(date +%s)
+  for t in case-status-full case-status-pending case-status-midday; do
+    at=$(systemctl show "permtracker-sweep@$t.timer" -p NextElapseUSecRealtime --value 2>/dev/null) || continue
+    [ -n "$at" ] || continue
+    at=$(date -d "$at" +%s 2>/dev/null) || continue
+    [ "$at" -gt "$now" ] || continue
+    mins=$(( (at - now) / 60 ))
+    [ "$mins" -lt "$soonest" ] && soonest=$mins
+  done
+  echo "$soonest"
+}
+
+docs_after_deploy(){
+  # The stored documents are still the last sweep's, built by the rules of the release before this one. A release
+  # that changes how one is built would print the old figures under its new words until the next sweep (Nov 10
+  # 2026: a corrected count stayed wrong on a live page for three hours). Nothing here asks DOL anything.
+  local soon; soon=$(minutes_to_next_case_sweep)
+  if [ "$soon" -lt "$DOCS_GIVE_WAY" ]; then
+    echo "a case sweep starts in $soon minutes and rebuilds the documents itself; nothing to do"; return 0
+  fi
+  if ! timeout 10m nice -n 10 python3 scripts/ingest_case_status_direct.py --docs; then
+    fail "ingest_case_status_direct.py --docs" "the rebuild after a deploy failed or ran past 10m"; failed+=("docs")
+  fi
+  builders
+  derived
+  filings_by_day
   [ ${#failed[@]} -eq 0 ] && expire revalidate-sweep
 }
 
@@ -92,13 +140,14 @@ pwd_status(){  # pwd_status <pending|full|active>
 case "$job" in
   case-status-full) case_status full ;;
   case-status-pending) case_status pending ;;
+  case-status-docs) docs_after_deploy ;;
   pwd-pending) pwd_status pending ;;
   pwd-full) pwd_status full ;;
   pwd-active) pwd_status active ;;
   ingest-health)
     python3 scripts/check_ingest_health.py || failed+=("check_ingest_health.py")
     python3 scripts/check_invariants.py || failed+=("check_invariants.py") ;;
-  *) echo "usage: permtracker-sweep <case-status-full|case-status-pending|pwd-pending|pwd-full|pwd-active|ingest-health>"; exit 2 ;;
+  *) echo "usage: permtracker-sweep <case-status-full|case-status-pending|case-status-docs|pwd-pending|pwd-full|pwd-active|ingest-health>"; exit 2 ;;
 esac
 if [ ${#failed[@]} -gt 0 ]; then
   echo "these steps failed and the run carried on: ${failed[*]}"; exit 1
