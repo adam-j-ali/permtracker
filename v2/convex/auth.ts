@@ -10,6 +10,8 @@ import type { MutationCtx } from "./_generated/server";
 import { recordError } from "./lib/errorRecording";
 import { validateUserName } from "./lib/nameValidation";
 import { guardCodeFlows, requireSignupPass } from "./lib/turnstilePass";
+import { noteResetOutcome } from "./lib/authOutcomes";
+import { countResetOutcomes } from "./lib/resetOutcomes";
 
 /**
  * Post-auth hook: ensure user profile exists and record login.
@@ -244,9 +246,13 @@ function guardPasswordProvider(provider: typeof password): GuardedPassword {
     ...provider,
     options: {
       ...options,
-      authorize: guardCodeFlows(
-        options.authorize,
-        (ctx, pass): Promise<boolean> => ctx.runMutation(internal.turnstilePasses.consume, { pass }),
+      // Outermost, the count of how each reset ends (convex/lib/authOutcomes.ts); inside it, the pass check.
+      authorize: countResetOutcomes(
+        guardCodeFlows(
+          options.authorize,
+          (ctx, pass): Promise<boolean> => ctx.runMutation(internal.turnstilePasses.consume, { pass }),
+        ),
+        (ctx, kind): Promise<void> => noteResetOutcome(ctx, kind),
       ),
     },
   };

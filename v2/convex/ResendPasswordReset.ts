@@ -5,6 +5,7 @@ import { render } from "@react-email/render";
 import { generateSecureOTP } from "./lib/crypto";
 import { isEmailBlocked } from "./lib/emailBlocklist";
 import { chargeAuthMail, recordAuthSend, type ChargeCtx } from "./lib/authMailGate";
+import { noteResetOutcome } from "./lib/authOutcomes";
 import { recordError } from "./lib/errorRecording";
 import { AUTH_CODE_MAX_AGE_S } from "./lib/authCodeTtl";
 import { PasswordResetCode } from "../src/emails/PasswordResetCode";
@@ -61,5 +62,7 @@ export const ResendPasswordReset = Email({
       );
     }
     await recordAuthSend(ctx, sent);
+    // For the morning report: codes sent against resets completed (convex/lib/authOutcomes.ts).
+    await noteResetOutcome(ctx, "resetSent");
   },
 });

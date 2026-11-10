@@ -498,6 +498,12 @@ export const prune = internalMutation({
       .withIndex("by_day_pool", (q) => q.lt("day", oldDay))) {
       await ctx.db.delete(r._id);
     }
+    // The password-reset counts (convex/lib/authOutcomes.ts), on the same month: three rows a day.
+    for await (const r of ctx.db
+      .query("authOutcomes")
+      .withIndex("by_day_kind", (q) => q.lt("day", oldDay))) {
+      await ctx.db.delete(r._id);
+    }
     return { rows, recipients };
   },
 });

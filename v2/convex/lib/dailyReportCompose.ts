@@ -15,6 +15,7 @@ import { SITE_URL } from "./links";
 import { emailDailyLimit } from "./emailAllowance";
 import { MS_PER_DAY } from "./time";
 import { MONTH_ABBR } from "./months";
+import { resetVerdict, type ResetCounts } from "./resetOutcomes";
 
 export type SectionStatus = "fail" | "warn" | "unknown" | "off" | "ok";
 
@@ -170,6 +171,8 @@ export interface Facts {
     byScore: number[];
     notes: Array<{ score: number; note: string; updatedAt: number }>;
   };
+  /** How password resets ended over the last week (convex/lib/authOutcomes.ts); absent in older reports. */
+  resets?: ResetCounts;
   /** Working API keys by scope (convex/lib/apiKeyStats.ts) and webhook health; absent in older reports. */
   developers?: {
     keys: KeyCounts;
@@ -214,6 +217,15 @@ export function convexSections(f: Facts, resend: ResendDay | string, now: number
       `Confirmed subscriptions: ${subsLine}`,
     ],
   };
+  // Codes that go out while no reset completes is a reset that doesn't work: nothing else in the report would show it.
+  if (f.resets) {
+    const resets = resetVerdict(f.resets);
+    app.lines.push(resets.line);
+    if (resets.warn) {
+      app.status = "warn";
+      app.summary = `No password reset has completed in ${f.resets.days} days (${f.resets.sent} codes sent); ${app.summary}`;
+    }
+  }
 
   const emailLines: string[] = [];
   const emailStatus: ReportSection["status"][] = [];
