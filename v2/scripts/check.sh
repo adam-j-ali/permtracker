@@ -9,7 +9,8 @@
 # eslint on the changed files, and the vitest
 # tests that import something changed since the base (vitest's --changed,
 # uncommitted and untracked files included), the tests that name a changed file,
-# and, when src/ or convex/ changed, every gate that walks the tree. It's still
+# and, when src/ or convex/ changed, every gate that walks the tree, and when an
+# article or its picture changed, every test that holds the articles. It's still
 # the first look, never the last word: CI runs the whole
 # suite on every push and the deploy waits for it to pass (test.yml,
 # oracle-deploy.yml). `pnpm test:run` is still the full local run.
@@ -102,6 +103,14 @@ if { git diff --name-only --relative "$base" 2>/dev/null; git ls-files --others 
   echo "   and the gates that walk the whole tree:"
   # shellcheck disable=SC2086
   pnpm exec vitest run $walkers
+fi
+# An article is read from disk by the tests that hold it (its picture, its title and description, its
+# links, the opening's mention), through helpers that neither --changed nor a search by name follows,
+# and content/ is none of the folders above. Nov 10 2026: a push that changed only two articles ran no
+# article test here. Any change to an article or its pictures runs them all: about three minutes.
+if { git diff --name-only --relative "$base" 2>/dev/null; git ls-files --others --exclude-standard; } | grep -qE '^(content|public/images/content)/'; then
+  echo "   and the tests that hold the articles:"
+  pnpm exec vitest run src/app/__tests__ src/lib/content
 fi
 took
 echo "== passed in $(( $(date +%s) - t0 ))s"
