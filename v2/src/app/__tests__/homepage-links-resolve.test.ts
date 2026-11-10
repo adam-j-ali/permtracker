@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { FORM_PAGES } from "@/lib/uscisForms";
 
 /**
  * Every internal link on the homepage points at a route that exists.
@@ -37,7 +38,17 @@ const COMPONENTS = [
   // strip and the tools section on the page, and the two halves gained links.
   "src/components/home/RoadSection.tsx",
   "src/components/home/AudienceBlocks.tsx",
+  // Added 2026-11-10: the steps after PERM, under the hero's case box.
+  "src/components/home/HeroSteps.tsx",
 ];
+
+/**
+ * Families of pages a homepage part may link one page of, each with the pages it is built for. Without this a link
+ * to "/uscis-processing-times/i-140" had no route to equal, and a typo in the form would have passed as dynamic.
+ */
+const FAMILIES: Record<string, string[]> = {
+  "/uscis-processing-times/[form]": FORM_PAGES.map((p) => p.slug),
+};
 
 /** Route segments Next treats as grouping only, so they vanish from the URL. */
 function isTransparent(segment: string): boolean {
@@ -84,6 +95,14 @@ describe("homepage internal links", () => {
       // A dynamic route cannot be checked by string equality; those are
       // covered by not-found-status.test.ts instead.
       if (href.includes("[")) continue;
+      // One page of a family ("/uscis-processing-times/i-140" under "[form]"): the family must be a route, and
+      // the page must be one the family is built for, read from the same list its generateStaticParams reads.
+      const family = Object.keys(FAMILIES).find((f) => href.startsWith(`${f.slice(0, f.lastIndexOf("/"))}/`) && !routes.has(href));
+      if (family) {
+        expect(routes.has(family), `${family} is not a route`).toBe(true);
+        expect(FAMILIES[family]!, `${rel} links to ${href}, which ${family} has no page for`).toContain(href.slice(href.lastIndexOf("/") + 1));
+        continue;
+      }
       expect(routes.has(href), `${rel} links to ${href}, which is not a route`).toBe(
         true,
       );

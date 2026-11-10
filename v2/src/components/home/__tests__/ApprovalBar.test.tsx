@@ -26,4 +26,12 @@ describe("ApprovalBar", () => {
     expect(text).not.toContain("withdrawals included");
     expect(container.querySelectorAll('[aria-hidden="true"] > div')).toHaveLength(3);
   });
+
+  it("names itself with the words people search, as a heading (Nov 10 2026)", () => {
+    const { container } = render(<ApprovalBar parts={approvalRate(META, [])!.parts} />);
+    const h2 = container.querySelector("figure > h2");
+    expect(h2?.textContent).toBe("PERM approval rate");
+    // The heading comes before the bar and its figures, so an answer engine reads the name, then the numbers.
+    expect((container.textContent ?? "").indexOf("PERM approval rate")).toBeLessThan((container.textContent ?? "").indexOf("91.9%"));
+  });
 });

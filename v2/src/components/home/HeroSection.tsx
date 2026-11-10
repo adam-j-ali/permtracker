@@ -9,6 +9,7 @@ import { FolderSimpleIcon, MagnifyingGlassIcon } from "@phosphor-icons/react/ssr
 import { ColumnChart, type Column } from "@/components/numbers/ColumnChart";
 import { CaseLookupForm } from "@/components/tools/CaseLookupForm";
 import { CasePromises } from "@/components/tools/CasePromises";
+import { HeroSteps } from "@/components/home/HeroSteps";
 import { aboutMonths } from "@/lib/board";
 import { checkedLabel } from "@/lib/time";
 import { formatMonth, formatMonthDay } from "@/lib/dolFormat";
@@ -80,6 +81,8 @@ export interface HeroFigure {
   value: string;
   /** Which way it moved, and whether that's good for someone waiting. */
   trend?: FigureTrend;
+  /** Where the figure's own page is, for one that counts another step than PERM. */
+  href?: string;
 }
 
 /** Each figure's direction, computed by the page from what it already reads (`src/lib/homeTrends.ts`). */
@@ -107,7 +110,9 @@ export function heroFigures(board: HeroBoard | undefined, wait: HeroWait | null,
   if (wait && wait.days > 0) rows.push({ label: `Cases decided ${boardDay(wait.on)} waited`, value: waitValue(wait.days), trend: trends.wait });
   if (board?.pending != null) rows.push({ label: "In the PERM backlog", value: formatInt(board.pending), trend: trends.pending });
   if (board?.lastDay) rows.push({ label: `Decided on ${boardDay(board.lastDay.date)}`, value: formatInt(board.lastDay.total), trend: trends.decided });
-  if (board?.pwdPending) rows.push({ label: "Wage requests waiting", value: formatInt(board.pwdPending) });
+  // The step before PERM: its number opens the wage request wait, the way in for someone waiting on a wage request
+  // (their request's own number goes in the case box above, like any other).
+  if (board?.pwdPending) rows.push({ label: "Wage requests waiting", value: formatInt(board.pwdPending), href: "/tools/pwd-calculator" });
   return rows;
 }
 
@@ -150,6 +155,13 @@ export function HeroSection({ wait = null, board, months = [], trends = {}, appr
     // `hero-ground` in globals.css.
     <section id="hero" className="hero-ground">
       <div className="mx-auto max-w-[1200px] px-4 pb-12 pt-8 sm:px-8 lg:pb-14 lg:pt-10">
+        {/* THE FIRST SCREEN DOES ONE JOB: the answer, and the box that takes a case number or an employer, on a phone
+            and on a wide screen alike. One grid and one copy of each part: on a wide screen the answer and the
+            month chart share the left column and the box stands beside them; on a phone the box follows the answer and
+            the chart follows the box. The chart is the answer's own picture (its marker reads "DOL is here"), so it
+            stays beside the words it shows; the four figures are a row under both. */}
+        <div className="grid grid-cols-1 gap-y-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(24rem,0.9fr)] lg:grid-rows-[auto_1fr] lg:gap-x-12 lg:[grid-template-areas:'head_box'_'figs_box'] [&>*]:min-w-0">
+        <div className="lg:[grid-area:head]">
         {/* `isolate` makes the heading its own layer, so the month's lime (drawn by ::before at z-index -1) sits
             behind every line's letters: drawn on the span itself, it covered the descenders of the line above
             (the "g" of "deciding", Nov 2 2026). lib_covered_text.mjs checks every page for the same. */}
@@ -174,29 +186,31 @@ export function HeroSection({ wait = null, board, months = [], trends = {}, appr
           From the Department of Labor&apos;s own records
           {board?.checkedAt ? <>, checked {checkedLabel(board.checkedAt)}</> : null}.
         </p>{" "}
-        {figures.length ? (
-          <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4 [&>*]:min-w-0">
-            {figures.map((f) => (
-              <Fragment key={f.label}>
-                {" "}
-                <div className="border-l-4 border-primary pl-3">
-                  <dt className="text-sm text-soft">{f.label}</dt>{" "}
-                  <dd className="m-0 mt-0.5 font-heading text-xl font-bold tabular-nums sm:text-[1.75rem]">{f.value}</dd>{" "}
-                  {f.trend ? (
-                    <dd className="m-0 mt-1">
-                      <TrendChip trend={f.trend} />
-                    </dd>
-                  ) : null}
-                </div>
-              </Fragment>
-            ))}
-          </dl>
-        ) : null}{" "}
-        {/* DOL's own approval rate with its count and dates, then our check's newest 30 days (owner, Nov 4 2026),
-            drawn as a bar (Nov 5 2026: the sentences read as a wall of text). */}
-        {approval ? <ApprovalBar parts={approval.parts} /> : null}{" "}
+        </div>{" "}
+        <div className="lg:[grid-area:box]">
+        <div className="object p-5 sm:p-6">
+          <p className="font-heading text-lg font-bold">Check a case</p>{" "}
+          {/* What the number gets: the two reasons people come (owner, Oct 15). */}
+          <CasePromises compact className="mt-3" />{" "}
+          {/* Kept short: the field is 212px wide at 320 (hero-placeholder.test.ts). */}
+          <CaseLookupForm
+            className="mt-4"
+            compact
+            label="Case number or employer"
+            placeholder="Case number or employer"
+            names
+            help={null}
+            searchHref="/tools/perm-timeline-calculator"
+            searchLabel="Estimate your wait from your filing month"
+            source="home-hero"
+            footnote="Free, and no account needed."
+            boxed
+          />
+        </div>{" "}
+          <HeroSteps className="mt-5" />
+        </div>{" "}
         {columns.length ? (
-          <figure className="mt-6 sm:mt-7">
+          <figure className="lg:self-end lg:[grid-area:figs]">
             <ColumnChart
               label="PERM cases by the month they were filed, decided and still waiting"
               unit="Cases"
@@ -223,34 +237,39 @@ export function HeroSection({ wait = null, board, months = [], trends = {}, appr
             </figcaption>
           </figure>
         ) : null}{" "}
-        {/* One row under the chart, filling the column the headline and the
-            chart fill: the case box in two thirds, what the site is in the
-            last third. Each had stopped at 768px with nothing beside it,
-            leaving the right of the hero empty (owner, Oct 27 2026). */}
-        <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start lg:gap-12 [&>*]:min-w-0">
-        <div className="object p-5 sm:p-6">
-          <p className="font-heading text-lg font-bold">Check a case</p>{" "}
-          {/* What the number gets: the two reasons people come (owner, Oct 15). */}
-          <CasePromises compact className="mt-3" />{" "}
-          {/* Kept short: the field is 212px wide at 320 (hero-placeholder.test.ts). */}
-          <CaseLookupForm
-            className="mt-4"
-            compact
-            label="Case number or employer"
-            placeholder="Case number or employer"
-            names
-            help={null}
-            searchHref="/tools/perm-timeline-calculator"
-            searchLabel="Estimate your wait from your filing month"
-            source="home-hero"
-            footnote="Free, and no account needed."
-            boxed
-          />
         </div>{" "}
-        {/* What the site is, both halves, after the answer: search engines
-            still read it in the first section, and people meet the answer
-            first. */}
-        <div className="border-t-2 border-border pt-6 lg:border-l-2 lg:border-t-0 lg:pl-10 lg:pt-0">
+        {figures.length ? (
+          <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4 [&>*]:min-w-0">
+            {figures.map((f) => (
+              <Fragment key={f.label}>
+                {" "}
+                <div className="border-l-4 border-primary pl-3">
+                  <dt className="text-sm text-soft">{f.label}</dt>{" "}
+                  <dd className="m-0 mt-0.5 font-heading text-xl font-bold tabular-nums sm:text-[1.75rem]">
+                    {f.href ? (
+                      // 44px tall to tap on a phone; the negative margin keeps the figure's own line height.
+                      <Link href={f.href} className="link -my-2 inline-flex min-h-11 items-center">
+                        {f.value}
+                      </Link>
+                    ) : (
+                      f.value
+                    )}
+                  </dd>{" "}
+                  {f.trend ? (
+                    <dd className="m-0 mt-1">
+                      <TrendChip trend={f.trend} />
+                    </dd>
+                  ) : null}
+                </div>
+              </Fragment>
+            ))}
+          </dl>
+        ) : null}{" "}
+        {/* DOL's own approval rate with its count and dates, then our check's newest 30 days (owner, Nov 4 2026),
+            drawn as a bar (Nov 5 2026: the sentences read as a wall of text). */}
+        {approval ? <ApprovalBar parts={approval.parts} /> : null}{" "}
+        {/* What the site is, both halves, after the figures: search engines still read it in the first section. */}
+        <div className="mt-8 max-w-3xl border-t-2 border-border pt-6">
           <p className="text-base leading-normal text-soft sm:text-lg">{ABOUT_ONE_LINER}</p>{" "}
           <ul aria-label="Free on both sides" className="mt-3 flex flex-col gap-2 text-base">
             <li className="flex items-start gap-2.5">
@@ -267,7 +286,6 @@ export function HeroSection({ wait = null, board, months = [], trends = {}, appr
               </span>
             </li>
           </ul>
-        </div>
         </div>
       </div>
     </section>
