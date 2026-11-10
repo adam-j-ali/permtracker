@@ -162,12 +162,26 @@ describe("Resend email providers — send-failure handling (C3)", () => {
       const ctx = makeCtx();
       await sendWithCtx(provider, { identifier: "User@Example.com", token: "ABCDEF123456" }, ctx);
       const charge = (ctx as unknown as { runMutation: ReturnType<typeof vi.fn> }).runMutation;
-      // The charge, then (after the send) the day's count; a code is never queued.
-      expect(charge).toHaveBeenCalledTimes(2);
+      // The charge, then (after the send) the day's count; a code is never queued. A reset code is also counted as
+      // sent, for the morning report's "are resets getting through" line (convex/lib/authOutcomes.ts).
+      expect(charge).toHaveBeenCalledTimes(key === "reset" ? 3 : 2);
       expect(charge.mock.calls[0]![1]).toEqual({ email: "User@Example.com" });
       expect(charge.mock.invocationCallOrder[0]!).toBeLessThan(sendMock.mock.invocationCallOrder[0]!);
       expect(charge.mock.calls[1]![1]).toEqual({});
       expect(charge.mock.invocationCallOrder[1]!).toBeGreaterThan(sendMock.mock.invocationCallOrder[0]!);
+      if (key === "reset") {
+        expect(charge.mock.calls[2]![1]).toEqual({ kind: "resetSent" });
+        expect(charge.mock.invocationCallOrder[2]!).toBeGreaterThan(sendMock.mock.invocationCallOrder[0]!);
+      }
+    });
+
+    it("counts nothing as sent when the send fails", async () => {
+      sendMock.mockResolvedValue({ error: { message: "rate limited", name: "rate_limit_exceeded" } });
+      const { provider } = await loadProvider(key);
+      const ctx = makeCtx();
+      await expect(sendWithCtx(provider, { identifier: "user@example.com", token: "ABCDEF123456" }, ctx)).rejects.toThrow();
+      const calls = (ctx as unknown as { runMutation: ReturnType<typeof vi.fn> }).runMutation.mock.calls;
+      expect(calls.some((c) => (c[1] as { kind?: string } | undefined)?.kind === "resetSent")).toBe(false);
     });
 
     it("sends nothing and says 'too many' when the limit refuses", async () => {

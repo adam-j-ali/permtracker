@@ -2848,6 +2848,18 @@ export default defineSchema({
   }).index("by_day_pool", ["day", "pool"]),
 
   /**
+   * How password resets end, per Eastern day: codes sent, resets completed, codes refused. Counts only, for the
+   * morning report's "are resets getting through" line; see convex/lib/authOutcomes.ts. Pruned after a month
+   * with the alert outbox.
+   */
+  authOutcomes: defineTable({
+    day: v.string(),
+    /** One of RESET_OUTCOMES in convex/lib/authOutcomes.ts. */
+    kind: v.string(),
+    count: v.number(),
+  }).index("by_day_kind", ["day", "kind"]),
+
+  /**
    * The off-server check on the server (convex/serverWatch.ts): one row, the
    * alarm's state, so it emails when trouble starts, every 6 hours while it
    * lasts, and once on recovery.

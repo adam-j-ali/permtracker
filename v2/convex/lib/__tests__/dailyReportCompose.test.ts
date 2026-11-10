@@ -72,6 +72,32 @@ describe("the Convex sections", () => {
     expect(JSON.stringify([app, email, errors])).not.toMatch(/@/);
   });
 
+  it("prints how the week's password resets ended, and stays ok while they complete", () => {
+    const [app] = convexSections(
+      { ...facts(), resets: { days: 7, sent: 9, completed: 6, failed: 2 } },
+      { sent: 40, bounced: 0, complained: 0 },
+      NOW,
+    );
+    expect(app!.status).toBe("ok");
+    expect(app!.lines).toContain("Password resets, 7 days: 9 codes sent, 6 completed, 2 wrong or expired codes");
+    // A report from before the counts existed has no such line and no warning.
+    const [older] = convexSections(facts(), { sent: 40, bounced: 0, complained: 0 }, NOW);
+    expect(older!.lines.join(" ")).not.toContain("Password resets");
+  });
+
+  it("warns, in the section's own summary, when codes go out and no reset completes", () => {
+    const [app] = convexSections(
+      { ...facts(), resets: { days: 7, sent: 7, completed: 0, failed: 4 } },
+      { sent: 40, bounced: 0, complained: 0 },
+      NOW,
+    );
+    expect(app!.status).toBe("warn");
+    expect(app!.summary).toMatch(/^No password reset has completed in 7 days \(7 codes sent\); /);
+    expect(app!.lines).toContain(
+      "Password resets, 7 days: 7 codes sent and none completed, 4 wrong or expired codes. Try one from the sign-in page.",
+    );
+  });
+
   it("watches a Resend day near the cap, a spam complaint, failed alerts and a refused budget", () => {
     const [, email] = convexSections(
       facts({ outbox: { sent24h: 1, failed24h: 2, queued: 0, oldestQueuedAt: null }, refusals: [{ day: "2026-09-28", pool: "caseAlert", count: 3 }] }),

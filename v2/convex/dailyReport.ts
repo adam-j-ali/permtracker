@@ -39,6 +39,7 @@ import { ratingsSince } from "./alertRatings";
 import { waitingForReview } from "./firmClaims";
 import { heldSummary } from "./inboundFilter";
 import { keyCounts } from "./lib/apiKeyStats";
+import { readResetCounts } from "./lib/authOutcomes";
 import { webhookHealth } from "./webhookDelivery";
 
 const log = loggers.email;
@@ -160,6 +161,8 @@ export const facts = internalQuery({
       spamFilter: await heldSummary(ctx, since),
       // What people said about their alerts, the last week: scores and notes only.
       ratings: await ratingsSince(ctx, now - 7 * MS_PER_DAY),
+      // How password resets ended, the last week: codes sent, completed, refused. Counts only.
+      resets: await readResetCounts(ctx, now),
       // API keys by scope and webhook health: counts only, no account or address.
       developers: {
         keys: keyCounts(await ctx.db.query("apiKeys").take(TABLE_READ), now),
