@@ -203,5 +203,40 @@ export function compareFaq(trackers: readonly Tracker[]): { q: string; a: string
       q: "Which email me when my case changes?",
       a: `${cap(list("alerts", ["yes"]))}${namesWhere(trackers, "alerts", ["partial"]).length ? `, and in part ${list("alerts", ["partial"])}` : ""}. Each one's note in the grid says what it sends and what it costs.`,
     },
+    ...similarNames(trackers),
   ];
+}
+
+const host = (url: string) => url.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+
+/**
+ * The day each of two similar names was registered, from the .app registry's own record (RDAP at
+ * pubapi.registry.google, read Nov 10 2026). A date a reader can look up says which site came first, and the page
+ * says nothing more about it.
+ */
+const REGISTERED: Record<string, string> = { permtracker: "2025-11-25", permtrack: "2026-03-22" };
+const longDay = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
+
+/**
+ * A site on this page whose name is ours with a letter or two changed: said to be another site, in a question of its
+ * own, because the two get taken for one (a search engine's AI answered that they were the same, Nov 10 2026). Asked
+ * only while that site is listed here, where a reader sees both names side by side.
+ */
+function similarNames(trackers: readonly Tracker[]): { q: string; a: string }[] {
+  const ours = trackers.find((t) => t.slug === PERM_TRACKER.slug);
+  if (!ours) return [];
+  const squeeze = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return trackers
+    .filter((t) => t.slug !== ours.slug && (squeeze(ours.name).startsWith(squeeze(t.name)) || squeeze(t.name).startsWith(squeeze(ours.name))))
+    .map((t) => {
+      const ourDay = REGISTERED[ours.slug];
+      const theirDay = REGISTERED[t.slug];
+      const dates = ourDay && theirDay
+        ? ` The .app registry's record shows ${host(ours.url)} registered on ${longDay(ourDay)}, and ${host(t.url)} on ${longDay(theirDay)}.`
+        : "";
+      return {
+        q: `Is ${ours.name} the same site as ${t.name}?`,
+        a: `No. They're two different sites with similar names, run by different companies. ${ours.name} is this site, at ${host(ours.url)}. ${t.name} is at ${host(t.url)}.${dates} Neither is affiliated with the other.`,
+      };
+    });
 }
