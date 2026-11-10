@@ -86,6 +86,18 @@ describe("PermTracker", () => {
     expect(String(f.mock.calls[1]![0])).toBe("http://localhost:3000/v1/visa-bulletin");
   });
 
+  it("finds a case without its number: the employer and the day, with the program and job words when given", async () => {
+    const f = fakeFetch(200, { data: { filed: "2026-01-30", program: "perm", matched: 1, cases: [{ caseNumber: "G-100-26030-000001" }], closeNames: [] }, meta: { source: "DOL", asOf: "2026-11-09" } });
+    const pt = new PermTracker({ apiKey: KEY, fetch: f as unknown as typeof fetch });
+    const a = await pt.findCases({ employer: "Acme & Sons", filed: "2026-01-30" });
+    const plain = new URL(String(f.mock.calls[0]![0]));
+    expect(plain.pathname).toBe("/v1/cases");
+    expect(Object.fromEntries(plain.searchParams)).toEqual({ employer: "Acme & Sons", filed: "2026-01-30" });
+    expect(a.data.cases[0]!.caseNumber).toBe("G-100-26030-000001");
+    await pt.findCases({ employer: "Acme", filed: "2026-01-30", program: "lca", job: "software engineer" });
+    expect(Object.fromEntries(new URL(String(f.mock.calls[1]![0])).searchParams)).toEqual({ employer: "Acme", filed: "2026-01-30", program: "lca", job: "software engineer" });
+  });
+
   it("reads usage headers that are missing as unknown, not zero", () => {
     expect(usageFrom(new Headers())).toEqual({ perMinute: null, remainingThisMinute: null, today: null, perDay: null, month: null, perMonth: null });
   });
@@ -166,6 +178,13 @@ describe("the CLI", () => {
   it("reads the new flags, and an export's name=value parameters", () => {
     expect(parseArgs(["case", "G-100-26045-123456", "--live"])).toMatchObject({ command: "case", live: true });
     expect(parseArgs(["watch", "--employer", "google-llc"])).toMatchObject({ command: "watch", employer: "google-llc", args: [] });
+    expect(parseArgs(["find", "acme", "corp", "--filed", "2026-01-30", "--program=pwd", "--job", "software engineer"])).toMatchObject({
+      command: "find",
+      args: ["acme", "corp"],
+      filed: "2026-01-30",
+      program: "pwd",
+      job: "software engineer",
+    });
     expect(parseArgs(["export", "cases", "q=acme", "state=CA", "--format", "json", "--out", "a.json"])).toMatchObject({
       command: "export",
       args: ["cases", "q=acme", "state=CA"],
