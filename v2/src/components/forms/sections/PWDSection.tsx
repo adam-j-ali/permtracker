@@ -266,7 +266,7 @@ export function PWDSection(props: PWDSectionProps) {
               value={values.pwdCaseNumber || ''}
               onChange={handleInputChange}
               aria-invalid={!!errors?.pwdCaseNumber}
-              placeholder="e.g., PWD-2024-001"
+              placeholder="e.g., P-100-26045-123456"
             />
           </CharLimit>
         </FormField>
