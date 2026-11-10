@@ -30,8 +30,12 @@ export interface InquiryRow {
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-/** The category a form opens on, where the first one USCIS lists isn't the one most readers here hold. */
-const OPENS_ON: Record<string, string> = { "I-485": "131A" };
+/**
+ * The category a form opens on, where the first one USCIS lists isn't one this site's readers hold: the
+ * employment-based adjustment, the work permit and the travel paper filed with it, and the first I-140 class on
+ * USCIS's list that rests on a PERM.
+ */
+const OPENS_ON: Record<string, string> = { "I-485": "131A", "I-765": "147-C9", "I-131": "141B-OTH", "I-140": "136A-E21" };
 const SELECT =
   "mt-1.5 block min-h-11 w-full min-w-0 border-2 border-input bg-background px-3 py-2 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 const INPUT =
@@ -66,7 +70,7 @@ export function UscisCaseTimeline({ rows, published, formNames }: { rows: Inquir
   const form = pickedForm ?? (forms.includes(linkedForm) ? linkedForm : forms.includes("I-485") ? "I-485" : (forms[0] ?? ""));
   const subtypes = useMemo(() => [...new Map(rows.filter((r) => r.form === form).map((r) => [r.subtype, r.label])).entries()], [rows, form]);
   const [subtype, setSubtype] = useState("");
-  // USCIS lists the family-based adjustment first; this site's readers are on the employment-based one.
+  // USCIS's first category is often one no reader here holds (the family-based adjustment, a deportation work permit).
   const opensOn = OPENS_ON[form] && subtypes.some(([s]) => s === OPENS_ON[form]) ? OPENS_ON[form]! : (subtypes[0]?.[0] ?? "");
   const pickedSubtype = subtypes.some(([s]) => s === subtype) ? subtype : opensOn;
   const offices = useMemo(() => rows.filter((r) => r.form === form && r.subtype === pickedSubtype), [rows, form, pickedSubtype]);
