@@ -11,7 +11,9 @@ import { one } from "@/lib/db/client";
  * A decision date is the day the sweep first saw the case in a final status,
  * read from the event log, so the score writes itself the morning after DOL
  * decides and nobody has to remember to update a page. A case the log has
- * not seen decide is still pending, whatever the anchor says.
+ * not seen decide is still pending, whatever the anchor says. A failed read
+ * throws: a record that couldn't be read must never print a decided case as
+ * pending, and the page keeps its last good render.
  */
 
 export interface ScoredPrediction {
@@ -29,11 +31,11 @@ export const getScorecard = cache(async (): Promise<ScoredPrediction[]> => {
     const status = await one<{ current_status: string }>(
       "SELECT current_status FROM perm_case_status WHERE case_number = ?",
       [prediction.caseNumber],
-    ).catch(() => null);
+    );
     const ev = await one<{ changed_at: number | string }>(
       "SELECT changed_at FROM perm_case_events WHERE case_number = ? AND to_final = 1 ORDER BY changed_at LIMIT 1",
       [prediction.caseNumber],
-    ).catch(() => null);
+    );
     const ms = ev ? Number(ev.changed_at) : NaN;
     const decidedOn = Number.isFinite(ms) ? new Date(ms).toISOString().slice(0, 10) : null;
     out.push({
