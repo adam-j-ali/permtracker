@@ -188,6 +188,7 @@ const ISOLATED_UNIT_FILES = [
   // isolated from the start rather than after its first shared-pool collision.
   "src/lib/db/__tests__/lcaProfile.test.ts",
   "src/lib/db/__tests__/uscisH1b.test.ts",
+  "src/lib/db/__tests__/uscisQuarterly.test.ts",
   // Added 2026-10-03. Both mock ../client and set per-test answers.
   "src/lib/db/__tests__/seasonalCases.test.ts",
   "src/lib/db/__tests__/employerProgramsSeasonal.test.ts",
