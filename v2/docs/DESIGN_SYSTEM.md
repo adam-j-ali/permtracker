@@ -152,6 +152,10 @@ work so the server and every browser print the same day
   numbers right-aligned in tabular mono. On a phone a table becomes a list of short
   cards (the case browsers: number and status, then who, then when), CSS only where
   the rows can be restacked, so they exist once.
+  A table cell never gets `overflow-wrap: anywhere` or `break-all`: beside cells
+  that can't wrap, the table gives it one letter's width
+  (`table-cells-keep-their-words.test.ts`). A long value gets a `min-w-` box inside
+  the cell, or the rows become a list (`FilingRows`, the admin page's latest alerts).
 - **Charts:** a sentence-case title and at most four horizontal gridlines. One highlight
   colour marks the reader's own thing (their case, DOL's current month). Status and
   stage colours appear only where they mean something. A readout shows on hover, focus
