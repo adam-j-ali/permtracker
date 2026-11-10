@@ -4,6 +4,7 @@ import { cache } from "react";
 
 import { one, rows } from "./client";
 import { softFail } from "@/lib/softRead";
+import { beforeFirstLoad } from "./firstLoad";
 
 /**
  * DOL's debarment lists, as `scripts/ingest_debarments.py` stores them.
@@ -81,11 +82,14 @@ function toRow(r: DbRow): Debarment | null {
   };
 }
 
-/** Every row, newest start first. The table is a few hundred rows at most. */
+/**
+ * Every row, newest start first. The table is a few hundred rows at most. A failed read throws: the debarments page
+ * is this list, and must never print that nobody is debarred because the database didn't answer.
+ */
 export const listDebarments = cache(async (): Promise<Debarment[]> => {
   const r = await rows<DbRow>(
     `SELECT ${COLS} FROM debarments ORDER BY start_date DESC, entity`,
-  ).catch(() => [] as DbRow[]);
+  ).catch(beforeFirstLoad<DbRow[]>([]));
   return r.map(toRow).filter((x): x is Debarment => x !== null);
 });
 

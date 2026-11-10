@@ -10,13 +10,15 @@ import { one } from "./client";
  * `perm_docs['employer_stages']`. One point read; no fallback query on
  * purpose, because the fallback IS the 97,000-row group-by the doc exists to
  * avoid. A missing or stale doc renders as the page's empty state, which
- * names the sweep rather than pretending the record is empty.
+ * names the sweep rather than pretending the record is empty. A failed read
+ * throws: the under-review page and the numbers page keep their last good
+ * render, and the pages that only borrow a figure name a recorded fallback.
  */
 export const getEmployerStages = cache(async (): Promise<EmployerStagesDoc | null> => {
   const r = await one<{ json: string; computed_at: number | string }>(
     "SELECT json, computed_at FROM perm_docs WHERE key = ?",
     ["employer_stages"],
-  ).catch(() => null);
+  );
   if (!r) return null;
   return parseEmployerStagesDoc(String(r.json), Number(r.computed_at) || 0, Date.now());
 });

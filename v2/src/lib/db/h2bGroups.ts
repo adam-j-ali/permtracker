@@ -5,6 +5,7 @@ import { cache } from "react";
 import { parseGroupTiming, type H2bGroupTiming } from "@/lib/h2bGroups";
 import { one } from "./client";
 import { softFail } from "@/lib/softRead";
+import { beforeFirstLoad } from "./firstLoad";
 
 /** perm_docs['h2b_group_timing'], one point read. */
 export const getH2bGroupTiming = cache(async (): Promise<H2bGroupTiming | null> => {
@@ -12,11 +13,11 @@ export const getH2bGroupTiming = cache(async (): Promise<H2bGroupTiming | null> 
   return r ? parseGroupTiming(String(r.json)) : null;
 });
 
-/** The season and group DOL's list put this H-2B application in, or null. */
+/** The season and group DOL's list put this H-2B application in, or null. A failed read throws, and the case's page records its own fallback. */
 export async function h2bGroupOf(caseNumber: string): Promise<{ peak: string; letter: string } | null> {
   const r = await one<{ peak: string; grp: string }>(
     "SELECT peak, grp FROM h2b_groups WHERE case_number = ?",
     [caseNumber.trim().toUpperCase()],
-  ).catch(() => null);
+  ).catch(beforeFirstLoad(null));
   return r ? { peak: String(r.peak), letter: String(r.grp) } : null;
 }

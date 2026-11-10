@@ -59,6 +59,16 @@ describe("debarments", () => {
     await expect(debarmentsForSlug("northwind-staffing-group")).rejects.toThrow("database query deadline");
   });
 
+  it("throws on a failed read of the whole list instead of printing that nobody is debarred", async () => {
+    rows.mockRejectedValue(new Error("database query deadline"));
+    await expect(listDebarments()).rejects.toThrow("database query deadline");
+  });
+
+  it("holds an empty list before the table's first load", async () => {
+    rows.mockRejectedValue(new Error("SQLITE_ERROR: no such table: debarments"));
+    expect(await listDebarments()).toEqual([]);
+  });
+
   it("reads the summary document and refuses a malformed one", async () => {
     one.mockResolvedValue({ json: JSON.stringify({ asOf: "2026-09-08", pdfDate: "2026-08-07", h1bEffective: "2026-09-01", counts: { perm: 2, h1b: 5, h2a: 49, h2b: 49 } }) });
     expect(await getDebarmentsSummary()).toEqual({ asOf: "2026-09-08", pdfDate: "2026-08-07", h1bEffective: "2026-09-01", counts: { perm: 2, h1b: 5, h2a: 49, h2b: 49 } });
