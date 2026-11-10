@@ -1442,5 +1442,13 @@
   },
   "credit": "Screenshot of permtracker.app, November 10, 2026",
   "alt": "The case finder open under the case number box on permtracker.app, listing one employer's four PERM cases filed on January 5, 2026, each with its status"
+ },
+ "changelog/the-answer-first-and-uscis-times-by-category": {
+  "capture": {
+   "url": "/",
+   "wait": 5000
+  },
+  "credit": "Screenshot of permtracker.app, November 10, 2026",
+  "alt": "The top of permtracker.app's homepage: the month DOL is working on with its chart on the left, and on the right the case number box with links to I-140 times, the visa bulletin and I-485 times"
  }
 }

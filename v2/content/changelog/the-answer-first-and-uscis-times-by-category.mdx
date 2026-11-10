@@ -1,0 +1,43 @@
+---
+title: "The answer and the case box first, and USCIS's posted time by category"
+seoTitle: "The answer first, and USCIS times by category"
+description: "The homepage now opens with the month DOL is working on and the case box together. Each USCIS form page lists the posted time for every category."
+date: "2026-11-11"
+author: "PERM Tracker team"
+image: "/images/content/heroes/changelog/the-answer-first-and-uscis-times-by-category.webp"
+imageAlt: "The top of permtracker.app's homepage: the month DOL is working on with its chart on the left, and on the right the case number box with links to I-140 times, the visa bulletin and I-485 times"
+imageCredit: "Screenshot of permtracker.app, November 10, 2026"
+category: "Release"
+tags: ["changelog", "release", "homepage", "uscis", "processing-times", "i-140", "deadlines"]
+---
+
+This release moves the answer and the case box to the top of the homepage. It also fills in USCIS's own posted times, one category at a time.
+
+## The homepage opens with the answer
+
+- The [homepage](/) now puts the month DOL is working on, with its chart, beside the case number box. On a phone the box comes right after the answer. Before, it sat a screen and a half down.
+- Under the box, "Past PERM already?" links straight to [I-140 times](/uscis-processing-times/i-140), the [visa bulletin](/visa-bulletin) and [I-485 times](/uscis-processing-times/i-485).
+- The four figures sit in one row under both. The count of wage requests waiting now opens the [prevailing wage queue calculator](/tools/pwd-calculator).
+- The approval bar has a heading of its own: "PERM approval rate".
+- On the road from PERM to a green card, the I-140 stop now prints the time within which USCIS decided half its I-140s in the newest quarter.
+
+## USCIS's posted time, by category
+
+- Each form's page, such as [I-140](/uscis-processing-times/i-140), now lists what USCIS's own processing-times page posts for each category of that form. That's the time within which 8 cases in 10 were decided, and the receipt day before which USCIS takes a question about a case.
+- Where several offices post the same category, the row gives the quickest and the slowest.
+- These pages refresh the day a new posting is copied.
+
+## A deadline that lands on a weekend or holiday
+
+- The [I-140 deadline guide](/guides/eta-9089-expiration-and-i140-deadline) now says what USCIS does when a certification's last day falls on a Saturday, a Sunday or a federal holiday. A paper petition is on time the next business day. One filed online gets no extra day.
+- The [rules roundup](/blog/rule-changes-since-august-2026) names the policy alert of September 23, 2026 that set this. It took effect on October 23, 2026.
+
+## Filings that point at each other
+
+- A few H-1B LCAs name the wage request their wage came from. [Look one up](/perm-case-status) and its page now prints that request in DOL's record, linked to the request's own page.
+
+## Figures that hold up when something breaks
+
+- A page whose main figures can't be read keeps its last good version. A smaller figure that can't be read is left out. Neither is ever shown as zero or as "none".
+- Right after each release, the stored figures behind the PERM pages are rebuilt. Until that finishes, a page says a count isn't ready yet, so new wording never sits on figures built by an older rule.
+- The H-1B employer rankings in the [API](/developers) answer 503 when they can't be read, so a program can tell an outage from an empty result.
