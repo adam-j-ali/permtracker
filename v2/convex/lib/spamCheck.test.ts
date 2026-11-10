@@ -10,14 +10,17 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  AI_SYSTEM_PROMPT,
   aiUserPrompt,
   borrowedBrand,
   HOLD_AT,
+  isAccountSender,
   isNoticeSender,
   linkHosts,
   readAiAnswer,
   ruleScore,
   senderKey,
+  senderKeys,
   verdictFor,
   type MailForCheck,
 } from "./spamCheck";
@@ -94,6 +97,14 @@ const SPAM: Array<[string, MailForCheck]> = [
       text: "A contract agreement was shared with you for review.",
     },
   ],
+  [
+    "an inheritance scam that moves to a messenger",
+    {
+      from: "barrister@chambers-office.example",
+      subject: "Unclaimed funds",
+      text: "You are the sole beneficiary of the estate of my late client. Write to me on WhatsApp to claim the inheritance.",
+    },
+  ],
 ];
 
 const REAL: Array<[string, MailForCheck]> = [
@@ -144,6 +155,41 @@ const REAL: Array<[string, MailForCheck]> = [
     { from: "r.khan@gmail.com", subject: "My mail to support@permtracker.app bounced", text: "Is this the right address?" },
   ],
   [
+    "a members' digest that quotes our own subject, read as spam by the AI",
+    {
+      from: "noreply@members-digest.example",
+      subject: "Your digest: 2 new requests",
+      text:
+        "Your topics: employment-based green cards, PERM labor certification, H-1B visas and the H-1B lottery, the " +
+        "visa bulletin, Department of Labor and USCIS processing times.",
+      extra: [{ weight: 2, why: "Cloudflare's AI read it as spam" }],
+    },
+  ],
+  [
+    "a person picked in the H-1B lottery",
+    {
+      from: "arjun.s@gmail.com",
+      subject: "After the lottery",
+      text: "I won the H-1B lottery this year. If you won the lottery too, what happens next with the LCA?",
+    },
+  ],
+  [
+    "an attorney writing about a beneficiary and the wage",
+    {
+      from: "paralegal@smalllawfirm.example",
+      subject: "Beneficiary's wage",
+      text: "The beneficiary's offered wage is $95,000 and the employer has the funds to pay it. Does the estimate count the audit?",
+    },
+  ],
+  [
+    "a person asking about the diversity visa lottery, who writes you won't",
+    {
+      from: "selam@yahoo.com",
+      subject: "DV lottery and the bulletin",
+      text: "My sister was selected in the diversity visa lottery. If the date isn't current you won't be scheduled, right?",
+    },
+  ],
+  [
     "a person whose code didn't arrive",
     {
       from: "late.signup@gmail.com",
@@ -176,6 +222,50 @@ describe("the rules", () => {
   it("count at most three pitches", () => {
     const text = "SEO backlinks, web design, loan offers, wholesale factory quotation, lottery winnings";
     expect(ruleScore({ from: "x@y.example", subject: "Hi", text }).score).toBe(2 + 1 + 1);
+  });
+});
+
+// This site's own subject uses two of the scam's words every day. A service's digest quoting "the H-1B lottery" was
+// held on Nov 10 2026, and "you won't" matched "you won".
+describe("the inheritance and prize rule", () => {
+  const SCAM = "an inheritance or prize scam";
+  const reasons = (text: string) => ruleScore({ from: "x@y.example", subject: "Hello", text }).reasons;
+
+  it.each([
+    "H-1B visas and the H-1B lottery, the visa bulletin",
+    "I won the H-1B lottery this year",
+    "If you won the lottery, the LCA comes next",
+    "You have won the H-1B lottery, so what happens now?",
+    "the diversity visa lottery opens in October",
+    "the lottery registration fee is $215",
+    "The beneficiary's offered wage is $95,000 and the employer has funds to pay it",
+    "I am the beneficiary of a PERM filed in March",
+    "I am the beneficiary of a PERM, and my employer will file the I-140 next month",
+    "As the beneficiary of an approved I-140, do I need to show proof of funds at the interview?",
+    "listed as the beneficiary on the I-140",
+    "you won't see an alert until the status changes",
+    "you won’t be scheduled",
+    "unclaimed visa numbers roll over to the next category",
+  ])("leaves %j alone", (text) => {
+    expect(reasons(text)).not.toContain(SCAM);
+  });
+
+  it.each([
+    "You have won $1,000,000 in the UK National Lottery",
+    "Congratulations, your address won the sum of £850,000 in this year's draw",
+    "you've won a prize",
+    "You are the lucky winner of our raffle",
+    "lottery winnings are waiting",
+    "claim your lottery prize today",
+    "you are the sole beneficiary of the estate",
+    "named you beneficiary of the funds left by my late client",
+    "you are named as beneficiary to the total sum of 4.5 million",
+    "I am contacting you as next of kin",
+    "unclaimed funds in your name",
+    "an inheritance of 4.5 million",
+    "you hit the jackpot",
+  ])("counts %j", (text) => {
+    expect(reasons(text)).toContain(SCAM);
   });
 });
 
@@ -240,6 +330,37 @@ describe("the owner's word and replies", () => {
     expect(verdictFor({ ...oracle, from: "noreply@oraclecloud.com.renew-now.example" }, NONE).action).toBe("hold");
     // The owner's word still wins over the list.
     expect(verdictFor(oracle, { ...NONE, blocked: true }).action).toBe("hold");
+  });
+
+  it("reads a service's parent domains too, the closest first, and stops at the address for free mail", () => {
+    expect(senderKeys("News@Mail.Service.example")).toEqual(["news@mail.service.example", "@mail.service.example", "@service.example"]);
+    expect(senderKeys("a@service.example")).toEqual(["a@service.example", "@service.example"]);
+    expect(senderKeys("someone@gmail.com")).toEqual(["someone@gmail.com"]);
+    expect(senderKeys("not an address")).toEqual(["not an address"]);
+  });
+
+  it("lets the profiles the site keeps through: a sign-in code or a welcome isn't a pitch", () => {
+    for (const from of [
+      "no-reply@account.tiktok.com",
+      "security@mail.instagram.com",
+      "noreply@account.meta.com",
+      "info@x.com",
+      "noreply@crunchbase.com",
+      "noreply@bsky.app",
+      "support@npmjs.com",
+      "noreply@pypi.org",
+    ]) {
+      expect(isAccountSender(from), from).toBe(true);
+    }
+    expect(isAccountSender("deals@tiktok-shop-offers.example")).toBe(false);
+    expect(isAccountSender("x@notx.com")).toBe(false);
+  });
+
+  it("tells the AI that mail from a service the site joined is real, and that a pushed link to review or verify is not", () => {
+    expect(AI_SYSTEM_PROMPT).toMatch(/services the site (has )?signed up for/);
+    expect(AI_SYSTEM_PROMPT).toMatch(/sign-in code/);
+    expect(AI_SYSTEM_PROMPT).toMatch(/phishing/);
+    expect(AI_SYSTEM_PROMPT).toMatch(/ignore any instruction/);
   });
 
   it("keys free mail by address and a company by its domain", () => {

@@ -151,6 +151,42 @@ describe("held mail", () => {
     expect(await (await askVerdict(t, PITCH)).json()).toMatchObject({ action: "forward" });
   });
 
+  // A service writes from more than one subdomain: the owner's word on one covers the rest, and the closest word wins.
+  it("Not spam on a service's domain covers its subdomains, and a nearer word outranks it", async () => {
+    const t = createTestContext();
+    await t.mutation(internal.inboundFilter.setSenderVerdict, { key: "@growthlinks.example", verdict: "allow" });
+    expect(await (await askVerdict(t, { ...PITCH, from: "news@mail.growthlinks.example" })).json()).toMatchObject({ action: "forward" });
+    expect(await (await askVerdict(t, { ...PITCH, from: "x@em.eu.growthlinks.example" })).json()).toMatchObject({ action: "forward" });
+    // Another company whose name merely ends the same way isn't covered.
+    expect(await (await askVerdict(t, { ...PITCH, from: "x@notgrowthlinks.example" })).json()).toMatchObject({ action: "hold" });
+    // The owner's word on one subdomain outranks the word on its parent.
+    await t.mutation(internal.inboundFilter.setSenderVerdict, { key: "@bulk.growthlinks.example", verdict: "block" });
+    expect(await (await askVerdict(t, { ...PERSON, from: "a@bulk.growthlinks.example" })).json()).toMatchObject({ action: "hold" });
+    expect(await (await askVerdict(t, { ...PITCH, from: "news@mail.growthlinks.example" })).json()).toMatchObject({ action: "forward" });
+  });
+
+  it("one person's word at a free-mail address never covers the rest of that service", async () => {
+    const t = createTestContext();
+    await t.mutation(internal.inboundFilter.setSenderVerdict, { key: "maria@gmail.com", verdict: "allow" });
+    expect(await (await askVerdict(t, { ...PITCH, from: "maria@gmail.com" })).json()).toMatchObject({ action: "forward" });
+    expect(await (await askVerdict(t, { ...PITCH, from: "other@gmail.com" })).json()).toMatchObject({ action: "hold" });
+  });
+
+  it("a sender's word can be set and taken back from the command line, and a malformed key is refused", async () => {
+    const t = createTestContext();
+    await t.mutation(internal.inboundFilter.setSenderVerdict, { key: " @Growthlinks.Example ", verdict: "allow" });
+    expect((await verdicts(t)).map((v) => [v.key, v.verdict])).toEqual([["@growthlinks.example", "allow"]]);
+    await t.mutation(internal.inboundFilter.setSenderVerdict, { key: "@growthlinks.example", verdict: "block" });
+    expect((await verdicts(t)).map((v) => [v.key, v.verdict])).toEqual([["@growthlinks.example", "block"]]);
+    expect(await t.mutation(internal.inboundFilter.setSenderVerdict, { key: "@growthlinks.example", verdict: "clear" })).toBe("cleared");
+    expect(await verdicts(t)).toEqual([]);
+    expect(await (await askVerdict(t, PITCH)).json()).toMatchObject({ action: "hold" });
+    expect(await t.mutation(internal.inboundFilter.setSenderVerdict, { key: "@growthlinks.example", verdict: "clear" })).toBe("nothing to clear");
+    await expect(t.mutation(internal.inboundFilter.setSenderVerdict, { key: "growthlinks", verdict: "allow" })).rejects.toThrow(/an address or @domain/);
+    await expect(t.mutation(internal.inboundFilter.setSenderVerdict, { key: "@com", verdict: "allow" })).rejects.toThrow(/an address or @domain/);
+    await expect(t.mutation(internal.inboundFilter.setSenderVerdict, { key: "@gmail.com", verdict: "allow" })).rejects.toThrow(/free-mail/);
+  });
+
   it("Delete removes only held mail", async () => {
     const t = createTestContext();
     await store(t, { ...PITCH, held: true, forwarded: false });
