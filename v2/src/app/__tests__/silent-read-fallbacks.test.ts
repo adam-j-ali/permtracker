@@ -51,7 +51,6 @@ const DB_REMAINING: Record<string, number> = {
   "src/lib/db/publicData.ts": 1,
   "src/lib/db/recordCounts.ts": 2,
   "src/lib/db/reference.ts": 8,
-  "src/lib/db/scorecard.ts": 2,
   "src/lib/db/socTitles.ts": 2,
   "src/lib/db/uscisCaseStatus.ts": 2,
   "src/lib/db/visaIssuances.ts": 2,
