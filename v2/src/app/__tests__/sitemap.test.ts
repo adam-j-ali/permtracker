@@ -777,6 +777,13 @@ describe("sitemap index and chunking", () => {
     // `sequence.shuffle`, which CI turns on for exactly this. Reproduced with
     // `CI=1 vitest --sequence.seed=17`.
     vi.mocked(browseCounts).mockResolvedValue(bucketCounts());
+    // The two extra employer families too. A test in the block above leaves `countOtherEmployerRanks` rejecting
+    // ("deadline"), and clearAllMocks keeps implementations: shuffled ahead of this block, it made the index record
+    // a failed count here, and the test that asserts nothing was recorded went red on CI (Nov 10 2026).
+    vi.mocked(countLiveOnlyRanks).mockResolvedValue(0);
+    vi.mocked(getLiveOnlySlugWindow).mockResolvedValue([]);
+    vi.mocked(countOtherEmployerRanks).mockResolvedValue(0);
+    vi.mocked(getOtherEmployerSlugWindow).mockResolvedValue([]);
   });
 
   it("chunks a kind into children of at most SITEMAP_CHUNK URLs", async () => {
