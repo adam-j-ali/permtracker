@@ -4,6 +4,7 @@ The [PERM Tracker](https://permtracker.app) API for Python and the command line.
 
 - DOL case status for PERM, wage requests, H-1B LCAs, H-2A, H-2B and CW-1
 - When a pending PERM case is likely to be decided
+- A case found without its number, from the employer and the filing day
 - DOL's queue and the visa bulletin
 - Employer, law firm and job records
 - Exports, live DOL lookups and signed webhooks
@@ -24,6 +25,7 @@ Make a free key at [permtracker.app/settings](https://permtracker.app/settings),
 permtracker login
 permtracker case G-100-26045-123456
 permtracker estimate --filed 2026-02-15
+permtracker find "Acme Corp" --filed 2026-01-30
 permtracker bulletin 2026-10
 ```
 

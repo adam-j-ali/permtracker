@@ -183,6 +183,15 @@ class PermTracker:
             raise PermTrackerError(400, "missing_argument", "Give a case number or a filing date.")
         return self.get("/estimate", {"case": case} if case else {"filed": filed})
 
+    def find_cases(self, employer: str, filed: str, program: Optional[str] = None, job: Optional[str] = None) -> Answer:
+        """A case without its number: the cases an employer filed on one day (YYYY-MM-DD).
+
+        program is perm (the default), pwd, lca or seasonal; job narrows a long list by
+        words of the job title. With no match, the answer's closeNames are the employers
+        that filed that day under a close spelling.
+        """
+        return self.get("/cases", {"employer": employer, "filed": filed, "program": program, "job": job})
+
     def queue(self) -> Answer:
         return self.get("/queue")
 

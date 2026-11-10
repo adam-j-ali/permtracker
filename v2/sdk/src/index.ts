@@ -113,6 +113,44 @@ export interface Estimate {
   [field: string]: unknown;
 }
 
+/** The kinds of filing the finder reads: PERM cases, wage requests, H-1B LCAs, or H-2A, H-2B and CW-1. */
+export type FilingProgram = "perm" | "pwd" | "lca" | "seasonal";
+
+/** One case `findCases` lists. */
+export interface FoundCase {
+  caseNumber: string;
+  status: string;
+  /** True once DOL has decided it. */
+  isFinal: boolean;
+  employer: string;
+  jobTitle: string;
+  decisionDate: string | null;
+  worksiteState: string | null;
+  /** On a decided PERM case, the wage request it names. */
+  wageRequest: string | null;
+  /** The case's page on permtracker.app. */
+  url: string;
+}
+
+/** What `findCases` answers: the day, the employer's cases on it, and close names when nothing matched. */
+export interface FoundCases {
+  filed: string;
+  program: FilingProgram;
+  /** The whole day in DOL's record, whatever was asked. */
+  day: { filed: number; decided: number; waiting: number };
+  /** Cases from an employer matching the name, before `job` narrows them. */
+  matchedEmployer: number;
+  /** Cases matching the name and the job words. `cases` holds the first 50. */
+  matched: number;
+  cases: FoundCase[];
+  truncated: boolean;
+  /** With no match: the employers that filed that day under a close spelling. */
+  closeNames: Array<{ employer: string; cases: number }>;
+  /** The day's own list was cut at its cap, so a case can be missing from this answer. */
+  dayListCapped: boolean;
+  [field: string]: unknown;
+}
+
 export interface SearchHit {
   slug: string;
   name: string;
@@ -328,6 +366,15 @@ export class PermTracker {
   /** When a pending PERM case is likely to be decided: by case number, or by filing date. */
   estimate(by: { case: string } | { filed: string }): Promise<Answer<Estimate>> {
     return this.get("/estimate", "case" in by ? { case: by.case } : { filed: by.filed });
+  }
+
+  /**
+   * A case without its number: the cases an employer filed on one day (YYYY-MM-DD). `program` is
+   * "perm" unless given; `job` narrows a long list by words of the job title. With no match, the
+   * answer's `closeNames` are the employers that filed that day under a close spelling.
+   */
+  findCases(by: { employer: string; filed: string; program?: FilingProgram; job?: string }): Promise<Answer<FoundCases>> {
+    return this.get("/cases", { employer: by.employer, filed: by.filed, program: by.program, job: by.job });
   }
 
   queue(): Promise<Answer<Record<string, unknown>>> {

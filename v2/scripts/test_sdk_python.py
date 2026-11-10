@@ -113,5 +113,18 @@ except PermTrackerError as e:
     check("name=value" in e.message, "a parameter that isn't name=value is refused")
 check(parser().parse_args(["watch", "--employer", "google-llc"]).employer == "google-llc", "watch --employer")
 
+# A case without its number.
+finder = PermTracker(api_key=KEY, transport=transport(200, {"data": {"matched": 1, "cases": [{"caseNumber": "G-100-26030-000001"}]}, "meta": {}}))
+found = finder.find_cases("Acme & Sons", "2026-01-30")
+url = calls[-1][0]
+check(url.startswith("https://permtracker.app/v1/cases?") and "employer=Acme+%26+Sons" in url and "filed=2026-01-30" in url
+      and "program=" not in url and "job=" not in url, "find_cases sends the employer and the day, and leaves out what wasn't given")
+check(found.data["cases"][0]["caseNumber"] == "G-100-26030-000001", "find_cases returns the API's answer")
+finder.find_cases("Acme", "2026-01-30", program="lca", job="software engineer")
+check("program=lca" in calls[-1][0] and "job=software+engineer" in calls[-1][0], "find_cases sends the program and the job words when given")
+a = parser().parse_args(["find", "acme", "corp", "--filed", "2026-01-30", "--program", "pwd", "--job", "software engineer"])
+check(a.command == "find" and a.args == ["acme", "corp"] and a.filed == "2026-01-30" and a.program == "pwd" and a.job == "software engineer",
+      "find's arguments and flags")
+
 print(f"\n{len(fails)} failure(s)")
 sys.exit(1 if fails else 0)
