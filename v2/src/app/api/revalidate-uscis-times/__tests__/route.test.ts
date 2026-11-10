@@ -8,7 +8,7 @@ const revalidatePath = vi.fn();
 vi.mock("next/cache", () => ({ revalidatePath, revalidateTag: vi.fn() }));
 
 const { POST } = await import("../route");
-const { USCIS_TIMES_PAGES } = await import("../paths");
+const { USCIS_TIMES_PAGES, USCIS_TIMES_PAGE_FAMILIES } = await import("../paths");
 
 const SECRET = "test-secret-value";
 const appDir = join(process.cwd(), "src", "app");
@@ -44,9 +44,18 @@ describe("POST /api/revalidate-uscis-times", () => {
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
-  it("expires every listed page", async () => {
+  it("expires every listed page, and every family as pages", async () => {
     expect((await POST(post())).status).toBe(200);
     for (const p of USCIS_TIMES_PAGES) expect(revalidatePath).toHaveBeenCalledWith(p);
+    for (const f of USCIS_TIMES_PAGE_FAMILIES) expect(revalidatePath).toHaveBeenCalledWith(f, "page");
+    expect(revalidatePath).toHaveBeenCalledTimes(USCIS_TIMES_PAGES.length + USCIS_TIMES_PAGE_FAMILIES.length);
+  });
+
+  it("each family is the file path of a real page, route groups included", () => {
+    for (const f of USCIS_TIMES_PAGE_FAMILIES) {
+      expect(statSync(join(appDir, f, "page.tsx")).isFile()).toBe(true);
+      expect(f).toMatch(/\[[a-z]+\]/);
+    }
   });
 
   it("lists every page that reads the posted figures, and nothing else", () => {
@@ -55,6 +64,7 @@ describe("POST /api/revalidate-uscis-times", () => {
       .map(routeOf)
       .sort();
     expect(readers.length).toBeGreaterThan(0);
-    expect([...USCIS_TIMES_PAGES].sort()).toEqual(readers);
+    const urlOf = (family: string) => family.replace(/\([^)]*\)\/?/g, "").replace(/\/+/g, "/");
+    expect([...USCIS_TIMES_PAGES, ...USCIS_TIMES_PAGE_FAMILIES.map(urlOf)].sort()).toEqual(readers);
   });
 });

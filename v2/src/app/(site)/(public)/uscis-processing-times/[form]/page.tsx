@@ -16,6 +16,7 @@ import { notFound } from "next/navigation";
 import { Fragment } from "react";
 import { HourglassMediumIcon, SealCheckIcon, TrayIcon, UsersIcon } from "@phosphor-icons/react/ssr";
 
+import { BarRows, type BarRow } from "@/components/data/BarRows";
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { FinePrint } from "@/components/data/FinePrint";
 import { Figure, FigureRow } from "@/components/data/FigureRow";
@@ -23,10 +24,14 @@ import { PageSection } from "@/components/data/PageSection";
 import { ColumnChart, type Column } from "@/components/numbers/ColumnChart";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { breadcrumbSchema } from "@/lib/breadcrumbs";
+import { getUscisPosted } from "@/lib/db/uscisPosted";
 import { getHistoricalMedians, getUscisFormRows, type HistoricalMedians } from "@/lib/db/uscisQuarterly";
+import { formatAsOf } from "@/lib/dolFormat";
 import { formatInt, formatShare } from "@/lib/format";
 import { openGraphBase } from "@/lib/openGraphBase";
+import { PROCESSING_TIMES_SOURCE_URL } from "@/lib/processing-times/i140ProcessingTimes";
 import { withSocialCard } from "@/lib/socialCard";
+import { easternDay } from "@/lib/time";
 import {
   FORM_PAGES,
   approvedShare,
@@ -39,6 +44,7 @@ import {
   type LinePoint,
   type Slot,
 } from "@/lib/uscisForms";
+import { isCurrent, postedByCategory, type PostedCategory } from "@/lib/uscisPosted";
 import { monthsLabel, quarterLabel } from "@/lib/uscisQuarterlyShape";
 import { approvalMoved, countMoved, medianMoved } from "@/lib/uscisTrends";
 import { softFail } from "@/lib/softRead";
@@ -74,6 +80,29 @@ export async function generateMetadata({ params }: { params: Promise<{ form: str
 /** "a month" for 1, else "N months", with USCIS's one decimal. */
 function monthsPhrase(m: number): string {
   return m === 1 ? "1 month" : `${monthsLabel(m)} months`;
+}
+
+/**
+ * USCIS's posted figure for each category, as bar rows. Where several offices post one category the bar is the
+ * slowest office and the figure is the range, so a row never reads quicker than the reader's own office may be.
+ */
+function postedRows(categories: readonly PostedCategory[]): BarRow[] {
+  return categories.map((c) => {
+    const asked = c.requestDate ? formatAsOf(c.requestDate) : null;
+    return {
+      key: c.subtype,
+      label: c.label,
+      sub:
+        c.offices > 1
+          ? `The quickest and the slowest of ${c.offices} offices`
+          : asked
+            ? `USCIS takes a question about a case it received before ${asked}`
+            : undefined,
+      value: c.max,
+      nullText: c.note ?? "No figure posted",
+      text: c.min === null || c.max === null ? "" : c.min === c.max ? monthsPhrase(c.max) : `${monthsLabel(c.min)} to ${monthsPhrase(c.max)}`,
+    };
+  });
 }
 
 function medianColumns(points: readonly LinePoint[]): Column[] {
@@ -125,7 +154,14 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
   const page = formPage((await params).form);
   if (!page) notFound();
   const path = `/uscis-processing-times/${page.slug}`;
-  const [rows, history] = await Promise.all([getUscisFormRows(page.form), getHistoricalMedians().catch(softFail("uscis-processing-times/[form]/page.getHistoricalMedians", null))]);
+  const [rows, history, posted] = await Promise.all([
+    getUscisFormRows(page.form),
+    getHistoricalMedians().catch(softFail("uscis-processing-times/[form]/page.getHistoricalMedians", null)),
+    // Throws on a failed read, like the rows: the page keeps its last good render for the week.
+    getUscisPosted(),
+  ]);
+  // A posting too old to stand for "now" is left out: the quarterly median carries the page on its own.
+  const categories = posted && isCurrent(posted, easternDay()) ? postedRows(postedByCategory(posted, page.form)) : [];
   const slots = quarterSlots(rows);
   const lines = page.lines
     .map((line) => ({ line, points: lineSeries(rows, line, slots) }))
@@ -210,6 +246,33 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
               />
             ) : null}
           </FigureRow>{" "}
+          {categories.length > 0 && posted ? (
+            <PageSection
+              id="posted"
+              title="USCIS's posted time, by category"
+              lede={`USCIS's processing-times page prints one figure a category: the time within which it finished 80% of the cases it decided over the past six months. Posted ${formatAsOf(posted.published)}.`}
+            >
+              <div className="object p-4 sm:p-5">
+                <BarRows inline rows={categories} label={`${page.form}: the months USCIS posts, by category`} />
+              </div>{" "}
+              <p className="mt-3 max-w-3xl text-sm leading-relaxed text-soft">
+                The median above is one figure over every {page.form} USCIS decided in a quarter. These are by category,
+                and each is the time for 8 cases in 10. From{" "}
+                <a href={PROCESSING_TIMES_SOURCE_URL} target="_blank" rel="noopener noreferrer" className="link">
+                  USCIS&apos;s processing-times page
+                </a>
+                , as copied each day by the open-source{" "}
+                <a href={posted.project} target="_blank" rel="noopener noreferrer" className="link">
+                  jzebedee/uscis project
+                </a>
+                .{" "}
+                <Link href={`/tools/uscis-case-inquiry?form=${encodeURIComponent(page.form)}`} className="link">
+                  Put your own {page.form} on the calendar
+                </Link>
+                .
+              </p>
+            </PageSection>
+          ) : null}{" "}
           <PageSection
             id="median"
             title="Median months, quarter by quarter"
@@ -334,16 +397,16 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
       </PageSection>{" "}
       <FinePrint summary="Why USCIS's own case page shows a different time" className="mt-10">
         <p className="max-w-2xl text-base leading-relaxed">
-          This is USCIS&apos;s median: half of the cases it finished in a quarter took less time than this. Its
-          processing-times page prints a different figure, the time within which it finished 80% of recent cases, so it
-          reads longer. Both are USCIS&apos;s, and{" "}
+          The median is the time half of the cases USCIS finished in a quarter took, over every category together. Its
+          processing-times page prints a different figure, the time within which it finished 80% of recent cases, one
+          for each category, so the two rarely match. Both are USCIS&apos;s, and{" "}
           <Link href="/uscis-processing-times" className="link">
             the hub
           </Link>{" "}
           sets them side by side for the I-140.
         </p>
       </FinePrint>{" "}
-      <DataProvenance datasets={["uscis-form-quarters"]} />
+      <DataProvenance datasets={["uscis-form-quarters", "uscis-posted-times"]} />
     </div>
   );
 }

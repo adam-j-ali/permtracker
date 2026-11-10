@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { getI140ProcessingTime, PROCESSING_TIMES_AS_OF } from "@/lib/processing-times/i140ProcessingTimes";
-import { h4EadTimes, i140Code, i140Figures, i140Series, isCurrent, parseUscisPosted } from "@/lib/uscisPosted";
+import { h4EadTimes, i140Code, i140Figures, i140Series, isCurrent, parseUscisPosted, postedByCategory } from "@/lib/uscisPosted";
 
 /** USCIS's posted figures take the place of the typed ones only while they're current, code by code. */
 
@@ -108,5 +108,44 @@ describe("h4EadTimes: the H-4 work permit's two posted routes", () => {
     expect(h4EadTimes(withH4("2026-10-19", [both[0]!, { ...both[1]!, posted: null }]), "2026-11-04")).toBeNull();
     expect(h4EadTimes(withH4("2026-06-01", both), "2026-11-04")).toBeNull();
     expect(h4EadTimes(null, "2026-11-04")).toBeNull();
+  });
+});
+
+/** A form's own page lists what USCIS posts for each of its categories, whatever the form. */
+describe("postedByCategory", () => {
+  const posted = parseUscisPosted(
+    JSON.stringify({
+      published: "2026-10-19",
+      postings: ["2026-10-19"],
+      project: "https://github.com/jzebedee/uscis",
+      newest: [
+        { form: "I-140", subtype: "136A-E21", office: "SCD", posted: 3, postedText: "3 Months", requestDate: "2026-04-28", label: "Advanced degree or exceptional ability (E21)" },
+        { form: "I-140", subtype: "136A-NIW", office: "SCD", posted: 30, postedText: "30 Months", requestDate: "2024-02-17", label: null },
+        { form: "I-140", subtype: "136A-E13", office: "SCD", posted: null, postedText: "See the notes below", requestDate: null, label: "Multinational executive or manager (E13)" },
+        { form: "I-485", subtype: "131A", office: "ATL", posted: 9.5, postedText: "9.5 Months", requestDate: "2025-09-01", label: "Employment-based adjustment applications" },
+        { form: "I-485", subtype: "131A", office: "NYC", posted: 24, postedText: "24 Months", requestDate: "2024-10-01", label: "Employment-based adjustment applications" },
+        { form: "I-485", subtype: "131A", office: "SEA", posted: null, postedText: "See the notes below", requestDate: null, label: "Employment-based adjustment applications" },
+      ],
+      series: [],
+    }),
+  );
+
+  it("gives one line a category, with the figure and the ask-after date where one office posts it", () => {
+    expect(postedByCategory(posted, "I-140")).toEqual([
+      { subtype: "136A-E21", label: "Advanced degree or exceptional ability (E21)", offices: 1, min: 3, max: 3, requestDate: "2026-04-28", note: null },
+      { subtype: "136A-NIW", label: "136A-NIW", offices: 1, min: 30, max: 30, requestDate: "2024-02-17", note: null },
+      { subtype: "136A-E13", label: "Multinational executive or manager (E13)", offices: 1, min: null, max: null, requestDate: null, note: "See the notes below" },
+    ]);
+  });
+
+  it("gives the shortest and longest office where several post one category, and no single ask-after date", () => {
+    expect(postedByCategory(posted, "I-485")).toEqual([
+      { subtype: "131A", label: "Employment-based adjustment applications", offices: 3, min: 9.5, max: 24, requestDate: null, note: null },
+    ]);
+  });
+
+  it("is empty for a form USCIS posts nothing for, and when the postings can't be had", () => {
+    expect(postedByCategory(posted, "I-290B")).toEqual([]);
+    expect(postedByCategory(null, "I-140")).toEqual([]);
   });
 });
