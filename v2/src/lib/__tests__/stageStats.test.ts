@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import { placeCaseInCohort, COHORT_PERCENTILE_FACTOR } from "../queueForecast";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import {
   ageByStatusFrom,
   exitMixFor,
   stageDurationFor,
   type StageStats,
 } from "../db/stageStats";
+import { MOVES_COUNTED_FROM, byCurrentRule } from "../stageStatsShape";
 
 /**
  * Stage ages are MEASURED; what a stage MEANS stays in code.
@@ -165,5 +169,39 @@ describe("stage duration, which switches itself on", () => {
   it("says nothing at all with no document", () => {
     expect(stageDurationFor(null, "RFI ISSUED")).toBeNull();
     expect(stageDurationFor({ ...STATS, durations: [] }, "RFI ISSUED")).toBeNull();
+  });
+});
+
+/**
+ * A document built by an older counting rule. On Nov 10 2026 the audit page printed 3,206 moves "after a denial"
+ * for three hours under words that said the count ran from August 30: the page's code had the new rule and the
+ * document had been built by the old one. The census doesn't depend on the rule, so it stays.
+ */
+describe("a document built by an older rule", () => {
+  const current: StageStats = { ...STATS, since: MOVES_COUNTED_FROM, rfiPath: { since: MOVES_COUNTED_FROM, entered: 12 } };
+
+  it("is read whole when it was built by the rule this code reads by", () => {
+    expect(byCurrentRule(current)).toBe(current);
+  });
+
+  it("keeps its census and loses its moves, its durations and its RFI path when it carries no day, or another day", () => {
+    for (const old of [STATS, { ...current, since: "2026-08-26" }]) {
+      const read = byCurrentRule(old);
+      expect(read.stages).toEqual(STATS.stages);
+      expect(read.asOf).toBe(STATS.asOf);
+      expect(read.exits).toEqual([]);
+      expect(read.durations).toEqual([]);
+      expect(read.rfiPath).toBeUndefined();
+      expect(read.since).toBeUndefined();
+      // The measured ages still answer; the moves answer nothing, never the old figures.
+      expect(ageByStatusFrom(read).get("RFI ISSUED")).toBe(362);
+      expect(exitMixFor(read, "RFI ISSUED")).toBeNull();
+      expect(stageDurationFor(read, "RFI ISSUED")).toBeNull();
+    }
+  });
+
+  it("counts from the same day the ingest writes", () => {
+    const script = readFileSync(join(process.cwd(), "scripts", "ingest_case_status_direct.py"), "utf8");
+    expect(script.match(/^WATCHED_FROM = "(\d{4}-\d{2}-\d{2})"$/m)?.[1]).toBe(MOVES_COUNTED_FROM);
   });
 });

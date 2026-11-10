@@ -6,7 +6,7 @@ import { MS_PER_DAY } from "@/lib/time";
 
 import { one } from "./client";
 import { softFail } from "@/lib/softRead";
-import type { StageStats } from "@/lib/stageStatsShape";
+import { byCurrentRule, type StageStats } from "@/lib/stageStatsShape";
 
 /**
  * The server loader for the measured stage statistics.
@@ -51,11 +51,12 @@ export const getStageStats = cache(async (): Promise<StageStats | null> => {
   try {
     const doc = JSON.parse(row.json) as StageStats;
     if (!Array.isArray(doc.stages) || doc.stages.length === 0) return null;
-    return {
+    // A document built by an older counting rule keeps its census and loses its moves (`byCurrentRule`).
+    return byCurrentRule({
       ...doc,
       exits: Array.isArray(doc.exits) ? doc.exits : [],
       durations: Array.isArray(doc.durations) ? doc.durations : [],
-    };
+    });
   } catch {
     return null;
   }
