@@ -6,6 +6,7 @@ import { shapeLcaProfile, type LcaNewestRow, type LcaProfile, type LcaProfileRow
 import { one } from "./client";
 import { employerMatch } from "./employerSlugs";
 import { tableColumns } from "./tableColumns";
+import { softFail } from "@/lib/softRead";
 
 /**
  * One employer's LCA profile, read over the same spellings as its program
@@ -84,8 +85,8 @@ export const getLcaProfile = cache(async (slug: string): Promise<LcaProfile | nu
   const [row, newest] = await Promise.all([
     // Columns the reduced query doesn't name come back undefined, which shapes to 0.
     one<LcaProfileRow>(lcaProfileSql(hasDetail, match.where), args),
-    // The declarations are a nicety on top of the counts; a failed read drops them, not the panel.
-    hasDetail ? one<LcaNewestRow>(lcaNewestFlagsSql(match.where), args).catch(() => null) : Promise.resolve(null),
+    // The declarations are a nicety on top of the counts; a failed read drops them, not the panel, and is recorded.
+    hasDetail ? one<LcaNewestRow>(lcaNewestFlagsSql(match.where), args).catch(softFail("lcaProfile.newestFlags", null)) : Promise.resolve(null),
   ]);
   return shapeLcaProfile(row, newest);
 });
