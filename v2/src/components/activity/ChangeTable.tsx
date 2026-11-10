@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/intent-link";
 
 import { SortableHeader } from "@/components/tools/SortableHeader";
 import { CaseStatusChip } from "@/components/ui/badge";
@@ -85,21 +85,21 @@ export function ChangeTable({
                   React warns it breaks hydration, which
                   no-whitespace-in-table-rows.test.ts pins. */}
               <td className="whitespace-nowrap px-3 py-3 font-mono text-base">
-                <Link
+                <IntentLink
                   href={`/perm-case-status?case=${encodeURIComponent(c.caseNumber)}`}
                   className="link"
                 >
                   {c.caseNumber}
-                </Link>{" "}
+                </IntentLink>{" "}
               </td>
               <td className="whitespace-nowrap px-3 py-3 font-mono text-sm text-soft">
                 {PROGRAM_LABEL[c.program]}{" "}
               </td>
               <td className="px-3 py-3 font-bold">
                 {c.employerName && c.employerSlug ? (
-                  <Link href={entityHref("employer", c.employerSlug)} className="link">
+                  <IntentLink href={entityHref("employer", c.employerSlug)} className="link">
                     {c.employerName}
-                  </Link>
+                  </IntentLink>
                 ) : (
                   c.employerName ?? (
                     <span className="font-normal text-muted-foreground">

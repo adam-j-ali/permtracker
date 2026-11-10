@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/intent-link";
 
 import { SortableHeader } from "@/components/tools/SortableHeader";
 import type { SortColumn, SortState } from "@/lib/tableSort";
@@ -123,12 +123,12 @@ export function DecidedTable({
               className="border-t-2 border-border/30 align-top"
             >
               <td className="whitespace-nowrap px-3 py-3 font-mono text-base">
-                <Link
+                <IntentLink
                   href={`/perm-case-status?case=${encodeURIComponent(c.caseNumber)}`}
                   className="link"
                 >
                   {c.caseNumber}
-                </Link>{" "}
+                </IntentLink>{" "}
               </td>
               <td className="whitespace-nowrap px-3 py-3 font-mono text-sm text-soft">
                 {PROGRAM_LABEL[c.program]}{" "}
@@ -138,12 +138,12 @@ export function DecidedTable({
               </td>
               <td className="px-3 py-3 font-bold">
                 {c.employerSlug ? (
-                  <Link
+                  <IntentLink
                     href={entityHref("employer", c.employerSlug)}
                     className="link"
                   >
                     {c.employerName}
-                  </Link>
+                  </IntentLink>
                 ) : (
                   (c.employerName ?? "")
                 )}{" "}
@@ -164,12 +164,12 @@ export function DecidedTable({
               </td>
               <td className="px-3 py-3 text-sm text-soft">
                 {c.attorneySlug ? (
-                  <Link
+                  <IntentLink
                     href={entityHref("attorney", c.attorneySlug)}
                     className="link"
                   >
                     {c.attorneyName}
-                  </Link>
+                  </IntentLink>
                 ) : (
                   (c.attorneyName ?? "")
                 )}{" "}

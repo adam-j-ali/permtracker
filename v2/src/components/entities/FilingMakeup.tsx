@@ -1,6 +1,6 @@
 import { Fragment } from "react";
 import type { ReactNode } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/intent-link";
 
 import { ChartTips } from "@/components/data/ChartTips";
 import { FinePrint } from "@/components/data/FinePrint";
@@ -98,9 +98,9 @@ function Count({ row, href, bare = false }: { row: FacetRow; href?: (row: FacetR
   const to = href?.(row);
   if (!to) return <>{text}</>;
   return (
-    <Link href={to} className={ROW_LINK} aria-label={`${formatInt(row.n)} filings for ${row.label}, case by case`}>
+    <IntentLink href={to} className={ROW_LINK} aria-label={`${formatInt(row.n)} filings for ${row.label}, case by case`}>
       {text}
-    </Link>
+    </IntentLink>
   );
 }
 
@@ -142,12 +142,12 @@ export function OccupationMix({
     >
       <p className="font-heading text-2xl font-bold leading-tight">
         {lead.key ? (
-          <Link
+          <IntentLink
             href={entityHref("occupation", lead.key)}
             className="link"
           >
             {lead.label}
-          </Link>
+          </IntentLink>
         ) : (
           lead.label
         )}
@@ -168,12 +168,12 @@ export function OccupationMix({
               >
                 <span className="min-w-0 flex-1 text-sm font-bold leading-snug">
                   {r.key ? (
-                    <Link
+                    <IntentLink
                       href={entityHref("occupation", r.key)}
                       className="link"
                     >
                       {r.label}
-                    </Link>
+                    </IntentLink>
                   ) : (
                     r.label
                   )}
@@ -213,12 +213,12 @@ export function StateMix({
           The worksite state on the application, which is where the job is and
           not where the company is headquartered. Volume by state across
           everyone is on the{" "}
-          <Link
+          <IntentLink
             href="/perm-by-state"
             className="link"
           >
             state map
-          </Link>
+          </IntentLink>
           .{" "}
           {rows.length === 1
             ? `This state covers ${formatInt(shown)} of ${formatInt(total)} filings.`
@@ -299,9 +299,9 @@ export function PartyMix({
               >
                 <span className="min-w-0 flex-1">
                   {r.key ? (
-                    <Link href={`${hrefBase}/${r.key}`} className={`${ROW_LINK} leading-snug`}>
+                    <IntentLink href={`${hrefBase}/${r.key}`} className={`${ROW_LINK} leading-snug`}>
                       {r.label}
-                    </Link>
+                    </IntentLink>
                   ) : (
                     <span className="font-bold leading-snug">{r.label}</span>
                   )}{" "}
@@ -355,9 +355,9 @@ export function PlaceMix({
             ? `${cities.length === 1 ? "this city" : `these ${cities.length} cities`} ${formatInt(inCities)}`
             : ""}
           . Volume by state across everyone is on the{" "}
-          <Link href="/perm-by-state" className="link">
+          <IntentLink href="/perm-by-state" className="link">
             state map
-          </Link>
+          </IntentLink>
           .
         </>
       }
@@ -551,9 +551,9 @@ export function RecruitmentMix({
         </Shell>
       ) : null}{" "}
       <p className="col-span-full text-sm">
-        <Link href="/perm-recruitment" className="link font-semibold">
+        <IntentLink href="/perm-recruitment" className="link font-semibold">
           Where every PERM employer recruits
-        </Link>
+        </IntentLink>
       </p>
     </div>
   );

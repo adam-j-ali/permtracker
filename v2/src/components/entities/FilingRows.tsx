@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/intent-link";
 
 import { CASE_ROW_LINK } from "@/components/entities/caseRows";
 import { shortDate } from "@convex/lib/months";
@@ -65,12 +65,12 @@ export function FilingRows({
               >
                 {/* A phone gets two lines: the case number and its day, then the job and its status.
                     From 640px the order is the columns': case, job, wage, day, status. */}
-                <Link
+                <IntentLink
                   href={`/perm-case-status?case=${encodeURIComponent(r.caseNumber)}`}
                   className={cn(CASE_ROW_LINK, "order-1 whitespace-nowrap")}
                 >
                   {r.caseNumber}
-                </Link>{" "}
+                </IntentLink>{" "}
                 <span className="order-2 whitespace-nowrap text-right text-sm tabular-nums text-muted-foreground sm:order-4 sm:text-left">
                   {shortDate(r.date) ?? ""}
                 </span>{" "}

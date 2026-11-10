@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/intent-link";
 import { useCallback, useMemo } from "react";
 
 import { FilterableStatTable, type CsvSpec, type Facet, type StatColumn } from "@/components/tools/FilterableStatTable";
@@ -52,9 +52,9 @@ const COLUMNS: StatColumn<StageCase>[] = [
     render: (r) => (
       // Whole: a number broken at its hyphen reads as two (it broke in the
       // table at every desktop width).
-      <Link href={`/perm-case-status?case=${encodeURIComponent(r.caseNumber)}`} className="link whitespace-nowrap font-mono text-sm">
+      <IntentLink href={`/perm-case-status?case=${encodeURIComponent(r.caseNumber)}`} className="link whitespace-nowrap font-mono text-sm">
         {r.caseNumber}
-      </Link>
+      </IntentLink>
     ),
   },
   {
@@ -63,9 +63,9 @@ const COLUMNS: StatColumn<StageCase>[] = [
     sortValue: (r) => r.employer,
     render: (r) =>
       r.employer && r.employerSlug ? (
-        <Link href={entityHref("employer", r.employerSlug)} className="link">
+        <IntentLink href={entityHref("employer", r.employerSlug)} className="link">
           {r.employer}
-        </Link>
+        </IntentLink>
       ) : (
         <span>{r.employer ?? ""}</span>
       ),

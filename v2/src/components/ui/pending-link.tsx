@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
+import type Link from "next/link";
 import { useLinkStatus } from "next/link";
 import type { ComponentProps } from "react";
 import { CircleNotchIcon } from "@phosphor-icons/react";
 
+import { IntentLink } from "@/components/ui/intent-link";
 import { cn } from "@/lib/utils";
 
 /**
@@ -29,6 +30,11 @@ import { cn } from "@/lib/utils";
  * navigation (a prefetched or warm route) never flashes it — the delay is on
  * the show transition only, so it hides instantly when navigation completes.
  * A single opacity transition, not an animation: the project bans pulsing.
+ *
+ * IT PRE-LOADS ON INTENT. Every caller draws one of these per row of a list
+ * (a case number in a case browser, a name in a table), so a plain link asked
+ * the server for each row's page as the row scrolled into view. `IntentLink`
+ * waits for the pointer, a touch or keyboard focus.
  */
 function PendingDot() {
   const { pending } = useLinkStatus();
@@ -50,10 +56,10 @@ export function PendingLink({
   ...props
 }: ComponentProps<typeof Link>) {
   return (
-    <Link {...props}>
+    <IntentLink {...props}>
       {children}
       <PendingDot />
-    </Link>
+    </IntentLink>
   );
 }
 

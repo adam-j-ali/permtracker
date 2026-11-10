@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useId, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/ui/intent-link";
 import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 
 import { usePublicQuery } from "@/hooks/usePublicQuery";
@@ -705,9 +705,9 @@ export function FlagCaseBrowser({
             Decided ones come from DOL&apos;s quarterly files
             {disclosure?.latestDecision ? ` (through ${disclosure.latestDecision})` : ""}.
             Have the number? The{" "}
-            <Link href="/perm-case-status" className="link">
+            <IntentLink href="/perm-case-status" className="link">
               status lookup
-            </Link>{" "}
+            </IntentLink>{" "}
             asks DOL directly.
           </p>
         ) : null}
@@ -779,12 +779,12 @@ export function FlagCaseBrowser({
 
       <p className="text-base leading-relaxed text-soft">
         Looking for everything one employer has filed?{" "}
-        <Link
+        <IntentLink
           href={`/case-search${query.employer ? `?q=${encodeURIComponent(query.employer)}` : ""}`}
           className="link"
         >
           Search every DOL program at once
-        </Link>{" "}
+        </IntentLink>{" "}
         for the PERM, the wage request, the LCA and any H-2A, H-2B or CW-1 filing side by side.
       </p>
 
@@ -901,8 +901,8 @@ function EmployerName({ name, slug }: { name: string | null; slug: string | null
   if (!name) return null;
   if (!slug) return <>{name}</>;
   return (
-    <Link href={entityHref("employer", slug)} className="link max-sm:inline-flex max-sm:min-h-11 max-sm:items-center">
+    <IntentLink href={entityHref("employer", slug)} className="link max-sm:inline-flex max-sm:min-h-11 max-sm:items-center">
       {name}
-    </Link>
+    </IntentLink>
   );
 }
