@@ -61,6 +61,8 @@ EXTRA_COLUMNS: dict[str, str] = {
     "pi_filed": "TEXT",          # Eastern day the Register filed it for public inspection
     "signing_date": "TEXT",      # a presidential document's signing day
     "superseded_by": "TEXT",     # a White House row's Register document, once published
+    # Nov 10 2026: the CFR parts the Register lists for a document, "20 CFR 655; 20 CFR 656".
+    "cfr_parts": "TEXT",
 }
 
 # Every policy source's freshness row. The health check warns on one that has
