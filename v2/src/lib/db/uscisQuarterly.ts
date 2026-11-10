@@ -5,6 +5,7 @@ import { cache } from "react";
 import { one, rows } from "./client";
 import type { AwaitingCell, ClassCountryCell, OfficeRow } from "@/lib/uscisQuarterlyShape";
 import type { FormQuarterRow } from "@/lib/uscisForms";
+import { beforeFirstLoad } from "./firstLoad";
 
 /**
  * USCIS's quarterly performance workbooks, as `scripts/ingest_uscis_quarterly.py`
@@ -70,16 +71,6 @@ function formRow(r: Record<string, unknown>): UscisFormRow {
     ytdPending: num(r.ytd_pending),
   };
 }
-
-/**
- * A table the first load hasn't made yet holds nothing. Any other failed read is a failure, and throws: every reader
- * here uses it, so a page whose subject this is keeps its last good render, and a page that only borrows a figure
- * names its own fallback with `softFail` where it calls.
- */
-const beforeFirstLoad = <T>(empty: T) => (error: unknown): T => {
-  if (/no such table/i.test(String((error as Error)?.message ?? error))) return empty;
-  throw error;
-};
 
 /** The newest quarter held, with every form USCIS listed in it. Null only when none is held. */
 export const getUscisFormQuarter = cache(async (): Promise<UscisFormQuarter | null> => {

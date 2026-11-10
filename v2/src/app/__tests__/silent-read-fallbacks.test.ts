@@ -40,7 +40,6 @@ const DB_REMAINING: Record<string, number> = {
   "src/lib/db/debarments.ts": 1,
   "src/lib/db/decidedDays.ts": 5,
   "src/lib/db/embedLookup.ts": 2,
-  "src/lib/db/employerHistory.ts": 3,
   "src/lib/db/employerPrograms.ts": 2,
   "src/lib/db/employerSlugs.ts": 1,
   "src/lib/db/employerStages.ts": 1,
