@@ -226,20 +226,36 @@ def articles_by_cfr_part(content: pathlib.Path = CONTENT) -> dict[str, list[str]
             for part, by_page in counts.items()}
 
 
+def _cfr_stem(part: str) -> str:
+    """A part without its letter: "8 CFR 274a" -> "8 CFR 274"."""
+    return re.sub(r"[a-z]$", "", part)
+
+
 def cfr_sentence(parts: list[str], by_part: dict[str, list[str]], already: list[str] | None = None) -> str:
     """What to re-read when a document touches parts the articles cite: each part with the articles that cite it
     most, and how many more there are. Empty when no article cites any of them. `already` holds pages the line
-    has named for another reason, so none is named twice. Pure."""
+    has named for another reason, so none is named twice. Pure.
+
+    A part matches with or without its letter, and is named the way the articles cite it. The Register listed
+    part 274 for the rule that amended 8 CFR 274a.13 (document 2026-20955, read Nov 10 2026), so an exact match
+    would have named no article for the one rule the EAD guides most needed to hear about."""
     named_before = set(already or [])
-    bits = []
+    cited_as: dict[str, list[str]] = {}
+    for cited in by_part:
+        cited_as.setdefault(_cfr_stem(cited), []).append(cited)
+    bits, done = [], set()
     for part in parts:
-        pages = [p for p in by_part.get(part, []) if p not in named_before]
-        if not pages:
-            continue
-        title, number = part.split(" CFR ")
-        more = len(pages) - CFR_NAMED
-        bits.append(f"{title} CFR part {number} ({', '.join(pages[:CFR_NAMED])}"
-                    + (f", and {more} more" if more > 0 else "") + ")")
+        for cited in sorted(cited_as.get(_cfr_stem(part), [])):
+            if cited in done:
+                continue
+            done.add(cited)
+            pages = [p for p in by_part[cited] if p not in named_before]
+            if not pages:
+                continue
+            title, number = cited.split(" CFR ")
+            more = len(pages) - CFR_NAMED
+            bits.append(f"{title} CFR part {number} ({', '.join(pages[:CFR_NAMED])}"
+                        + (f", and {more} more" if more > 0 else "") + ")")
     if not bits:
         return ""
     return f" It touches {'; '.join(bits)}: read it and check what those articles say."
