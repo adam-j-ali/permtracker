@@ -73,7 +73,7 @@ try {
   });
   const page = await ctx.newPage();
   for (const [slug, s] of jobs) {
-    const { url, scroll, wait, clip, width, height, maxHeight, fill, click, css, clock, ready, settle } = s.capture;
+    const { url, scroll, wait, clip, width, height, maxHeight, open, fill, click, css, clock, ready, settle } = s.capture;
     try {
       await page.setViewportSize({ width: width ?? 1200, height: height ?? 900 });
       // A Storybook capture of the app runs on the day its sample firm was
@@ -84,6 +84,12 @@ try {
       if (!res || res.status() !== 200) throw new Error(`status ${res?.status()}`);
       await page.addStyleTag({ content: HIDE + (css ?? "") });
       await page.waitForTimeout(wait ?? 1500);
+      // "open": buttons to press before typing (a panel that holds the boxes
+      // to type into, closed until asked for).
+      for (const sel of open ? [open].flat() : []) {
+        await page.locator(sel).first().click();
+        await page.waitForTimeout(600);
+      }
       // Type into boxes on the page (a list's own search, a calculator's
       // dates), then let it answer.
       for (const f of fill ? [fill].flat() : []) {

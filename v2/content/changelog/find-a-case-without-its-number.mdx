@@ -1,0 +1,44 @@
+---
+title: "Find a case without its number, and a USCIS case on its own calendar"
+seoTitle: "Find a case without its number"
+description: "Find a DOL case by employer and filing day, from any case box, the API or the app. Plus a tool that dates a USCIS case and the day you can ask about it."
+date: "2026-11-10"
+author: "PERM Tracker team"
+image: "/images/content/heroes/changelog/find-a-case-without-its-number.webp"
+imageAlt: "The case finder open under the case number box on permtracker.app, listing one employer's four PERM cases filed on January 5, 2026, each with its status"
+imageCredit: "Screenshot of permtracker.app, November 10, 2026"
+category: "Release"
+tags: ["changelog", "release", "case-status", "case-search", "uscis", "processing-times", "api"]
+---
+
+This release is for the person whose lawyer filed the case and never passed on the number. It also puts a USCIS case on its own calendar.
+
+## Find your case without the number
+
+- Under every case number box there's a new way in: [find it by employer and filing date](/perm-case-status). Type the employer and the day, and it lists that employer's filings from that day.
+- A long list narrows by job title. A misspelled employer still finds the close names that filed that day, and a day with nothing offers the days around it.
+- It works for PERM cases, wage requests, H-1B LCAs and the seasonal programs. On an employer's page it opens with the name filled in.
+- The [case search](/case-search) takes one exact filing day as well as a month.
+- In the app, the case form can find the DOL number for you. "Find it in DOL's record" sits under the ETA 9089 and wage determination number fields, and picking a case fills the field.
+- The same lookup is in the [API](/developers) as `GET /v1/cases`, in the MCP server as `find_case`, and in the chat assistant.
+- The case box at the top of each list page was rebuilt around it. The box holds one frame, and the finder opens under the whole header, where it has room.
+
+## Filings that point at each other
+
+- A decided PERM case names the wage request it was filed on, and the lists show it: each day's filings, the case search and the CSV export.
+- A wage request says how many decided PERM cases name it.
+- A decided case's page prints the last day its wage determination was valid, from DOL's own record.
+
+## A USCIS case on its own calendar
+
+- [When will USCIS decide my case, and when can I ask?](/tools/uscis-case-inquiry) takes your form, office and receipt date. It draws the day half of such cases were decided by, the day eight in ten were, and the day USCIS takes a question about yours.
+- Below that it lists the steps for a late case in order: USCIS, your representative or senators, the Ombudsman, then a lawyer. It drafts a note for a congressional office, and nothing you type leaves your browser.
+- A new guide covers that step: [Congressional inquiry for a USCIS case](/guides/uscis-congressional-inquiry).
+- The [receipt number guide](/guides/uscis-receipt-number) now says how soon the receipt notice arrives.
+
+## Also in this release
+
+- Cases come into the app from a spreadsheet saved as CSV, with a [guide and a template](/guides/perm-case-tracking-spreadsheet).
+- The appeal guide says how long reconsideration takes, from live figures.
+- A new guide explains [why a prevailing wage ends on June 30, or after 90 days](/guides/why-prevailing-wage-ends-june-30).
+- One correction: figures for where a denied case goes next counted two catch-up days as moves. They're fixed, and the [corrections page](/changelog/corrections) has the detail.
