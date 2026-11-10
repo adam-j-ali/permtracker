@@ -83,6 +83,7 @@ One line each. The reasons, and the incident behind each, are in the notes file 
 - libSQL returns integers as strings: one normaliser on both sides of any diff.
 - A statement naming `lca_cases` goes to the LCA database; never join it to a main-database table ([ops](docs/notes/ops.md)).
 - Big reads through the tunnel go in bounded slug slices (`SLUG_WINDOWS` in `scripts/lib_db.py`).
+- Time a query on the live database one statement at a time, the smallest window first, and stop at the first one over a second: a batch of year-wide scans stalled page reads for 22 seconds (Nov 10) ([ops](docs/notes/ops.md)).
 - One rule per thing, never a copy: PERM deadlines `convex/lib/perm`, months `convex/lib/months.ts`, shares `formatShareOf` (`convex/lib/format.ts`), entity links `entityHref`, LIKE `src/lib/db/like.ts`, job codes `socGroup`, yearly wages `comparableWage` and `scripts/data/pay_periods.json`, slugs `entitySlug.ts` and `lib_slugs.py`.
 
 **Pages**
