@@ -74,6 +74,10 @@ class Inputs:
     articles: dict[str, list[str]] = field(default_factory=dict)  # RIN -> the articles that follow it
     # A Policy Manual chapter ("volume-1-part-b-chapter-6") -> the articles that cite it
     chapter_articles: dict[str, list[str]] = field(default_factory=dict)
+    # A part of the CFR ("20 CFR 656") -> the articles that cite it, the ones that cite it most first
+    cfr_articles: dict[str, list[str]] = field(default_factory=dict)
+    # A Register document number -> the parts the Register lists for it ("20 CFR 655; 20 CFR 656")
+    cfr_by_document: dict[str, str] = field(default_factory=dict)
     debarments: list[dict] = field(default_factory=list)  # program, entity, start_date, end_date, first_seen_at
 
 
@@ -185,6 +189,67 @@ def articles_by_chapter(content: pathlib.Path = CONTENT) -> dict[str, list[str]]
     return {chapter: sorted(paths) for chapter, paths in out.items()}
 
 
+# How an article cites a regulation: eCFR's own address for a part or a section, or the citation in words
+# ("20 CFR 656.17", "8 CFR § 274a.12", "20 CFR part 655").
+ARTICLE_CFR_URL = re.compile(
+    r"ecfr\.gov/current/title-(\d+)/(?:[A-Za-z0-9-]+/)*?(?:part-(\d+[a-z]?)(?![0-9a-z])|section-(\d+[a-z]?)\.)")
+ARTICLE_CFR_WORDS = re.compile(r"\b(\d+)\s+CFR\s+(?:§{1,2}\s*)?(?:[Pp]arts?\s+)?(\d+[a-z]?)(?![0-9a-z])")
+STORED_CFR = re.compile(r"(\d+) CFR (\d+[a-z]?)")
+# A part most guides cite (20 CFR 656) would name forty articles. The line names the ones that cite it most.
+CFR_NAMED = 5
+# A release note is a dated record of what shipped: it's never rewritten when a rule changes.
+CFR_SKIP_FOLDERS = {"changelog"}
+
+
+def cfr_parts_of(stored: str | None) -> list[str]:
+    """The parts in a row's `cfr_parts` ("20 CFR 655; 20 CFR 656"), each as "20 CFR 655". Pure."""
+    return [f"{title} CFR {part}" for title, part in STORED_CFR.findall(stored or "")]
+
+
+def articles_by_cfr_part(content: pathlib.Path = CONTENT) -> dict[str, list[str]]:
+    """Every article that cites a part of the CFR, by part ("20 CFR 656"), the ones that cite it most first.
+    Like a Policy Manual chapter, nothing in such an article updates itself when the part is amended."""
+    counts: dict[str, dict[str, int]] = {}
+    for f in sorted(content.glob("*/*.mdx")):
+        if f.parent.name in CFR_SKIP_FOLDERS:
+            continue
+        text = f.read_text(encoding="utf8", errors="ignore")
+        if "CFR" not in text and "ecfr.gov" not in text:
+            continue
+        page = f"/{f.parent.name}/{f.stem}"
+        cited = [(title, part or section) for title, part, section in ARTICLE_CFR_URL.findall(text)]
+        cited += ARTICLE_CFR_WORDS.findall(text)
+        for title, part in cited:
+            by_page = counts.setdefault(f"{title} CFR {part.lower()}", {})
+            by_page[page] = by_page.get(page, 0) + 1
+    return {part: [page for page, _ in sorted(by_page.items(), key=lambda kv: (-kv[1], kv[0]))]
+            for part, by_page in counts.items()}
+
+
+def cfr_sentence(parts: list[str], by_part: dict[str, list[str]], already: list[str] | None = None) -> str:
+    """What to re-read when a document touches parts the articles cite: each part with the articles that cite it
+    most, and how many more there are. Empty when no article cites any of them. `already` holds pages the line
+    has named for another reason, so none is named twice. Pure."""
+    named_before = set(already or [])
+    bits = []
+    for part in parts:
+        pages = [p for p in by_part.get(part, []) if p not in named_before]
+        if not pages:
+            continue
+        title, number = part.split(" CFR ")
+        more = len(pages) - CFR_NAMED
+        bits.append(f"{title} CFR part {number} ({', '.join(pages[:CFR_NAMED])}"
+                    + (f", and {more} more" if more > 0 else "") + ")")
+    if not bits:
+        return ""
+    return f" It touches {'; '.join(bits)}: read it and check what those articles say."
+
+
+# Which of a followed rule's Register documents a step is about.
+STEP_DOCUMENT = {"public-inspection": "pi_document", "proposed-published": "proposed_document",
+                 "final-published": "final_document"}
+
+
 def _rule_items(inputs: Inputs, since_ms: int, now_ms: int) -> list[dict]:
     floor = (dt.datetime.fromtimestamp(now_ms / 1000, tz=ET).date()
              - dt.timedelta(days=RULE_STEP_RECENT_DAYS)).isoformat()
@@ -203,6 +268,10 @@ def _rule_items(inputs: Inputs, since_ms: int, now_ms: int) -> list[dict]:
         if e["kind"] in TEXT_STEPS and pages:
             what += (f" Read it and update {', '.join(pages)}: the status there updates itself, "
                      "the text about what the rule says doesn't.")
+        if e["kind"] in TEXT_STEPS:
+            # The other articles: the ones that cite a part this rule's text touches, whatever rule they follow.
+            document = e.get(STEP_DOCUMENT[e["kind"]]) or ""
+            what += cfr_sentence(cfr_parts_of(inputs.cfr_by_document.get(document)), inputs.cfr_articles, pages)
         out.append({"kind": "rule", "when": e["on_date"], "what": what, "source": rule_source(e["kind"])})
     for on, events in editions.items():
         out.append({"kind": "rule", "when": on, "what": agenda_sentence(events),
@@ -488,6 +557,9 @@ def _document_items(inputs: Inputs, since_ms: int, now_ms: int) -> list[dict]:
             if pages:
                 what += (f" It changes a chapter these articles cite, so read it and check their words: "
                          f"{', '.join(pages)}.")
+        else:
+            what += cfr_sentence(cfr_parts_of(inputs.cfr_by_document.get(d.get("document_number") or "")),
+                                 inputs.cfr_articles)
         out.append({"kind": "document", "when": when, "what": what,
                     "source": DOC_SOURCES.get(d.get("source") or "", "the Federal Register")})
     return out
@@ -528,7 +600,8 @@ def read_inputs(db, since_ms: int) -> Inputs:
 
     inputs = Inputs()
     inputs.rule_events = safe(
-        "SELECT e.rin, e.kind, e.on_date, e.detail, e.seen_at, r.title, r.agency, r.comments_close, r.effective_on "
+        "SELECT e.rin, e.kind, e.on_date, e.detail, e.seen_at, r.title, r.agency, r.comments_close, r.effective_on, "
+        "r.pi_document, r.proposed_document, r.final_document "
         "FROM rule_pipeline_events e JOIN rule_pipeline r ON r.rin = e.rin WHERE e.seen_at >= ? ORDER BY e.on_date",
         [since_ms])
     # The reading before the window too, so the first one in it has something to compare with.
@@ -559,6 +632,15 @@ def read_inputs(db, since_ms: int) -> Inputs:
         "SELECT final_document FROM rule_pipeline WHERE final_document IS NOT NULL", []) if r.get("n")}
     inputs.articles = articles_by_rin()
     inputs.chapter_articles = articles_by_chapter()
+    inputs.cfr_articles = articles_by_cfr_part()
+    # The Register's CFR parts, by document. A table without the column (before the feed's writer first ran with
+    # it, Nov 10 2026) reads as none, and the lines then name no articles; any other failure raises.
+    try:
+        inputs.cfr_by_document = {r["document_number"]: r["cfr_parts"] for r in query_dicts(
+            db, "SELECT document_number, cfr_parts FROM policy_notices WHERE cfr_parts IS NOT NULL", [])}
+    except Exception as exc:  # noqa: BLE001
+        if "no such" not in str(exc).lower():
+            raise
     # A table without first_seen_at (before Nov 1 2026) reads as no new debarments.
     try:
         inputs.debarments = query_dicts(

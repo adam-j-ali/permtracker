@@ -75,6 +75,16 @@ def main() -> int:
     check("shape turns empty and blank strings into NULL", row["comments_close_on"] is None and row["dates"] is None)
     check("shape carries the citation and pdf", row["citation"] == "91 FR 57516" and row["pdf_url"].endswith("C1-2026-17324.pdf"))
     check("shape without a correction_of gives None", pn.shape({"document_number": "x"})["correction_of"] is None)
+    # The CFR parts the Register lists (its `cfr_references`: the title a number, the part a string), kept as one
+    # sorted line so the news email can name the articles that cite them.
+    refs = [{"chapter": None, "citation_url": None, "part": "656", "title": 20}, {"part": "655", "title": 20},
+            {"part": "656", "title": 20}, {"part": "274a", "title": 8}, {"part": "", "title": 8}, "junk",
+            {"part": "12x9", "title": 8}, {"part": "214"}]
+    check("shape keeps each CFR part once, in order, and drops what isn't a part",
+          pn.shape(dict(api_doc, cfr_references=refs))["cfr_parts"] == "8 CFR 274a; 20 CFR 655; 20 CFR 656")
+    check("shape without CFR references gives None", row["cfr_parts"] is None
+          and pn.shape(dict(api_doc, cfr_references=[]))["cfr_parts"] is None)
+    check("the feed asks the Register for the parts", "cfr_references" in pn.FIELDS)
 
     # add_missing_columns() adds only what the live table lacks; write()
     # compares on the new fields too, so a changed effective date is a write.

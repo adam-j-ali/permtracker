@@ -104,7 +104,9 @@ FIELDS = ["title", "type", "abstract", "document_number", "html_url",
           "effective_on", "comments_close_on", "comment_url", "citation",
           "action", "dates", "correction_of", "pdf_url",
           # A presidential document: "Proclamation", "Executive Order", and the day it was signed.
-          "subtype", "signing_date"]
+          "subtype", "signing_date",
+          # The parts of the CFR the document touches, so the news email can name the articles that cite them.
+          "cfr_references"]
 
 DATASET = "policy-notices"
 INSPECTION_DATASET = "policy-notices-pi"
@@ -207,6 +209,23 @@ def keep(doc: dict) -> bool:
     return True
 
 
+def cfr_parts(d: dict) -> str | None:
+    """The CFR parts the Register lists for a document, as "20 CFR 655; 20 CFR 656" (each once, in order), or None.
+
+    From `cfr_references`: a list of {"title": 20, "part": "656", ...}, the title a number and the part a string
+    that can end in a letter ("274a"). Read at the API on Nov 10 2026. Anything else in the list is left out.
+    """
+    seen: set[tuple[int, int, str]] = set()
+    for ref in d.get("cfr_references") or []:
+        if not isinstance(ref, dict):
+            continue
+        title, part = str(ref.get("title") or "").strip(), str(ref.get("part") or "").strip().lower()
+        m = re.fullmatch(r"(\d+)[a-z]?", part)
+        if title.isdigit() and m:
+            seen.add((int(title), int(m.group(1)), part))
+    return "; ".join(f"{title} CFR {part}" for title, _, part in sorted(seen)) or None
+
+
 def shape(d: dict) -> dict:
     """One Register document as the row the table holds. Pure, so a test can drive it.
 
@@ -237,6 +256,7 @@ def shape(d: dict) -> dict:
         "correction_of": parent.rstrip("/").rsplit("/", 1)[-1] if parent else None,
         "pdf_url": opt("pdf_url"),
         "signing_date": opt("signing_date"),
+        "cfr_parts": cfr_parts(d),
         "status": "published",
     } | ({"action": opt("subtype")} if not opt("action") and opt("subtype") else {})
 

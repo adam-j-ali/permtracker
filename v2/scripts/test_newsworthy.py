@@ -290,6 +290,61 @@ def main() -> int:
           "/guides/eta-9089-expiration-and-i140-deadline" in held.get("volume-6-part-e-chapter-6", [])
           and "/guides/eta-9089-expiration-and-i140-deadline" in held.get("volume-1-part-b-chapter-6", []), str(sorted(held)))
 
+    # A Register document that touches a part of the CFR: the line names the articles that cite the part, the ones
+    # that cite it most first, and counts the rest. Nothing in an article updates itself when its part is amended.
+    amend = {"document_number": "2026-30001", "publication_date": "2026-10-27", "type": "Proposed Rule",
+             "title": "Changes to the Labor Certification Process", "agencies": ["Employment and Training Administration"],
+             "source": "federal-register", "status": "published", "first_seen_at": pm_seen}
+    plain = dict(amend, document_number="2026-30002", title="A rule on parts no article cites")
+    cfr_cites = {"20 CFR 656": [f"/guides/g{i}" for i in range(1, 8)], "20 CFR 655": ["/guides/h2a"]}
+    parts = {"2026-30001": "20 CFR 655; 20 CFR 656", "2026-30002": "8 CFR 106", "2026-30003": "20 CFR 656"}
+    got = nw.newsworthy(nw.Inputs(documents=[amend, plain], cfr_articles=cfr_cites, cfr_by_document=parts), morning, now)
+    amend_line = next((i["what"] for i in got if "Labor Certification Process" in i["what"]), "")
+    plain_line = next((i["what"] for i in got if "no article cites" in i["what"]), "")
+    check("a document names the articles that cite each part it touches, most-citing first, and counts the rest",
+          amend_line.endswith(" It touches 20 CFR part 655 (/guides/h2a); 20 CFR part 656 (/guides/g1, /guides/g2, "
+                              "/guides/g3, /guides/g4, /guides/g5, and 2 more): read it and check what those articles say."),
+          amend_line)
+    check("a document whose parts no article cites names none", bool(plain_line) and "It touches" not in plain_line, plain_line)
+    got = nw.newsworthy(nw.Inputs(documents=[amend], cfr_articles=cfr_cites), morning, now)
+    check("a document the feed holds no parts for names none, and is still news",
+          len(got) == 1 and "It touches" not in got[0]["what"], str(got))
+    # A followed rule's own text step: its RIN's pages first, then the OTHER articles that cite the parts it touches.
+    step = dict(pub, proposed_document="2026-30003", pi_document=None, final_document=None)
+    got = nw.newsworthy(nw.Inputs(rule_events=[step], articles={"1205-AC29": ["/guides/g1"]}, cfr_articles=cfr_cites,
+                                  cfr_by_document=parts), morning, now)
+    rule_line = got[0]["what"] if got else ""
+    check("a followed rule names its own page once, then the other articles citing its parts",
+          "update /guides/g1:" in rule_line and rule_line.count("/guides/g1,") == 0
+          and "20 CFR part 656 (/guides/g2, /guides/g3, /guides/g4, /guides/g5, /guides/g6, and 1 more)" in rule_line, rule_line)
+    got = nw.newsworthy(nw.Inputs(rule_events=[dict(step, kind="oira-completed", detail="Consistent with Change")],
+                                  articles={"1205-AC29": ["/guides/g1"]}, cfr_articles=cfr_cites, cfr_by_document=parts), morning, now)
+    check("a step with no new text names no articles by part", len(got) == 1 and "It touches" not in got[0]["what"], str(got))
+    check("the stored parts read back one by one",
+          nw.cfr_parts_of("8 CFR 274a; 20 CFR 655; 20 CFR 656") == ["8 CFR 274a", "20 CFR 655", "20 CFR 656"]
+          and nw.cfr_parts_of(None) == [] and nw.cfr_parts_of("") == [])
+    held_parts = nw.articles_by_cfr_part()
+    check("the real articles are found by the parts they cite, by eCFR address and in words",
+          "/guides/h2a-case-status-and-timing" in held_parts.get("20 CFR 655", [])
+          and "/guides/ead-renewal-no-automatic-extension" in held_parts.get("8 CFR 274a", [])
+          and "/blog/h1b-sponsors-layoff-notices-october-2026" in held_parts.get("20 CFR 639", []), str(sorted(held_parts)))
+    check("a release note is a dated record and is never named",
+          not any(page.startswith("/changelog/") for pages in held_parts.values() for page in pages))
+    import tempfile  # noqa: PLC0415
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp)
+        (root / "guides").mkdir()
+        (root / "changelog").mkdir()
+        (root / "guides" / "twice.mdx").write_text(
+            "See [the rule](https://www.ecfr.gov/current/title-20/chapter-V/part-656/subpart-C/section-656.17) and 20 CFR 656.40, "
+            "8 CFR \u00a7 274a.12(c)(9), [8 CFR 204.5](https://www.ecfr.gov/current/title-8/section-204.5) and 20 CFR part 655.")
+        (root / "guides" / "once.mdx").write_text("Only 20 CFR 656.10 here, and 2026 CFRs aren't a citation.")
+        (root / "changelog" / "note.mdx").write_text("20 CFR 656.17 shipped.")
+        found = nw.articles_by_cfr_part(root)
+    check("a part's articles are ordered by how often each cites it; sections fold into their part",
+          found == {"20 CFR 656": ["/guides/twice", "/guides/once"], "8 CFR 274a": ["/guides/twice"],
+                    "8 CFR 204": ["/guides/twice"], "20 CFR 655": ["/guides/twice"]}, str(found))
+
     print(f"\n{len(FAILS)} failed" if FAILS else "\nall passed")
     return 1 if FAILS else 0
 
