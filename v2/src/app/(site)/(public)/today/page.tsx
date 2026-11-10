@@ -102,10 +102,10 @@ export default async function TodayPage() {
     getLiveCensus().catch(softFail("today/page.getLiveCensus", null)),
     getObservedDays(DECISION_DAYS).catch(softFail("today/page.getObservedDays", [])),
     getSweepCoverage().catch(softFail("today/page.getSweepCoverage", null)),
-    getUscisFormHistory("I-140"),
+    getUscisFormHistory("I-140").catch(softFail("today/page.getUscisFormHistory.i140", [])),
     getVisaBulletins().catch(softFail("today/page.getVisaBulletins", [])),
-    getUscisFormMedian("I-485", "Employment"),
-    getUscisFormHistory("I-485"),
+    getUscisFormMedian("I-485", "Employment").catch(softFail("today/page.getUscisFormMedian.i485", null)),
+    getUscisFormHistory("I-485").catch(softFail("today/page.getUscisFormHistory.i485", [])),
     getBulletinBoard().catch(softFail("today/page.getBulletinBoard", null)),
   ]);
 

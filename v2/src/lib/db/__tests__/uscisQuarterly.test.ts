@@ -5,7 +5,8 @@ const one = vi.fn<(sql: string, args?: unknown[]) => Promise<unknown>>();
 const rows = vi.fn<(sql: string, args?: unknown[]) => Promise<unknown[]>>();
 vi.mock("../client", () => ({ one, rows, exec: vi.fn() }));
 
-const { getUscisFormQuarter } = await import("../uscisQuarterly");
+const { getEbAwaitingVisa, getHistoricalMedians, getI140ClassCountry, getI485Offices, getUscisFormHistory, getUscisFormMedian, getUscisFormQuarter } =
+  await import("../uscisQuarterly");
 
 /**
  * USCIS's newest quarter. A table the first load hasn't made yet holds nothing; a database that can't be read is a
@@ -49,5 +50,71 @@ describe("getUscisFormQuarter", () => {
     one.mockResolvedValue({ fy: 2026, quarter: 3 });
     rows.mockRejectedValue(new Error("fetch failed"));
     await expect(getUscisFormQuarter()).rejects.toThrow("fetch failed");
+  });
+});
+
+/**
+ * The same rule for every other read in the file. Each used to answer a failed read with "nothing held", which a
+ * page then printed as "USCIS hasn't published this" and kept for its whole cache window.
+ */
+describe("every other USCIS quarterly read", () => {
+  beforeEach(() => {
+    one.mockReset();
+    rows.mockReset();
+  });
+
+  const READS: [string, () => Promise<unknown>, unknown][] = [
+    ["getUscisFormHistory", () => getUscisFormHistory("I-140"), []],
+    ["getUscisFormMedian", () => getUscisFormMedian("I-485", "Employment"), null],
+    ["getI485Offices", () => getI485Offices(), null],
+    ["getEbAwaitingVisa", () => getEbAwaitingVisa(), null],
+    ["getI140ClassCountry", () => getI140ClassCountry(), null],
+    ["getHistoricalMedians", () => getHistoricalMedians(), null],
+  ];
+
+  it.each(READS)("%s holds nothing when its table isn't made yet", async (_name, read, empty) => {
+    const notMade = new Error("SQLITE_ERROR: no such table: uscis_x");
+    one.mockRejectedValue(notMade);
+    rows.mockRejectedValue(notMade);
+    expect(await read()).toEqual(empty);
+  });
+
+  it.each(READS)("%s throws when the database can't be read", async (_name, read) => {
+    const down = new Error("database query deadline");
+    one.mockRejectedValue(down);
+    rows.mockRejectedValue(down);
+    await expect(read()).rejects.toThrow("database query deadline");
+  });
+
+  it("throws when a later statement fails, after the first one answered", async () => {
+    const down = new Error("fetch failed");
+    // The field offices: the quarters answer, the newest quarter's rows don't.
+    rows.mockResolvedValueOnce([{ fy: 2026, quarter: 3 }]).mockRejectedValueOnce(down);
+    await expect(getI485Offices()).rejects.toThrow("fetch failed");
+    // The same page's comparison with the quarter before.
+    rows.mockReset();
+    rows
+      .mockResolvedValueOnce([{ fy: 2026, quarter: 3 }, { fy: 2026, quarter: 2 }])
+      .mockResolvedValueOnce([{ state: "CA", office: "Los Angeles", code: "LOS", suppressed: 0, quarter_end: "2026-06-30", source_file: "i485.xlsx" }])
+      .mockRejectedValueOnce(down);
+    await expect(getI485Offices()).rejects.toThrow("fetch failed");
+    // Approved petitions waiting for a visa: the dates answer, the cells don't.
+    rows.mockReset();
+    rows.mockResolvedValueOnce([{ as_of: "2026-06-30" }]).mockRejectedValueOnce(down);
+    await expect(getEbAwaitingVisa()).rejects.toThrow("fetch failed");
+    // Receipts by class and country: the newest file's date answers, its rows don't.
+    rows.mockReset();
+    one.mockResolvedValueOnce({ as_of: "2026-Q3" });
+    rows.mockRejectedValueOnce(down);
+    await expect(getI140ClassCountry()).rejects.toThrow("fetch failed");
+  });
+
+  it("still answers what it holds", async () => {
+    rows.mockResolvedValueOnce([{ fy: "2026", quarter: "3", quarter_end: "2026-06-30", title: "Employment", median_months: "7.1", pending: "100", received: "50", completed: "40" }]);
+    expect(await getUscisFormHistory("I-485")).toEqual([
+      { fy: 2026, quarter: 3, quarterEnd: "2026-06-30", title: "Employment", medianMonths: 7.1, pending: 100, received: 50, completed: 40 },
+    ]);
+    one.mockResolvedValueOnce(null);
+    expect(await getUscisFormMedian("I-140")).toBeNull();
   });
 });

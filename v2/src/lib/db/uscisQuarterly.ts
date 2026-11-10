@@ -71,7 +71,11 @@ function formRow(r: Record<string, unknown>): UscisFormRow {
   };
 }
 
-/** A table the first load hasn't made yet holds nothing. Any other failed read is a failure, and throws. */
+/**
+ * A table the first load hasn't made yet holds nothing. Any other failed read is a failure, and throws: every reader
+ * here uses it, so a page whose subject this is keeps its last good render, and a page that only borrows a figure
+ * names its own fallback with `softFail` where it calls.
+ */
 const beforeFirstLoad = <T>(empty: T) => (error: unknown): T => {
   if (/no such table/i.test(String((error as Error)?.message ?? error))) return empty;
   throw error;
@@ -122,7 +126,7 @@ export const getUscisFormHistory = cache(async (form: string): Promise<UscisForm
     `SELECT fy, quarter, quarter_end, title, median_months, pending, received, completed
        FROM uscis_form_quarters WHERE form = ? ORDER BY fy, quarter, rowid`,
     [form],
-  ).catch(() => []);
+  ).catch(beforeFirstLoad([]));
   return list.map((r) => ({
     fy: Number(r.fy),
     quarter: Number(r.quarter),
@@ -137,9 +141,9 @@ export const getUscisFormHistory = cache(async (form: string): Promise<UscisForm
 
 /**
  * Every quarterly row USCIS printed for one form, every title, oldest first:
- * what a form's own page draws. Unlike the readers above this one throws on a
- * failed read, so the page keeps its last good render instead of drawing a
- * form USCIS reports on as one with no record.
+ * what a form's own page draws. It throws on a failed read, as every reader
+ * in this file does, so the page keeps its last good render instead of drawing
+ * a form USCIS reports on as one with no record.
  */
 export const getUscisFormRows = cache(async (form: string): Promise<FormQuarterRow[]> => {
   const list = await rows<Record<string, unknown>>(
@@ -185,7 +189,7 @@ export const getUscisFormMedian = cache(
         WHERE form = ? AND median_months IS NOT NULL${titleContains ? " AND title LIKE ?" : ""}
         ORDER BY fy DESC, quarter DESC LIMIT 1`,
       titleContains ? [form, `%${titleContains}%`] : [form],
-    ).catch(() => null);
+    ).catch(beforeFirstLoad(null));
     if (!r || r.median_months === null || r.median_months === undefined) return null;
     return {
       form: String(r.form),
@@ -240,14 +244,14 @@ function officeRow(r: Record<string, unknown>): OfficeRow {
 export const getI485Offices = cache(async (): Promise<I485Offices | null> => {
   const heads = await rows<{ fy: number; quarter: number }>(
     "SELECT DISTINCT fy, quarter FROM uscis_i485_offices ORDER BY fy DESC, quarter DESC LIMIT 2",
-  ).catch(() => []);
+  ).catch(beforeFirstLoad([]));
   const head = heads[0];
   if (!head) return null;
   const list = await rows<Record<string, unknown>>(
     `SELECT state, office, code, suppressed, quarter_end, source_file, ${OFFICE_COLS.join(", ")}
        FROM uscis_i485_offices WHERE fy = ? AND quarter = ? ORDER BY rowid`,
     [head.fy, head.quarter],
-  ).catch(() => []);
+  ).catch(beforeFirstLoad([]));
   if (list.length === 0) return null;
   const all = list.map(officeRow);
   let previous: I485Offices["previous"] = null;
@@ -256,7 +260,7 @@ export const getI485Offices = cache(async (): Promise<I485Offices | null> => {
     const prevRows = await rows<{ code: string; emp_pending: number | null }>(
       "SELECT code, emp_pending FROM uscis_i485_offices WHERE fy = ? AND quarter = ?",
       [prev.fy, prev.quarter],
-    ).catch(() => []);
+    ).catch(beforeFirstLoad([]));
     previous = {
       fy: Number(prev.fy),
       quarter: Number(prev.quarter),
@@ -290,14 +294,14 @@ export interface EbAwaitingVisa {
 export const getEbAwaitingVisa = cache(async (): Promise<EbAwaitingVisa | null> => {
   const heads = await rows<{ as_of: string }>(
     "SELECT DISTINCT as_of FROM uscis_eb_awaiting_visa ORDER BY as_of DESC LIMIT 2",
-  ).catch(() => []);
+  ).catch(beforeFirstLoad([]));
   const head = heads[0];
   if (!head) return null;
   const read = async (asOf: string) =>
     (await rows<Record<string, unknown>>(
       "SELECT country, category, count, source_file FROM uscis_eb_awaiting_visa WHERE as_of = ?",
       [asOf],
-    ).catch(() => [])).map((r) => ({
+    ).catch(beforeFirstLoad([]))).map((r) => ({
       country: String(r.country), category: String(r.category), count: Number(r.count),
       sourceFile: String(r.source_file),
     }));
@@ -331,12 +335,12 @@ export interface I140ClassCountry {
 export const getI140ClassCountry = cache(async (): Promise<I140ClassCountry | null> => {
   const head = await one<{ as_of: string }>(
     "SELECT as_of FROM uscis_i140_class_country ORDER BY as_of DESC LIMIT 1",
-  ).catch(() => null);
+  ).catch(beforeFirstLoad(null));
   if (!head) return null;
   const list = await rows<Record<string, unknown>>(
     "SELECT country, preference, measure, fy, count, source_file FROM uscis_i140_class_country WHERE as_of = ?",
     [head.as_of],
-  ).catch(() => []);
+  ).catch(beforeFirstLoad([]));
   if (list.length === 0) return null;
   const cells = list.map((r) => ({
     country: String(r.country), preference: String(r.preference), measure: String(r.measure),
@@ -379,7 +383,7 @@ export interface HistoricalMedians {
 export const getHistoricalMedians = cache(async (): Promise<HistoricalMedians | null> => {
   const r = await one<{ json: string }>(
     "SELECT json FROM perm_docs WHERE key = ?", ["uscis_historical_pt"],
-  ).catch(() => null);
+  ).catch(beforeFirstLoad(null));
   if (!r) return null;
   try {
     const d = JSON.parse(String(r.json)) as Partial<HistoricalMedians>;

@@ -10,6 +10,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { getUscisFormMedian } from "@/lib/db/uscisQuarterly";
+import { softFail } from "@/lib/softRead";
 import { quarterLabel } from "@/lib/uscisQuarterlyShape";
 import { i140Lead } from "@/lib/processing-times/i140ProcessingTimes";
 import { withSocialCard } from "@/lib/socialCard";
@@ -72,7 +73,8 @@ export default async function I140CalculatorPage() {
     // The quarterly median over every I-140 decided, from USCIS's all-forms
     // workbook: the third official figure, beside the published range and
     // the pending count, each measuring something different.
-    getUscisFormMedian("I-140"),
+    // The page stands on the first two without it, so a failed read is recorded and the figure is left out.
+    getUscisFormMedian("I-140").catch(softFail("i140-calculator/page.getUscisFormMedian", null)),
   ]);
 
   const faqSchema = {
