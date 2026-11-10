@@ -320,6 +320,16 @@ def main() -> int:
     got = nw.newsworthy(nw.Inputs(rule_events=[dict(step, kind="oira-completed", detail="Consistent with Change")],
                                   articles={"1205-AC29": ["/guides/g1"]}, cfr_articles=cfr_cites, cfr_by_document=parts), morning, now)
     check("a step with no new text names no articles by part", len(got) == 1 and "It touches" not in got[0]["what"], str(got))
+    # The Register listed part 274 for the rule that amended 8 CFR 274a.13 (2026-20955): a part matches with or
+    # without its letter, and the line names it the way the articles cite it.
+    ead = {"8 CFR 274a": ["/guides/ead-renewal"], "8 CFR 214": ["/guides/h1b"]}
+    check("a part the Register lists without its letter still names the articles that cite it with one",
+          nw.cfr_sentence(["8 CFR 274"], ead) == " It touches 8 CFR part 274a (/guides/ead-renewal): read it and check what those articles say.",
+          nw.cfr_sentence(["8 CFR 274"], ead))
+    check("and the other way round, each cited part once",
+          nw.cfr_sentence(["8 CFR 274a", "8 CFR 274"], {"8 CFR 274": ["/guides/a"], "8 CFR 274a": ["/guides/b"]})
+          == " It touches 8 CFR part 274 (/guides/a); 8 CFR part 274a (/guides/b): read it and check what those articles say.")
+    check("a part is never matched by a longer number", nw.cfr_sentence(["8 CFR 27"], ead) == "" and nw.cfr_sentence(["8 CFR 2740"], ead) == "")
     check("the stored parts read back one by one",
           nw.cfr_parts_of("8 CFR 274a; 20 CFR 655; 20 CFR 656") == ["8 CFR 274a", "20 CFR 655", "20 CFR 656"]
           and nw.cfr_parts_of(None) == [] and nw.cfr_parts_of("") == [])
