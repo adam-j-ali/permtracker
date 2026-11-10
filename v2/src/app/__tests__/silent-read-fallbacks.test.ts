@@ -37,19 +37,15 @@ const DB_REMAINING: Record<string, number> = {
   "src/lib/db/bulletinLine.ts": 1,
   "src/lib/db/caseSearchReads.ts": 2,
   "src/lib/db/dateSources.ts": 1,
-  "src/lib/db/debarments.ts": 1,
   "src/lib/db/decidedDays.ts": 5,
   "src/lib/db/embedLookup.ts": 2,
   "src/lib/db/employerPrograms.ts": 2,
   "src/lib/db/employerSlugs.ts": 1,
-  "src/lib/db/employerStages.ts": 1,
   "src/lib/db/entities.ts": 1,
   "src/lib/db/entityBrowse.ts": 1,
   "src/lib/db/greenCardLine.ts": 1,
   "src/lib/db/h1bRanks.ts": 1,
-  "src/lib/db/h2bGroups.ts": 1,
   "src/lib/db/lcaProfile.ts": 1,
-  "src/lib/db/monthDetail.ts": 1,
   "src/lib/db/nameSuggest.ts": 2,
   "src/lib/db/openData.ts": 1,
   "src/lib/db/publicData.ts": 1,
@@ -59,7 +55,6 @@ const DB_REMAINING: Record<string, number> = {
   "src/lib/db/socTitles.ts": 2,
   "src/lib/db/uscisCaseStatus.ts": 2,
   "src/lib/db/visaIssuances.ts": 2,
-  "src/lib/db/warn.ts": 2,
 };
 
 /** Fewer server files than this under src/components means the walk has stopped seeing them. */

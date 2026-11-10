@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 
 import { rows } from "@/lib/db/client";
+import { beforeFirstLoad } from "./firstLoad";
 
 /**
  * WARN notices, as the states publish them, matched to PERM sponsors by the
@@ -106,7 +107,7 @@ export const warnTotals = cache(async (): Promise<WarnTotals> => {
             COUNT(employer_slug) AS matched,
             COALESCE(SUM(CASE WHEN employer_slug IS NOT NULL THEN employees END), 0) AS employees
        FROM warn_notices`,
-  ).catch(() => [] as { notices: number; matched: number; employees: number }[]);
+  ).catch(beforeFirstLoad<{ notices: number; matched: number; employees: number }[]>([]));
   const row = r[0];
   return {
     notices: Number(row?.notices ?? 0),
@@ -128,6 +129,6 @@ export const matchedWarn = cache(async (limit = 2000): Promise<WarnNotice[]> => 
   const r = await rows<DbRow>(
     `SELECT ${COLS} FROM warn_notices WHERE employer_slug IS NOT NULL ORDER BY notice_date DESC, company LIMIT ?`,
     [Math.min(limit, 5000)],
-  ).catch(() => [] as DbRow[]);
+  ).catch(beforeFirstLoad<DbRow[]>([]));
   return r.map(hydrate);
 });
