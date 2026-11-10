@@ -6,7 +6,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
-import { USCIS_TIMES_PAGES } from "./paths";
+import { USCIS_TIMES_PAGE_FAMILIES, USCIS_TIMES_PAGES } from "./paths";
 import { secretMatches } from "@/lib/secretMatch";
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -16,5 +16,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   for (const path of USCIS_TIMES_PAGES) revalidatePath(path);
-  return NextResponse.json({ revalidated: USCIS_TIMES_PAGES.length, now: Date.now() });
+  for (const family of USCIS_TIMES_PAGE_FAMILIES) revalidatePath(family, "page");
+  return NextResponse.json({ revalidated: USCIS_TIMES_PAGES.length + USCIS_TIMES_PAGE_FAMILIES.length, now: Date.now() });
 }

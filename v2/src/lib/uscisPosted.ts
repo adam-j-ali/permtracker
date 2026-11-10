@@ -134,6 +134,51 @@ export function i140Series(doc: UscisPosted | null): (PostedSeries & { code: str
   });
 }
 
+/** One category of a form, as USCIS's newest posting prints it. */
+export interface PostedCategory {
+  subtype: string;
+  /** USCIS's own name for the category, or its code where the posting gave none. */
+  label: string;
+  /** How many offices USCIS posts this category under. */
+  offices: number;
+  /** The shortest and the longest posted months across those offices: the same figure where one office posts it. */
+  min: number | null;
+  max: number | null;
+  /** The receipt date before which a case may ask USCIS about itself, where one office posts the category. */
+  requestDate: string | null;
+  /** USCIS's own words where it prints a note and no figure. */
+  note: string | null;
+}
+
+/**
+ * What USCIS's newest posting says for each category of one form, in the posting's own order. A form's own page
+ * prints these beside its quarterly median: the posted figure is the time within which USCIS finished 80% of the
+ * cases it decided, by category, which is the question a person with one case is asking.
+ */
+export function postedByCategory(doc: UscisPosted | null, form: string): PostedCategory[] {
+  if (!doc) return [];
+  const bySubtype = new Map<string, PostedRow[]>();
+  for (const r of doc.newest) {
+    if (r.form !== form) continue;
+    const held = bySubtype.get(r.subtype);
+    if (held) held.push(r);
+    else bySubtype.set(r.subtype, [r]);
+  }
+  return [...bySubtype.entries()].map(([subtype, rows]) => {
+    const months = rows.flatMap((r) => (r.posted === null ? [] : [r.posted]));
+    const one = rows.length === 1 ? rows[0] : undefined;
+    return {
+      subtype,
+      label: rows.find((r) => r.label)?.label ?? subtype,
+      offices: rows.length,
+      min: months.length > 0 ? Math.min(...months) : null,
+      max: months.length > 0 ? Math.max(...months) : null,
+      requestDate: one ? one.requestDate : null,
+      note: months.length === 0 ? (rows.find((r) => r.postedText)?.postedText ?? null) : null,
+    };
+  });
+}
+
 /** USCIS's two posted routes for an H-4 spouse's work permit (Form I-765, category (c)(26)), in its own words. */
 const H4_ROUTES = [
   { subtype: "147-539C26", key: "with-i539", name: "Filed with the H-4 extension (I-539)" },
