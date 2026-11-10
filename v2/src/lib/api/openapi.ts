@@ -49,13 +49,16 @@ export const ENDPOINTS: EndpointDoc[] = [
   {
     path: "/cases",
     summary:
-      "Find a case without its number: the cases an employer filed on one day, each with its number, status and job, and that day's totals. With no match, the employers that did file that day under a close spelling.",
-    example: "/cases?employer=Acme&filed=2026-01-30",
+      "Find a case without its number, from what you know about it: any of the employer's name, words of the job title and the law firm, with one filing day, a range of days or no date. One of them is enough. Each case comes with its number, status, job and filing day, and the answer says what DOL's record holds for the days read. With no employer fitting in a month or less, the employers that did file in those days under a close spelling.",
+    example: "/cases?employer=Acme&from=2026-01-05&to=2026-01-31",
     params: [
-      { name: "employer", in: "query", required: true, description: "The employer's name or its start, 2 to 120 characters. Inc, LLC and punctuation don't matter." },
-      { name: "filed", in: "query", required: true, description: "The filing day, YYYY-MM-DD, from 2019-10-01 to today." },
+      { name: "employer", in: "query", required: false, description: "The employer's name, 2 to 120 characters. Inc, LLC and punctuation don't matter. With dates three months apart or less, any word of the name fits; with no dates or a longer range, the start of the name." },
+      { name: "job", in: "query", required: false, description: "Words of the job title, up to 80 characters. Alone, with no dates, it reads the newest three months." },
+      { name: "firm", in: "query", required: false, description: "The law firm's or agent's name, 2 to 120 characters. DOL names a firm only once it decides a case, so the answer holds decided cases only." },
+      { name: "filed", in: "query", required: false, description: "One filing day, YYYY-MM-DD, from 2019-10-01 to today. Not with from or to." },
+      { name: "from", in: "query", required: false, description: "The first filing day of a range, YYYY-MM-DD. Alone, it is that one day." },
+      { name: "to", in: "query", required: false, description: "The last filing day of a range, YYYY-MM-DD. A range longer than three months needs an employer or a firm." },
       { name: "program", in: "query", required: false, description: "perm (the default), pwd, lca or seasonal." },
-      { name: "job", in: "query", required: false, description: "Words of the job title, to narrow a long answer." },
     ],
     counted: true,
   },
@@ -325,7 +328,7 @@ export function openApiDocument(): Record<string, unknown> {
 /** The assistant tools at /mcp, for the docs. A test holds this list to the tools the server registers. */
 export const MCP_TOOLS: { name: string; summary: string }[] = [
   { name: "lookup_case", summary: "One case by number, any of the four programs." },
-  { name: "find_case", summary: "The cases an employer filed on one day, for someone with no case number." },
+  { name: "find_case", summary: "A case found without its number: by employer, job title or law firm, over one filing day, a range of days or none." },
   { name: "estimate_decision", summary: "When a pending PERM case is likely to be decided." },
   { name: "queue_status", summary: "DOL's processing times and the pending queue by filing month." },
   { name: "visa_bulletin", summary: "A visa bulletin's charts, the newest by default." },

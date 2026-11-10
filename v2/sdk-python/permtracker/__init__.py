@@ -183,14 +183,31 @@ class PermTracker:
             raise PermTrackerError(400, "missing_argument", "Give a case number or a filing date.")
         return self.get("/estimate", {"case": case} if case else {"filed": filed})
 
-    def find_cases(self, employer: str, filed: str, program: Optional[str] = None, job: Optional[str] = None) -> Answer:
-        """A case without its number: the cases an employer filed on one day (YYYY-MM-DD).
+    def find_cases(
+        self,
+        employer: Optional[str] = None,
+        filed: Optional[str] = None,
+        program: Optional[str] = None,
+        job: Optional[str] = None,
+        firm: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+    ) -> Answer:
+        """A case without its number, from what you know about it.
 
-        program is perm (the default), pwd, lca or seasonal; job narrows a long list by
-        words of the job title. With no match, the answer's closeNames are the employers
-        that filed that day under a close spelling.
+        Any of employer, job (words of the job title) and firm (the law firm), with one
+        filing day (filed, YYYY-MM-DD), a range (date_from, date_to) or no date. One of
+        them is enough. program is perm (the default), pwd, lca or seasonal. A firm finds
+        decided cases only, and a range longer than three months needs an employer or a
+        firm. With no employer fitting in a month or less, the answer's closeNames are the
+        employers that filed in those days under a close spelling.
         """
-        return self.get("/cases", {"employer": employer, "filed": filed, "program": program, "job": job})
+        if not any((employer, filed, job, firm, date_from, date_to)):
+            raise PermTrackerError(400, "missing_argument", "Give at least one of employer, job, firm, filed, or date_from and date_to.")
+        return self.get(
+            "/cases",
+            {"employer": employer, "job": job, "firm": firm, "filed": filed, "from": date_from, "to": date_to, "program": program},
+        )
 
     def queue(self) -> Answer:
         return self.get("/queue")

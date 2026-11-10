@@ -43,7 +43,12 @@ function renderTool() {
 }
 
 const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
-const filing = (caseNumber: string, employer: string) => ({ caseNumber, status: "ANALYST REVIEW", employer, employerSlug: "acme-robotics", jobTitle: "Controls Engineer", final: false });
+const filing = (caseNumber: string, employer: string) => ({ caseNumber, status: "ANALYST REVIEW", employer, employerSlug: "acme-robotics", jobTitle: "Controls Engineer", final: false, filedOn: "2025-12-15" });
+/** The finder's answer for one day (src/lib/findCase.ts), as its route sends it. */
+const found = (day: string, cases: object[], held = cases.length) => ({
+  program: "perm", asked: { employer: "acme", title: "", firm: "" }, by: "window", window: { from: day, to: day, assumed: false }, cases, matched: cases.length, ofEmployer: cases.length,
+  capped: false, period: { filed: held, decided: 0, waiting: held }, close: [], firmUnknown: false, decidedOnly: false,
+});
 
 afterEach(() => {
   cleanup();
@@ -55,7 +60,7 @@ describe("the estimator's finder", () => {
     const asked: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (url: string) => {
       asked.push(url);
-      return json({ cases: [filing("G-100-25349-000123", "Acme Robotics, Inc."), filing("G-100-25349-000777", "Other Co")], capped: false });
+      return json(found("2025-12-15", [filing("G-100-25349-000123", "Acme Robotics, Inc.")], 2));
     }));
     renderTool();
     fireEvent.change(screen.getByRole("textbox", { name: /employer/i }), { target: { value: "acme" } });
@@ -64,7 +69,8 @@ describe("the estimator's finder", () => {
 
     fireEvent.change(screen.getByLabelText(/DOL received your case/i), { target: { value: "2025-12-15" } });
     await screen.findByText(/1 is from an employer matching “acme”\./);
-    expect(asked).toEqual(["/api/filed-on?day=2025-12-15&program=perm"]);
+    // The estimator's own date is the one day read, with the name typed beside it.
+    expect(asked).toEqual(["/api/find-case?program=perm&employer=acme&from=2025-12-15&to=2025-12-15"]);
     const finder = within(screen.getByRole("region", { name: "Find your case without its number" }));
     const row = within(finder.getByRole("list")).getByRole("listitem");
     expect(within(row).getByRole("link", { name: "G-100-25349-000123" })).toHaveAttribute("href", "/perm-case-status?case=G-100-25349-000123");
@@ -75,7 +81,7 @@ describe("the estimator's finder", () => {
 
   it("moves the estimate to a nearby day the reader picks", async () => {
     vi.stubGlobal("fetch", vi.fn(async (url: string) =>
-      url.startsWith("/api/case-search") ? json({ rows: [{ filedOn: "2025-12-17" }] }) : json({ cases: [filing("G-100-25349-000777", "Other Co")], capped: false }),
+      url.startsWith("/api/case-search") ? json({ rows: [{ filedOn: "2025-12-17" }] }) : json(found("2025-12-15", [], 1)),
     ));
     renderTool();
     const date = screen.getByLabelText(/DOL received your case/i) as HTMLInputElement;

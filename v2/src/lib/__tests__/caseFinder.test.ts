@@ -2,7 +2,22 @@ import { describe, expect, it } from "vitest";
 
 import type { DayCase } from "@/lib/filingDay";
 
-import { enoughTyped, findOnDay, jobFits, nameFits, nearbyDays } from "../caseFinder";
+import {
+  WINDOW_MAX_DAYS,
+  askedAnything,
+  closeNamesAmong,
+  employerStem,
+  enoughTyped,
+  finderWindow,
+  firmFits,
+  jobFits,
+  matchFound,
+  nameFits,
+  nearbyDays,
+  typedWords,
+  windowDays,
+  type FoundCase,
+} from "../caseFinder";
 
 const c = (caseNumber: string, employer: string, final = false, status = final ? "CERTIFIED" : "ANALYST REVIEW", jobTitle = "Software Engineer"): DayCase => ({
   caseNumber, status, employer, employerSlug: null, jobTitle, final,
@@ -65,78 +80,6 @@ describe("enoughTyped", () => {
   });
 });
 
-describe("findOnDay", () => {
-  const day = [
-    c("G-100-26030-000003", "Microsoft Corporation"),
-    c("G-100-26030-000001", "Google LLC", true),
-    c("G-100-26030-000002", "GOOGLE LLC"),
-    c("G-100-26030-000004", "Goggle Optics Inc", true, "DENIED"),
-    c("G-100-26030-000005", "Meta Platforms, Inc.", true, "WITHDRAWN"),
-  ];
-
-  it("counts the whole day whatever was typed", () => {
-    expect(findOnDay(day, "").day).toEqual({ filed: 5, decided: 3, waiting: 2 });
-    expect(findOnDay(day, "google").day).toEqual({ filed: 5, decided: 3, waiting: 2 });
-    expect(findOnDay([], "google")).toEqual({ matches: [], ofEmployer: 0, close: [], day: { filed: 0, decided: 0, waiting: 0 } });
-  });
-
-  it("lists the employer's cases that day, in order, and offers no guesses beside them", () => {
-    const got = findOnDay(day, "Google Inc");
-    // Two spellings of one company, kept together and in number order.
-    expect(got.matches.map((m) => m.caseNumber)).toEqual(["G-100-26030-000001", "G-100-26030-000002"]);
-    expect(got.close).toEqual([]);
-  });
-
-  it("narrows a big employer's cases by words of the job title, and still says how many the employer filed", () => {
-    const big = [
-      c("G-100-26030-000011", "Amazon Web Services, Inc.", false, "ANALYST REVIEW", "Software Dev Engineer III"),
-      c("G-100-26030-000012", "Amazon.com Services LLC", true, "CERTIFIED", "Sr. Product Manager - Tech"),
-      c("G-100-26030-000013", "Amazon Data Services, Inc.", true, "CERTIFIED", "Software Dev Engineer II"),
-      c("G-100-26030-000014", "Other Co", false, "ANALYST REVIEW", "Software Dev Engineer III"),
-    ];
-    const got = findOnDay(big, "amazon", "engineer iii");
-    expect(got.ofEmployer).toBe(3);
-    expect(got.matches.map((m) => m.caseNumber)).toEqual(["G-100-26030-000011"]);
-    // A job nobody there holds leaves the employer's count and no cases, and it guesses no other name.
-    expect(findOnDay(big, "amazon", "welder")).toMatchObject({ matches: [], ofEmployer: 3, close: [] });
-    // An empty job box narrows nothing.
-    expect(findOnDay(big, "amazon", "  ").matches).toHaveLength(3);
-  });
-
-  it("matches nothing until two letters are typed", () => {
-    expect(findOnDay(day, "g").matches).toEqual([]);
-    expect(findOnDay(day, "g").close).toEqual([]);
-  });
-
-  it("offers the day's closest spellings when the name fits none, busiest first among equals", () => {
-    const got = findOnDay(day, "Gogle");
-    expect(got.matches).toEqual([]);
-    // Both spellings of Google are one company, so its chip carries both cases.
-    expect(got.close[0]).toEqual({ employer: "Google LLC", cases: 2 });
-    expect(got.close.map((n) => n.employer)).toContain("Goggle Optics Inc");
-    expect(got.close.map((n) => n.employer)).not.toContain("Meta Platforms, Inc.");
-  });
-
-  it("offers one company once however DOL printed it, under its commonest spelling, with its cases together", () => {
-    const printed = [
-      c("G-100-26030-000021", "Amazon Web Services, Inc."),
-      c("G-100-26030-000022", "Amazon Web Services, Inc."),
-      c("G-100-26030-000023", "AMAZON WEB SERVICES, INC."),
-      c("G-100-26030-000024", "Amazon Web Services, INC"),
-      c("G-100-26030-000025", "Amazon Data Services, Inc."),
-    ];
-    const got = findOnDay(printed, "amazn web servces");
-    expect(got.close[0]).toEqual({ employer: "Amazon Web Services, Inc.", cases: 4 });
-    expect(got.close.filter((n) => /web services/i.test(n.employer))).toHaveLength(1);
-    // Picking the chip types its name, and every spelling fits it.
-    expect(findOnDay(printed, got.close[0]!.employer).ofEmployer).toBe(4);
-  });
-
-  it("offers nothing when no name on the day is close", () => {
-    expect(findOnDay(day, "Zzyzx Qwerty")).toMatchObject({ matches: [], close: [] });
-  });
-});
-
 describe("nearbyDays", () => {
   it("folds a search's rows to their days, nearest first, without the asked day or undated rows", () => {
     const rows = [
@@ -149,5 +92,188 @@ describe("nearbyDays", () => {
       { day: "2026-02-03", cases: 1 },
     ]);
     expect(nearbyDays([], "2026-01-30")).toEqual([]);
+  });
+});
+
+// The finder takes a window of days and any of an employer, a job title and a law firm (owner, Nov 10 2026:
+// "time range rather than exact date ... each optional, need to fill in at least one thing").
+const TODAY = "2026-11-10";
+const EARLIEST = "2019-10-01";
+const ask = (over: Partial<{ employer: string; title: string; firm: string; from: string; to: string }> = {}) => ({
+  employer: "", title: "", firm: "", from: "", to: "", ...over,
+});
+const found = (caseNumber: string, employer: string, filedOn: string, over: Partial<FoundCase> = {}): FoundCase => ({
+  ...c(caseNumber, employer), filedOn, ...over,
+});
+
+describe("finderWindow", () => {
+  it("reads two dates as a window, in either order", () => {
+    expect(finderWindow(ask({ from: "2026-01-05", to: "2026-01-31" }), TODAY, EARLIEST)).toEqual({ ok: true, from: "2026-01-05", to: "2026-01-31", assumed: false });
+    expect(finderWindow(ask({ from: "2026-01-31", to: "2026-01-05" }), TODAY, EARLIEST)).toEqual({ ok: true, from: "2026-01-05", to: "2026-01-31", assumed: false });
+  });
+
+  it("reads one date alone as that one day, whichever box holds it", () => {
+    expect(finderWindow(ask({ from: "2026-01-05" }), TODAY, EARLIEST)).toEqual({ ok: true, from: "2026-01-05", to: "2026-01-05", assumed: false });
+    expect(finderWindow(ask({ to: "2026-01-05" }), TODAY, EARLIEST)).toEqual({ ok: true, from: "2026-01-05", to: "2026-01-05", assumed: false });
+  });
+
+  it("assumes the newest quarter when no date is given, and says it was assumed", () => {
+    const w = finderWindow(ask(), TODAY, EARLIEST);
+    expect(w).toEqual({ ok: true, from: "2026-08-11", to: TODAY, assumed: true });
+    expect(w.ok && windowDays(w.from, w.to)).toBe(WINDOW_MAX_DAYS);
+  });
+
+  it("takes a quarter whole and calls a day more too long, with the days it read", () => {
+    expect(finderWindow(ask({ from: "2026-01-01", to: "2026-04-02" }), TODAY, EARLIEST)).toMatchObject({ ok: true });
+    expect(finderWindow(ask({ from: "2026-01-01", to: "2026-04-03" }), TODAY, EARLIEST)).toEqual({ ok: false, why: "too-long", from: "2026-01-01", to: "2026-04-03" });
+  });
+
+  it("cuts a window to the days the lists hold, and refuses one wholly outside them", () => {
+    expect(finderWindow(ask({ from: "2019-09-20", to: "2019-10-05" }), TODAY, EARLIEST)).toMatchObject({ ok: true, from: EARLIEST, to: "2019-10-05" });
+    expect(finderWindow(ask({ from: "2026-11-01", to: "2026-12-01" }), TODAY, EARLIEST)).toMatchObject({ ok: true, from: "2026-11-01", to: TODAY });
+    expect(finderWindow(ask({ from: "2018-01-01", to: "2018-02-01" }), TODAY, EARLIEST)).toEqual({ ok: false, why: "too-early" });
+    expect(finderWindow(ask({ from: "2026-11-11" }), TODAY, EARLIEST)).toEqual({ ok: false, why: "not-yet" });
+  });
+
+  it("refuses a date that isn't a real day", () => {
+    expect(finderWindow(ask({ from: "2026-02-30" }), TODAY, EARLIEST)).toEqual({ ok: false, why: "bad-date" });
+    expect(finderWindow(ask({ to: "01/05/2026" }), TODAY, EARLIEST)).toEqual({ ok: false, why: "bad-date" });
+  });
+
+  it("counts both ends of a window", () => {
+    expect(windowDays("2026-01-05", "2026-01-05")).toBe(1);
+    expect(windowDays("2026-01-01", "2026-01-31")).toBe(31);
+  });
+});
+
+describe("askedAnything", () => {
+  it("is true for any one filled box or any date, and false for nothing or a single letter", () => {
+    expect(askedAnything(ask())).toBe(false);
+    expect(askedAnything(ask({ employer: "a" }))).toBe(false);
+    expect(askedAnything(ask({ employer: "ac" }))).toBe(true);
+    expect(askedAnything(ask({ title: "engineer" }))).toBe(true);
+    expect(askedAnything(ask({ firm: "fragomen" }))).toBe(true);
+    expect(askedAnything(ask({ from: "2026-01-05" }))).toBe(true);
+    expect(askedAnything(ask({ to: "2026-01-05" }))).toBe(true);
+  });
+});
+
+describe("firmFits", () => {
+  it("wants every typed word somewhere in the firm's printed name", () => {
+    expect(firmFits("fragomen", "Fragomen, Del Rey, Bernsen & Loewy, LLP")).toBe(true);
+    expect(firmFits("del rey fragomen", "Fragomen, Del Rey, Bernsen & Loewy, LLP")).toBe(true);
+    expect(firmFits("fragomen smith", "Fragomen, Del Rey, Bernsen & Loewy, LLP")).toBe(false);
+  });
+
+  it("fits no case that names no firm, and every case when nothing is typed", () => {
+    expect(firmFits("fragomen", null)).toBe(false);
+    expect(firmFits("fragomen", "")).toBe(false);
+    expect(firmFits("", null)).toBe(true);
+  });
+});
+
+describe("employerStem", () => {
+  it("is the start of the name's first key word, three letters at most", () => {
+    expect(employerStem("Microsoft Corporation")).toBe("mic");
+    expect(employerStem("jp morgan")).toBe("jp");
+    expect(employerStem("The Boeing Company")).toBe(employerStem("boeing"));
+    expect(employerStem("  ")).toBe("");
+  });
+
+  // The database narrows a window by the stem before the exact rule runs, so it must never drop a name the rule fits.
+  it("is in every printed name the rule fits, once the name's spaces and punctuation are taken out", () => {
+    const squeezed = (name: string) => name.toLowerCase().replace(/[ .,&\-'/]/g, "");
+    const pairs: [string, string][] = [
+      ["google inc", "GOOGLE LLC"],
+      ["micro", "Microsoft Corporation"],
+      ["amazon web", "Amazon Web Services, Inc."],
+      ["wal mart", "Walmart Inc."],
+      ["walmart", "Wal-Mart Associates, Inc."],
+      ["jpmorgan", "JP Morgan Chase & Co."],
+      ["morganchase", "JP Morgan Chase & Co."],
+      ["morgan", "JP Morgan Chase & Co."],
+      ["acme holdings", "Acme Holdings d/b/a Zenith Staffing"],
+      ["att", "AT&T Services, Inc."],
+      ["abc", "A.B.C. Trucking, Inc."],
+      ["oreilly", "O'Reilly Auto Parts"],
+      ["ernst young", "Ernst & Young U.S. LLP"],
+    ];
+    for (const [typed, printed] of pairs) {
+      if (!nameFits(typed, printed)) continue;
+      expect(squeezed(printed), `${typed} in ${printed}`).toContain(employerStem(typed));
+    }
+    // Enough of the pairs fit for the loop to mean something.
+    expect(pairs.filter(([typed, printed]) => nameFits(typed, printed)).length).toBeGreaterThanOrEqual(10);
+  });
+});
+
+describe("typedWords", () => {
+  it("gives the letters and digits typed, lower case, as words", () => {
+    expect(typedWords("  Sr. Software-Engineer II ")).toEqual(["sr", "software", "engineer", "ii"]);
+    expect(typedWords("%_")).toEqual([]);
+  });
+});
+
+describe("matchFound", () => {
+  const rows = [
+    found("G-1", "Acme Robotics LLC", "2026-01-05", { jobTitle: "Data Scientist", firm: "Fragomen, Del Rey, Bernsen & Loewy, LLP" }),
+    found("G-2", "ACME ROBOTICS, L.L.C.", "2026-01-20", { jobTitle: "Software Engineer", firm: null }),
+    found("G-3", "Zenith Foods Inc", "2026-01-12", { jobTitle: "Data Scientist", firm: "Smith Immigration PC" }),
+    found("G-4", "Acme Robotics LLC", "2026-01-20", { jobTitle: "Software Engineer II", firm: "Smith Immigration PC" }),
+  ];
+
+  it("keeps every row when no box is filled, the newest filing first", () => {
+    expect(matchFound(rows, ask()).map((r) => r.caseNumber)).toEqual(["G-2", "G-4", "G-3", "G-1"]);
+  });
+
+  it("fits a job title alone, across employers", () => {
+    expect(matchFound(rows, ask({ title: "data scientist" })).map((r) => r.caseNumber)).toEqual(["G-3", "G-1"]);
+  });
+
+  it("fits a law firm alone, and never a case that names no firm", () => {
+    expect(matchFound(rows, ask({ firm: "smith" })).map((r) => r.caseNumber)).toEqual(["G-4", "G-3"]);
+  });
+
+  it("fits an employer whatever its spelling, its cases together, the newest first", () => {
+    expect(matchFound(rows, ask({ employer: "acme robotics" })).map((r) => r.caseNumber)).toEqual(["G-2", "G-4", "G-1"]);
+  });
+
+  it("needs every filled box to fit", () => {
+    expect(matchFound(rows, ask({ employer: "acme", title: "engineer", firm: "smith" })).map((r) => r.caseNumber)).toEqual(["G-4"]);
+    expect(matchFound(rows, ask({ employer: "zenith", title: "engineer" }))).toEqual([]);
+  });
+
+  it("doesn't count a single letter as a filled box", () => {
+    expect(matchFound(rows, ask({ employer: "z", firm: "s" }))).toHaveLength(4);
+  });
+});
+
+describe("closeNamesAmong", () => {
+  it("ranks a window's employers by how close their spelling is, one company once", () => {
+    const names = [
+      { employer: "Microsoft Corporation", cases: 40 },
+      { employer: "MICROSOFT CORPORATION", cases: 2 },
+      { employer: "Micron Technology, Inc.", cases: 9 },
+      { employer: "Zenith Foods Inc", cases: 1 },
+    ];
+    const close = closeNamesAmong(names, "mircosoft");
+    expect(close[0]).toEqual({ employer: "Microsoft Corporation", cases: 42 });
+    expect(close.map((n) => n.employer)).not.toContain("Zenith Foods Inc");
+  });
+
+  it("puts the busiest first among names equally close, and writes a company in its commonest spelling", () => {
+    const names = [
+      { employer: "ACME ROBOTICS INC", cases: 1 },
+      { employer: "Acme Robotics, Inc.", cases: 1 },
+      { employer: "Acme Robotics LLC", cases: 7 },
+    ];
+    // "Inc" and "LLC" are form words, so the three are one company: its commonest spelling leads, and between
+    // spellings equally common the one with fewer capitals.
+    expect(closeNamesAmong(names, "acmee robotcs")).toEqual([{ employer: "Acme Robotics LLC", cases: 9 }]);
+    expect(closeNamesAmong(names.slice(0, 2), "acmee robotcs")).toEqual([{ employer: "Acme Robotics, Inc.", cases: 2 }]);
+  });
+
+  it("offers nothing when no name is close, and skips a row with no name", () => {
+    expect(closeNamesAmong([{ employer: "Zenith Foods Inc", cases: 1 }, { employer: "", cases: 50 }], "qqqqqq")).toEqual([]);
   });
 });

@@ -88,7 +88,8 @@ describe("the chat's public-record tools", () => {
       doGenerate: [call("findDolCase", { employer: "Acme Robotics", filed: "2026-01-30" }), say("Acme Robotics filed one PERM case that day: G-100-26030-000123.")],
     });
     const result = await generateText({ model, tools: createTools("token"), prompt: "I don't have my case number. Acme Robotics filed it on January 30.", stopWhen: stepCountIs(4) });
-    expect(findCases).toHaveBeenCalledExactlyOnceWith({ employer: "Acme Robotics", filed: "2026-01-30", program: null, job: null });
+    // What the model left out goes to the read as missing: every part of the ask is optional.
+    expect(findCases).toHaveBeenCalledExactlyOnceWith({ employer: "Acme Robotics", job: null, firm: null, filed: "2026-01-30", from: null, to: null, program: null });
     expect(result.text).toContain("G-100-26030-000123");
     const second = JSON.stringify(model.doGenerateCalls[1]!.prompt);
     expect(second).toContain("G-100-26030-000123");

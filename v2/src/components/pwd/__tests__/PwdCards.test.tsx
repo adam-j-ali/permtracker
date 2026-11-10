@@ -61,16 +61,21 @@ describe("PwdDateEstimate", () => {
     const asked: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (url: string) => {
       asked.push(url);
-      const request = { caseNumber: "P-100-26226-000123", status: "IN PROCESS", employer: "Acme Robotics, Inc.", employerSlug: null, jobTitle: "Controls Engineer", final: false };
-      return new Response(JSON.stringify({ cases: [request], capped: false }), { status: 200 });
+      const request = { caseNumber: "P-100-26226-000123", status: "IN PROCESS", employer: "Acme Robotics, Inc.", jobTitle: "Controls Engineer", final: false, filedOn: "2026-08-14" };
+      // The finder's answer for one day (src/lib/findCase.ts).
+      const answer = {
+        program: "pwd", asked: { employer: "acme", title: "", firm: "" }, by: "window", window: { from: "2026-08-14", to: "2026-08-14", assumed: false }, cases: [request], matched: 1, ofEmployer: 1,
+        capped: false, period: { filed: 800, decided: 40, waiting: 760 }, close: [], firmUnknown: false, decidedOnly: false,
+      };
+      return new Response(JSON.stringify(answer), { status: 200 });
     }));
     const { unmount } = render(<PwdDateEstimate data={DATA} lineDay="2026-07-27" />);
     fireEvent.change(screen.getByRole("textbox", { name: /employer/i }), { target: { value: "acme" } });
     expect(asked).toEqual([]);
     fireEvent.change(screen.getByLabelText("The day the wage request was filed"), { target: { value: "2026-08-14" } });
     expect(await screen.findByRole("link", { name: "P-100-26226-000123" })).toHaveAttribute("href", "/perm-case-status?case=P-100-26226-000123");
-    // Wage requests alone, so no chooser, and the day's own list.
-    expect(asked).toEqual(["/api/filed-on?day=2026-08-14&program=pwd"]);
+    // Wage requests alone, so no chooser, read for the estimate's own day.
+    expect(asked).toEqual(["/api/find-case?program=pwd&employer=acme&from=2026-08-14&to=2026-08-14"]);
     expect(screen.queryByRole("group", { name: "Kind of filing" })).toBeNull();
     unmount();
     vi.unstubAllGlobals();

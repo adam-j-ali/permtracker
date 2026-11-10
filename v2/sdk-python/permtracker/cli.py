@@ -20,7 +20,7 @@ from . import EXPORT_KINDS, WEBHOOK_EVENTS, PermTracker, PermTrackerError, __ver
 COMMANDS = {
     "case": "one case: PERM (G-), wage request (P-), LCA (I-), H-2A, H-2B, CW-1",
     "estimate": "when a pending PERM case is likely to be decided (a number, or --filed YYYY-MM-DD)",
-    "find": "a case without its number: an employer's filings from one day (--filed YYYY-MM-DD; --program pwd, lca or seasonal; --job <words>)",
+    "find": "a case without its number, from any of: an employer, --job <words>, --firm <name>, --filed YYYY-MM-DD for one day or --from and --to for a range (--program pwd, lca or seasonal)",
     "queue": "DOL's processing times and the pending queue",
     "bulletin": "a visa bulletin, the newest by default (or YYYY-MM)",
     "employers": "search employers", "employer": "one employer by slug",
@@ -88,7 +88,10 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--key", help="an API key, instead of the saved one")
     p.add_argument("--filed", help="a filing date, YYYY-MM-DD, for estimate and find")
     p.add_argument("--program", choices=["perm", "pwd", "lca", "seasonal"], help="find: the kind of filing (perm by default)")
-    p.add_argument("--job", help="find: words of the job title, to narrow a long list")
+    p.add_argument("--job", help="find: words of the job title")
+    p.add_argument("--firm", help="find: the law firm's name (decided cases only)")
+    p.add_argument("--from", dest="date_from", help="find: the first filing day of a range, YYYY-MM-DD")
+    p.add_argument("--to", dest="date_to", help="find: the last filing day of a range, YYYY-MM-DD")
     p.add_argument("--live", action="store_true", help="case: ask DOL now when our records don't hold the number yet")
     p.add_argument("--employer", help="watch or unwatch an employer by slug")
     p.add_argument("--format", choices=["csv", "json"], help="export: csv (the default) or json")
@@ -130,9 +133,7 @@ def run(argv: list) -> int:
     if c == "case": ans = pt.case(need("a case number"), live=a.live)
     elif c == "estimate": ans = pt.estimate(filed=a.filed) if a.filed else pt.estimate(case=need("a case number, or --filed YYYY-MM-DD"))
     elif c == "find":
-        if not a.filed:
-            raise PermTrackerError(400, "missing_argument", "Give the filing day: --filed YYYY-MM-DD.")
-        ans = pt.find_cases(need("the employer's name"), a.filed, program=a.program, job=a.job)
+        ans = pt.find_cases(text or None, a.filed, program=a.program, job=a.job, firm=a.firm, date_from=a.date_from, date_to=a.date_to)
     elif c == "queue": ans = pt.queue()
     elif c == "bulletin": ans = pt.visa_bulletin(a.args[0] if a.args else None)
     elif c == "employers": ans = pt.employers(need("a name to search"))

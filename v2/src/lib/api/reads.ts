@@ -27,9 +27,8 @@ import { lookupSeasonalPosting, lookupSeasonalRecord, seasonal } from "@/lib/db/
 import { estimatePermCase, loadPermEstimateContext } from "@/lib/db/permEstimate";
 import { rfiEnteredOn } from "@/lib/db/rfiClock";
 import { softFail } from "@/lib/softRead";
-import { enoughTyped, findOnDay } from "@/lib/caseFinder";
-import { getFiledOnProgram } from "@/lib/db/filingDay";
-import { FILINGS_FROM } from "@/lib/filingDay";
+import { enoughTyped } from "@/lib/caseFinder";
+import { findCase } from "@/lib/findCase";
 import { FILING_PROGRAMS, dayHref, type FilingProgram } from "@/lib/filingsByDay";
 import { easternDay } from "@convex/lib/time";
 import { ISO_MONTH_RE } from "@convex/lib/months";
@@ -521,62 +520,92 @@ export async function readEstimate(args: { caseNumber?: string | null; filed?: s
 /* Finding a case without its number                                    */
 /* ------------------------------------------------------------------ */
 
-/** Cases one answer lists: a big employer files dozens a day, and a job title narrows them. */
+/** Cases one answer lists. A longer answer says it was cut; another box or closer dates narrow it. */
 const FOUND_MAX = 50;
 
 /**
- * The cases an employer filed on one day, for a caller with no case number: the same day list and the
- * same name match as the site's finder (src/lib/caseFinder.ts), so the API, the MCP tool and the page
- * answer the same question the same way. A failed read throws to the route's 500, never "none".
+ * A case found from what a caller knows about it, with no case number: any of the employer's name, words of the
+ * job title and the law firm, with one filing day (`filed`), a range of days (`from` and `to`) or no date at all.
+ * One of them is enough. The same read and the same matching as the site's finder (src/lib/findCase.ts), so the
+ * API, the MCP tool, the chat and the page answer the same ask the same way. A failed read throws to the route's
+ * 500, never "none".
  */
 export async function findCases(args: {
   employer?: string | null;
+  /** One filing day. The same as `from` and `to` both set to it. */
   filed?: string | null;
+  from?: string | null;
+  to?: string | null;
   program?: string | null;
   job?: string | null;
+  firm?: string | null;
 }): Promise<ReadResult<Record<string, unknown>>> {
   // Lengths first, then shapes: nothing below walks a string it hasn't capped.
   const employer = (args.employer ?? "").slice(0, 121).trim();
   const job = (args.job ?? "").slice(0, 81).trim();
+  const firm = (args.firm ?? "").slice(0, 121).trim();
   const filed = (args.filed ?? "").slice(0, 11).trim();
+  const from = (args.from ?? "").slice(0, 11).trim();
+  const to = (args.to ?? "").slice(0, 11).trim();
   const program = (args.program ?? "perm").slice(0, 12).trim().toLowerCase();
-  if (employer.length > 120 || !enoughTyped(employer)) return bad("employer must be 2 to 120 characters of the employer's name.");
+  if (employer.length > 120 || (employer !== "" && !enoughTyped(employer))) return bad("employer must be 2 to 120 characters of the employer's name.");
   if (job.length > 80) return bad("job must be at most 80 characters.");
-  if (!DATE_RE.test(filed)) return bad("filed must be the filing day, like 2026-01-30.");
+  if (firm.length > 120 || (firm !== "" && !enoughTyped(firm))) return bad("firm must be 2 to 120 characters of the law firm's name.");
+  if (filed && !DATE_RE.test(filed)) return bad("filed must be the filing day, like 2026-01-30.");
+  if ((from && !DATE_RE.test(from)) || (to && !DATE_RE.test(to))) return bad("from and to must be days, like 2026-01-30.");
+  if (filed && (from || to)) return bad("Give filed for one day, or from and to for a range of days, not both.");
   if (!(FILING_PROGRAMS as readonly string[]).includes(program)) return bad(`program must be one of ${FILING_PROGRAMS.join(", ")}.`);
   const today = easternDay();
-  if (filed < FILINGS_FROM || filed > today) return bad(`filed must be between ${FILINGS_FROM} and today.`);
 
   const kind = program as FilingProgram;
-  const { cases, capped } = await getFiledOnProgram(filed, kind);
-  const found = findOnDay(cases, employer, job);
+  const got = await findCase(kind, { employer, title: job, firm, from: filed || from, to: filed || to }, today);
+  if (!got.ok) return bad(got.message);
+  const a = got.answer;
+  const oneDay = a.window && !a.window.assumed && a.window.from === a.window.to ? a.window.from : null;
   return {
     ok: true,
     data: {
-      filed,
       program: kind,
       programName: PROGRAM_NAMES[kind],
-      // The whole day, whatever was asked: how many DOL's record holds, decided and still waiting.
-      day: found.day,
-      matchedEmployer: found.ofEmployer,
-      matched: found.matches.length,
-      cases: found.matches.slice(0, FOUND_MAX).map((c) => ({
+      // "window": every case filed in the days read, matched by any word of the employer's name. "index": the
+      // case search's index for the employer (by the start of its name) or the law firm, over any dates.
+      readBy: a.by,
+      // The days read. `assumed` is the newest three months, when no date was given with a job title alone.
+      window: a.window,
+      ...(oneDay ? { filed: oneDay } : {}),
+      // What DOL's record holds for the days read, whatever was asked. `day` is the same under its older name.
+      period: a.period,
+      ...(oneDay && a.period ? { day: a.period } : {}),
+      matchedEmployer: a.ofEmployer,
+      matched: a.matched,
+      cases: a.cases.slice(0, FOUND_MAX).map((c) => ({
         caseNumber: c.caseNumber,
         status: c.status,
         isFinal: c.final,
         employer: c.employer,
         jobTitle: c.jobTitle,
+        filedOn: c.filedOn || null,
         decisionDate: c.decided ?? null,
         worksiteState: c.state ?? null,
         wageRequest: c.wageRequest ?? null,
+        lawFirm: c.firm ?? null,
         url: `${SITE_URL}/perm-case-status?case=${encodeURIComponent(c.caseNumber)}`,
       })),
-      truncated: found.matches.length > FOUND_MAX,
-      // With no match: the employers that did file that day under a close spelling.
-      closeNames: found.close,
-      // The day's own list was cut at its cap, so a case can be missing from this answer.
-      dayListCapped: capped,
+      truncated: a.matched > FOUND_MAX || a.capped,
+      // With no employer fitting in a window of a month or less: the employers that did file in it under a close spelling.
+      closeNames: a.close,
+      // The firm a typed law firm's words named, with the other firms they could mean.
+      lawFirm: a.firm ? { name: a.firm.name, alternatives: a.firm.alternatives.map((f) => f.name) } : null,
+      lawFirmUnknown: a.firmUnknown,
+      // A law firm was asked for: DOL names it only once a case is decided, so no pending case can be listed.
+      decidedOnly: a.decidedOnly,
+      // A read stopped at its limit, so a case can be missing from this answer.
+      dayListCapped: a.capped,
     },
-    meta: { source: DOL_SOURCE, asOf: today, url: `${SITE_URL}${dayHref(filed, kind)}` },
+    meta: {
+      source: DOL_SOURCE,
+      asOf: today,
+      url: oneDay ? `${SITE_URL}${dayHref(oneDay, kind)}` : `${SITE_URL}/case-search${employer ? `?q=${encodeURIComponent(employer)}` : ""}`,
+    },
   };
 }

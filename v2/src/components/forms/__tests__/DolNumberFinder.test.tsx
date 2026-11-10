@@ -9,16 +9,18 @@ import { DolNumberFinder } from "../DolNumberFinder";
  */
 vi.mock("@/lib/funnelEvents", () => ({ trackFinder: vi.fn() }));
 
-const day = [
-  { caseNumber: "G-100-26030-000123", status: "ANALYST REVIEW", employer: "Acme Robotics, Inc.", employerSlug: null, jobTitle: "Controls Engineer", final: false },
-  { caseNumber: "G-100-26030-000777", status: "CERTIFIED", employer: "Other Co", employerSlug: null, jobTitle: "Analyst", final: true },
-];
+// The finder's answer (src/lib/findCase.ts): the one case on the day whose employer the name fits, of the two filed.
+const answer = {
+  program: "perm", asked: { employer: "acme", title: "", firm: "" }, by: "window", window: { from: "2026-01-30", to: "2026-01-30", assumed: false },
+  cases: [{ caseNumber: "G-100-26030-000123", status: "ANALYST REVIEW", employer: "Acme Robotics, Inc.", jobTitle: "Controls Engineer", final: false, filedOn: "2026-01-30" }],
+  matched: 1, ofEmployer: 1, capped: false, period: { filed: 2, decided: 1, waiting: 1 }, close: [], firmUnknown: false, decidedOnly: false,
+};
 
 function stub() {
   const asked: string[] = [];
   vi.stubGlobal("fetch", vi.fn(async (url: string) => {
     asked.push(url);
-    return new Response(JSON.stringify({ cases: day, capped: false }), { status: 200 });
+    return new Response(JSON.stringify(answer), { status: 200 });
   }));
   return asked;
 }
@@ -45,7 +47,7 @@ describe("DolNumberFinder", () => {
     fireEvent.click(screen.getByRole("button", { name: "Find it in DOL's record" }));
     fireEvent.change(screen.getByRole("textbox", { name: /employer/i }), { target: { value: "acme" } });
     const use = await screen.findByRole("button", { name: "Use this number: G-100-26030-000123" });
-    expect(asked).toEqual(["/api/filed-on?day=2026-01-30&program=perm"]);
+    expect(asked).toEqual(["/api/find-case?program=perm&employer=acme&from=2026-01-30&to=2026-01-30"]);
     fireEvent.click(use);
     expect(onPick).toHaveBeenCalledExactlyOnceWith("G-100-26030-000123");
     await waitFor(() => expect(screen.getByRole("button", { name: "Find it in DOL's record" })).toHaveAttribute("aria-expanded", "false"));

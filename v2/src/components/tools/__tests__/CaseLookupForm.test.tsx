@@ -50,13 +50,15 @@ describe("CaseLookupForm", () => {
     const asked: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (url: string) => {
       asked.push(url);
-      return new Response(JSON.stringify({ cases: [], capped: false }), { status: 200 });
+      return new Response(JSON.stringify({ program: "perm", asked: { employer: "Acme Robotics, Inc.", title: "", firm: "" }, by: "index", cases: [], matched: 0, capped: false, close: [], firmUnknown: false, decidedOnly: false }), { status: 200 });
     }));
     render(<CaseLookupForm employerName="Acme Robotics, Inc." searchHref="/case-search?q=acme" searchLabel="Find it among their filings" />);
     fireEvent.click(screen.getByRole("button", { name: "Find it by employer and filing date" }));
     expect(await screen.findByRole("textbox", { name: "Employer’s name" })).toHaveValue("Acme Robotics, Inc.");
-    fireEvent.change(screen.getByLabelText("Date it was filed"), { target: { value: "2026-01-30" } });
-    await waitFor(() => expect(asked).toContain("/api/filed-on?day=2026-01-30&program=perm"));
+    // The name alone is already an ask: the employer's filings, the newest first. A date narrows them to its day.
+    await waitFor(() => expect(asked).toContain("/api/find-case?program=perm&employer=Acme+Robotics%2C+Inc."));
+    fireEvent.change(screen.getByLabelText("Filed from"), { target: { value: "2026-01-30" } });
+    await waitFor(() => expect(asked).toContain("/api/find-case?program=perm&employer=Acme+Robotics%2C+Inc.&from=2026-01-30"));
     expect(screen.getByRole("link", { name: "Find it among their filings" })).toHaveAttribute("href", "/case-search?q=acme");
   });
 

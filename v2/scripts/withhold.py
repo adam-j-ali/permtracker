@@ -242,6 +242,15 @@ def check_live(entries: list[Entry], touched: list[Entry], paths: list[str], rem
             answer = {}
         found = bool(answer.get("rows")) and not answer.get("noMatch")
         print(f"live: a case search by the name answers {code}, " + ("finds nothing" if not found else "<- it found rows"))
+        # The finder under every case-number box asks its own route (src/lib/findCase.ts), by the same name.
+        finder = "firm" if e.kind == "firm" else "employer"
+        code, body = fetch(f"/api/find-case?{finder}={urllib.parse.quote(e.name)}")
+        try:
+            answer = json.loads(body) if body else {}
+        except ValueError:
+            answer = {}
+        found = code == 200 and (bool(answer.get("cases")) or bool(answer.get("matched")))
+        print(f"live: the case finder by the name answers {code}, " + ("finds nothing" if not found else "<- it found cases"))
         if e.cases:
             code, body = fetch(f"/embed/case-status?case={urllib.parse.quote(e.cases[0])}")
             ok = code == 200 and shown_label(e) in body and not _says_a_name(body, entries)
