@@ -125,7 +125,7 @@ export function FormHelpPanel() {
             </p>
             <FieldList items={[
               { field: "Filing date", desc: "When the ETA 9089 was filed with DOL" },
-              { field: "Case number", desc: "The DOL case number (e.g., A-12345-67890)" },
+              { field: "Case number", desc: "The DOL case number (e.g., G-100-26045-123456)" },
               { field: "Certification date", desc: "When DOL certified the application. Fills in the expiration (certification + 179 days, the date DOL prints) and opens I-140." },
               { field: "Audit", desc: "If DOL audits the case, enter the audit received and submitted dates" },
             ]} />
