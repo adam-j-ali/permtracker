@@ -30,7 +30,14 @@ export async function GET(request: Request) {
   if (stateRaw !== NATION && !(stateRaw in US_STATE_NAMES)) return bad("state must be US or a two-letter state code");
   if (byRaw !== "lca" && byRaw !== "uscis") return bad("by must be lca or uscis");
   const by = byRaw as H1bBasis;
-  const summary = await getH1bSummary();
+  let summary: Awaited<ReturnType<typeof getH1bSummary>>;
+  try {
+    summary = await getH1bSummary();
+  } catch (err) {
+    // A read that failed isn't "not built": say so, and let the caller ask again.
+    console.error("[h1bEmployers] summary read failed", err);
+    return NextResponse.json({ error: "The rankings couldn't be read just now. Try again in a minute." }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
   if (!summary) return NextResponse.json({ error: "The rankings aren't built yet." }, { status: 503 });
   const year = summary.years.find((y) => y.fy === Number(fyRaw));
   if (!year) return bad(`fy must be one of ${summary.years.map((y) => y.fy).join(", ")}`);

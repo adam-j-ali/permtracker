@@ -60,8 +60,8 @@ export const onetForSoc = cache(async (code: string): Promise<OnetForSoc | null>
     rows<OnetRow>(
       "SELECT onet_code, title, description, job_zone, bright, detail FROM onet_occupations WHERE soc7 = ? ORDER BY onet_code",
       [soc],
-    ).catch(softFail("reference.rows", [])),
-    one<{ json: string }>("SELECT json FROM perm_docs WHERE key = 'onet_reference'").catch(softFail("reference.one", null)),
+    ).catch(softFail("reference.onetForSoc", [])),
+    one<{ json: string }>("SELECT json FROM perm_docs WHERE key = 'onet_reference'").catch(softFail("reference.onetForSoc.zones", null)),
   ]);
   if (!got.length) return null;
   const occupations = got.map((r): OnetOccupation => {
@@ -97,7 +97,7 @@ export const onetForSoc = cache(async (code: string): Promise<OnetForSoc | null>
 
 /** O*NET's Job Zone names and the database version, from the doc the O*NET loader writes. Never throws. */
 export const onetReference = cache(async (): Promise<{ zones: Record<string, JobZone>; version: string | null }> => {
-  const ref = await one<{ json: string }>("SELECT json FROM perm_docs WHERE key = 'onet_reference'").catch(softFail("reference.one", null));
+  const ref = await one<{ json: string }>("SELECT json FROM perm_docs WHERE key = 'onet_reference'").catch(softFail("reference.onetReference", null));
   try {
     const doc = ref ? (JSON.parse(String(ref.json)) as { jobZones?: Record<string, JobZone>; version?: string }) : {};
     return { zones: doc.jobZones ?? {}, version: doc.version ?? null };
@@ -231,7 +231,7 @@ const OEWS_COLS =
 export const marketPayNational = cache(async (code: string): Promise<MarketPay | null> => {
   const soc = socGroup(code);
   if (!soc) return null;
-  const r = await one<OewsRow>(`SELECT ${OEWS_COLS} FROM bls_oews WHERE soc7 = ? AND area = '99'`, [soc]).catch(softFail("reference.one", null));
+  const r = await one<OewsRow>(`SELECT ${OEWS_COLS} FROM bls_oews WHERE soc7 = ? AND area = '99'`, [soc]).catch(softFail("reference.marketPayNational", null));
   return r ? marketPay(r) : null;
 });
 
@@ -256,7 +256,7 @@ export async function marketPayForArea(area: string, codes: string[]): Promise<M
   const got = await rows<OewsRow & { soc7: string }>(
     `SELECT soc7, ${OEWS_COLS} FROM bls_oews WHERE area = ? AND soc7 IN (${socs.map(() => "?").join(",")})`,
     [area, ...socs],
-  ).catch(() => []);
+  ).catch(softFail("reference.marketPayForArea", []));
   return got.map((r) => ({ ...marketPay(r), soc: String(r.soc7) }));
 }
 
@@ -284,7 +284,7 @@ export const projectionFor = cache(async (code: string): Promise<Projection | nu
   const r = await one<Record<string, unknown>>(
     "SELECT title, base_year, proj_year, emp_base, emp_proj, change_pct, openings, median_wage, education, experience, training FROM bls_projections WHERE soc7 = ?",
     [soc],
-  ).catch(() => null);
+  ).catch(softFail("reference.projectionFor", null));
   if (!r) return null;
   const text = (v: unknown) => (v == null || v === "" ? null : String(v));
   return {
@@ -319,7 +319,7 @@ export const dolBasisFor = cache(async (code: string): Promise<DolBasis | null> 
   const r = await one<Record<string, unknown>>(
     "SELECT wage_year, job_zone, education, appendix_a FROM oflc_occupation_basis WHERE soc7 = ? ORDER BY wage_year DESC, onet_code LIMIT 1",
     [soc],
-  ).catch(() => null);
+  ).catch(softFail("reference.dolBasisFor", null));
   if (!r) return null;
   return {
     wageYear: Number(r.wage_year),
@@ -418,7 +418,7 @@ export async function wageLevelsForArea(area: string, codes: string[]): Promise<
      WHERE area = ? AND collection = 'alc' AND soc7 IN (${socs.map(() => "?").join(",")})
        AND wage_year = (SELECT max(wage_year) FROM oflc_wage_levels)`,
     [area, ...socs],
-  ).catch(() => []);
+  ).catch(softFail("reference.wageLevelsForArea", []));
   return got.map((r) => ({ soc: String(r.soc7), ...levelYear(r) }));
 }
 
@@ -496,7 +496,7 @@ export const cityGeo = cache(async (cityKey: string): Promise<CityGeo | null> =>
     // added still answers (those read as unknown) instead of failing the query.
     "SELECT * FROM city_geo WHERE city_key = ?",
     [cityKey],
-  ).catch(() => null);
+  ).catch(softFail("reference.cityGeo", null));
   if (!r) return null;
   const text = (v: unknown) => (v == null || v === "" ? null : String(v));
   return {
@@ -524,7 +524,7 @@ export async function cityGeoMany(cityKeys: string[]): Promise<Map<string, CityG
   const got = await rows<Record<string, unknown>>(
     `SELECT city_key, place_name, county_name, cbsa, cbsa_title, wage_area, wage_area_name FROM city_geo WHERE city_key IN (${keys.map(() => "?").join(",")})`,
     keys,
-  ).catch(() => []);
+  ).catch(softFail("reference.cityGeoMany", []));
   for (const r of got) {
     out.set(String(r.city_key), {
       placeName: r.place_name == null ? null : String(r.place_name),
@@ -561,7 +561,7 @@ export const priceParity = cache(async (fips: string): Promise<PriceParity | nul
   const got = await rows<{ year: unknown; line: string; value: unknown; geo_name: string }>(
     "SELECT year, line, value, geo_name FROM bea_rpp WHERE geo_fips = ? AND year = (SELECT max(year) FROM bea_rpp WHERE geo_fips = ?)",
     [fips, fips],
-  ).catch(() => []);
+  ).catch(softFail("reference.priceParity", []));
   const first = got[0];
   if (!first) return null;
   const v = Object.fromEntries(got.map((r) => [r.line, num(r.value)]));
@@ -586,7 +586,7 @@ export async function occupationSlugs(codes: string[]): Promise<Map<string, stri
      WHERE kind = 'occupation' AND substr(code, 1, 7) IN (${socs.map(() => "?").join(",")})
      ORDER BY total DESC`,
     socs,
-  ).catch(() => []);
+  ).catch(softFail("reference.occupationSlugs", []));
   for (const r of got) if (!out.has(r.soc)) out.set(r.soc, r.slug);
   return out;
 }

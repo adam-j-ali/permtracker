@@ -193,6 +193,8 @@ const ISOLATED_UNIT_FILES = [
   "src/lib/db/__tests__/employerHistory.test.ts",
   "src/lib/db/__tests__/smallReadsThrow.test.ts",
   "src/lib/db/__tests__/scorecard.test.ts",
+  // Mocks ../client and ../employerSlugs, and imports a dozen readers at once.
+  "src/lib/db/__tests__/lastReadsRecordOrThrow.test.ts",
   // Added 2026-10-03. Both mock ../client and set per-test answers.
   "src/lib/db/__tests__/seasonalCases.test.ts",
   "src/lib/db/__tests__/employerProgramsSeasonal.test.ts",

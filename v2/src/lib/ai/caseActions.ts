@@ -258,6 +258,14 @@ async function readCase(caseId: string, token: string): Promise<CaseDoc | null> 
   return (await fetchQuery(api.cases.get, { id: caseId as Id<'cases'> }, { token })) as CaseDoc | null;
 }
 
+/** A read an answer can do without (a label, a hint): null on a failure, which is recorded like the others. */
+const orNull =
+  (operation: string) =>
+  (error: unknown): null => {
+    captureError(error, { operation: `ai.caseActions.${operation}` });
+    return null;
+  };
+
 /** A read that failed, told apart from a case that isn't there. */
 const UNREADABLE = Symbol('unreadable');
 type Unreadable = typeof UNREADABLE;
@@ -686,7 +694,7 @@ function sameValue(a: unknown, b: unknown): boolean {
 
 async function runUpdateCase(args: Args, token: string): Promise<ActionOutcome> {
   const id = args.id as string;
-  const before = await readCase(id, token).catch(() => null);
+  const before = await readCase(id, token).catch(orNull('readCaseLabel'));
   await fetchMutation(api.cases.update, args as Parameters<typeof fetchMutation<typeof api.cases.update>>[1], { token });
   const after = await readCaseOrUnreadable(id, token).then((c) => (c === UNREADABLE ? null : c));
   if (!after) {
@@ -927,7 +935,7 @@ async function prepareCalendar(caseId: string, enable: boolean, token: string): 
   if (c === UNREADABLE) return unreadable();
   if (!c) return notFound();
   if (enable) {
-    const profile = await fetchQuery(api.users.currentUserProfile, {}, { token }).catch(() => null);
+    const profile = await fetchQuery(api.users.currentUserProfile, {}, { token }).catch(orNull('currentUserProfile'));
     if (profile && !profile.googleCalendarConnected) {
       return {
         kind: 'answer',
@@ -1076,7 +1084,7 @@ async function prepareBulkCalendar(params: BulkCalendarSyncInput, token: string)
     return { kind: 'answer', response: { changed: false, message: `Calendar sync is already ${params.enabled ? 'on' : 'off'} for those cases.` } };
   }
   if (params.enabled) {
-    const profile = await fetchQuery(api.users.currentUserProfile, {}, { token }).catch(() => null);
+    const profile = await fetchQuery(api.users.currentUserProfile, {}, { token }).catch(orNull('currentUserProfile'));
     if (profile && !profile.googleCalendarConnected) {
       return { kind: 'answer', response: { changed: false, message: "Google Calendar isn't connected. Connect it in Settings, under Calendar sync, first." } };
     }
@@ -1222,7 +1230,7 @@ export async function prepareAction(toolName: ActionTool, params: unknown, token
       const t = params as UpdateJobDescriptionTemplateInput;
       if (!CONVEX_ID.test(t.templateId)) return badId('template');
       if (!t.name && !t.description) return { kind: 'answer', response: { changed: false, message: 'Nothing to change: send a new name or description.' } };
-      const existing = await fetchQuery(api.jobDescriptionTemplates.get, { id: t.templateId as Id<'jobDescriptionTemplates'> }, { token }).catch(() => null);
+      const existing = await fetchQuery(api.jobDescriptionTemplates.get, { id: t.templateId as Id<'jobDescriptionTemplates'> }, { token }).catch(orNull('templateGet'));
       if (!existing) return { kind: 'answer', response: { error: "That template wasn't found.", suggestion: 'List templates with listJobDescriptionTemplates.' } };
       return {
         kind: 'plan',
@@ -1238,7 +1246,7 @@ export async function prepareAction(toolName: ActionTool, params: unknown, token
     case 'deleteJobDescriptionTemplate': {
       const t = params as DeleteJobDescriptionTemplateInput;
       if (!CONVEX_ID.test(t.templateId)) return badId('template');
-      const existing = await fetchQuery(api.jobDescriptionTemplates.get, { id: t.templateId as Id<'jobDescriptionTemplates'> }, { token }).catch(() => null);
+      const existing = await fetchQuery(api.jobDescriptionTemplates.get, { id: t.templateId as Id<'jobDescriptionTemplates'> }, { token }).catch(orNull('templateGet'));
       if (!existing) return { kind: 'answer', response: { error: "That template wasn't found." } };
       return {
         kind: 'plan',
@@ -1311,12 +1319,12 @@ export async function runAction(toolName: string, args: Args, token: string): Pr
     }
     case 'reopenCase': {
       const r = await fetchMutation(api.cases.reopenCase, { id: args.id as Id<'cases'> }, { token });
-      const after = await readCase(String(args.id), token).catch(() => null);
+      const after = await readCase(String(args.id), token).catch(orNull('readCaseLabel'));
       const stage = stageWords(r.newCaseStatus, r.newProgressStatus);
       return outcome(true, `Reopened ${after ? caseLabel(after) : 'the case'} at ${stage}.`, { caseId: args.id, action: 'reopened', stage });
     }
     case 'deleteCase': {
-      const before = await readCase(String(args.id), token).catch(() => null);
+      const before = await readCase(String(args.id), token).catch(orNull('readCaseLabel'));
       await fetchMutation(api.cases.remove, { id: args.id as Id<'cases'> }, { token });
       const after = await readCaseOrUnreadable(String(args.id), token);
       if (after === UNREADABLE) {
@@ -1387,7 +1395,7 @@ export async function runAction(toolName: string, args: Args, token: string): Pr
     }
     case 'updateSettings': {
       await fetchMutation(api.users.updateUserProfile, args as Parameters<typeof fetchMutation<typeof api.users.updateUserProfile>>[1], { token });
-      const profile = (await fetchQuery(api.users.currentUserProfile, {}, { token }).catch(() => null)) as Args | null;
+      const profile = (await fetchQuery(api.users.currentUserProfile, {}, { token }).catch(orNull('currentUserProfile'))) as Args | null;
       const notSaved = profile
         ? Object.entries(args).filter(([k, v]) => JSON.stringify(profile[k]) !== JSON.stringify(v)).map(([k]) => SETTING_WORDS[k] ?? k)
         : [];

@@ -58,7 +58,7 @@ async function programLine(program: "perm" | "pwd" | "lca", match: EmployerMatch
           `SELECT COUNT(*) AS n FROM ${t.live} INDEXED BY ${t.live}_emp WHERE ${where} AND is_final = 0` +
             (t.visaType ? " AND visa_type = ?" : ""),
           t.visaType ? [...match.args, t.visaType] : match.args,
-        ).catch(() => null)
+        ).catch(softFail(`employerPrograms.${program}Pending`, null))
       : Promise.resolve(null),
   ]);
   const published = Number(counts?.n ?? 0);
@@ -104,7 +104,7 @@ async function seasonalLine(match: EmployerMatch): Promise<ProgramLine | null> {
     one<{ n: number | string }>(
       `SELECT COUNT(*) AS n FROM seasonal_case_status INDEXED BY seasonal_case_status_emp WHERE ${where} AND is_final = 0`,
       match.args,
-    ).catch(() => null),
+    ).catch(softFail("employerPrograms.seasonalPending", null)),
   ]);
   const published = Number(counts?.n ?? 0);
   const pending = live ? Number(live.n) : null;

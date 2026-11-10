@@ -11,6 +11,7 @@ import { titleKey } from "@/lib/socTitleKey";
 import { ENTITY_BASE } from "@/lib/entityPayload";
 import { getSocTitle } from "./socTitles";
 import { isWithheldQuery, neutralPageEntry } from "@/lib/privacy/withheld";
+import { softFail } from "@/lib/softRead";
 
 /** "Law firm 3" and "law-firm-3" as the slug they'd be. */
 function neutralSlugOfText(text: string): string {
@@ -228,8 +229,8 @@ export async function occupationChoices(text: string, limit: number): Promise<Oc
   const [candidates, byTitle] = await Promise.all([
     nameCandidates("occupation", text, limit * 2),
     // The codes employers filed the words under as a job title (the job code finder's table), so
-    // "software engineer" reaches Software Developers. A failed read leaves the names alone.
-    titleCodeChoices(text).catch(() => [] as OccupationChoice[]),
+    // "software engineer" reaches Software Developers. A failed read leaves the names alone, and is recorded.
+    titleCodeChoices(text).catch(softFail("nameSuggest.titleCodeChoices", [] as OccupationChoice[])),
   ]);
   const rows = await Promise.all(candidates.map((c) => getBySlug("occupation", c.slug)));
   const seen = new Set<string>();

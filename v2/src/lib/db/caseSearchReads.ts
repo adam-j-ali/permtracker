@@ -32,6 +32,7 @@ import { socGroup, socGroupClause } from "@/lib/socCode";
 import { programOf } from "@/lib/flagCaseNumber";
 import { boundEnd, boundStart, fiscalYearSpan } from "@convex/lib/months";
 import { LIKE_ESCAPE, likeContains } from "./like";
+import { softFail } from "@/lib/softRead";
 
 /**
  * Every read the unified case search makes, and the index each one rides.
@@ -1535,7 +1536,8 @@ export async function firstSeenDecided(
       WHERE case_number IN (${holes}) AND to_final IN (1, '1')
       GROUP BY case_number`,
     [...caseNumbers],
-  ).catch(() => []);
+    // Unread, these rows keep an unknown date, which is what they had; the failure is recorded.
+  ).catch(softFail("caseSearchReads.firstSeenDecided", []));
   for (const r of found) {
     const ms = Number(r.seen);
     if (!Number.isFinite(ms) || ms <= 0) continue;
@@ -1786,8 +1788,11 @@ export async function getCaseFieldOptions(): Promise<CaseFieldOptions> {
   const out: CaseFieldOptions = {
     citizenship: [], birthCountry: [], visaClass: [], education: [], jobEducation: [],
   };
+  // A failed read and a broken doc both leave the fallbacks below to answer; only the read is a failure to record.
+  const r = await rows<{ json: string }>("SELECT json FROM perm_docs WHERE key = 'case_field_options'").catch(
+    softFail("caseSearchReads.fieldOptionsDoc", []),
+  );
   try {
-    const r = await rows<{ json: string }>("SELECT json FROM perm_docs WHERE key = 'case_field_options'");
     const doc = JSON.parse(r[0]?.json ?? "{}") as Record<string, unknown>;
     for (const k of FIELD_KEYS) {
       const list = Array.isArray(doc[k]) ? (doc[k] as unknown[]) : [];
@@ -1799,13 +1804,13 @@ export async function getCaseFieldOptions(): Promise<CaseFieldOptions> {
         .map((e) => ({ value: e.value, n: typeof e.n === "number" && Number.isFinite(e.n) ? e.n : null }));
     }
   } catch {
-    // A missing or broken doc leaves the fallbacks below to answer.
+    // A broken doc leaves the fallbacks below to answer.
   }
   if (out.citizenship.length === 0) {
     const countries = await rows<{ country: string; n: number | string }>(
       `SELECT country, SUM(certified + denied + withdrawn) AS n FROM perm_country_years
        WHERE fy >= 2016 AND country != '' GROUP BY country ORDER BY n DESC LIMIT ${MAX_OPTIONS}`,
-    ).catch(() => []);
+    ).catch(softFail("caseSearchReads.countryOptions", []));
     out.citizenship = countries
       .filter((c) => typeof c.country === "string" && c.country)
       .map((c) => ({ value: c.country, n: Number(c.n) }));

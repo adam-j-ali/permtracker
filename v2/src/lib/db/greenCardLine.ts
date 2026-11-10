@@ -43,7 +43,7 @@ export const getLineSnapshot = cache(async (): Promise<LineSnapshot> => {
         WHERE as_of = (SELECT max(as_of) FROM i485_inventory)
           AND category IN ('EB2', 'EB3', 'EW3')
         GROUP BY as_of, country, category, status, pd_year, pd_month`,
-    ).catch(() => []),
+    ).catch(softFail("greenCardLine.i485Inventory", [])),
   ]);
 
   const years = Object.keys(limits?.table_v ?? {}).map(Number).filter(Number.isFinite);

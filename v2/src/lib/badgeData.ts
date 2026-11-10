@@ -9,6 +9,7 @@ import { getPermLine } from "@/lib/db/permLine";
 import { getProcessingTimes } from "@/lib/db/processingTimes";
 import { getRecordCounts } from "@/lib/db/recordCounts";
 import { getReviewStages } from "@/lib/db/rfi";
+import { softFail } from "@/lib/softRead";
 
 /**
  * Every figure the badges can carry, assembled once.
@@ -44,11 +45,11 @@ function normalise(values: number[]): number[] {
 
 export const getBadgeData = cache(async (): Promise<BadgeData> => {
   const [snap, counts, stages, board, line] = await Promise.all([
-    getProcessingTimes().catch(() => null),
-    getRecordCounts().catch(() => []),
-    getReviewStages().catch(() => []),
-    getBulletinBoard().catch(() => null),
-    getPermLine().catch(() => null),
+    getProcessingTimes().catch(softFail("badgeData.getProcessingTimes", null)),
+    getRecordCounts().catch(softFail("badgeData.getRecordCounts", [])),
+    getReviewStages().catch(softFail("badgeData.getReviewStages", [])),
+    getBulletinBoard().catch(softFail("badgeData.getBulletinBoard", null)),
+    getPermLine().catch(softFail("badgeData.getPermLine", null)),
   ]);
 
   const queue = (re: RegExp) => snap?.permQueues.find((q) => re.test(q.queue))?.priorityDate ?? null;

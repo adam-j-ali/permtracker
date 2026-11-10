@@ -32,7 +32,7 @@ export interface IssuanceSummary {
 }
 
 export const issuanceSummary = cache(async (): Promise<IssuanceSummary | null> => {
-  const r = await one<{ json: string }>("SELECT json FROM perm_docs WHERE key = 'visa_issuances_summary'").catch(softFail("visaIssuances.one", null));
+  const r = await one<{ json: string }>("SELECT json FROM perm_docs WHERE key = 'visa_issuances_summary'").catch(softFail("visaIssuances.summary", null));
   if (!r) return null;
   try {
     const doc = JSON.parse(String(r.json)) as IssuanceSummary;
@@ -63,7 +63,7 @@ export async function employmentBy(dim: "fsc" | "post", from: string, to: string
      WHERE dim = ? AND month >= ? AND month <= ? AND category IN (${EMPLOYMENT_CATEGORIES.map(() => "?").join(",")})
      GROUP BY group_key, category`,
     [dim, from, to, ...EMPLOYMENT_CATEGORIES],
-  ).catch(() => []);
+  ).catch(softFail("visaIssuances.employmentBy", []));
   return got.map((r) => ({ group: r.group_key, label: r.label, category: r.category, n: Number(r.n) }));
 }
 
@@ -118,7 +118,7 @@ export async function lineIssuance(bulletinCategory: string, country: string): P
     `SELECT group_key, month, sum(n) AS n FROM visa_issuances
      WHERE dim = 'fsc' AND category = ? AND month >= ? AND month <= ? GROUP BY group_key, month`,
     [category, from, to],
-  ).catch(() => []);
+  ).catch(softFail("visaIssuances.lineIssuance", []));
   if (!got.length) return null;
   const listed = new Set(Object.values(LINE_COUNTRY));
   const mine = got.filter((r) =>

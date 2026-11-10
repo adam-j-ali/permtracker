@@ -9,6 +9,7 @@ import type { DateSources } from "@/lib/pageDates";
 import { one } from "./client";
 import { getFreshness } from "./publicData";
 import { getSweepCoverage } from "./sweepCoverage";
+import { softFail } from "@/lib/softRead";
 
 /**
  * The days a page's figures last moved, for `pageDate` (src/lib/pageDates.ts).
@@ -27,7 +28,7 @@ import { getSweepCoverage } from "./sweepCoverage";
 async function dolAsOf(): Promise<string | null> {
   const r = await one<{ d: string | null }>(
     "SELECT perm_as_of AS d FROM processing_times ORDER BY perm_as_of DESC LIMIT 1",
-  ).catch(() => null);
+  );
   return r?.d ? String(r.d) : null;
 }
 
@@ -47,12 +48,15 @@ function postsDay(): string | null {
   }
 }
 
-/** A read that fails, however it fails, leaves its source out. */
-async function safely(read: () => Promise<string | null>): Promise<string | null> {
+/**
+ * A read that fails, however it fails, leaves its source out, and is recorded under its source's name: every public
+ * page reads these, so one that threw would take the whole site's pages with it.
+ */
+async function safely(source: string, read: () => Promise<string | null>): Promise<string | null> {
   try {
     return await read();
-  } catch {
-    return null;
+  } catch (error) {
+    return softFail<string | null>(`dateSources.${source}`, null)(error);
   }
 }
 
@@ -66,12 +70,12 @@ async function refusalsDay(): Promise<string | null> {
 
 export const getDateSources = cache(async (): Promise<DateSources> => {
   const [dol, sweep, corpus, bulletin, consular, refusals] = await Promise.all([
-    safely(dolAsOf),
-    safely(async () => (await getSweepCoverage())?.finishedOn ?? null),
-    safely(async () => (await getFreshness())["perm-cases"]?.asOf ?? null),
-    safely(bulletinDay),
-    safely(async () => (await getFreshness())["iv-scheduling"]?.asOf ?? null),
-    safely(refusalsDay),
+    safely("dol", dolAsOf),
+    safely("sweep", async () => (await getSweepCoverage())?.finishedOn ?? null),
+    safely("corpus", async () => (await getFreshness())["perm-cases"]?.asOf ?? null),
+    safely("bulletin", bulletinDay),
+    safely("consular", async () => (await getFreshness())["iv-scheduling"]?.asOf ?? null),
+    safely("refusals", refusalsDay),
   ]);
   return { dol, sweep, corpus, bulletin, consular, refusals, posts: postsDay() };
 });

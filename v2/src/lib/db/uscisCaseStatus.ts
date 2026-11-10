@@ -10,6 +10,7 @@ import {
   type ClientDeps,
   type UscisCaseStatus,
 } from "@/lib/uscis/torchClient";
+import { softFail } from "@/lib/softRead";
 
 /**
  * Stored USCIS case statuses: what the site has been told, and when.
@@ -131,14 +132,14 @@ export async function readStored(receipt: string): Promise<StoredUscisStatus | n
             history_json, seen_at, first_seen_at, last_change_at
        FROM uscis_case_status WHERE receipt = ?`,
     [receipt],
-  ).catch(() => null);
+  ).catch(softFail("uscisCaseStatus.readStored", null));
   return r ? fromRow(r) : null;
 }
 
 /** Stamp that somebody read this row, so retention counts from the last lookup. */
 export async function touchRead(receipt: string, now: Date): Promise<void> {
   await exec(`UPDATE uscis_case_status SET last_read_at = ? WHERE receipt = ?`, [now.getTime(), receipt]).catch(
-    () => undefined,
+    softFail("uscisCaseStatus.touchRead", undefined),
   );
 }
 

@@ -35,7 +35,7 @@ const counts = cache(async () => {
          FROM i485_inventory
         WHERE as_of = (SELECT max(as_of) FROM i485_inventory)
         GROUP BY as_of, country, category, status`,
-    ).catch(() => []),
+    ).catch(softFail("bulletinLine.i485Inventory", [])),
   ]);
   return { awaiting, inv };
 });
