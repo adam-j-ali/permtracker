@@ -60,6 +60,27 @@ export interface StageStats {
   rfiPath?: unknown;
 }
 
+/**
+ * The first day a move or a stage entry counts from, under the rule this code reads by: the day after the record's
+ * catch-up ended. MUST MATCH `WATCHED_FROM` in `scripts/ingest_case_status_direct.py` (a test holds the two together).
+ */
+export const MOVES_COUNTED_FROM = "2026-08-30";
+
+/**
+ * The document as this code may read it. One built by the current counting rule is read whole. One built by an
+ * older rule (no `since`, or another day) keeps its census, which no rule changes, and loses its moves, its
+ * durations and its RFI path: those were counted from a different day, and a page printing them under today's words
+ * states the old figures as the new ones. The page's own "not counted yet" state then shows until the next sweep
+ * rebuilds the document.
+ *
+ * A change to what these figures mean changes the day here and in the ingest together, so a deploy that lands
+ * before the document is rebuilt can never mix the two.
+ */
+export function byCurrentRule(doc: StageStats): StageStats {
+  if (doc.since === MOVES_COUNTED_FROM) return doc;
+  return { asOf: doc.asOf, source: doc.source, stages: doc.stages, exits: [], durations: [] };
+}
+
 /** Measured ages keyed by status, for `queueForecast` to prefer over its table. */
 export function ageByStatusFrom(stats: StageStats | null): Map<string, number> {
   const out = new Map<string, number>();
