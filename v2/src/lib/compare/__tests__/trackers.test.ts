@@ -98,6 +98,23 @@ describe("the PERM tracker comparison", () => {
     expect(PERM_TRACKER.beatsUs).toEqual([]);
   });
 
+  // Two of the names here are two letters apart, and a search engine's AI answered that they were one site
+  // (Nov 10 2026). The page that lists both says plainly that they aren't, as a question a machine reads too.
+  it("says in plain words that a site with a similar name is another site, by its own address", () => {
+    const all = [PERM_TRACKER, ...RIVALS];
+    const same = compareFaq(all).find((f) => f.q === "Is PERM Tracker the same site as PermTrack?");
+    expect(same).toBeDefined();
+    expect(same!.a.startsWith("No.")).toBe(true);
+    expect(same!.a).toContain("permtracker.app");
+    expect(same!.a).toContain("permtrack.app");
+    expect(same!.a).toMatch(/Neither is affiliated with the other\.$/);
+    // Which came first is said as two dates from the registry's record, and in no other words.
+    expect(same!.a).toContain("permtracker.app registered on November 25, 2025, and permtrack.app on March 22, 2026.");
+    expect(same!.a).not.toMatch(/original|older|newer|better|first/i);
+    // Only while that site is on the page: the question is about a name the reader can see beside ours.
+    expect(compareFaq(all.filter((t) => t.slug !== "permtrack")).some((f) => /same site/.test(f.q))).toBe(false);
+  });
+
   it("answers the choosing questions from the marks themselves", () => {
     const all = [PERM_TRACKER, ...RIVALS];
     const faq = compareFaq(all);
