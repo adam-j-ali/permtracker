@@ -34,6 +34,8 @@ const BANNED: Record<string, string> = {
   "text-muted-foreground/50": "2.08:1 in light — drop the opacity",
   "text-destructive/80": "2.67:1 in light — drop the opacity",
   "text-primary/60": "1.58:1 in light — drop the opacity",
+  // The page's own colour on the bright red fill (a "failed" chip), measured in a browser on Nov 10 2026.
+  "bg-destructive text-background": "3.22:1 in light: use text-destructive-foreground (black, 6.2:1 in both themes)",
 };
 
 function walk(dir: string, out: string[] = []): string[] {

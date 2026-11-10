@@ -14,10 +14,10 @@ import { useState } from "react";
 import type { FunctionReturnType } from "convex/server";
 import { formatInt } from "@/lib/format";
 import { EASTERN_TIMEZONE, MS_PER_HOUR } from "@/lib/time";
-import { ScrollBox } from "@/components/ui/scroll-box";
 import type { api } from "@convex/_generated/api";
 import { between } from "./elapsed";
 import { entityHref } from "@/lib/entityPayload";
+import { cn } from "@/lib/utils";
 
 export type Delivery = FunctionReturnType<typeof api.adminDelivery.getDelivery>;
 
@@ -42,9 +42,16 @@ const KIND_LABEL = {
 const STATUS_CLASS: Record<string, string> = {
   sent: "bg-primary text-primary-foreground",
   queued: "bg-data-warn-ink text-background",
-  failed: "bg-destructive text-background",
+  failed: "bg-destructive text-destructive-foreground",
   dropped: "bg-muted text-foreground",
 };
+
+/**
+ * The latest alerts' columns from 1024px: sent, signed up, to, what, state. Below that each alert is a short card. A
+ * list and a grid, never a <table>: a table cell that may break anywhere shrinks to a letter a line beside cells that
+ * can't wrap, which is how an address read on a phone.
+ */
+const ALERT_COLS = "lg:grid-cols-[10rem_minmax(10rem,1fr)_minmax(11rem,1.1fr)_minmax(14rem,1.5fr)_8.5rem]";
 
 /** Every pool as a row: label, a usage bar against the ceiling, the numbers. */
 export function BudgetPools({
@@ -181,50 +188,55 @@ export function DeliveryPanel({ data }: { data: Delivery }) {
               {`The newest ${formatInt(data.recent.length)} of ${formatInt(data.recentTotal ?? 0)} in the last 7 days.`}
             </p>
           ) : null}
-          <ScrollBox label="Latest alerts" className="mt-3 border border-border">
-            <table className="w-full min-w-[880px] text-left text-sm">
-              <thead className="bg-muted">
-                <tr>
-                  <th className="px-3 py-2 font-bold">{"Sent "}</th>
-                  <th className="px-3 py-2 font-bold">{"Signed up "}</th>
-                  <th className="px-3 py-2 font-bold">{"To "}</th>
-                  <th className="px-3 py-2 font-bold">{"What "}</th>
-                  <th className="px-3 py-2 font-bold">{"State "}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.recent.map((r, i) => (
-                  <tr key={`${r.email}-${r.createdAt}-${i}`} className="border-t-2 border-border align-top">
-                    <td className="whitespace-nowrap px-3 py-2 tabular-nums">{`${when(r.sentAt ?? r.createdAt)} `}</td>
-                    <td className="whitespace-nowrap px-3 py-2 tabular-nums">
-                      {r.signedUpAt ? (
-                        <>
-                          {when(r.signedUpAt)}{" "}
-                          <span className="block text-sm text-muted-foreground">
-                            {`${between(r.signedUpAt, r.sentAt ?? r.createdAt)} before${r.confirmedAt ? `, confirmed after ${between(r.signedUpAt, r.confirmedAt)}` : ", never confirmed"}`}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground">subscription removed</span>
-                      )}{" "}
-                    </td>
-                    <td className="px-3 py-2 [overflow-wrap:anywhere]">{`${r.email} `}</td>
-                    <td className="px-3 py-2">
-                      <span className="font-bold">{`${KIND_LABEL[r.kind]}: ${r.title}`}</span>{" "}
-                      <span className="block text-muted-foreground">{`${r.line} `}</span>
-                      {r.lastError ? <span className="block text-sm text-destructive">{`${r.lastError} `}</span> : null}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2">
-                      <span className={`px-1.5 py-0.5 text-sm font-bold ${STATUS_CLASS[r.status] ?? ""}`}>{r.status}</span>{" "}
-                      <span className="text-sm text-muted-foreground">
-                        {r.direct ? "straight out" : r.bundleSize && r.bundleSize > 1 ? `in a bundle of ${r.bundleSize}` : ""}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </ScrollBox>
+          <div className="mt-3 border-2 border-border bg-card">
+            <div aria-hidden="true" className={cn("hidden gap-x-4 bg-muted px-3 py-2 text-sm font-bold lg:grid", ALERT_COLS)}>
+              <span>Sent</span> <span>Signed up</span> <span>To</span> <span>What</span> <span>State</span>
+            </div>{" "}
+            <ul className="divide-y-2 divide-border">
+              {data.recent.map((r, i) => (
+                <li
+                  key={`${r.email}-${r.createdAt}-${i}`}
+                  className={cn("grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1 px-3 py-3 text-sm lg:py-2", ALERT_COLS)}
+                >
+                  {/* A phone reads what was sent and its state first, then who and when. From 1024px the order is
+                      the columns': sent, signed up, to, what, state. Each label is read out at every width. */}
+                  <div className="order-1 min-w-0 lg:order-4">
+                    <span className="font-bold [overflow-wrap:anywhere]">{`${KIND_LABEL[r.kind]}: ${r.title}`}</span>{" "}
+                    <span className="block text-muted-foreground">{`${r.line} `}</span>
+                    {r.lastError ? <span className="block text-destructive [overflow-wrap:anywhere]">{`${r.lastError} `}</span> : null}
+                  </div>{" "}
+                  <div className="order-2 justify-self-end text-right lg:order-5 lg:justify-self-start lg:text-left">
+                    <span className="sr-only">State:</span>{" "}
+                    <span className={`inline-block px-1.5 py-0.5 font-bold ${STATUS_CLASS[r.status] ?? ""}`}>{r.status}</span>{" "}
+                    <span className="block text-muted-foreground">
+                      {r.direct ? "straight out" : r.bundleSize && r.bundleSize > 1 ? `in a bundle of ${r.bundleSize}` : ""}
+                    </span>
+                  </div>{" "}
+                  <div className="order-3 col-span-2 min-w-0 [overflow-wrap:anywhere] lg:col-span-1">
+                    <span className="text-muted-foreground lg:sr-only">{"To "}</span>
+                    {`${r.email} `}
+                  </div>{" "}
+                  <div className="order-4 col-span-2 tabular-nums lg:order-1 lg:col-span-1">
+                    <span className="text-muted-foreground lg:sr-only">{"Sent "}</span>
+                    {`${when(r.sentAt ?? r.createdAt)} `}
+                  </div>{" "}
+                  <div className="order-5 col-span-2 lg:order-2 lg:col-span-1">
+                    <span className="text-muted-foreground lg:sr-only">{"Signed up "}</span>
+                    {r.signedUpAt ? (
+                      <>
+                        <span className="tabular-nums">{when(r.signedUpAt)}</span>{" "}
+                        <span className="block text-muted-foreground">
+                          {`${between(r.signedUpAt, r.sentAt ?? r.createdAt)} before${r.confirmedAt ? `, confirmed after ${between(r.signedUpAt, r.confirmedAt)}` : ", never confirmed"}`}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">subscription removed</span>
+                    )}{" "}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
           </>
         )}
       </section>{" "}

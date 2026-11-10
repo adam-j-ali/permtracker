@@ -8,6 +8,9 @@
  * Below, the newest mail that got through, each with "Spam", which holds that
  * sender's mail from then on.
  *
+ * A row the owner has acted on stays where it stood for the rest of the visit, saying what happened. Were it to leave
+ * the list, the row under it would slide up beneath the same thumb, and a second tap would let that one through too.
+ *
  * SECURITY: the rows carry senders' addresses and words; admin page only.
  */
 
@@ -64,13 +67,23 @@ function Sender({ r }: { r: Row }) {
   );
 }
 
-function HeldRow({ r }: { r: Row }) {
+/**
+ * The held list as shown: the mail still held, and the rows acted on this visit, each where it stood. Both lists are
+ * newest first by the time the message arrived, which is the order the server gives.
+ */
+export function heldRowsToShow(held: readonly Row[], settled: readonly Row[]): Row[] {
+  const still = new Set(held.map((r) => r.id));
+  return [...held, ...settled.filter((r) => !still.has(r.id))].sort((a, b) => b.receivedAt - a.receivedAt);
+}
+
+function HeldRow({ r, onSettled }: { r: Row; onSettled: (row: Row) => void }) {
   const release = useMutation(api.inboundFilter.release);
   const remove = useMutation(api.inboundFilter.deleteHeld);
   const { busy, error, run } = useAct();
   // Held mail is the only copy, so Delete asks for a second press; once Not spam has sent it on, nothing more is offered.
   const [sure, setSure] = useState(false);
   const [released, setReleased] = useState(false);
+  const [deleted, setDeleted] = useState(false);
   // Each press swaps buttons; focus moves to what replaced the pressed one, never to the page.
   const focusNext = useFocusNext();
   const keepRef = useRef<HTMLButtonElement>(null);
@@ -93,9 +106,9 @@ function HeldRow({ r }: { r: Row }) {
           {typeof r.score === "number" ? ` (score ${r.score})` : ""}
         </p>
       ) : null}
-      {released ? (
+      {released || deleted ? (
         <p ref={statusRef} tabIndex={-1} role="status" className="mt-3 text-sm font-bold focus-visible:outline-2 focus-visible:outline-primary">
-          Sending to your inbox
+          {released ? "Sending to your inbox" : "Deleted"}
         </p>
       ) : (
         <div className="mt-3 flex flex-wrap gap-3">
@@ -106,6 +119,7 @@ function HeldRow({ r }: { r: Row }) {
             onClick={() =>
               run(async () => {
                 await release({ id });
+                onSettled(r);
                 focusNext(() => statusRef.current);
                 setReleased(true);
               })
@@ -115,7 +129,19 @@ function HeldRow({ r }: { r: Row }) {
           </button>{" "}
           {sure ? (
             <>
-              <button type="button" className={`${BTN} bg-destructive text-destructive-foreground`} disabled={busy} onClick={() => run(() => remove({ id }))}>
+              <button
+                type="button"
+                className={`${BTN} bg-destructive text-destructive-foreground`}
+                disabled={busy}
+                onClick={() =>
+                  run(async () => {
+                    await remove({ id });
+                    onSettled(r);
+                    focusNext(() => statusRef.current);
+                    setDeleted(true);
+                  })
+                }
+              >
                 Delete for good
               </button>{" "}
               <button
@@ -197,6 +223,14 @@ function RecentRow({ r }: { r: Row }) {
 
 export function InboxFilterPanel({ data }: { data: InboxFilterData | undefined }) {
   if (!data) return <Skeleton className="h-64" />;
+  return <Loaded data={data} />;
+}
+
+function Loaded({ data }: { data: InboxFilterData }) {
+  // The rows acted on this visit: each keeps its place in the list after the server has let it go.
+  const [settled, setSettled] = useState<Row[]>([]);
+  const held = heldRowsToShow(data.held, settled);
+  const waiting = data.held.filter((r) => !settled.some((s) => s.id === r.id)).length;
   return (
     <section aria-labelledby="inbox-filter" className="space-y-6">
       <div>
@@ -210,14 +244,14 @@ export function InboxFilterPanel({ data }: { data: InboxFilterData | undefined }
       </div>
       <div>
         <h3 className="font-heading text-lg font-bold">
-          Held{data.held.length > 0 ? ` (${data.held.length})` : ""}
+          Held{waiting > 0 ? ` (${waiting})` : ""}
         </h3>{" "}
-        {data.held.length === 0 ? (
+        {held.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">Nothing held.</p>
         ) : (
           <ul className="mt-3 space-y-4">
-            {data.held.map((r) => (
-              <HeldRow key={r.id} r={r} />
+            {held.map((r) => (
+              <HeldRow key={r.id} r={r} onSettled={(row) => setSettled((rows) => (rows.some((s) => s.id === row.id) ? rows : [...rows, row]))} />
             ))}
           </ul>
         )}

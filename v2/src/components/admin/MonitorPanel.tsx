@@ -27,7 +27,7 @@ const WORD: Record<SectionStatus, string> = {
 };
 
 const CHIP: Record<SectionStatus, string> = {
-  fail: "bg-destructive text-background",
+  fail: "bg-destructive text-destructive-foreground",
   warn: "bg-data-warn-ink text-background",
   unknown: "bg-muted text-foreground",
   off: "bg-muted text-foreground",
