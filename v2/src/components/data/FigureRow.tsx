@@ -62,6 +62,9 @@ export function TrendChip({ trend, className }: { trend: FigureTrend; className?
   );
 }
 
+/** A figure that is a number: digits with their separators, a currency sign before or a percent or short unit after. */
+const NUMBER = /^[$€£]?\d[\d,.]*\s?(?:%|[A-Za-z]{1,4})?$/;
+
 export function Figure({
   label,
   value,
@@ -80,13 +83,17 @@ export function Figure({
   /** One figure in a row may stand out: the lime one is the reader's own. */
   tone?: keyof typeof TONE;
 }) {
+  // A number is one word. In a row of five tiles a wage as long as "$119,350" was wider than its tile, and the
+  // page's own break-word rule split it across two lines. A number keeps to one line, and its tile never shrinks
+  // below it: the row wraps a tile down instead. Words still wrap as before.
+  const number = typeof value === "string" && NUMBER.test(value.trim());
   return (
-    <div className={cn("min-w-0 flex-1 basis-40 px-4 py-3.5 sm:px-5 sm:py-4", TONE[tone])}>
+    <div className={cn("flex-1 basis-40 px-4 py-3.5 sm:px-5 sm:py-4", number ? "min-w-min" : "min-w-0", TONE[tone])}>
       <p className="flex items-center gap-1.5 text-sm font-bold">
         {icon ? <span aria-hidden="true" className="inline-flex shrink-0 [&_svg]:size-4">{icon}</span> : null}
         {label}
       </p>{" "}
-      <p className="mt-1.5 font-heading text-[1.75rem] font-bold leading-none tabular-nums sm:text-[2rem]">{value}</p>{" "}
+      <p className={cn("mt-1.5 font-heading text-[1.75rem] font-bold leading-none tabular-nums sm:text-[2rem]", number && "whitespace-nowrap")}>{value}</p>{" "}
       {trend ? <TrendChip trend={trend} className="mt-2" /> : null}{" "}
       {note ? (
         <p className={cn("mt-1.5 text-sm leading-snug", tone === "paper" ? "text-muted-foreground" : "opacity-85")}>{note}</p>
