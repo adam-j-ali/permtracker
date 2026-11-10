@@ -8,6 +8,7 @@ import {
   type BrowseBucket,
 } from "@/lib/entityBrowse";
 import type { BrowseEntry } from "@/lib/db/entityBrowse";
+import { IntentLink } from "@/components/ui/intent-link";
 import { cn } from "@/lib/utils";
 import { formatInt } from "@/lib/format";
 
@@ -82,7 +83,7 @@ export function BrowseStrip({
                     {bucketLabel(b)}
                   </span>
                 ) : (
-                  <Link
+                  <IntentLink
                     href={browseHref(base, b)}
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
@@ -94,7 +95,7 @@ export function BrowseStrip({
                     )}
                   >
                     {bucketLabel(b)}
-                  </Link>
+                  </IntentLink>
                 )}
               </li>
             </Fragment>
@@ -152,7 +153,7 @@ export function BrowseIndexGrid({
                   </span>
                 </div>
               ) : (
-                <Link
+                <IntentLink
                   href={browseHref(base, b)}
                   className={cn(
                     card,
@@ -168,7 +169,7 @@ export function BrowseIndexGrid({
                   <span aria-hidden="true" className="mt-2 block h-1.5 bg-sage">
                     <span className="block h-full bg-primary" style={{ width: `${Math.max(3, (n / max) * 100)}%` }} />
                   </span>
-                </Link>
+                </IntentLink>
               )}
             </li>
           </Fragment>
