@@ -79,3 +79,16 @@ describe("the page's frame pre-loads on intent", () => {
     expect(src).toMatch(/<IntentLink\b/);
   });
 });
+
+describe("a strip of letters pre-loads on intent", () => {
+  // The A to Z strip and its cards are 27 links on screen at once, on every employer, firm and wage index. Plain
+  // links pre-loaded all of them in one second and the front door's limiter refused the burst (Nov 10 2026: 17
+  // answers of 503 to one browser on /perm-employers).
+  it("EntityBrowse draws each letter with IntentLink, and keeps the default for the names in its list", () => {
+    const src = readFileSync(path.join(process.cwd(), "src/components/entities/EntityBrowse.tsx"), "utf8");
+    expect(src).not.toMatch(/<Link\b[^>]*browseHref\(/);
+    expect(src.match(/<IntentLink\b[^>]*browseHref\(/g)).toHaveLength(2);
+    // A name in the list is the page's own content: it pre-loads as it comes into view, as content links do.
+    expect(src).toMatch(/<Link translate="no" href=\{`\$\{base\}\/\$\{e\.slug\}`\}/);
+  });
+});
