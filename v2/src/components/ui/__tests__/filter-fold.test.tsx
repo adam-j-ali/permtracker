@@ -1,18 +1,23 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 
 import { FilterFold } from "../filter-fold";
 
-/** The window as a wide screen or a phone, as `matchMedia("(min-width: 640px)")` answers it. */
+/**
+ * The window as a wide screen or a phone, as `matchMedia("(min-width: 640px)")` answers it. Set by assignment and
+ * put back the same way: the shared setup's `matchMedia` is itself a mock, and "restoring" a spy over it would
+ * leave it answering nothing for whichever test runs next.
+ */
+const realMatchMedia = window.matchMedia;
 function screenIs(wide: boolean) {
-  vi.spyOn(window, "matchMedia").mockImplementation(
-    (query: string) => ({ matches: wide, media: query, addEventListener() {}, removeEventListener() {} }) as unknown as MediaQueryList,
-  );
+  window.matchMedia = ((query: string) => ({ matches: wide, media: query, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
 }
 const fold = (c: HTMLElement) => c.querySelector("details") as HTMLDetailsElement;
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  window.matchMedia = realMatchMedia;
+});
 
 describe("FilterFold", () => {
   it("is shut with nothing on, and its control says only its name", () => {
@@ -45,6 +50,12 @@ describe("FilterFold", () => {
     rerender(<FilterFold active={2} shutOn={0}><span>inside</span></FilterFold>);
     expect(fold(container).open).toBe(true);
     rerender(<FilterFold active={2} shutOn={1}><span>inside</span></FilterFold>);
+    expect(fold(container).open).toBe(false);
+  });
+
+  it("reads a window that can't answer as a phone", () => {
+    window.matchMedia = (() => undefined) as unknown as typeof window.matchMedia;
+    const { container } = render(<FilterFold active={1}><span>inside</span></FilterFold>);
     expect(fold(container).open).toBe(false);
   });
 
