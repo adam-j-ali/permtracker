@@ -94,6 +94,22 @@ function measure(w) {
 }
 
 let bad = 0;
+// How long one page may take to load. PT_LOAD_TIMEOUT_MS shortens it for a probe of this script.
+const LOAD_MS = Number(process.env.PT_LOAD_TIMEOUT_MS) || 90000;
+
+/** The requests a page hadn't finished, as host and path (no query string: one can carry a token). Five at most. */
+function stillOpen(open) {
+  const seen = new Set();
+  for (const url of open.values()) {
+    try {
+      const u = new URL(url);
+      seen.add(u.origin === new URL(base).origin ? u.pathname : u.host + u.pathname);
+    } catch {
+      seen.add(String(url).slice(0, 60));
+    }
+  }
+  return [...seen].slice(0, 5).map((x) => x.slice(0, 90)).join(", ");
+}
 // The Mac's own Chrome here; installed Chrome by its channel anywhere else (GitHub's runners carry it),
 // or Playwright's own Chromium where no Chrome is built (the deploy's ARM runner: PT_BROWSER=chromium).
 const browser = await chromium.launch(
@@ -107,12 +123,23 @@ try {
   for (const width of WIDTHS) {
     const ctx = await browser.newContext({ viewport: { width, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
     const page = await ctx.newPage();
+    // What the page is still waiting on when a load runs out of time. A load that hangs on someone else's script
+    // reads the same as one that hangs on our own page until the open requests are named (Nov 11 2026: about
+    // seven 90 s timeouts in one deploy's sweep, with nothing in the site's own log).
+    const open = new Map();
+    page.on("request", (r) => open.set(r, r.url()));
+    for (const ended of ["requestfinished", "requestfailed"]) page.on(ended, (r) => open.delete(r));
     for (const p of paths) {
+      open.clear();
       // Load, then up to 8 s for the network to go quiet. Waiting for quiet alone cost 2 minutes a width on a
       // page that keeps a request open, and the deploy's sweep ran out of its 10 minutes (Nov 1 2026).
       const t0 = Date.now();
-      const ok = await page.goto(base + p, { waitUntil: "load", timeout: 90000 }).then(() => true, (e) => (console.log(`${width} ${p} load failed: ${String(e).slice(0, 80)}`), false));
-      if (!ok) { bad++; continue; }
+      const ok = await page.goto(base + p, { waitUntil: "load", timeout: LOAD_MS }).then(() => true, (e) => (console.log(`${width} ${p} load failed: ${String(e).slice(0, 80)}`), false));
+      if (!ok) {
+        console.log(`${width} ${p} was still waiting on: ${stillOpen(open) || "nothing it had asked for"}`);
+        bad++;
+        continue;
+      }
       await page.waitForLoadState("networkidle", { timeout: 8000 }).catch(() => {});
       const secs = ((Date.now() - t0) / 1000).toFixed(1);
       const r = await page.evaluate(measure, width);
