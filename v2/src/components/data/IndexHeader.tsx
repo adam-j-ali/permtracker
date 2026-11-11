@@ -5,7 +5,8 @@ import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { CaseLookupForm } from "@/components/tools/CaseLookupForm";
 import { FinderDock, FinderDockPanel } from "@/components/tools/FinderDock";
-import { TrendChip, type FigureTrend } from "@/components/data/FigureRow";
+import { Figure, FigureRow, type FigureTrend } from "@/components/data/FigureRow";
+import { Spark, SplitBar, type SplitPart } from "@/components/data/FigureVisual";
 
 /**
  * The top of a list page: what the list is, its headline figures, and the
@@ -41,6 +42,10 @@ export interface IndexFigure {
   note?: string;
   /** How the figure moved, drawn as the cards' chip. */
   trend?: FigureTrend;
+  /** The figure over time, oldest first: drawn as a spark line. */
+  spark?: readonly number[];
+  /** The figure as a share of something: drawn as a split bar, with the sentence that says it. */
+  split?: { parts: readonly SplitPart[]; label: string };
 }
 
 export function IndexHeader({
@@ -75,30 +80,33 @@ export function IndexHeader({
           <div className="@[52rem]:col-start-2 @[52rem]:row-span-2 @[52rem]:row-start-1 @[52rem]:mt-[9px] @[52rem]:self-start">{aside}</div>
         ) : null}{" "}
         {figures.length > 0 ? (
-          <dl className="flex flex-wrap gap-x-10 gap-y-5 @[52rem]:col-start-1 @[52rem]:row-start-2 @[52rem]:self-end">
+          // The overview: the same figure cards as every other page, each with its small picture where it has one.
+          <FigureRow className="@[52rem]:col-start-1 @[52rem]:row-start-2 @[52rem]:self-end">
             {figures.map((f) => (
-              <div key={f.label} className="min-w-0">
-                <dt className="text-sm font-semibold">{f.label}</dt>{" "}
-                <dd className="mt-1 font-heading text-2xl font-bold leading-tight tabular-nums [overflow-wrap:anywhere]">
-                  {f.href ? (
+              <Figure
+                key={f.label}
+                label={f.label}
+                value={
+                  f.href ? (
                     <Link href={f.href} className="link">
                       {f.value}
                     </Link>
                   ) : (
                     f.value
-                  )}
-                </dd>{" "}
-                {f.trend ? (
-                  <>
-                    <dd className="mt-1.5">
-                      <TrendChip trend={f.trend} />
-                    </dd>{" "}
-                  </>
-                ) : null}
-                {f.note ? <dd className="mt-0.5 text-sm text-soft">{f.note}</dd> : null}
-              </div>
+                  )
+                }
+                visual={
+                  f.spark && f.spark.length > 1 ? (
+                    <Spark values={f.spark} />
+                  ) : f.split ? (
+                    <SplitBar parts={f.split.parts} label={f.split.label} />
+                  ) : undefined
+                }
+                trend={f.trend}
+                note={f.note}
+              />
             ))}
-          </dl>
+          </FigureRow>
         ) : null}
       </div>{" "}
       <FinderDockPanel className="mt-6" />

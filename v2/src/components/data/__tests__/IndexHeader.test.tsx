@@ -17,8 +17,28 @@ describe("IndexHeader", () => {
     );
     expect(screen.getByText("1,204 fewer in 30 days")).toBeTruthy();
     expect(screen.getByText("From DOL's case-status service")).toBeTruthy();
-    // One chip in all: the second figure has none.
-    expect(document.querySelectorAll("dl > div")[1]!.textContent).toBe("Decided, with the wage set 886,809 ");
+    // One chip in all: the second figure's card holds its label and its number, nothing else.
+    const second = screen.getByText("Decided, with the wage set").parentElement!;
+    expect(second.textContent?.replace(/\s+/g, " ").trim()).toBe("Decided, with the wage set 886,809");
+  });
+
+  it("draws a figure's small picture when it's given one: a split bar named by its sentence", () => {
+    render(
+      <IndexHeader
+        title="Find a prevailing wage request"
+        lede="Search by employer."
+        figures={[
+          {
+            label: "Waiting at DOL now",
+            value: "47,681",
+            split: { parts: [{ value: 90, tone: "good" }, { value: 10, tone: "wait" }], label: "10 of 100 wage requests are still waiting." },
+          },
+          { label: "Decided, with the wage set", value: "886,809" },
+        ]}
+      />,
+    );
+    expect(screen.getAllByRole("img")).toHaveLength(1);
+    expect(screen.getByRole("img", { name: "10 of 100 wage requests are still waiting." })).toBeTruthy();
   });
 });
 

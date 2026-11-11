@@ -92,6 +92,18 @@ export default async function PwdCasesPage() {
             value: summary ? formatInt(summary.pending) : "—",
             trend: backlogTrend(pwdBoard?.flow),
             note: "From DOL's case-status service",
+            // Waiting against decided, of every request the service holds.
+            ...(summary && summary.total > 0
+              ? {
+                  split: {
+                    parts: [
+                      { value: summary.decided, tone: "good" as const },
+                      { value: summary.pending, tone: "wait" as const },
+                    ],
+                    label: `${formatInt(summary.pending)} of ${formatInt(summary.total)} wage requests are still waiting, and ${formatInt(summary.decided)} are decided.`,
+                  },
+                }
+              : {}),
           },
           {
             label: "Decided, with the wage set",
@@ -105,6 +117,14 @@ export default async function PwdCasesPage() {
                 label: "DOL is deciding requests filed on",
                 value: lineDay,
                 href: "/tools/pwd-calculator",
+                // How much of that day DOL has worked through.
+                split: {
+                  parts: [
+                    { value: Math.round(line.filed * line.decidedShare), tone: "good" as const },
+                    { value: line.filed - Math.round(line.filed * line.decidedShare), tone: "wait" as const },
+                  ],
+                  label: `${Math.round(line.decidedShare * 100)}% of the ${formatInt(line.filed)} requests filed that day are decided.`,
+                },
                 note: `${Math.round(line.decidedShare * 100)}% of that day's ${formatInt(line.filed)} decided, our check of ${longDate(line.asOf)}${
                   now.frontier ? `. DOL's own figure${now.asOf ? ` of ${now.asOf}` : ""}: ${now.frontier}` : ""
                 }`,
