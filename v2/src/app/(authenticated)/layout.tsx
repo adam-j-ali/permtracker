@@ -28,7 +28,6 @@ import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import { OnboardingTourWrapper } from "@/components/onboarding/OnboardingTourWrapper";
 import { SentryUserContext } from "@/components/layout/SentryUserContext";
 import { SentryClientInit } from "@/components/layout/SentryClientInit";
-import { AppSessionReplay } from "@/components/layout/AppSessionReplay";
 import { ServiceWorkerRegistration } from "@/components/pwa";
 import { ConvexProviders } from "@/app/providers";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
@@ -44,15 +43,13 @@ export default function AuthenticatedLayout({
     <ConvexAuthNextjsServerProvider>
     <ConvexProviders>
     <InactivityTimeoutProvider>
-      {/* Sentry client: explicit captureError() + stale-deploy reload. Its
-          session replay was removed; PostHog records the app instead. */}
+      {/* Sentry client: explicit captureError() + stale-deploy reload. No session
+          replay, here or in PostHog: the Privacy Policy says it's off
+          (session-replay-off.test.ts). */}
       <SentryClientInit />
 
       {/* Sentry user context for the error reports above. */}
       <SentryUserContext />
-
-      {/* PostHog session replay ON (masked) — public pages never record. */}
-      <AppSessionReplay />
 
       {/* Register unified service worker (caching + push) */}
       <ServiceWorkerRegistration />

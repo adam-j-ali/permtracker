@@ -72,12 +72,10 @@ export function SentryClientInit() {
           // No email address goes to Sentry, from the user or from any message (src/lib/sentryRedact.ts).
           return redactBrowserEvent(event);
         },
-        // NO SESSION REPLAY. PostHog records the authenticated app (masked)
-        // via AppSessionReplay; two replay products recording the same
-        // sessions would be pure duplication and double the replay
-        // main-thread cost. Sentry stays for what it is better at here, the
-        // explicit captureError() calls throughout the app and its console
-        // integration, while PostHog owns replay and analytics.
+        // NO SESSION REPLAY, here or in PostHog: the Privacy Policy says it's
+        // off (session-replay-off.test.ts). Sentry stays for the explicit
+        // captureError() calls throughout the app and its console integration;
+        // PostHog owns analytics.
         integrations: [
           Sentry.consoleLoggingIntegration({ levels: ["warn", "error"] }),
         ],
