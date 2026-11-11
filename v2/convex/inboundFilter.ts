@@ -13,8 +13,9 @@ import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { internalAction, internalMutation, internalQuery, mutation, query, type DatabaseWriter, type QueryCtx } from "./_generated/server";
+import { internalAction, internalMutation, internalQuery, mutation, query, type DatabaseWriter, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { getSecurityAlertEmail, requireAdmin } from "./lib/admin";
+import { contactRowIdOf } from "./lib/contactMessageRef";
 import { getResend } from "./lib/email";
 import { recordError } from "./lib/errorRecording";
 import { sendOwnerMail } from "./lib/ownerMail";
@@ -297,6 +298,18 @@ export const markReleased = internalMutation({
   },
 });
 
+/**
+ * Delete one held message, and the contact form's own row when it came through the form.
+ * The form stores its row first, with the sender's IP, and files a copy with support
+ * mail; "deleted 30 days later" has to be true of both (convex/lib/contactMessageRef.ts).
+ */
+async function deleteHeldRow(ctx: MutationCtx, row: Doc<"supportEmails">): Promise<void> {
+  const formRowId = contactRowIdOf(row.messageId);
+  const contactId = formRowId ? ctx.db.normalizeId("contactMessages", formRowId) : null;
+  if (contactId && (await ctx.db.get(contactId))) await ctx.db.delete(contactId);
+  await ctx.db.delete(row._id);
+}
+
 /** "Delete": a held message the owner has read and doesn't want. SECURITY: requireAdmin. */
 export const deleteHeld = mutation({
   args: { id: v.id("supportEmails") },
@@ -304,7 +317,7 @@ export const deleteHeld = mutation({
   handler: async (ctx, { id }) => {
     await requireAdmin(ctx);
     const row = await ctx.db.get(id);
-    if (row?.status === "held") await ctx.db.delete(id);
+    if (row?.status === "held") await deleteHeldRow(ctx, row);
     return null;
   },
 });
@@ -342,7 +355,7 @@ export const pruneHeld = internalMutation({
     let removed = 0;
     for (const row of old) {
       if (row.status !== "held") continue;
-      await ctx.db.delete(row._id);
+      await deleteHeldRow(ctx, row);
       removed += 1;
     }
     return removed;
