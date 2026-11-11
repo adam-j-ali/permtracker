@@ -221,8 +221,15 @@ export const ensureUserProfileInternal = internalMutation({
  * public mutation is called client-side to cover ALL auth flows.
  */
 export const recordMyLogin = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    /**
+     * Whether analytics is off in the browser signing in: the person's own switch there, or
+     * its Global Privacy Control signal. The server can see neither, and it files one event
+     * by itself below, so the sign-in says.
+     */
+    analyticsOff: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
     const userId = await getCurrentUserIdOrNull(ctx);
     if (!userId) return;
 
@@ -296,12 +303,18 @@ export const recordMyLogin = mutation({
       // login, so it's the reliable "real completed signup" signal and gives an
       // attempt→verified funnel. distinctId matches LoginTracker's identify id so it
       // attaches to the same person. Best-effort; never blocks the login.
+      //
+      // Never for an account that switched usage analytics off, or from a browser that has
+      // it off (its own switch, or its privacy signal): the browser's events obey both, and
+      // the Privacy Policy says the choice follows the account.
       try {
-        await ctx.scheduler.runAfter(0, internal.analytics.captureServerEvent, {
-          event: "signup_verified",
-          distinctId: profile._id,
-          email: user?.email,
-        });
+        if (profile.analyticsOff !== true && args.analyticsOff !== true) {
+          await ctx.scheduler.runAfter(0, internal.analytics.captureServerEvent, {
+            event: "signup_verified",
+            distinctId: profile._id,
+            email: user?.email,
+          });
+        }
       } catch (analyticsError) {
         await recordError(ctx, "mutation", "users.recordMyLogin.analytics", analyticsError, { userId });
       }

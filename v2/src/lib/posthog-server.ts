@@ -36,3 +36,14 @@ export function getPostHogClient(): PostHog | null {
   }
   return posthogClient;
 }
+
+/**
+ * Whether the server may file an event for this request. Never for an account that switched
+ * usage analytics off in Settings, and never for a browser sending Global Privacy Control
+ * (`Sec-GPC: 1`). The browser's own events stop for both (src/instrumentation-client.ts), and
+ * the Privacy Policy says both, so the server's events stop too. A profile that couldn't be
+ * read files under no account, which the switch doesn't cover.
+ */
+export function mayCapture(profile: { analyticsOff?: boolean } | null | undefined, headers: Headers): boolean {
+  return profile?.analyticsOff !== true && headers.get("sec-gpc") !== "1";
+}

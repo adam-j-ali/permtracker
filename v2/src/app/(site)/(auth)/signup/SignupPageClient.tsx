@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { NavLink } from "@/components/ui/nav-link";
+import { analyticsOffHere } from "@/lib/analytics";
 import { toast } from "@/lib/toast";
 import { captureError } from "@/lib/sentry";
 import { handleStaleDeployment } from "@/components/error/auth-error";
@@ -220,7 +221,7 @@ export function SignupPageClient() {
       if (result.signingIn) {
         toast.success("Welcome to PERM Tracker.");
         localStorage.setItem("perm_last_login_at", String(Date.now()));
-        recordMyLogin().catch((err) => console.warn("[recordMyLogin] failed:", err));
+        recordMyLogin({ analyticsOff: analyticsOffHere() }).catch((err) => console.warn("[recordMyLogin] failed:", err));
         trackSignupSucceeded("email_password");
         router.push(afterSignIn("signup"));
       } else {
@@ -299,7 +300,7 @@ export function SignupPageClient() {
 
       toast.success("Account verified. Welcome to PERM Tracker.");
       localStorage.setItem("perm_last_login_at", String(Date.now()));
-      recordMyLogin().catch((err) => console.warn("[recordMyLogin] failed:", err));
+      recordMyLogin({ analyticsOff: analyticsOffHere() }).catch((err) => console.warn("[recordMyLogin] failed:", err));
       trackSignupSucceeded("email_password");
       router.push(afterSignIn("signup"));
     } catch (error) {

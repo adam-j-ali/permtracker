@@ -31,7 +31,7 @@
 import { useEffect, useRef } from "react";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { analytics, isAnalyticsOff } from "@/lib/analytics";
+import { analytics, analyticsOffHere, isAnalyticsOff } from "@/lib/analytics";
 import { captureError } from "@/lib/sentry";
 import { LAST_LOGIN_KEY } from "@/components/error/auth-error";
 
@@ -96,7 +96,7 @@ export function LoginTracker() {
 
     if (!browserOff) analytics.capture("user_logged_in", { auth_method: "oauth_or_password" });
 
-    recordMyLogin().catch((error) => {
+    recordMyLogin({ analyticsOff: analyticsOffHere() }).catch((error) => {
       console.error("[LoginTracker] Failed to record login:", error);
       captureError(error, { operation: "LoginTracker.recordMyLogin" });
       localStorage.removeItem(LAST_LOGIN_KEY);
