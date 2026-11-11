@@ -61,6 +61,8 @@ import { CaseListEmptyState } from "@/components/cases/CaseListEmptyState";
 import { useNavigationLoading } from "@/hooks/useNavigationLoading";
 import { CasesLoadingSkeleton, NewUserEmptyState } from "./components";
 import { sortCases } from "@convex/lib/caseListHelpers";
+import { compareByCustomOrder, orderLookup } from "@/lib/cases/customOrder";
+import { CASE_DELETE_WARNING } from "@/lib/cases/deleteWarning";
 import {
   exportFullCasesJSON,
   exportFullCasesCSV,
@@ -369,31 +371,18 @@ export function CasesPageClient() {
     // If user just dragged (localOrder set), apply that order immediately
     // This keeps the visual reorder without switching sort modes
     if (localOrder.length > 0) {
-      const orderMap = new Map(localOrder.map((id, index) => [id, index]));
-      cases.sort((a, b) => {
-        const aIndex = orderMap.get(a._id) || Number.MAX_SAFE_INTEGER;
-        const bIndex = orderMap.get(b._id) || Number.MAX_SAFE_INTEGER;
-        if (aIndex !== Number.MAX_SAFE_INTEGER && bIndex !== Number.MAX_SAFE_INTEGER) {
-          return aIndex - bIndex;
-        }
-        if (aIndex !== Number.MAX_SAFE_INTEGER) return -1;
-        if (bIndex !== Number.MAX_SAFE_INTEGER) return 1;
-        return 0; // Keep server order for items not in localOrder
-      });
+      const order = orderLookup(localOrder);
+      // A case that isn't in localOrder keeps the server's order.
+      cases.sort((a, b) => compareByCustomOrder(order, a._id, b._id) || 0);
       return cases;
     }
 
     // If custom sort mode, apply saved custom order
     if (sort.sortBy === "custom" && customOrderData?.caseIds?.length) {
-      const orderMap = new Map(customOrderData.caseIds.map((id, index) => [id, index]));
+      const order = orderLookup(customOrderData.caseIds);
       cases.sort((a, b) => {
-        const aIndex = orderMap.get(a._id) || Number.MAX_SAFE_INTEGER;
-        const bIndex = orderMap.get(b._id) || Number.MAX_SAFE_INTEGER;
-        if (aIndex !== Number.MAX_SAFE_INTEGER && bIndex !== Number.MAX_SAFE_INTEGER) {
-          return aIndex - bIndex;
-        }
-        if (aIndex !== Number.MAX_SAFE_INTEGER) return -1;
-        if (bIndex !== Number.MAX_SAFE_INTEGER) return 1;
+        const placed = compareByCustomOrder(order, a._id, b._id);
+        if (placed !== undefined) return placed;
         // Fallback for new cases not in custom order — sort them using the
         // base sort method that was active when custom order was saved.
         const baseSortBy = customOrderData.baseSortMethod || "deadline";
@@ -1130,8 +1119,7 @@ export function CasesPageClient() {
             <DialogDescription>
               {confirmDialog.type === "delete" && (
                 <>
-                  Are you sure you want to delete {confirmDialog.count} case{confirmDialog.count !== 1 ? "s" : ""}?
-                  This action can be undone by an administrator.
+                  Delete {confirmDialog.count} case{confirmDialog.count !== 1 ? "s" : ""}? {CASE_DELETE_WARNING}
                 </>
               )}
               {confirmDialog.type === "archive" && (
@@ -1143,7 +1131,7 @@ export function CasesPageClient() {
               {confirmDialog.type === "reopen" && (
                 <>
                   Are you sure you want to re-open {confirmDialog.count} case{confirmDialog.count !== 1 ? "s" : ""}?
-                  Cases will be set back to PWD stage.
+                  Each case goes back to the stage its dates support.
                 </>
               )}
             </DialogDescription>
@@ -1184,8 +1172,7 @@ export function CasesPageClient() {
             <DialogDescription>
               {singleCaseConfirm.type === "delete" ? (
                 <>
-                  Are you sure you want to delete &quot;{singleCaseConfirm.caseName}&quot;?
-                  This action can be undone by an administrator.
+                  Delete &quot;{singleCaseConfirm.caseName}&quot;? {CASE_DELETE_WARNING}
                 </>
               ) : (
                 <>

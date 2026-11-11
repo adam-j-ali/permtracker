@@ -168,10 +168,13 @@ vi.mock("@/components/cases/detail/DocumentsTab", () => ({
   ),
 }));
 
+// The stand-in keeps the page's save handler, so a test can call it as the real tab does.
+let notesSave: ((notes: unknown[]) => void | Promise<void>) | undefined;
 vi.mock("@/components/cases/detail/NotesTab", () => ({
-  NotesTab: ({ notes }: any) => (
-    <div data-testid="notes-tab">Notes Tab ({notes?.length || 0} notes)</div>
-  ),
+  NotesTab: ({ notes, onUpdateNotes }: any) => {
+    notesSave = onUpdateNotes;
+    return <div data-testid="notes-tab">Notes Tab ({notes?.length || 0} notes)</div>;
+  },
 }));
 
 // Mock status badges
@@ -481,6 +484,23 @@ describe("CaseDetailPage - Tab Navigation", () => {
     expect(screen.getByTestId("notes-tab")).toBeInTheDocument();
     expect(screen.queryByTestId("overview-tab")).not.toBeInTheDocument();
   });
+
+  // The notes tab clears its box only after the save resolves, so a failed
+  // save has to reject here or the words typed are lost.
+  it("a note's failed save rejects, so the notes tab keeps the words", async () => {
+    mockCaseData.mockReturnValue(createMockCaseData());
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { user } = await renderPageAndWait("test-id");
+    await user.click(screen.getByRole("tab", { name: /notes/i }));
+
+    mockUpdate.mockRejectedValue(new Error("offline"));
+    await expect(Promise.resolve(notesSave?.([{ id: "n1", content: "Call the employer", createdAt: 1, status: "pending" }]))).rejects.toThrow("offline");
+    expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ notes: expect.any(Array) }));
+
+    mockUpdate.mockResolvedValue(undefined);
+    await expect(Promise.resolve(notesSave?.([]))).resolves.toBeUndefined();
+    quiet.mockRestore();
+  });
 });
 
 // SECTION HEADER TESTS
@@ -626,7 +646,8 @@ describe("CaseDetailPage - Delete Confirmation", () => {
 
     // Dialog should appear
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByText(/are you sure you want to delete/i)).toBeInTheDocument();
+    // One true sentence, the same in every delete box: nothing can bring the case back.
+    expect(screen.getByText(/The case, its notes and its documents are erased\. This can’t be undone\./)).toBeInTheDocument();
   });
 
   it("shows case name in delete confirmation", async () => {

@@ -29,7 +29,7 @@ describe("the dashboard's card for dates from the deadline calculator", () => {
       "/cases/new?calc=2026-01-15_2026-02-01",
     );
     act(() => {
-      fireEvent.click(screen.getByRole("button", { name: "Not now" }));
+      fireEvent.click(screen.getByRole("button", { name: "Discard" }));
     });
     expect(screen.queryByText(/Your dates from the deadline calculator/)).toBeNull();
     expect(window.localStorage.getItem("pt:calculator-case")).toBeNull();

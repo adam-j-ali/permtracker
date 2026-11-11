@@ -242,7 +242,7 @@ export function AddCasePageClient() {
                   You can{" "}
                   <button
                     onClick={() => router.push(`/cases/${duplicateCaseId}`)}
-                    className="text-primary hover:underline font-medium"
+                    className="text-primary-text underline font-medium"
                   >
                     view the existing case
                   </button>{" "}
