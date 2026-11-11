@@ -12,6 +12,7 @@ import { stopListMail, type ListMailStopped } from "./listMailOff";
 import type { MutationCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { recordError } from "./errorRecording";
+import { deleteCaseDocumentBlobs } from "./caseDocumentBlobs";
 
 interface PurgeResult {
   /** The deleted user's email, captured before the user row is removed. */
@@ -65,16 +66,9 @@ export async function purgeAllUserData(
   let storageBlobsDeleted = 0;
   const failedBlobs: string[] = [];
   for (const caseDoc of cases) {
-    for (const doc of caseDoc.documents ?? []) {
-      if (doc.storageId) {
-        try {
-          await ctx.storage.delete(doc.storageId as Id<"_storage">);
-          storageBlobsDeleted++;
-        } catch {
-          failedBlobs.push(doc.storageId);
-        }
-      }
-    }
+    const blobs = await deleteCaseDocumentBlobs(ctx, caseDoc);
+    storageBlobsDeleted += blobs.deleted;
+    failedBlobs.push(...blobs.failed);
     await ctx.db.delete(caseDoc._id);
   }
   // Record blob-deletion failures ONCE per purge (not per blob) to avoid alert
