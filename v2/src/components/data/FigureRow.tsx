@@ -96,7 +96,17 @@ export function Figure({
         {icon ? <span aria-hidden="true" className="inline-flex shrink-0 [&_svg]:size-4">{icon}</span> : null}
         {label}
       </p>{" "}
-      <p className={cn("mt-1.5 font-heading text-[1.75rem] font-bold leading-none tabular-nums sm:text-[2rem]", number && "whitespace-nowrap")}>{value}</p>{" "}
+      {/* A number is the figure, so it's the largest thing in the card. A name or a date is words: set a step
+          smaller, it reads as a name and wraps inside its card, where at a number's size one long name made its
+          card twice the height of its neighbours. */}
+      <p
+        className={cn(
+          "mt-1.5 font-heading font-bold tabular-nums",
+          number ? "whitespace-nowrap text-[1.75rem] leading-none sm:text-[2rem]" : "text-xl leading-tight sm:text-[1.375rem]",
+        )}
+      >
+        {value}
+      </p>{" "}
       {visual ? <div className="mt-2.5">{visual}</div> : null}{" "}
       {trend ? <TrendChip trend={trend} className="mt-2" /> : null}{" "}
       {note ? (
