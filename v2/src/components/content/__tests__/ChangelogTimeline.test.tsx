@@ -5,12 +5,6 @@ import { renderWithProviders } from "../../../../test-utils/render-utils";
 import ChangelogTimeline from "../ChangelogTimeline";
 import type { PostSummary } from "@/lib/content/types";
 
-// GSAP is lazily dynamic-imported by useScrollStagger and pulls real browser
-// globals; stub the hook to a no-op so it doesn't actually run in jsdom.
-vi.mock("@/hooks/useGSAP", () => ({
-  useScrollStagger: vi.fn(),
-}));
-
 // next/image — render a plain <img> so jsdom doesn't choke on optimizer paths.
 vi.mock("next/image", () => ({
   __esModule: true,

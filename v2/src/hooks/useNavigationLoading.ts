@@ -10,7 +10,7 @@ const BACK_SENTINEL = "__nav_back__";
  * useNavigationLoading Hook
  *
  * Provides navigation with a loading state that coordinates with ALL other
- * navigation components (NavLink, NavigableCard, etc.) via shared context.
+ * navigation components (NavLink and the like) via shared context.
  * When any component starts navigating, all other loading indicators clear.
  *
  * @returns Object with:
