@@ -71,6 +71,18 @@ describe("LoginTracker and a browser switched off", () => {
   });
 });
 
+describe("LoginTracker and who the events belong to", () => {
+  // The Privacy Policy says events are linked to the account. It names no name, so none is sent.
+  it("identifies the account by its id alone, with no name", async () => {
+    render(<LoginTracker />);
+    await waitFor(() => expect(posthog.identify).toHaveBeenCalled());
+    for (const call of posthog.identify.mock.calls) {
+      expect(call[0]).toBe("u1");
+      expect(JSON.stringify(call.slice(1))).not.toContain("A Person");
+    }
+  });
+});
+
 describe("LoginTracker tells the server whether analytics is off in this browser", () => {
   // The server files one event by itself at a first sign-in (convex/users.ts). It can't see
   // this browser's switch or its privacy signal, so the sign-in says.

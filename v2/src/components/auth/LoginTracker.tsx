@@ -83,7 +83,8 @@ export function LoginTracker() {
     // attributed to the account.
     if (!browserOff) {
       analytics.consentForAccount();
-      analytics.identify(profile._id, { name: profile.fullName });
+      // The id alone: the Privacy Policy says events are linked to the account, and names no name.
+      analytics.identify(profile._id);
     }
 
     // Skip login recording + event if already recorded recently (by LoginPageClient)
