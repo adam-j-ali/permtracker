@@ -166,6 +166,29 @@ describe("Cases Security", () => {
 
 // Bulk Operations Tests (4.3)
 
+describe("A case link that isn't a case's id", () => {
+  setupSchedulerTests();
+
+  // A cut-off or mistyped /cases/<id> link used to throw in the argument check, which the page showed as
+  // "Cases error". It's the same answer as a case that doesn't exist: null, and the page says "Case not found".
+  it("answers null for a malformed id, a cut-off one and another table's id", async () => {
+    const t = createTestContext();
+    const user = await createAuthenticatedContext(t, "User 1");
+    const caseId = await user.mutation(api.cases.create, {
+      employerName: "Test Corp",
+      beneficiaryIdentifier: "John D.",
+      positionTitle: "Engineer",
+    });
+    await finishScheduledFunctions(t);
+    const anotherTablesId = await t.run(async (ctx) => (await ctx.db.query("users").first())!._id);
+
+    expect(await user.query(api.cases.get, { id: "not-a-case" })).toBeNull();
+    expect(await user.query(api.cases.get, { id: caseId.slice(0, 12) })).toBeNull();
+    expect(await user.query(api.cases.get, { id: anotherTablesId })).toBeNull();
+    expect((await user.query(api.cases.get, { id: caseId }))?._id).toBe(caseId);
+  });
+});
+
 describe("A deleted case takes its uploaded files with it", () => {
   setupSchedulerTests();
 

@@ -172,7 +172,9 @@ export const list = query({
  */
 export const get = query({
   args: {
-    id: v.id("cases"),
+    // The address's own text, so a string checked below. As v.id("cases") a cut-off or mistyped link threw
+    // before the handler ran, and the page showed an error where "Case not found" exists.
+    id: v.string(),
   },
   handler: async (ctx, args) => {
     // Use null-safe auth check for graceful sign-out/timeout handling
@@ -186,7 +188,11 @@ export const get = query({
       return null;
     }
 
-    const caseDoc = await ctx.db.get(args.id);
+    // Not the shape of a case's id: no such case.
+    const id = ctx.db.normalizeId("cases", args.id);
+    if (id === null) return null;
+
+    const caseDoc = await ctx.db.get(id);
 
     if (!caseDoc) {
       // Case not found in database
