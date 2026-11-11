@@ -70,3 +70,35 @@ describe("the retired language pages", () => {
     expect(pathToRegexp("/:lang(es|zh|pt-br|ko|vi)/perm-case-status").test("/est/perm-case-status")).toBe(false);
   });
 });
+
+/**
+ * A link printed in a sentence gets read with the sentence's punctuation: "(permtracker.app/developers)." is opened
+ * as /developers). by whatever turned the text into a link. In the 30 days to Nov 10 2026 /developers)., /api-terms).
+ * and /v1. were each asked for, and each answered 404. The address without its last marks is the page that was meant.
+ */
+describe("an address that arrives with a sentence's punctuation", () => {
+  it.each([
+    ["/developers).", "/developers"],
+    ["/api-terms).", "/api-terms"],
+    ["/perm-case-status.", "/perm-case-status"],
+    ["/tools/perm-timeline-calculator),", "/tools/perm-timeline-calculator"],
+    ["/perm-employers/google-llc;", "/perm-employers/google-llc"],
+    ["/guides/getting-started:", "/guides/getting-started"],
+    ["/v1.", "/v1"],
+  ])("%s goes to %s", async (asked, meant) => {
+    expect(await follow(asked)).toEqual({ to: meant, permanent: true });
+  });
+
+  it("keeps the query string", async () => {
+    expect(await follow("/perm-case-status).?case=G-100-26125-868956")).toEqual({
+      to: "/perm-case-status?case=G-100-26125-868956",
+      permanent: true,
+    });
+  });
+
+  it("leaves real addresses alone, a file's extension and a dot inside a name included", async () => {
+    for (const path of ["/developers", "/sitemap.xml", "/llms.txt", "/v1/openapi.json", "/perm-employers/a.b-c", "/feed.xml", "/"]) {
+      expect(await follow(path)).toBeNull();
+    }
+  });
+});

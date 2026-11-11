@@ -306,5 +306,5 @@ export function sandboxAnswer(url: URL, params: Record<string, string>): ReadRes
   if (kind) {
     return second ? sandboxEntity(kind, params.slug ?? second) : sandboxSearch(kind, url.searchParams.get("q") ?? "");
   }
-  return notInSandbox("The sandbox has no sample answer for this address. See the samples at https://permtracker.app/developers#sandbox.");
+  return notInSandbox("The sandbox has no sample answer for this address. The samples: https://permtracker.app/developers#sandbox");
 }
