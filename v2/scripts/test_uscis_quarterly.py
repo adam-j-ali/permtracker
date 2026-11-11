@@ -506,6 +506,13 @@ def main() -> int:
 
     # -- the whole run over local files, against the fake --------------------
     q.Database = lambda: db  # type: ignore[assignment]
+    # The fixture's offices are made up (O001...), so the run reads a page list that holds them. The real list is
+    # put back for the last run below, which has to end red.
+    real_pages = q.OFFICE_PAGES
+    import tempfile
+    fixture_pages = pathlib.Path(tempfile.mkdtemp()) / "office-pages.json"
+    fixture_pages.write_text("[" + ",".join('{"code": "%s"}' % r["code"] for r in of.rows if r["code"] != "ALL") + "]")
+    q.OFFICE_PAGES = fixture_pages
     rc = q.main(["--local", str(FIXTURES), "--skip-factsheet"])
     loads = q.read_loads(db)
     check("main: exits 0 and records every file by name",
@@ -525,6 +532,11 @@ def main() -> int:
     check("main: a second run skips every file already loaded (no table inserts)", rc == 0 and inserts == [])
     runs = db.execute("SELECT note FROM ingest_runs ORDER BY rowid DESC LIMIT 1")["response"]["result"]["rows"]
     check("main: the quiet run says so", "nothing new" in runs[0][0]["value"])
+    q.OFFICE_PAGES = real_pages
+    rc = q.main(["--local", str(FIXTURES), "--skip-factsheet"])
+    runs = db.execute("SELECT status, note FROM ingest_runs ORDER BY rowid DESC LIMIT 1")["response"]["result"]["rows"]
+    check("main: ends red and names the offices when the site's list has no page for them",
+          rc == 1 and "NO PAGE on the site for" in runs[0][1]["value"] and "O001" in runs[0][1]["value"])
 
     # -- the factsheet text ----------------------------------------------------
     text = """Historical Processing Times Trends
@@ -560,6 +572,26 @@ I-485 Employment-based adjustment applications - 27% 51% -6% -12% 13% 11% -22% -
     refuses("factsheet: a text without the employment I-485 row is refused",
             lambda: q.parse_factsheet_text(text.replace("I-485 Employment-based adjustment applications 5.5", "I-485 Nothing 5.5")),
             "employment-based")
+
+    # The site gives every office a page from a fixed list; the loader names an office the list lacks.
+    import json
+    with tempfile.TemporaryDirectory() as tmp:
+        pages = pathlib.Path(tmp) / "offices.json"
+        pages.write_text('[{"code": "HAR", "name": "Hartford", "state": "Connecticut", "slug": "hartford-connecticut"}]')
+        office_rows = [
+            {"code": "ALL", "office": "Total", "state": ""},
+            {"code": "HAR", "office": "Hartford", "state": "Connecticut"},
+            {"code": "NEW", "office": "Springfield", "state": "Illinois"},
+        ]
+        check("offices: one the site has no page for is named, and the total row is nobody's office",
+              q.offices_without_a_page(office_rows, pages) == ["NEW Springfield (Illinois)"])
+        check("offices: a file the list covers names none", q.offices_without_a_page(office_rows[:2], pages) == [])
+    listed_offices = json.loads(q.OFFICE_PAGES.read_text())
+    check("offices: the site's own list holds 99, each with a code and an address of its own",
+          len(listed_offices) == 99
+          and all(set(o) == {"code", "name", "state", "slug"} for o in listed_offices)
+          and len({o["code"] for o in listed_offices}) == 99
+          and len({o["slug"] for o in listed_offices}) == 99)
     return report()
 
 

@@ -188,6 +188,50 @@ export function sumMeasure(rowsIn: readonly OfficeRow[], measure: OfficeMeasure)
   return { total, withheld };
 }
 
+/** One loaded quarter of the office file: every office's row under its code. */
+export interface OfficeQuarter {
+  fy: number;
+  quarter: number;
+  quarterEnd: string;
+  sourceFile: string;
+  byCode: Readonly<Record<string, OfficeRow>>;
+}
+
+/** One office in one quarter. */
+export interface OfficePoint {
+  fy: number;
+  quarter: number;
+  quarterEnd: string;
+  row: OfficeRow;
+}
+
+/** An office's own rows across the loaded quarters, oldest first. A quarter the file doesn't carry it in is skipped. */
+export function officeYear(quarters: readonly OfficeQuarter[], code: string): OfficePoint[] {
+  const out: OfficePoint[] = [];
+  for (const q of quarters) {
+    const row = q.byCode[code];
+    if (row) out.push({ fy: q.fy, quarter: q.quarter, quarterEnd: q.quarterEnd, row });
+  }
+  return out;
+}
+
+/**
+ * Where an office stands among `rowsIn` on one figure: rank 1 holds the most. Null when the office isn't in the
+ * list or its own figure is withheld or missing. Offices whose figure is withheld are left out of the count, so
+ * "12th of 88" never counts a cell nobody can read.
+ */
+export function standing(
+  rowsIn: readonly OfficeRow[],
+  code: string,
+  value: (r: OfficeRow) => number | null,
+): { rank: number; of: number } | null {
+  const mine = rowsIn.find((r) => r.code === code);
+  const own = mine ? value(mine) : null;
+  if (own === null) return null;
+  const known = rowsIn.map(value).filter((v): v is number => v !== null);
+  return { rank: known.filter((v) => v > own).length + 1, of: known.length };
+}
+
 /** Rows grouped by state, states alphabetical, the service centers last. */
 export function groupByState(rowsIn: readonly OfficeRow[]): Array<{ state: string; offices: OfficeRow[] }> {
   const groups = new Map<string, OfficeRow[]>();

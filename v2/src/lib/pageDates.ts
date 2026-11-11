@@ -68,6 +68,7 @@ export const TEMPLATE_DAY: Readonly<Record<string, string>> = {
   "/changelog/[slug]": "2026-10-01",
   "/guides/[slug]": "2026-09-26",
   "/h1b-employers/[state]": "2026-10-17",
+  "/i485-by-field-office/[office]": "2026-11-11",
   "/law-firm-rankings/[state]": "2026-10-28",
   "/perm-attorneys/[slug]": "2026-10-16",
   "/perm-attorneys/browse/[letter]": "2026-10-15",

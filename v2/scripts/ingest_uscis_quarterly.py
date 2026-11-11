@@ -782,6 +782,29 @@ def ensure_tables(db: Database) -> None:
         db.execute(ddl)
 
 
+OFFICE_PAGES = pathlib.Path(__file__).resolve().parent.parent / "src" / "lib" / "uscisOffices.json"
+
+
+def offices_without_a_page(rows: list[dict], path: pathlib.Path | None = None) -> list[str]:
+    """Offices USCIS's file lists that the site holds no page for, each as "CODE Office (State)".
+
+    The site gives every office a page of its own from a fixed list (src/lib/uscisOffices.json), which the sitemap
+    and the search box read too. An office USCIS adds, or gives a new code, would sit on the index page with no
+    page of its own and nothing would say so. The run that finds one ends red and names it.
+    """
+    import json
+    held = {o["code"] for o in json.loads((path or OFFICE_PAGES).read_text())}
+    return sorted(f'{r["code"]} {r["office"]} ({r["state"]})'
+                  for r in rows if r["code"] != "ALL" and r["code"] not in held)
+
+
+def newest_office_rows(db: Database) -> list[dict]:
+    """The offices of the newest quarter held, whatever this run loaded."""
+    return [{"code": str(r[0]), "office": str(r[1]), "state": str(r[2] or "")} for r in query_rows(
+        db, "SELECT code, office, state FROM uscis_i485_offices WHERE (fy, quarter) = "
+            "(SELECT fy, quarter FROM uscis_i485_offices ORDER BY fy DESC, quarter DESC LIMIT 1)", [])]
+
+
 def count_where(db: Database, table: str, where: str, args: list) -> int:
     return int(db.scalar(f"SELECT count(*) FROM {table} WHERE {where}", args) or 0)
 
@@ -1053,9 +1076,17 @@ def main(argv: list[str] | None = None) -> int:
                         max_age_days=MAX_AGE_DAYS)
     note = (f"loaded {', '.join(loaded_names)}" if loaded_names
             else f"nothing new among {len(listed)} listed file(s)") + factsheet_note
+    # Checked on every run against what's held, so the run stays red until the list is fixed.
+    unpaged = offices_without_a_page(newest_office_rows(db))
+    if unpaged:
+        note += f"; NO PAGE on the site for {len(unpaged)} office(s): {', '.join(unpaged)}"
     record_run(db, "ingest_uscis_quarterly.py", status="ok", rows_written=written,
                note=note, started_at=started)
     log(f"done: {note}")
+    if unpaged:
+        # The quarter is loaded and stamped. The run still ends red: an office with no page is work for a person.
+        log("FAILED: add each office above to src/lib/uscisOffices.json (code, name, state, slug), then rerun")
+        return 1
     return 0
 
 

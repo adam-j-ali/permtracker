@@ -13,6 +13,7 @@ import {
   type SitePage,
 } from "@/lib/siteMap";
 import { FORM_PAGES } from "@/lib/uscisForms";
+import { USCIS_OFFICES, isCenter } from "@/lib/uscisOffices";
 
 export interface SiteIndexEntry {
   label: string;
@@ -140,6 +141,15 @@ export function staticIndex(): SiteIndexEntry[] {
   // One page per USCIS form, under the name people search for ("i-485 processing time").
   for (const f of FORM_PAGES) {
     add({ href: `/uscis-processing-times/${f.slug}`, name: `${f.form} processing time` }, "USCIS processing times", f.terms);
+  }
+  // One page per USCIS office, under the words people type ("hartford field office", "nbc i-485").
+  for (const o of USCIS_OFFICES) {
+    const center = isCenter(o);
+    add(
+      { href: `/i485-by-field-office/${o.slug}`, name: center ? `${o.name}: I-485 numbers` : `${o.name} field office: I-485 numbers` },
+      "USCIS offices",
+      `${o.code} ${o.state} uscis ${center ? "service center" : "field office fo"} i-485 i485 pending approved`,
+    );
   }
   // One row per page: a page in two lists keeps its first, most specific group.
   const seen = new Set<string>();

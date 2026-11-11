@@ -220,6 +220,31 @@ export default async function I485ByFieldOfficePage() {
             </p>
           ) : null}
 
+          {/* First things first: the search and the list, then the charts. */}
+          <section id="every-office" className="mt-12 scroll-mt-24">
+            <h2 className="font-heading text-2xl font-bold">Find your office</h2>{" "}
+            <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
+              {fieldOffices.length} field offices and {serviceCenters.length} service
+              centers, busiest first. Search for yours, filter by state, or sort on
+              any column. An office&apos;s name opens its own page, with its last four quarters.
+              Every count is USCIS&apos;s own, for the employment-based half, with the
+              family-based pending count beside it for scale.
+            </p>{" "}
+            <div className="mt-4">
+              <OfficeTable rows={[...fieldOffices, ...serviceCenters]} />
+            </div>{" "}
+            <FinePrint summary="What the columns mean, in USCIS's words" className="mt-4">
+              <p>
+                Received is new applications entered in the quarter; approved and denied
+                are decisions issued in the quarter; pending is what awaited a decision
+                on its last day. USCIS notes that transfers between offices and
+                administrative closures are not in the report, so a pending count cannot
+                be computed from earlier periods. The office location is where the case
+                sits, not the whole area the office covers. Employment-based
+                applications are received at a service center and routed from there.
+              </p>
+            </FinePrint>
+          </section>
           <section id="busiest" className="mt-12 scroll-mt-24">
             <FigurePlate
               title="Employment-based I-485 pending"
@@ -278,29 +303,6 @@ export default async function I485ByFieldOfficePage() {
             </FigurePlate>
           </section>
 
-          <section id="every-office" className="mt-12 scroll-mt-24">
-            <h2 className="font-heading text-2xl font-bold">Every office, by state</h2>{" "}
-            <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
-              {fieldOffices.length} field offices and {serviceCenters.length} service
-              centers, busiest first. Search for yours, filter by state, or sort on
-              any column. Every count is USCIS&apos;s own, for the employment-based half,
-              with the family-based pending count beside it for scale.
-            </p>{" "}
-            <div className="mt-4">
-              <OfficeTable rows={[...fieldOffices, ...serviceCenters]} />
-            </div>{" "}
-            <FinePrint summary="What the columns mean, in USCIS's words" className="mt-4">
-              <p>
-                Received is new applications entered in the quarter; approved and denied
-                are decisions issued in the quarter; pending is what awaited a decision
-                on its last day. USCIS notes that transfers between offices and
-                administrative closures are not in the report, so a pending count cannot
-                be computed from earlier periods. The office location is where the case
-                sits, not the whole area the office covers. Employment-based
-                applications are received at a service center and routed from there.
-              </p>
-            </FinePrint>
-          </section>
         </>
       )}
 

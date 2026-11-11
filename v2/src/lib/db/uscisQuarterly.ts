@@ -3,7 +3,7 @@ import "server-only";
 import { cache } from "react";
 
 import { one, rows } from "./client";
-import type { AwaitingCell, ClassCountryCell, OfficeRow } from "@/lib/uscisQuarterlyShape";
+import type { AwaitingCell, ClassCountryCell, OfficeQuarter, OfficeRow } from "@/lib/uscisQuarterlyShape";
 import type { FormQuarterRow } from "@/lib/uscisForms";
 import { beforeFirstLoad } from "./firstLoad";
 
@@ -268,6 +268,29 @@ export const getI485Offices = cache(async (): Promise<I485Offices | null> => {
     offices: all.filter((r) => r.code !== "ALL"),
     previous,
   };
+});
+
+/**
+ * Every loaded quarter of the office file, oldest first: the year an office's own page draws. One read of a small
+ * table, a hundred rows a quarter.
+ */
+export const getI485OfficeQuarters = cache(async (): Promise<OfficeQuarter[]> => {
+  const list = await rows<Record<string, unknown>>(
+    `SELECT fy, quarter, state, office, code, suppressed, quarter_end, source_file, ${OFFICE_COLS.join(", ")}
+       FROM uscis_i485_offices ORDER BY fy, quarter, rowid`,
+  ).catch(beforeFirstLoad<Record<string, unknown>[]>([]));
+  const out: Array<OfficeQuarter & { byCode: Record<string, OfficeRow> }> = [];
+  for (const r of list) {
+    const fy = Number(r.fy);
+    const quarter = Number(r.quarter);
+    let q = out[out.length - 1];
+    if (!q || q.fy !== fy || q.quarter !== quarter) {
+      q = { fy, quarter, quarterEnd: String(r.quarter_end), sourceFile: String(r.source_file), byCode: {} };
+      out.push(q);
+    }
+    q.byCode[String(r.code)] = officeRow(r);
+  }
+  return out;
 });
 
 // ---------------------------------------------------------------------------
