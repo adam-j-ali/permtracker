@@ -133,6 +133,41 @@ describe("unconfirmed queue, bulletin and employer sign-ups", () => {
   }, 120_000);
 });
 
+describe("unconfirmed digest and product-news sign-ups", () => {
+  setupSchedulerTests();
+
+  // The Privacy Policy says an email sign-up nobody confirms is deleted after 30 days.
+  // These two lists are sign-ups too.
+  it("go past the same horizon; confirmed, stopped and recent ones stay", async () => {
+    const t = createTestContext();
+    const { UNCONFIRMED_CASE_ALERT_DAYS } = await import("../retention");
+    const now = Date.now();
+    const old = now - (UNCONFIRMED_CASE_ALERT_DAYS + 1) * DAY;
+    await t.run(async (ctx) => {
+      for (const table of ["newsSubscribers", "newsletterSubscribers"] as const) {
+        await ctx.db.insert(table, { email: `${table}-never@example.com`, createdAt: old });
+        await ctx.db.insert(table, { email: `${table}-yes@example.com`, createdAt: old, confirmedAt: old });
+        await ctx.db.insert(table, { email: `${table}-stopped@example.com`, createdAt: old, unsubscribedAt: old });
+        await ctx.db.insert(table, { email: `${table}-new@example.com`, createdAt: now });
+      }
+    });
+    const res = await t.mutation(internal.retention.pruneOperationalLogs, { now });
+    expect(res.unconfirmedOtherAlerts).toBe(2);
+    const left = await t.run(async (ctx) => [
+      ...(await ctx.db.query("newsSubscribers").collect()),
+      ...(await ctx.db.query("newsletterSubscribers").collect()),
+    ].map((r) => r.email).sort());
+    expect(left).toEqual([
+      "newsSubscribers-new@example.com",
+      "newsSubscribers-stopped@example.com",
+      "newsSubscribers-yes@example.com",
+      "newsletterSubscribers-new@example.com",
+      "newsletterSubscribers-stopped@example.com",
+      "newsletterSubscribers-yes@example.com",
+    ]);
+  });
+});
+
 describe("tool cache cleanup", () => {
   setupSchedulerTests();
 
