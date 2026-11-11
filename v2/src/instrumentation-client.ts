@@ -35,6 +35,7 @@ import { droppedForAllowance } from "@/lib/analyticsSample";
 import { guardDomAgainstTranslators } from "@/lib/translateSafeDom";
 import { guardStorage } from "@/lib/storageGuard";
 import { isLocalDevHost } from "@/lib/localHost";
+import { inOwnFrame } from "@/lib/ownFrame";
 
 // The live site's security policy has no 'unsafe-eval', so zod must not
 // compile parsers with new Function: its probe would be refused and log a
@@ -95,6 +96,8 @@ function startPostHog(key: string, country: string | null): void {
     // opt-out only falls back to cookie-free counting. Disclosed in the
     // Privacy Policy (§7, §15).
     const gpcEnabled = isGpcEnabled();
+    // A live embed shown on one of our own pages isn't a page anyone went to (src/lib/ownFrame.ts).
+    const ownFrame = inOwnFrame();
 
     posthog.init(key, {
       api_host: "/ingest",
@@ -150,6 +153,7 @@ function startPostHog(key: string, country: string | null): void {
         // nothing. Read on every event, so an opt-out mid-session applies at
         // once.
         if (gpcEnabled || isAnalyticsOff()) return null;
+        if (ownFrame && event.event === "$pageview") return null;
 
         // Case numbers never leave for a third party, on ANY event.
         //
