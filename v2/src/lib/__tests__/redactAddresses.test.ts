@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { redactAddresses, redactEventAddresses } from "@/lib/analyticsRedact";
+import { redactAddresses, redactEventAddresses, redactIdentifiers } from "@/lib/analyticsRedact";
 
 /**
  * What a page address may tell PostHog. The Privacy Policy says case numbers are
@@ -130,6 +130,25 @@ describe("redactAddresses", () => {
     ]) {
       expect(run({ $current_url: url }).$current_url).toBe(url);
     }
+  });
+
+  it("reads an address of any length in step with its length, and redacts all of it", () => {
+    // A referrer can be any length, and someone else controls it. With an unbounded
+    // email pattern this one took a minute; bounded, it's a few milliseconds.
+    const long = `https://elsewhere.example/?case=G-100-26125-868956&x=${"a".repeat(200_000)}&receipt=IOE0912345678&who=${"b".repeat(200_000)}%40example.com`;
+    const started = performance.now();
+    const out = String(run({ $referrer: long }).$referrer);
+    expect(performance.now() - started).toBeLessThan(3_000);
+    expect(out.startsWith("https://elsewhere.example/?case=redacted&x=aaa")).toBe(true);
+    expect(out).toContain("&receipt=redacted&who=");
+    expect(out).not.toContain("%40example.com");
+  });
+
+  it("rules out a long run of letters before an @ just as fast in a click's own text", () => {
+    const started = performance.now();
+    const out = redactIdentifiers(`${"a".repeat(200_000)} then someone@example.com`);
+    expect(performance.now() - started).toBeLessThan(3_000);
+    expect(out.endsWith(" then [redacted]")).toBe(true);
   });
 
   it("survives a missing bag and values that aren't strings", () => {
