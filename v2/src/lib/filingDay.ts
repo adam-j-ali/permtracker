@@ -60,7 +60,7 @@ export interface DayTally {
 export const FILINGS_FROM = "2019-10-01";
 
 /** Cases a page of the day's list shows. */
-export const DAY_PAGE_SIZE = 50;
+export const DAY_PAGE_SIZE = 25;
 
 /** The letter a name is filed under: its first letter, or # for a digit or a symbol. */
 export function letterOf(name: string): string {
@@ -99,7 +99,7 @@ const ORDER: Record<DaySort, (a: DayCase, b: DayCase) => number> = {
 
 export function dayView(
   cases: readonly DayCase[],
-  pick: { status: string | null; letter: string | null; page: number; q?: string | null; sort?: DaySort | null },
+  pick: { status: string | null; letter: string | null; page: number; q?: string | null; sort?: DaySort | null; per?: number },
 ): DayView {
   // Every word must appear in the case number, the employer or the job, whatever the punctuation.
   const words = fold(pick.q ?? "").split(" ").filter(Boolean);
@@ -108,7 +108,8 @@ export function dayView(
     .filter((x) => (!pick.status || x.status === pick.status) && (!pick.letter || letterOf(x.employer) === pick.letter))
     .filter((x) => words.length === 0 || words.every((w) => hay(x).includes(w)))
     .sort(ORDER[pick.sort && pick.sort in ORDER ? pick.sort : "employer"]);
-  const pageCount = Math.max(1, Math.ceil(kept.length / DAY_PAGE_SIZE));
+  const per = pick.per && pick.per >= 1 ? Math.floor(pick.per) : DAY_PAGE_SIZE;
+  const pageCount = Math.max(1, Math.ceil(kept.length / per));
   const page = Math.min(Math.max(1, Math.floor(pick.page) || 1), pageCount);
   const statuses = [...tally(cases.map((x) => x.status))]
     .map(([status, n]) => ({ status, n }))
@@ -116,7 +117,7 @@ export function dayView(
   const letters = [...tally(cases.map((x) => letterOf(x.employer)))]
     .map(([letter, n]) => ({ letter, n }))
     .sort((a, b) => a.letter.localeCompare(b.letter));
-  return { rows: kept.slice((page - 1) * DAY_PAGE_SIZE, page * DAY_PAGE_SIZE), total: kept.length, page, pageCount, statuses, letters };
+  return { rows: kept.slice((page - 1) * per, page * per), total: kept.length, page, pageCount, statuses, letters };
 }
 
 /** The day an address names, `YYYY-MM-DD`, or null when it isn't a real day up to today. */

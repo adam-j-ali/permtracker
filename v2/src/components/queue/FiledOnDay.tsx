@@ -4,7 +4,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 
 import { DayCaseRow } from "@/components/queue/DayCaseRow";
 import { RequestFailed } from "@/components/tools/RequestFailed";
-import { Pagination } from "@/components/ui/pagination";
+import { Pagination, usePerPage } from "@/components/ui/pagination";
 import { usePublicQuery } from "@/hooks/usePublicQuery";
 import { useUrlPatch, useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 import { INITIAL_RE } from "@/lib/employerInitial";
@@ -45,6 +45,8 @@ export function FiledOnDay({
   dayLabel,
   day,
   counts,
+  moved = false,
+  tabs = true,
 }: {
   perm: DayCase[];
   pwd: DayCase[];
@@ -53,6 +55,13 @@ export function FiledOnDay({
   day?: string;
   /** The day's counts from the filings document, for the tabs that load on demand. */
   counts?: Partial<Record<FilingProgram, number>>;
+  /**
+   * The list is of what DOL moved on the day (/perm-updates), where the default is what was filed on it. Each
+   * row then says its own filing day, a case DOL moved twice is listed twice, and the words say "moved".
+   */
+  moved?: boolean;
+  /** False for a list of one kind: the "which filings" buttons are left out. */
+  tabs?: boolean;
 }) {
   const params = useUrlSearchParams();
   const patch = useUrlPatch();
@@ -81,7 +90,8 @@ export function FiledOnDay({
   const remote = usePublicQuery<Remote>(day && lazy ? `/api/filed-on?day=${day}&program=${kind}` : "skip");
   const loaded = lazy ? remote.data : undefined;
   const cases = kind === "perm" ? perm : kind === "pwd" ? pwd : (loaded?.cases ?? []);
-  const view = dayView(cases, { status, letter, page, q, sort });
+  const rowsPer = usePerPage({ wide: DAY_PAGE_SIZE, address: { raw: params.get("per") ?? "", update: patch } });
+  const view = dayView(cases, { status, letter, page, q, sort, per: rowsPer.per });
   const countOf = (k: FilingProgram) =>
     k === "perm" ? perm.length : k === "pwd" ? pwd.length : k === kind && loaded ? loaded.cases.length : counts?.[k];
 
@@ -101,7 +111,7 @@ export function FiledOnDay({
 
   return (
     <div ref={top} className="scroll-mt-24">
-      <div role="group" aria-label="Which filings" className="flex flex-wrap gap-2">
+      <div role="group" aria-label="Which filings" className={cn("flex flex-wrap gap-2", !tabs && "hidden")}>
         {kinds.map((k) => {
           const n = countOf(k);
           return (
@@ -120,7 +130,9 @@ export function FiledOnDay({
           Loading the {noun} filed on {dayLabel}.
         </p>
       ) : cases.length === 0 ? (
-        <p className="mt-6 text-base text-soft">DOL&apos;s record holds none filed on {dayLabel}.</p>
+        <p className="mt-6 text-base text-soft">
+          {moved ? <>Our checks saw DOL move none on {dayLabel}.</> : <>DOL&apos;s record holds none filed on {dayLabel}.</>}
+        </p>
       ) : (
         <>
           {/* The day by status, every case one sliver of the bar. */}
@@ -143,7 +155,9 @@ export function FiledOnDay({
               </Fragment>
             ))}
           </div>{" "}
-          <div role="group" aria-label="Employer's first letter" className="mt-3 flex flex-wrap gap-1">
+          {/* Wide screens only: on a phone the 26 letters are five rows of buttons above the first case, and the
+              search box under them does the same job in one. */}
+          <div role="group" aria-label="Employer's first letter" className="mt-3 hidden flex-wrap gap-1 sm:flex">
             {view.letters.map((l) => (
               <Fragment key={l.letter}>
                 <button
@@ -193,25 +207,25 @@ export function FiledOnDay({
             {q.trim() ? `, matching “${q.trim()}”` : ""}
           </p>{" "}
           <ul className="mt-2 divide-y-2 divide-border border-y-2 border-border">
-            {view.rows.map((r) => (
-              <DayCaseRow key={r.caseNumber} c={r} />
+            {view.rows.map((r, i) => (
+              // A list of moves can hold one case twice (denied, then reopened), so its status is in the key.
+              <DayCaseRow key={moved ? `${r.caseNumber} ${r.status}` : r.caseNumber} c={r} filed={moved} className={rowsPer.narrowHidden(i)} />
             ))}
           </ul>{" "}
           {lazy && loaded?.capped ? (
             <p className="mt-4 text-sm text-soft">This day holds more than the list shows, so it lists the first of them by employer.</p>
           ) : null}
-          {view.pageCount > 1 ? (
-            <Pagination
-              className="mt-6"
-              page={view.page}
-              pageCount={view.pageCount}
-              onPage={(n) => patch({ page: n > 1 ? String(n) : null })}
-              total={view.total}
-              perPage={DAY_PAGE_SIZE}
-              noun={kind === "perm" ? "cases" : "filings"}
-              scrollTo={top}
-            />
-          ) : null}
+          <Pagination
+            className="mt-6"
+            page={view.page}
+            pageCount={view.pageCount}
+            onPage={(n) => patch({ page: n > 1 ? String(n) : null })}
+            total={view.total}
+            perPage={rowsPer.per}
+            noun={kind === "perm" ? "cases" : "filings"}
+            scrollTo={top}
+            per={rowsPer}
+          />
         </>
       )}
     </div>

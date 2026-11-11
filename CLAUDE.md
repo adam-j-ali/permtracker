@@ -134,7 +134,7 @@ Each was decided once and holds until the owner changes it. The reasons are in t
 - One status colour code everywhere: certified green, denied red, filed or waiting yellow, withdrawn purple (Oct 27).
 - Pictures before words; a short looping clip beats a still where something happens (Oct 26, Oct 27). Article pictures: a relevant photo first, then something colourful, a pale screenshot last (Nov 2).
 - First things first on every page: the search box, then the overview (the answer or the summary figures), then the list in short pages, then the rest (Nov 11).
-- Pages, not endless lists (Oct 21). Loading screens sweep (Oct 6). Summary cards say which way a figure moved and whether that's good (Nov 1).
+- Pages, not endless lists (Oct 21): every list shows a short page sized for the screen (fewer rows on a phone), with a pager and a rows-per-page choice (Nov 11). Loading screens sweep (Oct 6). Summary cards say which way a figure moved and whether that's good (Nov 1).
 - A moving drawing sits beside the text with no box, and each new one waits for the owner's yes; the sideways scroll stage is the attorney page's alone (Oct 21).
 - `/press` and the firm's-site section stay as they were built (Oct 11). The homepage opens with the answer, and the header offers Sign in only (Oct 27). Its first screen holds the answer and the case box at every width; the steps after PERM are links under the box, never a switch, and the figures and the approval rate sit below (Nov 10).
 - Sign-up is minimal: a heading, Google, email, an optional name, a password and one line of small print (Oct 26). Nobody is sent out of the app for their role (Oct 26).

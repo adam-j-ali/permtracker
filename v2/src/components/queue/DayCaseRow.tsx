@@ -19,8 +19,10 @@ export function DayCaseRow({
   action,
   filed = false,
   firm = false,
+  className,
 }: {
   c: DayCase;
+  className?: string;
   action?: React.ReactNode;
   /** Say the day it was filed: for a list that spans more than one day. */
   filed?: boolean;
@@ -28,7 +30,7 @@ export function DayCaseRow({
   firm?: boolean;
 }) {
   return (
-    <li className="grid grid-cols-1 gap-x-4 gap-y-1 py-3 sm:grid-cols-[13rem_minmax(0,1fr)_auto] sm:items-center [&>*]:min-w-0">
+    <li className={cn("grid grid-cols-1 gap-x-4 gap-y-1 py-3 sm:grid-cols-[13rem_minmax(0,1fr)_auto] sm:items-center [&>*]:min-w-0", className)}>
       <IntentLink href={caseHref(c.caseNumber)} className="link inline-flex min-h-11 items-center font-mono text-sm">
         {c.caseNumber}
       </IntentLink>{" "}

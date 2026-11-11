@@ -4,6 +4,7 @@ import { useCallback, useSyncExternalStore, type RefObject } from "react";
 import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
 
 import { choiceVariants } from "@/components/ui/choice";
+import { ChoiceRow } from "@/components/ui/choice-row";
 import { cn } from "@/lib/utils";
 
 /**
@@ -75,6 +76,73 @@ export function usePageParam(key = "page"): [number, (page: number) => void] {
   return [page, set];
 }
 
+/**
+ * How many rows a page of a list holds: fewer on a phone, and the reader's own choice once they make one. Every
+ * list shows a page sized for the screen, with a pager and this choice (a standing rule since Nov 11 2026).
+ *
+ * - With nothing chosen, a wide screen gets `wide` rows and a phone `narrow`: a row that is one line on a desktop
+ *   is three or four on a phone, and 25 of them ran five screens.
+ * - A choice lives in the address (`?per=50`), so a reload and a shared link keep it. Choosing starts the list
+ *   from its first page.
+ * - The server can't know the screen, so it renders `wide` rows. A host hides the rows past `narrow` on a phone
+ *   with `narrowHidden(i)` until the browser has started, and nothing jumps: the phone never paints the long page.
+ */
+export const PER_PAGE_OPTIONS = [10, 25, 50, 100] as const;
+const NARROW = "(max-width: 639px)";
+
+function subscribeNarrow(onChange: () => void) {
+  const m = window.matchMedia?.(NARROW);
+  if (!m) return () => {};
+  m.addEventListener("change", onChange);
+  return () => m.removeEventListener("change", onChange);
+}
+
+export interface PerPage {
+  /** Rows on a page, now. */
+  per: number;
+  /** The reader picked this (it's in the address); false while it's the screen's default. */
+  chosen: boolean;
+  setPer: (per: number) => void;
+  options: readonly number[];
+  /** The class for row `i` (0-based) of a server-rendered page: hides the rows a phone's shorter page leaves out. */
+  narrowHidden: (i: number) => string | undefined;
+}
+
+export function usePerPage({
+  wide = 25,
+  narrow = 10,
+  options = PER_PAGE_OPTIONS,
+  key = "per",
+  pageKey = "page",
+  address,
+}: {
+  wide?: number;
+  narrow?: number;
+  options?: readonly number[];
+  key?: string;
+  pageKey?: string;
+  /** For a list that already keeps its picks in the address through Next's hooks: its own value and writer. */
+  address?: { raw: string; update: (updates: Record<string, string | null>) => void };
+} = {}): PerPage {
+  const own = useQueryParam(key);
+  const raw = address ? address.raw : own[0];
+  const update = address ? address.update : own[1];
+  const isNarrow = useSyncExternalStore(
+    subscribeNarrow,
+    () => window.matchMedia?.(NARROW).matches ?? false,
+    () => false,
+  );
+  const asked = options.includes(Number(raw)) ? Number(raw) : null;
+  const setPer = useCallback((per: number) => update({ [key]: String(per), [pageKey]: null }), [key, pageKey, update]);
+  return {
+    per: asked ?? (isNarrow ? narrow : wide),
+    chosen: asked !== null,
+    setPer,
+    options,
+    narrowHidden: (i) => (asked === null && i >= narrow ? "max-sm:hidden" : undefined),
+  };
+}
+
 /** Bring a list's top into view if a press left it above the screen. */
 export function showTop(top: HTMLElement | null | undefined) {
   if (!top || top.getBoundingClientRect().top >= 0) return;
@@ -91,6 +159,7 @@ export function Pagination({
   noun = "items",
   label = "Pages",
   scrollTo,
+  per,
   className,
 }: {
   /** 1-based. */
@@ -106,13 +175,32 @@ export function Pagination({
   label?: string;
   /** The top of the list; give it a `scroll-mt-*` clear of the header. */
   scrollTo?: RefObject<HTMLElement | null>;
+  /** With it, the pager offers "Rows per page" (usePerPage). Left out where the list has fewer rows than the smallest page. */
+  per?: Pick<PerPage, "per" | "setPer" | "options">;
   className?: string;
 }) {
+  // The choice is offered whenever the list is longer than the smallest page, on one page or many: someone who
+  // picked 100 and got everything on one page still needs the way back.
+  const smallest = per ? Math.min(...per.options) : 0;
+  const rowsChoice =
+    per && total !== undefined && total > smallest ? (
+      <ChoiceRow
+        label="Rows per page"
+        labelClassName="block text-center text-sm text-muted-foreground"
+        rowClassName="justify-center"
+        options={per.options.map((n) => ({ value: String(n), label: String(n), ariaLabel: `${n} rows per page` }))}
+        value={String(per.per)}
+        onChange={(v) => {
+          per.setPer(Number(v));
+          showTop(scrollTo?.current);
+        }}
+      />
+    ) : null;
   if (pageCount <= 1) {
     return total && total > 0 ? (
-      <p className={cn("text-sm text-muted-foreground", className)}>
-        {`All ${total.toLocaleString("en-US")} ${noun}`}
-      </p>
+      <div className={cn("flex flex-col items-center gap-3", className)}>
+        <p className="text-sm text-muted-foreground">{`All ${total.toLocaleString("en-US")} ${noun}`}</p> {rowsChoice}
+      </div>
     ) : null;
   }
   const go = (next: number) => {
@@ -173,7 +261,8 @@ export function Pagination({
           <span className="hidden sm:inline">Next</span>
           <CaretRightIcon aria-hidden="true" weight="bold" className="size-4" />
         </button>
-      </div>
+      </div>{" "}
+      {rowsChoice}
     </nav>
   );
 }

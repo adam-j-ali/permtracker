@@ -60,6 +60,16 @@ describe("dayView", () => {
     expect(last.page).toBe(3);
     expect(last.rows).toHaveLength(3);
   });
+
+  it("pages by the size it's given, and by its own when given none or nonsense", () => {
+    const many = Array.from({ length: 23 }, (_, i) => c(i, `Employer ${i}`, "ANALYST REVIEW"));
+
+    const tens = dayView(many, { status: null, letter: null, page: 3, per: 10 });
+    expect(tens.pageCount).toBe(3);
+    expect(tens.rows).toHaveLength(3);
+    expect(dayView(many, { status: null, letter: null, page: 1, per: 0 }).rows).toHaveLength(Math.min(23, DAY_PAGE_SIZE));
+    expect(dayView(many, { status: null, letter: null, page: 1 }).rows).toHaveLength(Math.min(23, DAY_PAGE_SIZE));
+  });
 });
 
 describe("filingDayOf", () => {
