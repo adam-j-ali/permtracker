@@ -2,7 +2,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowSquareOutIcon, CalendarIcon as CalendarIcon, InfoIcon, PlusIcon } from "@phosphor-icons/react";
@@ -19,6 +19,7 @@ import { CalendarView, type CaseDataMap, CalendarFilters } from "@/components/ca
 import type { CaseForSelection } from "@/components/timeline";
 import { PageHeading } from "../components/PageHeading";
 import { CaseCapNotice } from "@/components/cases/CaseCapNotice";
+import { handleOperationError } from "@/lib/errors";
 
 // The event pill and the react-big-calendar theming
 import "@/app/calendar.css";
@@ -118,42 +119,32 @@ export function CalendarSkeleton() {
 }
 
 // ============================================================================
-// Empty State
+// Nothing to draw
 // ============================================================================
 
-function CalendarEmptyState() {
-  const router = useRouter();
-
+/**
+ * What takes the calendar's place when there's nothing to draw. The heading and
+ * the filter row stay above it, because the way back from "everything hidden"
+ * or "every case closed" is a control in that row.
+ */
+function NothingToShow({
+  title,
+  line,
+  children,
+}: {
+  title: string;
+  line: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div data-tour="calendar-view" className="flex flex-col h-full">
-      {/* Header */}
-      <div className="mb-6">
-        <PageHeading
-          title="Calendar"
-        />
-      </div>
-
-      {/* Empty state message */}
-      <div className="flex-1 flex flex-col items-center justify-center py-16 px-4 border-2 border-dashed border-border bg-muted/20">
-        <div className="text-center max-w-md">
-          <div className="mb-4 p-4 inline-block bg-tint border-2 shadow-hard border-border">
-            <CalendarIcon className="size-12 text-muted-foreground" />
-          </div>
-          <h2 className="font-heading text-xl font-semibold mb-2">
-            No deadlines to display
-          </h2>{" "}
-          <p className="text-muted-foreground mb-6">
-            Add cases with milestone dates to see them on the calendar. Each
-            deadline will appear as an event color-coded by stage.
-          </p>
-          <Button
-            onClick={() => router.push("/cases/new")}
-            className="bg-primary text-primary-foreground font-semibold border-border transition-colors border"
-          >
-            <PlusIcon className="size-4 mr-2" />
-            Add your first case
-          </Button>
+    <div className="flex flex-1 flex-col items-center justify-center bg-tint px-4 py-16 border-2 shadow-hard border-border">
+      <div className="max-w-md text-center">
+        <div className="mb-4 inline-block bg-background p-4 border-2 shadow-hard border-border">
+          <CalendarIcon className="size-12 text-muted-foreground" aria-hidden="true" />
         </div>
+        <h2 className="mb-2 font-heading text-xl font-semibold">{title}</h2>{" "}
+        <p className="mb-6 text-muted-foreground">{line}</p>{" "}
+        <div className="flex flex-wrap items-center justify-center gap-3">{children}</div>
       </div>
     </div>
   );
@@ -182,6 +173,7 @@ export function CalendarPageClient() {
 
   // Query user's calendar preferences (hidden cases/deadline types)
   const preferences = useQuery(api.calendar.getCalendarPreferences);
+  const showEverything = useMutation(api.calendar.updateCalendarPreferences);
 
   // Query user profile to check Google Calendar connection status
   const userProfile = useQuery(api.users.currentUserProfile);
@@ -263,41 +255,9 @@ export function CalendarPageClient() {
     return <CalendarSkeleton />;
   }
 
-  // Empty state - no cases at all
-  if (calendarCases.length === 0) {
-    return <CalendarEmptyState />;
-  }
-
-  // No events after filtering (all hidden or no dates set)
-  if (events.length === 0) {
-    return (
-      <div data-tour="calendar-view" className="flex flex-col h-full">
-        {/* Header */}
-        <div className="mb-6">
-          <PageHeading
-            title="Calendar"
-          />
-        </div>
-
-        {/* Calendar view with empty state message */}
-        <div className="flex flex-1 flex-col items-center justify-center bg-tint px-4 py-16 border-2 shadow-hard border-border">
-          <div className="text-center max-w-md">
-            <div className="mb-4 inline-block bg-background p-4 border-2 shadow-hard border-border">
-              <CalendarIcon className="size-12 text-muted-foreground" />
-            </div>
-            <h2 className="font-heading text-xl font-semibold mb-2">
-              No deadlines visible
-            </h2>{" "}
-            <p className="text-muted-foreground">
-              Your cases exist but don&apos;t have milestone dates set, or all
-              deadline types are hidden. Update your cases with dates to see
-              them on the calendar.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // What's hidden by the person's own choices, which "Show everything" clears.
+  const somethingHidden = preferences.hiddenCases.length > 0 || preferences.hiddenDeadlineTypes.length > 0;
+  const showingAll = showCompleted && showClosed;
 
   return (
     <div
@@ -352,15 +312,62 @@ export function CalendarPageClient() {
         />
       </div>
 
-      {/* Calendar */}
-      <div className={refreshing ? "flex-1 opacity-60 transition-opacity" : "flex-1"} aria-busy={refreshing}>
-        <CalendarView
-          events={events}
-          defaultView="month"
-          caseDataMap={caseDataMap}
-          hiddenCases={preferences.hiddenCases}
-        />
-      </div>
+      {/* Calendar, or what to do when there's nothing on it */}
+      {calendarCases.length === 0 ? (
+        showingAll ? (
+          <NothingToShow title="No cases yet" line="Add a case with its dates and each deadline appears here, coloured by stage.">
+            <Button onClick={() => router.push("/cases/new")}>
+              <PlusIcon className="mr-2 size-4" aria-hidden="true" />
+              Add your first case
+            </Button>
+          </NothingToShow>
+        ) : (
+          <NothingToShow
+            title="No open deadlines"
+            line="No open case has a deadline to show. Closed and completed cases are left out until you ask for them."
+          >
+            <Button
+              onClick={() => {
+                setShowCompleted(true);
+                setShowClosed(true);
+              }}
+            >
+              Show closed and completed cases
+            </Button>{" "}
+            <Button variant="outline" onClick={() => router.push("/cases/new")}>
+              <PlusIcon className="mr-2 size-4" aria-hidden="true" />
+              Add a case
+            </Button>
+          </NothingToShow>
+        )
+      ) : events.length === 0 ? (
+        somethingHidden ? (
+          <NothingToShow title="Everything is hidden" line="Every case or deadline type on this calendar is switched off in the filters above.">
+            <Button
+              onClick={() => {
+                void showEverything({ hiddenCases: [], hiddenDeadlineTypes: [] }).catch((error: unknown) =>
+                  handleOperationError(error, { userMessage: "Couldn’t change the filters. Try again." }),
+                );
+              }}
+            >
+              Show everything
+            </Button>
+          </NothingToShow>
+        ) : (
+          <NothingToShow title="No dates yet" line="These cases have no milestone dates. Add dates to a case and its deadlines appear here.">
+            <Button onClick={() => router.push("/cases")}>Open your cases</Button>
+          </NothingToShow>
+        )
+      ) : (
+        <div className={refreshing ? "flex-1 opacity-60 transition-opacity" : "flex-1"} aria-busy={refreshing}>
+          <CalendarView
+            events={events}
+            defaultView="month"
+            caseDataMap={caseDataMap}
+            hiddenCases={preferences.hiddenCases}
+          />
+        </div>
+      )}
     </div>
   );
 }
