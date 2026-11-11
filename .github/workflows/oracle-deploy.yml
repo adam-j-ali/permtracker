@@ -257,9 +257,19 @@ jobs:
       # a planner step gone) and turned the report red; 5 of 7 mornings from
       # Oct 26. A failure here stops the deploy before the server is touched, and
       # a push outside the night window shows it the same day.
+      # The install fetches system packages from Ubuntu's servers. Nov 11 2026: the runner couldn't resolve that
+      # host for seven minutes, and a built, tested release failed at this step. Three tries, a minute apart,
+      # each warning in the run's summary, so a network blip heals itself and a real fault still ends red.
       - name: Install the page checks' browser
         if: steps.plan.outputs.build == 'true'
-        run: pnpm exec playwright install --with-deps chromium
+        run: |
+          for attempt in 1 2 3; do
+            if pnpm exec playwright install --with-deps chromium; then exit 0; fi
+            echo "::warning::The page checks' browser didn't install (attempt $attempt of 3)"
+            sleep 60
+          done
+          echo "::error::The page checks' browser couldn't be installed after three tries"
+          exit 1
 
       - name: Check the built site's pages before it can ship
         if: steps.plan.outputs.build == 'true'
