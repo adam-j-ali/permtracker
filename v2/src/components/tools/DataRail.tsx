@@ -28,7 +28,10 @@ import {
 import { cn } from "@/lib/utils";
 import { LinkPending } from "@/components/ui/pending-link";
 
-import { GROUPS, OVERVIEW, SECTIONS, isDataPath, sectionForPath, type DataGroup } from "@/lib/siteMap";
+import { GROUPS, HEADER_PAGES, OVERVIEW, SECTIONS, isDataPath, sectionForPath, type DataGroup } from "@/lib/siteMap";
+
+/** The gap between the header and the phone handle under it. */
+const HANDLE_GAP = "4px";
 
 /** The pages under a group, in the menu's order: the step's data, then its calculators beside it. */
 function groupPages(g: DataGroup): { key: string; label: string; href: string }[] {
@@ -83,6 +86,9 @@ export function DataRail() {
   // The calculators index belongs to no step, so nothing in the rail is current there.
   const active = found && found.group !== "Calculators" ? { key: found.key as string, group: found.group } : null;
   const onOverview = pathname.replace(/\/+$/, "") === OVERVIEW.href;
+  // The page that is the lookup already holds the case box: a second lime "Check my case" beside it sends the
+  // reader to the page they're on.
+  const pinLookup = pathname.replace(/\/+$/, "") !== HEADER_PAGES.caseStatus.href;
 
   // Below `lg` the rail is a side panel that slides in from the same edge.
   const [panelOpen, setPanelOpen] = useState(false);
@@ -349,7 +355,7 @@ export function DataRail() {
                 >
                   <div style={{ width: "calc(100% - 24px)" }}>{renderBody("rail")}</div>
                 </div>
-                <RailFooter />
+                {pinLookup ? <RailFooter /> : null}
               </div>
             </>
           ) : (
@@ -408,11 +414,15 @@ export function DataRail() {
         </nav>
       </div>
 
-      {/* Below lg: the same side panel, pulled out by a tab on the screen edge,
-          so the sections are a fixed edge on every width. The handle is the
-          caret alone, a 44px square in the gap under the header; a version
-          carrying the section name was tall enough to cover the page's heading.
-          The panel names the section once it's open. */}
+      {/* Below lg: the same side panel, pulled out by a tab on the screen edge.
+          The handle is the caret alone, a 44px square in the gap under the
+          header; a version carrying the section name was tall enough to cover
+          the page's heading. The panel names the section once it's open.
+          CLOSED, IT SITS IN THE PAGE (the shell is its positioned parent) and
+          scrolls away with the top: fixed to the screen it floated over the
+          text, and each line that passed under it lost its first letters
+          (seen at 390 wide, Nov 10 2026). The header's Menu lists the same
+          sections from anywhere on the page. Open, it's fixed with its panel. */}
       <button
         type="button"
         aria-expanded={panelOpen}
@@ -421,13 +431,15 @@ export function DataRail() {
           setPanelDrawn(true);
           setPanelOpen((v) => !v);
         }}
-        // The header's measured height, not a constant: it shrinks on scroll.
-        style={{ top: "calc(var(--site-header-h, 4.5rem) + 4px)" }}
+        // Open: under the header's measured height, not a constant (it shrinks
+        // on scroll). Closed: the same 4px gap, from the top of the shell.
+        style={{ top: panelOpen ? `calc(var(--site-header-h, 4.5rem) + ${HANDLE_GAP})` : HANDLE_GAP }}
         className={cn(
           // `z-[41]`: above the panel (40), below the header (45), so the
           // header's phone menu covers it. At equal z-index the panel (rendered
           // later) would paint its border over the handle.
-          "fixed left-[env(safe-area-inset-left,0px)] z-[41] flex size-11 items-center justify-center",
+          panelOpen ? "fixed" : "absolute",
+          "left-[env(safe-area-inset-left,0px)] z-[41] flex size-11 items-center justify-center",
           "border-y-2 border-r-2 border-border bg-background shadow-hard-sm",
           "transition-transform duration-200 ease-out motion-reduce:transition-none",
           "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
@@ -486,7 +498,7 @@ export function DataRail() {
         {panelDrawn ? (
           <>
             {renderBody("panel")}
-            <RailFooter />
+            {pinLookup ? <RailFooter /> : null}
           </>
         ) : null}
       </nav>
@@ -601,7 +613,8 @@ function Tab({
         />
       ) : null}
       <TabMarker current={current} kind={kind} />{" "}
-      <span className="min-w-0 flex-1 truncate">{label}</span>
+      {/* A long name takes a second line: cut off, two entries read "Green card timeline and pl…". */}
+      <span className="min-w-0 flex-1 leading-snug">{label}</span>
     </IntentLink>
   );
 }

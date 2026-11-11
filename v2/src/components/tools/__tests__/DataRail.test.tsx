@@ -1,12 +1,13 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 
 import { DataRail, GROUP_ICONS } from "../DataRail";
 import { GROUPS, SECTIONS } from "@/lib/siteMap";
 
+const at = vi.hoisted(() => ({ path: "/perm-employers" }));
 vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  usePathname: () => "/perm-employers",
+  usePathname: () => at.path,
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
   useSearchParams: () => new URLSearchParams(),
 }));
@@ -74,5 +75,53 @@ describe("the data rail", () => {
     expect(head).not.toBeNull();
     expect(head.getAttribute("aria-expanded")).toBe("true");
     expect(document.activeElement).toBe(head);
+  });
+});
+
+/**
+ * Seen in captures on Nov 10 2026: two names in the rail were cut off at 1280 wide ("Green card timeline and pl…"),
+ * "Check my case" was pinned beside the case box on the case page itself, and on a phone the rail's opener tab stayed
+ * fixed over the page, so each line that scrolled under it lost its first letters.
+ */
+describe("the data rail, as a reader meets it", () => {
+  afterEach(() => {
+    at.path = "/perm-employers";
+  });
+
+  it("wraps a long page name instead of cutting it off", () => {
+    at.path = "/perm-case-status";
+    const { container } = render(<DataRail />);
+    const rail = container.querySelector("#data-rail-desktop") as HTMLElement;
+    const long = within(rail).getByRole("link", { name: "Green card timeline and planner" });
+    const label = [...long.querySelectorAll("span")].find((s) => s.textContent === "Green card timeline and planner");
+    expect(label).toBeDefined();
+    expect(label?.className).not.toMatch(/\btruncate\b/);
+  });
+
+  it("pins the case lookup under the list, except on the page that is the lookup", () => {
+    const elsewhere = render(<DataRail />);
+    const rail = elsewhere.container.querySelector("#data-rail-desktop") as HTMLElement;
+    expect(within(rail).getByRole("link", { name: /Check my case/ })).toBeTruthy();
+    elsewhere.unmount();
+
+    at.path = "/perm-case-status";
+    const onLookup = render(<DataRail />);
+    const railThere = onLookup.container.querySelector("#data-rail-desktop") as HTMLElement;
+    expect(within(railThere).queryByRole("link", { name: /Check my case/ })).toBeNull();
+    // The phone panel follows the same rule.
+    fireEvent.click(screen.getByRole("button", { name: "Open data sections" }));
+    const panel = onLookup.container.querySelector("#data-rail-panel") as HTMLElement;
+    expect(within(panel).queryByRole("link", { name: /Check my case/ })).toBeNull();
+  });
+
+  it("keeps the phone tab in the page, and fixes it to the screen only while its panel is open", () => {
+    render(<DataRail />);
+    const tab = screen.getByRole("button", { name: "Open data sections" });
+    expect(tab.className.split(/\s+/)).toContain("absolute");
+    expect(tab.className.split(/\s+/)).not.toContain("fixed");
+    fireEvent.click(tab);
+    const open = screen.getByRole("button", { name: "Close data sections" });
+    expect(open.className.split(/\s+/)).toContain("fixed");
+    expect(open.className.split(/\s+/)).not.toContain("absolute");
   });
 });
