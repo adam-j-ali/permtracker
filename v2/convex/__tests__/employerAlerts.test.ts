@@ -442,6 +442,22 @@ describe("one email a day, whatever the address follows", () => {
     expect(statuses).toEqual(["dropped", "dropped"]);
   });
 
+  // A link for ONE alert that has lost its id used to answer "Turned off" and change nothing.
+  it("a one-alert stop link without its id is a bad link, never 'Turned off'", async () => {
+    const t = createTestContext();
+    stub({});
+    await follow(t, "noid@example.com");
+    const token = await makeUnsubscribeToken("noid@example.com", SECRET, "prefs");
+    for (const kind of ["case", "queue", "bulletin", "employer"]) {
+      const res = await t.fetch(`/prefs/unsubscribe?token=${encodeURIComponent(token)}&kind=${kind}`, { method: "POST" });
+      expect(await res.text(), kind).not.toContain("Turned off");
+      const ask = await t.fetch(`/prefs/unsubscribe?token=${encodeURIComponent(token)}&kind=${kind}`);
+      expect(await ask.text(), kind).not.toContain("Stop these emails?");
+    }
+    const row = await t.run((ctx) => ctx.db.query("employerAlerts").first());
+    expect(row?.unsubscribedAt).toBeUndefined();
+  });
+
   it("the bundle's one-click turns every alert kind off and nothing else", async () => {
     const t = createTestContext();
     stub({});

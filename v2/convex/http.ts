@@ -1641,12 +1641,18 @@ const KIND_WORDS: Record<OneClickKind, string> = {
   digest: `your ${MAIL_KINDS.digest.name.toLowerCase()}`,
 };
 
+/** The kinds whose link names one alert by its id. The others turn off a whole list for the address. */
+const ONE_ROW_KINDS: ReadonlySet<string> = new Set(["case", "queue", "bulletin", "employer"]);
+
 function oneClickParams(req: Request): { token: string; kind: OneClickKind; id?: string } | null {
   const url = new URL(req.url);
   const token = url.searchParams.get("token");
   const kind = url.searchParams.get("kind") ?? "";
   const id = url.searchParams.get("id") ?? undefined;
   if (!token || !(ONE_CLICK_KINDS as readonly string[]).includes(kind)) return null;
+  // These four turn off ONE row, named by its id. Without the id there's nothing to turn off, and the page
+  // must not answer "Turned off": it's a bad link.
+  if (ONE_ROW_KINDS.has(kind) && !id) return null;
   return { token, kind: kind as OneClickKind, id: id?.slice(0, 64) };
 }
 
