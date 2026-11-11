@@ -490,6 +490,11 @@ export function CasesPageClient() {
         // Clear local order so the server's reactive query takes over,
         // preventing stale local state from masking future server updates.
         setLocalOrder([]);
+        // The saved order shows only under "Custom order". A drop made under another sort turns the sort to it,
+        // or the list would go on showing the other sort and the card would snap back.
+        if (sort.sortBy !== "custom") {
+          handleSortChange({ sortBy: "custom", sortOrder: sort.sortOrder });
+        }
         toast.success("Order saved");
       } catch (error) {
         handleOperationError(error, {
@@ -503,6 +508,7 @@ export function CasesPageClient() {
       saveCaseOrderMutation,
       filters,
       sort,
+      handleSortChange,
     ]
   );
 

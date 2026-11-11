@@ -78,8 +78,11 @@ export function SortableCaseCard({
       {...attributes}
       {...listeners}
       className={`touch-manipulation ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
-      onPointerDown={() => {
+      onPointerDown={(e) => {
         didDragRef.current = false;
+        // The drag library starts a mouse drag from this same event. A handler set after `{...listeners}` replaces
+        // the library's, so it's called here: without it a mouse can't pick the card up.
+        listeners?.onPointerDown?.(e);
       }}
       onClickCapture={(e) => {
         if (didDragRef.current) {
