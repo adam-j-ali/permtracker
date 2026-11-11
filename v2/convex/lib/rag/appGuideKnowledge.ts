@@ -383,8 +383,7 @@ Settings Tabs:
 - Enable/disable quiet hours
 - Start time and end time settings
 - Time zone for quiet hours
-- Days of week selection
-- During quiet hours, non-urgent notifications are held
+- Inside quiet hours a push that isn't urgent is not sent; email isn't held
 
 4. Calendar Sync Tab
 - Google Calendar connection status
@@ -865,59 +864,26 @@ Related: Quiet Hours, Notifications Page, Dashboard`,
   // Section 16: Quiet Hours
   {
     title: "Quiet Hours Configuration",
-    content: `Quiet Hours allows you to pause non-urgent notifications during specified times, such as nights or weekends.
+    content: `Quiet hours hold browser push notifications during the hours you choose, such as overnight.
 
-Quiet Hours Settings:
+What quiet hours cover:
+- Push notifications that aren't urgent are not sent inside quiet hours. They aren't sent later either.
+- An urgent push (a deadline within the urgent window, or one that's overdue) still comes through.
+- Email isn't held. The deadline reminder email goes once a day at a fixed hour, whatever the quiet hours are.
+- Every notification is always listed on the Notifications page.
 
-1. Enable Quiet Hours
-- Master toggle to turn feature on/off
-- When enabled, settings below take effect
+Settings:
+- A switch to turn quiet hours on or off
+- A start time and an end time, which may run overnight (for example 10:00 PM to 8:00 AM)
+- The hours follow the time zone set on the Profile tab
+- The same hours apply every day; there's no per-day choice
 
-2. Time Window
-- Start Time: When quiet hours begin (e.g., 8:00 PM)
-- End Time: When quiet hours end (e.g., 8:00 AM)
-- Time displayed in your configured timezone
-
-3. Timezone Setting
-- Select your timezone for accurate quiet hours
-- Important if you travel or work across timezones
-- Defaults to your system timezone
-
-4. Days of Week (if available)
-- Select which days quiet hours apply
-- Common: Enable only weekends
-- Or: Every night of the week
-
-Notification Behavior During Quiet Hours:
-
-1. Held Notifications
-- Non-urgent notifications are queued
-- Delivered when quiet hours end
-- Batched together in a summary (if enabled)
-
-2. Urgent Notifications
-- Overdue deadlines still notify immediately
-- Configurable: some urgent types can be held too
-
-3. Push Notifications
-- Browser push notifications are suppressed
-- Email notifications are held/delayed
-
-To Set Up Quiet Hours:
-1. Go to Settings > Quiet Hours tab
-2. Enable the Quiet Hours toggle
-3. Set start time (when notifications should stop)
-4. Set end time (when notifications resume)
-5. Verify timezone is correct
-6. (Optional) Select specific days
-7. Save changes
-
-Use Cases:
-- Prevent notifications during sleep hours
-- Block weekend notifications for work-life balance
-- Silence alerts during important meetings (temporary)
-
-Note: You can always check the Notifications page to see held notifications even during quiet hours.
+To set up quiet hours:
+1. Go to Settings > Quiet hours
+2. Turn quiet hours on
+3. Set the start and end times
+4. Check the time zone shown is yours
+5. Save
 
 Related: Notification Settings, Notifications Page`,
     metadata: {
