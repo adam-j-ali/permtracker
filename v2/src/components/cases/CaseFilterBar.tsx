@@ -299,22 +299,7 @@ export function CaseFilterBar({
 
   return (
     <div data-testid="case-filter-bar" className="space-y-3">
-      {/* Two by two on a phone, so "Completed" has the room it needs and the
-          four stay the same size; one row from 640px. */}
-      <div className="grid grid-cols-2 gap-2 [&>*]:min-w-0 sm:flex sm:flex-wrap" role="group" aria-label="Which cases">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            aria-pressed={activeTab === t.id}
-            onClick={() => handleTabClick(t.id)}
-            className={choiceVariants({ on: activeTab === t.id, className: "min-h-11 justify-center px-3 sm:px-4" })}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
+      {/* First things first: the search, then which cases, then the list. */}
       <div className="flex flex-wrap items-center gap-2">
         <div data-testid="search-input-container" className="relative min-w-0 flex-1 basis-64">
           <Input
@@ -482,6 +467,27 @@ export function CaseFilterBar({
             {sort.sortOrder === "asc" ? <ArrowUpIcon className="size-4" /> : <ArrowDownIcon className="size-4" />}
           </Button>
         </div>
+      </div>
+
+      {/* One row at every width. On a phone the four share the row, "Completed" taking half as much again as the
+          others, which is the room its word needs at 320px. */}
+      <div className="flex gap-1.5 sm:flex-wrap sm:gap-2" role="group" aria-label="Which cases">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            aria-pressed={activeTab === t.id}
+            onClick={() => handleTabClick(t.id)}
+            className={choiceVariants({
+              on: activeTab === t.id,
+              className:
+                "min-h-11 justify-center px-1 max-sm:min-w-0 sm:px-4 " +
+                (t.id === "completed" ? "max-sm:flex-[1.5]" : "max-sm:flex-1"),
+            })}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
     </div>
   );

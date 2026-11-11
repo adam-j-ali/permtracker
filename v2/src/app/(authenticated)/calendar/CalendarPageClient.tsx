@@ -5,7 +5,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowSquareOutIcon, CalendarIcon as CalendarIcon, InfoIcon, PlusIcon } from "@phosphor-icons/react";
+import { CalendarIcon as CalendarIcon, CalendarPlusIcon, PlusIcon } from "@phosphor-icons/react";
 
 import { api } from "@convex/_generated/api";
 import { currentPage, loginHrefFor } from "@/lib/auth/returnTo";
@@ -14,7 +14,7 @@ import { RECORDED_EVENT_TYPES, type DeadlineType } from "@/lib/calendar/types";
 import { toCalendarCaseData } from "@/lib/calendar/fromQuery";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useKeptWhileLoading } from "@/hooks/useKeptWhileLoading";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { CalendarView, type CaseDataMap, CalendarFilters } from "@/components/calendar";
 import type { CaseForSelection } from "@/components/timeline";
 import { PageHeading } from "../components/PageHeading";
@@ -266,37 +266,22 @@ export function CalendarPageClient() {
     >
       <CaseCapNotice className="mb-4" />
 
-      {/* Google Calendar Connection Banner - shown when not connected, and only once the profile has loaded:
-          a connected account had briefly been asked to connect (owner, Nov 2 2026). */}
-      {userProfile !== undefined && !isGoogleConnected && (
-        <div className="mb-4 flex items-center justify-between gap-4 bg-tint px-4 py-3">
-          <div className="flex items-center gap-3">
-            <InfoIcon className="size-5 shrink-0 text-foreground" aria-hidden="true" />
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                Sync deadlines to Google Calendar
-              </p>{" "}
-              <p className="text-sm text-muted-foreground">
-                Connect your Google Calendar to automatically sync case deadlines
-              </p>
-            </div>
-          </div>
-          <Link
-            href="/settings?tab=calendar-sync"
-            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 bg-primary px-3 text-sm font-semibold text-primary-foreground transition-[color,background-color,border-color,box-shadow,transform] hover:bg-primary/90 border-2 motion-safe:hover:-translate-x-0.5 motion-safe:hover:-translate-y-0.5 border-border"
-          >
-            Connect
-            <ArrowSquareOutIcon className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="mb-4">
+      {/* Header: the title first. The Google Calendar offer is one link beside it, shown when the account isn't
+          connected and only once the profile has loaded (a connected account had briefly been asked to connect). */}
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <PageHeading
           meta={`${openDeadlines} deadline${openDeadlines !== 1 ? "s" : ""} across ${calendarCases.length} case${calendarCases.length !== 1 ? "s" : ""}`}
           title="Calendar"
         />
+        {userProfile !== undefined && !isGoogleConnected ? (
+          <Link
+            href="/settings?tab=calendar-sync"
+            className={buttonVariants({ variant: "outline" }) + " min-h-11 shrink-0"}
+          >
+            <CalendarPlusIcon className="mr-2 size-4" aria-hidden="true" />
+            Sync to Google Calendar
+          </Link>
+        ) : null}
       </div>
 
       {/* Filters */}

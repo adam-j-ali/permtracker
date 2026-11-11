@@ -47,7 +47,7 @@ export interface UnsavedChangesDialogProps {
   onLeave: () => void;
 
   /**
-   * Custom title (default: "Unsaved Changes")
+   * Custom title (default: "Unsaved changes")
    */
   title?: string;
 
@@ -71,7 +71,7 @@ export function UnsavedChangesDialog({
   open,
   onStay,
   onLeave,
-  title = "Unsaved Changes",
+  title = "Unsaved changes",
   description = "You have unsaved changes. Are you sure you want to leave? Your changes will be lost.",
   stayText = "Stay",
   leaveText = "Leave",
