@@ -114,7 +114,9 @@ export const SEASONAL_PROGRAM: FlagBrowserProgram = {
 };
 
 
-const PAGE_SIZE = 50;
+// A page of the list is short on purpose (first things first: the list in short pages). At 50 one page ran
+// thirteen phone screens.
+const PAGE_SIZE = 25;
 
 const ORDER_CHOICES = [
   { value: "newest", label: "Newest filing first" },
@@ -125,6 +127,10 @@ const CONTROL =
   "w-full min-w-0 min-h-[44px] border-2 border-input bg-card px-3 text-base font-medium focus-visible:ring-2 focus-visible:ring-primary";
 
 
+
+/** A list row's places on a phone, by name (see Rows). The form's short name sits beside the job title where a list shows it. */
+const PHONE_ROW = "max-sm:[grid-template-areas:'emp_status'_'title_title'_'num_wage'_'dates_dates']";
+const PHONE_ROW_WITH_FORM = "max-sm:[grid-template-areas:'emp_status'_'title_form'_'num_wage'_'dates_dates']";
 
 function Rows({
   rows,
@@ -171,10 +177,12 @@ function Rows({
     return cols;
   }, [withWage, wageLabel, wages, showForm]);
   const ordered = useMemo(() => sortRows(rows, columns, sort), [rows, columns, sort]);
-  // ON A PHONE EACH ROW IS A CARD. As a table, a phone saw the case number and
-  // half a status chip, then scrolled sideways past rows made tall by text it
-  // couldn't see. Below `sm` the same cells stack, one to a line: number,
-  // status, employer, title, then the dates, each with its word.
+  // ON A PHONE EACH ROW IS FOUR SHORT LINES. As a table, a phone saw the case
+  // number and half a status chip, then scrolled sideways. As six stacked lines
+  // one page of the list ran thirteen screens. Below `sm` the same cells take
+  // named places in a two-column grid: the employer with the status beside it,
+  // the job title on one line, the case number as the row's 44px target (the
+  // wage beside it when there is one), then filed and checked on one line across the row.
   // CSS only, so the rows exist once and the table is unchanged from `sm` up.
   return (
     <div className="mt-4 sm:overflow-x-auto">
@@ -195,10 +203,13 @@ function Rows({
           {ordered.map((r) => (
             <tr
               key={r.caseNumber}
-              className="border-t-2 border-border/30 align-top max-sm:grid max-sm:grid-cols-1 max-sm:gap-y-1 max-sm:py-3 max-sm:[&>td]:p-0 max-sm:[&>td]:whitespace-normal"
+              className={
+                "border-t-2 border-border/30 align-top max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto] max-sm:items-center max-sm:gap-x-3 max-sm:py-2.5 max-sm:[&>td]:p-0 max-sm:[&>td]:whitespace-normal " +
+                (showForm ? PHONE_ROW_WITH_FORM : PHONE_ROW)
+              }
             >
               {/* `whitespace-nowrap!`: the row's phone rule lets every other cell wrap, and a case number broken at a hyphen reads as two. */}
-              <td className="whitespace-nowrap px-3 py-3 font-mono text-base max-sm:whitespace-nowrap! max-sm:text-sm">
+              <td className="whitespace-nowrap px-3 py-3 font-mono text-base max-sm:whitespace-nowrap! max-sm:text-sm max-sm:[grid-area:num] max-sm:[&_a]:inline-flex max-sm:[&_a]:min-h-11 max-sm:[&_a]:items-center">
                 {/* PendingLink, not Link: /perm-case-status is dynamic, and a
                     number this site does not hold is asked of DOL live at
                     around 3.5 seconds. A bare link there is three seconds of
@@ -211,17 +222,17 @@ function Rows({
                 </PendingLink>
               {" "}</td>
               {showForm ? (
-                <td className="whitespace-nowrap px-3 py-3 text-sm font-bold">
+                <td className="whitespace-nowrap px-3 py-3 text-sm font-bold max-sm:max-w-28 max-sm:whitespace-normal! max-sm:text-right max-sm:[grid-area:form]">
                   {seasonalForm(r.caseNumber)?.label ?? ""}
                 {" "}</td>
               ) : null}
-              <td className="whitespace-nowrap px-3 py-3">
+              <td className="whitespace-nowrap px-3 py-3 max-sm:[grid-area:status]">
                 <CaseStatusChip status={r.status} />
               {" "}</td>
-              <td className="px-3 py-3 font-bold"><EmployerName name={r.employerName} slug={r.employerSlug} />{" "}</td>
-              <td className="px-3 py-3 text-soft max-sm:text-sm">{r.jobTitle ?? ""}{" "}</td>
+              <td className="px-3 py-3 font-bold max-sm:[grid-area:emp]"><EmployerName name={r.employerName} slug={r.employerSlug} />{" "}</td>
+              <td className="px-3 py-3 text-soft max-sm:truncate max-sm:text-sm max-sm:[grid-area:title]">{r.jobTitle ?? ""}{" "}</td>
               {withWage ? (
-                <td className="whitespace-nowrap px-3 py-3 font-mono text-sm max-sm:empty:hidden">
+                <td className="whitespace-nowrap px-3 py-3 font-mono text-sm max-sm:empty:hidden max-sm:[grid-area:wage] max-sm:text-right">
                   {formatWage(wages?.get(r.caseNumber)?.wage ?? null, wages?.get(r.caseNumber)?.wageUnit ?? null) ?? ""}{" "}
                   <YearlyPayNote wage={wages?.get(r.caseNumber)?.wage} unit={wages?.get(r.caseNumber)?.wageUnit} short />
                 {" "}</td>
@@ -236,12 +247,14 @@ function Rows({
                   {wages?.get(r.caseNumber)?.attorneyName ?? ""}
                 {" "}</td>
               ) : null}
-              <td className="whitespace-nowrap px-3 py-3 font-mono text-sm max-sm:mt-1 max-sm:font-sans max-sm:text-muted-foreground">
+              {/* On a phone the two dates share one line across the row: in the right-hand column the longer of them
+                  set that column's width, and employer names wrapped to make room. */}
+              <td className="whitespace-nowrap px-3 py-3 font-mono text-sm max-sm:font-sans max-sm:text-muted-foreground max-sm:[grid-area:dates]">
                 <span className="sm:hidden">Filed</span>{" "}
                 <span>{r.filingDate ?? ""}</span>
+                {r.lastCheckedAt ? <span className="sm:hidden">{`, checked ${r.lastCheckedAt.slice(0, 10)}`}</span> : null}
               {" "}</td>
-              <td className="whitespace-nowrap px-3 py-3 font-mono text-sm text-soft max-sm:font-sans max-sm:text-muted-foreground">
-                <span className="sm:hidden">Checked</span>{" "}
+              <td className="whitespace-nowrap px-3 py-3 font-mono text-sm text-soft max-sm:hidden">
                 <span>{r.lastCheckedAt?.slice(0, 10) ?? ""}</span>
               {" "}</td>
             </tr>
