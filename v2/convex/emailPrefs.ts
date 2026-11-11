@@ -48,8 +48,8 @@
  * confirmation link able to opt them into something it never mentioned.
  *
  * Signed-in users' marketing consent stays in Resend, untouched by any of this
- * except "unsubscribe from everything", which removes the Resend contact
- * through the same path account deletion uses.
+ * except "unsubscribe from everything", which marks the Resend contact
+ * unsubscribed. The contact is kept: it's the record of the choice.
  *
  * @module convex/emailPrefs
  */
@@ -542,6 +542,11 @@ async function disableForEmail(
       await ctx.db.patch(row._id, { unsubscribedAt: now });
     }
     if (kind === "newsletter") await dropRetries(ctx, email, (r) => r.kind === "digest");
+    // Product news goes out through the mail provider's own list, so the stop is put on its
+    // contact at once. Until Nov 11 2026 it waited for the next sync to remove the contact.
+    if (kind === "news") {
+      await ctx.scheduler.runAfter(0, internal.marketingEmail.setContactUnsubscribed, { email, createIfMissing: false });
+    }
     return;
   }
   if (kind === "digest") {
@@ -647,8 +652,8 @@ export const turnOffMine = mutation({
 
 /**
  * Stop everything at once: every alert row tombstoned, news off, weekly
- * digest off, and the Resend marketing contact removed through the same
- * path account deletion uses.
+ * digest off, and the Resend marketing contact marked unsubscribed (kept, so
+ * the stop is on record: see `marketingEmail.setContactUnsubscribed`).
  */
 export const unsubscribeAllByToken = internalMutation({
   args: { token: v.string() },
@@ -661,10 +666,13 @@ export const unsubscribeAllByToken = internalMutation({
     await turnOffAlerts(ctx, email, now);
     await turnOffNewsAndDigest(ctx, email, now);
     await ctx.runMutation(internal.notifications.unsubscribeWeeklyByEmail, { email });
-    // Resend contact removal is an action (external API); scheduled, and
-    // idempotent on the other end for an address with no contact.
-    await ctx.scheduler.runAfter(0, internal.marketingEmail.removeContactByEmail, {
+    // The stop goes on the address's contact at the mail provider (an action: external API). The contact is
+    // kept, marked unsubscribed, and created that way for an account that has none: the list is filled
+    // from the accounts before each product update, so a stop that left no contact was undone by it.
+    const account = await getUserByEmail(ctx, email);
+    await ctx.scheduler.runAfter(0, internal.marketingEmail.setContactUnsubscribed, {
       email,
+      createIfMissing: account !== null && !account.deletedAt,
     });
 
     return await stateForEmail(ctx, email);

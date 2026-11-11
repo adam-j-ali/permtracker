@@ -154,9 +154,11 @@ export const getMarketingSubscriptionStatus = action({
         `/contacts/${encodeURIComponent(email)}`,
         apiKey
       );
-      // Not on the list means not subscribed: the switch shows off, and turning it on adds them. It answered
-      // null here, which hid the switch ("Not available") for everyone who joined after April 12 2026.
-      if (res.status === 404) return false;
+      // Not on the list yet. Product updates are opt-out for an account (the Privacy Policy, "Product Update
+      // Emails"), and the list is filled from the accounts before each one goes (`syncContacts`), so this
+      // account will be mailed: the switch shows on. It answered false until Nov 11 2026, a switch that read
+      // "off" for someone about to be subscribed, and null before that, which hid it ("Not available").
+      if (res.status === 404) return true;
       if (!res.ok) {
         const text = await res.text().catch(() => "");
         await recordError(
@@ -197,18 +199,18 @@ export const updateMarketingSubscription = action({
     );
 
     // Not on the list: everyone who joined after the one-time sync of April 12 2026. The switch only ever
-    // PATCHed, so for them it failed both ways (Nov 4 2026). Off needs nothing; on adds them, subscribed.
+    // PATCHed, so for them it failed both ways (Nov 4 2026). Either way the contact is created with the
+    // choice on it: "off" recorded nowhere is undone by the next fill of the list.
     if (res.status === 404) {
-      if (!args.subscribed) return false;
       const created = await resendFetch("/contacts", apiKey, {
         method: "POST",
-        body: { email, unsubscribed: false, segment_ids: [SEGMENT_ID] },
+        body: { email, unsubscribed: !args.subscribed, segment_ids: [SEGMENT_ID] },
       });
       if (!created.ok) {
         const text = await created.text();
-        throw new Error(`Failed to subscribe: ${created.status} ${text}`);
+        throw new Error(`Failed to ${args.subscribed ? "subscribe" : "unsubscribe"}: ${created.status} ${text}`);
       }
-      return true;
+      return args.subscribed;
     }
 
     if (!res.ok) {
@@ -217,6 +219,48 @@ export const updateMarketingSubscription = action({
     }
 
     return args.subscribed;
+  },
+});
+
+/**
+ * Put a stop on record at the mail provider: the address's contact is marked unsubscribed
+ * and kept. Scheduled by "Stop everything" and by "Product news off" on the preferences
+ * page (convex/emailPrefs.ts).
+ *
+ * The contact is the record of the choice, so a stop never removes it: `syncContacts` adds
+ * every account that has no contact, and a removed one came back subscribed. When there's
+ * no contact, one is created already unsubscribed, but only for an address with an account
+ * (`createIfMissing`), the one case the sync would add it. An address with no account and
+ * no contact is on no list, and nothing about it is stored.
+ *
+ * Best-effort like the removal below: a failure is recorded, never thrown.
+ */
+export const setContactUnsubscribed = internalAction({
+  args: { email: v.string(), createIfMissing: v.boolean() },
+  returns: v.null(),
+  handler: async (ctx, args): Promise<null> => {
+    const apiKey = getApiKey();
+    let res = await resendFetch(`/contacts/${encodeURIComponent(args.email)}`, apiKey, {
+      method: "PATCH",
+      body: { unsubscribed: true },
+    });
+    if (res.status === 404) {
+      if (!args.createIfMissing) return null;
+      res = await resendFetch("/contacts", apiKey, {
+        method: "POST",
+        body: { email: args.email, unsubscribed: true, segment_ids: [SEGMENT_ID] },
+      });
+    }
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      await recordError(
+        ctx,
+        "action",
+        "marketingEmail.setContactUnsubscribed",
+        new Error(`Resend ${res.status} ${text.slice(0, 200)}`),
+      );
+    }
+    return null;
   },
 });
 
@@ -257,7 +301,8 @@ export const removeContactByEmail = internalAction({
  * Sync all Convex users ↔ Resend contacts.
  *
  * Idempotent. Safe to run anytime. Handles:
- * - New users → create Resend contact
+ * - New users → create Resend contact (unsubscribed, when the log shows its contact was removed by a stop)
+ * - A contact that's unsubscribed is never written back to subscribed
  * - Name changes → update Resend contact
  * - Soft/hard deleted users → remove from Resend
  * - Orphan Resend contacts (no matching user) → remove
@@ -359,6 +404,11 @@ export const syncContacts = internalAction({
       const existing = resendByEmail.get(emailLower);
 
       if (!existing) {
+        // An account whose contact was removed while the account lives stopped everything before
+        // Nov 11 2026, when a stop removed the contact. It comes back as stopped, never subscribed.
+        const stopped: boolean = await ctx.runQuery(internal.marketingEmailHelpers.contactWasRemoved, {
+          email: emailLower,
+        });
         // Create new contact (Resend REST API uses snake_case)
         const ok = await runWrite("POST (create)", emailLower, () =>
           resendFetch("/contacts", apiKey, {
@@ -366,6 +416,7 @@ export const syncContacts = internalAction({
             body: {
               email: user.email,
               first_name: firstName || undefined,
+              ...(stopped ? { unsubscribed: true } : {}),
               segment_ids: [SEGMENT_ID],
             },
           }),
