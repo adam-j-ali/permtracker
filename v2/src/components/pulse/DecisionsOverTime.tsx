@@ -71,7 +71,7 @@ export function DecisionsOverTime({
           value: b.total,
           label: name(b),
           now: b === last,
-          href: linkDays && b.by === "day" ? `/perm-decision-activity?day=${b.start}#day` : undefined,
+          href: linkDays && b.by === "day" ? `/perm-updates/${b.start}` : undefined,
           partial: b.partial,
           tip: [`${name(b)}${b.partial ? ", so far" : ""}`, `${formatInt(b.total)} decided`, ...OUTCOMES.map((o) => `${formatInt(b[o.key])} ${o.label.split(" ")[0]!.toLowerCase()}`)].join("\n"),
           parts: OUTCOMES.map((o) => ({ value: b[o.key], fill: o.fill })),

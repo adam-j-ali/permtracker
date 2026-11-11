@@ -1,0 +1,13 @@
+{
+ "what": "How a PERM status that ends a case is counted in a day's decisions. scripts/ingest_case_status_direct.py (DECISION_BUCKETS, EXPIRY_FROM, EXPIRY_TO) writes the daily series by it and src/lib/dailyUpdate.ts counts a day's list by it; a test on each side holds them to this file.",
+ "buckets": {
+  "CERTIFIED": "certified",
+  "CERTIFIED - EXPIRED": "certified",
+  "CERTIFIED-EXPIRED": "certified",
+  "DENIED": "denied",
+  "DENIED - BALCA DISMISSED": "denied",
+  "DENIED - BALCA AFFIRMED": "denied",
+  "WITHDRAWN": "withdrawn"
+ },
+ "expiry": { "from": "CERTIFIED", "to": "CERTIFIED - EXPIRED" }
+}

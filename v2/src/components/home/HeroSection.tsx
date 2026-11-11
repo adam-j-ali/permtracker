@@ -109,7 +109,10 @@ export function heroFigures(board: HeroBoard | undefined, wait: HeroWait | null,
   const rows: HeroFigure[] = [];
   if (wait && wait.days > 0) rows.push({ label: `Cases decided ${boardDay(wait.on)} waited`, value: waitValue(wait.days), trend: trends.wait });
   if (board?.pending != null) rows.push({ label: "In the PERM backlog", value: formatInt(board.pending), trend: trends.pending });
-  if (board?.lastDay) rows.push({ label: `Decided on ${boardDay(board.lastDay.date)}`, value: formatInt(board.lastDay.total), trend: trends.decided });
+  // The day's count opens the day's own page: which cases, and the filing dates DOL reached.
+  if (board?.lastDay) {
+    rows.push({ label: `Decided on ${boardDay(board.lastDay.date)}`, value: formatInt(board.lastDay.total), trend: trends.decided, href: `/perm-updates/${board.lastDay.date}` });
+  }
   // The step before PERM: its number opens the wage request wait, the way in for someone waiting on a wage request
   // (their request's own number goes in the case box above, like any other).
   if (board?.pwdPending) rows.push({ label: "Wage requests waiting", value: formatInt(board.pwdPending), href: "/tools/pwd-calculator" });

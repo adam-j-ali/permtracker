@@ -19,6 +19,8 @@ export const SWEEP_PAGES = [
   // The About page prints the homepage's record ledger, its "checked" date included.
   "/about",
   "/perm-decision-activity",
+  // The newest DOL day on one screen. Each day's own page (/perm-updates/<day>) keeps its half-hour window.
+  "/perm-updates",
   // How many were filed each day: written after each pass (scripts/build_filings_by_day.py).
   "/filings-by-day",
   "/perm-case-statuses",

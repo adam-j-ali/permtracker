@@ -49,6 +49,7 @@ export type DataSection =
   | "processing-times"
   | "timeline-calculator"
   | "queue"
+  | "updates"
   | "activity"
   | "filings"
   | "pwd-wait"
@@ -170,7 +171,9 @@ export const SECTIONS: DataNavSection[] = [
   s("processing-times", "PERM", "PERM processing times", "/perm-processing-times"),
   t("timeline-calculator", "PERM", "Timeline calculator", "/tools/perm-timeline-calculator", "The likely decision day and its range."),
   s("queue", "PERM", "Queue backlog", "/perm-queue"),
-  s("activity", "PERM", "Daily decisions", "/perm-decision-activity"),
+  // One day on one screen. The long record (DOL's pace by week, every day and both sources) is under Breakdowns:
+  // a group stays at nine pages or fewer.
+  s("updates", "PERM", "Today's decisions", "/perm-updates"),
   s("filings", "PERM", "Filed each day", "/filings-by-day"),
   s("risk", "PERM", "Denial rates", "/perm-denial-risk"),
   s("rfi-audit", "PERM", "RFI and audits", "/perm-rfi-audit"),
@@ -210,6 +213,7 @@ export const SECTIONS: DataNavSection[] = [
   s("by-city", "Breakdowns", "By city", "/perm-cities"),
   s("by-industry", "Breakdowns", "By industry", "/perm-industries"),
   s("by-country", "Breakdowns", "By citizenship", "/perm-countries"),
+  s("activity", "Breakdowns", "Decisions over time", "/perm-decision-activity"),
 
   s("wages", "Wages", "PERM wages by job", "/perm-wages"),
   t("salary-explorer", "Wages", "PERM salary explorer", "/tools/salary-explorer", "What certified PERM jobs pay, as a ladder."),

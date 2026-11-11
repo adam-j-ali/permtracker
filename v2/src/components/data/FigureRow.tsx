@@ -10,9 +10,9 @@ import { cn } from "@/lib/utils";
  * the frame's own ink showing through the gaps, and every row fills its
  * width, so no empty cell is ever left showing. On a phone they stack.
  */
-export function FigureRow({ children, className }: { children: ReactNode; className?: string }) {
+export function FigureRow({ children, className, id }: { children: ReactNode; className?: string; id?: string }) {
   return (
-    <div className={cn("flex flex-wrap gap-[2px] border-2 border-border bg-border shadow-hard-sm", className)}>
+    <div id={id} className={cn("flex flex-wrap gap-[2px] border-2 border-border bg-border shadow-hard-sm", className)}>
       {children}
     </div>
   );

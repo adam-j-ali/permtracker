@@ -92,6 +92,7 @@ export const PAGE_CARD_ALT = {
   "perm-attorneys": "Who files the most PERM cases. Every firm named on a PERM filing, ranked, with its approval rate from DOL's files.",
   "perm-by-state": "PERM filings, state by state. Every certified, denied and withdrawn case at its worksite state.",
   "perm-case-status": "Check a PERM case. The status DOL holds, its place in the queue, and an email when it changes.",
+  "perm-updates": "PERM updates today. The cases DOL certified, denied and saw withdrawn on its last working day, and the filing dates it reached.",
   "perm-decision-activity": "How fast the queue is moving. Decisions counted by the day DOL issued them, and the cases it moved.",
   "filings-by-day": "Cases filed each day. PERM cases, wage requests and H-1B LCAs counted by the day DOL received them, each day opening its cases.",
   "perm-denial-risk": "What gets denied. Denial rates by job, worksite and what the form asks, from DOL's own files.",

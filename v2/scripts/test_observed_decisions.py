@@ -173,6 +173,14 @@ def main() -> int:
               csd.observed_day(b["lo"]) == b["day"] and csd.observed_day(b["lo"] - 1) != b["day"]
               and csd.observed_day(b["hi"] - 1) == b["day"] and csd.observed_day(b["hi"]) != b["day"])
 
+    # The buckets, shared with the page that lists one day's decisions (src/lib/dailyUpdate.ts reads the same
+    # fixture), so the day's list and the daily series can't count a status two ways.
+    bx = json.loads((V2 / "scripts/fixtures/decision_buckets.json").read_text())
+    check("the decision buckets are the fixture's, status for status",
+          bx["buckets"] == csd.DECISION_BUCKETS, str(set(bx["buckets"].items()) ^ set(csd.DECISION_BUCKETS.items())))
+    check("the expiry pair is the fixture's",
+          (bx["expiry"]["from"], bx["expiry"]["to"]) == (csd.EXPIRY_FROM, csd.EXPIRY_TO))
+
     # -----------------------------------------------------------------------
     # 4. The fold, on production's actual shape.
     #

@@ -1278,6 +1278,22 @@
   ]
  },
  {
+  "slug": "perm-updates",
+  "path": "/perm-updates",
+  "title": "PERM updates today",
+  "label": "What DOL certified, denied and saw withdrawn on its last working day, and the filing dates it reached.",
+  "mask": "figures",
+  "fromEl": "#counts",
+  "css": "[data-card-hide], #counts [class*=\"bg-soft-\"], #counts [class*=\"bg-muted\"] { visibility: hidden !important; }",
+  "shot": "perm-updates.png",
+  "crop": [
+   0,
+   0,
+   1504,
+   808
+  ]
+ },
+ {
   "slug": "perm-decision-activity",
   "path": "/perm-decision-activity",
   "title": "Daily decisions",
