@@ -5,6 +5,7 @@ import { FinePrint } from "@/components/data/FinePrint";
 import { PageSection } from "@/components/data/PageSection";
 import {
   buildCaseEstimate,
+  holidayLine,
   type CaseEstimate as Estimate,
   type CaseEstimateInput,
 } from "@/lib/caseEstimate";
@@ -153,6 +154,12 @@ export function CaseEstimatePanel({
           </>
         ) : null}
         {est.totalDays.toLocaleString("en-US")} days from filing. It&apos;s an estimate. It isn&apos;t a promise.
+        {holidayLine(est) ? (
+          <>
+            {" "}
+            {holidayLine(est)}
+          </>
+        ) : null}
       </p>{" "}
       {est.stage ? (
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-soft">{est.stage.note}</p>

@@ -47,7 +47,7 @@ import { cn } from "@/lib/utils";
 import { daysBetween, easternDay } from "@/lib/time";
 import { useCaseCorpus } from "@/components/app/CaseCorpusProvider";
 import { caseStepEstimate } from "@/lib/caseStepEstimate";
-import type { CaseEstimate } from "@/lib/caseEstimate";
+import { holidayLine, type CaseEstimate } from "@/lib/caseEstimate";
 import type { LineAheadRow } from "@/lib/queueAhead";
 import { CaseNumberSuggestion } from "./CaseNumberSuggestion";
 import { canonicalStatus } from "@/lib/caseStatusVocabulary";
@@ -450,6 +450,10 @@ export function CaseEstimateSection({ caseData }: { caseData: CaseEstimateSectio
             today={today}
           />
         </div>
+      ) : null}
+
+      {est && est.kind === "date" && result.step === "perm" && holidayLine(est) ? (
+        <p className="px-5 pb-4 text-sm text-muted-foreground">{holidayLine(est)}</p>
       ) : null}
 
       {est && est.kind === "no-date" ? (

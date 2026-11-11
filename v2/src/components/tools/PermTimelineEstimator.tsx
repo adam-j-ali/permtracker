@@ -28,6 +28,7 @@ import {
   type MeasuredPace,
   type RangeCoverage,
 } from "@/lib/perm";
+import { holidayLine } from "@/lib/caseEstimate";
 import { describeDisclosureFiles } from "@/lib/disclosureFiles";
 import type { Pace } from "@/lib/dolPace";
 import type { StragglerRates } from "@/lib/stragglerRates";
@@ -471,6 +472,9 @@ export function PermTimelineEstimator({
   // The range's own caveat is printed under the date when the date comes from
   // the lead model; listing it again below would say the same thing twice.
   const rangeNote = lead?.rangeNote ?? rangeCaveat(rangeCoverage);
+  // The same line the case page prints: what DOL's holidays and slow weeks add to the lead model's wait.
+  const holidays =
+    lead && lead.facts && lead.facts.id === "decision-pace" ? holidayLine({ holidayDays: lead.facts.holidayDays }) : null;
   const notes = shown?.fromLead
     ? estimate.caveats.filter((c) => c !== rangeNote)
     : estimate.caveats;
@@ -698,6 +702,9 @@ export function PermTimelineEstimator({
                     ? "One model has enough published data to answer for this month."
                     : `The window comes from ${envelope?.modelCount ?? 0} models on different bases, spread across ${envelope?.spanMonths ?? 0} months. They're never averaged into one number, because the spread is part of the answer. Open "How this was worked out" to see each.`}
               </p>{" "}
+              {shown.fromLead && holidays ? (
+                <p className="mt-2 text-base leading-relaxed text-muted-foreground">{holidays}</p>
+              ) : null}{" "}
               {/* The next steps, right under the answer: hear when DOL reaches
                   this month, or read the case itself, which knows its stage. */}
               <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">

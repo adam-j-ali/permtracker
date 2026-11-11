@@ -127,6 +127,11 @@ export type CaseEstimate =
       latestDate: string | null;
       /** Stage-adjusted calendar days from filing. */
       totalDays: number;
+      /**
+       * decision-pace only: the days of the wait that come from DOL's calendar, counted by the model as it walks
+       * it (closed on federal holidays, slower around Thanksgiving and the year's end). Absent when there are none.
+       */
+      holidayDays?: number;
       /** Which model produced the base figure. */
       modelLabel: string;
       basis: string;
@@ -375,6 +380,8 @@ export function buildCaseEstimate(input: CaseEstimateInput): CaseEstimate | null
     );
   }
 
+  const holidayDays = model.facts && model.facts.id === "decision-pace" ? model.facts.holidayDays || 0 : 0;
+
   return {
     kind: "date",
     modelId: model.id,
@@ -384,6 +391,7 @@ export function buildCaseEstimate(input: CaseEstimateInput): CaseEstimate | null
     earliestDate: shiftDate(model.earliestDate),
     latestDate: shiftDate(model.latestDate),
     totalDays,
+    ...(holidayDays > 0 ? { holidayDays } : {}),
     modelLabel: model.label,
     basis: model.basis,
     source: model.source,
@@ -393,4 +401,14 @@ export function buildCaseEstimate(input: CaseEstimateInput): CaseEstimate | null
         : null,
     caveats,
   };
+}
+
+/**
+ * The one line that answers "does the date count the holidays?", or null when the wait holds none (or the model
+ * that dated the case doesn't walk DOL's calendar). The public estimate and the app's card print the same words.
+ */
+export function holidayLine(est: { holidayDays?: number }): string | null {
+  const n = est.holidayDays || 0;
+  if (n <= 0) return null;
+  return `It allows ${n.toLocaleString("en-US")} ${n === 1 ? "day" : "days"} for the federal holidays ahead and DOL's slower weeks around them.`;
 }
