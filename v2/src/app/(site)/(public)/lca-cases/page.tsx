@@ -5,6 +5,7 @@ import { PageBasics } from "@/components/data/PageBasics";
 import { IndexHeader, IndexLookup } from "@/components/data/IndexHeader";
 import { FilingMonthBars } from "@/components/data/FilingMonthBars";
 import { formatInt } from "@/lib/format";
+import { filedLastMonth, waitingSplit } from "@/lib/figureVisuals";
 import { FlagCaseBrowser, LCA_PROGRAM } from "@/components/tools/FlagCaseBrowser";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { getLcaSummary, getLcaDisclosureSummary } from "@/lib/db/lcaCases";
@@ -42,6 +43,8 @@ export const revalidate = 86400;
 export default async function LcaCasesPage() {
   const [summary, disclosure] = await Promise.all([getLcaSummary(), getLcaDisclosureSummary()]);
 
+  const lastMonth = summary?.asOf ? filedLastMonth(summary.byMonth, summary.asOf) : undefined;
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">
       <IndexHeader
@@ -52,6 +55,7 @@ export default async function LcaCasesPage() {
             label: "Waiting at DOL now",
             value: summary ? formatInt(summary.pending) : "—",
             note: "DOL has seven working days to decide one",
+            ...(waitingSplit(summary, "LCAs") ? { split: waitingSplit(summary, "LCAs") } : {}),
           },
           {
             label: "Decided, with the wage offered",
@@ -60,6 +64,8 @@ export default async function LcaCasesPage() {
               ? { note: `Published through ${longDate(disclosure?.latestDecision ?? null)}` }
               : {}),
           },
+          // How busy the last complete month was, against the eleven before it.
+          ...(lastMonth ? [{ ...lastMonth, note: "LCAs in DOL's case-status service, by the month filed" }] : []),
         ]}
         aside={
           <IndexLookup
