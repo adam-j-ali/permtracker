@@ -134,8 +134,16 @@ export default async function SeasonalCasesPage() {
         }
       />
 
+      {/* First things first: the employer search and the list it opens, straight after the header. The form-by-form
+          counts, the note on which numbers the box takes and the decisions chart come after the list. */}
+      <div className="mt-10">
+        <SearchParamsBoundary>
+          <FlagCaseBrowser summary={summary} program={SEASONAL_PROGRAM} />
+        </SearchParamsBoundary>
+      </div>
+
       {summary && hasForms ? (
-        <section aria-label="DOL's filings, form by form" className="mt-10">
+        <section aria-label="DOL's filings, form by form" className="mt-12">
             <ChartTips label="Each form's share of the filings DOL has confirmed">
             <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
               {FORM_ORDER.map((p) => {
@@ -207,12 +215,6 @@ export default async function SeasonalCasesPage() {
           </div>
         </details>
       </section>
-
-      <div className="mt-10">
-        <SearchParamsBoundary>
-          <FlagCaseBrowser summary={summary} program={SEASONAL_PROGRAM} />
-        </SearchParamsBoundary>
-      </div>
 
       {allDecided.length > 0 ? (
         <section aria-labelledby="seasonal-decided" className="mt-14">
