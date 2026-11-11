@@ -502,7 +502,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/green-card-timelines",
     label: "Green card timelines",
     blurb:
-      "How long the I-140, I-485, work permit and green card took for the people who report them: the PERM dates checked against DOL's record, everything after self-reported and labelled as such.",
+      "How long the I-140, I-485, biometrics, work permit, interview and green card took for the people who report them, by step and by USCIS office: the PERM dates checked against DOL's record, everything after self-reported and labelled as such. Anyone can add their own dates with no account and no case number; each timeline is checked before it counts, and no case number or employer is shown.",
   },
   {
     path: "/uscis-processing-times",
@@ -526,7 +526,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/i485-by-field-office/hartford-connecticut",
     label: "One page per USCIS field office and service center",
     blurb:
-      `A page for each of the ${USCIS_OFFICES.length} offices in USCIS's quarterly I-485 file at /i485-by-field-office/<office> (for example hartford-connecticut, newark-new-jersey, national-benefits-center): employment-based I-485s received, approved, denied and pending there for the last four quarters, where the office's pending pile ranks among the others, and the one processing time USCIS posts for employment-based cases at field offices. USCIS's own counts; no wait per office is published, and none is invented.`,
+      `A page for each of the ${USCIS_OFFICES.length} offices in USCIS's quarterly I-485 file at /i485-by-field-office/<office> (for example hartford-connecticut, newark-new-jersey, national-benefits-center): employment-based I-485s received, approved, denied and pending there for the last four quarters, where the office's pending pile ranks among the others, and the one processing time USCIS posts for employment-based cases at field offices. USCIS's own counts; no wait per office is published, and none is invented. Under them, the timelines people shared from that office (days from filing the I-485 to biometrics, the interview and the green card), self-reported, labelled as such, and shown as a median only once five people have shared.`,
   },
   {
     path: "/i140-awaiting-visa",

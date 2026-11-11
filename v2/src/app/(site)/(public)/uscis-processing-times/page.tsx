@@ -616,6 +616,11 @@ export default async function UscisProcessingTimesPage() {
             <Link href="/i485-by-field-office" className="link">
               The I-485 by field office
             </Link>
+          </li>{" "}
+          <li>
+            <Link href="/green-card-timelines" className="link">
+              Timelines people shared, by step and by office
+            </Link>
           </li>
         </ul>
       </section>

@@ -17,6 +17,7 @@ import { MonitorPanel } from "@/components/admin/MonitorPanel";
 import { FirmClaimsPanel } from "@/components/admin/FirmClaimsPanel";
 import { AlertRatingsPanel } from "@/components/admin/AlertRatingsPanel";
 import { ReviewsPanel } from "@/components/admin/ReviewsPanel";
+import { TimelinesPanel, timelinesWaiting } from "@/components/admin/TimelinesPanel";
 import { ConsularReportsPanel } from "@/components/admin/ConsularReportsPanel";
 import { InboxFilterPanel } from "@/components/admin/InboxFilterPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +38,7 @@ export default function AdminDashboardClient() {
   const delivery = useQuery(api.adminDelivery.getDelivery, skip ? "skip" : {});
   const firmClaims = useQuery(api.firmClaims.listForAdmin, skip ? "skip" : {});
   const reviews = useQuery(api.siteReviews.listForAdmin, skip ? "skip" : {});
+  const timelines = useQuery(api.communityTimelines.listForAdmin, skip ? "skip" : {});
   const alertRatings = useQuery(api.alertRatings.forAdmin, skip ? "skip" : {});
   const consularReports = useQuery(api.consularReports.listForAdmin, skip ? "skip" : {});
   const inboxFilter = useQuery(api.inboundFilter.forAdmin, skip ? "skip" : {});
@@ -249,6 +251,12 @@ export default function AdminDashboardClient() {
                 <ConsularReportsPanel data={consularReports} />
               </div>
             ),
+          },
+          {
+            id: "timelines",
+            label: "Timelines",
+            badge: timelinesWaiting(timelines) > 0 ? `${timelinesWaiting(timelines)} waiting` : null,
+            content: <TimelinesPanel data={timelines} />,
           },
           {
             id: "developers",

@@ -15,6 +15,7 @@ import {
 import { ChartTips } from "@/components/data/ChartTips";
 import { cn } from "@/lib/utils";
 import { ScrollBox } from "@/components/ui/scroll-box";
+import { officeByCode } from "@/lib/uscisOffices";
 
 /**
  * The visual half of the green card timelines page, server-rendered, no
@@ -142,19 +143,24 @@ const STOPS = [
  * Tones by stage family (round 3, Oct 15 2026: no black or grey marks). A
  * decision is green, dark for DOL's certification and lime for USCIS's
  * approvals; a filing is the waiting yellow; the work and travel papers are
- * blue; the interview stays an open ring. The key names every one, and the
- * green card is a diamond, so no mark depends on its colour alone.
+ * blue; the interview stays an open ring and biometrics an open square. The
+ * key names every one, and the green card is a diamond, so no mark depends on
+ * its colour alone.
  */
 const DOT: Record<string, string> = {
   permCertifiedOn: "bg-data-good-ink",
   i140FiledOn: "bg-chart-yellow",
   i140ApprovedOn: "bg-primary",
   i485FiledOn: "bg-chart-yellow",
+  biometricsOn: "bg-card",
   eadOn: "bg-chart-blue",
   apOn: "bg-chart-blue",
   interviewOn: "bg-card",
   greenCardOn: "bg-primary",
 };
+
+/** A mark's outline: the green card a diamond, biometrics a square, every other step a circle. */
+const shape = (id: string) => (id === "greenCardOn" ? "rotate-45" : id === "biometricsOn" ? "" : "rounded-full");
 
 export function BoardKey() {
   return (
@@ -164,11 +170,7 @@ export function BoardKey() {
           {" "}
           <li className="inline-flex items-center gap-2">
             <span
-              className={cn(
-                "inline-block size-3 border-input border",
-                DOT[s.id],
-                s.id === "greenCardOn" ? "rotate-45" : "rounded-full",
-              )}
+              className={cn("inline-block size-3 border-input border", DOT[s.id], shape(s.id))}
               aria-hidden="true"
             />{" "}
             {s.short}
@@ -213,7 +215,11 @@ export function BoardTable({ rows }: { rows: readonly BoardRow[] }) {
                 <td className="px-3 py-3">{label(COUNTRIES, r.country) ?? ""}{" "}</td>
                 <td className="px-3 py-3">
                   {r.route ? (label(ROUTES, r.route) ?? "").replace(/ \(.*\)$/, "") : ""}
-                  {r.premium ? <span className="block text-muted-foreground">premium I-140</span> : null}{" "}
+                  {r.premium ? <span className="block text-muted-foreground">premium I-140</span> : null}
+                  {/* Optional: a backend older than Nov 11 2026 sends no office. */}
+                  {r.office && officeByCode(r.office) ? (
+                    <span className="block text-muted-foreground">{`I-485 at ${officeByCode(r.office)!.name}`}</span>
+                  ) : null}{" "}
                 </td>
                 <td className="px-3 py-3">
                   <div className="relative h-5" role="img" aria-label={words || "No dated steps yet"}>
@@ -222,11 +228,7 @@ export function BoardTable({ rows }: { rows: readonly BoardRow[] }) {
                       <span
                         key={s.id}
                         data-tip={`${STOPS.find((x) => x.id === s.id)?.short ?? s.id}\nDay ${(s.day as number).toLocaleString("en-US")} from PERM filing${s.month ? `\n${monthName(s.month)}` : ""}${r.filedMonth ? `\nPERM filed ${monthName(r.filedMonth)}` : ""}`}
-                        className={cn(
-                          "absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 border-input border",
-                          DOT[s.id],
-                          s.id === "greenCardOn" ? "rotate-45" : "rounded-full",
-                        )}
+                        className={cn("absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 border-input border", DOT[s.id], shape(s.id))}
                         style={{ left: at(s.day as number) }}
                         aria-hidden="true"
                       />

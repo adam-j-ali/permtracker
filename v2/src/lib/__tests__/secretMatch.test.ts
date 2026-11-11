@@ -69,7 +69,7 @@ describe("the route handlers", () => {
 
   it("route every secret check through the helper", () => {
     const checking = files.filter(([, src]) => /process\.env\.(?:REVALIDATE_SECRET|SENTRY_CHECK_SECRET|CRON_SECRET)/.test(src));
-    expect(checking.length).toBe(15);
+    expect(checking.length).toBe(16);
     for (const [path, src] of checking) {
       expect(src, path).toMatch(/\b(?:secretMatches|bearerMatches)\(/);
     }
