@@ -431,6 +431,8 @@ describe("sitemap.ts", () => {
       // Thousands of small noindex lists of one filing day's cases; robots.txt
       // keeps crawlers off them and the month pages carry the search value.
       "perm-queue/[month]/[day]": "filing-day pages",
+      // One DOL day's decisions, a noindex list a person shares by its address; /perm-updates is the page to find.
+      "perm-updates/[day]": "decision-day pages",
     };
     // Every public page whose route has a dynamic segment, as its pattern ("perm-employers/[slug]"). Patterns,
     // not the folder above a [param]: a [param] segment at the root would have the whole site above it, which

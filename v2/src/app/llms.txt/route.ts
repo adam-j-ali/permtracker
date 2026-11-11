@@ -95,6 +95,12 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
       "How many PERM cases, wage requests, H-1B LCAs and H-2A, H-2B and CW-1 filings DOL received today, yesterday and each day since October 2019, each day opening its cases.",
   },
   {
+    path: "/perm-updates",
+    label: "PERM updates today",
+    blurb:
+      "DOL's last working day on one page: the PERM cases it certified, denied and saw withdrawn, the filing dates the certified ones came from, and every case it moved. Each day since late August 2026 has its own address under it (/perm-updates/2026-11-10).",
+  },
+  {
     path: "/perm-decision-activity",
     label: "PERM daily decision activity",
     blurb:

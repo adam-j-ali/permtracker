@@ -80,6 +80,7 @@ export const TEMPLATE_DAY: Readonly<Record<string, string>> = {
   // Oct 28 2026: every month page gained what moved since yesterday, its status links and its day calendar.
   "/perm-queue/[month]": "2026-10-28",
   "/perm-queue/[month]/[day]": "2026-10-28",
+  "/perm-updates/[day]": "2026-11-11",
   "/perm-rfi-audit/[stage]": "2026-10-17",
   // Oct 29 2026: every occupation page gained the job titles employers filed under its code.
   "/perm-wages/[slug]": "2026-10-29",
@@ -149,6 +150,7 @@ export const DATE_SOURCE: Readonly<Record<string, DateSource>> = {
   "/perm-rfi-audit": "sweep",
   "/perm-rfi-audit/[stage]": "sweep",
   "/perm-decision-activity": "sweep",
+  "/perm-updates": "sweep",
   "/perm-employers/under-review": "sweep",
   // Pages that print the sweep's live record (a case lookup, the case lists, the boards): dated by the day the
   // record was last read, never by their code's last change (a lookup read "Updated November 4" on Nov 6).

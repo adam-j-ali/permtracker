@@ -52,6 +52,7 @@ export const PAGE_KEYWORDS: Readonly<Record<string, string>> = {
   "/soc-codes": "soc code occupation code job title lookup onet o*net 15-1252 occupational classification",
   "/perm-countries": "country countries citizenship nationality birth",
   "/perm-by-state": "state states worksite location",
+  "/perm-updates": "today updates approvals approved certified denied withdrawn yesterday daily what moved news latest",
   "/perm-decision-activity": "decided decisions day certified denied withdrawn",
   "/filings-by-day": "filed today yesterday daily new filings how many filed received per day lca wage request",
   "/pwd-cases": "prevailing wage request p-100 pwd",

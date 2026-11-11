@@ -61,26 +61,42 @@ export function isDolWorkday(iso: string): boolean {
   return weekdayIndex(iso) < 5 && !isFederalHoliday(iso);
 }
 
+/**
+ * What this weekday usually brings: the mean of `key` over the same weekday in the `weeks` before `date`, federal
+ * holidays left out (DOL is closed, and a zero would drag the mean). Null with no earlier day to compare with.
+ * One rule for the homepage's board and the daily page's chips.
+ */
+export function usualFor(
+  days: readonly ActivityDay[],
+  date: string,
+  key: "total" | "certified" | "denied" | "withdrawn",
+  weeks = 4,
+): { usual: number; compared: number } | null {
+  const wd = weekdayIndex(date);
+  const earlier = byDate(days)
+    .filter((d) => d.date < date && weekdayIndex(d.date) === wd && !isFederalHoliday(d.date))
+    .slice(-weeks);
+  if (earlier.length === 0) return null;
+  return { usual: Math.round(earlier.reduce((a, d) => a + d[key], 0) / earlier.length), compared: earlier.length };
+}
+
 /** DOL's last working day and how it stands against the same weekday in the `weeks` before it. */
 export function pulseHeadline(days: readonly ActivityDay[], weeks = 4): PulseHeadline | null {
   if (days.length === 0) return null;
   const sorted = byDate(days);
   const workdays = sorted.filter((d) => isDolWorkday(d.date));
   const day = workdays[workdays.length - 1] ?? sorted[sorted.length - 1]!;
-  const wd = weekdayIndex(day.date);
   const closedAfter: ClosedDay[] = [];
   for (const d of sorted) {
     if (d.date <= day.date) continue;
     const name = federalHolidayName(d.date);
     if (name) closedAfter.push({ date: d.date, name, total: d.total });
   }
-  const earlier = sorted
-    .filter((d) => d.date < day.date && weekdayIndex(d.date) === wd && !isFederalHoliday(d.date))
-    .slice(-weeks);
-  if (earlier.length === 0) return { day, typical: null, changePct: null, compared: 0, closedAfter };
-  const typical = Math.round(earlier.reduce((a, b) => a + b.total, 0) / earlier.length);
+  const against = usualFor(sorted, day.date, "total", weeks);
+  if (!against) return { day, typical: null, changePct: null, compared: 0, closedAfter };
+  const typical = against.usual;
   const changePct = typical > 0 ? Math.round(((day.total - typical) / typical) * 100) : null;
-  return { day, typical, changePct, compared: earlier.length, closedAfter };
+  return { day, typical, changePct, compared: against.compared, closedAfter };
 }
 
 /** The last `n` days on record, oldest first. */
