@@ -93,17 +93,21 @@ export const recordContactEvent = internalMutation({
       return { inserted: false, id: existing._id };
     }
 
+    // A deleted contact's row says what happened and when, never who. Removing the
+    // contact is the last step of deleting an account, and Resend answers it with this
+    // event: stored whole, it would write the address back after the account's rows were
+    // purged (convex/lib/deletion.ts). The payload repeats the address, so it goes too.
+    const gone = args.eventType === "contact.deleted";
     const id = await ctx.db.insert("marketingEvents", {
       svixId: args.svixId,
-      email: args.email,
+      email: gone ? "" : args.email,
       contactId: args.contactId,
       audienceId: args.audienceId,
       eventType: args.eventType,
       unsubscribed: args.unsubscribed,
       occurredAt: args.occurredAt,
-      firstName: args.firstName,
-      lastName: args.lastName,
-      rawPayload: args.rawPayload,
+      ...(gone ? {} : { firstName: args.firstName, lastName: args.lastName }),
+      rawPayload: gone ? "" : args.rawPayload,
     });
 
     return { inserted: true, id };

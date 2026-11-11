@@ -145,6 +145,51 @@ describe("marketingWebhook.recordContactEvent", () => {
     });
   });
 
+  describe("a deleted contact", () => {
+    // Removing a contact is what account deletion does last, and Resend answers with this
+    // event. Its row says what happened and when, never who, or the address would be
+    // written back after the account's rows were purged.
+    it("is recorded without its address, names or payload", async () => {
+      const t = createTestContext();
+      const args = {
+        svixId: "msg_deleted_1",
+        email: "gone@example.com",
+        contactId: "contact_9",
+        eventType: "contact.deleted" as const,
+        unsubscribed: false,
+        occurredAt: 1_700_000_000_000,
+        firstName: "Gone",
+        lastName: "Person",
+        rawPayload: JSON.stringify({ type: "contact.deleted", data: { email: "gone@example.com", first_name: "Gone" } }),
+      };
+      const result = await t.mutation(internal.marketingWebhook.recordContactEvent, args);
+      expect(result.inserted).toBe(true);
+      const row = await t.run(async (ctx) => ctx.db.get(result.id));
+      expect(row).toMatchObject({ eventType: "contact.deleted", email: "", contactId: "contact_9", rawPayload: "", occurredAt: 1_700_000_000_000 });
+      expect(row!.firstName).toBeUndefined();
+      expect(row!.lastName).toBeUndefined();
+      expect(JSON.stringify(row)).not.toContain("gone@example.com");
+      // A second delivery of the same event is still recognised.
+      expect((await t.mutation(internal.marketingWebhook.recordContactEvent, args)).inserted).toBe(false);
+    });
+
+    it("leaves every other event's row whole", async () => {
+      const t = createTestContext();
+      const result = await t.mutation(internal.marketingWebhook.recordContactEvent, {
+        svixId: "msg_updated_1",
+        email: "here@example.com",
+        contactId: "contact_10",
+        eventType: "contact.updated",
+        unsubscribed: true,
+        occurredAt: 1,
+        firstName: "Here",
+        rawPayload: '{"x":1}',
+      });
+      const row = await t.run(async (ctx) => ctx.db.get(result.id));
+      expect(row).toMatchObject({ email: "here@example.com", firstName: "Here", rawPayload: '{"x":1}' });
+    });
+  });
+
   describe("idempotency (svixId dedup)", () => {
     it("returns the existing row on duplicate svixId without inserting again", async () => {
       const t = createTestContext();

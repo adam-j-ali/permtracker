@@ -40,7 +40,8 @@ interface PurgeResult {
  * cases, notifications, conversations (+ messages + tool cache),
  * audit logs, case order, timeline prefs, job description templates,
  * user profile, auth accounts (+ verification codes),
- * auth sessions (+ refresh tokens), and the user record itself.
+ * auth sessions (+ refresh tokens), the address's rows in the email
+ * event log, and the user record itself.
  *
  * This is the single source of truth for user deletion.
  * Both `deleteUserAdmin` and `permanentlyDeleteAccount` call this.
@@ -265,6 +266,19 @@ export async function purgeAllUserData(
         confirmations: listMail.confirmations + stopped.confirmations,
         congratsNotes: listMail.congratsNotes + stopped.congratsNotes,
       };
+    }
+  }
+
+  // The email event log (Resend's contact events, convex/marketingWebhook.ts) holds the
+  // address, the names and each event's payload. It isn't on the Privacy Policy's list
+  // of what stays, so the address's rows go with the account. One address has a handful.
+  if (email) {
+    for (const address of new Set([email.toLowerCase().trim(), email])) {
+      const events = await ctx.db
+        .query("marketingEvents")
+        .withIndex("by_email_and_time", (q) => q.eq("email", address))
+        .collect();
+      for (const event of events) await ctx.db.delete(event._id);
     }
   }
 
