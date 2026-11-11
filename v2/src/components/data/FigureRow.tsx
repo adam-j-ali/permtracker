@@ -72,10 +72,13 @@ export function Figure({
   tone = "paper",
   icon,
   trend,
+  visual,
 }: {
   label: string;
   value: ReactNode;
   note?: ReactNode;
+  /** A small picture of what the figure measures (FigureVisual.tsx), drawn under the number. */
+  visual?: ReactNode;
   /** A small icon before the label, saying at a glance what the figure is. */
   icon?: ReactNode;
   /** The figure against its yardstick, as a coloured chip under the number. */
@@ -94,6 +97,7 @@ export function Figure({
         {label}
       </p>{" "}
       <p className={cn("mt-1.5 font-heading text-[1.75rem] font-bold leading-none tabular-nums sm:text-[2rem]", number && "whitespace-nowrap")}>{value}</p>{" "}
+      {visual ? <div className="mt-2.5">{visual}</div> : null}{" "}
       {trend ? <TrendChip trend={trend} className="mt-2" /> : null}{" "}
       {note ? (
         <p className={cn("mt-1.5 text-sm leading-snug", tone === "paper" ? "text-muted-foreground" : "opacity-85")}>{note}</p>
