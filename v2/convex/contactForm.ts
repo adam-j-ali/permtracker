@@ -7,6 +7,7 @@ import { getSecurityAlertEmail } from "./lib/admin";
 import { sendOwnerMail } from "./lib/ownerMail";
 import { recordError } from "./lib/errorRecording";
 import { MS_PER_DAY, MS_PER_HOUR } from "./lib/time";
+import { contactMailId } from "./lib/contactMessageRef";
 import { aiOpinionFromWorker } from "./inboundFilter";
 
 /**
@@ -128,7 +129,7 @@ export const forward = internalAction({
       toEmail: CONTACT_INBOX,
       subject,
       bodyText: row.message,
-      messageId: `<contact-form-${id}@permtracker.app>`,
+      messageId: contactMailId(id),
       forwarded: !held,
       held,
       spamScore: verdict.score,

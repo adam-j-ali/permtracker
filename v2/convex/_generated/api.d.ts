@@ -102,6 +102,7 @@ import type * as lib_chatLimits from "../lib/chatLimits.js";
 import type * as lib_communityTimeline from "../lib/communityTimeline.js";
 import type * as lib_congratsNote from "../lib/congratsNote.js";
 import type * as lib_consularReport from "../lib/consularReport.js";
+import type * as lib_contactMessageRef from "../lib/contactMessageRef.js";
 import type * as lib_crypto from "../lib/crypto.js";
 import type * as lib_dailyReportCompose from "../lib/dailyReportCompose.js";
 import type * as lib_dashboardHelpers from "../lib/dashboardHelpers.js";
@@ -373,6 +374,7 @@ declare const fullApi: ApiFromModules<{
   "lib/communityTimeline": typeof lib_communityTimeline;
   "lib/congratsNote": typeof lib_congratsNote;
   "lib/consularReport": typeof lib_consularReport;
+  "lib/contactMessageRef": typeof lib_contactMessageRef;
   "lib/crypto": typeof lib_crypto;
   "lib/dailyReportCompose": typeof lib_dailyReportCompose;
   "lib/dashboardHelpers": typeof lib_dashboardHelpers;

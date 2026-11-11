@@ -246,6 +246,69 @@ describe("the contact form", () => {
     expect(calls).not.toHaveBeenCalled();
   });
 
+  // The Privacy Policy says a held message is deleted 30 days later, and says it of the
+  // contact form too. The form keeps its own row (with the sender's IP) beside the copy
+  // filed with support mail, so both have to go.
+  const heldContactMessage = async (t: T) => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 200 })));
+    const id = await t.run(async (ctx) =>
+      ctx.db.insert("contactMessages", {
+        name: "SEO team",
+        email: "outreach@growthlinks.example",
+        message: "We offer guest posts and backlinks on high-DR sites.",
+        ip: "203.0.113.5",
+        createdAt: Date.now(),
+        checkSignals: [{ weight: 2, why: "sent without the form's check that it's a person" }],
+      }),
+    );
+    await t.action(internal.contactForm.forward, { id });
+    return id;
+  };
+  const contactRows = (t: T) => t.run(async (ctx) => ctx.db.query("contactMessages").collect());
+
+  it("deletes a held message's own row with its copy, 30 days after it was held", async () => {
+    const t = createTestContext();
+    await heldContactMessage(t);
+    expect(await contactRows(t)).toHaveLength(1);
+    // Inside the 30 days nothing goes.
+    expect(await t.mutation(internal.inboundFilter.pruneHeld, {})).toBe(0);
+    expect(await contactRows(t)).toHaveLength(1);
+    await t.run(async (ctx) => {
+      const [copy] = await ctx.db.query("supportEmails").collect();
+      await ctx.db.patch(copy!._id, { heldAt: Date.now() - (HELD_KEEP_DAYS + 1) * MS_PER_DAY });
+    });
+    expect(await t.mutation(internal.inboundFilter.pruneHeld, {})).toBe(1);
+    expect(await rows(t)).toEqual([]);
+    expect(await contactRows(t)).toEqual([]);
+  });
+
+  it("Delete on a held message removes its own row too", async () => {
+    const t = createTestContext();
+    await heldContactMessage(t);
+    const admin = await adminAuth(t);
+    const [copy] = await rows(t);
+    await admin.mutation(api.inboundFilter.deleteHeld, { id: copy!._id });
+    expect(await rows(t)).toEqual([]);
+    expect(await contactRows(t)).toEqual([]);
+  });
+
+  it("keeps a message that was sent on, and one whose copy names no row of the form", async () => {
+    const t = createTestContext();
+    const now = Date.now();
+    const kept = await t.run(async (ctx) => {
+      const id = await ctx.db.insert("contactMessages", { name: "Maria", email: "maria@gmail.com", message: "Hi", ip: "203.0.113.9", createdAt: now });
+      const base = { toEmail: "support@permtracker.app", subject: "s", resendEmailId: "x", createdAt: 1 };
+      // The copy of a message that reached the owner: never pruned, so its row stays.
+      await ctx.db.insert("supportEmails", { ...base, fromEmail: "maria@gmail.com", messageId: `<contact-form-${id}@permtracker.app>`, status: "forwarded" });
+      // Old held mail whose id only looks like the form's: nothing of the form's is touched.
+      await ctx.db.insert("supportEmails", { ...base, fromEmail: "x@x.example", messageId: "<contact-form-not-an-id@permtracker.app>", status: "held", heldAt: now - (HELD_KEEP_DAYS + 1) * MS_PER_DAY });
+      await ctx.db.insert("supportEmails", { ...base, fromEmail: "y@x.example", messageId: "<abc@mail.example>", status: "held", heldAt: now - (HELD_KEEP_DAYS + 1) * MS_PER_DAY });
+      return id;
+    });
+    expect(await t.mutation(internal.inboundFilter.pruneHeld, {})).toBe(2);
+    expect((await contactRows(t)).map((r) => r._id)).toEqual([kept]);
+  });
+
   it("flags a message whose AI check failed, so the morning report counts it", async () => {
     vi.stubEnv("OWNER_MAIL_URL", "https://mail.example.com/owner");
     vi.stubEnv("OWNER_MAIL_KEY", "key");
