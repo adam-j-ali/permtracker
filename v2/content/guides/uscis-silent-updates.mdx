@@ -1,20 +1,21 @@
 ---
 title: "USCIS silent updates: what they are and what they mean"
-description: "What a USCIS silent update is, where it shows up, what USCIS says can cause one, and why no tracker can read the codes from a receipt number."
+description: "What a USCIS silent update is, what the codes FTA0, IAF and FJ are called in official code lists, and why no tracker can read them from a receipt number."
 date: "2026-10-17"
+updated: "2026-11-11"
 author: "PERM Tracker data desk"
 image: "/images/content/heroes/guides/uscis-silent-updates.webp"
 imageAlt: "A USCIS Application Support Center on Jamaica Avenue in Queens, New York, where applicants give fingerprints and photos"
 imageCredit: "Photo: Tdorante10 / Wikimedia Commons, CC BY-SA 4.0"
 imageSource: "https://commons.wikimedia.org/wiki/File:Jamaica_Av_153rd_St_td_(2022-04-11)_02_-_USCIS_Application_Support_Center.jpg"
-tags: ["uscis", "silent-updates", "case-status", "my-uscis", "i-485", "i-140", "explainer"]
+tags: ["uscis", "silent-updates", "fta0", "case-status", "my-uscis", "i-485", "i-140", "explainer"]
 category: "green-card"
-seoTitle: "USCIS Silent Updates: What They Mean"
-seoDescription: "A USCIS silent update is a change in your own account's case data with no new status. What USCIS says causes one, and what it can't tell you."
+seoTitle: "USCIS Silent Updates and FTA0: What They Mean"
+seoDescription: "A silent update changes your USCIS account's case data with no new status. What FTA0, IAF and FJ are called officially, and what they can't tell you."
 published: true
 ---
 
-This guide is for anyone waiting on a USCIS case (an I-485, I-140, I-765 or any other form) who has heard about "silent updates" or "API movement" and wants to know what they mean. To see how long USCIS usually takes on your form, check PERM Tracker's [USCIS processing times page](/uscis-processing-times), which shows USCIS's quarterly median for every form beside its receipts and pending counts.
+This guide is for anyone waiting on a USCIS case (an I-485, I-140, I-765 or any other form) who has heard about "silent updates", "API movement" or codes such as FTA0 and wants to know what they mean. To see how long USCIS usually takes on your form, check PERM Tracker's [USCIS processing times page](/uscis-processing-times), which shows USCIS's quarterly median for every form beside its receipts and pending counts.
 
 <Callout type="important" title="The short answer">
 A silent update is a change in your own USCIS account's case data (a new date or a new code) while the status on USCIS's public page stays the same. USCIS says some of these changes are "internal or administrative updates that do not impact the outcome of a case." So a silent update tells you something happened. It doesn't tell you what, and it doesn't mean a decision is near.
@@ -37,13 +38,39 @@ The first two are USCIS's own tools: [Case Status Online](https://egov.uscis.gov
 
 ## What USCIS says causes them
 
-USCIS's own description of its [Case Status API](https://developer.uscis.gov/api/case-status) is the only place it explains what moves behind a case. Its modified date "is updated when an event occurs related to a receiptNumber." Some of those events show up as a new status or a new history entry. Others don't: "Internal or administrative updates that do not impact the outcome of a case may also cause a modifiedDate update."
+USCIS's own description of its [Case Status API](https://developer.uscis.gov/api/case-status) says most plainly what moves behind a case. Its modified date "is updated when an event occurs related to a receiptNumber." Some of those events show up as a new status or a new history entry. Others don't: "Internal or administrative updates that do not impact the outcome of a case may also cause a modifiedDate update."
 
 That sentence is the best guide to a silent update. Something was done on the file. It may be a step toward a decision, or it may be a file moving between offices, a record being touched, or a routine check.
 
-## The codes
+## FTA0, IAF, FJ, FTA1 and H008: what the codes are
 
-People who look at the case data their own signed-in account loads see short action codes beside dates. USCIS doesn't publish what the codes mean. The meanings traded online come from people comparing their own cases. They're a guess that's sometimes right and often wrong, so don't plan around one.
+People who look at the case data their own signed-in account loads see short codes beside dates. USCIS has never published a key to the codes in your account. Three of the common ones do appear in older official code lists, under plain names.
+
+<ComparisonTable
+  headers={["Code", "What an official list calls it", "What filers report"]}
+  rows={[
+    ["FTA0", "\"DATABASE CHECKS RECEIVED\", in the action code table of USCIS's manual for its CLAIMS 3 case system (table dated September 16, 2008)", "It shows up after fingerprints, often twice, and again later in a case"],
+    ["FJ", "\"INTERVIEW SCHEDULED/NOTICE ORDERED\", in the same table", "It shows up when an interview notice goes out"],
+    ["IAF", "\"RECEIPT LETTER EMAILED\", in a federal data standard that carries the same table", "It shows up at the start of a case. The spelled-out names online are guesses"],
+    ["FTA1", "In neither list", "It shows up around interviews, evidence requests and long reviews. Filers disagree about it"],
+    ["H008", "In neither list", "It nearly always shows up with an approval. On July 22 and 23, 2026, filers reported it on cases that weren't approved"]
+  ]}
+/>
+
+The manual is [a scan USCIS released under the Freedom of Information Act](https://www.uscis.gov/sites/default/files/document/foia/CLAIMS_3_Database_User_Manual.pdf), and its code table is Attachment C. The data standard is [NIEM's list of benefit document statuses](https://niem.github.io/model/5.0/scr/BenefitDocumentStatusCategoryCodeSimpleType/), in that standard's section for screening data.
+
+One caution goes with every row. USCIS has never said the codes in your account are the ones in that old table. The letters match. A [DHS privacy filing](https://www.dhs.gov/sites/default/files/2024-07/24_0731_priv_pia-uscis-071a-myuscisaccountexperience-appendixb-update.pdf) says the CLAIMS 3 system updates your account at "each step in the case management process", and the steps it lists include automated background checks. The record stops there.
+
+"Database checks received" also says very little. It doesn't say which check came back, what it found or why it ran.
+
+### The third FTA0
+
+The best-known claim online is that a third FTA0 means an approval is a day away. Here's what stands behind it.
+
+- **One count exists.** [One filer tallied 138 approved cases](https://www.reddit.com/r/USCIS/comments/1vov84z/) from early 2026. About half (70) were approved the day after a third FTA0. The count holds approved cases only, so it leaves out everyone who got a third FTA0 and kept waiting.
+- **Many people did keep waiting.** Filers report one month, two months and longer after a third, fourth or fifth FTA0.
+- **It isn't a visa number being set aside.** USCIS's [questions and answers on employment-based adjustment](https://www.uscis.gov/green-card/green-card-processes-and-procedures/fiscal-year-2023-employment-based-adjustment-of-status-faqs) say there's "no reservation or pre-allocation of a visa number" before an application is approved.
+- **One day it landed on many cases at once.** On August 13, 2026, filers saw an FTA0 land on many unrelated cases in one afternoon. That fits a batch of checks coming back. It doesn't fit an officer opening one file.
 
 No code is a decision. The decision is the status USCIS shows and the notice it mails.
 
@@ -78,7 +105,7 @@ No tracker, forum helper or app needs your USCIS password.
 
 ## What this can't tell you
 
-- **What any code means.** USCIS doesn't say, and nothing here guesses.
+- **What a code means for your case.** Two older official lists name some of the codes. USCIS hasn't said what a code in your account means today.
 - **Whether a silent update means a decision is coming.** USCIS says some don't affect the outcome at all.
 - **Anything about a receipt that starts with IOE through USCIS's API.** USCIS doesn't send the modified date for those.
 

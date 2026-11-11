@@ -164,7 +164,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     term: "Emma",
     slug: "emma",
     definition:
-      "USCIS's computer-generated virtual assistant on uscis.gov, named for Emma Lazarus. It answers general questions in English and Spanish and can hand off to a live agent. USCIS says not to ask it about your own case, and agents reached through it quote dates without naming forms, so match any date to your receipt numbers.",
+      "USCIS's computer-generated virtual assistant on uscis.gov, named for Emma Lazarus. It answers general questions in English and Spanish and can hand off to a live agent. USCIS's Contact Center page says people who ask about case status are pointed to Case Status Online or their online account. Agents reached through it quote dates without naming forms, so match any date to your receipt numbers.",
     see: [{ label: "What Emma told you", href: "/guides/what-emma-told-you" }],
   },
   {
@@ -218,6 +218,14 @@ export const GLOSSARY: GlossaryTerm[] = [
     definition:
       "DOL's filing system for PERM, prevailing wage, LCA, H-2A, H-2B and CW-1 cases, and the source of the status words on this site. Its case-status search answers by case number. It publishes no definitions of the words it returns.",
     see: [{ label: "Every status, explained", href: "/perm-case-statuses" }],
+  },
+  {
+    term: "USCIS account codes",
+    slug: "uscis-account-codes",
+    aka: ["FTA0", "FTA1", "IAF", "FJ", "H008"],
+    definition:
+      "The short codes (FTA0, IAF, FJ and others) in the case data a signed-in USCIS account loads. USCIS has never published a key to them. Its manual for the CLAIMS 3 case system, with a code table dated September 16, 2008, lists FTA0 as \"DATABASE CHECKS RECEIVED\" and FJ as \"INTERVIEW SCHEDULED/NOTICE ORDERED\". No code is a decision.",
+    see: [{ label: "USCIS silent updates and the codes", href: "/guides/uscis-silent-updates" }],
   },
   {
     term: "CW-1",
@@ -460,6 +468,14 @@ export const GLOSSARY: GlossaryTerm[] = [
     definition:
       "Occupations DOL has pre-certified as short of U.S. workers, chiefly physical therapists and professional nurses. The employer files the I-140 with the uncertified ETA-9089 and skips DOL's queue, but still needs a prevailing wage determination and a notice of filing.",
     cite: CFR656("656.15"),
+  },
+  {
+    term: "Silent update",
+    slug: "silent-update",
+    aka: ["API movement"],
+    definition:
+      "A change in the case data your own USCIS account loads (a new date or a new code) while the status on USCIS's public page stays the same. USCIS says some changes behind a case are \"internal or administrative updates that do not impact the outcome of a case\". It shows something happened on the file. It can't be read from a receipt number.",
+    see: [{ label: "USCIS silent updates", href: "/guides/uscis-silent-updates" }],
   },
   {
     term: "Six-year limit",
