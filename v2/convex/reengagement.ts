@@ -1,7 +1,8 @@
 /**
  * Re-engagement nudge + weekly-digest auto-pause.
  *
- * Flow for a verified user who has the weekly digest ON but has gone quiet:
+ * Flow for a verified user who has email and the weekly digest ON, has at least one
+ * live case of their own, and has gone quiet:
  *   1. After INACTIVE_DAYS with no activity, send ONE "we've missed you" email
  *      and stamp reengagementNudgeSentAt.
  *   2. If still no activity SUPPRESS_GRACE_DAYS after that nudge, pause the weekly
@@ -27,6 +28,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { getCurrentUserId, getCurrentUserIdOrNull } from "./lib/auth";
+import { countLiveCases } from "./lib/liveCases";
 import { loggers } from "./lib/logging";
 import { MS_PER_DAY } from "./lib/time";
 
@@ -62,12 +64,15 @@ export const getReengagementCandidates = internalQuery({
       lastSeen: number;
       reengagementNudgeSentAt: number | undefined;
       weeklyDigestSuppressedAt: number | undefined;
+      liveCases: number;
     }> = [];
 
     for (const profile of profiles) {
       // Digest is ON unless explicitly false (matches getUsersForWeeklyDigest's
       // `!== false`), so legacy profiles with `undefined` are covered, not skipped.
       if (profile.emailWeeklyDigest === false) continue; // nothing to pause
+      // The master switch in Settings: an account with email off gets none of this.
+      if (profile.emailNotificationsEnabled === false) continue;
       if (profile.deletedAt !== undefined) continue;
       const lastSeen =
         profile.lastActiveAt ?? profile.lastLoginAt ?? profile._creationTime;
@@ -75,6 +80,13 @@ export const getReengagementCandidates = internalQuery({
 
       const user = await ctx.db.get(profile.userId);
       if (!user || user.deletedAt || !user.email) continue;
+
+      // The email says "your N cases are still being tracked" and warns that the weekly
+      // case summary will pause. Neither is true of an account with no case of its own
+      // (none, or only the sample), which never gets a summary. Read last: only the
+      // few accounts quiet this long reach it.
+      const liveCases = await countLiveCases(ctx, profile.userId);
+      if (liveCases === 0) continue;
 
       candidates.push({
         profileId: profile._id,
@@ -84,6 +96,7 @@ export const getReengagementCandidates = internalQuery({
         lastSeen,
         reengagementNudgeSentAt: profile.reengagementNudgeSentAt,
         weeklyDigestSuppressedAt: profile.weeklyDigestSuppressedAt,
+        liveCases,
       });
     }
 
@@ -142,7 +155,7 @@ export const runReengagementCheck = internalAction({
         await ctx.scheduler.runAfter(
           emailIndex * 1000,
           internal.notificationActions.sendReengagementNudge,
-          { to: c.email, userName: c.userName }
+          { to: c.email, userName: c.userName, activeCaseCount: c.liveCases }
         );
         await ctx.runMutation(internal.reengagement.markNudged, {
           profileId: c.profileId,

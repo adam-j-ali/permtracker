@@ -62,6 +62,7 @@ import {
   VIOLATION_TO_DEADLINE_TYPE,
 } from "./lib/deadlineEnforcementHelpers";
 import { MS_PER_DAY, emailStamp } from "./lib/time";
+import { countLiveCases } from "./lib/liveCases";
 
 /** Read notifications deleted per cleanup run; the hourly run takes the rest next time. */
 const NOTIFICATION_CLEANUP_BATCH = 1000;
@@ -588,21 +589,7 @@ export const getActiveCaseCountForUser = internalQuery({
   args: {
     userId: v.id("users"),
   },
-  handler: async (ctx, { userId }): Promise<number> => {
-    const cases = await ctx.db
-      .query("cases")
-      .withIndex("by_user_id", (q) => q.eq("userId", userId))
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("deletedAt"), undefined),
-          q.neq(q.field("caseStatus"), "closed"),
-          q.neq(q.field("isSample"), true)
-        )
-      )
-      .collect();
-
-    return cases.length;
-  },
+  handler: async (ctx, { userId }): Promise<number> => countLiveCases(ctx, userId),
 });
 
 /**
