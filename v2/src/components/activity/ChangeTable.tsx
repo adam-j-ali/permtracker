@@ -28,6 +28,12 @@ export const CHANGE_COLUMNS: SortColumn<CaseChange>[] = [
   { key: "to", label: "Changed to", get: (r) => r.toStatus },
 ];
 
+/** The same columns with the day first, for a range of days: a row's day is part of what it says. */
+export const CHANGE_COLUMNS_WITH_DAY: SortColumn<CaseChange>[] = [
+  { key: "seen", label: "Seen", descFirst: true, get: (r) => r.observedOn },
+  ...CHANGE_COLUMNS,
+];
+
 /**
  * Which cases DOL moved, one row each, sortable on every column.
  *
@@ -51,6 +57,7 @@ export function ChangeTable({
   onSort,
   caption,
   sortable = true,
+  showDay = false,
 }: {
   rows: CaseChange[];
   sort: SortState;
@@ -58,13 +65,15 @@ export function ChangeTable({
   caption: string;
   /** False while the rows are only the prerendered head of the day. */
   sortable?: boolean;
+  /** True for a range of days: the day each change was seen leads the row. */
+  showDay?: boolean;
 }) {
   return (
     <ScrollBox label={caption} className="mt-4">
       <table className="w-full min-w-[1040px] border-collapse text-left text-base">
         <caption className="sr-only">{caption}</caption>
         <SortableHeader
-          columns={CHANGE_COLUMNS}
+          columns={showDay ? CHANGE_COLUMNS_WITH_DAY : CHANGE_COLUMNS}
           sort={sort}
           onSort={onSort}
           disabled={!sortable}
@@ -72,7 +81,8 @@ export function ChangeTable({
         <tbody translate="no" className="bg-card">
           {rows.map((c) => (
             <tr
-              key={`${c.program}:${c.caseNumber}`}
+              // One case can move twice inside a range, so the day and the new status are part of the key.
+              key={`${c.program}:${c.caseNumber}:${c.observedOn}:${c.toStatus}`}
               className="border-t-2 border-border/30 align-top"
             >
               {/* A SEPARATOR INSIDE EVERY CELL. JSX puts nothing between
@@ -84,6 +94,11 @@ export function ChangeTable({
                   whitespace text node whose parent is <tr> is invalid HTML and
                   React warns it breaks hydration, which
                   no-whitespace-in-table-rows.test.ts pins. */}
+              {showDay ? (
+                <td className="whitespace-nowrap px-3 py-3 font-mono text-sm">
+                  {c.observedOn}{" "}
+                </td>
+              ) : null}
               <td className="whitespace-nowrap px-3 py-3 font-mono text-base">
                 <IntentLink
                   href={`/perm-case-status?case=${encodeURIComponent(c.caseNumber)}`}

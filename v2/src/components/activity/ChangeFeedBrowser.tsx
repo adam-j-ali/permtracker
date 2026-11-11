@@ -12,11 +12,12 @@ import { CHANGE_PROGRAMS, PROGRAM_LABEL, type ChangeProgram } from "@/lib/change
 import { formatInt } from "@/lib/format";
 import { easternDay } from "@/lib/time";
 import { longDate as monthsLongDate, weekdayName } from "@convex/lib/months";
-import { CHANGE_COLUMNS, ChangeTable } from "./ChangeTable";
+import { CHANGE_COLUMNS, CHANGE_COLUMNS_WITH_DAY, ChangeTable } from "./ChangeTable";
 import { DECIDED_COLUMNS, DecidedTable } from "./DecidedTable";
 import { DecidedFilters } from "./DecidedFilters";
 import { applyDecidedFilters, anyDecidedFilter, type DecidedFilters as DecidedFilterState } from "@/lib/decidedFilter";
 import { coverageFor, daysInRange, type CoverageWindows } from "@/lib/dateCoverage";
+import { mergeChangeDays, observedDaysIn } from "@/lib/changeFeedRange";
 // One line, deliberately: no-server-only-in-client.test.ts checks each import
 // line on its own, so a type import wrapped over several lines reads as a
 // runtime import of a "server-only" module.
@@ -235,18 +236,74 @@ export function ChangeFeedBrowser({
       ? decidedData.feed
       : null;
 
-  const { data, failed, failure, retry } = usePublicQuery<{ day: ChangeDayFeed | null }>(
-    hasObserved && span === 1
-      ? `/api/case-changes?date=${date}&limit=5000`
-      : "skip",
+  // WHICH DAYS TO LOAD. One day is the common case. A range over days DOL hasn't
+  // published loads each day in it that holds a change, newest first, up to
+  // RANGE_DAYS_MAX (src/lib/changeFeedRange.ts), and adds them up. Until Nov 11
+  // 2026 a range here loaded nothing and the controls printed zeros.
+  const single = span === 1;
+  const observedRange = cov.observed;
+  const plan = useMemo(
+    () =>
+      !observedRange
+        ? { dates: [] as string[], left: 0 }
+        : single
+          ? { dates: [date], left: 0 }
+          : observedDaysIn(observedRange, calendar),
+    [observedRange, single, date, calendar],
   );
+  const dayUrl = (i: number) => {
+    const d = plan.dates[i];
+    return d ? `/api/case-changes?date=${d}&limit=5000` : "skip";
+  };
+  // ONE REQUEST A DAY, IN A FIXED NUMBER OF SLOTS. Hooks can't sit in a loop
+  // whose length changes, so there is one slot for each day a plan can hold
+  // (RANGE_DAYS_MAX, held by a test) and an unused slot skips. Each day keeps
+  // its own cache entry, the same one a single-day view reads.
+  type DayReply = { day: ChangeDayFeed | null };
+  const s0 = usePublicQuery<DayReply>(dayUrl(0));
+  const s1 = usePublicQuery<DayReply>(dayUrl(1));
+  const s2 = usePublicQuery<DayReply>(dayUrl(2));
+  const s3 = usePublicQuery<DayReply>(dayUrl(3));
+  const s4 = usePublicQuery<DayReply>(dayUrl(4));
+  const s5 = usePublicQuery<DayReply>(dayUrl(5));
+  const s6 = usePublicQuery<DayReply>(dayUrl(6));
+  const slots = [s0, s1, s2, s3, s4, s5, s6];
+  const failedSlot = slots.find((s, i) => i < plan.dates.length && s.failed);
+  const failed = failedSlot !== undefined;
+  const failure = failedSlot?.failure ?? null;
+  const retry = () => {
+    slots.forEach((s, i) => {
+      if (i < plan.dates.length && s.failed) s.retry();
+    });
+  };
 
-  // The full day, only when it is the day being shown: a slow response for the
-  // day the reader has just navigated away from must not paint.
-  const full = data?.day && data.day.date === date ? data.day : null;
-  const preview = date === initialDay.date ? initialDay : null;
-  const feed = full ?? preview;
-  const ready = full !== null;
+  // A day counts only when it is the day asked for: a slow response for a day
+  // the reader has just navigated away from must not paint.
+  const first = s0.data?.day;
+  const full = single && first && first.date === date ? first : null;
+  const preview = single && date === initialDay.date ? initialDay : null;
+  // A range paints once every one of its days is in, so no total is ever a part of the answer.
+  const merged = useMemo(() => {
+    if (single || plan.dates.length === 0) return null;
+    const replies = [s0.data, s1.data, s2.data, s3.data, s4.data, s5.data, s6.data];
+    const days: ChangeDayFeed[] = [];
+    for (const [i, d] of plan.dates.entries()) {
+      const got = replies[i]?.day;
+      if (!got || got.date !== d) return null;
+      days.push(got);
+    }
+    return mergeChangeDays(days);
+  }, [single, plan, s0.data, s1.data, s2.data, s3.data, s4.data, s5.data, s6.data]);
+  const feed = single ? (full ?? preview) : merged;
+  const ready = single ? full !== null : merged !== null;
+  /** "on November 11, 2026", or "from November 10 to November 11, 2026" for a range. */
+  const when =
+    feed && !single && merged && merged.since !== merged.date
+      ? `from ${longDate(merged.since)} to ${longDate(merged.date)}`
+      : feed
+        ? `on ${longDate(feed.date)}`
+        : "";
+  const columns = single ? CHANGE_COLUMNS : CHANGE_COLUMNS_WITH_DAY;
 
   const reset = () => setPage(0);
 
@@ -270,8 +327,8 @@ export function ChangeFeedBrowser({
   }, [feed, search, program, fromStatus, toStatus]);
 
   const ordered = useMemo(
-    () => sortRows(filtered, CHANGE_COLUMNS, sort),
-    [filtered, sort],
+    () => sortRows(filtered, columns, sort),
+    [filtered, sort, columns],
   );
 
   // The same free-text needle over the decided half. Program and status filter
@@ -794,7 +851,7 @@ export function ChangeFeedBrowser({
         </section>
       ) : null}
 
-      {!hasObserved || span !== 1 ? null : feed ? (
+      {!hasObserved ? null : feed ? (
         <div className="mt-6">
           <ul className="m-0 mb-4 flex list-none flex-wrap gap-2 p-0">
             {(allChips || fromStatus || toStatus ? feed.transitions : feed.transitions.slice(0, CHIPS_SHOWN)).map((t) => {
@@ -844,7 +901,7 @@ export function ChangeFeedBrowser({
             {!ready ? (
               <>
                 Showing the first {formatInt(feed.changes.length)} of{" "}
-                {formatInt(feed.total)} changes observed on {longDate(feed.date)}.
+                {formatInt(feed.total)} changes observed {when}.
                 Search, filters and sorting read the whole day, so they switch on
                 once the rest of it has loaded.
                 {failed ? (
@@ -860,18 +917,25 @@ export function ChangeFeedBrowser({
               <>
                 {formatInt(ordered.length)}{" "}
                 {ordered.length === 1 ? "change" : "changes"}
-                {filtering ? ` of ${formatInt(feed.total)}` : ""} on{" "}
-                {longDate(feed.date)}
+                {filtering ? ` of ${formatInt(feed.total)}` : ""} {when}
                 {ordered.length > pageSize
                   ? `. Rows ${formatInt(start + 1)} to ${formatInt(start + rows.length)}.`
                   : "."}
               </>
             )}
           </p>
+          {!single && plan.left > 0 ? (
+            <p className="mt-2 text-sm leading-relaxed text-soft">
+              These are the newest {formatInt(plan.dates.length)} days of the range that hold a change.{" "}
+              {formatInt(plan.left)} earlier {plan.left === 1 ? "day isn't" : "days aren't"} loaded. Pick a shorter
+              range to see {plan.left === 1 ? "it" : "them"}.
+            </p>
+          ) : null}
           {capped ? (
             <p className="mt-2 text-sm leading-relaxed text-soft">
-              This day holds {formatInt(feed.total)} changes and the feed carries the
-              first {formatInt(feed.changes.length)} of them, ordered by employer.
+              {single ? "This day holds" : "These days hold"} {formatInt(feed.total)} changes and the feed
+              carries the first {formatInt(feed.changes.length)} of them
+              {single ? "" : " (up to 5,000 a day)"}, ordered by employer.
               Search and sorting cover the loaded rows.
             </p>
           ) : null}
@@ -903,9 +967,8 @@ export function ChangeFeedBrowser({
           {ordered.length === 0 && ready ? (
             <div className="mt-4 bg-tint p-4 text-base border-2 border-border">
               <p>
-                Nothing on {longDate(feed.date)} matches that. The day itself
-                holds {formatInt(feed.total)} changes, so clearing the filters will
-                bring them back.
+                Nothing {when} matches that. {single ? "The day itself holds" : "These days hold"}{" "}
+                {formatInt(feed.total)} changes, so clearing the filters will bring them back.
               </p>{" "}
               <DidYouMean className="mt-3" suggestions={nameSuggestions} />
             </div>
@@ -913,12 +976,13 @@ export function ChangeFeedBrowser({
             <ChangeTable
               rows={rows}
               sortable={ready}
+              showDay={!single}
               sort={sort}
               onSort={(k) => {
-                setSort((cur) => nextSort(cur, k, CHANGE_COLUMNS));
+                setSort((cur) => nextSort(cur, k, columns));
                 reset();
               }}
-              caption={`Cases DOL moved on ${longDate(feed.date)}, with the status each moved from and to`}
+              caption={`Cases DOL moved ${when}, with the status each moved from and to`}
             />
           )}
           {pages > 1 ? (
@@ -947,15 +1011,20 @@ export function ChangeFeedBrowser({
         </div>
       ) : failed ? (
         <RequestFailed
-          what="That day"
+          what={single ? "That day" : "One of those days"}
           failure={failure}
           onRetry={retry}
           after="The other days still work."
           className="mt-6 bg-tint p-4 border-2 border-border"
         />
+      ) : !single && plan.dates.length === 0 ? (
+        <p className="mt-6 bg-tint p-4 text-base border-2 border-border">
+          Our daily check recorded no change between {longDate(observedRange?.from ?? range.from)} and{" "}
+          {longDate(observedRange?.to ?? range.to)}. That&apos;s a real answer. Nothing is missing.
+        </p>
       ) : (
         <p className="mt-6 text-base text-soft" role="status">
-          Loading that day&apos;s changes…
+          {single ? "Loading that day's changes…" : `Loading ${formatInt(plan.dates.length)} days of changes…`}
         </p>
       )}
     </div>

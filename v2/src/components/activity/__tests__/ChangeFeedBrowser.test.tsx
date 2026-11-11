@@ -322,3 +322,124 @@ describe("the kinds of change, as chips", () => {
     expect(screen.queryByRole("button", { name: /show all/i })).toBeNull();
   });
 });
+
+describe("a range of days DOL hasn't published yet", () => {
+  // Until Nov 11 2026 a range here loaded nothing and the program picker read "All programs (0)".
+  const SEP2 = day({
+    date: "2026-09-02",
+    changes: [change({ caseNumber: "G-100-25300-999999", observedOn: "2026-09-02", employerName: "Yesterday Corp", toStatus: "WITHDRAWN" })],
+    total: 1090,
+    byProgram: { perm: 1090, pwd: 0, lca: 0 },
+    transitions: [
+      { fromStatus: "ANALYST REVIEW", toStatus: "CERTIFIED", n: 1000 },
+      { fromStatus: "ANALYST REVIEW", toStatus: "WITHDRAWN", n: 90 },
+    ],
+    expiriesExcluded: 13,
+  });
+  const SEP3 = day();
+
+  /** Answer each day's own request, and nothing for a slot that skips. */
+  function byDay(feeds: Record<string, ChangeDayFeed | "fail" | "wait">, retry = vi.fn()) {
+    usePublicQuery.mockImplementation((url: string) => {
+      const m = /case-changes\?date=(\d{4}-\d{2}-\d{2})/.exec(url);
+      if (!m) return { data: undefined, failed: false, failure: null, retry };
+      const f = feeds[m[1]!];
+      if (f === "fail") return { data: undefined, failed: true, failure: { message: "The server didn't answer." }, retry };
+      if (f === "wait" || f === undefined) return { data: undefined, failed: false, failure: null, retry };
+      return { data: { day: f }, failed: false, failure: null, retry };
+    });
+    return retry;
+  }
+  const asked = () =>
+    [...new Set(usePublicQuery.mock.calls.map((c) => String(c[0])).filter((u) => u.includes("case-changes")))].map(
+      (u) => /date=([\d-]+)/.exec(u)![1],
+    );
+
+  /** Moving From on a single day moves To with it, so a range is From first, then To back out. */
+  function widenTo(from: string, to = "2026-09-03") {
+    fireEvent.change(screen.getByLabelText("From date"), { target: { value: from } });
+    fireEvent.change(screen.getByLabelText("To date"), { target: { value: to } });
+  }
+
+  it("loads each day in the range and adds them up, where it used to print zeros", () => {
+    byDay({ "2026-09-03": SEP3, "2026-09-02": SEP2 });
+    render(<ChangeFeedBrowser calendar={CALENDAR} initialDay={day()} windows={WINDOWS} />);
+    widenTo("2026-09-02");
+
+    expect(asked()).toEqual(expect.arrayContaining(["2026-09-03", "2026-09-02"]));
+    // 587 + 1,090, and each program's own sum.
+    expect(screen.getByRole("option", { name: "All programs (1,677)" })).toBeInTheDocument();
+    expect(screen.getByText(/4 changes from Wednesday, September 2, 2026 to Thursday, September 3, 2026/)).toBeInTheDocument();
+    // Rows from both days, each with the day it was seen.
+    const table = screen.getByRole("table");
+    expect(within(table).getByRole("columnheader", { name: /Seen/ })).toBeInTheDocument();
+    expect(within(table).getByText("Yesterday Corp")).toBeInTheDocument();
+    expect(within(table).getByText("Flextronics International USA, Inc.")).toBeInTheDocument();
+    expect(within(table).getAllByText("2026-09-02").length).toBeGreaterThan(0);
+  });
+
+  it("adds a kind of change that both days hold into one chip", () => {
+    byDay({ "2026-09-03": SEP3, "2026-09-02": SEP2 });
+    render(<ChangeFeedBrowser calendar={CALENDAR} initialDay={day()} windows={WINDOWS} />);
+    widenTo("2026-09-02");
+    // 175 on the 3rd and 1,000 on the 2nd.
+    expect(screen.getByRole("button", { name: /ANALYST REVIEW.*CERTIFIED.*1,175/i })).toBeInTheDocument();
+  });
+
+  it("shows no total until every day has arrived, so a part is never read as the whole", () => {
+    byDay({ "2026-09-03": SEP3, "2026-09-02": "wait" });
+    render(<ChangeFeedBrowser calendar={CALENDAR} initialDay={day()} windows={WINDOWS} />);
+    widenTo("2026-09-02");
+    expect(screen.getByRole("status")).toHaveTextContent("Loading 2 days of changes…");
+    expect(screen.queryByRole("table")).toBeNull();
+    expect(screen.getByRole("option", { name: "All programs (0)" })).toBeInTheDocument();
+  });
+
+  it("names a day that didn't come back, and tries only that day again", () => {
+    const retry = byDay({ "2026-09-03": SEP3, "2026-09-02": "fail" });
+    render(<ChangeFeedBrowser calendar={CALENDAR} initialDay={day()} windows={WINDOWS} />);
+    widenTo("2026-09-02");
+    expect(screen.getByText(/One of those days/)).toBeInTheDocument();
+    expect(screen.queryByRole("table")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /try again/i }));
+    expect(retry).toHaveBeenCalledTimes(1);
+  });
+
+  it("says so in words when the range holds no day with a change", () => {
+    byDay({});
+    const windows = { ...WINDOWS, observed: { from: "2026-08-26", to: "2026-09-03" } };
+    render(<ChangeFeedBrowser calendar={{ ...CALENDAR, days: [CALENDAR.days[0]!] }} initialDay={day()} windows={windows} />);
+    // Aug 30 to Sep 1: inside our record, and the calendar lists no day there.
+    widenTo("2026-08-30", "2026-09-01");
+    expect(screen.getByText(/Our daily check recorded no change between Sunday, August 30, 2026 and Tuesday, September 1, 2026/)).toBeInTheDocument();
+    expect(asked()).not.toContain("2026-08-31");
+  });
+
+  it("has a request slot for every day a range can load, and says how many days it left out", async () => {
+    const { RANGE_DAYS_MAX } = await import("@/lib/changeFeedRange");
+    const many = Array.from({ length: RANGE_DAYS_MAX + 2 }, (_, i) => `2026-09-${String(RANGE_DAYS_MAX + 2 - i).padStart(2, "0")}`);
+    const calendar: ChangeCalendar = {
+      ...CALENDAR,
+      days: many.map((date) => ({ date, total: 10, byProgram: { perm: 10, pwd: 0, lca: 0 } })),
+    };
+    byDay(Object.fromEntries(many.map((date) => [date, day({ date, total: 10, changes: [change({ caseNumber: `G-100-25300-${date.slice(8)}0000`, observedOn: date })] })])));
+    const windows = { ...WINDOWS, observed: { from: "2026-08-26", to: many[0]! } };
+    render(<ChangeFeedBrowser calendar={calendar} initialDay={day({ date: many[0]! })} windows={windows} />);
+    widenTo("2026-09-01", many[0]!);
+
+    // The newest RANGE_DAYS_MAX days of the range were asked for, and no older one.
+    const newest = many.slice(0, RANGE_DAYS_MAX);
+    expect(asked()).toEqual(expect.arrayContaining(newest));
+    expect(asked()).not.toContain(many[RANGE_DAYS_MAX]);
+    expect(screen.getByRole("option", { name: `All programs (${RANGE_DAYS_MAX * 10})` })).toBeInTheDocument();
+    expect(screen.getByText(/These are the newest 7 days of the range that hold a change/)).toHaveTextContent("2 earlier days aren't loaded");
+  });
+
+  it("keeps a single day exactly as it was: one request, no day column", () => {
+    byDay({ "2026-09-03": SEP3 });
+    render(<ChangeFeedBrowser calendar={CALENDAR} initialDay={day()} windows={WINDOWS} />);
+    expect(asked()).toEqual(["2026-09-03"]);
+    expect(within(screen.getByRole("table")).queryByRole("columnheader", { name: /Seen/ })).toBeNull();
+    expect(screen.getByText(/3 changes on Thursday, September 3, 2026/)).toBeInTheDocument();
+  });
+});
