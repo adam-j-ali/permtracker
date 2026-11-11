@@ -456,6 +456,15 @@ export default function PrivacyPage() {
                 The USCIS lookup can keep up to 12 of your receipt numbers, with
                 a label for each, on this device. They stay in your browser’s
                 storage, and we never receive them
+              </li>{" "}
+              <li>
+                A case&apos;s page keeps two things on this device, under that case
+                number: the day you sent its email alert form from this browser,
+                and the days you looked the case up. The page uses them to show
+                the day you asked in place of the form, and to tell you how many
+                days you&apos;ve checked. They stay in your browser’s storage, and we
+                never receive them. Clearing this site&apos;s data in your browser
+                removes them
               </li>
             </ul>{" "}
 
@@ -1247,8 +1256,9 @@ export default function PrivacyPage() {
                 mode settings, UI preferences, temporary authentication state
                 during OAuth redirects, for one day the sealed review link from
                 our email (see Reviews above), your saved USCIS receipt numbers,
-                and the keys that let you change a timeline or a consulate
-                report you saved (see Section 2)
+                the day you asked for a case&apos;s email alert and the days you
+                looked that case up, and the keys that let you change a timeline
+                or a consulate report you saved (see Section 2)
               </li>{" "}
               <li>
                 <strong>Error Monitoring:</strong> Sentry’s script runs only on

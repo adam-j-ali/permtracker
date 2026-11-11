@@ -81,3 +81,18 @@ export function statusHistory(events: readonly StatusEvent[], filedOn?: string |
   }
   return steps.length > 1 ? steps : [];
 }
+
+/**
+ * The DOL day our checks first saw a case in the status it holds now, "YYYY-MM-DD", or null when the record can't
+ * date it (no change on record, or one seen during the record's catch-up, which says where the case stood and
+ * never when it moved). For a case decided in DOL's live record before its quarterly file names a decision date.
+ */
+export function seenInStatusSince(events: readonly StatusEvent[], status: string): string | null {
+  const want = status.trim().toUpperCase().split(/\s+/).join(" ");
+  const last = [...events]
+    .filter((e) => e.to.trim().toUpperCase().split(/\s+/).join(" ") === want)
+    .sort((a, b) => b.at - a.at)[0];
+  if (!last) return null;
+  const day = dolDayOf(last.at);
+  return day > HISTORY_FROM ? day : null;
+}

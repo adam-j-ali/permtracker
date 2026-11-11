@@ -2,7 +2,8 @@ import Link from "next/link";
 import { SocCodeLink } from "@/components/soc/SocCodeLink";
 import { DecidedTimeline } from "@/components/tools/DecidedTimeline";
 import { StatusHistory } from "@/components/tools/StatusHistory";
-import type { StatusEvent } from "@/lib/statusHistory";
+import { seenInStatusSince, type StatusEvent } from "@/lib/statusHistory";
+import { daysBetween } from "@/lib/time";
 import type { DecidedTimelineRead } from "@/lib/db/decidedTimeline";
 import type { EmployerWageRequests as FoundWageRequests } from "@/lib/employerWageRequests";
 import { EmployerWageRequests } from "@/components/tools/EmployerWageRequests";
@@ -18,7 +19,8 @@ import { Figure, FigureRow } from "@/components/data/FigureRow";
 import { Fold, FoldList } from "@/components/data/Fold";
 import { buttonVariants } from "@/components/ui/button";
 import { CaseMilestones } from "@/components/tools/CaseMilestones";
-import { AnswerNext } from "@/components/tools/AnswerNext";
+import { AnswerNext, WATCH_ANCHOR } from "@/components/tools/AnswerNext";
+import { BulletinAlertForm } from "@/components/tools/BulletinAlertForm";
 import { RecordList, type RecordRow } from "@/components/data/RecordList";
 import {
   CaseEstimate,
@@ -259,6 +261,7 @@ export function CaseStatusResult({
         publishedAsOf={publishedAsOf}
         casesAhead={casesAhead}
         estimate={estimate}
+        seenFinalOn={isFinal && status && history ? seenInStatusSince(history, status) : null}
       />
 
       {check?.stale && !isFinal ? (
@@ -435,6 +438,7 @@ function Answer({
   publishedAsOf,
   casesAhead,
   estimate,
+  seenFinalOn = null,
 }: {
   caseNumber: string;
   status: string | null;
@@ -456,6 +460,8 @@ function Answer({
   publishedAsOf: string | null;
   /** The estimate the panel below explains, built once by the caller. */
   estimate: Estimate | null;
+  /** The day our checks first saw a decided case in its final status, when DOL's file hasn't dated it yet. */
+  seenFinalOn?: string | null;
 }) {
   const verdict = meaning ? KIND_LABEL[meaning.kind] : isFinal ? "Decided" : "Pending";
 
@@ -508,6 +514,9 @@ function Answer({
       label={<span translate="no">{caseNumber}</span>}
       source={sourceBits.length > 0 ? sourceBits.join(" · ") : undefined}
       picture={tape}
+      // A pending case's date and its email box come before the picture of the line: the email is what a
+      // returning visitor can act on, and under the picture it was a screen down on a phone.
+      actionsFirst={!isFinal}
       actions={
         isFinal ? (
           <DecidedNext status={status} approved={approved} filingDate={filingDate} decisionDate={decided?.decisionDate ?? null} />
@@ -564,6 +573,19 @@ function Answer({
           DOL decided it {formatAsOf(decided.decisionDate)}
           {decided.days !== null ? <>, {formatInt(decided.days)} days after filing</> : null}.
         </>
+      ) : isFinal ? (
+        // DECIDED IN DOL'S LIVE RECORD, NOT YET IN ITS QUARTERLY FILE. The file is where DOL's own decision date
+        // comes from, and it runs up to three months behind. Until Nov 11 2026 a case in this gap fell through to
+        // the sentence below and was told how many cases were "filed before this one" in a queue it had left.
+        seenFinalOn ? (
+          <>
+            Our daily check first saw this status on {formatAsOf(seenFinalOn)}
+            {filingDate && daysBetween(filingDate, seenFinalOn) > 0 ? <>, {formatInt(daysBetween(filingDate, seenFinalOn))} days after filing</> : null}. DOL
+            prints its own decision date in its next quarterly file.
+          </>
+        ) : (
+          <>DOL prints its decision date in its next quarterly file.</>
+        )
       ) : wall && !wall.isPastFront ? (
         <>
           {/* Our own daily count leads; DOL's table, which can sit weeks old, follows with its own date. */}
@@ -621,6 +643,17 @@ function DecidedNext({
   if (!next) return null;
   return (
     <div className="mt-6 border-t border-foreground/10 pt-6">
+      {approved ? (
+        // A CERTIFIED CASE'S NEXT WATCH. The case alert ends here, and the wait that follows (the visa bulletin
+        // reaching this case's priority date) can run for years. The bulletin alert sits where the case alert sat
+        // on a pending case, with the priority date already beside it, so someone who was watching keeps watching.
+        <div id={WATCH_ANCHOR} className="-mx-5 mb-6 scroll-mt-24 border-l-4 border-primary bg-tint px-5 py-5 sm:mx-0">
+          <h3 className="font-heading text-lg font-bold leading-snug">Next, the visa bulletin: get an email when your cutoff moves</h3>{" "}
+          <div className="mt-2">
+            <BulletinAlertForm source="case-certified" bare priorityDate={filingDate} />
+          </div>
+        </div>
+      ) : null}{" "}
       <Link href={next.href} className={buttonVariants({ variant: "outline", size: "lg" })}>
         {next.label}
       </Link>{" "}

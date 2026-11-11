@@ -12,6 +12,16 @@ import { cleanup } from "@testing-library/react";
  */
 afterEach(() => {
   cleanup();
+  // What a component kept in the browser (a remembered alert sign-up, a saved key) must not reach the next test:
+  // files in the shared pool share one window, so a form sent in one file read as "already asked" in another.
+  try {
+    if (typeof window !== "undefined") {
+      window.localStorage?.clear();
+      window.sessionStorage?.clear();
+    }
+  } catch {
+    // A test that swapped storage for one that throws cleans up after itself.
+  }
 });
 import "@testing-library/jest-dom/vitest";
 import React from "react";

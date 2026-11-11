@@ -243,6 +243,16 @@ describe("CaseStatusResult, pending case", () => {
     expect(container.querySelector('a[href="#watch"]')).toBeNull();
   });
 
+  it("puts a pending case's date and email box above the picture of the line", () => {
+    const { container } = renderPending({}, ESTIMATOR);
+    const html = container.querySelector("section")!.innerHTML;
+    // Control: this answer draws the picture.
+    expect(html).toContain("DOL is here");
+    expect(html.indexOf('id="watch"')).toBeGreaterThan(-1);
+    expect(html.indexOf('id="watch"')).toBeLessThan(html.indexOf("DOL is here"));
+    expect(html.indexOf("Estimated decision")).toBeLessThan(html.indexOf("DOL is here"));
+  });
+
   it("puts the record's details below the date and the alert form", () => {
     // The answer card already states the status, filing date and queue; the
     // record cards are reference and sit under the next steps.
@@ -464,6 +474,89 @@ describe("CaseStatusResult, decided case", () => {
     />,
     );
   }
+
+  it("offers a certified case the next watch: the visa bulletin, with the case's priority date beside it", () => {
+    const { container } = renderDecided(null);
+    const answer = container.querySelector("section")!;
+    const next = answer.querySelector("#watch");
+
+    expect(next?.textContent).toMatch(/Next, the visa bulletin: get an email when your cutoff moves/);
+    // The filing date is the priority date, and the form says so.
+    expect(next?.textContent).toMatch(/Your priority date is January 11, 2024/);
+    expect(next?.querySelector('button[type="submit"]')?.textContent).toMatch(/Email me when it moves/);
+    // The case alert itself is over: no promise of mail about a case that can't change.
+    expect(container.textContent).not.toMatch(/Email me when DOL changes this/);
+  });
+
+  it("tells a case certified live, before DOL's file, when our check saw it and never that it's still in line", () => {
+    // Certified in DOL's live record on Nov 6 2026; the quarterly file hasn't named it yet.
+    const live = { ...DECIDED, decided: null, live: { ...DECIDED.live!, filingDate: "2026-01-30" }, cohort: { ...DECIDED.cohort!, month: "2026-01" } };
+    const { container } = render(
+      <CaseStatusResult
+        result={live}
+        backlog={BACKLOG}
+        cohortStatuses={[]}
+        wall={buildWall(BACKLOG, "2026-01")}
+        neighbours={[]}
+        publishedFront="2025-09"
+        publishedAsOf="2026-08-20"
+        wage={null}
+        duration={null}
+        today={TODAY}
+        estimator={null}
+        history={[{ at: Date.parse("2026-11-06T17:00:00Z"), from: "ANALYST REVIEW", to: "CERTIFIED" }]}
+      />,
+    );
+    const answer = container.querySelector("section")!.textContent ?? "";
+
+    expect(answer).toMatch(/Our daily check first saw this status on November 6, 2026, 280 days after filing\./);
+    expect(answer).toMatch(/DOL prints its own decision date in its next quarterly file\./);
+    expect(answer).not.toMatch(/filed before this one/);
+    expect(answer).not.toMatch(/oldest month still open/);
+  });
+
+  it("says only that the date is coming when the record can't date the decision", () => {
+    const { container } = render(
+      <CaseStatusResult
+        result={{ ...DECIDED, decided: null }}
+        backlog={BACKLOG}
+        cohortStatuses={[]}
+        wall={buildWall(BACKLOG, "2024-01")}
+        neighbours={[]}
+        publishedFront="2025-09"
+        publishedAsOf="2026-08-20"
+        wage={null}
+        duration={null}
+        today={TODAY}
+        estimator={null}
+      />,
+    );
+    const answer = container.querySelector("section")!.textContent ?? "";
+
+    expect(answer).toMatch(/DOL prints its decision date in its next quarterly file\./);
+    expect(answer).not.toMatch(/filed before this one/);
+  });
+
+  it("offers a denied case no bulletin alert", () => {
+    const { container } = render(
+      <CaseStatusResult
+        result={{ ...DECIDED, live: { ...DECIDED.live!, status: "DENIED" }, decided: { ...DECIDED.decided!, status: "denied" } }}
+        backlog={BACKLOG}
+        cohortStatuses={[]}
+        wall={null}
+        neighbours={[]}
+        publishedFront="2025-09"
+        publishedAsOf="2026-08-20"
+        wage={null}
+        duration={null}
+        today={TODAY}
+        estimator={null}
+      />,
+    );
+
+    expect(container.textContent).not.toMatch(/visa bulletin: get an email/);
+    expect(container.querySelector("#watch")).toBeNull();
+  });
 
   it("plans a case certified live, before DOL's quarterly file, as certified", () => {
     // Arrange: certified in DOL's live record, not yet in a disclosure file
