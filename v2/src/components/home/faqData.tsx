@@ -49,14 +49,12 @@ export const HOME_FAQS: HomeFaqItem[] = [
   {
     question: "Is PERM Tracker really free?",
     answer:
-      "Yes. No credit card and no case limit. Looking up a case, reading the data pages and setting an email alert need no account at all. Managing your own caseload with computed deadlines takes a free account. Optional paid features may come later, but the data, the lookup, the calculators and the core deadline tracking stay free.",
+      "Yes. No credit card and no case limit. Looking up a case, reading the data pages and setting an email alert need no account at all. Managing your own caseload with computed deadlines takes a free account.",
     rich: (
       <>
         Yes. No credit card and no case limit. Looking up a case, reading the
         data pages and setting an email alert need no account at all. Managing
-        your own caseload with computed deadlines takes a free account. Optional
-        paid features may come later, but the data, the lookup, the calculators and
-        the core deadline tracking stay free.
+        your own caseload with computed deadlines takes a free account.
       </>
     ),
   },
