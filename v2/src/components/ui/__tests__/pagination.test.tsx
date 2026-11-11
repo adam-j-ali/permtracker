@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 
-import { clampPage, pageItems, Pagination } from "../pagination";
+import { clampPage, pageItems, Pagination, PER_PAGE_OPTIONS, usePerPage } from "../pagination";
 
 describe("pageItems", () => {
   it("lists every page when there are seven or fewer", () => {
@@ -57,5 +57,104 @@ describe("Pagination", () => {
     render(<Pagination page={1} pageCount={1} onPage={() => {}} total={9} noun="posts" />);
     expect(screen.queryByRole("navigation")).toBeNull();
     expect(screen.getByText("All 9 posts")).toBeTruthy();
+  });
+});
+
+describe("Pagination's rows per page", () => {
+  const per = (now: number, setPer = vi.fn()) => ({ per: now, setPer, options: PER_PAGE_OPTIONS });
+
+  it("offers the sizes, marks the one in use and hands back a pick", () => {
+    const setPer = vi.fn();
+    render(<Pagination page={1} pageCount={9} onPage={() => {}} total={86} perPage={10} noun="cases" per={per(10, setPer)} />);
+
+    const group = screen.getByRole("group", { name: "Rows per page" });
+    expect(group).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "10 rows per page" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "50 rows per page" }));
+    expect(setPer).toHaveBeenCalledWith(50);
+  });
+
+  it("stays when a bigger page put the whole list on one, so there's a way back", () => {
+    render(<Pagination page={1} pageCount={1} onPage={() => {}} total={86} perPage={100} noun="cases" per={per(100)} />);
+
+    expect(screen.getByText("All 86 cases")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "10 rows per page" })).toBeInTheDocument();
+  });
+
+  it("isn't offered for a list shorter than the smallest page", () => {
+    render(<Pagination page={1} pageCount={1} onPage={() => {}} total={9} perPage={10} noun="cases" per={per(10)} />);
+
+    expect(screen.queryByRole("group", { name: "Rows per page" })).toBeNull();
+  });
+});
+
+describe("usePerPage", () => {
+  function Probe(props: Parameters<typeof usePerPage>[0]) {
+    const p = usePerPage(props);
+    return (
+      <div>
+        <output data-testid="per">{p.per}</output>
+        <output data-testid="chosen">{String(p.chosen)}</output>
+        <output data-testid="hide9">{String(p.narrowHidden(9))}</output>
+        <output data-testid="hide10">{String(p.narrowHidden(10))}</output>
+        <button onClick={() => p.setPer(50)}>fifty</button>
+      </div>
+    );
+  }
+  const at = (search: string) => window.history.replaceState(null, "", `/list${search}`);
+  const phone = (matches: boolean) =>
+    vi.stubGlobal("matchMedia", (q: string) => ({ matches: matches && q.includes("max-width"), media: q, addEventListener: () => {}, removeEventListener: () => {} }));
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    at("");
+  });
+
+  it("gives a wide screen the wide page and a phone the short one", () => {
+    phone(false);
+    const { unmount } = render(<Probe wide={25} narrow={10} />);
+    expect(screen.getByTestId("per")).toHaveTextContent("25");
+    unmount();
+
+    phone(true);
+    render(<Probe wide={25} narrow={10} />);
+    expect(screen.getByTestId("per")).toHaveTextContent("10");
+    expect(screen.getByTestId("chosen")).toHaveTextContent("false");
+  });
+
+  it("hides the rows past the phone's page on a server-rendered list, until someone chooses a size", () => {
+    phone(false);
+    render(<Probe wide={25} narrow={10} />);
+
+    expect(screen.getByTestId("hide9")).toHaveTextContent("undefined");
+    expect(screen.getByTestId("hide10")).toHaveTextContent("max-sm:hidden");
+  });
+
+  it("takes the size from the address, on any screen, and hides nothing then", () => {
+    phone(true);
+    at("?per=50");
+    render(<Probe wide={25} narrow={10} />);
+
+    expect(screen.getByTestId("per")).toHaveTextContent("50");
+    expect(screen.getByTestId("chosen")).toHaveTextContent("true");
+    expect(screen.getByTestId("hide10")).toHaveTextContent("undefined");
+  });
+
+  it("ignores a size that isn't offered", () => {
+    phone(false);
+    at("?per=7");
+    render(<Probe wide={25} narrow={10} />);
+
+    expect(screen.getByTestId("per")).toHaveTextContent("25");
+  });
+
+  it("writes a pick to the address and starts the list from its first page", () => {
+    phone(false);
+    at("?page=4&q=acme");
+    render(<Probe wide={25} narrow={10} />);
+
+    act(() => fireEvent.click(screen.getByRole("button", { name: "fifty" })));
+
+    expect(window.location.search).toBe("?q=acme&per=50");
+    expect(screen.getByTestId("per")).toHaveTextContent("50");
   });
 });

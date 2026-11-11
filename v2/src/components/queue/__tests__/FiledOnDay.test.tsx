@@ -90,12 +90,59 @@ describe("FiledOnDay", () => {
   });
 
   it("pages a day longer than one page", () => {
-    render(<FiledOnDay perm={Array.from({ length: 120 }, (_, i) => mk(i))} pwd={[]} dayLabel="x" />);
-    expect(caseLinks()).toHaveLength(50);
+    render(<FiledOnDay perm={Array.from({ length: 60 }, (_, i) => mk(i))} pwd={[]} dayLabel="x" />);
+    expect(caseLinks()).toHaveLength(25);
     fireEvent.click(screen.getByRole("button", { name: "Next page" }));
-    expect(caseLinks()).toHaveLength(50);
+    expect(caseLinks()).toHaveLength(25);
     fireEvent.click(screen.getByRole("button", { name: "Page 3" }));
-    expect(caseLinks()).toHaveLength(20);
+    expect(caseLinks()).toHaveLength(10);
+  });
+
+  it("shows more rows a page when asked, from the first page, and keeps the pick in the address", () => {
+    render(<FiledOnDay perm={Array.from({ length: 60 }, (_, i) => mk(i))} pwd={[]} dayLabel="x" />);
+    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "50 rows per page" }));
+
+    expect(caseLinks()).toHaveLength(50);
+    expect(nav.get()).toBe("per=50");
+    expect(screen.getByText("1 to 50 of 60 cases")).toBeInTheDocument();
+  });
+
+  it("marks the rows past a phone's shorter page, so a phone never paints the long one", () => {
+    render(<FiledOnDay perm={Array.from({ length: 30 }, (_, i) => mk(i))} pwd={[]} dayLabel="x" />);
+
+    const rows = screen.getAllByRole("listitem").filter((li) => li.querySelector('a[href^="/perm-case-status"]'));
+    expect(rows).toHaveLength(25);
+    expect(rows.filter((li) => li.className.includes("max-sm:hidden"))).toHaveLength(15);
+    expect(rows[9]!.className).not.toContain("max-sm:hidden");
+  });
+
+  it("as a list of what DOL moved: says each case's filing day, and lists a case moved twice for each move", () => {
+    const twice = "G-100-26030-111111";
+    render(
+      <FiledOnDay
+        moved
+        dayLabel="November 10, 2026"
+        pwd={[]}
+        perm={[
+          mk(1, { caseNumber: twice, status: "DENIED", final: true, filedOn: "2026-01-30" }),
+          mk(2, { caseNumber: twice, status: "RECONSIDERATION APPEALS", filedOn: "2026-01-30" }),
+          mk(3, { status: "CERTIFIED", final: true, filedOn: "2026-02-02" }),
+        ]}
+      />,
+    );
+
+    expect(caseLinks()).toHaveLength(3);
+    expect(screen.getAllByText("Filed January 30, 2026")).toHaveLength(2);
+    expect(screen.getByText("Filed February 2, 2026")).toBeInTheDocument();
+  });
+
+  it("as a list of what DOL moved: an empty kind says none moved, never none filed", () => {
+    render(<FiledOnDay moved perm={[]} pwd={[mk(1)]} dayLabel="November 8, 2026" />);
+    fireEvent.click(screen.getByRole("button", { name: /PERM cases/ }));
+
+    expect(screen.getByText("Our checks saw DOL move none on November 8, 2026.")).toBeInTheDocument();
   });
 
   it("keeps its picks in the address, and opens from one", () => {
