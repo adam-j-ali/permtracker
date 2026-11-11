@@ -40,7 +40,7 @@ describe("the boxes that hold the case form", () => {
       <IndexHeader
         title="Find an H-2A, H-2B or CW-1 filing"
         lede="Seasonal work."
-        aside={<IndexLookup title="Have the number?" placeholder="H-300-26188-123456" source="seasonal-cases" program="seasonal" />}
+        aside={<IndexLookup title="Have the number?" example="H-300-26188-123456" source="seasonal-cases" program="seasonal" />}
       />,
     );
     const box = screen.getByText("Have the number?").closest(".object") as HTMLElement;

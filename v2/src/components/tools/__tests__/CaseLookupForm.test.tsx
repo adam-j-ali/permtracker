@@ -167,3 +167,50 @@ describe("where the finder opens", () => {
     expect(screen.getByText("Free, and no account needed.")).toBeInTheDocument();
   });
 });
+
+/**
+ * A case box's button was pressed with nothing typed about 600 times in 30 days (to Nov 10 2026), on employer pages
+ * more often than it was used properly. The box showed a whole example number as its placeholder in the muted text
+ * colour, which reads as a number already typed; the homepage's box, whose placeholder is words, saw 1% empty presses.
+ */
+describe("a case box with nothing typed", () => {
+  const box = () => screen.getByRole("textbox") as HTMLInputElement;
+
+  it("shows words in the empty box, never a whole example number", () => {
+    render(<CaseLookupForm />);
+    expect(box().placeholder).toBe("Case number");
+    expect(box().placeholder).not.toMatch(/\d{5}/);
+    cleanup();
+    render(<CaseLookupForm names label="Case number or employer" />);
+    expect(box().placeholder).toBe("Case number or employer");
+  });
+
+  it("is required, so the browser keeps an empty press in the box, with or without scripts", () => {
+    render(<CaseLookupForm />);
+    expect(box().required).toBe(true);
+    expect(box().checkValidity()).toBe(false);
+  });
+
+  it("says what to type in its own words, and clears that the moment something is typed", () => {
+    render(<CaseLookupForm />);
+    fireEvent.invalid(box());
+    expect(box().validationMessage).toBe("Type your case number first.");
+    fireEvent.input(box(), { target: { value: "G-100-26125-868956" } });
+    expect(box().validationMessage).toBe("");
+    expect(box().checkValidity()).toBe(true);
+    cleanup();
+    render(<CaseLookupForm names />);
+    fireEvent.invalid(box());
+    expect(box().validationMessage).toBe("Type a case number or an employer's name first.");
+  });
+
+  it("gives the example of its own kind of number when the typed one is the wrong shape", () => {
+    render(<CaseLookupForm example="P-100-26140-123456" />);
+    fireEvent.change(box(), { target: { value: "12345" } });
+    expect(screen.getByText(/They look like P-100-26140-123456\./)).toBeTruthy();
+    cleanup();
+    render(<CaseLookupForm />);
+    fireEvent.change(box(), { target: { value: "12345" } });
+    expect(screen.getByText(/They look like G-100-26125-868956\./)).toBeTruthy();
+  });
+});

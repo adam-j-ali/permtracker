@@ -64,7 +64,7 @@ export default async function LcaCasesPage() {
         aside={
           <IndexLookup
             title="Have the number?"
-            placeholder="I-200-26188-123456"
+            example="I-200-26188-123456"
             note="DOL is asked live, and the case page can email you when it moves."
             source="lca-cases"
             program="lca"

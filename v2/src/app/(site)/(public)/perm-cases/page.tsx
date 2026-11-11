@@ -139,7 +139,7 @@ export default async function PermCasesPage() {
         aside={
           <IndexLookup
             title="Have the number?"
-            placeholder="G-100-26125-868956"
+            example="G-100-26125-868956"
             note="DOL's status today, the published record once one exists, and an estimated date."
             source="perm-cases"
           />
