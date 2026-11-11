@@ -225,7 +225,9 @@ export function SignupPageClient() {
         trackSignupSucceeded("email_password");
         router.push(afterSignIn("signup"));
       } else {
-        // OTP sent — move to verification step
+        // The code is on its way. The security token was spent getting here, so it's
+        // cleared: coming back to this step asks the check for a fresh one.
+        setTurnstileToken(null);
         setStep("verification");
         toast.success("Verification code sent to your email");
       }
