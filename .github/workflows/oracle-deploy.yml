@@ -257,19 +257,22 @@ jobs:
       # a planner step gone) and turned the report red; 5 of 7 mornings from
       # Oct 26. A failure here stops the deploy before the server is touched, and
       # a push outside the night window shows it the same day.
-      # The install fetches system packages from Ubuntu's servers. Nov 11 2026: the runner couldn't resolve that
-      # host for seven minutes, and a built, tested release failed at this step. Three tries, a minute apart,
-      # each warning in the run's summary, so a network blip heals itself and a real fault still ends red.
+      # The install fetches the browser from Playwright's servers and its system packages (ten font packages on this
+      # image) from Ubuntu's. Nov 11 2026: the runner couldn't resolve Ubuntu's host on three runs in a morning,
+      # for seven to thirteen minutes each, and built, tested releases failed here. Two tries with the packages;
+      # then the browser alone, with a warning in the run's summary, so the page checks still run (on the image's
+      # own fonts) and a runner's network fault can't hold a release. A browser that can't start fails the next
+      # step, so a real fault still ends red.
       - name: Install the page checks' browser
         if: steps.plan.outputs.build == 'true'
         run: |
-          for attempt in 1 2 3; do
+          for attempt in 1 2; do
             if pnpm exec playwright install --with-deps chromium; then exit 0; fi
-            echo "::warning::The page checks' browser didn't install (attempt $attempt of 3)"
-            sleep 60
+            echo "::warning::The page checks' browser and its system packages didn't install (attempt $attempt of 2)"
+            sleep 30
           done
-          echo "::error::The page checks' browser couldn't be installed after three tries"
-          exit 1
+          echo "::warning::Ubuntu's packages couldn't be fetched. Installing the browser alone: the page checks run on the image's own fonts."
+          pnpm exec playwright install chromium
 
       - name: Check the built site's pages before it can ship
         if: steps.plan.outputs.build == 'true'
