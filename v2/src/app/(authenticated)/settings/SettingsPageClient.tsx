@@ -136,6 +136,8 @@ export function SettingsPageClient() {
               emailDeadlineReminderRfi: profile?.emailDeadlineReminderRfi,
               emailDeadlineReminderRfe: profile?.emailDeadlineReminderRfe,
               emailStatusUpdates: profile?.emailStatusUpdates,
+              emailWeeklyDigest: profile?.emailWeeklyDigest,
+              watchSavedCases: profile?.watchSavedCases,
               pushNotificationsEnabled: profile?.pushNotificationsEnabled,
               reminderDaysBefore: profile?.reminderDaysBefore,
               urgentDeadlineDays: profile?.urgentDeadlineDays,
