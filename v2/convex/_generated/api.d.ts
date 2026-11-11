@@ -132,6 +132,7 @@ import type * as lib_ids from "../lib/ids.js";
 import type * as lib_ipHash from "../lib/ipHash.js";
 import type * as lib_links from "../lib/links.js";
 import type * as lib_listMailOff from "../lib/listMailOff.js";
+import type * as lib_liveCases from "../lib/liveCases.js";
 import type * as lib_logging from "../lib/logging.js";
 import type * as lib_mailKinds from "../lib/mailKinds.js";
 import type * as lib_mailPages from "../lib/mailPages.js";
@@ -404,6 +405,7 @@ declare const fullApi: ApiFromModules<{
   "lib/ipHash": typeof lib_ipHash;
   "lib/links": typeof lib_links;
   "lib/listMailOff": typeof lib_listMailOff;
+  "lib/liveCases": typeof lib_liveCases;
   "lib/logging": typeof lib_logging;
   "lib/mailKinds": typeof lib_mailKinds;
   "lib/mailPages": typeof lib_mailPages;

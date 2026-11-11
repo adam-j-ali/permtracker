@@ -20,6 +20,10 @@ async function makeUser(
     lastActiveDaysAgo?: number;
     nudgedDaysAgo?: number;
     suppressed?: boolean;
+    /** The master email switch in Settings. On unless said. */
+    emailOn?: boolean;
+    /** Live cases of the account's own. One unless said. */
+    liveCases?: number;
   }
 ) {
   const authT = await createAuthenticatedContext(t, name);
@@ -40,7 +44,7 @@ async function makeUser(
     return await ctx.db.insert("userProfiles", {
       userId,
       userType: "individual",
-      emailNotificationsEnabled: true,
+      emailNotificationsEnabled: opts.emailOn ?? true,
       smsNotificationsEnabled: false,
       pushNotificationsEnabled: false,
       urgentDeadlineDays: 7,
@@ -79,7 +83,40 @@ async function makeUser(
     });
   });
 
+  for (let i = 0; i < (opts.liveCases ?? 1); i++) await addCase(t, userId);
   return { userId, authT, profileId, email };
+}
+
+/** One case on an account: live unless the overrides say closed, deleted or the sample. */
+async function addCase(
+  t: ReturnType<typeof createTestContext>,
+  userId: Id<"users">,
+  overrides: { caseStatus?: "pwd" | "closed"; isSample?: boolean; deletedAt?: number } = {},
+) {
+  const now = Date.now();
+  await t.run(async (ctx) =>
+    ctx.db.insert("cases", {
+      userId,
+      employerName: "ACME Robotics",
+      positionTitle: "Engineer",
+      caseStatus: "pwd",
+      progressStatus: "working",
+      rfiEntries: [],
+      rfeEntries: [],
+      notes: [],
+      isProfessionalOccupation: false,
+      isFavorite: false,
+      priorityLevel: "normal",
+      tags: [],
+      calendarSyncEnabled: true,
+      documents: [],
+      recruitmentApplicantsCount: 0,
+      additionalRecruitmentMethods: [],
+      createdAt: now,
+      updatedAt: now,
+      ...overrides,
+    }),
+  );
 }
 
 async function getProfile(authT: Awaited<ReturnType<typeof makeUser>>["authT"], profileId: Id<"userProfiles">) {
@@ -135,6 +172,44 @@ describe("runReengagementCheck", () => {
     expect(result.suppressed).toBe(0);
     const profile = await getProfile(u.authT, u.profileId);
     expect(profile?.reengagementNudgeSentAt).toBeUndefined();
+  });
+
+  // The email says "your cases are still being tracked" and warns the weekly summary will
+  // pause. It's false for an account with no case of its own, and unwanted by one that
+  // switched email off.
+  it("doesn't nudge an account that switched email notifications off", async () => {
+    const t = createTestContext();
+    const u = await makeUser(t, "Quiet Quinn", { emailWeeklyDigest: true, lastActiveDaysAgo: 90, emailOn: false });
+    const result = await t.action(internal.reengagement.runReengagementCheck, {});
+    expect(result.nudged).toBe(0);
+    expect((await getProfile(u.authT, u.profileId))?.reengagementNudgeSentAt).toBeUndefined();
+  });
+
+  it("doesn't nudge an account with no live case of its own: none, the sample, a closed one, a deleted one", async () => {
+    const t = createTestContext();
+    const none = await makeUser(t, "Empty Eve", { emailWeeklyDigest: true, lastActiveDaysAgo: 90, liveCases: 0 });
+    const others = await makeUser(t, "Sample Sam", { emailWeeklyDigest: true, lastActiveDaysAgo: 90, liveCases: 0 });
+    await addCase(t, others.userId, { isSample: true });
+    await addCase(t, others.userId, { caseStatus: "closed" });
+    await addCase(t, others.userId, { deletedAt: Date.now() });
+    const result = await t.action(internal.reengagement.runReengagementCheck, {});
+    expect(result.nudged).toBe(0);
+    for (const u of [none, others]) {
+      expect((await getProfile(u.authT, u.profileId))?.reengagementNudgeSentAt).toBeUndefined();
+    }
+  });
+
+  it("tells the email how many live cases the account has", async () => {
+    const t = createTestContext();
+    const u = await makeUser(t, "Busy Bea", { emailWeeklyDigest: true, lastActiveDaysAgo: 90, liveCases: 2 });
+    await addCase(t, u.userId, { caseStatus: "closed" });
+    await addCase(t, u.userId, { isSample: true });
+    await t.action(internal.reengagement.runReengagementCheck, {});
+    const sends = await t.run(async (ctx) =>
+      (await ctx.db.system.query("_scheduled_functions").collect()).filter((job) => job.name.includes("sendReengagementNudge")),
+    );
+    expect(sends).toHaveLength(1);
+    expect(sends[0]!.args).toEqual([{ to: u.email, userName: "Busy Bea", activeCaseCount: 2 }]);
   });
 
   it("ignores users who don't have the weekly digest on", async () => {

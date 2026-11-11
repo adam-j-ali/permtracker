@@ -4,7 +4,7 @@
  * Sent once when a user goes inactive, a warm "your cases are still tracked,
  * here’s the way back in" nudge. If it’s ignored and the user stays inactive,
  * the weekly digest auto-suppresses server-side (the in-app banner explains how
- * to turn it back on). Weekly-only unsubscribe link is included.
+ * to turn it back on). Its one link stops the weekly case summary, and says so.
  *
  * Matches the shared EmailLayout and greets like every
  * other account email ("Hi Name,").
@@ -17,8 +17,8 @@ import { SITE_URL } from "../../convex/lib/links";
 export interface ReengagementNudgeProps {
   /** First name (or display name) of the recipient. */
   userName: string;
-  /** Number of active cases still being tracked (optional, for a concrete hook). */
-  activeCaseCount?: number;
+  /** The account's live cases. Always one or more: an account with none isn't sent this (convex/reengagement.ts). */
+  activeCaseCount: number;
   baseUrl?: string;
   settingsUrl?: string;
   /** One-click unsubscribe URL (omit to hide the link). */
@@ -32,12 +32,9 @@ export function ReengagementNudge({
   settingsUrl = `${SITE_URL}/settings`,
   unsubscribeUrl,
 }: ReengagementNudgeProps) {
-  const previewText = "Your PERM cases are still tracked. Here’s a quick way back in.";
-
-  const caseLine =
-    activeCaseCount && activeCaseCount > 0
-      ? `Your ${activeCaseCount} PERM ${activeCaseCount === 1 ? "case is" : "cases are"} still being tracked, and we’re still watching every deadline for you.`
-      : "Your PERM cases are still being tracked, and we’re still watching every deadline for you.";
+  const casesAre = activeCaseCount === 1 ? "case is" : "cases are";
+  const previewText = `Your PERM ${casesAre} still tracked. Here’s a quick way back in.`;
+  const caseLine = `Your ${activeCaseCount} PERM ${casesAre} still being tracked, and we’re still watching every deadline for you.`;
 
   return (
     <EmailLayout previewText={previewText} settingsUrl={settingsUrl}>
@@ -67,7 +64,7 @@ export function ReengagementNudge({
           <Text className="em-text-muted" style={styles.unsubText}>
             Not tracking PERM cases anymore?{" "}
             <Link href={unsubscribeUrl} className="em-link" style={styles.unsubLink}>
-              Unsubscribe from these emails
+              Stop the weekly case summary
             </Link>
           </Text>
         </Section>

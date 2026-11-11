@@ -443,7 +443,7 @@ export const sendWeeklyDigestEmail = internalAction({
  * stay away (the reengagement cron does the actual suppression).
  */
 export const sendReengagementNudge = internalAction({
-  args: { to: v.string(), userName: v.string() },
+  args: { to: v.string(), userName: v.string(), activeCaseCount: v.number() },
   handler: async (ctx, args): Promise<void> => {
     const isActive = await ctx.runQuery(internal.notifications.isUserActiveByEmail, {
       email: args.to,
@@ -457,7 +457,7 @@ export const sendReengagementNudge = internalAction({
     const unsubscribeUrl = await buildUnsubscribeUrl(args.to);
 
     const html = await render(
-      ReengagementNudge({ userName: args.userName, baseUrl: appUrl, unsubscribeUrl })
+      ReengagementNudge({ userName: args.userName, activeCaseCount: args.activeCaseCount, baseUrl: appUrl, unsubscribeUrl })
     );
 
     const resend = getResend();
