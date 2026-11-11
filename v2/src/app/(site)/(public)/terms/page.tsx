@@ -60,7 +60,7 @@ export default function TermsPage() {
       <div>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Terms of service</h1>{" "}
         <p className="mb-8 mt-4 text-lg text-muted-foreground">
-          Effective Date: February 17, 2026 | Last Updated: November 5, 2026
+          Effective Date: February 17, 2026 | Last Updated: November 11, 2026
         </p>{" "}
 
         <SectionIndex sections={SECTIONS} />
@@ -619,12 +619,14 @@ export default function TermsPage() {
               cookie-free mode and stores nothing in your browser; if you’re
               signed in, your analytics events are linked to your account
               unless you switch usage analytics off in Settings, in which case
-              your browser sends no analytics at all. Session replay is switched off. If we turn it back on, it will
+              your browser sends nothing to PostHog. Session replay is switched off. If we turn it back on, it will
               cover only the signed-in app, mask form inputs and on-screen
               text, and our Privacy Policy will say so first. We never use
               session replays for advertising and never sell them, and we honor
-              the Global Privacy Control (GPC) browser signal by sending no
-              analytics at all from your browser. We also use Cloudflare
+              the Global Privacy Control (GPC) browser signal by sending nothing
+              to PostHog from your browser. Ahrefs Web Analytics, which sets no
+              cookies and collects no personal data, still counts the page view
+              (see our Privacy Policy). We also use Cloudflare
               Turnstile on our sign-up, password-reset and contact forms to
               prevent automated abuse; it processes limited device and
               interaction signals but doesn’t read the contents of form fields.

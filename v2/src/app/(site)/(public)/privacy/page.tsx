@@ -62,7 +62,7 @@ export default function PrivacyPage() {
       <div>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Privacy policy</h1>{" "}
         <p className="mb-8 mt-4 text-lg text-muted-foreground">
-          Effective Date: February 17, 2026 | Last Updated: November 5, 2026
+          Effective Date: February 17, 2026 | Last Updated: November 11, 2026
         </p>{" "}
 
         <SectionIndex sections={SECTIONS} />
@@ -102,9 +102,9 @@ export default function PrivacyPage() {
             <ul className="list-disc list-inside text-soft space-y-2 ml-4">
               <li>
                 <strong>Email address</strong>: used to sign you in, to confirm
-                the address is yours, to send the email you’ve asked for, and to
-                send occasional product updates you can turn off (see Product
-                Update Emails below)
+                the address is yours, to send the email you’ve asked for, to send one note if an
+                account holding cases goes unused for 60 days, and to send occasional
+                product updates you can turn off (see Product Update Emails below)
               </li>{" "}
               <li>
                 <strong>Name</strong>: from Google if you sign in with Google,
@@ -132,7 +132,10 @@ export default function PrivacyPage() {
               <li>Beneficiary identifiers</li>{" "}
               <li>Case status and progress information</li>{" "}
               <li>Important dates (PWD filing, recruitment dates, etc.)</li>{" "}
-              <li>Notes and case-related documentation references</li>{" "}
+              <li>
+                Notes, and any documents you upload to a case. An uploaded file is
+                deleted when you delete it, its case or your account
+              </li>{" "}
               <li>RFI/RFE information and response dates</li>
             </ul>{" "}
 
@@ -182,9 +185,20 @@ export default function PrivacyPage() {
                 No account is needed. For each, we keep your email address, what
                 you asked to follow (a case number, a filing month, a bulletin
                 category and country, or an employer’s page), the page you signed
-                up on, and when we confirmed, checked and emailed. The queue
-                alert also asks, if you choose to say, whether you’re an
+                up on, and when we confirmed, checked and emailed. The queue alert also asks, if you choose to say, whether you’re an
                 attorney, an applicant or an employer
+              </li>{" "}
+              <li>
+                You can also ask for our weekly digest (DOL’s queue, visa
+                bulletin moves, USCIS times and new rules, in one email). It
+                needs the same confirming click, and we keep your email address
+                and when you confirmed
+              </li>{" "}
+              <li>
+                If you follow a prevailing wage request and DOL later publishes
+                a PERM filing that looks like the one it led to, we email you
+                once to say so (“A PERM that may be yours”). It’s matched from
+                DOL’s published records, and its link stops that one alert
               </li>{" "}
               <li>
                 Nothing is sent until you click the link in our confirmation
@@ -203,12 +217,15 @@ export default function PrivacyPage() {
               </li>{" "}
               <li>
                 A copy of each alert email waits with us until it’s sent, and is
-                deleted 30 days after that
+                deleted 30 days after that. An email that fails to send is kept
+                whole for up to 14 days while we try again, and a confirmation
+                email held back by our daily sending limit for up to 7
               </li>{" "}
               <li>
-                Every alert email has a link that stops it in one click, and a
-                link to a page listing everything your address receives, where
-                you can turn any of it off. When you stop an alert, we keep a
+                Every alert email has a link that stops it: one click on your mail
+                app’s own Unsubscribe, or one button on the page the link
+                opens. It also links to a page listing everything your address
+                receives, where you can turn any of it off. When you stop an alert, we keep a
                 note that your address opted out, so it can’t be restarted
                 without a new confirmation. To have that note deleted too, write
                 to{" "}
@@ -394,6 +411,15 @@ export default function PrivacyPage() {
                 we add it to our case tables, where it shows like any other case
                 DOL publishes: its number, status, employer, job title and filing
                 date. Nothing about you is stored with it
+              </li>{" "}
+              <li>
+                Like any web server, ours keeps a log of each request for 14 days:
+                your IP address, the address of the page asked for (which includes
+                a case number or receipt number typed into it), the page you came
+                from and your browser’s user agent. A diagnostic log on the
+                same server, kept for 30 days, records errors and can name the
+                case number that was being looked up. We use both to keep the
+                site running and to stop abuse
               </li>{" "}
               <li>
                 A DOL case number you save in your account, and any case number
@@ -597,9 +623,11 @@ export default function PrivacyPage() {
               <li>
                 <strong>Backups:</strong> each night we copy our databases to
                 Cloudflare R2 storage. The copies that hold your account, your
-                cases, our alert lists and the website&apos;s own database are
-                sealed before they leave our systems, so that only a key kept
-                off our servers and out of R2 can open them. The one copy that
+                cases, our alert lists and the website&apos;s own database are sealed before they&apos;re stored, so that only a key kept
+                off our servers and out of R2 can open them. The copy of the
+                app&apos;s database (accounts, cases and alert lists) is made on
+                a GitHub Actions runner, which holds it unsealed for the few
+                minutes that takes, seals it and deletes the unsealed file. The one copy that
                 isn&apos;t sealed holds only DOL&apos;s published H-1B LCA
                 records. We keep the newest 15 nightly copies and the first copy
                 of each of the last 3 months, so something you delete leaves our
@@ -640,7 +668,7 @@ export default function PrivacyPage() {
                 status, dates, and notes)
               </li>{" "}
               <li>
-                System-generated context (your name, case counts, current page)
+                System-generated context (the date and time, and the page you’re on)
               </li>{" "}
               <li>Conversation history for context continuity</li>
             </ul>{" "}
@@ -691,8 +719,10 @@ export default function PrivacyPage() {
               </li>
             </ul>{" "}
             <p className="text-soft leading-relaxed mt-4">
-              Search queries are derived from your questions and don’t include
-              your personal information or case data.
+              When the assistant searches the web, it writes the search itself from
+              the conversation, so a search can include words from your question,
+              such as an employer’s name. The search providers receive that
+              search text only, never your account or your case records.
             </p>{" "}
 
             <h3 className="font-heading text-lg font-bold mt-6 mb-3">
@@ -874,8 +904,9 @@ export default function PrivacyPage() {
             </h3>{" "}
             <p className="text-soft leading-relaxed">
               Sentry does not record session replays for this site. That
-              feature was removed on August 29, 2026; Sentry receives error
-              reports and performance timings only.
+              feature was removed on August 29, 2026; Sentry receives error reports, performance timings and
+              diagnostic log lines (the warnings and errors the site prints),
+              and nothing else.
             </p>{" "}
 
             <h3 className="font-heading text-lg font-bold mt-6 mb-3">
@@ -1044,9 +1075,9 @@ export default function PrivacyPage() {
               and per-user limits on hot backend mutations (case create,
               conversation create, notification marks, knowledge search,
               etc.). When a limit is reached, requests return an HTTP 429
-              response for the duration of the rate-limit window. We keep
-              only the minimum counter state needed (a request count and a
-              timestamp) and an internal blocklist of IP addresses that hit
+              response for the duration of the rate-limit window. For each limited action we keep a short record of the attempt (what
+              was tried, when, and what it was counted against: an IP address, an
+              email address or an account number) and an internal blocklist of IP addresses that hit
               our limits three times within 15 minutes. A blocked address is
               unblocked automatically after one hour. Counter records are
               deleted within a day.
@@ -1242,12 +1273,22 @@ export default function PrivacyPage() {
                 its public-data database, on servers in the United States
               </li>{" "}
               <li>
-                <strong>Cloudflare:</strong> The network in front of the
-                website. Every request passes through it, so it receives your
-                browser&apos;s standard request data (IP address, user agent)
-                to deliver the page and screen out abusive traffic. It also
-                runs Turnstile (Section 9)
-              </li>{" "}
+              <strong>Cloudflare:</strong> The network in front of the
+              website. Every request passes through it, so it receives your
+              browser&apos;s standard request data (IP address, user agent)
+              to deliver the page and screen out abusive traffic. It also
+              provides DNS and encryption, Turnstile on authentication and
+              contact forms, email routing for @permtracker.app addresses,
+              Workers AI for the spam check on that email and contact form
+              messages (see Section 9), and R2 storage for our nightly backups
+              (see Section 5)
+            </li>{" "}
+            <li>
+              <strong>GitHub:</strong> runs our automated jobs (GitHub Actions).
+              The nightly backup of the app&apos;s database is made on one of
+              its runners, which holds the copy unsealed for the few minutes that
+              takes (see Section 5)
+            </li>{" "}
               <li>
                 <strong>Resend:</strong> Transactional email delivery
                 (notifications, OTP verification, password resets) and product
@@ -1260,8 +1301,10 @@ export default function PrivacyPage() {
               <li>
                 <strong>Google:</strong> sign-in with Google, the Calendar API,
                 and Gmail, which receives a copy of every message sent to an
-                @permtracker.app address and every contact-form message, so we can
-                read and answer them
+              @permtracker.app address and every contact-form message, so we can
+              read and answer them, and our own notices about a new review, a
+              law firm&apos;s claim or a locked account, which carry that
+              person&apos;s details
               </li>{" "}
               <li>
                 <strong>Zoho Mail:</strong> the mailbox our press address runs on.
@@ -1298,15 +1341,7 @@ export default function PrivacyPage() {
                 <strong>Search Providers:</strong> Tavily and Brave Search for AI
                 web search capabilities (see Section 6)
               </li>{" "}
-              <li>
-                <strong>Cloudflare, Inc.:</strong> DNS, encryption and the network
-                edge in front of the site (rate limiting and bot mitigation),
-                Turnstile on authentication and contact forms, email routing for
-                @permtracker.app addresses, Workers AI for the spam check on
-                that email and contact form messages (see Section 9), and R2
-                storage for our nightly backups (see Section 5)
-              </li>{" "}
-              <li>
+            <li>
                 <strong>Browser Push Services:</strong> Google FCM, Mozilla Push
                 Service, Microsoft Windows Push Notification Services and Apple
                 APNs, for browser notifications (see Section 10)
@@ -1373,16 +1408,30 @@ export default function PrivacyPage() {
               <li>
                 <strong>What deleting an account doesn&apos;t remove:</strong>{" "}
                 reviews you wrote, emails you sent to our support address,
-                messages you sent through the contact form, and star ratings you
-                tapped in an alert email. These aren&apos;t part of your account:
+                messages you sent through the contact form, star ratings you
+                tapped in an alert email, a law firm&apos;s page you claimed with
+                what you wrote on it, and our note that an address opted out of
+                an email. These aren&apos;t part of your account:
                 they&apos;re records of what was published on the site or said to
                 us, so we keep them, with the email address they came from if
                 they had one, after the account is gone. A note we sent you by hand stays in the
-                mailbox it was sent from. To have any of them removed, write to{" "}
+                mailbox it was sent from. Our own error records, which carry
+                your account&apos;s number, are deleted after 180 days. To have any of them removed, write to{" "}
                 <a href="mailto:support@permtracker.app" className="link">
                   support@permtracker.app
                 </a>{" "}
                 with the address you used
+              </li>{" "}
+              <li>
+                <strong>Usage analytics:</strong> events already sent to PostHog
+                (Section 7) aren&apos;t deleted with your account. They stay under
+                your account&apos;s number and, if you signed in before November
+                11, 2026, the name on the account, until PostHog&apos;s own
+                retention period removes them. To have them deleted sooner,
+                write to{" "}
+                <a href="mailto:support@permtracker.app" className="link">
+                  support@permtracker.app
+                </a>
               </li>{" "}
               <li>
                 <strong>Email alert sign-ups</strong> you never confirm are
@@ -1586,8 +1635,8 @@ export default function PrivacyPage() {
               Your data is primarily stored and processed in the United States.
               If you’re located in the European Economic Area (EEA), United
               Kingdom, or Switzerland, your data may be transferred to the United
-              States by our service providers (Convex, Cloudflare, Resend,
-              Google, Zoho, Sentry, PostHog and the AI chat providers).
+              States by our service providers (Convex, Oracle, Cloudflare, GitHub, Resend, Google, Zoho, Sentry,
+            PostHog and the AI chat and search providers).
             </p>{" "}
             <p className="text-soft leading-relaxed mt-4">
               Where a provider offers them, these transfers rely on the Standard
@@ -1631,6 +1680,7 @@ export default function PrivacyPage() {
             <h3 className="font-heading text-lg font-bold mt-6 mb-3">What we store</h3>{" "}
             <ul className="list-disc list-inside text-soft space-y-2 ml-4">
               <li>The receipt number, the form type, the status text, the dated history, and the time of the lookup.</li>{" "}
+              <li>The page address you asked for, with the receipt number in it, also sits in our web server&apos;s request log for 14 days (Section 2).</li>{" "}
               <li>We store it so a later lookup of the same receipt can show what changed, and so we can count lookups by form type and status. Counts are published only in aggregate; a receipt number is never published or shared.</li>{" "}
               <li>A receipt number identifies a case rather than a person, and we treat it as personal data anyway: it&apos;s encrypted at rest with the rest of the database, it&apos;s not sold, and it&apos;s not used for advertising.</li>{" "}
               <li>Stored lookups are deleted twelve months after the last lookup of that receipt, or sooner if you ask at <a href="mailto:support@permtracker.app?subject=USCIS%20lookup%20deletion" className="link">support@permtracker.app</a> with the receipt number.</li>{" "}
