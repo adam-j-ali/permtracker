@@ -30,6 +30,7 @@ function answer(body: unknown) {
 }
 
 beforeEach(() => {
+  // A sent form is remembered in the browser (caseWatchMemory); vitest.setup.ts empties storage after every test.
   vi.stubEnv("NEXT_PUBLIC_CONVEX_URL", "https://example-123.convex.cloud");
 });
 afterEach(() => {

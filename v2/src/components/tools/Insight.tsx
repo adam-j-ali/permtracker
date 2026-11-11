@@ -68,6 +68,7 @@ export function AnswerPanel({
   source,
   picture,
   actions,
+  actionsFirst = false,
   className,
 }: {
   verdict?: string;
@@ -80,6 +81,11 @@ export function AnswerPanel({
   picture?: ReactNode;
   /** What to do next, under the claim and above the source line. */
   actions?: ReactNode;
+  /**
+   * Put what to do next straight under the claim, above the picture. For an answer whose next step is the point
+   * (a pending case's "email me when it moves"): under the picture it sat on a phone's second screen.
+   */
+  actionsFirst?: boolean;
   className?: string;
 }) {
   return (
@@ -94,8 +100,9 @@ export function AnswerPanel({
       ) : null}
       <div className="p-5 sm:p-8">
         <p className="max-w-3xl text-lg leading-relaxed text-foreground sm:text-xl">{children}</p>{" "}
+        {actionsFirst ? (actions ?? null) : null}{" "}
         {picture ? <div className="mt-6">{picture}</div> : null}{" "}
-        {actions ?? null}{" "}
+        {actionsFirst ? null : (actions ?? null)}{" "}
         {source ? <p className="mt-5 text-sm text-muted-foreground">{source}</p> : null}
       </div>
     </section>

@@ -27,7 +27,7 @@ export function AnswerNext({
   program: FlagProgram;
 }) {
   return (
-    <div className="mt-6 grid grid-cols-1 gap-6 border-t border-foreground/10 pt-6 lg:grid-cols-2 lg:gap-10">
+    <div className="mt-6 grid grid-cols-1 gap-6 border-t border-foreground/10 pt-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-10 [&>*]:min-w-0">
       <div>
         {date ? (
           <>
@@ -37,7 +37,9 @@ export function AnswerNext({
         ) : null}{" "}
         {note ? <div className={date ? "mt-1 text-sm" : "text-base leading-relaxed text-soft"}>{note}</div> : null}
       </div>{" "}
-      <div id={WATCH_ANCHOR}>
+      {/* The ask stands out as the one thing to do here: a tinted band with the action's lime at its edge. On a
+          phone it runs the panel's full width. */}
+      <div id={WATCH_ANCHOR} className="-mx-5 scroll-mt-24 border-l-4 border-primary bg-tint px-5 py-5 sm:mx-0">
         <WatchThisNumber caseNumber={caseNumber} program={program} variant="inline" />
       </div>
     </div>

@@ -123,14 +123,16 @@ export function LookupSkeleton() {
           <Bar className="h-6 w-full sm:hidden" />
           <Bar className="h-6 w-4/5 sm:hidden" />
         </div>
-        <div className="mt-6 grid grid-cols-1 gap-6 border-t border-foreground/10 pt-6 lg:grid-cols-2 lg:gap-10">
+        {/* The same grid and the same tinted band as AnswerNext: the date, then the email box. */}
+        <div className="mt-6 grid grid-cols-1 gap-6 border-t border-foreground/10 pt-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-10 [&>*]:min-w-0">
           <div className="space-y-2">
             <Bar className="h-4 w-36" />
             <Bar className="h-9 w-72 max-w-full" />
             <Bar className="h-4 w-40" />
           </div>
-          <div className="space-y-2">
-            <Bar className="h-5 w-72 max-w-full" />
+          <div className="-mx-5 space-y-2 border-l-4 border-primary bg-tint px-5 py-5 sm:mx-0">
+            <Bar className="h-6 w-72 max-w-full" />
+            <Bar className="h-4 w-64 max-w-full" />
             <div className="flex flex-col gap-2 sm:flex-row">
               <div className="h-12 min-w-0 flex-1 border-2 border-input bg-card" />
               <Bar className="h-12 w-full sm:w-44" />

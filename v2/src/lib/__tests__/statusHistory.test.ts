@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { HISTORY_FROM, statusHistory, type StatusEvent } from "../statusHistory";
+import { HISTORY_FROM, statusHistory, type StatusEvent, seenInStatusSince } from "../statusHistory";
 
 // An instant at a given Eastern hour (EDT, UTC-4, in the autumn days these use).
 const at = (day: string, hourEt: number) => Date.parse(`${day}T${String(hourEt + 4).padStart(2, "0")}:00:00Z`);
@@ -89,3 +89,37 @@ describe("the catch-up's last day, one rule in both languages", () => {
     expect(easternDay(Date.parse(`${next}T04:00:00Z`) - 1)).toBe(HISTORY_FROM);
   });
 });
+
+describe("the day our checks first saw a case in its status", () => {
+  // Noon Eastern on a November day is 17:00 UTC.
+  const at = (day: string, hourUtc = 17) => Date.parse(`${day}T${String(hourUtc).padStart(2, "0")}:00:00Z`);
+
+  it("is the DOL day of the newest change into that status", () => {
+    const events = [
+      { at: at("2026-10-01"), from: "IN PROCESS", to: "ANALYST REVIEW" },
+      { at: at("2026-11-06"), from: "ANALYST REVIEW", to: "CERTIFIED" },
+    ];
+
+    expect(seenInStatusSince(events, "CERTIFIED")).toBe("2026-11-06");
+    expect(seenInStatusSince(events, "certified")).toBe("2026-11-06");
+  });
+
+  it("dates a change our 4 AM check saw to the day before, as every count does", () => {
+    // 4:10 AM Eastern on Nov 7 is 09:10 UTC: the evening work of Nov 6.
+    const events = [{ at: Date.parse("2026-11-07T09:10:00Z"), from: "ANALYST REVIEW", to: "CERTIFIED" }];
+
+    expect(seenInStatusSince(events, "CERTIFIED")).toBe("2026-11-06");
+  });
+
+  it("can't date a status the record only caught up to", () => {
+    const events = [{ at: at(HISTORY_FROM), from: "ANALYST REVIEW", to: "CERTIFIED" }];
+
+    expect(seenInStatusSince(events, "CERTIFIED")).toBeNull();
+  });
+
+  it("is null with no change into that status on record", () => {
+    expect(seenInStatusSince([], "CERTIFIED")).toBeNull();
+    expect(seenInStatusSince([{ at: at("2026-11-06"), from: "IN PROCESS", to: "ANALYST REVIEW" }], "CERTIFIED")).toBeNull();
+  });
+});
+

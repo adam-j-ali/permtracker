@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState, useSyncExternalStore } from "react";
 
 import { cn } from "@/lib/utils";
 import { programNoun, type FlagProgram } from "@/lib/flagCaseNumber";
@@ -11,6 +11,9 @@ import { formText } from "@/lib/forms/formText";
 import { trackAlertSignup } from "@/lib/alertSignupEvent";
 import { useAlertFormTelemetry } from "@/lib/funnelEvents";
 import { convexSiteUrl } from "@/lib/convexSite";
+import { announceWatchChange, browserStore, checkDays, forgetAsked, noteCheck, readAsked, rememberAsked, subscribeWatch } from "@/lib/caseWatchMemory";
+import { easternDay } from "@/lib/time";
+import { longDate } from "@convex/lib/months";
 
 /**
  * Subscribe to status changes on ONE case.
@@ -41,7 +44,18 @@ import { convexSiteUrl } from "@/lib/convexSite";
  * is looking at, and tags the source so signup mix can be read per surface.
  * Passing the wrong one produces mildly wrong copy, never a wrong
  * subscription.
+ *
+ * IT KNOWS A RETURNING BROWSER (src/lib/caseWatchMemory.ts). Most visits to a
+ * case's page are a repeat check. A browser that already sent this form for
+ * this case sees the day it asked and a way to ask again, in place of the form.
+ * A browser on its third day of checking is told so, beside the offer to check
+ * for it. Both come from the browser's own storage and say only what the
+ * browser did: "you asked", never "you're subscribed", which only the server
+ * knows and tells nobody.
  */
+
+/** From this many different days of checking, the form says how many. */
+export const RETURNING_FROM_DAYS = 3;
 
 /** Where the signup came from, for the `source` column. Wording aside, inert. */
 const SOURCE: Record<FlagProgram, string> = {
@@ -75,6 +89,14 @@ export function CaseAlertForm({
   const [news, setNews] = useState(false);
   const [newsletter, setNewsletter] = useState(false);
   const [state, setState] = useState<State>({ kind: "idle" });
+  // What this browser remembers of the case. The server's render and the first paint know nothing (null, 0), so
+  // the markup matches; the browser's own answer follows at once.
+  const askedOn = useSyncExternalStore(subscribeWatch, () => readAsked(browserStore(), caseNumber), () => null);
+  const daysChecked = useSyncExternalStore(subscribeWatch, () => checkDays(browserStore(), caseNumber), () => 0);
+  useEffect(() => {
+    noteCheck(browserStore(), caseNumber, easternDay());
+    announceWatchChange();
+  }, [caseNumber]);
 
   const endpoint = convexSiteUrl("/case-alert/subscribe");
   if (!endpoint) return null;
@@ -108,6 +130,8 @@ export function CaseAlertForm({
         body?.message ??
         "That didn't go through. Try again in a moment, or check the case on DOL's own status page.";
       setState(res.ok ? { kind: "done", message, queued: isQueued(body) } : { kind: "refused", message });
+      // The day is kept so the next visit says "you asked" in place of the form. This visit keeps the server's reply.
+      if (res.ok) rememberAsked(browserStore(), caseNumber, easternDay());
       trackAlertSignup("case", res.ok ? "accepted" : "refused", { program, status: res.status });
     } catch {
       trackAlertSignup("case", "error", { program });
@@ -122,6 +146,30 @@ export function CaseAlertForm({
     return <AlertDone message={state.message} queued={state.queued} className={className} />;
   }
 
+  if (askedOn) {
+    return (
+      <div className={cn("print:hidden", className)}>
+        <p className="text-base font-semibold text-foreground">
+          You asked for emails about this {noun} on {longDate(askedOn) ?? askedOn}.
+        </p>{" "}
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          We email the moment DOL changes its status. If no confirmation email came, look in your spam folder, or{" "}
+          <button
+            type="button"
+            className="link inline-flex min-h-11 items-center font-semibold"
+            onClick={() => {
+              forgetAsked(browserStore(), caseNumber);
+              announceWatchChange();
+            }}
+          >
+            ask again
+          </button>
+          .
+        </p>
+      </div>
+    );
+  }
+
   return (
     <form
       ref={observe}
@@ -129,10 +177,14 @@ export function CaseAlertForm({
       onSubmit={submit}
       className={cn("print:hidden", className)}
     >
-      <label htmlFor={inputId} className="block text-base font-semibold text-foreground">
+      <label htmlFor={inputId} className="block font-heading text-lg font-bold leading-snug text-foreground">
         Email me when DOL changes this {noun}&apos;s status
       </label>{" "}
-      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+      <p className="mt-1 text-sm leading-relaxed text-foreground">
+        {daysChecked >= RETURNING_FROM_DAYS ? `You've checked this ${noun} on ${daysChecked} days. ` : ""}
+        We ask DOL about it every 5 minutes on weekdays, so you can stop checking.
+      </p>{" "}
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         <EmailField
           id={inputId}
           value={email}
