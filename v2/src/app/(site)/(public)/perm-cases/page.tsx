@@ -135,9 +135,9 @@ export default async function PermCasesPage() {
     ...(lastMonth ? [{ ...lastMonth, note: "PERM cases in DOL's live service, by the month filed" }] : []),
   ];
   const chapters: ChapterItem[] = [
-    { id: "by-day", label: "Decisions" },
     { id: "decided", label: "Decided cases" },
     { id: "live", label: "Newer cases, live" },
+    { id: "by-day", label: "Decisions by month" },
   ];
 
   return (
@@ -166,15 +166,6 @@ export default async function PermCasesPage() {
       {meta ? (
         <>
           <ChapterNav items={chapters} className="mt-10" />
-
-          {/* THE CHART SITS OUTSIDE THE SEARCH-PARAMS BOUNDARY, and that is the
-              point: it takes server-computed props and reads no search params,
-              so outside the boundary it is in the HTML a crawler gets and paints
-              before the JS lands. Inside, it would exist only in the escaped RSC
-              payload. */}
-          <Chapter id="by-day" title="How many cases DOL decides" dek="Every decision in DOL's published files, counted by month.">
-            <DailyDecisionsChart points={daily} />
-          </Chapter>
 
           <SearchParamsBoundary>
             <Chapter
@@ -210,6 +201,15 @@ export default async function PermCasesPage() {
               <LiveCaseBrowser summary={liveSummary} publishedThrough={meta.lastDecisionDate} />
             </div>
           </SearchParamsBoundary>
+
+          {/* First things first: the lists come before this chart. THE CHART STILL SITS OUTSIDE THE SEARCH-PARAMS BOUNDARY, and that is the
+              point: it takes server-computed props and reads no search params,
+              so outside the boundary it is in the HTML a crawler gets and paints
+              before the JS lands. Inside, it would exist only in the escaped RSC
+              payload. */}
+          <Chapter id="by-day" title="How many cases DOL decides" dek="Every decision in DOL's published files, counted by month.">
+            <DailyDecisionsChart points={daily} />
+          </Chapter>
         </>
       ) : (
         <section className="mt-10 bg-tint p-8 text-center border-2 shadow-hard border-border">
