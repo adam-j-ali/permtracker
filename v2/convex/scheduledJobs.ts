@@ -965,6 +965,28 @@ export const enforceDeadlinesForAllUsers = internalAction({
               userId, resourceId: caseDoc._id.toString(),
             });
           }
+
+          // The same push the sign-in path sends (deadlineEnforcement.ts). This run is the one that closes a case
+          // for someone who isn't in the app, which is exactly who a push is for.
+          try {
+            if (profile.pushNotificationsEnabled) {
+              await ctx.scheduler.runAfter(0, internal.pushNotifications.sendPushNotification, {
+                userId,
+                title,
+                body: message,
+                url: `/cases/${caseDoc._id}`,
+                tag: `auto-closure-${caseDoc._id}`,
+              });
+            }
+          } catch (pushError) {
+            log.error("Failed to schedule auto-closure push", {
+              resourceId: caseDoc._id,
+              error: pushError instanceof Error ? pushError.message : String(pushError),
+            });
+            await recordError(ctx, "cron", "scheduledJobs.enforceDeadlinesForAllUsers.pushSchedule", pushError, {
+              userId, resourceId: caseDoc._id.toString(),
+            });
+          }
         }
 
         processed++;
