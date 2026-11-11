@@ -30,7 +30,7 @@ import {
   fromInjectedPageScript,
   fromServiceWorkerRegister,
 } from "@/lib/exceptionNoise";
-import { isFieldFocusClick, scrubClickEvent } from "@/lib/analyticsRedact";
+import { isFieldFocusClick, redactEventAddresses, scrubClickEvent } from "@/lib/analyticsRedact";
 import { droppedForAllowance } from "@/lib/analyticsSample";
 import { guardDomAgainstTranslators } from "@/lib/translateSafeDom";
 import { guardStorage } from "@/lib/storageGuard";
@@ -59,26 +59,6 @@ if (typeof Node === "function") {
     counted = true;
     analytics.capture("dom_guard_stepped_in", { op, lang: navigator.language || null });
   });
-}
-
-/**
- * Strip `case=<number>` out of every URL-shaped property on an event.
- *
- * String surgery rather than `new URL()`: these properties are sometimes a
- * bare path ("/perm-case-status?case=X"), which `new URL()` throws on, and a
- * throw inside before_send would drop the event entirely. Anything without
- * the parameter is returned untouched, so the common case costs one
- * `includes` per property.
- */
-function redactCaseParam(props: Record<string, unknown> | undefined): void {
-  if (!props) return;
-  for (const key of ["$current_url", "$referrer", "$pathname", "url", "$initial_current_url", "$initial_referrer"]) {
-    const v = props[key];
-    if (typeof v !== "string" || !(v.includes("case=") || v.includes("t="))) continue;
-    // `t` is the sealed review-link token (/reviews?t=...): it opens to the reader's address on our server, so it
-    // never goes to a third party either.
-    props[key] = v.replace(/([?&]case=)[^&#]*/gi, "$1redacted").replace(/([?&]t=)[^&#]*/g, "$1redacted");
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -120,22 +100,17 @@ function startPostHog(key: string, country: string | null): void {
       // set to 2 (stateful), or PostHog drops these events.
       cookieless_mode: "on_reject",
       opt_out_capturing_by_default: true,
-      // SESSION REPLAY IS OFF BY DEFAULT AND TURNED ON ONLY IN THE AUTHENTICATED
-      // APP (see (authenticated)/layout.tsx), for two measured reasons:
-      //   1. PERF. The public layout renders AmbientMurmuration, a full-viewport
-      //      requestAnimationFrame canvas, and this project's PostHog project has
-      //      recordCanvas enabled (verified in the live remote config: fps 3,
-      //      100% of sessions). Canvas capture is a GPU readback on the main
-      //      thread every frame and cannot be disabled from client init (it reads
-      //      only from remote config). Not loading the recorder on public pages
-      //      removes that cost for 100% of public visitors — the "everything is
-      //      laggy" report.
-      //   2. PRIVACY. /perm-case-status renders a real case number, employer and
-      //      job title as on-screen TEXT. We already strip `case=` from every
-      //      event URL (redactCaseParam below) precisely so a person is never
-      //      linked to an application — and an unmasked replay of that page puts
-      //      it straight back. Not recording public pages closes that entirely;
-      //      maskAllInputs + maskTextSelector below defend the app recording too.
+      // SESSION REPLAY IS OFF, EVERYWHERE. The Privacy Policy and the Terms say so, and
+      // session-replay-off.test.ts holds the code to them: recording is disabled here and
+      // nothing in the app starts one. Two more reasons it never ran on public pages:
+      //   1. PERF. The public layout renders a full-viewport animated canvas, and capturing
+      //      a canvas is a GPU readback on the main thread every frame.
+      //   2. PRIVACY. /perm-case-status renders a real case number, employer and job title
+      //      as on-screen text. The case number is stripped from every event's address
+      //      (redactEventAddresses below) so a person is never linked to an application,
+      //      and a replay of that page would put it straight back.
+      // The masks stay as the second lock: a recording started by any future path would
+      // still carry no typed input and no text.
       disable_session_recording: true,
       session_recording: { maskAllInputs: true, maskTextSelector: "*" },
       // SURVEYS OFF. The Surveys product is not enabled on this project, yet
@@ -172,8 +147,7 @@ function startPostHog(key: string, country: string | null): void {
         // Page leaves (in case the SDK sends one anyway) and three sessions in four of web vitals.
         if (droppedForAllowance(event)) return null;
 
-        redactCaseParam(event.properties);
-        redactCaseParam(event.$set);
+        redactEventAddresses(event);
         // A click's own text and attributes: none from the signed-in app (it can show
         // a client's name), and no case or receipt numbers or addresses from anywhere.
         scrubClickEvent(event.properties);

@@ -6,7 +6,7 @@
  * `$selected_content` for copied text. In the signed-in app that text can be a client's
  * name, so there it's dropped entirely; on public pages it's DOL's public record and
  * stays, with identifiers that tie a visitor to one filing taken out first (a link to a
- * case lookup carried the case number in its href, which redactCaseParam never saw).
+ * case lookup carried the case number in its href, which the address redaction never saw).
  *
  * Done in before_send (src/instrumentation-client.ts), the one place that sees every
  * event, rather than by flipping posthog-js's mask_all_text at runtime: the SDK copies
@@ -46,6 +46,70 @@ export function redactIdentifiers(s: string): string {
   let out = s;
   for (const re of IDENTIFIERS) out = out.replace(re, REDACTED);
   return out;
+}
+
+/** The event fields that hold a page address. */
+const ADDRESS_FIELDS = [
+  "$current_url",
+  "$referrer",
+  "$pathname",
+  "url",
+  "$initial_current_url",
+  "$initial_referrer",
+  "$initial_pathname",
+] as const;
+
+/**
+ * Parameters whose whole value is private whatever its shape: a looked-up case (`case`),
+ * a USCIS receipt (`receipt`) and the sealed review-link token (`t`, which opens to the
+ * reader's address on our server). The name must start at a `?` or `&`, so `showcase=`
+ * and `format=` are left alone.
+ */
+const PRIVATE_PARAMS = /([?&](?:case|receipt|t)=)[^&#]*/gi;
+
+/** An email address as an address bar prints it. */
+const ENCODED_EMAIL = /[\w.+-]+%40[\w-]+(?:\.[\w-]+)+/gi;
+
+/**
+ * Take what identifies a filing or a person out of every page address in one bag of
+ * event fields, in place: the private parameters by name, then any identifier by its
+ * shape (a case number typed into the site search rides in `q=`).
+ *
+ * String surgery rather than `new URL()`: these fields are sometimes a bare path
+ * ("/perm-case-status?case=X"), which `new URL()` throws on, and a throw inside
+ * before_send would drop the event. The path stays, so the page is still measurable.
+ */
+export function redactAddresses(props: Record<string, unknown> | undefined): void {
+  if (!props) return;
+  for (const key of ADDRESS_FIELDS) {
+    const v = props[key];
+    if (typeof v !== "string") continue;
+    props[key] = redactIdentifiers(v.replace(PRIVATE_PARAMS, "$1redacted").replace(ENCODED_EMAIL, REDACTED));
+  }
+}
+
+type AddressBag = Record<string, unknown> | undefined;
+
+/** `value` as a bag of fields, when it is one. */
+function bag(value: unknown): AddressBag {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : undefined;
+}
+
+/**
+ * Every place one event carries a page address: its own fields, and the person
+ * properties it sets. A signed-in person's first page (`$initial_current_url`) rides in
+ * `$set_once` on every event, at the top of the event or inside its properties
+ * depending on the event.
+ */
+export function redactEventAddresses(
+  event: { properties?: AddressBag; $set?: AddressBag; $set_once?: AddressBag } | null | undefined,
+): void {
+  if (!event) return;
+  redactAddresses(event.properties);
+  redactAddresses(event.$set);
+  redactAddresses(event.$set_once);
+  redactAddresses(bag(event.properties?.$set));
+  redactAddresses(bag(event.properties?.$set_once));
 }
 
 /** The page's path, from the event's own fields. */

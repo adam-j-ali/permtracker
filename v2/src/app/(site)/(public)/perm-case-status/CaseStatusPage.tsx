@@ -77,8 +77,8 @@ import { caseSearchHref } from "@/lib/caseSearchPlan";
  *      an employer and a job title. Neither belongs in a search index. The
  *      canonical is the bare path on every variant.
  *   2. The number would otherwise reach PostHog verbatim in `$current_url` on
- *      every autocaptured event. `redactCaseParam` in instrumentation-client
- *      strips it before send.
+ *      every autocaptured event. `redactEventAddresses` (src/lib/analyticsRedact.ts),
+ *      called from instrumentation-client, strips it before send.
  *
  * THE SHELL RENDERS BEFORE THE LOOKUP. The reads are a second or two against
  * a remote SQLite, so the header, the form and the explainer sit outside the
