@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useEffect } from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useEffect, useState } from "react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 /**
  * A refused sign-up says nothing about whether the address has an account (Nov 4 2026).
@@ -13,8 +13,10 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
  * refusal is one PostHog event and a breadcrumb, never a Sentry issue per press.
  */
 
-const { signIn, capture, captureError, toastError } = vi.hoisted(() => ({
+const { signIn, capture, captureError, toastError, verifyCheck, widget } = vi.hoisted(() => ({
   signIn: vi.fn(),
+  verifyCheck: vi.fn(),
+  widget: { mounts: 0, auto: true, solve: null as null | (() => void) },
   capture: vi.fn(),
   captureError: vi.fn(),
   toastError: vi.fn(),
@@ -22,7 +24,7 @@ const { signIn, capture, captureError, toastError } = vi.hoisted(() => ({
 
 vi.mock("@convex-dev/auth/react", () => ({ useAuthActions: () => ({ signIn }) }));
 vi.mock("convex/react", () => ({
-  useAction: () => vi.fn().mockResolvedValue({ success: true, pass: "one-time-pass" }),
+  useAction: () => verifyCheck,
   useMutation: () => vi.fn().mockResolvedValue(null),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => "/signup" }));
@@ -35,7 +37,16 @@ vi.mock("@/lib/sentry", () => ({ captureError, addBreadcrumb: vi.fn() }));
 // The real widget loads Cloudflare's script; this one passes the check as soon as it mounts.
 vi.mock("@/components/auth/AuthTurnstile", () => ({
   AuthTurnstile: ({ onVerify }: { onVerify: (token: string) => void }) => {
-    useEffect(() => onVerify("turnstile-token"), [onVerify]);
+    // One token per mount, as Cloudflare's widget gives. It arrives at once unless a test holds it
+    // back (`widget.auto = false`), which is the moment a real widget is still working.
+    const [token] = useState(() => {
+      widget.mounts += 1;
+      return `turnstile-token-${widget.mounts}`;
+    });
+    useEffect(() => {
+      if (widget.auto) onVerify(token);
+      else widget.solve = () => onVerify(token);
+    }, [onVerify, token]);
     return null;
   },
 }));
@@ -58,6 +69,10 @@ async function submitWith(error: Error) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  widget.mounts = 0;
+  widget.auto = true;
+  widget.solve = null;
+  verifyCheck.mockResolvedValue({ success: true, pass: "one-time-pass" });
   window.history.replaceState(null, "", "/signup?next=%2Fcases%2Fabc");
 });
 
@@ -99,5 +114,34 @@ describe("a refused sign-up", () => {
     await submitWith(new TypeError("Failed to fetch"));
     await waitFor(() => expect(toastError).toHaveBeenCalledWith(expect.stringMatching(/Network error/)));
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+});
+
+describe("asking for a second code", () => {
+  // The first request spends the security token. Coming back from the code
+  // step used to leave that spent token in place, so the button was live at
+  // once and a quick press sent the old token: "Security check failed."
+  it("waits for a fresh security token, and never sends the one the first request spent", async () => {
+    signIn.mockResolvedValue({ signingIn: false });
+    render(<SignupPageClient />);
+    fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: "person@example.com" } });
+    fireEvent.change(screen.getByLabelText(/^Password/, { selector: "input" }), {
+      target: { value: "a-long-password" },
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "Create account" }));
+
+    // Back from the code step, with the widget still working on its next token.
+    widget.auto = false;
+    fireEvent.click(await screen.findByRole("button", { name: /Back to signup/ }));
+    expect(await screen.findByRole("button", { name: "Complete the security check" })).toBeDisabled();
+    expect(verifyCheck).toHaveBeenCalledTimes(1);
+
+    // The widget finishes: the button comes back, and the second request carries the new token.
+    await waitFor(() => expect(widget.solve).not.toBeNull());
+    act(() => widget.solve?.());
+    fireEvent.click(await screen.findByRole("button", { name: "Create account" }));
+    await waitFor(() => expect(verifyCheck).toHaveBeenCalledTimes(2));
+    const tokens = verifyCheck.mock.calls.map((call) => (call[0] as { token: string }).token);
+    expect(tokens).toEqual(["turnstile-token-1", "turnstile-token-2"]);
   });
 });
