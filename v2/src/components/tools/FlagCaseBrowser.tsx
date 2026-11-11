@@ -27,7 +27,9 @@ import {
   type FlagFilters,
 } from "@/lib/flagFilter";
 import { nextSort, sortRows, type SortColumn, type SortState } from "@/lib/tableSort";
+import { ScrollBox } from "@/components/ui/scroll-box";
 import { RequestFailed } from "@/components/tools/RequestFailed";
+import { LIST_PAGE_SIZE, LIST_ROW, LIST_TABLE, NUMBER_CELL, PHONE_ROW, PHONE_ROW_WITH_FORM, TITLE_ON_PHONE } from "@/components/tools/caseListRow";
 import { DidYouMean, useNameSuggestions } from "@/components/search/DidYouMean";
 import { seasonalForm } from "@/lib/seasonalForms";
 import { formatInt } from "@/lib/format";
@@ -116,7 +118,6 @@ export const SEASONAL_PROGRAM: FlagBrowserProgram = {
 
 // A page of the list is short on purpose (first things first: the list in short pages). At 50 one page ran
 // thirteen phone screens.
-const PAGE_SIZE = 25;
 
 const ORDER_CHOICES = [
   { value: "newest", label: "Newest filing first" },
@@ -128,9 +129,6 @@ const CONTROL =
 
 
 
-/** A list row's places on a phone, by name (see Rows). The form's short name sits beside the job title where a list shows it. */
-const PHONE_ROW = "max-sm:[grid-template-areas:'emp_status'_'title_title'_'num_wage'_'dates_dates']";
-const PHONE_ROW_WITH_FORM = "max-sm:[grid-template-areas:'emp_status'_'title_form'_'num_wage'_'dates_dates']";
 
 function Rows({
   rows,
@@ -177,19 +175,12 @@ function Rows({
     return cols;
   }, [withWage, wageLabel, wages, showForm]);
   const ordered = useMemo(() => sortRows(rows, columns, sort), [rows, columns, sort]);
-  // ON A PHONE EACH ROW IS FOUR SHORT LINES. As a table, a phone saw the case
-  // number and half a status chip, then scrolled sideways. As six stacked lines
-  // one page of the list ran thirteen screens. Below `sm` the same cells take
-  // named places in a two-column grid: the employer with the status beside it,
-  // the job title on one line, the case number as the row's 44px target (the
-  // wage beside it when there is one), then filed and checked on one line across the row.
-  // CSS only, so the rows exist once and the table is unchanged from `sm` up.
+  // On a phone each row is four short lines by named places: caseListRow.ts.
   return (
-    <div className="mt-4 sm:overflow-x-auto">
+    <ScrollBox label={caption} className="mt-4">
       <table
         className={
-          "w-full border-collapse text-left text-base max-sm:block max-sm:[&_thead]:hidden " +
-          (withWage ? "sm:min-w-[1100px]" : "sm:min-w-[820px]")
+          LIST_TABLE + " " + (withWage ? "sm:min-w-[1100px]" : "sm:min-w-[820px]")
         }
       >
         <caption className="sr-only">{caption}</caption>
@@ -204,12 +195,10 @@ function Rows({
             <tr
               key={r.caseNumber}
               className={
-                "border-t-2 border-border/30 align-top max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto] max-sm:items-center max-sm:gap-x-3 max-sm:py-2.5 max-sm:[&>td]:p-0 max-sm:[&>td]:whitespace-normal " +
-                (showForm ? PHONE_ROW_WITH_FORM : PHONE_ROW)
+                LIST_ROW + " " + (showForm ? PHONE_ROW_WITH_FORM : PHONE_ROW)
               }
             >
-              {/* `whitespace-nowrap!`: the row's phone rule lets every other cell wrap, and a case number broken at a hyphen reads as two. */}
-              <td className="whitespace-nowrap px-3 py-3 font-mono text-base max-sm:whitespace-nowrap! max-sm:text-sm max-sm:[grid-area:num] max-sm:[&_a]:inline-flex max-sm:[&_a]:min-h-11 max-sm:[&_a]:items-center">
+              <td className={NUMBER_CELL}>
                 {/* PendingLink, not Link: /perm-case-status is dynamic, and a
                     number this site does not hold is asked of DOL live at
                     around 3.5 seconds. A bare link there is three seconds of
@@ -230,7 +219,7 @@ function Rows({
                 <CaseStatusChip status={r.status} />
               {" "}</td>
               <td className="px-3 py-3 font-bold max-sm:[grid-area:emp]"><EmployerName name={r.employerName} slug={r.employerSlug} />{" "}</td>
-              <td className="px-3 py-3 text-soft max-sm:truncate max-sm:text-sm max-sm:[grid-area:title]">{r.jobTitle ?? ""}{" "}</td>
+              <td className={"px-3 py-3 text-soft " + TITLE_ON_PHONE}>{r.jobTitle ?? ""}{" "}</td>
               {withWage ? (
                 <td className="whitespace-nowrap px-3 py-3 font-mono text-sm max-sm:empty:hidden max-sm:[grid-area:wage] max-sm:text-right">
                   {formatWage(wages?.get(r.caseNumber)?.wage ?? null, wages?.get(r.caseNumber)?.wageUnit ?? null) ?? ""}{" "}
@@ -261,7 +250,7 @@ function Rows({
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollBox>
   );
 }
 
@@ -292,7 +281,7 @@ function DisclosedRows({
   );
   const ordered = useMemo(() => sortRows(rows, columns, sort), [rows, columns, sort]);
   return (
-    <div className="mt-4 overflow-x-auto">
+    <ScrollBox label={caption} className="mt-4">
       <table className="w-full min-w-[1180px] border-collapse text-left text-base">
         <caption className="sr-only">{caption}</caption>
         <SortableHeader
@@ -335,7 +324,7 @@ function DisclosedRows({
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollBox>
   );
 }
 
@@ -577,7 +566,7 @@ export function FlagCaseBrowser({
   const withheld = false as boolean;
   const listUrl = useMemo(() => {
     if (withheld) return "skip" as const;
-    const p = new URLSearchParams({ action: "list", kind, numItems: String(PAGE_SIZE) });
+    const p = new URLSearchParams({ action: "list", kind, numItems: String(LIST_PAGE_SIZE) });
     if (month) p.set("month", month);
     if (order === "oldest") p.set("order", "oldest");
     const cursor = cursors[cursors.length - 1];
