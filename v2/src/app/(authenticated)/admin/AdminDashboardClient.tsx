@@ -185,7 +185,7 @@ export default function AdminDashboardClient() {
               inboxFilter && inboxFilter.held.length > 0
                 ? `${inboxFilter.held.length} held`
                 : delivery && delivery.outbox.queued > 0
-                  ? `${delivery.outbox.queued} waiting`
+                  ? `${delivery.outbox.queued} to send`
                   : null,
             content: (
               <div className="space-y-8">
