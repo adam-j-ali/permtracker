@@ -72,6 +72,54 @@ describe("CaseBrowser search by name", () => {
   });
 });
 
+/**
+ * First things first: the name search, then the cases. Every other filter is behind one control, which opens
+ * by itself when a link arrives with a filter set, and its fields still belong to the search.
+ */
+describe("CaseBrowser keeps its other filters behind one control", () => {
+  const fold = (container: HTMLElement) => container.querySelector("details") as HTMLDetailsElement;
+
+  it("is shut on a plain visit, with the name search and the first page of 25 before it", () => {
+    const { container } = render(<CaseBrowser meta={null} occupations={[]} showLookup={false} />);
+    expect(fold(container).open).toBe(false);
+    expect(fold(container).querySelector("summary")?.textContent).toMatch(/^\s*More filters\s*$/);
+    // The name box comes before the fold in the page's order.
+    const box = screen.getByPlaceholderText("Start of a name");
+    expect(box.compareDocumentPosition(fold(container)) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const listUrls = usePublicQuery.mock.calls.map((c) => String(c[0])).filter((u) => u.includes("numItems="));
+    expect(listUrls.length).toBeGreaterThan(0);
+    expect(listUrls.every((u) => u.includes("numItems=25"))).toBe(true);
+  });
+
+  it("says how many are on when the link carries a filter, and is open on a wide screen", () => {
+    search = "status=denied&fy=2025";
+    const phone = render(<CaseBrowser meta={null} occupations={[]} showLookup={false} />);
+    expect(fold(phone.container).open).toBe(false);
+    expect(fold(phone.container).querySelector("summary")?.textContent).toContain("2 on");
+    phone.unmount();
+
+    const wide = vi.spyOn(window, "matchMedia").mockImplementation(
+      (query: string) => ({ matches: true, media: query, addEventListener() {}, removeEventListener() {} }) as unknown as MediaQueryList,
+    );
+    const { container } = render(<CaseBrowser meta={null} occupations={[]} showLookup={false} />);
+    expect(fold(container).open).toBe(true);
+    wide.mockRestore();
+  });
+
+  it("sends the job title typed inside it with the name search", () => {
+    const { container } = render(<CaseBrowser meta={null} occupations={[]} showLookup={false} />);
+    const title = container.querySelector('input[name="title"]') as HTMLInputElement;
+    const form = container.querySelector("form") as HTMLFormElement;
+    // The field sits outside the form's own tags and names its form.
+    expect(form.contains(title)).toBe(false);
+    expect(title.getAttribute("form")).toBe(form.id);
+    fireEvent.change(title, { target: { value: "analyst" } });
+    fireEvent.change(screen.getByPlaceholderText("Start of a name"), { target: { value: "google" } });
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(searchUrls().some((u) => u.includes("text=google") && u.includes("title=analyst"))).toBe(true);
+  });
+});
+
 describe("CaseBrowser case lookup", () => {
   it("says what to type when the box is empty", () => {
     render(<CaseBrowser meta={null} occupations={[]} />);

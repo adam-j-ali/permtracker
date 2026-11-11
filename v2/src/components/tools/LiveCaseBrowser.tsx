@@ -6,12 +6,14 @@ import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 
 import { usePublicQuery } from "@/hooks/usePublicQuery";
 import { Pager } from "@/components/ui/pager";
+import { ScrollBox } from "@/components/ui/scroll-box";
 import { PendingLink } from "@/components/ui/pending-link";
 import { formatMonth } from "@/lib/dolFormat";
 // Type-only: `@/lib/db/liveCases` imports `server-only`, and a value import
 // here would be a build error. A type import compiles to nothing.
 import type { LiveKind, LiveListPage, LiveRemainderSummary, LiveSort } from "@/lib/db/liveCases";
 import { RequestFailed } from "@/components/tools/RequestFailed";
+import { LIST_PAGE_SIZE, LIST_ROW, LIST_TABLE, NUMBER_CELL, PHONE_ROW, TITLE_ON_PHONE } from "@/components/tools/caseListRow";
 import { INITIAL_RE, OTHER_INITIAL } from "@/lib/employerInitial";
 import { cn } from "@/lib/utils";
 import { formatInt } from "@/lib/format";
@@ -46,7 +48,6 @@ import { entityHref } from "@/lib/entityPayload";
  * of three, is a person.
  */
 
-const PAGE_SIZE = 50;
 
 const SORT_CHOICES: readonly { value: LiveSort; label: string }[] = [
   { value: "filed", label: "Filing date" },
@@ -130,7 +131,7 @@ export function LiveCaseBrowser({
     if (q) p.set("q", q);
     if (letter) p.set("letter", letter);
     if (sort !== "filed") p.set("sort", sort);
-    p.set("numItems", String(PAGE_SIZE));
+    p.set("numItems", String(LIST_PAGE_SIZE));
     const cursor = cursors[cursors.length - 1];
     if (cursor) p.set("cursor", cursor);
     return `/api/perm-cases?${p.toString()}`;
@@ -282,87 +283,89 @@ export function LiveCaseBrowser({
         ) : null}
 
         {!withheld && !failed ? (
-          <div
-            className={cn("mt-5 transition-opacity sm:overflow-x-auto", busy && "opacity-60")}
-            aria-busy={loading}
-          >
-            {/* On a phone each row is a card, as in the other case browsers. */}
-            <table className="w-full border-collapse text-left text-base max-sm:block max-sm:[&_thead]:hidden sm:min-w-[820px]">
-              <caption className="sr-only">
-                Live cases from DOL&apos;s case-status service, newest filing first
-              </caption>
-              <thead className="dark border-b border-black bg-[#141414] text-foreground">
-                <tr>
-                  {["Case", "Status", "Employer", "Job title", "Filed", "Seen"].map((h) => (
-                    <Fragment key={h}>
-                    <th
-                      scope="col"
-                      className="whitespace-nowrap px-3 py-3 text-sm font-bold"
-                    >
-                      {h}{" "}
-                    </th>
-                    </Fragment>
-                  ))}
-                </tr>
-              </thead>
-              <tbody translate="no" className="bg-card max-sm:block">
-                {loading && !shownPage ? (
+          <div className={cn("mt-5 transition-opacity", busy && "opacity-60")} aria-busy={loading}>
+            <ScrollBox label="Live PERM cases">
+              {/* On a phone each row is four short lines by named places: caseListRow.ts. */}
+              <table className={LIST_TABLE + " sm:min-w-[820px]"}>
+                <caption className="sr-only">
+                  Live cases from DOL&apos;s case-status service, newest filing first
+                </caption>
+                <thead className="dark border-b border-black bg-[#141414] text-foreground">
                   <tr>
-                    <td colSpan={6} className="px-3 py-6 text-muted-foreground">
-                      Loading the live list…
-                    {" "}</td>
-                  </tr>
-                ) : null}
-                {page && page.rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-3 py-6 text-muted-foreground">
-                      Nothing live matches that filter.
-                    {" "}</td>
-                  </tr>
-                ) : null}
-                {shownPage?.rows.map((r) => (
-                  <tr
-                    key={r.caseNumber}
-                    className="border-t border-border/30 align-top max-sm:grid max-sm:grid-cols-1 max-sm:gap-y-1 max-sm:px-3 max-sm:py-3 max-sm:[&>td]:p-0 max-sm:[&>td]:whitespace-normal"
-                  >
-                    <td className="whitespace-nowrap px-3 py-3 font-mono text-base max-sm:whitespace-nowrap!">
-                      {/* PendingLink: /perm-case-status is dynamic and can
-                          ask DOL live, so a bare link is seconds of silence. */}
-                      <PendingLink
-                        href={`/perm-case-status?case=${encodeURIComponent(r.caseNumber)}`}
-                        className="link max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
+                    {["Case", "Status", "Employer", "Job title", "Filed", "Seen"].map((h) => (
+                      <Fragment key={h}>
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap px-3 py-3 text-sm font-bold"
                       >
-                        {r.caseNumber}
-                      </PendingLink>
-                    {" "}</td>
-                    <td className="whitespace-nowrap px-3 py-3">
-                      {r.status ? <CaseStatusChip status={r.status} /> : <span className="text-muted-foreground">Unknown</span>}
-                    {" "}</td>
-                    <td className="px-3 py-3">
-                      {r.employerSlug ? (
-                        <IntentLink
-                          href={entityHref("employer", r.employerSlug)}
-                          className="link max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
-                        >
-                          {r.employerName}
-                        </IntentLink>
-                      ) : (
-                        <span className="font-bold">{r.employerName}</span>
-                      )}
-                    {" "}</td>
-                    <td className="px-3 py-3 text-soft max-sm:text-sm">{r.jobTitle ?? ""}{" "}</td>
-                    <td className="whitespace-nowrap px-3 py-3 font-mono text-sm max-sm:font-sans max-sm:text-muted-foreground">
-                      {r.filingDate ? <span className="sm:hidden">Filed </span> : null}
-                      {r.filingDate ?? ""}
-                    {" "}</td>
-                    <td className="whitespace-nowrap px-3 py-3 font-mono text-sm text-soft max-sm:font-sans max-sm:text-muted-foreground">
-                      {r.decidedSeen ? <span className="sm:hidden">Seen decided </span> : null}
-                      {r.decidedSeen ?? ""}
-                    {" "}</td>
+                        {h}{" "}
+                      </th>
+                      </Fragment>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody translate="no" className="bg-card max-sm:block">
+                  {loading && !shownPage ? (
+                    <tr>
+                      <td colSpan={6} className="px-3 py-6 text-muted-foreground">
+                        Loading the live list…
+                      {" "}</td>
+                    </tr>
+                  ) : null}
+                  {page && page.rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-3 py-6 text-muted-foreground">
+                        Nothing live matches that filter.
+                      {" "}</td>
+                    </tr>
+                  ) : null}
+                  {shownPage?.rows.map((r) => (
+                    <tr
+                      key={r.caseNumber}
+                      className={LIST_ROW + " " + PHONE_ROW}
+                    >
+                      <td className={NUMBER_CELL}>
+                        {/* PendingLink: /perm-case-status is dynamic and can
+                            ask DOL live, so a bare link is seconds of silence. */}
+                        <PendingLink
+                          href={`/perm-case-status?case=${encodeURIComponent(r.caseNumber)}`}
+                          className="link"
+                        >
+                          {r.caseNumber}
+                        </PendingLink>
+                      {" "}</td>
+                      <td className="whitespace-nowrap px-3 py-3 max-sm:[grid-area:status]">
+                        {r.status ? <CaseStatusChip status={r.status} /> : <span className="text-muted-foreground">Unknown</span>}
+                      {" "}</td>
+                      <td className="px-3 py-3 font-bold max-sm:[grid-area:emp]">
+                        {r.employerSlug ? (
+                          <IntentLink
+                            href={entityHref("employer", r.employerSlug)}
+                            className="link max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
+                          >
+                            {r.employerName}
+                          </IntentLink>
+                        ) : (
+                          <span className="font-bold">{r.employerName}</span>
+                        )}
+                      {" "}</td>
+                      <td className={"px-3 py-3 text-soft " + TITLE_ON_PHONE}>{r.jobTitle ?? ""}{" "}</td>
+                      {/* On a phone the two dates share one line across the row; the "Seen" cell is the wide table's. */}
+                      <td className="whitespace-nowrap px-3 py-3 font-mono text-sm max-sm:font-sans max-sm:text-muted-foreground max-sm:[grid-area:dates]">
+                        {r.filingDate ? <span className="sm:hidden">Filed </span> : null}
+                        <span>{r.filingDate ?? ""}</span>
+                        {r.decidedSeen ? (
+                          <span className="sm:hidden">{`${r.filingDate ? ", " : ""}seen decided ${r.decidedSeen}`}</span>
+                        ) : null}
+                      {" "}</td>
+                      <td className="whitespace-nowrap px-3 py-3 font-mono text-sm text-soft max-sm:hidden">
+                        {r.decidedSeen ?? ""}
+                      {" "}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ScrollBox>
           </div>
         ) : null}
 

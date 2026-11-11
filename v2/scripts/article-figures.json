@@ -242,7 +242,7 @@
  "guides/look-up-a-law-firm/firm-search": {
   "capture": {
    "url": "/perm-cases?firm=fragomen-del-rey-bernsen-loewy-llp",
-   "clip": "from:Browse the cases",
+   "clip": "from:Search by employer or law firm",
    "wait": 12000,
    "maxHeight": 1100
   },

@@ -12,6 +12,10 @@ const WIDE_TABLES = [
   "src/components/activity/ChangeTable.tsx",
   "src/components/entities/EmployerYears.tsx",
   "src/components/data/SevpRowsTable.tsx",
+  // The case lists (Nov 11): ten columns beside the rail are wider than most laptop screens.
+  "src/components/tools/CaseBrowser.tsx",
+  "src/components/tools/LiveCaseBrowser.tsx",
+  "src/components/tools/FlagCaseBrowser.tsx",
 ];
 
 const PLAIN_BOX = /<div\b[^>]*\boverflow-x-auto\b[^>]*>\s*(?:\{\/\*[^*]*\*\/\}\s*)?<table\b/g;

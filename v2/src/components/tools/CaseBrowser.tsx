@@ -10,8 +10,11 @@ import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 import { usePublicQuery } from "@/hooks/usePublicQuery";
 import { FilterCombobox } from "@/components/ui/filter-combobox";
 import { ChoiceRow } from "@/components/ui/choice-row";
+import { FilterFold } from "@/components/ui/filter-fold";
 import { Pager } from "@/components/ui/pager";
+import { ScrollBox } from "@/components/ui/scroll-box";
 import { LinkPending, PendingLink } from "@/components/ui/pending-link";
+import { LIST_PAGE_SIZE, LIST_ROW, LIST_TABLE, NUMBER_CELL, PHONE_ROW, TITLE_ON_PHONE } from "@/components/tools/caseListRow";
 // TYPE ONLY, and that is what makes it legal here. `@/lib/db/cases` imports
 // `server-only`, so a value import would be a build error in a client
 // component - correctly, because the token behind it grants access to the
@@ -127,7 +130,8 @@ export interface OccupationOption {
 type Dimension = "all" | "state" | "occupation" | "employer" | "attorney";
 type SortKey = "decisionDate" | "receivedDate" | "days" | "wage" | "employerName" | "caseNumber";
 
-const PAGE_SIZES = [50, 100, 250, 500];
+/** Rows a page can hold: the lists' own 25 first, and more for someone reading on a wide screen. */
+const PAGE_SIZES = [LIST_PAGE_SIZE, 50, 100, 250];
 const STATUS_LABEL: Record<Status, string> = {
   certified: "Certified",
   denied: "Denied",
@@ -225,8 +229,9 @@ export function CaseBrowser({
   });
   const [fiscalYear, setFiscalYear] = useState(() => params.get("fy") ?? "");
   const [order, setOrder] = useState<"newest" | "oldest">("newest");
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(LIST_PAGE_SIZE);
   const socBoxId = useId();
+  const formId = useId();
   // A code typed ("15-1252") finds its title too.
   const occupationOptions = useMemo(
     () => occupations.map((o) => ({ value: o.code, label: `${o.name} (${formatInt(o.total)})`, keywords: o.code })),
@@ -522,6 +527,18 @@ export function CaseBrowser({
   const displayRows: CaseRow[] =
     shown.length > 0 ? shown : tableBusy ? prevRows : [];
 
+  // How many of the folded filters are set: the fold opens on a filtered view and says the count.
+  const activeFilters = [
+    titleInput.trim() !== "",
+    fromInput !== "",
+    toInput !== "",
+    dimension !== "all",
+    status !== "",
+    fiscalYear !== "",
+    order !== "newest",
+    pageSize !== LIST_PAGE_SIZE,
+  ].filter(Boolean).length;
+
   return (
     <div className="flex flex-col gap-8">
       {/* ---------------------------------------------------------------- */}
@@ -624,7 +641,7 @@ export function CaseBrowser({
           </div>
         ) : null}
         {caseHit ? (
-          <div className="mt-4 border-t-2 border-[var(--object-border)] sm:overflow-x-auto">
+          <ScrollBox label={`Case ${caseHit.caseNumber}`} className="mt-4 border-t-2 border-[var(--object-border)]">
             <CaseTable
               rows={[caseHit]}
               columns={columns}
@@ -634,170 +651,18 @@ export function CaseBrowser({
               onSort={sortBy}
               caption={`Case ${caseHit.caseNumber}`}
             />
-          </div>
+          </ScrollBox>
         ) : null}
       </section>
       ) : null}
 
       {/* ---------------------------------------------------------------- */}
-      {/* Filters                                                           */}
+      {/* The name search, then every other filter behind one control       */}
       {/* ---------------------------------------------------------------- */}
       <section>
-        <h2 className="font-heading text-xl font-bold">Browse the cases</h2>{" "}
-
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
-          <label className="block">
-            <span className={LABEL}>Slice by</span>{" "}
-            <select
-              value={dimension}
-              onChange={(e) => pickDimension(e.target.value as Dimension)}
-              className={CONTROL}
-            >
-              {/* The `{" "}` between adjacent options is the same glued-JSX
-                  fix the rest of the app carries. JSX drops the newline
-                  between two elements, so an extractor walking the DOM reads
-                  "EverythingStateOccupation" as one run. Whitespace between
-                  options is valid inside a select and is ignored when the
-                  control is rendered, so it costs nothing visually.
-
-                  Only the boundaries where a word character meets a word
-                  character are worth spacing. The options built by `.map()`
-                  below all end in a count - "Alabama (1,234)" - so their
-                  boundary is ")" against a letter, which no reader or
-                  extractor mistakes for a compound word. That is the same
-                  predicate `scripts/audit_glued_text.py` uses, and it is why
-                  it flagged three pairs on this page rather than dozens. */}
-              <option value="all">Everything</option>{" "}
-              <option value="state">State</option>{" "}
-              <option value="occupation">Occupation</option>{" "}
-              {employerSlug ? <option value="employer">Employer</option> : null}{" "}
-              {attorneySlug ? <option value="attorney">Law firm</option> : null}
-            </select>
-          </label>
-
-          {dimension === "state" ? (
-            <label className="block">
-              <span className={LABEL}>State</span>{" "}
-              <select
-                value={stateValue}
-                onChange={(e) => setStateValue(e.target.value)}
-                className={CONTROL}
-              >
-                <option value="">Pick a state</option>
-                {(meta?.byState ?? []).map((s) => (
-                  <option key={s.state || "none"} value={s.state}>
-                    {s.state === "" ? "Not published" : s.state} ({formatInt(s.total)})
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-
-          {dimension === "occupation" ? (
-            // Hundreds of occupations: a box you can type a title or a code into, showing the pick whole.
-            <div>
-              <label htmlFor={socBoxId} className={`block ${LABEL}`}>
-                Occupation
-              </label>{" "}
-              <FilterCombobox
-                id={socBoxId}
-                noun="occupations"
-                placeholder="Pick an occupation"
-                options={occupationOptions}
-                value={socValue}
-                onChange={setSocValue}
-                className={CONTROL}
-              />
-            </div>
-          ) : null}
-
-          {dimension === "employer" && employerSlug ? (
-            <div className="flex min-h-[44px] items-center justify-between gap-2 border-2 border-input bg-tint px-3 shadow-hard-sm">
-              <span className="truncate text-base font-bold">{employerSlug}</span>{" "}
-              <button type="button" onClick={clearAll} className="shrink-0 text-sm underline">
-                Clear
-              </button>
-            </div>
-          ) : null}
-
-          {dimension === "attorney" && attorneySlug ? (
-            <div className="flex min-h-[44px] items-center justify-between gap-2 border-2 border-input bg-tint px-3 shadow-hard-sm">
-              <span className="truncate text-base font-bold">{attorneySlug}</span>{" "}
-              <button type="button" onClick={clearAll} className="shrink-0 text-sm underline">
-                Clear
-              </button>
-            </div>
-          ) : null}
-
-          <label className="block">
-            <span className={LABEL}>Outcome</span>{" "}
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value as Status | "")}
-              className={CONTROL}
-            >
-              <option value="">Any outcome</option>
-              {(meta?.byStatus ?? []).map((s) => (
-                <option key={s.status} value={s.status}>
-                  {STATUS_LABEL[s.status]} ({formatInt(s.count)})
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className={LABEL}>Fiscal year of decision</span>{" "}
-            <select
-              value={fiscalYear}
-              onChange={(e) => setFiscalYear(e.target.value)}
-              className={CONTROL}
-            >
-              <option value="">Every year in the window</option>
-              {(meta?.byFiscalYear ?? []).map((y) => (
-                <option key={y.fiscalYear} value={y.fiscalYear}>
-                  FY{y.fiscalYear} ({formatInt(y.total)})
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
-          <ChoiceRow
-            label="Order"
-            labelClassName={`block ${LABEL}`}
-            options={ORDER_CHOICES}
-            value={order}
-            onChange={setOrder}
-          />{" "}
-          <label className="block">
-            <span className={LABEL}>Rows per page</span>{" "}
-            <select
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              className={CONTROL}
-            >
-              {PAGE_SIZES.map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex items-end">
-            <button type="button" onClick={clearAll} className={BUTTON}>
-              Clear filters
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ---------------------------------------------------------------- */}
-      {/* Search by name                                                    */}
-      {/* ---------------------------------------------------------------- */}
-      <section className="object p-5 sm:p-6">
         <h2 className="font-heading text-lg font-bold">Search by employer or law firm</h2>{" "}
         <form
+          id={formId}
           className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[auto_1fr_auto] [&>*]:min-w-0"
           onSubmit={(e) => {
             e.preventDefault();
@@ -866,52 +731,208 @@ export function CaseBrowser({
           >
             {nameSearchPending ? "Searching…" : "Search"}
           </button>{" "}
-          {/* Narrowing: the two facts an applicant has besides the employer.
-              Optional, and they narrow both halves - the published cases by
-              the month DOL received them, the live ones by filing date. */}
-          <label className="block sm:col-start-2">
-            <span className="mb-1 block text-sm font-bold">Job title contains</span>{" "}
-            <input
-              type="text"
-              name="title"
-              value={titleInput}
-              onChange={(e) => setTitleInput(e.target.value)}
-              placeholder="e.g. software, analyst"
-              maxLength={80}
-              autoComplete="off"
-              className={CONTROL}
-            />
-          </label>{" "}
-          <div className="grid grid-cols-2 gap-3 sm:col-start-2 [&>*]:min-w-0">
-            <label className="block">
-              <span className="mb-1 block text-sm font-bold">Filed from</span>{" "}
-              <input
-                type="month"
-                name="from"
-                value={fromInput}
-                onChange={(e) => setFromInput(e.target.value)}
-                placeholder="YYYY-MM"
-                className={CONTROL + " min-w-0"}
-              />
-            </label>{" "}
-            <label className="block">
-              <span className="mb-1 block text-sm font-bold">Filed to</span>{" "}
-              <input
-                type="month"
-                name="to"
-                value={toInput}
-                onChange={(e) => setToInput(e.target.value)}
-                placeholder="YYYY-MM"
-                className={CONTROL + " min-w-0"}
-              />
-            </label>
-          </div>
         </form>
         {nameNote ? (
           <p role="status" className="mt-3 text-base font-semibold">
             {nameNote}
           </p>
         ) : null}
+        {/* First things first: the search, then the cases. What narrows them is one tap away, and opens
+            by itself when a link arrives with a filter set. The three name-search fields sit outside the
+            form's own tags, so each names its form. */}
+        <FilterFold className="mt-3" active={activeFilters} shutOn={nameSubmit}>
+          <p className={LABEL}>For a name search</p>{" "}
+          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 [&>*]:min-w-0">
+            <label className="block">
+              <span className="mb-1 block text-sm font-bold">Job title contains</span>{" "}
+              <input
+                type="text"
+                name="title"
+                form={formId}
+                value={titleInput}
+                onChange={(e) => setTitleInput(e.target.value)}
+                placeholder="e.g. software, analyst"
+                maxLength={80}
+                autoComplete="off"
+                className={CONTROL}
+              />
+            </label>{" "}
+            <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0">
+              <label className="block">
+                <span className="mb-1 block text-sm font-bold">Filed from</span>{" "}
+                <input
+                  type="month"
+                  name="from"
+                  form={formId}
+                  value={fromInput}
+                  onChange={(e) => setFromInput(e.target.value)}
+                  placeholder="YYYY-MM"
+                  className={CONTROL + " min-w-0"}
+                />
+              </label>{" "}
+              <label className="block">
+                <span className="mb-1 block text-sm font-bold">Filed to</span>{" "}
+                <input
+                  type="month"
+                  name="to"
+                  form={formId}
+                  value={toInput}
+                  onChange={(e) => setToInput(e.target.value)}
+                  placeholder="YYYY-MM"
+                  className={CONTROL + " min-w-0"}
+                />
+              </label>
+            </div>
+          </div>{" "}
+          <p className={`mt-6 ${LABEL}`}>For the whole list, when no name is searched</p>{" "}
+          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
+            <label className="block">
+              <span className={LABEL}>Slice by</span>{" "}
+              <select
+                value={dimension}
+                onChange={(e) => pickDimension(e.target.value as Dimension)}
+                className={CONTROL}
+              >
+                {/* The `{" "}` between adjacent options is the same glued-JSX
+                    fix the rest of the app carries. JSX drops the newline
+                    between two elements, so an extractor walking the DOM reads
+                    "EverythingStateOccupation" as one run. Whitespace between
+                    options is valid inside a select and is ignored when the
+                    control is rendered, so it costs nothing visually.
+
+                    Only the boundaries where a word character meets a word
+                    character are worth spacing. The options built by `.map()`
+                    below all end in a count - "Alabama (1,234)" - so their
+                    boundary is ")" against a letter, which no reader or
+                    extractor mistakes for a compound word. That is the same
+                    predicate `scripts/audit_glued_text.py` uses, and it is why
+                    it flagged three pairs on this page rather than dozens. */}
+                <option value="all">Everything</option>{" "}
+                <option value="state">State</option>{" "}
+                <option value="occupation">Occupation</option>{" "}
+                {employerSlug ? <option value="employer">Employer</option> : null}{" "}
+                {attorneySlug ? <option value="attorney">Law firm</option> : null}
+              </select>
+            </label>
+
+            {dimension === "state" ? (
+              <label className="block">
+                <span className={LABEL}>State</span>{" "}
+                <select
+                  value={stateValue}
+                  onChange={(e) => setStateValue(e.target.value)}
+                  className={CONTROL}
+                >
+                  <option value="">Pick a state</option>
+                  {(meta?.byState ?? []).map((s) => (
+                    <option key={s.state || "none"} value={s.state}>
+                      {s.state === "" ? "Not published" : s.state} ({formatInt(s.total)})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+
+            {dimension === "occupation" ? (
+              // Hundreds of occupations: a box you can type a title or a code into, showing the pick whole.
+              <div>
+                <label htmlFor={socBoxId} className={`block ${LABEL}`}>
+                  Occupation
+                </label>{" "}
+                <FilterCombobox
+                  id={socBoxId}
+                  noun="occupations"
+                  placeholder="Pick an occupation"
+                  options={occupationOptions}
+                  value={socValue}
+                  onChange={setSocValue}
+                  className={CONTROL}
+                />
+              </div>
+            ) : null}
+
+            {dimension === "employer" && employerSlug ? (
+              <div className="flex min-h-[44px] items-center justify-between gap-2 border-2 border-input bg-tint px-3 shadow-hard-sm">
+                <span className="truncate text-base font-bold">{employerSlug}</span>{" "}
+                <button type="button" onClick={clearAll} className="shrink-0 text-sm underline">
+                  Clear
+                </button>
+              </div>
+            ) : null}
+
+            {dimension === "attorney" && attorneySlug ? (
+              <div className="flex min-h-[44px] items-center justify-between gap-2 border-2 border-input bg-tint px-3 shadow-hard-sm">
+                <span className="truncate text-base font-bold">{attorneySlug}</span>{" "}
+                <button type="button" onClick={clearAll} className="shrink-0 text-sm underline">
+                  Clear
+                </button>
+              </div>
+            ) : null}
+
+            <label className="block">
+              <span className={LABEL}>Outcome</span>{" "}
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as Status | "")}
+                className={CONTROL}
+              >
+                <option value="">Any outcome</option>
+                {(meta?.byStatus ?? []).map((s) => (
+                  <option key={s.status} value={s.status}>
+                    {STATUS_LABEL[s.status]} ({formatInt(s.count)})
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className={LABEL}>Fiscal year of decision</span>{" "}
+              <select
+                value={fiscalYear}
+                onChange={(e) => setFiscalYear(e.target.value)}
+                className={CONTROL}
+              >
+                <option value="">Every year in the window</option>
+                {(meta?.byFiscalYear ?? []).map((y) => (
+                  <option key={y.fiscalYear} value={y.fiscalYear}>
+                    FY{y.fiscalYear} ({formatInt(y.total)})
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
+            <ChoiceRow
+              label="Order"
+              labelClassName={`block ${LABEL}`}
+              options={ORDER_CHOICES}
+              value={order}
+              onChange={setOrder}
+              // Two columns wide, so its two choices sit side by side.
+              className="sm:col-span-2"
+            />{" "}
+            <label className="block">
+              <span className={LABEL}>Rows per page</span>{" "}
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className={CONTROL}
+              >
+                {PAGE_SIZES.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="flex items-end">
+              <button type="button" onClick={clearAll} className={BUTTON}>
+                Clear filters
+              </button>
+            </div>
+          </div>
+        </FilterFold>
         {searching && nameField === "employer" && liveHits.length > 0 ? (
           /* The live strip: filings newer than the last disclosure file, from
              DOL's live feed, each linking to its own status page. */
@@ -1072,21 +1093,19 @@ export function CaseBrowser({
         ) : null}
 
         {displayRows.length > 0 ? (
-          <div
-            className={`mt-4 border-t-2 border-[var(--object-border)] transition-opacity sm:overflow-x-auto ${
-              tableBusy ? "opacity-60" : ""
-            }`}
-            aria-busy={tableBusy}
-          >
-            <CaseTable
-              rows={displayRows}
-              columns={columns}
-              sortable={!searching && sortable}
-              sortKey={sortKey}
-              sortAsc={sortAsc}
-              onSort={sortBy}
-              caption="PERM cases with outcome, employer, job, wage and decision dates"
-            />
+          <div className={`mt-4 transition-opacity ${tableBusy ? "opacity-60" : ""}`} aria-busy={tableBusy}>
+            {/* Ten columns are wider than most screens beside the rail: the box scrolls, and a keyboard can reach it. */}
+            <ScrollBox label="Decided PERM cases" className="border-t-2 border-[var(--object-border)]">
+              <CaseTable
+                rows={displayRows}
+                columns={columns}
+                sortable={!searching && sortable}
+                sortKey={sortKey}
+                sortAsc={sortAsc}
+                onSort={sortBy}
+                caption="PERM cases with outcome, employer, job, wage and decision dates"
+              />
+            </ScrollBox>
           </div>
         ) : null}
 
@@ -1134,10 +1153,8 @@ function CaseTable({
   caption: string;
 }) {
   return (
-    // ON A PHONE EACH ROW IS A CARD, as in the wage-request and LCA browsers:
-    // number, status, employer, title, wage and the dates, one to a line. CSS
-    // only, so the rows exist once and the table is unchanged from `sm` up.
-    <table className="w-full border-collapse text-left text-base max-sm:block max-sm:[&_thead]:hidden sm:min-w-[880px]">
+    // On a phone each row is four short lines by named places: caseListRow.ts.
+    <table className={LIST_TABLE + " sm:min-w-[880px]"}>
       <caption className="sr-only">{caption}</caption>
       <thead className="dark border-b border-black bg-[#141414] text-foreground">
         <tr>
@@ -1182,27 +1199,26 @@ function CaseTable({
         {rows.map((r) => (
           <tr
             key={r.caseNumber}
-            className="border-t border-border/30 align-top max-sm:grid max-sm:grid-cols-1 max-sm:gap-y-1 max-sm:px-3 max-sm:py-3 max-sm:[&>td]:p-0 max-sm:[&>td]:whitespace-normal"
+            className={LIST_ROW + " " + PHONE_ROW}
           >
-            <td className="whitespace-nowrap px-3 py-3 font-mono text-base max-sm:whitespace-nowrap!">
+            <td className={NUMBER_CELL}>
               {/* Every case number opens its own page, as in the live list: DOL's
                   status today, the history our record holds and the alert box. */}
               <PendingLink
                 href={`/perm-case-status?case=${encodeURIComponent(r.caseNumber)}`}
-                className="link max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
+                className="link"
               >
                 {r.caseNumber}
               </PendingLink>
             {" "}</td>
-            <td className="whitespace-nowrap px-3 py-3">
+            <td className="whitespace-nowrap px-3 py-3 max-sm:[grid-area:status]">
               <CaseStatusChip status={STATUS_LABEL[r.status]} />
             {" "}</td>
-            <td className="px-3 py-3">
+            <td className="px-3 py-3 font-bold max-sm:[grid-area:emp]">
               {r.employerSlug ? (
                 <IntentLink
                   href={entityHref("employer", r.employerSlug)}
-                  // On a phone card the employer and firm links sit one above
-                  // the other; each is a 44px target, the site's floor.
+                  // 44px on a phone, the site's tap floor.
                   className="link max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
                 >
                   {r.employerName}
@@ -1213,11 +1229,12 @@ function CaseTable({
               {r.attorneyName ? (
                 <>
                   {" "}
-                  <span className="block text-sm text-muted-foreground">
+                  {/* The law firm is the wide table's: on a phone it's on the case's own page. */}
+                  <span className="block text-sm font-normal text-muted-foreground max-sm:hidden">
                     {r.attorneySlug ? (
                       <IntentLink
                         href={entityHref("attorney", r.attorneySlug)}
-                        className="link max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
+                        className="link"
                       >
                         {r.attorneyName}
                       </IntentLink>
@@ -1228,7 +1245,7 @@ function CaseTable({
                 </>
               ) : null}{" "}
             </td>
-            <td className="px-3 py-3 max-sm:text-sm max-sm:text-soft">
+            <td className={"px-3 py-3 max-sm:text-soft " + TITLE_ON_PHONE}>
               {r.jobTitle || <span className="max-sm:hidden">—</span>}
             {" "}</td>
             <td className="whitespace-nowrap px-3 py-3 max-sm:hidden">{r.state || "—"}{" "}</td>
@@ -1247,18 +1264,18 @@ function CaseTable({
                 </>
               ) : null}{" "}
             </td>
-            <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums max-sm:text-left max-sm:text-sm">
-              <span className="sm:hidden">Wage </span>
+            <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums max-sm:text-sm max-sm:[grid-area:wage]">
               {fmtWage(r.wage)}
             {" "}</td>
-            <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-base tabular-nums max-sm:text-left max-sm:font-sans max-sm:text-sm max-sm:text-muted-foreground">
+            {/* On a phone the filing day and the wait share one line across the row: the list is in decision order, so
+                the wait says more there than the decision day repeated. The "Decided" cell is the wide table's. */}
+            <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-base tabular-nums max-sm:text-left max-sm:font-sans max-sm:text-sm max-sm:text-muted-foreground max-sm:[grid-area:dates]">
               <span className="sm:hidden">Filed </span>
-              {r.receivedDate}
+              <span>{r.receivedDate}</span>
+              <span className="sm:hidden">{`, decided in ${formatInt(r.days)} ${r.days === 1 ? "day" : "days"}`}</span>
             {" "}</td>
-            <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-base tabular-nums max-sm:text-left max-sm:font-sans max-sm:text-sm max-sm:text-muted-foreground">
-              <span className="sm:hidden">Decided </span>
+            <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-base tabular-nums max-sm:hidden">
               {r.decisionDate}
-              <span className="sm:hidden">{`, ${formatInt(r.days)} days`}</span>
             {" "}</td>
             <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums max-sm:hidden">
               {formatInt(r.days)}
