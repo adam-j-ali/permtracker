@@ -33,7 +33,7 @@ When this file and the code disagree, the code is right and this file is stale.
 6. **Sentence case everywhere.** No `uppercase`, no wide letter spacing.
 7. **Mono only for case numbers, dates, the board and figures** in tables and ticks.
 8. **One moment of motion at most.** Hover changes a colour or an underline, and press
-   darkens a fill. Nothing lifts or scales. The queue tape fills once on scroll.
+   darkens a fill. Nothing lifts or scales.
 9. **The floor:** 16px body, 14px smallest text, 4.5:1 text contrast (3:1 large),
    3:1 for anything a reader must see to understand (control outlines, chart
    marks), 44px tap targets, full keyboard use, reduced motion honoured.

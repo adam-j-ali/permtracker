@@ -65,9 +65,6 @@ export const URGENCY_COLORS: Record<Urgency, string> = {
  * - Calendar: All case milestones for timeline visualization (camelCase)
  * - Dashboard: Actionable deadlines requiring user attention (snake_case)
  *
- * For bidirectional conversion between conventions, use the mapping utilities:
- * @see convex/lib/deadlineTypeMapping.ts
- *
  * Extended with filing window types for calendar-specific events.
  */
 export type DeadlineType =

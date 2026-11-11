@@ -31,8 +31,6 @@ export type UrgencyGroup = "overdue" | "thisWeek" | "thisMonth" | "later";
  * camelCase for frontend timeline visualization. The two serve different purposes:
  * - Dashboard: Actionable deadlines requiring user attention (snake_case)
  * - Calendar: All case milestones for timeline display (camelCase)
- *
- * @see ./deadlineTypeMapping.ts for bidirectional conversion between conventions
  */
 export type DeadlineType =
   | "pwd_expiration"
