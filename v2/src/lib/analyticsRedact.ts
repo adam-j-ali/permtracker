@@ -35,8 +35,10 @@ const IDENTIFIERS: readonly RegExp[] = [
   /\bA-\d{5}-\d{5}\b/gi,
   // USCIS receipt numbers (the USCIS lookup keeps saved ones on screen).
   /\b[A-Z]{3}\d{10}\b/gi,
-  // Email addresses.
-  /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g,
+  // Email addresses. Every run is bounded (64 before the @, 63 a label, as the mail
+  // standards have it), so the work stays in step with the text's length: unbounded,
+  // one 200,000-character run of letters took a minute to rule out.
+  /[\w.+-]{1,64}@[\w-]{1,63}(?:\.[\w-]{1,63})+/g,
 ];
 
 const REDACTED = "[redacted]";
@@ -67,8 +69,8 @@ const ADDRESS_FIELDS = [
  */
 const PRIVATE_PARAMS = /([?&](?:case|receipt|t)=)[^&#]*/gi;
 
-/** An email address as an address bar prints it. */
-const ENCODED_EMAIL = /[\w.+-]+%40[\w-]+(?:\.[\w-]+)+/gi;
+/** An email address as an address bar prints it, bounded like the plain one above. */
+const ENCODED_EMAIL = /[\w.+-]{1,64}%40[\w-]{1,63}(?:\.[\w-]{1,63})+/gi;
 
 /**
  * Take what identifies a filing or a person out of every page address in one bag of
@@ -84,7 +86,9 @@ export function redactAddresses(props: Record<string, unknown> | undefined): voi
   for (const key of ADDRESS_FIELDS) {
     const v = props[key];
     if (typeof v !== "string") continue;
-    props[key] = redactIdentifiers(v.replace(PRIVATE_PARAMS, "$1redacted").replace(ENCODED_EMAIL, REDACTED));
+    let address = v.replace(PRIVATE_PARAMS, "$1redacted");
+    if (address.includes("%40")) address = address.replace(ENCODED_EMAIL, REDACTED);
+    props[key] = redactIdentifiers(address);
   }
 }
 
