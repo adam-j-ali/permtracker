@@ -34,6 +34,7 @@ import { verifyExpiringToken } from "./lib/expiringToken";
 import { firmBadLinkPage, firmEditPage, type EditNotice } from "./lib/firmClaimPages";
 import { profileFromForm, type ProfileInput } from "../src/lib/firmProfile";
 import { SITE_URL } from "./lib/links";
+import { QUEUE_CANCEL_ASK, QUEUE_CONFIRM_ASK, queueConfirmedWords } from "./lib/queueAlertPages";
 import { createLogger } from "./lib/logging";
 import { watchedSecretOk, sharedSecretOk } from "./watchedCases";
 import { checkTurnstile } from "./lib/turnstileVerify";
@@ -404,7 +405,7 @@ http.route({
     if (!token) return badLinkPage();
     return messagePage(
       "Confirm your queue alert",
-      "We'll email you once, on the day the Department of Labor's PERM analyst-review queue reaches your filing month. That's the only message you'll get.",
+      QUEUE_CONFIRM_ASK,
       {
         post: `/queue-alert/confirm?token=${encodeURIComponent(token)}`,
         label: "Confirm",
@@ -430,9 +431,7 @@ http.route({
 
     return messagePage(
       "You're on the list",
-      result.alreadyReached
-        ? `DOL's PERM analyst-review queue has already reached ${result.filingMonth}. Your alert is on its way now, and that's the only message you'll get. Current figures are always on permtracker.app/perm-processing-times.`
-        : `We'll email you once, when the Department of Labor's PERM analyst-review queue reaches ${result.filingMonth}. That's the only message you'll get, and DOL's current figures are always on permtracker.app/perm-processing-times.`,
+      queueConfirmedWords(result.queue, result.filingMonth, result.alreadyReached),
       undefined,
       confirmOffers("queue"),
     );
@@ -462,7 +461,7 @@ http.route({
     if (!token) return badLinkPage();
     return messagePage(
       "Cancel your queue alert?",
-      "You'll stop receiving the one-time alert about the PERM queue reaching your filing month.",
+      QUEUE_CANCEL_ASK,
       { post: `/queue-alert/unsubscribe?token=${encodeURIComponent(token)}` },
     );
   }),

@@ -41,6 +41,7 @@ import { weeklyUnsubscribeUrl } from "./lib/prefsLink";
 import { extractUserIdFromAction } from "./lib/auth";
 import { rateLimiter } from "./rateLimitConfig";
 import { SITE_URL } from "./lib/links";
+import { NOTIFICATION_SETTINGS_PATH } from "./lib/mailKinds";
 import { deadlineDigestWords } from "./lib/deadlineDigestWords";
 
 // App URL for generating links (falls back to production URL)
@@ -73,7 +74,7 @@ function buildEmailUrls(caseId?: string): { appUrl: string; caseUrl?: string; se
   return {
     appUrl,
     caseUrl: caseId ? `${appUrl}/cases/${caseId}` : undefined,
-    settingsUrl: `${appUrl}/settings/notifications`,
+    settingsUrl: `${appUrl}${NOTIFICATION_SETTINGS_PATH}`,
   };
 }
 
@@ -387,7 +388,7 @@ export const sendWeeklyDigestEmail = internalAction({
     }
 
     const appUrl = getAppUrl();
-    const settingsUrl = `${appUrl}/settings`;
+    const settingsUrl = `${appUrl}${NOTIFICATION_SETTINGS_PATH}`;
 
     // One-click unsubscribe (weekly digest only). Omitted if the secret isn't set.
     const unsubscribeUrl = await buildUnsubscribeUrl(args.to);
@@ -510,7 +511,7 @@ export const sendDeadlineDigestEmail = internalAction({
         userName: args.userName,
         items,
         baseUrl: appUrl,
-        settingsUrl: `${appUrl}/settings`,
+        settingsUrl: `${appUrl}${NOTIFICATION_SETTINGS_PATH}`,
       })
     );
 
@@ -568,7 +569,7 @@ export const sendTestEmail = action({
     await rateLimiter.limit(ctx, "testEmailDaily", { key: callerId, throws: true });
 
     const appUrl = getAppUrl();
-    const settingsUrl = `${appUrl}/settings/notifications`;
+    const settingsUrl = `${appUrl}${NOTIFICATION_SETTINGS_PATH}`;
 
     // Render branded test email template
     const { render } = await import("@react-email/render");

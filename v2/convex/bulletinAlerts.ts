@@ -614,7 +614,7 @@ export const sweep = internalAction({
             const { BulletinMoved } = await import("../src/emails/BulletinMoved");
             return BulletinMoved({
               seriesLabel: label,
-              bulletinMonth: latest.month,
+              bulletinMonth: monthLabel(latest.month),
               fromCutoff: fromWords,
               toCutoff: toWords,
               unsubscribeUrl: unsubUrl,
