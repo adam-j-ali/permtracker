@@ -50,21 +50,24 @@ type DeadlineTypeKey = typeof DEADLINE_TYPES[number]["key"];
 // ============================================================================
 
 export interface NotificationPreferencesSectionProps {
+  // Every key is required, so a switch the page forgets to pass fails the
+  // typecheck: a missing one starts from its default and reads "on" for an
+  // account that turned it off.
   profile: {
-    emailNotificationsEnabled?: boolean;
-    emailDeadlineReminders?: boolean;
-    emailDeadlineReminderPwd?: boolean;
-    emailDeadlineReminderRecruitment?: boolean;
-    emailDeadlineReminderEta9089?: boolean;
-    emailDeadlineReminderI140?: boolean;
-    emailDeadlineReminderRfi?: boolean;
-    emailDeadlineReminderRfe?: boolean;
-    emailStatusUpdates?: boolean;
-    emailWeeklyDigest?: boolean;
-    watchSavedCases?: boolean;
-    pushNotificationsEnabled?: boolean;
-    reminderDaysBefore?: number[];
-    urgentDeadlineDays?: number;
+    emailNotificationsEnabled: boolean | undefined;
+    emailDeadlineReminders: boolean | undefined;
+    emailDeadlineReminderPwd: boolean | undefined;
+    emailDeadlineReminderRecruitment: boolean | undefined;
+    emailDeadlineReminderEta9089: boolean | undefined;
+    emailDeadlineReminderI140: boolean | undefined;
+    emailDeadlineReminderRfi: boolean | undefined;
+    emailDeadlineReminderRfe: boolean | undefined;
+    emailStatusUpdates: boolean | undefined;
+    emailWeeklyDigest: boolean | undefined;
+    watchSavedCases: boolean | undefined;
+    pushNotificationsEnabled: boolean | undefined;
+    reminderDaysBefore: number[] | undefined;
+    urgentDeadlineDays: number | undefined;
   };
   userEmail: string;
 }
