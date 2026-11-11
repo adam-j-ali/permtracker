@@ -13,6 +13,7 @@
 import { Text, Section, Link } from "@react-email/components";
 import { EmailLayout } from "./components";
 import { SITE_URL } from "../../convex/lib/links";
+import { NOTIFICATION_SETTINGS_PATH } from "../../convex/lib/mailKinds";
 
 export interface ReengagementNudgeProps {
   /** First name (or display name) of the recipient. */
@@ -29,7 +30,7 @@ export function ReengagementNudge({
   userName,
   activeCaseCount,
   baseUrl = SITE_URL,
-  settingsUrl = `${SITE_URL}/settings`,
+  settingsUrl = `${SITE_URL}${NOTIFICATION_SETTINGS_PATH}`,
   unsubscribeUrl,
 }: ReengagementNudgeProps) {
   const casesAre = activeCaseCount === 1 ? "case is" : "cases are";
@@ -118,7 +119,7 @@ ReengagementNudge.PreviewProps = {
   userName: "Jake",
   activeCaseCount: 3,
   baseUrl: SITE_URL,
-  settingsUrl: `${SITE_URL}/settings`,
+  settingsUrl: `${SITE_URL}${NOTIFICATION_SETTINGS_PATH}`,
   unsubscribeUrl: `${SITE_URL}/unsubscribe?token=SAMPLE`,
 } satisfies ReengagementNudgeProps;
 

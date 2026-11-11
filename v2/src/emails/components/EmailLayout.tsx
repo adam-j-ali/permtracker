@@ -24,6 +24,7 @@ import * as React from "react";
 
 import { POSTAL_ADDRESS } from "../../lib/constants/about";
 import { SITE_URL } from "../../../convex/lib/links";
+import { NOTIFICATION_SETTINGS_PATH } from "../../../convex/lib/mailKinds";
 
 export interface EmailLayoutProps {
   /** Preview text shown in email clients */
@@ -245,7 +246,7 @@ const RESPONSIVE_STYLES = [
 export function EmailLayout({
   previewText,
   children,
-  settingsUrl = `${SITE_URL}/settings`,
+  settingsUrl = `${SITE_URL}${NOTIFICATION_SETTINGS_PATH}`,
   settingsLabel = "Manage notification settings",
   footerText,
   hideSettingsLink = false,

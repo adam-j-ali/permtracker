@@ -22,6 +22,7 @@ import type { DigestContent, DigestDeadline, DigestCaseUpdate } from "../../conv
 import { formatRelativeDays } from "../../convex/lib/digestHelpers";
 import { MS_PER_DAY } from "../../convex/lib/time";
 import { SITE_URL } from "../../convex/lib/links";
+import { NOTIFICATION_SETTINGS_PATH } from "../../convex/lib/mailKinds";
 import { urgencyHeadStyle, urgencyHeadText, urgencyRow, urgencyRowLast } from "./components/emailStyles";
 
 export interface WeeklyDigestProps {
@@ -42,7 +43,7 @@ export interface WeeklyDigestProps {
 export function WeeklyDigest({
   digestContent,
   baseUrl = SITE_URL,
-  settingsUrl = `${SITE_URL}/settings`,
+  settingsUrl = `${SITE_URL}${NOTIFICATION_SETTINGS_PATH}`,
   unsubscribeUrl,
 }: WeeklyDigestProps) {
   const {

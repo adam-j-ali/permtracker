@@ -27,6 +27,7 @@ import {
 } from "../../convex/lib/digestHelpers";
 import type { DeadlineDigestItem } from "../../convex/lib/reminderDigest";
 import { SITE_URL } from "../../convex/lib/links";
+import { NOTIFICATION_SETTINGS_PATH } from "../../convex/lib/mailKinds";
 import { urgencyHeadStyle, urgencyHeadText, urgencyRow, urgencyRowLast } from "./components/emailStyles";
 import { deadlineDigestWords } from "../../convex/lib/deadlineDigestWords";
 
@@ -56,7 +57,7 @@ export function DeadlineDigest({
   userName,
   items,
   baseUrl = SITE_URL,
-  settingsUrl = `${SITE_URL}/settings`,
+  settingsUrl = `${SITE_URL}${NOTIFICATION_SETTINGS_PATH}`,
 }: DeadlineDigestProps) {
   const words = deadlineDigestWords(items.length, items.filter((i) => i.urgency === "overdue").length);
   const headline = words.headline;
@@ -209,7 +210,7 @@ const styles = {
 DeadlineDigest.PreviewProps = {
   userName: "Jake",
   baseUrl: SITE_URL,
-  settingsUrl: `${SITE_URL}/settings`,
+  settingsUrl: `${SITE_URL}${NOTIFICATION_SETTINGS_PATH}`,
   items: [
     { caseId: "c1" as never, employerName: "Globex Corporation", beneficiaryIdentifier: "A. Rivera", deadlineType: "PWD expiration", deadlineDate: "2026-06-27", daysUntil: -2, urgency: "overdue" },
     { caseId: "c2" as never, employerName: "Acme Inc", beneficiaryIdentifier: "B. Chen", deadlineType: "PWD expiration", deadlineDate: "2026-06-30", daysUntil: 1, urgency: "urgent" },

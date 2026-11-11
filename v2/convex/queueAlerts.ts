@@ -552,6 +552,7 @@ export const confirmByToken = internalMutation({
       email: v.string(),
       filingMonth: v.string(),
       alreadyReached: v.boolean(),
+      queue: queueValidator,
     }),
     v.null(),
   ),
@@ -569,7 +570,7 @@ export const confirmByToken = internalMutation({
     // non-OEWS). A confirm click proves inbox access for the address, so it
     // confirms every row that is confirmable - exactly as the case-alert
     // confirm covers every staged case for the address.
-    let primary: { email: string; filingMonth: string; alreadyReached: boolean } | null =
+    let primary: { email: string; filingMonth: string; alreadyReached: boolean; queue: DolQueue } | null =
       null;
     const queuesToNotify = new Set<DolQueue>();
 
@@ -618,7 +619,7 @@ export const confirmByToken = internalMutation({
       // click most plausibly came from (a staged change, else the first
       // confirmable) is the honest one to show.
       if (primary === null || monthChanged) {
-        primary = { email: row.email, filingMonth, alreadyReached };
+        primary = { email: row.email, filingMonth, alreadyReached, queue };
       }
     }
 
@@ -933,7 +934,9 @@ export const notifyQueueReached = internalAction({
             // is false once the frontier has run past their month.
             monthsPast > 0
               ? `DOL has worked past ${filingLabel} and is now on ${frontierLabel}. It`
-              : `DOL is now adjudicating cases filed in ${filingLabel}. It`,
+              : queue === "perm"
+                ? `DOL is now adjudicating cases filed in ${filingLabel}. It`
+                : `DOL is now working prevailing-wage requests submitted in ${filingLabel}. It`,
             "isn't a decision on your case and it isn't a prediction of one.",
             ...(paceLine ? ["", paceLine] : []),
             "",

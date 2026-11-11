@@ -2,8 +2,16 @@
 import { WelcomeEmail } from "../WelcomeEmail";
 import { AdminEmail } from "../AdminEmail";
 import { AccountDeletionConfirm } from "../AccountDeletionConfirm";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 import { render } from "@react-email/render";
+
+import { NOTIFICATION_SETTINGS_PATH } from "@convex/lib/mailKinds";
+import { ReengagementNudge } from "../ReengagementNudge";
+import { TestEmail } from "../TestEmail";
+import { WeeklyDigest } from "../WeeklyDigest";
 
 import { BulletinMoved } from "../BulletinMoved";
 import { BulletinWeekly } from "../BulletinWeekly";
@@ -17,6 +25,8 @@ import { QueueReached } from "../QueueReached";
 import { StatusChange } from "../StatusChange";
 import { PossiblePermMatch } from "../PossiblePermMatch";
 import type { DigestData } from "@convex/lib/newsletterCompose";
+
+const NOTIFICATION_SETTINGS_URL = `https://permtracker.app${NOTIFICATION_SETTINGS_PATH}`;
 
 /**
  * Every email has a way out, and it is the right one for who receives it.
@@ -181,13 +191,53 @@ describe("every email has a way out", () => {
         ],
       }),
     );
-    expect(reminder).toContain("https://permtracker.app/settings");
+    expect(reminder).toContain(NOTIFICATION_SETTINGS_URL);
     expect(reminder).toContain("Manage notification settings");
     expect(reminder).not.toContain("/prefs?token=");
     const status = await render(
       StatusChange({ employerName: "Acme Corp", beneficiaryName: "A. Person", caseUrl: "https://permtracker.app/cases/123", oldStatus: "pwd_pending", newStatus: "pwd_received" } as Parameters<typeof StatusChange>[0]),
     );
-    expect(status).toContain("https://permtracker.app/settings");
+    expect(status).toContain(NOTIFICATION_SETTINGS_URL);
+  });
+
+  // "Manage notification settings" used to open the Profile tab, and the test
+  // email's button an address with no page behind it (/settings/notifications).
+  it("every account email's settings link opens the Notifications tab", async () => {
+    const emails = {
+      reminder: await render(DeadlineDigest({ userName: "A. Person", items: [] })),
+      weekly: await render(
+        WeeklyDigest({
+          digestContent: {
+            userName: "A. Person",
+            userEmail: "person@example.com",
+            weekStartDate: "2026-09-28",
+            weekEndDate: "2026-10-04",
+            stats: { totalActiveCases: 1, overdueCount: 0, urgentCount: 0, unreadNotificationCount: 0 },
+            overdueDeadlines: [],
+            next7DaysDeadlines: [],
+            next14DaysDeadlines: [],
+            recentCaseUpdates: [],
+            isEmpty: true,
+            emptyMessage: "Nothing changed this week.",
+          },
+        }),
+      ),
+      nudge: await render(ReengagementNudge(ReengagementNudge.PreviewProps as Parameters<typeof ReengagementNudge>[0])),
+      test: await render(TestEmail(TestEmail.PreviewProps as Parameters<typeof TestEmail>[0])),
+      testAsSent: await render(TestEmail({})),
+    };
+    for (const [name, html] of Object.entries(emails)) {
+      const settingsLinks = [...html.matchAll(/href="(https:\/\/permtracker\.app\/settings[^"]*)"/g)].map((m) => m[1]);
+      expect(settingsLinks.length, `${name} has a settings link`).toBeGreaterThan(0);
+      for (const href of settingsLinks) expect(href, name).toBe(NOTIFICATION_SETTINGS_URL);
+    }
+  });
+
+  it("the bulletin alert is handed its month as words, never as a code like 2026-12", () => {
+    const sender = readFileSync(join(process.cwd(), "convex/bulletinAlerts.ts"), "utf8");
+    // The template's own props, as the sender writes them (the stored month stays a code elsewhere in the file).
+    const props = /return BulletinMoved\(\{([^}]*)\}\)/.exec(sender)?.[1] ?? "";
+    expect(props).toContain("bulletinMonth: monthLabel(latest.month)");
   });
 
   it("mail that isn't a notification never says it is (Oct 11 2026: the welcome, deletion and admin emails did)", async () => {
