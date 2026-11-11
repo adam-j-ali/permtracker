@@ -89,7 +89,7 @@ DOCS_GIVE_WAY=45
 
 minutes_to_next_case_sweep(){  # whole minutes until the next case-status timer fires; 9999 when none can be read
   local soonest=9999 t at mins now; now=$(date +%s)
-  for t in case-status-full case-status-pending case-status-midday; do
+  for t in case-status-full case-status-pending case-status-midday case-status-evening; do
     at=$(systemctl show "permtracker-sweep@$t.timer" -p NextElapseUSecRealtime --value 2>/dev/null) || continue
     [ -n "$at" ] || continue
     at=$(date -d "$at" +%s 2>/dev/null) || continue

@@ -1,0 +1,12 @@
+[Unit]
+Description=Schedule for permtracker-sweep@case-status-pending
+# The undecided cases, the evening pass, added Nov 11 2026. DOL posts decisions all through its working day and into
+# the evening, until about 8 PM Eastern. Before this pass the day's list stood still from the 3:40 PM run until the
+# 4:10 AM one. (A second batch lands just after midnight; the 4:10 AM full pass reads that one.)
+[Timer]
+OnCalendar=*-*-* 20:10:00 America/New_York
+Persistent=true
+Unit=permtracker-sweep@case-status-pending.service
+
+[Install]
+WantedBy=timers.target
