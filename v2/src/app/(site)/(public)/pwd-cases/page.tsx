@@ -10,6 +10,7 @@ import { getPwdDayData, getPwdLine, getPwdNowDocs } from "@/lib/db/pwdDayQueue";
 import { PwdNowBoard } from "@/components/pwd/PwdNowBoard";
 import { waitPhrase } from "@/lib/pwdLine";
 import { formatInt } from "@/lib/format";
+import { waitingSplit } from "@/lib/figureVisuals";
 import { FlagCaseBrowser, PWD_PROGRAM } from "@/components/tools/FlagCaseBrowser";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { getPwdSummary, getPwdDisclosureSummary } from "@/lib/db/pwdCases";
@@ -92,18 +93,7 @@ export default async function PwdCasesPage() {
             value: summary ? formatInt(summary.pending) : "—",
             trend: backlogTrend(pwdBoard?.flow),
             note: "From DOL's case-status service",
-            // Waiting against decided, of every request the service holds.
-            ...(summary && summary.total > 0
-              ? {
-                  split: {
-                    parts: [
-                      { value: summary.decided, tone: "good" as const },
-                      { value: summary.pending, tone: "wait" as const },
-                    ],
-                    label: `${formatInt(summary.pending)} of ${formatInt(summary.total)} wage requests are still waiting, and ${formatInt(summary.decided)} are decided.`,
-                  },
-                }
-              : {}),
+            ...(waitingSplit(summary, "wage requests") ? { split: waitingSplit(summary, "wage requests") } : {}),
           },
           {
             label: "Decided, with the wage set",
