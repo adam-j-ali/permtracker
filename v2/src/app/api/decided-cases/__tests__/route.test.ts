@@ -74,6 +74,15 @@ describe("date validation", () => {
     expect(getDecidedFeed).not.toHaveBeenCalled();
   });
 
+  it("serves the record's first day: the floor sits below every day the page's date box offers", async () => {
+    // The published record starts Oct 1 2007. Until Nov 11 2026 the floor was 2015-01-01 and every day before it
+    // answered 400 on a page whose date box offered it.
+    const res = await GET(get("from=2007-10-01&to=2007-10-01"));
+
+    expect(res.status).toBe(200);
+    expect(getDecidedFeed).toHaveBeenCalledTimes(1);
+  });
+
   it("400s on a future date", async () => {
     const r = await GET(get("from=2099-01-01"));
     expect(r.status).toBe(400);

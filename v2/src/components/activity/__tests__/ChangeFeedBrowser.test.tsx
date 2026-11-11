@@ -392,7 +392,9 @@ describe("a range of days DOL hasn't published yet", () => {
     widenTo("2026-09-02");
     expect(screen.getByRole("status")).toHaveTextContent("Loading 2 days of changes…");
     expect(screen.queryByRole("table")).toBeNull();
-    expect(screen.getByRole("option", { name: "All programs (0)" })).toBeInTheDocument();
+    // No count is printed while it isn't known: "(0)" beside a program would read as "DOL moved nothing".
+    expect(screen.getByRole("option", { name: "All programs" })).toBeInTheDocument();
+    expect(screen.getAllByRole("option").filter((o) => /\(0\)/.test(o.textContent ?? ""))).toHaveLength(0);
   });
 
   it("names a day that didn't come back, and tries only that day again", () => {

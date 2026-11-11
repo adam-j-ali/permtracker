@@ -570,7 +570,9 @@ export function ChangeFeedBrowser({
             }}
             className={`${CONTROL} mt-1`}
           >
-            <option value="">All programs ({formatInt(feed?.total ?? 0)})</option>
+            {/* A count is printed only once it's known. While a day or a range is still loading, and for dates
+                our own record doesn't cover, "(0)" would read as "DOL moved nothing". */}
+            <option value="">{feed ? `All programs (${formatInt(feed.total)})` : "All programs"}</option>
             {CHANGE_PROGRAMS.map((p) => {
               const n = feed?.byProgram[p] ?? 0;
               return (
@@ -579,7 +581,7 @@ export function ChangeFeedBrowser({
                       day is a fact about the day, and hiding it would read as
                       the program not existing. */}
                   <option value={p} disabled={n === 0}>
-                    {PROGRAM_LABEL[p]} ({formatInt(n)})
+                    {feed ? `${PROGRAM_LABEL[p]} (${formatInt(n)})` : PROGRAM_LABEL[p]}
                   </option>
                 {" "}
                 </Fragment>
