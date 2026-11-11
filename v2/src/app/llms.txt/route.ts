@@ -286,7 +286,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
   {
     path: "/developers",
     label: "API and MCP server",
-    blurb: "A free JSON API (permtracker.app/v1, keys from Settings) and an MCP server (permtracker.app/mcp, no key needed) with six read-only tools: look up a PERM, prevailing wage, H-1B LCA or H-2A/H-2B case by number, estimate a PERM decision date, DOL's queues, the visa bulletin, and employer, law firm and occupation records.",
+    blurb: "A free JSON API at https://permtracker.app/v1 with keys from Settings, and an MCP server at https://permtracker.app/mcp with no key needed. Six read-only tools: look up a PERM, prevailing wage, H-1B LCA or H-2A/H-2B case by number, estimate a PERM decision date, DOL's queues, the visa bulletin, and employer, law firm and occupation records.",
   },
   {
     path: "/extension",

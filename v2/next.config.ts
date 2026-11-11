@@ -294,6 +294,10 @@ const nextConfig: NextConfig = {
     return [
       // Fix GSC 404s: stray URLs → clean routes
       { source: "/%24", destination: "/", permanent: true },
+      // A link printed in a sentence is opened with the sentence's punctuation ("permtracker.app/developers)."),
+      // by whatever turned the text into a link. No page's address ends in one of these marks, so the address
+      // without them is the page that was meant.
+      { source: "/:path(.*[^\\).,;:])([\\).,;:]+)", destination: "/:path", permanent: true },
       // Old links to /demo land on the data surface: the product is free, so
       // the calculators and signup ARE the trial. Tutorials and resources
       // merged into guides. /corrections points at the corrections log

@@ -41,7 +41,7 @@ async function admit(caller: ApiCaller): Promise<string | null> {
     const m = takeMinute(`mcp:${ANONYMOUS_ACCOUNT}`, ANONYMOUS_PER_MINUTE);
     return m.ok
       ? null
-      : `PERM Tracker is answering many assistants at once. Try again in ${m.reset} seconds, or connect with a free API key for your own limit (permtracker.app/developers).`;
+      : `PERM Tracker is answering many assistants at once. Try again in ${m.reset} seconds, or connect with a free API key for your own limit. Keys: https://permtracker.app/developers`;
   }
   if (caller.sandbox) {
     return "Sandbox keys (pt_test_) answer the /v1 API's sample data only. Connect without a key, or with a live key, for real records.";
