@@ -30,6 +30,7 @@ import { longDate, MONTH_NAMES, monthYear } from "@convex/lib/months";
 import { RIVALS } from "@/lib/compare/rivals";
 import { checkedPhrase } from "@/lib/compare/trackers";
 import { FORM_PAGES } from "@/lib/uscisForms";
+import { USCIS_OFFICES } from "@/lib/uscisOffices";
 import { queryStatic } from "@/lib/convexStatic";
 import { softFail } from "@/lib/softRead";
 
@@ -520,6 +521,12 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     label: "The I-485 by USCIS field office",
     blurb:
       "Employment-based I-485 applications received, approved, denied and pending at every USCIS field office and service center per quarter, the busiest offices, and quarters of work at each office's pace. From USCIS's quarterly count. Withheld cells stay withheld.",
+  },
+  {
+    path: "/i485-by-field-office/hartford-connecticut",
+    label: "One page per USCIS field office and service center",
+    blurb:
+      `A page for each of the ${USCIS_OFFICES.length} offices in USCIS's quarterly I-485 file at /i485-by-field-office/<office> (for example hartford-connecticut, newark-new-jersey, national-benefits-center): employment-based I-485s received, approved, denied and pending there for the last four quarters, where the office's pending pile ranks among the others, and the one processing time USCIS posts for employment-based cases at field offices. USCIS's own counts; no wait per office is published, and none is invented.`,
   },
   {
     path: "/i140-awaiting-visa",

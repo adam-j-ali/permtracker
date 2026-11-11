@@ -3,12 +3,29 @@
 import { FilterableStatTable, type Facet, type StatColumn } from "@/components/tools/FilterableStatTable";
 import { SERVICE_CENTER_STATE, quartersOfWork, type OfficeRow } from "@/lib/uscisQuarterlyShape";
 import { formatInt } from "@/lib/format";
+import { officeHref } from "@/lib/uscisOffices";
+import { IntentLink } from "@/components/ui/intent-link";
 
 /** USCIS withholds a small cell; it prints as "withheld", as on the rest of the page, never as 0. */
 const count = (n: number | null) => (n === null ? "withheld" : formatInt(n));
 
 export const OFFICE_COLUMNS: StatColumn<OfficeRow>[] = [
-  { key: "office", label: "Office", sortValue: (r) => r.office, render: (r) => <span className="font-semibold">{r.office}</span> },
+  {
+    key: "office",
+    label: "Office",
+    sortValue: (r) => r.office,
+    // The office's own page, where the list holds one (uscisOffices.ts); the name alone for an office it doesn't.
+    render: (r) => {
+      const href = officeHref(r.code);
+      return href ? (
+        <IntentLink href={href} className="link font-semibold max-sm:inline-flex max-sm:min-h-11 max-sm:items-center">
+          {r.office}
+        </IntentLink>
+      ) : (
+        <span className="font-semibold">{r.office}</span>
+      );
+    },
+  },
   { key: "state", label: "State", sortValue: (r) => r.state, render: (r) => r.state },
   { key: "code", label: "Code", sortValue: (r) => r.code, render: (r) => <span className="font-mono">{r.code}</span>, secondary: true },
   { key: "received", label: "EB received", numeric: true, sortValue: (r) => r.empReceived, render: (r) => count(r.empReceived), secondary: true },
@@ -51,7 +68,8 @@ export function OfficeTable({ rows }: { rows: OfficeRow[] }) {
       caption="Every USCIS field office and service center, employment-based I-485 counts for the quarter"
       noun="offices"
       facets={OFFICE_FACETS}
-      pageSize={0}
+      // The table comes first on its page now, so it's paged like the other lists: the charts follow it.
+      pageSize={25}
       csv={{
         filename: "i485-by-field-office.csv",
         header: ["office", "state", "code", "eb_received", "eb_approved", "eb_denied", "eb_pending", "family_pending"],

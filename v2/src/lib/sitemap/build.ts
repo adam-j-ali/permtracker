@@ -43,6 +43,7 @@ import { bulletinMonthDate, employerOwnDate, pageDate, type DateSources } from "
 import { h1bAsOf as summaryAsOf } from "@/lib/h1bRanks";
 import { auditWeek, pickAuditPaths, splitPages, type AuditFamily } from "@/lib/sitemap/audit";
 import { FORM_PAGES } from "@/lib/uscisForms";
+import { USCIS_OFFICES } from "@/lib/uscisOffices";
 import { softFail } from "@/lib/softRead";
 import { getConsularIndex } from "@/lib/db/consularPosts";
 import { getSocTitlePages } from "@/lib/db/socTitles";
@@ -322,6 +323,11 @@ export async function pagesEntries(): Promise<Entry[]> {
       lastModified: at("/uscis-processing-times/[form]"),
     })),
     { url: `${base}/i485-by-field-office`, lastModified: at("/i485-by-field-office"), images: [`${base}/og/i485-by-field-office.jpg`] },
+    // One page per USCIS office, a fixed list (`USCIS_OFFICES`), each dated by the template.
+    ...USCIS_OFFICES.map((o) => ({
+      url: `${base}/i485-by-field-office/${o.slug}`,
+      lastModified: at("/i485-by-field-office/[office]"),
+    })),
     { url: `${base}/i140-awaiting-visa`, lastModified: at("/i140-awaiting-visa"), images: [`${base}/og/i140-awaiting-visa.jpg`] },
     // No card of its own yet, so no image entry: the sitemap names a card only once its file exists.
     { url: `${base}/uscis-rfe-rates`, lastModified: at("/uscis-rfe-rates") },
