@@ -1585,3 +1585,61 @@ describe("getCasesNeedingReminders reads through indexes", () => {
     expect(new Set(all.map((r: { userId: Id<"users"> }) => r.userId))).toEqual(new Set([a, b]));
   });
 });
+
+// enforceDeadlinesForAllUsers: the overnight run that closes a case past its deadline
+
+describe("the overnight closure run", () => {
+  setupSchedulerTests();
+
+  // A wage determination issued over a year ago and expired a month ago, with no recruitment begun and nothing
+  // filed: the one state the rules close outright.
+  async function caseWithAnExpiredWage(
+    t: ReturnType<typeof createTestContext>,
+    authT: Awaited<ReturnType<typeof createAuthenticatedContext>>,
+  ): Promise<Id<"cases">> {
+    const caseId = await createTestCaseWithDeadlines(t, authT, {
+      employerName: "Acme Corp",
+      beneficiaryIdentifier: "A. Person",
+    });
+    await t.run((ctx) => ctx.db.patch(caseId, { pwdDeterminationDate: daysAgo(420), pwdExpirationDate: daysAgo(30) }));
+    return caseId;
+  }
+
+  // The sign-in path pushed and this one didn't, though this is the run that closes a case for someone who
+  // isn't in the app.
+  it("schedules a push for an account with push on, as the sign-in path does", async () => {
+    const t = createTestContext();
+    const { userId, authT } = await createTestUserWithProfile(t, "Closure Push");
+    await t.run(async (ctx) => {
+      const profile = await ctx.db.query("userProfiles").withIndex("by_user_id", (q) => q.eq("userId", userId)).first();
+      await ctx.db.patch(profile!._id, { autoDeadlineEnforcementEnabled: true, pushNotificationsEnabled: true });
+    });
+    const caseId = await caseWithAnExpiredWage(t, authT);
+
+    const result = await t.action(internal.scheduledJobs.enforceDeadlinesForAllUsers, {});
+    expect(result.closed).toBe(1);
+    expect((await t.run((ctx) => ctx.db.get(caseId)))?.caseStatus).toBe("closed");
+
+    const scheduled = await t.run((ctx) => ctx.db.system.query("_scheduled_functions").collect());
+    const pushes = scheduled.filter((f) => f.name.includes("sendPushNotification"));
+    expect(pushes).toHaveLength(1);
+    expect(pushes[0]!.args[0]).toMatchObject({ userId, url: `/cases/${caseId}`, tag: `auto-closure-${caseId}` });
+    await finishScheduledFunctions(t);
+  });
+
+  it("schedules no push for an account with push off", async () => {
+    const t = createTestContext();
+    const { userId, authT } = await createTestUserWithProfile(t, "Closure Quiet");
+    await t.run(async (ctx) => {
+      const profile = await ctx.db.query("userProfiles").withIndex("by_user_id", (q) => q.eq("userId", userId)).first();
+      await ctx.db.patch(profile!._id, { autoDeadlineEnforcementEnabled: true });
+    });
+    await caseWithAnExpiredWage(t, authT);
+
+    const result = await t.action(internal.scheduledJobs.enforceDeadlinesForAllUsers, {});
+    expect(result.closed).toBe(1);
+    const scheduled = await t.run((ctx) => ctx.db.system.query("_scheduled_functions").collect());
+    expect(scheduled.filter((f) => f.name.includes("sendPushNotification"))).toHaveLength(0);
+    await finishScheduledFunctions(t);
+  });
+});
