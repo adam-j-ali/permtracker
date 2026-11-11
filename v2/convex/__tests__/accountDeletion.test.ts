@@ -162,6 +162,27 @@ describe("cleanupAndPurge — grace-window gate", () => {
     });
   });
 
+  // The Privacy Policy lists what stays after an account is deleted. The log of Resend's
+  // contact events (address, names, each event's payload) isn't on it.
+  it("takes the address out of the email event log, and leaves other people's rows", async () => {
+    const t = createTestContext();
+    const now = Date.now();
+    const userId = await t.run(async (ctx) =>
+      ctx.db.insert("users", { email: "Owner@Example.com", deletedAt: now - DAY }),
+    );
+    await t.run(async (ctx) => {
+      const base = { contactId: "c1", eventType: "contact.updated" as const, unsubscribed: false, rawPayload: "{}" };
+      await ctx.db.insert("marketingEvents", { ...base, svixId: "m1", email: "owner@example.com", occurredAt: now - 3, firstName: "Olive", lastName: "Owner" });
+      await ctx.db.insert("marketingEvents", { ...base, svixId: "m2", email: "owner@example.com", occurredAt: now - 2 });
+      // As Resend echoes an address typed with capitals.
+      await ctx.db.insert("marketingEvents", { ...base, svixId: "m3", email: "Owner@Example.com", occurredAt: now - 1 });
+      await ctx.db.insert("marketingEvents", { ...base, svixId: "m4", email: "other@example.com", occurredAt: now });
+    });
+    await t.action(internal.accountDeletion.cleanupAndPurge, { userId });
+    const left = await t.run(async (ctx) => (await ctx.db.query("marketingEvents").collect()).map((r) => r.email));
+    expect(left).toEqual(["other@example.com"]);
+  });
+
   it("does NOT purge a user who cancelled (deletedAt unset)", async () => {
     const t = createTestContext();
     const userId = await t.run(async (ctx) =>
