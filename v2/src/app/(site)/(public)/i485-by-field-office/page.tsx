@@ -82,6 +82,10 @@ const FAQS = [
     a: "No. USCIS's Policy Manual says a case that needs an interview goes to the field office with jurisdiction over where the applicant lives. USCIS has also moved I-485s between the National Benefits Center and field offices, and filers report cases worked at an office that isn't their local one. This page shows how busy each office is. It can't help you pick one.",
   },
   {
+    q: "Can I see how long people waited at my office?",
+    a: "USCIS doesn't publish that, so it comes from people who share their own dates. Each office's page lists the timelines shared from it: the days from filing the I-485 to biometrics, the interview and the green card. They're self-reported, checked before they show, and a median appears once five people from an office have shared.",
+  },
+  {
     q: "How current is this?",
     a: "It's the quarter USCIS published most recently, named on every figure. USCIS posts a quarter roughly three months after it ends. This site checks monthly and loads a new quarter the day it appears.",
   },
@@ -226,7 +230,8 @@ export default async function I485ByFieldOfficePage() {
             <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
               {fieldOffices.length} field offices and {serviceCenters.length} service
               centers, busiest first. Search for yours, filter by state, or sort on
-              any column. An office&apos;s name opens its own page, with its last four quarters.
+              any column. An office&apos;s name opens its own page, with its last four quarters and the timelines
+              people shared from it.
               Every count is USCIS&apos;s own, for the employment-based half, with the
               family-based pending count beside it for scale.
             </p>{" "}

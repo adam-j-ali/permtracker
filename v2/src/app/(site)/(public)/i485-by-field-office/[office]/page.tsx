@@ -4,6 +4,8 @@
  * People waiting on an I-485 ask about one office at a time ("is Hartford slow?", "how long at Portland, Maine?").
  * The index page holds every office in one table; this page gives one office its own address, its last four
  * quarters, where it stands among the others, and the one processing time USCIS posts for employment-based cases.
+ * Under USCIS's figures sit the timelines people shared from this office (components/community/OfficeTimelines.tsx):
+ * self-reported, checked before they show, and kept apart from USCIS's counts.
  *
  * Every count is USCIS's, from its quarterly file. What the page won't do is the same as the index: it never turns
  * a pile and a pace into "months to your decision", and a cell USCIS withholds stays withheld.
@@ -18,6 +20,10 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { FaqList } from "@/components/tools/FaqList";
 import { DataProvenance } from "@/components/data/DataProvenance";
+import { OfficeTimelines, type OfficeTimelineView } from "@/components/community/OfficeTimelines";
+import { queryStatic } from "@/lib/convexStatic";
+import { softFail } from "@/lib/softRead";
+import { api } from "@convex/_generated/api";
 import { RecordStrip } from "@/components/home/RecordStrip";
 import { QuarterlyEmpty } from "@/components/data/BarRows";
 import { ScrollBox } from "@/components/ui/scroll-box";
@@ -93,6 +99,17 @@ function ordinal(n: number): string {
   return `${n}${["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
 }
 
+/**
+ * The answer about people's own waits here, from the timelines they shared. A median is named only when the read
+ * sent one (five timelines or more), and always as theirs, never as USCIS's.
+ */
+function sharedAnswer(o: UscisOffice, view: OfficeTimelineView | null): string {
+  const none = `USCIS doesn't publish a wait for one office. People whose I-485 was at ${theOffice(o)} can share their own dates on this page, and it shows a median once five have.`;
+  const toCard = view?.metrics.find((m) => m.id === "i485-gc");
+  if (!view || !toCard || toCard.median === null) return none;
+  return `USCIS doesn't publish a wait for one office. The ${formatInt(toCard.n)} people who shared a full timeline from ${theOffice(o)} report a median of ${formatInt(toCard.median)} days from filing the I-485 to the green card. Their dates are self-reported, and people with a fast or a stuck case are likelier to share, so read it as what they saw.`;
+}
+
 /** The quarter in words alone: "April to June 2026". */
 const quarterWords = (fy: number, quarter: number) => quarterLabel(fy, quarter).replace(/^FY\d+ Q\d \((.*)\)$/, "$1");
 
@@ -100,7 +117,14 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
   const office = officeBySlug((await params).office);
   if (!office) notFound();
 
-  const [quarters, posted] = await Promise.all([getI485OfficeQuarters(), getUscisPosted()]);
+  const [quarters, posted, shared] = await Promise.all([
+    getI485OfficeQuarters(),
+    getUscisPosted(),
+    // People's own timelines from this office. A failed read is named on the page, never drawn as "nobody has shared".
+    queryStatic(api.communityTimelines.office, { office: office.code }, revalidate).catch(
+      softFail<OfficeTimelineView | null>("i485-by-field-office/[office].timelines", null),
+    ),
+  ]);
   const year = officeYear(quarters, office.code);
   const newest = quarters[quarters.length - 1];
   const now = year[year.length - 1];
@@ -186,6 +210,10 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
       a: `Yes. USCIS can move a case from one office to another while it waits, and its file counts a case wherever it sits on the quarter's last day. USCIS says it sends a transfer notice when it moves a case, and an interview or appointment notice names the office to go to.`,
     },
     {
+      q: `How long did people at ${theOffice(office)} wait for their I-485?`,
+      a: sharedAnswer(office, shared),
+    },
+    {
       q: `Where do these numbers come from?`,
       a: `From the I-485 file USCIS publishes each quarter on its Immigration and Citizenship Data page, which lists every field office and service center. This site copies it as published and names the quarter beside every figure.`,
     },
@@ -236,25 +264,27 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
             <>What USCIS&apos;s {center ? office.name : `field office in ${place}`} received, decided and still holds, from USCIS&apos;s own quarterly file.</>
           )}
         </p>{" "}
-        <p className="mt-4 text-base">
+        <p className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-base">
           <Link href={INDEX} className="link font-bold">
             Every office in one table
-          </Link>
-          {neighbours.length > 0 ? (
-            <>
-              {" "}
-              <span className="text-muted-foreground">{center ? "The other centers:" : `Also in ${office.state}:`}</span>{" "}
-              {neighbours.map((o, i) => (
-                <span key={o.code}>
-                  {i > 0 ? ", " : ""}
-                  <Link href={`${INDEX}/${o.slug}`} className="link">
-                    {o.name}
-                  </Link>
-                </span>
-              ))}
-            </>
-          ) : null}
-        </p>
+          </Link>{" "}
+          <a href="#timelines" className="link font-bold">
+            Timelines people shared from here
+          </a>
+        </p>{" "}
+        {neighbours.length > 0 ? (
+          <p className="mt-2 text-base">
+            <span className="text-muted-foreground">{center ? "The other centers:" : `Also in ${office.state}:`}</span>{" "}
+            {neighbours.map((o, i) => (
+              <span key={o.code}>
+                {i > 0 ? ", " : ""}
+                <Link href={`${INDEX}/${o.slug}`} className="link">
+                  {o.name}
+                </Link>
+              </span>
+            ))}
+          </p>
+        ) : null}
       </header>
 
       {!current ? (
@@ -348,7 +378,8 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
               </li>{" "}
               <li>
                 <b className="font-bold">Where your case is.</b> USCIS can move a case between offices while it waits, and this file
-                counts it wherever it sits on the quarter&apos;s last day. A notice from USCIS or your online account names the office.
+                counts it wherever it sits on the quarter&apos;s last day. USCIS says it sends a transfer notice when it moves a case,
+                and an interview or appointment notice names the office to go to.
               </li>{" "}
               <li>
                 <b className="font-bold">Why a count moved.</b> Cases sent in from another office and cases newly filed both show as
@@ -365,6 +396,8 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
           </section>
         </>
       )}
+
+      <OfficeTimelines office={office} view={shared} />
 
       <section className="mt-12">
         <h2 className="font-heading text-2xl font-bold">Questions about this office</h2>

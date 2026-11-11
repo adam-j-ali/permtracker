@@ -11,6 +11,8 @@ import { ArrowLeftIcon, PlusIcon } from "@phosphor-icons/react/ssr";
 import { withSocialCard } from "@/lib/socialCard";
 import { SectionIndex } from "@/components/legal/SectionIndex";
 import { LEGAL_DBA, LEGAL_FORM, LEGAL_NAME, POSTAL_ADDRESS, TRADE_NAME } from "@/lib/constants/about";
+// The floors the policy states are the ones the code holds, read from the same constants.
+import { BOARD_OPENS_AT, METRIC_MIN_N, MIN_CASE_REPORTERS, OFFICE_LIST_OPENS_AT } from "@/lib/communityTimeline";
 import { openGraphBase } from "@/lib/openGraphBase";
 import Link from "next/link";
 
@@ -309,21 +311,33 @@ export default function PrivacyPage() {
             </ul>{" "}
 
             <h3 id="community-timelines" className="font-heading text-lg font-bold mt-6 mb-3">
-              Your Timeline After PERM
+              Timelines You Share
             </h3>{" "}
             <ul className="list-disc list-inside text-soft space-y-2 ml-4">
               <li>
-                On a case’s page you can save the dates that came after PERM
-                (the I-140, the I-485, a work permit, a travel document, an
-                interview, the green card) and a few choices from fixed lists,
-                such as your category and country. There’s no free-text box. The
-                PERM dates come from DOL’s own record and are never typed by you
+                On a case’s page, a USCIS office’s page or the green card
+                timelines page you can save the dates that came after PERM (the
+                I-140, the I-485, a biometrics appointment, a work permit, a
+                travel document, an interview, the green card) and a few choices
+                from fixed lists, such as your category, your country and the
+                USCIS office handling your I-485. There’s no free-text box. A
+                PERM case number is optional; when you give one, the PERM dates
+                come from DOL’s own record and are never typed by you, and the
+                number is never shown on any page
               </li>{" "}
               <li>
-                No account is needed. Your browser keeps a random key for that
-                case, and we keep only a one-way hash of it. Anyone using that
-                browser can change or remove the timeline, and removing it
-                deletes it
+                No account is needed. Your browser keeps a random key for your
+                timeline, and we keep only a one-way hash of it. Anyone using
+                that browser can change or remove the timeline, and removing it
+                deletes it. The form can show you that key as an edit code, so
+                you can open the timeline on another device; anyone you give
+                the code to can change or remove it too
+              </li>{" "}
+              <li>
+                We look at each timeline before it shows or counts anywhere,
+                and you’re told it’s waiting. We decline one whose dates can’t
+                be right, a second copy, or a test. A declined timeline stays
+                visible to you, so you can fix it, and to nobody else
               </li>{" "}
               <li>
                 We also keep a hash of your IP address with the timeline, to
@@ -334,22 +348,25 @@ export default function PrivacyPage() {
                 personal data
               </li>{" "}
               <li>
-                If you tick &quot;Show my timeline on the public board&quot;,
-                it’s listed there with its filing month and how many days each
-                step took. The board never shows the case number, the employer or
-                an exact PERM date, and it lists nothing until 25 people have
-                shared
+                If you tick &quot;Show my timeline in the public lists&quot;,
+                it’s listed on the green card timelines page and on its USCIS
+                office’s page with the month you filed and how many days each
+                step took. A list never shows a case number, an employer or an
+                exact date. The full list shows nothing until {BOARD_OPENS_AT}{" "}
+                people have shared, and one office’s list nothing until{" "}
+                {OFFICE_LIST_OPENS_AT} people from that office have
               </li>{" "}
               <li>
-                Whether or not you tick that box, your dates count toward the
-                anonymous medians on the green card timelines page, which show no
-                figure from fewer than 5 timelines
+                Whether or not you tick that box, once we’ve checked your
+                timeline your dates count toward the anonymous medians on those
+                pages, which show no figure from fewer than {METRIC_MIN_N}{" "}
+                timelines
               </li>{" "}
               <li>
                 Anyone who looks up the same case number can see how many
                 timelines were saved for it and how many report each step, but
-                only once at least 3 people have added dates for that case. They
-                can never see the dates
+                only once at least {MIN_CASE_REPORTERS} people have added dates
+                for that case. They can never see the dates
               </li>{" "}
               <li>
                 We keep a timeline until you remove it, or until we take it down

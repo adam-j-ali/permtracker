@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/convexStatic", () => ({ queryStatic: vi.fn() }));
 
 import { queryStatic } from "@/lib/convexStatic";
-import { computeMetrics, summarizeRfes, toBoardRow, whoIsWaiting, type TimelineRecord } from "@/lib/communityTimeline";
+import { BOARD_OPENS_AT, OFFICE_LIST_OPENS_AT, computeMetrics, summarizeRfes, toBoardRow, whoIsWaiting, type TimelineRecord } from "@/lib/communityTimeline";
 import Page from "../(site)/(public)/green-card-timelines/page";
 
 /**
@@ -95,6 +95,37 @@ describe("/green-card-timelines", () => {
     const out = await html();
     expect(out).toContain("<table");
     expect(out).toContain("Who&#x27;s waiting, and where");
+  });
+
+  it("links each office whose own list is open, and names a row's office when the backend sends it", async () => {
+    const records = Array.from({ length: BOARD_OPENS_AT }, (_, i) => rec(i, { fieldOffice: "HAR" }));
+    const board = { ...boardOf(records, BOARD_OPENS_AT), offices: [{ code: "HAR", shared: BOARD_OPENS_AT }] };
+    board.rows = records.map((r) => toBoardRow(r, true));
+    vi.mocked(queryStatic).mockResolvedValue(board as never);
+    const out = await html();
+    expect(out).toContain('href="/i485-by-field-office/hartford-connecticut#timelines"');
+    expect(out).toMatch(/By USCIS office:.*Hartford/s);
+    expect(out).toContain("I-485 at Hartford");
+    expect(out).toContain(`which opens at ${OFFICE_LIST_OPENS_AT} shared timelines from that office`);
+  });
+
+  it("renders against a backend older than the office fields", async () => {
+    // Deploy skew: no `offices`, and rows with no `office`.
+    const older = boardOf(Array.from({ length: 25 }, (_, i) => rec(i)));
+    vi.mocked(queryStatic).mockResolvedValue(older as never);
+    const out = await html();
+    expect(out).toContain("<table");
+    expect(out).not.toContain("By USCIS office:");
+    expect(out).toContain('href="/i485-by-field-office"');
+  });
+
+  it("answers the questions people ask, in the page and in its structured data, with the floors the backend holds", async () => {
+    vi.mocked(queryStatic).mockResolvedValue(boardOf([rec(0)]) as never);
+    const out = await html();
+    expect(out).toContain("FAQPage");
+    expect(out).toContain("Are these USCIS&#x27;s processing times?");
+    expect(out).toContain(`only once ${BOARD_OPENS_AT} people have shared (${OFFICE_LIST_OPENS_AT} for one office&#x27;s list)`);
+    expect(out).toContain("It needs no account and no case number.");
   });
 
   it("lists RFE reasons, and renders a sentence when Convex can't be reached", async () => {

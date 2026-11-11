@@ -80,7 +80,7 @@ export const PAGE_KEYWORDS: Readonly<Record<string, string>> = {
   "/perm-employers/compare": "compare sponsors side by side",
   "/layoffs": "warn layoff notices",
   "/debarments": "debarred barred banned sponsors",
-  "/green-card-timelines": "i-140 i-485 timeline community reports rfe premium ead advance parole",
+  "/green-card-timelines": "i-140 i-485 timeline timelines share my timeline add my dates community reports rfe premium ead advance parole biometrics interview field office",
   "/developers": "api developer developers key json mcp claude cursor chatgpt assistant connector openapi integration",
   "/api-terms": "api terms license licence rules",
   "/extension": "chrome extension browser add-on plugin linkedin indeed glassdoor handshake wellfound job posting sponsor h-1b",
@@ -148,7 +148,7 @@ export function staticIndex(): SiteIndexEntry[] {
     add(
       { href: `/i485-by-field-office/${o.slug}`, name: center ? `${o.name}: I-485 numbers` : `${o.name} field office: I-485 numbers` },
       "USCIS offices",
-      `${o.code} ${o.state} uscis ${center ? "service center" : "field office fo"} i-485 i485 pending approved`,
+      `${o.code} ${o.state} uscis ${center ? "service center" : "field office fo"} i-485 i485 pending approved timeline timelines biometrics interview how long`,
     );
   }
   // One row per page: a page in two lists keeps its first, most specific group.
