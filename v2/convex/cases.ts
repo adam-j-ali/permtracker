@@ -979,17 +979,20 @@ export const update = mutation({
       ? (args.progressStatus ?? caseDoc!.progressStatus)
       : autoStatus.progressStatus;
 
-    // Build case label: "Employer - Position" format (fallback to just employer)
-    const caseLabel = oldDoc!.positionTitle
-      ? `${oldDoc!.positionTitle} at ${oldDoc!.employerName}`
-      : oldDoc!.employerName;
+    // The case's label, "Position at Employer" (the employer alone without a position), as this save leaves it:
+    // a notice names the case the way the person now sees it.
+    const labelTitle = args.positionTitle ?? oldDoc!.positionTitle;
+    const labelEmployer = args.employerName ?? oldDoc!.employerName;
+    const caseLabel = labelTitle ? `${labelTitle} at ${labelEmployer}` : labelEmployer;
 
     // Detect what actually changed
     const caseStatusChanged = actualNewCaseStatus !== oldDoc!.caseStatus;
     const progressStatusChanged = actualNewProgressStatus !== oldDoc!.progressStatus;
+    // The edit form sends `null` for an empty job description (it's a field the form can clear). Empty before
+    // and empty after isn't a change, so both sides are read with empty as "".
     const jobDescriptionChanged =
       args.jobDescription !== undefined &&
-      args.jobDescription !== (oldDoc!.jobDescription ?? "");
+      (args.jobDescription ?? "") !== (oldDoc!.jobDescription ?? "");
 
     try {
       const userProfile = await ctx.db
