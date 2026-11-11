@@ -52,6 +52,18 @@ This release moves the answer and the case box to the top of the homepage. It al
 - Press the button with nothing typed and you stay in the box, with a line saying what to type.
 - An address copied with a full stop or a bracket stuck to its end now opens the page it meant.
 
+## Privacy: what we fixed
+
+We read the Privacy Policy against the code, line by line, and fixed each place where the product did less than the policy says.
+
+- A message sent through the contact form and held by the spam filter is now deleted after 30 days in both places it's stored. One copy used to stay.
+- Deleting your account now also takes your address out of our email event log.
+- A sign-up for the weekly digest or product news that nobody confirms is deleted after 30 days, like the other alerts.
+- A USCIS receipt number in a page's address is stripped before our analytics sees it, the way a case number already was.
+- The two analytics events our server sends now obey your account's analytics switch and your browser's Global Privacy Control signal.
+- Session replay can't start while the policy says it's off.
+- Your account is identified to our analytics by its number alone. Your name is no longer sent.
+
 ## Case tracking for legal teams
 
 - A note whose save fails now stays in its box, so you can try again. It used to vanish with only a brief error message.
