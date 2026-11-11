@@ -58,7 +58,7 @@ export function PossiblePermMatch({
       footerExtra={
         <Text className="em-text-secondary" style={styles.footerExtra}>
           <Link href={unsubscribeUrl} className="em-link" style={styles.footerLink}>
-            Stop these alerts
+            Stop emails about this wage request
           </Link>
         </Text>
       }
@@ -202,7 +202,7 @@ PossiblePermMatch.PreviewProps = {
       watchUrl: "https://permtracker.app/perm-case-status?case=G-100-26286-296040#watch",
     },
   ],
-  unsubscribeUrl: "https://permtracker.app/case-alert/unsubscribe?token=abc",
+  unsubscribeUrl: "https://permtracker.app/prefs/unsubscribe?token=abc&kind=case&id=sample",
 } satisfies PossiblePermMatchProps;
 
 export default PossiblePermMatch;
