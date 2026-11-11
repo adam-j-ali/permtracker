@@ -62,9 +62,11 @@ const EXPLORERS = [
       "What certified PERM jobs pay, as a ladder of percentiles.",
   },
   {
+    // A data page, listed here because it answers the same question as the explorer above it. It isn't one of
+    // the site map's calculators, so it isn't counted as one.
     href: "/lca-wages",
     icon: CurrencyDollarIcon,
-    kind: "Distribution",
+    kind: "Data page",
     blurb:
       "The wage attested on certified H-1B LCAs, by occupation and worksite state, annualised from the unit each filing quoted.",
   },
@@ -86,6 +88,8 @@ const EXPLORERS = [
 const EXPLORER_HREFS = new Set(EXPLORERS.map((e) => e.href));
 /** The calculators about the reader's own case: every calculator in the site map but the explorers. */
 const CASE_TOOLS = CALCULATOR_PAGES.filter((p) => !EXPLORER_HREFS.has(p.href));
+/** How many of the explorers the site map counts as calculators: the page's count is the site map's. */
+const EXPLORER_TOOL_COUNT = CALCULATOR_PAGES.length - CASE_TOOLS.length;
 
 export default function CalculatorsPage() {
   const itemList = {
@@ -114,9 +118,8 @@ export default function CalculatorsPage() {
           PERM calculators
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          {CASE_TOOLS.length} calculators about your case, {EXPLORERS.length}{" "}
-          explorers about the field you filed into. Free, on the
-          government&apos;s own data.
+          {CALCULATOR_PAGES.length} calculators: {CASE_TOOLS.length} about your case and {EXPLORER_TOOL_COUNT}{" "}
+          about the field you filed into. Free, on the government&apos;s own data.
         </p>
       </header>
     </div>{" "}
