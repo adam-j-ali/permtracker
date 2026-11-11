@@ -34,7 +34,7 @@ export const metadata: Metadata = withSocialCard({
   },
 }, "accessibility");
 
-const STATEMENT_DATE = "September 22, 2026";
+const STATEMENT_DATE = "November 10, 2026";
 
 export default function AccessibilityPage() {
   return (
@@ -67,7 +67,7 @@ export default function AccessibilityPage() {
               <li>Every control can be reached and operated from a keyboard, with a visible focus state, and nothing depends on hovering.</li>{" "}
               <li>Standalone tap targets are at least 44px so they work on a phone.</li>{" "}
               <li>Pages carry one heading outline, landmarks, and labels on every form field; native controls are used where they exist.</li>{" "}
-              <li>Motion is reduced when your system asks for it (prefers-reduced-motion), and nothing pulses or loops.</li>{" "}
+              <li>Motion is reduced when your system asks for it (prefers-reduced-motion). The short clips in the guides loop, and each has a pause button.</li>{" "}
               <li>Charts are inline SVG with text labels and titles, and every figure a chart draws is also printed as text or in a table on the same page.</li>{" "}
               <li>Wide tables scroll inside their own container rather than the whole page.</li>
             </ul>
@@ -77,7 +77,7 @@ export default function AccessibilityPage() {
             <h2 className="font-heading text-2xl font-bold mt-8 mb-4">Known limits</h2>{" "}
             <ul className="list-disc list-inside text-soft space-y-2 ml-4">
               <li>Some government documents are shown as the printed first page of a PDF; the text of each is linked beside the image.</li>{" "}
-              <li>Third-party widgets (the review carousel, the contact form&apos;s bot check) render their own markup, which this site can&apos;t change.</li>{" "}
+              <li>The bot check on the sign-up, password-reset and contact forms is a third party&apos;s widget. It renders its own markup, which this site can&apos;t change.</li>{" "}
               <li>Screenshots inside the guides describe the screen in their alt text, not every figure on it.</li>
             </ul>
           </section>{" "}

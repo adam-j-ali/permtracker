@@ -90,7 +90,7 @@ function contentSecurityPolicy(frameAncestors: "'none'" | "*"): string {
     "font-src 'self' https://fonts.gstatic.com",
     "connect-src 'self' https://*.convex.cloud https://*.convex.site wss://*.convex.cloud https://*.sentry.io https://browser.sentry-cdn.com https://fonts.googleapis.com https://fonts.gstatic.com https://us.i.posthog.com https://us-assets.i.posthog.com https://challenges.cloudflare.com https://analytics.ahrefs.com",
     "media-src 'self' blob: data:",
-    "frame-src 'self' https://app.supademo.com https://*.convex.cloud https://challenges.cloudflare.com",
+    "frame-src 'self' https://*.convex.cloud https://challenges.cloudflare.com",
     "worker-src 'self' blob:",
     `frame-ancestors ${frameAncestors}`,
     "base-uri 'self'",

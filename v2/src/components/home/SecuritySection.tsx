@@ -9,7 +9,7 @@ import { IDLE_SIGN_OUT_MINUTES } from "@/lib/auth/session";
  * a fact about the app, not a promise.
  */
 const ROWS = [
-  { label: "Sensitive fields encrypted", value: "AES-256-GCM on the employer's FEIN and on sign-in tokens" },
+  { label: "Sensitive fields encrypted", value: "AES-256-GCM on the employer's FEIN and on Google Calendar tokens" },
   { label: "Database", value: "Convex, which holds a SOC 2 Type II report" },
   { label: "Session", value: `Signed out after ${IDLE_SIGN_OUT_MINUTES} minutes without activity` },
   { label: "Isolation", value: "Each account's cases are visible to that account only" },

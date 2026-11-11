@@ -140,7 +140,7 @@ const HALVES = [
 const SOURCES = [
   { agency: "Department of Labor", what: "Every case's status, pending included, and the quarterly files with the wage" },
   { agency: "USCIS", what: "I-140 and I-485 counts and processing times" },
-  { agency: "State Department", what: "Every visa bulletin since June 2005" },
+  { agency: "State Department", what: "Every visa bulletin since October 2014, and most back to June 2005" },
 ] as const;
 
 const PAGES = [
@@ -333,7 +333,7 @@ export default async function AboutPage() {
         <SectionHead
           id="sources"
           title="Where every figure comes from"
-          line="Three federal agencies, read several times a day and live on every case lookup. Each figure carries its source and its date."
+          line="Three federal agencies, read several times a day, with DOL asked on the spot for a case we don’t hold yet. Each figure carries its source and its date."
         />{" "}
         <div className="mt-10">
           <SourcePages />
@@ -356,8 +356,8 @@ export default async function AboutPage() {
           <div className="dark grid content-center border-2 p-5 shadow-hard border-black bg-[#141414] text-foreground">
             <span className="block font-heading text-xl font-bold text-primary-text">PERM Tracker</span>{" "}
             <span className="mt-2 block text-sm leading-relaxed text-muted-foreground">
-              Checks DOL several times a day, loads each new file the day it lands, and asks DOL again whenever a
-              case is looked up.
+              Checks DOL several times a day, loads each new file the day it lands, and asks DOL on the spot about
+              a case it doesn’t hold yet.
             </span>
           </div>{" "}
           <span aria-hidden="true" className="grid place-items-center py-1">
