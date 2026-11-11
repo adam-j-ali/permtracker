@@ -127,6 +127,14 @@ export default async function PwdCasesPage() {
         }
       />{" "}
 
+      {/* The page's job first: the employer search and the list it opens. The queue's own figures come after
+          the list, since someone here is looking for a request, and each of those figures has its page. */}
+      <div className="mt-10">
+        <SearchParamsBoundary>
+          <FlagCaseBrowser summary={summary} disclosure={disclosure} program={PWD_PROGRAM} />
+        </SearchParamsBoundary>
+      </div>{" "}
+
       <PwdNowBoard
         line={line}
         dayData={dayData}
@@ -137,39 +145,28 @@ export default async function PwdCasesPage() {
         reviews={times?.pwdReviews ?? []}
       />{" "}
 
-      <div className="mt-10">
-        <SearchParamsBoundary>
-          <FlagCaseBrowser
-            summary={summary}
-            disclosure={disclosure}
-            program={PWD_PROGRAM}
-            between={
-              summary ? (
-                <section >
-                  <h2 className="font-heading text-xl font-bold">Where DOL is in the line</h2>{" "}
-                  <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                    Wage requests by the month they were filed, from DOL&apos;s case-status service.
-                    {line && lineDay
-                      ? ` By our check of ${longDate(line.asOf)}, DOL is deciding requests filed ${lineDay}${
-                          line.before ? ` and has decided ${Math.round(line.before.decidedShare * 100)}% of ${longDate(line.before.day)}'s` : ""
-                        }.`
-                      : now.frontier
-                        ? ` DOL is issuing determinations on ${now.frontier}.`
-                        : ""}
-                  </p>{" "}
-                  <FilingMonthBars
-                    className="mt-5"
-                    months={summary.byMonth}
-                    frontier={line ? line.day.slice(0, 7) : frontier}
-                    nouns="wage requests"
-                    label="Wage requests by filing month, decided and still waiting"
-                  />
-                </section>
-              ) : null
-            }
+      {summary ? (
+        <section className="mt-12">
+          <h2 className="font-heading text-xl font-bold">Where DOL is in the line</h2>{" "}
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            Wage requests by the month they were filed, from DOL&apos;s case-status service.
+            {line && lineDay
+              ? ` By our check of ${longDate(line.asOf)}, DOL is deciding requests filed ${lineDay}${
+                  line.before ? ` and has decided ${Math.round(line.before.decidedShare * 100)}% of ${longDate(line.before.day)}'s` : ""
+                }.`
+              : now.frontier
+                ? ` DOL is issuing determinations on ${now.frontier}.`
+                : ""}
+          </p>{" "}
+          <FilingMonthBars
+            className="mt-5"
+            months={summary.byMonth}
+            frontier={line ? line.day.slice(0, 7) : frontier}
+            nouns="wage requests"
+            label="Wage requests by filing month, decided and still waiting"
           />
-        </SearchParamsBoundary>
-      </div>
+        </section>
+      ) : null}{" "}
 
       <PageBasics page="pwd-cases" />{" "}
     </div>
