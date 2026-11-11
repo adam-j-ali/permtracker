@@ -85,6 +85,7 @@ import { JobDescriptionField } from "@/components/job-description";
 import { usePublishBottomBar } from "@/hooks/usePublishBottomBar";
 import { cn } from "@/lib/utils";
 import { handleOperationError } from "@/lib/errors";
+import { CASE_DELETE_WARNING } from "@/lib/cases/deleteWarning";
 import { FormHelpPanel } from "./FormHelpPopover";
 
 // Re-export helpers for consumers
@@ -766,7 +767,7 @@ function DeleteDialog({ open, isDeleting, caseName, onCancel, onConfirm }: { ope
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Delete case</DialogTitle>
-          <DialogDescription>Delete &quot;{caseName}&quot;? It can’t be undone.</DialogDescription>
+          <DialogDescription>Delete &quot;{caseName}&quot;? {CASE_DELETE_WARNING}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={onCancel} disabled={isDeleting}>Cancel</Button>

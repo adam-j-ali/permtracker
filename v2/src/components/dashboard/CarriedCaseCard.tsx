@@ -53,7 +53,7 @@ export function CarriedCaseCard() {
             analytics.capture("carried_case_card", { action: "dismiss" });
           }}
         >
-          Not now
+          Discard
         </Button>
       </div>
     </section>

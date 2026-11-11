@@ -56,6 +56,7 @@ import type { CaseDetailData } from "@/components/cases/detail/case-detail-types
 import { STAGE_VISUALS } from "@/components/status/stage-visuals";
 import { formatCompactDate } from "@/components/cases/case-card.utils";
 import { caseWriteErrorMessage } from "@/lib/caseWriteErrors";
+import { CASE_DELETE_WARNING } from "@/lib/cases/deleteWarning";
 import {
   MAX_DOCUMENTS_PER_CASE,
   MAX_DOCUMENT_NAME_LENGTH,
@@ -167,8 +168,7 @@ function DeleteConfirmDialog({
         <DialogHeader>
           <DialogTitle>Delete case</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete &quot;{caseName}&quot;? This action can’t be
-            undone.
+            Delete &quot;{caseName}&quot;? {CASE_DELETE_WARNING}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -267,11 +267,13 @@ function CaseDetail({ caseId, caseData }: CaseDetailProps) {
   // Handlers
   const editPath = `/cases/${caseId}/edit`;
 
+  // A failed save says so and throws again: the notes tab keeps the words in its box only when this rejects.
   const handleUpdateNotes = useCallback(async (updatedNotes: import("@/lib/forms/case-form-schema").NoteEntry[]) => {
     try {
       await updateMutation({ id: caseId, notes: updatedNotes });
     } catch (error) {
       handleOperationError(error, { userMessage: "Couldn’t save the note. Try again." });
+      throw error;
     }
   }, [updateMutation, caseId]);
 

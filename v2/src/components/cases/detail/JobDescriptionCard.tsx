@@ -121,7 +121,7 @@ export function JobDescriptionCard({ caseData, jobDescProps }: { caseData: CaseD
           </div>
         </div>
         <div className="field-cell">
-          <div className="fc-label">Wage offered</div>
+          <div className="fc-label">Prevailing wage</div>
           <div className={`fc-val ${caseData.pwdWageAmount === undefined ? "dim" : ""}`}>
             {caseData.pwdWageAmount !== undefined ? `${fmtCurrency(caseData.pwdWageAmount)} / yr` : "-"}
           </div>
