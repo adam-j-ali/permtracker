@@ -166,6 +166,52 @@ describe("Cases Security", () => {
 
 // Bulk Operations Tests (4.3)
 
+describe("A deleted case takes its uploaded files with it", () => {
+  setupSchedulerTests();
+
+  async function caseWithFile(t: ReturnType<typeof createTestContext>, user: Awaited<ReturnType<typeof createAuthenticatedContext>>) {
+    const caseId = await user.mutation(api.cases.create, {
+      employerName: "Test Corp",
+      beneficiaryIdentifier: "John D.",
+      positionTitle: "Engineer",
+    });
+    await finishScheduledFunctions(t);
+    const storageId = await t.run((ctx) => ctx.storage.store(new Blob(["a stored file"])));
+    await t.run((ctx) =>
+      ctx.db.patch(caseId, {
+        documents: [
+          { id: "doc-1", name: "letter.pdf", url: "https://files.example/letter.pdf", storageId, mimeType: "application/pdf", size: 13, uploadedAt: 1 },
+        ],
+      }),
+    );
+    return { caseId, storageId };
+  }
+
+  it("deleting one case deletes its stored file", async () => {
+    const t = createTestContext();
+    const user = await createAuthenticatedContext(t, "User 1");
+    const { caseId, storageId } = await caseWithFile(t, user);
+    expect(await t.run((ctx) => ctx.db.system.get(storageId))).not.toBeNull();
+
+    await user.mutation(api.cases.remove, { id: caseId });
+    await finishScheduledFunctions(t);
+
+    expect(await t.run((ctx) => ctx.db.system.get(storageId))).toBeNull();
+  });
+
+  it("deleting cases in bulk deletes their stored files", async () => {
+    const t = createTestContext();
+    const user = await createAuthenticatedContext(t, "User 1");
+    const { caseId, storageId } = await caseWithFile(t, user);
+
+    const result = await user.mutation(api.cases.bulkRemove, { ids: [caseId] });
+    await finishScheduledFunctions(t);
+
+    expect(result.successCount).toBe(1);
+    expect(await t.run((ctx) => ctx.db.system.get(storageId))).toBeNull();
+  });
+});
+
 describe("Bulk Operations", () => {
   // Enable fake timers for scheduled function handling
   setupSchedulerTests();

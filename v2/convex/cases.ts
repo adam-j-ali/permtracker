@@ -26,6 +26,7 @@ import { normaliseFlagCaseNumber } from "../src/lib/flagCaseNumber";
 import { scheduleCalendarSync, scheduleCalendarSyncBulk } from "./lib/calendarSyncHelpers";
 import { loggers } from "./lib/logging";
 import { recordError } from "./lib/errorRecording";
+import { deleteCaseDocumentBlobs } from "./lib/caseDocumentBlobs";
 
 const log = loggers.cases;
 
@@ -1239,6 +1240,27 @@ async function clearCaseReferences(
 }
 
 /**
+ * Deletes a case's uploaded files from storage before its row goes. A file
+ * that can't be deleted is recorded once and doesn't stop the deletion.
+ */
+async function deleteCaseFiles(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  caseDoc: Doc<"cases">,
+  source: string,
+): Promise<void> {
+  const { failed } = await deleteCaseDocumentBlobs(ctx, caseDoc);
+  if (failed.length === 0) return;
+  await recordError(
+    ctx,
+    "mutation",
+    source,
+    new Error(`Failed to delete ${failed.length} stored file(s) of a deleted case`),
+    { userId, resourceId: caseDoc._id.toString() },
+  );
+}
+
+/**
  * Hard delete a case with full cascade cleanup
  * Permanently removes the case and cleans up all related data
  */
@@ -1298,7 +1320,8 @@ export const remove = mutation({
       resourceId: args.id,
     });
 
-    // ===== HARD DELETE THE CASE =====
+    // ===== THE CASE'S STORED FILES, THEN THE CASE =====
+    await deleteCaseFiles(ctx, userId, caseDoc!, "cases.deleteCase.storage");
     await ctx.db.delete(args.id);
 
     return args.id;
@@ -1381,7 +1404,8 @@ export const bulkRemove = mutation({
           await recordError(ctx, "mutation", "cases.bulkRemove.calendar", calendarError, { userId, resourceId: id.toString() });
         }
 
-        // ===== HARD DELETE THE CASE =====
+        // ===== THE CASE'S STORED FILES, THEN THE CASE =====
+        await deleteCaseFiles(ctx, userId, caseDoc, "cases.bulkRemove.storage");
         await ctx.db.delete(id);
 
         deletedCaseIds.push(id);
