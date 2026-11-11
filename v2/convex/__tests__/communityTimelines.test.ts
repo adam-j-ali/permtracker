@@ -65,6 +65,13 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
+/** The owner's yes for every row, written straight to the table (the admin's own path is in communityTimelineReview.test.ts). */
+async function approveAll(t: ReturnType<typeof createTestContext>) {
+  await t.run(async (ctx) => {
+    for (const r of await ctx.db.query("communityTimelines").take(1000)) await ctx.db.patch(r._id, { status: "approved" });
+  });
+}
+
 const save = (over: Record<string, unknown> = {}, who: { key?: string; ip?: string; caseNumber?: string } = {}) => ({
   caseNumber: who.caseNumber ?? CASE,
   editKeyHash: who.key ?? KEY,
@@ -153,7 +160,8 @@ describe("communityTimelines.save", () => {
     for (let i = 0; i < LEFT + 20 && refusedAt < 0; i++) {
       const ip = i.toString(16).padStart(64, "0");
       const c = `G-100-25324-${String(100000 + i).padStart(6, "0")}`;
-      const r = await t.mutation(internal.communityTimelines.save, save({}, { caseNumber: c, ip }));
+      // A key of its own each time: one key is one row, and only a NEW row draws on the day's budget.
+      const r = await t.mutation(internal.communityTimelines.save, save({}, { caseNumber: c, ip, key: (i + 1).toString(16).padStart(64, "0") }));
       if (!r.ok) refusedAt = i;
     }
     if (refusedAt < 0) throw new Error(`${LEFT + 20} new timelines were never refused`);
@@ -207,6 +215,7 @@ describe("communityTimelines.board", () => {
     const t = createTestContext();
     await t.mutation(internal.communityTimelines.save, save({ public: true }));
     await t.action(internal.communityTimelines.verifyCase, { caseNumber: CASE });
+    await approveAll(t);
     const b = await t.query(api.communityTimelines.board, {});
     expect(b).toMatchObject({ total: 1, shared: 1, open: false });
     expect(b.rows).toHaveLength(0);
@@ -223,9 +232,10 @@ describe("communityTimelines.board", () => {
       const c = `G-100-25324-${String(200000 + i).padStart(6, "0")}`;
       await t.mutation(
         internal.communityTimelines.save,
-        save({ public: i < n }, { caseNumber: c, ip: i.toString(16).padStart(64, "0") }),
+        save({ public: i < n }, { caseNumber: c, ip: i.toString(16).padStart(64, "0"), key: (i + 1).toString(16).padStart(64, "0") }),
       );
     }
+    await approveAll(t);
     const b = await t.query(api.communityTimelines.board, {});
     expect(b.open).toBe(true);
     expect(b.total).toBe(n + 3);
@@ -237,6 +247,8 @@ describe("communityTimelines.board", () => {
   it("a hidden row leaves every count", async () => {
     const t = createTestContext();
     await t.mutation(internal.communityTimelines.save, save({ public: true }));
+    await approveAll(t);
+    expect((await t.query(api.communityTimelines.board, {})).total).toBe(1);
     const [row] = await t.run(async (ctx) => ctx.db.query("communityTimelines").take(1000));
     await t.mutation(internal.communityTimelines.hide, { id: row!._id, hidden: true });
     const b = await t.query(api.communityTimelines.board, {});
@@ -260,6 +272,7 @@ describe("the case summary", () => {
       eventDate: "2026-06-01",
       ipHash: "c".repeat(64),
     });
+    await approveAll(t);
     const s = await t.query(internal.communityTimelines.caseSummary, { caseNumber: CASE });
     expect(s.withheld).toBe(false);
     expect(s.timelines).toBe(1);
@@ -274,6 +287,7 @@ describe("the case summary", () => {
     await t.mutation(internal.caseMilestones.report, { caseNumber: CASE, kind: "i140-approved", eventDate: "2026-05-15", ipHash: IP_B });
     // The same address twice is one person.
     await t.mutation(internal.caseMilestones.report, { caseNumber: CASE, kind: "i485-filed", eventDate: "2026-06-01", ipHash: IP_B });
+    await approveAll(t);
     const s = await t.query(internal.communityTimelines.caseSummary, { caseNumber: CASE });
     expect(s.withheld).toBe(true);
     expect(s.timelines).toBe(0);
@@ -286,6 +300,7 @@ describe("the case summary", () => {
     await t.mutation(internal.communityTimelines.save, save({ i140ApprovedOn: "2026-05-12" }));
     await t.mutation(internal.communityTimelines.save, save({}, { key: "b".repeat(64), ip: IP_B }));
     await t.mutation(internal.communityTimelines.save, save({}, { key: "d".repeat(64), ip: IP_B }));
+    await approveAll(t);
     const s = await t.query(internal.communityTimelines.caseSummary, { caseNumber: CASE });
     expect(s.withheld).toBe(true);
     expect(s.stops.every((x) => x.count === 0)).toBe(true);

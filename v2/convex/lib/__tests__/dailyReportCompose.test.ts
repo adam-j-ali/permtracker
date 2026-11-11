@@ -195,6 +195,30 @@ describe("law firms waiting for review", () => {
   });
 });
 
+describe("timelines waiting for the owner", () => {
+  it("adds no section when nothing waits", () => {
+    const keys = convexSections(facts({ timelineQueue: { waiting: [] } }), { sent: 1, bounced: 0, complained: 0 }, NOW).map((s) => s.key);
+    expect(keys).not.toContain("timelines");
+  });
+
+  it("counts the new ones and the changed ones apart, with the oldest wait and the place to act", () => {
+    const day = 24 * 60 * 60 * 1000;
+    const f = facts({
+      timelineQueue: {
+        waiting: [
+          { edited: false, since: NOW - 2 * day },
+          { edited: false, since: NOW - 60 * 60 * 1000 },
+          { edited: true, since: NOW - 3 * 60 * 60 * 1000 },
+        ],
+      },
+    });
+    const section = convexSections(f, { sent: 1, bounced: 0, complained: 0 }, NOW).find((s) => s.key === "timelines")!;
+    expect(section.status).toBe("warn");
+    expect(section.summary).toBe("2 new and 1 changed after you approved it, the oldest for 2 days");
+    expect(section.lines).toEqual(["Approve or decline them at https://permtracker.app/admin#timelines"]);
+  });
+});
+
 describe("reviews waiting for the owner", () => {
   it("adds no section when nothing waits", () => {
     const keys = convexSections(facts({ reviewQueue: { waiting: [] } }), { sent: 1, bounced: 0, complained: 0 }, NOW).map((s) => s.key);

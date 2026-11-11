@@ -155,6 +155,8 @@ export interface Facts {
   firmReview?: { waiting: Array<{ firmName: string; kind: "claim" | "edit"; since: number }> };
   /** Reviews and alert-email ratings waiting for the owner (convex/siteReviews.ts), oldest first; absent in older reports. */
   reviewQueue?: { waiting: Array<{ source: "site" | "senja" | "alert"; rating: number; since: number }> };
+  /** Timelines waiting for the owner, and approved ones changed since (convex/communityTimelines.ts); absent in older reports. */
+  timelineQueue?: { waiting: Array<{ edited: boolean; since: number }> };
   /** Mail the spam filter held (convex/inboundFilter.ts): subjects and sender domains only; absent in older reports. */
   spamFilter?: {
     heldSince: number;
@@ -290,6 +292,8 @@ export function convexSections(f: Facts, resend: ResendDay | string, now: number
   if (firms) sections.push(firms);
   const reviews = reviewSection(f, now);
   if (reviews) sections.push(reviews);
+  const timelines = timelineSection(f, now);
+  if (timelines) sections.push(timelines);
   const spam = spamSection(f);
   if (spam) sections.push(spam);
   const ratings = ratingSection(f);
@@ -426,6 +430,29 @@ function reviewSection(f: Facts, now: number): ReportSection | null {
       ...(waiting.length > 10 ? [`and ${waiting.length - 10} more`] : []),
       `Approve or decline them at ${SITE_URL}/admin#reviews`,
     ],
+  };
+}
+
+/**
+ * Timelines people shared, waiting for the owner. A new one shows nowhere until it's approved; an approved one
+ * its author changed still shows, and is listed so the change gets a look.
+ */
+function timelineSection(f: Facts, now: number): ReportSection | null {
+  const waiting = f.timelineQueue?.waiting ?? [];
+  if (waiting.length === 0) return null;
+  const fresh = waiting.filter((w) => !w.edited).length;
+  const edited = waiting.length - fresh;
+  const parts = [
+    fresh ? `${fresh} new` : "",
+    edited ? `${edited} changed after you approved ${edited === 1 ? "it" : "them"}` : "",
+  ].filter(Boolean);
+  const oldest = Math.min(...waiting.map((w) => w.since));
+  return {
+    key: "timelines",
+    title: "Timelines waiting for you",
+    status: "warn",
+    summary: `${parts.join(" and ")}, the oldest for ${waited(now - oldest)}`,
+    lines: [`Approve or decline them at ${SITE_URL}/admin#timelines`],
   };
 }
 

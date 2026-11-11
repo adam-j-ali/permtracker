@@ -18,16 +18,30 @@
  * exact PERM date. It shows the filing MONTH and durations in days, which is
  * what the board is for, and which cannot be turned back into a case without
  * other information.
+ *
+ * REVIEWED BEFORE IT SHOWS. A timeline waits for the owner (`status`), and
+ * every public figure, list and count reads approved rows only (`isShown`).
+ * Its author sees it at once, marked as waiting.
  */
 
+import { USCIS_OFFICES } from "../../src/lib/uscisOffices";
 import { MS_PER_DAY } from "./time";
 
+/** `perm` is false for a category that has no labor certification, so no PERM case number. */
 export const CATEGORIES = [
-  { id: "eb2", label: "EB-2" },
-  { id: "eb3", label: "EB-3 professional or skilled" },
-  { id: "eb3-other", label: "EB-3 other workers" },
+  { id: "eb1", label: "EB-1", perm: false },
+  { id: "eb2", label: "EB-2", perm: true },
+  { id: "eb2-niw", label: "EB-2 with a national interest waiver", perm: false },
+  { id: "eb3", label: "EB-3 professional or skilled", perm: true },
+  { id: "eb3-other", label: "EB-3 other workers", perm: true },
 ] as const;
 export type CategoryId = (typeof CATEGORIES)[number]["id"];
+
+/** Whether a category goes through PERM, so a timeline in it can carry a PERM case number. */
+export const isPermCategory = (id: string): boolean => CATEGORIES.some((c) => c.id === id && c.perm);
+
+/** The USCIS offices a timeline can name, by USCIS's own three-letter code (src/lib/uscisOffices.json). */
+const OFFICE_CHOICES: readonly { id: string }[] = USCIS_OFFICES.map((o) => ({ id: o.code }));
 
 /** Chargeability as the visa bulletin splits it. */
 export const COUNTRIES = [
@@ -61,6 +75,7 @@ export const DATE_FIELDS = [
   { id: "i140FiledOn", label: "I-140 filed", short: "I-140 filed", routes: ["adjustment", "consular"] },
   { id: "i140ApprovedOn", label: "I-140 approved", short: "I-140 approved", routes: ["adjustment", "consular"] },
   { id: "i485FiledOn", label: "I-485 filed", short: "I-485 filed", routes: ["adjustment"] },
+  { id: "biometricsOn", label: "Biometrics appointment", short: "Biometrics", routes: ["adjustment"] },
   { id: "eadOn", label: "Work permit (EAD) approved", short: "EAD", routes: ["adjustment"] },
   { id: "apOn", label: "Travel document (advance parole) approved", short: "Advance parole", routes: ["adjustment"] },
   { id: "interviewOn", label: "Interview", short: "Interview", routes: ["adjustment", "consular"] },
@@ -95,8 +110,10 @@ export const RFE_OUTCOMES = [
 ] as const;
 export type RfeOutcomeId = (typeof RFE_OUTCOMES)[number]["id"];
 
-/** The board lists rows once this many people have shared theirs publicly. */
-export const BOARD_OPENS_AT = 25;
+/** The board lists rows once this many people have shared theirs publicly (owner, Nov 11 2026; it was 25). */
+export const BOARD_OPENS_AT = 10;
+/** One USCIS office's own list opens once this many people there have shared theirs (owner, Nov 11 2026). */
+export const OFFICE_LIST_OPENS_AT = 3;
 /** A median is printed only over at least this many timelines. */
 export const METRIC_MIN_N = 5;
 
@@ -120,9 +137,12 @@ export interface TimelineInput {
   route?: string | null;
   premium?: boolean | null;
   i140Center?: string | null;
+  /** The USCIS office holding the I-485, by USCIS's three-letter code. */
+  fieldOffice?: string | null;
   i140FiledOn?: string | null;
   i140ApprovedOn?: string | null;
   i485FiledOn?: string | null;
+  biometricsOn?: string | null;
   eadOn?: string | null;
   apOn?: string | null;
   interviewOn?: string | null;
@@ -142,9 +162,11 @@ export interface TimelineFields {
   route?: RouteId;
   premium?: boolean;
   i140Center?: I140CenterId;
+  fieldOffice?: string;
   i140FiledOn?: string;
   i140ApprovedOn?: string;
   i485FiledOn?: string;
+  biometricsOn?: string;
   eadOn?: string;
   apOn?: string;
   interviewOn?: string;
@@ -158,7 +180,15 @@ export interface TimelineFields {
 }
 
 /** The choice fields, each checked against its own list. */
-export type TimelineChoiceField = "category" | "country" | "route" | "i140Center" | "rfeForm" | "rfeReason" | "rfeOutcome";
+export type TimelineChoiceField =
+  | "category"
+  | "country"
+  | "route"
+  | "i140Center"
+  | "fieldOffice"
+  | "rfeForm"
+  | "rfeReason"
+  | "rfeOutcome";
 
 /**
  * Why a timeline was refused, beside the English `message`, so a page in another language can word the same
@@ -172,6 +202,7 @@ export type TimelineProblem =
   | { code: "green-card-order" }
   | { code: "rfe-order" }
   | { code: "rfe-form" }
+  | { code: "office-consular" }
   | { code: "adjustment-only"; field: DateFieldId };
 
 export type ValidationResult =
@@ -215,6 +246,7 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
     ["country", COUNTRIES, input.country, "country"],
     ["route", ROUTES, input.route, "route"],
     ["i140Center", I140_CENTERS, input.i140Center, "I-140 office"],
+    ["fieldOffice", OFFICE_CHOICES, input.fieldOffice, "USCIS office"],
     ["rfeForm", RFE_FORMS, input.rfeForm, "RFE form"],
     ["rfeReason", RFE_REASONS, input.rfeReason, "RFE reason"],
     ["rfeOutcome", RFE_OUTCOMES, input.rfeOutcome, "RFE outcome"],
@@ -258,6 +290,13 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
     return { ok: false, code: "rfe-form", message: "Say which form the RFE was on." };
   }
   if (out.route === "consular") {
+    if (out.fieldOffice !== undefined) {
+      return {
+        ok: false,
+        code: "office-consular",
+        message: "A USCIS office applies to an adjustment in the US. A consular case has none.",
+      };
+    }
     // An adjustment-only date on a consular timeline is a contradiction the
     // board would print as fact. Refuse it rather than silently dropping it.
     for (const f of DATE_FIELDS) {
@@ -290,8 +329,29 @@ export interface TimelineRecord extends TimelineFields {
   permCertifiedOn?: string;
   /** Where the certification date came from. */
   permCertifiedSource?: "disclosure" | "observed";
+  /** The owner's decision. A row from before reviews existed has none until the backfill marks it approved. */
+  status?: TimelineStatus;
   hiddenAt?: number;
   updatedAt: number;
+}
+
+export const TIMELINE_STATUSES = ["pending", "approved", "declined"] as const;
+export type TimelineStatus = (typeof TIMELINE_STATUSES)[number];
+
+/** Why the owner kept a timeline off the site. A fixed list: a timeline has no words, so neither does this. */
+export const DECLINE_REASONS = [
+  { id: "implausible", label: "Dates that can't be right" },
+  { id: "duplicate", label: "A second copy of one timeline" },
+  { id: "spam", label: "A test, or spam" },
+] as const;
+export type DeclineReasonId = (typeof DECLINE_REASONS)[number]["id"];
+
+/**
+ * Whether a row may reach any public surface: approved by the owner and not hidden. The one test every
+ * public read applies, so a waiting or declined timeline can't count toward a figure by mistake.
+ */
+export function isShown(r: { status?: TimelineStatus; hiddenAt?: number }): boolean {
+  return r.status === "approved" && r.hiddenAt === undefined;
 }
 
 /**
@@ -305,10 +365,15 @@ export const METRICS = [
   { id: "cert-to-i140", label: "PERM certified to I-140 filed", from: "permCertifiedOn", to: "i140FiledOn", verified: false },
   { id: "i140-premium", label: "I-140 filed to approved, premium", from: "i140FiledOn", to: "i140ApprovedOn", premium: true, verified: false },
   { id: "i140-regular", label: "I-140 filed to approved, regular", from: "i140FiledOn", to: "i140ApprovedOn", premium: false, verified: false },
+  { id: "i485-bio", label: "I-485 filed to biometrics", from: "i485FiledOn", to: "biometricsOn", verified: false },
   { id: "i485-ead", label: "I-485 filed to work permit", from: "i485FiledOn", to: "eadOn", verified: false },
+  { id: "i485-interview", label: "I-485 filed to interview", from: "i485FiledOn", to: "interviewOn", verified: false },
   { id: "i485-gc", label: "I-485 filed to green card", from: "i485FiledOn", to: "greenCardOn", verified: false },
 ] as const;
 export type MetricId = (typeof METRICS)[number]["id"];
+
+/** The stages one USCIS office's page measures: everything counted from the I-485 filing. */
+export const OFFICE_METRIC_IDS: readonly MetricId[] = ["i485-bio", "i485-ead", "i485-interview", "i485-gc"];
 
 export interface MetricResult {
   id: MetricId;
@@ -393,10 +458,13 @@ export interface BoardRow {
   /** True when the PERM half was found in DOL's record. */
   permVerified: boolean;
   rfe: { form: RfeFormId; reason: RfeReasonId | null; outcome: RfeOutcomeId | null } | null;
+  /** The USCIS office's code, only when that office's own list is open; null otherwise. */
+  office: string | null;
   updatedMonth: string;
 }
 
-export function toBoardRow(r: TimelineRecord): BoardRow {
+/** `showOffice`: the caller has checked that this row's office has enough shared timelines to be named. */
+export function toBoardRow(r: TimelineRecord, showOffice = false): BoardRow {
   const origin = r.permFiledOn ?? null;
   const stop = (id: DateFieldId | "permCertifiedOn") => {
     const iso = (r as unknown as Record<string, string | undefined>)[id];
@@ -411,8 +479,61 @@ export function toBoardRow(r: TimelineRecord): BoardRow {
     stops: [stop("permCertifiedOn"), ...DATE_FIELDS.map((f) => stop(f.id))],
     permVerified: Boolean(r.permFiledOn && r.permCertifiedOn),
     rfe: r.rfeForm ? { form: r.rfeForm, reason: r.rfeReason ?? null, outcome: r.rfeOutcome ?? null } : null,
+    office: showOffice ? (r.fieldOffice ?? null) : null,
     updatedMonth: new Date(r.updatedAt).toISOString().slice(0, 7),
   };
+}
+
+/** The steps an office's list draws, each counted in days from the I-485 filing. */
+export const OFFICE_STOPS = ["biometricsOn", "eadOn", "apOn", "interviewOn", "greenCardOn"] as const;
+export type OfficeStopId = (typeof OFFICE_STOPS)[number];
+
+/** One row of a USCIS office's list: no case number, no employer, no exact date. */
+export interface OfficeRow {
+  /** "YYYY-MM": the month the I-485 was filed; null when the person didn't give it. */
+  filedMonth: string | null;
+  category: CategoryId | null;
+  country: CountryId | null;
+  /** Days from the I-485 filing to each step, in OFFICE_STOPS order; null when not reported or not countable. */
+  stops: { id: OfficeStopId; day: number | null; month: string | null }[];
+  /** An RFE on the I-485, and how it ended; null when none was reported. */
+  rfe: { outcome: RfeOutcomeId | null } | null;
+  updatedMonth: string;
+}
+
+export function toOfficeRow(r: TimelineRecord): OfficeRow {
+  const origin = r.i485FiledOn ?? null;
+  return {
+    filedMonth: origin ? origin.slice(0, 7) : null,
+    category: r.category ?? null,
+    country: r.country ?? null,
+    stops: OFFICE_STOPS.map((id) => {
+      const iso = r[id];
+      const day = origin && iso ? daysBetween(origin, iso) : null;
+      return { id, day: day !== null && day >= 0 ? day : null, month: iso ? iso.slice(0, 7) : null };
+    }),
+    rfe: r.rfeForm === "i485" ? { outcome: r.rfeOutcome ?? null } : null,
+    updatedMonth: new Date(r.updatedAt).toISOString().slice(0, 7),
+  };
+}
+
+/**
+ * What the owner should look at before approving: plain sentences for the dates that sit oddly together.
+ * A hint, never a refusal: a person's own dates are theirs, and the form already refuses the impossible ones.
+ */
+export function reviewFlags(r: TimelineRecord & { caseNumber?: string; permCheckedAt?: number }): string[] {
+  const flags: string[] = [];
+  const gap = (a?: string, b?: string) => daysBetween(a, b);
+  const gc = gap(r.i485FiledOn, r.greenCardOn);
+  if (gc !== null && gc < 30 && r.route !== "consular") flags.push(`The green card is dated ${gc} days after the I-485 filing.`);
+  const certToI140 = gap(r.permCertifiedOn, r.i140FiledOn);
+  if (certToI140 !== null && certToI140 < 0) flags.push("The I-140 is dated before DOL certified the PERM.");
+  const bio = gap(r.i485FiledOn, r.biometricsOn);
+  if (bio !== null && bio < 0) flags.push("Biometrics is dated before the I-485 filing.");
+  if (r.caseNumber && r.permCheckedAt !== undefined && !r.permFiledOn) flags.push("DOL's record has no case with this number.");
+  const typed = DATE_FIELDS.map((f) => r[f.id]).filter((x): x is string => typeof x === "string");
+  if (typed.length >= 3 && new Set(typed).size === 1) flags.push("Every date is the same day.");
+  return flags;
 }
 
 /** The stages the case page draws, in order, with whether anyone reported each. */
@@ -443,7 +564,10 @@ export const WAITING_MIN_CELL = 5;
 /** The furthest step a timeline reports. */
 export function waitingStage(r: TimelineRecord): WaitingStageId {
   if (r.greenCardOn) return "done";
-  if (r.i485FiledOn) return "i485";
+  // Biometrics, a work permit and a travel document each follow an I-485, so any of them places the case there.
+  if (r.i485FiledOn || r.biometricsOn || r.eadOn || r.apOn) return "i485";
+  // An interview in the US is the I-485's; abroad it follows the approved I-140.
+  if (r.interviewOn) return r.route === "consular" ? "approved" : "i485";
   if (r.i140ApprovedOn) return "approved";
   if (r.i140FiledOn) return "i140";
   if (r.permCertifiedOn) return "certified";

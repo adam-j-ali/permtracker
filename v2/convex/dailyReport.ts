@@ -119,6 +119,17 @@ export const facts = internalQuery({
       await ctx.db.query("siteReviews").withIndex("by_status_created", (q) => q.eq("status", "pending")).take(50)
     ).filter((r) => r.insider !== true);
 
+    const timelinesWaiting = [
+      ...(await ctx.db.query("communityTimelines").withIndex("by_status_created", (q) => q.eq("status", "pending")).take(50)).map((r) => ({
+        edited: false,
+        since: r.createdAt,
+      })),
+      ...(await ctx.db.query("communityTimelines").withIndex("by_editedAt", (q) => q.gt("editedAt", 0)).take(50)).map((r) => ({
+        edited: true,
+        since: r.editedAt ?? r.updatedAt,
+      })),
+    ];
+
     // Who each account is for, from its onboarding role, so the report's
     // attorney figure leaves out people tracking their own case.
     const roleByUser = new Map(profiles.map((p) => [p.userId, p.jobTitle]));
@@ -157,6 +168,8 @@ export const facts = internalQuery({
       firmReview: { waiting: firmWaiting.map((w) => ({ firmName: w.firmName, kind: w.kind, since: w.since })) },
       // Reviews and alert ratings waiting for the owner: where each came from, its stars and age; never a name or address.
       reviewQueue: { waiting: reviewsWaiting.map((r) => ({ source: r.source, rating: r.rating, since: r.createdAt })) },
+      // Timelines waiting, and approved ones changed since: ages only.
+      timelineQueue: { waiting: timelinesWaiting },
       // Held mail: subjects and sender domains, never an address.
       spamFilter: await heldSummary(ctx, since),
       // What people said about their alerts, the last week: scores and notes only.

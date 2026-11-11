@@ -2288,23 +2288,33 @@ export default defineSchema({
    * No account. Whoever holds the edit key (32 random bytes the browser keeps)
    * can change or remove the row; only its SHA-256 is stored. `public` is the
    * opt-in to the public board, off by default; the anonymous medians use every
-   * row that is not hidden, and the form says so before saving.
+   * approved row that is not hidden, and the form says so before saving.
+   *
+   * A timeline waits for the owner before it reaches any page (`status`). A row
+   * saved before Nov 11 2026 has no status and reads as approved, because it
+   * was public then; `communityTimelines.backfillStatus` writes it.
    */
   communityTimelines: defineTable({
-    caseNumber: v.string(),
+    /** The PERM case, when the case has one. EB-1 and waiver cases have none. */
+    caseNumber: v.optional(v.string()),
     editKeyHash: v.string(),
     ipHash: v.string(),
     public: v.boolean(),
-    category: v.optional(v.union(v.literal("eb2"), v.literal("eb3"), v.literal("eb3-other"))),
+    category: v.optional(
+      v.union(v.literal("eb1"), v.literal("eb2"), v.literal("eb2-niw"), v.literal("eb3"), v.literal("eb3-other")),
+    ),
     country: v.optional(
       v.union(v.literal("row"), v.literal("india"), v.literal("china"), v.literal("mexico"), v.literal("philippines")),
     ),
     route: v.optional(v.union(v.literal("adjustment"), v.literal("consular"))),
     premium: v.optional(v.boolean()),
     i140Center: v.optional(v.union(v.literal("nebraska"), v.literal("texas"), v.literal("other"))),
+    /** The USCIS office holding the I-485: USCIS's three-letter code, one of src/lib/uscisOffices.json. */
+    fieldOffice: v.optional(v.string()),
     i140FiledOn: v.optional(v.string()),
     i140ApprovedOn: v.optional(v.string()),
     i485FiledOn: v.optional(v.string()),
+    biometricsOn: v.optional(v.string()),
     eadOn: v.optional(v.string()),
     apOn: v.optional(v.string()),
     interviewOn: v.optional(v.string()),
@@ -2336,13 +2346,23 @@ export default defineSchema({
     permCheckedAt: v.optional(v.number()),
     /** Set by an admin to take a row off every surface without deleting it. */
     hiddenAt: v.optional(v.number()),
+    /** The owner's decision. Only an approved row reaches a page. */
+    status: v.optional(v.union(v.literal("pending"), v.literal("approved"), v.literal("declined"))),
+    reviewedAt: v.optional(v.number()),
+    declineReason: v.optional(v.union(v.literal("implausible"), v.literal("duplicate"), v.literal("spam"))),
+    /** When its author last changed a timeline the owner had approved; cleared once the owner has looked. */
+    editedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_case", ["caseNumber"])
     .index("by_case_key", ["caseNumber", "editKeyHash"])
     .index("by_case_ip", ["caseNumber", "ipHash"])
-    .index("by_perm_checked", ["permCheckedAt"]),
+    .index("by_perm_checked", ["permCheckedAt"])
+    .index("by_editKeyHash", ["editKeyHash"])
+    .index("by_fieldOffice", ["fieldOffice"])
+    .index("by_status_created", ["status", "createdAt"])
+    .index("by_editedAt", ["editedAt"]),
 
   /**
    * Consulate reports: what happened at a US consulate's visa interview or drop box, as the person waiting
