@@ -62,41 +62,44 @@ export function IndexHeader({
     <header className={cn("@container pt-8 sm:pt-10", className)}>
       {/* The case box's finder opens in the dock's panel, under both columns: the box is too narrow to hold it. */}
       <FinderDock>
-      {/* Side by side, the two columns share a top and a bottom: the box's top edge meets the top of the heading's
-          capitals (the 9px), and the figures stand on the line of the box's bottom edge whenever the box is the
-          taller of the two. A title block with nothing under it beside a taller box read as unfinished. */}
-      <div className="grid grid-cols-1 gap-8 @[52rem]:grid-cols-[minmax(0,1.15fr)_minmax(25rem,1fr)] [&>*]:min-w-0">
-        <div className="flex flex-col">
+      {/* First things first: the title, the way in, then the figures. On a phone they stack in that order, so the
+          box is in the first screen and the figures follow it. Side by side, the title and the figures share the
+          left column and the box the right: its top edge meets the top of the heading's capitals (the 9px), and the
+          figures stand on the line of its bottom edge whenever the box is the taller of the two. */}
+      <div className="grid grid-cols-1 gap-x-8 gap-y-6 @[52rem]:grid-cols-[minmax(0,1.15fr)_minmax(25rem,1fr)] @[52rem]:grid-rows-[auto_1fr] [&>*]:min-w-0">
+        <div className="@[52rem]:col-start-1 @[52rem]:row-start-1">
           <h1 className="text-balance font-heading text-4xl font-bold leading-tight sm:text-5xl">{wholeCodes(title)}</h1>{" "}
-          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-soft">{lede}</p>{" "}
-          {figures.length > 0 ? (
-            <dl className="mt-6 flex flex-wrap gap-x-10 gap-y-5 @[52rem]:mt-auto @[52rem]:pt-6">
-              {figures.map((f) => (
-                <div key={f.label} className="min-w-0">
-                  <dt className="text-sm font-semibold">{f.label}</dt>{" "}
-                  <dd className="mt-1 font-heading text-2xl font-bold leading-tight tabular-nums [overflow-wrap:anywhere]">
-                    {f.href ? (
-                      <Link href={f.href} className="link">
-                        {f.value}
-                      </Link>
-                    ) : (
-                      f.value
-                    )}
-                  </dd>{" "}
-                  {f.trend ? (
-                    <>
-                      <dd className="mt-1.5">
-                        <TrendChip trend={f.trend} />
-                      </dd>{" "}
-                    </>
-                  ) : null}
-                  {f.note ? <dd className="mt-0.5 text-sm text-soft">{f.note}</dd> : null}
-                </div>
-              ))}
-            </dl>
-          ) : null}
+          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-soft">{lede}</p>
         </div>{" "}
-        {aside ? <div className="@[52rem]:mt-[9px] @[52rem]:self-start">{aside}</div> : null}
+        {aside ? (
+          <div className="@[52rem]:col-start-2 @[52rem]:row-span-2 @[52rem]:row-start-1 @[52rem]:mt-[9px] @[52rem]:self-start">{aside}</div>
+        ) : null}{" "}
+        {figures.length > 0 ? (
+          <dl className="flex flex-wrap gap-x-10 gap-y-5 @[52rem]:col-start-1 @[52rem]:row-start-2 @[52rem]:self-end">
+            {figures.map((f) => (
+              <div key={f.label} className="min-w-0">
+                <dt className="text-sm font-semibold">{f.label}</dt>{" "}
+                <dd className="mt-1 font-heading text-2xl font-bold leading-tight tabular-nums [overflow-wrap:anywhere]">
+                  {f.href ? (
+                    <Link href={f.href} className="link">
+                      {f.value}
+                    </Link>
+                  ) : (
+                    f.value
+                  )}
+                </dd>{" "}
+                {f.trend ? (
+                  <>
+                    <dd className="mt-1.5">
+                      <TrendChip trend={f.trend} />
+                    </dd>{" "}
+                  </>
+                ) : null}
+                {f.note ? <dd className="mt-0.5 text-sm text-soft">{f.note}</dd> : null}
+              </div>
+            ))}
+          </dl>
+        ) : null}
       </div>{" "}
       <FinderDockPanel className="mt-6" />
       </FinderDock>

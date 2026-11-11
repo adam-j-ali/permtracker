@@ -111,6 +111,13 @@ never black-weight. Prose runs at 68 characters at most (`max-w-prose` or
   figure, a form or a table), folded detail, one next step, at most three related
   links, footer. At most five boxes and one lime element in the first two screens,
   and never a card inside a card.
+- **First things first** (owner, Nov 11 2026), the order inside that shape on every page:
+  1. the way in: the search or lookup box, or a tool's own inputs, in the first screen at every width;
+  2. the overview: the answer, or three summary figures at most;
+  3. the list: 25 rows a page, a compact row (three lines or fewer on a phone, one tap target), a pager;
+  4. the rest: sections with a heading each, the long ones folded, then questions, then sources.
+  One lookup a page. A figure, a chart or a lookup appears once. Nothing sits above the list that isn't
+  the way in or the overview. A list page is eight phone screens or fewer with its list loaded.
 - A grid holding form controls needs `grid-cols-1` and `[&>*]:min-w-0` below its
   breakpoint (`responsive-grid-tracks.test.ts`), or iOS sizes the track from the
   control and it overflows.
