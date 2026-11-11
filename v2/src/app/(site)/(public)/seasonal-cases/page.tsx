@@ -5,7 +5,7 @@ import { PlusIcon } from "@phosphor-icons/react/ssr";
 import { ChartTips } from "@/components/data/ChartTips";
 import { PageBasics } from "@/components/data/PageBasics";
 import { DataProvenance } from "@/components/data/DataProvenance";
-import { IndexHeader, IndexLookup } from "@/components/data/IndexHeader";
+import { IndexFigures, IndexHeader, type IndexFigure } from "@/components/data/IndexHeader";
 import { FlagCaseBrowser, SEASONAL_PROGRAM } from "@/components/tools/FlagCaseBrowser";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
@@ -97,13 +97,8 @@ export default async function SeasonalCasesPage() {
     : null;
   const hasForms = !!summary && FORM_ORDER.some((p) => (summary.byPrefix[p] ?? 0) > 0);
 
-  return (
-    <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">
-      <IndexHeader
-        title="Find an H-2A, H-2B or CW-1 filing"
-        lede="Seasonal farm and non-farm work. Search the employer to get the number, the job and DOL's status."
-        figures={
-          summary
+  // The overview, drawn between the search and the list.
+  const figures: IndexFigure[] = summary
             ? [
                 {
                   label: "Waiting at DOL now",
@@ -121,24 +116,20 @@ export default async function SeasonalCasesPage() {
                   ? [{ ...filedLastMonth(summary.byMonth, summary.asOf)!, note: "H-2A, H-2B and CW-1 filings, by the month filed" }]
                   : []),
               ]
-            : []
-        }
-        aside={
-          <IndexLookup
-            title="Have the number?"
-            example="H-300-26188-123456"
-            note="DOL is asked live, and the case page can email you when it moves."
-            source="seasonal-cases"
-            program="seasonal"
-          />
-        }
+            : [];
+
+  return (
+    <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">
+      <IndexHeader
+        title="Find an H-2A, H-2B or CW-1 filing"
+        lede="Seasonal farm and non-farm work. Search the employer to get the number, the job and DOL's status."
       />
 
       {/* First things first: the employer search and the list it opens, straight after the header. The form-by-form
           counts, the note on which numbers the box takes and the decisions chart come after the list. */}
       <div className="mt-10">
         <SearchParamsBoundary>
-          <FlagCaseBrowser summary={summary} program={SEASONAL_PROGRAM} />
+          <FlagCaseBrowser summary={summary} program={SEASONAL_PROGRAM} between={<IndexFigures figures={figures} />} />
         </SearchParamsBoundary>
       </div>
 

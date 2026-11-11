@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { withSocialCard } from "@/lib/socialCard";
 
 import { PageBasics } from "@/components/data/PageBasics";
-import { IndexHeader, IndexLookup } from "@/components/data/IndexHeader";
+import { IndexFigures, IndexHeader, type IndexFigure } from "@/components/data/IndexHeader";
 import { FilingMonthBars } from "@/components/data/FilingMonthBars";
 import { getProcessingTimes } from "@/lib/db/processingTimes";
 import { dolPwdNow, pwdLine } from "@/lib/dolNow";
@@ -79,15 +79,11 @@ export default async function PwdCasesPage() {
   // published month trails it by weeks, so it's the figure under it.
   const lineDay = line ? longDate(line.day) : null;
   const lede = line && lineDay
-    ? `PERM wage requests take ${waitPhrase(line.waitDays)} at DOL now: requests filed ${lineDay} are being decided, by our daily check of DOL's case status.`
+    ? `PERM wage requests take ${waitPhrase(line.waitDays)} at DOL now.`
     : pwdLine(now);
 
-  return (
-    <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">
-      <IndexHeader
-        title="Find a prevailing wage request"
-        lede={`${lede} Search by employer to find one: you rarely see its number.`}
-        figures={[
+  // The overview, drawn between the search and the list.
+  const figures: IndexFigure[] = [
           {
             label: "Waiting at DOL now",
             value: summary ? formatInt(summary.pending) : "—",
@@ -125,23 +121,20 @@ export default async function PwdCasesPage() {
                 href: "/tools/pwd-calculator",
                 ...(now.asOf ? { note: `As of ${now.asOf}` } : {}),
               },
-        ]}
-        aside={
-          <IndexLookup
-            title="Have the number?"
-            example="P-100-26140-123456"
-            note="DOL is asked live, and the case page can email you when it moves."
-            source="pwd-cases"
-            program="pwd"
-          />
-        }
+        ];
+
+  return (
+    <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">
+      <IndexHeader
+        title="Find a prevailing wage request"
+        lede={`${lede} Search by the employer's name to find one: you rarely see its number.`}
       />{" "}
 
       {/* The page's job first: the employer search and the list it opens. The queue's own figures come after
           the list, since someone here is looking for a request, and each of those figures has its page. */}
       <div className="mt-10">
         <SearchParamsBoundary>
-          <FlagCaseBrowser summary={summary} disclosure={disclosure} program={PWD_PROGRAM} />
+          <FlagCaseBrowser summary={summary} disclosure={disclosure} program={PWD_PROGRAM} between={<IndexFigures figures={figures} />} />
         </SearchParamsBoundary>
       </div>{" "}
 
