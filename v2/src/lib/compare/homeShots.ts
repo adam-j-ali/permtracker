@@ -1,7 +1,6 @@
 /**
  * Each tracker's homepage as it opened on the day /compare read it: the first
- * screen at 1440 by 810, scaled to 960 by 540 (owner, Oct 27 2026: "need a pic
- * of all competitors"). One page load each, the homepage only, every site's
+ * screen at 1440 by 810, scaled to 960 by 540 (the owner's call, Oct 27 2026). One page load each, the homepage only, every site's
  * robots.txt allowing it; H1BPerm's is the capture taken in a person's own
  * browser that day, since its site asks scripts not to read it. H1BGrader's
  * was taken in a person's own browser on Oct 28, after Cloudflare's check

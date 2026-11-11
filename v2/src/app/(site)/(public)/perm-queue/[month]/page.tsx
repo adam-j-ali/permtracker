@@ -642,7 +642,7 @@ function MonthHeadline({
           </Fragment>
         ))}
       </ul>{" "}
-      {/* One row of figures, the queue page's own (Adam, Oct 28 2026: no tiles that repeat the
+      {/* One row of figures, the queue page's own (the owner's call, Oct 28 2026: no tiles that repeat the
           key above them): what's still waiting, where DOL's line is (lime: the reader's own
           question), when the line reaches this month's end, and what's filed ahead of it. */}
       <FigureRow className="mt-6">

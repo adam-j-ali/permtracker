@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * A picked option is lime (Adam, Oct 28 2026: "green is primary remember that"), the look
+ * A picked option is lime (the owner's call, Oct 28 2026), the look
  * `choiceVariants` gives every row of choices. A pressed toggle drawn in ink reads as a
  * different kind of control, and two shipped that way in one week. This reads every
  * component for an `aria-pressed` toggle whose pressed class is the ink fill.

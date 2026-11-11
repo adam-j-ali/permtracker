@@ -1,8 +1,8 @@
 /**
  * The day's email count and the retry queue (convex/emailLedger.ts, Sep 29 2026).
  *
- * Adam: "for any and all email failures like resend or anything so never just
- * refuse and lost". These pin that a failed send is kept, retried on a backoff
+ * The rule (the owner's call, Sep 29 2026): no email is ever refused and lost, whatever
+ * failed. These pin that a failed send is kept, retried on a backoff
  * (a quota refusal after the UTC day turns), given up on only after two weeks
  * or at a full queue, and that each of those is counted and told to the admin
  * once a day.

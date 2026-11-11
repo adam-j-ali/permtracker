@@ -73,8 +73,8 @@
      clears 3:1 on every surface (3.30 on the tint, 3.69 on white). */
   /* ROUND 2 (Oct 15 2026, evening): lines are ink again. The calm pass made
      --border a pale grey and every divider, frame and table rule on the site
-     faded with it; the owner: "no structure or lines or dividers or
-     compartments or containers". */
+     faded with it, and the page lost its structure: its lines, dividers and
+     compartments (the owner's call the same evening). */
   --border: #141414;
   --input: #141414;
   /* Hard offset shadows, the original's, back for the framework's shadow-*
@@ -540,7 +540,7 @@ html {
     background-size: 300% 100%;
     background-repeat: no-repeat;
     /* Round 2 (Oct 15 2026): back toward the live site's pace, so a loading
-       page reads as working (owner: "loading states skeletons everywhere").
+       page reads as working (the owner's call).
        The short wait stays, so a fast load never shows a sweep. */
     animation: skeleton-sweep 2s ease-in-out 0.2s infinite;
   }
@@ -733,7 +733,7 @@ html {
 /* The drift is tied to the page's scroll by the browser itself, so the
    pattern moves in step with the scroll: 240px over the first 800px, 0.3 of
    the page's speed. A script moving it a frame behind the scroll made the dots
-   shake (owner, Oct 16 2026: "glitchy"). A browser without scroll-driven
+   shake (reported Oct 16 2026). A browser without scroll-driven
    animations, or a visitor who asks for less motion, gets a still pattern. */
 @media (prefers-reduced-motion: no-preference) {
   @supports (animation-timeline: scroll()) {
@@ -1454,8 +1454,8 @@ body[data-scroll-locked] {
 .prose-article h3 { font-size: 1.375rem; margin-top: 2em; margin-bottom: 0.5em; }
 .prose-article h4 { font-size: 1.125rem; margin-top: 1.5em; margin-bottom: 0.5em; }
 
-/* A moving drawing sits beside the text from 1024px, with no box of its own (owner, Oct 21 2026: "smaller on
-   the side ... not main thing full width", "naked on the screen not in container"; src/components/figures/frame.ts).
+/* A moving drawing sits beside the text from 1024px, with no box of its own (the owner's call, Oct 21 2026:
+   smaller, at the side, never the full-width main thing, and bare on the page; src/components/figures/frame.ts).
    A heading beside it shortens instead of running its rule under it, a new section starts below it, and a block
    with its own ground (a table, a callout, a screenshot) never sits half under it. The prose's paragraph margins
    don't reach the drawing's own readout and note. */

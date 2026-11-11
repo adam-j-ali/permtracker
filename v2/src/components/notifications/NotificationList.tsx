@@ -315,7 +315,7 @@ export default function NotificationList({
   const router = useRouter();
   const { isSigningOut } = useAuthContext();
 
-  // Pages, not an endless list (owner, Oct 21 2026: "pagination not endless scroll"): twenty a page, the
+  // Pages, not an endless list (the owner's call, Oct 21 2026): twenty a page, the
   // server's cursor for each page kept in a stack so Previous goes back exactly. A new tab starts at page 1.
   const [stack, setStack] = useState<Array<string | undefined>>([undefined]);
   const cursor = stack[stack.length - 1];

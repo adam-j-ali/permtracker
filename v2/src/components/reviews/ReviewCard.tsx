@@ -96,8 +96,8 @@ export function ReviewCard({
           ) : null}
         </blockquote>
       ) : (
-        // A rating left without words shows its stars and nothing in the words' place (owner, Oct 31 2026: "dont say
-        // that just leave it blank"); the spacer keeps the name at the card's foot.
+        // A rating left without words shows its stars and nothing in the words' place (the owner's call,
+        // Oct 31 2026); the spacer keeps the name at the card's foot.
         <div className="mt-4 flex-1" aria-hidden="true" />
       )}{" "}
       <figcaption className="mt-5 border-t-2 border-border pt-3">

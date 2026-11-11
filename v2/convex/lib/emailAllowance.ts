@@ -3,9 +3,9 @@
  * back the day there's more of it.
  *
  * Resend's free plan allows 100 emails a day. Everything below holds mail back
- * to stay inside it. The owner's call (Oct 12 2026): "if we ever pay for
- * unlimited (or just enough) emails these should all go back to the most
- * helpful". So they all read this module, and setting EMAIL_DAILY_LIMIT on the
+ * to stay inside it. The owner's call (Oct 12 2026): on a paid plan with enough
+ * room, every one of them goes back to its most helpful setting. So they all
+ * read this module, and setting EMAIL_DAILY_LIMIT on the
  * Convex deployment to the paid plan's daily figure (above 100) turns them all
  * back at once. It's read on every call, so no deploy is needed; unset, or 100
  * and below, keeps the free plan's behavior.

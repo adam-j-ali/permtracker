@@ -368,8 +368,8 @@ export function FilterableStatTable<T>({
       {/* Controls. A fixed grid, so no control's width depends on the data:
           a flex row sized each select to its longest option, which changed
           when the full list loaded, and the whole row rewrapped on the first
-          tap (owner's iPhone, Oct 30 2026: "Search F" squeezed beside State,
-          fixed only after a tap). One column on a phone, two from 640px with
+          tap (seen on an iPhone, Oct 30 2026: the button cut to "Search F", squeezed
+          beside State, and right only after a tap). One column on a phone, two from 640px with
           Search across the top, three from 1280px. */}
       <div className="flex flex-col gap-3">
         <div className="grid grid-cols-1 items-center gap-3 sm:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
@@ -628,7 +628,7 @@ export function FilterableStatTable<T>({
         </table>
       </div>
 
-      {/* Numbered pages (owner, Oct 21 2026: "pagination not endless ... good looking good working smooth"). */}
+      {/* Numbered pages (the owner's call, Oct 21 2026). */}
       {pageCount > 1 ? (
         <Pagination
           page={safePage + 1}

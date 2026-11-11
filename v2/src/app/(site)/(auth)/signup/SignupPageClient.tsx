@@ -579,7 +579,7 @@ export function SignupPageClient() {
           )}
         </form>
 
-        {/* One line of small print (owner, Oct 26 2026: "too much text"). The terms acceptance and the
+        {/* One line of small print (the owner's call, Oct 26 2026). The terms acceptance and the
             not-a-law-firm line stay, they're the load-bearing part. A sentence about session recording went:
             recording has been off since Sep 6 2026 (disable_session_recording in instrumentation-client.ts). */}
         <p className="text-sm leading-relaxed text-muted-foreground">

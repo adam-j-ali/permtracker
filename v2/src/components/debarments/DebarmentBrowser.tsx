@@ -106,7 +106,7 @@ function Row({ d, off = false }: { d: DebarmentView; off?: boolean }) {
  * publishes them. With JavaScript off the server-rendered lists are the whole
  * record, so nothing is hidden behind a control.
  */
-/** Entries a page in one program's list (owner, Oct 21 2026: "pagination not endless scroll"). */
+/** Entries a page in one program's list (the owner's call, Oct 21 2026). */
 const PER_PAGE = 25;
 
 /**

@@ -206,8 +206,7 @@ export default async function PermQueuePage() {
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           {queueLead(census.pending, dolMonth, dolAsOf, line)}
         </p>{" "}
-        {/* The page opens on its figures (owner, Oct 27 2026: "visual heavy,
-            not text blobs"); how the count is read is folded under them. */}
+        {/* The page opens on its figures (the owner's call, Oct 27 2026); how the count is read is folded under them. */}
         <FinePrint summary="How this count is read" className="mt-3">
           <div className="mt-2 grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-6 [&>*]:min-w-0">
             <NoteBanner>

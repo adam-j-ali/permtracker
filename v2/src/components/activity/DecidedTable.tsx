@@ -94,7 +94,7 @@ export function DecidedTable({
   caption: string;
   sortable?: boolean;
 }) {
-  // Fifty rows a page (owner, Oct 21 2026: "pagination not endless scroll"); a new day or a new order starts at page 1.
+  // Fifty rows a page (the owner's call, Oct 21 2026); a new day or a new order starts at page 1.
   const [page, setPage] = useState(1);
   const [seen, setSeen] = useState(rows);
   if (seen !== rows) {

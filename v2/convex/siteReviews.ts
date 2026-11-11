@@ -287,8 +287,7 @@ export const ALERT_READER_NAME = "Case alert reader";
 export const UNNAMED_REVIEWER = "Anonymous";
 
 /**
- * The label for a review sent without a name (owner, Nov 2 2026: "if submit with none then put whatever approp if u
- * know where came from like case alerts ... and if dk then anon"): someone who came through an alert email's link,
+ * The label for a review sent without a name (the owner's call, Nov 2 2026): someone who came through an alert email's link,
  * or who watches a case at the address they gave, is a case alert reader; anyone else is anonymous.
  */
 async function unnamedLabel(ctx: MutationCtx, linkEmail: string | undefined, email: string | undefined): Promise<string> {

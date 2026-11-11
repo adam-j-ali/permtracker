@@ -237,7 +237,7 @@ export function OverviewTab({
         </div>
       </div>
 
-      {/* DOL decision card, at the foot of the Overview (owner, Oct 30 2026: "move this to the bottom"). */}
+      {/* DOL decision card, at the foot of the Overview (the owner's call, Oct 30 2026). */}
       <CaseEstimateSection caseData={caseData} />
 
     </div>

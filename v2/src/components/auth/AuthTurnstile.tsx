@@ -9,8 +9,8 @@
  * verification in convex/turnstile.ts.
  *
  * Three callsites:
- *   - signup         → appearance="interaction-only" since Oct 26 2026 (owner: "no
- *                      friction"); the check is still required, it just shows
+ *   - signup         → appearance="interaction-only" since Oct 26 2026 (the owner's call, for
+ *                      less friction); the check is still required, it just shows
  *                      itself only when Cloudflare wants a click
  *   - reset-password → appearance="always" (same abuse profile as signup)
  *   - login          → appearance="interaction-only" (invisible for most

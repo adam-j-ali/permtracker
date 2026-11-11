@@ -30,8 +30,7 @@ import { formatInt } from "@/lib/format";
 import { longDate, shortDate, weekdayName } from "@convex/lib/months";
 
 /**
- * The daily filings for any program and any period since FY2020 (owner, Nov 5 2026: "ez to
- * click/check other days or time periods ... flexible sort filter search"). The page carries the
+ * The daily filings for any program and any period since FY2020 (the owner's call, Nov 5 2026). The page carries the
  * last PAGE_WINDOW_DAYS; an older period is asked of /api/filings-by-day. Picks live in the
  * address (`?program=lca&period=custom&from=2024-01-01&to=2024-03-31`), so a view can be shared.
  */

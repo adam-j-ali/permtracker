@@ -179,7 +179,7 @@ try {
       }, [Math.max(0, Math.round(box.y - (card.above ?? 40))), x, x + Math.min(card.maxWidth ?? SHOT_W_MAX, viewW - x)]);
       const w = Math.min(card.maxWidth ?? SHOT_W_MAX, Math.round(box.right + 32) - x, viewW - x);
       const h = Math.round(w * FRAME_RATIO);
-      // A clean bottom (owner, Oct 27 2026: "all borders shouldn't have cut off"): the frame
+      // A clean bottom (the owner's call, Oct 27 2026): the frame
       // has a fixed shape, so its edge used to land mid-box. End the picture on the lowest
       // line inside the frame that no box, picture or line of text crosses, and paint the
       // page's own ground below it, so every card ends on whitespace.

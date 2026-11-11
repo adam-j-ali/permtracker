@@ -12,8 +12,7 @@ import { longDate, monthDay, monthYear } from "@convex/lib/months";
 
 /**
  * The wage-request page's board: the answers first, each a compact tile with
- * its picture (owner, Oct 31 2026: "visual first ... big important what they
- * want first, the rest there if they want it"). When might mine be decided,
+ * its picture (the owner's call, Oct 31 2026). When might mine be decided,
  * is DOL keeping up, how long requests take month by month, how they end,
  * what DOL did each day, and the other wage queues DOL publishes. Every figure
  * names its source and day; a tile whose data didn't load is left out.

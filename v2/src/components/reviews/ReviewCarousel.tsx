@@ -9,8 +9,8 @@ import { DRIFT_FROM, IN_ROWS_MAX, dealRows, rowsFor, wordsFirst } from "@/lib/re
 import { cn } from "@/lib/utils";
 
 /**
- * The reviews as rows of cards that drift slowly sideways (owner, Oct 23 2026: "visual driven ... carousel auto
- * soft slow scroll, can stop or scroll", then "multi layered ... grows, but capped"). The site's no-looping-motion
+ * The reviews as rows of cards that drift slowly sideways (the owner's call, Oct 23 2026: led by the picture, a
+ * slow drift the reader can stop or scroll, in several rows that grow to a cap). The site's no-looping-motion
  * default is bent here by the owner's call, inside WCAG 2.2.2's terms: one Pause stops every row, a row stops while
  * it's pointed at, touched, scrolled or holds focus, everything stops when the tab is hidden, and nothing moves for
  * anyone who asks for reduced motion.

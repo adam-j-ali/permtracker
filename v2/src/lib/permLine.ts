@@ -2,7 +2,7 @@
  * Where DOL really is in the PERM line, from our own daily check of DOL's case-status service: the oldest
  * filing month with 100 or more cases that DOL hasn't decided half of (perm_docs['live_census'], rebuilt
  * after every sweep). DOL's own published month is dated by DOL and can sit unchanged for weeks; on Nov 2
- * 2026 it still read "as of October 21" (owner, Nov 2: "oct 21? isnt that super behind?"). So every surface
+ * 2026 it still read "as of October 21", twelve days behind. So every surface
  * that names the month DOL is working leads with this, dated by our check, and gives DOL's table beside it,
  * as the wage-request line has since Oct 31 (lib/pwdLine.ts, whose rule this shares).
  *

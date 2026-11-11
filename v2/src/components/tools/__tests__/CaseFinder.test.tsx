@@ -7,8 +7,7 @@ import { CaseFinder } from "../CaseFinder";
 
 /**
  * The finder asks /api/find-case for what a person knows about a case: any of the employer's name, the job title
- * and the law firm, with one filing date, two, or none (owner, Nov 10 2026: "time range rather than exact date ...
- * each optional, need to fill in at least one thing"). The server reads and matches; this is the form, what it
+ * and the law firm, with one filing date, two, or none (the owner's call, Nov 10 2026). The server reads and matches; this is the form, what it
  * asks for and when, and how it says each answer.
  */
 vi.mock("@/lib/funnelEvents", () => ({ trackFinder: vi.fn() }));

@@ -2,9 +2,9 @@
 """How many cases were filed each day, every program, DOL's live record and its files together.
 
 perm_docs['filings_by_day'] answers "how many were filed today, yesterday, this
-week, on March 3" for PERM, wage requests, H-1B LCAs and the seasonal programs
-(owner, Nov 5 2026: "work properly with both live data and published from
-disclosure ... and properly handle mismatch or only in one").
+week, on March 3" for PERM, wage requests, H-1B LCAs and the seasonal programs.
+It reads DOL's live record and its published files together, and says where the
+two disagree or only one holds a case (the owner's call, Nov 5 2026).
 
 DOL holds each case twice. Its live case-status service (our sweep's
 `*_case_status` tables, `filing_date`) has every case it indexes, pending

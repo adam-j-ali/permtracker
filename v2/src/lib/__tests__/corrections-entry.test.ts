@@ -5,8 +5,7 @@ import { describe, expect, it } from "vitest";
 
 /**
  * The corrections log is ONE changelog entry now, in the same shape as every
- * release note (Adam, 2026-09-10: "all the corrections, they should be under 1
- * changelog and follow same format as others"). It used to be a typed array in
+ * release note (the owner's call, 2026-09-10). It used to be a typed array in
  * `src/lib/corrections.ts` rendered as fourteen special-cased timeline rows,
  * and that array had a test asserting every entry carried all four parts.
  *

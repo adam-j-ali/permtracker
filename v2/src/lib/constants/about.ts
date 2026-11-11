@@ -95,7 +95,7 @@ export const ORGANIZATION_SAME_AS: readonly string[] = [
  * law needs the party: the Terms, the Privacy Policy, the API terms (each once,
  * in its opening and its operator line) and the Organization's `legalName`.
  * Everywhere else the site, its emails, packages and licences say PERM Tracker
- * (owner, Oct 31 2026: "only put Asolys where actually needed").
+ * (the owner's call, Oct 31 2026).
  *
  * Formed Sep 23 2026 as PERM Tracker LLC and renamed Asolys LLC by Articles of
  * Amendment filed Oct 8 2026 (Sunbiz document L26000495521, read Oct 30 2026:
