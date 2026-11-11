@@ -1884,7 +1884,10 @@ export default defineSchema({
     unsubscribedAt: v.optional(v.number()),
     createdAt: v.number(),
     source: v.optional(v.string()),
-  }).index("by_email", ["email"]),
+  })
+    .index("by_email", ["email"])
+    // The 30-day clean-up of sign-ups nobody confirmed (convex/retention.ts).
+    .index("by_confirmed_created", ["confirmedAt", "createdAt"]),
 
   /**
    * The weekly digest list. Same shape and the same double opt-in
@@ -1908,7 +1911,10 @@ export default defineSchema({
     source: v.optional(v.string()),
     /** When the digest's own sign-up (convex/digestSignup.ts) last sent a confirmation: its 10-minute cooldown. */
     lastConfirmationSentAt: v.optional(v.number()),
-  }).index("by_email", ["email"]),
+  })
+    .index("by_email", ["email"])
+    // The 30-day clean-up of sign-ups nobody confirmed (convex/retention.ts).
+    .index("by_confirmed_created", ["confirmedAt", "createdAt"]),
 
   /** One row per composed issue, newest first by weekOf. */
   newsletterIssues: defineTable({

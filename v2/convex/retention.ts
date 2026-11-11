@@ -116,8 +116,8 @@ export const pruneOperationalLogs = internalMutation({
         break;
       }
     }
-    // The queue, bulletin and employer sign-ups nobody confirmed go on the same horizon (audit, Nov 4 2026:
-    // they had been kept for good). Read through an index that leads with confirmedAt, so only unconfirmed
+    // The queue, bulletin, employer, product-news and weekly-digest sign-ups nobody confirmed go on the same
+    // horizon (they had been kept for good). Read through an index that leads with confirmedAt, so only unconfirmed
     // rows past the horizon are read: confirmed rows, never deleted, can't fill the read. An unconfirmed row
     // someone stopped is kept. A run reads at most OTHER_ALERTS_LOOK a table; whatever it deleted is gone,
     // so the next day's run reads past it.
@@ -130,6 +130,14 @@ export const pruneOperationalLogs = internalMutation({
         .withIndex("by_confirmed_created", (q) => q.eq("confirmedAt", undefined).lt("createdAt", staleBefore)),
       ctx.db
         .query("bulletinAlerts")
+        .withIndex("by_confirmed_created", (q) => q.eq("confirmedAt", undefined).lt("createdAt", staleBefore)),
+      // The product-news and weekly-digest lists are sign-ups too, staged by a checkbox and confirmed by a
+      // click (convex/lib/newsConsent.ts). They had no clean-up at all.
+      ctx.db
+        .query("newsSubscribers")
+        .withIndex("by_confirmed_created", (q) => q.eq("confirmedAt", undefined).lt("createdAt", staleBefore)),
+      ctx.db
+        .query("newsletterSubscribers")
         .withIndex("by_confirmed_created", (q) => q.eq("confirmedAt", undefined).lt("createdAt", staleBefore)),
     ];
     for (const source of sources) {
