@@ -7,6 +7,7 @@ import { PageSection } from "@/components/data/PageSection";
 import { Fold, FoldList } from "@/components/data/Fold";
 import { FinePrint } from "@/components/data/FinePrint";
 import { Figure, FigureRow } from "@/components/data/FigureRow";
+import { CaseNotFoundSeen } from "@/components/analytics/CaseNotFoundSeen";
 import { WatchThisNumber } from "@/components/tools/WatchThisNumber";
 import { CaseNumberPlate } from "@/components/tools/CaseNumberPlate";
 import { CaseWall, CohortNeighbours } from "@/components/tools/CaseWall";
@@ -80,6 +81,8 @@ export function CaseNotFound({
   dolMiss = null,
 }: CaseNotFoundProps) {
   const month = (iso: string) => monthYear(iso) ?? iso;
+  // For the count of lookups that end here: the number's form, never the number.
+  const format = isLegacy ? "legacy" : parsed ? "current" : "unreadable";
   const checked = mirrorSize
     ? `Checked ${formatInt(mirrorSize)} per-case statuses and DOL's decided files since October 2015`
     : null;
@@ -87,6 +90,7 @@ export function CaseNotFound({
     const retry = `/perm-case-status?case=${encodeURIComponent(caseNumber)}`;
     return (
       <div>
+        <CaseNotFoundSeen why="gap" format={format} />
         <AnswerPanel
           verdict={unsettledVerdict(dolMiss)}
           direction="flat"
@@ -116,6 +120,7 @@ export function CaseNotFound({
   }
   return (
     <div>
+      <CaseNotFoundSeen why="none" format={format} />
       <AnswerPanel
         verdict="Not in our records"
         direction="flat"

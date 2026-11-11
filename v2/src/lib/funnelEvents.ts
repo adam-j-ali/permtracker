@@ -43,6 +43,15 @@ export function trackLookup(source: string, raw: string): void {
 }
 
 /**
+ * A case number was looked up and we hold no record of it. `why` is "none" (DOL's own search was asked and holds
+ * none either) or "gap" (the live check couldn't be made, so the page says it doesn't know). `format` says whether
+ * the number is in the current form or the older one. Never the number.
+ */
+export function trackCaseNotFound(why: "none" | "gap", format: "current" | "legacy" | "unreadable"): void {
+  analytics.capture("case_not_found", { why, format });
+}
+
+/**
  * The no-number finder answered: an employer's name and a filing day were read against that
  * day's list. `found` is how it ended ("cases", "close-names" or "none"), never the name.
  */
