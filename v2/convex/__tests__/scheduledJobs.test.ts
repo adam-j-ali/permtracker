@@ -313,6 +313,42 @@ describe("Scheduled Jobs", () => {
       expect(reminders[0].daysUntilDeadline).toBe(7);
     });
 
+    // The run stores an RFI reminder as "rfi_alert", and its already-sent check read "deadline_reminder" rows
+    // only, so a second run on the same day sent the RFI reminder again.
+    it("doesn't repeat an RFI reminder the run has already written", async () => {
+      const t = createTestContext();
+      const { userId, authT } = await createTestUserWithProfile(t, "User RFI Twice");
+      const caseId = await createTestCaseWithDeadlines(t, authT, {
+        employerName: "RFI Company",
+        beneficiaryIdentifier: "Ben RFI",
+        caseStatus: "eta9089",
+        rfiEntries: [
+          { id: "rfi-1", receivedDate: daysAgo(23), responseDueDate: daysFromNow(7), createdAt: Date.now() - 23 * 24 * 60 * 60 * 1000 },
+        ],
+      });
+      await authT.run(async (ctx) => {
+        const now = Date.now();
+        await ctx.db.insert("notifications", {
+          userId,
+          caseId,
+          type: "rfi_alert",
+          title: "RFI response due in 7 days",
+          message: "Test message",
+          priority: "high",
+          deadlineDate: daysFromNow(7),
+          deadlineType: "rfi_due",
+          daysUntilDeadline: 7,
+          isRead: false,
+          emailSent: false,
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+
+      const reminders = await authT.run((ctx) => ctx.runQuery(internal.scheduledJobs.getCasesNeedingReminders, {}));
+      expect(reminders.length).toBe(0);
+    });
+
     it("handles RFE entries with due dates", async () => {
       const t = createTestContext();
       const { authT } = await createTestUserWithProfile(t, "User RFE");

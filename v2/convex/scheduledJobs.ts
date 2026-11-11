@@ -120,6 +120,9 @@ function daysUntilDeadline(
 // QUERIES
 // ============================================================================
 
+/** The notification types the daily reminder run writes: a row of any of them means that reminder went. */
+const REMINDER_NOTIFICATION_TYPES: ReadonlySet<string> = new Set(["deadline_reminder", "rfi_alert", "rfe_alert"]);
+
 /**
  * Get all cases with upcoming deadlines that need reminder notifications.
  *
@@ -188,7 +191,9 @@ export const getCasesNeedingReminders = internalQuery({
       for await (const notif of ctx.db
         .query("notifications")
         .withIndex("by_case_id", (q) => q.eq("caseId", caseDoc._id))) {
-        if (notif.type === "deadline_reminder" && notif.deadlineType && notif.daysUntilDeadline !== undefined) {
+        // An RFI or RFE reminder is stored under its own type (deadlineDigest.ts), so all three count as sent:
+        // with "deadline_reminder" alone, a second run on the same day sent those two again.
+        if (REMINDER_NOTIFICATION_TYPES.has(notif.type) && notif.deadlineType && notif.daysUntilDeadline !== undefined) {
           existingKeys.add(`${caseDoc._id}:${notif.deadlineType}:${notif.daysUntilDeadline}`);
         }
       }
