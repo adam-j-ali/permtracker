@@ -33,6 +33,7 @@ import { ChapterNav, type ChapterItem } from "@/components/entities/Chapters";
 import { withSocialCard } from "@/lib/socialCard";
 import { SearchParamsBoundary } from "@/hooks/useUrlSearchParams";
 import { formatInt } from "@/lib/format";
+import { filedLastMonth, waitingSplit } from "@/lib/figureVisuals";
 import { SITE_URL } from "@/lib/constants/site";
 const TITLE = "PERM Case Search";
 const DESCRIPTION =
@@ -108,14 +109,30 @@ export default async function PermCasesPage() {
       : {}),
   });
 
+  // Only the months after the published files end: a month inside them has lost its decided cases to those files,
+  // so its count here is what's left of it, never what was filed.
+  const wholeMonths = liveSummary?.publishedThrough
+    ? liveSummary.byMonth.filter((m) => m.month > liveSummary.publishedThrough!.slice(0, 7))
+    : [];
+  const lastMonth = liveSummary?.asOf ? filedLastMonth(wholeMonths, liveSummary.asOf.slice(0, 10)) : undefined;
+
   const figures: IndexFigure[] = [
     ...(meta
       ? [{ label: "Decided, in DOL's published files", value: formatInt(meta.totalCases), note: `${monthYear(meta.firstDecisionDate)} to ${monthYear(meta.lastDecisionDate)}` }]
       : []),
     ...(liveSummary
-      ? [{ label: "Newer, from DOL's live service", value: formatInt(liveSummary.total), href: "#live", note: `${formatInt(liveSummary.pending)} still waiting` }]
+      ? [
+          {
+            label: "Newer, from DOL's live service",
+            value: formatInt(liveSummary.total),
+            href: "#live",
+            note: `${formatInt(liveSummary.pending)} still waiting`,
+            ...(waitingSplit(liveSummary, "newer PERM cases") ? { split: waitingSplit(liveSummary, "newer PERM cases") } : {}),
+          },
+        ]
       : []),
-    { label: "Beyond PERM", value: "Search every program", href: "/case-search", note: "Wage requests, H-1B, H-2A and H-2B too" },
+    // How busy the last complete month was. (The way to every other program is in the box beside these, once.)
+    ...(lastMonth ? [{ ...lastMonth, note: "PERM cases in DOL's live service, by the month filed" }] : []),
   ];
   const chapters: ChapterItem[] = [
     { id: "by-day", label: "Decisions" },

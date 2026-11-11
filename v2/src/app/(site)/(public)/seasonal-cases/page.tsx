@@ -15,6 +15,7 @@ import { DailyDecisionsChart } from "@/components/tools/DailyDecisionsChart";
 import { SEASONAL_FORMS } from "@/lib/seasonalForms";
 import { SearchParamsBoundary } from "@/hooks/useUrlSearchParams";
 import { formatInt } from "@/lib/format";
+import { filedLastMonth, waitingSplit } from "@/lib/figureVisuals";
 import { longDate } from "@convex/lib/months";
 import { softFail } from "@/lib/softRead";
 
@@ -108,12 +109,17 @@ export default async function SeasonalCasesPage() {
                   label: "Waiting at DOL now",
                   value: formatInt(summary.pending),
                   ...(longDate(summary.asOf) ? { note: `Checked ${longDate(summary.asOf)}` } : {}),
+                  ...(waitingSplit(summary, "filings") ? { split: waitingSplit(summary, "filings") } : {}),
                 },
                 {
                   label: "Decided",
                   value: formatInt(summary.decided),
                   ...(earliest && longDate(`${earliest}-01`) ? { note: `Filed since ${longDate(`${earliest}-01`)}` } : {}),
                 },
+                // How busy the last complete month was, against the eleven before it.
+                ...(summary.asOf && filedLastMonth(summary.byMonth, summary.asOf)
+                  ? [{ ...filedLastMonth(summary.byMonth, summary.asOf)!, note: "H-2A, H-2B and CW-1 filings, by the month filed" }]
+                  : []),
               ]
             : []
         }
