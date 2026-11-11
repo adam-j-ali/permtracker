@@ -61,3 +61,22 @@ export const listNewsSubscribers = internalQuery({
     return out;
   },
 });
+
+/**
+ * Whether the newest event the mail provider sent us about an address is its contact's
+ * removal. Before Nov 11 2026 "Stop everything" on the preferences page removed the
+ * contact, and that removal is the only record of the stop, so the sync asks this before
+ * it adds an account to the list (convex/marketingEmail.ts). One row is read.
+ */
+export const contactWasRemoved = internalQuery({
+  args: { email: v.string() },
+  returns: v.boolean(),
+  handler: async (ctx, { email }) => {
+    const newest = await ctx.db
+      .query("marketingEvents")
+      .withIndex("by_email_and_time", (q) => q.eq("email", email))
+      .order("desc")
+      .first();
+    return newest?.eventType === "contact.deleted";
+  },
+});

@@ -43,7 +43,7 @@ vi.mock("../marketingWebhook", async (importOriginal) => {
 
 import { Webhook } from "svix";
 import { createTestContext } from "../../test-utils/convex";
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 
 const TEST_WEBHOOK_SECRET = Buffer.from("perm-tracker-test-secret-1234").toString("base64");
 
@@ -162,20 +162,31 @@ describe("marketingEmail subscription actions — IDOR protection (C1)", () => {
     expect(body.segment_ids).toHaveLength(1);
   });
 
-  it("someone not on the list reads as not subscribed, so the switch shows, off", async () => {
+  // Product updates are opt-out for an account (the Privacy Policy, "Product Update Emails"):
+  // the list is filled from the accounts before each update goes. So an account that isn't on
+  // the list yet is one that will be mailed, and the switch has to say so.
+  it("an account not on the list yet reads as subscribed, so the switch shows on", async () => {
     const t = createTestContext();
     const { ctx } = await seedCaller(t, "new@example.com");
     mockFetch.mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({}), text: async () => "not found" });
-    expect(await ctx.action(api.marketingEmail.getMarketingSubscriptionStatus, { email: "x" })).toBe(false);
+    expect(await ctx.action(api.marketingEmail.getMarketingSubscriptionStatus, { email: "x" })).toBe(true);
   });
 
-  it("turning updates off for someone not on the list needs nothing", async () => {
+  // It answered "nothing to do", so the choice was recorded nowhere and the next fill of the
+  // list subscribed the account.
+  it("turning updates off for an account not on the list puts the choice on record", async () => {
     const t = createTestContext();
     const { ctx } = await seedCaller(t, "new@example.com");
-    mockFetch.mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({}), text: async () => "not found" });
+    mockFetch
+      .mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({}), text: async () => "not found" })
+      .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ id: "c1" }), text: async () => "{}" });
     const result = await ctx.action(api.marketingEmail.updateMarketingSubscription, { email: "x", subscribed: false });
     expect(result).toBe(false);
-    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    const [url, init] = mockFetch.mock.calls[1] as [string, RequestInit];
+    expect(url).toMatch(/\/contacts$/);
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body as string)).toMatchObject({ email: "new@example.com", unsubscribed: true });
   });
 
   it("getMarketingSubscriptionStatus returns null for an unauthenticated caller (no Resend call)", async () => {
@@ -221,6 +232,118 @@ describe("marketingEmail subscription actions — IDOR protection (C1)", () => {
 // C4 — webhook returns 5xx (not 200) when the internal write fails, so
 // svix/Resend redelivers and the by_svix_id dedup recovers the audit event.
 // ============================================================================
+
+// "Stop everything" on the preferences page removed the address's contact. The list is filled
+// from the accounts before each product update, so an account that pressed it came back,
+// subscribed. A stop is kept as a contact that says so.
+describe("a stop stays on record", () => {
+  let mockFetch: ReturnType<typeof vi.fn>;
+  const ok = { ok: true, status: 200, json: async () => ({}), text: async () => "{}" };
+  const missing = { ok: false, status: 404, json: async () => ({}), text: async () => "not found" };
+
+  beforeEach(() => {
+    process.env.AUTH_RESEND_KEY = "re_test_key";
+    mockFetch = vi.fn();
+    global.fetch = mockFetch as unknown as typeof fetch;
+  });
+  afterEach(() => {
+    global.fetch = originalFetch;
+    delete process.env.AUTH_RESEND_KEY;
+    vi.clearAllMocks();
+  });
+
+  const call = (i: number) => {
+    const [url, init] = mockFetch.mock.calls[i] as [string, RequestInit];
+    return { url, method: init.method, body: init.body ? JSON.parse(init.body as string) : undefined };
+  };
+
+  it("marks an existing contact unsubscribed, and never deletes it", async () => {
+    const t = createTestContext();
+    mockFetch.mockResolvedValueOnce(ok);
+    await t.action(internal.marketingEmail.setContactUnsubscribed, { email: "stop@example.com", createIfMissing: true });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(call(0)).toMatchObject({ method: "PATCH", body: { unsubscribed: true } });
+    expect(call(0).url).toContain("/contacts/stop%40example.com");
+  });
+
+  it("creates the contact already unsubscribed for an account that isn't on the list", async () => {
+    const t = createTestContext();
+    mockFetch.mockResolvedValueOnce(missing).mockResolvedValueOnce(ok);
+    await t.action(internal.marketingEmail.setContactUnsubscribed, { email: "stop@example.com", createIfMissing: true });
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(call(1)).toMatchObject({ method: "POST", body: { email: "stop@example.com", unsubscribed: true } });
+  });
+
+  it("stores nothing for an address with no account and no contact", async () => {
+    const t = createTestContext();
+    mockFetch.mockResolvedValueOnce(missing);
+    await t.action(internal.marketingEmail.setContactUnsubscribed, { email: "stranger@example.com", createIfMissing: false });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("records a failed request and doesn't throw", async () => {
+    const t = createTestContext();
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({}), text: async () => "boom" });
+    await expect(
+      t.action(internal.marketingEmail.setContactUnsubscribed, { email: "stop@example.com", createIfMissing: true }),
+    ).resolves.toBeNull();
+    const recorded = await t.run(async (ctx) =>
+      (await ctx.db.system.query("_scheduled_functions").collect())
+        .filter((job) => job.name.includes("systemErrors"))
+        .map((job) => (job.args[0] as { operation: string }).operation),
+    );
+    expect(recorded).toEqual(["marketingEmail.setContactUnsubscribed"]);
+  });
+});
+
+// Stops made before the fix removed the contact, and that removal (in the log of the mail
+// provider's contact events) is the only record of them.
+describe("filling the list never undoes a stop", () => {
+  let calls: { url: string; method: string; body?: Record<string, unknown> }[];
+
+  beforeEach(() => {
+    process.env.AUTH_RESEND_KEY = "re_test_key";
+    calls = [];
+    global.fetch = (async (url: unknown, init?: RequestInit) => {
+      const method = init?.method ?? "GET";
+      calls.push({ url: String(url), method, body: init?.body ? JSON.parse(init.body as string) : undefined });
+      // The list as Resend holds it: one account's contact, already unsubscribed.
+      if (method === "GET") {
+        return new Response(
+          JSON.stringify({ data: [{ id: "c-off", email: "off@example.com", first_name: "Off", unsubscribed: true }], has_more: false }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      return new Response(JSON.stringify({ id: "new" }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }) as unknown as typeof fetch;
+  });
+  afterEach(() => {
+    global.fetch = originalFetch;
+    delete process.env.AUTH_RESEND_KEY;
+  });
+
+  it("adds a new account subscribed, a stopped one unsubscribed, and leaves an unsubscribed contact alone", async () => {
+    const t = createTestContext();
+    await t.run(async (ctx) => {
+      await ctx.db.insert("users", { name: "New Person", email: "new@example.com" });
+      await ctx.db.insert("users", { name: "Stopped Person", email: "Stopped@Example.com" });
+      await ctx.db.insert("users", { name: "Off", email: "off@example.com" });
+      // The stopped account's contact was removed by "Stop everything"; the newest event says so.
+      const base = { contactId: "c-old", unsubscribed: false, rawPayload: "{}" };
+      await ctx.db.insert("marketingEvents", { ...base, svixId: "e1", email: "stopped@example.com", eventType: "contact.created", occurredAt: 1 });
+      await ctx.db.insert("marketingEvents", { ...base, svixId: "e2", email: "stopped@example.com", eventType: "contact.deleted", occurredAt: 2 });
+    });
+
+    await t.action(internal.marketingEmail.syncContacts, {});
+
+    const created = calls.filter((c) => c.method === "POST").map((c) => c.body!);
+    expect(created.find((b) => b.email === "new@example.com")?.unsubscribed).toBeUndefined();
+    expect(created.find((b) => String(b.email).toLowerCase() === "stopped@example.com")).toMatchObject({ unsubscribed: true });
+    // The contact that's already unsubscribed is never written to.
+    expect(calls.filter((c) => c.method !== "GET" && c.url.includes("c-off"))).toEqual([]);
+    expect(created.find((b) => b.email === "off@example.com")).toBeUndefined();
+  }, 30_000);
+});
 
 describe("/resend-inbound returns 5xx on internal write failure (C4)", () => {
   beforeEach(() => {

@@ -306,6 +306,39 @@ describe("the preference center", () => {
     );
     expect(rows.every((r) => r.unsubscribedAt !== undefined)).toBe(true);
   });
+
+  // The stop is kept as a contact marked unsubscribed. Removing the contact left no record,
+  // and the next fill of the product-update list subscribed an account that had stopped.
+  const contactJobs = (t: ReturnType<typeof createTestContext>) =>
+    t.run(async (ctx) =>
+      (await ctx.db.system.query("_scheduled_functions").collect())
+        .filter((job) => job.name.includes("marketingEmail"))
+        .map((job) => [job.name.split(":").pop(), job.args[0]]),
+    );
+
+  it("unsubscribe-all marks the address's contact unsubscribed, creating it for an account", async () => {
+    const t = createTestContext();
+    await t.run(async (ctx) => ctx.db.insert("users", { name: "Account", email: EMAIL }));
+    const token = await makeUnsubscribeToken(EMAIL, SECRET, "prefs");
+    await t.mutation(internal.emailPrefs.unsubscribeAllByToken, { token });
+    expect(await contactJobs(t)).toEqual([["setContactUnsubscribed", { email: EMAIL, createIfMissing: true }]]);
+  });
+
+  it("unsubscribe-all for an address with no account stores no new contact", async () => {
+    const t = createTestContext();
+    const token = await makeUnsubscribeToken(EMAIL, SECRET, "prefs");
+    await t.mutation(internal.emailPrefs.unsubscribeAllByToken, { token });
+    expect(await contactJobs(t)).toEqual([["setContactUnsubscribed", { email: EMAIL, createIfMissing: false }]]);
+  });
+
+  it("product news turned off alone takes effect at the mail provider at once", async () => {
+    const t = createTestContext();
+    await t.mutation(internal.emailPrefs.stageNews, { email: EMAIL });
+    await t.mutation(internal.emailPrefs.confirmNewsForEmail, { email: EMAIL });
+    const token = await makeUnsubscribeToken(EMAIL, SECRET, "prefs");
+    await t.mutation(internal.emailPrefs.disableByToken, { token, kind: "news" });
+    expect(await contactJobs(t)).toEqual([["setContactUnsubscribed", { email: EMAIL, createIfMissing: false }]]);
+  });
 });
 
 describe("bulletin alerts", () => {
