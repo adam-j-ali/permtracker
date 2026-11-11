@@ -101,7 +101,7 @@ const TRACE: {
     figure: "Analyst review queue month",
     where: { href: "/perm-processing-times", label: "Processing times" },
     how: "No computation. The value DOL prints in that row, with the date DOL attached to it. Where DOL prints a dash, the page says so instead of substituting anything.",
-    population: "DOL's published snapshot, read weekly and kept, since DOL overwrites its own.",
+    population: "DOL's published snapshot, read daily and kept, since DOL overwrites its own.",
   },
   {
     figure: "Average days to a determination",
@@ -119,7 +119,7 @@ const TRACE: {
     figure: "Decisions per month",
     where: { href: "/perm-processing-times", label: "Processing times" },
     how: "A count of determinations by the month DOL issued them.",
-    population: "Every decided case in the merged files. It lags the weekly queue page by a quarter.",
+    population: "Every decided case in the merged files. It lags the queue page by a quarter.",
   },
   {
     figure: "Denial rate",

@@ -59,7 +59,7 @@ const POSTURE = [
   {
     Icon: KeyIcon,
     title: "Sign-in",
-    body: "Emailed one-time codes or Google. Passwords are salted and hashed with industry-standard algorithms.",
+    body: "A password or Google. An emailed one-time code confirms a new address and resets a password. Passwords are salted and hashed with industry-standard algorithms.",
   },
   {
     Icon: EnvelopeSimpleIcon,
@@ -102,7 +102,8 @@ export default function SecurityPage() {
           What every page is sent with
         </h2>{" "}
         <p className="mt-2 max-w-2xl text-base leading-relaxed text-soft">
-          HTTPS only, for two years, on every subdomain. No other site may show a page in a frame. No camera or
+          HTTPS only, for two years, on every subdomain. No other site may show a page in a frame, apart from the
+          embeddable tools, which are made to be framed. No camera or
           location. And a content policy that lists where scripts, styles and connections may come from.
         </p>{" "}
         <CodeWindow

@@ -96,7 +96,7 @@ const STANDARDS = [
       <>
         Each date is checked against its source before it&apos;s published. Each picture of a page or form is captured
         from the page or form itself and credited. Every morning the live pages are checked as a browser renders them, for
-        headings, links and accessibility (WCAG 2.1 AA). Each page shows the day it last changed.
+        headings, links and accessibility (WCAG 2.2 AA). Each page shows the day it last changed.
       </>
     ),
   },
