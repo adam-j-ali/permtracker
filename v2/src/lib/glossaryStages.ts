@@ -59,7 +59,7 @@ export const GLOSSARY_STAGES: readonly GlossaryStage[] = [
     name: "Green card",
     who: "USCIS or a consulate",
     onRoad: true,
-    slugs: ["adjustment-of-status", "consular-processing", "i-693", "supplement-j", "portability", "ead", "advance-parole", "median-processing-time", "emma"],
+    slugs: ["adjustment-of-status", "consular-processing", "i-693", "supplement-j", "portability", "ead", "advance-parole", "median-processing-time", "emma", "silent-update", "uscis-account-codes"],
   },
   {
     id: "h1b",

@@ -79,7 +79,7 @@ const FAQS = [
   },
   {
     q: "Can I choose my field office?",
-    a: "No. USCIS assigns the office by the applicant's address, and moving during the case moves the case. This page shows where a case stands and how busy that office is. It can't help you pick one.",
+    a: "No. USCIS's Policy Manual says a case that needs an interview goes to the field office with jurisdiction over where the applicant lives. USCIS has also moved I-485s between the National Benefits Center and field offices, and filers report cases worked at an office that isn't their local one. This page shows how busy each office is. It can't help you pick one.",
   },
   {
     q: "How current is this?",

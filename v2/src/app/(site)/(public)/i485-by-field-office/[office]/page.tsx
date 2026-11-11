@@ -183,7 +183,7 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
     },
     {
       q: `Can my I-485 be decided at an office other than my local one?`,
-      a: `Yes. USCIS can move a case from one office to another while it waits, and its file counts a case wherever it sits on the quarter's last day. A notice from USCIS, or your online account, says which office holds your case.`,
+      a: `Yes. USCIS can move a case from one office to another while it waits, and its file counts a case wherever it sits on the quarter's last day. USCIS says it sends a transfer notice when it moves a case, and an interview or appointment notice names the office to go to.`,
     },
     {
       q: `Where do these numbers come from?`,
