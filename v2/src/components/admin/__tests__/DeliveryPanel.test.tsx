@@ -114,3 +114,21 @@ describe("the admin page's latest alerts", () => {
     expect(within(latest()).queryByRole("list")).toBeNull();
   });
 });
+
+describe("alerts waiting in the outbox", () => {
+  // The tab's badge counts them, and nothing on the page said what they were waiting for.
+  it("says how many are waiting, when they go, and that the once-a-day rule can hold one until tomorrow", () => {
+    const waiting = data([]);
+    waiting.outbox = { ...waiting.outbox, queued: 1, oldestQueuedAt: Date.now() - 3 * 3_600_000 };
+    render(<DeliveryPanel data={waiting} />);
+    const body = document.body.textContent ?? "";
+    expect(body).toContain("1 alert is waiting to send.");
+    expect(body).toContain("7:30 AM, 1:00 PM or 6:30 PM Eastern");
+    expect(body).toContain("already emailed today waits for tomorrow");
+  });
+
+  it("says nothing of the kind when the outbox is empty", () => {
+    render(<DeliveryPanel data={data([])} />);
+    expect(document.body.textContent ?? "").not.toContain("waiting to send");
+  });
+});

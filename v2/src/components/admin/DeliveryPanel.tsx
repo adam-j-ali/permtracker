@@ -156,6 +156,13 @@ export function DeliveryPanel({ data }: { data: Delivery }) {
           {"A case's status change goes out the moment it's seen. Queue, bulletin and employer news reach a person " +
             "at most once a day: several wait in the outbox and go out together."}
         </p>{" "}
+        {data.outbox.queued > 0 ? (
+          <p className="mt-2 text-sm">
+            {`${formatInt(data.outbox.queued)} ${data.outbox.queued === 1 ? "alert is" : "alerts are"} waiting to send. ` +
+              "Each goes with the next run (7:30 AM, 1:00 PM or 6:30 PM Eastern). One whose address was already " +
+              "emailed today waits for tomorrow's first run: that's the once-a-day rule, and nothing is stuck."}
+          </p>
+        ) : null}{" "}
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <Figure value={formatInt(w.emails)} label="emails sent" />
           <Figure value={formatInt(w.items)} label="alerts inside them" />
