@@ -12,8 +12,9 @@ interface CompletionStepProps {
 export function CompletionStep({ onTakeTour, onSkip }: CompletionStepProps) {
   const { onboardingCaseInfo } = useOnboarding();
 
-  // If no case info, user skipped the wizard — sample case was created
-  const didSkip = !onboardingCaseInfo;
+  // The case just made in this visit, held in memory only. After a reload it's gone, so nothing here may claim
+  // the person skipped: the words below are true whether they made a case, skipped, or came back to this step.
+  const madeACase = Boolean(onboardingCaseInfo);
 
   return (
     <div className="flex flex-col items-center text-center px-2">
@@ -22,7 +23,7 @@ export function CompletionStep({ onTakeTour, onSkip }: CompletionStepProps) {
       </div>
 
       <h2 className="font-heading text-2xl sm:text-3xl font-bold mb-2">
-        {didSkip ? "Welcome aboard" : "You\u2019re all set"}
+        {madeACase ? "You\u2019re all set" : "Welcome aboard"}
       </h2>
 
       {onboardingCaseInfo && (
@@ -39,19 +40,19 @@ export function CompletionStep({ onTakeTour, onSkip }: CompletionStepProps) {
         </div>
       )}
 
-      {didSkip && (
-        <div className="mb-4 inline-flex items-center gap-2 border-2 border-dashed border-border px-4 py-2">
-          <span className="text-sm text-muted-foreground">
-            We added a <span className="font-semibold text-foreground">sample case</span> so you can explore.
-            Delete it anytime.
-          </span>
-        </div>
-      )}
+      {/* Every account gets the sample: at the skip, or as this step is left. Said to everyone, in words that hold
+          on both sides of that moment. */}
+      <div className="mb-4 inline-flex items-center gap-2 border-2 border-dashed border-border px-4 py-2">
+        <span className="text-sm text-muted-foreground">
+          Your account comes with a <span className="font-semibold text-foreground">sample case</span>, marked
+          Sample, so there&apos;s something to explore. Delete it anytime.
+        </span>
+      </div>
 
       <p className="text-muted-foreground text-sm max-w-xs mb-8">
-        {didSkip
-          ? "Take a quick tour to see where everything is, or jump straight into your dashboard."
-          : "Your first case is ready. Take a quick tour to see where everything is, or jump straight into your dashboard."}
+        {madeACase
+          ? "Your first case is ready. Take a quick tour to see where everything is, or jump straight into your dashboard."
+          : "Take a quick tour to see where everything is, or jump straight into your dashboard."}
       </p>
 
       <div className="w-full max-w-sm space-y-3">
