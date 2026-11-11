@@ -81,8 +81,13 @@ export interface CaseLookupFormProps {
   source?: string;
   /** Where the number goes. The embed answers inside its own frame. */
   action?: string;
-  /** An example number, never a label. */
+  /**
+   * Words in the empty box, never a whole example number: an example in the muted text colour reads as a number
+   * already typed, and the button was being pressed on it. "Case number" unless the box says otherwise.
+   */
   placeholder?: string;
+  /** What this box's kind of number looks like, said when the typed one is the wrong shape. A PERM number otherwise. */
+  example?: string;
   /** The line under the box before anything is typed; null leaves it off. */
   help?: React.ReactNode | null;
   /** The button's word in another language; "Check" otherwise. */
@@ -99,6 +104,12 @@ export interface CaseLookupFormProps {
 
 /** The button's one word, everywhere a case number is asked for. */
 export const CHECK_LABEL = "Check";
+/** What a PERM case number looks like. */
+const EXAMPLE_NUMBER = "G-100-26125-868956";
+/** The empty box's words: a box that takes a name says so. */
+const PLACEHOLDER = { number: "Case number", name: "Case number or employer" } as const;
+/** What the browser says when the button is pressed with nothing typed. */
+const EMPTY_PRESS = { number: "Type your case number first.", name: "Type a case number or an employer's name first." } as const;
 /** The opener's words, the same under every box. */
 const FINDER_LABEL = "Find it by employer and filing date";
 /** The words for the full search, under every box that doesn't name its own next page. */
@@ -120,7 +131,8 @@ export function CaseLookupForm({
   finderProgram,
   source,
   action = "/perm-case-status",
-  placeholder = "G-100-26125-868956",
+  placeholder,
+  example = EXAMPLE_NUMBER,
   help = "It's on your ETA-9089 receipt.",
   buttonLabel = CHECK_LABEL,
   hiddenFields,
@@ -146,7 +158,7 @@ export function CaseLookupForm({
       Checking it takes you to the USCIS page.
     </span>
   ) : malformed ? (
-    <span className="text-data-bad-ink">That isn&apos;t the shape of a case number. They look like G-100-26125-868956.</span>
+    <span className="text-data-bad-ink">That isn&apos;t the shape of a case number. They look like {example}.</span>
   ) : (
     help
   );
@@ -173,11 +185,20 @@ export function CaseLookupForm({
             name="case"
             type="text"
             defaultValue={defaultValue}
+            // The browser's own check, so it holds with or without scripts; with them, the message is ours. The
+            // browser stops an empty press before it's a submit (the event doesn't reach the form), so it's
+            // counted here, as the empty shape it was counted as when the press went on to an empty case page.
+            required
+            onInvalid={(e) => {
+              e.currentTarget.setCustomValidity(EMPTY_PRESS[names ? "name" : "number"]);
+              if (source) trackLookup(source, "");
+            }}
+            onInput={(e) => e.currentTarget.setCustomValidity("")}
             onChange={(e) => {
               setValue(e.target.value);
               setEdited(true);
             }}
-            placeholder={placeholder}
+            placeholder={placeholder ?? PLACEHOLDER[names ? "name" : "number"]}
             autoComplete="off"
             autoCapitalize={names ? "none" : "characters"}
             spellCheck={false}

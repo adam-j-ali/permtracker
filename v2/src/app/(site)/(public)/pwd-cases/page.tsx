@@ -119,7 +119,7 @@ export default async function PwdCasesPage() {
         aside={
           <IndexLookup
             title="Have the number?"
-            placeholder="P-100-26140-123456"
+            example="P-100-26140-123456"
             note="DOL is asked live, and the case page can email you when it moves."
             source="pwd-cases"
             program="pwd"

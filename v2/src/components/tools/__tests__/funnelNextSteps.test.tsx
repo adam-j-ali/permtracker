@@ -25,6 +25,20 @@ const read = (p: string) => readFileSync(join(ROOT, p), "utf8");
 
 beforeEach(() => capture.mockReset());
 
+describe("a case box pressed with nothing typed", () => {
+  it("is still counted as the empty shape, though the browser stops it before it's a submit", () => {
+    render(<CaseLookupForm source="employer-page" />);
+    fireEvent.invalid(screen.getByRole("textbox"));
+    expect(capture).toHaveBeenCalledWith("case_lookup_submitted", { source: "employer-page", shape: "empty" });
+  });
+
+  it("counts nothing where the box names no source", () => {
+    render(<CaseLookupForm />);
+    fireEvent.invalid(screen.getByRole("textbox"));
+    expect(capture).not.toHaveBeenCalled();
+  });
+});
+
 describe("CaseNextStep", () => {
   it("asks in the page's terms and sends the number to the case page", () => {
     const { container } = render(

@@ -120,7 +120,7 @@ export default async function SeasonalCasesPage() {
         aside={
           <IndexLookup
             title="Have the number?"
-            placeholder="H-300-26188-123456"
+            example="H-300-26188-123456"
             note="DOL is asked live, and the case page can email you when it moves."
             source="seasonal-cases"
             program="seasonal"

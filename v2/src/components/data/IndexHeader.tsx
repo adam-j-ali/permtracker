@@ -160,7 +160,7 @@ export function IndexSearch({
  */
 export function IndexLookup({
   title,
-  placeholder,
+  example,
   note,
   source,
   searchHref = "/case-search",
@@ -168,7 +168,8 @@ export function IndexLookup({
   program,
 }: {
   title: string;
-  placeholder: string;
+  /** What this program's numbers look like, said when the typed one is the wrong shape. */
+  example: string;
   note?: ReactNode;
   source: string;
   /** The kind of filing this list is of: the finder under the box opens on it. */
@@ -180,7 +181,7 @@ export function IndexLookup({
     <div className="object p-5 sm:p-6">
       <CaseLookupForm
         label={title}
-        placeholder={placeholder}
+        example={example}
         help={note ?? null}
         source={source}
         searchHref={searchHref}
