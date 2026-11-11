@@ -7,7 +7,9 @@ import { cn } from "@/lib/utils";
 
 /** `sm` and up: room for an open fold above the list. False on the server, where nothing is filtered yet. */
 function isWide(): boolean {
-  return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(min-width: 640px)").matches;
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  const wide = window.matchMedia("(min-width: 640px)");
+  return Boolean(wide && wide.matches);
 }
 
 /**

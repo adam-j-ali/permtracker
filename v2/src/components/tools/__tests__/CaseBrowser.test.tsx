@@ -98,12 +98,16 @@ describe("CaseBrowser keeps its other filters behind one control", () => {
     expect(fold(phone.container).querySelector("summary")?.textContent).toContain("2 on");
     phone.unmount();
 
-    const wide = vi.spyOn(window, "matchMedia").mockImplementation(
-      (query: string) => ({ matches: true, media: query, addEventListener() {}, removeEventListener() {} }) as unknown as MediaQueryList,
-    );
-    const { container } = render(<CaseBrowser meta={null} occupations={[]} showLookup={false} />);
-    expect(fold(container).open).toBe(true);
-    wide.mockRestore();
+    // By assignment, and put back the same way: the shared setup's `matchMedia` is a mock, and restoring a spy over
+    // it would leave it answering nothing for the next test.
+    const before = window.matchMedia;
+    window.matchMedia = ((query: string) => ({ matches: true, media: query, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
+    try {
+      const { container } = render(<CaseBrowser meta={null} occupations={[]} showLookup={false} />);
+      expect(fold(container).open).toBe(true);
+    } finally {
+      window.matchMedia = before;
+    }
   });
 
   it("sends the job title typed inside it with the name search", () => {
