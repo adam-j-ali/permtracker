@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { withSocialCard } from "@/lib/socialCard";
 
 import { PageBasics } from "@/components/data/PageBasics";
-import { IndexHeader, IndexLookup } from "@/components/data/IndexHeader";
+import { IndexFigures, IndexHeader, type IndexFigure } from "@/components/data/IndexHeader";
 import { FilingMonthBars } from "@/components/data/FilingMonthBars";
 import { formatInt } from "@/lib/format";
 import { filedLastMonth, waitingSplit } from "@/lib/figureVisuals";
@@ -45,12 +45,8 @@ export default async function LcaCasesPage() {
 
   const lastMonth = summary?.asOf ? filedLastMonth(summary.byMonth, summary.asOf) : undefined;
 
-  return (
-    <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">
-      <IndexHeader
-        title="Find an H-1B LCA"
-        lede="The employer files it with DOL before the H-1B petition. Search the employer to get the number, the job title, the filing date and the status."
-        figures={[
+  // The overview, drawn between the search and the list.
+  const figures: IndexFigure[] = [
           {
             label: "Waiting at DOL now",
             value: summary ? formatInt(summary.pending) : "—",
@@ -66,16 +62,13 @@ export default async function LcaCasesPage() {
           },
           // How busy the last complete month was, against the eleven before it.
           ...(lastMonth ? [{ ...lastMonth, note: "LCAs in DOL's case-status service, by the month filed" }] : []),
-        ]}
-        aside={
-          <IndexLookup
-            title="Have the number?"
-            example="I-200-26188-123456"
-            note="DOL is asked live, and the case page can email you when it moves."
-            source="lca-cases"
-            program="lca"
-          />
-        }
+        ];
+
+  return (
+    <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">
+      <IndexHeader
+        title="Find an H-1B LCA"
+        lede="The employer files it with DOL before the H-1B petition. Search the employer to get the number, the job title, the filing date and the status."
       />{" "}
 
       <div className="mt-10">
@@ -84,26 +77,27 @@ export default async function LcaCasesPage() {
             summary={summary}
             disclosure={disclosure}
             program={LCA_PROGRAM}
-            between={
-              summary ? (
-                <section >
-                  <h2 className="font-heading text-xl font-bold">LCAs by the month they were filed</h2>{" "}
-                  <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                    DOL has seven working days to certify an LCA (20 CFR 655.740), so only the newest
-                    filings are still waiting.
-                  </p>{" "}
-                  <FilingMonthBars
-                    className="mt-5"
-                    months={summary.byMonth}
-                    nouns="LCAs"
-                    label="LCAs by filing month, decided and still waiting"
-                  />
-                </section>
-              ) : null
-            }
+            between={<IndexFigures figures={figures} />}
           />
         </SearchParamsBoundary>
-      </div>
+      </div>{" "}
+
+      {/* After the list: the same record by filing month. */}
+      {summary ? (
+        <section className="mt-12">
+          <h2 className="font-heading text-xl font-bold">LCAs by the month they were filed</h2>{" "}
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            DOL has seven working days to certify an LCA (20 CFR 655.740), so only the newest
+            filings are still waiting.
+          </p>{" "}
+          <FilingMonthBars
+            className="mt-5"
+            months={summary.byMonth}
+            nouns="LCAs"
+            label="LCAs by filing month, decided and still waiting"
+          />
+        </section>
+      ) : null}
 
       <PageBasics page="lca-cases" />{" "}
     </div>

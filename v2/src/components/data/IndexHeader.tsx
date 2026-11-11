@@ -48,6 +48,43 @@ export interface IndexFigure {
   split?: { parts: readonly SplitPart[]; label: string };
 }
 
+/**
+ * A list page's overview: its summary figures as the site's figure cards, in one even row, each with its small
+ * picture where it has one. Its own part, so a page whose search is the list's own form can draw it between that
+ * form and the list.
+ */
+export function IndexFigures({ figures, className }: { figures: IndexFigure[]; className?: string }) {
+  if (figures.length === 0) return null;
+  return (
+    <FigureRow className={className}>
+      {figures.map((f) => (
+        <Figure
+          key={f.label}
+          label={f.label}
+          value={
+            f.href ? (
+              <Link href={f.href} className="link">
+                {f.value}
+              </Link>
+            ) : (
+              f.value
+            )
+          }
+          visual={
+            f.spark && f.spark.length > 1 ? (
+              <Spark values={f.spark} />
+            ) : f.split ? (
+              <SplitBar parts={f.split.parts} label={f.split.label} />
+            ) : undefined
+          }
+          trend={f.trend}
+          note={f.note}
+        />
+      ))}
+    </FigureRow>
+  );
+}
+
 export function IndexHeader({
   title,
   lede,
@@ -67,47 +104,14 @@ export function IndexHeader({
     <header className={cn("@container pt-8 sm:pt-10", className)}>
       {/* The case box's finder opens in the dock's panel, under both columns: the box is too narrow to hold it. */}
       <FinderDock>
-      {/* First things first: the title, the way in, then the figures. On a phone they stack in that order, so the
-          box is in the first screen and the figures follow it. Side by side, the title and the figures share the
-          left column and the box the right: its top edge meets the top of the heading's capitals (the 9px), and the
-          figures stand on the line of its bottom edge whenever the box is the taller of the two. */}
-      <div className="grid grid-cols-1 gap-x-8 gap-y-6 @[52rem]:grid-cols-[minmax(0,1.15fr)_minmax(25rem,1fr)] @[52rem]:grid-rows-[auto_1fr] [&>*]:min-w-0">
-        <div className="@[52rem]:col-start-1 @[52rem]:row-start-1">
-          <h1 className="text-balance font-heading text-4xl font-bold leading-tight sm:text-5xl">{wholeCodes(title)}</h1>{" "}
-          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-soft">{lede}</p>
-        </div>{" "}
-        {aside ? (
-          <div className="@[52rem]:col-start-2 @[52rem]:row-span-2 @[52rem]:row-start-1 @[52rem]:mt-[9px] @[52rem]:self-start">{aside}</div>
-        ) : null}{" "}
-        {figures.length > 0 ? (
-          // The overview: the same figure cards as every other page, each with its small picture where it has one.
-          <FigureRow className="@[52rem]:col-start-1 @[52rem]:row-start-2 @[52rem]:self-end">
-            {figures.map((f) => (
-              <Figure
-                key={f.label}
-                label={f.label}
-                value={
-                  f.href ? (
-                    <Link href={f.href} className="link">
-                      {f.value}
-                    </Link>
-                  ) : (
-                    f.value
-                  )
-                }
-                visual={
-                  f.spark && f.spark.length > 1 ? (
-                    <Spark values={f.spark} />
-                  ) : f.split ? (
-                    <SplitBar parts={f.split.parts} label={f.split.label} />
-                  ) : undefined
-                }
-                trend={f.trend}
-                note={f.note}
-              />
-            ))}
-          </FigureRow>
-        ) : null}
+      {/* First things first, in one column at every width: the title, one line on what the list is, the way in,
+          then the figures in one even row. Side by side, the title's column and the box's column never ended on the
+          same line: one of them always stood over empty space, and the figures broke two and one. */}
+      <div className="[&>*]:min-w-0">
+        <h1 className="text-balance font-heading text-4xl font-bold leading-tight sm:text-5xl">{wholeCodes(title)}</h1>{" "}
+        <p className="mt-4 max-w-2xl text-lg leading-relaxed text-soft">{lede}</p>{" "}
+        {aside ? <div className="mt-6 max-w-3xl">{aside}</div> : null}{" "}
+        <IndexFigures figures={figures} className="mt-6" />
       </div>{" "}
       <FinderDockPanel className="mt-6" />
       </FinderDock>

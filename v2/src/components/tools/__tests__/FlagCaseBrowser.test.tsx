@@ -13,9 +13,10 @@ import type { FlagCaseRow, FlagDisclosedRow } from "@/lib/db/flagCases";
 
 const usePublicQuery = vi.fn();
 vi.mock("@/hooks/usePublicQuery", () => ({ usePublicQuery }));
+const push = vi.fn();
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams("q=acme"),
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push }),
 }));
 
 const { FlagCaseBrowser, LCA_PROGRAM, PWD_PROGRAM } = await import("../FlagCaseBrowser");
@@ -91,7 +92,7 @@ describe("FlagCaseBrowser search filters", () => {
 describe("FlagCaseBrowser answers every press of Search", () => {
   it("says why when the employer name is too short", () => {
     render(<FlagCaseBrowser summary={null} program={LCA_PROGRAM} />);
-    fireEvent.change(screen.getByLabelText("Employer"), { target: { value: "a" } });
+    fireEvent.change(screen.getByLabelText("Employer or case number"), { target: { value: "a" } });
     const before = usePublicQuery.mock.calls.length;
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
     expect(screen.getByRole("status")).toHaveTextContent("Type at least two letters of the employer's name.");
@@ -101,9 +102,31 @@ describe("FlagCaseBrowser answers every press of Search", () => {
 
   it("searches for the name the box holds even when React never heard it typed", () => {
     render(<FlagCaseBrowser summary={null} program={LCA_PROGRAM} />);
-    (screen.getByLabelText("Employer") as HTMLInputElement).value = "globex";
+    (screen.getByLabelText("Employer or case number") as HTMLInputElement).value = "globex";
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
     const urls = usePublicQuery.mock.calls.map((c) => String(c[0]));
     expect(urls.some((u) => u.includes("action=search") && u.includes("text=globex"))).toBe(true);
+  });
+});
+
+describe("FlagCaseBrowser is the page's one search box", () => {
+  // The list pages had a case-number box and, right under it, this employer search: two boxes back to back.
+  // This one takes either, and a case number goes to its own page, where DOL is asked live.
+  it("sends a typed case number to that case's page, and runs no employer search for it", () => {
+    push.mockClear();
+    usePublicQuery.mockReturnValue({ data: undefined, failed: false, failure: null, retry: vi.fn() });
+    render(<FlagCaseBrowser summary={null} program={PWD_PROGRAM} />);
+    const box = screen.getByLabelText("Employer or case number");
+    fireEvent.change(box, { target: { value: "p-100-26140-123456" } });
+    // Submitted as Enter in the box does (the button is busy while the address's own search loads).
+    fireEvent.submit(box.closest("form")!);
+    expect(push).toHaveBeenCalledWith("/perm-case-status?case=P-100-26140-123456");
+  });
+
+  it("is headed by what it finds, with no second box asked for", () => {
+    usePublicQuery.mockReturnValue({ data: undefined, failed: false, failure: null, retry: vi.fn() });
+    render(<FlagCaseBrowser summary={null} program={LCA_PROGRAM} />);
+    expect(screen.getByRole("heading", { name: "Find an LCA" })).toBeTruthy();
+    expect(screen.getAllByRole("textbox", { name: /Employer or case number/ })).toHaveLength(1);
   });
 });

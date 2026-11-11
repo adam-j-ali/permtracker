@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useId, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { IntentLink } from "@/components/ui/intent-link";
 import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 
@@ -473,6 +474,7 @@ export function FlagCaseBrowser({
     pending: program.pendingLabel,
     decided: program.decidedLabel,
   };
+  const router = useRouter();
   const params = useUrlSearchParams();
   const initial = params.get("q") ?? "";
   const uid = useId();
@@ -578,9 +580,10 @@ export function FlagCaseBrowser({
   return (
     <div className="space-y-10">
       <section className="object p-5 sm:p-6">
-        <h2 className="font-heading text-xl font-bold">Find {program.article ?? "a"} {program.noun} by employer</h2>{" "}
+        {/* The page's one way in: an employer's name searches the list, and a case number goes to its own page. */}
+        <h2 className="font-heading text-xl font-bold">Find {program.article ?? "a"} {program.noun}</h2>{" "}
         <p className="mt-2 max-w-2xl text-base leading-relaxed text-soft">
-          The start of the employer&apos;s name is enough. Add a word from the job
+          Type the start of the employer&apos;s name, or a case number. Add a word from the job
           title or a filing month if the employer files a lot.
         </p>{" "}
         <form
@@ -597,7 +600,13 @@ export function FlagCaseBrowser({
             setTitleInput(title);
             setFromInput(from);
             setToInput(to);
-            if (employer.length < 2 && !normaliseCaseNumber(employer)) {
+            // A case number isn't a search: it has its own page, where DOL is asked live.
+            const asNumber = normaliseCaseNumber(employer);
+            if (asNumber) {
+              router.push(`/perm-case-status?case=${encodeURIComponent(asNumber)}`);
+              return;
+            }
+            if (employer.length < 2) {
               setSearchNote("Type at least two letters of the employer's name.");
               return;
             }
@@ -622,7 +631,7 @@ export function FlagCaseBrowser({
           }}
         >
           <label className="block sm:col-span-2">
-            <span className="mb-1 block text-sm font-bold">Employer</span>{" "}
+            <span className="mb-1 block text-sm font-bold">Employer or case number</span>{" "}
             <input
               type="text"
               name="q"
