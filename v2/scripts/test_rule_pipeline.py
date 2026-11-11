@@ -425,7 +425,38 @@ def agenda_checks() -> None:
           raises(lambda: whole_run(FakeDb(), overrides={rp.AGENDA_REPORTS: TypeError("bug")}), TypeError) is not None)
 
 
+def followed_whatever_the_title_checks() -> None:
+    """OIRA's own record of 1205-AC30's final rule, typo and all (read Nov 11 2026)."""
+    typo = (b"<?xml version='1.0' encoding='UTF-8'?><OIRA_DATA RUNDATE='2026-11-11'><REGACT>"
+            b"<AGENCY_CODE>1205</AGENCY_CODE><RIN>1205-AC30</RIN>"
+            b"<TITLE>Improving Wage Protections for the Temporary and Permanent Employment of Certain Foreign Nations "
+            b"in the United States</TITLE><STAGE>Final Rule</STAGE>"
+            b"<ECONOMICALLY_SIGNIFICANT>No</ECONOMICALLY_SIGNIFICANT><DATE_RECEIVED>2026-11-06</DATE_RECEIVED>"
+            b"<LEGAL_DEADLINE>None</LEGAL_DEADLINE></REGACT></OIRA_DATA>")
+    empty_done = b"<?xml version='1.0' encoding='UTF-8'?><OIRA_DATA RUNDATE='2026-11-11'></OIRA_DATA>"
+    over = {rp.OIRA_UNDER_REVIEW: typo, rp.OIRA_COMPLETED: empty_done}
+    check("control: OIRA's typed title names no immigration program",
+          not rp.relevant("1205-AC30", "Improving Wage Protections for the Temporary and Permanent Employment of Certain Foreign Nations in the United States"))
+
+    stored = {"1205-AC30": {"rin": "1205-AC30", "title": "Improving Wage Protections for the Temporary and Permanent Employment of Certain Foreign Nationals in the United States"}}
+    read = rp.collect(fixture_get(over), stored, "2026-11-11", sleep=lambda _s: None)
+    reviews = [f for f in read.facts.get("1205-AC30", []) if f.get("f_received")]
+    check("a rule followed already has its final rule's review read, whatever OIRA's list calls it",
+          len(reviews) == 1 and reviews[0]["f_stage"] == "Final Rule" and reviews[0]["f_received"] == "2026-11-06",
+          str(read.facts.get("1205-AC30")))
+    check("OIRA's mistyped title doesn't replace the rule's own", all("title" not in f for f in reviews), str(reviews))
+
+    asked_for = rp.collect(fixture_get(over), {}, "2026-11-11", follow=("1205-AC30",), sleep=lambda _s: None)
+    check("a rule asked for by number is read the same way",
+          any(f.get("f_received") == "2026-11-06" for f in asked_for.facts.get("1205-AC30", [])))
+
+    stranger = rp.collect(fixture_get(over), {}, "2026-11-11", sleep=lambda _s: None)
+    check("a rule nobody follows, with a title naming no program, is still left out",
+          not any(f.get("f_received") for f in stranger.facts.get("1205-AC30", [])), str(stranger.facts.get("1205-AC30")))
+
+
 def main() -> int:
+    followed_whatever_the_title_checks()
     rp.REGISTER_PAUSE_S = 0
     rp.AGENDA_PAUSE_S = 0
     # --- which rules ---------------------------------------------------------

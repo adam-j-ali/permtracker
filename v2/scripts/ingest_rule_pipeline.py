@@ -901,8 +901,18 @@ def collect(get, stored: dict[str, dict], today: str, follow: tuple[str, ...] = 
     if not under.reviews:
         raise ValueError("OIRA's under-review list holds no reviews")
     for r in under.reviews + done.reviews:
-        if relevant(r["rin"], r["title"]):
-            facts.setdefault(r["rin"], []).append(review_facts(r))
+        named = relevant(r["rin"], r["title"])
+        # A RULE FOLLOWED ALREADY IS READ WHATEVER OIRA'S LIST CALLS IT. OIRA typed 1205-AC30's final rule as
+        # "... Employment of Certain Foreign Nations in the United States" (received Nov 6 2026). That title names
+        # no immigration program, the title was the only test here, and the review went unrecorded for five days
+        # while every run said "ok". Public inspection and the agenda already took a followed RIN on its number.
+        if not named and r["rin"] not in stored and r["rin"] not in follow:
+            continue
+        review = review_facts(r)
+        # A title that names no program is OIRA's typing: the title the rule already has stands.
+        if not named:
+            review.pop("title", None)
+        facts.setdefault(r["rin"], []).append(review)
 
     try:
         listing = json.loads(get(PUBLIC_INSPECTION, "application/json"))
