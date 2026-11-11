@@ -95,6 +95,38 @@ export interface UseUnsavedChangesReturn {
   markNavigating: () => void;
 }
 
+/**
+ * The address a click would leave this page for, or null when the click stays here.
+ *
+ * It leaves when it's a plain left click on a link to another page of this site, opening in this tab. A click
+ * with a modifier key, a link that opens a new tab or downloads a file, and a jump within the page all keep the
+ * form on screen. A link to another site is left to the browser's own "leave site?" question.
+ */
+export function linkThatLeaves(
+  event: Pick<MouseEvent, "button" | "metaKey" | "ctrlKey" | "shiftKey" | "altKey" | "defaultPrevented" | "target">,
+  here: string,
+): string | null {
+  if (event.defaultPrevented || event.button !== 0) return null;
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return null;
+  const el = event.target instanceof Element ? event.target.closest("a[href]") : null;
+  if (!(el instanceof HTMLAnchorElement)) return null;
+  if (el.hasAttribute("download")) return null;
+  const opensIn = el.getAttribute("target");
+  if (opensIn && opensIn !== "_self") return null;
+  let to: URL;
+  let from: URL;
+  try {
+    // The link as written, read against this page's address (`here`), which is what the browser does.
+    to = new URL(el.getAttribute("href") ?? "", here);
+    from = new URL(here);
+  } catch {
+    return null;
+  }
+  if (to.origin !== from.origin) return null;
+  if (to.pathname === from.pathname && to.search === from.search) return null;
+  return to.href;
+}
+
 export function useUnsavedChanges(
   options: UseUnsavedChangesOptions = {}
 ): UseUnsavedChangesReturn {
@@ -210,6 +242,34 @@ export function useUnsavedChanges(
         window.history.back();
       }
     };
+  }, [isDirty, isSubmitting, disabled]);
+
+  // In-app links. Back and refresh were guarded and a click on a link wasn't: the header, the logo, the
+  // breadcrumb or a link inside the form left at once, and the form's work went with it. Caught at the document,
+  // before the router sees the click, and sent through the same dialog.
+  useEffect(() => {
+    if (navigationInitiatedRef.current) return;
+    if (!isDirty || isSubmitting || disabled) return;
+
+    const onClick = (e: MouseEvent) => {
+      if (navigationInitiatedRef.current || isSubmittingRef.current || disabledRef.current) return;
+      const href = linkThatLeaves(e, window.location.href);
+      if (!href) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setShouldShowDialog(true);
+      setPendingNavigation(() => () => {
+        // The person chose to leave: no second question from the browser, and no guard entry left in history.
+        navigationInitiatedRef.current = true;
+        if (window.history.state?.unsavedChangesGuard) {
+          window.history.replaceState(null, "", window.location.href);
+        }
+        window.location.assign(href);
+      });
+    };
+
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
   }, [isDirty, isSubmitting, disabled]);
 
   // Set dirty state
