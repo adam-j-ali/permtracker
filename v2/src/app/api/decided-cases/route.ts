@@ -49,12 +49,16 @@ import { isWithheldQuery } from "@/lib/privacy/withheld";
 /**
  * The oldest date this route will consider.
  *
- * Deliberately older than the data (the published record starts 2023-10-01) so
- * the page can say "we hold nothing back that far" rather than the route
- * refusing with a 400 that looks like a bug. It exists to bound the cache key
- * space, not to describe coverage.
+ * Deliberately older than any data, so the page can say "we hold nothing back that far" for a day before the
+ * record instead of the route refusing with a 400 that looks like a bug. It bounds the cache key space; it
+ * doesn't describe coverage.
+ *
+ * It read 2015-01-01 until Nov 11 2026, written when the published record started in 2023. The record now reaches
+ * Oct 1 2007, the date box on the daily decisions page offers every day back to it, and each of the 2,649 days
+ * before 2015 answered "Those decisions didn't load". Nothing here may sit inside the record again:
+ * route.test.ts asks for the record's first day.
  */
-const FLOOR = "2015-01-01";
+const FLOOR = "2000-01-01";
 
 /** Longest a single filter value may be, before it reaches any query. */
 const MAX_FILTER_LEN = 120;
