@@ -2,8 +2,9 @@
  * The day DOL worked, for a status our records first saw at an instant.
  *
  * A DOL day runs from 7 AM Eastern to 7 AM the next morning. Our sweeps catch
- * PERM decisions in three batches, about 4 AM, 10 AM and 3 PM Eastern, and the
- * 4 AM batch is the previous evening's work: over the three weeks to Oct 27
+ * PERM decisions in four batches, about 4 AM, 10 AM, 3 PM and (since Nov 11
+ * 2026) 8 PM Eastern (src/lib/sweepSchedule.ts), and the 4 AM batch is the
+ * previous evening's work and the batch DOL posts just after midnight: over the three weeks to Oct 27
  * 2026 it held 414 decisions on Saturday mornings, 12 on Sunday mornings and 5
  * on Monday mornings, because DOL works Friday evening and barely at all on the
  * weekend. Dated by the hour we saw them, Saturdays read 111 to 146 decisions.
