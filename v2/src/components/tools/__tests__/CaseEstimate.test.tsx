@@ -104,3 +104,53 @@ describe("what happens next", () => {
   });
 });
 
+
+/**
+ * "Does the date count the holidays?" is answered on the page, in the sentence people read, and only when the
+ * wait holds some. Asserted on the rendered text so a glued word ("promise.It allows") fails too.
+ */
+describe("CaseEstimate says what the holidays add", () => {
+  const PACE = {
+    pace: 544, fast: 650, slow: 450, weekdayMean: 760, weekendMean: 5, weekdaysUsed: 20, daysUsed: 28,
+    workday: 760, offday: 5,
+  };
+  const frontier = (month: string, asOf: string) =>
+    ({ frontier: { analystQueueMonth: month, officialAvgDays: 372, asOf }, cohorts: [] }) as never;
+
+  it("prints the count when the wait crosses November and December", () => {
+    render(
+      <CaseEstimate
+        caseNumber="A-33333-33333"
+        filingDate="2025-11-10"
+        status="ANALYST REVIEW"
+        isFinal={false}
+        estimator={frontier("2025-07", "2026-10-28")}
+        casesAhead={36_061}
+        decisionPace={PACE}
+        sweepAgeDays={0}
+        today="2026-11-03"
+      />,
+    );
+    const body = (document.body.textContent ?? "").replace(/\s+/g, " ");
+    expect(body).toMatch(/It isn't a promise\. It allows \d+ days for the federal holidays ahead and DOL's slower weeks around them\./);
+  });
+
+  it("prints nothing about holidays when the wait holds none", () => {
+    render(
+      <CaseEstimate
+        caseNumber="A-44444-44444"
+        filingDate="2026-03-10"
+        status="ANALYST REVIEW"
+        isFinal={false}
+        estimator={frontier("2025-11", "2027-02-24")}
+        casesAhead={7_600}
+        decisionPace={PACE}
+        sweepAgeDays={0}
+        today="2027-03-01"
+      />,
+    );
+    const body = (document.body.textContent ?? "").replace(/\s+/g, " ");
+    expect(body).toMatch(/It isn't a promise\./);
+    expect(body).not.toMatch(/federal holidays ahead/);
+  });
+});

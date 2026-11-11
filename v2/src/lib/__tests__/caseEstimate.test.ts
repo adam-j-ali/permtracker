@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildCaseEstimate } from "../caseEstimate";
+import { buildCaseEstimate, holidayLine } from "../caseEstimate";
 import type { EstimatorData } from "../db/estimate";
 
 /**
@@ -292,5 +292,60 @@ describe("an RFI case is dated from its own RFI day (Oct 8 2026)", () => {
   it("leaves a case in analyst review alone", () => {
     const e = buildCaseEstimate({ ...base, status: "ANALYST REVIEW", rfi: { enteredOn: "2026-10-01", clock } });
     expect(e?.kind === "date" && e.modelId).not.toBe("rfi-clock");
+  });
+});
+
+/**
+ * The holidays inside the date. The pace model walks DOL's calendar (closed on federal holidays, slower around
+ * Thanksgiving and the year's end) and knows how many days that adds. The page says so in one line, because
+ * "does it count the holidays?" is the first thing people ask about the date.
+ */
+describe("the holidays inside an estimate", () => {
+  const PACE = {
+    pace: 544, fast: 650, slow: 450, weekdayMean: 760, weekendMean: 5, weekdaysUsed: 20, daysUsed: 28,
+    workday: 760, offday: 5,
+  };
+  const inLine = {
+    status: "ANALYST REVIEW",
+    isFinal: false,
+    estimator: { ...ESTIMATOR, frontier: { analystQueueMonth: "2025-07", officialAvgDays: 372, asOf: "2026-10-28" } } as unknown as EstimatorData,
+    decisionPace: PACE,
+    sweepAgeDays: 0,
+  };
+
+  it("carries the days the holidays add when the wait crosses November and December", () => {
+    const est = buildCaseEstimate({ ...inLine, filingDate: "2025-11-10", casesAhead: 36_061, today: "2026-11-03" });
+    if (est?.kind !== "date") throw new Error("expected a date");
+    expect(est.modelId).toBe("decision-pace");
+    expect(est.holidayDays).toBeGreaterThan(5);
+    expect(holidayLine(est)).toBe(
+      `It allows ${est.holidayDays} days for the federal holidays ahead and DOL's slower weeks around them.`,
+    );
+  });
+
+  it("says nothing for a wait with no holiday in it", () => {
+    const est = buildCaseEstimate({
+      ...inLine,
+      estimator: { ...ESTIMATOR, frontier: { analystQueueMonth: "2025-11", officialAvgDays: 372, asOf: "2027-02-24" } } as unknown as EstimatorData,
+      filingDate: "2026-03-10",
+      casesAhead: 7_600,
+      today: "2027-03-01",
+    });
+    if (est?.kind !== "date") throw new Error("expected a date");
+    expect(est.modelId).toBe("decision-pace");
+    expect(est.holidayDays ?? 0).toBe(0);
+    expect(holidayLine(est)).toBeNull();
+  });
+
+  it("says nothing for a date another model produced, and one day reads as one day", () => {
+    const other = buildCaseEstimate({
+      filingDate: "2026-01-15", status: "ANALYST REVIEW", isFinal: false, estimator: ESTIMATOR, today: TODAY,
+    });
+    if (other?.kind !== "date") throw new Error("expected a date");
+    expect(other.modelId).not.toBe("decision-pace");
+    expect(holidayLine(other)).toBeNull();
+    expect(holidayLine({ ...other, holidayDays: 1 })).toBe(
+      "It allows 1 day for the federal holidays ahead and DOL's slower weeks around them.",
+    );
   });
 });
