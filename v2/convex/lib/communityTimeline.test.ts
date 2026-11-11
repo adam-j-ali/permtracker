@@ -2,11 +2,19 @@ import { describe, expect, it } from "vitest";
 
 import {
   BOARD_OPENS_AT,
+  CATEGORIES,
+  DATE_FIELDS,
   METRIC_MIN_N,
+  OFFICE_LIST_OPENS_AT,
+  OFFICE_METRIC_IDS,
   computeMetrics,
   daysBetween,
+  isPermCategory,
+  isShown,
+  reviewFlags,
   summarizeRfes,
   toBoardRow,
+  toOfficeRow,
   validateTimeline,
   WAITING_STAGES,
   waitingStage,
@@ -40,7 +48,9 @@ describe("validateTimeline", () => {
     ["a malformed date", { i140FiledOn: "2026-9-1" }],
     ["an impossible date", { i140FiledOn: "2026-02-31x" }],
     ["a date before 2005", { i140FiledOn: "2004-12-31" }],
-    ["an unknown category", { category: "eb1", i140FiledOn: "2026-01-01" }],
+    ["an unknown category", { category: "eb5", i140FiledOn: "2026-01-01" }],
+    ["an office USCIS's file doesn't list", { fieldOffice: "ZZZ", i485FiledOn: "2026-01-01" }],
+    ["an office code too long to be one", { fieldOffice: "x".repeat(40), i485FiledOn: "2026-01-01" }],
     ["an unknown RFE reason", { rfeForm: "i140", rfeReason: "vibes", i140FiledOn: "2026-01-01" }],
     ["a string too long to be a choice", { country: "x".repeat(40), i140FiledOn: "2026-01-01" }],
   ])("refuses %s", (_, input) => {
@@ -172,6 +182,129 @@ it("opens the board at a threshold that is more than one row", () => {
   expect(BOARD_OPENS_AT).toBeGreaterThan(METRIC_MIN_N);
 });
 
+it("holds the floors the Privacy Policy states: the board at 10 shared, an office's list at 3", () => {
+  expect(BOARD_OPENS_AT).toBe(10);
+  expect(OFFICE_LIST_OPENS_AT).toBe(3);
+});
+
+describe("the USCIS office and the biometrics date", () => {
+  const TODAY = "2026-09-26";
+
+  it("takes an office by USCIS's own code, and a biometrics date alone is a timeline", () => {
+    const r = validateTimeline({ fieldOffice: "HAR", biometricsOn: "2026-03-02" }, TODAY);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value.fieldOffice).toBe("HAR");
+    expect(r.value.biometricsOn).toBe("2026-03-02");
+  });
+
+  it("refuses an office on a consular case, where there is none", () => {
+    const r = validateTimeline({ route: "consular", fieldOffice: "HAR", i140FiledOn: "2026-01-01" }, TODAY);
+    expect(r).toMatchObject({ ok: false, code: "office-consular" });
+  });
+
+  it("refuses biometrics on a consular case like every other adjustment-only date", () => {
+    const r = validateTimeline({ route: "consular", i140FiledOn: "2026-01-01", biometricsOn: "2026-03-02" }, TODAY);
+    expect(r).toMatchObject({ ok: false, code: "adjustment-only", field: "biometricsOn" });
+  });
+
+  it("puts biometrics after the I-485 in the order a case meets its dates", () => {
+    const ids = DATE_FIELDS.map((f) => f.id as string);
+    expect(ids.indexOf("biometricsOn")).toBe(ids.indexOf("i485FiledOn") + 1);
+  });
+});
+
+describe("categories", () => {
+  it("knows which have a PERM case and which don't", () => {
+    expect(CATEGORIES.filter((c) => !c.perm).map((c) => c.id)).toEqual(["eb1", "eb2-niw"]);
+    expect(isPermCategory("eb2")).toBe(true);
+    expect(isPermCategory("eb2-niw")).toBe(false);
+    expect(isPermCategory("nonsense")).toBe(false);
+  });
+});
+
+describe("isShown", () => {
+  it("is true only for an approved timeline that isn't hidden", () => {
+    expect(isShown({ status: "approved" })).toBe(true);
+    expect(isShown({ status: "approved", hiddenAt: 5 })).toBe(false);
+    expect(isShown({ status: "pending" })).toBe(false);
+    expect(isShown({ status: "declined" })).toBe(false);
+    expect(isShown({})).toBe(false);
+  });
+});
+
+describe("an office's row and its medians", () => {
+  const rec = (over: Partial<TimelineRecord>): TimelineRecord => ({ updatedAt: Date.UTC(2026, 8, 1), public: true, ...over }) as TimelineRecord;
+
+  it("counts each step in days from the I-485 filing, and carries no exact date", () => {
+    const row = toOfficeRow(
+      rec({ i485FiledOn: "2025-05-01", biometricsOn: "2025-06-10", interviewOn: "2026-02-03", greenCardOn: "2026-02-20", category: "eb2", country: "india", permFiledOn: "2023-01-09" }),
+    );
+    expect(row.filedMonth).toBe("2025-05");
+    expect(row.stops.map((s) => [s.id, s.day])).toEqual([
+      ["biometricsOn", 40],
+      ["eadOn", null],
+      ["apOn", null],
+      ["interviewOn", 278],
+      ["greenCardOn", 295],
+    ]);
+    const text = JSON.stringify(row);
+    expect(text).not.toContain("2025-05-01");
+    expect(text).not.toContain("2023-01");
+    expect(row.updatedMonth).toBe("2026-09");
+  });
+
+  it("gives a step its month and no day count when the I-485 date is missing or later", () => {
+    const none = toOfficeRow(rec({ biometricsOn: "2025-06-10" }));
+    expect(none.filedMonth).toBeNull();
+    expect(none.stops[0]).toEqual({ id: "biometricsOn", day: null, month: "2025-06" });
+    const before = toOfficeRow(rec({ i485FiledOn: "2025-07-01", biometricsOn: "2025-06-10" }));
+    expect(before.stops[0]!.day).toBeNull();
+  });
+
+  it("names only an RFE on the I-485", () => {
+    expect(toOfficeRow(rec({ i485FiledOn: "2025-05-01", rfeForm: "i485", rfeOutcome: "approved" })).rfe).toEqual({ outcome: "approved" });
+    expect(toOfficeRow(rec({ i485FiledOn: "2025-05-01", rfeForm: "i140" })).rfe).toBeNull();
+  });
+
+  it("measures the I-485's steps, each from the filing", () => {
+    const five = Array.from({ length: 5 }, (_, i) =>
+      rec({ i485FiledOn: "2025-05-01", biometricsOn: `2025-06-${String(10 + i).padStart(2, "0")}`, interviewOn: "2026-02-03" }),
+    );
+    const m = computeMetrics(five).filter((x) => OFFICE_METRIC_IDS.includes(x.id));
+    expect(m.map((x) => x.id)).toEqual(["i485-bio", "i485-ead", "i485-interview", "i485-gc"]);
+    expect(m[0]).toMatchObject({ n: 5, median: 42 });
+    expect(m[2]).toMatchObject({ n: 5, median: 278 });
+    expect(m[3]).toMatchObject({ n: 0, median: null });
+  });
+
+  it("the board's row names the office only when told the office's list is open", () => {
+    const r = rec({ fieldOffice: "HAR", i485FiledOn: "2025-05-01" });
+    expect(toBoardRow(r).office).toBeNull();
+    expect(toBoardRow(r, true).office).toBe("HAR");
+  });
+});
+
+describe("what the owner should look at", () => {
+  const rec = (over: Record<string, unknown>) => ({ updatedAt: 1, public: true, ...over }) as TimelineRecord & { caseNumber?: string; permCheckedAt?: number };
+
+  it("says nothing about an ordinary timeline, a long wait included", () => {
+    expect(reviewFlags(rec({ permFiledOn: "2012-03-01", permCertifiedOn: "2012-09-01", i140FiledOn: "2012-10-01", i485FiledOn: "2025-05-01", biometricsOn: "2025-06-10", greenCardOn: "2026-02-20" }))).toEqual([]);
+  });
+
+  it("points at dates that sit oddly together", () => {
+    expect(reviewFlags(rec({ i485FiledOn: "2025-05-01", greenCardOn: "2025-05-09" }))).toEqual(["The green card is dated 8 days after the I-485 filing."]);
+    expect(reviewFlags(rec({ permCertifiedOn: "2025-05-01", i140FiledOn: "2025-04-01" }))).toEqual(["The I-140 is dated before DOL certified the PERM."]);
+    expect(reviewFlags(rec({ i485FiledOn: "2025-05-01", biometricsOn: "2025-04-01" }))).toEqual(["Biometrics is dated before the I-485 filing."]);
+    expect(reviewFlags(rec({ caseNumber: "G-100-25324-425560", permCheckedAt: 5, i140FiledOn: "2025-04-01" }))).toEqual(["DOL's record has no case with this number."]);
+    expect(reviewFlags(rec({ i140FiledOn: "2025-04-01", i140ApprovedOn: "2025-04-01", i485FiledOn: "2025-04-01" }))).toEqual(["Every date is the same day."]);
+  });
+
+  it("doesn't call a consular visa issued soon after anything a problem", () => {
+    expect(reviewFlags(rec({ route: "consular", i140FiledOn: "2025-01-01", greenCardOn: "2025-01-20" }))).toEqual([]);
+  });
+});
+
 describe("whoIsWaiting", () => {
   const rec = (over: Partial<TimelineRecord>): TimelineRecord => ({ updatedAt: 1, public: false, ...over }) as TimelineRecord;
   const many = (n: number, over: Partial<TimelineRecord>) => Array.from({ length: n }, () => rec(over));
@@ -183,6 +316,12 @@ describe("whoIsWaiting", () => {
     expect(waitingStage(rec({ i140FiledOn: "2025-02-01", i140ApprovedOn: "2025-03-01" }))).toBe("approved");
     expect(waitingStage(rec({ i140ApprovedOn: "2025-03-01", i485FiledOn: "2025-05-01" }))).toBe("i485");
     expect(waitingStage(rec({ i485FiledOn: "2025-05-01", greenCardOn: "2026-01-01" }))).toBe("done");
+    // Biometrics, a work permit, a travel document and an interview in the US each follow an I-485.
+    expect(waitingStage(rec({ biometricsOn: "2025-06-10" }))).toBe("i485");
+    expect(waitingStage(rec({ eadOn: "2025-08-01" }))).toBe("i485");
+    expect(waitingStage(rec({ apOn: "2025-08-01" }))).toBe("i485");
+    expect(waitingStage(rec({ interviewOn: "2026-01-05" }))).toBe("i485");
+    expect(waitingStage(rec({ route: "consular", i140ApprovedOn: "2025-03-01", interviewOn: "2026-01-05" }))).toBe("approved");
   });
 
   it("stays shut until the board's floor, so a count can't be a person", () => {

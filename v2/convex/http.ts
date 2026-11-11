@@ -1798,7 +1798,7 @@ http.route({
 /**
  * Community timelines: a person's dates after PERM (convex/communityTimelines.ts).
  *
- * The browser keeps a random 64-hex edit key per case; only its SHA-256 is
+ * The browser keeps a random 64-hex edit key per timeline; only its SHA-256 is
  * stored, so whoever holds the key can change or remove the row and nobody
  * else can. Reading your own row is a POST so the key never sits in a URL or
  * an access log. Every limit lives in the internal mutation; the address is
@@ -1822,8 +1822,9 @@ async function timelineBody(
     return { ok: false, status: 400, message: "Malformed request." };
   }
   const b = body as Record<string, unknown>;
-  if (typeof b.caseNumber !== "string" || b.caseNumber.length > 24) {
-    return { ok: false, status: 400, message: "A PERM case number is required." };
+  // A PERM case number is optional (a case's page sends its own; an EB-1 or waiver case has none).
+  if (b.caseNumber !== undefined && b.caseNumber !== null && (typeof b.caseNumber !== "string" || b.caseNumber.length > 24)) {
+    return { ok: false, status: 400, message: "Malformed request." };
   }
   if (typeof b.key !== "string" || !HEX64_KEY.test(b.key)) {
     return { ok: false, status: 400, message: "Malformed request." };
@@ -1831,9 +1832,13 @@ async function timelineBody(
   return { ok: true, body: b };
 }
 
+/** The case number a timeline request names, or none. */
+const timelineCase = (b: Record<string, unknown>): string | undefined =>
+  typeof b.caseNumber === "string" && b.caseNumber.trim() !== "" ? b.caseNumber : undefined;
+
 const TIMELINE_FIELDS = [
-  "category", "country", "route", "i140Center",
-  "i140FiledOn", "i140ApprovedOn", "i485FiledOn", "eadOn", "apOn", "interviewOn", "greenCardOn",
+  "category", "country", "route", "i140Center", "fieldOffice",
+  "i140FiledOn", "i140ApprovedOn", "i485FiledOn", "biometricsOn", "eadOn", "apOn", "interviewOn", "greenCardOn",
   "rfeForm", "rfeReason", "rfeIssuedOn", "rfeRespondedOn", "rfeOutcome",
 ] as const;
 
@@ -1874,7 +1879,7 @@ http.route({
       sha256Hex(`timeline-key:${b.key as string}`),
     ]);
     const result = await ctx.runMutation(internal.communityTimelines.save, {
-      caseNumber: b.caseNumber as string,
+      caseNumber: timelineCase(b),
       editKeyHash,
       ipHash,
       input: input as TimelineWire,
@@ -1894,7 +1899,7 @@ http.route({
     if (!parsed.ok) return json({ ok: false, message: parsed.message }, parsed.status);
     const editKeyHash = await sha256Hex(`timeline-key:${parsed.body.key as string}`);
     const mine = await ctx.runQuery(internal.communityTimelines.mine, {
-      caseNumber: parsed.body.caseNumber as string,
+      caseNumber: timelineCase(parsed.body),
       editKeyHash,
     });
     return json({ ok: true, mine });
@@ -1912,7 +1917,7 @@ http.route({
     if (!parsed.ok) return json({ ok: false, message: parsed.message }, parsed.status);
     const editKeyHash = await sha256Hex(`timeline-key:${parsed.body.key as string}`);
     const result = await ctx.runMutation(internal.communityTimelines.remove, {
-      caseNumber: parsed.body.caseNumber as string,
+      caseNumber: timelineCase(parsed.body),
       editKeyHash,
     });
     return json(result, result.ok ? 200 : 400);
