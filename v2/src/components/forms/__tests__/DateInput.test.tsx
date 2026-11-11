@@ -302,3 +302,28 @@ describe("DateInput reading a pasted date", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
+
+describe("the date box's buttons are full-height targets", () => {
+  it("makes the calendar button the box's whole height, 44px square when it stands alone", () => {
+    renderWithProviders(<DateInput value="" onChange={() => {}} />);
+
+    const cal = screen.getByRole("button", { name: "Open date picker" });
+    expect(cal.className).toContain("h-11");
+    expect(cal.className).toContain("w-11");
+    expect(cal.className).toContain("right-0");
+  });
+
+  it("splits the box's last 64px between the calendar and the clear button, each as tall as the box", () => {
+    renderWithProviders(<DateInput value="2026-11-11" onChange={() => {}} onClear={() => {}} />);
+
+    const cal = screen.getByRole("button", { name: "Open date picker" });
+    const clear = screen.getByRole("button", { name: "Clear date" });
+    for (const b of [cal, clear]) {
+      expect(b.className).toContain("h-11");
+      expect(b.className).toContain("w-8");
+    }
+    // Side by side, never one over the other: the clear button at the edge, the calendar 32px in.
+    expect(clear.className).toContain("right-0");
+    expect(cal.className).toContain("right-8");
+  });
+});

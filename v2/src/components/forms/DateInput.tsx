@@ -323,8 +323,8 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
             !error && !validationState && !autoCalculated && "border-input",
             // Auto-calculated state (overrides valid state styling)
             autoCalculated && "ring-2 ring-primary/30 border-primary",
-            // Right padding for buttons
-            hasValue && onClear ? "pr-16" : "pr-10",
+            // Right padding for buttons: 44px for the calendar button alone, 64px for it and the clear button.
+            hasValue && onClear ? "pr-16" : "pr-11",
             // Custom calendar icon styling
             "[&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-10 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
           )}
@@ -346,10 +346,13 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
           className={cn(
             // date-picker-btn: Firefox draws its own picker button, which no
             // CSS hides, so globals.css hides this one there (one icon each).
-            "date-picker-btn absolute top-[1.375rem] -translate-y-1/2 p-1 text-muted-foreground transition-colors",
+            // THE WHOLE HEIGHT OF THE BOX IS THE TARGET. It was the 16px icon and 4px of padding: a 24px target on
+            // every date box on the site. Alone it's 44 by 44; beside the clear button the two split the last 64px,
+            // 32 each and 44 tall, which is all a narrow date box has before the date itself is covered.
+            "date-picker-btn absolute top-0 inline-flex h-11 items-center justify-center text-muted-foreground transition-colors",
             "hover:text-foreground",
             "disabled:text-muted-foreground disabled:pointer-events-none",
-            hasValue && onClear ? "right-8" : "right-2"
+            hasValue && onClear ? "right-8 w-8" : "right-0 w-11"
           )}
           aria-label="Open date picker"
           tabIndex={-1}
@@ -363,7 +366,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
             type="button"
             onClick={onClear}
             data-testid="clear-button"
-            className="absolute right-2 top-[1.375rem] -translate-y-1/2 p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            className="absolute right-0 top-0 inline-flex h-11 w-8 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             aria-label="Clear date"
           >
             <XIcon className="h-4 w-4" />
