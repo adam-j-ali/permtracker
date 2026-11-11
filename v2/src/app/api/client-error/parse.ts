@@ -1,7 +1,7 @@
 /**
  * What an error screen reports to /api/client-error, checked. The screens that
- * catch a crash reload or redirect within a second (owner, Oct 31 2026: "it
- * disappears super quick so i cant [screenshot]"), and PostHog is off for staff
+ * catch a crash reload or redirect within a second (reported Oct 31 2026: gone too fast
+ * to capture), and PostHog is off for staff
  * and Sentry isn't loaded on the sign-in pages, so they also tell our own server.
  *
  * Only these fields, each capped, and the path without its query string, so a

@@ -57,7 +57,7 @@ import { softFail } from "@/lib/softRead";
  * Where every step stands today: one page that gathers the answer each data
  * page gives, step by step, with a link to each (owner, Oct 27 2026: keep
  * every page, and add one place with everything). Every answer is a picture
- * first (owner, Oct 27: "visual heavy, not text blobs").
+ * first (the owner's call, Oct 27).
  *
  * Expired by the sweep (/api/revalidate-sweep), DOL's readings
  * (/api/revalidate-dol) and the bulletin (/api/revalidate-bulletin).
@@ -197,8 +197,8 @@ export default async function TodayPage() {
       )
     : [];
 
-  // USCIS's two lines in and out, from its quarterly received and completed counts (Adam,
-  // Oct 27 2026: "why just those 2?"): the I-140's in its card, the I-485's in its tab. USCIS
+  // USCIS's two lines in and out, from its quarterly received and completed counts (the owner's
+  // call, Oct 27 2026): the I-140's in its card, the I-485's in its tab. USCIS
   // publishes them once a quarter, so the caption names the quarter rather than 30 days; the
   // step already says it's USCIS's.
   const uscisLine = (row: (typeof i140)[number] | undefined) => {

@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  * Inside the attorney page's ribbon stage (TourStage, `pinned`) each band is also a layer filling the pinned frame,
  * clipped from the left by --wipe (100% hidden, 0% whole; TourStage writes it), its words always on the left; below
  * 1024px, under reduced motion and with scripts off those bands stack like the rest. The sideways stage is the
- * attorney page's alone (owner, Oct 21 2026: "keep that sideways scroll for attorney page, rest dont need it").
+ * attorney page's alone (the owner's call, Oct 21 2026).
  */
 export function StageBand({
   id,

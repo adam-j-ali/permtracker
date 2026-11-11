@@ -278,7 +278,7 @@ export function ChatPanel({
         // Desktop: in the bubble's corner, lifted over a bottom bar (the case form's save bar, the
         // selection bar: --bottom-bar-h) so it never covers its buttons.
         'md:bottom-[calc(var(--bottom-bar-h,0px)_+_1.5rem_+_env(safe-area-inset-bottom,0px))] md:right-[calc(1.5rem_+_env(safe-area-inset-right,0px))]',
-        // Roomier from Oct 31 2026 (owner: "too small and cramped"): wider, and as tall as the room under
+        // Roomier from Oct 31 2026 (the owner's call): wider, and as tall as the room under
         // the header allows. Nov 1 2026: it reached over the header ("chat covers the header now"), since
         // its height took 7rem off the screen while the header and its gap need more; it stops 1rem below it.
         'md:w-[min(30rem,calc(100vw-2rem))] lg:w-[32rem]',

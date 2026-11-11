@@ -299,7 +299,7 @@ route checks `Authorization: Bearer <CRON_SECRET>`, refuses unknown jobs, skips 
 workflow with a run inside the last 20 minutes, and fires `workflow_dispatch` on
 `adam-j-ali/permtracker` (`adamjali/perm` until Nov 7 2026) with `GITHUB_DISPATCH_TOKEN`. Reason: GitHub's `schedule` fired
 2 to 7.5 hours late every day. The data workflows carry no `schedule:` any more;
-`ingest-health.yml` keeps one as a second clock. Two launchd agents on Adam's Mac
+`ingest-health.yml` keeps one as a second clock. Two launchd agents on the owner's Mac
 (`v2/scripts/launchd/`) retry the USCIS fetches the day after GitHub's attempt.
 Detail: `v2/CLAUDE.md`.
 

@@ -20,7 +20,7 @@ describe("groupMarkers", () => {
     expect(groupMarkers(p, 24)).toEqual([[2], [3, 1], [0]]);
   });
 
-  it("draws five dates in six days as ONE marker, not a tower (Adam's phone, Sep 30 2026)", () => {
+  it("draws five dates in six days as ONE marker, not a tower (seen on a phone, Sep 30 2026)", () => {
     const p = [0, 2, 4, 5, 6].map((d) => 40 + pct(d, 24));
     expect(groupMarkers(p, 24)).toEqual([[0, 1, 2, 3, 4]]);
   });

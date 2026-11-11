@@ -1,7 +1,6 @@
 /**
  * How many cases were filed today, yesterday, this week, or on any day since FY2020, for PERM,
- * wage requests, H-1B LCAs and the seasonal programs (owner, Nov 5 2026: "is there a way to see
- * how many FILED on a day/daily/today/yesterday ... ez simple findable"). One count a day from
+ * wage requests, H-1B LCAs and the seasonal programs (the owner's call, Nov 5 2026). One count a day from
  * perm_docs['filings_by_day'] (scripts/build_filings_by_day.py, after each case-status pass):
  * DOL's live case-status service and its published files together, each case counted once.
  *

@@ -5,7 +5,7 @@ import { ChatPanel } from '../ChatPanel';
 import { ToolCallCard } from '../ToolCallCard';
 
 /**
- * Room in the panel (owner, Oct 31 2026: "too small and cramped"): the not-legal-advice note folds behind an icon,
+ * Room in the panel (the owner's call, Oct 31 2026): the not-legal-advice note folds behind an icon,
  * the mode strip carries no explaining line, and a finished tool step is one line with its inputs folded.
  */
 

@@ -739,7 +739,7 @@ export interface ReportChange {
 export const OWNER_LIST_MAX = 40;
 
 /**
- * The owner's once-a-day email about consulate reports (owner, Nov 5 2026: "one email a day", and
+ * The owner's once-a-day email about consulate reports (the owner's call, Nov 5 2026: one email a day, and
  * reports post at once and are taken down after, never held for approval). One line per report saved or
  * edited after `since`, newest first, each with its consulate's page. Null on a day with none, so a quiet
  * day sends nothing. `total` is how many changed when the caller read more than it lists; `more` says the

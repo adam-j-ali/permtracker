@@ -3,9 +3,9 @@
 import { useEffect } from "react";
 
 /**
- * Something inside each small picture answers the mouse (owner, Oct 21 2026: "something happening unique within the
- * drawing pref with the colors ... if its a compass point to mouse ... whichever is highlighted which is closest to
- * mouse ... clean", after a tilt of the whole picture read as "so corny").
+ * Something inside each small picture answers the mouse (the owner's call, Oct 21 2026): one part of the drawing
+ * moves, in its own colours. A compass points at the pointer, the item nearest it lights. Never the whole picture
+ * tilting.
  *
  * Each picture is an image file (SpotPicture), drawn by scripts/spot-pictures/build.mjs with its moving parts marked.
  * With a mouse, as the pointer comes near a picture this puts the picture's own SVG in the page in place of the image

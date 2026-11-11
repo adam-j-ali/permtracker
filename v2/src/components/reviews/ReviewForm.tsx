@@ -17,8 +17,7 @@ import { cn } from "@/lib/utils";
 import { NOTE_MAX, REVIEW_NAME_MAX, REVIEW_TEXT_MAX, type ReviewField } from "@convex/lib/siteReview";
 
 /**
- * The site's review form, kept to the least a person has to do (owner, Oct 23 2026: "frictionless, easy as
- * possible ... big and clear and calm"): tap the stars, write something if they want, a name, an email if they
+ * The site's review form, kept to the least a person has to do (the owner's call, Oct 23 2026): tap the stars, write something if they want, a name, an email if they
  * want, send. Posts to the Convex route (`/review/submit`), which owns the checks and the budgets; this side shows
  * honest states and never pretends. Nothing shows until the owner approves it, and the thanks says so.
  *

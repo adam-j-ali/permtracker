@@ -662,7 +662,7 @@ const keyCabinetPoints = () => [...trayPoints(), [-24, -26, 56], [24, -16, 56], 
 // The pictures, their pages and their sets. A set shares one world scale.
 // ======================================================================================
 // ======================================================================================
-// Redrawn Oct 21 2026 (owner: "unique, not same or basically same"): the ticket dispenser read as a
+// Redrawn Oct 21 2026 (the owner's call): the ticket dispenser read as a
 // second stamp, the card index as a second filing drawer, the deposit boxes as a third grid of doors.
 // ======================================================================================
 

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 /**
- * The board's one moment on load (owner, Oct 15 2026: "count up on load").
+ * The board's one moment on load (the owner's call, Oct 15 2026).
  *
  * A number row counts up from zero like an odometer, its cells fixed (leading
  * zeros, the commas where they'll land), so nothing shifts; any other row (a

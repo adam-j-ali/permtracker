@@ -27,7 +27,7 @@ import { clampPage, Pagination, usePageParam, useQueryParam } from "@/components
 import { SelectInput } from "@/components/forms/SelectInput";
 import { AUDIENCES, SORTS, audienceOf, forAudience, sortOf, sortPosts, sortedHeading } from "@/lib/content/listing";
 
-/** Articles a page (owner, Oct 21 2026: "pagination not endless scroll"). */
+/** Articles a page (the owner's call, Oct 21 2026). */
 export const PER_PAGE = 12;
 
 interface ContentListingProps {

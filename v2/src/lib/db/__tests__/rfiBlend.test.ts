@@ -5,8 +5,8 @@ import type { RfiFunnel, RfiObserved } from "../rfi";
 /**
  * The blend that decides the headline RFI percentage.
  *
- * Adam asked for one blended number over my recommendation to publish the two
- * halves separately. That is his call; what the code owes in return is a blend
+ * One blended number is the owner's call, over a recommendation to publish the two
+ * halves separately. What the code owes in return is a blend
  * that is provably decomposable and provably free of double counting, which is
  * what these tests pin.
  */

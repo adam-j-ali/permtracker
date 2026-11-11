@@ -25,8 +25,7 @@ import { usePathname } from "next/navigation";
  *
  * A section with a background of its own (a lime or ink band) keeps it painted and only its contents rise:
  * fading the whole band showed the page's paper where the band would be, so the homepage's lime step divider
- * hung over a blank gap until the closing band caught up (owner, Nov 2 2026: "footer loads weird and wonky
- * and glitchy").
+ * hung over a blank gap until the closing band caught up (reported Nov 2 2026).
  *
  * Off under reduced motion, and a section can opt out with `data-no-reveal`
  * (sticky bars, anything a reader jumps to by anchor).

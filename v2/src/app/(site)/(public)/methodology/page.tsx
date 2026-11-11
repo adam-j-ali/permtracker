@@ -316,7 +316,7 @@ export default async function MethodologyPage() {
       <section className="mt-12">
         <h2 className="font-heading text-2xl font-bold">What our figures are</h2>{" "}
         {/* A tile per source: the agency's seal, what it gives in a line and how
-            often; the detail is folded (owner, Oct 27 2026: "not text blobs"). */}
+            often; the detail is folded (the owner's call, Oct 27 2026). */}
         <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
           {SOURCES.map((s) => (
             <li key={s.name} className="flex flex-col bg-tint p-5">

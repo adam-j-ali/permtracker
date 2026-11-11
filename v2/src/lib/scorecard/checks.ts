@@ -1,6 +1,6 @@
 /**
  * Every estimate the site gives, and how its own check came out, as rows for the public scorecard and the guides
- * that explain the estimates (owner, Nov 4 2026: "update it as needed with all the stuff we track").
+ * that explain the estimates (the owner's call, Nov 4 2026).
  *
  * Each row comes from a check the site runs on its own record: the nightly PERM backtest (cases in DOL's line,
  * cases the line has passed, cases at an RFI, the range near the front), the nightly wage-request backtest, the
