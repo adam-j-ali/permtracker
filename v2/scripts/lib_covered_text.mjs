@@ -17,7 +17,14 @@ export function coveredText() {
     return parts.length > 3 ? parseFloat(parts[3]) : 1;
   };
   const paints = (cs) => cs.content !== "none" && cs.content !== "normal" && (alpha(cs.backgroundColor) > 0.05 || cs.backgroundImage !== "none") && !(parseInt(cs.zIndex, 10) < 0);
-  const hidden = (el) => !!el.closest('svg, [aria-hidden="true"], [inert], .sr-only');
+  // Not painted, so nothing can cover it: hidden from everyone, or inside a fold that's shut. A shut <details> keeps
+  // its contents' boxes at its own foot, where the next thing on the page sits: on Nov 11 2026 a button under a shut
+  // "Other emails" fold was reported as covering the fold's two labels.
+  const shut = (el) => {
+    const fold = el.closest("details:not([open])");
+    return !!fold && !el.closest("summary");
+  };
+  const hidden = (el) => !!el.closest('svg, [aria-hidden="true"], [inert], .sr-only') || shut(el);
   const words = (text) => text.trim().replace(/\s+/g, " ").slice(0, 40);
 
   for (const el of document.querySelectorAll("body *")) {

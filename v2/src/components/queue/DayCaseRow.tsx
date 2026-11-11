@@ -36,7 +36,9 @@ export function DayCaseRow({
       </IntentLink>{" "}
       <span className="leading-snug">
         {c.employer && c.employerSlug ? (
-          <IntentLink href={entityHref("employer", c.employerSlug)} className="link block font-semibold">
+          // 44px tall to tap on a phone (the deploy's phone sweep refused the page over these at 22px); a wider
+          // screen keeps the compact row.
+          <IntentLink href={entityHref("employer", c.employerSlug)} className="link flex min-h-11 items-center font-semibold sm:block sm:min-h-0">
             {c.employer}
           </IntentLink>
         ) : (
