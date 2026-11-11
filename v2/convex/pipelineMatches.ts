@@ -26,8 +26,9 @@
  * ## Sending
  *
  * One email per wage request per run, listing what's new, through
- * `deliverAlert` as kind "match", so the one-email-a-day bundling applies and
- * the case alert's own stop link (and the preference page) turns it off. Each
+ * `deliverAlert` as kind "match", so the one-email-a-day bundling applies. Its
+ * stop link (and the preference page) turns off that wage request's alerts and
+ * nothing else the address watches. Each
  * email claims one unit of the `pipelineMatch` pool before it's built. Each
  * PERM is reserved in `permMatchNotices` before the email goes (`reserveTold`)
  * and recorded as told once it's sent or queued (`recordTold`); a failed send
@@ -49,9 +50,9 @@ import { BUDGETS, noteRefusal, windowFor } from "./lib/alertBudgets";
 import { dayDolActed, isPermWageRequest } from "./lib/alertNextSteps";
 import { createLogger } from "./lib/logging";
 import { recordError } from "./lib/errorRecording";
-import { actionUrl, SITE_URL } from "./lib/links";
+import { SITE_URL } from "./lib/links";
 import { longDate } from "./lib/months";
-import { prefsLink } from "./lib/prefsLink";
+import { oneClickUnsubscribeUrl, prefsLink } from "./lib/prefsLink";
 import { placeholders, query, type Row } from "./lib/publicMirror";
 import { checkRateLimit, recordRateLimitAttempt } from "./lib/rateLimit";
 import { makeUnsubscribeToken } from "./lib/unsubscribeToken";
@@ -421,8 +422,11 @@ export const sweep = internalAction({
       let delivered = false;
       try {
         const secret = unsubscribeSecret();
-        const token = await makeUnsubscribeToken(watch.email, secret, "case-unsubscribe");
-        const unsubscribeUrl = actionUrl("/case-alert/unsubscribe", token);
+        // The stop link turns off this wage request's alerts and nothing else. The case
+        // alerts' own link stops every case the address watches, which is more than someone
+        // who wants no more "may be yours" emails asked for.
+        const token = await makeUnsubscribeToken(watch.email, secret, "prefs");
+        const unsubscribeUrl = oneClickUnsubscribeUrl(token, "case", watch._id);
         const prefsUrl = await prefsLink(watch.email, secret, `case:${watch._id}`);
         const employerName = request.employerName ?? send[0]!.employerName ?? "The employer";
         const jobTitle = request.jobTitle ?? send[0]!.jobTitle ?? "the same job";
@@ -475,7 +479,7 @@ export const sweep = internalAction({
             ]),
             "While a PERM is pending, DOL's record doesn't name the worker or say which wage request it uses. DOL names the wage request only once it decides the case, so for now we can't tell whether this is yours. The employer, the job title and a filing date after your wage all match. Your employer or attorney can confirm the case number.",
             "",
-            `Stop these alerts: ${unsubscribeUrl}`,
+            `Stop emails about this wage request: ${unsubscribeUrl}`,
             "",
             "PERM Tracker",
             TEXT_LEGAL_LINE,

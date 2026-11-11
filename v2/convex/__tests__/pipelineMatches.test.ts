@@ -185,6 +185,38 @@ describe("the wage request to PERM match", () => {
     expect(matches()).toHaveLength(1);
   });
 
+  // "Stop these alerts" used the case alerts' own link, which turns off every case the
+  // address watches. Someone who only wanted no more "may be yours" emails lost them all.
+  it("carries a stop link that turns off that wage request's alerts and nothing else", async () => {
+    const t = createTestContext();
+    const { matches } = stub({ pwd: { [PWD]: pwdRow }, perms: [permOf("G-100-26286-296040", "2026-10-13")] });
+    const id = await watch(t, "person@example.com");
+
+    await t.action(internal.pipelineMatches.sweep, {});
+    // A second case the address watches, added after the email went (with two, the email
+    // would wait for the day's one bundle).
+    const other = await t.run(async (ctx) =>
+      ctx.db.insert("caseStatusAlerts", { email: "person@example.com", caseNumber: "G-100-25100-555555", createdAt: Date.now(), confirmedAt: Date.now() }),
+    );
+    const [sent] = matches();
+    expect(sent).toBeDefined();
+    expect(JSON.stringify(sent), "the every-case stop link").not.toContain("/case-alert/unsubscribe");
+    const link = /Stop emails about this wage request: (\S+)/.exec(String(sent!.text))?.[1];
+    expect(link).toBeDefined();
+    const url = new URL(link!);
+    expect(url.pathname).toBe("/prefs/unsubscribe");
+    expect(url.searchParams.get("kind")).toBe("case");
+    expect(url.searchParams.get("id")).toBe(id);
+    // The mail app's own Unsubscribe button goes to the same place.
+    expect(JSON.stringify(sent)).toContain(link!.replace(/&/g, "&"));
+
+    const res = await t.fetch(`${url.pathname}${url.search}`, { method: "POST" });
+    expect(res.status).toBe(200);
+    const rows = await t.run(async (ctx) => Promise.all([ctx.db.get(id), ctx.db.get(other)]));
+    expect(rows[0]!.unsubscribedAt, "the wage request's own alerts").toBeTypeOf("number");
+    expect(rows[1]!.unsubscribedAt, "another case the address watches").toBeUndefined();
+  });
+
   it("reads every spelling the page map ties to the employer", async () => {
     const t = createTestContext();
     const { matches } = stub({
