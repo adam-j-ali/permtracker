@@ -1270,8 +1270,9 @@ function CaseTable({
             {/* On a phone the filing day and the wait share one line across the row: the list is in decision order, so
                 the wait says more there than the decision day repeated. The "Decided" cell is the wide table's. */}
             <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-base tabular-nums max-sm:text-left max-sm:font-sans max-sm:text-sm max-sm:text-muted-foreground max-sm:[grid-area:dates]">
-              <span className="sm:hidden">Filed </span>
-              <span>{r.receivedDate}</span>
+              <span className="sm:hidden">Filed</span>{" "}
+              {r.receivedDate}
+              {/* Its comma follows the date with no space, so nothing separates the two. */}
               <span className="sm:hidden">{`, decided in ${formatInt(r.days)} ${r.days === 1 ? "day" : "days"}`}</span>
             {" "}</td>
             <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-base tabular-nums max-sm:hidden">
