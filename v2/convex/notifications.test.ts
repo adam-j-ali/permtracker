@@ -8,6 +8,7 @@ import {
   calculatePriority,
   formatDeadlineType,
   shouldSendEmail,
+  shouldSendPush,
   getNotificationIcon,
   type UserNotificationPrefs,
 } from "./lib/notificationHelpers";
@@ -908,60 +909,41 @@ describe("Notifications", () => {
 
       it("respects master switch", () => {
         const prefs = { ...basePrefs, emailNotificationsEnabled: false };
-        expect(shouldSendEmail("deadline_reminder", "high", prefs, "10:00")).toBe(false);
+        expect(shouldSendEmail("deadline_reminder", "high", prefs)).toBe(false);
       });
 
       it("respects type-specific preferences - deadline_reminder", () => {
         const prefs = { ...basePrefs, emailDeadlineReminders: false };
-        expect(shouldSendEmail("deadline_reminder", "high", prefs, "10:00")).toBe(false);
+        expect(shouldSendEmail("deadline_reminder", "high", prefs)).toBe(false);
       });
 
       it("respects type-specific preferences - status_change", () => {
         const prefs = { ...basePrefs, emailStatusUpdates: false };
-        expect(shouldSendEmail("status_change", "normal", prefs, "10:00")).toBe(false);
+        expect(shouldSendEmail("status_change", "normal", prefs)).toBe(false);
       });
 
       it("respects type-specific preferences - rfi_alert", () => {
         const prefs = { ...basePrefs, emailRfeAlerts: false };
-        expect(shouldSendEmail("rfi_alert", "high", prefs, "10:00")).toBe(false);
+        expect(shouldSendEmail("rfi_alert", "high", prefs)).toBe(false);
       });
 
       it("respects type-specific preferences - rfe_alert", () => {
         const prefs = { ...basePrefs, emailRfeAlerts: false };
-        expect(shouldSendEmail("rfe_alert", "high", prefs, "10:00")).toBe(false);
+        expect(shouldSendEmail("rfe_alert", "high", prefs)).toBe(false);
       });
 
-      it("respects quiet hours", () => {
+      // The reminder email goes once a day at a fixed hour and each reminder
+      // fires on one day only, so an email held by quiet hours was an email
+      // never sent. Quiet hours hold the push; see shouldSendPush.
+      it("quiet hours never hold an email", () => {
         const prefs: UserNotificationPrefs = {
           ...basePrefs,
           quietHoursEnabled: true,
           quietHoursStart: "22:00",
           quietHoursEnd: "08:00",
         };
-        expect(shouldSendEmail("deadline_reminder", "normal", prefs, "23:00")).toBe(false);
-        expect(shouldSendEmail("deadline_reminder", "normal", prefs, "07:00")).toBe(false);
-      });
-
-      it("allows during non-quiet hours", () => {
-        const prefs: UserNotificationPrefs = {
-          ...basePrefs,
-          quietHoursEnabled: true,
-          quietHoursStart: "22:00",
-          quietHoursEnd: "08:00",
-        };
-        expect(shouldSendEmail("deadline_reminder", "normal", prefs, "10:00")).toBe(true);
-        expect(shouldSendEmail("deadline_reminder", "normal", prefs, "18:00")).toBe(true);
-      });
-
-      it("urgent bypasses quiet hours", () => {
-        const prefs: UserNotificationPrefs = {
-          ...basePrefs,
-          quietHoursEnabled: true,
-          quietHoursStart: "22:00",
-          quietHoursEnd: "08:00",
-        };
-        expect(shouldSendEmail("deadline_reminder", "urgent", prefs, "23:00")).toBe(true);
-        expect(shouldSendEmail("deadline_reminder", "urgent", prefs, "03:00")).toBe(true);
+        expect(shouldSendEmail("deadline_reminder", "normal", prefs)).toBe(true);
+        expect(shouldSendEmail("deadline_reminder", "high", prefs)).toBe(true);
       });
 
       it("auto_closure always sends if master enabled", () => {
@@ -971,7 +953,49 @@ describe("Notifications", () => {
           emailStatusUpdates: false,
           emailRfeAlerts: false,
         };
-        expect(shouldSendEmail("auto_closure", "urgent", prefs, "10:00")).toBe(true);
+        expect(shouldSendEmail("auto_closure", "urgent", prefs)).toBe(true);
+      });
+    });
+
+    describe("shouldSendPush", () => {
+      const basePrefs: UserNotificationPrefs = {
+        emailNotificationsEnabled: true,
+        emailDeadlineReminders: true,
+        emailStatusUpdates: true,
+        emailRfeAlerts: true,
+        pushNotificationsEnabled: true,
+        quietHoursEnabled: false,
+        timezone: "America/Los_Angeles",
+      };
+      const quiet: UserNotificationPrefs = {
+        ...basePrefs,
+        quietHoursEnabled: true,
+        quietHoursStart: "22:00",
+        quietHoursEnd: "08:00",
+      };
+
+      it("follows the push switch", () => {
+        expect(shouldSendPush("normal", basePrefs, "10:00")).toBe(true);
+        expect(shouldSendPush("normal", { ...basePrefs, pushNotificationsEnabled: false }, "10:00")).toBe(false);
+      });
+
+      it("goes with every email switch off: push is its own choice", () => {
+        const prefs = { ...basePrefs, emailNotificationsEnabled: false, emailDeadlineReminders: false };
+        expect(shouldSendPush("high", prefs, "10:00")).toBe(true);
+      });
+
+      it("is held inside quiet hours, overnight ones included", () => {
+        expect(shouldSendPush("normal", quiet, "23:00")).toBe(false);
+        expect(shouldSendPush("high", quiet, "07:00")).toBe(false);
+        expect(shouldSendPush("normal", quiet, "10:00")).toBe(true);
+      });
+
+      it("an urgent one goes inside quiet hours", () => {
+        expect(shouldSendPush("urgent", quiet, "03:00")).toBe(true);
+      });
+
+      it("goes when the time isn't known", () => {
+        expect(shouldSendPush("normal", quiet)).toBe(true);
       });
     });
 

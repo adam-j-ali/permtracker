@@ -100,7 +100,7 @@ describe("QuietHoursSection", () => {
         <QuietHoursSection profile={defaultProfile} />
       );
 
-      expect(screen.getByText("Pause non-urgent notifications during specific hours")).toBeInTheDocument();
+      expect(screen.getByText("Hold push notifications during set hours. Urgent ones still come through, and email isn’t held.")).toBeInTheDocument();
     });
 
     it("renders Enable Quiet Hours toggle", () => {

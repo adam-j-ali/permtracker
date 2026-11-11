@@ -577,33 +577,17 @@ function isWithinQuietHours(
 }
 
 /**
- * Determine whether an email should be sent for a notification.
+ * Whether an email goes for a notification: the master email switch, then the
+ * switch for its kind.
  *
- * Checks:
- * 1. Master email switch is enabled
- * 2. Type-specific preference is enabled
- * 3. Not within quiet hours (if enabled)
- *
- * @param notificationType - Type of notification
- * @param priority - Notification priority
- * @param userPrefs - User notification preferences
- * @param currentTimeInTimezone - Current time in user's timezone (HH:MM format)
- * @returns true if email should be sent
- *
- * @example
- * shouldSendEmail("deadline_reminder", "urgent", {
- *   emailNotificationsEnabled: true,
- *   emailDeadlineReminders: true,
- *   quietHoursEnabled: false,
- *   // ...other prefs
- * }, "10:30");
- * // true
+ * Quiet hours never hold an email. The reminder email goes once a day at a
+ * fixed hour and each reminder fires on one day only, so an email held was an
+ * email never sent. Quiet hours hold the push: see shouldSendPush.
  */
 export function shouldSendEmail(
   notificationType: NotificationType,
-  priority: PriorityLevel,
+  _priority: PriorityLevel,
   userPrefs: UserNotificationPrefs,
-  currentTimeInTimezone?: string
 ): boolean {
   // Check master switch
   if (!userPrefs.emailNotificationsEnabled) {
@@ -641,24 +625,24 @@ export function shouldSendEmail(
       break;
   }
 
-  // Check quiet hours (skip for urgent priority - always deliver urgent)
-  if (
-    priority !== "urgent" &&
-    userPrefs.quietHoursEnabled &&
-    userPrefs.quietHoursStart &&
-    userPrefs.quietHoursEnd &&
-    currentTimeInTimezone
-  ) {
-    if (
-      isWithinQuietHours(
-        currentTimeInTimezone,
-        userPrefs.quietHoursStart,
-        userPrefs.quietHoursEnd
-      )
-    ) {
-      return false;
-    }
-  }
-
   return true;
+}
+
+/**
+ * Whether a push goes for a notification: the push switch, and quiet hours.
+ * The email switches have no say, so email off with push on still pushes.
+ * An urgent one goes inside quiet hours; so does any when the time isn't known.
+ *
+ * @param currentTimeInTimezone - the account's local time, HH:MM
+ */
+export function shouldSendPush(
+  priority: PriorityLevel,
+  userPrefs: UserNotificationPrefs,
+  currentTimeInTimezone?: string,
+): boolean {
+  if (!userPrefs.pushNotificationsEnabled) return false;
+  if (priority === "urgent") return true;
+  if (!userPrefs.quietHoursEnabled || !userPrefs.quietHoursStart || !userPrefs.quietHoursEnd) return true;
+  if (!currentTimeInTimezone) return true;
+  return !isWithinQuietHours(currentTimeInTimezone, userPrefs.quietHoursStart, userPrefs.quietHoursEnd);
 }

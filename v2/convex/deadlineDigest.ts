@@ -28,6 +28,7 @@ import {
   generateNotificationMessage,
   calculatePriority,
   shouldSendEmail,
+  shouldSendPush,
   type NotificationType,
 } from "./lib/notificationHelpers";
 import { groupRemindersByUser, type DigestReminderInput } from "./lib/reminderDigest";
@@ -131,8 +132,7 @@ export const runDeadlineReminders = internalAction({
       });
       processed++;
 
-      const currentTime = getCurrentTimeInTimezone(reminder.userPrefs.timezone);
-      const sendEmail = shouldSendEmail(notificationType, priority, reminder.userPrefs, currentTime);
+      const sendEmail = shouldSendEmail(notificationType, priority, reminder.userPrefs);
 
       if (sendEmail) {
         emailWorthy.push({
@@ -147,8 +147,9 @@ export const runDeadlineReminders = internalAction({
         });
       }
 
-      // Push notification per reminder (unchanged), gated like email.
-      if (reminder.userPrefs.pushNotificationsEnabled && sendEmail) {
+      // A push per reminder, by the push switch and quiet hours alone: email off with push on still pushes.
+      const currentTime = getCurrentTimeInTimezone(reminder.userPrefs.timezone);
+      if (shouldSendPush(priority, reminder.userPrefs, currentTime)) {
         await ctx.scheduler.runAfter(0, internal.pushNotifications.sendPushNotification, {
           userId: reminder.userId,
           title,

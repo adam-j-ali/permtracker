@@ -10,8 +10,7 @@
 /**
  * QuietHoursSection Component
  *
- * Quiet hours configuration section for suppressing non-urgent notifications
- * during specified time ranges.
+ * Quiet hours: the hours in which a push that isn't urgent is not sent. Email isn't held.
  *
  * Features:
  * - Master toggle (quietHoursEnabled) - when OFF, hides time pickers
@@ -232,14 +231,14 @@ export default function QuietHoursSection({
   const timezoneDisplay = getTimezoneFriendlyName(profile.timezone);
 
   return (
-    <SettingsCard title="Quiet hours" description="Pause non-urgent notifications during specific hours">
+    <SettingsCard title="Quiet hours" description="Hold push notifications during set hours. Urgent ones still come through, and email isn’t held.">
       <div className="flex items-center justify-between gap-4">
         <div className="flex-1 space-y-0.5">
           <Label htmlFor="quiet-hours-enabled" className="text-sm font-medium">
             Enable quiet hours
           </Label>
           <p className="text-sm text-muted-foreground">
-            Suppress notifications during the specified time range
+            No push in these hours unless a deadline is urgent
           </p>
         </div>
         <Switch
