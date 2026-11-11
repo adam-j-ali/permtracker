@@ -49,9 +49,6 @@ export const ANALYTICS_OFF_KEY = "pt_analytics_off";
  */
 export const VISITOR_OFF_KEY = "pt_analytics_visitor_off";
 
-/** Fired on window once a signed-in account has switched to persistence. */
-export const ANALYTICS_CONSENT_EVENT = "pt:analytics-consent";
-
 function flag(key: string): boolean {
   try {
     return window.localStorage.getItem(key) === "1";
@@ -77,6 +74,15 @@ export function isGpcEnabled(): boolean {
     (navigator as Navigator & { globalPrivacyControl?: boolean })
       .globalPrivacyControl === true
   );
+}
+
+/**
+ * True when nothing may be sent for this browser: it's switched off (by its account or by
+ * the visitor), or it sends the privacy signal. What a sign-in tells the server, which
+ * files one event of its own (convex/users.ts, `recordMyLogin`).
+ */
+export function analyticsOffHere(): boolean {
+  return isAnalyticsOff() || isGpcEnabled();
 }
 
 /**
@@ -197,7 +203,6 @@ function consentForAccount(): void {
     try {
       if (isGpcEnabled() || isAnalyticsOff()) return;
       if (!posthog.has_opted_in_capturing()) posthog.opt_in_capturing();
-      window.dispatchEvent(new Event(ANALYTICS_CONSENT_EVENT));
     } catch {
       // PostHog not initialized — safe to ignore
     }

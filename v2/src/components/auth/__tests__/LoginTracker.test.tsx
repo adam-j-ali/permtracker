@@ -16,9 +16,10 @@ const posthog = vi.hoisted(() => ({
 }));
 vi.mock("posthog-js", () => ({ default: posthog }));
 const server = vi.hoisted(() => ({ excluded: false as boolean | undefined }));
+const recordMyLogin = vi.hoisted(() => vi.fn());
 vi.mock("convex/react", () => ({
   useConvexAuth: () => ({ isAuthenticated: true }),
-  useMutation: () => vi.fn().mockResolvedValue(null),
+  useMutation: () => recordMyLogin,
   useQuery: (ref: string) => (ref === "users:isPostHogExcluded" ? server.excluded : { _id: "u1", fullName: "A Person" }),
 }));
 vi.mock("@convex/_generated/api", () => ({
@@ -31,6 +32,7 @@ const { ANALYTICS_OFF_KEY, VISITOR_OFF_KEY, isAnalyticsOff } = await import("@/l
 beforeEach(() => {
   window.localStorage.clear();
   vi.clearAllMocks();
+  recordMyLogin.mockResolvedValue(null);
   server.excluded = false;
 });
 afterEach(() => window.localStorage.clear());
@@ -66,5 +68,30 @@ describe("LoginTracker and a browser switched off", () => {
     // Assert
     await waitFor(() => expect(window.localStorage.getItem(ANALYTICS_OFF_KEY)).toBe("1"));
     expect(posthog.opt_in_capturing).not.toHaveBeenCalled();
+  });
+});
+
+describe("LoginTracker tells the server whether analytics is off in this browser", () => {
+  // The server files one event by itself at a first sign-in (convex/users.ts). It can't see
+  // this browser's switch or its privacy signal, so the sign-in says.
+  const setGpc = (on: boolean | undefined) =>
+    Object.defineProperty(window.navigator, "globalPrivacyControl", { value: on, configurable: true });
+  afterEach(() => setGpc(undefined));
+
+  it("says on for an ordinary browser", async () => {
+    render(<LoginTracker />);
+    await waitFor(() => expect(recordMyLogin).toHaveBeenCalledWith({ analyticsOff: false }));
+  });
+
+  it("says off for a browser the person switched off", async () => {
+    window.localStorage.setItem(VISITOR_OFF_KEY, "1");
+    render(<LoginTracker />);
+    await waitFor(() => expect(recordMyLogin).toHaveBeenCalledWith({ analyticsOff: true }));
+  });
+
+  it("says off for a browser sending Global Privacy Control", async () => {
+    setGpc(true);
+    render(<LoginTracker />);
+    await waitFor(() => expect(recordMyLogin).toHaveBeenCalledWith({ analyticsOff: true }));
   });
 });

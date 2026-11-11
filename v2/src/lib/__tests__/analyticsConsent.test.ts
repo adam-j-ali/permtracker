@@ -22,7 +22,6 @@ const ph = vi.hoisted(() => ({
 vi.mock("posthog-js", () => ({ default: ph }));
 
 import {
-  ANALYTICS_CONSENT_EVENT,
   ANALYTICS_OFF_KEY,
   analytics,
   isAnalyticsOff,
@@ -48,17 +47,12 @@ describe("analytics consent", () => {
     setGpc(false);
   });
 
-  it("opts a signed-in account in once, then only re-announces", () => {
-    const heard = vi.fn();
-    window.addEventListener(ANALYTICS_CONSENT_EVENT, heard);
-
+  it("opts a signed-in account in once", () => {
     analytics.consentForAccount();
     analytics.consentForAccount();
 
     // opt_in sends an $opt_in event and a pageview, so never twice.
     expect(ph.opt_in_capturing).toHaveBeenCalledTimes(1);
-    expect(heard).toHaveBeenCalledTimes(2);
-    window.removeEventListener(ANALYTICS_CONSENT_EVENT, heard);
   });
 
   it("never opts in a browser that sends Global Privacy Control", () => {

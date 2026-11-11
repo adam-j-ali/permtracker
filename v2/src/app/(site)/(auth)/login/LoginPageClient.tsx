@@ -12,6 +12,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { NavLink } from "@/components/ui/nav-link";
+import { analyticsOffHere } from "@/lib/analytics";
 import { toast } from "@/lib/toast";
 import { captureError } from "@/lib/sentry";
 import { handleStaleDeployment } from "@/components/error/auth-error";
@@ -138,7 +139,7 @@ export function LoginPageClient() {
           console.warn("[clearRateLimit] failed:", err),
         );
         localStorage.setItem("perm_last_login_at", String(Date.now()));
-        recordMyLogin().catch((err) => console.warn("[recordMyLogin] failed:", err));
+        recordMyLogin({ analyticsOff: analyticsOffHere() }).catch((err) => console.warn("[recordMyLogin] failed:", err));
         trackLoginSucceeded("email_password");
         router.push(afterSignIn("login"));
       } else {
@@ -196,7 +197,7 @@ export function LoginPageClient() {
 
       toast.success("Email verified. Signing you in.");
       localStorage.setItem("perm_last_login_at", String(Date.now()));
-      recordMyLogin().catch((err) => console.warn("[recordMyLogin] failed:", err));
+      recordMyLogin({ analyticsOff: analyticsOffHere() }).catch((err) => console.warn("[recordMyLogin] failed:", err));
       trackLoginSucceeded("email_password");
       router.push(afterSignIn("login"));
     } catch (error) {

@@ -38,7 +38,7 @@ import { nowInZone, savedTurns, stepShowedCard } from '@/lib/ai/chatTurn';
 import type { ActionMode } from '@/lib/ai/tool-permissions';
 import { createCacheStats } from '@/lib/ai/cache';
 import { captureError } from '@/lib/sentry';
-import { getPostHogClient } from '@/lib/posthog-server';
+import { getPostHogClient, mayCapture } from '@/lib/posthog-server';
 import { chatDebug, createTools, truncateForLog } from './create-tools';
 import { CHAT_MAX_OUTPUT_TOKENS, CHAT_MAX_STEPS, chatIpLimitBody, chatUserLimitBody, cutShortFrom } from '@/lib/ai/limits';
 import { CHAT_LIMITS, CONVERSATION_FULL_MESSAGE } from '@convex/lib/chatLimits';
@@ -279,6 +279,16 @@ export async function POST(req: Request) {
     }
     const userProfile = await profilePromise;
     const posthogUserId = userProfile?._id || "anonymous";
+    // The server's own events obey the account's analytics switch and the browser's privacy signal.
+    const captureAllowed = mayCapture(userProfile, req.headers);
+    const capture = (event: string, properties: Record<string, unknown>) => {
+      if (!captureAllowed) return;
+      try {
+        getPostHogClient()?.capture({ distinctId: posthogUserId, event, properties });
+      } catch (error) {
+        console.warn(`[Chat API] [${sessionId}] PostHog capture failed:`, error instanceof Error ? error.message : error);
+      }
+    };
 
     // Build system prompt WITH action mode AND current date context
     // "Today" in the person's own time zone (Eastern if unset). The server
@@ -294,15 +304,7 @@ export async function POST(req: Request) {
     const tools = createTools(token, typedConversationId, cacheStats, actionMode, pageContext);
 
     // Track chat message sent (fire-and-forget, non-blocking)
-    try {
-      getPostHogClient()?.capture({
-        distinctId: posthogUserId,
-        event: "chat_message_sent",
-        properties: { session_id: sessionId, has_conversation_id: !!conversationId },
-      });
-    } catch (error) {
-      console.warn(`[Chat API] [${sessionId}] PostHog capture failed:`, error instanceof Error ? error.message : error);
-    }
+    capture("chat_message_sent", { session_id: sessionId, has_conversation_id: !!conversationId });
 
     try {
       chatDebug(`[Chat API] [${sessionId}] Streaming with ${PRIMARY_MODEL_NAME} (fallback across the chain)`);
@@ -371,17 +373,7 @@ export async function POST(req: Request) {
             chatDebug(`[Chat API] [${sessionId}] Stream completed: ${event.finishReason} (model: ${modelUsed}, attempts: ${attempts})`);
           }
           // Track provider fallback when more than 1 attempt was needed
-          if (attempts > 1) {
-            try {
-              getPostHogClient()?.capture({
-                distinctId: posthogUserId,
-                event: "chat_provider_fallback",
-                properties: { session_id: sessionId, model_used: modelUsed, attempts },
-              });
-            } catch (error) {
-              console.warn(`[Chat API] [${sessionId}] PostHog capture failed:`, error instanceof Error ? error.message : error);
-            }
-          }
+          if (attempts > 1) capture("chat_provider_fallback", { session_id: sessionId, model_used: modelUsed, attempts });
         },
       });
 
