@@ -207,8 +207,11 @@ describe("the wage request to PERM match", () => {
     expect(url.pathname).toBe("/prefs/unsubscribe");
     expect(url.searchParams.get("kind")).toBe("case");
     expect(url.searchParams.get("id")).toBe(id);
-    // The mail app's own Unsubscribe button goes to the same place.
-    expect(JSON.stringify(sent)).toContain(link!.replace(/&/g, "&"));
+    // The mail app's own Unsubscribe button goes to the same place: the header, read by itself. The email's text
+    // already holds the link, so finding it anywhere in the email proved nothing about the header.
+    const headers = sent!.headers as Record<string, string>;
+    expect(headers["List-Unsubscribe"]).toBe(`<${link!}>`);
+    expect(headers["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
 
     const res = await t.fetch(`${url.pathname}${url.search}`, { method: "POST" });
     expect(res.status).toBe(200);
