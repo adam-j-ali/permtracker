@@ -1243,7 +1243,8 @@ function CaseTable({
                     {r.attorneySlug ? (
                       <IntentLink
                         href={entityHref("attorney", r.attorneySlug)}
-                        className="link"
+                        // It stands alone on its line of a phone row, so it gets the tap floor too.
+                        className="link max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
                       >
                         {r.attorneyName}
                       </IntentLink>

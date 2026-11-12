@@ -163,6 +163,19 @@ describe("CaseBrowser links what has a page", () => {
     answer({ cases: [decided], live: [live] });
   });
 
+  it("gives the law firm's link the 44px tap floor on a phone, as the employer's has", () => {
+    // The firm's link stands alone on its own line of a phone row. The built site's accessibility check failed it on
+    // Nov 12 2026 as too small a target, a morning after the link came back to the phone row.
+    answer({ cases: [{ ...decided, attorneyName: "Burr & Forman LLP", attorneySlug: "burr-forman-llp" }], live: [] });
+    render(<CaseBrowser meta={null} occupations={[]} />);
+    const firm = screen.getByRole("link", { name: "Burr & Forman LLP" });
+    const employer = screen.getAllByRole("link", { name: "Google LLC" })[0]!;
+    for (const cls of ["max-sm:inline-flex", "max-sm:min-h-11", "max-sm:items-center"]) {
+      expect(firm.className).toContain(cls);
+      expect(employer.className).toContain(cls);
+    }
+  });
+
   it("opens a decided case's own page from its number, as the live list does", () => {
     render(<CaseBrowser meta={null} occupations={[]} />);
     expect(screen.getByRole("link", { name: decided.caseNumber }).getAttribute("href")).toBe(
