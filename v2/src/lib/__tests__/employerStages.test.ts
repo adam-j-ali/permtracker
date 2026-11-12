@@ -13,6 +13,7 @@ import {
   parseEmployerStagesDoc,
   rankByReview,
   rankByShare,
+  workedLabel,
   type EmployerStageRow,
 } from "../employerStages";
 
@@ -144,6 +145,41 @@ describe("decision batches and the keyed move list", () => {
     ]);
     expect(moves.map((m) => m.tone)).toEqual(["good", "bad", "neutral"]);
     expect(new Set(moves.map((m) => m.key)).size).toBe(moves.length);
+  });
+});
+
+describe("the day DOL worked on a move", () => {
+  const certified = { date: "2026-11-11", name: "Acme", slug: "acme", to: "CERTIFIED" as const, n: 76 };
+  const hold = { date: "2026-11-11", name: "Acme", slug: "acme", dir: "on" as const, to: "APPLICATION ON HOLD", n: 30 };
+
+  it("is the move's own `worked` list: the 4 AM pass records the evening before's work", () => {
+    const [move] = employerMoves({ holdMoves: [], decisionMoves: [{ ...certified, worked: ["2026-11-10"] }] });
+    // The key stays on the recorded day: a follower who heard this batch must not hear it again.
+    expect(move!.key).toBe("2026-11-11|decided|CERTIFIED");
+    expect(move!.date).toBe("2026-11-11");
+    expect(move!.worked).toEqual(["2026-11-10"]);
+  });
+
+  it("is the recorded day for a move written before the list existed", () => {
+    const moves = employerMoves({ holdMoves: [hold], decisionMoves: [certified] });
+    expect(moves.map((m) => m.worked)).toEqual([["2026-11-11"], ["2026-11-11"]]);
+  });
+
+  it("groups the hold moves a page lists by the day DOL worked", () => {
+    const days = movesByDay([{ ...hold, worked: ["2026-11-10"] }, { ...hold, name: "Other", slug: "other", date: "2026-11-10" }]);
+    expect(days.map((d) => [d.date, d.moves.length])).toEqual([["2026-11-10", 2]]);
+  });
+
+  it("names both days for a batch seen on both sides of the morning line", () => {
+    expect(workedLabel(["2026-11-10", "2026-11-11"], (d) => d.slice(5))).toBe("11-10 and 11-11");
+    expect(workedLabel(["2026-11-10"], (d) => d.slice(5))).toBe("11-10");
+  });
+
+  it("reads a doc carrying `worked`, and refuses one whose list isn't dates", () => {
+    const read = (worked: unknown) => parseEmployerStagesDoc(doc({ decisionMoves: [{ ...certified, worked }] }), 1_000, 2_000);
+    expect(read(["2026-11-10"])?.decisionMoves[0]?.worked).toEqual(["2026-11-10"]);
+    expect(read(["yesterday"])?.decisionMoves).toEqual([]);
+    expect(read([])?.decisionMoves).toEqual([]);
   });
 });
 

@@ -820,7 +820,8 @@ def hold_moves(events, today: datetime.date, employers: list[dict] | None = None
     """The days DOL moved one employer's cases into or out of hold, in bulk.
 
     `events` is (employer_name, slug, et_date, direction, to_status) per case
-    move, direction "on" or "off". A group is one employer, one day, one
+    move, direction "on" or "off", with the day DOL worked as an optional sixth
+    value (see `_worked`). A group is one employer, one day, one
     direction (and for a release, one destination, so "back to analyst
     review" and "certified" never merge). Groups under `minimum` are case-level
     and dropped; the feed is for actions taken on an employer. Newest first.
@@ -828,7 +829,7 @@ def hold_moves(events, today: datetime.date, employers: list[dict] | None = None
     index = _row_index(employers or [])
     cutoff = (today - datetime.timedelta(days=days)).isoformat()
     groups: dict[tuple, dict] = {}
-    for name, slug, date, direction, to_status in events:
+    for name, slug, date, direction, to_status, *dol_day in events:
         if not date or date < cutoff:
             continue
         row = _resolve(index, name, slug)
@@ -839,11 +840,25 @@ def hold_moves(events, today: datetime.date, employers: list[dict] | None = None
             "date": date,
             "name": row["name"] if row else str(name or "").strip(),
             "slug": row["slug"] if row else slug,
-            "dir": direction, "to": to, "n": 0})
+            "dir": direction, "to": to, "n": 0, "_worked": set()})
         g["n"] += 1
-    out = [g for g in groups.values() if g["n"] >= minimum and g["name"]]
+        g["_worked"].add((dol_day[0] if dol_day else None) or date)
+    out = [_worked(g) for g in groups.values() if g["n"] >= minimum and g["name"]]
     out.sort(key=lambda g: (g["date"], g["n"]), reverse=True)
-    return out
+    return strip_private(out)
+
+
+def _worked(group: dict) -> dict:
+    """Give a move the day or days DOL worked on it, oldest first, as `worked`.
+
+    THE RECORDED DAY AND THE DAY DOL WORKED ARE TWO THINGS. `date` is the Eastern day the sweep recorded the move,
+    and it stays the group's key: a follow alert remembers a batch by it, so re-dating a batch that was already
+    mailed would mail it again. But the 4 AM pass records the evening before's work (`observed_day`), and words
+    built from `date` said "DOL certified 76 ... Nov 11, 2026" on a federal holiday. Every sentence about a move
+    takes its day from `worked`; `date` is for keys, windows and sorting.
+    """
+    group["worked"] = sorted(group["_worked"])
+    return group
 
 
 def decision_moves(events, today: datetime.date, employers: list[dict] | None = None,
@@ -855,7 +870,8 @@ def decision_moves(events, today: datetime.date, employers: list[dict] | None = 
     """The days one employer's cases were decided in bulk, for the follow alerts.
 
     `events` is (employer_name, slug, et_date, to_status) per case reaching a
-    decision. A group is one employer, one day, one outcome, so a batch of
+    decision, with the day DOL worked as an optional fifth value (see `_worked`).
+    A group is one employer, one day, one outcome, so a batch of
     certifications and a batch of withdrawals never merge: DOL certifies and
     denies, the EMPLOYER withdraws, and the copy downstream names who acted.
 
@@ -876,7 +892,7 @@ def decision_moves(events, today: datetime.date, employers: list[dict] | None = 
     window_days = max(1, (today - datetime.date.fromisoformat(start)).days + 1)
     totals: dict[tuple, int] = {}
     groups: dict[tuple, dict] = {}
-    for name, slug, date, to_status in events:
+    for name, slug, date, to_status, *dol_day in events:
         if not date or date < cutoff or to_status not in DECISION_STATUSES:
             continue
         row = _resolve(index, name, slug)
@@ -886,11 +902,12 @@ def decision_moves(events, today: datetime.date, employers: list[dict] | None = 
             "date": date,
             "name": row["name"] if row else str(name or "").strip(),
             "slug": row["slug"] if row else slug,
-            "to": to_status, "n": 0,
+            "to": to_status, "n": 0, "_worked": set(),
             "_pending": row["pending"] if row else 0, "_who": (who, to_status)})
         g["n"] += 1
+        g["_worked"].add((dol_day[0] if dol_day else None) or date)
         totals[(who, to_status)] = totals.get((who, to_status), 0) + 1
-    out = [g for g in groups.values()
+    out = [_worked(g) for g in groups.values()
            if g["name"] and g["n"] >= minimum
            and g["n"] >= share * (g["_pending"] + g["n"])
            and g["n"] >= pace * totals[g["_who"]] / window_days]
@@ -958,9 +975,9 @@ def hold_history(db, employers: list[dict], today: datetime.date) -> dict:
          et_date(seen) if seen else None)
         for cn, name, slug, seen in held], log_from)
 
-    events = [(*meta.get(cn, (None, None)), et_date(at), "on", HOLD_STATUS)
+    events = [(*meta.get(cn, (None, None)), et_date(at), "on", HOLD_STATUS, observed_day(int(at)))
               for cn, at in ins]
-    events += [(*meta.get(cn, (None, None)), et_date(at), "off", to)
+    events += [(*meta.get(cn, (None, None)), et_date(at), "off", to, observed_day(int(at)))
                for cn, at, to in outs]
     since_ms = int((time.time() - (DECISION_MOVES_DAYS + 1) * 86400) * 1000)
     decided = query_rows(db, f"""
@@ -976,7 +993,7 @@ def hold_history(db, employers: list[dict], today: datetime.date) -> dict:
     return {"logFrom": log_from,
             "holdMoves": hold_moves(events, today, employers),
             "decisionMoves": decision_moves(
-                [(name, slug, et_date(at), to) for name, slug, at, to in decided],
+                [(name, slug, et_date(at), to, observed_day(int(at))) for name, slug, at, to in decided],
                 today, employers, log_from)}
 
 

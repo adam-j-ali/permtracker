@@ -14,6 +14,7 @@ import type { EmployerMove } from "@/lib/employerStages";
 const move = (i: number): EmployerMove => ({
   key: `2026-09-${String(10 + i).padStart(2, "0")}|hold-on|APPLICATION ON HOLD`,
   date: `2026-09-${String(10 + i).padStart(2, "0")}`,
+  worked: [`2026-09-${String(10 + i).padStart(2, "0")}`],
   slug: "acme",
   name: "ACME",
   sentence: `DOL put ${i + 5} of its cases on hold.`,

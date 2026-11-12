@@ -110,6 +110,19 @@ def main() -> int:
         "DOL put 598 of Microsoft Corporation's PERM cases on hold on Oct 27, 2026.",
         "DOL certified 61 of Upshift Work LLC's PERM cases in one day, Oct 27, 2026."], str(e))
 
+    # The day in the words is the day DOL worked. A batch the 4 AM pass recorded on a holiday morning is the
+    # evening before's work: "certified ... Nov 11" on Veterans Day 2026 was wrong by a day.
+    overnight = {"holdMoves": [
+        {"date": "2026-10-27", "worked": ["2026-10-26"], "name": "Microsoft Corporation", "dir": "on", "to": "APPLICATION ON HOLD", "n": 598}],
+        "decisionMoves": [
+            {"date": "2026-10-27", "worked": ["2026-10-26"], "name": "Upshift Work LLC", "to": "CERTIFIED", "n": 61},
+            {"date": "2026-10-27", "worked": ["2026-10-26", "2026-10-27"], "name": "Two Day Co", "to": "DENIED", "n": 80}]}
+    o = [i["what"] for i in nw.newsworthy(nw.Inputs(employer_stages=overnight), morning, now)]
+    check("a move is worded with the day DOL worked, and a batch across two days says both", o == [
+        "DOL put 598 of Microsoft Corporation's PERM cases on hold on Oct 26, 2026.",
+        "DOL certified 61 of Upshift Work LLC's PERM cases in one day, Oct 26, 2026.",
+        "DOL denied 80 of Two Day Co's PERM cases over Oct 26, 2026 and Oct 27, 2026."], str(o))
+
     # --- a decision day ------------------------------------------------------
     days = weekdays("2026-10-27", 25, 700) + [{"date": "2026-10-27", "total": 1500}]
     d = [i["what"] for i in nw.newsworthy(nw.Inputs(decision_days=days), morning, now)]

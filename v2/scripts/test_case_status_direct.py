@@ -672,6 +672,27 @@ def main() -> int:
     check("decision_moves keeps a day far above the employer's own pace",
           got_b == [("2026-09-25", 72)], str(got_b))
 
+    # THE DAY DOL WORKED. A batch first seen by the 4 AM pass is the evening before's work. The group keeps the day
+    # it was recorded (a follow alert remembers a batch by that day) and carries the day DOL worked beside it, for
+    # the words. On Nov 11 2026, a federal holiday, the owner's notice read "DOL certified 76 ... Nov 11".
+    night = [("Gone Corp", "gone-corp", "2026-09-22", "CERTIFIED", "2026-09-21")] * 10
+    m = csd.decision_moves(night, today, everyone)[0]
+    check("a batch seen before the morning line keeps its recorded day and names the day DOL worked",
+          (m["date"], m["worked"], m["n"]) == ("2026-09-22", ["2026-09-21"], 10), str(m))
+    across = night + [("Gone Corp", "gone-corp", "2026-09-22", "CERTIFIED", "2026-09-22")] * 3
+    m = csd.decision_moves(across, today, everyone)[0]
+    check("a batch seen on both sides of the line is one group naming both days, oldest first",
+          (m["date"], m["worked"], m["n"]) == ("2026-09-22", ["2026-09-21", "2026-09-22"], 13), str(m))
+    check("an event with no DOL day keeps the recorded day as the day worked",
+          all(x["worked"] == [x["date"]] for x in dm), str(dm[:2]))
+    held = [("Hold Co", "hold-co", "2026-09-22", "on", csd.HOLD_STATUS, "2026-09-21")] * csd.EMPLOYER_MOVE_MIN
+    hm = csd.hold_moves(held, today, [])[0]
+    check("a hold move carries the day DOL worked too",
+          (hm["date"], hm["worked"]) == ("2026-09-22", ["2026-09-21"]), str(hm))
+    src = (HERE / "ingest_case_status_direct.py").read_text()
+    check("the builder hands every employer move the DOL day (observed_day), the daily series' own rule",
+          src.count("observed_day(int(at))") >= 3, str(src.count("observed_day(int(at))")))
+
     # Eastern dates across daylight time: 11:30 PM EDT and 11:30 PM EST both
     # stay on their own calendar day.
     check("et_date keeps a late-evening EDT event on its own day",

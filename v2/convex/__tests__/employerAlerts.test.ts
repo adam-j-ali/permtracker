@@ -349,8 +349,8 @@ describe("the change detector", () => {
 
   it("unheard() filters told keys and the follow date", () => {
     const moves = [
-      { key: "k1", date: "2026-09-24", slug: "a", name: "A", sentence: "s", tone: "bad" as const, n: 5 },
-      { key: "k2", date: "2026-09-20", slug: "a", name: "A", sentence: "s", tone: "bad" as const, n: 5 },
+      { key: "k1", date: "2026-09-24", worked: ["2026-09-24"], slug: "a", name: "A", sentence: "s", tone: "bad" as const, n: 5 },
+      { key: "k2", date: "2026-09-20", worked: ["2026-09-20"], slug: "a", name: "A", sentence: "s", tone: "bad" as const, n: 5 },
     ];
     expect(unheard(moves, ["k1"], undefined).map((m) => m.key)).toEqual(["k2"]);
     expect(unheard(moves, [], "2026-09-22").map((m) => m.key)).toEqual(["k1"]);
@@ -570,7 +570,7 @@ describe("subjects stay inside an inbox line", () => {
   });
 
   it("employerSubject keeps to 78 characters", () => {
-    const m = (sentence: string) => ({ key: "k", date: "2026-09-24", slug: "x", name: "X", sentence, tone: "bad" as const, n: 5 });
+    const m = (sentence: string) => ({ key: "k", date: "2026-09-24", worked: ["2026-09-24"], slug: "x", name: "X", sentence, tone: "bad" as const, n: 5 });
     expect(employerSubject("Adobe Inc.", [m("DOL put 215 of its cases on hold")])).toBe(
       "Adobe Inc.: DOL put 215 of its cases on hold",
     );

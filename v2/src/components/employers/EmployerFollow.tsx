@@ -3,7 +3,7 @@ import { Fragment } from "react";
 import { EmployerFollowForm } from "@/components/employers/EmployerFollowForm";
 import { ChartTips } from "@/components/data/ChartTips";
 import { StatusRibbon, ribbonLegend, ribbonParts } from "@/components/employers/StatusRibbon";
-import { longDate, type EmployerMove, type EmployerStageRow } from "@/lib/employerStages";
+import { longDate, workedLabel, type EmployerMove, type EmployerStageRow } from "@/lib/employerStages";
 import { formatInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +31,7 @@ function MoveItem({ m }: { m: EmployerMove }) {
   return (
     <li className="relative grid grid-cols-1 gap-y-0.5 py-2 pl-6 sm:grid-cols-[6.5rem_minmax(0,1fr)] sm:gap-x-4">
       <span aria-hidden="true" className={`absolute -left-[9px] top-3.5 h-4 w-4 border border-input ${markerClass(m)}`} />{" "}
-      <span className="text-sm font-semibold tabular-nums text-muted-foreground">{longDate(m.date).replace(/, \d{4}$/, "")}</span>{" "}
+      <span className="text-sm font-semibold tabular-nums text-muted-foreground">{workedLabel(m.worked, (d) => longDate(d).replace(/, \d{4}$/, ""))}</span>{" "}
       <span className="text-base font-bold [overflow-wrap:anywhere]">{m.sentence}</span>
     </li>
   );

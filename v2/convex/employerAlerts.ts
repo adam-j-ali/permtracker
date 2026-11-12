@@ -79,6 +79,7 @@ import {
   employerMoves,
   longDate,
   parseEmployerStagesDoc,
+  workedLabel,
   type EmployerMove,
   type EmployerStagesDoc,
 } from "../src/lib/employerStages";
@@ -679,7 +680,8 @@ export const sweep = internalAction({
         const prefsUrl = await prefsLink(sub.email, unsubscribeSecret(), `employer:${sub._id}`);
         const url = employerUrl(sub.slug);
         const mix = mixFor(doc, sub.slug);
-        const rows = news.map((m) => ({ dateLabel: shortDate(m.date), sentence: m.sentence, tone: m.tone }));
+        // The day DOL worked, never the day the sweep recorded it (the 4 AM pass records the evening before's work).
+        const rows = news.map((m) => ({ dateLabel: workedLabel(m.worked, shortDate), sentence: m.sentence, tone: m.tone }));
         const html = await renderOrTextOnly(ctx, "employerAlerts.sweep.render", async () => {
           const { EmployerMoved } = await import("../src/emails/EmployerMoved");
           return EmployerMoved({

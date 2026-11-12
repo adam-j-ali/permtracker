@@ -383,6 +383,18 @@ def _debarment_items(inputs: Inputs, since_ms: int) -> list[dict]:
     return out
 
 
+def _worked_words(m: dict) -> tuple[str, bool]:
+    """The day DOL worked on a move, in words, and whether it was one day.
+
+    A move's `date` is the day the sweep recorded it; the 4 AM pass records the evening before's work, so the
+    words come from `worked` (ingest_case_status_direct._worked). A move written before that list existed has
+    only its recorded day."""
+    days = [d for d in (m.get("worked") or []) if d] or [m.get("date")]
+    if len(days) == 1:
+        return day_label(days[0]), True
+    return f"{day_label(days[0])} and {day_label(days[-1])}", False
+
+
 def _employer_items(inputs: Inputs, since_ms: int) -> list[dict]:
     doc = inputs.employer_stages or {}
     floor = et_day(since_ms)
@@ -390,9 +402,10 @@ def _employer_items(inputs: Inputs, since_ms: int) -> list[dict]:
     for m in doc.get("holdMoves") or []:
         if (m.get("date") or "") >= floor and int(m.get("n") or 0) >= NEWS_EMPLOYER_MIN:
             n = int(m["n"])
-            what = (f"DOL put {n:,} of {m['name']}'s PERM cases on hold on {day_label(m['date'])}."
+            when, _one = _worked_words(m)
+            what = (f"DOL put {n:,} of {m['name']}'s PERM cases on hold on {when}."
                     if m.get("dir") == "on" else
-                    f"DOL took {n:,} of {m['name']}'s PERM cases off hold on {day_label(m['date'])}, to {m.get('to') or 'another status'}.")
+                    f"DOL took {n:,} of {m['name']}'s PERM cases off hold on {when}, to {m.get('to') or 'another status'}.")
             out.append({"kind": "employer", "when": m["date"], "what": what,
                         "source": "DOL's case-status search, read by this site's sweep"})
     for m in doc.get("decisionMoves") or []:
@@ -400,8 +413,10 @@ def _employer_items(inputs: Inputs, since_ms: int) -> list[dict]:
             n = int(m["n"])
             act = {"CERTIFIED": "DOL certified", "DENIED": "DOL denied",
                    "WITHDRAWN": "The employer withdrew"}.get(m.get("to") or "", f"DOL moved to {m.get('to')}")
+            when, one = _worked_words(m)
             out.append({"kind": "employer", "when": m["date"],
-                        "what": f"{act} {n:,} of {m['name']}'s PERM cases in one day, {day_label(m['date'])}.",
+                        "what": (f"{act} {n:,} of {m['name']}'s PERM cases in one day, {when}." if one else
+                                 f"{act} {n:,} of {m['name']}'s PERM cases over {when}."),
                         "source": "DOL's case-status search, read by this site's sweep"})
     return out
 
