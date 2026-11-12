@@ -1,8 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 import {
   FilterableStatTable,
+  PHONE_ROWS,
   type Facet,
   type StatColumn,
 } from "../FilterableStatTable";
@@ -421,5 +422,63 @@ describe("FilterableStatTable", () => {
       target: { value: "100" },
     });
     expect(bodyOrder()).toHaveLength(60);
+  });
+});
+
+describe("FilterableStatTable on a phone", () => {
+  const many: Row[] = Array.from({ length: 120 }, (_, i) => ({ name: `Co ${i}`, total: 1000 - i, state: "CA", days: 1 }));
+  const phone = (matches: boolean) =>
+    vi.stubGlobal("matchMedia", (q: string) => ({ matches: matches && q.includes("max-width"), media: q, addEventListener: () => {}, removeEventListener: () => {} }));
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("shows at most a phone's page of a table whose own page is longer", () => {
+    phone(true);
+    render(<FilterableStatTable rows={many} {...base()} pageSize={100} />);
+
+    expect(bodyOrder()).toHaveLength(PHONE_ROWS);
+  });
+
+  it("leaves a wide screen the table's own page", () => {
+    phone(false);
+    render(<FilterableStatTable rows={many} {...base()} pageSize={100} />);
+
+    expect(bodyOrder()).toHaveLength(100);
+  });
+
+  it("marks the rows past a phone's page on the first render, so a phone never paints the long page", () => {
+    // The server and the first paint don't know the screen: they render the table's own page.
+    phone(false);
+    render(<FilterableStatTable rows={many} {...base()} pageSize={100} />);
+
+    const rows = screen.getAllByRole("row").slice(1);
+    expect(rows.filter((tr) => tr.className.includes("max-sm:hidden"))).toHaveLength(100 - PHONE_ROWS);
+    expect(rows[PHONE_ROWS - 1]!.className).not.toContain("max-sm:hidden");
+  });
+
+  it("gives the reader's own pick on any screen, and hides nothing then", () => {
+    phone(true);
+    render(<FilterableStatTable rows={many} {...base()} pageSize={100} />);
+
+    fireEvent.change(screen.getByRole("combobox", { name: /Rows/ }), { target: { value: "50" } });
+
+    const rows = screen.getAllByRole("row").slice(1);
+    expect(rows).toHaveLength(50);
+    expect(rows.filter((tr) => tr.className.includes("max-sm:hidden"))).toHaveLength(0);
+  });
+
+  it("offers a short page too", () => {
+    phone(false);
+    render(<FilterableStatTable rows={many} {...base()} pageSize={25} />);
+
+    fireEvent.change(screen.getByRole("combobox", { name: /Rows/ }), { target: { value: "10" } });
+
+    expect(bodyOrder()).toHaveLength(10);
+  });
+
+  it("never shortens a table whose own page is already shorter than a phone's", () => {
+    phone(true);
+    render(<FilterableStatTable rows={many} {...base()} pageSize={10} />);
+
+    expect(bodyOrder()).toHaveLength(10);
   });
 });

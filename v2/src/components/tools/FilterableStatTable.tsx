@@ -11,7 +11,8 @@ import type { SuggestKind } from "@/lib/search/suggestTypes";
 import { buttonVariants } from "@/components/ui/button";
 import { SEARCH_TEXT_MAX } from "@/lib/search/limits";
 import { compareNullsLast } from "@/lib/tableSort";
-import { Pagination } from "@/components/ui/pagination";
+import { NARROW_HIDDEN, Pagination, useNarrowScreen } from "@/components/ui/pagination";
+import { cn } from "@/lib/utils";
 import { SortMark } from "@/components/ui/sort-mark";
 
 /**
@@ -135,7 +136,9 @@ export interface FilterableStatTableProps<T> {
 }
 
 /** `0` means every row on one page: the "show all" a reader asks for when a cohort is a few thousand rows. */
-const PAGE_SIZES = [25, 50, 100, 250, 0] as const;
+const PAGE_SIZES = [10, 25, 50, 100, 250, 0] as const;
+/** The most rows a page holds on a phone until the reader picks a size. */
+export const PHONE_ROWS = 25;
 
 function toCsv<T>(spec: CsvSpec<T>, rows: T[]): string {
   const cell = (v: string | number | null): string => {
@@ -179,7 +182,14 @@ export function FilterableStatTable<T>({
   const [sortDesc, setSortDesc] = useState(true);
   const [page, setPage] = useState(0);
   const tableTop = useRef<HTMLDivElement>(null);
-  const [pageSize, setPageSize] = useState<number>(initialPageSize);
+  // ROWS A PAGE. The reader's pick once they make one; until then the table's own size on a wide screen and at most
+  // PHONE_ROWS on a phone, where a 100-row page ran five screens. The server renders the table's own size and marks
+  // the rows past a phone's page hidden there, so the phone never paints the long page and nothing jumps.
+  const [pickedSize, setPickedSize] = useState<number | null>(null);
+  const narrow = useNarrowScreen();
+  const phoneSize = initialPageSize === 0 ? PHONE_ROWS : Math.min(initialPageSize, PHONE_ROWS);
+  const pageSize = pickedSize ?? (narrow ? phoneSize : initialPageSize);
+  const setPageSize = setPickedSize;
   const [facetValues, setFacetValues] = useState<Record<string, string>>({});
 
   const [allRows, setAllRows] = useState<T[] | null>(null);
@@ -583,7 +593,7 @@ export function FilterableStatTable<T>({
           </thead>
           <tbody className="bg-card">
             {pageRows.map((row, i) => (
-              <tr key={safePage * pageSize + i} className="border-t border-border/40">
+              <tr key={safePage * pageSize + i} className={cn("border-t border-border/40", pickedSize === null && i >= phoneSize && NARROW_HIDDEN)}>
                 {/* Cells rendered from a map arrive with nothing between them,
                     so a row reads as one run of characters to anything walking
                     the DOM. A space between cells costs nothing in a table. */}
