@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 
 import { createClientErrorBudget } from "./budget";
-import { MAX_BODY, chunkFileOf, dplOf, groupingKey, parseClientError } from "./parse";
+import { MAX_BODY, chunkFileOf, dplOf, groupingKey, isConnectionClosed, parseClientError } from "./parse";
 
 /**
  * POST /api/client-error: an error screen's own report, sent with
@@ -24,6 +24,10 @@ import { MAX_BODY, chunkFileOf, dplOf, groupingKey, parseClientError } from "./p
  * than the live one: a page kept open or cached for weeks asks for files the
  * three-week prune has since removed, and the screen's reload loads the live
  * build. Those share one warning issue too (Nov 2 2026: a run-96 page on run 445).
+ *
+ * A page whose data stream was cut on the visitor's connection (React's "Connection
+ * closed.", error 412) is the same kind of thing and shares one warning issue of its
+ * own (Nov 12 2026: four reports in a week, each reopening an error and its email).
  */
 /** Where the server keeps every build's files (nginx's root for /_next/static/). */
 const staticRoots = () => [
@@ -77,6 +81,16 @@ export async function POST(request: Request) {
       tags: { ...tags, chunk: "old-build" },
       extra: { ...extra, dpl, live },
       fingerprint: ["client-error", "chunk-old-build"],
+    });
+  } else if (isConnectionClosed(report.message)) {
+    // The page's data stream was cut on the visitor's side (React's "Connection closed."). Like a build file that
+    // didn't download, the reload cures it: one warning issue for all of them, so none alerts anybody twice.
+    if (!budget.sentryKey("connection-closed")) return done();
+    Sentry.captureMessage("A page's data stream was cut on the visitor's connection (the screen reloads)", {
+      level: "warning",
+      tags: { ...tags, stream: "closed" },
+      extra,
+      fingerprint: ["client-error", "connection-closed"],
     });
   } else {
     const key = budget.sentryKey(`${report.boundary}|${groupingKey(report.message)}`);

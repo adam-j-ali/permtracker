@@ -99,6 +99,31 @@ describe("POST /api/client-error", () => {
     }
   });
 
+  it("files a page stream cut on the visitor's connection under one warning, whatever screen caught it", async () => {
+    // React's error 412 is "Connection closed.": the page's data stream ended early on the visitor's side, and
+    // the screen reloads. Each one opened or reopened an error issue and its email (four in a week by Nov 12 2026).
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const minified =
+      "Minified React error #412; visit https://react.dev/errors/412 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.";
+    await post(JSON.stringify({ ...good, boundary: "PublicDataError", outcome: "reload", name: "Error", message: minified, path: "/perm-case-status" }));
+    await post(JSON.stringify({ ...good, boundary: "RouteError", outcome: "reload", name: "Error", message: "Connection closed.", path: "/perm-queue" }));
+    const calls = vi.mocked(Sentry.captureMessage).mock.calls;
+    expect(calls).toHaveLength(2);
+    for (const [msg, opts] of calls) {
+      expect(msg).toBe("A page's data stream was cut on the visitor's connection (the screen reloads)");
+      expect(opts).toMatchObject({ level: "warning", fingerprint: ["client-error", "connection-closed"] });
+    }
+  });
+
+  it("leaves React's other numbered errors as errors of their own", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await post(JSON.stringify({ ...good, boundary: "PublicDataError", outcome: "shown", name: "Error", message: "Minified React error #4120; visit https://react.dev/errors/4120", path: "/" }));
+    await post(JSON.stringify({ ...good, boundary: "PublicDataError", outcome: "shown", name: "Error", message: "Minified React error #419; visit https://react.dev/errors/419", path: "/" }));
+    const calls = vi.mocked(Sentry.captureMessage).mock.calls;
+    expect(calls).toHaveLength(2);
+    for (const [, opts] of calls) expect(opts).toMatchObject({ level: "error" });
+  });
+
   it("keeps a file the server doesn't have as an error of its own", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     await post(JSON.stringify(chunkReport("9999-deadbeefdeadbeef.js")));
