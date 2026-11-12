@@ -9,6 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { ChoiceRadios } from "@/components/ui/choice-radios";
 import { caseSearchHref } from "@/lib/caseSearchPlan";
 import { ROW_LINK } from "@/components/entities/caseRows";
+import { choiceVariants } from "@/components/ui/choice";
 import { findSponsors, resolveJob, type FinderRow, type JobPick } from "@/lib/db/sponsorFinder";
 import { MIN_DECIDED_FOR_MEDIAN, MIN_DECIDED_FOR_RATE, entityHref } from "@/lib/entityPayload";
 import { formatApprovalRate, formatDollars, formatInt } from "@/lib/format";
@@ -19,8 +20,9 @@ import { withSocialCard } from "@/lib/socialCard";
 import {
   ANY,
   MONTH_STEPS,
-  PAGE_SIZE,
   PATH,
+  PER_STEPS,
+  PHONE_PAGE,
   RATE_STEPS,
   RECENT_STEPS,
   SENIOR_SHARE,
@@ -29,6 +31,7 @@ import {
   WAGE_STEPS,
   ANSWER_ID,
   finderHref,
+  pageSize,
   parseFinder,
   type FinderFilters,
 } from "@/lib/sponsorFinder";
@@ -179,6 +182,52 @@ function JobLine({ pick, f }: { pick: JobPick; f: FinderFilters }) {
   );
 }
 
+/**
+ * Previous and Next for one page size, and the sizes to choose from. `f.per` is the size these links keep: on a
+ * default first page it is drawn twice, a phone's (ten) and a wide screen's (25), each shown where it applies.
+ */
+function ResultPages({ f, total, className }: { f: FinderFilters; total: number; className?: string }) {
+  const size = pageSize(f);
+  const pages = Math.max(1, Math.ceil(total / size));
+  if (total <= PER_STEPS[0]) return null;
+  return (
+    <div className={className}>
+      {pages > 1 ? (
+        <nav aria-label="Result pages" className="mt-4 flex flex-wrap items-center gap-4 text-base">
+          {f.page > 1 ? (
+            <Link href={finderHref(f, f.page - 1)} className={ROW_LINK}>
+              Previous {size}
+            </Link>
+          ) : null}{" "}
+          <span className="text-muted-foreground">
+            Page {formatInt(f.page)} of {formatInt(pages)}
+          </span>{" "}
+          {f.page < pages ? (
+            <Link href={finderHref(f, f.page + 1)} className={ROW_LINK}>
+              Next {size}
+            </Link>
+          ) : null}
+        </nav>
+      ) : null}{" "}
+      <nav aria-label="Rows per page" className="mt-4 flex flex-wrap items-center gap-2">
+        <span className="text-sm text-muted-foreground">Rows per page</span>{" "}
+        {PER_STEPS.map((n) => (
+          <Fragment key={n}>
+            <Link
+              href={finderHref({ ...f, per: n }, 1)}
+              aria-current={n === size ? "true" : undefined}
+              aria-label={`${n} rows per page`}
+              className={choiceVariants({ on: n === size })}
+            >
+              {n}
+            </Link>{" "}
+          </Fragment>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
 export default async function SponsorFinderPage({
   searchParams,
 }: {
@@ -189,7 +238,9 @@ export default async function SponsorFinderPage({
   // The address names the job by its page slug once it's found, whatever was typed.
   const f: FinderFilters = { ...asked, job: pick.kind === "job" ? pick.slug : asked.job };
   const found = pick.kind === "unknown" ? null : await findSponsors(f, pick.kind === "job" ? pick.soc : ANY);
-  const pages = found ? Math.max(1, Math.ceil(found.total / PAGE_SIZE)) : 1;
+  // A PHONE READS TEN AT A TIME. The page is drawn here, where the screen can't be seen, so a default first page
+  // holds 25 sponsors, a phone hides the ones past its ten, and the phone's own links ask for ten a page.
+  const phoneFirst = f.per === null && f.page === 1;
   const narrowed = pick.kind === "job" || f.state !== null;
   const jobSlug = pick.kind === "job" ? pick.slug : null;
 
@@ -362,8 +413,8 @@ export default async function SponsorFinderPage({
                 </p>{" "}
                 {/* A phone gets a card per sponsor, every figure labelled, from the same columns. */}
                 <ul className="mt-4 divide-y divide-border border-y border-border sm:hidden">
-                  {found.rows.map((r) => (
-                    <li key={r.slug} className="py-3 text-base">
+                  {found.rows.map((r, i) => (
+                    <li key={r.slug} className={`py-3 text-base ${phoneFirst && i >= PHONE_PAGE ? "hidden" : ""}`}>
                       <EmployerCell r={r} jobSlug={jobSlug} />{" "}
                       <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm [&>*]:min-w-0">
                         {COLUMNS.map((c) => (
@@ -405,23 +456,14 @@ export default async function SponsorFinderPage({
                     </tbody>
                   </table>
                 </div>{" "}
-                {pages > 1 ? (
-                  <nav aria-label="Result pages" className="mt-4 flex flex-wrap items-center gap-4 text-base">
-                    {f.page > 1 ? (
-                      <Link href={finderHref(f, f.page - 1)} className={ROW_LINK}>
-                        Previous {PAGE_SIZE}
-                      </Link>
-                    ) : null}{" "}
-                    <span className="text-muted-foreground">
-                      Page {formatInt(f.page)} of {formatInt(pages)}
-                    </span>{" "}
-                    {f.page < pages ? (
-                      <Link href={finderHref(f, f.page + 1)} className={ROW_LINK}>
-                        Next {PAGE_SIZE}
-                      </Link>
-                    ) : null}
-                  </nav>
-                ) : null}
+                {phoneFirst ? (
+                  <>
+                    <ResultPages f={{ ...f, per: PHONE_PAGE }} total={found.total} className="sm:hidden" />{" "}
+                    <ResultPages f={f} total={found.total} className="hidden sm:block" />
+                  </>
+                ) : (
+                  <ResultPages f={f} total={found.total} />
+                )}
               </>
             )}
           </section>
