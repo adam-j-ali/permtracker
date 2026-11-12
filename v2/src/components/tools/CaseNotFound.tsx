@@ -7,8 +7,8 @@ import { PageSection } from "@/components/data/PageSection";
 import { Fold, FoldList } from "@/components/data/Fold";
 import { FinePrint } from "@/components/data/FinePrint";
 import { Figure, FigureRow } from "@/components/data/FigureRow";
-import { SplitBar } from "@/components/data/FigureVisual";
-import { CalendarCheckIcon, FileTextIcon, HourglassMediumIcon, StackIcon } from "@phosphor-icons/react/ssr";
+import { DecidedShare, SplitBar } from "@/components/data/FigureVisual";
+import { CalendarBlankIcon, CalendarCheckIcon, FileTextIcon, HourglassMediumIcon, QueueIcon, StackIcon } from "@phosphor-icons/react/ssr";
 import { CaseNotFoundSeen } from "@/components/analytics/CaseNotFoundSeen";
 import { WatchThisNumber } from "@/components/tools/WatchThisNumber";
 import { CaseNumberPlate } from "@/components/tools/CaseNumberPlate";
@@ -206,10 +206,22 @@ export function CaseNotFound({
             </p>
 
             <FigureRow className="mt-6">
-              <Figure label="Filed that month" value={formatInt(cohort.total)} note="cases checked against DOL" />
+              <Figure
+                label="Filed that month"
+                icon={<CalendarBlankIcon weight="bold" className="text-primary-text" />}
+                value={formatInt(cohort.total)}
+                note="cases checked against DOL"
+              />
               <Figure
                 label="Still undecided"
+                icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />}
                 value={formatInt(cohort.pending)}
+                // The note under it says the share, so the bar is drawn alone.
+                visual={
+                  cohort.decided + cohort.pending > 0 ? (
+                    <DecidedShare monthName={month(cohort.month)} decided={cohort.decided} pending={cohort.pending} caption={false} />
+                  ) : undefined
+                }
                 note={
                   cohort.decidedPct !== null
                     ? `${cohort.decidedPct.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% of the month is decided`
@@ -217,7 +229,12 @@ export function CaseNotFound({
                 }
               />
               {wall && !wall.isPastFront ? (
-                <Figure label="Filed before that month" value={formatInt(wall.ahead)} note="undecided, across every earlier month" />
+                <Figure
+                  label="Filed before that month"
+                  icon={<QueueIcon weight="bold" className="text-primary-text" />}
+                  value={formatInt(wall.ahead)}
+                  note="undecided, across every earlier month"
+                />
               ) : null}
             </FigureRow>
 
@@ -303,22 +320,8 @@ function factPicture(
   if (kind === "deciding" || kind === "oldest") {
     const month = kind === "deciding" ? d.deciding : d.front;
     const m = d.months.find((x) => x.month === month);
-    const all = m ? m.decided + m.pending : 0;
-    if (!m || all <= 0) return undefined;
-    const pct = Math.round((m.decided / all) * 100);
-    const name = monthYear(m.month) ?? m.month;
-    return (
-      <>
-        <SplitBar
-          parts={[
-            { value: m.decided, tone: "good" },
-            { value: m.pending, tone: "wait" },
-          ]}
-          label={`${pct}% of the cases filed in ${name} are decided and ${100 - pct}% are still waiting`}
-        />{" "}
-        <span className="mt-1.5 block text-sm font-semibold">{pct}% decided </span>
-      </>
-    );
+    if (!m || m.decided + m.pending <= 0) return undefined;
+    return <DecidedShare monthName={monthYear(m.month) ?? m.month} decided={m.decided} pending={m.pending} />;
   }
   if (kind === "wall" && d.wallTotal !== null && d.toClear !== null && d.front && d.toClear > 0 && d.toClear < d.wallTotal) {
     const name = monthYear(d.front) ?? d.front;

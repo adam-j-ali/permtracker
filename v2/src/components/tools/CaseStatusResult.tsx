@@ -9,13 +9,25 @@ import type { EmployerWageRequests as FoundWageRequests } from "@/lib/employerWa
 import { EmployerWageRequests } from "@/components/tools/EmployerWageRequests";
 import { FinePrint } from "@/components/data/FinePrint";
 import { Fragment } from "react";
-import { WarningIcon } from "@phosphor-icons/react/ssr";
+import {
+  ArrowUUpLeftIcon,
+  CalendarBlankIcon,
+  CheckCircleIcon,
+  CurrencyDollarIcon,
+  FlagPennantIcon,
+  MapPinIcon,
+  QueueIcon,
+  TimerIcon,
+  WarningIcon,
+  XCircleIcon,
+} from "@phosphor-icons/react/ssr";
 
 import { ChartTips } from "@/components/data/ChartTips";
 import { FigurePlate } from "@/components/tools/FigurePlate";
 import { AnswerPanel } from "@/components/tools/Insight";
 import { PageSection } from "@/components/data/PageSection";
 import { Figure, FigureRow } from "@/components/data/FigureRow";
+import { DecidedShare } from "@/components/data/FigureVisual";
 import { Fold, FoldList } from "@/components/data/Fold";
 import { buttonVariants } from "@/components/ui/button";
 import { CaseMilestones } from "@/components/tools/CaseMilestones";
@@ -48,6 +60,7 @@ import { formatAsOf, formatMonth } from "@/lib/dolFormat";
 import { PendingCensus } from "@/components/queue/PendingCensus";
 import { StageBar, StageLegend } from "@/components/queue/StageBar";
 import { groupByStage, prettyStatus } from "@/components/queue/stages";
+import { caseStatusTint } from "@/lib/statusTone";
 import type { StatusCount } from "@/lib/liveQueue";
 import { getStatusMeaning, KIND_LABEL } from "@/lib/permStatus";
 import { statusAnchor } from "@/lib/statusDictionary";
@@ -622,6 +635,19 @@ function planHrefFor(filingDate: string | null, decisionDate: string | null): st
   return filingDate ? planHref({ permFiled: filingDate, permCertified: decisionDate, certified: true }) : "/tools/green-card-timeline";
 }
 
+
+/**
+ * DOL's decision as an icon in the site's status colours: certified green, denied red, withdrawn purple
+ * (`caseStatusTint`, the one rule for what a status means). The word beside it carries the meaning.
+ */
+function outcomeIcon(status: string) {
+  const tint = caseStatusTint(status);
+  if (tint === "good") return <CheckCircleIcon weight="bold" className="text-data-good-ink" />;
+  if (tint === "bad") return <XCircleIcon weight="bold" className="text-data-bad-ink" />;
+  if (tint === "withdrawn") return <ArrowUUpLeftIcon weight="bold" className="text-data-purple-ink" />;
+  return <CheckCircleIcon weight="bold" className="text-muted-foreground" />;
+}
+
 /** A decided case's next step: what comes after PERM, or what a denial means. */
 function DecidedNext({
   status,
@@ -746,18 +772,28 @@ function Position({
       ) : null}
 
       <FigureRow className="mt-6">
+        {/* The cases ahead of this one are the reader's own figure, so it takes the lime card. */}
         <Figure
+          tone="lime"
           label="Filed in earlier months"
+          icon={<QueueIcon weight="bold" />}
           value={formatInt(wall.ahead)}
           note="still waiting in DOL's normal queue"
         />
         <Figure
           label="Filed the same month"
+          icon={<CalendarBlankIcon weight="bold" className="text-primary-text" />}
           value={formatInt(wall.sameMonth)}
+          visual={
+            wall.subject.decided + wall.subject.pending > 0 ? (
+              <DecidedShare monthName={formatMonth(wall.subject.month) ?? wall.subject.month} decided={wall.subject.decided} pending={wall.subject.pending} />
+            ) : undefined
+          }
           note="still waiting, this case among them"
         />
         <Figure
           label="Behind the work front"
+          icon={<FlagPennantIcon weight="bold" className="text-primary-text" />}
           value={
             wall.isPastFront
               ? `${Math.abs(wall.monthsBehindFront)} ahead`
@@ -845,12 +881,14 @@ function TheDecision({
       <FigureRow>
         <Figure
           label="Outcome"
+          icon={outcomeIcon(decided.status)}
           value={prettyStatus(decided.status)}
           note={decided.decisionDate ? formatAsOf(decided.decisionDate) ?? "" : ""}
         />
         {decided.days !== null ? (
           <Figure
             label="Days taken"
+            icon={<TimerIcon weight="bold" className="text-primary-text" />}
             value={formatInt(decided.days)}
             note="from receipt to determination"
           />
@@ -858,6 +896,7 @@ function TheDecision({
         {decided.wage !== null ? (
           <Figure
             label="Offered wage"
+            icon={<CurrencyDollarIcon weight="bold" className="text-primary-text" />}
             value={money(decided.wage)}
             note={
               decided.socCode ? (
@@ -872,7 +911,7 @@ function TheDecision({
           />
         ) : null}
         {decided.state ? (
-          <Figure label="Worksite state" value={decided.state} note="as filed" />
+          <Figure label="Worksite state" icon={<MapPinIcon weight="bold" className="text-primary-text" />} value={decided.state} note="as filed" />
         ) : null}
       </FigureRow>
 
