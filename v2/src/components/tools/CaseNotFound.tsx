@@ -19,7 +19,8 @@ import { DOL_CASE_STATUS_URL } from "@/components/queue/SourceNote";
 import { isLookupGap, unsettledClause, unsettledVerdict, type DiscoveryMiss } from "@/lib/dolMiss";
 import { CASE_NUMBER_ACCURACY } from "@/lib/permCaseNumber";
 import { formatInt } from "@/lib/format";
-import { longDate, monthDay, monthYear } from "@convex/lib/months";
+import { longDate, monthYear } from "@convex/lib/months";
+import { queueNowFacts, type QueueFact } from "@/lib/queueNowFacts";
 
 /**
  * A case number we hold no record for. A real state, not an error.
@@ -298,24 +299,9 @@ export function CaseStatusEmpty({
   publishedAsOf: string | null;
   mirrorSize: number | null;
 }) {
-  const facts: { label: string; value: string; note: string }[] = [];
-  // THE MONTH DOL IS ON LEADS, AND IT'S OURS. This row showed it only from DOL's own table, DOL stopped printing a
-  // month on Oct 31 2026, and the figure dropped out with nothing said: the row was left with the oldest open
-  // month alone, which reads as the answer to "where is DOL now" and isn't.
-  if (deciding) {
-    facts.push({
-      label: "DOL is deciding now",
-      value: monthYear(deciding.month) ?? deciding.month,
-      note: `cases filed that month, by our check of DOL's case status on ${monthDay(deciding.asOf) ?? deciding.asOf}`,
-    });
-  }
-  if (front && front !== deciding?.month) {
-    facts.push({
-      label: "Oldest month still open",
-      value: monthYear(front) ?? front,
-      note: "the oldest filing month DOL hasn't substantially decided",
-    });
-  }
+  // The month DOL is on leads, and it's ours (lib/queueNowFacts.ts): this row once showed it only from DOL's own
+  // table, DOL stopped printing a month on Oct 31 2026, and the figure dropped out with nothing said.
+  const facts: QueueFact[] = queueNowFacts(deciding, front);
   if (wallTotal !== null) {
     facts.push({ label: "Undecided cases", value: formatInt(wallTotal), note: "across every filing month, the whole wall" });
   }

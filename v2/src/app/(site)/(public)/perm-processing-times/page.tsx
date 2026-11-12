@@ -35,7 +35,7 @@ import { getPermLine } from "@/lib/db/permLine";
 import { withSocialCard } from "@/lib/socialCard";
 import Link from "next/link";
 import { queryStatic } from "@/lib/convexStatic";
-import { ArrowRightIcon, ArrowSquareOutIcon, CurrencyDollarIcon, HourglassMediumIcon, MagnifyingGlassIcon } from "@phosphor-icons/react/ssr";
+import { ArrowRightIcon, ArrowSquareOutIcon, CalendarBlankIcon, CurrencyDollarIcon, HourglassMediumIcon, MagnifyingGlassIcon } from "@phosphor-icons/react/ssr";
 import { averageTrend, queueMoveTrend } from "@/lib/dolTrends";
 
 import { openGraphBase } from "@/lib/openGraphBase";
@@ -53,8 +53,11 @@ import { QueueTape } from "@/components/tools/QueueTape";
 import { DecisionsByMonth, QueueHistoryChart } from "@/components/tools/QueueHistoryChart";
 import { PwdBacklogChart } from "@/components/tools/PwdBacklogChart";
 import { FreshnessDots, type Freshness } from "@/components/tools/Insight";
-import { getDisclosureStats } from "@/lib/db/publicData";
 import { getProcessingTimes, getProcessingTimesHistory } from "@/lib/db/processingTimes";
+import { getDisclosureStats, getLiveBacklog } from "@/lib/db/publicData";
+import { findFront, type CohortMonth } from "@/lib/liveQueue";
+import { oldestOpenFact } from "@/lib/queueNowFacts";
+import { CopyButton } from "@/components/ui/copy-button";
 import { dolNow, howLongSentence, queueLine } from "@/lib/dolNow";
 import { getPermBoard } from "@/lib/db/board";
 import { getPermWaitTrend, getPwdLine } from "@/lib/db/pwdDayQueue";
@@ -111,6 +114,8 @@ export const metadata: Metadata = withSocialCard({
 
 /** Stands in for the live answer to "how long", filled at render (`howLongSentence`, lib/dolNow.ts). */
 const HOW_LONG_NOW = "{{howLong}}";
+/** Stands in for the month DOL is deciding today, filled at render from our own check (or DOL's month, when it prints one). */
+const MONTH_NOW = "{{monthNow}}";
 
 /** Questions taken from Google's own People Also Ask for this query set. */
 const FAQ = [
@@ -119,9 +124,13 @@ const FAQ = [
     answer: `${HOW_LONG_NOW} DOL's average describes cases it finished recently, so it tells you about the past. It doesn't forecast your case. The case lookup dates your own case from the cases still waiting ahead of it.`,
   },
   {
+    question: "Which month is DOL processing PERM applications from now?",
+    answer: `${MONTH_NOW} DOL's own page printed that month until October 31, 2026, and prints only average days since. The month here is the oldest filing month DOL has decided fewer than half of, read every day from DOL's case-status service.`,
+  },
+  {
     question: "What does the analyst review priority date mean?",
     answer:
-      "It’s the month whose applications DOL is currently adjudicating. If the date reads September 2025, DOL is working through cases filed in September 2025. It’s a queue position, and it moves forward as DOL clears cases. It doesn’t give a decision date.",
+      "It was the month DOL’s processing-times page printed until October 31, 2026: the filing month whose applications DOL was adjudicating. If it read September 2025, DOL was working through cases filed in September 2025. It’s a queue position that moves forward as DOL clears cases, and it never gave a decision date. This page keeps measuring that month from DOL’s case-status service.",
   },
   {
     question: "Why is the prevailing wage date different from the PERM date?",
@@ -141,7 +150,7 @@ const FAQ = [
 ];
 
 export default async function PermProcessingTimesPage() {
-  const [snapshot, history, disclosure, estimator, board, permBoard, pwdLine, waitTrend, permLine] = await Promise.all([
+  const [snapshot, history, disclosure, estimator, board, permBoard, pwdLine, waitTrend, permLine, backlog] = await Promise.all([
     getProcessingTimes(),
     getProcessingTimesHistory(24),
     // The quarterly files, for the decisions-per-month series. A separate
@@ -162,9 +171,10 @@ export default async function PermProcessingTimesPage() {
     getPermWaitTrend(),
     // Where DOL really is in the PERM line, by our own daily check: its table can sit unchanged for weeks.
     getPermLine().catch(softFail("perm-processing-times/page.getPermLine", null)),
+    // The oldest month DOL still has open, for one figure beside the month it's deciding. The page stands without it.
+    getLiveBacklog().catch(softFail("perm-processing-times/page.getLiveBacklog", [] as CohortMonth[])),
   ]);
   const howLong = howLongSentence(permBoard, snapshot, permLine);
-  const faq = FAQ.map((f) => ({ ...f, answer: f.answer.replace(HOW_LONG_NOW, howLong) }));
   const afterPerm = board?.metrics.filter((m) => m.median !== null) ?? [];
 
   const decisionsByMonth = disclosure?.clearanceByMonth ?? [];
@@ -195,6 +205,20 @@ export default async function PermProcessingTimesPage() {
   const analystMonth = formatMonth(analyst?.priorityDate ?? null);
   // Where the line is by our own daily check of DOL's case status: the lead once DOL stopped printing a month.
   const ourMonth = permLine ? formatMonth(permLine.month) : null;
+  const oldestOpen = oldestOpenFact(permLine, findFront(backlog)?.month ?? null);
+  // The FAQ's live answers: how long, and which month DOL is on (ours while DOL's page prints none).
+  const monthNow =
+    ourMonth && permLine
+      ? `DOL is deciding PERM applications filed in ${ourMonth}, by PERM Tracker's check of DOL's case status on ${longDate(permLine.asOf) ?? permLine.asOf}.`
+      : analystMonth
+        ? `DOL is reviewing PERM applications filed in ${analystMonth}, by its own page${snapshot?.permAsOf ? ` of ${formatAsOf(snapshot.permAsOf)}` : ""}.`
+        : "The month DOL is deciding is at the top of this page, dated.";
+  const faq = FAQ.map((f) => ({ ...f, answer: f.answer.replace(HOW_LONG_NOW, howLong).replace(MONTH_NOW, monthNow) }));
+  // The answer as one line a writer can paste, dated by our check. DOL's own page no longer prints the month.
+  const citeLine =
+    ourMonth && permLine
+      ? `DOL is deciding PERM applications filed in ${ourMonth} (PERM Tracker's daily check of DOL's case status, ${longDate(permLine.asOf) ?? permLine.asOf}): ${SITE_URL}/perm-processing-times`
+      : null;
   const permAsOf = formatAsOf(snapshot?.permAsOf);
 
   // Two publications, two cadences, both named. A dot is only rendered for a
@@ -365,7 +389,10 @@ export default async function PermProcessingTimesPage() {
           {/* The headline. This one sentence is what the whole search cluster asks for. */}
           {/* The answer, as the page's one object, with its picture: DOL's
               tape of filing months and where it is on it. */}
-          <section className="object mt-8 p-5 sm:p-7">
+          {/* The answer and its figures are the embeddable box (/embed/perm-processing-times): one marked
+              wrapper, so the gap between the two survives the embed's own spacing rules. */}
+          <div data-embed="perm-processing-times" className="mt-8">
+          <section className="object p-5 sm:p-7">
             <p className="text-sm font-semibold">The analyst review queue</p>{" "}
             {analystMonth || !ourMonth || !permLine ? (
               <>
@@ -416,11 +443,29 @@ export default async function PermProcessingTimesPage() {
                     <ArrowSquareOutIcon className="ml-1 inline h-3 w-3" aria-hidden="true" />
                   </a>
                 </p>
+                {/* For a writer or a group post: the answer as one dated line. Left out of the embed. */}
+                {citeLine ? (
+                  <div data-embed-hide className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-3 border-t-2 border-border pt-4">
+                    <p className="min-w-0 flex-1 basis-72 text-sm leading-relaxed text-soft">
+                      <span className="font-bold text-foreground">To quote it:</span> {citeLine}
+                    </p>{" "}
+                    <CopyButton text={citeLine} label="Copy the line" />
+                  </div>
+                ) : null}
               </>
             )}
           </section>
 
           <FigureRow className="mt-8">
+            {/* DOL is past the halfway mark of this month and still finishing it. */}
+            {oldestOpen ? (
+              <Figure
+                label={oldestOpen.label}
+                icon={<CalendarBlankIcon weight="bold" className="text-primary-text" />}
+                value={oldestOpen.value}
+                note={`${oldestOpen.note.charAt(0).toUpperCase()}${oldestOpen.note.slice(1)}.`}
+              />
+            ) : null}{" "}
             {analystAvg?.calendarDays !== null && analystAvg?.calendarDays !== undefined ? (
               <Figure
                 label="Average to a determination"
@@ -475,8 +520,39 @@ export default async function PermProcessingTimesPage() {
               />
             ) : null}
           </FigureRow>
+          </div>
+        </>
+      ) : (
+        <section className="mt-10 bg-sage p-6 border-2 shadow-hard border-border">
+          <p className="text-base leading-relaxed">
+            Live figures are being fetched from the Department of Labor. Until they land,{" "}
+            <a
+              href={DOL_SOURCE}
+              className="link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              DOL publishes them directly
+            </a>
+            .
+          </p>
+        </section>
+      )}
 
+      {/* The email box sits right under the answer: someone who came for the month can ask to be told when it
+          reaches theirs. Outside the snapshot gate on purpose: on a day DOL's page is unreadable the visitor is
+          exactly the person who wants to be told when it moves, and the form needs nothing from the snapshot. */}
+      <section id="month-alert" className="mt-10 scroll-mt-24">
+        <QueueAlertForm
+          source="perm-processing-times"
+          newestMonth={currentMonthUtc()}
+          // DOL's own month while its page prints one, and the month by our daily check since it stopped.
+          frontierMonth={analyst?.priorityDate ?? permLine?.month ?? undefined}
+        />
+      </section>
 
+      {snapshot ? (
+        <>
           <ChapterNav items={chapters} className="mt-12" />{" "}
 
           {waitTrend && waitNewest ? (
@@ -694,22 +770,7 @@ export default async function PermProcessingTimesPage() {
           ) : null}
           </Chapter>
         </>
-      ) : (
-        <section className="mt-10 bg-sage p-6 border-2 shadow-hard border-border">
-          <p className="text-base leading-relaxed">
-            Live figures are being fetched from the Department of Labor. Until they land,{" "}
-            <a
-              href={DOL_SOURCE}
-              className="link"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              DOL publishes them directly
-            </a>
-            .
-          </p>
-        </section>
-      )}
+      ) : null}
 
       {/* Links to the calculator rather than embedding it. Two live estimators
           on one page would compete for the same question, and this page's job
@@ -764,16 +825,12 @@ export default async function PermProcessingTimesPage() {
         </section>
       ) : null}
 
-      {/* Outside the snapshot gate on purpose. Someone arriving on a day DOL's
-          page is unreadable is exactly the person who wants to be told when it
-          moves, and the form needs nothing from the snapshot to work. */}
-      <section className="mt-10">
-        <QueueAlertForm
-          source="perm-processing-times"
-          newestMonth={currentMonthUtc()}
-          frontierMonth={analyst?.priorityDate ?? undefined}
-        />
-      </section>
+      {/* The sign-up moved up under the figures (Nov 12 2026); its old place keeps the way to it. */}
+      <p className="mt-10">
+        <a href="#month-alert" className="link inline-flex min-h-11 items-center font-bold">
+          Email me when DOL reaches my month
+        </a>
+      </p>
       </Chapter>
 
       {/* Where the numbers come from is one of the questions (round 3, Oct 15

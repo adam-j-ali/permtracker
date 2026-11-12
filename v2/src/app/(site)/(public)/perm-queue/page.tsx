@@ -18,7 +18,7 @@ import { AlphabetEffect } from "@/components/queue/AlphabetEffect";
 import { StageBar, StageLegend } from "@/components/queue/StageBar";
 import { ChartTips } from "@/components/data/ChartTips";
 import { groupByStage } from "@/components/queue/stages";
-import { formatAsOf, formatMonth } from "@/lib/dolFormat";
+import { currentMonthUtc, formatAsOf, formatMonth } from "@/lib/dolFormat";
 import { findFront } from "@/lib/liveQueue";
 import { findVolumeAnomalies } from "@/lib/queueAhead";
 import { MIRROR_COMPLETE, PROVISIONAL_NOTICE } from "@/lib/liveQueueGate";
@@ -46,6 +46,7 @@ import { statusCasesHref } from "@/components/queue/statusLinks";
 import { getPermLine } from "@/lib/db/permLine";
 import { permLineNote } from "@/lib/permLine";
 import { softFail } from "@/lib/softRead";
+import { QueueAlertForm } from "../perm-processing-times/QueueAlertForm";
 
 /**
  * Where DOL's PERM queue stands right now, from a per-case scan.
@@ -350,6 +351,12 @@ export default async function PermQueuePage() {
             ) : null}
           </div>
         </FinePrint>
+      </section>{" "}
+
+      {/* Someone reading where the queue stands is waiting on a month of their own, so the email box sits right
+          under the overview. The reached months are marked from our own daily check. */}
+      <section id="month-alert" className="mt-8 scroll-mt-24">
+        <QueueAlertForm source="perm-queue" newestMonth={currentMonthUtc()} frontierMonth={line?.month ?? undefined} />
       </section>{" "}
 
       <section className="mt-6 border-2 shadow-hard p-6 sm:p-8 bg-card border-border">
