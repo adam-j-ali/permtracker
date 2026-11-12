@@ -67,6 +67,12 @@ describe("decisions by month, against a year earlier", () => {
     expect(rows[3]!.textContent).toContain("part month");
     expect(rows[4]!.textContent).toContain("not counted yet");
     expect(rows[4]!.textContent).toContain("not compared");
+    // Each cell's words end with a space. The built site's check found "not counted yet" run straight into the
+    // next cell's number (Nov 12 2026), which a reader hears and a search engine indexes as one word.
+    for (const row of rows.slice(1)) {
+      const cells = [...row.querySelectorAll("th, td")];
+      for (const cell of cells.slice(0, -1)) expect(cell.textContent, cell.textContent ?? "").toMatch(/\s$/);
+    }
   });
 
   it("says where the newest months come from, and links DOL's notice of the shutdown", () => {

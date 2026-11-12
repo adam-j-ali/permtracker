@@ -154,7 +154,10 @@ function Count({ value, max, tone, last }: { value: number | null; max: number; 
   return (
     <td className={cn("py-2.5 align-top", last ? null : "pr-3")}>
       {value === null ? (
-        <span className="text-sm text-muted-foreground">not counted</span>
+        // The space ends the cell's words, so they never run into the next cell's.
+        <>
+          <span className="text-sm text-muted-foreground">not counted</span>{" "}
+        </>
       ) : (
         <Fragment>
           <span className="block font-mono text-base font-bold">{formatInt(value)}</span>{" "}

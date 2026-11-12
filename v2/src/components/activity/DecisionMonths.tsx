@@ -77,7 +77,7 @@ export function DecisionMonths({
             <Side count={m.now} />
             <Side count={m.then} />
             <td className="py-2.5 text-base">
-              <Change month={m} />
+              <Change month={m} />{" "}
             </td>
           </tr>
         ))}
@@ -126,7 +126,10 @@ function Side({ count }: { count: MonthCount | null }) {
           </span>
         </>
       ) : (
-        <span className="text-sm text-muted-foreground">not counted yet</span>
+        // The space ends the cell's words: with none, "not counted yet" ran straight into the next cell's number.
+        <>
+          <span className="text-sm text-muted-foreground">not counted yet</span>{" "}
+        </>
       )}
     </td>
   );
