@@ -105,6 +105,26 @@ describe("QueueTape on a phone", () => {
     expect(classes(flag(mid.container, "DOL is here"))).not.toContain("max-sm:left-0");
   });
 
+  it("sets the first and last months' labels from the strip's edges on a phone, where a centred one is cut off", () => {
+    // A label is wider than a phone's column. Centred on the first or last column it ran past the strip's edge and
+    // was clipped: "Aug '25" read "Au" on the processing-times page at 390px (Nov 12 2026).
+    const { container } = render(<QueueTape frontierMonth="2026-02" monthsBehind={6} monthsAhead={10} />);
+    const columns = Array.from(container.querySelectorAll("[data-tip]"));
+    const first = columns[0]!;
+    const last = columns[columns.length - 1]!;
+    expect(classes(first)).toContain("max-sm:justify-start");
+    expect(classes(last)).toContain("max-sm:justify-end");
+    expect(classes(first.querySelector("span.font-mono"))).toContain("max-sm:text-left");
+    expect(classes(last.querySelector("span.font-mono"))).toContain("max-sm:text-right");
+    // A label runs over the column beside it, so it's drawn above that column's own background.
+    for (const c of columns) expect(classes(c.querySelector("span.font-mono"))).toContain("z-[1]");
+    // Every column between them keeps its label centred.
+    for (const c of columns.slice(1, -1)) {
+      expect(classes(c)).not.toContain("max-sm:justify-start");
+      expect(classes(c)).not.toContain("max-sm:justify-end");
+    }
+  });
+
   it("labels DOL's month, the reader's month and every fourth month clear of them", () => {
     const { container } = casePage();
     const shown = (l: { classes: string[] }) => !l.classes.includes("sr-only") && !l.classes.includes("max-sm:sr-only");
