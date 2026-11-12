@@ -55,7 +55,8 @@ export function EmbedGallery({ origin }: { origin: string }) {
             {EMBEDS.filter((e) => e.group === g).map((e) => (
               <Fragment key={e.slug}>
                 {" "}
-                <li className="flex flex-col bg-tint p-4 border-2 border-border">
+                {/* Its own address (/badges#embed-<slug>), so a page that offers one box can point straight at its code. */}
+                <li id={`embed-${e.slug}`} className="flex scroll-mt-24 flex-col bg-tint p-4 border-2 border-border">
                   <p className="font-heading text-base font-bold">{e.title}</p>{" "}
                   <p className="mt-1 flex-1 text-sm leading-relaxed text-soft">{e.blurb}</p>{" "}
                   <p className="mt-2 text-sm">

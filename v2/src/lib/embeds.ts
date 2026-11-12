@@ -29,6 +29,13 @@ export interface EmbedDef {
   href: string;
   /** A starting iframe height in CSS pixels, from the tool's usual first view. */
   height: number;
+  /**
+   * For a box that's only read: the taller frame a narrow page needs, so nothing is cut on a phone. The frame is
+   * `height` tall, or `at0` minus `perVw` hundredths of the page's width when that's taller (`embedFrameHeight`).
+   * Both numbers come from measuring the box's content at each frame width; `embeds.test.tsx` holds the table.
+   * Unset, the frame keeps `height` at every width, which suits a tool a reader types into and scrolls.
+   */
+  narrow?: { at0: number; perVw: number };
   group: EmbedGroup;
 }
 
@@ -52,7 +59,7 @@ export const EMBEDS: readonly EmbedDef[] = [
   { slug: "compare-offer", title: "Compare my offer", blurb: "A salary offer against H-1B LCA wages for the same job and state.", href: "/tools/compare-my-offer", height: 760, group: "calculator" },
   { slug: "i140-trends", title: "I-140 trends", blurb: "USCIS I-140 receipts, approvals and pending by quarter.", href: "/tools/i140-trends", height: 760, group: "chart" },
   { slug: "perm-queue", title: "The PERM queue by filing month", blurb: "Every filing month's undecided cases, and the month DOL is working by our daily check.", href: "/perm-queue", height: 900, group: "chart" },
-  { slug: "perm-processing-times", title: "PERM processing times today", blurb: "The filing month DOL is deciding, by our daily check of DOL's case status, with DOL's own average days and the prevailing wage line. It keeps itself current.", href: "/perm-processing-times", height: 840, group: "chart" },
+  { slug: "perm-processing-times", title: "PERM processing times today", blurb: "The filing month DOL is deciding, by our daily check of DOL's case status, with DOL's own average days and the prevailing wage line. It keeps itself current.", href: "/perm-processing-times", height: 860, narrow: { at0: 1790, perVw: 161 }, group: "chart" },
   { slug: "visa-bulletin", title: "Visa bulletin cutoffs", blurb: "Final action and filing dates by category and country, with the month's movement.", href: "/visa-bulletin", height: 820, group: "chart" },
 ];
 
@@ -79,9 +86,17 @@ export function embedBySlug(slug: string): EmbedDef | null {
  */
 export function embedSnippet(def: EmbedDef, origin = SITE_URL): string {
   const title = def.title.replace(/"/g, "&quot;");
-  const frame = `<iframe src="${origin}/embed/${def.slug}" title="${title}" width="100%" height="${def.height}" style="border:0;max-width:100%" loading="lazy"></iframe>`;
+  // The height attribute is the frame's height wherever the style's rule isn't understood.
+  const tall = def.narrow ? `;height:max(${def.height}px,calc(${def.narrow.at0}px - ${def.narrow.perVw}vw))` : "";
+  const frame = `<iframe src="${origin}/embed/${def.slug}" title="${title}" width="100%" height="${def.height}" style="border:0;max-width:100%${tall}" loading="lazy"></iframe>`;
   const source = `<p style="margin:4px 0 0;font-size:13px">Source: <a href="${origin}${def.href}">PERM Tracker</a></p>`;
   return `${frame}\n${source}`;
+}
+
+/** The height, in CSS pixels, the pasted frame takes on a page `pageWidth` pixels wide: the rule `embedSnippet` writes. */
+export function embedFrameHeight(def: EmbedDef, pageWidth: number): number {
+  if (!def.narrow) return def.height;
+  return Math.max(def.height, def.narrow.at0 - (def.narrow.perVw / 100) * pageWidth);
 }
 
 /**

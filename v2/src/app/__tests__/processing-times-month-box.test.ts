@@ -43,6 +43,22 @@ describe("the processing-times page puts the email box under the answer", () => 
     expect(times).toContain('<CopyButton text={citeLine} label="Copy the line" />');
     expect(times).toContain("PERM Tracker's daily check of DOL's case status, ${longDate(permLine.asOf) ?? permLine.asOf}");
   });
+
+  // A site that keeps its own processing-times page gets the box's code where the answer is: one button copies it,
+  // and one link opens its card, with a preview, on the embeds page.
+  it("offers the box's own code to paste, kept out of the embed", () => {
+    expect(times).toContain('const embedDef = embedBySlug("perm-processing-times");');
+    expect(times).toContain("const embedCode = embedDef ? embedSnippet(embedDef, SITE_URL) : null;");
+    expect(times).toMatch(/<div data-embed-hide id="on-your-page"[^>]*>\s*<p[^>]*>\s*<span[^>]*>To show it on your own page:<\/span>/);
+    expect(times).toContain('<CopyButton text={embedCode} label="Copy the code" />');
+    expect(times).toContain('<Link href="/badges#embed-perm-processing-times" className="link">');
+  });
+
+  it("gives every embed's card an address of its own on the embeds page", () => {
+    const gallery = readFileSync(join(__dirname, "..", "..", "components", "badges", "EmbedGallery.tsx"), "utf8");
+    expect(gallery).toContain("<li id={`embed-${e.slug}`} className=\"flex scroll-mt-24 flex-col");
+    expect(embedBySlug("perm-processing-times")?.group).not.toBe("lookup");
+  });
 });
 
 describe("the queue page has the email box too", () => {

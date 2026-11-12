@@ -58,6 +58,7 @@ import { getDisclosureStats, getLiveBacklog } from "@/lib/db/publicData";
 import { findFront, type CohortMonth } from "@/lib/liveQueue";
 import { oldestOpenFact } from "@/lib/queueNowFacts";
 import { CopyButton } from "@/components/ui/copy-button";
+import { embedBySlug, embedSnippet } from "@/lib/embeds";
 import { dolNow, howLongSentence, queueLine } from "@/lib/dolNow";
 import { getPermBoard } from "@/lib/db/board";
 import { getPermWaitTrend, getPwdLine } from "@/lib/db/pwdDayQueue";
@@ -205,6 +206,9 @@ export default async function PermProcessingTimesPage() {
   const analystMonth = formatMonth(analyst?.priorityDate ?? null);
   // Where the line is by our own daily check of DOL's case status: the lead once DOL stopped printing a month.
   const ourMonth = permLine ? formatMonth(permLine.month) : null;
+  // The code a site pastes to show this page's answer box (lib/embeds.ts, the same line /badges prints).
+  const embedDef = embedBySlug("perm-processing-times");
+  const embedCode = embedDef ? embedSnippet(embedDef, SITE_URL) : null;
   const oldestOpen = oldestOpenFact(permLine, findFront(backlog)?.month ?? null);
   // The FAQ's live answers: how long, and which month DOL is on (ours while DOL's page prints none).
   const monthNow =
@@ -392,11 +396,13 @@ export default async function PermProcessingTimesPage() {
           {/* The answer and its figures are the embeddable box (/embed/perm-processing-times): one marked
               wrapper, so the gap between the two survives the embed's own spacing rules. */}
           <div data-embed="perm-processing-times" className="mt-8">
-          <section className="object p-5 sm:p-7">
+          {/* The box's large padding and heading start at 768px, never 640: in a frame 640 to 690px wide the large
+              heading took a third line and the box outgrew the embed's height by 70px (measured Nov 12 2026). */}
+          <section className="object p-5 md:p-7">
             <p className="text-sm font-semibold">The analyst review queue</p>{" "}
             {analystMonth || !ourMonth || !permLine ? (
               <>
-                <p className="mt-2 font-heading text-3xl font-bold leading-tight sm:text-4xl">
+                <p className="mt-2 font-heading text-3xl font-bold leading-tight md:text-4xl">
                   {analystMonth
                     ? `DOL is reviewing PERM applications filed in ${analystMonth}.`
                     : "DOL hasn’t published a filing month for the analyst review queue."}
@@ -426,7 +432,7 @@ export default async function PermProcessingTimesPage() {
             ) : (
               <>
                 {/* DOL's page stopped printing a filing month on Oct 31 2026; our own daily check says where it is. */}
-                <p className="mt-2 font-heading text-3xl font-bold leading-tight sm:text-4xl">
+                <p className="mt-2 font-heading text-3xl font-bold leading-tight md:text-4xl">
                   DOL is deciding PERM applications filed in {ourMonth}.
                 </p>{" "}
                 <QueueTape frontierMonth={permLine.month} className="mt-6" monthsBehind={6} monthsAhead={10} />{" "}
@@ -450,6 +456,20 @@ export default async function PermProcessingTimesPage() {
                       <span className="font-bold text-foreground">To quote it:</span> {citeLine}
                     </p>{" "}
                     <CopyButton text={citeLine} label="Copy the line" />
+                  </div>
+                ) : null}
+                {/* For a site that keeps a processing-times page of its own: this box, as one line of code. Left out
+                    of the embed, where it would offer the box inside itself. */}
+                {embedCode ? (
+                  <div data-embed-hide id="on-your-page" className="mt-3 flex scroll-mt-24 flex-wrap items-center gap-x-4 gap-y-3">
+                    <p className="min-w-0 flex-1 basis-72 text-sm leading-relaxed text-soft">
+                      <span className="font-bold text-foreground">To show it on your own page:</span> paste one line of
+                      code, and the month and DOL&apos;s figures stay current there.{" "}
+                      <Link href="/badges#embed-perm-processing-times" className="link">
+                        See the code and a preview
+                      </Link>
+                    </p>{" "}
+                    <CopyButton text={embedCode} label="Copy the code" />
                   </div>
                 ) : null}
               </>
