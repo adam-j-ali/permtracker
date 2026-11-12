@@ -1,25 +1,24 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { CaretDownIcon, SlidersHorizontalIcon } from "@phosphor-icons/react";
 
 import { cn } from "@/lib/utils";
 
-/** `sm` and up: room for an open fold above the list. False on the server, where nothing is filtered yet. */
-function isWide(): boolean {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
-  const wide = window.matchMedia("(min-width: 640px)");
-  return Boolean(wide && wide.matches);
-}
-
 /**
- * The filters a list doesn't need on its first screen, behind one control: the search, then the list, then the
- * rest. Native `<details>`, so the keyboard and a screen reader work with no script, and a control inside is
- * still part of its form (a shut fold's fields are submitted like any others).
+ * A list's other filters: open on a wide screen, one tap away on a phone.
  *
- * The control says how many filters inside are on. On a wide screen it also opens by itself when one is, so a
- * filtered view shows what's narrowing it; on a phone it stays shut, because open it's a screen tall and the list
- * is what the person came for. It shuts when `shutOn` changes (a search was run), for the same reason.
+ * ON A WIDE SCREEN THEY'RE OPEN. For one release (Nov 11 2026) they sat behind this control at every width. The
+ * reason was a phone, where the open filters are a screen tall above the list; on a desktop nothing was wrong, and
+ * the filters are how the list gets used. So the fold is a phone's alone.
+ *
+ * WHICH ONE A SCREEN GETS IS A STYLE RULE (`sm:block` on the filters, `sm:hidden` on the control), never a script
+ * reading the window: the server's page is already right, and nothing moves when the browser starts. With scripts
+ * off the control can't work, so a phone gets the filters open.
+ *
+ * Shut or open, the fields stay in the page, so a form still carries them. On a phone the control says how many of
+ * the filters inside are on, and the fold shuts when `shutOn` changes (a search was run): the list is what the
+ * person came for.
  */
 export function FilterFold({
   label = "More filters",
@@ -36,25 +35,37 @@ export function FilterFold({
   children: ReactNode;
   className?: string;
 }) {
-  const [open, setOpen] = useState(() => active > 0 && isWide());
+  const [open, setOpen] = useState(false);
   // Shut when a search runs. State adjusted while rendering, the way React asks for a value derived from a prop.
   const [seen, setSeen] = useState(shutOn);
   if (shutOn !== seen) {
     setSeen(shutOn);
     setOpen(false);
   }
+  const id = useId();
   return (
-    <details open={open} onToggle={(e) => setOpen(e.currentTarget.open)} className={cn("group", className)}>
-      <summary className="inline-flex min-h-[44px] cursor-pointer list-none items-center gap-2 border-2 border-input bg-card px-4 text-sm font-bold hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
+    <div className={className}>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen((v) => !v)}
+        className="group inline-flex min-h-[44px] cursor-pointer items-center gap-2 border-2 border-input bg-card px-4 text-sm font-bold hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:hidden"
+      >
         <SlidersHorizontalIcon className="size-4 shrink-0" aria-hidden="true" />{" "}
         <span>{label}</span>{" "}
         {active > 0 ? <span className="bg-tint px-1.5 tabular-nums">{`${active} on`}</span> : null}{" "}
         <CaretDownIcon
-          className="size-4 shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none"
+          className={cn("size-4 shrink-0 transition-transform motion-reduce:transition-none", open && "rotate-180")}
           aria-hidden="true"
         />
-      </summary>{" "}
-      <div className="mt-4">{children}</div>
-    </details>
+      </button>{" "}
+      <div id={id} data-filter-fold className={cn(open ? "mt-4" : "hidden", "sm:mt-0 sm:block")}>
+        {children}
+      </div>
+      <noscript>
+        <style>{`[id="${id}"]{display:block}`}</style>
+      </noscript>
+    </div>
   );
 }

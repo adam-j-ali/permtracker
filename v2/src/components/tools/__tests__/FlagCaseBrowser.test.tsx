@@ -170,4 +170,14 @@ describe("FlagCaseBrowser is the page's one search box", () => {
     expect(screen.getByRole("heading", { name: "Find an LCA" })).toBeTruthy();
     expect(screen.getAllByRole("textbox", { name: /Employer or case number/ })).toHaveLength(1);
   });
+
+  it("says under the box what a case number gets: DOL asked live, and an email when it moves", () => {
+    // The lists had a second box for the number, with this sentence. The two boxes became one and the sentence was lost.
+    render(<FlagCaseBrowser summary={null} program={PWD_PROGRAM} />);
+    const box = screen.getByRole("textbox", { name: "Employer or case number" });
+    const note = document.getElementById(box.getAttribute("aria-describedby") ?? "");
+    expect(note?.textContent).toBe(
+      "Have the number? Type it here: DOL is asked live, and the case's page can email you when it moves.",
+    );
+  });
 });

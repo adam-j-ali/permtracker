@@ -159,8 +159,14 @@ export function CaseLookupForm({
     </span>
   ) : malformed ? (
     <span className="text-data-bad-ink">That isn&apos;t the shape of a case number. They look like {example}.</span>
-  ) : (
+  ) : names || !help ? (
     help
+  ) : (
+    // The example sits under the box. As the box's placeholder it read as a number already typed (about 600 empty
+    // presses in 30 days), and with words there instead, a first-time visitor had no example to go by.
+    <>
+      {help} A case number looks like <span translate="no">{example}</span>.
+    </>
   );
 
   return (

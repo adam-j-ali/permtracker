@@ -564,6 +564,7 @@ export function FlagCaseBrowser({
     setCursors([]);
   }, [list.size]);
   const browseTop = useRef<HTMLElement>(null);
+  const numberNoteId = useId();
   const months = useMemo(
     () => (summary ? [...summary.byMonth].sort((a, b) => (a.month < b.month ? 1 : -1)) : []),
     [summary],
@@ -652,6 +653,7 @@ export function FlagCaseBrowser({
               placeholder="e.g. Microsoft"
               maxLength={120}
               autoComplete="off"
+              aria-describedby={numberNoteId}
               className={CONTROL}
             />
           </label>{" "}
@@ -660,6 +662,12 @@ export function FlagCaseBrowser({
               {searchPending ? "Searching…" : "Search"}
             </button>
           </div>{" "}
+          {/* What a number gets, said where the number is typed. The lists had a second box for it that carried
+              this sentence; the two boxes became one (Nov 11 2026) and nothing on the page said a case can be
+              watched. */}
+          <p id={numberNoteId} className="text-sm text-muted-foreground sm:col-span-3">
+            Have the number? Type it here: DOL is asked live, and the case&apos;s page can email you when it moves.
+          </p>{" "}
           <label className="block">
             <span className="mb-1 block text-sm font-bold">Job title contains</span>{" "}
             <input
