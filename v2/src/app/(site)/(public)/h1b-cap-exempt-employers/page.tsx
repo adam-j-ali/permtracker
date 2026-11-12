@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { Icon } from "@phosphor-icons/react";
+import { BuildingsIcon, FlaskIcon, GraduationCapIcon, HandshakeIcon } from "@phosphor-icons/react/ssr";
 
 import { BarRows } from "@/components/data/BarRows";
 import { DataProvenance } from "@/components/data/DataProvenance";
@@ -19,6 +21,7 @@ import {
   capExemptAsOf,
   monthShares,
   type CapExemptDoc,
+  type CapExemptKind,
   type CapExemptRow,
 } from "@/lib/capExempt";
 import { SITE_URL } from "@/lib/constants/site";
@@ -45,6 +48,13 @@ export const revalidate = 604800;
 const PATH = "/h1b-cap-exempt-employers";
 const SHOWN = 25;
 const TITLE = "H-1B Cap-Exempt Employers";
+
+/** The three kinds the law exempts, each as a picture: a school, a nonprofit tied to one, a lab. */
+const KIND_ICON: Record<CapExemptKind, Icon> = {
+  "higher-ed": GraduationCapIcon,
+  affiliated: HandshakeIcon,
+  research: FlaskIcon,
+};
 
 const FAQS = [
   {
@@ -205,10 +215,17 @@ export default async function Page() {
           <>
             <section className="mt-10" aria-label="The employers in figures">
               <FigureRow>
-                <Figure tone="lime" label="Employers" value={formatInt(doc.employers)} note="Most of their wage requests say ACWIA covers them" />{" "}
-                {CAP_EXEMPT_KINDS.map((k) => (
-                  <Figure key={k} label={KIND_WORDS[k].many} value={formatInt(doc.kinds[k].employers)} />
-                ))}
+                <Figure
+                  tone="lime"
+                  label="Employers"
+                  icon={<BuildingsIcon weight="bold" />}
+                  value={formatInt(doc.employers)}
+                  note="Most of their wage requests say ACWIA covers them"
+                />{" "}
+                {CAP_EXEMPT_KINDS.map((k) => {
+                  const KindIcon = KIND_ICON[k];
+                  return <Figure key={k} label={KIND_WORDS[k].many} icon={<KindIcon weight="bold" className="text-primary-text" />} value={formatInt(doc.kinds[k].employers)} />;
+                })}
               </FigureRow>{" "}
             </section>{" "}
             {fy !== null && doc.months.length === 12 ? (

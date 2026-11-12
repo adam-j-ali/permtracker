@@ -10,7 +10,18 @@
  */
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import {
+  BellIcon,
+  EnvelopeSimpleIcon,
+  HandPalmIcon,
+  HourglassMediumIcon,
+  ProhibitIcon,
+  QuestionIcon,
+  StackIcon,
+  UsersIcon,
+  WarningIcon,
+} from "@phosphor-icons/react";
 import type { FunctionReturnType } from "convex/server";
 import { formatInt } from "@/lib/format";
 import { EASTERN_TIMEZONE, MS_PER_HOUR } from "@/lib/time";
@@ -132,11 +143,16 @@ export function BudgetPools({
   );
 }
 
-function Figure({ value, label, tone }: { value: string; label: string; tone?: "warn" }) {
+function Figure({ icon, value, label, tone }: { icon: ReactNode; value: string; label: string; tone?: "warn" }) {
   return (
     <div className={`border-2 border-border p-3 ${tone === "warn" ? "bg-data-warn-ink text-background" : "bg-background"}`}>
       <p className="font-heading text-2xl font-bold tabular-nums">{value}</p>{" "}
-      <p className={`text-sm font-semibold ${tone === "warn" ? "" : "text-muted-foreground"}`}>{label}</p>
+      <p className={`flex items-start gap-1.5 text-sm font-semibold ${tone === "warn" ? "" : "text-muted-foreground"}`}>
+        <span aria-hidden="true" className="mt-0.5 inline-flex shrink-0 [&_svg]:size-4">
+          {icon}
+        </span>
+        {label}
+      </p>
     </div>
   );
 }
@@ -164,12 +180,12 @@ export function DeliveryPanel({ data }: { data: Delivery }) {
           </p>
         ) : null}{" "}
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <Figure value={formatInt(w.emails)} label="emails sent" />
-          <Figure value={formatInt(w.items)} label="alerts inside them" />
-          <Figure value={formatInt(w.bundles)} label="bundled emails" />
-          <Figure value={formatInt(data.outbox.queued)} label={data.outbox.oldestQueuedAt ? `waiting, oldest ${ago(data.outbox.oldestQueuedAt)}` : "waiting"} tone={stale ? "warn" : undefined} />
-          <Figure value={formatInt(w.failed)} label="gave up after 6 tries" tone={w.failed > 0 ? "warn" : undefined} />
-          <Figure value={formatInt(w.dropped)} label="dropped by an opt-out" />
+          <Figure icon={<EnvelopeSimpleIcon weight="bold" />} value={formatInt(w.emails)} label="emails sent" />
+          <Figure icon={<BellIcon weight="bold" />} value={formatInt(w.items)} label="alerts inside them" />
+          <Figure icon={<StackIcon weight="bold" />} value={formatInt(w.bundles)} label="bundled emails" />
+          <Figure icon={<HourglassMediumIcon weight="bold" />} value={formatInt(data.outbox.queued)} label={data.outbox.oldestQueuedAt ? `waiting, oldest ${ago(data.outbox.oldestQueuedAt)}` : "waiting"} tone={stale ? "warn" : undefined} />
+          <Figure icon={<WarningIcon weight="bold" />} value={formatInt(w.failed)} label="gave up after 6 tries" tone={w.failed > 0 ? "warn" : undefined} />
+          <Figure icon={<ProhibitIcon weight="bold" />} value={formatInt(w.dropped)} label="dropped by an opt-out" />
         </div>{" "}
         <p className="mt-3 text-sm">
           {(Object.keys(KIND_LABEL) as (keyof typeof KIND_LABEL)[])
@@ -253,9 +269,9 @@ export function DeliveryPanel({ data }: { data: Delivery }) {
           Employer follows
         </h2>{" "}
         <div className="mt-3 grid grid-cols-3 gap-3 sm:max-w-md">
-          <Figure value={formatInt(data.follows.confirmed)} label="following" />
-          <Figure value={formatInt(data.follows.pending)} label="not confirmed" />
-          <Figure value={formatInt(data.follows.unsubscribed)} label="stopped" />
+          <Figure icon={<UsersIcon weight="bold" />} value={formatInt(data.follows.confirmed)} label="following" />
+          <Figure icon={<QuestionIcon weight="bold" />} value={formatInt(data.follows.pending)} label="not confirmed" />
+          <Figure icon={<HandPalmIcon weight="bold" />} value={formatInt(data.follows.unsubscribed)} label="stopped" />
         </div>{" "}
         {(data.follows.employers ?? 0) > data.follows.top.length ? (
           <p className="mt-3 text-sm text-muted-foreground">

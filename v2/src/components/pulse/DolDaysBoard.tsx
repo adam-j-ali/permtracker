@@ -59,14 +59,14 @@ export function DolDaysBoard({
       <FigureRow className="mt-5 max-sm:[&>*]:basis-full">
         <Figure
           label="PERM decisions, last 7 days"
-          icon={<ClipboardTextIcon weight="bold" />}
+          icon={<ClipboardTextIcon weight="bold" className="text-primary-text" />}
           value={week(perm)}
           trend={perm ? (weekTrend(perm, holidays) ?? undefined) : undefined}
           note={perm ? `Certified, denied or withdrawn, through ${through}.` : "Our check hasn't reached one of these seven days yet."}
         />{" "}
         <Figure
           label="Wage determinations, last 7 days"
-          icon={<CurrencyDollarIcon weight="bold" />}
+          icon={<CurrencyDollarIcon weight="bold" className="text-primary-text" />}
           value={week(wage)}
           trend={wage ? (weekTrend(wage, holidays) ?? undefined) : undefined}
           note={wage ? `Prevailing wages DOL issued for PERM, through ${through}.` : "Our check hasn't reached one of these seven days yet."}

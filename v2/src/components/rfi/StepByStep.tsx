@@ -1,7 +1,9 @@
 import type { ActivityDay } from "@/lib/activityStats";
 import { Fragment, type ReactNode } from "react";
+import { EnvelopeSimpleIcon, HourglassMediumIcon, SealCheckIcon, TimerIcon } from "@phosphor-icons/react/ssr";
 
 import { ChartTips } from "@/components/data/ChartTips";
+import { SplitBar } from "@/components/data/FigureVisual";
 import { formatAsOf } from "@/lib/dolFormat";
 import type { RfiClock } from "@/lib/perm";
 import { stageDurationFor, type StageStats } from "@/lib/db/stageStats";
@@ -41,11 +43,30 @@ const STEPS: ReadonlyArray<{ status: string; title: string }> = [
   { status: "BALCA APPEALS", title: "After a BALCA appeal" },
 ];
 
-function Figure({ label, value, children }: { label: string; value: string; children?: ReactNode }) {
+function Figure({
+  icon,
+  label,
+  value,
+  visual,
+  children,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  /** A small picture of the figure, drawn under the number. */
+  visual?: ReactNode;
+  children?: ReactNode;
+}) {
   return (
     <div className="flex flex-col border-2 border-border bg-card p-4 shadow-hard-sm sm:p-5">
-      <p className="text-sm font-semibold">{label}</p>{" "}
+      <p className="flex items-center gap-1.5 text-sm font-semibold">
+        <span aria-hidden="true" className="inline-flex shrink-0 [&_svg]:size-4">
+          {icon}
+        </span>
+        {label}
+      </p>{" "}
       <p className="mt-1 font-heading text-3xl font-bold tabular-nums">{value}</p>{" "}
+      {visual ? <div className="mt-2">{visual}</div> : null}{" "}
       {children ? <div className="mt-2 text-sm leading-relaxed text-soft">{children}</div> : null}
     </div>
   );
@@ -141,25 +162,40 @@ export function RfiJourney({
     <div>
       <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${narrow ? "" : "lg:grid-cols-4"} [&>*]:min-w-0`}>
         {path ? (
-          <Figure label="RFIs we watched DOL issue" value={int(path.entered)}>
+          <Figure icon={<EnvelopeSimpleIcon weight="bold" className="text-primary-text" />} label="RFIs we watched DOL issue" value={int(path.entered)}>
             {int(path.inRfi)} waiting on the reply, {int(path.repliedWaiting)} replied and back in review,{" "}
             {int(decided)} decided.
           </Figure>
         ) : null}{" "}
         {clock ? (
-          <Figure label="Time to reply" value={`${clock.leaveDays.p50} days`}>
+          <Figure icon={<TimerIcon weight="bold" className="text-primary-text" />} label="Time to reply" value={`${clock.leaveDays.p50} days`}>
             Half of the RFIs left RFI status by day {clock.leaveDays.p50}. The letter sets the date, and DOL usually gives 30 days.
           </Figure>
         ) : null}{" "}
         {clock ? (
-          <Figure label="Once the reply is in" value={`${clock.afterLeaveDays.p50} days`}>
+          <Figure icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />} label="Once the reply is in" value={`${clock.afterLeaveDays.p50} days`}>
             Half were decided within {clock.afterLeaveDays.p50} days of going back to review
             {clock.afterLeaveDays.p75 !== null ? `, 3 in 4 within ${clock.afterLeaveDays.p75}` : ""}
             {clock.afterLeaveWatched ? `, over ${int(clock.afterLeaveWatched)} decided cases` : ""}.
           </Figure>
         ) : null}{" "}
         {path && afterReply > 0 ? (
-          <Figure label="Certified after a reply" value={pct(path.afterReply.certified / afterReply)}>
+          <Figure
+            icon={<SealCheckIcon weight="bold" className="text-primary-text" />}
+            label="Certified after a reply"
+            value={pct(path.afterReply.certified / afterReply)}
+            visual={
+              <SplitBar
+                parts={[
+                  { value: path.afterReply.certified, tone: "good" },
+                  { value: path.afterReply.denied, tone: "bad" },
+                  { value: path.afterReply.withdrawn, tone: "withdrawn" },
+                  { value: path.afterReply.other, tone: "none" },
+                ]}
+                label={`After a reply: ${int(path.afterReply.certified)} certified, ${int(path.afterReply.denied)} denied and ${int(path.afterReply.withdrawn)} withdrawn`}
+              />
+            }
+          >
             {int(path.afterReply.certified)} of the {int(afterReply)} decided after a reply so far.
           </Figure>
         ) : null}

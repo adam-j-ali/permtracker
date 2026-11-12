@@ -8,9 +8,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Fragment } from "react";
+import { ChartPieSliceIcon, CurrencyDollarIcon, HashIcon, StairsIcon } from "@phosphor-icons/react/ssr";
 
 import { BarRows, type BarRow } from "@/components/data/BarRows";
 import { Figure, FigureRow } from "@/components/data/FigureRow";
+import { SplitBar } from "@/components/data/FigureVisual";
 import { SocCodeText } from "@/components/data/SocCodeText";
 import { PageSection } from "@/components/data/PageSection";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
@@ -158,12 +160,47 @@ export default async function SocTitlePage({ params }: { params: Promise<{ title
       </header>{" "}
       {top ? (
         <FigureRow className="mt-8">
-          <Figure tone="lime" label="Filed most under" value={top.soc} note={top.codeTitle} />{" "}
-          <Figure label="Of its filings" value={formatShareOf(top.filings, a.total)} note={`${formatInt(a.total)} in all`} />{" "}
+          <Figure tone="lime" label="Filed most under" icon={<HashIcon weight="bold" />} value={top.soc} note={top.codeTitle} />{" "}
+          <Figure
+            label="Of its filings"
+            icon={<ChartPieSliceIcon weight="bold" className="text-primary-text" />}
+            value={formatShareOf(top.filings, a.total)}
+            visual={
+              <SplitBar
+                parts={[
+                  { value: top.filings, tone: "info" },
+                  { value: a.total - top.filings, tone: "none" },
+                ]}
+                label={`${formatShareOf(top.filings, a.total)} of the ${formatInt(a.total)} filings with this title used code ${top.soc}`}
+              />
+            }
+            note={`${formatInt(a.total)} in all`}
+          />{" "}
           {payOf.get(top.soc) ? (
-            <Figure label="BLS median pay for the code" value={formatDollars(payOf.get(top.soc)!)} note="a year, nationally" />
+            <Figure
+              label="BLS median pay for the code"
+              icon={<CurrencyDollarIcon weight="bold" className="text-primary-text" />}
+              value={formatDollars(payOf.get(top.soc)!)}
+              note="a year, nationally"
+            />
           ) : null}{" "}
-          {top.zone ? <Figure label="O*NET Job Zone" value={zoneLabelOf(top.zone) ?? ""} note="of 5: how much preparation it takes" /> : null}
+          {top.zone ? (
+            <Figure
+              label="O*NET Job Zone"
+              icon={<StairsIcon weight="bold" className="text-primary-text" />}
+              value={zoneLabelOf(top.zone) ?? ""}
+              visual={
+                <SplitBar
+                  parts={[
+                    { value: top.zone, tone: "info" },
+                    { value: 5 - top.zone, tone: "none" },
+                  ]}
+                  label={`Job Zone ${zoneLabelOf(top.zone)} of 5`}
+                />
+              }
+              note="of 5: how much preparation it takes"
+            />
+          ) : null}
         </FigureRow>
       ) : null}{" "}
       {filed.length ? (

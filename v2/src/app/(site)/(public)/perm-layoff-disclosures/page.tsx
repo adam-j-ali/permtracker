@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BuildingsIcon, SealCheckIcon, UserMinusIcon } from "@phosphor-icons/react/ssr";
 
 import ScreenshotFigure from "@/components/content/ScreenshotFigure";
 import { BarRows } from "@/components/data/BarRows";
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { Figure, FigureRow } from "@/components/data/FigureRow";
+import { SplitBar } from "@/components/data/FigureVisual";
 import { FinePrint } from "@/components/data/FinePrint";
 import { PageSection } from "@/components/data/PageSection";
 import { LayoffAnswersTable } from "@/components/layoffs/LayoffAnswersTable";
@@ -157,17 +159,48 @@ export default async function Page() {
             <FigureRow>
               <Figure
                 label="Said yes"
+                icon={<UserMinusIcon weight="bold" className="text-primary-text" />}
                 value={formatInt(y.yes)}
+                visual={
+                  <SplitBar
+                    parts={[
+                      { value: y.yes, tone: "info" },
+                      { value: y.answered - y.yes, tone: "none" },
+                    ]}
+                    label={`${formatShareOf(y.yes, y.answered)} of ${formatInt(y.answered)} decided applications said yes`}
+                  />
+                }
                 note={`${formatShareOf(y.yes, y.answered)} of ${formatInt(y.answered)} decided applications`}
               />{" "}
               <Figure
                 label="Employers"
+                icon={<BuildingsIcon weight="bold" className="text-primary-text" />}
                 value={formatInt(doc.employersYes)}
+                visual={
+                  <SplitBar
+                    parts={[
+                      { value: doc.employersYes, tone: "info" },
+                      { value: doc.employersAnswering - doc.employersYes, tone: "none" },
+                    ]}
+                    label={`${formatInt(doc.employersYes)} of the ${formatInt(doc.employersAnswering)} employers that answered said yes at least once`}
+                  />
+                }
                 note={`said yes at least once, of ${formatInt(doc.employersAnswering)} that answered`}
               />{" "}
               <Figure
                 label="Certified after a yes"
+                icon={<SealCheckIcon weight="bold" className="text-primary-text" />}
                 value={formatShareOf(y.yesOutcomes.certified, outcomeTotal(y.yesOutcomes))}
+                visual={
+                  <SplitBar
+                    parts={[
+                      { value: y.yesOutcomes.certified, tone: "good" },
+                      { value: y.yesOutcomes.denied, tone: "bad" },
+                      { value: y.yesOutcomes.withdrawn, tone: "withdrawn" },
+                    ]}
+                    label={`After a yes: ${formatInt(y.yesOutcomes.certified)} certified, ${formatInt(y.yesOutcomes.denied)} denied and ${formatInt(y.yesOutcomes.withdrawn)} withdrawn`}
+                  />
+                }
                 note={`${formatShareOf(y.noOutcomes.certified, outcomeTotal(y.noOutcomes))} after a no`}
               />
             </FigureRow>

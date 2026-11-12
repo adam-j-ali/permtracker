@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BriefcaseIcon, BuildingOfficeIcon, UsersThreeIcon } from "@phosphor-icons/react/ssr";
 
 import { Figure, FigureRow } from "@/components/data/FigureRow";
 import { ColumnChart, type Column } from "@/components/numbers/ColumnChart";
@@ -85,16 +86,19 @@ export function WorkVisasView({ data, name, className }: { data: PostNiv; name: 
       <FigureRow className="mt-6">
         <Figure
           label={`H-1B, ${monthName(newest)}`}
+          icon={<BriefcaseIcon weight="bold" className="text-primary-text" />}
           value={formatInt(newestOf("H1B"))}
           note={`${formatInt(sumOf(data.byMonth, data.held, ["H1B"]))} in ${span} to ${monthName(newest)}`}
         />{" "}
         <Figure
           label={`L-1, ${monthName(newest)}`}
+          icon={<BuildingOfficeIcon weight="bold" className="text-primary-text" />}
           value={formatInt(newestOf("L1"))}
           note={`${formatInt(sumOf(data.byMonth, data.held, ["L1"]))} in ${span}`}
         />{" "}
         <Figure
           label={`Every work visa, ${monthName(newest)}`}
+          icon={<UsersThreeIcon weight="bold" className="text-primary-text" />}
           value={formatInt(workNewest)}
           note="H, L, E, O, P, Q, R, TN, CW and media visas, with the families who come with them"
         />

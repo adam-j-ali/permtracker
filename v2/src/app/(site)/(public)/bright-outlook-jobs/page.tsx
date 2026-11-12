@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { Icon } from "@phosphor-icons/react";
+import { ClipboardTextIcon, FilesIcon, PlantIcon, RocketLaunchIcon, SunIcon, UsersThreeIcon } from "@phosphor-icons/react/ssr";
 
 import { BarRows } from "@/components/data/BarRows";
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { Figure, FigureRow } from "@/components/data/FigureRow";
+import { SplitBar } from "@/components/data/FigureVisual";
 import { FinePrint } from "@/components/data/FinePrint";
 import { PageSection } from "@/components/data/PageSection";
 import { ROW_LINK } from "@/components/entities/caseRows";
@@ -11,12 +14,12 @@ import { OnetCredit } from "@/components/reference/OnetCredit";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { FaqList } from "@/components/tools/FaqList";
 import { ScrollBox } from "@/components/ui/scroll-box";
-import { BRIGHT_CATEGORIES, brightTotals, growingAndSponsored, type BrightJob } from "@/lib/brightOutlook";
+import { BRIGHT_CATEGORIES, brightTotals, growingAndSponsored, type BrightCategory, type BrightJob } from "@/lib/brightOutlook";
 import { SITE_URL } from "@/lib/constants/site";
 import { getBrightOutlook } from "@/lib/db/brightOutlook";
 import { getCasesMeta } from "@/lib/db/publicData";
 import { onetReference } from "@/lib/db/reference";
-import { formatInt, formatShare } from "@/lib/format";
+import { formatInt, formatShare, formatShareOf } from "@/lib/format";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { getDatasetSchema } from "@/lib/structuredData";
@@ -34,6 +37,26 @@ const PATH = "/bright-outlook-jobs";
 const TITLE = "Fast-Growing Jobs and Their Sponsorship";
 const SHOWN = 25;
 const GROWING_SHOWN = 15;
+
+/** What each of O*NET's three reasons looks like: growing fast, hiring many, or newly appeared. */
+const CATEGORY_ICON: Record<BrightCategory, Icon> = {
+  "Rapid Growth": RocketLaunchIcon,
+  "Numerous Job Openings": UsersThreeIcon,
+  "New and Emerging": PlantIcon,
+};
+
+/** How many of the listed jobs a count covers, as a bar. */
+function ShareOfJobs({ n, of, what }: { n: number; of: number; what: string }) {
+  return (
+    <SplitBar
+      parts={[
+        { value: n, tone: "info" },
+        { value: of - n, tone: "none" },
+      ]}
+      label={`${formatShareOf(n, of)} of the ${formatInt(of)} Bright Outlook jobs ${what}`}
+    />
+  );
+}
 
 const FAQS = [
   {
@@ -135,12 +158,25 @@ export default async function Page() {
         <>
           <section className="mt-10" aria-label="The list in figures">
             <FigureRow>
-              <Figure tone="lime" label="Bright Outlook jobs" value={formatInt(totals.jobs)} note="By job code, O*NET's list" />{" "}
-              <Figure label="With PERM cases" value={formatInt(totals.withPerm)} note={`Decided ${span}`} />{" "}
-              <Figure label="With H-1B LCAs" value={formatInt(totals.withLca)} note={lcaFloor ? `${lcaFloor} or more certified` : undefined} />{" "}
-              {BRIGHT_CATEGORIES.map((c) => (
-                <Figure key={c} label={c} value={formatInt(totals.byCategory[c])} />
-              ))}
+              <Figure tone="lime" label="Bright Outlook jobs" icon={<SunIcon weight="bold" />} value={formatInt(totals.jobs)} note="By job code, O*NET's list" />{" "}
+              <Figure
+                label="With PERM cases"
+                icon={<ClipboardTextIcon weight="bold" className="text-primary-text" />}
+                value={formatInt(totals.withPerm)}
+                visual={<ShareOfJobs n={totals.withPerm} of={totals.jobs} what="have PERM cases" />}
+                note={`Decided ${span}`}
+              />{" "}
+              <Figure
+                label="With H-1B LCAs"
+                icon={<FilesIcon weight="bold" className="text-primary-text" />}
+                value={formatInt(totals.withLca)}
+                visual={<ShareOfJobs n={totals.withLca} of={totals.jobs} what="have certified H-1B LCAs" />}
+                note={lcaFloor ? `${lcaFloor} or more certified` : undefined}
+              />{" "}
+              {BRIGHT_CATEGORIES.map((c) => {
+                const CategoryIcon = CATEGORY_ICON[c];
+                return <Figure key={c} label={c} icon={<CategoryIcon weight="bold" className="text-primary-text" />} value={formatInt(totals.byCategory[c])} />;
+              })}
             </FigureRow>
           </section>{" "}
           <PageSection
