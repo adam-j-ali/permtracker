@@ -1,10 +1,11 @@
 "use client";
 
-import { Fragment, useMemo } from "react";
+import { Fragment, useMemo, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import { RequestFailed } from "@/components/tools/RequestFailed";
+import { Pagination, usePagedRows } from "@/components/ui/pagination";
 import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 import { usePublicQuery } from "@/hooks/usePublicQuery";
 import { formatInt, formatShareOf } from "@/lib/format";
@@ -127,11 +128,28 @@ function Marks({ r }: { r: H1bRankRow }) {
 
 const ROW_GRID = "grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-3 lg:grid-cols-[3.5rem_minmax(0,1fr)_repeat(4,7.5rem)] lg:items-center lg:gap-x-4";
 
-function Row({ r, rank, max, cols, by }: { r: H1bRankRow; rank: number; max: number; cols: Column[]; by: H1bBasis }) {
+function Row({
+  r,
+  rank,
+  max,
+  cols,
+  by,
+  hidden,
+  className,
+}: {
+  r: H1bRankRow;
+  rank: number;
+  max: number;
+  cols: Column[];
+  by: H1bBasis;
+  /** Off the page being shown: kept in the list, so its link is still in the page. */
+  hidden?: boolean;
+  className?: string;
+}) {
   const value = by === "lca" ? r.lcas : r.uscisAppr;
   const width = max > 0 ? Math.max(1, Math.round((value / max) * 100)) : 0;
   return (
-    <li className={`${ROW_GRID} border-t-2 border-border py-4`}>
+    <li hidden={hidden} className={`${ROW_GRID} border-t-2 border-border py-4 ${className ?? ""}`}>
       <span className="font-heading text-2xl font-bold leading-none tabular-nums lg:text-3xl" aria-label={`Rank ${rank}`}>
         {rank}
       </span>{" "}
@@ -269,8 +287,10 @@ export function H1bEmployerRanks({
   const lcaYear = hasBasis(year, "lca", state);
   const uscisYear = hasBasis(year, "uscis", state);
   const firstLca = firstLcaYear(summary);
-  const shown = rows.slice(0, LIST_SHOWN);
-  const folded = rows.slice(LIST_SHOWN);
+  // A PAGE AT A TIME. The list was its first 25 and a fold holding the other 75, which opened to twenty phone
+  // screens. It is one list now: 25 on a wide screen, 10 on a phone, every row still in the page.
+  const paged = usePagedRows(rows, { wide: LIST_SHOWN });
+  const listTop = useRef<HTMLElement>(null);
 
   return (
     <div>
@@ -348,7 +368,7 @@ export function H1bEmployerRanks({
           </p>
         ) : null}{" "}
         {rows.length > 0 ? (
-          <section aria-labelledby="h1b-ranked" className="mt-10">
+          <section ref={listTop} aria-labelledby="h1b-ranked" className="mt-10 scroll-mt-24">
             <h2 id="h1b-ranked" className="font-heading text-2xl font-bold sm:text-3xl">
               The {rows.length} busiest, FY{year.fy}
             </h2>{" "}
@@ -362,27 +382,30 @@ export function H1bEmployerRanks({
               ))}
             </div>{" "}
             <ol className="mt-2 lg:mt-0">
-              {shown.map((r, i) => (
-                <Row key={r.slug} r={r} rank={rankOf(r, by) ?? i + 1} max={max} cols={cols} by={by} />
+              {rows.map((r, i) => (
+                <Row
+                  key={r.slug}
+                  r={r}
+                  rank={rankOf(r, by) ?? i + 1}
+                  max={max}
+                  cols={cols}
+                  by={by}
+                  hidden={!paged.on(i)}
+                  className={paged.hide(i)}
+                />
               ))}
             </ol>{" "}
-            {folded.length > 0 ? (
-              <details className="group border-t-2 border-border">
-                <summary className="flex min-h-[48px] cursor-pointer list-none items-center gap-2 py-3 font-heading text-base font-bold [&::-webkit-details-marker]:hidden">
-                  <span className="inline-flex min-h-[44px] items-center border-2 border-input bg-card px-4 group-open:hidden shadow-hard-sm">
-                    Show ranks {LIST_SHOWN + 1} to {rows.length}
-                  </span>{" "}
-                  <span className="hidden min-h-[44px] items-center border-2 border-input bg-card px-4 group-open:inline-flex">
-                    Hide ranks {LIST_SHOWN + 1} to {rows.length}
-                  </span>
-                </summary>{" "}
-                <ol>
-                  {folded.map((r, i) => (
-                    <Row key={r.slug} r={r} rank={rankOf(r, by) ?? LIST_SHOWN + i + 1} max={max} cols={cols} by={by} />
-                  ))}
-                </ol>
-              </details>
-            ) : null}
+            <Pagination
+              page={paged.page}
+              pageCount={paged.pageCount}
+              onPage={paged.setPage}
+              total={rows.length}
+              perPage={paged.perPage}
+              noun="employers"
+              scrollTo={listTop}
+              per={paged.per}
+              className="mt-6"
+            />
           </section>
         ) : null}
       </div>

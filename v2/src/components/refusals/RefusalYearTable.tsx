@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { RequestFailed } from "@/components/tools/RequestFailed";
 import { SortableHeader } from "@/components/tools/SortableHeader";
+import { Pagination, usePagedRows } from "@/components/ui/pagination";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { usePublicQuery } from "@/hooks/usePublicQuery";
 import { formatInt } from "@/lib/format";
@@ -56,6 +57,10 @@ export function RefusalYearTable({ years, initial }: { years: readonly number[];
   const shown = answer ?? (asked.failed ? undefined : asked.previous);
   const loading = fy !== initial.fy && !asked.data && !asked.failed;
   const rows = shown ? sortRows(shown.grounds, COLUMNS, sort) : [];
+  // State's table runs to about 80 grounds, ten phone screens: a page of them at a time, 25 wide and 10 on a phone.
+  // A new year or a new sort starts from the first page.
+  const paged = usePagedRows(rows);
+  const top = useRef<HTMLDivElement>(null);
 
   return (
     <div>
@@ -63,7 +68,15 @@ export function RefusalYearTable({ years, initial }: { years: readonly number[];
         <label htmlFor="refusal-year" className="text-base font-bold">
           Fiscal year
         </label>{" "}
-        <select id="refusal-year" value={fy} onChange={(e) => setFy(Number(e.target.value))} className={SELECT}>
+        <select
+          id="refusal-year"
+          value={fy}
+          onChange={(e) => {
+            setFy(Number(e.target.value));
+            paged.setPage(1);
+          }}
+          className={SELECT}
+        >
           {[...years].sort((a, b) => b - a).map((y) => (
             <option key={y} value={y}>
               {fyLabel(y)}
@@ -76,16 +89,23 @@ export function RefusalYearTable({ years, initial }: { years: readonly number[];
       </div>
       {asked.failed ? <RequestFailed what={`${fyLabel(fy)}'s table`} failure={asked.failure} onRetry={asked.retry} className="mt-4 bg-tint p-4" /> : null}
       {shown ? (
-        <div aria-busy={loading} className={loading ? "opacity-60 transition-opacity" : "transition-opacity"}>
+        <div ref={top} aria-busy={loading} className={`scroll-mt-24 ${loading ? "opacity-60 transition-opacity" : "transition-opacity"}`}>
         <ScrollBox label={`Visa refusals by ground, ${fyLabel(shown.fy)}`} className="mt-4">
           <table className="w-full min-w-[46rem] text-left text-base">
             <caption className="sr-only">
               Visa refusals by ground of ineligibility, {fyLabel(shown.fy)}, worldwide, from the State Department{" "}
             </caption>
-            <SortableHeader columns={COLUMNS} sort={sort} onSort={(key) => setSort(nextSort(sort, key, COLUMNS))} />
+            <SortableHeader
+              columns={COLUMNS}
+              sort={sort}
+              onSort={(key) => {
+                setSort(nextSort(sort, key, COLUMNS));
+                paged.setPage(1);
+              }}
+            />
             <tbody>
-              {rows.map((r) => (
-                <tr key={r.line} className="border-b border-border">
+              {paged.shown.map((r, i) => (
+                <tr key={r.line} className={`border-b border-border ${paged.hide(i) ?? ""}`}>
                   <th scope="row" className="px-3 py-3 align-top font-normal">
                     <span className="block font-mono text-sm font-bold">{r.code}</span>{" "}
                     <span className="block">{r.ground}</span>{" "}
@@ -111,7 +131,18 @@ export function RefusalYearTable({ years, initial }: { years: readonly number[];
               </tfoot>
             ) : null}
           </table>
-        </ScrollBox>
+        </ScrollBox>{" "}
+        <Pagination
+          page={paged.page}
+          pageCount={paged.pageCount}
+          onPage={paged.setPage}
+          total={rows.length}
+          perPage={paged.perPage}
+          noun="grounds"
+          scrollTo={top}
+          per={paged.per}
+          className="mt-4"
+        />
         </div>
       ) : null}
       {shown?.knownGaps.length ? (

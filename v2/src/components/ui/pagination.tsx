@@ -218,6 +218,48 @@ export function RowsPerPage({
   );
 }
 
+/**
+ * A page of rows the browser already holds, sized for the screen: 25 on a wide screen, 10 on a phone, until the
+ * reader picks. The place is kept in the component, for a list that shares its page with another list whose page is
+ * already in the address (`usePerPage` is the one that writes there).
+ *
+ * `hide(i)` is for the server's drawing of the first page, which is the wide one: it hides the rows a phone's page
+ * leaves out until the browser starts.
+ */
+export function usePagedRows<T>(rows: readonly T[], sizes?: { wide?: number; narrow?: number; options?: readonly number[] }) {
+  const list = useListSize(sizes);
+  const [asked, setAsked] = useState(1);
+  const pageCount = Math.max(1, Math.ceil(rows.length / list.size));
+  const page = Math.min(asked, pageCount);
+  const start = (page - 1) * list.size;
+  return {
+    page,
+    pageCount,
+    setPage: setAsked,
+    /** The 0-based place of the page's first row in `rows`. */
+    start,
+    shown: rows.slice(start, start + list.size),
+    /** Whether row `i` of `rows` is on this page, for a list that keeps every row in the page and hides the rest. */
+    on: (i: number) => i >= start && i < start + list.size,
+    perPage: list.size,
+    /** The reader picked the size; false while it's the screen's default. */
+    picked: list.picked,
+    /** A phone's default page, for a rule that hides the rest of a server-drawn first page there. */
+    narrow: sizes?.narrow ?? 10,
+    /** For `Pagination`'s `per`: a new size starts from the first page. */
+    per: {
+      per: list.size,
+      options: list.options,
+      setPer: (n: number) => {
+        list.setSize(n);
+        setAsked(1);
+      },
+    },
+    /** `i` counts from the top of the first page, which is also its place in `rows`. */
+    hide: (i: number) => (page === 1 ? list.narrowHidden(i) : undefined),
+  };
+}
+
 /** Bring a list's top into view if a press left it above the screen. */
 export function showTop(top: HTMLElement | null | undefined) {
   if (!top || top.getBoundingClientRect().top >= 0) return;
