@@ -52,6 +52,11 @@ export interface CaseWallProps {
   className?: string;
 }
 
+/** The narrowest a column reads at: its count ("14,888") over its bar and its month. */
+const WALL_COLUMN_PX = 56;
+/** A wall of this many months or more keeps one floor (560px) and scrolls on a phone. */
+const WALL_FLOOR_COLUMNS = 10;
+
 export function CaseWall({
   wall,
   publishedFront,
@@ -66,8 +71,11 @@ export function CaseWall({
 
   return (
     <div className={className}>
-      <ChartTips label="Undecided cases by filing month, up to this case's month" scroll="-mx-1 px-1">
-        <ul className="flex min-w-[560px] items-end gap-1.5">
+      {/* The reader's own month is the last bar. A wall too long for a phone opens scrolled to it, and a short one
+          takes only the width its months need (56px a column, to a floor of ten columns' worth): at a fixed 560px,
+          two months took 277px each on a phone and the reader's bar sat off the right edge. */}
+      <ChartTips label="Undecided cases by filing month, up to this case's month" scroll="-mx-1 px-1" startAtEnd>
+        <ul className="flex items-end gap-1.5" style={{ minWidth: `${Math.min(wall.segments.length, WALL_FLOOR_COLUMNS) * WALL_COLUMN_PX}px` }}>
           {wall.segments.map((s) => {
             const label = formatMonthShort(s.month) ?? s.month;
             return (
