@@ -58,6 +58,8 @@ describe("PERM decisions and wage determinations, side by side", () => {
     const table = screen.getByRole("table", { name: /each day/ });
     const first = within(table).getAllByRole("row")[1]!;
     expect(first.textContent).toContain("not counted");
+    // The cell's words end with a space, so "not counted" never runs into the next cell's number.
+    expect(first.querySelectorAll("td")[0]!.textContent).toMatch(/not counted\s$/);
     expect(document.body.textContent).toContain("Not counted yet");
     expect(document.body.textContent).toContain("Our check hasn't reached one of these seven days yet.");
     // The wage side is whole, so it keeps its figure.
