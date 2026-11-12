@@ -137,6 +137,9 @@ export function QueueTape({
                 data-tip={tipFor(m, i - frontierAt, isYou)}
                 className={cn(
                   "relative flex h-16 items-end justify-center border-r border-foreground/10 pb-1 last:border-r-0",
+                  // A label is wider than a phone's column: at the strip's ends it starts from the edge, or it's cut off.
+                  i === 0 && "max-sm:justify-start",
+                  i === months.length - 1 && "max-sm:justify-end",
                   // Still waiting reads soft yellow, not blank (round 3, Oct 15 2026).
                   !cleared && !isFrontier && "bg-soft-wait",
                   cleared && "bg-primary",
@@ -153,7 +156,11 @@ export function QueueTape({
                 />
                 <span
                   className={cn(
-                    "relative text-center font-mono text-sm font-bold leading-none",
+                    // Above the columns beside it: a label wider than a phone's column runs over its neighbour, and the
+                    // neighbour's own background painted over it.
+                    "relative z-[1] text-center font-mono text-sm font-bold leading-none",
+                    i === 0 && "max-sm:text-left",
+                    i === months.length - 1 && "max-sm:text-right",
                     cleared || isFrontier ? "text-black/80" : "text-muted-foreground",
                     // Room is tight: see labelClass.
                     labelClass(i),
