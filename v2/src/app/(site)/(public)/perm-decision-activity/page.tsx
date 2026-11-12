@@ -29,6 +29,12 @@ import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { DecisionPaceChart } from "@/components/activity/DecisionPaceChart";
 import { PermPulse } from "@/components/pulse/PermPulse";
+import { DolDaysBoard } from "@/components/pulse/DolDaysBoard";
+import { DecisionMonths } from "@/components/activity/DecisionMonths";
+import { dolDays } from "@/lib/dolDays";
+import { monthsAgainstLastYear } from "@/lib/decisionMonths";
+import { getPwdNowDocs } from "@/lib/db/pwdDayQueue";
+import { easternDay } from "@convex/lib/time";
 import { getSweepCoverage } from "@/lib/db/sweepCoverage";
 import { OutcomeMix } from "@/components/activity/OutcomeMix";
 import { WeekdayShape } from "@/components/activity/WeekdayShape";
@@ -93,7 +99,7 @@ function monthYear(iso: string | undefined): string | null {
 }
 
 export default async function DecisionActivityPage() {
-  const [series, mirrorSize, activity, windows, coverage] = await Promise.all([
+  const [series, mirrorSize, activity, windows, coverage, wageDocs] = await Promise.all([
     getActivitySeries(),
     getLiveMirrorSize(),
     // The event record is days old, so a failure here must not take the whole
@@ -111,10 +117,17 @@ export default async function DecisionActivityPage() {
     // under-report coverage for months.
     getCoverageWindows().catch(softFail<CoverageWindows>("perm-decision-activity/page.getCoverageWindows", { decided: null, observed: null })),
     getSweepCoverage().catch(softFail("perm-decision-activity/page.getSweepCoverage", null)),
+    // The wage check's day document, for the determinations beside PERM's decisions. It soft-fails to null inside,
+    // and the board then says "not counted" for the wage side.
+    getPwdNowDocs(),
   ]);
 
   const disclosure = series.find((s) => s.source === "dol-disclosure");
   const live = series.find((s) => s.source === "sweep-observed");
+  // Two weeks of complete days, PERM beside wage determinations, and each month against a year earlier.
+  const today = easternDay();
+  const sideBySide = dolDays(live?.days ?? [], wageDocs.queue?.days ?? [], today, 14);
+  const byMonth = monthsAgainstLastYear(series.find((s) => s.source === "dol-disclosure")?.days ?? [], live?.days ?? [], today, 12);
   // The live scan is the current instrument, so it sets the headline pace. The
   // disclosure series is the fallback, never a splice of the two: the 43 days
   // between them hold no measurement at all.
@@ -228,6 +241,8 @@ export default async function DecisionActivityPage() {
           </p>
         </section>
       ) : null}
+
+      <DolDaysBoard days={sideBySide} className="mt-10" />
 
       {activity ? (
         <section id="day" className="mt-10 scroll-mt-24">
@@ -409,6 +424,8 @@ export default async function DecisionActivityPage() {
           </p>
         </FinePrint>
       ) : null}
+
+      <DecisionMonths months={byMonth} checksFrom={live?.days[0]?.date ?? null} className="mt-10" />
 
       {record.length > 0 ? (
         <FigurePlate
