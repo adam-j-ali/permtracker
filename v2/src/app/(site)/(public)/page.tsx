@@ -64,6 +64,9 @@ import { backlogTrend, dayTrend, waitTrend } from "@/lib/homeTrends";
 import { homeMonths } from "@/lib/homeMonths";
 import { easternDay } from "@convex/lib/time";
 import { PermPulse } from "@/components/pulse/PermPulse";
+import { DolDaysBoard } from "@/components/pulse/DolDaysBoard";
+import { dolDays } from "@/lib/dolDays";
+import { getPwdNowDocs } from "@/lib/db/pwdDayQueue";
 import { SITE_URL } from "@/lib/constants/site";
 import { softFail } from "@/lib/softRead";
 
@@ -154,7 +157,7 @@ export default async function HomePage() {
   // The pulse reads our own sweep's record, a third clock: it moves when the
   // sweep finishes, and /api/revalidate-sweep expires this page then. Either
   // read failing drops the band, never the page.
-  const [snapshot, disclosure, record, observed, coverage, siteReviews, backlog, permBoard, line, pwdSummary, casesMeta, i140Median] = await Promise.all([
+  const [snapshot, disclosure, record, observed, coverage, siteReviews, backlog, permBoard, line, pwdSummary, casesMeta, i140Median, wageDocs] = await Promise.all([
     getProcessingTimes(),
     getDisclosureStats(),
     getRecordCounts(),
@@ -175,6 +178,9 @@ export default async function HomePage() {
     getCasesMeta<CasesMeta>().catch(softFail("home/page.getCasesMeta", null)),
     // USCIS's newest quarterly median for the I-140, for the road's third stop; a failed read leaves its plain line.
     getUscisFormMedian("I-140").catch(softFail("home/page.getUscisFormMedian", null)),
+    // The wage check's day document, for the week's determinations beside the week's PERM decisions. It soft-fails
+    // to null inside, and the figure then says it isn't counted yet.
+    getPwdNowDocs(),
   ]);
   const analyst = snapshot
     ? analystReviewQueue(snapshot.permQueues)
@@ -229,6 +235,15 @@ export default async function HomePage() {
       />
       <LiveDataBand>
         <PermPulse variant="charts" days={observed} checkedAt={coverage?.checkedAt ?? null} />
+        {/* Both ends of the step in one row: the week's PERM decisions beside the week's wage determinations. */}
+        <DolDaysBoard
+          days={dolDays(observed, wageDocs.queue?.days ?? [], easternDay(), 14)}
+          rows={false}
+          level={3}
+          headingId="home-dol-days"
+          more={{ href: "/perm-decision-activity#dol-days", label: "Day by day, and each month against a year earlier" }}
+          className="mt-10"
+        />
       </LiveDataBand>
       <RoadSection pwdPending={pwdPending} frontierMonth={workingMonth} i140MedianMonths={i140Median?.medianMonths ?? null} />
       <DataShelf figures={deriveFigures(disclosure)} />
