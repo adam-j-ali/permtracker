@@ -52,6 +52,15 @@ export function trackCaseNotFound(why: "none" | "gap", format: "current" | "lega
 }
 
 /**
+ * Someone on a certified case's page said they want USCIS case tracking: "pressed" when they press the question's
+ * button (once per browser), "signed" when they send the alert form with the USCIS box ticked. The count of
+ * presses against the people who saw the form is the measure; nothing about the person or the case is sent.
+ */
+export function trackUscisInterest(step: "pressed" | "signed", source: string): void {
+  analytics.capture("uscis_interest", { step, source });
+}
+
+/**
  * The no-number finder answered: an employer's name and a filing day were read against that
  * day's list. `found` is how it ended ("cases", "close-names" or "none"), never the name.
  */

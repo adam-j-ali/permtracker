@@ -13,7 +13,7 @@
 import { useId, useState } from "react";
 import { isQueued, replyHeading } from "@/lib/alertReply";
 import { cn } from "@/lib/utils";
-import { AlertDone, AlertNote, EmailField, OptInFold } from "@/components/alerts/AlertParts";
+import { AlertDone, AlertNote, EmailField, OptInBox, OptInFold } from "@/components/alerts/AlertParts";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { SelectInput } from "@/components/forms/SelectInput";
@@ -54,8 +54,21 @@ export function BulletinAlertForm({
   priorityDate = null,
   headingLevel = "h2",
   bare = false,
+  extraOptIn,
 }: {
   source: string;
+  /**
+   * One more opt-in, shown above the button with its own words (a certified case's "tell me when USCIS tracking
+   * opens"). Ticked, the sign-up adds the news list, which is the consent its words state, and marks the source
+   * so those sign-ups can be counted. The caller holds the tick, so its own button can set it.
+   */
+  extraOptIn?: {
+    label: string;
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+    sourceSuffix: string;
+    onSigned?: () => void;
+  };
   /**
    * No frame and no heading of its own: the form sits under a section that already names it (the alerts page),
    * drawn like the month and wage-request boxes beside it.
@@ -77,6 +90,7 @@ export function BulletinAlertForm({
   const catId = useId();
   const countryId = useId();
   const newsId = useId();
+  const extraId = useId();
 
   const [email, setEmail] = useState("");
   const [category, setCategory] = useState<string>(initialCategory);
@@ -107,8 +121,8 @@ export function BulletinAlertForm({
           email: address,
           category,
           country,
-          source,
-          news: news || undefined,
+          source: extraOptIn?.checked ? `${source}${extraOptIn.sourceSuffix}` : source,
+          news: news || extraOptIn?.checked || undefined,
           newsletter: newsletter || undefined,
         }),
       });
@@ -119,6 +133,7 @@ export function BulletinAlertForm({
       setQueued(isQueued(body));
       setStatus(res.ok ? "done" : "error");
       trackAlertSignup("bulletin", res.ok ? "accepted" : "refused", { status: res.status });
+      if (res.ok && extraOptIn?.checked) extraOptIn.onSigned?.();
     } catch {
       trackAlertSignup("bulletin", "error");
       setMessage("Couldn't reach the server. Try again in a moment.");
@@ -183,6 +198,16 @@ export function BulletinAlertForm({
           <EmailField id={emailId} value={email} onChange={setEmail} invalid={status === "error"} className="mt-2" />
         </div>
       </div>{" "}
+      {extraOptIn ? (
+        <OptInBox
+          id={extraId}
+          kind="news"
+          label={extraOptIn.label}
+          checked={extraOptIn.checked}
+          onChange={extraOptIn.onChange}
+          className="mt-3"
+        />
+      ) : null}{" "}
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
         <Button type="submit" size="lg" loading={status === "sending"} data-ph-capture-attribute-cta="bulletin-alert">
           Email me when it moves
