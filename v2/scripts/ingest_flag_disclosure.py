@@ -563,7 +563,14 @@ def index_ddl(table: str) -> list[str]:
         # The yearly rankings and an employer's years read a whole fiscal year at a time (build_h1b_ranks.py,
         # build_lca_years.py); the current table is read the same way and is a third the size.
         f"CREATE INDEX IF NOT EXISTS {table}_fy ON {table} (fiscal_year, case_status, visa_class)",
-    ] if table.endswith("_history") else [])
+    ] if table.endswith("_history") else []) + ([
+        # An employer's wage requests of one kind, counted by year and by job group (`src/lib/db/employerStarts.ts`,
+        # INDEXED BY this name). The employer index doesn't carry the kind of request or the job code, so the count
+        # opened every one of the employer's rows: 0.7 s for Google and 2.0 s for Deloitte & Touche on Nov 12 2026.
+        # With all five columns in the index it opens none. Created on production by hand that day (7.0 s).
+        f"CREATE INDEX IF NOT EXISTS {table}_emp_kind ON {table} "
+        "(employer_slug, visa_class, received_date, case_number, soc_code)",
+    ] if table == "pwd_cases" else [])
 
 
 # DOL's H-1B files before FY2020 (FY2008 to FY2019, three older layouts) go to a table of their own in the LCA

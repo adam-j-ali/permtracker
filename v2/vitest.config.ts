@@ -65,6 +65,8 @@ const ISOLATED_UNIT_FILES = [
   "src/lib/__tests__/findCase.test.ts",
   // Mocks the database client to answer the day a case's RFI began (Nov 9 2026).
   "src/lib/db/__tests__/rfiEnteredOn.test.ts",
+  // Mocks the database client under an employer's wage requests and PERM applications by year (Nov 12 2026).
+  "src/lib/db/__tests__/employerStarts.test.ts",
   // Added 2026-11-04: mocks the database client under consularPosts; in the shared pool a file that
   // loaded consularPosts first left the real client in place (CI red on 714e620f).
   "src/lib/db/__tests__/embassyNotices.test.ts",
