@@ -41,4 +41,14 @@ describe("the quarter's chips", () => {
     expect(quarterDaysMoved(421, 420)?.dir).toBe("level");
     expect(quarterDaysMoved(null, 420)).toBeUndefined();
   });
+
+  it("sets a count against any earlier figure, named in the chip", async () => {
+    const { countMoved } = await import("@/lib/quarterReport");
+    // State's own counts: 452 public charge findings in FY2023, 1,008 in FY2024.
+    expect(countMoved(1008, 452, "FY2023")).toEqual({ text: "Up 123% on FY2023", dir: "up", tone: "info" });
+    expect(countMoved(74, 86, "FY2023")).toEqual({ text: "Down 14% on FY2023", dir: "down", tone: "info" });
+    expect(countMoved(500, 500, "FY2023")).toEqual({ text: "About the same as FY2023", dir: "level", tone: "neutral" });
+    // Nothing the year before: no chip, never a rise from zero.
+    expect(countMoved(5, 0, "FY2023")).toBeUndefined();
+  });
 });

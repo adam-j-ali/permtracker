@@ -71,12 +71,17 @@ export function changeWords(now: number, before: number): string {
 
 const BEFORE = "last quarter";
 
-/** A count against the quarter before, as a chip: volume is information, never good or bad. */
-export function quarterCountMoved(now: number, before: number): FigureTrend | undefined {
+/** A count against an earlier one, as a chip: volume is information, never good or bad. */
+export function countMoved(now: number, before: number, against: string): FigureTrend | undefined {
   if (before <= 0) return undefined;
   const words = changeWords(now, before);
-  if (words === "about the same") return { text: `About the same as ${BEFORE}`, dir: "level", tone: "neutral" };
-  return { text: `${words[0]!.toUpperCase()}${words.slice(1)} on ${BEFORE}`, dir: now > before ? "up" : "down", tone: "info" };
+  if (words === "about the same") return { text: `About the same as ${against}`, dir: "level", tone: "neutral" };
+  return { text: `${words[0]!.toUpperCase()}${words.slice(1)} on ${against}`, dir: now > before ? "up" : "down", tone: "info" };
+}
+
+/** A count against the quarter before. */
+export function quarterCountMoved(now: number, before: number): FigureTrend | undefined {
+  return countMoved(now, before, BEFORE);
 }
 
 /** The certified share against the quarter before, in points: higher is good. */

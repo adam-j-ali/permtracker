@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { changeWords, yearOnYear, type SeventyFiveMonth } from "../seventyFive";
+import { changeTrend, changeWords, yearOnYear, type SeventyFiveMonth } from "../seventyFive";
 
 const m = (month: string, eb75: number, ebOther: number): SeventyFiveMonth => ({ month, eb75, ebOther, all75: eb75 * 10, allOther: ebOther * 10 });
 
@@ -24,5 +24,20 @@ describe("the 75-country pause, year on year", () => {
   it("never divides by a zero month", () => {
     expect(changeWords({ from: 0, to: 5, percent: null })).toBe("new");
     expect(changeWords({ from: 5, to: 5, percent: 0 })).toBe("no change");
+  });
+
+  it("draws a change as a chip: which way, how much, against what, and never good or bad", () => {
+    // Arrange: a count that fell, one that rose, one that held, one with nothing before.
+    const fell = { from: 920, to: 216, percent: -77 };
+    const rose = { from: 3165, to: 3758, percent: 19 };
+    const held = { from: 500, to: 501, percent: 0 };
+    const fresh = { from: 0, to: 5, percent: null };
+
+    // Act and assert: a count of visas is volume, so the chip is information whichever way it moved.
+    expect(changeTrend(fell, "February 2025")).toEqual({ text: "Down 77% on February 2025", dir: "down", tone: "info" });
+    expect(changeTrend(rose, "February 2025")).toEqual({ text: "Up 19% on February 2025", dir: "up", tone: "info" });
+    expect(changeTrend(held, "February 2025")).toEqual({ text: "About the same as February 2025", dir: "level", tone: "neutral" });
+    // Nothing to compare against draws no chip: "new" stays in the note's words.
+    expect(changeTrend(fresh, "February 2025")).toBeUndefined();
   });
 });
