@@ -98,10 +98,12 @@ figure under its new words until the next sweep. So the deploy's last act is
 `systemctl start --no-block permtracker-sweep@case-status-docs.service`: the sweep runner's `case-status-docs` job
 reads the scripts at `origin/main`, runs `ingest_case_status_direct.py --docs` (every document, dated the day of the
 last complete sweep, nothing asked of DOL), the builders every pass runs, the full pass's table-only summaries and the
-filings by day, then expires the sweep's pages. About ten minutes.
+filings by day, then expires the sweep's pages. About ten minutes on a quiet disk; over half an hour right after a
+release, while the old build's page cache is deleted beside it (Nov 12 2026: the employer map's read of the LCA
+table took 21 minutes, so that step has an hour).
 - It can't fail a deploy: it starts in the background after the site has answered, and a failure to start is a log line.
-- It can't block a sweep: it shares the case sweeps' lock, so it does nothing when a case sweep is due within 45
-  minutes (`DOCS_GIVE_WAY` in `bin/permtracker-sweep`), and its unit is stopped at 40
+- It can't block a sweep: it shares the case sweeps' lock, so it does nothing when a case sweep is due within 80
+  minutes (`DOCS_GIVE_WAY` in `bin/permtracker-sweep`), and its unit is stopped at 75
   (`systemd/dropins/sweep-docs-limit.conf`, installed as
   `/etc/systemd/system/permtracker-sweep@case-status-docs.service.d/limit.conf`).
 - A step that fails ends the unit red, where the health check's `systemctl --failed` sees it, and leaves the pages

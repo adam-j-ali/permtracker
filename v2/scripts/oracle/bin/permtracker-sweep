@@ -30,7 +30,10 @@ expire(){  # expire <route> [json-file]: through nginx, which sends it to both w
 builders(){  # what every pass rebuilds from the tables: the live remainder, the employer map, the sponsor
   # index, the LCA cities and the wage sources, in the workflow's order: each reads the one before.
   timeout 15m nice -n 10 python3 scripts/build_entity_detail.py --live-recent-only || failed+=("build_entity_detail.py")
-  timeout 30m nice -n 10 python3 scripts/build_employer_map.py || failed+=("build_employer_map.py")
+  # An hour. The map reads every LCA row for its names, about six minutes on a quiet disk. Right after a release
+  # the old build's page cache (about 40 GB) is being deleted beside it, and on Nov 12 2026 that one read took 21
+  # minutes: the step ran out of 30, and the rebuild after the deploy ended red for a map the next sweep rebuilt.
+  timeout 60m nice -n 10 python3 scripts/build_employer_map.py || failed+=("build_employer_map.py")
   timeout 10m nice -n 10 python3 scripts/build_sponsor_index.py || failed+=("build_sponsor_index.py")
   timeout 10m nice -n 10 python3 scripts/build_lca_cities.py || failed+=("build_lca_cities.py")
   timeout 10m nice -n 10 python3 scripts/build_wage_sources.py || failed+=("build_wage_sources.py")
@@ -82,10 +85,11 @@ case_status(){  # case_status <full|pending>
   [ ${#failed[@]} -eq 0 ] && expire revalidate-sweep
 }
 
-# A sweep due within this many minutes rebuilds every document itself. The rebuild's own unit is stopped at 40
+# A sweep due within this many minutes rebuilds every document itself. The rebuild's own unit is stopped at 75
 # minutes (TimeoutStartSec in its drop-in), under this, so it can never hold the lock when a sweep's timer fires:
-# a sweep that finds the lock taken skips its run.
-DOCS_GIVE_WAY=45
+# a sweep that finds the lock taken skips its run. The night release goes live about 100 minutes before the
+# 4:10 AM sweep, so the rebuild still runs after it.
+DOCS_GIVE_WAY=80
 
 minutes_to_next_case_sweep(){  # whole minutes until the next case-status timer fires; 9999 when none can be read
   local soonest=9999 t at mins now; now=$(date +%s)
