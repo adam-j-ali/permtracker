@@ -412,7 +412,8 @@ export default async function AboutPage() {
                 <span className="block font-mono text-sm text-muted-foreground">{monthLabel(m.when)}</span>{" "}
                 <span className="mt-1 block text-base leading-snug">
                   {m.href ? (
-                    <Link href={m.href} className={LINK}>
+                    // A milestone's link stands alone on its lines, so on a phone it gets the tap floor.
+                    <Link href={m.href} className={`${LINK} max-sm:inline-flex max-sm:min-h-11 max-sm:items-center`}>
                       {m.what}
                     </Link>
                   ) : (

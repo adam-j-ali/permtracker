@@ -107,7 +107,7 @@ function StageRow({
       : null;
 
   return (
-    <li className="border-b border-border/30 px-4 py-3 last:border-b-0">
+    <li className="border-b border-border/30 px-4 py-3 last:border-b-0 max-sm:pt-1">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         {/* The stage name is the link, not the number: a row is scanned by
             its label, and a bare figure that happens to be clickable is a
@@ -119,7 +119,7 @@ function StageRow({
           {stageFromSlug(stageSlug(stage.status)) ? (
             <Link
               href={`/perm-rfi-audit/${stageSlug(stage.status)}`}
-              className="link"
+              className="link max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
             >
               {meta.label}
             </Link>

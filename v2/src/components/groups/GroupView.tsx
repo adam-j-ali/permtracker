@@ -28,6 +28,13 @@ function Box({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+/**
+ * A name in a ranked list is a link alone on its line, so on a phone it's a 44px tap target: its 20px line plus 12px
+ * above and below. The same 12px comes back off as margin, so the box reaches over the gap above the name and the
+ * bar under it, and forty rows stay the height they were.
+ */
+const RANKED_LINK = "link max-sm:-my-3 max-sm:py-3";
+
 function Ranked({
   items,
   label,
@@ -39,13 +46,16 @@ function Ranked({
   const top = items[0]?.n ?? 0;
   return (
     <ChartTips label={label} className="mt-4">
-    <ul className="space-y-2.5">
+    <ul className="space-y-2.5 max-sm:space-y-3">
       {items.map((it, i) => (
         <Fragment key={it.key}>
           {" "}
           <li data-tip={`${plainText(it.label)}\n${formatInt(it.n)} ${it.n === 1 ? "case" : "cases"}\n#${i + 1} of ${items.length} shown`}>
             <span className="flex items-baseline justify-between gap-3">
-              <span className="min-w-0 truncate text-sm font-bold">{it.label}</span>{" "}
+              {/* The name is one clipped line, link or plain text: the clip is on the child, so a link's tap box isn't cut. */}
+              <span className="min-w-0 text-sm font-bold [&>*]:block [&>*]:truncate">
+                {typeof it.label === "string" ? <span>{it.label}</span> : it.label}
+              </span>{" "}
               <span className="shrink-0 font-mono text-sm tabular-nums text-muted-foreground">{formatInt(it.n)}</span>
             </span>{" "}
             <span className="mt-1 block h-2 w-full bg-sage" aria-hidden="true">
@@ -111,7 +121,7 @@ export function GroupView({
             key: e.slug ?? `name:${e.name}`,
             n: e.n,
             label: e.slug ? (
-              <Link href={entityHref("employer", e.slug)} className="link">
+              <Link href={entityHref("employer", e.slug)} className={RANKED_LINK}>
                 {e.name}
               </Link>
             ) : (
@@ -131,7 +141,7 @@ export function GroupView({
             key: o.code,
             n: o.n,
             label: o.slug ? (
-              <Link href={entityHref("occupation", o.slug)} className="link">
+              <Link href={entityHref("occupation", o.slug)} className={RANKED_LINK}>
                 {occName(o)}
               </Link>
             ) : (
@@ -158,7 +168,7 @@ export function GroupView({
             n: c.n,
             label:
               c.n >= FLOOR ? (
-                <Link href={`${GROUP_PATH.city}/${c.slug}`} className="link">
+                <Link href={`${GROUP_PATH.city}/${c.slug}`} className={RANKED_LINK}>
                   {c.label}
                 </Link>
               ) : (
@@ -179,7 +189,7 @@ export function GroupView({
             n: i.n,
             label:
               i.n >= FLOOR && i.code.length === 6 ? (
-                <Link href={`${GROUP_PATH.industry}/${i.code}`} className="link">
+                <Link href={`${GROUP_PATH.industry}/${i.code}`} className={RANKED_LINK}>
                   {named(i)}
                 </Link>
               ) : (
@@ -199,7 +209,7 @@ export function GroupView({
             n: c.n,
             label:
               c.n >= FLOOR ? (
-                <Link href={`${GROUP_PATH.country}/${c.slug}`} className="link">
+                <Link href={`${GROUP_PATH.country}/${c.slug}`} className={RANKED_LINK}>
                   {c.label}
                 </Link>
               ) : (

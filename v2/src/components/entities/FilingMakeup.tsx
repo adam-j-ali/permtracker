@@ -170,7 +170,8 @@ export function OccupationMix({
                   {r.key ? (
                     <IntentLink
                       href={entityHref("occupation", r.key)}
-                      className="link"
+                      // The job's name stands alone on its line, so on a phone it gets the tap floor.
+                      className="link max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
                     >
                       {r.label}
                     </IntentLink>
