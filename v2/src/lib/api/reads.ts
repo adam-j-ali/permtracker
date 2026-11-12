@@ -18,6 +18,8 @@ import { getEntityBySlug, getFreshness, getLiveBacklog } from "@/lib/db/publicDa
 import { entityPending } from "@/lib/db/entityDetail";
 import { searchByName } from "@/lib/db/entities";
 import { getProcessingTimes } from "@/lib/db/processingTimes";
+import { getPermLine } from "@/lib/db/permLine";
+import { findFront } from "@/lib/liveQueue";
 
 import { certifiedShare } from "./share";
 import { LOOKS_YEARLY_NOTE, looksYearly } from "@/lib/wageFormat";
@@ -252,13 +254,23 @@ export async function readCase(input: string): Promise<ReadResult<CaseRecord>> {
 
 export async function readQueue(): Promise<ReadResult<Record<string, unknown>>> {
   // A backlog that can't be read is sent as null, never as an empty list that reads as "nothing pending".
-  const [pt, backlog] = await Promise.all([getProcessingTimes(), getLiveBacklog().catch(softFail("api/reads.readQueue.getLiveBacklog", null))]);
+  // The month by our own check is sent as null when it can't be read, never as DOL's last printed month.
+  const [pt, backlog, line] = await Promise.all([
+    getProcessingTimes(),
+    getLiveBacklog().catch(softFail("api/reads.readQueue.getLiveBacklog", null)),
+    getPermLine().catch(softFail("api/reads.readQueue.getPermLine", null)),
+  ]);
   if (!pt) return { ok: false, status: 503, code: "unavailable", message: "DOL's processing times aren't loaded right now. Try again later." };
   return {
     ok: true,
     data: {
       perm: {
         asOf: pt.permAsOf,
+        // The filing month DOL is deciding, measured each day from DOL's own case statuses (lib/permLine.ts). DOL's
+        // page stopped printing a month on Oct 31 2026, so `queues[].workingOnMonth` can be empty while this isn't.
+        decidingNow: line ? { month: line.month, asOf: line.asOf, source: "PERM Tracker's daily check of DOL's case status" } : null,
+        // The oldest filing month DOL hasn't substantially decided (lib/liveQueue.ts, `findFront`).
+        oldestOpenMonth: backlog ? (findFront(backlog)?.month ?? null) : null,
         queues: pt.permQueues.map((q) => ({ queue: q.queue, workingOnMonth: q.priorityDate, asPrinted: q.raw })),
         averageDays: pt.permAverageDays.map((a) => ({
           determination: a.determination,

@@ -164,8 +164,10 @@ export function buildMcpServer(caller: ApiCaller): McpServer {
     {
       title: "PERM and prevailing wage queues",
       description:
-        "DOL's processing times today: the month each PERM and prevailing wage queue is working on, average days to " +
-        "a decision, and how many PERM cases are pending from each filing month. Takes no arguments: {}.",
+        "DOL's processing times today: average days to a decision, the month each PERM and prevailing wage queue is " +
+        "working on when DOL prints one, the filing month DOL is deciding by PERM Tracker's own daily check of case " +
+        "statuses (perm.decidingNow: DOL stopped printing a PERM month on Oct 31 2026), the oldest month still open, and " +
+        "how many PERM cases are pending from each filing month. Takes no arguments: {}.",
       inputSchema: z.object({}),
       annotations: readOnly,
     },
