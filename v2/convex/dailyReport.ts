@@ -298,14 +298,19 @@ export const latest = query({
   args: {},
   returns: v.object({
     report: v.union(v.any(), v.null()),
-    history: v.array(v.object({ day: v.string(), overall: v.string() })),
+    history: v.array(v.object({ day: v.string(), overall: v.string(), failing: v.array(v.string()) })),
   }),
   handler: async (ctx) => {
     await requireAdmin(ctx);
     const rows = await ctx.db.query("dailyReports").withIndex("by_day").order("desc").take(HISTORY_DAYS);
     return {
       report: rows[0]?.report ?? null,
-      history: rows.map((r) => ({ day: r.day, overall: r.overall })),
+      // Which parts were red that day: "Failing" on its own gave the reader a row of red days and no reasons.
+      history: rows.map((r) => ({
+        day: r.day,
+        overall: r.overall,
+        failing: (readReport(r.report)?.sections ?? []).filter((s) => s.status === "fail").map((s) => s.title).slice(0, 6),
+      })),
     };
   },
 });

@@ -103,9 +103,10 @@ describe("dailyReport.store and latest", () => {
     const adminId = await t.run(async (ctx) => ctx.db.insert("users", { email: ADMIN }));
     const admin = t.withIdentity({ subject: adminId, email: ADMIN });
     const got = await admin.query(api.dailyReport.latest, {});
+    // A red day says which part of the report was red; a day with nothing failing names nothing.
     expect(got.history).toEqual([
-      { day: today, overall: "fail" },
-      { day: yesterday, overall: "ok" },
+      { day: today, overall: "fail", failing: ["A"] },
+      { day: yesterday, overall: "ok", failing: [] },
     ]);
     expect(got.report.day).toBe(today);
 
