@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { EmbedGallery } from "@/components/badges/EmbedGallery";
 import { EmbedFrame, embedCss, embedMetadata } from "@/components/embed/EmbedFrame";
-import { EMBEDS, embedSiteFor, embedSnippet, siteKeyOf } from "@/lib/embeds";
+import { EMBEDS, embedBySlug, embedFrameHeight, embedSiteFor, embedSnippet, siteKeyOf } from "@/lib/embeds";
 import RfiDeadlinePage from "../(site)/(public)/tools/rfi-deadline/page";
 
 /**
@@ -62,6 +62,38 @@ describe("the embed registry", () => {
       `<iframe src="https://permtracker.app/embed/case-status" title="Check a DOL case" width="100%" height="560" style="border:0;max-width:100%" loading="lazy"></iframe>\n` +
         `<p style="margin:4px 0 0;font-size:13px">Source: <a href="https://permtracker.app/perm-case-status">PERM Tracker</a></p>`,
     );
+  });
+
+  // The processing-times box is read, never typed into, so a frame that cuts it leaves half a figure showing. Pasted
+  // into a phone-width article at one fixed height it was 1,118px of content in an 840px frame (Nov 12 2026).
+  describe("the processing-times box is never cut by its frame", () => {
+    const box = embedBySlug("perm-processing-times")!;
+    // The box's content height at each frame width, measured in Chrome on Nov 12 2026.
+    const MEASURED: [frameWidth: number, contentHeight: number][] = [
+      [288, 1236], [328, 1125], [358, 1118], [382, 1079], [448, 976], [520, 862], [552, 824], [600, 825],
+      [640, 834], [672, 835], [688, 816], [720, 777], [800, 815], [900, 778], [1100, 758],
+    ];
+    // A page's gutters: a frame is at least this much narrower than the page that holds it.
+    const GUTTERS = 32;
+
+    it("writes the taller frame for a narrow page into the pasted code, after the fixed height", () => {
+      expect(embedSnippet(box)).toContain(
+        `width="100%" height="860" style="border:0;max-width:100%;height:max(860px,calc(1790px - 161vw))" loading="lazy">`,
+      );
+    });
+
+    it.each(MEASURED)("a frame %dpx wide holds its %dpx of content with room to spare", (frameWidth, contentHeight) => {
+      const frame = embedFrameHeight(box, frameWidth + GUTTERS);
+      expect(frame).toBeGreaterThanOrEqual(contentHeight + 20);
+      // And never so tall that a wide page shows a band of empty frame under the box.
+      expect(frame - contentHeight).toBeLessThanOrEqual(110);
+    });
+
+    it("keeps one fixed height for every embed without the rule", () => {
+      const plain = EMBEDS.find((e) => !e.narrow)!;
+      expect(embedFrameHeight(plain, 320)).toBe(plain.height);
+      expect(embedSnippet(plain)).not.toContain("height:max(");
+    });
   });
 
   it("links every snippet's source line to its own full tool, outside the frame", () => {
