@@ -143,9 +143,9 @@ CASES = [
      {"company": "Moveret", "notice_date": "2025-12-19", "employees": 90, "county": "Hardin"}),
     ("MT", "Montana workbook", lambda: ws.parse_montana(b("mt_warn.xlsx")), 3,
      {"company": "Wells Fargo & Company", "notice_date": "2026-03-30", "employees": 77, "county": "Yellowstone"}),
-    ("WI", "Wisconsin sheet", lambda: ws.parse_wisconsin(b("wi_originals.csv")), 5,
-     {"company": "Semco Windows and Doors", "notice_date": "2020-01-02", "employees": 141,
-      "kind": "Facility closure", "county": "Lincoln"}),
+    ("WI", "Wisconsin's year page", lambda: ws.parse_wisconsin(b("wi_layoff_notices.html")), 59,
+     {"company": "Colony Brands, Inc.", "notice_date": "2026-11-06", "employees": 82,
+      "kind": "Facility closure", "county": "Rock"}),
     ("OK", "Oklahoma service", lambda: ws.parse_oklahoma(b("ok_aura.json")), 4,
      {"company": "Macy's Distribution", "notice_date": "2026-01-15", "employees": None, "kind": "Plant Closing"}),
     ("OR", "Oregon page", lambda: ws.parse_oregon(b("or_warn_page1.html")), 4,
@@ -295,9 +295,30 @@ def main() -> int:
     mt = ws.parse_montana(b("mt_warn.xlsx"))
     check(all(r["notice_date"] >= "2019" for r in mt), "Montana's 2015 notice is before the window and left out", f)
 
-    wi = ws.parse_wisconsin(b("wi_originals.csv"))
-    check(any(r["kind"] == "Facility closure, Workforce reduction" for r in wi),
+    # Wisconsin's page (read Nov 11 2026): originals and updates share its tables, and a company's cell can carry
+    # a footnote. The page replaced a Google Sheet on Nov 10 2026; each row's PDF number is the sheet's record number.
+    wi_page = b("wi_layoff_notices.html")
+    wi = ws.parse_wisconsin(wi_page)
+    check({r["kind"] for r in wi} <= {"Facility closure", "Workforce reduction", None},
           "Wisconsin's codes read as its own legend's words", f)
+    check(not any(r["company"].lower().startswith("update") for r in wi),
+          "Wisconsin's updates to a notice aren't read as notices", f)
+    check(len(ws.wisconsin_rows(wi_page)) == 59 and wi_page.count(b"UPDATE 1") >= 3,
+          "control: the page does hold update rows, and they're the ones left out", f)
+    spar = [r for r in wi if r["company"].startswith("Sparhawk")]
+    check(len(spar) == 1 and spar[0]["company"] == "Sparhawk Trucking Inc. / Sparhawk Truck and Trailer Inc."
+          and spar[0]["employees"] is None,
+          "a footnote in Wisconsin's company cell isn't part of the name, and \"Unknown\" workers is no count", f)
+    raw = ws.wisconsin_rows(wi_page)
+    check(raw[0]["_extra"] == "2026111001",
+          "Wisconsin's notice keeps the record number its PDF carries, so its id doesn't move", f)
+    check(sorted(ws.wisconsin_years(wi_page)) == [2021, 2022, 2023, 2024, 2025],
+          "the earlier years are the ones Wisconsin's own page links", f)
+    try:
+        ws.parse_wisconsin(b"<html><title>Access denied</title><body>no tables here</body></html>")
+        check(False, "a Wisconsin page with no notice table fails, naming the page's title", f)
+    except ValueError as exc:
+        check("Access denied" in str(exc), "a Wisconsin page with no notice table fails, naming the page's title", f)
 
     ok = ws.parse_oklahoma(b("ok_aura.json"))
     check(all(r["employees"] is None for r in ok), "Oklahoma prints no count, so every count is None, never 0", f)
