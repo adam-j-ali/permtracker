@@ -10,6 +10,7 @@ import { Fragment } from "react";
 
 import type { Metadata } from "next";
 import Link from "next/link";
+import { GlobeIcon, PauseCircleIcon, StampIcon } from "@phosphor-icons/react/ssr";
 
 import { BarRows, type BarRow } from "@/components/data/BarRows";
 import { ChartHit } from "@/components/data/ChartHit";
@@ -20,7 +21,7 @@ import { FigurePlate } from "@/components/tools/FigurePlate";
 import { Figure, FigureRow } from "@/components/data/FigureRow";
 import { ColumnChart, type Column } from "@/components/numbers/ColumnChart";
 import { SEVENTY_FIVE, SEVENTY_FIVE_KEYS } from "@/lib/consular/facts";
-import { changeWords, yearOnYear } from "@/lib/consular/seventyFive";
+import { changeTrend, changeWords, yearOnYear } from "@/lib/consular/seventyFive";
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
 import { formatInt } from "@/lib/format";
 import { openGraphBase } from "@/lib/openGraphBase";
@@ -222,21 +223,30 @@ export default async function VisaIssuancesPage() {
             .
           </p>
           {yoy ? (
-            <FigureRow className="mt-6">
+            <FigureRow className="mt-6 max-sm:[&>*]:basis-full">
+              {/* The chip says which way and how much; the note gives the two counts. With nothing a year
+                  before there's no chip, and the note keeps the word ("new"). One figure a row on a phone:
+                  side by side, each chip wrapped to three lines. */}
               <Figure
                 label="Nationals of the 75 countries"
+                icon={<PauseCircleIcon weight="bold" className="text-primary-text" />}
                 value={formatInt(yoy.eb75.to)}
-                note={`employment visas in ${monthName(yoy.newest)}, ${changeWords(yoy.eb75)} from ${formatInt(yoy.eb75.from)} in ${monthName(yoy.yearBefore)}`}
+                trend={changeTrend(yoy.eb75, monthName(yoy.yearBefore))}
+                note={`employment visas in ${monthName(yoy.newest)}, ${yoy.eb75.percent === null ? `${changeWords(yoy.eb75)}: ` : "against "}${formatInt(yoy.eb75.from)} in ${monthName(yoy.yearBefore)}`}
               />{" "}
               <Figure
                 label="Everyone else"
+                icon={<GlobeIcon weight="bold" className="text-primary-text" />}
                 value={formatInt(yoy.ebOther.to)}
-                note={`employment visas in ${monthName(yoy.newest)}, ${changeWords(yoy.ebOther)} from ${formatInt(yoy.ebOther.from)} in ${monthName(yoy.yearBefore)}`}
+                trend={changeTrend(yoy.ebOther, monthName(yoy.yearBefore))}
+                note={`employment visas in ${monthName(yoy.newest)}, ${yoy.ebOther.percent === null ? `${changeWords(yoy.ebOther)}: ` : "against "}${formatInt(yoy.ebOther.from)} in ${monthName(yoy.yearBefore)}`}
               />{" "}
               <Figure
                 label="Every immigrant visa, the 75 countries"
+                icon={<StampIcon weight="bold" className="text-primary-text" />}
                 value={formatInt(yoy.all75.to)}
-                note={`in ${monthName(yoy.newest)}, ${changeWords(yoy.all75)} from ${formatInt(yoy.all75.from)} a year before`}
+                trend={changeTrend(yoy.all75, monthName(yoy.yearBefore))}
+                note={`in ${monthName(yoy.newest)}, ${yoy.all75.percent === null ? `${changeWords(yoy.all75)}: ` : "against "}${formatInt(yoy.all75.from)} a year before`}
               />
             </FigureRow>
           ) : null}

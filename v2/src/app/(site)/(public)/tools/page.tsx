@@ -11,6 +11,7 @@ import type { Metadata } from "next";
 import { CALCULATOR_PAGES } from "@/lib/siteMap";
 import { withSocialCard } from "@/lib/socialCard";
 import Link from "next/link";
+import { CalendarCheckIcon, CurrencyDollarIcon, HourglassMediumIcon } from "@phosphor-icons/react/ssr";
 import { Figure, FigureRow } from "@/components/data/FigureRow";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -84,16 +85,19 @@ export default async function ToolsPage() {
               <Figure
                 tone="lime"
                 label="DOL is deciding cases filed"
+                icon={<CalendarCheckIcon weight="bold" />}
                 value={formatMonth(where.month) ?? "Not published"}
                 note="Analyst review, the queue nearly every case sits in."
               />
               <Figure
                 label="Average to a determination"
+                icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />}
                 value={where.averageDays !== null ? `${where.averageDays} days` : "Not published"}
                 note="Across cases DOL decided recently. An RFI or audit can make one case take longer."
               />
               <Figure
                 label="Wage requests pending"
+                icon={<CurrencyDollarIcon weight="bold" className="text-primary-text" />}
                 value={where.pwdPending !== null ? where.pwdPending.toLocaleString("en-US") : "Not published"}
                 note="Prevailing wage, the stage before recruitment."
               />

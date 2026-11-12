@@ -8,6 +8,7 @@
  */
 
 import type { Metadata } from "next";
+import { AirplaneTiltIcon, HouseIcon, IdentificationCardIcon } from "@phosphor-icons/react/ssr";
 
 import { ConsularPauseNote } from "@/components/consular/ConsularPauseNote";
 import { BarRows, type BarRow } from "@/components/data/BarRows";
@@ -20,6 +21,7 @@ import { FigurePlate } from "@/components/tools/FigurePlate";
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
 import { refusalSummary, refusalsByCode, refusalsYear } from "@/lib/db/visaRefusals";
 import { formatInt } from "@/lib/format";
+import { countMoved } from "@/lib/quarterReport";
 import { openGraphBase } from "@/lib/openGraphBase";
 import {
   INTENT_TO_RETURN,
@@ -119,6 +121,11 @@ export default async function VisaRefusalsPage() {
   const b214 = series(tracked, INTENT_TO_RETURN);
   const pcNow = pc.find((p) => p.fy === newest);
   const b214Now = b214.find((p) => p.fy === newest);
+  // Each headline count against the fiscal year before it, where State's table for that year has the ground.
+  const pcBefore = pc.find((p) => p.fy === newest - 1);
+  const b214Before = b214.find((p) => p.fy === newest - 1);
+  const against = (now: number | null | undefined, before: number | null | undefined) =>
+    now == null || before == null ? undefined : countMoved(now, before, fyLabel(newest - 1));
   const g221Now = g221.find((p) => p.fy === newest);
   const totals = summary.totals[String(newest)] ?? null;
   const source = summary.sources[String(newest)] ?? STATE_REPORTS;
@@ -137,17 +144,23 @@ export default async function VisaRefusalsPage() {
       <FigureRow className="mt-8">
         <Figure
           label={`Public charge, immigrant visas, ${fyLabel(newest)}`}
+          icon={<IdentificationCardIcon weight="bold" className="text-primary-text" />}
           value={pcNow?.ivFound === null || !pcNow ? "N/A" : formatInt(pcNow.ivFound)}
+          trend={against(pcNow?.ivFound, pcBefore?.ivFound)}
           note={pcNow?.ivOvercome !== null && pcNow ? `found ineligible, with ${formatInt(pcNow.ivOvercome)} findings overcome` : "found ineligible"}
         />{" "}
         <Figure
           label={`Public charge, nonimmigrant visas, ${fyLabel(newest)}`}
+          icon={<AirplaneTiltIcon weight="bold" className="text-primary-text" />}
           value={pcNow?.nivFound === null || !pcNow ? "N/A" : formatInt(pcNow.nivFound)}
+          trend={against(pcNow?.nivFound, pcBefore?.nivFound)}
           note={pcNow?.nivOvercome !== null && pcNow ? `found ineligible, with ${formatInt(pcNow.nivOvercome)} overcome` : "found ineligible"}
         />{" "}
         <Figure
           label={`214(b), ${fyLabel(newest)}`}
+          icon={<HouseIcon weight="bold" className="text-primary-text" />}
           value={b214Now?.nivFound === null || !b214Now ? "N/A" : formatInt(b214Now.nivFound)}
+          trend={against(b214Now?.nivFound, b214Before?.nivFound)}
           note="nonimmigrant findings, the most common ground of all"
         />
       </FigureRow>

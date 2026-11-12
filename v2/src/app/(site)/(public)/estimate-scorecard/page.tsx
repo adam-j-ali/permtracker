@@ -1,7 +1,18 @@
 import type { Metadata } from "next";
 import { Figure } from "@/components/data/FigureRow";
+import { SplitBar } from "@/components/data/FigureVisual";
 import Link from "next/link";
-import { PlusIcon } from "@phosphor-icons/react/ssr";
+import {
+  ArrowsInLineHorizontalIcon,
+  CalendarCheckIcon,
+  CheckCircleIcon,
+  ChecksIcon,
+  GaugeIcon,
+  HourglassHighIcon,
+  NotePencilIcon,
+  PlusIcon,
+  TargetIcon,
+} from "@phosphor-icons/react/ssr";
 
 import { BarRows } from "@/components/data/BarRows";
 import { FinePrint } from "@/components/data/FinePrint";
@@ -72,6 +83,19 @@ const longNoYear = (iso: string) =>
 const long = (iso: string) => formatDay(iso) ?? iso;
 const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 const pct = (x: number | null) => (x === null ? "none yet" : `${Math.round(x * 100)}%`);
+/** A share that came out right, as a bar: green for the part that did. No share yet draws nothing. */
+function shareBar(x: number | null | undefined, what: string) {
+  if (x == null) return undefined;
+  return (
+    <SplitBar
+      parts={[
+        { value: x, tone: "good" },
+        { value: 1 - x, tone: "none" },
+      ]}
+      label={`${pct(x)} ${what}`}
+    />
+  );
+}
 const days = (x: number | null) => (x === null ? "none yet" : `${Math.round(x)} ${Math.round(x) === 1 ? "day" : "days"}`);
 const HORIZON_LABEL: Record<(typeof HORIZONS)[number], string> = {
   "0-30": "Dated within a month",
@@ -84,17 +108,29 @@ const HORIZON_LABEL: Record<(typeof HORIZONS)[number], string> = {
 function SampleCells({ cell, since }: { cell: Cell; since: string | null }) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 [&>*]:min-w-0">
-      <Figure label="Recorded" value={formatInt(cell.recorded)} note={since ? `predictions since ${long(since)}` : "predictions"} />
-      <Figure label="Graded" value={formatInt(cell.graded)} note="DOL has decided these (withdrawals left out)" />
-      <Figure label="Typical miss" value={days(cell.typicalMissDays)} note="median distance, decided cases" />
+      <Figure
+        label="Recorded"
+        icon={<NotePencilIcon weight="bold" className="text-primary-text" />}
+        value={formatInt(cell.recorded)}
+        note={since ? `predictions since ${long(since)}` : "predictions"}
+      />
+      <Figure label="Graded" icon={<ChecksIcon weight="bold" className="text-primary-text" />} value={formatInt(cell.graded)} note="DOL has decided these (withdrawals left out)" />
+      <Figure label="Typical miss" icon={<TargetIcon weight="bold" className="text-primary-text" />} value={days(cell.typicalMissDays)} note="median distance, decided cases" />
       {/* A case still waiting past its date is already that late, and only
           gets later, so this figure is a floor. Older summaries lack it. */}
       <Figure
         label="Counting the late ones"
+        icon={<HourglassHighIcon weight="bold" className="text-primary-text" />}
         value={cell.missAtLeastDays == null ? "-" : `at least ${days(cell.missAtLeastDays)}`}
         note={`${formatInt(cell.overdue ?? 0)} still waiting past their date, counted at the days they're already late`}
       />
-      <Figure label="Inside the range" value={pct(cell.inBandShare)} note="decided between the range's two ends" />
+      <Figure
+        label="Inside the range"
+        icon={<ArrowsInLineHorizontalIcon weight="bold" className="text-primary-text" />}
+        value={pct(cell.inBandShare)}
+        visual={shareBar(cell.inBandShare, "of graded predictions were decided inside the range")}
+        note="decided between the range's two ends"
+      />
     </div>
   );
 }
@@ -192,11 +228,19 @@ export default async function EstimateScorecardPage() {
             decided cases only. The daily sample below also counts the ones still waiting past their date.
           </p>{" "}
           <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
-            <Figure label="Within a week" value={pct(cur.within7Share)} note="of those decisions" />
+            <Figure
+              label="Within a week"
+              icon={<CalendarCheckIcon weight="bold" className="text-primary-text" />}
+              value={pct(cur.within7Share)}
+              visual={shareBar(cur.within7Share, "of those decisions came within a week of the date")}
+              note="of those decisions"
+            />
             {rangeCheck ? (
               <Figure
                 label="Inside the printed range"
+                icon={<ArrowsInLineHorizontalIcon weight="bold" className="text-primary-text" />}
                 value={pct(rangeCheck.share)}
+                visual={shareBar(rangeCheck.share, "of the cases judged were decided inside the printed range")}
                 note={
                   rangeCheck.kind === "pace-rule"
                     ? `of ${formatInt(rangeCheck.judged)} cases dated a week or more before the end, with a case still waiting counted as a miss`
@@ -206,10 +250,17 @@ export default async function EstimateScorecardPage() {
             ) : null}
             <Figure
               label="Right about the window"
+              icon={<CheckCircleIcon weight="bold" className="text-primary-text" />}
               value={pct(cur.decidedByEndRight)}
+              visual={shareBar(cur.decidedByEndRight, "of the calls about the window were right")}
               note={`said "decided by ${long(backtest.end)}" or "not yet", and was right`}
             />
-            <Figure label={"DOL\u2019s pace used"} value={`${formatInt(Math.round(backtest.pace))} a day`} note="the measured average before the first day" />
+            <Figure
+              label={"DOL\u2019s pace used"}
+              icon={<GaugeIcon weight="bold" className="text-primary-text" />}
+              value={`${formatInt(Math.round(backtest.pace))} a day`}
+              note="the measured average before the first day"
+            />
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
             Recomputed every night. This run: {formatAsOf(easternDay(backtest.computedAt))}.

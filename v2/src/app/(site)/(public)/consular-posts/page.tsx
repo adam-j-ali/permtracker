@@ -10,6 +10,7 @@
 
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CheckCircleIcon, HourglassMediumIcon, StampIcon } from "@phosphor-icons/react/ssr";
 
 import { ConsularPauseNote } from "@/components/consular/ConsularPauseNote";
 import { NivByPost } from "@/components/consular/NivByPost";
@@ -18,6 +19,7 @@ import { ReportedPosts } from "@/components/consular/ReportedPosts";
 import { BarRows, type BarRow } from "@/components/data/BarRows";
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { Figure, FigureRow } from "@/components/data/FigureRow";
+import { SplitBar } from "@/components/data/FigureVisual";
 import { FinePrint } from "@/components/data/FinePrint";
 import { FigurePlate } from "@/components/tools/FigurePlate";
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
@@ -107,16 +109,31 @@ export default async function ConsularPostsPage() {
       <FigureRow className="mt-8">
         <Figure
           label="Caught up on paper"
+          icon={<CheckCircleIcon weight="bold" className="text-primary-text" />}
           value={asOf ? `${caughtUp} of ${listed.length}` : "Not loaded"}
+          visual={
+            asOf && listed.length ? (
+              <SplitBar
+                parts={[
+                  { value: caughtUp, tone: "good" },
+                  { value: behind.length, tone: "wait" },
+                  { value: listed.length - caughtUp - behind.length, tone: "none" },
+                ]}
+                label={`${caughtUp} of ${listed.length} posts are caught up on employment cases and ${behind.length} are behind`}
+              />
+            ) : undefined
+          }
           note={asOf ? `posts scheduling employment cases completed this month, State's update of ${longDate(asOf)}` : undefined}
         />{" "}
         <Figure
           label="Behind on employment cases"
+          icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />}
           value={formatInt(behind.length)}
           note={asOf ? `posts scheduling cases completed in an earlier month` : undefined}
         />{" "}
         <Figure
           label="Employment visas issued abroad"
+          icon={<StampIcon weight="bold" className="text-primary-text" />}
           value={formatInt(employmentAbroad)}
           note={
             index.issuedFrom && index.issuedTo
