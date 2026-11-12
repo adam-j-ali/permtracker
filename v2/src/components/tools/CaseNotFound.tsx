@@ -19,7 +19,7 @@ import { DOL_CASE_STATUS_URL } from "@/components/queue/SourceNote";
 import { isLookupGap, unsettledClause, unsettledVerdict, type DiscoveryMiss } from "@/lib/dolMiss";
 import { CASE_NUMBER_ACCURACY } from "@/lib/permCaseNumber";
 import { formatInt } from "@/lib/format";
-import { longDate, monthYear } from "@convex/lib/months";
+import { longDate, monthDay, monthYear } from "@convex/lib/months";
 
 /**
  * A case number we hold no record for. A real state, not an error.
@@ -283,12 +283,15 @@ const GETS_YOU: readonly { lead: string; rest: string }[] = [
  * the queue looks like today rather than rendering a bare input.
  */
 export function CaseStatusEmpty({
+  deciding,
   front,
   wallTotal,
   publishedFront,
   publishedAsOf,
   mirrorSize,
 }: {
+  /** The filing month DOL is deciding by our own daily check (lib/permLine.ts), and the day of that check. */
+  deciding: { month: string; asOf: string } | null;
   front: string | null;
   wallTotal: number | null;
   publishedFront: string | null;
@@ -296,7 +299,17 @@ export function CaseStatusEmpty({
   mirrorSize: number | null;
 }) {
   const facts: { label: string; value: string; note: string }[] = [];
-  if (front) {
+  // THE MONTH DOL IS ON LEADS, AND IT'S OURS. This row showed it only from DOL's own table, DOL stopped printing a
+  // month on Oct 31 2026, and the figure dropped out with nothing said: the row was left with the oldest open
+  // month alone, which reads as the answer to "where is DOL now" and isn't.
+  if (deciding) {
+    facts.push({
+      label: "DOL is deciding now",
+      value: monthYear(deciding.month) ?? deciding.month,
+      note: `cases filed that month, by our check of DOL's case status on ${monthDay(deciding.asOf) ?? deciding.asOf}`,
+    });
+  }
+  if (front && front !== deciding?.month) {
     facts.push({
       label: "Oldest month still open",
       value: monthYear(front) ?? front,
@@ -306,7 +319,7 @@ export function CaseStatusEmpty({
   if (wallTotal !== null) {
     facts.push({ label: "Undecided cases", value: formatInt(wallTotal), note: "across every filing month, the whole wall" });
   }
-  if (publishedFront && publishedFront !== front) {
+  if (publishedFront && publishedFront !== front && publishedFront !== deciding?.month) {
     const asOf = longDate(publishedAsOf);
     facts.push({
       label: "DOL's own table",

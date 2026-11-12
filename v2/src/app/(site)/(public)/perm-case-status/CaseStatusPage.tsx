@@ -480,15 +480,18 @@ async function Lookup({ caseNumber }: { caseNumber: string }) {
 
 /** The page with nothing typed in: still the national picture, not a blank. */
 async function Empty() {
-  const [backlog, estimator, mirrorSize] = await Promise.all([
+  const [backlog, estimator, mirrorSize, permLine] = await Promise.all([
     getLiveBacklog().catch(softFail("perm-case-status/getLiveBacklog", [] as CohortMonth[])),
     getEstimatorData().catch(softFail("perm-case-status/getEstimatorData", null)),
     getLiveMirrorSize().catch(softFail("perm-case-status/getLiveMirrorSize", 0)),
+    // Where DOL is by our own daily check: the month its own page stopped printing on Oct 31 2026.
+    getPermLine().catch(softFail("perm-case-status/getPermLine", null)),
   ]);
   const front = findFront(backlog);
   const dol = estimator?.frontier && estimator.frontier.from !== "check" ? estimator.frontier : null;
   return (
     <CaseStatusEmpty
+      deciding={permLine ? { month: permLine.month, asOf: permLine.asOf } : null}
       front={front?.month ?? null}
       wallTotal={front?.wallTotal ?? null}
       publishedFront={dol?.analystQueueMonth ?? null}
