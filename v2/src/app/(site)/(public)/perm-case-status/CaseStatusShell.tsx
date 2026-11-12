@@ -128,6 +128,9 @@ export function LookupSkeleton() {
           <div className="space-y-2">
             <Bar className="h-4 w-36" />
             <Bar className="h-9 w-72 max-w-full" />
+            {/* The bar of the wait passed, and the days left under it. */}
+            <Bar className="h-3 w-64 max-w-full" />
+            <Bar className="h-5 w-72 max-w-full" />
             <Bar className="h-4 w-40" />
           </div>
           <div className="-mx-5 space-y-2 border-l-4 border-primary bg-tint px-5 py-5 sm:mx-0">
