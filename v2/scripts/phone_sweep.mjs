@@ -23,6 +23,10 @@
  *   elements past the edge.
  * - An inline link inside a sentence is exempt from the tap size (WCAG 2.5.8), a checkbox counts by
  *   its label, and a button out of the tab order inside a full-size field is a shortcut, not a target.
+ * - The sentence rule has a probe: serve scripts/fixtures/phone_sweep_probe.html as /index.html and
+ *   sweep it. It prints taps=5 at each width: the four links alone on a line and the name over a
+ *   count, never the link in a sentence, the link through a <b>, the source line or the link that
+ *   is a cell's whole content. A change to the rule that prints any other count changed the rule.
  */
 import { chromium } from "playwright-core";
 
@@ -81,11 +85,34 @@ function measure(w) {
     // Nothing a person can reach (a form's hidden honeypot, an inert copy) is a tap target.
     if (el.closest('[aria-hidden="true"], [inert]')) continue;
     const b = (label ?? el).getBoundingClientRect();
-    // WCAG 2.5.8's inline exception: a link set in a sentence, which a paragraph, a list item or a
-    // cell holds, or any block whose own text runs around the link (a FinePrint note's source line).
-    const sentence = (e) =>
-      e.closest("p, li, dd, td") ||
-      [...(e.parentElement?.childNodes ?? [])].some((n) => n !== e && n.nodeType === 3 && n.textContent.trim().length > 1);
+    // WCAG 2.5.8's inline exception: a link set in a sentence. The sentence is judged in the link's own
+    // block (its nearest ancestor that isn't inline): a paragraph, a list item or a cell holds running
+    // text by its nature, and any other block counts when words that aren't a control sit on the link's
+    // own line (a FinePrint note's source line). Words in a block of their own under the link (a bar, a
+    // count on the next line) don't make it a sentence. Any link under a cell used to pass, so a firm's
+    // name alone on its own line of a phone row read as "in a sentence" and its 20px target shipped
+    // (Nov 12 2026: the deploy's axe check caught it, this sweep had said taps=0).
+    const blockOf = (e) => {
+      let b = e.parentElement;
+      while (b && getComputedStyle(b).display.startsWith("inline")) b = b.parentElement;
+      return b;
+    };
+    const wordsOnItsLine = (b, e) => {
+      let n = 0;
+      const walk = (node) => {
+        for (const c of node.childNodes) {
+          if (c === e) continue;
+          if (c.nodeType === 3) n += c.textContent.replace(/\s+/g, " ").trim().length;
+          else if (c.nodeType === 1 && !c.matches("a, button, summary, select, input, label, svg") && getComputedStyle(c).display.startsWith("inline")) walk(c);
+        }
+      };
+      walk(b);
+      return n > 1;
+    };
+    const sentence = (e) => {
+      const b = blockOf(e);
+      return Boolean(b) && (b.matches("p, li, dd, td") || wordsOnItsLine(b, e));
+    };
     const inline = getComputedStyle(el).display === "inline" && sentence(el);
     const shortcut = el.tabIndex === -1 && [...(el.parentElement?.querySelectorAll("input") ?? [])].some((i) => i.getBoundingClientRect().height >= 43);
     if (b.width > 0 && b.height > 0 && b.height < 43 && !inline && !shortcut) taps.push(`${el.tagName.toLowerCase()} ${Math.round(b.height)}px "${(el.textContent || el.getAttribute("aria-label") || "").trim().slice(0, 30)}"`);
