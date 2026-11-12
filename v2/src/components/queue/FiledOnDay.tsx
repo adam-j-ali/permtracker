@@ -155,9 +155,13 @@ export function FiledOnDay({
               </Fragment>
             ))}
           </div>{" "}
-          {/* Wide screens only: on a phone the 26 letters are five rows of buttons above the first case, and the
-              search box under them does the same job in one. */}
-          <div role="group" aria-label="Employer's first letter" className="mt-3 hidden flex-wrap gap-1 sm:flex">
+          {/* On a phone the 26 letters are one row that scrolls sideways: wrapped, they were five rows of buttons
+              above the first case, and hidden (one release), a phone had no letters at all. */}
+          <div
+            role="group"
+            aria-label="Employer's first letter"
+            className="mt-3 flex gap-1 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0"
+          >
             {view.letters.map((l) => (
               <Fragment key={l.letter}>
                 <button
@@ -165,7 +169,7 @@ export function FiledOnDay({
                   aria-pressed={letter === l.letter}
                   aria-label={`${l.letter === "#" ? "A digit or symbol" : l.letter}, ${l.n} ${l.n === 1 ? "case" : "cases"}`}
                   onClick={() => pick({ letter: letter === l.letter ? null : l.letter })}
-                  className={cn(choiceVariants({ on: letter === l.letter }), "min-w-11 px-2 font-mono")}
+                  className={cn(choiceVariants({ on: letter === l.letter }), "min-w-11 shrink-0 px-2 font-mono")}
                 >
                   {l.letter}
                 </button>{" "}

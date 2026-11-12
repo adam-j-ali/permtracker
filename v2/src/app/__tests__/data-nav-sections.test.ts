@@ -95,8 +95,14 @@ describe("the map itself", () => {
     for (const g of GROUPS) expect(SECTIONS.filter((s) => s.group === g).length, g).toBeGreaterThan(0);
   });
 
-  it("keeps each group short enough to scan: at most nine pages", () => {
-    for (const g of GROUPS) expect(SECTIONS.filter((s) => s.group === g).length, g).toBeLessThanOrEqual(9);
+  it("keeps each group short enough to scan: at most ten pages", () => {
+    for (const g of GROUPS) expect(SECTIONS.filter((s) => s.group === g).length, g).toBeLessThanOrEqual(10);
+  });
+
+  it("keeps the decisions record in the PERM group, under the day's page", () => {
+    // It was moved to Breakdowns for one release to hold a group at nine; a page keeps its place in the menu.
+    const perm = SECTIONS.filter((s) => s.group === "PERM").map((s) => s.href);
+    expect(perm.indexOf("/perm-decision-activity")).toBe(perm.indexOf("/perm-updates") + 1);
   });
 
   it("has no duplicate keys or hrefs", () => {

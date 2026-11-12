@@ -52,4 +52,16 @@ describe("VisaWaitTable", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]!.textContent).toContain("Mumbai");
   });
+
+  it("keeps every visa's column on a phone: none is drawn for wide screens only", () => {
+    // For one release the visitor (B1/B2) and crew columns were hidden under 640px, and only the download had them.
+    const { container } = render(<VisaWaitTable posts={posts} />);
+    const heads = [...container.querySelectorAll("thead th")];
+    expect(heads.map((th) => th.textContent?.replace(/\s+/g, " ").trim())).toEqual(
+      expect.arrayContaining(["Consulate", "H, L, O, P, Q", "F, M, J", "B1/B2 next", "B1/B2 average", "C, D"]),
+    );
+    for (const cell of container.querySelectorAll("thead th, tbody td")) {
+      expect(cell.className).not.toMatch(/(^|\s)hidden(\s|$)/);
+    }
+  });
 });

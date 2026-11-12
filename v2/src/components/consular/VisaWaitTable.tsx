@@ -17,9 +17,10 @@ export interface PostWaits {
  * or for the longest waits, so the list opens with a box to type the city in, starts at the longest work-visa
  * wait, sorts on any column, and shows a short page.
  *
- * A PHONE SHOWS THE CONSULATE, WORK VISAS AND STUDENTS. The visitor and crew columns are in the wide table and in
- * the download: five columns of words don't fit a phone without a sideways scroll, and three do (the shared table
- * takes the screen's width when a phone shows three columns or fewer).
+ * A PHONE GETS EVERY COLUMN, in a table that scrolls sideways. For one release (Nov 11 2026) a phone showed the
+ * consulate, work visas and students, and the visitor and crew columns were on wide screens and in the download
+ * only. The visitor wait is the figure most people open this page for, so nothing here is drawn for wide screens
+ * alone.
  */
 export function VisaWaitTable({ posts }: { posts: PostWaits[] }) {
   const columns: StatColumn<PostWaits>[] = [
@@ -29,11 +30,10 @@ export function VisaWaitTable({ posts }: { posts: PostWaits[] }) {
       sortValue: (p) => p.post,
       render: (p) => <span className="font-semibold">{p.post}</span>,
     },
-    ...WAIT_COLUMNS.map((col, i): StatColumn<PostWaits> => ({
+    ...WAIT_COLUMNS.map((col): StatColumn<PostWaits> => ({
       key: col.key,
       label: col.short,
       numeric: true,
-      secondary: i > 1,
       // A cell with no figure sorts last either way, never as zero days.
       sortValue: (p) => {
         const c = p.cells[col.key];

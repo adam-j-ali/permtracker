@@ -73,41 +73,29 @@ describe("CaseBrowser search by name", () => {
 });
 
 /**
- * First things first: the name search, then the cases. Every other filter is behind one control, which opens
- * by itself when a link arrives with a filter set, and its fields still belong to the search.
+ * First things first: the name search, then the cases. The other filters are open on a wide screen and behind one
+ * control on a phone (FilterFold decides by a style rule), and their fields still belong to the search.
  */
-describe("CaseBrowser keeps its other filters behind one control", () => {
-  const fold = (container: HTMLElement) => container.querySelector("details") as HTMLDetailsElement;
+describe("CaseBrowser keeps its other filters with the list", () => {
+  const filters = (container: HTMLElement) => container.querySelector("[data-filter-fold]") as HTMLElement;
+  const control = () => screen.getByRole("button", { name: /More filters/ });
 
-  it("is shut on a plain visit, with the name search and the first page of 25 before it", () => {
+  it("opens on the name search and the first page of 25, with the filters after the name box", () => {
     const { container } = render(<CaseBrowser meta={null} occupations={[]} showLookup={false} />);
-    expect(fold(container).open).toBe(false);
-    expect(fold(container).querySelector("summary")?.textContent).toMatch(/^\s*More filters\s*$/);
-    // The name box comes before the fold in the page's order.
+    // Open from 640px by a style rule; on a phone, shut until its control is pressed.
+    expect(filters(container).className.split(/\s+/)).toEqual(expect.arrayContaining(["hidden", "sm:block"]));
+    expect(control().textContent).toMatch(/^\s*More filters\s*$/);
     const box = screen.getByPlaceholderText("Start of a name");
-    expect(box.compareDocumentPosition(fold(container)) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(box.compareDocumentPosition(filters(container)) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     const listUrls = usePublicQuery.mock.calls.map((c) => String(c[0])).filter((u) => u.includes("numItems="));
     expect(listUrls.length).toBeGreaterThan(0);
     expect(listUrls.every((u) => u.includes("numItems=25"))).toBe(true);
   });
 
-  it("says how many are on when the link carries a filter, and is open on a wide screen", () => {
+  it("says on a phone's control how many filters a link arrived with", () => {
     search = "status=denied&fy=2025";
-    const phone = render(<CaseBrowser meta={null} occupations={[]} showLookup={false} />);
-    expect(fold(phone.container).open).toBe(false);
-    expect(fold(phone.container).querySelector("summary")?.textContent).toContain("2 on");
-    phone.unmount();
-
-    // By assignment, and put back the same way: the shared setup's `matchMedia` is a mock, and restoring a spy over
-    // it would leave it answering nothing for the next test.
-    const before = window.matchMedia;
-    window.matchMedia = ((query: string) => ({ matches: true, media: query, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
-    try {
-      const { container } = render(<CaseBrowser meta={null} occupations={[]} showLookup={false} />);
-      expect(fold(container).open).toBe(true);
-    } finally {
-      window.matchMedia = before;
-    }
+    render(<CaseBrowser meta={null} occupations={[]} showLookup={false} />);
+    expect(control().textContent).toContain("2 on");
   });
 
   it("sends the job title typed inside it with the name search", () => {

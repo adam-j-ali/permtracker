@@ -185,6 +185,19 @@ describe("a case box with nothing typed", () => {
     expect(box().placeholder).toBe("Case number or employer");
   });
 
+  it("gives the example under the box, where it can't be taken for a number already typed", () => {
+    // The example was the placeholder, and left the page with it. A first-time visitor still needs to see the shape.
+    render(<CaseLookupForm />);
+    expect(screen.getByText(/It's on your ETA-9089 receipt\./).textContent).toMatch(/A case number looks like G-100-26125-868956\.$/);
+    cleanup();
+    render(<CaseLookupForm example="P-100-26140-123456" help="It's on your ETA-9141." />);
+    expect(screen.getByText(/It's on your ETA-9141\./).textContent).toMatch(/A case number looks like P-100-26140-123456\.$/);
+    cleanup();
+    // A box that also takes a name says so in its own words: an example number alone would say names aren't taken.
+    render(<CaseLookupForm names label="Case number or employer" />);
+    expect(screen.queryByText(/A case number looks like/)).toBeNull();
+  });
+
   it("is required, so the browser keeps an empty press in the box, with or without scripts", () => {
     render(<CaseLookupForm />);
     expect(box().required).toBe(true);

@@ -12,7 +12,7 @@ import { FilterCombobox } from "@/components/ui/filter-combobox";
 import { ChoiceRow } from "@/components/ui/choice-row";
 import { FilterFold } from "@/components/ui/filter-fold";
 import { Pager } from "@/components/ui/pager";
-import { useListSize } from "@/components/ui/pagination";
+import { RowsPerPage, useListSize } from "@/components/ui/pagination";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { LinkPending, PendingLink } from "@/components/ui/pending-link";
 import { LIST_PAGE_SIZE, LIST_ROW, LIST_TABLE, NUMBER_CELL, PHONE_ROW, TITLE_ON_PHONE } from "@/components/tools/caseListRow";
@@ -131,8 +131,11 @@ export interface OccupationOption {
 type Dimension = "all" | "state" | "occupation" | "employer" | "attorney";
 type SortKey = "decisionDate" | "receivedDate" | "days" | "wage" | "employerName" | "caseNumber";
 
-/** Rows a page can hold: the lists' own 25 first, and more for someone reading on a wide screen. */
-const PAGE_SIZES = [10, LIST_PAGE_SIZE, 50, 100, 250];
+/**
+ * Rows a page can hold: the lists' own 25 first, and more for someone reading on a wide screen. 500 was a choice
+ * here before the lists were paged alike, so it stays one.
+ */
+const PAGE_SIZES = [10, LIST_PAGE_SIZE, 50, 100, 250, 500];
 const STATUS_LABEL: Record<Status, string> = {
   certified: "Certified",
   denied: "Denied",
@@ -741,9 +744,9 @@ export function CaseBrowser({
             {nameNote}
           </p>
         ) : null}
-        {/* First things first: the search, then the cases. What narrows them is one tap away, and opens
-            by itself when a link arrives with a filter set. The three name-search fields sit outside the
-            form's own tags, so each names its form. */}
+        {/* First things first: the search, then the cases. What narrows them is open on a wide screen and
+            one tap away on a phone (FilterFold). The three name-search fields sit outside the form's own
+            tags, so each names its form. */}
         <FilterFold className="mt-3" active={activeFilters} shutOn={nameSubmit}>
           <p className={LABEL}>For a name search</p>{" "}
           <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 [&>*]:min-w-0">
@@ -1133,7 +1136,9 @@ export function CaseBrowser({
               setCursors((c) => (page && !page.isDone ? [...c, page.continueCursor] : c))
             }
           />
-        ) : null}
+        ) : null}{" "}
+        {/* Under the list, as on the other four case lists: inside the filters alone, a phone never saw it. */}
+        {!searching && (rows.length > 0 || prevRows.length > 0) ? <RowsPerPage list={listSize} className="mt-4" /> : null}
       </section>
     </div>
   );
@@ -1233,8 +1238,8 @@ function CaseTable({
               {r.attorneyName ? (
                 <>
                   {" "}
-                  {/* The law firm is the wide table's: on a phone it's on the case's own page. */}
-                  <span className="block text-sm font-normal text-muted-foreground max-sm:hidden">
+                  {/* On a phone too: it's the list's only link to the firm's page. */}
+                  <span className="block text-sm font-normal text-muted-foreground">
                     {r.attorneySlug ? (
                       <IntentLink
                         href={entityHref("attorney", r.attorneySlug)}
@@ -1271,13 +1276,13 @@ function CaseTable({
             <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums max-sm:text-sm max-sm:[grid-area:wage]">
               {fmtWage(r.wage)}
             {" "}</td>
-            {/* On a phone the filing day and the wait share one line across the row: the list is in decision order, so
-                the wait says more there than the decision day repeated. The "Decided" cell is the wide table's. */}
-            <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-base tabular-nums max-sm:text-left max-sm:font-sans max-sm:text-sm max-sm:text-muted-foreground max-sm:[grid-area:dates]">
+            {/* On a phone the filing day, the decision day and the wait share one line across the row. The separate
+                "Decided" and days cells are the wide table's. */}
+            <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-base tabular-nums max-sm:whitespace-normal max-sm:text-left max-sm:font-sans max-sm:text-sm max-sm:text-muted-foreground max-sm:[grid-area:dates]">
               <span className="sm:hidden">Filed</span>{" "}
               {r.receivedDate}
               {/* Its comma follows the date with no space, so nothing separates the two. */}
-              <span className="sm:hidden">{`, decided in ${formatInt(r.days)} ${r.days === 1 ? "day" : "days"}`}</span>
+              <span className="sm:hidden">{`, decided ${r.decisionDate} (${formatInt(r.days)} ${r.days === 1 ? "day" : "days"})`}</span>
             {" "}</td>
             <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-base tabular-nums max-sm:hidden">
               {r.decisionDate}

@@ -73,6 +73,16 @@ describe("FiledOnDay", () => {
     expect(caseLinks()).toHaveLength(3);
   });
 
+  it("keeps the first-letter row on a phone, as one row that scrolls sideways", () => {
+    // For one release the row was drawn on wide screens only: on a phone it had been five rows of buttons.
+    render(<FiledOnDay perm={[mk(1, { employer: "Acme" }), mk(2, { employer: "Beta" })]} pwd={[]} dayLabel="x" />);
+    const row = screen.getByRole("group", { name: "Employer's first letter" });
+    const classes = row.className.split(/\s+/);
+    expect(classes).not.toContain("hidden");
+    expect(classes).toEqual(expect.arrayContaining(["flex", "overflow-x-auto", "sm:flex-wrap", "sm:overflow-visible"]));
+    for (const b of row.querySelectorAll("button")) expect(b.className.split(/\s+/)).toContain("shrink-0");
+  });
+
   it("filters by the employer's first letter, digits and symbols under #", () => {
     render(<FiledOnDay perm={[mk(1, { employer: "Acme" }), mk(2, { employer: "3M Company" }), mk(3, { employer: "Beta" })]} pwd={[]} dayLabel="x" />);
     fireEvent.click(screen.getByRole("button", { name: "A digit or symbol, 1 case" }));

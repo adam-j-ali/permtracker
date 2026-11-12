@@ -1,70 +1,57 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from "vitest";
-import { fireEvent, render } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
 
 import { FilterFold } from "../filter-fold";
 
 /**
- * The window as a wide screen or a phone, as `matchMedia("(min-width: 640px)")` answers it. Set by assignment and
- * put back the same way: the shared setup's `matchMedia` is itself a mock, and "restoring" a spy over it would
- * leave it answering nothing for whichever test runs next.
+ * A list's other filters. On a wide screen they're open, as they were before Nov 11 2026: folding them there fixed
+ * nothing (the page was long on a phone) and hid how the list gets used. On a phone they're one tap away. Which of
+ * the two a screen gets is a style rule, so the server's page is right before any script runs.
  */
-const realMatchMedia = window.matchMedia;
-function screenIs(wide: boolean) {
-  window.matchMedia = ((query: string) => ({ matches: wide, media: query, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
-}
-const fold = (c: HTMLElement) => c.querySelector("details") as HTMLDetailsElement;
-
-afterEach(() => {
-  window.matchMedia = realMatchMedia;
-});
+const control = () => screen.getByRole("button", { name: /More filters/ });
+const region = (c: HTMLElement) => c.querySelector("[data-filter-fold]") as HTMLElement;
 
 describe("FilterFold", () => {
-  it("is shut with nothing on, and its control says only its name", () => {
-    screenIs(true);
+  it("is open from 640px by a style rule, with no control to press", () => {
     const { container } = render(<FilterFold><input aria-label="Year" /></FilterFold>);
-    expect(fold(container).open).toBe(false);
-    expect(fold(container).querySelector("summary")?.textContent?.trim()).toBe("More filters");
-    // Shut or open, what's inside stays in the page, so a form still carries it.
+    expect(region(container).className.split(/\s+/)).toContain("sm:block");
+    expect(control().className.split(/\s+/)).toContain("sm:hidden");
+  });
+
+  it("is shut on a phone until its control is pressed, and what's inside stays in the page", () => {
+    const { container } = render(<FilterFold><input aria-label="Year" /></FilterFold>);
+    expect(region(container).className.split(/\s+/)).toContain("hidden");
+    expect(control().getAttribute("aria-expanded")).toBe("false");
+    expect(control().getAttribute("aria-controls")).toBe(region(container).id);
+    // Shut or open, the fields are in the page, so a form still carries them.
     expect(container.querySelector('input[aria-label="Year"]')).not.toBeNull();
+    fireEvent.click(control());
+    expect(region(container).className.split(/\s+/)).not.toContain("hidden");
+    expect(control().getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(control());
+    expect(region(container).className.split(/\s+/)).toContain("hidden");
   });
 
-  it("opens by itself on a wide screen when a filter inside is on, and says how many", () => {
-    screenIs(true);
-    const { container } = render(<FilterFold active={2}><span>inside</span></FilterFold>);
-    expect(fold(container).open).toBe(true);
-    expect(fold(container).querySelector("summary")?.textContent).toContain("2 on");
+  it("says only its name with nothing on, and how many are on when some are", () => {
+    const { rerender } = render(<FilterFold><span>inside</span></FilterFold>);
+    expect(control().textContent?.trim()).toBe("More filters");
+    rerender(<FilterFold active={2}><span>inside</span></FilterFold>);
+    expect(control().textContent).toContain("2 on");
   });
 
-  it("stays shut on a phone with a filter on, and still says how many", () => {
-    screenIs(false);
-    const { container } = render(<FilterFold active={2}><span>inside</span></FilterFold>);
-    expect(fold(container).open).toBe(false);
-    expect(fold(container).querySelector("summary")?.textContent).toContain("2 on");
-  });
-
-  it("shuts when the list is asked again, and not when only the count changes", () => {
-    screenIs(true);
+  it("shuts on a phone when the list is asked again, and not when only the count changes", () => {
     const { container, rerender } = render(<FilterFold active={1} shutOn={0}><span>inside</span></FilterFold>);
-    expect(fold(container).open).toBe(true);
+    fireEvent.click(control());
+    expect(region(container).className.split(/\s+/)).not.toContain("hidden");
     rerender(<FilterFold active={2} shutOn={0}><span>inside</span></FilterFold>);
-    expect(fold(container).open).toBe(true);
+    expect(region(container).className.split(/\s+/)).not.toContain("hidden");
     rerender(<FilterFold active={2} shutOn={1}><span>inside</span></FilterFold>);
-    expect(fold(container).open).toBe(false);
+    expect(region(container).className.split(/\s+/)).toContain("hidden");
   });
 
-  it("reads a window that can't answer as a phone", () => {
-    window.matchMedia = (() => undefined) as unknown as typeof window.matchMedia;
-    const { container } = render(<FilterFold active={1}><span>inside</span></FilterFold>);
-    expect(fold(container).open).toBe(false);
-  });
-
-  it("follows the person's own opening and shutting", () => {
-    screenIs(false);
+  it("shows the filters to a phone with scripts off, where the control can't work", () => {
     const { container } = render(<FilterFold><span>inside</span></FilterFold>);
-    const d = fold(container);
-    d.open = true;
-    fireEvent(d, new Event("toggle"));
-    expect(fold(container).open).toBe(true);
+    expect(container.querySelector("noscript")).not.toBeNull();
   });
 });

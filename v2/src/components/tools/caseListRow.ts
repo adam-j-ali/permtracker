@@ -4,7 +4,7 @@
  *
  * ON A PHONE EACH ROW IS FOUR SHORT LINES. As a table, a phone saw the case number and half a status chip, then
  * scrolled sideways. As six stacked lines one page of a list ran thirteen screens. Below `sm` the same cells take
- * named places in a two-column grid: the employer with the status beside it, the job title on one line, the case
+ * named places in a two-column grid: the employer with the status beside it, the job title on up to two lines, the case
  * number as the row's 44px target (the wage beside it when the list has one), then the dates on one line across
  * the row. CSS only, so the rows exist once and the table is unchanged from `sm` up.
  *
@@ -36,7 +36,7 @@ export const NUMBER_CELL =
   "whitespace-nowrap px-3 py-3 font-mono text-base max-sm:whitespace-nowrap! max-sm:text-sm max-sm:[grid-area:num] max-sm:[&_a]:inline-flex max-sm:[&_a]:min-h-11 max-sm:[&_a]:items-center";
 
 /**
- * The job title's place on a phone: one line, cut with an ellipsis (the whole title is on the case's page).
- * `whitespace-nowrap!`: the row lets cells wrap, which would otherwise undo the cut.
+ * The job title's place on a phone: two lines, then cut (the whole title is on the case's page). One line hid the
+ * end of a title, which is often the part that tells two of an employer's cases apart.
  */
-export const TITLE_ON_PHONE = "max-sm:truncate max-sm:whitespace-nowrap! max-sm:text-sm max-sm:[grid-area:title]";
+export const TITLE_ON_PHONE = "max-sm:line-clamp-2 max-sm:text-sm max-sm:[grid-area:title]";

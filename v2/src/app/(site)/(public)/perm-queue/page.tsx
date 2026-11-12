@@ -296,6 +296,12 @@ export default async function PermQueuePage() {
                 position, and this scan measures {formatMonth(front.month)}. Both are
                 shown unadjusted, and neither has been moved towards the other.
               </p>
+            ) : dolMonth === null ? (
+              // Said, so the missing figure isn't a blank: this paragraph used to set DOL's own month beside the scan.
+              <p>
+                DOL&rsquo;s own page stopped printing a month for this queue on October 31, 2026, so there&rsquo;s no
+                published figure to set beside this scan.
+              </p>
             ) : null}
 
             {advance ? (
