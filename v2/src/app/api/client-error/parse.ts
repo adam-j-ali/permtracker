@@ -69,6 +69,15 @@ export function groupingKey(message: string): string {
 }
 
 /**
+ * React's "Connection closed." (error 412 in a production build, by React's own list of codes): the page's data
+ * stream ended early on the visitor's side, on a dropped connection or a tab put away mid-load. The screen
+ * reloads, and nothing in the site's code is at fault.
+ */
+export function isConnectionClosed(message: string): boolean {
+  return /\bMinified React error #412(?!\d)/.test(message) || /^(?:Error: )?Connection closed\.?$/.test(message.trim());
+}
+
+/**
  * The build file a ChunkLoadError names, as its path under /_next/static/, or
  * null. Only a file in chunks/ or css/ passes, so the route can look for it on
  * disk without the message choosing where to look. Folder names may carry
