@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState, type CSSProperties } from "react";
 import { WarningIcon } from "@phosphor-icons/react";
 
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,7 @@ import { WageAcrossAreas } from "@/components/tools/WageAcrossAreas";
 import { SocCodeText } from "@/components/data/SocCodeText";
 import { SocPicker } from "@/components/soc/SocPicker";
 import { AreaLoadFailure, areaPlaceholder, useWageAreas } from "@/components/tools/WageAreas";
+import { WageProposalTable, type WageRuleStage } from "@/components/tools/WageProposalTable";
 
 /**
  * The four prevailing wage levels for one occupation in one area, read live
@@ -70,19 +71,28 @@ function WageLadder({ levels }: { levels: WageLevel[] | null }) {
   return (
     <ol className="space-y-2" aria-label={levels ? "DOL's four wage levels" : "The four levels, once looked up"}>
       {rows.map((l, i) => (
-        <li key={l.level} className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-3 [&>*]:min-w-0">
+        <li
+          key={l.level}
+          className={
+            levels
+              ? // Under 768px: the level's name on the left, its figure on the right, the bar under both. Beside the
+                // bar, the figure had no room on a phone and ran out of the box (30px past it at 320).
+                "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 md:grid-cols-[6.5rem_minmax(0,1fr)] md:gap-3 [&>*]:min-w-0"
+              : "grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-3 [&>*]:min-w-0"
+          }
+        >
           <span className="leading-tight">
             <span className="block font-heading text-base font-bold">Level {l.level}</span>{" "}
             <span className="block text-sm text-muted-foreground">{LEVEL_WORDS[l.level]}</span>
           </span>{" "}
           {levels ? (
-            <span className="flex items-center gap-3">
+            <span className="contents md:flex md:items-center md:gap-3">
               <span
                 aria-hidden="true"
-                className="h-9 shrink-0 border-input bg-primary border"
-                style={{ width: `${Math.max(8, (l.yearly / top) * 70)}%` }}
+                className="order-3 col-span-2 h-4 w-[calc(var(--bar)*1%)] border-input bg-primary border md:order-none md:h-9 md:w-[calc(var(--bar)*0.7%)] md:shrink-0"
+                style={{ "--bar": Math.max(8, (l.yearly / top) * 100) } as CSSProperties}
               />{" "}
-              <span className="whitespace-nowrap">
+              <span className="whitespace-nowrap text-right md:text-left">
                 <span className="block font-heading text-lg font-bold tabular-nums">{usd(l.yearly)}</span>{" "}
                 <span className="block font-mono text-sm tabular-nums text-muted-foreground">{usd(l.hourly, 2)} an hour</span>
               </span>
@@ -141,7 +151,14 @@ const STATES = Object.entries(US_STATE_NAMES)
   .map(([code, name]) => ({ code, name }))
   .sort((a, b) => a.name.localeCompare(b.name));
 
-export function WageLevelsTool({ initialSoc = "" }: { initialSoc?: string }) {
+export function WageLevelsTool({
+  initialSoc = "",
+  ruleStage = null,
+}: {
+  initialSoc?: string;
+  /** Where DOL's proposed wage rule stands, from the rule watch, for the "under the proposal" table. */
+  ruleStage?: WageRuleStage | null;
+}) {
   const stateId = useId();
   const areaId = useId();
   const socId = useId();
@@ -311,7 +328,8 @@ export function WageLevelsTool({ initialSoc = "" }: { initialSoc?: string }) {
               OFLC wage search
             </a>
             , all-industries OEWS. The level a case is set at depends on the job&apos;s requirements, which DOL decides on the ETA-9141.
-          </p>
+          </p>{" "}
+          <WageProposalTable levels={result.levels} stage={ruleStage} />
         </div>
       ) : null}
 

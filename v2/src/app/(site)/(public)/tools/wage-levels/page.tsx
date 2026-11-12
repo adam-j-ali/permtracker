@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { FaqList } from "@/components/tools/FaqList";
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
+import { readRules } from "@/lib/db/rulePipeline";
+import { softFail } from "@/lib/softRead";
+import { WAGE_PROPOSAL } from "@/lib/wageProposal";
 import { WageLevelsTool } from "@/components/tools/WageLevelsTool";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { SOC_CODE_RE, socGroup } from "@/lib/socCode";
@@ -49,6 +52,10 @@ const FAQS = [
 export default async function WageLevelsPage({ searchParams }: { searchParams: Promise<{ soc?: string }> }) {
   const { soc } = await searchParams;
   const initialSoc = soc && SOC_CODE_RE.test(soc) ? socGroup(soc) ?? "" : "";
+  // Where the proposed wage rule stands, from the rule watch. Unread, the table says only what's printed in the
+  // proposal: it never guesses a stage.
+  const rule = (await readRules([WAGE_PROPOSAL.rin]).catch(softFail("tools/wage-levels.rule", null)))?.get(WAGE_PROPOSAL.rin) ?? null;
+  const ruleStage = rule ? { sentToReview: rule.fReceived, finalPublished: rule.finalPublished } : null;
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage" as const,
@@ -66,7 +73,7 @@ export default async function WageLevelsPage({ searchParams }: { searchParams: P
         </p>
       </header>
       <section data-embed="wage-levels" className="mt-10">
-        <WageLevelsTool initialSoc={initialSoc} />
+        <WageLevelsTool initialSoc={initialSoc} ruleStage={ruleStage} />
       </section>
       <section className="mt-12">
         <h2 className="font-heading text-2xl font-bold">FAQs</h2>
