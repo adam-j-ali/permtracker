@@ -97,6 +97,18 @@ function subscribeNarrow(onChange: () => void) {
   return () => m.removeEventListener("change", onChange);
 }
 
+/** Whether the screen is a phone's width. False on the server and for the first paint, so markup matches. */
+export function useNarrowScreen(): boolean {
+  return useSyncExternalStore(
+    subscribeNarrow,
+    () => window.matchMedia?.(NARROW).matches ?? false,
+    () => false,
+  );
+}
+
+/** The class that hides a server-rendered row a phone's shorter page leaves out, until the browser has started. */
+export const NARROW_HIDDEN = "max-sm:hidden";
+
 export interface PerPage {
   /** Rows on a page, now. */
   per: number;
@@ -127,11 +139,7 @@ export function usePerPage({
   const own = useQueryParam(key);
   const raw = address ? address.raw : own[0];
   const update = address ? address.update : own[1];
-  const isNarrow = useSyncExternalStore(
-    subscribeNarrow,
-    () => window.matchMedia?.(NARROW).matches ?? false,
-    () => false,
-  );
+  const isNarrow = useNarrowScreen();
   const asked = options.includes(Number(raw)) ? Number(raw) : null;
   const setPer = useCallback((per: number) => update({ [key]: String(per), [pageKey]: null }), [key, pageKey, update]);
   return {
@@ -139,7 +147,7 @@ export function usePerPage({
     chosen: asked !== null,
     setPer,
     options,
-    narrowHidden: (i) => (asked === null && i >= narrow ? "max-sm:hidden" : undefined),
+    narrowHidden: (i) => (asked === null && i >= narrow ? NARROW_HIDDEN : undefined),
   };
 }
 
