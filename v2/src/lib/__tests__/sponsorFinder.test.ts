@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { MIN_DECIDED_FOR_MEDIAN, MIN_DECIDED_FOR_RATE } from "../entityPayload";
 import { DAYS_PER_MONTH } from "../time";
-import { ANY, DEFAULT_FILTERS, PAGE_SIZE, SORTS, finderHref, finderSql, finderWhere, parseFinder } from "../sponsorFinder";
+import { ANY, DEFAULT_FILTERS, PAGE_SIZE, PER_STEPS, PHONE_PAGE, SORTS, finderHref, finderSql, finderWhere, pageSize, parseFinder } from "../sponsorFinder";
 import { SPONSOR_SHARE_MIN } from "../sponsorProfile";
 
 const STATES = new Set(["CA", "TX", "NY"]);
@@ -68,6 +68,31 @@ describe("sponsor finder filters", () => {
     const q = finderSql(parseFinder({ page: "2", sort: "quickest" }, STATES), ANY);
     expect(q.pageArgs.slice(-2)).toEqual([PAGE_SIZE, PAGE_SIZE]);
     expect(q.page).toContain(`ORDER BY ${SORTS.quickest.order}, s.slug LIMIT ? OFFSET ?`);
+  });
+});
+
+describe("a results page sized for the screen", () => {
+  it("is 25 sponsors unless the address asks for 10 or 50, and nothing else is taken", () => {
+    expect(PAGE_SIZE).toBe(25);
+    expect(PHONE_PAGE).toBe(10);
+    expect(DEFAULT_FILTERS.per).toBeNull();
+    expect(pageSize(DEFAULT_FILTERS)).toBe(25);
+    for (const n of PER_STEPS) expect(pageSize(parseFinder({ per: String(n) }, STATES))).toBe(n);
+    expect(parseFinder({ per: "5000" }, STATES).per).toBeNull();
+    expect(parseFinder({ per: "abc" }, STATES).per).toBeNull();
+  });
+
+  it("asks the database for that many, from the right row", () => {
+    const q = finderSql(parseFinder({ per: "10", page: "3" }, STATES), ANY);
+    expect(q.pageArgs.slice(-2)).toEqual([10, 20]);
+    const wide = finderSql(parseFinder({ page: "3" }, STATES), ANY);
+    expect(wide.pageArgs.slice(-2)).toEqual([25, 50]);
+  });
+
+  it("keeps a chosen size in every link, and leaves the default out", () => {
+    expect(finderHref(parseFinder({ per: "10" }, STATES), 2)).toBe("/sponsor-finder?per=10&page=2#answer");
+    expect(finderHref(parseFinder({ job: "nurses", per: "50" }, STATES))).toBe("/sponsor-finder?job=nurses&per=50#answer");
+    expect(finderHref(DEFAULT_FILTERS, 2)).toBe("/sponsor-finder?page=2#answer");
   });
 });
 

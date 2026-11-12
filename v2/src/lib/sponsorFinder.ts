@@ -48,7 +48,14 @@ export const WAGE_STEPS = [50_000, 75_000, 100_000, 125_000, 150_000] as const;
  * sponsors) to 495 (nine tenths), so one-month steps across that range.
  */
 export const MONTH_STEPS = [13, 14, 15, 16] as const;
-export const PAGE_SIZE = 50;
+/**
+ * Sponsors on a results page: 25, unless the address names one of PER_STEPS (`per`). The page is drawn on the
+ * server, which can't see the screen, so a default page hides its rows past PHONE_PAGE on a phone and its phone
+ * links ask for `per=10`: a phone reads ten at a time and never loads a page it mostly hides again.
+ */
+export const PAGE_SIZE = 25;
+export const PHONE_PAGE = 10;
+export const PER_STEPS = [10, 25, 50] as const;
 /** A transfer-friendly sponsor: a fifth or more of its certified H-1B positions were transfers. */
 export const TRANSFER_SHARE = 0.2;
 /** Mostly senior roles: half or more of its leveled LCAs at wage level III or IV. */
@@ -105,7 +112,12 @@ export interface FinderFilters {
   includeDebarred: boolean;
   sort: FinderSort;
   page: number;
+  /** Rows a page, when the address names it; null for the default (see PAGE_SIZE). */
+  per: number | null;
 }
+
+/** The rows a page of these filters holds. */
+export const pageSize = (f: Pick<FinderFilters, "per">): number => f.per ?? PAGE_SIZE;
 
 type Params = Record<string, string | string[] | undefined>;
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
@@ -132,6 +144,7 @@ export function parseFinder(params: Params, states: ReadonlySet<string>): Finder
     includeDebarred: first(params.debarred) === "1",
     sort: sort in SORTS ? (sort as FinderSort) : DEFAULT_SORT,
     page: Number.isFinite(page) && page >= 1 ? Math.min(page, MAX_PAGE) : 1,
+    per: oneOf(PER_STEPS, Number(first(params.per))),
   };
 }
 
@@ -154,6 +167,7 @@ export function finderHref(f: FinderFilters, page = f.page): string {
   if (f.capExempt) q.set("cap", "1");
   if (f.includeDebarred) q.set("debarred", "1");
   if (f.sort !== DEFAULT_SORT) q.set("sort", f.sort);
+  if (f.per !== null) q.set("per", String(f.per));
   if (page > 1) q.set("page", String(page));
   const s = q.toString();
   return s ? `${PATH}?${s}#${ANSWER_ID}` : PATH;
@@ -218,6 +232,6 @@ export function finderSql(
     count: `SELECT COUNT(*) AS n ${FROM} WHERE ${where}`,
     page: `SELECT ${COLUMNS} ${FROM} WHERE ${where} ORDER BY ${SORTS[f.sort].order}, s.slug LIMIT ? OFFSET ?`,
     args,
-    pageArgs: [...args, PAGE_SIZE, (f.page - 1) * PAGE_SIZE],
+    pageArgs: [...args, pageSize(f), (f.page - 1) * pageSize(f)],
   };
 }
