@@ -599,6 +599,9 @@ def health_lines(out: str) -> list[str]:
         elif s.startswith(("FAIL", "OUR INGEST HAS STOPPED", "THE SOURCE HAS BEEN SILENT",
                            "RUNS BROKEN")) or " BROKEN" in s[:40]:
             keep.append(s)
+        # The run that broke, by name and with its own note: "RUNS BROKEN: 1" alone says nothing to act on.
+        elif ": last run finished '" in s:
+            keep.append(s[:220])
         # The verdicts the other checks print: a stalled frontier, a missing,
         # empty or stale doc, a dry walk, a sweep that probed nothing. Without
         # them the email said only "the health check failed".

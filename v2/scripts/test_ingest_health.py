@@ -596,6 +596,7 @@ def main() -> int:
 
     check_freshness_verdict()
     check_capped_partial_is_not_broken()
+    check_one_source_of_many_is_a_watch()
     check_hand_read_figures()
     check_consular_record()
     check_browser_timer_heartbeats()
@@ -730,6 +731,67 @@ def check_capped_partial_is_not_broken() -> None:
           run([("sweep_serial_gaps.py", "partial", capped_note, int(NOW) - 3 * 3_600_000)]) == 0)
     check("a partial run WITHOUT the cap phrase still fails",
           run([("sweep_serial_gaps.py", "partial", "probed 2998, found 2113", int(NOW) - 3 * 3_600_000)]) == 1)
+
+
+def check_one_source_of_many_is_a_watch() -> None:
+    """ingest_warn.py reads 47 states. One state's page breaking is a watch that names it; the same state three runs
+    in a row, or five states in one run, is a break. Everything else about a partial run stays a break."""
+    import contextlib
+    import io
+    here = pathlib.Path(__file__).resolve().parent
+    m = re.search(r'^PART_FAILED_NOTE = "([^"]+)"', (here / "ingest_warn.py").read_text(), re.M)
+    check("the reader's part-failure phrase is byte-identical to ingest_warn's PART_FAILED_NOTE",
+          bool(m) and m.group(1) == health.PART_FAILED_NOTE, m.group(1) if m else "no PART_FAILED_NOTE found")
+    check("ingest_warn writes its note with the constant, never a second spelling",
+          "PART_FAILED_NOTE}" in (here / "ingest_warn.py").read_text())
+    day = 24 * H
+
+    def warn(days_ago: int, failed=(), script="ingest_warn.py", status=None):
+        # The run's real note, read from the server Nov 11 2026.
+        note = "42 states, 12366 notices; site down or refusing: Tennessee"
+        if failed:
+            note += f"; {health.PART_FAILED_NOTE}{', '.join(failed)}"
+        note += "; pruned 2 the source no longer lists; 3391 matched"
+        return (script, status or ("partial" if failed else "ok"), note, int(NOW) - days_ago * day - 3 * H)
+
+    def said(rows) -> tuple[int, str]:
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            code = run(rows)
+        return code, buf.getvalue()
+
+    code, out = said([warn(0, ["Wisconsin"]), warn(1), warn(2)])
+    check("one state's first bad run doesn't fail the check", code == 0, out[-300:])
+    check("and it's named as a watch, with how long it has failed",
+          any(l.startswith("::warning::") and "Wisconsin" in l and "1 run" in l for l in out.splitlines()), out[-400:])
+    code, out = said([warn(0, ["Wisconsin"]), warn(1, ["Wisconsin"]), warn(2)])
+    check("two runs in a row is still a watch", code == 0 and "2 runs" in out, out[-300:])
+    code, out = said([warn(0, ["Wisconsin"]), warn(1, ["Wisconsin"]), warn(2, ["Wisconsin"]), warn(3)])
+    check(f"the same state {health.PART_STREAK} runs in a row is a break", code == 1 and "RUNS BROKEN: 1" in out, out[-300:])
+    code, out = said([warn(0, ["Wisconsin"]), warn(1, ["Alabama"]), warn(2, ["Ohio"])])
+    check("three different states on three runs is no streak", code == 0, out[-300:])
+    code, out = said([warn(0, ["Wisconsin"]), warn(1), warn(2, ["Wisconsin"]), warn(3, ["Wisconsin"])])
+    check("a clean run in between ends the streak", code == 0, out[-300:])
+    many = ["Alabama", "Kansas", "Ohio", "Utah", "Wisconsin"][:health.PART_MANY]
+    code, out = said([warn(0, many), warn(1)])
+    check(f"{health.PART_MANY} states failing in one run is the reader breaking", code == 1, out[-300:])
+    code, _ = said([warn(0, many[:health.PART_MANY - 1]), warn(1)])
+    check(f"{health.PART_MANY - 1} states in one run is still a watch", code == 0)
+    # The whole ingest dying is the workflow hook's `failed` row, and stays a break.
+    code, _ = said([("ingest_warn.py", "failed", "WARN notices failed", int(NOW) - 3 * H), warn(1)])
+    check("the whole ingest failing is a break", code == 1)
+    code, _ = said([("ingest_warn.py", "partial", "42 states, 12366 notices; 3391 matched", int(NOW) - 3 * H)])
+    check("a partial run that names no source is a break", code == 1)
+    # The server's four states are their own run, with their own streak.
+    code, out = said([warn(0, ["Nevada"], "ingest_warn.py:server"), warn(0), warn(1, ["Nevada"], "ingest_warn.py:server"),
+                      warn(2, ["Nevada"], "ingest_warn.py:server")])
+    check("the server's run counts its own streak", code == 1, out[-300:])
+    # No other script gets the leniency: its `partial` naming a failure is a break, as before.
+    code, _ = said([("check_watched_cases.py", "partial", "nothing watched; FAILED: perm", int(NOW) - 3 * H)])
+    check("a partial run of any other script is still a break", code == 1)
+    check("a name is read whole: 'Virginia' isn't inside 'West Virginia'",
+          health.part_streaks([("partial", "x; FAILED: West Virginia; y", 2), ("partial", "x; FAILED: Virginia; y", 1)])
+          == {"West Virginia": 1})
 
 
 CHECKS = ("check_runs", "check_frontier", "check_discovery_yield", "check_backfill", "check_gap_sweep",

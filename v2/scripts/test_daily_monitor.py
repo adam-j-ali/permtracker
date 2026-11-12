@@ -356,6 +356,18 @@ def main() -> int:
     lines = dm.health_lines(out)
     check(lines == ["Watching: i485-inventory is 53 days old against a 45-day budget",
                     "OUR INGEST HAS STOPPED for: lca-status (has not RUN)."], f"health lines kept: {lines}")
+    # The run that broke is named. The report said "RUNS BROKEN: 1" and nothing else on six mornings by Nov 11 2026:
+    # the verdict row's BROKEN sits past column 40, and the line that names the run starts with the script's name.
+    broken = dm.health_lines(
+        "ingests with a run in 40d: 61 (4120 runs)\n"
+        "ingest_balca.py                        ok         2.8h ago  ok\n"
+        "ingest_niv_issuances.py                failed     2.8h ago  BROKEN\n"
+        "\nRUNS BROKEN: 1\n"
+        "  ingest_niv_issuances.py: last run finished 'failed' - oracle timer (niv-archive): the Internet Archive's months were refused\n")
+    check(any("ingest_niv_issuances.py" in l and "last run finished" in l for l in broken),
+          f"the broken run is named: {broken}")
+    check(not any("ingest_balca.py" in l for l in broken), f"a clean run's row is left out: {broken}")
+    check(sum("ingest_niv_issuances.py" in l for l in broken) == 1, f"and it's named once: {broken}")
     stalled = dm.health_lines("frontier          : 26280:1 6d  budget 5d  STALLED\n"
                               "  live_census            MISSING - the case lookup's queue position is being served\n"
                               "  month_detail           2.1d ago  ok\n")
