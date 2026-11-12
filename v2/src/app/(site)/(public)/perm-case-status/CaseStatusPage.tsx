@@ -494,6 +494,8 @@ async function Empty() {
       deciding={permLine ? { month: permLine.month, asOf: permLine.asOf } : null}
       front={front?.month ?? null}
       wallTotal={front?.wallTotal ?? null}
+      months={backlog}
+      toClear={front?.pendingToClear ?? null}
       publishedFront={dol?.analystQueueMonth ?? null}
       publishedAsOf={dol?.asOf ?? null}
       mirrorSize={mirrorSize || null}

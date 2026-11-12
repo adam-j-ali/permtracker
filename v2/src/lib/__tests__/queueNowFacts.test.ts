@@ -9,11 +9,12 @@ describe("the figures for where DOL is now", () => {
   it("lead with the month DOL is deciding, dated by our check, then the oldest month still open", () => {
     expect(queueNowFacts(deciding, "2026-01")).toEqual([
       {
+        kind: "deciding",
         label: "DOL is deciding now",
         value: "February 2026",
         note: "cases filed that month, by our check of DOL's case status on Nov 12",
       },
-      { label: "Oldest month still open", value: "January 2026", note: "the oldest filing month DOL hasn't substantially decided" },
+      { kind: "oldest", label: "Oldest month still open", value: "January 2026", note: "the oldest filing month DOL hasn't substantially decided" },
     ]);
   });
 

@@ -7,6 +7,8 @@ import { PageSection } from "@/components/data/PageSection";
 import { Fold, FoldList } from "@/components/data/Fold";
 import { FinePrint } from "@/components/data/FinePrint";
 import { Figure, FigureRow } from "@/components/data/FigureRow";
+import { SplitBar } from "@/components/data/FigureVisual";
+import { CalendarCheckIcon, FileTextIcon, HourglassMediumIcon, StackIcon } from "@phosphor-icons/react/ssr";
 import { CaseNotFoundSeen } from "@/components/analytics/CaseNotFoundSeen";
 import { WatchThisNumber } from "@/components/tools/WatchThisNumber";
 import { CaseNumberPlate } from "@/components/tools/CaseNumberPlate";
@@ -283,6 +285,62 @@ const GETS_YOU: readonly { lead: string; rest: string }[] = [
  * page that search engines index, so it states what the tool does and what
  * the queue looks like today rather than rendering a bare input.
  */
+/** What each figure is, at a glance. Lime on the dark card, green ink on paper. */
+function factIcon(kind: QueueFact["kind"]) {
+  const Icon = { deciding: CalendarCheckIcon, oldest: HourglassMediumIcon, wall: StackIcon, dol: FileTextIcon }[kind];
+  return <Icon weight="bold" className={kind === "deciding" ? "text-primary" : "text-primary-text"} />;
+}
+
+/**
+ * The small picture under a figure, in the site's status colours. Under a month: how much of it DOL has decided
+ * (green) and how much still waits (yellow). Under the wall: the cases up next beside the cases filed since.
+ * Nothing is drawn for a month the census doesn't hold, or a wall with no split to show: the figure stands alone.
+ */
+function factPicture(
+  kind: QueueFact["kind"],
+  d: { deciding: string | null; front: string | null; wallTotal: number | null; months: readonly CohortMonth[]; toClear: number | null },
+) {
+  if (kind === "deciding" || kind === "oldest") {
+    const month = kind === "deciding" ? d.deciding : d.front;
+    const m = d.months.find((x) => x.month === month);
+    const all = m ? m.decided + m.pending : 0;
+    if (!m || all <= 0) return undefined;
+    const pct = Math.round((m.decided / all) * 100);
+    const name = monthYear(m.month) ?? m.month;
+    return (
+      <>
+        <SplitBar
+          parts={[
+            { value: m.decided, tone: "good" },
+            { value: m.pending, tone: "wait" },
+          ]}
+          label={`${pct}% of the cases filed in ${name} are decided and ${100 - pct}% are still waiting`}
+        />{" "}
+        <span className="mt-1.5 block text-sm font-semibold">{pct}% decided </span>
+      </>
+    );
+  }
+  if (kind === "wall" && d.wallTotal !== null && d.toClear !== null && d.front && d.toClear > 0 && d.toClear < d.wallTotal) {
+    const name = monthYear(d.front) ?? d.front;
+    const since = d.wallTotal - d.toClear;
+    return (
+      <>
+        <SplitBar
+          parts={[
+            { value: d.toClear, tone: "wait" },
+            { value: since, tone: "info" },
+          ]}
+          label={`${formatInt(d.toClear)} of the ${formatInt(d.wallTotal)} undecided cases were filed in ${name} or earlier, and ${formatInt(since)} since`}
+        />{" "}
+        <span className="mt-1.5 block text-sm font-semibold">
+          {formatInt(d.toClear)} filed in {name} or earlier{" "}
+        </span>
+      </>
+    );
+  }
+  return undefined;
+}
+
 export function CaseStatusEmpty({
   deciding,
   front,
@@ -290,6 +348,8 @@ export function CaseStatusEmpty({
   publishedFront,
   publishedAsOf,
   mirrorSize,
+  months = [],
+  toClear = null,
 }: {
   /** The filing month DOL is deciding by our own daily check (lib/permLine.ts), and the day of that check. */
   deciding: { month: string; asOf: string } | null;
@@ -298,16 +358,21 @@ export function CaseStatusEmpty({
   publishedFront: string | null;
   publishedAsOf: string | null;
   mirrorSize: number | null;
+  /** Every filing month's decided and waiting counts, for the bar under a month. */
+  months?: readonly CohortMonth[];
+  /** Undecided cases filed in the oldest open month or earlier: the part of the wall that's up next. */
+  toClear?: number | null;
 }) {
   // The month DOL is on leads, and it's ours (lib/queueNowFacts.ts): this row once showed it only from DOL's own
   // table, DOL stopped printing a month on Oct 31 2026, and the figure dropped out with nothing said.
   const facts: QueueFact[] = queueNowFacts(deciding, front);
   if (wallTotal !== null) {
-    facts.push({ label: "Undecided cases", value: formatInt(wallTotal), note: "across every filing month, the whole wall" });
+    facts.push({ kind: "wall", label: "Undecided cases", value: formatInt(wallTotal), note: "across every filing month, the whole wall" });
   }
   if (publishedFront && publishedFront !== front && publishedFront !== deciding?.month) {
     const asOf = longDate(publishedAsOf);
     facts.push({
+      kind: "dol",
       label: "DOL's own table",
       value: monthYear(publishedFront) ?? publishedFront,
       note: asOf ? `its analyst review, as of ${asOf}` : "its analyst review",
@@ -321,7 +386,15 @@ export function CaseStatusEmpty({
           {facts.map((f) => (
             <Fragment key={f.label}>
               {" "}
-              <Figure label={f.label} value={f.value} note={f.note} />
+              {/* The month DOL is deciding is the answer, so it alone takes the dark card. */}
+              <Figure
+                label={f.label}
+                value={f.value}
+                note={f.note}
+                tone={f.kind === "deciding" ? "ink" : "paper"}
+                icon={factIcon(f.kind)}
+                visual={factPicture(f.kind, { deciding: deciding?.month ?? null, front, wallTotal, months, toClear })}
+              />
             </Fragment>
           ))}
         </FigureRow>
