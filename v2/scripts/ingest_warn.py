@@ -96,6 +96,9 @@ WA_MAX_PAGES = 80
 # cap leaves room and the date floor ends the walk first.
 WA_HISTORY_PAGES = 400
 DATASET = "warn-notices"
+# How the run's note names the states whose page didn't parse. check_ingest_health reads the names after it to count
+# how many runs in a row a state has failed, so the two spellings are one (test_ingest_health.py pins it).
+PART_FAILED_NOTE = "FAILED: "
 MAX_AGE_DAYS = 21
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36"
 
@@ -898,7 +901,7 @@ def main() -> int:
     if quiet:
         note += f"; nothing new: {', '.join(STATES[st]['name'] for st in quiet)}"
     if failed:
-        note += f"; FAILED: {', '.join(STATES[st]['name'] for st in failed)}"
+        note += f"; {PART_FAILED_NOTE}{', '.join(STATES[st]['name'] for st in failed)}"
     # The dataset-wide row speaks for every state, so only an all-states run may
     # write it: a `--state tx` run that stamped it would move the whole
     # dataset's as_of to whatever one state happened to hold.

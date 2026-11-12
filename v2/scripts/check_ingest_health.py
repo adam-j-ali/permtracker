@@ -87,6 +87,40 @@ SWEEP_CAP_NOTE = "stopped on the request cap"
 # The walk's other designed stop, its time budget. Byte-identical to
 # ingest_case_status_direct.BUDGET_NOTE; test_ingest_health.py pins it.
 BUDGET_NOTE = "stopped on its time budget"
+# AN INGEST OF MANY SOURCES NAMES THE ONES IT COULDN'T PARSE. ingest_warn.py reads 47 states' layoff pages, each by
+# its own parser, and finishes `partial` with "FAILED: <state>, <state>" in its note. Some state redesigns its page
+# most months (Alabama on Nov 2 2026, Wisconsin on Nov 11), every other state loads regardless, and each state's own
+# freshness row ages into a failure by itself. So one state's bad run is a watch that names it, and a break only when
+# the same state has failed PART_STREAK runs in a row, or PART_MANY fail in one run (the reader itself is broken).
+# The whole ingest dying is the workflow hook's `failed` row, a break as before. PART_FAILED_NOTE is byte-identical
+# to ingest_warn.PART_FAILED_NOTE; test_ingest_health.py pins it.
+PART_FAILED_NOTE = "FAILED: "
+MANY_SOURCE_SCRIPTS = {"ingest_warn.py": "Layoff notices",
+                       "ingest_warn.py:server": "Layoff notices (the four states read from the Internet Archive)"}
+PART_STREAK = 3
+PART_MANY = 5
+
+
+def parts_failed(note: str) -> list[str]:
+    """The sources a many-source run names as unparsed: 'x; FAILED: Alabama, Ohio; y' -> ['Alabama', 'Ohio']."""
+    at = note.find(PART_FAILED_NOTE)
+    if at < 0:
+        return []
+    return [p.strip() for p in note[at + len(PART_FAILED_NOTE):].split(";")[0].split(",") if p.strip()]
+
+
+def part_streaks(runs: list[tuple[str, str, int]]) -> dict[str, int]:
+    """For each source the newest run names, how many runs in a row have named it. `runs` is one script's
+    (status, note, finished), newest first; a run that doesn't name the source ends its streak."""
+    out: dict[str, int] = {}
+    for name in parts_failed(runs[0][1]) if runs else []:
+        streak = 0
+        for _status, note, _finished in runs:
+            if name not in parts_failed(note):
+                break
+            streak += 1
+        out[name] = streak
+    return out
 
 
 def unreadable(label: str, exc: Exception) -> int:
@@ -123,10 +157,14 @@ def check_runs(db) -> int:
     rows = rows_of(res)
 
     newest: dict[str, tuple[str, str, int]] = {}
+    history: dict[str, list[tuple[str, str, int]]] = {}
     for script, status, note, finished in rows:
         key = run_key(script)
+        run = (str(status), str(note or ""), int(finished))
         if key not in newest:                       # rows arrive newest first
-            newest[key] = (str(status), str(note or ""), int(finished))
+            newest[key] = run
+        if key in MANY_SOURCE_SCRIPTS:
+            history.setdefault(key, []).append(run)
 
     # A row with no mode can share no later run's key, so any later clean run
     # of the same filename supersedes it. Mode-keyed rows keep the exact-key
@@ -156,15 +194,27 @@ def check_runs(db) -> int:
     print(f"\ningests with a run in {RUN_FAILURE_WINDOW_DAYS}d: {len(newest)} "
           f"({len(rows)} runs)")
     bad = []
+    watching = []
     for key in sorted(newest):
         status, note, finished = newest[key]
         age_h = (NOW_MS - finished) / 3_600_000
         capped = status == "partial" and SWEEP_CAP_NOTE in note
-        broken = status in BROKEN_STATUSES and not capped
-        verdict = "BROKEN" if broken else ("ok (capped)" if capped else ("ok" if status == "ok" else status))
+        # One source of many, not yet PART_STREAK runs running and not PART_MANY at once: a watch.
+        streaks = part_streaks(history.get(key, [])) if status == "partial" else {}
+        watch = bool(streaks) and max(streaks.values()) < PART_STREAK and len(streaks) < PART_MANY
+        broken = status in BROKEN_STATUSES and not capped and not watch
+        verdict = "BROKEN" if broken else ("ok (capped)" if capped else (
+            "watching" if watch else ("ok" if status == "ok" else status)))
         print(f"{key:38s} {status:8s} {age_h:5.1f}h ago  {verdict}")
         if broken:
             bad.append((key, status, note))
+        elif watch:
+            watching.append((key, streaks))
+    for key, streaks in watching:
+        named = ", ".join(f"{name} ({n} run{'' if n == 1 else 's'} in a row)" for name, n in sorted(streaks.items()))
+        print(f"::warning::{MANY_SOURCE_SCRIPTS[key]}: the reader couldn't parse the page of {named}; every other "
+              f"source loaded. It becomes a failure at {PART_STREAK} runs in a row for one source, or "
+              f"{PART_MANY} sources in one run")
     if not bad:
         return 0
     print(f"\nRUNS BROKEN: {len(bad)}")
