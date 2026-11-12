@@ -90,7 +90,16 @@ This release puts first things first on the case lists: the search, a short summ
 - The oldest filing month DOL still has open sits beside the month it's deciding.
 - Under the month there's one dated line to copy, for when you quote it.
 - The page's questions now include "Which month is DOL processing PERM applications from now?"
-- If you keep a processing-times page of your own, you can paste this answer and its figures into it. The code is under [embeds](/badges#embeds), and the box keeps itself current.
+- If you keep a processing-times page of your own, you can paste this answer and its figures into it, and the box keeps itself current. The code is on the page itself, under the answer ("Copy the code"), and on its card under [embeds](/badges#embed-perm-processing-times).
+- The pasted box fits the page it's on. In a phone-width article its frame grows taller, so no figure is cut off. Before, a phone showed about three quarters of it.
+- Every box under [embeds](/badges#embeds) now has a link of its own, so you can send someone straight to one.
+- The [API](/developers)'s queue answer carries the month too: `perm.decidingNow` is the filing month DOL is deciding by our daily check, with its date, and `perm.oldestOpenMonth` is the oldest month still open. DOL's own month in that answer has been empty since October 31.
+
+## Wage requests beside PERM applications, on every employer's page
+
+- An employer's page has a new table: for each year since 2023, the wage requests it sent DOL beside the PERM applications it filed. A green card through work starts with the wage request, and the PERM application follows months later.
+- The newest of each is dated above the table, so you can see whether an employer is starting green cards now and whether it's filing them.
+- For an employer that mostly hires nurses or physical therapists, the table says those cases skip the PERM application and go straight to USCIS.
 
 ## Fixed
 
@@ -99,6 +108,13 @@ This release puts first things first on the case lists: the search, a short summ
 - A count no longer reads "(0)" while it's still loading.
 - On a phone, the first and last months on the queue's month strip were cut off ("Aug '25" read "Au"). They read in full now.
 - On a phone row of [PERM cases](/perm-cases), a law firm's name is a full-size tap target.
+- More links that stand alone on a line are full-size tap targets on a phone. They were 17 to 20 pixels tall.
+  - A job's name on an employer's page.
+  - The names on the [H-1B ranking](/h1b-employers).
+  - The four programs on [case search](/case-search).
+  - The status names on [RFI and audits](/perm-rfi-audit).
+  - The employers on [under review](/perm-employers/under-review).
+  - Every name in the ranked lists on a city, state, industry or country page.
 - A case certified in DOL's live record, before its quarterly file names the decision, was told how many cases were "filed before this one". It now says the day our check first saw it certified.
 - The calendar button in every date box is as tall as the box. It was a third of that, which is small for a thumb.
 - The [wage levels guide](/guides/salary-high-enough-perm-h1b) says where DOL's wage rule stands: the final rule went to the White House for review on November 6, 2026.
