@@ -1334,51 +1334,85 @@ def load_montana(f: str | None) -> list[dict]:
 
 
 # --- Wisconsin --------------------------------------------------------------------
-# DWD's page draws its list from a Google Sheet the state publishes; the
-# sheet's id is read from the page's own script, and the sheet's "Originals"
-# tab is read as CSV (Google serves a published sheet that way without a key).
-# Updates to a notice sit in another tab and aren't read.
-WI_PAGE = "https://dwd.wisconsin.gov/dislocatedworker/warn/"
-WI_SCRIPT = "https://dwd.wisconsin.gov/dislocatedworker/warn/include/default.js"
+# DWD lists each year's notices on a page of its own: this year's at WI_PAGE, a table a month, with each
+# earlier year linked from it. (Until Nov 10 2026 the list came from a Google Sheet named in the old page's
+# script. The page moved, its old address redirects, and the script answers 404.)
+# A row is an original notice (CL, WR) or an update to one ("UPDATE 1 - Company": AW, LS, OC, RN). Updates
+# aren't read, as they weren't from the sheet. Each company's name links its notice's PDF, and the PDF's
+# number is the record number the sheet carried (2026111001), so a notice keeps the id it had.
+WI_PAGE = "https://dwd.wisconsin.gov/dislocatedworker/layoff-notices"
 WI_KIND = {"CL": "Facility closure", "WR": "Workforce reduction"}
+WI_UPDATE_CODES = {"AW", "LS", "OC", "RN"}
+WI_UPDATE_NAME = re.compile(r"^\s*update\b", re.I)
+WI_YEAR_LINK = re.compile(r'href="(/dislocatedworker/layoff-notices/(20\d\d))/?"')
+WI_PDF = re.compile(r"/(\d{8,12})\.pdf(?:$|[?#])", re.I)
+WI_COLUMNS = (("company", "company"), ("city", "city"), ("workers", "affected workers"), ("notice", "notice received"),
+              ("type", "notice type"), ("begin", "layoff begin"), ("naics", "naics"), ("county", "county"))
+
+
+def wisconsin_rows(data: bytes, source_url: str = WI_PAGE) -> list[dict]:
+    """One year's page as notices, before ids: every table that names a company and the day its notice came."""
+    page = decode(data)
+    out: list[dict] = []
+    found = False
+    for t in tables(page):
+        if not t:
+            continue
+        head = [c.text.lower() for c in t[0]]
+        at = {k: next((i for i, h in enumerate(head) if words in h), None) for k, words in WI_COLUMNS}
+        if at["company"] is None or at["notice"] is None:
+            continue  # the "Reason for Update" tables
+        found = True
+        for r in t[1:]:
+            def text(k: str) -> str:
+                i = at[k]
+                return r[i].text if i is not None and i < len(r) else ""
+            name = text("company")
+            if WI_UPDATE_NAME.match(name):
+                continue
+            d = parse_date(text("notice"))
+            if not d:
+                continue
+            codes = [x.strip().upper() for x in clean(text("type")).split(",") if x.strip()]
+            # A row of update codes alone is an update, whatever its name says.
+            if codes and all(x in WI_UPDATE_CODES for x in codes):
+                continue
+            links = r[at["company"]].links if at["company"] < len(r) else ()
+            pdf = next((m.group(1) for m in (WI_PDF.search(x) for x in links) if m), "")
+            city = clean(text("city"))
+            out.append(notice("WI", d, name.split(" * ")[0], source_url=source_url,
+                              effective_date=first_date(text("begin")),
+                              kind=", ".join(WI_KIND[x] for x in codes if x in WI_KIND) or None,
+                              employees=parse_int(text("workers")), county=text("county"),
+                              industry=text("naics"), site=city or None, extra=pdf or city))
+    if not found:
+        title = re.search(r"<title[^>]*>(.*?)</title>", page, re.I | re.S)
+        said = re.sub(r"\s+", " ", title.group(1)).strip()[:80] if title else "no title"
+        raise ValueError(f"WI: no table naming a company and a notice date (the page's title: {said!r}, {len(page):,} characters)")
+    return out
 
 
 def parse_wisconsin(data: bytes) -> list[dict]:
-    rows = csv_rows(data)
-    hi = find_header(rows, "company", "noticercvd")
-    if hi is None:
-        raise ValueError("no header naming Company and NoticeRcvd")
-    h = header_of(rows[hi])
-    c = {k: h.index(k.lower()) if k.lower() in h else None for k in
-         ("PK", "Company", "City", "AffectedWorkers", "NoticeRcvd", "NoticeType", "LayoffBeginDate",
-          "NAICSDescription", "County")}
-    out = []
-    for r in rows[hi + 1:]:
-        d = parse_date(cell(r, c["NoticeRcvd"]))
-        if not d:
-            continue
-        codes = [x.strip() for x in clean(cell(r, c["NoticeType"])).split(",") if x.strip()]
-        kind = ", ".join(WI_KIND[x] for x in codes if x in WI_KIND) or None
-        city = clean(cell(r, c["City"]))
-        out.append(notice("WI", d, cell(r, c["Company"]), source_url=WI_PAGE,
-                          effective_date=first_date(cell(r, c["LayoffBeginDate"])), kind=kind,
-                          employees=parse_int(cell(r, c["AffectedWorkers"])), county=cell(r, c["County"]),
-                          industry=cell(r, c["NAICSDescription"]), site=city or None,
-                          extra=clean(cell(r, c["PK"]))))
-    return finish(out, SINCE)
+    return finish(wisconsin_rows(data), SINCE)
+
+
+def wisconsin_years(page: bytes) -> dict[int, str]:
+    """The earlier years the page itself links, by year."""
+    return {int(y): "https://dwd.wisconsin.gov" + path for path, y in WI_YEAR_LINK.findall(decode(page))}
 
 
 def load_wisconsin(f: str | None) -> list[dict]:
     if f:
         return parse_wisconsin(read(f))
-    script = get_text(WI_SCRIPT, referer=WI_PAGE)
-    # The production line, not the commented "Acceptance" one under it.
-    live = [ln for ln in script.splitlines() if "spreadsheets/" in ln and not ln.strip().startswith("//")]
-    m = re.search(r"spreadsheets/([\w-]{20,})", live[0]) if live else None
-    if not m:
-        raise ValueError("the Wisconsin page script no longer names its sheet")
-    pause()
-    return parse_wisconsin(get(f"https://docs.google.com/spreadsheets/d/{m[1]}/gviz/tq?tqx=out:csv&sheet=Originals"))
+    first = get(WI_PAGE)
+    rows = wisconsin_rows(first)
+    linked = wisconsin_years(first)
+    for year in years_to_read("WI"):
+        if year not in linked:  # this year is the page just read; a year DWD doesn't link isn't asked for
+            continue
+        pause()
+        rows += wisconsin_rows(get(linked[year], referer=WI_PAGE), linked[year])
+    return finish(rows, SINCE)
 
 
 # --- Oklahoma ----------------------------------------------------------------------
