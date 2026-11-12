@@ -155,8 +155,10 @@ def main() -> int:
     check("with a sweep due in 20 minutes it rebuilds nothing, says why, and isn't a failure",
           code == 0 and scripts_run(calls) == [] and expired(calls) == []
           and "a case sweep starts in" in out and "rebuilds the documents itself" in out, f"{code} {out[-300:]}")
-    code, calls, out = run("case-status-docs", next_sweep_min=46)
-    check("with a sweep 46 minutes off it runs", code == 0 and len(scripts_run(calls)) == 10, str(scripts_run(calls)))
+    code, calls, out = run("case-status-docs", next_sweep_min=79)
+    check("with a sweep 79 minutes off it still gives way: the rebuild may need 75", code == 0 and scripts_run(calls) == [], str(scripts_run(calls)))
+    code, calls, out = run("case-status-docs", next_sweep_min=81)
+    check("with a sweep 81 minutes off it runs", code == 0 and len(scripts_run(calls)) == 10, str(scripts_run(calls)))
     code, calls, out = run("case-status-docs", next_sweep_min=None)
     check("when no timer can be read it runs: an unreadable clock is no reason to leave old documents up",
           code == 0 and len(scripts_run(calls)) == 10, f"{code} {out[-200:]}")
@@ -166,6 +168,14 @@ def main() -> int:
     give_way = int(re.search(r"^DOCS_GIVE_WAY=(\d+)$", src, re.M).group(1))
     limit = int(re.search(r"^TimeoutStartSec=(\d+)min$", LIMIT.read_text(), re.M).group(1))
     check("the unit is stopped before the give-way figure is reached", 0 < limit < give_way, f"limit {limit}, give way {give_way}")
+    # The employer map's read of the LCA table took 21 minutes on Nov 12 2026, while the release's old page cache
+    # (about 40 GB) was being deleted beside it: the step ran out of its 30 minutes, the unit ended red at 3 AM, and
+    # the 4:10 AM sweep rebuilt the map in six. The step gets an hour, the unit 75 minutes, and the rest still fits.
+    code, calls, out = run("case-status-docs", next_sweep_min=400)
+    at = next(i for i, c in enumerate(calls) if c.startswith("python3") and "build_employer_map.py" in c)
+    map_limit = int(re.fullmatch(r"timeout (\d+)m", calls[at - 1]).group(1))
+    check("the employer map has an hour, inside the unit's own limit", map_limit == 60 and map_limit < limit, f"map {map_limit}m, unit {limit}min")
+    check("the release goes live about 100 minutes before the 4:10 AM sweep, so the rebuild still runs after it", give_way <= 90, f"give way {give_way}")
     timers = sorted(p.name.split("@")[1].removesuffix(".timer") for p in (HERE / "systemd").glob("permtracker-sweep@case-status-*.timer"))
     asked = sorted(re.search(r"for t in ([a-z -]+); do", src).group(1).split())
     check("every case-status timer is one it checks before starting", timers == asked, f"timers {timers}, asked {asked}")
