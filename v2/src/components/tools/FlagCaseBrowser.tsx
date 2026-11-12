@@ -1,12 +1,13 @@
 "use client";
 
-import { Fragment, useId, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { IntentLink } from "@/components/ui/intent-link";
 import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 
 import { usePublicQuery } from "@/hooks/usePublicQuery";
 import { Pager } from "@/components/ui/pager";
+import { RowsPerPage, useListSize } from "@/components/ui/pagination";
 import { PendingLink } from "@/components/ui/pending-link";
 import { formatMonth } from "@/lib/dolFormat";
 // One line, deliberately: no-server-only-in-client.test.ts checks each import
@@ -556,6 +557,12 @@ export function FlagCaseBrowser({
   // still in process are the ones people are most likely to be asking about.
   const [order, setOrder] = useState<"newest" | "oldest">("newest");
   const [cursors, setCursors] = useState<string[]>([]);
+  // 25 rows on a wide screen, 10 on a phone, until the reader picks. A cursor is a place in a list of one page
+  // size, so a new size starts the list again.
+  const list = useListSize({ wide: LIST_PAGE_SIZE });
+  useEffect(() => {
+    setCursors([]);
+  }, [list.size]);
   const browseTop = useRef<HTMLElement>(null);
   const months = useMemo(
     () => (summary ? [...summary.byMonth].sort((a, b) => (a.month < b.month ? 1 : -1)) : []),
@@ -566,13 +573,13 @@ export function FlagCaseBrowser({
   const withheld = false as boolean;
   const listUrl = useMemo(() => {
     if (withheld) return "skip" as const;
-    const p = new URLSearchParams({ action: "list", kind, numItems: String(LIST_PAGE_SIZE) });
+    const p = new URLSearchParams({ action: "list", kind, numItems: String(list.size) });
     if (month) p.set("month", month);
     if (order === "oldest") p.set("order", "oldest");
     const cursor = cursors[cursors.length - 1];
     if (cursor) p.set("cursor", cursor);
     return `${program.api}?${p.toString()}`;
-  }, [kind, month, order, cursors, withheld, program.api]);
+  }, [kind, month, order, cursors, withheld, program.api, list.size]);
   const { data: page, previous: previousPage, failed: listFailed, failure: listFailure, retry: retryList } = usePublicQuery<FlagListPage>(listUrl);
   // The rows on screen: this page, or the last one while the next loads, so a
   // filter or page change dims the table instead of collapsing it to a line.
@@ -898,7 +905,8 @@ export function FlagCaseBrowser({
               &ldquo;Checked&rdquo; is the last day this site asked DOL about it.
             </p>
           </Pager>
-        ) : null}
+        ) : null}{" "}
+        {!withheld && !listFailed ? <RowsPerPage list={list} scrollTo={browseTop} className="mt-4" /> : null}
       </section>
     </div>
   );

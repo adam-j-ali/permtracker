@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 
-import { clampPage, pageItems, Pagination, PER_PAGE_OPTIONS, usePerPage } from "../pagination";
+import { clampPage, LIST_SIZE_OPTIONS, NARROW_HIDDEN, pageItems, Pagination, PER_PAGE_OPTIONS, RowsPerPage, useListSize, usePerPage } from "../pagination";
 
 describe("pageItems", () => {
   it("lists every page when there are seven or fewer", () => {
@@ -156,5 +156,58 @@ describe("usePerPage", () => {
 
     expect(window.location.search).toBe("?q=acme&per=50");
     expect(screen.getByTestId("per")).toHaveTextContent("50");
+  });
+});
+
+describe("useListSize and RowsPerPage, for a list read a page at a time", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const screenIs = (narrow: boolean) =>
+    vi.stubGlobal("matchMedia", (q: string) => ({ matches: narrow && q.includes("max-width"), media: q, addEventListener: () => {}, removeEventListener: () => {} }));
+
+  function Probe() {
+    const list = useListSize();
+    return (
+      <div>
+        <p data-testid="size">{`${list.size} ${list.picked ? "picked" : "default"}`}</p>
+        <ul>
+          {Array.from({ length: 25 }, (_, i) => (
+            <li key={i} className={list.narrowHidden(i)}>{`row ${i + 1}`}</li>
+          ))}
+        </ul>
+        <RowsPerPage list={list} />
+      </div>
+    );
+  }
+
+  it("asks for 25 rows on a wide screen and 10 on a phone", () => {
+    screenIs(false);
+    const wide = render(<Probe />);
+    expect(screen.getByTestId("size").textContent).toBe("25 default");
+    wide.unmount();
+    screenIs(true);
+    render(<Probe />);
+    expect(screen.getByTestId("size").textContent).toBe("10 default");
+  });
+
+  it("hides the rows of a server-drawn page past the phone's ten, until a size is picked", () => {
+    screenIs(false);
+    render(<Probe />);
+    const rows = screen.getAllByRole("listitem");
+    expect(rows[9]!.className).not.toContain(NARROW_HIDDEN);
+    expect(rows[10]!.className).toContain(NARROW_HIDDEN);
+    fireEvent.click(screen.getByRole("button", { name: "50 rows per page" }));
+    expect(screen.getByTestId("size").textContent).toBe("50 picked");
+    expect(screen.getAllByRole("listitem")[10]!.className).not.toContain(NARROW_HIDDEN);
+  });
+
+  it("offers every size, marks the one in use, and a phone can ask for more", () => {
+    screenIs(true);
+    render(<Probe />);
+    expect(LIST_SIZE_OPTIONS).toEqual([10, 25, 50, 100]);
+    for (const n of LIST_SIZE_OPTIONS) expect(screen.getByRole("button", { name: `${n} rows per page` })).toBeDefined();
+    expect(screen.getByRole("button", { name: "10 rows per page" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "25 rows per page" }));
+    expect(screen.getByTestId("size").textContent).toBe("25 picked");
+    expect(screen.getByRole("button", { name: "25 rows per page" }).getAttribute("aria-pressed")).toBe("true");
   });
 });

@@ -12,6 +12,7 @@ import { FilterCombobox } from "@/components/ui/filter-combobox";
 import { ChoiceRow } from "@/components/ui/choice-row";
 import { FilterFold } from "@/components/ui/filter-fold";
 import { Pager } from "@/components/ui/pager";
+import { useListSize } from "@/components/ui/pagination";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { LinkPending, PendingLink } from "@/components/ui/pending-link";
 import { LIST_PAGE_SIZE, LIST_ROW, LIST_TABLE, NUMBER_CELL, PHONE_ROW, TITLE_ON_PHONE } from "@/components/tools/caseListRow";
@@ -131,7 +132,7 @@ type Dimension = "all" | "state" | "occupation" | "employer" | "attorney";
 type SortKey = "decisionDate" | "receivedDate" | "days" | "wage" | "employerName" | "caseNumber";
 
 /** Rows a page can hold: the lists' own 25 first, and more for someone reading on a wide screen. */
-const PAGE_SIZES = [LIST_PAGE_SIZE, 50, 100, 250];
+const PAGE_SIZES = [10, LIST_PAGE_SIZE, 50, 100, 250];
 const STATUS_LABEL: Record<Status, string> = {
   certified: "Certified",
   denied: "Denied",
@@ -229,7 +230,10 @@ export function CaseBrowser({
   });
   const [fiscalYear, setFiscalYear] = useState(() => params.get("fy") ?? "");
   const [order, setOrder] = useState<"newest" | "oldest">("newest");
-  const [pageSize, setPageSize] = useState(LIST_PAGE_SIZE);
+  // 25 rows on a wide screen, 10 on a phone, until the reader picks.
+  const listSize = useListSize({ wide: LIST_PAGE_SIZE, options: PAGE_SIZES });
+  const pageSize = listSize.size;
+  const setPageSize = listSize.setSize;
   const socBoxId = useId();
   const formId = useId();
   // A code typed ("15-1252") finds its title too.
@@ -536,7 +540,7 @@ export function CaseBrowser({
     status !== "",
     fiscalYear !== "",
     order !== "newest",
-    pageSize !== LIST_PAGE_SIZE,
+    listSize.picked,
   ].filter(Boolean).length;
 
   return (

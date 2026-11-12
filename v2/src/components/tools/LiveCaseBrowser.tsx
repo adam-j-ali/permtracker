@@ -6,6 +6,7 @@ import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 
 import { usePublicQuery } from "@/hooks/usePublicQuery";
 import { Pager } from "@/components/ui/pager";
+import { RowsPerPage, useListSize } from "@/components/ui/pagination";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { PendingLink } from "@/components/ui/pending-link";
 import { formatMonth } from "@/lib/dolFormat";
@@ -93,6 +94,8 @@ export function LiveCaseBrowser({
   const [kind, setKind] = useState<LiveKind>("all");
   const [month, setMonth] = useState<string>(initialMonth);
   const [cursors, setCursors] = useState<string[]>([]);
+  // 25 rows on a wide screen, 10 on a phone, until the reader picks.
+  const list = useListSize({ wide: LIST_PAGE_SIZE });
   const liveTop = useRef<HTMLElement>(null);
   const [qInput, setQInput] = useState("");
   const [q, setQ] = useState("");
@@ -104,9 +107,10 @@ export function LiveCaseBrowser({
     const t = setTimeout(() => setQ(qInput.trim().length >= 2 ? qInput.trim() : ""), 300);
     return () => clearTimeout(t);
   }, [qInput]);
+  // A cursor is a place in one ordered list of one page size: any of these changing starts the list again.
   useEffect(() => {
     setCursors([]);
-  }, [q, sort, letter]);
+  }, [q, sort, letter, list.size]);
 
   const months = useMemo(
     () => (summary ? [...summary.byMonth].sort((a, b) => (a.month < b.month ? 1 : -1)) : []),
@@ -120,7 +124,9 @@ export function LiveCaseBrowser({
   // Every month lists its cases, however few.
   const withheld = false as boolean;
   const pristine =
-    Boolean(seed) && kind === "all" && month === initialMonth && cursors.length === 0 && q === "" && sort === "filed" && letter === "";
+    Boolean(seed) && kind === "all" && month === initialMonth && cursors.length === 0 && q === "" && sort === "filed" && letter === "" &&
+    // The server's first page is the wide screen's page: any other size is asked for.
+    list.size === LIST_PAGE_SIZE;
 
   const url = useMemo(() => {
     if (withheld || pristine) return "skip" as const;
@@ -131,11 +137,11 @@ export function LiveCaseBrowser({
     if (q) p.set("q", q);
     if (letter) p.set("letter", letter);
     if (sort !== "filed") p.set("sort", sort);
-    p.set("numItems", String(LIST_PAGE_SIZE));
+    p.set("numItems", String(list.size));
     const cursor = cursors[cursors.length - 1];
     if (cursor) p.set("cursor", cursor);
     return `/api/perm-cases?${p.toString()}`;
-  }, [kind, month, q, letter, sort, cursors, withheld, pristine]);
+  }, [kind, month, q, letter, sort, cursors, withheld, pristine, list.size]);
 
   const fetched = usePublicQuery<LiveListPage>(url);
   const page = pristine ? seed ?? undefined : fetched.data;
@@ -143,7 +149,9 @@ export function LiveCaseBrowser({
   // way, the last one that arrived (or the server's first page). Dropping to a
   // one-line "Loading" row on every filter or page change collapsed the table
   // and grew it back a moment later.
-  const shownPage = page ?? fetched.previous ?? seed ?? undefined;
+  // The server's page stands in at the size now asked for, so a phone shows its ten while its own page loads.
+  const seedShown = useMemo(() => (seed ? { ...seed, rows: seed.rows.slice(0, list.size) } : undefined), [seed, list.size]);
+  const shownPage = page ?? fetched.previous ?? seedShown;
   const failed = pristine ? false : fetched.failed;
 
   const reset = useCallback(() => setCursors([]), []);
@@ -319,10 +327,11 @@ export function LiveCaseBrowser({
                       {" "}</td>
                     </tr>
                   ) : null}
-                  {shownPage?.rows.map((r) => (
+                  {shownPage?.rows.map((r, i) => (
                     <tr
                       key={r.caseNumber}
-                      className={LIST_ROW + " " + PHONE_ROW}
+                      // The server draws the wide screen's 25: a phone hides the rows past its ten until its own page arrives.
+                      className={`${LIST_ROW} ${PHONE_ROW} ${(pristine && list.narrowHidden(i)) || ""}`}
                     >
                       <td className={NUMBER_CELL}>
                         {/* PendingLink: /perm-case-status is dynamic and can
@@ -390,7 +399,8 @@ export function LiveCaseBrowser({
               decision. It&apos;s blank for cases decided before the daily check began.
             </p>
           </Pager>
-        ) : null}
+        ) : null}{" "}
+        {!withheld && !failed ? <RowsPerPage list={list} scrollTo={liveTop} className="mt-4" /> : null}
       </div>
     </section>
   );

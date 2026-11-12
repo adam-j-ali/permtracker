@@ -89,6 +89,47 @@ describe("FlagCaseBrowser search filters", () => {
   });
 });
 
+describe("FlagCaseBrowser's page is sized for the screen", () => {
+  const screenIs = (narrow: boolean) =>
+    vi.stubGlobal("matchMedia", (q: string) => ({ matches: narrow && q.includes("max-width"), media: q, addEventListener: () => {}, removeEventListener: () => {} }));
+  const listUrls = () => usePublicQuery.mock.calls.map((c) => String(c[0])).filter((u) => u.includes("action=list"));
+  const full = (n: number) => ({
+    rows: Array.from({ length: n }, (_, i) => live(`P-100-26213-${String(i).padStart(6, "0")}`, "IN PROCESS")),
+    isDone: false,
+    continueCursor: String(n),
+  });
+
+  it("asks for 25 rows on a wide screen and 10 on a phone", () => {
+    screenIs(false);
+    const wide = render(<FlagCaseBrowser summary={null} program={PWD_PROGRAM} />);
+    expect(listUrls().at(-1)).toContain("numItems=25");
+    wide.unmount();
+    usePublicQuery.mockClear();
+    screenIs(true);
+    render(<FlagCaseBrowser summary={null} program={PWD_PROGRAM} />);
+    expect(listUrls().at(-1)).toContain("numItems=10");
+    vi.unstubAllGlobals();
+  });
+
+  it("offers more rows on a phone, and a new size starts the list from its first page", () => {
+    screenIs(true);
+    usePublicQuery.mockImplementation((url: string) =>
+      typeof url === "string" && url.includes("action=search")
+        ? { data: SEARCH, failed: false }
+        : { data: full(Number(/numItems=(\d+)/.exec(String(url))?.[1] ?? 0)), failed: false },
+    );
+    render(<FlagCaseBrowser summary={null} program={PWD_PROGRAM} />);
+    fireEvent.click(screen.getByRole("button", { name: "Older" }));
+    expect(listUrls().at(-1)).toContain("cursor=10");
+    fireEvent.click(screen.getByRole("button", { name: "50 rows per page" }));
+    const last = listUrls().at(-1)!;
+    expect(last).toContain("numItems=50");
+    expect(last).not.toContain("cursor=");
+    expect(screen.getByRole("button", { name: "50 rows per page" }).getAttribute("aria-pressed")).toBe("true");
+    vi.unstubAllGlobals();
+  });
+});
+
 describe("FlagCaseBrowser answers every press of Search", () => {
   it("says why when the employer name is too short", () => {
     render(<FlagCaseBrowser summary={null} program={LCA_PROGRAM} />);
