@@ -59,13 +59,14 @@ export function MonitorPanel() {
         <h2 id="monitor-h" className="font-heading text-xl font-bold">
           {`Daily report, ${dayLabel(report.day)}`}
         </h2>{" "}
-        <ol className="mt-4 flex flex-wrap gap-2" aria-label="Verdicts, newest first">
+        {/* A day, its verdict, and for a red day the parts that were red: a row of red chips said nothing to act on. */}
+        <ol className="mt-4 space-y-1.5" aria-label="Verdicts, newest first">
           {data.history.map((h) => (
-            <li
-              key={h.day}
-              className={`border-2 border-border px-2 py-1 text-sm font-bold ${CHIP[asStatus(h.overall)]}`}
-            >
-              {`${dayLabel(h.day)}: ${WORD[asStatus(h.overall)]}`}{" "}
+            <li key={h.day} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
+              <span className={`border-2 border-border px-2 py-0.5 font-bold ${CHIP[asStatus(h.overall)]}`}>
+                {`${dayLabel(h.day)}: ${WORD[asStatus(h.overall)]}`}
+              </span>{" "}
+              {h.failing && h.failing.length > 0 ? <span>{h.failing.join(", ")}</span> : null}
             </li>
           ))}
         </ol>
