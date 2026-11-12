@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 
+import { SplitBar } from "@/components/data/FigureVisual";
 import { WatchThisNumber } from "@/components/tools/WatchThisNumber";
+import type { EstimateProgress } from "@/lib/estimateProgress";
 import type { FlagProgram } from "@/lib/flagCaseNumber";
 
 /** Where a pending result's email box is, for a link that lands on it. */
@@ -14,6 +16,7 @@ export const WATCH_ANCHOR = "watch";
 export function AnswerNext({
   dateLabel = "Estimated decision",
   date,
+  progress = null,
   note,
   caseNumber,
   program,
@@ -21,6 +24,11 @@ export function AnswerNext({
   dateLabel?: string;
   /** "Around October 26, 2026", or null when no date can be given. */
   date: ReactNode | null;
+  /**
+   * How far along the case is by that date (`estimateProgress`): the days left and the share of the estimated wait
+   * already behind it, drawn as a bar. Shown only with a date, since both are read off it.
+   */
+  progress?: EstimateProgress | null;
   /** Under the date (how it's worked out), or in its place (why there's none). */
   note?: ReactNode;
   caseNumber: string;
@@ -32,7 +40,28 @@ export function AnswerNext({
         {date ? (
           <>
             <p className="text-sm text-soft">{dateLabel}</p>{" "}
-            <p className="mt-1 font-heading text-2xl font-bold sm:text-3xl">{date}</p>
+            <p className="mt-1 font-heading text-2xl font-bold sm:text-3xl">{date}</p>{" "}
+            {progress ? (
+              <div className="mt-3">
+                {/* Green is the wait behind the case, yellow the wait still ahead: the site's own two colours. */}
+                <SplitBar
+                  className="max-w-[16rem]"
+                  parts={[
+                    { value: progress.daysPassed, tone: "good" },
+                    { value: progress.daysLeft, tone: "wait" },
+                  ]}
+                  label={`${progress.daysPassed} of an estimated ${progress.totalDays} days have passed`}
+                />{" "}
+                <p className="mt-2 text-base leading-snug">
+                  <b className="font-semibold">
+                    {progress.daysLeft === 0
+                      ? "Estimated for today."
+                      : `About ${progress.daysLeft} ${progress.daysLeft === 1 ? "day" : "days"} left.`}
+                  </b>{" "}
+                  <span className="text-soft">{progress.passedPct}% of the estimated wait has passed.</span>
+                </p>
+              </div>
+            ) : null}
           </>
         ) : null}{" "}
         {note ? <div className={date ? "mt-1 text-sm" : "text-base leading-relaxed text-soft"}>{note}</div> : null}

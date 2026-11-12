@@ -60,6 +60,7 @@ import { formatAsOf, formatMonth } from "@/lib/dolFormat";
 import { PendingCensus } from "@/components/queue/PendingCensus";
 import { StageBar, StageLegend } from "@/components/queue/StageBar";
 import { groupByStage, prettyStatus } from "@/components/queue/stages";
+import { estimateProgress, type EstimateProgress } from "@/lib/estimateProgress";
 import { caseStatusTint } from "@/lib/statusTone";
 import type { StatusCount } from "@/lib/liveQueue";
 import { getStatusMeaning, KIND_LABEL } from "@/lib/permStatus";
@@ -228,6 +229,9 @@ export function CaseStatusResult({
     rfi,
     today,
   });
+  // The days left and the share of the wait behind the case, read off that same estimate on the page's one clock,
+  // so they can't disagree with the date beside them.
+  const progress = estimate?.kind === "date" ? estimateProgress({ filingDate, estimatedDate: estimate.estimatedDate, today }) : null;
 
   // 54 cases in 277,016 carry a live status that contradicts DOL's decided
   // record. It is 0.02% of the overlap and it is the whole ballgame when it
@@ -274,6 +278,7 @@ export function CaseStatusResult({
         publishedAsOf={publishedAsOf}
         casesAhead={casesAhead}
         estimate={estimate}
+        progress={progress}
         seenFinalOn={isFinal && status && history ? seenInStatusSince(history, status) : null}
       />
 
@@ -451,6 +456,7 @@ function Answer({
   publishedAsOf,
   casesAhead,
   estimate,
+  progress,
   seenFinalOn = null,
 }: {
   caseNumber: string;
@@ -473,6 +479,8 @@ function Answer({
   publishedAsOf: string | null;
   /** The estimate the panel below explains, built once by the caller. */
   estimate: Estimate | null;
+  /** How far along the case is by that estimate, built with it. */
+  progress: EstimateProgress | null;
   /** The day our checks first saw a decided case in its final status, when DOL's file hasn't dated it yet. */
   seenFinalOn?: string | null;
 }) {
@@ -542,6 +550,7 @@ function Answer({
                 ? `Around ${formatAsOf(estimate.estimatedDate) ?? estimate.estimatedDate}`
                 : null
             }
+            progress={progress}
             note={
               estimate?.kind === "date" ? (
                 <a href={`#${ESTIMATE_ANCHOR}`} className="link inline-flex min-h-11 items-center">
