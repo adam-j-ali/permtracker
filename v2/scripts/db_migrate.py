@@ -126,6 +126,10 @@ INDEXES = [
     "CREATE INDEX idx_pc_emp_st_dec    ON perm_cases(employer_slug, status, decision_date)",
     # The layoff answer counts one employer's cases by year: the index alone answers it (4.5 to 1.7 ms, Nov 8 2026).
     "CREATE INDEX idx_pc_emp_fy_layoff ON perm_cases(employer_slug, fiscal_year, layoff, decision_date)",
+    # An employer's PERM applications by the year it filed them (the page's table of wage requests beside PERM
+    # applications, `src/lib/db/employerStarts.ts`, INDEXED BY this name): the filing day and the case number are in
+    # the index, so the count never opens a case's row. Created on production by hand on Nov 12 2026 (1.3 s).
+    "CREATE INDEX idx_pc_emp_dec_recv  ON perm_cases(employer_slug, decision_date, received_date, case_number)",
     "CREATE INDEX idx_pc_att_dec       ON perm_cases(attorney_slug, decision_date)",
     "CREATE INDEX idx_pc_att_st_dec    ON perm_cases(attorney_slug, status, decision_date)",
     # The occupation pair is on the 6-digit group: `perm_cases` holds both

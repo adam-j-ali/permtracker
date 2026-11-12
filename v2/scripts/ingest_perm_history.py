@@ -160,6 +160,13 @@ SCHEMA = [
     # table's rows, scattered across the file (5.5 to 2.5 ms a page with nothing cached, Nov 8 2026).
     "CREATE INDEX IF NOT EXISTS idx_pch_emp_dec_cover ON perm_cases_history"
     "(employer_slug, decision_date, case_number, status, job_title, state, wage)",
+    # An employer's PERM applications by the year it filed them (`src/lib/db/employerStarts.ts`, INDEXED BY this
+    # name): the filing day and the case number are in the index. THIS TABLE IS BIG AND RARELY READ WHOLE: building
+    # this on production by hand on Nov 12 2026 held the write lock for about six minutes in the daytime, the
+    # watchdog restarted the database, and 11 page loads were refused. An index on this table is built at night,
+    # with the watchdog's timer stopped for the build.
+    "CREATE INDEX IF NOT EXISTS idx_pch_emp_dec_recv ON perm_cases_history"
+    "(employer_slug, decision_date, received_date, case_number)",
     """CREATE TABLE IF NOT EXISTS perm_country_years (
          country   TEXT NOT NULL,
          fy        INTEGER NOT NULL,

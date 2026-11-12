@@ -233,6 +233,12 @@ def table_ddl(cfg: dict) -> list[str]:
         f"CREATE INDEX IF NOT EXISTS {t}_final_filed ON {t} (is_final, filing_date, case_number)",
         f"CREATE INDEX IF NOT EXISTS {t}_filed ON {t} (filing_date, case_number)",
         f"CREATE INDEX IF NOT EXISTS {t}_stage ON {t} (current_status, is_final, filing_date)",
+        # An employer's wage requests of one kind, counted by year (`src/lib/db/employerStarts.ts`, INDEXED BY this
+        # name): the kind, the filing day and the case number are in the index, so the count never opens a row.
+        # Only on the wage requests' table, the one that read is made on. Created on production by hand on
+        # Nov 12 2026 (2.0 s).
+        *([f"CREATE INDEX IF NOT EXISTS {t}_emp_kind ON {t} (employer_slug, visa_type, filing_date, case_number)"]
+          if t == "pwd_case_status" else []),
         f"""CREATE TABLE IF NOT EXISTS {e} (
              case_number TEXT NOT NULL,
              changed_at  INTEGER NOT NULL,

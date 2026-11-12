@@ -193,6 +193,11 @@ LIVE_RECENT_DDL = [
          decided_seen  TEXT)""",
     "CREATE INDEX IF NOT EXISTS perm_live_recent_emp "
     "ON perm_live_recent (employer_slug, filing_date DESC)",
+    # An employer's pending PERM applications counted by year (`src/lib/db/employerStarts.ts`, INDEXED BY this
+    # name): the case number is in the index, so the count never opens a row. Created on production by hand on
+    # Nov 12 2026 (0.7 s).
+    "CREATE INDEX IF NOT EXISTS perm_live_recent_emp_case "
+    "ON perm_live_recent (employer_slug, filing_date, case_number)",
     # The two browse orders on /perm-cases and /perm-queue/[month]. Equality
     # first, the range/sort column next, the unique tiebreak last, so
     # `WHERE is_final = ? [AND filing_date range] ORDER BY filing_date,

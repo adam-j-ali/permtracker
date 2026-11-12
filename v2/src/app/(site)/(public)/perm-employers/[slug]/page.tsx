@@ -66,6 +66,8 @@ import { getPwdLinks } from "@/lib/db/pwdLinks";
 import { getEmployerSize } from "@/lib/db/decidedTimeline";
 import { sizeNote } from "@/lib/employerSize";
 import { PwdToPerm } from "@/components/entities/PwdToPerm";
+import { StartYears } from "@/components/entities/StartYears";
+import { getEmployerStarts } from "@/lib/db/employerStarts";
 import { similarSponsors } from "@/lib/db/similarSponsors";
 import { NameSpellings } from "@/components/entities/NameSpellings";
 import { neutralPageEntry } from "@/lib/privacy/withheld";
@@ -302,7 +304,7 @@ async function loadLiveOnly(slug: string) {
 async function OtherEmployerPage({ slug, record }: { slug: string; record: OtherEmployerRecord }) {
   const match = await employerMatch(slug);
   const empty = { cases: [], more: false };
-  const [programs, fresh, wageLive, lcaLive, wageDets, lcaDets, seasonal, lcaProfile, uscisH1b, lottery, debarments, warn, whd] =
+  const [programs, fresh, wageLive, lcaLive, wageDets, lcaDets, seasonal, lcaProfile, uscisH1b, lottery, debarments, warn, whd, starts] =
     await Promise.all([
       getEmployerPrograms(slug).catch(softFail("perm-employers/[slug]/page.getEmployerPrograms", null)),
       getFreshness(),
@@ -321,6 +323,8 @@ async function OtherEmployerPage({ slug, record }: { slug: string; record: Other
       debarmentsForSlug(slug),
       warnForSlug(slug),
       whdForSlug(slug),
+      // Its wage requests by year, beside the PERM applications it never filed. A failure only drops the table.
+      record.pwd ? getEmployerStarts(slug).catch(softFail("perm-employers/[slug]/page.getEmployerStarts", null)) : null,
     ]);
   const lines = programs ? [programs.pwd, programs.lca, programs.seasonal] : [];
   const open = lines.filter((l) => l && l.pending !== null);
@@ -368,12 +372,19 @@ async function OtherEmployerPage({ slug, record }: { slug: string; record: Other
           ) : null
         }
         filings={
-          <WageAndLcaFilings
-            name={record.name}
-            wageReqs={unifiedRows(wageLive, wageDets, 5)}
-            lcas={unifiedRows(lcaLive, lcaDets, 5)}
-            heading="Its newest wage requests and LCAs"
-          />
+          <>
+            <WageAndLcaFilings
+              name={record.name}
+              wageReqs={unifiedRows(wageLive, wageDets, 5)}
+              lcas={unifiedRows(lcaLive, lcaDets, 5)}
+              heading="Its newest wage requests and LCAs"
+            />{" "}
+            <StartYears
+              starts={starts}
+              spellings={programs?.match.basis === "map" ? programs.match.spellings : null}
+              className="mt-8"
+            />
+          </>
         }
         seasonalCases={seasonal.cases}
         seasonalMore={seasonal.more}
@@ -602,7 +613,7 @@ export default async function EmployerPage({
     // No catch: an unreadable map must fail the render (the last good page
     // stays), not cache a month of an employer with no other programs.
     const liveMatch = await employerMatch(slug);
-    const [fresh, liveStages, liveWait, fieldWait, filedToday, liveSeasonal, wageLive, lcaLive, wageDets, lcaDets, lcaProfile, uscisH1b, lottery, liveDebarments, liveWarn, liveWhd] =
+    const [fresh, liveStages, liveWait, fieldWait, filedToday, liveSeasonal, wageLive, lcaLive, wageDets, lcaDets, lcaProfile, uscisH1b, lottery, liveDebarments, liveWarn, liveWhd, liveStarts] =
       await Promise.all([
         getFreshness(),
         getEmployerStages().catch(softFail("perm-employers/[slug]/page.getEmployerStages", null)),
@@ -620,6 +631,8 @@ export default async function EmployerPage({
         debarmentsForSlug(slug),
         warnForSlug(slug),
         whdForSlug(slug),
+        // Its wage requests and PERM applications by year. A failure only drops the table.
+        getEmployerStarts(slug).catch(softFail("perm-employers/[slug]/page.getEmployerStarts", null)),
       ]);
     const updated = employerOwnDate(await liveOnlyLastChanged(slug), await getDateSources());
     return (
@@ -646,6 +659,7 @@ export default async function EmployerPage({
                 heading="Its wage requests and LCAs"
                 className="mt-8"
               />{" "}
+              <StartYears starts={liveStarts} className="mt-8" />{" "}
               <LcaProfile name={live.record.name} profile={lcaProfile} />{" "}
               <UscisH1bRecord record={uscisH1b} through={fresh["uscis-h1b-hub"]?.asOf ?? null} />{" "}
               <H1bLotteryHistory years={lottery} />{" "}
@@ -710,7 +724,7 @@ export default async function EmployerPage({
   // the LCA panel and the lists below all read the same rows.
   // No catch, for the reason at the live-only branch's call.
   const match = await employerMatch(canonicalSlug);
-  const [stats, dist, near, pending, facets, variants, absorbed, freshness, recentLive, wageLive, lcaLive, wageDets, lcaDets, programs, stagesDoc, debarments, warn, empWait, fieldWait, filedToday, years, historyCases, workers, seasonalRows, lcaProfile, uscisH1b, lottery, sponsor, pwdLinks, size, acwia, whd, osha, samRows, taaRows, pppRows, layoffAnswer, lcaYearRows] =
+  const [stats, dist, near, pending, facets, variants, absorbed, freshness, recentLive, wageLive, lcaLive, wageDets, lcaDets, programs, stagesDoc, debarments, warn, empWait, fieldWait, filedToday, years, historyCases, workers, seasonalRows, lcaProfile, uscisH1b, lottery, sponsor, pwdLinks, size, acwia, whd, osha, samRows, taaRows, pppRows, layoffAnswer, lcaYearRows, starts] =
     await Promise.all([
       getDisclosureSummary(),
       fieldDistribution(KIND, MIN_DECIDED_FOR_RATE),
@@ -784,6 +798,8 @@ export default async function EmployerPage({
       getEmployerLayoffAnswer(canonicalSlug),
       // Its H-1B LCAs by fiscal year, FY2008 on (lca_cases_years, one indexed read). No catch, as with layoffs.
       lcaYears(canonicalSlug),
+      // Its wage requests beside its PERM applications, by the year it filed each. A failure only drops the table.
+      getEmployerStarts(canonicalSlug).catch(softFail("perm-employers/[slug]/page.getEmployerStarts", null)),
     ]);
   const wageReqs = unifiedRows(wageLive, wageDets, 5);
   const lcas = unifiedRows(lcaLive, lcaDets, 5);
@@ -1037,6 +1053,12 @@ export default async function EmployerPage({
           searchHref={byName}
           spellings={programs?.match.basis === "map" ? programs.match.spellings : null}
           heading={false}
+        />{" "}
+        {/* Whether it's starting green cards, and whether it follows through: the first step beside the second. */}
+        <StartYears
+          starts={starts}
+          spellings={programs?.match.basis === "map" ? programs.match.spellings : null}
+          className="mt-8"
         />{" "}
         {/* The two filings that come BEFORE a PERM, from the same daily DOL
             check: the wage request and, for H-1B holders, the LCA. Five each,
