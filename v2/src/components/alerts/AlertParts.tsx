@@ -94,12 +94,15 @@ export function OptInBox({
   checked,
   onChange,
   className,
+  label,
 }: {
   id: string;
   kind: "newsletter" | "news";
   checked: boolean;
   onChange: (checked: boolean) => void;
   className?: string;
+  /** The row's own words, for a box that adds the list `kind` names for a stated reason. */
+  label?: string;
 }) {
   // The whole row is the label and at least 44px tall: a one-line row on a
   // 390px phone had been a 23px target. No negative margin: two boxes sit 12px
@@ -116,7 +119,7 @@ export function OptInBox({
           TICK,
         )}
       />{" "}
-      <span className="text-sm leading-relaxed text-soft">{OPT_IN_TEXT[kind]}</span>
+      <span className="text-sm leading-relaxed text-soft">{label ?? OPT_IN_TEXT[kind]}</span>
     </label>
   );
 }

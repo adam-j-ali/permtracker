@@ -20,7 +20,7 @@ import { Fold, FoldList } from "@/components/data/Fold";
 import { buttonVariants } from "@/components/ui/button";
 import { CaseMilestones } from "@/components/tools/CaseMilestones";
 import { AnswerNext, WATCH_ANCHOR } from "@/components/tools/AnswerNext";
-import { BulletinAlertForm } from "@/components/tools/BulletinAlertForm";
+import { CertifiedNextWatch } from "@/components/tools/CertifiedNextWatch";
 import { RecordList, type RecordRow } from "@/components/data/RecordList";
 import {
   CaseEstimate,
@@ -644,15 +644,7 @@ function DecidedNext({
   return (
     <div className="mt-6 border-t border-foreground/10 pt-6">
       {approved ? (
-        // A CERTIFIED CASE'S NEXT WATCH. The case alert ends here, and the wait that follows (the visa bulletin
-        // reaching this case's priority date) can run for years. The bulletin alert sits where the case alert sat
-        // on a pending case, with the priority date already beside it, so someone who was watching keeps watching.
-        <div id={WATCH_ANCHOR} className="-mx-5 mb-6 scroll-mt-24 border-l-4 border-primary bg-tint px-5 py-5 sm:mx-0">
-          <h3 className="font-heading text-lg font-bold leading-snug">Next, the visa bulletin: get an email when your cutoff moves</h3>{" "}
-          <div className="mt-2">
-            <BulletinAlertForm source="case-certified" bare priorityDate={filingDate} />
-          </div>
-        </div>
+        <CertifiedNextWatch anchorId={WATCH_ANCHOR} filingDate={filingDate} />
       ) : null}{" "}
       <Link href={next.href} className={buttonVariants({ variant: "outline", size: "lg" })}>
         {next.label}
