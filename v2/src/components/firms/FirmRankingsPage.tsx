@@ -14,7 +14,7 @@ import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { FaqList } from "@/components/tools/FaqList";
 import { buttonVariants } from "@/components/ui/button";
 import { choiceVariants } from "@/components/ui/choice";
-import { ScrollBox } from "@/components/ui/scroll-box";
+import { PagedTable } from "@/components/ui/paged-table";
 import { breadcrumbSchema } from "@/lib/breadcrumbs";
 import { SITE_URL } from "@/lib/constants/site";
 import { getFirmRanks, getFirmRanksSummary } from "@/lib/db/firmRanks";
@@ -267,11 +267,17 @@ async function Ranking({ program, state, summary }: { program: FirmProgram; stat
       {program === "perm" ? <WaitSpread list={list.slice(0, BARS_SHOWN)} /> : null}{" "}
       {rest.length > 0 ? (
         <FinePrint summary={`Ranks ${BARS_SHOWN + 1} to ${list.length}`} className="mt-6">
-          <ScrollBox label={`Law firms ranked ${BARS_SHOWN + 1} to ${list.length}`} className="border-2 border-border">
-            <table className="w-full min-w-[34rem] border-collapse text-left text-sm">
+          <PagedTable
+            label={`Law firms ranked ${BARS_SHOWN + 1} to ${list.length}`}
+            boxClassName="border-2 border-border"
+            tableClassName="w-full min-w-[34rem] border-collapse text-left text-sm"
+            noun="law firms"
+            caption={
               <caption className="sr-only">
                 Law firms ranked {BARS_SHOWN + 1} to {list.length} by {p.noun}, FY{fy}, {place}{" "}
               </caption>
+            }
+            head={
               <thead>
                 <tr className="border-b-2 border-border">
                   <th scope="col" className="p-2.5 text-right font-semibold">
@@ -296,8 +302,8 @@ async function Ranking({ program, state, summary }: { program: FirmProgram; stat
                   </th>
                 </tr>
               </thead>
-              <tbody>
-                {rest.map((r) => (
+            }
+            rows={rest.map((r) => (
                   <tr key={r.slug} className="border-b border-border/40 last:border-b-0">
                     <td className="p-2.5 text-right font-mono tabular-nums">{r.rank}{" "}</td>
                     <th scope="row" className="p-2.5 font-semibold">
@@ -313,9 +319,7 @@ async function Ranking({ program, state, summary }: { program: FirmProgram; stat
                     <td className="p-2.5 text-right tabular-nums">{r.prevRank === null ? "No filings" : ordinal(r.prevRank)}{" "}</td>
                   </tr>
                 ))}
-              </tbody>
-            </table>
-          </ScrollBox>
+          />
         </FinePrint>
       ) : null}
     </PageSection>

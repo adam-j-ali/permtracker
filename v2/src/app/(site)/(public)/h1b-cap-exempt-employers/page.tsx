@@ -11,7 +11,7 @@ import { SiteBreadcrumbs } from "@/components/layout/SiteBreadcrumbs";
 import { ColumnChart, type Column } from "@/components/numbers/ColumnChart";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { FaqList } from "@/components/tools/FaqList";
-import { ScrollBox } from "@/components/ui/scroll-box";
+import { PagedTable } from "@/components/ui/paged-table";
 import {
   CAP_EXEMPT_KINDS,
   KIND_WORDS,
@@ -249,11 +249,17 @@ export default async function Page() {
               />{" "}
               {rest.length > 0 ? (
                 <FinePrint summary={`The next ${rest.length}`} className="mt-6">
-                  <ScrollBox label={`Cap-exempt employers ${SHOWN + 1} to ${list.length}`} className="border-2 border-border">
-                    <table className="w-full min-w-[34rem] border-collapse text-left text-sm">
+                  <PagedTable
+                    label={`Cap-exempt employers ${SHOWN + 1} to ${list.length}`}
+                    boxClassName="border-2 border-border"
+                    tableClassName="w-full min-w-[34rem] border-collapse text-left text-sm"
+                    noun="employers"
+                    caption={
                       <caption className="sr-only">
                         Cap-exempt employers ranked {SHOWN + 1} to {list.length} by certified H-1B LCAs{" "}
                       </caption>
+                    }
+                    head={
                       <thead>
                         <tr className="border-b-2 border-border">
                           <th scope="col" className="p-2.5 font-semibold">
@@ -270,8 +276,8 @@ export default async function Page() {
                           </th>
                         </tr>
                       </thead>
-                      <tbody>
-                        {rest.map((r) => (
+                    }
+                    rows={rest.map((r) => (
                           <tr key={r.slug} className="border-b border-border/40 last:border-b-0">
                             <th scope="row" className="p-2.5 font-semibold">
                               {employerName(r, ROW_LINK)}{" "}
@@ -281,9 +287,7 @@ export default async function Page() {
                             <td className="p-2.5 text-right font-mono tabular-nums">{formatInt(r.lcas)}{" "}</td>
                           </tr>
                         ))}
-                      </tbody>
-                    </table>
-                  </ScrollBox>
+                  />
                 </FinePrint>
               ) : null}
             </PageSection>{" "}
