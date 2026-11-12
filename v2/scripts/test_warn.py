@@ -164,6 +164,26 @@ def main() -> int:
     stale, cov = prune_plan(wide, load)
     check(stale == [] and cov < PRUNE_MIN_COVERAGE, f"a load covering {cov:.0%} of what is held is treated as truncated and prunes nothing", f)
     check(prune_plan(held, []) == ([], 0.0), "an empty load prunes nothing", f)
+    # A reader that changes how it reads a name must still recognise its own old rows. Wisconsin's old reader kept
+    # the markup that followed a company's name and the state respelled two names (Nov 11 2026); the new reader's
+    # clean rows then covered 88% of the range, the prune stood down, and 16 notices were held twice.
+    relabelled = [
+        {"id": "n1", "company": "TJ Hale", "notice_date": "2026-02-25"},
+        {"id": "n2", "company": "Polaris, Inc.", "notice_date": "2026-04-21"},
+        {"id": "n3", "company": "Air Wisconsin Airlines LLC (ATW)", "notice_date": "2025-09-05"},
+        {"id": "n4", "company": "Air Wisconsin Airlines LLC (MKE)", "notice_date": "2025-09-05"},
+    ]
+    dirty = [
+        ("o1", 'TJ Hale<br/></a><a><em style="font-size: 0.9em;">Update 1</em>', "2026-02-25"),
+        ("o2", "Polaris Inc.", "2026-04-21"),
+        ("o3", "Air Wisconsin Airlines LLC (ATW)<br/></a>", "2025-09-05"),
+        ("n4", "Air Wisconsin Airlines LLC (MKE)", "2025-09-05"),
+    ]
+    stale, cov = prune_plan(dirty, relabelled)
+    check(cov == 1.0, f"old rows with markup after the name, or other punctuation, still count as covered (got {cov})", f)
+    check(stale == ["o1", "o2", "o3"], f"and their stale ids are the ones pruned (got {stale})", f)
+    apart = prune_plan([("x", "Air Wisconsin Airlines LLC (GRB)", "2025-09-05")], relabelled)
+    check(apart[1] == 0.0, f"a different site of the same company is a different notice (got {apart})", f)
 
     # The site: display only, so two notices one company filed the same day
     # for different sites stop printing identically. Never part of the id.

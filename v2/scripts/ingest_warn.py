@@ -612,6 +612,18 @@ def write(db: Database, rows: list[dict], state: str) -> int:
 PRUNE_MIN_COVERAGE = 0.9
 
 
+def cover_key(company: str, notice_date: str) -> tuple[str, str]:
+    """A notice's (company, day) for measuring coverage: the name up to any markup, letters and digits only.
+
+    ONE READING OF A NAME ON BOTH SIDES. Coverage compares rows written by an older reader with rows from today's,
+    and a reader that changes how it reads a name must still recognise its own old rows: Wisconsin's old reader
+    kept the markup that followed a name ("TJ Hale<br/></a><a><em ...") and the state respelled others ("Polaris
+    Inc." to "Polaris, Inc."). Compared letter for letter, the new reader's clean rows covered 88% of what was
+    held, the prune stood down, and 16 notices were held twice (Nov 11 2026). This is for coverage only: ids, and
+    the name a page shows, are untouched."""
+    return re.sub(r"[^a-z0-9]", "", str(company).split("<")[0].lower()), notice_date
+
+
 def prune_plan(held: list[tuple[str, str, str]], rows: list[dict]) -> tuple[list[str], float]:
     """Which held ids a snapshot load no longer carries, and how much it covers.
 
@@ -628,8 +640,8 @@ def prune_plan(held: list[tuple[str, str, str]], rows: list[dict]) -> tuple[list
     hi = max(r["notice_date"] for r in rows)
     ids = {r["id"] for r in rows}
     in_range = [h for h in held if lo <= h[2] <= hi]
-    held_keys = {(c.lower(), d) for _, c, d in in_range}
-    load_keys = {(r["company"].lower(), r["notice_date"]) for r in rows}
+    held_keys = {cover_key(c, d) for _, c, d in in_range}
+    load_keys = {cover_key(r["company"], r["notice_date"]) for r in rows}
     coverage = len(held_keys & load_keys) / len(held_keys) if held_keys else 1.0
     if coverage < PRUNE_MIN_COVERAGE:
         return [], coverage
