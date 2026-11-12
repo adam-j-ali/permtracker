@@ -50,7 +50,10 @@ export interface EmployerStageRow {
 
 /** One day DOL moved five or more of one employer's cases into or out of hold. */
 export interface HoldMove {
+  /** The Eastern day the sweep recorded it: the move's key, never its words. */
   date: string;
+  /** The day or days DOL worked on it, oldest first (see `workedOn`). Absent in a doc from before Nov 12 2026. */
+  worked?: string[];
   name: string;
   slug: string | null;
   dir: "on" | "off";
@@ -65,7 +68,10 @@ export interface HoldMove {
  * day this site recorded it. DOL certifies and denies; the employer withdraws.
  */
 export interface DecisionMove {
+  /** The Eastern day the sweep recorded it: the move's key, never its words. */
   date: string;
+  /** The day or days DOL worked on it, oldest first (see `workedOn`). Absent in a doc from before Nov 12 2026. */
+  worked?: string[];
   name: string;
   slug: string | null;
   to: "CERTIFIED" | "DENIED" | "WITHDRAWN";
@@ -119,8 +125,31 @@ function isMove(v: unknown): v is HoldMove {
     (m.slug === null || typeof m.slug === "string") &&
     (m.dir === "on" || m.dir === "off") &&
     typeof m.to === "string" &&
-    isInt(m.n)
+    isInt(m.n) &&
+    isWorked(m.worked)
   );
+}
+
+/** `worked` is optional; when it's there it's one or two ISO days. */
+function isWorked(v: unknown): boolean {
+  return v === undefined || (Array.isArray(v) && v.length >= 1 && v.length <= 2 && v.every(isIso));
+}
+
+/**
+ * The day or days DOL worked on a move, oldest first.
+ *
+ * A move's `date` is the day the sweep recorded it, and the 4 AM pass records the evening before's work: on Nov 11
+ * 2026, a federal holiday, a batch dated by `date` read "DOL certified 76 of its cases, Nov 11". The sweep now
+ * writes the day DOL worked beside it (`worked`), by the daily series' own rule. Every date a reader sees comes
+ * from here; `date` stays the key a follower's "already heard" list holds, so no batch is mailed twice.
+ */
+export function workedOn(m: { date: string; worked?: string[] }): string[] {
+  return m.worked && m.worked.length > 0 ? m.worked : [m.date];
+}
+
+/** The days in words: one day as `format` gives it, two joined by "and". */
+export function workedLabel(days: readonly string[], format: (iso: string) => string): string {
+  return days.map(format).join(" and ");
 }
 
 const DECISIONS = new Set(["CERTIFIED", "DENIED", "WITHDRAWN"]);
@@ -135,7 +164,8 @@ function isDecision(v: unknown): v is DecisionMove {
     (m.slug === null || typeof m.slug === "string") &&
     typeof m.to === "string" &&
     DECISIONS.has(m.to) &&
-    isInt(m.n)
+    isInt(m.n) &&
+    isWorked(m.worked)
   );
 }
 
@@ -298,7 +328,10 @@ export function holdSentence(m: HoldMove): string {
  */
 export interface EmployerMove {
   key: string;
+  /** The day the sweep recorded it: for the key, windows and order. Show `worked`. */
   date: string;
+  /** The day or days DOL worked on it, oldest first: the date a reader is shown. */
+  worked: string[];
   slug: string | null;
   name: string;
   sentence: string;
@@ -311,6 +344,7 @@ export function employerMoves(doc: Pick<EmployerStagesDoc, "holdMoves" | "decisi
     ...doc.holdMoves.map((m) => ({
       key: `${m.date}|hold-${m.dir}|${m.to}`,
       date: m.date,
+      worked: workedOn(m),
       slug: m.slug,
       name: m.name,
       sentence: holdSentence(m),
@@ -320,6 +354,7 @@ export function employerMoves(doc: Pick<EmployerStagesDoc, "holdMoves" | "decisi
     ...doc.decisionMoves.map((m) => ({
       key: `${m.date}|decided|${m.to}`,
       date: m.date,
+      worked: workedOn(m),
       slug: m.slug,
       name: m.name,
       sentence: decisionSentence(m),
@@ -359,10 +394,14 @@ export interface HoldDay {
   moves: HoldMove[];
 }
 
-/** Hold moves grouped by day, newest day first. */
+/** Hold moves grouped by the day DOL worked on them (the later day, for a move seen across two), newest first. */
 export function movesByDay(moves: readonly HoldMove[]): HoldDay[] {
   const byDate = new Map<string, HoldMove[]>();
-  for (const m of moves) byDate.set(m.date, [...(byDate.get(m.date) ?? []), m]);
+  for (const m of moves) {
+    const worked = workedOn(m);
+    const day = worked[worked.length - 1] ?? m.date;
+    byDate.set(day, [...(byDate.get(day) ?? []), m]);
+  }
   return [...byDate]
     .sort((a, b) => (a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0))
     .map(([date, ms]) => ({ date, moves: [...ms].sort((a, b) => b.n - a.n) }));
