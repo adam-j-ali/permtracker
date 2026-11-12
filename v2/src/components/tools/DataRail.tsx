@@ -415,14 +415,16 @@ export function DataRail() {
       </div>
 
       {/* Below lg: the same side panel, pulled out by a tab on the screen edge.
-          The handle is the caret alone, a 44px square in the gap under the
-          header; a version carrying the section name was tall enough to cover
-          the page's heading. The panel names the section once it's open.
-          CLOSED, IT SITS IN THE PAGE (the shell is its positioned parent) and
-          scrolls away with the top: fixed to the screen it floated over the
-          text, and each line that passed under it lost its first letters
-          (seen at 390 wide, Nov 10 2026). The header's Menu lists the same
-          sections from anywhere on the page. Open, it's fixed with its panel. */}
+          The handle is the caret alone, in the gap under the header; a version
+          carrying the section name was tall enough to cover the page's heading.
+          The panel names the section once it's open.
+          IT STAYS ON THE SCREEN, shut or open. As a 44px square it floated over
+          the text, and each line that passed under it lost its first letters
+          (390 wide, Nov 10 2026). Letting it scroll away with the page fixed that
+          and lost the tab, which the owner missed the next day. So it's fixed,
+          and on a phone it's 28px wide with its 2px shadow: a page's first letter
+          is 32px from the edge (the shell's 16px and the page's own 16px). From
+          640px those margins are 48px and the tab is the full square. */}
       <button
         type="button"
         aria-expanded={panelOpen}
@@ -431,15 +433,15 @@ export function DataRail() {
           setPanelDrawn(true);
           setPanelOpen((v) => !v);
         }}
-        // Open: under the header's measured height, not a constant (it shrinks
-        // on scroll). Closed: the same 4px gap, from the top of the shell.
-        style={{ top: panelOpen ? `calc(var(--site-header-h, 4.5rem) + ${HANDLE_GAP})` : HANDLE_GAP }}
+        // Under the header's measured height, not a constant: it shrinks on scroll.
+        style={{ top: `calc(var(--site-header-h, 4.5rem) + ${HANDLE_GAP})` }}
         className={cn(
           // `z-[41]`: above the panel (40), below the header (45), so the
           // header's phone menu covers it. At equal z-index the panel (rendered
           // later) would paint its border over the handle.
-          panelOpen ? "fixed" : "absolute",
-          "left-[env(safe-area-inset-left,0px)] z-[41] flex size-11 items-center justify-center",
+          "fixed left-[env(safe-area-inset-left,0px)] z-[41] flex h-11 w-7 items-center justify-center sm:w-11",
+          // The rest of a 44px target on a phone: 16px beside the tab that takes a tap and draws nothing.
+          "after:absolute after:inset-y-0 after:left-full after:w-4 after:content-[''] sm:after:hidden",
           "border-y-2 border-r-2 border-border bg-background shadow-hard-sm",
           "transition-transform duration-200 ease-out motion-reduce:transition-none",
           "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",

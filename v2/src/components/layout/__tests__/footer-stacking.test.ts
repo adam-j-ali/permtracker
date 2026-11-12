@@ -69,11 +69,9 @@ describe("header, footer and dialog stacking", () => {
     // The handle sat at 41 over a header at 40 (Oct 15 to Oct 24 2026) and drew
     // on top of the open phone menu's first row.
     const rail = read("src/components/tools/DataRail.tsx");
-    // The handle's position is its own expression since Nov 10 2026: in the page
-    // while the panel is shut, fixed with the panel while it's open. Its z-index
-    // matters in both, since an open panel's handle sits under the header's menu.
-    const handle = rail.match(/"(left-\[env\(safe-area-inset-left,0px\)\] z-[^"]*)"/)?.[1] ?? "";
-    expect(rail).toContain('panelOpen ? "fixed" : "absolute"');
+    // The handle is fixed to the screen whether the panel is shut or open (again since
+    // Nov 12 2026), so its z-index is in play on every data page at every scroll position.
+    const handle = rail.match(/"(fixed left-\[env\(safe-area-inset-left,0px\)\] z-[^"]*)"/)?.[1] ?? "";
     const panel = rail.match(/"(fixed bottom-0 left-0 z-[^"]*)"/)?.[1] ?? "";
     expect(zIndexIn(handle), "handle z-index").not.toBeNull();
     expect(zIndexIn(panel), "panel z-index").not.toBeNull();

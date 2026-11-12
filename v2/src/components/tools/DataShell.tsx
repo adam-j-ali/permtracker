@@ -48,8 +48,7 @@ export function DataShell({ children, sources }: { children: React.ReactNode; so
   }
 
   return (
-    // `relative`: below `lg` the rail's handle is placed from this box's top-left corner.
-    <div className="relative w-full px-4 sm:px-6 lg:flex lg:gap-8">
+    <div className="w-full px-4 sm:px-6 lg:flex lg:gap-8">
       {/* `contents` keeps the wrapper out of the flex layout; it exists only so
           the rail can be left off a printed page. */}
       <div className="contents print:hidden">
