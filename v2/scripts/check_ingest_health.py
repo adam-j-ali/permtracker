@@ -211,7 +211,8 @@ def check_runs(db) -> int:
         elif watch:
             watching.append((key, streaks))
     for key, streaks in watching:
-        named = ", ".join(f"{name} ({n} run{'' if n == 1 else 's'} in a row)" for name, n in sorted(streaks.items()))
+        named = ", ".join(f"{name} ({'1 run so far' if n == 1 else f'{n} runs in a row'})"
+                          for name, n in sorted(streaks.items()))
         print(f"::warning::{MANY_SOURCE_SCRIPTS[key]}: the reader couldn't parse the page of {named}; every other "
               f"source loaded. It becomes a failure at {PART_STREAK} runs in a row for one source, or "
               f"{PART_MANY} sources in one run")
