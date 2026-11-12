@@ -155,7 +155,11 @@ function Row({
       </span>{" "}
       <div className="min-w-0">
         {r.linked ? (
-          <Link href={entityHref("employer", r.slug)} className="link text-base [overflow-wrap:anywhere] lg:text-lg">
+          <Link
+            href={entityHref("employer", r.slug)}
+            // The name stands alone on its line above the bar, so on a phone it gets the tap floor.
+            className="link text-base [overflow-wrap:anywhere] max-sm:inline-flex max-sm:min-h-11 max-sm:items-center lg:text-lg"
+          >
             {r.name}
           </Link>
         ) : (

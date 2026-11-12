@@ -241,9 +241,11 @@ export default async function EmployersUnderReviewPage() {
                       data-tip={`${r.name}\n${formatInt(n)} of ${formatInt(r.pending)} pending cases on hold${since ? `, ${since}` : ""}`}
                     >
                       <span className="min-w-0">
+                        {/* On a phone the name is a 44px tap target: 12px above and below its line, taken back off as
+                            margin, so a one-line name sits as close to the line under it as a two-line name does. */}
                         <span className="block font-bold [overflow-wrap:anywhere]">
                           {r.slug ? (
-                            <Link href={entityHref("employer", r.slug)} className="link">
+                            <Link href={entityHref("employer", r.slug)} className="link max-sm:-my-3 max-sm:block max-sm:py-3">
                               {r.name}
                             </Link>
                           ) : (

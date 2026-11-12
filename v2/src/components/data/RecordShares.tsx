@@ -50,12 +50,13 @@ export function RecordShares({ rows, className }: { rows: RecordShare[]; classNa
         {rows.map((r) => (
           <Fragment key={r.key}>
             {" "}
-            <li className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3 py-2.5">
-              <span aria-hidden="true" className={cn("mt-1 size-4 border-input border", r.swatch)} />{" "}
+            <li className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3 py-2.5 max-sm:pt-0.5">
+              {/* On a phone the name is a 44px tap target, so the swatch and the count drop to sit level with it. */}
+              <span aria-hidden="true" className={cn("mt-1 size-4 border-input border max-sm:mt-3.5", r.swatch)} />{" "}
               <span className="min-w-0">
                 <Link
                   href={r.href}
-                  className="link"
+                  className="link max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
                 >
                   {r.label}
                 </Link>{" "}
@@ -68,7 +69,7 @@ export function RecordShares({ rows, className }: { rows: RecordShare[]; classNa
                   ))}
                 </span>
               </span>{" "}
-              <span className="font-heading text-lg font-bold tabular-nums">{r.n === null ? "—" : formatInt(r.n)}</span>
+              <span className="font-heading text-lg font-bold tabular-nums max-sm:mt-2">{r.n === null ? "—" : formatInt(r.n)}</span>
             </li>
           </Fragment>
         ))}
