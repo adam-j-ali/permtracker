@@ -119,6 +119,7 @@ Each was decided once and holds until the owner changes it. The reasons are in t
 - Recruitment may begin on the wage determination's own day, but the app keeps the day after on purpose (Nov 9). A denial's 30-day request moves to the next business day off a weekend or holiday, but the app keeps the 30th day on purpose, so it's never later than the real one (Nov 9).
 - A case alert keeps watching for a year after DOL decides (Oct 7). The green card line prints years by default (Sep 26).
 - The API and the MCP server are free: `PAYWALL_ENFORCED` stays unset until billing exists (Oct 8); exports count rows, 20,000 a day on Plus (Oct 10).
+- The site says it's free, and only that: no "forever", no promise and no timeline about later (Nov 12).
 - Nothing is posted or replied to on X or elsewhere for the site without the owner's yes for that post (Oct 11).
 
 **Email**
@@ -127,6 +128,7 @@ Each was decided once and holds until the owner changes it. The reasons are in t
 - The weekly case summary stays on Monday for every account and goes only in a week something changed; the sample case sends nothing (Oct 12).
 - A box opened in an alert email saves its rating at once (Oct 12, Oct 24). A congratulations note goes two business days after a good decision, read by a person, one per address, never twice (Oct 22, Oct 23).
 - Reviews are the site's own: the owner approves each, declining only spam and abuse; a review needs no name (Oct 23, Nov 2). Visitor reports on consulate pages post at once and are moderated after (Nov 5).
+- A shared green card timeline waits for the owner's review before it counts (Nov 12).
 - A law firm's own words wait for the admin's review before they show (Oct 5).
 
 **Look and feel**
@@ -134,6 +136,7 @@ Each was decided once and holds until the owner changes it. The reasons are in t
 - One status colour code everywhere: certified green, denied red, filed or waiting yellow, withdrawn purple (Oct 27).
 - Pictures before words; a short looping clip beats a still where something happens (Oct 26, Oct 27). Article pictures: a relevant photo first, then something colourful, a pale screenshot last (Nov 2).
 - First things first on every page: the search box, then the overview (the answer or the summary figures), then the list in short pages, then the rest (Nov 11).
+- Nothing a reader sees or uses is removed, hidden or unpinned to fix a flaw in it: the flaw is fixed and the thing stays. A repeat stays where it's relevant and important to that page. A real removal is the owner's call, asked with the picture (Nov 12).
 - Pages, not endless lists (Oct 21): every list shows a short page sized for the screen (fewer rows on a phone), with a pager and a rows-per-page choice (Nov 11). Loading screens sweep (Oct 6). Summary cards say which way a figure moved and whether that's good (Nov 1).
 - A moving drawing sits beside the text with no box, and each new one waits for the owner's yes; the sideways scroll stage is the attorney page's alone (Oct 21).
 - `/press` and the firm's-site section stay as they were built (Oct 11). The homepage opens with the answer, and the header offers Sign in only (Oct 27). Its first screen holds the answer and the case box at every width; the steps after PERM are links under the box, never a switch, and the figures and the approval rate sit below (Nov 10).
