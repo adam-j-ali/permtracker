@@ -38,6 +38,7 @@ import { analystReviewQueue } from "@convex/lib/dolProcessingTimes";
 import { queueMoveTrend } from "@/lib/dolTrends";
 import { waitingTrend } from "@/lib/homeTrends";
 import { getLiveRemainderSummary, listLiveCases } from "@/lib/db/liveCases";
+import { LIST_PAGE_SIZE } from "@/components/tools/caseListRow";
 import { LiveCaseBrowser } from "@/components/tools/LiveCaseBrowser";
 import { SearchParamsBoundary } from "@/hooks/useUrlSearchParams";
 import { openGraphBase } from "@/lib/openGraphBase";
@@ -138,12 +139,12 @@ export async function generateStaticParams(): Promise<{ month: string }[]> {
 }
 
 /**
- * How many of the month's live rows the page lists before pointing at the
- * full list on /perm-cases. A busy month holds ~14,500 filings; the whole set
+ * How many of the month's live rows the page draws: the list's own first page (a phone shows ten of them), before
+ * pointing at the full list on /perm-cases. A busy month holds ~14,500 filings; the whole set
  * belongs in the paginated browser, not in a prerendered page written whole
  * to the page cache on every regeneration.
  */
-const MONTH_LIST_MAX = 50;
+const MONTH_LIST_MAX = LIST_PAGE_SIZE;
 
 export default async function CohortPage({
   params,

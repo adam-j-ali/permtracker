@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useSyncExternalStore, type RefObject } from "react";
+import { useCallback, useState, useSyncExternalStore, type RefObject } from "react";
 import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
 
 import { choiceVariants } from "@/components/ui/choice";
@@ -149,6 +149,73 @@ export function usePerPage({
     options,
     narrowHidden: (i) => (asked === null && i >= narrow ? NARROW_HIDDEN : undefined),
   };
+}
+
+/** The page sizes a list read a page at a time offers. */
+export const LIST_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+
+export interface ListSize {
+  /** Rows to ask the server for, now. */
+  size: number;
+  /** The reader picked this; false while it's the screen's default. */
+  picked: boolean;
+  setSize: (size: number) => void;
+  /** Back to the screen's default, as if nothing had been picked. */
+  clear: () => void;
+  options: readonly number[];
+  /** The class for row `i` (0-based) of a page the server drew at the wide size: hides the rows past a phone's page. */
+  narrowHidden: (i: number) => string | undefined;
+}
+
+/**
+ * Rows a page for a list read from the server a page at a time (Previous and Next, no page numbers): `wide` on a
+ * wide screen and `narrow` on a phone, until the reader picks a size.
+ *
+ * THE PICK LIVES IN THE COMPONENT, never the address. A list like this keeps its place as a cursor, which no link
+ * carries, so a size in the address would be a link that opens on another page than the one it was copied from.
+ * The caller sends `size` as the request's page size and goes back to its first page when it changes.
+ */
+export function useListSize({
+  wide = 25,
+  narrow = 10,
+  options = LIST_SIZE_OPTIONS,
+}: { wide?: number; narrow?: number; options?: readonly number[] } = {}): ListSize {
+  const isNarrow = useNarrowScreen();
+  const [picked, setPicked] = useState<number | null>(null);
+  return {
+    size: picked ?? (isNarrow ? narrow : wide),
+    picked: picked !== null,
+    setSize: setPicked,
+    clear: () => setPicked(null),
+    options,
+    narrowHidden: (i) => (picked === null && i >= narrow ? NARROW_HIDDEN : undefined),
+  };
+}
+
+/** "Rows per page" beside a Previous and Next pager, for `useListSize`. */
+export function RowsPerPage({
+  list,
+  scrollTo,
+  className,
+}: {
+  list: Pick<ListSize, "size" | "setSize" | "options">;
+  /** The top of the list, brought back into view after a pick. */
+  scrollTo?: RefObject<HTMLElement | null>;
+  className?: string;
+}) {
+  return (
+    <ChoiceRow
+      label="Rows per page"
+      labelClassName="block text-sm text-muted-foreground"
+      className={className}
+      options={list.options.map((n) => ({ value: String(n), label: String(n), ariaLabel: `${n} rows per page` }))}
+      value={String(list.size)}
+      onChange={(v) => {
+        list.setSize(Number(v));
+        showTop(scrollTo?.current);
+      }}
+    />
+  );
 }
 
 /** Bring a list's top into view if a press left it above the screen. */
