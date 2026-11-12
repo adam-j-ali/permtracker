@@ -47,6 +47,8 @@ const LABEL_EVERY = 2;
 const PHONE_LABEL_EVERY = 4;
 /** On a phone a label this close to a flagged month's label would touch it. */
 const PHONE_LABEL_CLEAR_OF_FLAG = 2;
+/** When the two flagged months sit side by side their labels are turned outward and reach a column further. */
+const PHONE_LABEL_CLEAR_OF_TURNED = 3;
 /** "DOL is here" is wider than three phone columns: this near the strip's start it's set from the column's edge. */
 const PHONE_FLAG_EDGE_COLUMNS = 3;
 /** The share of a phone's strip the stretch between the flags must cover to hold the cases-ahead words. */
@@ -93,11 +95,23 @@ export function QueueTape({
   const stretch = youAt - frontierAt - 1;
   const aheadFitsPhone = stretch / months.length >= PHONE_AHEAD_LABEL_MIN_SHARE;
 
+  // SIDE BY SIDE, THE TWO FLAGGED MONTHS' LABELS PRINTED OVER EACH OTHER ON A PHONE: a label is about twice a
+  // column's width there, and both are always shown ("Jan '26" on "Feb '26", for a case filed the month after the
+  // one DOL is deciding). Each is turned away from the other: the left one ends at its column's right edge, the
+  // right one starts at its column's left edge. At the strip's own edge there's no room to turn, so there DOL's
+  // month gives up its label on a phone and its flag stands for it.
+  const sideBySide = hasYou && frontierAt >= 0 && Math.abs(youAt - frontierAt) === 1;
+  const pairLeft = sideBySide ? Math.min(frontierAt, youAt) : -1;
+  const pairRight = sideBySide ? Math.max(frontierAt, youAt) : -1;
+  const turned = sideBySide && pairLeft > 0 && pairRight < months.length - 1;
+  const clearOfFlag = turned ? PHONE_LABEL_CLEAR_OF_TURNED : PHONE_LABEL_CLEAR_OF_FLAG;
+
   /** Which widths a month's label shows at: both, from `sm` only, or to screen readers alone. */
   const labelClass = (i: number): string => {
+    if (i === frontierAt && sideBySide && !turned) return "max-sm:sr-only";
     if (i === frontierAt || i === youAt) return "";
     if (i % LABEL_EVERY !== 0) return "sr-only";
-    const nearFlag = [frontierAt, youAt].some((f) => f >= 0 && Math.abs(i - f) < PHONE_LABEL_CLEAR_OF_FLAG);
+    const nearFlag = [frontierAt, youAt].some((f) => f >= 0 && Math.abs(i - f) < clearOfFlag);
     return i % PHONE_LABEL_EVERY !== 0 || nearFlag ? "max-sm:sr-only" : "";
   };
 
@@ -140,6 +154,9 @@ export function QueueTape({
                   // A label is wider than a phone's column: at the strip's ends it starts from the edge, or it's cut off.
                   i === 0 && "max-sm:justify-start",
                   i === months.length - 1 && "max-sm:justify-end",
+                  // Side by side, the two flagged months' labels turn away from each other, with air between.
+                  turned && i === pairLeft && "max-sm:justify-end max-sm:pr-1",
+                  turned && i === pairRight && "max-sm:justify-start max-sm:pl-1",
                   // Still waiting reads soft yellow, not blank (round 3, Oct 15 2026).
                   !cleared && !isFrontier && "bg-soft-wait",
                   cleared && "bg-primary",
@@ -161,6 +178,8 @@ export function QueueTape({
                     "relative z-[1] text-center font-mono text-sm font-bold leading-none",
                     i === 0 && "max-sm:text-left",
                     i === months.length - 1 && "max-sm:text-right",
+                    turned && i === pairLeft && "max-sm:text-right",
+                    turned && i === pairRight && "max-sm:text-left",
                     cleared || isFrontier ? "text-black/80" : "text-muted-foreground",
                     // Room is tight: see labelClass.
                     labelClass(i),

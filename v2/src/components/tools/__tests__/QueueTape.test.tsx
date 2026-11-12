@@ -137,6 +137,58 @@ describe("QueueTape on a phone", () => {
     expect(all.map((l, i) => (wide(l) ? i : -1)).filter((i) => i >= 0)).toEqual([0, 1, 2, 4, 6, 8, 10, 11, 12]);
   });
 
+  it("turns the two flagged months' labels away from each other on a phone when they sit side by side", () => {
+    // A label is about twice a phone column's width. With DOL deciding January and the reader's case filed in
+    // February, the two centred labels printed over each other ("JaFeb '2626", seen at 390px on Nov 12 2026).
+    // Arrange: the case page's call for a case one month behind DOL's front.
+    const { container } = render(<QueueTape frontierMonth="2026-01" selectedMonth="2026-02" monthsBehind={8} monthsAhead={10} />);
+    const columns = Array.from(container.querySelectorAll("[data-tip]"));
+    const dol = columns[8]!;
+    const you = columns[9]!;
+    const shown = (l: { classes: string[] }) => !l.classes.includes("sr-only") && !l.classes.includes("max-sm:sr-only");
+
+    // Assert: the left one ends at its column's right edge and the right one starts at its column's left edge,
+    // with a little air between them, and both are still printed.
+    expect(classes(dol)).toEqual(expect.arrayContaining(["max-sm:justify-end", "max-sm:pr-1"]));
+    expect(classes(dol.querySelector("span.font-mono"))).toContain("max-sm:text-right");
+    expect(classes(you)).toEqual(expect.arrayContaining(["max-sm:justify-start", "max-sm:pl-1"]));
+    expect(classes(you.querySelector("span.font-mono"))).toContain("max-sm:text-left");
+    const all = labels(container);
+    expect(shown(all[8]!)).toBe(true);
+    expect(shown(all[9]!)).toBe(true);
+    expect(all.map((l, i) => (shown(l) ? i : -1)).filter((i) => i >= 0)).toEqual([0, 4, 8, 9, 12, 16]);
+  });
+
+  it("keeps a plain label one more column clear of a turned pair, which reaches further", () => {
+    // DOL at index 6 and the reader at 7: index 4 is an every-fourth month two columns from DOL's. Beside a centred
+    // label it fits; beside one turned toward it, the two would touch, so it's hidden on a phone.
+    const { container } = render(<QueueTape frontierMonth="2026-01" selectedMonth="2026-02" monthsBehind={6} monthsAhead={10} />);
+    const shown = (l: { classes: string[] }) => !l.classes.includes("sr-only") && !l.classes.includes("max-sm:sr-only");
+    expect(labels(container).map((l, i) => (shown(l) ? i : -1)).filter((i) => i >= 0)).toEqual([0, 6, 7, 12, 16]);
+    // Apart, that same month keeps its label.
+    const apart = render(<QueueTape frontierMonth="2026-01" selectedMonth="2026-06" monthsBehind={6} monthsAhead={10} />);
+    expect(labels(apart.container).map((l, i) => (shown(l) ? i : -1)).filter((i) => i >= 0)).toContain(4);
+  });
+
+  it("at the strip's own edge, where a label can't turn, DOL's month gives its label up on a phone", () => {
+    // DOL at the first column and the reader beside it: the first label starts from the strip's edge and would run
+    // over the second. The flag still says where DOL is.
+    const { container } = render(<QueueTape frontierMonth="2026-01" selectedMonth="2026-02" monthsBehind={0} monthsAhead={10} />);
+    const all = labels(container);
+    expect(all[0]!.classes).toContain("max-sm:sr-only");
+    expect(all[1]!.classes).not.toContain("max-sm:sr-only");
+    expect(flag(container, "DOL is here")).toBeDefined();
+  });
+
+  it("leaves both labels centred when the two flagged months are apart", () => {
+    const { container } = render(<QueueTape frontierMonth="2026-01" selectedMonth="2026-04" monthsBehind={8} monthsAhead={10} />);
+    const columns = Array.from(container.querySelectorAll("[data-tip]"));
+    for (const c of [columns[8]!, columns[11]!]) {
+      expect(classes(c)).not.toContain("max-sm:justify-end");
+      expect(classes(c)).not.toContain("max-sm:justify-start");
+    }
+  });
+
   it("draws the cases-ahead label inside the strip on a phone only when the stretch can hold it", () => {
     // The words sit in a span of their own inside the stretch's box; the box is what hides.
     const stretchBox = (c: HTMLElement, words: string) =>
