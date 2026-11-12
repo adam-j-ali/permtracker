@@ -228,6 +228,8 @@ function sandboxEntity(kind: keyof typeof ENTITIES, slug: string): ReadResult<Re
 const SAMPLE_QUEUE = {
   perm: {
     asOf: AS_OF,
+    decidingNow: { month: "2026-02", asOf: AS_OF, source: "PERM Tracker's daily check of DOL's case status" },
+    oldestOpenMonth: "2026-01",
     queues: [{ queue: "Analyst Review", workingOnMonth: "2025-12", asPrinted: "December 2025" }],
     averageDays: [{ determination: "Analyst Review", month: "2026-09", calendarDays: 470 }],
   },

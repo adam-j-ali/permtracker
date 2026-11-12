@@ -74,7 +74,7 @@ export const ENDPOINTS: EndpointDoc[] = [
   },
   {
     path: "/queue",
-    summary: "DOL's processing times (the month each queue is working on, average days) and the pending PERM cases by filing month.",
+    summary: "DOL's processing times (average days, and the month each queue is working on when DOL prints one), the filing month DOL is deciding by PERM Tracker's daily check of case statuses, the oldest month still open, and the pending PERM cases by filing month.",
     example: "/queue",
     counted: true,
   },

@@ -629,7 +629,7 @@ AUTONOMOUS: No confirmation needed.`,
     },
 
     dolQueue: {
-      description: "DOL's processing times today: each queue's month and average days, and pending PERM cases by filing month.",
+      description: "DOL's processing times today: average days, the filing month DOL is deciding by our daily check of case statuses (perm.decidingNow), the oldest month still open, and pending PERM cases by filing month.",
       inputSchema: DolQueueInputSchema,
       execute: async () => publicRecord(() => readQueue()),
     },

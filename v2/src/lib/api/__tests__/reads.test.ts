@@ -20,6 +20,7 @@ const lookupCase = vi.fn();
 vi.mock("@/lib/db/caseLookup", () => ({ lookupCase: (...a: unknown[]) => lookupCase(...a) }));
 vi.mock("@/lib/db/client", () => ({ one: vi.fn() }));
 vi.mock("@/lib/db/processingTimes", () => ({ getProcessingTimes: vi.fn() }));
+vi.mock("@/lib/db/permLine", () => ({ getPermLine: vi.fn() }));
 vi.mock("@/lib/db/pwdCases", () => ({ pwd: {} }));
 vi.mock("@/lib/db/lcaCases", () => ({ lca: {} }));
 const seasonalLookup = vi.fn();
@@ -45,6 +46,7 @@ vi.mock("@/lib/findCase", () => ({ findCase: (...a: unknown[]) => findCase(...a)
 
 import { getLiveBacklog } from "@/lib/db/publicData";
 import { getProcessingTimes } from "@/lib/db/processingTimes";
+import { getPermLine } from "@/lib/db/permLine";
 import { findCases, readCase, readEntity, readEstimate, readQueue, searchEntities } from "../reads";
 
 const adobe = {
@@ -252,6 +254,9 @@ describe("readEstimate", () => {
 });
 
 describe("readQueue", () => {
+  beforeEach(() => {
+    vi.mocked(getPermLine).mockReset().mockResolvedValue(null);
+  });
   const pt = { permAsOf: "2026-11-01", permQueues: [], permAverageDays: [], pwdAsOf: "2026-11-01", pwdQueues: [], pwdPermBacklog: null };
   const pending = (out: Awaited<ReturnType<typeof readQueue>>) => (out.ok ? (out.data.perm as Record<string, unknown> | undefined) : undefined);
 
@@ -261,6 +266,36 @@ describe("readQueue", () => {
     const out = await readQueue();
     expect(out.ok).toBe(true);
     expect(out.ok && out.data.pendingPermByFilingMonth).toBeNull();
+    expect(pending(out)?.asOf).toBe("2026-11-01");
+  });
+
+  // DOL's own page stopped printing the month it's working on (Oct 31 2026), so `queues[].workingOnMonth` can be
+  // empty. The answer carries the month by our own daily check, dated, and the oldest month still open.
+  it("names the month DOL is deciding by our own check, and the oldest month still open", async () => {
+    vi.mocked(getProcessingTimes).mockResolvedValue(pt as never);
+    vi.mocked(getPermLine).mockResolvedValue({ month: "2026-02", asOf: "2026-11-12" } as never);
+    vi.mocked(getLiveBacklog).mockResolvedValue([
+      { month: "2025-12", total: 9000, decided: 8800, pending: 200, decidedPct: 97.8 },
+      { month: "2026-01", total: 9000, decided: 6000, pending: 3000, decidedPct: 66.7 },
+      { month: "2026-02", total: 9000, decided: 900, pending: 8100, decidedPct: 10 },
+    ] as never);
+    const out = await readQueue();
+    expect(pending(out)?.decidingNow).toEqual({
+      month: "2026-02",
+      asOf: "2026-11-12",
+      source: "PERM Tracker's daily check of DOL's case status",
+    });
+    expect(pending(out)?.oldestOpenMonth).toBe("2026-01");
+  });
+
+  it("sends null for the month when our check can't be read, and keeps the rest", async () => {
+    vi.mocked(getProcessingTimes).mockResolvedValue(pt as never);
+    vi.mocked(getPermLine).mockRejectedValue(new Error("fetch failed"));
+    vi.mocked(getLiveBacklog).mockRejectedValue(new Error("fetch failed"));
+    const out = await readQueue();
+    expect(out.ok).toBe(true);
+    expect(pending(out)?.decidingNow).toBeNull();
+    expect(pending(out)?.oldestOpenMonth).toBeNull();
     expect(pending(out)?.asOf).toBe("2026-11-01");
   });
 
