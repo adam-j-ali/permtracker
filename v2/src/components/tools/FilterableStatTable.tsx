@@ -134,15 +134,19 @@ export interface FilterableStatTableProps<T> {
   /** The name a row goes by, for a "did you mean" chip; the search text when unset. */
   suggestText?: (row: T) => string;
   /**
-   * The columns a phone shows fit a phone: the table takes the screen's width there, with no sideways scroll.
-   * Without it the table keeps its 560px floor on every screen, and on a phone the first figure column starts past
-   * the edge. For a table whose phone columns are a name and one or two short figures.
+   * Whether the table takes a phone's width, with no sideways scroll there. Left out, it does whenever a phone
+   * shows three columns or fewer (the ones not marked `secondary`): a name and one or two short figures fit 326px.
+   * The table used to keep a 560px floor on every screen, and on a phone the Filings and Approval columns of the
+   * employer and law firm lists started past the edge (measured Nov 11 2026: 234px over, two cells off-screen).
+   * A table showing four or five columns on a phone keeps the floor and scrolls; say `false` to force that.
    */
   fitPhone?: boolean;
 }
 
 /** `0` means every row on one page: the "show all" a reader asks for when a cohort is a few thousand rows. */
 const PAGE_SIZES = [10, 25, 50, 100, 250, 0] as const;
+/** The most columns a phone can show without a sideways scroll: a name and two short figures. */
+const PHONE_FIT_COLUMNS = 3;
 /** The most rows a page holds on a phone until the reader picks a size. */
 export const PHONE_ROWS = 25;
 
@@ -177,8 +181,9 @@ export function FilterableStatTable<T>({
   queryFromUrl = false,
   suggestKind,
   suggestText,
-  fitPhone = false,
+  fitPhone: fitPhoneAsked,
 }: FilterableStatTableProps<T>) {
+  const fitPhone = fitPhoneAsked ?? columns.filter((c) => !c.secondary).length <= PHONE_FIT_COLUMNS;
   const [query, setQuery] = useState("");
   useEffect(() => {
     if (!queryFromUrl) return;

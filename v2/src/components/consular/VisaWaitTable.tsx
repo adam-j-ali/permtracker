@@ -18,7 +18,8 @@ export interface PostWaits {
  * wait, sorts on any column, and shows a short page.
  *
  * A PHONE SHOWS THE CONSULATE, WORK VISAS AND STUDENTS. The visitor and crew columns are in the wide table and in
- * the download: five columns of words don't fit a phone without a sideways scroll.
+ * the download: five columns of words don't fit a phone without a sideways scroll, and three do (the shared table
+ * takes the screen's width when a phone shows three columns or fewer).
  */
 export function VisaWaitTable({ posts }: { posts: PostWaits[] }) {
   const columns: StatColumn<PostWaits>[] = [
@@ -72,7 +73,6 @@ export function VisaWaitTable({ posts }: { posts: PostWaits[] }) {
       noun="consulates"
       csv={csv}
       pageSize={25}
-      fitPhone
     />
   );
 }

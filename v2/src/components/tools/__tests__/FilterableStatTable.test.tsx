@@ -482,3 +482,30 @@ describe("FilterableStatTable on a phone", () => {
     expect(bodyOrder()).toHaveLength(10);
   });
 });
+
+describe("FilterableStatTable's width on a phone", () => {
+  const classes = () => screen.getByRole("table").className.split(/\s+/);
+  const three = COLUMNS.slice(0, 3).map((c) => ({ ...c, secondary: false }));
+  const four = [...three, { ...three[2]!, key: "fourth", label: "Fourth" }];
+
+  it("takes the screen's width when a phone shows three columns or fewer, so no figure starts past the edge", () => {
+    render(<FilterableStatTable rows={ROWS} {...base()} columns={three} />);
+    expect(classes()).toContain("sm:min-w-[560px]");
+    expect(classes()).not.toContain("min-w-[560px]");
+  });
+
+  it("counts only the columns a phone shows: a fourth marked secondary still fits", () => {
+    render(<FilterableStatTable rows={ROWS} {...base()} columns={[...three, { ...four[3]!, secondary: true }]} />);
+    expect(classes()).toContain("sm:min-w-[560px]");
+  });
+
+  it("keeps its floor, and scrolls, when a phone shows four columns", () => {
+    render(<FilterableStatTable rows={ROWS} {...base()} columns={four} />);
+    expect(classes()).toContain("min-w-[560px]");
+  });
+
+  it("does what it's told when told", () => {
+    render(<FilterableStatTable rows={ROWS} {...base()} columns={three} fitPhone={false} />);
+    expect(classes()).toContain("min-w-[560px]");
+  });
+});
