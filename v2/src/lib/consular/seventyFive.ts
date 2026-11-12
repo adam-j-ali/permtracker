@@ -1,3 +1,4 @@
+import type { FigureTrend } from "@/components/data/FigureRow";
 import { shiftMonth } from "@convex/lib/months";
 
 /** One month's immigrant visas abroad, split between nationals of the 75 paused countries and everyone else. */
@@ -48,4 +49,15 @@ export function changeWords(c: Change): string {
   if (c.percent === null) return "new";
   if (c.percent === 0) return "no change";
   return c.percent < 0 ? `down ${-c.percent}%` : `up ${c.percent}%`;
+}
+
+/**
+ * A change as a figure's chip: which way the count moved, by how much, against what. A count of visas is volume,
+ * so the chip is information and never good or bad. Nothing to compare against draws no chip.
+ */
+export function changeTrend(c: Change, against: string): FigureTrend | undefined {
+  if (c.percent === null) return undefined;
+  if (c.percent === 0) return { text: `About the same as ${against}`, dir: "level", tone: "neutral" };
+  const words = changeWords(c);
+  return { text: `${words[0]!.toUpperCase()}${words.slice(1)} on ${against}`, dir: c.percent < 0 ? "down" : "up", tone: "info" };
 }
