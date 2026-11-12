@@ -19,8 +19,8 @@ import { DataProvenance } from "@/components/data/DataProvenance";
 import { FinePrint } from "@/components/data/FinePrint";
 import { Figure, FigureRow } from "@/components/data/FigureRow";
 import { PageSection } from "@/components/data/PageSection";
+import { VisaWaitTable } from "@/components/consular/VisaWaitTable";
 import { ColumnChart, type Column } from "@/components/numbers/ColumnChart";
-import { ScrollBox } from "@/components/ui/scroll-box";
 import { longDate, monthYear } from "@convex/lib/months";
 import { getVisaWaits } from "@/lib/db/visaWaits";
 import { openGraphBase } from "@/lib/openGraphBase";
@@ -229,44 +229,9 @@ export default async function VisaWaitTimesPage() {
         </PageSection>
       ) : null}{" "}
       <PageSection id="every" title={`Every consulate, every visa (${posts.length})`} lede={`State's table as it stood on ${readingDate}.`}>
-        <ScrollBox label="Every consulate's wait for each kind of visa" className="max-h-[40rem] overflow-y-auto border-2 border-foreground">
-          <table className="w-full min-w-[44rem] border-collapse text-left text-sm">
-            <caption className="sr-only">The wait for a visa interview at each U.S. embassy and consulate, by visa{" "}</caption>
-            <thead className="sticky top-0 bg-card">
-              <tr className="border-b-2 border-foreground">
-                <th scope="col" className="p-2.5 font-semibold">
-                  Consulate{" "}
-                </th>
-                {WAIT_COLUMNS.map((col) => (
-                  <Fragment key={col.key}>
-                    <th scope="col" className="p-2.5 text-right font-semibold">
-                      {col.short}{" "}
-                    </th>
-                  </Fragment>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {posts.map((p) => (
-                <tr key={p} className="border-b border-border last:border-b-0">
-                  <th scope="row" className="p-2.5 font-semibold">
-                    {p}{" "}
-                  </th>
-                  {WAIT_COLUMNS.map((col) => {
-                    const c = byPost.get(p)?.get(col.key);
-                    return (
-                      <Fragment key={col.key}>
-                        <td className={`p-2.5 text-right tabular-nums ${c && waitBarDays(c) === null ? "text-muted-foreground" : ""}`}>
-                          {c ? waitWords(c) : "Not listed"}{" "}
-                        </td>
-                      </Fragment>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </ScrollBox>{" "}
+        <VisaWaitTable
+          posts={posts.map((p) => ({ post: p, cells: Object.fromEntries(byPost.get(p) ?? []) }))}
+        />{" "}
         <dl className="mt-4 grid grid-cols-1 gap-x-8 gap-y-2 text-sm text-soft sm:grid-cols-2">
           {WAIT_COLUMNS.map((col) => (
             <Fragment key={col.key}>

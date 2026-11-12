@@ -133,6 +133,12 @@ export interface FilterableStatTableProps<T> {
   suggestKind?: SuggestKind;
   /** The name a row goes by, for a "did you mean" chip; the search text when unset. */
   suggestText?: (row: T) => string;
+  /**
+   * The columns a phone shows fit a phone: the table takes the screen's width there, with no sideways scroll.
+   * Without it the table keeps its 560px floor on every screen, and on a phone the first figure column starts past
+   * the edge. For a table whose phone columns are a name and one or two short figures.
+   */
+  fitPhone?: boolean;
 }
 
 /** `0` means every row on one page: the "show all" a reader asks for when a cohort is a few thousand rows. */
@@ -171,6 +177,7 @@ export function FilterableStatTable<T>({
   queryFromUrl = false,
   suggestKind,
   suggestText,
+  fitPhone = false,
 }: FilterableStatTableProps<T>) {
   const [query, setQuery] = useState("");
   useEffect(() => {
@@ -547,7 +554,7 @@ export function FilterableStatTable<T>({
 
       {/* The table scrolls inside its own box; the page never scrolls sideways. */}
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[560px] border-t-2 border-[var(--object-border)] text-left text-sm">
+        <table className={`w-full ${fitPhone ? "sm:min-w-[560px]" : "min-w-[560px]"} border-t-2 border-[var(--object-border)] text-left text-sm`}>
           <caption className="sr-only">{caption}</caption>
           <thead className="dark border-b border-black bg-[#141414] text-foreground">
             <tr>
