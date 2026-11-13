@@ -65,6 +65,9 @@ def checks(base: str, extra: list[str] | None = None) -> list[dict]:
         # Not a page check, but it needs the public database's credentials, which this job has: figures
         # typed into the copy with no date beside them go stale when DOL's next file loads.
         {"key": "figures", "title": "Figures typed into the copy", "cmd": [py, "scripts/audit_staleness.py"], "limit": 300},
+        # Not a page check either: a sentence that put a deadline ahead ("comments close November 9") goes wrong
+        # by itself the day after, with no push to catch it, so it's read against today's date each morning.
+        {"key": "deadlines", "title": "Deadlines written as ahead after the day passed", "cmd": [py, "scripts/audit_passed_deadlines.py"], "limit": 60},
         {"key": "axe", "title": "Accessibility (axe, WCAG AA)", "cmd": ["node", "scripts/audit_axe.mjs", base, *pages], "limit": 900},
         {"key": "phone", "title": "Phone widths (overflow, text size, tap size)", "cmd": ["node", "scripts/phone_sweep.mjs", base, *pages], "limit": 900,
          # A page with nothing wrong prints a line too; the report keeps the lines with findings.
