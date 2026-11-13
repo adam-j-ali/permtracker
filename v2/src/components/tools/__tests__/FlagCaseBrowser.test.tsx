@@ -89,6 +89,31 @@ describe("FlagCaseBrowser search filters", () => {
   });
 });
 
+describe("FlagCaseBrowser names the finished filings for what the list holds", () => {
+  // The wage list's button read "Issued · 520,636" and the line above it "520,636 issued". That count is every
+  // request DOL is done with: on Nov 12 2026, 22,519 of them were withdrawn and 6,149 returned unprocessed, and the
+  // rows under the button said so.
+  const summary = {
+    total: 566705,
+    pending: 46069,
+    decided: 520636,
+    byStatus: { "DETERMINATION ISSUED": 490549, WITHDRAWN: 22519 },
+    byVisaType: {},
+    byPrefix: {},
+    pendingByPrefix: {},
+    byMonth: [],
+    asOf: "2026-11-12T20:11:19Z",
+    computedAt: 0,
+  };
+
+  it("calls them decided on the wage list, as the other lists do", () => {
+    render(<FlagCaseBrowser summary={summary} program={PWD_PROGRAM} />);
+    expect(screen.getByRole("button", { name: "Decided · 520,636" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Issued/ })).toBeNull();
+    expect(screen.getByText(/46,069 still in process, 520,636 decided\./)).toBeInTheDocument();
+  });
+});
+
 describe("FlagCaseBrowser's page is sized for the screen", () => {
   const screenIs = (narrow: boolean) =>
     vi.stubGlobal("matchMedia", (q: string) => ({ matches: narrow && q.includes("max-width"), media: q, addEventListener: () => {}, removeEventListener: () => {} }));

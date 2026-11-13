@@ -88,7 +88,8 @@ export const PWD_PROGRAM: FlagBrowserProgram = {
   noun: "wage request",
   nouns: "wage requests",
   pendingLabel: "In process",
-  decidedLabel: "Issued",
+  // Every request DOL is done with, withdrawn and returned ones too, so never "Issued".
+  decidedLabel: "Decided",
   wageLabel: "Wage set",
   allVisasLabel: "Include wage requests for other visas (H-2B, H-1B and the rest)",
 };
