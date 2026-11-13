@@ -143,11 +143,22 @@ export function BudgetPools({
   );
 }
 
-function Figure({ icon, value, label, tone }: { icon: ReactNode; value: string; label: string; tone?: "warn" }) {
+/**
+ * One figure in a box: the number, then what it counts.
+ *
+ * `inline` is for a row of three. Three boxes across a phone leave about 45px for a label, so "not confirmed" ran
+ * out of its box (Nov 13 2026). With it, the boxes stack on a phone and each holds its number and label on one
+ * line; from `sm` up they sit three across as before.
+ */
+function Figure({ icon, value, label, tone, inline }: { icon: ReactNode; value: string; label: string; tone?: "warn"; inline?: boolean }) {
   return (
-    <div className={`border-2 border-border p-3 ${tone === "warn" ? "bg-data-warn-ink text-background" : "bg-background"}`}>
+    <div
+      className={`border-2 border-border p-3 ${inline ? "flex items-baseline gap-3 sm:block" : ""} ${
+        tone === "warn" ? "bg-data-warn-ink text-background" : "bg-background"
+      }`}
+    >
       <p className="font-heading text-2xl font-bold tabular-nums">{value}</p>{" "}
-      <p className={`flex items-start gap-1.5 text-sm font-semibold ${tone === "warn" ? "" : "text-muted-foreground"}`}>
+      <p className={`flex min-w-0 items-start gap-1.5 text-sm font-semibold ${tone === "warn" ? "" : "text-muted-foreground"}`}>
         <span aria-hidden="true" className="mt-0.5 inline-flex shrink-0 [&_svg]:size-4">
           {icon}
         </span>
@@ -268,10 +279,10 @@ export function DeliveryPanel({ data }: { data: Delivery }) {
         <h2 id="follows-h" className="font-heading text-xl font-bold">
           Employer follows
         </h2>{" "}
-        <div className="mt-3 grid grid-cols-3 gap-3 sm:max-w-md">
-          <Figure icon={<UsersIcon weight="bold" />} value={formatInt(data.follows.confirmed)} label="following" />
-          <Figure icon={<QuestionIcon weight="bold" />} value={formatInt(data.follows.pending)} label="not confirmed" />
-          <Figure icon={<HandPalmIcon weight="bold" />} value={formatInt(data.follows.unsubscribed)} label="stopped" />
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:max-w-md sm:grid-cols-3">
+          <Figure inline icon={<UsersIcon weight="bold" />} value={formatInt(data.follows.confirmed)} label="following" />
+          <Figure inline icon={<QuestionIcon weight="bold" />} value={formatInt(data.follows.pending)} label="not confirmed" />
+          <Figure inline icon={<HandPalmIcon weight="bold" />} value={formatInt(data.follows.unsubscribed)} label="stopped" />
         </div>{" "}
         {(data.follows.employers ?? 0) > data.follows.top.length ? (
           <p className="mt-3 text-sm text-muted-foreground">
@@ -285,7 +296,8 @@ export function DeliveryPanel({ data }: { data: Delivery }) {
                 <Link href={entityHref("employer", f.slug)} className="link min-w-0 [overflow-wrap:anywhere]">
                   {f.name}
                 </Link>{" "}
-                <span className="tabular-nums">{`${formatInt(f.followers)} following`}</span>
+                {/* The count keeps its line; a long employer name is what wraps. */}
+                <span className="shrink-0 whitespace-nowrap tabular-nums">{`${formatInt(f.followers)} following`}</span>
               </li>
             ))}
           </ol>
