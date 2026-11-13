@@ -279,6 +279,76 @@ describe("searching, filtering and sorting one day", () => {
   });
 });
 
+describe("a day with nothing in it", () => {
+  // The control walk picked the newest day alone and read: "Nothing on Thursday, November 12, 2026 matches that. The
+  // day itself holds 0 changes, so clearing the filters will bring them back." No filter was on, and there was
+  // nothing to bring back (Nov 12 2026).
+  const nothing = { changes: [], total: 0, byProgram: { perm: 0, pwd: 0, lca: 0 }, transitions: [], expiriesExcluded: 0 };
+
+  it("says no change is recorded, and never offers filters that aren't on", () => {
+    // Arrange: a weekday our check covers, with no change on it.
+    loaded({ ...nothing, date: "2026-09-03" });
+
+    // Act
+    render(<ChangeFeedBrowser calendar={CALENDAR} initialDay={day({ ...nothing, date: "2026-09-03" })} windows={WINDOWS} />);
+
+    // Assert
+    expect(screen.queryByText(/clearing the filters/)).toBeNull();
+    expect(screen.queryByText(/matches that/)).toBeNull();
+    expect(screen.getByText(/Our checks recorded no change on Thursday, September 3, 2026\./)).toBeInTheDocument();
+  });
+
+  it("says only that a weekend is quieter when the empty day is one", () => {
+    // A Saturday inside the days our check covers (the record here runs Aug 26 to Sep 3). The record holds changes
+    // on weekends too (LCAs by the thousand on a Sunday), so the line never says DOL does nothing on one.
+    loaded({ ...nothing, date: "2026-08-29" });
+    render(<ChangeFeedBrowser calendar={CALENDAR} initialDay={day({ ...nothing, date: "2026-08-29" })} windows={WINDOWS} />);
+    expect(screen.getByText(/Our checks recorded no change on Saturday, August 29, 2026\. DOL moves fewer cases on a weekend\./)).toBeInTheDocument();
+    expect(screen.queryByText(/doesn't decide/)).toBeNull();
+  });
+
+  it("names the federal holiday when the empty day is one, and claims nothing more", () => {
+    // Labor Day 2026, a Monday inside the days our check covers when the record runs to Sep 8.
+    loaded({ ...nothing, date: "2026-09-07" });
+    render(
+      <ChangeFeedBrowser
+        calendar={CALENDAR}
+        initialDay={day({ ...nothing, date: "2026-09-07" })}
+        windows={{ ...WINDOWS, observed: { from: WINDOWS.observed!.from, to: "2026-09-08" } }}
+      />,
+    );
+    expect(screen.getByText(/Our checks recorded no change on Monday, September 7, 2026\. It was Labor Day, a federal holiday\./)).toBeInTheDocument();
+    expect(screen.queryByText(/was closed/)).toBeNull();
+  });
+
+  it("opens the explanation by itself when no record covers the day picked", () => {
+    // A day between DOL's last file (June 30) and our check's first day (Aug 26) showed "We hold nothing for these
+    // dates" over a shut fold, with every control off and no list: the reason was one press away (the control walk
+    // read it as a dead end, Nov 12 2026).
+    pending();
+    render(<ChangeFeedBrowser calendar={CALENDAR} initialDay={day({ ...nothing, date: "2026-08-10" })} windows={WINDOWS} />);
+    const fold = screen.getByText("We hold nothing for these dates").closest("details")!;
+    expect(fold.open).toBe(true);
+    expect(fold.textContent).toContain("It doesn't mean DOL did nothing.");
+    // Open, the heading is followed by the reason: the heading's own words aren't printed a second time under it.
+    expect(fold.textContent!.match(/We hold nothing for these dates/g)).toHaveLength(1);
+  });
+
+  it("leaves the explanation shut on a day a record covers", () => {
+    loaded();
+    render(<ChangeFeedBrowser calendar={CALENDAR} initialDay={day()} windows={WINDOWS} />);
+    const fold = screen.getByText("Newer than DOL's last file: what our daily check saw change").closest("details")!;
+    expect(fold.open).toBe(false);
+  });
+
+  it("still names the day's size when a filter is what emptied it", () => {
+    loaded();
+    render(<ChangeFeedBrowser calendar={CALENDAR} initialDay={day()} windows={WINDOWS} />);
+    fireEvent.change(screen.getByLabelText("Search these dates"), { target: { value: "no such employer" } });
+    expect(screen.getByText(/Nothing on .* matches that/).textContent).toContain("587");
+  });
+});
+
 describe("what the day itself leaves out", () => {
   it("names both exclusions, with the count each one costs THAT day", () => {
     // Rendered on the server once, this would keep describing the day the page

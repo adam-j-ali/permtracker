@@ -12,6 +12,7 @@ import { CHANGE_PROGRAMS, PROGRAM_LABEL, type ChangeProgram } from "@/lib/change
 import { formatInt } from "@/lib/format";
 import { easternDay } from "@/lib/time";
 import { longDate as monthsLongDate, weekdayName } from "@convex/lib/months";
+import { federalHolidayName } from "@/lib/perm";
 import { CHANGE_COLUMNS, CHANGE_COLUMNS_WITH_DAY, ChangeTable } from "./ChangeTable";
 import { DECIDED_COLUMNS, DecidedTable } from "./DecidedTable";
 import { DecidedFilters } from "./DecidedFilters";
@@ -105,6 +106,21 @@ const UNAVAILABLE: { slug: string; label: string; why: string }[] = [
     why: "The SOC code is on the published record. The live lookup returns the job title as filed, which is free text.",
   },
 ];
+
+/**
+ * The words for days that hold no change at all. What follows the plain fact is only what the calendar says about
+ * the day (it isn't over, it was a federal holiday, it was a weekend), never that DOL did nothing: the record holds
+ * changes on weekends and holidays too, fewer of them, and an empty day can also be one our checks missed.
+ */
+function nothingRecorded(when: string, oneDay: string | null, today: string): string {
+  const head = `Our checks recorded no change ${when}.`;
+  if (!oneDay) return head;
+  if (oneDay === today) return `${head} Today's changes are added through the day as our checks see them.`;
+  const holiday = federalHolidayName(oneDay);
+  if (holiday) return `${head} It was ${holiday}, a federal holiday.`;
+  const name = weekdayName(oneDay);
+  return name === "Saturday" || name === "Sunday" ? `${head} DOL moves fewer cases on a weekend.` : head;
+}
 
 function longDate(iso: string): string {
   // No time zone arithmetic, so the server and every browser print the same day.
@@ -555,8 +571,13 @@ export function ChangeFeedBrowser({
           </select>
         </div>
       </div>{" "}
-      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
-        <div>
+      {/* From lg up this row is a wrapping line, never a four-column grid: the four page sizes need 239px (four
+          44px targets), a quarter of the column beside the rail is as little as 153px, and in a grid cell the last
+          size ran under "Earlier day". Each part keeps its own width, and the day buttons drop to a second line
+          when the column can't hold all three. Program keeps a quarter, so it lines up with the search box above,
+          and never less than 13.5rem, the room "All programs (1,640)" needs to be read whole. */}
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-end [&>*]:min-w-0">
+        <div className="lg:w-[max(13.5rem,calc(25%-0.5625rem))]">
           <label htmlFor={`${id}-program`} className={LABEL}>
             Program
           </label>{" "}
@@ -593,6 +614,7 @@ export function ChangeFeedBrowser({
         <ChoiceRow
           label="Rows per page"
           labelClassName={LABEL}
+          className="lg:shrink-0"
           rowClassName="mt-1 flex-nowrap gap-1"
           options={PAGE_SIZES.map((n) => ({ value: String(n), label: String(n), ariaLabel: `${n} rows per page` }))}
           value={String(pageSize)}
@@ -602,7 +624,7 @@ export function ChangeFeedBrowser({
             reset();
           }}
         />{" "}
-        <div className="flex items-end gap-3 sm:col-span-2">
+        <div className="flex items-end gap-3 sm:col-span-2 lg:shrink-0">
           <button
             type="button"
             className={NAV}
@@ -642,7 +664,8 @@ export function ChangeFeedBrowser({
       {/* ONE LINE FIRST, THE REST FOLDED. The answer to "what
           do these dates hold" is one of four short facts; the detail behind it
           stays a click away, in the DOM for search either way. */}
-      <details className="mt-6 bg-tint">
+      {/* With nothing held for the dates there's no list to read instead, so the reason opens by itself. */}
+      <details className="mt-6 bg-tint" open={!hasDecided && !hasObserved ? true : undefined}>
         <summary className="flex min-h-[44px] cursor-pointer items-center px-4 py-2 text-base font-bold">
           {hasDecided && hasObserved
             ? "These dates cross DOL's published files and our own daily check"
@@ -653,6 +676,7 @@ export function ChangeFeedBrowser({
                 : "We hold nothing for these dates"}
         </summary>{" "}
         <div className="border-t-2 border-border px-4 py-3">
+        {hasDecided || hasObserved ? (
         <p className="mt-2 text-base leading-relaxed text-soft">
           {hasDecided && hasObserved ? (
             <>
@@ -669,17 +693,15 @@ export function ChangeFeedBrowser({
               DOL published these decisions, so every filter and column works,
               including the wage, the worksite state and the occupation.
             </>
-          ) : hasObserved ? (
+          ) : (
             <>
               These dates are newer than DOL&apos;s last published file, so what
               follows is what our daily check saw change. DOL returns five
               fields on a case that&apos;s still moving, so the wage, law firm,
               worksite and occupation aren&apos;t available for these dates.
             </>
-          ) : (
-            <>We hold nothing for these dates.</>
           )}
-          {cov.uncoveredDays > 0 && (hasDecided || hasObserved) ? (
+          {cov.uncoveredDays > 0 ? (
             <>
               {" "}
               <strong>{formatInt(cov.uncoveredDays)}</strong> of the{" "}
@@ -688,7 +710,7 @@ export function ChangeFeedBrowser({
             </>
           ) : null}
         </p>
-        {!hasDecided && !hasObserved ? (
+        ) : (
           <p className="mt-2 text-base leading-relaxed text-soft">
             DOL&apos;s published files run to{" "}
             <strong>{windows.decided?.to ?? "no loaded file"}</strong> and our
@@ -698,7 +720,7 @@ export function ChangeFeedBrowser({
             DOL publishes its next quarterly file. It doesn&apos;t mean DOL
             did nothing.
           </p>
-        ) : null}
+        )}
       </div>
       </details>
 
@@ -968,10 +990,16 @@ export function ChangeFeedBrowser({
           ) : null}
           {ordered.length === 0 && ready ? (
             <div className="mt-4 bg-tint p-4 text-base border-2 border-border">
-              <p>
-                Nothing {when} matches that. {single ? "The day itself holds" : "These days hold"}{" "}
-                {formatInt(feed.total)} changes, so clearing the filters will bring them back.
-              </p>{" "}
+              {feed.total === 0 ? (
+                // Nothing to filter: the days themselves hold no change. Saying "clear the filters" here told a
+                // reader with no filter on to bring back rows that don't exist.
+                <p>{nothingRecorded(when, single ? feed.date : null, ceiling)}</p>
+              ) : (
+                <p>
+                  Nothing {when} matches that. {single ? "The day itself holds" : "These days hold"}{" "}
+                  {formatInt(feed.total)} changes, so clearing the filters will bring them back.
+                </p>
+              )}{" "}
               <DidYouMean className="mt-3" suggestions={nameSuggestions} />
             </div>
           ) : (
