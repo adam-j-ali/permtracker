@@ -771,23 +771,30 @@ function MonthActivity({ detail, label, month }: { detail: MonthDetail; label: s
       <p className="mt-1 max-w-2xl text-base text-soft">
         {`DOL tends to work a month loosely from A to Z. The share of ${label}'s cases decided, by the first letter of the employer's name.`}
       </p>{" "}
-      <ol className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-7 lg:grid-cols-9">
+      {/*
+        A box holds a letter and a share of up to four characters, 54px side by side. The column count at each
+        width leaves every box that much room inside the card (which loses the rail's width from lg to xl), and
+        under 360px the share sits under its letter.
+      */}
+      <ol className="mt-4 grid grid-cols-3 gap-2 min-[460px]:grid-cols-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-6 xl:grid-cols-9">
         {letters.map(({ l, v }) => {
           const share = v[0] ? v[1] / v[0] : 0;
+          const shown = v[0] ? formatShare(share) : "none";
           return (
             <Fragment key={l}>{" "}
             <li data-tip={`${l}: ${formatInt(v[1])} of ${formatInt(v[0])} decided`}>
               {/* Each letter opens the month's live cases from employers starting with it. */}
               <Link
                 href={`/perm-cases?filed=${month}&letter=${encodeURIComponent(l)}#live`}
-                className="block border-2 border-border bg-sage p-2 transition-colors hover:bg-sage-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                aria-label={`${l}: ${formatInt(v[1])} of ${formatInt(v[0])} decided. Show these employers' cases`}
+                className="flex h-full flex-col border-2 border-border bg-sage p-2 transition-colors hover:bg-sage-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                // The spoken name starts with the words on the box, so a voice command for what's seen finds it.
+                aria-label={`${l} ${shown}: ${formatInt(v[1])} of ${formatInt(v[0])} decided. Show these employers' cases`}
               >
-                <span className="flex items-baseline justify-between gap-1">
+                <span className="mb-1 flex flex-col gap-x-1 min-[360px]:flex-row min-[360px]:flex-wrap min-[360px]:items-baseline min-[360px]:justify-between">
                   <span className="font-heading text-lg font-bold">{l}</span>{" "}
-                  <span className="font-mono text-sm tabular-nums">{v[0] ? formatShare(share) : "none"}</span>
+                  <span className="font-mono text-sm tabular-nums">{shown}</span>
                 </span>{" "}
-                <span className="mt-1 block h-2 border border-input bg-soft-wait" aria-hidden="true">
+                <span className="mt-auto block h-2 border border-input bg-soft-wait" aria-hidden="true">
                   <span className="block h-full bg-primary" style={{ width: `${Math.round(share * 100)}%` }} />
                 </span>
               </Link>

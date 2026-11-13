@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { DayTally } from "@/lib/filingDay";
 import { formatCompact, formatInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { WEEKDAY_NAMES, longDate } from "@convex/lib/months";
+import { MONTH_NAMES, WEEKDAY_NAMES } from "@convex/lib/months";
 
 /**
  * A filing month as a calendar (owner, Oct 27 2026: open a month by filing day): each day
@@ -60,7 +60,7 @@ export function MonthDays({ month, days, today }: { month: string; days: Readonl
           const inner = (
             <>
               <span className="text-sm font-semibold tabular-nums">{i + 1}</span>{" "}
-              {/* A phone's cell is too narrow for "1,094"; the link's label says it in full. */}
+              {/* A phone's cell is too narrow for "1,094". */}
               {t.waiting > 0 ? (
                 <span className="whitespace-nowrap font-mono text-sm tabular-nums">
                   <span className="sm:hidden">{formatCompact(t.waiting)}</span>{" "}
@@ -69,19 +69,40 @@ export function MonthDays({ month, days, today }: { month: string; days: Readonl
               ) : null}
             </>
           );
+          /*
+            A link is named by its own words, never an aria-label, and the name holds the day number shown on
+            the cell (WCAG 2.5.3). The sentence a screen reader needs comes first; the day number and the short
+            figure a phone shows are for the eye; the exact figure is in the name at every width.
+          */
+          const linked = (
+            <>
+              <span className="sr-only">{`${MONTH_NAMES[m - 1]} ${i + 1}, ${y}: ${formatInt(t.filed)} filed,`}</span>{" "}
+              <span aria-hidden="true" className="text-sm font-semibold tabular-nums">{i + 1}</span>{" "}
+              <span className="whitespace-nowrap font-mono text-sm tabular-nums">
+                {t.waiting > 0 ? (
+                  <>
+                    <span className="sm:hidden" aria-hidden="true">{formatCompact(t.waiting)}</span>{" "}
+                    <span className="sr-only sm:not-sr-only">{formatInt(t.waiting)}</span>
+                  </>
+                ) : (
+                  <span className="sr-only">0</span>
+                )}
+                <span className="sr-only">{" still waiting at DOL. Open the day's cases"}</span>
+              </span>
+            </>
+          );
           return (
             <li key={iso}>
               {t.filed > 0 && iso <= today ? (
                 <Link
                   href={`/perm-queue/${month}/${dd}`}
-                  aria-label={`${longDate(iso)}: ${formatInt(t.filed)} filed, ${formatInt(t.waiting)} still waiting at DOL. Open the day's cases`}
                   className={cn(
                     CELL,
                     "hover:outline-2 hover:outline-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary",
                     shade(t.waiting),
                   )}
                 >
-                  {inner}
+                  {linked}
                 </Link>
               ) : (
                 <span className={cn(CELL, "text-soft")}>{inner}</span>
