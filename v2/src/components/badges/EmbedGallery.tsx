@@ -78,8 +78,10 @@ export function EmbedGallery({ origin }: { origin: string }) {
         </summary>
         <div className="mt-3 space-y-3 text-base leading-relaxed text-soft">
           <p>
-            Each snippet starts at a height that fits the tool&apos;s first view. To fit the frame to its content,
-            listen for the message the frame posts whenever its height changes:{" "}
+            A short tool&apos;s snippet opens at a height that fits its first view, on a phone and in an
+            article&apos;s column. A long one, such as a filled-in example or a page of charts, opens as a window that
+            scrolls. To fit any frame to its content, listen for the message the frame posts whenever its height
+            changes:{" "}
             <code translate="no" className="font-mono text-sm">
               {"{ type: \"permtracker:embed-height\", slug, height }"}
             </code>
