@@ -43,7 +43,7 @@ const ROWS: InquiryRow[] = [
   row({}),
   row({ office: "SCD", officeLabel: "Service Center Operations", requestDate: "2022-10-28", posted: 42.5, postedText: "42.5 Months" }),
   row({ subtype: "131T", label: "Based on an approved T Visa", office: "VSC", officeLabel: "Vermont Service Center", requestDate: "2023-01-10", posted: 40, postedText: "40 Months", median: null }),
-  row({ form: "I-140", subtype: "136A-E21", label: "Advanced degree or exceptional ability (E21)", office: "SCD", officeLabel: "Service Center Operations", requestDate: "2025-06-02", posted: 8, postedText: "8 Months", median: { months: 3.9, quarter: "FY2026 Q3 (Apr to Jun 2026)" } }),
+  row({ form: "I-140", subtype: "136A-E21", label: "Advanced degree or exceptional ability (E21)", office: "SCD", officeLabel: "Service Center Operations", requestDate: "2025-06-02", posted: 8, postedText: "8 Months", median: { months: 3.9, quarter: "FY2026 Q3 (Apr to Jun 2026)", wholeForm: true } }),
   row({ form: "I-90", subtype: "90A", label: "Initial issuance or replacement", office: "POB", officeLabel: "Potomac Service Center", requestDate: null, posted: null, postedText: null, median: null }),
 ];
 const NAMES = { "I-485": "Application to Register Permanent Residence or Adjust Status", "I-140": "Immigrant Petition for Alien Workers" };
@@ -146,7 +146,28 @@ describe("UscisCaseTimeline", () => {
     expect(screen.getByLabelText("Category")).toHaveValue("136A-E21");
     expect(screen.getByLabelText("Office on your receipt notice")).toHaveValue("SCD");
     receipt("2026-08-03");
-    expect(screen.getByText("Half of cases like yours were decided by November 30, 2026.")).toBeInTheDocument();
+    // The I-140's median counts every category, so it's a sentence about the form and never this case's date.
+    expect(screen.queryByText(/Half of cases like yours/)).toBeNull();
+    expect(screen.getByText(/Across every I-140 category together, half were decided within 3\.9 months/)).toBeInTheDocument();
+  });
+
+  it("keeps a whole form's median off the case's calendar, and says whose it is", () => {
+    // What a reader saw on Nov 13 2026: an E21 petition received Nov 6, with USCIS posting 3 months for it.
+    const e21 = row({ form: "I-140", subtype: "136A-E21", label: "Advanced degree or exceptional ability (E21)", office: "SCD", officeLabel: "Service Center Operations", requestDate: "2026-05-01", posted: 3, postedText: "3 Months", median: { months: 3.9, quarter: "FY2026 Q3 (Apr to Jun 2026)", wholeForm: true } });
+    render(<UscisCaseTimeline rows={[e21]} published="2026-10-19" formNames={NAMES} />);
+    receipt("2026-11-06");
+    expect(screen.getByText("Eight in ten were decided by February 6, 2027.")).toBeInTheDocument();
+    expect(screen.queryByText(/Half decided by/)).toBeNull();
+    expect(screen.queryByText(/Half of cases like yours/)).toBeNull();
+    expect(screen.getByText(/That figure counts all of them, so it isn't a date for yours\./)).toBeInTheDocument();
+  });
+
+  it("still marks half and eight in ten for a case whose median is its own", () => {
+    mount();
+    receipt("2026-06-09");
+    expect(screen.getByText("Half of cases like yours were decided by December 9, 2026.")).toBeInTheDocument();
+    expect(screen.getByText(/Half decided by/)).toBeInTheDocument();
+    expect(screen.queryByText(/Across every/)).toBeNull();
   });
 
   it("falls back to USCIS's six-month default for a form it posts no time for", () => {
