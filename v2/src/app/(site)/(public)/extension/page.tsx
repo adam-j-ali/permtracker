@@ -14,6 +14,7 @@ import { BriefcaseIcon, CursorClickIcon, PuzzlePieceIcon, ShieldCheckIcon } from
 
 import { lookupEmployer } from "@/lib/api/employerLookup";
 import { openGraphBase } from "@/lib/openGraphBase";
+import { withSocialCard } from "@/lib/socialCard";
 import { SITES } from "../../../../../extension/src/extract";
 import { panelFor, type PanelModel } from "../../../../../extension/src/model";
 import type { LookupAnswer } from "../../../../../extension/src/api";
@@ -29,12 +30,13 @@ const TITLE = "PERM Tracker for Chrome: Visa Sponsor Check";
 const DESCRIPTION =
   "A free Chrome extension that shows an employer's PERM green card and H-1B record from DOL's files on the job posting. It sends only the employer's name.";
 
-export const metadata: Metadata = {
+// The card pictures this page with "On the Chrome Web Store soon": render it again when CHROME_STORE_URL is set.
+export const metadata: Metadata = withSocialCard({
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: "/extension" },
   openGraph: { ...openGraphBase, title: `${TITLE} | PERM Tracker`, description: DESCRIPTION, url: "/extension" },
-};
+}, "extension");
 
 /** The example's figures move with DOL's records; a day is plenty. */
 export const revalidate = 86400;

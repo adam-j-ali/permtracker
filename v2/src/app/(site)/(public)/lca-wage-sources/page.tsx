@@ -26,7 +26,6 @@ const DESCRIPTION =
   "Where H-1B prevailing wages come from: OES, private salary surveys or union contracts, plus the survey firms and the employers that use them most.";
 const PATH = "/lca-wage-sources";
 
-// No social card yet (a card is a capture of the rendered page).
 export const metadata: Metadata = withSocialCard({
   title: TITLE,
   description: DESCRIPTION,
