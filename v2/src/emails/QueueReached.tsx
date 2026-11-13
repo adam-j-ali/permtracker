@@ -72,6 +72,9 @@ export interface QueueReachedProps {
 /** Where our daily check of DOL's case status draws the PERM line, month by month. */
 export const PERM_QUEUE_URL = `${SITE_URL}/perm-queue`;
 
+/** The case lookup: DOL's status for one case number (PERM or a wage request), and the case alert. */
+export const CASE_LOOKUP_URL = `${SITE_URL}/perm-case-status`;
+
 export function QueueReached({
   frontierMonth,
   filingMonth,
@@ -164,18 +167,33 @@ export function QueueReached({
         </Text>
       ) : null}
 
+      {/*
+        The reader's own case comes next: DOL reaching the month is when they most want it watched, and this is
+        the only email a queue alert sends. The lookup shows DOL's status and offers the case alert.
+      */}
+      <Text className="em-text-body" style={styles.body}>
+        {isPwd
+          ? "Look up your wage request\u2019s number for DOL\u2019s status today, and get an email when it changes."
+          : "Look up your case number for DOL\u2019s status today, and get an email when it changes."}
+      </Text>
+
       <Section style={styles.cta}>
-        <EmailButton
-          href={`${SITE_URL}/perm-processing-times`}
-          variant="outline"
-        >
-          See the current figures
+        <EmailButton href={CASE_LOOKUP_URL} variant="primary">
+          Check my case
         </EmailButton>
       </Section>
 
       <EmailLinkList
         label="Also on PERM Tracker"
         items={[
+          {
+            href: `${SITE_URL}/case-search`,
+            text: "No case number? Find your case by employer",
+          },
+          {
+            href: `${SITE_URL}/perm-processing-times`,
+            text: "See the current figures",
+          },
           {
             href: `${SITE_URL}/tools/perm-timeline-calculator`,
             text: "The deadlines on your side of the process",
