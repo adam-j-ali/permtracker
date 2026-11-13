@@ -60,10 +60,21 @@ export interface CaseMarks {
  * cases USCIS finished recently, so they say how long those took and promise nothing about this one.
  */
 export function caseMarks(receipt: string, medianMonths: number | null, postedMonths: number | null): CaseMarks {
-  return {
-    half: medianMonths !== null && medianMonths > 0 ? plusMonths(receipt, medianMonths) : null,
-    eightInTen: postedMonths !== null && postedMonths > 0 ? plusMonths(receipt, postedMonths) : null,
-  };
+  const half = medianMonths !== null && medianMonths > 0 ? plusMonths(receipt, medianMonths) : null;
+  const eightInTen = postedMonths !== null && postedMonths > 0 ? plusMonths(receipt, postedMonths) : null;
+  // Half can't be done after eight in ten. When USCIS's two figures put them that way round they don't
+  // describe the same cases (another quarter, or a wider group), and the posted time, which is this
+  // category's own and newer, is the one that stands.
+  return { half: half !== null && eightInTen !== null && half > eightInTen ? null : half, eightInTen };
+}
+
+/**
+ * Whether the quarterly line `medianLineFor` names counts every category of the form together. The I-140's
+ * does: one median for extraordinary ability, advanced degree, skilled, unskilled and the rest, whose posted
+ * times run from 3 to 9 months. Such a median is said of the form and never dated on one case's calendar.
+ */
+export function medianCoversWholeForm(form: string): boolean {
+  return form === "I-140";
 }
 
 /**

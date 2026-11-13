@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { caseMarks, congressNote, inquiryAnswer, medianLineFor, ombudsmanFrom, pickMedian, postedInSentence } from "../uscisInquiry";
+import { caseMarks, congressNote, inquiryAnswer, medianCoversWholeForm, medianLineFor, ombudsmanFrom, pickMedian, postedInSentence } from "../uscisInquiry";
 
 /**
  * When a USCIS case can be asked about, from USCIS's posted cutoff and its own formula, and the note a congressional
@@ -92,6 +92,23 @@ describe("caseMarks", () => {
   it("marks nothing where USCIS publishes no figure, or prints zero", () => {
     expect(caseMarks("2026-06-09", null, null)).toEqual({ half: null, eightInTen: null });
     expect(caseMarks("2026-06-09", 0, 0)).toEqual({ half: null, eightInTen: null });
+  });
+});
+
+describe("a median that can't be this case's own", () => {
+  // An I-140 received Nov 6 2026 read "Half decided by Mar 5, 2027" beside "8 in 10 decided by Feb 6, 2027"
+  // (Nov 13 2026): the 3.9-month median counts every I-140 category, and the 3-month posted time is E21's alone.
+  it("never puts the day half were decided after the day eight in ten were", () => {
+    expect(caseMarks("2026-11-06", 3.9, 3)).toEqual({ half: null, eightInTen: "2027-02-06" });
+    // A day apart, in order: both stand.
+    expect(caseMarks("2026-11-06", 3.9, 4)).toEqual({ half: "2027-03-05", eightInTen: "2027-03-06" });
+    // With no posted time there's nothing to contradict.
+    expect(caseMarks("2026-11-06", 3.9, null).half).toBe("2027-03-05");
+  });
+
+  it("knows which form's quarterly line counts every category of it together", () => {
+    expect(medianCoversWholeForm("I-140")).toBe(true);
+    for (const form of ["I-485", "I-765", "N-400", "I-130", ""]) expect(medianCoversWholeForm(form)).toBe(false);
   });
 });
 

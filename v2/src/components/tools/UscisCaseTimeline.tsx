@@ -25,8 +25,11 @@ export interface InquiryRow {
   /** USCIS's posted time, the months it took to finish eight in ten, as a number and as printed. */
   posted: number | null;
   postedText: string | null;
-  /** The quarterly median for the same kind of case, where USCIS's report has a line that counts the same cases. */
-  median: { months: number; quarter: string } | null;
+  /**
+   * The quarterly median, where USCIS's report has a line for this case. `wholeForm` marks a line that counts
+   * every category of the form together (the I-140's): it's said of the form, never dated on this case.
+   */
+  median: { months: number; quarter: string; wholeForm?: boolean } | null;
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -83,7 +86,8 @@ export function UscisCaseTimeline({ rows, published, formNames }: { rows: Inquir
   const notYet = DATE_RE.test(receipt) && receipt > today;
   const answer: InquiryAnswer | null = row && dated ? inquiryAnswer(receipt, row.requestDate, published, today) : null;
   const canAsk = answer !== null && (answer.kind === "now" || (answer.kind === "default" && answer.now));
-  const marks = row && dated ? caseMarks(receipt, row.median?.months ?? null, row.posted) : null;
+  const formWide = row?.median?.wholeForm ? row.median : null;
+  const marks = row && dated ? caseMarks(receipt, row.median && !formWide ? row.median.months : null, row.posted) : null;
   // The day a question opens: the cutoff already behind the case, or the day USCIS's formula gives.
   const askFrom = answer === null ? null : answer.kind === "later" || answer.kind === "default" ? answer.from : null;
   const rulerEnd = askFrom ?? marks?.eightInTen ?? marks?.half ?? null;
@@ -173,7 +177,7 @@ export function UscisCaseTimeline({ rows, published, formNames }: { rows: Inquir
             leftWord="to go"
             emptyHint="Enter your receipt date"
           />{" "}
-          {marks && (marks.half || marks.eightInTen) ? (
+          {marks && (marks.half || marks.eightInTen || formWide) ? (
             <ul className="mt-5 space-y-2 text-base leading-relaxed">
               {marks.half && row?.median ? (
                 <li>
@@ -185,6 +189,12 @@ export function UscisCaseTimeline({ rows, published, formNames }: { rows: Inquir
                 <li>
                   <b className="font-bold">Eight in ten were decided by {long(marks.eightInTen)}.</b> USCIS&apos;s posted time for this
                   office is {postedInSentence(row?.postedText) ?? "not printed"}.
+                </li>
+              ) : null}{" "}
+              {formWide && row ? (
+                <li>
+                  Across every {row.form} category together, half were decided within {formWide.months} months in{" "}
+                  {formWide.quarter}. That figure counts all of them, so it isn&apos;t a date for yours.
                 </li>
               ) : null}
             </ul>

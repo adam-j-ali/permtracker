@@ -10,7 +10,7 @@ import { getUscisPosted } from "@/lib/db/uscisPosted";
 import { getUscisFormQuarter } from "@/lib/db/uscisQuarterly";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
-import { medianLineFor, pickMedian } from "@/lib/uscisInquiry";
+import { medianCoversWholeForm, medianLineFor, pickMedian } from "@/lib/uscisInquiry";
 import { quarterLabel } from "@/lib/uscisQuarterlyShape";
 import { longDate } from "@convex/lib/months";
 
@@ -84,7 +84,7 @@ export default async function UscisCaseInquiryPage() {
       requestDate: r.requestDate,
       posted: r.posted,
       postedText: r.postedText,
-      median: months !== null ? { months, quarter: quarterName } : null,
+      median: months !== null ? { months, quarter: quarterName, wholeForm: medianCoversWholeForm(r.form) } : null,
     };
   });
   // A form's name, from the quarterly report's own title for it, without the basis in brackets.
