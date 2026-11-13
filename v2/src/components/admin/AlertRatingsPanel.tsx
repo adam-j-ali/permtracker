@@ -54,7 +54,7 @@ function RatingItem({ r }: { r: Row }) {
       ) : null}{" "}
       <dl className="mt-3 grid grid-cols-1 gap-x-4 gap-y-1 text-sm sm:grid-cols-[max-content_1fr] [&>*]:min-w-0">
         <dt className="font-bold">Who</dt>{" "}
-        <dd className="break-all">
+        <dd className="[overflow-wrap:anywhere]">
           {r.anonymous ? "Asked to leave their email off" : [r.name, r.email].filter(Boolean).join(", ") || "Unknown"}
           {r.name === null && r.email ? " (no account)" : ""}
         </dd>{" "}

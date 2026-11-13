@@ -86,7 +86,7 @@ function ClaimCard({ c }: { c: Claim }) {
         <span className="text-sm font-bold">{c.status.replace("_", " ")}</span>
       </div>{" "}
       <dl className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-sm sm:grid-cols-[max-content_1fr] [&>*]:min-w-0">
-        <dt className="font-bold">Address</dt> <dd className="break-all">{c.email}</dd>{" "}
+        <dt className="font-bold">Address</dt> <dd className="[overflow-wrap:anywhere]">{c.email}</dd>{" "}
         <dt className="font-bold">Role</dt> <dd>{c.role}</dd>{" "}
         <dt className="font-bold">Domain check</dt>{" "}
         <dd>
@@ -96,7 +96,7 @@ function ClaimCard({ c }: { c: Claim }) {
         <dt className="font-bold">Asked</dt> <dd>{when(c.createdAt)}{c.confirmedAt ? `; confirmed ${when(c.confirmedAt)}` : ""}</dd>{" "}
         {c.draft.website ? (
           <>
-            <dt className="font-bold">Website</dt> <dd className="break-all">{c.draft.website}</dd>{" "}
+            <dt className="font-bold">Website</dt> <dd className="[overflow-wrap:anywhere]">{c.draft.website}</dd>{" "}
           </>
         ) : null}
         {c.draft.focus.length ? (
@@ -231,7 +231,7 @@ function EditCard({ e }: { e: Edit }) {
         <span className="text-sm font-bold">{e.before ? "changes" : "first profile"}</span>
       </div>{" "}
       <p className="mt-1 text-sm">
-        Sent {when(e.submittedAt)} by <span className="break-all">{e.email}</span>
+        Sent {when(e.submittedAt)} by <span className="[overflow-wrap:anywhere]">{e.email}</span>
         {e.hidden ? "; the profile is down, so approving won't show it" : ""}
       </p>{" "}
       <dl className="mt-3 grid grid-cols-1 gap-y-2 text-sm [&>*]:min-w-0">

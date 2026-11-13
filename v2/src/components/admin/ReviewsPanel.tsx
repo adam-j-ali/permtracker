@@ -120,12 +120,12 @@ function ReviewCard({ r }: { r: Row }) {
         {r.rater ? (
           <>
             <dt className="font-bold">Rated by</dt>{" "}
-            <dd className="break-all">{`${r.rater.email}, watching ${r.rater.caseNumber} (only you see this)`}</dd>{" "}
+            <dd className="[overflow-wrap:anywhere]">{`${r.rater.email}, watching ${r.rater.caseNumber} (only you see this)`}</dd>{" "}
           </>
         ) : (
           <>
             <dt className="font-bold">Email</dt>{" "}
-            <dd className="break-all">
+            <dd className="[overflow-wrap:anywhere]">
               {r.email ? `${r.email}${r.watchesCase ? " (watches a case on the site)" : ""}` : "None given"}
             </dd>{" "}
           </>
