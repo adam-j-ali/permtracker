@@ -193,6 +193,46 @@ def check_restore() -> None:
           "after the switch the site is checked before the old second copy stops, and a failure switches back")
 
 
+def room_with(cap_exit: int) -> tuple[int, str, str]:
+    """The deploy's own make_room(), lifted out, against a stand-in for the page-cache cap that writes down what
+    it was asked (the deploy throws the cap's own output away). Returns the exit code, the output and the ask."""
+    text = SCRIPT.read_text()
+    start = text.index("make_room(){")
+    fn = text[start:text.index("\n}\n", start) + 3]
+    room = next(ln for ln in text.splitlines() if ln.startswith("DEPLOY_ROOM_GB="))
+    with tempfile.TemporaryDirectory() as tmp:
+        asked = pathlib.Path(tmp) / "asked"
+        stubs = (
+            f"{room}\nPRUNE=the_cap\n"
+            f'the_cap(){{ echo "$*" > "{asked}"; return {cap_exit}; }}\n'
+            'timeout(){ shift; "$@"; }\n'
+            "log(){ echo \"$*\"; }\n"
+        )
+        r = subprocess.run(["bash", "-c", "set -euo pipefail\n" + stubs + fn + "make_room; echo went-on"],
+                           capture_output=True, text=True, timeout=30)
+        return r.returncode, r.stdout + r.stderr, asked.read_text().strip() if asked.exists() else ""
+
+
+def check_room() -> None:
+    """A release makes its own room before it arrives, and a cap that fails never stops a deploy.
+
+    Nov 13 2026: with the page caches at their budgets the disk had about 28 GB free, the release took 5 more for
+    a few minutes, and the alarm's 25 GB line emailed the owner about a release working as designed."""
+    rc, out, asked = room_with(0)
+    check(rc == 0 and asked == "--keep-free 40" and "made room" in out and "went-on" in out,
+          f"the deploy asks the cap to leave 40 GB free, and says it did ({asked!r}, {out!r})")
+    rc, out, asked = room_with(1)
+    check(rc == 0 and "deploying anyway" in out and "went-on" in out,
+          f"a cap that fails is logged and the deploy goes on ({out!r})")
+    text = SCRIPT.read_text()
+    deploy = text[text.index("  deploy)"):text.index("  prune-releases)")]
+    check("make_room" in deploy and deploy.index("make_room") < deploy.index('cat > "$tmp"'),
+          "room is made before the release is read off the wire")
+    check(deploy.index("refusing to replace it") < deploy.index("make_room"),
+          "and only for a release that passed the guard: a refused one trims nothing")
+    check('PRUNE=/usr/local/bin/permtracker-prune' in text, "the cap it runs is the installed one, by its full path")
+
+
 PRUNE_SHARED = 'find "$A/shared/_next/static" -type f -mtime +21 -delete'
 
 
@@ -242,6 +282,7 @@ def main() -> int:
     check_order()
     check_reload()
     check_stop()
+    check_room()
     check_stamp()
     check_site_ok()
     check_restore()

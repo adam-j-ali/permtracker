@@ -32,6 +32,24 @@ ensure_env(){ # $1 copy: blue2/green2 need a PORT file like blue's and green's
 }
 active=$(cat $A/active)
 log(){ echo "[deploy $(date -u +%H:%M:%S)] $*"; logger -t permtracker-deploy "$*"; }
+# A RELEASE MAKES ITS OWN ROOM BEFORE IT ARRIVES. The page caches sit at their
+# budgets, which leaves about 30 GB free (permtracker-prune's KEEP_FREE), and a
+# release needs about 5 GB more for a few minutes: its archive, its two
+# folders, the pages warmed on them. Nov 13 2026: that took the disk to 23.5 GB
+# free, under the alarm's 25 GB line, and the alarm emailed the owner about a
+# release working as designed. So the cap runs first with a wider line. What
+# it trims is the oldest pages of a cache the switch empties minutes later, so
+# nothing is lost. It never fails a deploy.
+PRUNE=/usr/local/bin/permtracker-prune
+DEPLOY_ROOM_GB=40
+make_room(){
+  if timeout 300 "$PRUNE" --keep-free "$DEPLOY_ROOM_GB" >/dev/null 2>&1; then
+    log "made room first: the page caches trimmed to leave $DEPLOY_ROOM_GB GB free"
+  else
+    log "could not make room first (the page-cache cap failed or ran long); deploying anyway"
+  fi
+  return 0
+}
 stop_copy(){ # $1 copy. One still holding a long-lived connection (an MCP client's
   # stream) can outlast its 30 s stop and be killed (green2, Oct 27 2026, 11:40 AM
   # EDT). Traffic had already moved, so that's the stop doing its job, not a
@@ -231,6 +249,7 @@ case "$action" in
       fi
     done
     idle=$(other_of "$active")
+    make_room
     tmp=$A/incoming/$rel.tar.zst
     cat > "$tmp"
     log "received $(stat -c %s "$tmp") bytes for $rel"

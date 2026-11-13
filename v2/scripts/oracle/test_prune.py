@@ -152,6 +152,63 @@ with tempfile.TemporaryDirectory() as tmp:
     finally:
         (prune.APP, prune.HEALTH, prune.BUDGET, prune.TIGHT, prune.FREE_FLOOR, prune.KEEP_FREE, prune.disk_free) = saved
 
+# A deploy makes room first (Nov 13 2026). The caches sit at their budgets, which leaves about KEEP_FREE free, and a
+# release needs about 5 GB more for a few minutes: that night it took the disk to 23.5 GB, under the alarm's 25 GB
+# line. `--keep-free N` fits the budgets to a wider line for one run.
+b, f = prune.fit(prune.BUDGET, 28 * G, 46 * G, 2, 2, 40 * G)
+at_cap = 28 * G + 46 * G - (b["live"] * 2 + b["standby"] * 2)
+check("asked to keep 40 GB free, every cache at its fitted budget leaves 40", f and abs(at_cap - 40 * G) < G, f"{at_cap / G:.1f} GB")
+check("--keep-free reads its number of GB", prune.keep_free_asked(["x", "--keep-free", "40"]) == 40 * G)
+check("with no --keep-free the line is the usual one", prune.keep_free_asked(["x"]) == prune.KEEP_FREE)
+check("a line under the usual one is never taken: the cap can be asked for more room, never for less",
+      prune.keep_free_asked(["x", "--keep-free", "5"]) == prune.KEEP_FREE)
+for bad in (["x", "--keep-free"], ["x", "--keep-free", "lots"]):
+    try:
+        prune.keep_free_asked(bad)
+        refused = False
+    except SystemExit:
+        refused = True
+    check(f"a --keep-free with no number of GB is refused ({' '.join(bad[2:]) or 'nothing after it'})", refused)
+
+# The three numbers hold together: what the deploy asks for, less a release's own use (5.3 GB measured Nov 13 2026,
+# 10 allowed here), still sits above the alarm's line.
+import re as _re
+_bin = pathlib.Path(__file__).resolve().parent / "bin"
+_room = int(_re.search(r"^DEPLOY_ROOM_GB=(\d+)$", (_bin / "permtracker-deploy").read_text(), _re.M).group(1))
+_low = int(_re.search(r"^DISK_LOW_GB = (\d+)$", (_bin / "permtracker-alarm").read_text(), _re.M).group(1))
+check("the room a deploy asks for is more than the cap usually keeps", _room * G > prune.KEEP_FREE, f"{_room} GB")
+check("and a release's own 10 GB still leaves the disk above the alarm's line", _room - 10 >= _low, f"{_room} - 10 against {_low}")
+
+with tempfile.TemporaryDirectory() as tmp:
+    app = pathlib.Path(tmp) / "app"
+    for rel in ("a", "a.w2"):
+        r = app / "releases" / rel
+        (r / ".next" / "server").mkdir(parents=True)
+        (r / "server.js").write_text("")
+        for i in range(5):
+            page(r / f".next/server/route-cache/APP_PAGE/h{i}/$/p{i}")
+    (app / "slots").mkdir()
+    for slot, rel in (("blue", "a"), ("blue2", "a.w2")):
+        (app / "slots" / slot).symlink_to(app / "releases" / rel)
+    (app / "active").write_text("blue")
+    saved = (prune.APP, prune.HEALTH, prune.BUDGET, prune.TIGHT, prune.FREE_FLOOR, prune.KEEP_FREE, prune.disk_free,
+             prune.keep_free_asked)
+    try:
+        prune.APP, prune.HEALTH = str(app), str(pathlib.Path(tmp) / "prune.json")
+        prune.BUDGET = {"live": 20_000, "standby": 4_000, "old": 0}
+        prune.TIGHT = {"live": 4_000, "standby": 0, "old": 0}
+        prune.FREE_FLOOR, prune.KEEP_FREE = 0, 30_000
+        prune.disk_free = lambda: 18_000          # with 40,000 cached and 38,000 to keep: room 20,000, 10,000 a folder
+        prune.keep_free_asked = lambda argv: 38_000
+        prune.main()
+        rep = _json.loads(pathlib.Path(prune.HEALTH).read_text())
+        by = {r["release"]: r for r in rep["releases"]}
+        check("a run asked for more room trims further than the usual line would (2 of 5 pages, where it kept 3)",
+              by["a"]["pages"] == 2 and by["a.w2"]["pages"] == 2, str({k: v["pages"] for k, v in by.items()}))
+    finally:
+        (prune.APP, prune.HEALTH, prune.BUDGET, prune.TIGHT, prune.FREE_FLOOR, prune.KEEP_FREE, prune.disk_free,
+         prune.keep_free_asked) = saved
+
 # Every slot runs two copies, each in its own folder with the slot's role, so
 # a folder's budget is half the slot's: two live folders must fit 60 GB.
 check("the live slot's two folders share 60 GB", prune.BUDGET["live"] * 2 == 60 * prune.GB,
