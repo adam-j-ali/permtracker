@@ -33,11 +33,18 @@ export function newsSubject(n: NewsHandOver): string {
   return `Newsworthy, ${dayLabel(n.day)}: ${n.lines.length} ${n.lines.length === 1 ? "thing moved" : "things moved"}`;
 }
 
+/** A line about a rule on its way: its source is OIRA's review lists or the Federal Register. */
+const RULE_LINE = /\b(OIRA|reginfo\.gov|Federal Register)\b/;
+
 export function newsBody(n: NewsHandOver): string {
-  return [
-    "What moved since this morning's report, each from its own record:",
-    "",
-    ...n.lines.flatMap((l) => [`- ${l}`, ""]),
-    "Every rule on its way, step by step: https://permtracker.app/policy-changes#pipeline",
-  ].join("\n");
+  const lines = ["What moved since this morning's report, each from its own record:", ""];
+  n.lines.forEach((l, i) => {
+    if (i > 0) lines.push("");
+    lines.push(`- ${l}`);
+  });
+  // The rules page is where a rule's next step shows. An evening with no rule in it gets no pointer there.
+  if (n.lines.some((l) => RULE_LINE.test(l))) {
+    lines.push("", "Every rule on its way, step by step: https://permtracker.app/policy-changes#pipeline");
+  }
+  return lines.join("\n");
 }
