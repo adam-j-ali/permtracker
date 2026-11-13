@@ -7,7 +7,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 
 import type { FlagCaseRow, FlagDisclosedRow } from "@/lib/db/flagCases";
 
@@ -181,3 +181,68 @@ describe("FlagCaseBrowser is the page's one search box", () => {
     );
   });
 });
+
+describe("FlagCaseBrowser's search results come a short page at a time", () => {
+  // A search returns up to 200 filings from the daily check and 200 more from DOL's file. Both were drawn whole:
+  // 17 to 25 screens each at desktop width (the control walk, Nov 12 2026), on pages whose own lists are 25 rows.
+  const many = (n: number) => Array.from({ length: n }, (_, i) => live(`I-200-26213-${String(100000 + i)}`, "IN PROCESS"));
+  const files = (n: number) => Array.from({ length: n }, (_, i) => file(`I-200-25001-${String(200000 + i)}`, "WA", "H-1B"));
+  const answer = (cases: FlagCaseRow[], disclosed: FlagDisclosedRow[]) =>
+    usePublicQuery.mockImplementation((url: string) =>
+      typeof url === "string" && url.includes("action=search")
+        ? { data: { cases, disclosed }, failed: false }
+        : { data: { rows: [], isDone: true, continueCursor: "0" }, failed: false },
+    );
+  const rowsIn = (name: RegExp) => screen.getByRole("table", { name }).querySelectorAll("tbody tr").length;
+
+  it("draws 25 of 60 found, says so, and turns the page", () => {
+    // Arrange
+    answer(many(60), []);
+
+    // Act
+    render(<FlagCaseBrowser summary={null} program={LCA_PROGRAM} />);
+
+    // Assert: the first page, where it is, and the next one.
+    expect(rowsIn(/matching the search/)).toBe(25);
+    const pager = screen.getByRole("navigation", { name: "Pages of filings found" });
+    expect(pager.textContent).toContain("1 to 25 of 60");
+    expect(screen.getByText("I-200-26213-100000")).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "Next page" })[0]!);
+    expect(screen.queryByText("I-200-26213-100000")).toBeNull();
+    expect(screen.getByText("I-200-26213-100025")).toBeInTheDocument();
+    expect(pager.textContent).toContain("26 to 50 of 60");
+  });
+
+  it("pages the filings from DOL's file by themselves", () => {
+    answer(many(3), files(40));
+    render(<FlagCaseBrowser summary={null} program={LCA_PROGRAM} />);
+    expect(rowsIn(/matching the search/)).toBe(3);
+    expect(rowsIn(/from DOL's quarterly file/)).toBe(25);
+    expect(screen.getByRole("navigation", { name: "Pages of decided filings from DOL's file" }).textContent).toContain("1 to 25 of 40");
+  });
+
+  it("orders the whole answer from a column header, and goes back to the first page", () => {
+    // Arrange: 60 found, and the one whose title sorts first is the last of them, three pages down.
+    const rows = many(60).map((r, i) => ({ ...r, jobTitle: i === 59 ? "Aardvark Keeper" : `Zoo Engineer ${i}` }));
+    answer(rows, []);
+    render(<FlagCaseBrowser summary={null} program={LCA_PROGRAM} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Next page" })[0]!);
+    expect(screen.queryByText("Aardvark Keeper")).toBeNull();
+
+    // Act: sort by job title.
+    const table = screen.getByRole("table", { name: /matching the search/ });
+    fireEvent.click(within(table).getByRole("button", { name: /Job title/ }));
+
+    // Assert: the page was cut after the sort, so the first of all 60 leads the first page.
+    expect(screen.getByText("Aardvark Keeper")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Pages of filings found" }).textContent).toContain("1 to 25 of 60");
+  });
+
+  it("a few results get no pager at all", () => {
+    answer(many(3), files(2));
+    render(<FlagCaseBrowser summary={null} program={LCA_PROGRAM} />);
+    expect(screen.queryByRole("navigation", { name: "Pages of filings found" })).toBeNull();
+    expect(rowsIn(/matching the search/)).toBe(3);
+  });
+});
+

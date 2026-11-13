@@ -7,7 +7,7 @@ import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 
 import { usePublicQuery } from "@/hooks/usePublicQuery";
 import { Pager } from "@/components/ui/pager";
-import { RowsPerPage, useListSize } from "@/components/ui/pagination";
+import { Pagination, RowsPerPage, useListSize, usePagedRows } from "@/components/ui/pagination";
 import { PendingLink } from "@/components/ui/pending-link";
 import { formatMonth } from "@/lib/dolFormat";
 // One line, deliberately: no-server-only-in-client.test.ts checks each import
@@ -131,19 +131,59 @@ const CONTROL =
 
 
 
+/** How a search's results are paged, and what its pager is called (a page can hold two). */
+interface FoundPaging {
+  /** What the rows are, plural, for "1 to 25 of 60 LCAs". */
+  noun: string;
+  label: string;
+}
+
+/**
+ * A table's sorted rows, a short page at a time when the caller asks: 25 on a wide screen, 10 on a phone, the
+ * reader's pick after. A search returns up to 200 filings from the daily check and 200 more from DOL's file, and
+ * both were drawn whole (17 to 25 screens each). The page is cut after the sort, so a column header orders the
+ * whole answer and goes back to its first page. Without `paging` every row is drawn, as a server-paged list needs.
+ */
+function useFoundPages<T>(ordered: readonly T[], paging: FoundPaging | undefined) {
+  const paged = usePagedRows(ordered);
+  const top = useRef<HTMLDivElement>(null);
+  return {
+    top,
+    rows: paging ? paged.shown : ordered,
+    toFirst: () => paged.setPage(1),
+    pager: paging ? (
+      <Pagination
+        className="mt-4"
+        page={paged.page}
+        pageCount={paged.pageCount}
+        onPage={paged.setPage}
+        total={ordered.length}
+        perPage={paged.perPage}
+        noun={paging.noun}
+        label={paging.label}
+        scrollTo={top}
+        per={paged.per}
+      />
+    ) : null,
+  };
+}
+
 function Rows({
   rows,
   caption,
   wages,
   wageLabel,
   showForm,
+  paged,
 }: {
-  rows: FlagCaseRow[];
+  rows: readonly FlagCaseRow[];
   caption: string;
   /** The file's record for rows it also holds; adds a wage column when non-empty. */
   wages?: Map<string, FlagDisclosedRow>;
   wageLabel?: string;
   showForm?: boolean;
+  /** For a search's results, which can run to 200: a short page at a time, cut after the sort. */
+  paged?: FoundPaging;
 }) {
   const withWage = !!wages && wages.size > 0;
   const [sort, setSort] = useState<SortState>({ key: "filed", dir: -1 });
@@ -175,9 +215,11 @@ function Rows({
     );
     return cols;
   }, [withWage, wageLabel, wages, showForm]);
-  const ordered = useMemo(() => sortRows(rows, columns, sort), [rows, columns, sort]);
+  const ordered = useMemo(() => sortRows([...rows], columns, sort), [rows, columns, sort]);
+  const found = useFoundPages(ordered, paged);
   // On a phone each row is four short lines by named places: caseListRow.ts.
   return (
+    <div ref={found.top} className="scroll-mt-24">
     <ScrollBox label={caption} className="mt-4">
       <table
         className={
@@ -188,11 +230,14 @@ function Rows({
         <SortableHeader
           columns={columns}
           sort={sort}
-          onSort={(k) => setSort((cur) => nextSort(cur, k, columns))}
+          onSort={(k) => {
+            setSort((cur) => nextSort(cur, k, columns));
+            found.toFirst();
+          }}
           leading={["Case"]}
         />
         <tbody translate="no" className="bg-card max-sm:block">
-          {ordered.map((r) => (
+          {found.rows.map((r) => (
             <tr
               key={r.caseNumber}
               className={
@@ -251,7 +296,9 @@ function Rows({
           ))}
         </tbody>
       </table>
-    </ScrollBox>
+    </ScrollBox>{" "}
+    {found.pager}
+    </div>
   );
 }
 
@@ -259,10 +306,13 @@ function DisclosedRows({
   rows,
   caption,
   wageLabel,
+  paged,
 }: {
-  rows: FlagDisclosedRow[];
+  rows: readonly FlagDisclosedRow[];
   caption: string;
   wageLabel: string;
+  /** For a search's results, which can run to 200: a short page at a time, cut after the sort. */
+  paged?: FoundPaging;
 }) {
   const [sort, setSort] = useState<SortState>({ key: "decided", dir: -1 });
   const columns: SortColumn<FlagDisclosedRow>[] = useMemo(
@@ -280,19 +330,24 @@ function DisclosedRows({
     ],
     [wageLabel],
   );
-  const ordered = useMemo(() => sortRows(rows, columns, sort), [rows, columns, sort]);
+  const ordered = useMemo(() => sortRows([...rows], columns, sort), [rows, columns, sort]);
+  const found = useFoundPages(ordered, paged);
   return (
+    <div ref={found.top} className="scroll-mt-24">
     <ScrollBox label={caption} className="mt-4">
       <table className="w-full min-w-[1180px] border-collapse text-left text-base">
         <caption className="sr-only">{caption}</caption>
         <SortableHeader
           columns={columns}
           sort={sort}
-          onSort={(k) => setSort((cur) => nextSort(cur, k, columns))}
+          onSort={(k) => {
+            setSort((cur) => nextSort(cur, k, columns));
+            found.toFirst();
+          }}
           leading={["Case"]}
         />
         <tbody translate="no" className="bg-card">
-          {ordered.map((r) => (
+          {found.rows.map((r) => (
             <tr key={r.caseNumber} className="border-t-2 border-border/30 align-top">
               <td className="whitespace-nowrap px-3 py-3 font-mono text-base">
                 {/* PendingLink, not Link: /perm-case-status is dynamic, and a
@@ -325,7 +380,9 @@ function DisclosedRows({
           ))}
         </tbody>
       </table>
-    </ScrollBox>
+    </ScrollBox>{" "}
+    {found.pager}
+    </div>
   );
 }
 
@@ -774,11 +831,14 @@ export function FlagCaseBrowser({
                 : ""}
             </p>{" "}
             <Rows
+              // A new search or filter is a new question: it starts from its first page.
+              key={`${searchUrl}|${JSON.stringify(filters)}`}
               rows={shownLive}
               caption={`${program.nouns} matching the search`}
               wages={halves?.wages}
               wageLabel={program.wageLabel}
               showForm={program.showForm}
+              paged={{ noun: program.nouns, label: "Pages of filings found" }}
             />
           </>
         ) : null}
@@ -795,9 +855,11 @@ export function FlagCaseBrowser({
               {halves.fileOnly.length >= 200 ? " (the first 200, so narrow by title or month for the rest)" : ""}.
             </p>{" "}
             <DisclosedRows
+              key={`${searchUrl}|${JSON.stringify(filters)}`}
               rows={shownFile}
               caption={`decided ${program.nouns} from DOL's quarterly file`}
               wageLabel={program.wageLabel}
+              paged={{ noun: program.nouns, label: "Pages of decided filings from DOL's file" }}
             />
           </>
         ) : null}
