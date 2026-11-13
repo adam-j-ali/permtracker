@@ -12,7 +12,9 @@ feed it. Five kinds of move, each from a record this site already keeps:
   3. A new visa bulletin month reached this site (`bulletin_first_seen`).
   4. DOL moved one employer's cases as a group, a big one: on or off hold, or
      a decision batch (`perm_docs['employer_stages']`), at NEWS_EMPLOYER_MIN
-     cases or more.
+     cases or more. A decision batch must also be that employer's biggest of
+     that outcome in the days the record keeps: a big filer passes the count
+     on ordinary days.
   5. Our sweep recorded a day of PERM decisions at DECISION_DAY_MULTIPLE
      times a typical weekday or more (`daily_decisions`, sweep-observed).
   6. A document or announcement this site saw for the first time: a Register
@@ -40,6 +42,10 @@ ET = ZoneInfo("America/New_York")
 
 # An employer-wide move worth an email: at least this many cases in one day.
 NEWS_EMPLOYER_MIN = 50
+# The days of decision batches `perm_docs['employer_stages']` keeps (DECISION_MOVES_DAYS in
+# ingest_case_status_direct.py; test_newsworthy.py holds the two together). A batch is news when it's the
+# employer's biggest in them.
+EMPLOYER_RECORD_DAYS = 60
 # A decision day worth an email: this many times the median of the weekdays before it.
 DECISION_DAY_MULTIPLE = 2.0
 # The weekdays the typical day is measured over, and the fewest it needs.
@@ -395,6 +401,22 @@ def _worked_words(m: dict) -> tuple[str, bool]:
     return f"{day_label(days[0])} and {day_label(days[-1])}", False
 
 
+def _same_employer(m: dict) -> str:
+    """The employer a move belongs to: its page's slug, or its name as the ingest groups a name with no page."""
+    return m.get("slug") or "name:" + " ".join(str(m.get("name") or "").lower().split())
+
+
+def _biggest_before(m: dict, moves: list[dict]) -> dict | None:
+    """The same employer's biggest batch of the same outcome on an earlier day, or None.
+
+    The record lists every batch that passed its own rules (ingest_case_status_direct.decision_moves), and each
+    rule is a floor on the count for one employer and outcome. So a day bigger than a listed one is listed too,
+    and the biggest listed day is the biggest day in the window."""
+    who, to, day = _same_employer(m), m.get("to"), m.get("date") or ""
+    earlier = [x for x in moves if _same_employer(x) == who and x.get("to") == to and (x.get("date") or "") < day]
+    return max(earlier, key=lambda x: (int(x.get("n") or 0), x.get("date") or ""), default=None)
+
+
 def _employer_items(inputs: Inputs, since_ms: int) -> list[dict]:
     doc = inputs.employer_stages or {}
     floor = et_day(since_ms)
@@ -408,15 +430,24 @@ def _employer_items(inputs: Inputs, since_ms: int) -> list[dict]:
                     f"DOL took {n:,} of {m['name']}'s PERM cases off hold on {when}, to {m.get('to') or 'another status'}.")
             out.append({"kind": "employer", "when": m["date"], "what": what,
                         "source": "DOL's case-status search, read by this site's sweep"})
-    for m in doc.get("decisionMoves") or []:
+    batches = doc.get("decisionMoves") or []
+    for m in batches:
         if (m.get("date") or "") >= floor and int(m.get("n") or 0) >= NEWS_EMPLOYER_MIN:
             n = int(m["n"])
+            # A big filer's ordinary flow passes the count: only its biggest batch so far is news.
+            passed = _biggest_before(m, batches)
+            if passed and int(passed.get("n") or 0) >= n:
+                continue
             act = {"CERTIFIED": "DOL certified", "DENIED": "DOL denied",
                    "WITHDRAWN": "The employer withdrew"}.get(m.get("to") or "", f"DOL moved to {m.get('to')}")
             when, one = _worked_words(m)
-            out.append({"kind": "employer", "when": m["date"],
-                        "what": (f"{act} {n:,} of {m['name']}'s PERM cases in one day, {when}." if one else
-                                 f"{act} {n:,} of {m['name']}'s PERM cases over {when}."),
+            what = (f"{act} {n:,} of {m['name']}'s PERM cases in one day, {when}." if one else
+                    f"{act} {n:,} of {m['name']}'s PERM cases over {when}.")
+            if passed:
+                then, then_one = _worked_words(passed)
+                what += (f" That's its biggest batch in the last {EMPLOYER_RECORD_DAYS} days: the most before was "
+                         f"{int(passed['n']):,}, {'on' if then_one else 'over'} {then}.")
+            out.append({"kind": "employer", "when": m["date"], "what": what,
                         "source": "DOL's case-status search, read by this site's sweep"})
     return out
 
