@@ -152,62 +152,60 @@ with tempfile.TemporaryDirectory() as tmp:
     finally:
         (prune.APP, prune.HEALTH, prune.BUDGET, prune.TIGHT, prune.FREE_FLOOR, prune.KEEP_FREE, prune.disk_free) = saved
 
-# A deploy makes room first (Nov 13 2026). The caches sit at their budgets, which leaves about KEEP_FREE free, and a
-# release needs about 5 GB more for a few minutes: that night it took the disk to 23.5 GB, under the alarm's 25 GB
-# line. `--keep-free N` fits the budgets to a wider line for one run.
-b, f = prune.fit(prune.BUDGET, 28 * G, 46 * G, 2, 2, 40 * G)
-at_cap = 28 * G + 46 * G - (b["live"] * 2 + b["standby"] * 2)
-check("asked to keep 40 GB free, every cache at its fitted budget leaves 40", f and abs(at_cap - 40 * G) < G, f"{at_cap / G:.1f} GB")
-check("--keep-free reads its number of GB", prune.keep_free_asked(["x", "--keep-free", "40"]) == 40 * G)
-check("with no --keep-free the line is the usual one", prune.keep_free_asked(["x"]) == prune.KEEP_FREE)
-check("a line under the usual one is never taken: the cap can be asked for more room, never for less",
-      prune.keep_free_asked(["x", "--keep-free", "5"]) == prune.KEEP_FREE)
-for bad in (["x", "--keep-free"], ["x", "--keep-free", "lots"]):
-    try:
-        prune.keep_free_asked(bad)
-        refused = False
-    except SystemExit:
-        refused = True
-    check(f"a --keep-free with no number of GB is refused ({' '.join(bad[2:]) or 'nothing after it'})", refused)
-
-# The three numbers hold together: what the deploy asks for, less a release's own use (5.3 GB measured Nov 13 2026,
-# 10 allowed here), still sits above the alarm's line.
-import re as _re
-_bin = pathlib.Path(__file__).resolve().parent / "bin"
-_room = int(_re.search(r"^DEPLOY_ROOM_GB=(\d+)$", (_bin / "permtracker-deploy").read_text(), _re.M).group(1))
-_low = int(_re.search(r"^DISK_LOW_GB = (\d+)$", (_bin / "permtracker-alarm").read_text(), _re.M).group(1))
-check("the room a deploy asks for is more than the cap usually keeps", _room * G > prune.KEEP_FREE, f"{_room} GB")
-check("and a release's own 10 GB still leaves the disk above the alarm's line", _room - 10 >= _low, f"{_room} - 10 against {_low}")
-
+# A deploy makes room first, and fast (Nov 13 2026). The caches at their budgets leave about KEEP_FREE free and a
+# release needs about 5 GB more for a few minutes; one took the disk under the alarm's line that night. The first
+# answer, fitting every budget to a wider line, walked every page of the live caches and took 13 minutes at midday,
+# past the deploy's 5-minute limit. `--standby-only` drops the pages of the folders that aren't live, the slot the
+# release is about to replace among them, and never opens a live folder.
 with tempfile.TemporaryDirectory() as tmp:
     app = pathlib.Path(tmp) / "app"
-    for rel in ("a", "a.w2"):
+    for rel in ("live", "live.w2", "idle", "idle.w2", "older"):
         r = app / "releases" / rel
         (r / ".next" / "server").mkdir(parents=True)
         (r / "server.js").write_text("")
         for i in range(5):
             page(r / f".next/server/route-cache/APP_PAGE/h{i}/$/p{i}")
     (app / "slots").mkdir()
-    for slot, rel in (("blue", "a"), ("blue2", "a.w2")):
+    for slot, rel in (("blue", "live"), ("blue2", "live.w2"), ("green", "idle"), ("green2", "idle.w2")):
         (app / "slots" / slot).symlink_to(app / "releases" / rel)
     (app / "active").write_text("blue")
-    saved = (prune.APP, prune.HEALTH, prune.BUDGET, prune.TIGHT, prune.FREE_FLOOR, prune.KEEP_FREE, prune.disk_free,
-             prune.keep_free_asked)
+    health = pathlib.Path(tmp) / "prune.json"
+    health.write_text('{"at": 1, "kept": "the last full run"}')
+    walked: list[str] = []
+    real_groups = prune.groups
+    saved = (prune.APP, prune.HEALTH, prune.groups, sys.argv)
     try:
-        prune.APP, prune.HEALTH = str(app), str(pathlib.Path(tmp) / "prune.json")
-        prune.BUDGET = {"live": 20_000, "standby": 4_000, "old": 0}
-        prune.TIGHT = {"live": 4_000, "standby": 0, "old": 0}
-        prune.FREE_FLOOR, prune.KEEP_FREE = 0, 30_000
-        prune.disk_free = lambda: 18_000          # with 40,000 cached and 38,000 to keep: room 20,000, 10,000 a folder
-        prune.keep_free_asked = lambda argv: 38_000
+        prune.APP, prune.HEALTH = str(app), str(health)
+        prune.groups = lambda rel: (walked.append(pathlib.Path(rel).name), real_groups(rel))[1]
+        sys.argv = ["permtracker-prune", "--standby-only"]
+        rc = prune.main()
+        left = {rel: len(list(real_groups(str(app / "releases" / rel)))) for rel in ("live", "live.w2", "idle", "idle.w2", "older")}
+        check("a standby-only run ends well", rc == 0, str(rc))
+        check("it drops every page of the idle slot's two folders and of an older release",
+              left["idle"] == 0 and left["idle.w2"] == 0 and left["older"] == 0, str(left))
+        check("it leaves the live folders' pages alone", left["live"] == 5 and left["live.w2"] == 5, str(left))
+        check("it never walks a live folder, which is what took 13 minutes",
+              "live" not in walked and "live.w2" not in walked, str(walked))
+        check("it leaves the last full run's report as it was (the alarm reads its headroom from that)",
+              health.read_text() == '{"at": 1, "kept": "the last full run"}', health.read_text()[:80])
+        # The probe: the same tree through an ordinary run walks the live folders.
+        walked.clear()
+        sys.argv = ["permtracker-prune", "--dry-run"]
+        saved_dry, prune.DRY_RUN = prune.DRY_RUN, True
         prune.main()
-        rep = _json.loads(pathlib.Path(prune.HEALTH).read_text())
-        by = {r["release"]: r for r in rep["releases"]}
-        check("a run asked for more room trims further than the usual line would (2 of 5 pages, where it kept 3)",
-              by["a"]["pages"] == 2 and by["a.w2"]["pages"] == 2, str({k: v["pages"] for k, v in by.items()}))
+        prune.DRY_RUN = saved_dry
+        check("PROBE: an ordinary run does walk the live folders", "live" in walked and "live.w2" in walked, str(walked))
     finally:
-        (prune.APP, prune.HEALTH, prune.BUDGET, prune.TIGHT, prune.FREE_FLOOR, prune.KEEP_FREE, prune.disk_free,
-         prune.keep_free_asked) = saved
+        prune.APP, prune.HEALTH, prune.groups, sys.argv = saved
+
+# The numbers hold together: with every cache at its budget KEEP_FREE is free, the idle slot's pages add their
+# budget back, and a release's own use (5.3 GB measured Nov 13 2026, 10 allowed here) still leaves the disk above
+# the alarm's line.
+import re as _re
+_low = int(_re.search(r"^DISK_LOW_GB = (\d+)$", (HERE / "bin" / "permtracker-alarm").read_text(), _re.M).group(1))
+_after = (prune.KEEP_FREE + prune.BUDGET["standby"] * prune.COPIES) / prune.GB
+check("the idle slot's pages give back more than a release takes", prune.BUDGET["standby"] * prune.COPIES >= 5.3 * prune.GB)
+check("and a release's own 10 GB still leaves the disk above the alarm's line", _after - 10 >= _low, f"{_after:.0f} - 10 against {_low}")
 
 # Every slot runs two copies, each in its own folder with the slot's role, so
 # a folder's budget is half the slot's: two live folders must fit 60 GB.

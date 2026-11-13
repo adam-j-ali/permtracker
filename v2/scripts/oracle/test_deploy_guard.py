@@ -199,11 +199,10 @@ def room_with(cap_exit: int) -> tuple[int, str, str]:
     text = SCRIPT.read_text()
     start = text.index("make_room(){")
     fn = text[start:text.index("\n}\n", start) + 3]
-    room = next(ln for ln in text.splitlines() if ln.startswith("DEPLOY_ROOM_GB="))
     with tempfile.TemporaryDirectory() as tmp:
         asked = pathlib.Path(tmp) / "asked"
         stubs = (
-            f"{room}\nPRUNE=the_cap\n"
+            "PRUNE=the_cap\n"
             f'the_cap(){{ echo "$*" > "{asked}"; return {cap_exit}; }}\n'
             'timeout(){ shift; "$@"; }\n'
             "log(){ echo \"$*\"; }\n"
@@ -219,8 +218,10 @@ def check_room() -> None:
     Nov 13 2026: with the page caches at their budgets the disk had about 28 GB free, the release took 5 more for
     a few minutes, and the alarm's 25 GB line emailed the owner about a release working as designed."""
     rc, out, asked = room_with(0)
-    check(rc == 0 and asked == "--keep-free 40" and "made room" in out and "went-on" in out,
-          f"the deploy asks the cap to leave 40 GB free, and says it did ({asked!r}, {out!r})")
+    check(rc == 0 and asked == "--standby-only" and "made room" in out and "went-on" in out,
+          f"the deploy asks the cap for the idle slot's pages only, and says it did ({asked!r}, {out!r})")
+    check("--keep-free" not in SCRIPT.read_text(),
+          "it never asks for every budget to be refitted: that walk took 13 minutes at midday (Nov 13 2026)")
     rc, out, asked = room_with(1)
     check(rc == 0 and "deploying anyway" in out and "went-on" in out,
           f"a cap that fails is logged and the deploy goes on ({out!r})")

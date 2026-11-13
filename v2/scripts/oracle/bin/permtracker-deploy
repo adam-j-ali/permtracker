@@ -37,16 +37,17 @@ log(){ echo "[deploy $(date -u +%H:%M:%S)] $*"; logger -t permtracker-deploy "$*
 # release needs about 5 GB more for a few minutes: its archive, its two
 # folders, the pages warmed on them. Nov 13 2026: that took the disk to 23.5 GB
 # free, under the alarm's 25 GB line, and the alarm emailed the owner about a
-# release working as designed. So the cap runs first with a wider line. What
-# it trims is the oldest pages of a cache the switch empties minutes later, so
-# nothing is lost. It never fails a deploy.
+# release working as designed. So the idle slot's rendered pages go first (up
+# to 6 GB): the release replaces that slot minutes later, so nothing is lost.
+# The cap never opens a live folder for this. A first version refitted every
+# budget, which walks the live caches: 13 minutes at midday, past this limit,
+# so that afternoon's deploy made no room. It never fails a deploy.
 PRUNE=/usr/local/bin/permtracker-prune
-DEPLOY_ROOM_GB=40
 make_room(){
-  if timeout 300 "$PRUNE" --keep-free "$DEPLOY_ROOM_GB" >/dev/null 2>&1; then
-    log "made room first: the page caches trimmed to leave $DEPLOY_ROOM_GB GB free"
+  if timeout 300 "$PRUNE" --standby-only >/dev/null 2>&1; then
+    log "made room first: the idle slot's rendered pages dropped"
   else
-    log "could not make room first (the page-cache cap failed or ran long); deploying anyway"
+    log "could not make room first (dropping the idle slot's pages failed or ran long); deploying anyway"
   fi
   return 0
 }
