@@ -17,7 +17,7 @@
  * keeps permanently, so the sentence beside the table has to be true then too.
  */
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 
 import type { CaseChange, ChangeCalendar, ChangeDayFeed } from "@/lib/db/changes";
@@ -334,6 +334,18 @@ describe("a day with nothing in it", () => {
     expect(fold.textContent!.match(/We hold nothing for these dates/g)).toHaveLength(1);
   });
 
+  it("says where the record starts for a day before DOL's first file, never the gap's explanation", () => {
+    // The day before the oldest file read: "our own record starts 2026-08-27. Dates between the two are a gap in
+    // the record". That day isn't between the two records, it's before both (the control walk, Nov 13 2026).
+    pending();
+    render(<ChangeFeedBrowser calendar={CALENDAR} initialDay={day({ ...nothing, date: "2023-09-01" })} windows={WINDOWS} />);
+    const fold = screen.getByText("We hold nothing for these dates").closest("details")!;
+    expect(fold.open).toBe(true);
+    expect(fold.textContent).toContain("The oldest DOL file held here starts on 2023-10-01, and these dates are earlier.");
+    expect(fold.textContent).not.toContain("gap in the record");
+    expect(fold.textContent).not.toContain("our own record starts");
+  });
+
   it("leaves the explanation shut on a day a record covers", () => {
     loaded();
     render(<ChangeFeedBrowser calendar={CALENDAR} initialDay={day()} windows={WINDOWS} />);
@@ -346,6 +358,50 @@ describe("a day with nothing in it", () => {
     render(<ChangeFeedBrowser calendar={CALENDAR} initialDay={day()} windows={WINDOWS} />);
     fireEvent.change(screen.getByLabelText("Search these dates"), { target: { value: "no such employer" } });
     expect(screen.getByText(/Nothing on .* matches that/).textContent).toContain("587");
+  });
+});
+
+describe("a day's changes, a page sized for the screen", () => {
+  // 25 rows a page at every width was 3.2 phone screens of rows (the control walk at 390px, Nov 13 2026).
+  const many = Array.from({ length: 60 }, (_, i) => change({ caseNumber: `G-100-25308-${String(i).padStart(6, "0")}` }));
+  const screenIs = (narrow: boolean) =>
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: narrow && q.includes("max-width"),
+      media: q,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+  afterEach(() => vi.unstubAllGlobals());
+  const show = () => {
+    loaded({ changes: many, total: 60 });
+    render(<ChangeFeedBrowser calendar={CALENDAR} initialDay={day({ changes: many, total: 60 })} windows={WINDOWS} />);
+  };
+  const pressed = (n: number) => screen.getByRole("button", { name: `${n} rows per page` }).getAttribute("aria-pressed");
+
+  it("shows ten rows on a phone, and the choice says so", () => {
+    // Arrange
+    screenIs(true);
+    // Act
+    show();
+    // Assert
+    expect(caseNumbers()).toHaveLength(10);
+    expect(pressed(10)).toBe("true");
+  });
+
+  it("shows 25 on a wide screen", () => {
+    screenIs(false);
+    show();
+    expect(caseNumbers()).toHaveLength(25);
+    expect(pressed(25)).toBe("true");
+  });
+
+  it("keeps every size it offered before, and the reader's pick wins over the screen", () => {
+    screenIs(true);
+    show();
+    for (const n of [10, 25, 50, 100, 250]) expect(screen.getByRole("button", { name: `${n} rows per page` })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "50 rows per page" }));
+    expect(caseNumbers()).toHaveLength(50);
+    expect(pressed(50)).toBe("true");
   });
 });
 

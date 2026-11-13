@@ -28,6 +28,7 @@ import { RequestFailed } from "@/components/tools/RequestFailed";
 import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 import { choiceVariants } from "@/components/ui/choice";
 import { ChoiceRow } from "@/components/ui/choice-row";
+import { useListSize } from "@/components/ui/pagination";
 
 /**
  * Everything DOL moved on a day, searchable, filterable and sortable.
@@ -62,11 +63,12 @@ import { ChoiceRow } from "@/components/ui/choice-row";
  */
 
 /**
- * Rows per page. It opens at 25: the day's table sits mid-page above three
- * figures, and fifty rows put two thousand pixels between the reader and them.
+ * Rows per page. It opens at 25 on a wide screen: the day's table sits mid-page
+ * above three figures, and fifty rows put two thousand pixels between the reader
+ * and them. On a phone it opens at 10, where 25 of these rows ran three screens.
  * The control still offers 50 to 250.
  */
-const PAGE_SIZES = [25, 50, 100, 250] as const;
+const PAGE_SIZES = [10, 25, 50, 100, 250] as const;
 
 const CONTROL =
   "w-full min-w-0 min-h-[44px] border-2 border-input bg-card px-3 text-base font-medium focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:text-muted-foreground";
@@ -187,7 +189,9 @@ export function ChangeFeedBrowser({
     dir: -1,
   });
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState<number>(25);
+  // The screen's size until the reader picks one (the shared rule every list follows).
+  const listSize = useListSize({ options: PAGE_SIZES });
+  const pageSize = listSize.size;
   // A day bar in the daily pulse links here with `?day=YYYY-MM-DD`: open that
   // day. Read through useUrlSearchParams, inside the page's
   // SearchParamsBoundary, so the page itself stays static. Adjusted during
@@ -610,7 +614,7 @@ export function ChangeFeedBrowser({
             })}
           </select>
         </div>{" "}
-        {/* Four page sizes, one tap each. */}
+        {/* Five page sizes, one tap each. */}
         <ChoiceRow
           label="Rows per page"
           labelClassName={LABEL}
@@ -620,7 +624,7 @@ export function ChangeFeedBrowser({
           value={String(pageSize)}
           disabled={!ready}
           onChange={(v) => {
-            setPageSize(Number(v));
+            listSize.setSize(Number(v));
             reset();
           }}
         />{" "}
@@ -711,6 +715,13 @@ export function ChangeFeedBrowser({
           ) : null}
         </p>
         ) : (
+          // A day before the first file isn't in the gap between the two records: it's before both.
+          floor && range.to < floor ? (
+          <p className="mt-2 text-base leading-relaxed text-soft">
+            The oldest DOL file held here starts on <strong>{floor}</strong>, and these dates are earlier. Pick a
+            day from then on.
+          </p>
+          ) : (
           <p className="mt-2 text-base leading-relaxed text-soft">
             DOL&apos;s published files run to{" "}
             <strong>{windows.decided?.to ?? "no loaded file"}</strong> and our
@@ -720,6 +731,7 @@ export function ChangeFeedBrowser({
             DOL publishes its next quarterly file. It doesn&apos;t mean DOL
             did nothing.
           </p>
+          )
         )}
       </div>
       </details>
