@@ -940,6 +940,12 @@ export const notifyQueueReached = internalAction({
             "isn't a decision on your case and it isn't a prediction of one.",
             ...(paceLine ? ["", paceLine] : []),
             "",
+            queue === "perm"
+              ? "Look up your case number for DOL's status today, and get an email when it changes:"
+              : "Look up your wage request's number for DOL's status today, and get an email when it changes:",
+            `${SITE_URL}/perm-case-status`,
+            `No case number? Find your case by employer: ${SITE_URL}/case-search`,
+            "",
             `Current figures: ${SITE_URL}/perm-processing-times`,
             "",
             "This was the only email you signed up for, and it won't repeat.",

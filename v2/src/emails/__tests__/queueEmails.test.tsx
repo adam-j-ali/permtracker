@@ -357,6 +357,58 @@ describe("alert: frontier past the filing month vs landed on it", () => {
   });
 });
 
+/** Where the link whose words are `label` goes. A button carries Outlook-only padding in comments, dropped first. */
+function linkNamed(html: string, label: string): string | null {
+  for (const m of html.matchAll(/<a\b[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g)) {
+    const words = (m[2] as string)
+      .replace(/<!--[\s\S]*?-->/g, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (words === label) return m[1] as string;
+  }
+  return null;
+}
+
+describe("alert: the way to the reader's own case", () => {
+  // DOL reaching the month is the moment a reader most wants their own case watched, and this email is the
+  // only one a queue alert ever sends. Its button is the case lookup, where the case alert is offered.
+  const PWD = { ...alertProps, queueName: "prevailing-wage queue", monthNoun: "submission month" };
+
+  it("makes the case lookup the button, for both queues and both cases", async () => {
+    for (const props of [alertProps, alertPropsEqual, PWD]) {
+      const html = await render(QueueReached(props));
+      expect(linkNamed(html, "Check my case")).toBe("https://permtracker.app/perm-case-status");
+    }
+  });
+
+  it("says what the lookup gives, and promises no decision", async () => {
+    const text = (await render(QueueReached(alertProps))).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+    expect(text).toMatch(/Look up your case number for DOL(\u2019|&#x27;|&rsquo;|')s status today, and get an email when it changes\./);
+    expect(text).not.toMatch(/when (it(\u2019|')s|your case is) (certified|approved)/i);
+  });
+
+  it("names the wage request for the prevailing-wage queue", async () => {
+    const text = (await render(QueueReached(PWD))).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+    expect(text).toMatch(/Look up your wage request(\u2019|&#x27;|&rsquo;|')s number/);
+  });
+
+  it("keeps the processing times, and gives a reader with no number the search", async () => {
+    const html = await render(QueueReached(alertProps));
+    expect(hrefs(html)).toContain("https://permtracker.app/perm-processing-times");
+    expect(linkNamed(html, "No case number? Find your case by employer")).toBe("https://permtracker.app/case-search");
+    // What was there before stays.
+    expect(hrefs(html)).toContain("https://permtracker.app/tools/perm-timeline-calculator");
+    expect(hrefs(html)).toContain("https://permtracker.app/perm-cases");
+  });
+
+  it("would catch the button going back to the figures", () => {
+    const was = '<a href="https://permtracker.app/perm-processing-times" style="x"><span>See the current figures</span></a>';
+    expect(linkNamed(was, "Check my case")).toBeNull();
+    expect(linkNamed(was, "See the current figures")).toBe("https://permtracker.app/perm-processing-times");
+  });
+});
+
 describe("alert: the measured pace line", () => {
   it("states a measured rate when one is supplied", async () => {
     const html = await render(QueueReached(alertProps));
