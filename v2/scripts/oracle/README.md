@@ -119,10 +119,12 @@ why). An urgent fix: `gh workflow run oracle-deploy.yml -f when=now`. Each deplo
 Oct 17 to 18 eight of the thirteen people shown the busy page came within an hour of one (fifteen deploys that Saturday).
 
 A deploy first makes its own room (`make_room`, since Nov 13 2026): it runs the page-cache cap with
-`--keep-free 40`, because the caches at their budgets leave about 30 GB free and a release needs about 5 GB more for
-a few minutes. That night one took the disk to 23.5 GB, under the alarm's 25 GB line, and the alarm emailed about a
-release working as designed. The pages it trims belong to the cache the switch empties minutes later. A cap that
-fails never stops a deploy.
+`--standby-only`, which drops the idle slot's rendered pages (up to 6 GB) and never opens a live folder. The caches
+at their budgets leave about 30 GB free and a release needs about 5 GB more for a few minutes; that night one took
+the disk to 23.5 GB, under the alarm's 25 GB line, and the alarm emailed about a release working as designed. The
+release replaces the idle slot minutes later, so nothing is lost. A first version asked the cap to refit every
+budget (`--keep-free 40`): that walks the live caches, 8 to 13 minutes at midday, and ran past the step's 5-minute
+limit, so it's gone. A cap that fails never stops a deploy.
 
 A deploy copies the release to `<release>.w2`, starts BOTH copies of the idle slot, checks both, warms them
 (the core pages and the 300 busiest employers, two at a time, 4 minutes at most), points nginx at both, asks the
