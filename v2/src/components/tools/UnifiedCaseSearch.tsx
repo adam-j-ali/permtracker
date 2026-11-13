@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useId, useMemo, useState } from "react";
+import { Fragment, useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { IntentLink } from "@/components/ui/intent-link";
 import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 
@@ -512,6 +512,7 @@ export function UnifiedCaseSearch({
   industries = [],
   fieldOptions = NO_FIELD_OPTIONS,
   publishedFrom = null,
+  overview = null,
 }: {
   states?: StateOption[];
   fiscalYears?: FiscalYearOption[];
@@ -519,6 +520,12 @@ export function UnifiedCaseSearch({
   fieldOptions?: CaseFieldOptions;
   /** The first fiscal year of published PERM cases the search reaches, once the history is loaded. */
   publishedFrom?: string | null;
+  /**
+   * The page's overview (what one search reaches, by program). First things first: with nothing searched it comes
+   * straight after the form, ahead of the example of an answer; once a search has run, the answer comes first and
+   * the overview follows it.
+   */
+  overview?: ReactNode;
 }) {
   // THE FORM LIVES IN THE ADDRESS. Every box starts from its parameter (the
   // route's own names, `buildParams` below), and every search writes the
@@ -1951,6 +1958,7 @@ export function UnifiedCaseSearch({
           restated the four programs the page's header already counts; what a
           first visit can't see is what comes back, so the answer is drawn
           ahead of it: one row per case, from any program, open or decided. */}
+      {!searching && overview ? <div className="max-w-3xl">{overview}</div> : null}{" "}
       {!searching ? (
         <figure className="border-2 border-dashed border-foreground/40 p-4 sm:p-5">
           <figcaption className="font-heading text-lg font-bold">One row per case, from every program</figcaption>{" "}
@@ -1976,7 +1984,8 @@ export function UnifiedCaseSearch({
             ))}
           </div>
         </figure>
-      ) : null}
+      ) : null}{" "}
+      {searching && overview ? <div className="max-w-3xl">{overview}</div> : null}
     </div>
   );
 }

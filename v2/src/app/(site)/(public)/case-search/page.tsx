@@ -151,8 +151,9 @@ export default async function CaseSearchPage() {
           </>
         }
       />{" "}
-      {/* The search box, then the overview: the four programs' shares come after the box they describe. Above it,
-          they pushed the box off a desktop's first screen and to the bottom of a phone's. */}
+      {/* The search box, then the overview: the four programs' shares come straight after the form they describe
+          (above it, they pushed the box off a desktop's first screen and to the bottom of a phone's), and after the
+          answer once a search has run. The search part places them, since only it knows whether one has. */}
       <div className="mt-8">
         <SearchParamsBoundary>
           {/* The state and fiscal-year lists come from the same `perm_docs`
@@ -164,11 +165,9 @@ export default async function CaseSearchPage() {
             industries={SECTOR_GROUPS.map((g) => ({ code: sectorRange(g), title: g.label }))}
             fieldOptions={fieldOptions}
             publishedFrom={firstYear}
+            overview={<RecordShares rows={bands} />}
           />
         </SearchParamsBoundary>
-      </div>{" "}
-      <div className="mt-10 max-w-3xl">
-        <RecordShares rows={bands} />
       </div>
 
       <section className="mt-12 max-w-3xl">
