@@ -359,7 +359,7 @@ export default async function PermQueuePage() {
         <QueueAlertForm source="perm-queue" newestMonth={currentMonthUtc()} frontierMonth={line?.month ?? undefined} />
       </section>{" "}
 
-      <section className="mt-6 border-2 shadow-hard p-6 sm:p-8 bg-card border-border">
+      <section className="mt-6 border-2 shadow-hard p-4 sm:p-8 bg-card border-border">
         <h2 className="font-heading text-2xl font-bold sm:text-3xl">
           What those {formatInt(census.pending)} cases were doing
         </h2>{" "}
@@ -382,7 +382,7 @@ export default async function PermQueuePage() {
         </FinePrint>
       </section>{" "}
 
-      <section className="mt-6 border-2 shadow-hard p-6 sm:p-8 bg-card border-border">
+      <section className="mt-6 border-2 shadow-hard p-4 sm:p-8 bg-card border-border">
         <h2 className="font-heading text-2xl font-bold sm:text-3xl">
           The wall, by filing month
         </h2>{" "}
@@ -422,10 +422,10 @@ export default async function PermQueuePage() {
         ) : null}
       </section>{" "}
 
-      {ebSplit ? <EbSplit split={ebSplit} className="mt-6 border-2 shadow-hard p-6 sm:p-8 bg-card border-border" /> : null}{" "}
+      {ebSplit ? <EbSplit split={ebSplit} className="mt-6 border-2 shadow-hard p-4 sm:p-8 bg-card border-border" /> : null}{" "}
 
       {alphabet ? (
-        <section className="mt-6 border-2 shadow-hard p-6 sm:p-8 bg-card border-border">
+        <section className="mt-6 border-2 shadow-hard p-4 sm:p-8 bg-card border-border">
           <h2 className="font-heading text-2xl font-bold sm:text-3xl">
             Your employer&rsquo;s first letter: small, and not in our estimates
           </h2>{" "}

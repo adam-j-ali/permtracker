@@ -38,4 +38,26 @@ describe("BacklogWall's percent column", () => {
     const recent = screen.getByRole("listitem", { name: /January 2026: 9,998 of 10,000 still waiting, under 0\.1% decided/ });
     expect(recent.textContent).toContain("<0.1%");
   });
+
+  it("gives the last column room for its own heading on a phone, in the heading row and every month's row alike", () => {
+    // "Decided" in bold 14px is 56px wide. In a 48px column the page's own break rule split it as "Decide" over "d"
+    // (seen at 390px, Nov 12 2026). The widths were measured on the page: a month's name needs about 60px of its
+    // 80, the largest count 49px of its 56, so the 12px the heading lacked comes from those two and the bar keeps
+    // every pixel it had (widening the last column alone took the bar to nothing at 320px). The heading row and the
+    // month rows are separate grids, so they must share one set of columns or the figures drift from their headings.
+    const { container } = render(
+      <BacklogWall
+        months={[month("2025-12", 500, 9_500), month("2026-01", 9_000, 1_000)]}
+        frontierMonth={null}
+        frontierAsOf={null}
+        frontMonth="2026-01"
+      />,
+    );
+    const PHONE_COLUMNS = "grid-cols-[4.5rem_1fr_3.25rem_3.75rem]";
+    const heading = Array.from(container.querySelectorAll("div[aria-hidden='true']")).find((d) => d.textContent?.includes("Decided"));
+    expect(heading?.className.split(/\s+/)).toContain(PHONE_COLUMNS);
+    const rows = screen.getAllByRole("listitem");
+    expect(rows.length).toBeGreaterThanOrEqual(2);
+    for (const row of rows) expect(row.className.split(/\s+/)).toContain(PHONE_COLUMNS);
+  });
 });

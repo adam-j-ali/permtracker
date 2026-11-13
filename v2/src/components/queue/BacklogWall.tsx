@@ -178,8 +178,10 @@ export function BacklogWall({
 
 function Header() {
   return (
+    // On a phone the columns are sized from what they hold (measured Nov 12 2026): a month's name about 60px, the
+    // largest count 49px, the heading "Decided" 56px. The bar takes the rest, and the month rows share these columns.
     <div
-      className="grid grid-cols-[5rem_1fr_3.5rem_3rem] items-end gap-2 border-b-2 border-border pb-2 [&>*]:min-w-0 sm:grid-cols-[7rem_1fr_5rem_4rem] sm:gap-3"
+      className="grid grid-cols-[4.5rem_1fr_3.25rem_3.75rem] items-end gap-1.5 border-b-2 border-border pb-2 [&>*]:min-w-0 sm:grid-cols-[7rem_1fr_5rem_4rem] sm:gap-3"
       aria-hidden="true"
     >
       <span className="text-sm font-bold text-soft">
@@ -189,7 +191,9 @@ function Header() {
           one state: the queue tape legend, the month page heading and this
           column header all describe the same cases, and three wordings for one
           idea is drift a reader has to translate. */}
-      <span className="text-sm font-bold text-soft">
+      {/* Under 340px the bar's column is a sliver and these words stacked a letter a line: the cell keeps its place
+          and one line's height, and the words aren't drawn. The key under the chart still names the colours. */}
+      <span className="text-sm font-bold text-soft max-[339px]:h-5 max-[339px]:overflow-hidden max-[339px]:opacity-0">
         Still pending
       </span>{" "}
       <span className="text-right text-sm font-bold text-soft">
@@ -235,7 +239,7 @@ function MonthRow({
       // at `text-sm` its box is 20px tall: with `space-y-1` between rows that
       // put 39 targets on a 24px pitch, which is the floor of WCAG 2.5.8 and
       // well under this project's own. The bar stays 20px; the ROW grew.
-      className="grid min-h-11 grid-cols-[5rem_1fr_3.5rem_3rem] items-center gap-2 [&>*]:min-w-0 sm:grid-cols-[7rem_1fr_5rem_4rem] sm:gap-3"
+      className="grid min-h-11 grid-cols-[4.5rem_1fr_3.25rem_3.75rem] items-center gap-1.5 [&>*]:min-w-0 sm:grid-cols-[7rem_1fr_5rem_4rem] sm:gap-3"
       aria-label={`${label}: ${formatInt(month.pending)} of ${formatInt(month.total)} still waiting, ${decided} decided${outline ? `; ${formatInt(outline.n)} ${outline.label.toLowerCase()}` : ""}`}
     >
       <span className="flex min-h-11 items-center gap-1 truncate">
