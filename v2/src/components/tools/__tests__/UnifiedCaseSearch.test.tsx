@@ -387,3 +387,38 @@ describe("the results on a phone", () => {
     expect(text).toContain("ACME CORP, Engineer");
   });
 });
+
+describe("the overview's place on the page", () => {
+  // First things first: the search box, then the overview, then the rest. The four programs' counts are the
+  // page's overview. They sat under the example of an answer, a screen further down.
+  const overview = <p data-testid="overview">8,055,399 filings, four programs</p>;
+  const order = (a: Element, b: Element) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it("with nothing searched, comes straight after the search form and before the example of an answer", () => {
+    // Arrange: an empty address, so no search has run.
+    address.params = new URLSearchParams();
+
+    // Act
+    render(<UnifiedCaseSearch fieldOptions={OPTIONS} overview={overview} />);
+
+    // Assert: the form's own button, then the overview, then the example.
+    const button = screen.getAllByRole("button", { name: /search/i })[0]!;
+    const shown = screen.getByTestId("overview");
+    const example = screen.getByText("One row per case, from every program");
+    expect(order(button, shown)).toBe(true);
+    expect(order(shown, example)).toBe(true);
+  });
+
+  it("with a search run, follows the results: the answer to the search comes first", () => {
+    // Arrange: an address that carries a search, and its answer.
+    address.params = new URLSearchParams("q=acme");
+
+    // Act
+    render(<UnifiedCaseSearch fieldOptions={OPTIONS} overview={overview} />);
+
+    // Assert: a result's row comes before the overview, and the overview is still on the page.
+    const result = screen.getAllByText("G-100-24001-000002")[0]!;
+    expect(order(result, screen.getByTestId("overview"))).toBe(true);
+  });
+});
+
