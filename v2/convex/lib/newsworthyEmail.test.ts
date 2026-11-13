@@ -23,4 +23,21 @@ describe("the evening newsworthy email", () => {
     expect(body).toContain(`- ${line}`);
     expect(body).toContain("https://permtracker.app/policy-changes#pipeline");
   });
+
+  it("points at the rules page only when a rule is what moved", () => {
+    // An evening with one employer's batch and nothing about a rule ended "Every rule on its way, step by step",
+    // a link to a page the notice had nothing to do with (Nov 12 2026).
+    const employer =
+      "DOL certified 103 of AMAZON DEV CENTER U.S., INC.'s PERM cases in one day, Nov 12, 2026. Source: DOL's case-status search, read by this site's sweep.";
+    const register =
+      'DOL published "A wage rule" in the Federal Register on Nov 12, 2026 (final rule). Source: the Federal Register.';
+
+    const alone = newsBody({ day: "2026-11-12", lines: [employer] });
+    expect(alone).toContain(`- ${employer}`);
+    expect(alone).not.toContain("policy-changes");
+    expect(alone.endsWith("\n")).toBe(false);
+
+    expect(newsBody({ day: "2026-11-12", lines: [employer, register] })).toContain("https://permtracker.app/policy-changes#pipeline");
+    expect(newsBody({ day: "2026-11-12", lines: [employer, line] })).toContain("https://permtracker.app/policy-changes#pipeline");
+  });
 });
