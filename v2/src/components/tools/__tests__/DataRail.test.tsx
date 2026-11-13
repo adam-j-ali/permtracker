@@ -100,20 +100,53 @@ describe("the data rail, as a reader meets it", () => {
     expect(label?.className).not.toMatch(/\btruncate\b/);
   });
 
-  it("pins the case lookup under the list, except on the page that is the lookup", () => {
+  it("pins the case lookup under the list on every page, and on the lookup's own page it takes the reader to the box", () => {
+    // It was taken out of the rail on the case page (Nov 10 2026), because a link there opens the page it's on.
+    // Nothing a reader uses is removed to fix a flaw in it: it stays, and there it moves to the page's case box.
     const elsewhere = render(<DataRail />);
     const rail = elsewhere.container.querySelector("#data-rail-desktop") as HTMLElement;
-    expect(within(rail).getByRole("link", { name: /Check my case/ })).toBeTruthy();
+    expect(within(rail).getByRole("link", { name: /Check my case/ }).getAttribute("href")).toBe("/perm-case-status");
     elsewhere.unmount();
 
+    // Arrange: the case page, with its case box in the page's main part.
     at.path = "/perm-case-status";
-    const onLookup = render(<DataRail />);
+    const onLookup = render(
+      <>
+        <DataRail />
+        <main>
+          <input name="case" aria-label="Your PERM case number" />
+        </main>
+      </>,
+    );
     const railThere = onLookup.container.querySelector("#data-rail-desktop") as HTMLElement;
+    // No link to the page the reader is on.
     expect(within(railThere).queryByRole("link", { name: /Check my case/ })).toBeNull();
-    // The phone panel follows the same rule.
-    fireEvent.click(screen.getByRole("button", { name: "Open data sections" }));
-    const panel = onLookup.container.querySelector("#data-rail-panel") as HTMLElement;
-    expect(within(panel).queryByRole("link", { name: /Check my case/ })).toBeNull();
+
+    // Act
+    fireEvent.click(within(railThere).getByRole("button", { name: /Check my case/ }));
+
+    // Assert
+    expect(document.activeElement).toBe(screen.getByLabelText("Your PERM case number"));
+  });
+
+  it("does the same from the phone panel, and shuts the panel so the box is in view", () => {
+    at.path = "/perm-case-status";
+    const { container } = render(
+      <>
+        <DataRail />
+        <main>
+          <input name="case" aria-label="Your PERM case number" />
+        </main>
+      </>,
+    );
+    const opener = screen.getByRole("button", { name: "Open data sections" });
+    fireEvent.click(opener);
+    const panel = container.querySelector("#data-rail-panel") as HTMLElement;
+
+    fireEvent.click(within(panel).getByRole("button", { name: /Check my case/ }));
+
+    expect(document.activeElement).toBe(screen.getByLabelText("Your PERM case number"));
+    expect(screen.getByRole("button", { name: "Open data sections" }).getAttribute("aria-expanded")).toBe("false");
   });
 
   it("keeps the phone tab on the screen, shut or open, under the header's measured height", () => {
