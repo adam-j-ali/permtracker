@@ -101,7 +101,7 @@ function TimelineCard({ r }: { r: Row }) {
             <dt className="font-bold">RFE</dt> <dd>{r.rfe}</dd>{" "}
           </>
         ) : null}
-        <dt className="font-bold">PERM case</dt> <dd className="break-all">{r.caseNumber ? `${r.caseNumber} (only you see this)` : "None given"}</dd>{" "}
+        <dt className="font-bold">PERM case</dt> <dd className="[overflow-wrap:anywhere]">{r.caseNumber ? `${r.caseNumber} (only you see this)` : "None given"}</dd>{" "}
         <dt className="font-bold">Saved</dt>{" "}
         <dd>{`${when(r.createdAt)}${r.updatedAt !== r.createdAt ? `, changed ${when(r.updatedAt)}` : ""}${r.shared ? ", asked to be listed" : ", medians only"}`}</dd>{" "}
         {r.reviewedAt ? (

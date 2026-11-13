@@ -155,7 +155,7 @@ export default function WebhooksSection() {
           <ul className="mb-6 divide-y divide-border border-y-2 border-border">
             {mine.endpoints.map((e) => (
               <li key={e.id} className="space-y-2 py-3">
-                <p className="break-all font-mono text-sm font-semibold">{e.url}</p>{" "}
+                <p className="[overflow-wrap:anywhere] font-mono text-sm font-semibold">{e.url}</p>{" "}
                 <p className="text-sm text-muted-foreground">
                   {e.events.map((x) => (x in WEBHOOK_EVENT_LABELS ? WEBHOOK_EVENT_LABELS[x as WebhookEvent] : x)).join("; ")}.{" "}
                   Secret ends {e.secretHint}.
@@ -327,7 +327,7 @@ export default function WebhooksSection() {
                   <p className="font-semibold">
                     <span className="font-mono">{d.type}</span>
                     {" to "}
-                    <span className="break-all">{urlById.get(d.endpointId) ?? "a deleted endpoint"}</span>
+                    <span className="[overflow-wrap:anywhere]">{urlById.get(d.endpointId) ?? "a deleted endpoint"}</span>
                   </p>{" "}
                   <p className="text-muted-foreground">
                     {STATUS_WORDS[d.status] ?? d.status}

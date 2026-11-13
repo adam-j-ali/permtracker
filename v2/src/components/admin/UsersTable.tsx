@@ -81,7 +81,7 @@ function TruncatedCell({ children, maxWidth = 180 }: { children: string; maxWidt
             {children}
           </span>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs break-all">
+        <TooltipContent side="top" className="max-w-xs [overflow-wrap:anywhere]">
           {children}
         </TooltipContent>
       </Tooltip>
