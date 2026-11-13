@@ -25,7 +25,8 @@ name: Daily monitor
 # Before the report, every check that reads rendered pages runs against the live
 # site (scripts/page_checks.py): glued words, content hidden until scripts run,
 # headings, titles and canonicals, internal links, figures typed into the copy,
-# axe, phone widths and the browser flows. They had run only by hand (found Oct
+# deadlines written as ahead after the day passed, axe, phone widths and the
+# browser flows. They had run only by hand (found Oct
 # 25 2026). The report prints one line per check, and a failed check turns this
 # run red at the end, after the email has gone.
 

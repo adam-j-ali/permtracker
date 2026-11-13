@@ -45,8 +45,10 @@ echo "$n script tests, $failed failed"
 [ "$failed" -eq 0 ]
 took
 
-echo "== 4/6 source audits (articles, contrast, every page registered, every test file run)"
-for a in audit_articles.py audit_contrast.py audit_page_registration.py; do
+echo "== 4/6 source audits (articles, contrast, every page registered, passed deadlines, every test file run)"
+# audit_passed_deadlines.py reads today's date: an article that said "comments close" on a day now behind us
+# fails here until the sentence says what happened (Nov 12 2026: seven articles had gone wrong by themselves).
+for a in audit_articles.py audit_contrast.py audit_page_registration.py audit_passed_deadlines.py; do
   "$PY" "scripts/$a" > /dev/null 2>&1 || { echo "FAILED $a"; "$PY" "scripts/$a" 2>&1 | tail -20; exit 1; }
 done
 node scripts/every_test_file_runs.mjs

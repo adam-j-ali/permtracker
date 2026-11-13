@@ -56,7 +56,9 @@ reason. `scripts/every_test_file_runs.mjs` fails on a test file no vitest projec
 **The rendered-page checks run against the live site each morning** (`scripts/page_checks.py`,
 the first step of `daily-monitor.yml`; the report's "The live pages, checked"): glued words,
 content hidden until scripts run, headings, titles and canonicals, internal links, figures typed
-into the copy with no date, axe, phone widths, and the Playwright flows. `pnpm qa` runs them by
+into the copy with no date, a deadline still written as ahead after its day (`audit_passed_deadlines.py`,
+in `pnpm check` too: write "a comment deadline of" or "comments closed", never "comments close"),
+axe, phone widths, and the Playwright flows. `pnpm qa` runs them by
 hand. Cloudflare's lookup check stands in front of `/perm-case-status?case=` for every scripted
 browser, so on the live site the flow checks the same lookup through `/embed/case-status`.
 
