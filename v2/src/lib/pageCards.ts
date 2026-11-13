@@ -119,6 +119,8 @@ export const PAGE_CARD_ALT = {
   "terms": "Terms of service. The terms for using PERM Tracker, its data and its case management.",
   "visa-bulletin": "The next visa bulletin. When past bulletins first appeared (by day of the month before) and what every earlier bulletin for this month did, since October 2014.",
   "tools": "Live PERM data and free calculators: DOL's figures with their dates, and every data field.",
+  "extension": "PERM Tracker for Chrome. A free extension that shows an employer's PERM green card and H-1B record from DOL's files on the job posting.",
+  "opt-employers": "Top OPT and CPT employers. The employers with the most F-1 students on OPT, STEM OPT and CPT, from ICE's own top-200 lists.",
 } as const;
 
 export type PageCardSlug = keyof typeof PAGE_CARD_ALT;

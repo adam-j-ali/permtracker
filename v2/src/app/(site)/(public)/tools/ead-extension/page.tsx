@@ -24,7 +24,6 @@ const DESCRIPTION =
   "Whether your work permit was automatically extended by a renewal, and to when, under the October 30, 2025 rule and 8 CFR 274a.13.";
 const PATH = "/tools/ead-extension";
 
-// No social card yet (a card is a capture of the rendered page).
 export const metadata: Metadata = withSocialCard({
   title: TITLE,
   description: DESCRIPTION,

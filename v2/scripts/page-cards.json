@@ -1718,5 +1718,33 @@
   ],
   "from": "The ones employers sponsor most",
   "mask": "figures"
+ },
+ {
+  "slug": "extension",
+  "path": "/extension",
+  "title": "PERM Tracker for Chrome",
+  "label": "A free Chrome extension that shows an employer's PERM and H-1B record from DOL's files on the job posting.",
+  "mask": "figures",
+  "shot": "extension.png",
+  "crop": [
+   0,
+   0,
+   2048,
+   942
+  ]
+ },
+ {
+  "slug": "opt-employers",
+  "path": "/opt-employers",
+  "title": "Top OPT and CPT employers",
+  "label": "The employers with the most F-1 students on OPT, STEM OPT and CPT, from ICE's own top-200 lists.",
+  "mask": "figures",
+  "shot": "opt-employers.png",
+  "crop": [
+   0,
+   0,
+   1504,
+   948
+  ]
  }
 ]

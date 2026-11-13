@@ -9,6 +9,7 @@ import { FinePrint } from "@/components/data/FinePrint";
 import { IndexHeader, type IndexFigure } from "@/components/data/IndexHeader";
 import { AsPrinted, SevpEmployerTable } from "@/components/data/SevpEmployerTable";
 import { openGraphBase } from "@/lib/openGraphBase";
+import { withSocialCard } from "@/lib/socialCard";
 import { formatInt } from "@/lib/format";
 import { getSevpLists, type SevpList } from "@/lib/db/sevpEmployers";
 
@@ -25,13 +26,12 @@ const DESCRIPTION =
   "The employers with the most F-1 students on OPT, STEM OPT and CPT, from ICE's own top-200 lists for each year it published.";
 const PATH = "/opt-employers";
 
-// No social card yet (a card is a capture of the rendered page).
-export const metadata: Metadata = {
+export const metadata: Metadata = withSocialCard({
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: PATH },
   openGraph: { ...openGraphBase, title: `${TITLE} | PERM Tracker`, description: DESCRIPTION, url: PATH },
-};
+}, "opt-employers");
 
 export const revalidate = 604800;
 
