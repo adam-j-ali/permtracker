@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useId, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useId, useMemo, useRef, useState, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import { IntentLink } from "@/components/ui/intent-link";
 import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
@@ -144,11 +144,15 @@ interface FoundPaging {
  * both were drawn whole (17 to 25 screens each). The page is cut after the sort, so a column header orders the
  * whole answer and goes back to its first page. Without `paging` every row is drawn, as a server-paged list needs.
  */
-function useFoundPages<T>(ordered: readonly T[], paging: FoundPaging | undefined) {
+function useFoundPages<T>(
+  ordered: readonly T[],
+  paging: FoundPaging | undefined,
+  /** The table's own top, which a page turn scrolls back to. The caller owns the ref: a ref handed back beside
+      the rows would make every read of them a read of a ref during render. */
+  top: RefObject<HTMLDivElement | null>,
+) {
   const paged = usePagedRows(ordered);
-  const top = useRef<HTMLDivElement>(null);
   return {
-    top,
     rows: paging ? paged.shown : ordered,
     toFirst: () => paged.setPage(1),
     pager: paging ? (
@@ -216,10 +220,11 @@ function Rows({
     return cols;
   }, [withWage, wageLabel, wages, showForm]);
   const ordered = useMemo(() => sortRows([...rows], columns, sort), [rows, columns, sort]);
-  const found = useFoundPages(ordered, paged);
+  const top = useRef<HTMLDivElement>(null);
+  const found = useFoundPages(ordered, paged, top);
   // On a phone each row is four short lines by named places: caseListRow.ts.
   return (
-    <div ref={found.top} className="scroll-mt-24">
+    <div ref={top} className="scroll-mt-24">
     <ScrollBox label={caption} className="mt-4">
       <table
         className={
@@ -331,9 +336,10 @@ function DisclosedRows({
     [wageLabel],
   );
   const ordered = useMemo(() => sortRows([...rows], columns, sort), [rows, columns, sort]);
-  const found = useFoundPages(ordered, paged);
+  const top = useRef<HTMLDivElement>(null);
+  const found = useFoundPages(ordered, paged, top);
   return (
-    <div ref={found.top} className="scroll-mt-24">
+    <div ref={top} className="scroll-mt-24">
     <ScrollBox label={caption} className="mt-4">
       <table className="w-full min-w-[1180px] border-collapse text-left text-base">
         <caption className="sr-only">{caption}</caption>
