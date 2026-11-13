@@ -37,6 +37,16 @@ line: it started and cleared three times in a day as the caches refilled after
 each deploy. The report records the budget used and whether it was fitted, and
 the alarm and the morning report read their headroom from it.
 
+A DEPLOY MAKES ROOM FIRST (Nov 13 2026). With the caches at their budgets
+about KEEP_FREE is free, and a release needs about 5 GB more for a few minutes
+(its archive, its two folders, the pages warmed on them). That night it took
+the disk to 23.5 GB, under the alarm's 25 GB line, and the alarm emailed about
+a release working as designed. `--keep-free N` fits the budgets to leave N GB
+free for this one run; permtracker-deploy asks for it before a release
+arrives. It trims the oldest pages of a cache the switch empties minutes
+later, so it costs nothing. N under KEEP_FREE is ignored: the cap can be asked
+for more room, never for less.
+
 Writes /srv/permtracker/health/prune.json, which the health job reports.
 `--dry-run` prints what it would remove and changes nothing.
 """
@@ -165,12 +175,26 @@ def disk_free() -> int:
     return shutil.disk_usage("/").free
 
 
-def fit(budgets: dict, free: int, cached: int, live_n: int, standby_n: int) -> tuple[dict, bool]:
+def keep_free_asked(argv: list[str]) -> int:
+    """The free space this run fits the budgets to, in bytes: KEEP_FREE, or the
+    `--keep-free N` (GB) a deploy asks for when that is more."""
+    if "--keep-free" not in argv:
+        return KEEP_FREE
+    try:
+        gb = float(argv[argv.index("--keep-free") + 1])
+    except (IndexError, ValueError):
+        raise SystemExit("--keep-free needs a number of GB, as in --keep-free 40")
+    return max(KEEP_FREE, int(gb * GB))
+
+
+def fit(budgets: dict, free: int, cached: int, live_n: int, standby_n: int,
+        keep_free: int | None = None) -> tuple[dict, bool]:
     """The budgets, shrunk so every cache at its budget still leaves KEEP_FREE
-    free; whether they had to shrink. `cached` is what the caches hold now (it
-    comes back if they're cut, so it's room they may use), `live_n` and
-    `standby_n` the folders with each role."""
-    room = free + cached - KEEP_FREE
+    free (or `keep_free`, when a deploy asked for more); whether they had to
+    shrink. `cached` is what the caches hold now (it comes back if they're cut,
+    so it's room they may use), `live_n` and `standby_n` the folders with each
+    role."""
+    room = free + cached - (KEEP_FREE if keep_free is None else keep_free)
     standby = budgets["standby"]
     if room - standby * standby_n < TIGHT["live"] * max(1, live_n):
         standby = 0
@@ -199,15 +223,16 @@ def main() -> int:
         pages = sorted(groups(rel))                     # least recently used first
         found.append((name, rel, role, pages, sum(size for _u, size, _s in pages)))
     fitted = False
+    keep = keep_free_asked(sys.argv)
     if free < FREE_FLOOR:
         budgets = TIGHT
     else:
         budgets, fitted = fit(BUDGET, free, sum(t for *_x, t in found),
                               sum(1 for f in found if f[2] == "live"),
-                              sum(1 for f in found if f[2] == "standby"))
+                              sum(1 for f in found if f[2] == "standby"), keep)
     report = {"at": int(time.time()), "freeGB": round(free / GB, 1),
               "tight": budgets is TIGHT, "fitted": fitted,
-              "keepFreeGB": round(KEEP_FREE / GB), "releases": []}
+              "keepFreeGB": round(keep / GB), "releases": []}
     for name, rel, role, pages, total in found:
         removed = freed = planned = 0
         for _used, size, stem in pages:
