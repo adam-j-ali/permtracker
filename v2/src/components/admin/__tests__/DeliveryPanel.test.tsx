@@ -132,3 +132,49 @@ describe("alerts waiting in the outbox", () => {
     expect(document.body.textContent ?? "").not.toContain("waiting to send");
   });
 });
+
+describe("employer follows, on a phone", () => {
+  // Three boxes across left about 45px for a label: "not confirmed" ran out of its box and "following" touched the
+  // edge (the owner's phone, Nov 13 2026). And a long employer name pushed its count onto two lines ("2", then
+  // "following").
+  const follows = (): Delivery => ({
+    ...data([]),
+    follows: {
+      confirmed: 70,
+      pending: 24,
+      unsubscribed: 0,
+      employers: 55,
+      top: [{ slug: "cognizant-technology-solutions-us-corporation", name: "Cognizant Technology Solutions US Corporation", followers: 2 }],
+    },
+  });
+  const section = () => screen.getByRole("heading", { name: "Employer follows" }).closest("section")!;
+
+  it("stacks the three figures in one column on a phone, each a number with its label beside it", () => {
+    // Arrange, Act
+    render(<DeliveryPanel data={follows()} />);
+    const figure = within(section()).getByText("not confirmed").closest("div")!;
+    const grid = figure.parentElement!;
+    // Assert: one column until there's room for three, and never three squeezed onto a phone.
+    expect(grid.className).toMatch(/(^|\s)grid-cols-1(\s|$)/);
+    expect(grid.className).toMatch(/(^|\s)sm:grid-cols-3(\s|$)/);
+    expect(grid.className).not.toMatch(/(^|\s)grid-cols-3(\s|$)/);
+    // The number and its label share a line on a phone and stack from the same width up.
+    expect(figure.className).toMatch(/(^|\s)flex(\s|$)/);
+    expect(figure.className).toMatch(/(^|\s)sm:block(\s|$)/);
+    expect(figure.textContent).toContain("24");
+  });
+
+  it("keeps an employer's count on one line, so a long name wraps and the count doesn't", () => {
+    render(<DeliveryPanel data={follows()} />);
+    const count = within(section()).getByText("2 following");
+    expect(count.className).toContain("whitespace-nowrap");
+    expect(count.className).toContain("shrink-0");
+  });
+
+  it("leaves the outbox's six figures as they were: two across on a phone", () => {
+    render(<DeliveryPanel data={follows()} />);
+    const grid = screen.getByText("emails sent").closest("div")!.parentElement!;
+    expect(grid.className).toMatch(/(^|\s)grid-cols-2(\s|$)/);
+    expect(screen.getByText("emails sent").closest("div")!.className).not.toMatch(/(^|\s)sm:block(\s|$)/);
+  });
+});
