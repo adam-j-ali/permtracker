@@ -10,7 +10,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 
 import type { UnifiedCase } from "@/lib/db/unifiedSearch";
 
@@ -293,25 +293,56 @@ describe("the reason a control is off", () => {
   });
 });
 
-describe("a long answer is shown a page at a time, and says so", () => {
-  // Renders 230 table rows three times; about 5 s on the old Mac when idle, so
-  // a loaded machine needs more than the project's 10 s.
-  it("draws 100 rows, counts the rest, and shows more on request", { timeout: 30_000 }, () => {
-    const many = Array.from({ length: 230 }, (_, i) => row(`G-100-24001-${String(100000 + i).padStart(6, "0")}`));
+describe("a long answer comes in short pages, like every other case list", () => {
+  // 100 rows at a time with "Show 100 more" made one large employer's answer 14,452px of results on a phone
+  // (measured Nov 12 2026). A page is 25 rows on a wide screen and 10 on a phone, with the shared pager and its
+  // rows-per-page choice; the CSV still carries the whole answer.
+  const many = Array.from({ length: 230 }, (_, i) => row(`G-100-24001-${String(100000 + i).padStart(6, "0")}`));
+  const search = () => {
     usePublicQuery.mockImplementation((url: string) =>
       url === "skip" ? { data: undefined, failed: false } : { data: answer({ rows: many, counts: { perm: 230, pwd: 0, lca: 0, seasonal: 0 } }), failed: false },
     );
     renderIt();
     fireEvent.change(screen.getByLabelText("Employer or case number"), { target: { value: "acme" } });
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
-    const bodyRows = () => document.querySelectorAll("tbody tr").length;
-    expect(bodyRows()).toBe(100);
-    expect(screen.getByText(/Showing 100 of 230\. The CSV download carries all/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Show 100 more" }));
-    expect(bodyRows()).toBe(200);
-    fireEvent.click(screen.getByRole("button", { name: "Show 30 more" }));
-    expect(bodyRows()).toBe(230);
+  };
+  const bodyRows = () => Array.from(document.querySelectorAll("tbody tr"));
+  const firstCase = () => bodyRows()[0]?.querySelector("td")?.textContent ?? "";
+
+  it("draws one page, says where it is in the answer, and that the CSV carries all of it", { timeout: 30_000 }, () => {
+    search();
+    expect(bodyRows()).toHaveLength(25);
+    expect(screen.getByText("1 to 25 of 230 filings")).toBeInTheDocument();
+    expect(screen.getByText(/The CSV download carries all 230\./)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Show \d+ more$/ })).toBeNull();
+  });
+
+  it("turns the page with the pager, and the phone's list turns with the table", { timeout: 30_000 }, () => {
+    search();
+    const before = firstCase();
+    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+    expect(bodyRows()).toHaveLength(25);
+    expect(firstCase()).not.toBe(before);
+    expect(screen.getByText("26 to 50 of 230 filings")).toBeInTheDocument();
+    // The phone's list is the same page of the same answer.
+    expect(document.querySelectorAll("ul.sm\\:hidden > li")).toHaveLength(25);
+  });
+
+  it("takes a rows-per-page choice and starts again from the first page", { timeout: 30_000 }, () => {
+    search();
+    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+    fireEvent.click(screen.getByRole("button", { name: "100 rows per page" }));
+    expect(bodyRows()).toHaveLength(100);
+    expect(screen.getByText("1 to 100 of 230 filings")).toBeInTheDocument();
+  });
+
+  it("goes back to the first page when the question changes", { timeout: 30_000 }, () => {
+    search();
+    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+    expect(screen.getByText("26 to 50 of 230 filings")).toBeInTheDocument();
+    // The stage chips ask a different question of the same answer: every row here is decided.
+    fireEvent.click(within(screen.getByRole("group", { name: "Which stage" })).getByRole("button", { name: "Decided" }));
+    expect(screen.getByText("1 to 25 of 230 filings")).toBeInTheDocument();
   });
 });
 

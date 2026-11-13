@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useId, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { IntentLink } from "@/components/ui/intent-link";
 import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 
@@ -55,6 +55,7 @@ import { formatInt } from "@/lib/format";
 import { formText } from "@/lib/forms/formText";
 import { seasonalForm } from "@/lib/seasonalForms";
 import { choiceVariants } from "@/components/ui/choice";
+import { Pagination, useListSize } from "@/components/ui/pagination";
 import { buttonVariants } from "@/components/ui/button";
 import { CaseStatusChip } from "@/components/ui/badge";
 import { ISO_MONTH_RE } from "@convex/lib/months";
@@ -162,12 +163,9 @@ const CONTROL =
   // gate scans file TEXT and cannot tell a comment from a className.)
   "disabled:border-border/50 disabled:bg-tint/40 disabled:text-muted-foreground";
 
-/**
- * Rows drawn at once. An answer holds up to 1,000 (UNIFIED_MAX); drawing them
- * all makes a phone's table heavy, so the page shows 100 and says how many
- * more there are, and the CSV always carries the whole answer.
- */
-const PAGE_ROWS = 100;
+// An answer holds up to 1,000 rows (UNIFIED_MAX). They're drawn a short page at a time, like every other case
+// list: 25 on a wide screen, 10 on a phone, the reader's own pick after that (`useListSize`). At 100 a time with
+// "Show 100 more", one large employer's answer was 14,452px of results on a phone. The CSV carries the whole answer.
 
 /**
  * The sortable columns. `descFirst` on the date, money and duration columns:
@@ -669,12 +667,17 @@ export function UnifiedCaseSearch({
     return sortRows(staged, COLUMNS, sort);
   }, [data, stage, sort]);
 
-  // How many of `shown` are drawn. Keyed on the question (the query, the
+  // Which page of `shown` is drawn. Keyed on the question (the query, the
   // stage chip and the sort), not on the answer object, so a refetch of the
-  // same answer keeps the reader's place and a new question starts at one page.
+  // same answer keeps the reader's place and a new question starts at page one.
   const pageKey = `${url}|${stage}|${JSON.stringify(sort)}`;
-  const [expanded, setExpanded] = useState<{ key: string; n: number } | null>(null);
-  const visible = Math.min(expanded && expanded.key === pageKey ? expanded.n : PAGE_ROWS, shown.length);
+  const listSize = useListSize();
+  const [asked, setAsked] = useState<{ key: string; page: number } | null>(null);
+  const pageCount = Math.max(1, Math.ceil(shown.length / listSize.size));
+  const page = Math.min(asked && asked.key === pageKey ? asked.page : 1, pageCount);
+  const pageRows = shown.slice((page - 1) * listSize.size, page * listSize.size);
+  /** The top of the results, brought back into view when the page turns. */
+  const resultsTop = useRef<HTMLElement>(null);
 
   const toggleProgram = (p: ChangeProgram) => {
     setPrograms((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]));
@@ -1747,7 +1750,7 @@ export function UnifiedCaseSearch({
       ) : null}
 
       {searching && data && data.rows.length > 0 ? (
-        <section>
+        <section ref={resultsTop} className="scroll-mt-24">
           <div className="flex flex-wrap items-center gap-2">
             <div role="group" aria-label="Which stage" className="flex flex-wrap gap-2">
               {(["all", "pending", "decided"] as const).map((k) => (
@@ -1790,7 +1793,7 @@ export function UnifiedCaseSearch({
               phone the case number and the program, and a tall row of blanks;
               each filing here reads as its number, status, employer and dates. */}
           <ul translate="no" className="mt-4 divide-y divide-border border-y border-border sm:hidden">
-            {shown.slice(0, visible).map((r) => (
+            {pageRows.map((r) => (
               <PhoneRow key={r.caseNumber} r={r} />
             ))}
           </ul>{" "}
@@ -1806,7 +1809,7 @@ export function UnifiedCaseSearch({
                 leading={["Case"]}
               />
               <tbody translate="no" className="bg-card">
-                {shown.slice(0, visible).map((r) => (
+                {pageRows.map((r) => (
                   <tr key={r.caseNumber} className="border-t-2 border-border/30 align-top">
                     <td className="whitespace-nowrap px-3 py-3 font-mono text-base">
                       {/* PendingLink: /perm-case-status is dynamic and can
@@ -1899,20 +1902,30 @@ export function UnifiedCaseSearch({
               </tbody>
             </table>
           </div>{" "}
-          {shown.length > visible ? (
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <p className="text-sm text-muted-foreground">
-                Showing {formatInt(visible)} of {formatInt(shown.length)}. The CSV download carries all{" "}
-                {formatInt(data.rows.length)}.
-              </p>{" "}
-              <button
-                type="button"
-                className={choiceVariants()}
-                onClick={() => setExpanded({ key: pageKey, n: visible + PAGE_ROWS })}
-              >
-                Show {formatInt(Math.min(PAGE_ROWS, shown.length - visible))} more
-              </button>
-            </div>
+          <Pagination
+            className="mt-5"
+            page={page}
+            pageCount={pageCount}
+            onPage={(p) => setAsked({ key: pageKey, page: p })}
+            total={shown.length}
+            perPage={listSize.size}
+            noun="filings"
+            label="Pages of results"
+            scrollTo={resultsTop}
+            per={{
+              per: listSize.size,
+              options: listSize.options,
+              // A new size starts from the first page.
+              setPer: (n) => {
+                listSize.setSize(n);
+                setAsked({ key: pageKey, page: 1 });
+              },
+            }}
+          />{" "}
+          {pageCount > 1 ? (
+            <p className="mt-3 text-center text-sm text-muted-foreground">
+              The CSV download carries all {formatInt(data.rows.length)}.
+            </p>
           ) : null}{" "}
 
           {/* THE FOOTNOTE THE ASTERISK POINTS AT, rendered only when a row in
@@ -1944,7 +1957,7 @@ export function UnifiedCaseSearch({
             {data.orderScope === "complete"
               ? `${ORDER_LABEL[data.order ?? "filed-desc"]} covers every match, because every match is here.`
               : `${ORDER_LABEL[data.order ?? "filed-desc"]} arranges only the rows fetched, so "highest wage" means highest among these rows.`}{" "}
-            A column header reorders this page without searching again. A wage,
+            A column header reorders this answer without searching again. A wage,
             a law firm, a worksite and an occupation appear once DOL has
             published the case in a quarterly file. Open filings carry none of
             them.
