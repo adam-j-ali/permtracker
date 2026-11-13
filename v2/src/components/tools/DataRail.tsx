@@ -86,9 +86,10 @@ export function DataRail() {
   // The calculators index belongs to no step, so nothing in the rail is current there.
   const active = found && found.group !== "Calculators" ? { key: found.key as string, group: found.group } : null;
   const onOverview = pathname.replace(/\/+$/, "") === OVERVIEW.href;
-  // The page that is the lookup already holds the case box: a second lime "Check my case" beside it sends the
-  // reader to the page they're on.
-  const pinLookup = pathname.replace(/\/+$/, "") !== HEADER_PAGES.caseStatus.href;
+  // The page that is the lookup already holds the case box, so a link there would open the page the reader is
+  // on. The action stays pinned all the same (nothing a reader uses goes away to fix a flaw in it): on that page
+  // it takes them to the box.
+  const onLookup = pathname.replace(/\/+$/, "") === HEADER_PAGES.caseStatus.href;
 
   // Below `lg` the rail is a side panel that slides in from the same edge.
   const [panelOpen, setPanelOpen] = useState(false);
@@ -159,6 +160,19 @@ export function DataRail() {
       document.body.style.overflow = prev;
     };
   }, [panelOpen]);
+
+  // The panel shuts first: the page behind it can't scroll while it's open, so the box is reached once it has.
+  const boxAfterPanel = useRef(false);
+  useEffect(() => {
+    if (panelOpen || !boxAfterPanel.current) return;
+    boxAfterPanel.current = false;
+    focusCaseBox();
+  }, [panelOpen]);
+  const toCaseBox = () => {
+    if (!panelOpen) return focusCaseBox();
+    boxAfterPanel.current = true;
+    setPanelOpen(false);
+  };
 
   if (!isDataPath(pathname)) return null;
 
@@ -355,7 +369,7 @@ export function DataRail() {
                 >
                   <div style={{ width: "calc(100% - 24px)" }}>{renderBody("rail")}</div>
                 </div>
-                {pinLookup ? <RailFooter /> : null}
+                <RailFooter toBox={onLookup ? toCaseBox : undefined} />
               </div>
             </>
           ) : (
@@ -500,7 +514,7 @@ export function DataRail() {
         {panelDrawn ? (
           <>
             {renderBody("panel")}
-            {pinLookup ? <RailFooter /> : null}
+            <RailFooter toBox={onLookup ? toCaseBox : undefined} />
           </>
         ) : null}
       </nav>
@@ -633,8 +647,18 @@ function Tab({
  * leave me". It repeats a destination that also appears under Case tools,
  * and that is fine: a list entry and a call to action are different things
  * doing different jobs.
+ *
+ * ON THE LOOKUP'S OWN PAGE IT IS A BUTTON. A link there opens the page the reader is on, so `toBox` moves them to
+ * the page's case box instead.
  */
-function RailFooter() {
+function RailFooter({ toBox }: { toBox?: () => void }) {
+  const look = cn(
+    "mt-2.5 flex min-h-11 w-full items-center justify-center gap-2 border-2 border-black bg-primary px-3 lg:mt-2",
+    "font-heading text-sm font-bold text-black shadow-hard-sm",
+    "transition-transform duration-150 ease-out motion-safe:hover:-translate-y-[1px] motion-safe:active:translate-y-0",
+    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+    "motion-reduce:transition-none",
+  );
   return (
     <div className="mt-auto border-t-2 border-border px-4 pb-2 pt-3 lg:pb-1 lg:pt-2">
       <p className="flex items-center gap-2 font-heading text-sm font-bold text-foreground">
@@ -646,23 +670,29 @@ function RailFooter() {
       <p className="mt-1 text-sm leading-snug text-soft lg:hidden">
         When it&apos;ll likely be decided, and an email when DOL moves it.
       </p>{" "}
-      <IntentLink
-        href="/perm-case-status"
-        className={cn(
-          "mt-2.5 flex min-h-11 items-center justify-center gap-2 border-2 border-black bg-primary px-3 lg:mt-2",
-          "font-heading text-sm font-bold text-black shadow-hard-sm",
-          "transition-transform duration-150 ease-out motion-safe:hover:-translate-y-[1px] motion-safe:active:translate-y-0",
-          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-          "motion-reduce:transition-none",
-        )}
-      >
-        {/* The case page can ask DOL live (seconds), so it shows a pending
-            signal. */}
-        <LinkPending />
-        Check my case
-      </IntentLink>
+      {toBox ? (
+        <button type="button" onClick={toBox} className={look}>
+          Check my case
+        </button>
+      ) : (
+        <IntentLink href="/perm-case-status" className={look}>
+          {/* The case page can ask DOL live (seconds), so it shows a pending
+              signal. */}
+          <LinkPending />
+          Check my case
+        </IntentLink>
+      )}
     </div>
   );
+}
+
+/** Put the reader in the page's own case box: focus it, and bring it to the middle of the screen. */
+function focusCaseBox() {
+  const box = document.querySelector<HTMLInputElement>('main input[name="case"]');
+  if (!box) return;
+  box.focus({ preventScroll: true });
+  const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  box.scrollIntoView?.({ block: "center", behavior: still ? "auto" : "smooth" });
 }
 
 function slug(g: string): string {
