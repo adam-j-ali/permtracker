@@ -14,7 +14,7 @@ import { YearlyPayNote } from "@/components/data/YearlyPayNote";
 import { comparableWage } from "@/lib/wageFormat";
 import { CaseStatusChip } from "@/components/ui/badge";
 import { entityHref } from "@/lib/entityPayload";
-import { Pagination } from "@/components/ui/pagination";
+import { Pagination, usePagedRows } from "@/components/ui/pagination";
 import { ScrollBox } from "@/components/ui/scroll-box";
 
 /**
@@ -78,8 +78,11 @@ export const DECIDED_COLUMNS: SortColumn<DecidedCase>[] = [
  * invalid HTML and a hydration error; the separator lives inside the cell
  * instead. `no-whitespace-in-table-rows.test.ts` is the gate.
  */
-/** Rows a page in the decided table. */
-export const DECIDED_PER_PAGE = 50;
+/**
+ * Rows a page in the decided table: fifty on a wide screen (the owner's call, Oct 21 2026) and ten on a phone, where
+ * fifty of these rows ran six screens, until the reader picks a size.
+ */
+const DECIDED_PAGE = { wide: 50, narrow: 10 } as const;
 
 export function DecidedTable({
   rows,
@@ -94,16 +97,14 @@ export function DecidedTable({
   caption: string;
   sortable?: boolean;
 }) {
-  // Fifty rows a page (the owner's call, Oct 21 2026); a new day or a new order starts at page 1.
-  const [page, setPage] = useState(1);
+  // A page for the screen; a new day or a new order starts at page 1.
+  const paged = usePagedRows(rows, DECIDED_PAGE);
   const [seen, setSeen] = useState(rows);
   if (seen !== rows) {
     setSeen(rows);
-    setPage(1);
+    paged.setPage(1);
   }
   const top = useRef<HTMLDivElement>(null);
-  const pageCount = Math.max(1, Math.ceil(rows.length / DECIDED_PER_PAGE));
-  const slice = rows.slice((page - 1) * DECIDED_PER_PAGE, page * DECIDED_PER_PAGE);
   return (
     <>
     <div ref={top} className="mt-4 scroll-mt-28">
@@ -117,7 +118,7 @@ export function DecidedTable({
           disabled={!sortable}
         />
         <tbody translate="no" className="bg-card">
-          {slice.map((c) => (
+          {paged.shown.map((c) => (
             <tr
               key={`${c.program}:${c.caseNumber}`}
               className="border-t-2 border-border/30 align-top"
@@ -186,19 +187,18 @@ export function DecidedTable({
       </table>
     </ScrollBox>
     </div>{" "}
-    {pageCount > 1 ? (
-      <Pagination
-        page={page}
-        pageCount={pageCount}
-        onPage={setPage}
-        total={rows.length}
-        perPage={DECIDED_PER_PAGE}
-        noun="decided cases"
-        label="Pages of decided cases"
-        scrollTo={top}
-        className="mt-5"
-      />
-    ) : null}
+    <Pagination
+      page={paged.page}
+      pageCount={paged.pageCount}
+      onPage={paged.setPage}
+      total={rows.length}
+      perPage={paged.perPage}
+      per={paged.per}
+      noun="decided cases"
+      label="Pages of decided cases"
+      scrollTo={top}
+      className="mt-5"
+    />
     </>
   );
 }

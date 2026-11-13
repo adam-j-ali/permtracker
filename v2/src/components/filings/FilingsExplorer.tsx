@@ -6,7 +6,7 @@ import { Fragment, useRef, useState } from "react";
 import { ColumnChart, type Column } from "@/components/numbers/ColumnChart";
 import { RequestFailed } from "@/components/tools/RequestFailed";
 import { choiceVariants } from "@/components/ui/choice";
-import { Pagination } from "@/components/ui/pagination";
+import { Pagination, usePagedRows } from "@/components/ui/pagination";
 import { SortMark } from "@/components/ui/sort-mark";
 import { usePublicQuery } from "@/hooks/usePublicQuery";
 import { useUrlPatch, useUrlSearchParams } from "@/hooks/useUrlSearchParams";
@@ -43,7 +43,8 @@ const SORT_COLS: { key: SortKey; label: string; numeric: boolean }[] = [
   { key: "fileOnly", label: "Only in DOL's files", numeric: true },
   { key: "mismatch", label: "Files give another day", numeric: true },
 ];
-const PER_PAGE = 31;
+/** A month of days a page on a wide screen and ten on a phone, until the reader picks. */
+const PAGE_SIZES = { wide: 31, narrow: 10, options: [10, 31, 100] } as const;
 
 type Range = { asOf: string; programs: Record<FilingProgram, FilingDay[]> };
 
@@ -87,22 +88,20 @@ export function FilingsExplorer({ asOf, windowFrom, programs }: { asOf: string; 
   }));
 
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "day", dir: "desc" });
-  const [page, setPage] = useState(1);
   const rows = fillDays(days, from, to).sort((a, b) => {
     const v = sort.key === "day" ? a.day.localeCompare(b.day) : a[sort.key] - b[sort.key] || a.day.localeCompare(b.day);
     return sort.dir === "asc" ? v : -v;
   });
-  const pageCount = Math.max(1, Math.ceil(rows.length / PER_PAGE));
-  const shown = rows.slice((Math.min(page, pageCount) - 1) * PER_PAGE, Math.min(page, pageCount) * PER_PAGE);
+  const paged = usePagedRows(rows, PAGE_SIZES);
   const sortBy = (key: SortKey) => {
     setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "desc" }));
-    setPage(1);
+    paged.setPage(1);
   };
 
   const [jump, setJump] = useState(asOf);
   const setPeriod = (p: Record<string, string | null>) => {
     patch(p);
-    setPage(1);
+    paged.setPage(1);
   };
 
   return (
@@ -254,8 +253,8 @@ export function FilingsExplorer({ asOf, windowFrom, programs }: { asOf: string; 
                 </tr>
               </thead>
               <tbody>
-                {shown.map((r) => (
-                  <tr key={r.day} className="border-b border-border">
+                {paged.shown.map((r, i) => (
+                  <tr key={r.day} className={`border-b border-border ${paged.hide(i) ?? ""}`}>
                     <td className="py-2">
                       <Link href={dayHref(r.day, program)} className="link inline-flex min-h-11 items-center whitespace-nowrap">
                         {(weekdayName(r.day) ?? "").slice(0, 3)} {shortDate(r.day)}
@@ -270,9 +269,17 @@ export function FilingsExplorer({ asOf, windowFrom, programs }: { asOf: string; 
               </tbody>
             </table>
           </div>{" "}
-          {pageCount > 1 ? (
-            <Pagination className="mt-6" page={Math.min(page, pageCount)} pageCount={pageCount} onPage={setPage} total={rows.length} perPage={PER_PAGE} noun="days" scrollTo={top} />
-          ) : null}
+          <Pagination
+            className="mt-6"
+            page={paged.page}
+            pageCount={paged.pageCount}
+            onPage={paged.setPage}
+            total={rows.length}
+            perPage={paged.perPage}
+            per={paged.per}
+            noun="days"
+            scrollTo={top}
+          />
         </>
       )}
     </div>
