@@ -26,9 +26,18 @@ read, and the event row is inserted only when that UPDATE changed a row
 move leaves this run nothing to do, and the reverse is guarded the same way
 in the sweeps' own snapshot comparison.
 
+THE DAY BESIDE A STATUS. The wage, LCA and seasonal case pages print
+`last_checked_at` as "DOL showed this status on", and the sweep stamps it when
+a status moves, so a move recorded here stamps it too. (`perm_case_status`'s
+inherited column is never written; the PERM page dates its status another way.)
+Until Nov 13 2026 this check left it alone, and a watched wage request issued
+on Nov 10 still read the day its row was first seen. `--heal-dates` puts the
+day of the move on the rows written before then.
+
     python3 scripts/check_watched_cases.py watched.json
     python3 scripts/check_watched_cases.py watched.json --dry-run
     python3 scripts/check_watched_cases.py --from-convex --cadence --sweep
+    python3 scripts/check_watched_cases.py --from-convex --heal-dates --dry-run
 
 Prints `CHANGED=<n>` last, for the workflow to decide whether to run alerts.
 """
@@ -92,6 +101,7 @@ def plan_changes(program: str, stored: dict[str, list], answers: list[dict], sta
     blank answer, and every UPDATE is conditioned on the status it read.
     """
     table, events = tables_for(program)
+    moved_iso = iso_of(stamp)
     stmts: list[dict] = []
     for v in answers:
         cn = v.get("caseNumber")
@@ -103,8 +113,9 @@ def plan_changes(program: str, stored: dict[str, list], answers: list[dict], sta
         if not new or new == was:
             continue
         fin = final_for(program, new)
-        extra = ", visa_type=COALESCE(?, visa_type)" if program != "perm" else ""
-        extra_args = [(v.get("visaType") or "").strip() or None] if program != "perm" else []
+        # A FLAG table's page prints last_checked_at as the day DOL showed the status (see the docstring).
+        extra = ", visa_type=COALESCE(?, visa_type), last_checked_at=?" if program != "perm" else ""
+        extra_args = [(v.get("visaType") or "").strip() or None, moved_iso] if program != "perm" else []
         stmts.append({
             "sql": f"UPDATE {table} SET current_status=?, is_final=?, employer_name=?, job_title=?, "
                    f"source=?, fetched_at=?{extra} WHERE case_number=? AND current_status=?",
@@ -121,6 +132,72 @@ def plan_changes(program: str, stored: dict[str, list], answers: list[dict], sta
             "case": cn,
         })
     return stmts
+
+
+def iso_of(stamp: int) -> str:
+    """A millisecond stamp as the sweep writes `last_checked_at`: UTC, ISO, with its offset."""
+    return datetime.datetime.fromtimestamp(stamp / 1000, datetime.timezone.utc).isoformat()
+
+
+def _instant(iso: str | None) -> float | None:
+    try:
+        return datetime.datetime.fromisoformat((iso or "").replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return None
+
+
+# A sweep stamps the date and the write in the same second; anything further apart is this check's.
+HEAL_GAP_S = 60
+
+
+def plan_date_heals(program: str, rows: list[list], events_at: set[tuple[str, int]]) -> list[dict]:
+    """The date fixes for FLAG rows this check moved before it stamped the day (see the docstring).
+
+    `rows` are [case_number, last_checked_at, fetched_at] as the database returns them (the integer may be
+    a string); `events_at` holds (case_number, changed_at) for the same cases. A row is healed only when
+    its last write was a recorded move (an event at exactly fetched_at) and the date beside it is older
+    than that write. Pure, and every UPDATE applies only while the row still holds what was read.
+    """
+    if program == "perm":
+        return []
+    table, _ = tables_for(program)
+    out: list[dict] = []
+    for cn, checked, fetched in rows:
+        try:
+            at = int(fetched)
+        except (TypeError, ValueError):
+            continue
+        if (cn, at) not in events_at:
+            continue
+        seen = _instant(checked)
+        if seen is not None and at / 1000 - seen <= HEAL_GAP_S:
+            continue
+        out.append({
+            "sql": f"UPDATE {table} SET last_checked_at=? WHERE case_number=? AND fetched_at=? "
+                   f"AND last_checked_at IS ?",
+            "args": [iso_of(at), cn, at, checked],
+            "case": cn,
+        })
+    return out
+
+
+def heal_dates(db: Database, program: str, numbers: list[str], dry: bool) -> dict:
+    """Read the watched rows of one FLAG program by case number and apply `plan_date_heals`."""
+    table, events = tables_for(program)
+    rows: list[list] = []
+    events_at: set[tuple[str, int]] = set()
+    for i in range(0, len(numbers), 200):
+        chunk = numbers[i:i + 200]
+        q = ",".join("?" * len(chunk))
+        rows += [list(r) for r in query_rows(
+            db, f"SELECT case_number, last_checked_at, fetched_at FROM {table} WHERE case_number IN ({q})", chunk)]
+        events_at |= {(r[0], int(r[1])) for r in query_rows(
+            db, f"SELECT case_number, changed_at FROM {events} WHERE case_number IN ({q})", chunk)}
+    stmts = plan_date_heals(program, rows, events_at)
+    applied = 0
+    if stmts and not dry:
+        applied = sum(1 for n in run_stmts(db, [stmt(s["sql"], s["args"]) for s in stmts], STMTS_PER_REQUEST) if n)
+    return {"program": program, "watched": len(numbers), "rows": len(rows), "stale": len(stmts), "applied": applied}
 
 
 # Even, so an UPDATE and the INSERT that tests its changes() share a request.
@@ -231,6 +308,9 @@ def main() -> int:
     ap.add_argument("--cadence", action="store_true", help="Exit quietly unless this run is due (see due()).")
     ap.add_argument("--sweep", action="store_true", help="When anything moved, ask Convex to send the alerts now.")
     ap.add_argument("--dry-run", action="store_true", help="Ask DOL and plan, write nothing.")
+    ap.add_argument("--heal-dates", action="store_true",
+                    help="Don't ask DOL: put the day of the move on watched wage, LCA and seasonal rows this check "
+                         "moved before it stamped that day. With --dry-run, count them only.")
     a = ap.parse_args()
     started = time.time()
     if a.cadence and not due(datetime.datetime.now(datetime.timezone.utc)):
@@ -245,6 +325,14 @@ def main() -> int:
     numbers = doc.get("caseNumbers", []) if isinstance(doc, dict) else doc
     groups = split_programs(numbers)
     db = Database()
+    if a.heal_dates:
+        for program, nums in groups.items():
+            if program == "perm" or not nums:
+                continue
+            r = heal_dates(db, program, nums, a.dry_run)
+            print(f"{program}: {r['watched']} watched, {r['rows']} stored, {r['stale']} with a date older than "
+                  f"their move, {r['applied']} healed" + (" (dry run)" if a.dry_run else ""))
+        return 0
     if not a.dry_run and a.from_convex:
         try:
             keep_watched_list(db, numbers)

@@ -5,7 +5,7 @@ exercised for real."""
 from __future__ import annotations
 import pathlib, sqlite3, sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from check_watched_cases import due, plan_changes, split_programs
+from check_watched_cases import due, plan_changes, plan_date_heals, split_programs
 
 fails: list[str] = []
 def check(cond, msg):
@@ -67,6 +67,66 @@ check(n == 1, "no second event when a sweep already recorded the move")
 c = db()
 run(c, plan); run(c, plan)
 check(c.execute("SELECT COUNT(*) FROM perm_case_events").fetchone()[0] == 1, "a replay adds nothing")
+
+# ---- a wage request's move also stamps the day DOL showed it ---------------------
+# The wage, LCA and seasonal case pages print `last_checked_at` as "DOL showed this status on". The sweep
+# stamps it when a status moves. This check didn't, so a watched wage request DOL issued on Nov 10 2026
+# still read September 7, the day the row was first seen.
+STAMP = 1_794_345_007_578            # Tue Nov 10 2026, 4:10 PM Eastern
+STAMP_ISO = "2026-11-10T21:10:07.578000+00:00"
+FIRST_SEEN = "2026-09-07T06:03:59.230915+00:00"
+p_stored = {"P-100-26218-150907": ["PENDING DETERMINATION", "ACME", "Analyst"]}
+p_answers = [{"caseNumber": "P-100-26218-150907", "caseStatus": "DETERMINATION ISSUED",
+              "employerName": "ACME", "jobTitle": "Analyst", "visaType": "PERM"}]
+p_plan = plan_changes("pwd", p_stored, p_answers, STAMP)
+
+def flag_db(status="PENDING DETERMINATION", final=0, checked=FIRST_SEEN, fetched=0):
+    c = sqlite3.connect(":memory:")
+    c.execute("CREATE TABLE pwd_case_status (case_number TEXT PRIMARY KEY, current_status TEXT, is_final INTEGER,"
+              " employer_name TEXT, job_title TEXT, visa_type TEXT, last_checked_at TEXT, source TEXT, fetched_at INTEGER)")
+    c.execute("CREATE TABLE pwd_case_events (case_number TEXT, changed_at INTEGER, from_status TEXT,"
+              " to_status TEXT, to_final INTEGER, source TEXT, PRIMARY KEY (case_number, changed_at))")
+    c.execute("INSERT INTO pwd_case_status VALUES ('P-100-26218-150907',?,?,'ACME','Analyst',NULL,?,'x',?)",
+              [status, final, checked, fetched])
+    return c
+
+c = flag_db()
+run(c, p_plan)
+row = c.execute("SELECT current_status, is_final, last_checked_at, fetched_at FROM pwd_case_status").fetchone()
+check(row[:2] == ("DETERMINATION ISSUED", 1), "a wage request's move is written, final flag set")
+check(row[2] == STAMP_ISO and row[3] == STAMP, "and its last_checked_at is the moment of the move, as the sweep writes it")
+check("last_checked_at" not in plan[0]["sql"], "PERM's inherited last_checked_at column stays unwritten")
+# The probe: the plan as it was (no stamp) leaves the page's date on the first sighting.
+c = flag_db()
+run(c, [{**s_, "sql": s_["sql"].replace(", last_checked_at=?", ""),
+         "args": [a_ for a_ in s_["args"] if a_ != STAMP_ISO]} for s_ in p_plan])
+check(c.execute("SELECT last_checked_at FROM pwd_case_status").fetchone()[0] == FIRST_SEEN,
+      "PROBE: without the stamp the row keeps its first-seen day, which is what the page showed")
+
+# ---- the rows already written without it ---------------------------------------
+# A row is healed only when its last write was a recorded move (an event at exactly fetched_at) and the
+# date beside it is older than that write.
+rows = [
+    ["P-100-26218-150907", FIRST_SEEN, str(STAMP)],              # moved by this check: stale
+    ["P-100-26217-000001", STAMP_ISO, str(STAMP)],               # moved by the sweep: already right
+    ["P-100-26217-000002", FIRST_SEEN, str(STAMP)],              # fetched_at with no event: not a move
+    ["P-100-26217-000003", None, str(STAMP)],                    # never stamped, and it moved
+]
+events_at = {("P-100-26218-150907", STAMP), ("P-100-26217-000001", STAMP), ("P-100-26217-000003", STAMP)}
+heals = plan_date_heals("pwd", rows, events_at)
+check([h["case"] for h in heals] == ["P-100-26218-150907", "P-100-26217-000003"],
+      "heals the rows this check moved, and no row whose last write wasn't a move")
+check(all("AND fetched_at=?" in h["sql"] and "last_checked_at IS ?" in h["sql"] for h in heals),
+      "each heal applies only while the row still holds what was read")
+c = flag_db("DETERMINATION ISSUED", 1, FIRST_SEEN, STAMP)
+run(c, heals[:1]); run(c, heals[:1])
+check(c.execute("SELECT last_checked_at FROM pwd_case_status").fetchone()[0] == STAMP_ISO,
+      "a healed row reads the day of its move, and a replay changes nothing")
+c = flag_db("DETERMINATION ISSUED", 1, "2026-11-12T10:00:00+00:00", STAMP + 5)
+run(c, heals[:1])
+check(c.execute("SELECT last_checked_at FROM pwd_case_status").fetchone()[0] == "2026-11-12T10:00:00+00:00",
+      "a row written again since it was read is left alone")
+check(plan_date_heals("perm", rows, events_at) == [], "PERM rows are never healed: that column isn't theirs")
 
 # ---- cadence -------------------------------------------------------------------
 import datetime as _dt
