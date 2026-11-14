@@ -29,3 +29,52 @@ describe("the employer alert's pending bar", () => {
     expect(html).not.toMatch(/suspend|investigat|fraud/i);
   });
 });
+
+describe("the every-case alert", () => {
+  const props = {
+    employerName: "Small Co",
+    employerUrl: "https://permtracker.app/perm-employers/small-co",
+    moves: [
+      {
+        dateLabel: "Nov 10",
+        sentence: "DOL certified 3 of its cases",
+        tone: "good" as const,
+        cases: [
+          { number: "A-25100-00001", url: "https://permtracker.app/perm-case-status?case=A-25100-00001", note: "Software Engineer, filed Apr 2025" },
+          { number: "A-25100-00002", url: "https://permtracker.app/perm-case-status?case=A-25100-00002", note: "" },
+        ],
+        more: 1,
+      },
+    ],
+    mix: null,
+    asOf: "November 12, 2026",
+    scope: "each" as const,
+    unsubscribeUrl: "https://permtracker.app/employer-alert/unsubscribe?token=U",
+  };
+
+  it("lists each case as a link to its own page, with what DOL holds to tell them apart", async () => {
+    // Act
+    const html = await render(EmployerMoved(props));
+    // Assert
+    expect(html).toContain('href="https://permtracker.app/perm-case-status?case=A-25100-00001"');
+    expect(html).toContain("Software Engineer, filed Apr 2025");
+    expect(html).toContain("A-25100-00002");
+    expect(html).toContain("and 1 more, listed on its page");
+  });
+
+  it("says in the footer that this is the case-by-case follow, and closes without a reason", async () => {
+    const html = await render(EmployerMoved(props));
+    expect(html).toContain("case by case");
+    expect(html).not.toContain("five or more of its cases");
+    expect(html).toContain("DOL gives no reason for any of them");
+    // No pending bar was drawn, so the closing line names no census day.
+    expect(html).not.toContain("counted on");
+  });
+
+  it("leaves a group follower's email exactly as it was", async () => {
+    const html = await render(EmployerMoved({ ...props, scope: undefined, moves: [{ dateLabel: "Nov 10", sentence: "DOL put 215 of its cases on hold", tone: "bad" }] }));
+    expect(html).toContain("five or more of its cases");
+    expect(html).toContain("counted on November 12, 2026");
+    expect(html).not.toContain("case by case");
+  });
+});

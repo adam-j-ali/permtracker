@@ -3,13 +3,16 @@ import { Fragment } from "react";
 import { EmployerFollowForm } from "@/components/employers/EmployerFollowForm";
 import { ChartTips } from "@/components/data/ChartTips";
 import { StatusRibbon, ribbonLegend, ribbonParts } from "@/components/employers/StatusRibbon";
+import { defaultFollowScope } from "@/lib/employerCaseMoves";
 import { longDate, workedLabel, type EmployerMove, type EmployerStageRow } from "@/lib/employerStages";
 import { formatInt } from "@/lib/format";
+import { monthDay } from "@convex/lib/months";
 import { cn } from "@/lib/utils";
 
 /**
  * Follow an employer: what its pending cases look like today, what DOL has
- * done to them as a group, and one field to hear about the next time.
+ * done to them as a group, and a form to hear about the next time, with a
+ * tick box that adds every case's own changes (src/lib/employerCaseMoves.ts).
  *
  * The bar and the rail carry the content; the words are the legend. Every
  * rail entry is a sentence naming who acted, dated by the day this site
@@ -31,7 +34,8 @@ function MoveItem({ m }: { m: EmployerMove }) {
   return (
     <li className="relative grid grid-cols-1 gap-y-0.5 py-2 pl-6 sm:grid-cols-[6.5rem_minmax(0,1fr)] sm:gap-x-4">
       <span aria-hidden="true" className={`absolute -left-[9px] top-3.5 h-4 w-4 border border-input ${markerClass(m)}`} />{" "}
-      <span className="text-sm font-semibold tabular-nums text-muted-foreground">{workedLabel(m.worked, (d) => longDate(d).replace(/, \d{4}$/, ""))}</span>{" "}
+      {/* The short month, as in a table: in the narrow column a long one ran a two-day move's date to three lines. */}
+      <span className="text-sm font-semibold tabular-nums text-muted-foreground">{workedLabel(m.worked, (d) => monthDay(d) ?? d)}</span>{" "}
       <span className="text-base font-bold [overflow-wrap:anywhere]">{m.sentence}</span>
     </li>
   );
@@ -147,7 +151,13 @@ export function EmployerFollow({
       {/* The form sits at the foot of the box, so beside a taller card it stays level with that card's end. */}
       <div className="mt-auto pt-6">
         <div className="border-t-2 border-border pt-5">
-          <EmployerFollowForm slug={slug} source="employer-page" />
+          <EmployerFollowForm
+            slug={slug}
+            source="employer-page"
+            // Under five pending cases the census has no row, and that's a known small number. An unread census
+            // isn't: the box opens on the size that can never flood an inbox.
+            defaultScope={defaultFollowScope(docMissing ? null : (row?.pending ?? 0))}
+          />
         </div>
       </div>
     </section>

@@ -176,7 +176,7 @@ export const getSignals = query({
     const employerAlerts = (await ctx.db.query("employerAlerts").order("desc").take(SUBSCRIPTIONS_SHOWN)).map(
       (r): SignalSub => ({
         email: r.email,
-        subject: r.employerName,
+        subject: r.scope === "each" ? `${r.employerName} (every case)` : r.employerName,
         status: status(r),
         createdAt: r._creationTime,
         lastNotifiedAt: r.lastAlertSentAt ?? null,

@@ -15,7 +15,8 @@
  * two to one answer.
  */
 
-import { easternDay } from "@/lib/time";
+// A relative import, so Convex's bundler (which knows no "@/") can load this module for the employer follow.
+import { easternDay } from "../../convex/lib/time";
 
 /** The Eastern hour a DOL day starts at. */
 export const DOL_DAY_STARTS_HOUR = 7;

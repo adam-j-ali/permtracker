@@ -232,7 +232,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/perm-case-alerts",
     label: "Free PERM case status email alerts",
     blurb:
-      "Free email alerts with no account: a PERM, wage request, LCA, H-2A, H-2B or CW-1 case number (checked against DOL's record every 5 minutes on weekdays, a status change emailed at once), a filing month DOL reaches, a visa bulletin line that moves, or an employer whose cases DOL moves as a group.",
+      "Free email alerts with no account: a PERM, wage request, LCA, H-2A, H-2B or CW-1 case number (checked against DOL's record every 5 minutes on weekdays, a status change emailed at once), a filing month DOL reaches, a visa bulletin line that moves, or an employer's PERM cases (every status change of every case, or only the days DOL moves them as a group).",
   },
   {
     path: "/h1b-cap-exempt-employers",

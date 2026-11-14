@@ -183,7 +183,7 @@ export default function PrivacyPage() {
               <li>
                 You can ask for an email when DOL changes a case’s status, when
                 DOL’s queue reaches your filing month, when a visa bulletin
-                cutoff moves, or when DOL moves an employer’s cases as a group.
+                cutoff moves, or when the cases of an employer you follow change status.
                 No account is needed. For each, we keep your email address, what
                 you asked to follow (a case number, a filing month, a bulletin
                 category and country, or an employer’s page), the page you signed

@@ -54,6 +54,7 @@
  * @module convex/emailPrefs
  */
 
+import { followScope } from "../src/lib/employerCaseMoves";
 import type { ReactElement } from "react";
 
 import { v } from "convex/values";
@@ -387,6 +388,8 @@ const stateValidator = v.object({
       id: v.id("employerAlerts"),
       slug: v.string(),
       employerName: v.string(),
+      /** The size of the follow: every case, or group moves only. */
+      scope: v.union(v.literal("group"), v.literal("each")),
       confirmed: v.boolean(),
       active: v.boolean(),
     }),
@@ -476,6 +479,7 @@ async function stateForEmail(ctx: QueryCtx, email: string) {
       id: r._id,
       slug: r.slug,
       employerName: r.employerName,
+      scope: followScope(r.scope),
       confirmed: r.confirmedAt !== undefined,
       active: r.unsubscribedAt === undefined && r.confirmedAt !== undefined,
     })),

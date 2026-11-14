@@ -29,6 +29,7 @@ import { MAIL_KINDS, PREFS_KINDS, type PrefsKind } from "./lib/mailKinds";
 
 const isPrefsKind = (k: string): k is PrefsKind => (PREFS_KINDS as readonly string[]).includes(k);
 import { SLUG_RE as EMPLOYER_SLUG_RE, employerNameFor } from "./employerAlerts";
+import { followPromise, followScope, type FollowScope } from "../src/lib/employerCaseMoves";
 import { FIRM_SLUG_RE, firmNameFor, verdictFor } from "./firmClaims";
 import { verifyExpiringToken } from "./lib/expiringToken";
 import { firmBadLinkPage, firmEditPage, type EditNotice } from "./lib/firmClaimPages";
@@ -1215,7 +1216,7 @@ http.route({
     if (typeof body !== "object" || body === null) {
       return json({ ok: false, message: "Malformed request." }, 400);
     }
-    const { email, slug, source, news, newsletter } = body as Record<string, unknown>;
+    const { email, slug, source, news, newsletter, scope } = body as Record<string, unknown>;
     if (typeof email !== "string" || typeof slug !== "string") {
       return json({ ok: false, message: "An email address and an employer are both required." }, 400);
     }
@@ -1239,6 +1240,8 @@ http.route({
       slug: cleanSlug,
       employerName: employerName.slice(0, 200),
       source: typeof source === "string" ? source.slice(0, 64) : undefined,
+      // Two sizes and nothing else: any other value is the group follow.
+      scope: followScope(scope),
       news: news === true,
       newsletter: newsletter === true,
       ip: callerIp(req),
@@ -1250,12 +1253,15 @@ http.route({
 http.route({
   path: "/employer-alert/confirm",
   method: "GET",
-  handler: httpAction(async (_ctx, req) => {
+  handler: httpAction(async (ctx, req) => {
     const token = new URL(req.url).searchParams.get("token");
     if (!token) return badLinkPage();
+    // A read, never a write: the page says which size of follow the button confirms.
+    const staged = await ctx.runQuery(internal.employerAlerts.pendingForToken, { token });
+    const sizes: FollowScope[] = staged.length > 0 ? [...new Set(staged)] : ["group"];
     return messagePage(
       "Follow this employer?",
-      "We'll email you when DOL moves five or more of its PERM cases on or off hold in a day, or decides a batch of them well above its usual pace. Employer updates come at most once a day.",
+      sizes.map(followPromise).join(" "),
       {
         post: `/employer-alert/confirm?token=${encodeURIComponent(token)}`,
         label: "Confirm",
@@ -1272,17 +1278,28 @@ http.route({
     if (!token) return badLinkPage();
     const result = await ctx.runMutation(internal.employerAlerts.confirmByToken, { token });
     if (!result) return badLinkPage("This confirmation link is no longer valid.");
+    const names = (list: string[]) => escapeHtml(list.join(", "));
+    const byGroup = result.employers.filter((n) => !result.everyCase.includes(n));
+    // One sentence per size, each naming its employers, so the page says exactly what was confirmed.
+    const promise = [
+      result.everyCase.length > 0
+        ? `we'll write each time the status of one of ${names(result.everyCase)}'s PERM cases changes`
+        : "",
+      byGroup.length > 0 ? `we'll write when DOL moves ${names(byGroup)}'s PERM cases as a group` : "",
+    ]
+      .filter(Boolean)
+      .join(", and ");
     if (result.already) {
       return messagePage(
         "You're already following",
-        `Nothing more to do: we'll write when DOL moves ${escapeHtml(result.employers.join(", "))}'s PERM cases as a group.`,
+        `Nothing more to do: ${promise}.`,
         undefined,
         confirmOffers("employer"),
       );
     }
     return messagePage(
       "You're following",
-      `We'll write when DOL moves ${escapeHtml(result.employers.join(", "))}'s PERM cases as a group. Every figure is on permtracker.app/perm-employers/under-review.`,
+      `${promise.charAt(0).toUpperCase()}${promise.slice(1)}. Every figure is on permtracker.app/perm-employers/under-review.`,
       undefined,
       confirmOffers("employer"),
     );
