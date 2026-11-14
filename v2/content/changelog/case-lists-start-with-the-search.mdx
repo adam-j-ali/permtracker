@@ -132,6 +132,15 @@ This release puts first things first on the case lists: the search, a short summ
 - One email address can watch up to 100 cases. PERM, wage request, LCA, H-2A, H-2B and CW-1 numbers can share a list.
 - The email that confirms several cases typed one after another now shows each case's status too.
 
+## The API and the assistant tools, described in full
+
+- The [API's description](/developers) now names every operation, groups them by subject, gives every parameter an example and publishes the shape of every answer with a sample. Tools that read an OpenAPI document get all of it from `/v1/openapi.json`.
+- Every published shape was checked against real answers, which found one that was wrong: the prevailing wage part of the queue answer, in the description and in the sandbox's sample. Both now match what the API sends.
+- An error is now a standard problem document (RFC 9457) with a type, a title and a stable code. The error object the API has always sent is still inside it, unchanged, so code written against the old form keeps working. The [developer page](/developers#errors) lists every code.
+- The assistant server offers one tool for each read endpoint, named after it, such as `get_case`, `find_cases` and `search_employers`. A call under an old tool name is still answered.
+- A new address, `/v1/health`, says the API is up. It needs no key.
+- The API is at version 1.1.0, and the developer page has a list of what changed.
+
 ## Summary figures, drawn
 
 - The rows of summary figures on a dozen pages each carry a small icon now, so you can tell a wait from a wage from a count at a glance. The pages: [consulates](/consular-posts), [visa issuances](/visa-issuances), [visa refusals](/visa-refusals), [layoff disclosures](/perm-layoff-disclosures), [fast-growing jobs](/bright-outlook-jobs), [cap-exempt employers](/h1b-cap-exempt-employers), the [estimate scorecard](/estimate-scorecard), [RFI and audits](/perm-rfi-audit), the [job code finder](/soc-codes), the [green card planner](/tools/green-card-timeline) and [tools](/tools).

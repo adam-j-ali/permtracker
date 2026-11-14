@@ -69,6 +69,33 @@ describe("PermTracker", () => {
     expect(s.data).toEqual({ match: "exact" });
   });
 
+  it("asks whether the API is up, with no key", async () => {
+    // Arrange: the health answer has no data envelope.
+    const f = fakeFetch(200, { status: "ok", version: "1.1.0", docs: "https://permtracker.app/developers", openapi: "https://permtracker.app/v1/openapi.json" });
+    const pt = new PermTracker({ fetch: f as unknown as typeof fetch });
+    // Act
+    const h = await pt.health();
+    // Assert
+    expect(h).toMatchObject({ status: "ok", version: "1.1.0" });
+    expect(String(f.mock.calls[0]![0])).toBe("https://permtracker.app/v1/health");
+    expect((f.mock.calls[0]![1]!.headers as Record<string, string>).Authorization).toBeUndefined();
+  });
+
+  it("reads a refusal sent as a problem document, by the error object still inside it", async () => {
+    const f = fakeFetch(429, {
+      type: "https://permtracker.app/developers#error-rate-limited",
+      title: "Too many calls this minute",
+      status: 429,
+      detail: "The Free plan allows 10 calls a minute.",
+      code: "rate_limited",
+      retryAfter: 42,
+      error: { code: "rate_limited", message: "The Free plan allows 10 calls a minute.", retryAfter: 42 },
+    });
+    const pt = new PermTracker({ apiKey: KEY, fetch: f as unknown as typeof fetch });
+    const err = await pt.queue().catch((e: unknown) => e);
+    expect(err).toMatchObject({ status: 429, code: "rate_limited", retryAfter: 42, message: "The Free plan allows 10 calls a minute." });
+  });
+
   it("turns the API's refusal into an error with its code, message and wait", async () => {
     const f = fakeFetch(429, { error: { code: "rate_limited", message: "The Free plan allows 10 calls a minute.", retryAfter: 42 } });
     const pt = new PermTracker({ apiKey: KEY, fetch: f as unknown as typeof fetch });

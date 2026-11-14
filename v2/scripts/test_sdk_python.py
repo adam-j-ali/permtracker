@@ -45,6 +45,16 @@ except PermTrackerError as e:
 check(nokey.lookup_employer("Acme").data == {"match": "exact"} and "Authorization" not in calls[-1][1], "the lookup needs no key")
 check(nokey.lookup_soc("15-1252").data == {"match": "exact"} and "/lookup/soc?q=15-1252" in calls[-1][0]
       and "Authorization" not in calls[-1][1], "the SOC lookup needs no key and sends q")
+up = PermTracker(api_key="", transport=transport(200, {"status": "ok", "version": "1.1.0"}))
+check(up.health() == {"status": "ok", "version": "1.1.0"} and calls[-1][0] == "https://permtracker.app/v1/health"
+      and "Authorization" not in calls[-1][1], "health needs no key and answers the flat document")
+problem = PermTracker(api_key=KEY, transport=transport(429, {"type": "https://permtracker.app/developers#error-rate-limited", "title": "Too many calls this minute",
+                                                              "status": 429, "detail": "Ten a minute.", "code": "rate_limited", "retryAfter": 42,
+                                                              "error": {"code": "rate_limited", "message": "Ten a minute.", "retryAfter": 42}}))
+try:
+    problem.queue(); check(False, "a problem document raises")
+except PermTrackerError as e:
+    check((e.status, e.code, e.retry_after, e.message) == (429, "rate_limited", 42, "Ten a minute."), "a refusal sent as a problem document is read by its error object")
 limited = PermTracker(api_key=KEY, transport=transport(429, {"error": {"code": "rate_limited", "message": "Ten a minute.", "retryAfter": 42}}))
 try:
     limited.queue(); check(False, "a refusal raises")

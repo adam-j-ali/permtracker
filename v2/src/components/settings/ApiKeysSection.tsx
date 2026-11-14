@@ -20,7 +20,7 @@ import { CopyIcon } from "@phosphor-icons/react/ssr";
 import { api } from "@convex/_generated/api";
 import { displayKeyId } from "@convex/lib/apiKeyFormat";
 import { DEFAULT_SCOPES, GRANTABLE_SCOPES, SCOPE_LABELS, type ApiScope } from "@convex/lib/apiPlans";
-import { MCP_URL } from "@/lib/api/openapi";
+import { MCP_URL } from "@/lib/api/addresses";
 import { checkedLabel } from "@/lib/time";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";

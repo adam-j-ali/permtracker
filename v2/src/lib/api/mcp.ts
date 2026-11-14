@@ -2,8 +2,11 @@
  * The MCP server behind permtracker.app/mcp: the API's reads as tools an AI
  * assistant can call.
  *
- * Each tool calls the same function as its /v1 endpoint, so an answer in an
- * assistant and an answer from the API can't disagree. Every tool only reads.
+ * THE TOOLS ARE BUILT FROM THE API'S OWN REGISTRY (./openapi.ts): one tool per
+ * read operation, named after it (getCase is get_case), with the endpoint's
+ * parameters, limits and description. Each tool calls the same function as its
+ * /v1 endpoint, so an answer in an assistant and an answer from the API can't
+ * disagree. Every tool only reads.
  *
  * NO KEY NEEDED. Assistants connected by URL (Claude's custom connectors, for
  * one) can't send a header, and they arrive from their maker's own addresses,
@@ -17,6 +20,8 @@ import { McpServer, type AuthInfo } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 import type { ApiCaller } from "./auth";
+import { lookupEmployer } from "./employerLookup";
+import { API_VERSION, TOOL_ENDPOINTS, toolName, type EndpointDoc } from "./openapi";
 import { findCases, readBulletin, readCase, readEntity, readEstimate, readQueue, searchEntities, type ReadResult } from "./reads";
 import { lookupSoc } from "./socLookup";
 import { ANONYMOUS_ACCOUNT, checkAllowance, countCall, takeMinute } from "./usage";
@@ -24,9 +29,7 @@ import { ANONYMOUS_ACCOUNT, checkAllowance, countCall, takeMinute } from "./usag
 /** Tool calls a minute from every caller without a key together, in one copy of the site. */
 export const ANONYMOUS_PER_MINUTE = 300;
 
-const KINDS = { employer: "employer", "law firm": "attorney", occupation: "occupation" } as const;
-
-type ToolResult = { content: { type: "text"; text: string }[]; isError?: boolean };
+type ToolResult = { content: { type: "text"; text: string }[]; isError?: boolean; structuredContent?: Record<string, unknown> };
 
 const text = (t: string, isError = false): ToolResult => ({ content: [{ type: "text", text: t }], ...(isError ? { isError } : {}) });
 
@@ -73,27 +76,103 @@ async function answer(caller: ApiCaller, read: () => Promise<ReadResult<unknown>
     if (caller.kind === "key") countCall(caller.account, caller.keyId);
     else countCall(ANONYMOUS_ACCOUNT, "mcp");
   }
-  if (!r.ok) return text(r.url ? `${r.message} ${r.url}` : r.message, r.status !== 404);
-  // Source, date and page first, so an assistant has what it needs to cite.
-  return text(
-    JSON.stringify(
-      { source: r.meta.source, asOf: r.meta.asOf, page: r.meta.url, data: r.data },
-      null,
-      1,
-    ),
-  );
+  if (!r.ok) {
+    const said = r.url ? `${r.message} ${r.url}` : r.message;
+    if (r.status !== 404) return text(said, true);
+    // "No such record" is an answer, not a failure: the assistant should say so, not retry. It goes out in the
+    // same shape as any answer, with `data.found` false, so a client reading typed output gets it too.
+    return {
+      content: [{ type: "text", text: said }],
+      structuredContent: { source: "PERM Tracker", asOf: null, page: r.url ?? "https://permtracker.app/developers", data: { found: false, message: r.message } },
+    };
+  }
+  // Source, date and page first, so an assistant has what it needs to cite. The same object goes out as text
+  // (every client reads that) and as structured content (for clients that take typed output).
+  const payload = { source: r.meta.source, asOf: r.meta.asOf, page: r.meta.url, data: (r.data ?? {}) as Record<string, unknown> };
+  return { content: [{ type: "text", text: JSON.stringify(payload, null, 1) }], structuredContent: payload };
 }
 
 const readOnly = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
 
+type ToolArgs = Record<string, string | number | undefined>;
+const str = (v: string | number | undefined): string | null => (v === undefined || v === "" ? null : String(v));
+
+/**
+ * What each tool runs: the same function its /v1 endpoint calls, keyed by the operation's id. A read operation
+ * in the registry with no runner here fails `buildMcpServer`, and the tests with it.
+ */
+const RUNNERS: Record<string, (a: ToolArgs) => Promise<ReadResult<unknown>>> = {
+  getCase: (a) => readCase(String(a.caseNumber ?? "")),
+  findCases: (a) =>
+    findCases({ employer: str(a.employer), job: str(a.job), firm: str(a.firm), filed: str(a.filed), from: str(a.from), to: str(a.to), program: str(a.program) }),
+  estimateDecision: (a) => readEstimate({ caseNumber: str(a.case), filed: str(a.filed) }),
+  getQueue: () => readQueue(),
+  getVisaBulletin: (a) => readBulletin(str(a.month)),
+  searchEmployers: (a) => searchEntities("employer", String(a.q ?? ""), Number(a.limit ?? SEARCH_DEFAULT)),
+  getEmployer: (a) => readEntity("employer", String(a.slug ?? "")),
+  searchLawFirms: (a) => searchEntities("attorney", String(a.q ?? ""), Number(a.limit ?? SEARCH_DEFAULT)),
+  getLawFirm: (a) => readEntity("attorney", String(a.slug ?? "")),
+  searchOccupations: (a) => searchEntities("occupation", String(a.q ?? ""), Number(a.limit ?? SEARCH_DEFAULT)),
+  getOccupation: (a) => readEntity("occupation", String(a.slug ?? "")),
+  lookupEmployer: (a) => lookupEmployer(String(a.name ?? "")),
+  lookupSoc: (a) => lookupSoc(String(a.q ?? "")),
+};
+
+/** Results a search tool returns when the assistant names no limit: enough to choose from, small enough to read. */
+const SEARCH_DEFAULT = 10;
+
+/** A tool's inputs, from its operation's parameters: the same names, limits and descriptions as the endpoint's. */
+function inputSchema(e: EndpointDoc) {
+  const shape: Record<string, z.ZodType> = {};
+  for (const p of (e.params ?? []).filter((x) => !x.apiOnly)) {
+    let field: z.ZodType;
+    if (p.enum) {
+      field = z.enum(p.enum as [string, ...string[]]);
+    } else if (p.type === "integer") {
+      let n = z.number().int();
+      if (p.minimum !== undefined) n = n.min(p.minimum);
+      if (p.maximum !== undefined) n = n.max(p.maximum);
+      field = n;
+    } else {
+      // Length only: a malformed date or number is answered by the read itself, in a sentence that says what
+      // to send, which helps an assistant more than a pattern mismatch.
+      let t = z.string().max(p.maxLength ?? (p.format === "date" ? 10 : p.format === "month" ? 7 : 120));
+      if (p.minLength !== undefined) t = t.min(p.minLength);
+      field = t;
+    }
+    const isSearchLimit = p.name === "limit" && e.id.startsWith("search");
+    const text = isSearchLimit ? `Results to return, 1 to 100. ${SEARCH_DEFAULT} when left out.` : p.description;
+    field = field.describe(`${text} Example: ${p.example}.`);
+    shape[p.name] = p.required ? field : field.optional();
+  }
+  return z.object(shape);
+}
+
+/** What every tool answers: where it came from first, so an assistant has what it needs to cite, then the data. */
+const outputSchema = (e: EndpointDoc) =>
+  z.object({
+    source: z.string().describe("Who published the underlying records."),
+    asOf: z.string().nullable().describe("The date the data is true for, YYYY-MM-DD, when one applies."),
+    page: z.string().describe("The page on permtracker.app that shows the same thing. Cite it."),
+    data: z
+      .record(z.string(), z.unknown())
+      .describe(`The answer, in the shape the API documents as ${e.response.schemaName}: https://permtracker.app/v1/openapi.json`),
+  });
+
+function toolDescription(e: EndpointDoc): string {
+  const args = Object.fromEntries((e.params ?? []).filter((p) => !p.apiOnly && (p.required || e.example.includes(`${p.name}=`))).map((p) => [p.name, p.example]));
+  return `${e.description} Example: ${JSON.stringify(args)}.`;
+}
+
 export function buildMcpServer(caller: ApiCaller): McpServer {
   const server = new McpServer(
-    { name: "permtracker", title: "PERM Tracker", version: "1.0.0", websiteUrl: "https://permtracker.app/developers" },
+    { name: "permtracker", title: "PERM Tracker", version: API_VERSION, websiteUrl: "https://permtracker.app/developers" },
     {
       instructions:
         "Federal records on U.S. employment-based immigration: PERM labor certification, prevailing wage requests, " +
         "H-1B LCAs, DOL processing times and the State Department visa bulletin. Every answer names its source and " +
-        "the page it came from. Cite that page. Estimates are labelled as estimates and make no promise.",
+        "the page it came from. Cite that page. Estimates are labelled as estimates and make no promise. " +
+        "To read one employer, law firm or occupation, search for it by name first: the search returns the slug the get tool takes.",
       // Every tool takes a few short strings, so a call's arguments never hold
       // more than a handful of keys. Without a cap a 256 KB body of one big
       // array can exhaust memory during validation (GHSA-46jr-4wx8-v453).
@@ -101,138 +180,53 @@ export function buildMcpServer(caller: ApiCaller): McpServer {
     },
   );
 
-  server.registerTool(
-    "lookup_case",
-    {
-      title: "Look up a case",
-      description:
-        "One DOL case by number: status, filing date, employer, job and, once decided, DOL's decided record. " +
-        "PERM (G-100-...), prevailing wage (P-100- to P-203-...), H-1B LCA (I-200-...) and H-2A, H-2B or CW-1 numbers. " +
-        'Example: {"case_number": "G-100-26045-123456"}.',
-      inputSchema: z.object({ case_number: z.string().max(40).describe("As DOL prints it, e.g. G-100-26045-123456.") }),
-      annotations: readOnly,
-    },
-    async ({ case_number }) => answer(caller, () => readCase(case_number)),
-  );
-
-  server.registerTool(
-    "find_case",
-    {
-      title: "Find a case without its number",
-      description:
-        "A DOL case found without its number, from what someone knows about it: any of the employer's name, words of the job title and the law firm, with one filing day, a range of days or no date. One of them is enough. " +
-        "Each case comes with its number, status, job title and filing day, and the answer says what DOL's record holds for the days read. " +
-        "PERM by default. The program may be pwd (prevailing wage), lca (H-1B) or seasonal (H-2A, H-2B, CW-1). A law firm finds decided cases only, since DOL names it at the decision. " +
-        "A range longer than three months needs an employer or a firm. With no employer fitting in a month or less it returns the employers that filed in those days under a close spelling. " +
-        'Examples: {"employer": "Acme Robotics", "filed": "2026-01-30"}, {"job": "controls engineer", "from": "2026-01-05", "to": "2026-02-28"}.',
-      inputSchema: z.object({
-        employer: z.string().max(120).optional().describe("The employer's name."),
-        job: z.string().max(80).optional().describe("Words of the job title."),
-        firm: z.string().max(120).optional().describe("The law firm's or agent's name. Decided cases only."),
-        filed: z.string().max(10).optional().describe("One filing day, YYYY-MM-DD. Not with from or to."),
-        from: z.string().max(10).optional().describe("The first filing day of a range, YYYY-MM-DD."),
-        to: z.string().max(10).optional().describe("The last filing day of a range, YYYY-MM-DD."),
-        program: z.string().max(12).optional().describe("perm (the default), pwd, lca or seasonal."),
-      }),
-      annotations: readOnly,
-    },
-    async ({ employer, job, firm, filed, from, to, program }) =>
-      answer(caller, () =>
-        findCases({ employer: employer ?? null, job: job ?? null, firm: firm ?? null, filed: filed ?? null, from: from ?? null, to: to ?? null, program: program ?? null }),
-      ),
-  );
-
-  server.registerTool(
-    "estimate_decision",
-    {
-      title: "Estimate a PERM decision date",
-      description:
-        "When a pending PERM case is likely to be decided, with a range, the model used and its caveats. " +
-        "Pass a case number, or a filing date for a case in analyst review. It's an estimate and makes no promise. " +
-        'Examples: {"case_number": "G-100-26045-123456"} or {"filed": "2026-01-15"}.',
-      inputSchema: z.object({
-        case_number: z.string().max(40).optional().describe("A PERM case number."),
-        filed: z.string().max(10).optional().describe("Filing date, YYYY-MM-DD, when there's no case number."),
-      }),
-      annotations: readOnly,
-    },
-    async ({ case_number, filed }) => answer(caller, () => readEstimate({ caseNumber: case_number ?? null, filed: filed ?? null })),
-  );
-
-  server.registerTool(
-    "queue_status",
-    {
-      title: "PERM and prevailing wage queues",
-      description:
-        "DOL's processing times today: average days to a decision, the month each PERM and prevailing wage queue is " +
-        "working on when DOL prints one, the filing month DOL is deciding by PERM Tracker's own daily check of case " +
-        "statuses (perm.decidingNow: DOL stopped printing a PERM month on Oct 31 2026), the oldest month still open, and " +
-        "how many PERM cases are pending from each filing month. Takes no arguments: {}.",
-      inputSchema: z.object({}),
-      annotations: readOnly,
-    },
-    async () => answer(caller, () => readQueue()),
-  );
-
-  server.registerTool(
-    "visa_bulletin",
-    {
-      title: "Visa bulletin",
-      description:
-        "A visa bulletin's employment and family final action and dates for filing charts, as printed. The newest by default, with months back to June 2005. " +
-        'Examples: {} for the newest, or {"month": "2026-10"}.',
-      inputSchema: z.object({ month: z.string().max(7).optional().describe("YYYY-MM. Leave out for the newest.") }),
-      annotations: readOnly,
-    },
-    async ({ month }) => answer(caller, () => readBulletin(month ?? null)),
-  );
-
-  server.registerTool(
-    "search_sponsors",
-    {
-      title: "Find an employer, law firm or occupation",
-      description:
-        "Search DOL's PERM records by name. Returns each match's record and the slug that employer_profile takes. " +
-        'Example: {"kind": "employer", "name": "Microsoft"}.',
-      inputSchema: z.object({
-        kind: z.enum(["employer", "law firm", "occupation"]).describe('One of "employer", "law firm" or "occupation" (singular).'),
-        name: z.string().min(2).max(120).describe("Part of the name, 2 to 120 characters, e.g. Microsoft."),
-      }),
-      annotations: readOnly,
-    },
-    async ({ kind, name }) => answer(caller, () => searchEntities(KINDS[kind], name, 10)),
-  );
-
-  server.registerTool(
-    "employer_profile",
-    {
-      title: "An employer's, law firm's or occupation's PERM record",
-      description:
-        "Cases in DOL's published files (certified, denied, median days to a decision, filings in the last 12 months, " +
-        "and for an occupation the median offered wage), plus how many of its cases are pending at DOL right now and " +
-        'at which stage. Find the slug with search_sponsors first. Example: {"kind": "employer", "slug": "microsoft-corporation"}.',
-      inputSchema: z.object({
-        kind: z.enum(["employer", "law firm", "occupation"]).describe('One of "employer", "law firm" or "occupation" (singular).'),
-        slug: z.string().max(120).describe("From search_sponsors, e.g. google-llc."),
-      }),
-      annotations: readOnly,
-    },
-    async ({ kind, slug }) => answer(caller, () => readEntity(KINDS[kind], slug)),
-  );
-
-  server.registerTool(
-    "find_soc_code",
-    {
-      title: "Find a job's SOC code",
-      description:
-        "The SOC occupation codes employers filed a job title under in DOL's PERM, prevailing wage and LCA files, with each " +
-        "code's share of the title's filings. Or a code's title, and for a 2010 code the 2018 codes it became. " +
-        'Examples: {"query": "data scientist"} or {"query": "15-1132"}.',
-      inputSchema: z.object({ query: z.string().min(2).max(80).describe("A job title or a SOC code, e.g. data scientist or 15-2051.") }),
-      annotations: readOnly,
-    },
-    async ({ query }) => answer(caller, () => lookupSoc(query)),
-  );
+  for (const e of TOOL_ENDPOINTS) {
+    const run = RUNNERS[e.id];
+    if (!run) throw new Error(`mcp: the read operation ${e.id} has no runner`);
+    server.registerTool(
+      toolName(e.id),
+      {
+        title: e.tool!.title,
+        description: toolDescription(e),
+        inputSchema: inputSchema(e),
+        outputSchema: outputSchema(e),
+        annotations: readOnly,
+      },
+      async (args) => answer(caller, () => run(args as ToolArgs)),
+    );
+  }
 
   return server;
+}
+
+/**
+ * A call under a tool name version 1.0 used, as the call it is now. Null for a current name. The route applies it
+ * before the server sees the request, so an assistant or a script that learned the old names keeps working while
+ * the list shows only the new ones.
+ */
+export function legacyToolCall(name: string, args: Record<string, unknown> = {}): { name: string; arguments: Record<string, unknown> } | null {
+  const kind = String(args.kind ?? "");
+  const family = kind === "law firm" ? "law_firm" : kind === "occupation" ? "occupation" : "employer";
+  const plural = family === "law_firm" ? "law_firms" : `${family}s`;
+  switch (name) {
+    case "lookup_case":
+      return { name: "get_case", arguments: { caseNumber: args.case_number } };
+    case "find_case":
+      return { name: "find_cases", arguments: args };
+    case "estimate_decision":
+      // The same name then and now; only its case argument was renamed.
+      return "case_number" in args ? { name, arguments: { case: args.case_number, filed: args.filed } } : null;
+    case "queue_status":
+      return { name: "get_queue", arguments: {} };
+    case "visa_bulletin":
+      return { name: "get_visa_bulletin", arguments: { month: args.month } };
+    case "search_sponsors":
+      return { name: `search_${plural}`, arguments: { q: args.name } };
+    case "employer_profile":
+      return { name: `get_${family}`, arguments: { slug: args.slug } };
+    case "find_soc_code":
+      return { name: "lookup_soc", arguments: { q: args.query } };
+    default:
+      return null;
+  }
 }

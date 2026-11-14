@@ -8,7 +8,7 @@ import { SEARCH_TEXT_MIN, SUGGEST_MAX_LENGTH } from "@/lib/search/limits";
 import type { ReadResult } from "./reads";
 
 /**
- * The job code finder as an answer for /v1/lookup/soc and the MCP tool `find_soc_code`: one read,
+ * The job code finder as an answer for /v1/lookup/soc and the MCP tool `lookup_soc`: one read,
  * so the two can't differ. A title answers with the codes employers filed it under in DOL's files
  * and their shares; a code with its title, and a 2010 code with the codes it became.
  */

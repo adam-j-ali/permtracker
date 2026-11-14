@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "permtracker"
-version = "0.3.0"
+version = "0.4.0"
 description = "The PERM Tracker API from Python and the command line: DOL case status, decision estimates, the PERM queue, visa bulletins, employer, law firm and occupation records, exports, live DOL lookups and signed webhooks."
 readme = "README.md"
 license = { text = "MIT" }

@@ -29,7 +29,7 @@ from typing import Any, Callable, Optional
 
 __all__ = ["PermTracker", "PermTrackerError", "Answer", "CsvExport", "Usage", "verify_webhook", "WEBHOOK_EVENTS",
            "EXPORT_KINDS", "DEFAULT_BASE_URL", "__version__"]
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 WEBHOOK_EVENTS = ("case.status_changed", "employer.moved", "bulletin.published", "queue.moved", "processing_times.updated")
 EXPORT_KINDS = ("cases", "employers", "law-firms", "occupations")
 DEFAULT_BASE_URL = "https://permtracker.app/v1"
@@ -246,6 +246,14 @@ class PermTracker:
     def me(self) -> Answer:
         """Your key's scopes, the plan that applies, the paywall and what you've used. Not counted."""
         return self.get("/me")
+
+    def health(self) -> dict:
+        """Whether the API is up, with its description's version. No key needed, never counted."""
+        status, res_headers, body = self._send("/health", None, False, "GET", None, "application/json")
+        parsed = _parse(body)
+        if status >= 400:
+            raise _refusal(status, res_headers, parsed)
+        return parsed if isinstance(parsed, dict) else {}
 
     def export(self, kind: str, params: Optional[dict] = None) -> Answer:
         """A search's whole answer, up to the plan's export rows, as JSON. One call.

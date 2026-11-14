@@ -5,4 +5,4 @@ argument-hint: <case number, or a filing date YYYY-MM-DD>
 
 Estimate when a pending PERM case is likely to be decided, for: $ARGUMENTS
 
-Use the permtracker `estimate_decision` tool: pass a case number as `case`, or a date as `filed`. Give the estimated date, the range, the method it came from and its caveats in plain words. Say it's an estimate from DOL's queue and pace, and that it isn't a promise. Add DOL's current queue month from `queue_status` for context.
+Use the permtracker `estimate_decision` tool: pass a case number as `case`, or a date as `filed`. Give the estimated date, the range, the method it came from and its caveats in plain words. Say it's an estimate from DOL's queue and pace, and that it isn't a promise. Add the filing month DOL is deciding now from `get_queue` for context.

@@ -14,6 +14,7 @@ vi.mock("../usage", () => ({
 }));
 
 import { apiGet } from "../route";
+import { ProblemSchema } from "../schemas";
 import type { ReadResult } from "../reads";
 
 const KEY_CALLER = {
@@ -80,6 +81,28 @@ describe("a /v1 call", () => {
     expect(res.headers.get("Retry-After")).toBe("17");
     expect((await res.json()).error.code).toBe("rate_limited");
     expect(read).not.toHaveBeenCalled();
+  });
+
+  it("answers a refusal as a problem document that still carries the error object version 1.0 sent", async () => {
+    // Arrange
+    takeMinute.mockReturnValue({ ok: false, remaining: 0, reset: 42 });
+    // Act
+    const res = await call(async () => ({ ok: true, data: {}, meta }));
+    const body = (await res.json()) as Record<string, unknown>;
+    // Assert: the standard's members, the stable code, and the old object word for word.
+    expect(res.status).toBe(429);
+    expect(res.headers.get("Content-Type")).toContain("application/problem+json");
+    expect(ProblemSchema.safeParse(body).success).toBe(true);
+    expect(body).toMatchObject({
+      type: "https://permtracker.app/developers#error-rate-limited",
+      title: "Too many calls this minute",
+      status: 429,
+      code: "rate_limited",
+      retryAfter: 42,
+    });
+    expect(body.detail).toBe((body.error as { message: string }).message);
+    expect(body.error).toMatchObject({ code: "rate_limited", retryAfter: 42, docs: "https://permtracker.app/developers" });
+    expect(res.headers.get("Retry-After")).toBe("42");
   });
 
   it("refuses past the day's allowance, saying when it resets", async () => {

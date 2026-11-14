@@ -231,9 +231,16 @@ const SAMPLE_QUEUE = {
     decidingNow: { month: "2026-02", asOf: AS_OF, source: "PERM Tracker's daily check of DOL's case status" },
     oldestOpenMonth: "2026-01",
     queues: [{ queue: "Analyst Review", workingOnMonth: "2025-12", asPrinted: "December 2025" }],
-    averageDays: [{ determination: "Analyst Review", month: "2026-09", calendarDays: 470 }],
+    averageDays: [{ determination: "Analyst Review", month: null, period: "Last 30 Days", calendarDays: 470 }],
   },
-  prevailingWage: { asOf: AS_OF, queues: [], permRequestsPending: 21_000 },
+  prevailingWage: {
+    asOf: AS_OF,
+    queues: [{ program: "PERM", oewsReceiptDate: "2026-07", nonOewsReceiptDate: "2026-06" }],
+    permRequestsPending: [
+      { receiptMonth: "2026-08", remainingRequests: 9_400 },
+      { receiptMonth: "2026-09", remainingRequests: 11_600 },
+    ],
+  },
   pendingPermByFilingMonth: [
     { month: "2026-01", filed: 10_100, decided: 900, pending: 9_200, inAnalystReview: 9_050 },
     { month: "2026-02", filed: 9_800, decided: 410, pending: 9_390, inAnalystReview: 9_300 },
@@ -253,9 +260,12 @@ const SAMPLE_BULLETIN = {
 
 /** The finder's sample: the pending sample case, found by its employer and filing day. */
 const SAMPLE_FOUND = {
-  filed: "2026-02-10",
   program: "perm",
   programName: "PERM labor certification",
+  readBy: "window",
+  window: { from: "2026-02-10", to: "2026-02-10", assumed: false },
+  filed: "2026-02-10",
+  period: { filed: 412, decided: 18, waiting: 394 },
   day: { filed: 412, decided: 18, waiting: 394 },
   matchedEmployer: 1,
   matched: 1,
@@ -266,14 +276,19 @@ const SAMPLE_FOUND = {
       isFinal: false,
       employer: "Example Robotics LLC",
       jobTitle: "Software Engineer",
+      filedOn: "2026-02-10",
       decisionDate: null,
       worksiteState: null,
       wageRequest: null,
+      lawFirm: null,
       url: `${SITE}/perm-case-status?case=G-100-26000-000101`,
     },
   ],
   truncated: false,
   closeNames: [],
+  lawFirm: null,
+  lawFirmUnknown: false,
+  decidedOnly: false,
   dayListCapped: false,
 };
 
