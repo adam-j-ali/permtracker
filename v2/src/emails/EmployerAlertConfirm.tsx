@@ -15,6 +15,8 @@ export interface EmployerAlertConfirmProps {
   employerName: string;
   /** Absolute, purpose-scoped confirmation URL. */
   confirmUrl: string;
+  /** Which size of follow the click confirms: bulk moves, or every case. The email must say which. */
+  scope?: "group" | "each";
   /**
    * True when the subscriber also ticked the product-news box, so the same
    * confirm click opts them into that as well.
@@ -33,12 +35,18 @@ export interface EmployerAlertConfirmProps {
 export function EmployerAlertConfirm({
   employerName,
   confirmUrl,
+  scope = "group",
   includesNews = false,
   includesNewsletter = false,
 }: EmployerAlertConfirmProps) {
+  const each = scope === "each";
   return (
     <EmailLayout
-      previewText={`Confirm and we’ll email you when DOL moves ${employerName}’s PERM cases as a group.`}
+      previewText={
+        each
+          ? `Confirm and we’ll email you each time the status of one of ${employerName}’s PERM cases changes.`
+          : `Confirm and we’ll email you when DOL moves ${employerName}’s PERM cases as a group.`
+      }
       hideSettingsLink
       footerText={`This address was entered to follow ${employerName}’s PERM cases on PERM Tracker. It isn’t confirmed yet, so nothing else will be sent.`}
     >
@@ -47,12 +55,22 @@ export function EmployerAlertConfirm({
         <Text className="em-text" style={styles.stampValue}>{employerName}</Text>
       </Section>
 
-      <Text className="em-text-body" style={styles.body}>
-        You asked to follow this employer&rsquo;s PERM cases. Confirm and
-        we&rsquo;ll email you when DOL puts five or more of them on hold or
-        takes them off it in a day, or decides a batch of them well above its
-        usual pace. Employer updates come at most once a day.
-      </Text>
+      {each ? (
+        <Text className="em-text-body" style={styles.body}>
+          You asked to follow this employer&rsquo;s PERM cases, case by case.
+          Confirm and we&rsquo;ll email you each time the status of one of them
+          changes: a certification, a denial, a request for information, a
+          hold, a withdrawal or an appeal. That&rsquo;s one email a day at
+          most, on days something changed.
+        </Text>
+      ) : (
+        <Text className="em-text-body" style={styles.body}>
+          You asked to follow this employer&rsquo;s PERM cases. Confirm and
+          we&rsquo;ll email you when DOL puts five or more of them on hold or
+          takes them off it in a day, or decides a batch of them well above its
+          usual pace. Employer updates come at most once a day.
+        </Text>
+      )}
 
       {includesNews ? (
         <Text className="em-text-secondary" style={styles.newsNote}>

@@ -2627,7 +2627,7 @@ export default defineSchema({
   }).index("by_key", ["key"]),
 
   /**
-   * Someone following ONE employer's PERM cases as a group.
+   * Someone following ONE employer's PERM cases.
    *
    * Fourth sibling of the alert tables, same consent grammar: double opt-in,
    * a staged `pendingSlug` that only a fresh confirm click makes live,
@@ -2638,6 +2638,11 @@ export default defineSchema({
    * Both lists are precomputed by the daily sweep into
    * `perm_docs['employer_stages']`; this table only remembers which of those
    * days each follower has already been told about.
+   *
+   * A follow has one of two sizes (`scope`). "group" is the above. "each" is
+   * for someone who manages the cases: every status change of every one of the
+   * employer's cases, read from the event log, with `caseToldThrough` as its
+   * change detector (src/lib/employerCaseMoves.ts).
    */
   employerAlerts: defineTable({
     email: v.string(),
@@ -2649,6 +2654,12 @@ export default defineSchema({
     /** Staged by an unauthenticated POST; made live only by a confirm click. */
     pendingSlug: v.optional(v.string()),
     pendingName: v.optional(v.string()),
+    /** What to send: bulk moves only, or every case. Absent on a row from before the choice existed: a group follow. */
+    scope: v.optional(v.union(v.literal("group"), v.literal("each"))),
+    /** Staged with `pendingSlug`, so a form can't change what a confirmed follower gets without their click. */
+    pendingScope: v.optional(v.union(v.literal("group"), v.literal("each"))),
+    /** An "each" follow's change detector: the newest case move already told, in milliseconds. */
+    caseToldThrough: v.optional(v.number()),
     /** Throttles repeat confirmations to this address. Records intent. */
     lastConfirmationSentAt: v.optional(v.number()),
     /**

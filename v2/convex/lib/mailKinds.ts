@@ -83,7 +83,7 @@ export const MAIL_KINDS: Record<MailKindId, MailKind> = {
   employer: {
     name: "Employer alerts",
     one: "Employer you follow",
-    what: "When DOL moves an employer's cases as a group: holds, releases and big batches of decisions.",
+    what: "When an employer's PERM cases change status: every case, or only the days DOL moves them as a group.",
     when: "When it happens",
     start: { label: "Any employer's page", href: "/perm-employers" },
   },
@@ -170,7 +170,7 @@ export interface SubscriptionState {
   queueAlerts: { id: string; filingMonth: string; queue: string; active: boolean; notified: boolean }[];
   caseAlerts: { id: string; caseNumber: string; active: boolean }[];
   bulletinAlerts: { id: string; category: string; country: string; active: boolean }[];
-  employerAlerts: { id: string; employerName: string; active: boolean }[];
+  employerAlerts: { id: string; employerName: string; active: boolean; scope?: "group" | "each" }[];
   news: boolean;
   newsletter: boolean;
   /** Null when no account exists for the address. */
@@ -213,7 +213,11 @@ export function subscriptionRows(state: SubscriptionState): {
       .map((a) => ({ kind: "bulletin" as const, id: a.id, detail: seriesLabel(a.category, a.country) })),
     ...state.employerAlerts
       .filter((a) => a.active)
-      .map((a) => ({ kind: "employer" as const, id: a.id, detail: a.employerName })),
+      .map((a) => ({
+        kind: "employer" as const,
+        id: a.id,
+        detail: a.scope === "each" ? `${a.employerName}, every case` : `${a.employerName}, group moves`,
+      })),
   ];
   const digests: SubscriptionRow[] = [];
   if (state.newsletter) digests.push({ kind: "newsletter", detail: `${MAIL_KINDS.newsletter.when}: ${MAIL_KINDS.newsletter.what}` });

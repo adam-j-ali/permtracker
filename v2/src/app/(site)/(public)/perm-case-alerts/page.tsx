@@ -82,7 +82,7 @@ const KINDS = [
   { id: "month", icon: CalendarCheckIcon, title: "Your filing month", note: "DOL reaches it" },
   { id: "wage", icon: CurrencyDollarIcon, title: "Your wage request", note: "DOL reaches its month" },
   { id: "bulletin", icon: EnvelopeSimpleIcon, title: "The visa bulletin", note: "your line's cutoff moves" },
-  { id: "employer", icon: BuildingsIcon, title: "An employer", note: "DOL moves its cases as a group" },
+  { id: "employer", icon: BuildingsIcon, title: "An employer", note: "its cases change status" },
   { id: "digest", icon: NewspaperIcon, title: "The weekly digest", note: "one email on Tuesdays" },
 ] as const;
 
@@ -161,7 +161,7 @@ export default function Page() {
           <BulletinAlertForm source="alerts-page" bare />
         </div>
       </PageSection>{" "}
-      <PageSection id="employer" title="An employer" lede="Hear when DOL holds, releases or decides an employer's cases as a group.">
+      <PageSection id="employer" title="An employer" lede="Hear about every status change of an employer's PERM cases, or only the days DOL moves them as a group.">
         <p className="max-w-2xl text-base leading-relaxed">
           Each employer&apos;s page has a Follow box.{" "}
           <Link href="/perm-employers" className="link">

@@ -1,5 +1,12 @@
 /**
- * Follow an employer: an email when DOL moves its PERM cases as a group.
+ * Follow an employer: an email when DOL moves its PERM cases, as a group or case by case.
+ *
+ * A follow has one of two sizes, chosen on the form and made live by the confirm click (`scope`):
+ *
+ * - "group" (the default, and every follow from before the choice existed): the employer-wide moves below;
+ * - "each": every status change of every one of its cases, for the person who manages them. Read straight from
+ *   the event log each sweep (`readCaseMoves`), filtered and worded by src/lib/employerCaseMoves.ts, with a
+ *   watermark (`caseToldThrough`) as the change detector. One email a day at most, on days something changed.
  *
  * The census page (`/perm-employers/under-review`) shows where each
  * employer's pending cases stand; this tells a follower when that changes,
@@ -53,7 +60,7 @@ import {
   makeUnsubscribeToken,
   verifyUnsubscribeToken,
 } from "./lib/unsubscribeToken";
-import { one } from "./lib/publicMirror";
+import { one, placeholders, query } from "./lib/publicMirror";
 import { recordError } from "./lib/errorRecording";
 import {
   checkAndRecordRateLimit,
@@ -83,9 +90,28 @@ import {
   type EmployerMove,
   type EmployerStagesDoc,
 } from "../src/lib/employerStages";
+import {
+  BULK_WRITE_ROWS,
+  CASE_MOVE_READ_DAYS,
+  DIRECT_SOURCE,
+  EXPIRY_FROM,
+  EXPIRY_TO,
+  closingLine,
+  filedLabel,
+  followPromise,
+  followScope,
+  groupCaseMoves,
+  newestAt,
+  realCaseMoves,
+  rowsShown,
+  unheardCaseMoves,
+  type CaseMove,
+  type CaseMoveRow,
+  type FollowScope,
+} from "../src/lib/employerCaseMoves";
 import { connectionThrottleReply } from "./lib/throttleReply";
 import { admitConfirmation, queueConfirmation, replayArgs } from "./confirmationQueue";
-import { easternDay } from "./lib/time";
+import { MS_PER_DAY, easternDay } from "./lib/time";
 import { isPlausibleEmail } from "./lib/emailShape";
 import { TEXT_LEGAL_LINE } from "./lib/textFooter";
 
@@ -106,7 +132,14 @@ const FRESH_DAYS = 7;
 const TOLD_CAP = 200;
 const APPEAL_STATUSES = ["RECONSIDERATION APPEALS", "BALCA APPEALS", "REQUEST FOR REVIEW"];
 
+/** Rows one sweep reads from the event log for the "each" follows: far above a real week, so a cut is logged. */
+const CASE_MOVE_READ_CAP = 5000;
+/** A job title in a case row: enough to recognise the case, never a paragraph. */
+const TITLE_MAX = 60;
+
 export const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,119}$/;
+
+const scopeValidator = v.union(v.literal("group"), v.literal("each"));
 
 const NEUTRAL_REPLY = "Check your inbox to confirm.";
 
@@ -118,6 +151,10 @@ function unsubscribeSecret(): string {
 
 function employerUrl(slug: string): string {
   return `${SITE_URL}/perm-employers/${slug}`;
+}
+
+function caseUrl(caseNumber: string): string {
+  return `${SITE_URL}/perm-case-status?case=${encodeURIComponent(caseNumber)}`;
 }
 
 /** Shift an ISO date by whole days, no time zone involved. */
@@ -165,6 +202,8 @@ export const subscribe = internalMutation({
     slug: v.string(),
     employerName: v.string(),
     source: v.optional(v.string()),
+    /** "each" for every case's status change; anything else is the group follow. */
+    scope: v.optional(scopeValidator),
     news: v.optional(v.boolean()),
     newsletter: v.optional(v.boolean()),
     ip: v.optional(v.string()),
@@ -232,10 +271,13 @@ export const subscribe = internalMutation({
       }
     }
 
+    // Staged like the slug: the size a confirmed follower gets changes only on their own click.
+    const scope = followScope(args.scope);
     if (existing) {
       await ctx.db.patch(existing._id, {
         pendingSlug: args.slug,
         pendingName: args.employerName,
+        pendingScope: scope,
         lastConfirmationSentAt: now,
       });
     } else {
@@ -245,6 +287,7 @@ export const subscribe = internalMutation({
         employerName: args.employerName,
         pendingSlug: args.slug,
         pendingName: args.employerName,
+        pendingScope: scope,
         createdAt: now,
         source: args.source,
         lastConfirmationSentAt: now,
@@ -260,6 +303,7 @@ export const subscribe = internalMutation({
       email,
       slug: args.slug,
       employerName: args.employerName,
+      scope,
       includesNews,
       includesNewsletter,
     });
@@ -300,12 +344,15 @@ export const sendConfirmation = internalAction({
     email: v.string(),
     slug: v.string(),
     employerName: v.string(),
+    /** Optional: a confirmation scheduled before the choice existed carries none. */
+    scope: v.optional(scopeValidator),
     includesNews: v.optional(v.boolean()),
     includesNewsletter: v.optional(v.boolean()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
     try {
+      const scope = followScope(args.scope);
       const token = await makeUnsubscribeToken(args.email, unsubscribeSecret(), "employer-confirm");
       const confirmUrl = actionUrl("/employer-alert/confirm", token);
       const html = await renderOrTextOnly(ctx, "employerAlerts.sendConfirmation.render", async () => {
@@ -313,6 +360,7 @@ export const sendConfirmation = internalAction({
         return EmployerAlertConfirm({
           employerName: args.employerName,
           confirmUrl,
+          scope,
           includesNews: args.includesNews === true,
           includesNewsletter: args.includesNewsletter === true,
         });
@@ -323,10 +371,11 @@ export const sendConfirmation = internalAction({
         subject: `Confirm: follow ${args.employerName} on PERM Tracker`,
         html,
         text: [
-          `You asked to follow ${args.employerName}'s PERM cases.`,
+          scope === "each"
+            ? `You asked to follow ${args.employerName}'s PERM cases, case by case.`
+            : `You asked to follow ${args.employerName}'s PERM cases.`,
           "",
-          "We'll email you when DOL puts five or more of them on hold or takes them off it in a day,",
-          "or decides a batch of them well above its usual pace. Employer updates come at most once a day.",
+          followPromise(scope),
           "",
           "Confirm here:",
           confirmUrl,
@@ -388,43 +437,78 @@ export const confirmByToken = internalMutation({
   args: { token: v.string() },
   returns: v.union(
     // `already`: nothing was waiting and the address still follows these
-    // employers (a repeat click on an old confirmation link).
-    v.object({ email: v.string(), employers: v.array(v.string()), already: v.optional(v.boolean()) }),
+    // employers (a repeat click on an old confirmation link). `everyCase`:
+    // which of `employers` are followed case by case.
+    v.object({
+      email: v.string(),
+      employers: v.array(v.string()),
+      everyCase: v.array(v.string()),
+      already: v.optional(v.boolean()),
+    }),
     v.null(),
   ),
   handler: async (ctx, args) => {
     const all = await rowsForToken(ctx, args.token, "employer-confirm");
     const confirmed: string[] = [];
     const active: string[] = [];
+    const everyCase: string[] = [];
     const now = Date.now();
     for (const row of all) {
       // Only a fresh request stages a slug; a replayed link finds nothing to do.
       if (row.pendingSlug === undefined) {
-        if (row.confirmedAt !== undefined && row.unsubscribedAt === undefined) active.push(row.employerName);
+        if (row.confirmedAt !== undefined && row.unsubscribedAt === undefined) {
+          active.push(row.employerName);
+          if (followScope(row.scope) === "each") everyCase.push(row.employerName);
+        }
         continue;
       }
       const moved = row.slug !== row.pendingSlug;
+      const scope = followScope(row.pendingScope);
+      const name = row.pendingName ?? row.employerName;
       await ctx.db.patch(row._id, {
         confirmedAt: row.confirmedAt ?? now,
         slug: row.pendingSlug,
-        employerName: row.pendingName ?? row.employerName,
+        employerName: name,
+        scope,
         pendingSlug: undefined,
         pendingName: undefined,
+        pendingScope: undefined,
         unsubscribedAt: undefined,
         followingFrom: easternDay(now),
+        // What the page already showed them is not news: case moves count from this click.
+        caseToldThrough: now,
         ...(moved || row.unsubscribedAt !== undefined ? { toldMoves: [] } : {}),
       });
-      confirmed.push(row.pendingName ?? row.employerName);
+      confirmed.push(name);
+      if (scope === "each") everyCase.push(name);
     }
     if (confirmed.length === 0) {
-      return active.length > 0 ? { email: all[0]!.email, employers: active, already: true } : null;
+      return active.length > 0 ? { email: all[0]!.email, employers: active, everyCase, already: true } : null;
     }
     const email = all[0]!.email;
     // What the page already showed them is not news: mark today's moves told.
     await ctx.scheduler.runAfter(0, internal.employerAlerts.seedTold, { email });
     await ctx.runMutation(internal.emailPrefs.confirmNewsForEmail, { email });
     await ctx.runMutation(internal.emailPrefs.confirmNewsletterForEmail, { email });
-    return { email, employers: confirmed };
+    return { email, employers: confirmed, everyCase: everyCase.filter((n) => confirmed.includes(n)) };
+  },
+});
+
+/**
+ * What a confirm link would make live, for the page that asks before it acts: the sizes staged for the token's
+ * address. Reads only; the GET that shows the page must not change anything.
+ */
+export const pendingForToken = internalQuery({
+  args: { token: v.string() },
+  returns: v.array(scopeValidator),
+  handler: async (ctx, args) => {
+    const email = await verifyUnsubscribeToken(args.token, unsubscribeSecret(), "employer-confirm");
+    if (!email) return [];
+    const rows = await ctx.db
+      .query("employerAlerts")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .take(MAX_EMPLOYERS_PER_ADDRESS);
+    return rows.filter((r) => r.pendingSlug !== undefined).map((r) => followScope(r.pendingScope));
   },
 });
 
@@ -437,7 +521,12 @@ export const unsubscribeByToken = internalMutation({
     const now = Date.now();
     for (const row of all) {
       if (row.unsubscribedAt !== undefined && row.pendingSlug === undefined) continue;
-      await ctx.db.patch(row._id, { unsubscribedAt: now, pendingSlug: undefined, pendingName: undefined });
+      await ctx.db.patch(row._id, {
+        unsubscribedAt: now,
+        pendingSlug: undefined,
+        pendingName: undefined,
+        pendingScope: undefined,
+      });
     }
     await dropQueued(ctx, all[0]!.email, "employer");
     return true;
@@ -492,7 +581,13 @@ export const forSeeding = internalQuery({
 });
 
 export const recordTold = internalMutation({
-  args: { id: v.id("employerAlerts"), keys: v.array(v.string()), sent: v.boolean() },
+  args: {
+    id: v.id("employerAlerts"),
+    keys: v.array(v.string()),
+    sent: v.boolean(),
+    /** An "each" follow's new watermark: the newest case move this email carried. Never moves backwards. */
+    caseToldThrough: v.optional(v.number()),
+  },
   returns: v.null(),
   handler: async (ctx, args) => {
     const row = await ctx.db.get(args.id);
@@ -502,6 +597,9 @@ export const recordTold = internalMutation({
     await ctx.db.patch(args.id, {
       toldMoves: merged,
       lastCheckedAt: now,
+      ...(args.caseToldThrough !== undefined
+        ? { caseToldThrough: Math.max(row.caseToldThrough ?? 0, args.caseToldThrough) }
+        : {}),
       ...(args.sent ? { lastAlertSentAt: now, alertCount: (row.alertCount ?? 0) + 1 } : {}),
     });
     return null;
@@ -545,6 +643,9 @@ export const dueForCheck = internalQuery({
       employerName: v.string(),
       toldMoves: v.optional(v.array(v.string())),
       followingFrom: v.optional(v.string()),
+      scope: scopeValidator,
+      caseToldThrough: v.optional(v.number()),
+      confirmedAt: v.number(),
     }),
   ),
   handler: async (ctx, args) => {
@@ -555,6 +656,9 @@ export const dueForCheck = internalQuery({
       employerName: string;
       toldMoves?: string[];
       followingFrom?: string;
+      scope: FollowScope;
+      caseToldThrough?: number;
+      confirmedAt: number;
     }[] = [];
     for await (const row of ctx.db
       .query("employerAlerts")
@@ -567,6 +671,9 @@ export const dueForCheck = internalQuery({
         employerName: row.employerName,
         toldMoves: row.toldMoves,
         followingFrom: row.followingFrom,
+        scope: followScope(row.scope),
+        caseToldThrough: row.caseToldThrough,
+        confirmedAt: row.confirmedAt,
       });
       if (out.length >= args.limit) break;
     }
@@ -602,7 +709,7 @@ export const claimAlertBudget = internalMutation({
 });
 
 /** "Adobe Inc.: DOL put 215 of its cases on hold", inside an inbox line. */
-export function employerSubject(name: string, moves: EmployerMove[]): string {
+export function employerSubject(name: string, moves: readonly { sentence: string }[]): string {
   const first = moves[0];
   if (!first) return `${name}: its PERM cases moved`;
   const lead = `${name}: ${first.sentence}`;
@@ -627,14 +734,132 @@ function mixFor(doc: EmployerStagesDoc, slug: string) {
   };
 }
 
+// ============================================================================
+// Case by case: the "each" follow's read
+// ============================================================================
+
+type Tone = "good" | "bad" | "neutral";
+/** A case under a move, as the email prints it. */
+interface CaseLine {
+  number: string;
+  url: string;
+  /** "Software Engineer, filed Mar 2025", or "" when DOL's record has neither. */
+  note: string;
+}
+/** One line of an alert. An "each" follow's line carries the cases under it. */
+interface AlertRow {
+  dateLabel: string;
+  sentence: string;
+  tone: Tone;
+  cases?: CaseLine[];
+  /** Cases the line counts and doesn't list. */
+  more?: number;
+}
+
 /**
- * Tell each follower about the employer-wide moves they have not heard.
+ * The followed employers' case moves over the read window, by slug.
+ *
+ * Two statements in one round trip, both riding `case_events_recent`: the timestamps that are a catch-up write
+ * (normally none), and every DOL-direct event in the window joined to its case and its employer's page. The second
+ * is driven by the window, about 600 events a day once the lapsed certifications are left out, with three
+ * primary-key probes each, and returns only the followed employers' rows (0.3 s over eight days, Nov 13 2026). The slug join is the sweep's own (`_slug_join` in ingest_case_status_direct.py).
+ */
+async function readCaseMoves(slugs: string[], now: number): Promise<Map<string, CaseMove[]>> {
+  const marks = placeholders(slugs.length);
+  if (!marks) return new Map();
+  const since = now - CASE_MOVE_READ_DAYS * MS_PER_DAY;
+  const [bulk, moved] = await query([
+    {
+      sql: "SELECT changed_at AS at FROM perm_case_events WHERE changed_at >= ? GROUP BY changed_at HAVING COUNT(*) > ?",
+      args: [since, BULK_WRITE_ROWS],
+    },
+    {
+      sql: `SELECT COALESCE(l.employer_slug, p.employer_slug) AS slug, e.case_number AS case_number,
+                   e.changed_at AS at, e.from_status AS f, e.to_status AS t,
+                   c.filing_date AS filed, c.job_title AS title
+              FROM perm_case_events e
+              JOIN perm_case_status c ON c.case_number = e.case_number
+              LEFT JOIN perm_live_recent l ON l.case_number = e.case_number
+              LEFT JOIN perm_cases p ON p.case_number = e.case_number
+             WHERE e.changed_at >= ? AND e.source = ?
+               AND NOT (e.from_status = ? AND e.to_status = ?)
+               AND COALESCE(l.employer_slug, p.employer_slug) IN (${marks})
+             ORDER BY e.changed_at DESC LIMIT ${CASE_MOVE_READ_CAP}`,
+      args: [since, DIRECT_SOURCE, EXPIRY_FROM, EXPIRY_TO, ...slugs],
+    },
+  ]);
+  const rows = moved ?? [];
+  if (rows.length >= CASE_MOVE_READ_CAP) {
+    log.warn("the case-move read reached its cap; the oldest moves in the window were left out", {
+      cap: CASE_MOVE_READ_CAP,
+    });
+  }
+  const text = (v: string | number | null | undefined) => (typeof v === "string" ? v : "");
+  const parsed: CaseMoveRow[] = rows.map((r) => ({
+    slug: text(r.slug),
+    caseNumber: text(r.case_number),
+    at: Number(r.at),
+    from: text(r.f),
+    to: text(r.t),
+    filed: text(r.filed) || null,
+    jobTitle: text(r.title).trim() || null,
+  }));
+  const bulkStamps = new Set((bulk ?? []).map((r) => Number(r.at)));
+  const bySlug = new Map<string, CaseMove[]>();
+  for (const m of realCaseMoves(parsed, bulkStamps)) {
+    if (!Number.isFinite(m.at)) continue;
+    const list = bySlug.get(m.slug);
+    if (list) list.push(m);
+    else bySlug.set(m.slug, [m]);
+  }
+  return bySlug;
+}
+
+/** A follower's unheard case moves as alert lines: one per day and kind of change, its cases beneath it. */
+export function caseAlertRows(news: readonly CaseMove[]): AlertRow[] {
+  const groups = groupCaseMoves(news);
+  const shown = rowsShown(groups);
+  return groups.map((g, i) => {
+    const take = shown[i] ?? 0;
+    return {
+      dateLabel: shortDate(g.worked),
+      sentence: g.sentence,
+      tone: g.tone,
+      cases: g.cases.slice(0, take).map((c) => ({
+        number: c.caseNumber,
+        url: caseUrl(c.caseNumber),
+        note: [c.jobTitle ? c.jobTitle.slice(0, TITLE_MAX) : "", filedLabel(c.filed)].filter(Boolean).join(", "),
+      })),
+      more: g.n - take,
+    };
+  });
+}
+
+/** The plain-text lines for one alert line and the cases under it. */
+function rowText(r: AlertRow): string[] {
+  return [
+    `  Recorded ${r.dateLabel}: ${r.sentence}.`,
+    ...(r.cases ?? []).map((c) => `    ${c.number}${c.note ? ` (${c.note})` : ""}`),
+    ...(r.more && r.more > 0 ? [`    and ${r.more.toLocaleString("en-US")} more, listed on its page`] : []),
+  ];
+}
+
+// ============================================================================
+// The sweep
+// ============================================================================
+
+/**
+ * Tell each follower what they have not heard: the employer-wide moves for a group follow, every case's change
+ * for an "each" follow.
  *
  * Runs after the daily sweeps have written the census (see crons.ts). Reads
  * up to CHECK_BATCH_LIMIT follows least-recently-checked first, bumps every
  * one it looked at, builds at most ALERT_BATCH_LIMIT alerts under the shared
  * daily budget, and hands each to `deliverAlert`. A failed send leaves the
  * moves unheard so the next run tries again; a queued or sent one is told.
+ *
+ * A failed read of the event log is recorded and sends nothing: the "each" follows keep their watermarks, so the
+ * next run asks for the same window, and the group follows still go.
  */
 export const sweep = internalAction({
   args: {},
@@ -651,21 +876,47 @@ export const sweep = internalAction({
     let remaining = due.length > CHECK_BATCH_LIMIT;
     if (batch.length === 0) return { checked: 0, sent: 0, queued: 0, failed: 0 };
 
-    const today = easternDay(Date.now());
+    const now = Date.now();
+    const today = easternDay(now);
     const moves = freshMoves(doc, today);
-    const withNews = batch
-      .map((sub) => ({ sub, news: unheard(moves.get(sub.slug), sub.toldMoves, sub.followingFrom) }))
-      .filter((x) => x.news.length > 0);
+    const eachSlugs = [...new Set(batch.filter((b) => b.scope === "each").map((b) => b.slug))];
+    // A failed read sends nothing and moves no watermark, so the next run asks for the same window again.
+    const caseMoves = await readCaseMoves(eachSlugs, now).catch(async (error: unknown) => {
+      await recordError(ctx, "action", "employerAlerts.sweep.caseMoves", error);
+      return new Map<string, CaseMove[]>();
+    });
+
+    type Due = (typeof batch)[number];
+    const notices: { sub: Due; rows: AlertRow[]; keys: string[]; through?: number }[] = [];
+    for (const sub of batch) {
+      if (sub.scope === "each") {
+        const news = unheardCaseMoves(caseMoves.get(sub.slug), sub.caseToldThrough, sub.confirmedAt, now);
+        if (news.length > 0) notices.push({ sub, rows: caseAlertRows(news), keys: [], through: newestAt(news) });
+        continue;
+      }
+      const news = unheard(moves.get(sub.slug), sub.toldMoves, sub.followingFrom);
+      if (news.length > 0) {
+        notices.push({
+          sub,
+          // The day DOL worked, never the day the sweep recorded it (the 4 AM pass records the evening before's work).
+          rows: news.map((m) => ({ dateLabel: workedLabel(m.worked, shortDate), sentence: m.sentence, tone: m.tone })),
+          keys: news.map((m) => m.key),
+        });
+      }
+    }
+    // When the day's pool runs short, an employer-wide move goes before one case's change. The sort is stable, so
+    // each size keeps its least-recently-checked order.
+    notices.sort((a, b) => Number(a.sub.scope === "each") - Number(b.sub.scope === "each"));
 
     await ctx.runMutation(internal.employerAlerts.markChecked, { ids: batch.map((b) => b._id) });
-    if (withNews.length === 0) return { checked: batch.length, sent: 0, queued: 0, failed: 0 };
+    if (notices.length === 0) return { checked: batch.length, sent: 0, queued: 0, failed: 0 };
 
     const granted = await ctx.runMutation(internal.employerAlerts.claimAlertBudget, {
-      want: Math.min(withNews.length, alertBatchLimit()),
+      want: Math.min(notices.length, alertBatchLimit()),
     });
-    if (granted < withNews.length) remaining = true;
+    if (granted < notices.length) remaining = true;
     if (granted === 0) {
-      log.error("alert budget exhausted; employer alerts wait", { due: withNews.length });
+      log.error("alert budget exhausted; employer alerts wait", { due: notices.length });
       return { checked: batch.length, sent: 0, queued: 0, failed: 0 };
     }
 
@@ -673,15 +924,15 @@ export const sweep = internalAction({
     let queued = 0;
     let failed = 0;
     const asOf = longDate(doc.asOf);
-    for (const { sub, news } of withNews.slice(0, granted)) {
+    for (const { sub, rows, keys, through } of notices.slice(0, granted)) {
       try {
         const token = await makeUnsubscribeToken(sub.email, unsubscribeSecret(), "employer-unsubscribe");
         const unsubUrl = actionUrl("/employer-alert/unsubscribe", token);
         const prefsUrl = await prefsLink(sub.email, unsubscribeSecret(), `employer:${sub._id}`);
         const url = employerUrl(sub.slug);
         const mix = mixFor(doc, sub.slug);
-        // The day DOL worked, never the day the sweep recorded it (the 4 AM pass records the evening before's work).
-        const rows = news.map((m) => ({ dateLabel: workedLabel(m.worked, shortDate), sentence: m.sentence, tone: m.tone }));
+        const closing = closingLine(sub.scope, asOf, mix !== null);
+        const first = rows[0]!;
         const html = await renderOrTextOnly(ctx, "employerAlerts.sweep.render", async () => {
           const { EmployerMoved } = await import("../src/emails/EmployerMoved");
           return EmployerMoved({
@@ -690,6 +941,7 @@ export const sweep = internalAction({
             moves: rows,
             mix,
             asOf,
+            scope: sub.scope,
             unsubscribeUrl: unsubUrl,
             prefsUrl,
           });
@@ -698,12 +950,12 @@ export const sweep = internalAction({
           email: sub.email,
           kind: "employer",
           ref: `employer:${sub._id}`,
-          subject: employerSubject(sub.employerName, news),
+          subject: employerSubject(sub.employerName, rows),
           html,
           text: [
             `${sub.employerName}, an employer you follow on PERM Tracker:`,
             "",
-            ...rows.map((r) => `  Recorded ${r.dateLabel}: ${r.sentence}.`),
+            ...rows.flatMap(rowText),
             "",
             ...(mix
               ? [
@@ -711,8 +963,7 @@ export const sweep = internalAction({
                   "",
                 ]
               : []),
-            `These are DOL's own case statuses, read from its case system and counted on ${asOf}.`,
-            "DOL gives no reason for a hold or a batch, and neither do we. None of it predicts any one case.",
+            closing,
             "",
             `Every figure for ${sub.employerName}: ${url}`,
             "",
@@ -724,9 +975,9 @@ export const sweep = internalAction({
           listUnsubscribe: unsubUrl,
           summary: {
             title: sub.employerName,
-            line: news.length === 1 ? news[0]!.sentence : `${news[0]!.sentence}, and ${news.length - 1} more`,
+            line: rows.length === 1 ? first.sentence : `${first.sentence}, and ${rows.length - 1} more`,
             url,
-            tone: news[0]!.tone,
+            tone: first.tone,
           },
         });
         if (result.status === "failed") {
@@ -736,8 +987,9 @@ export const sweep = internalAction({
         }
         await ctx.runMutation(internal.employerAlerts.recordTold, {
           id: sub._id,
-          keys: news.map((m) => m.key),
+          keys,
           sent: true,
+          ...(through !== undefined ? { caseToldThrough: through } : {}),
         });
         if (result.status === "sent") sent += 1;
         else queued += 1;

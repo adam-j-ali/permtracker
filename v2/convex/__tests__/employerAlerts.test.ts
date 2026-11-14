@@ -48,16 +48,35 @@ function hrana(rows: Record<string, string | number | null>[]) {
   };
 }
 
+/** One row of the event log as the "every case" read returns it. */
+interface CaseEvent {
+  slug: string;
+  case_number: string;
+  at: number;
+  f: string;
+  t: string;
+  filed: string | null;
+  title: string | null;
+}
+
 interface Fixture {
   names?: Record<string, string>;
   holdMoves?: { date: string; name: string; slug: string | null; dir: "on" | "off"; to: string; n: number }[];
   decisionMoves?: { date: string; name: string; slug: string | null; to: string; n: number }[];
+  /** The event log's rows for the followed employers. */
+  caseEvents?: CaseEvent[];
+  /** Timestamps carrying more rows than a day's work: a catch-up write. */
+  bulkStamps?: number[];
+  /** True: the event log can't be read. */
+  caseReadFails?: boolean;
   resendStatus?: number;
 }
 
 /** Turso answers from the fixture; Resend records every send. */
 function stub(f: Fixture) {
   const sends: Record<string, unknown>[] = [];
+  /** Every statement the code sent that reads the event log. */
+  const eventReads: string[] = [];
   const doc = {
     asOf: easternDay(Date.now()),
     pendingTotal: 250,
@@ -88,6 +107,14 @@ function stub(f: Fixture) {
         const sql = req.stmt.sql;
         const arg = req.stmt.args?.[0]?.value ?? "";
         if (sql.includes("FROM perm_docs")) return hrana([{ json: JSON.stringify(doc), computed_at: Date.now() }]);
+        if (sql.includes("FROM perm_case_events")) {
+          eventReads.push(sql);
+          if (f.caseReadFails) return { type: "error", error: { message: "stubbed: the event log can't be read" } };
+          if (sql.includes("HAVING COUNT(*)")) return hrana((f.bulkStamps ?? []).map((at) => ({ at })));
+          // The slugs are the arguments after the window, the source and the lapse pair: only followed employers come back.
+          const asked = new Set((req.stmt.args ?? []).slice(4).map((a) => a.value));
+          return hrana((f.caseEvents ?? []).filter((e) => asked.has(e.slug)).map((e) => ({ ...e })));
+        }
         if (sql.includes("FROM perm_entities")) {
           const n = f.names?.[arg];
           return hrana(n ? [{ name: n }] : []);
@@ -112,7 +139,7 @@ function stub(f: Fixture) {
     }
     return new Response(JSON.stringify({ id: "stub" }), { status: 200, headers: { "Content-Type": "application/json" } });
   }) as unknown as typeof fetch;
-  return { sends };
+  return { sends, eventReads };
 }
 
 beforeEach(() => {
@@ -354,6 +381,224 @@ describe("the change detector", () => {
     ];
     expect(unheard(moves, ["k1"], undefined).map((m) => m.key)).toEqual(["k2"]);
     expect(unheard(moves, [], "2026-09-22").map((m) => m.key)).toEqual(["k1"]);
+  });
+});
+
+describe("following every case", () => {
+  const HOUR = 3_600_000;
+  const event = (over: Partial<CaseEvent> = {}): CaseEvent => ({
+    slug: "adobe-inc",
+    case_number: "A-25100-00001",
+    at: Date.now() - HOUR,
+    f: "ANALYST REVIEW",
+    t: "CERTIFIED",
+    filed: "2025-04-10",
+    title: "Software Engineer",
+    ...over,
+  });
+  /** A confirmed "every case" follow whose watermark is a day old. */
+  const followEach = (t: T, email: string, slug = "adobe-inc", extra: Record<string, unknown> = {}) =>
+    follow(t, email, slug, { scope: "each", caseToldThrough: Date.now() - 24 * HOUR, ...extra });
+
+  it("stages the size with the request, and only the confirm click makes it live", async () => {
+    // Arrange: a confirmed group follower asks for every case.
+    const t = createTestContext();
+    stub({ names: { "adobe-inc": "Adobe Inc." } });
+    const id = await follow(t, "h@example.com");
+    // Act
+    const res = await t.fetch("/employer-alert/subscribe", {
+      method: "POST",
+      body: JSON.stringify({ email: "h@example.com", slug: "adobe-inc", scope: "each" }),
+    });
+    // Assert: nothing they receive has changed yet.
+    expect(res.status).toBe(200);
+    const staged = await t.run(async (ctx) => ctx.db.get(id));
+    expect(staged?.scope).toBeUndefined();
+    expect(staged?.pendingScope).toBe("each");
+
+    const token = await makeUnsubscribeToken("h@example.com", SECRET, "employer-confirm");
+    const page = await t.fetch(`/employer-alert/confirm?token=${encodeURIComponent(token)}`, { method: "GET" });
+    expect(await page.text()).toContain("each time the status of one of its PERM cases changes");
+    const done = await t.mutation(internal.employerAlerts.confirmByToken, { token });
+    expect(done).toMatchObject({ employers: ["Adobe Inc."], everyCase: ["Adobe Inc."] });
+    const live = await t.run(async (ctx) => ctx.db.get(id));
+    expect(live?.scope).toBe("each");
+    expect(live?.pendingScope).toBeUndefined();
+    // What the page already showed is not news: the watermark starts at the click.
+    expect(live?.caseToldThrough).toBeGreaterThan(Date.now() - 60_000);
+  });
+
+  it("reads any size it doesn't know as the group follow", async () => {
+    const t = createTestContext();
+    stub({ names: { "adobe-inc": "Adobe Inc." } });
+    await t.fetch("/employer-alert/subscribe", {
+      method: "POST",
+      body: JSON.stringify({ email: "i@example.com", slug: "adobe-inc", scope: "everything, hourly" }),
+    });
+    const row = await t.run(async (ctx) => ctx.db.query("employerAlerts").first());
+    expect(row?.pendingScope).toBe("group");
+    const token = await makeUnsubscribeToken("i@example.com", SECRET, "employer-confirm");
+    const page = await t.fetch(`/employer-alert/confirm?token=${encodeURIComponent(token)}`, { method: "GET" });
+    expect(await page.text()).toContain("five or more of its PERM cases");
+  });
+
+  it("says which size the confirmation is for, in the email itself", async () => {
+    vi.useFakeTimers();
+    try {
+      const t = createTestContext();
+      const sent: Record<string, unknown>[] = [];
+      stub({});
+      const inner = global.fetch;
+      global.fetch = (async (url: unknown, init?: { body?: string }) => {
+        if (!String(url).includes("/v2/pipeline") && init?.body) sent.push(JSON.parse(init.body));
+        return inner(url as never, init as never);
+      }) as unknown as typeof fetch;
+      await t.mutation(internal.employerAlerts.subscribe, {
+        email: "j@example.com",
+        slug: "adobe-inc",
+        employerName: "Adobe Inc.",
+        scope: "each",
+      });
+      await t.finishAllScheduledFunctions(vi.runAllTimers);
+      const mail = sent.find((m) => String(m.subject).startsWith("Confirm:"));
+      expect(String(mail?.text)).toContain("case by case");
+      expect(String(mail?.text)).toContain("each time the status of one of its PERM cases changes");
+      expect(String(mail?.html)).toContain("case by case");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("mails each case's change once, listed by case under who acted", async () => {
+    // Arrange
+    const t = createTestContext();
+    const { sends } = stub({
+      caseEvents: [
+        event({ case_number: "A-25100-00002", filed: "2025-05-02", title: "Data Scientist" }),
+        event({ case_number: "A-25100-00001" }),
+        event({ case_number: "A-25100-00003", t: "RFI ISSUED", title: null, filed: null }),
+      ],
+    });
+    const id = await followEach(t, "k@example.com");
+    // Act
+    const first = await t.action(internal.employerAlerts.sweep, {});
+    // Assert
+    expect(first.sent).toBe(1);
+    expect(String(sends[0]!.subject)).toBe("Adobe Inc.: DOL certified 2 of its cases, and 1 more");
+    const text = String(sends[0]!.text);
+    expect(text).toContain("DOL certified 2 of its cases.");
+    expect(text).toContain("A-25100-00001 (Software Engineer, filed Apr 2025)");
+    expect(text).toContain("A-25100-00002 (Data Scientist, filed May 2025)");
+    expect(text.indexOf("A-25100-00001")).toBeLessThan(text.indexOf("A-25100-00002"));
+    expect(text).toContain("DOL sent a request for information on 1 of its cases.");
+    expect(text).toMatch(/\n {4}A-25100-00003\n/);
+    expect(text).toContain("DOL gives no reason for any of them");
+    const html = String(sends[0]!.html);
+    expect(html).toContain("https://permtracker.app/perm-case-status?case=A-25100-00001");
+    expect(html).toContain("case by case");
+    const row = await t.run(async (ctx) => ctx.db.get(id));
+    expect(row?.caseToldThrough).toBeGreaterThan(Date.now() - 2 * HOUR);
+
+    const second = await t.action(internal.employerAlerts.sweep, {});
+    expect(second.sent + second.queued).toBe(0);
+    expect(sends).toHaveLength(1);
+  });
+
+  it("stays silent on a change from before the watermark, a lapsed certification and a catch-up write", async () => {
+    const t = createTestContext();
+    const bulk = Date.now() - 2 * HOUR;
+    const { sends } = stub({
+      caseEvents: [
+        event({ case_number: "A-old", at: Date.now() - 30 * HOUR }),
+        event({ case_number: "A-lapsed", f: "CERTIFIED", t: "CERTIFIED - EXPIRED" }),
+        event({ case_number: "A-bulk", at: bulk }),
+      ],
+      bulkStamps: [bulk],
+    });
+    await followEach(t, "l@example.com");
+    const r = await t.action(internal.employerAlerts.sweep, {});
+    expect(r.sent + r.queued).toBe(0);
+    expect(sends).toHaveLength(0);
+  });
+
+  it("sends a group follower nothing case by case, and never reads the event log for them", async () => {
+    const t = createTestContext();
+    const { sends, eventReads } = stub({ caseEvents: [event()] });
+    await follow(t, "m@example.com");
+    const r = await t.action(internal.employerAlerts.sweep, {});
+    expect(r.checked).toBe(1);
+    expect(sends).toHaveLength(0);
+    expect(eventReads).toEqual([]);
+  });
+
+  it("asks the event log only for the employers followed case by case", async () => {
+    const t = createTestContext();
+    const { sends } = stub({ caseEvents: [event(), event({ slug: "maplebear-inc", case_number: "A-other" })] });
+    await followEach(t, "n@example.com");
+    await t.action(internal.employerAlerts.sweep, {});
+    expect(sends).toHaveLength(1);
+    expect(String(sends[0]!.text)).not.toContain("A-other");
+  });
+
+  it("treats a failed read as a failed read: no email, the watermark kept, the group follows still sent", async () => {
+    const t = createTestContext();
+    const { sends } = stub({ caseEvents: [event()], caseReadFails: true, holdMoves: [hold(1, "maplebear-inc", 14)] });
+    const watermark = Date.now() - 24 * HOUR;
+    const id = await followEach(t, "o@example.com", "adobe-inc", { caseToldThrough: watermark });
+    await follow(t, "p@example.com", "maplebear-inc");
+    const r = await t.action(internal.employerAlerts.sweep, {});
+    expect(r.sent).toBe(1);
+    expect(String(sends[0]!.subject)).toContain("Maplebear Inc.");
+    const row = await t.run(async (ctx) => ctx.db.get(id));
+    expect(row?.caseToldThrough).toBe(watermark);
+    const errors = await t.run(async (ctx) => ctx.db.query("systemErrors").take(5));
+    expect(errors.map((e) => e.operation)).toContain("employerAlerts.sweep.caseMoves");
+  });
+
+  it("keeps the watermark when the send fails for good, so the next sweep retries", async () => {
+    const t = createTestContext();
+    stub({ caseEvents: [event()], resendStatus: 422 });
+    const watermark = Date.now() - 24 * HOUR;
+    const id = await followEach(t, "q@example.com", "adobe-inc", { caseToldThrough: watermark });
+    const r = await t.action(internal.employerAlerts.sweep, {});
+    expect(r.failed).toBe(1);
+    const row = await t.run(async (ctx) => ctx.db.get(id));
+    expect(row?.caseToldThrough).toBe(watermark);
+  });
+
+  it("sends an employer-wide move before one case's change when the day's pool is nearly spent", async () => {
+    const t = createTestContext();
+    const { sends } = stub({ caseEvents: [event()], holdMoves: [hold(1, "maplebear-inc", 14)] });
+    // One place left in the shared alert pool.
+    await t.run(async (ctx) => {
+      for (let i = 0; i < BUDGETS.caseAlert.limit - 1; i++) {
+        await ctx.db.insert("rateLimits", {
+          key: `${BUDGETS.caseAlert.key}:all`,
+          timestamp: Date.now(),
+          identifier: "all",
+          action: BUDGETS.caseAlert.key,
+        });
+      }
+    });
+    // The case-by-case follow is checked first (it's older in the round-robin), and still goes second.
+    await followEach(t, "r@example.com");
+    await follow(t, "s@example.com", "maplebear-inc");
+    await t.action(internal.employerAlerts.sweep, {});
+    expect(sends).toHaveLength(1);
+    expect(String(sends[0]!.subject)).toContain("Maplebear Inc.");
+  });
+
+  it("lists thirty cases at most and counts the rest", async () => {
+    const t = createTestContext();
+    const many = Array.from({ length: 34 }, (_, i) =>
+      event({ case_number: `A-25100-${String(i).padStart(5, "0")}`, filed: `2025-04-${String((i % 28) + 1).padStart(2, "0")}` }),
+    );
+    const { sends } = stub({ caseEvents: many });
+    await followEach(t, "u@example.com");
+    await t.action(internal.employerAlerts.sweep, {});
+    const text = String(sends[0]!.text);
+    expect(text.match(/^ {4}A-25100-/gm)).toHaveLength(30);
+    expect(text).toContain("and 4 more, listed on its page");
   });
 });
 

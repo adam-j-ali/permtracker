@@ -294,14 +294,14 @@ export function moveSentence(m: HoldMove): string {
  * "DOL certified 44 of its cases" / "12 of its cases were withdrawn by the
  * employer". Names who acted: DOL decides, the employer withdraws.
  */
-export function decisionSentence(m: DecisionMove): string {
+export function decisionSentence(m: Pick<DecisionMove, "to" | "n">): string {
   const cases = `${formatInt(m.n)} of its cases`;
   if (m.to === "WITHDRAWN") return `${cases} ${m.n === 1 ? "was" : "were"} withdrawn by the employer`;
   return `DOL ${m.to === "CERTIFIED" ? "certified" : "denied"} ${cases}`;
 }
 
 /** "DOL put 215 of its cases on hold" / "DOL took 201 of its cases off hold, back to analyst review". */
-export function holdSentence(m: HoldMove): string {
+export function holdSentence(m: Pick<HoldMove, "dir" | "to" | "n">): string {
   const cases = `${formatInt(m.n)} of its cases`;
   if (m.dir === "on") return `DOL put ${cases} on hold`;
   const them = m.n === 1 ? "it" : "them";

@@ -1,8 +1,11 @@
 /**
- * The follow alert: DOL did something to an employer's PERM cases as a group.
+ * The follow alert: something happened to an employer's PERM cases, as a group or case by case.
  *
  * What moved comes first, one row per move, each sentence naming who acted
- * (DOL holds, releases, certifies and denies; the employer withdraws). Then
+ * (DOL holds, releases, certifies and denies; the employer withdraws). An
+ * "every case" follow's row lists the cases under it, each a link to its own
+ * page, with the job title and filing month DOL holds so the reader can tell
+ * whose case it is. Then
  * one bar: where the employer's pending cases sit today, in the same three
  * colours the site uses for the stage groups, so the email and the page it
  * links to read alike.
@@ -17,15 +20,33 @@ import { Link, Section, Text } from "@react-email/components";
 import { EmailLayout } from "./components";
 import { SANS_STACK } from "./components/QueueStamp";
 import { formatInt } from "../../convex/lib/format";
+import { closingLine, followFooter } from "../lib/employerCaseMoves";
+
+export interface EmployerMovedCase {
+  number: string;
+  url: string;
+  /** "Software Engineer, filed Mar 2025", or "" when DOL's record has neither. */
+  note: string;
+}
 
 export interface EmployerMovedProps {
   employerName: string;
   employerUrl: string;
-  moves: { dateLabel: string; sentence: string; tone: "good" | "bad" | "neutral" }[];
-  /** Today's pending mix, or null when the employer has no pending cases. */
+  moves: {
+    dateLabel: string;
+    sentence: string;
+    tone: "good" | "bad" | "neutral";
+    /** An "every case" follow: the cases this row counts, oldest filing first. */
+    cases?: EmployerMovedCase[];
+    /** Cases the row counts and doesn't list. */
+    more?: number;
+  }[];
+  /** Today's pending mix, or null when the employer isn't in the census (under five pending cases). */
   mix: { pending: number; queue: number; review: number; appeal: number; held: number } | null;
   /** "September 25, 2026": the day the census was taken. */
   asOf: string;
+  /** Which size of follow sent this: it decides the footer's "why you got this". */
+  scope?: "group" | "each";
   unsubscribeUrl: string;
   prefsUrl?: string;
 }
@@ -53,6 +74,7 @@ export function EmployerMoved({
   moves,
   mix,
   asOf,
+  scope = "group",
   unsubscribeUrl,
   prefsUrl,
 }: EmployerMovedProps) {
@@ -71,7 +93,7 @@ export function EmployerMoved({
       hideSettingsLink={!prefsUrl}
       settingsUrl={prefsUrl}
       settingsLabel="Email preferences"
-      footerText={`You follow ${employerName} on PERM Tracker. We write when DOL moves five or more of its cases on or off hold in a day, or decides a batch of them well above its usual pace.`}
+      footerText={followFooter(employerName, scope)}
       footerExtra={
         <Text className="em-text-secondary" style={styles.footerExtra}>
           <Link href={unsubscribeUrl} className="em-link" style={styles.footerLink}>
@@ -98,6 +120,19 @@ export function EmployerMoved({
                     {`Recorded ${m.dateLabel} `}
                   </Text>
                   <Text className="em-text" style={styles.sentence}>{`${m.sentence}.`}</Text>
+                  {(m.cases ?? []).map((c) => (
+                    <Text key={c.number} className="em-text-body" style={styles.caseRow}>
+                      <Link href={c.url} className="em-link" style={styles.caseLink}>
+                        {c.number}
+                      </Link>
+                      {c.note ? ` ${c.note}` : ""}
+                    </Text>
+                  ))}
+                  {m.more && m.more > 0 ? (
+                    <Text className="em-text-secondary" style={styles.caseMore}>
+                      {`and ${formatInt(m.more)} more, listed on its page`}
+                    </Text>
+                  ) : null}
                 </td>
               </tr>
             </tbody>
@@ -128,7 +163,7 @@ export function EmployerMoved({
       ) : null}
 
       <Text className="em-text-body" style={styles.bodyText}>
-        {`These are DOL's own case statuses, read from its case system and counted on ${asOf}. DOL gives no reason for a hold or a batch, and neither do we. None of it predicts any one case.`}
+        {closingLine(scope, asOf, mix !== null)}
       </Text>
       <Link href={employerUrl} className="em-link" style={styles.open}>
         {`See every figure for ${employerName}`}
@@ -174,6 +209,25 @@ const styles = {
     fontWeight: 700 as const,
     lineHeight: "24px",
     margin: 0,
+  },
+  caseRow: {
+    fontFamily: SANS_STACK,
+    color: "#2A2A2A",
+    fontSize: "15px",
+    lineHeight: "22px",
+    margin: "6px 0 0 0",
+  },
+  caseLink: {
+    color: "#1A1A1A",
+    fontWeight: 600 as const,
+    textDecorationLine: "underline" as const,
+  },
+  caseMore: {
+    fontFamily: SANS_STACK,
+    color: "#5A5A5A",
+    fontSize: "14px",
+    lineHeight: "20px",
+    margin: "6px 0 0 0",
   },
   mixWrap: { margin: "22px 0 18px 0" },
   bar: { border: "2px solid #000001", borderCollapse: "collapse" as const },
