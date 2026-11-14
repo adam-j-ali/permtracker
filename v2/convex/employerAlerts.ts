@@ -111,7 +111,7 @@ import {
 } from "../src/lib/employerCaseMoves";
 import { connectionThrottleReply } from "./lib/throttleReply";
 import { admitConfirmation, queueConfirmation, replayArgs } from "./confirmationQueue";
-import { MS_PER_DAY, easternDay } from "./lib/time";
+import { MS_PER_DAY, MS_PER_HOUR, easternDay } from "./lib/time";
 import { isPlausibleEmail } from "./lib/emailShape";
 import { TEXT_LEGAL_LINE } from "./lib/textFooter";
 
@@ -248,6 +248,26 @@ export const subscribe = internalMutation({
     const now = Date.now();
     const lastSent = forThisAddress.reduce((a, r) => Math.max(a, r.lastConfirmationSentAt ?? 0), 0);
     if (lastSent > 0 && now - lastSent < CONFIRMATION_COOLDOWN_MS) {
+      // No second email inside the ten minutes, and no lost request: held, and named by one follow-up when they
+      // end (`followUpConfirmation`; the reasoning is in convex/caseAlerts.ts, where the same branch lives).
+      const followed =
+        existing !== null &&
+        existing.pendingSlug === undefined &&
+        existing.confirmedAt !== undefined &&
+        existing.unsubscribedAt === undefined;
+      // The same employer at the other size is a change worth holding; the same size again is nothing new.
+      const sameAsk = existing !== null && followScope(existing.pendingSlug !== undefined ? existing.pendingScope : existing.scope) === followScope(args.scope);
+      const nothingNew = existing !== null && sameAsk && (followed || existing.pendingSlug !== undefined);
+      const room = existing !== null || forThisAddress.length < MAX_EMPLOYERS_PER_ADDRESS;
+      if (!nothingNew && room) {
+        const scheduled = forThisAddress.some((r) => r.confirmationOwed === true);
+        const staged = { pendingSlug: args.slug, pendingName: args.employerName, pendingScope: followScope(args.scope), confirmationOwed: true };
+        if (existing) await ctx.db.patch(existing._id, staged);
+        else await ctx.db.insert("employerAlerts", { email, slug: args.slug, employerName: args.employerName, createdAt: now, source: args.source, ...staged });
+        if (!scheduled) {
+          await ctx.scheduler.runAt(lastSent + CONFIRMATION_COOLDOWN_MS, internal.employerAlerts.followUpConfirmation, { email });
+        }
+      }
       return { ok: true, message: NEUTRAL_REPLY };
     }
     if (!existing && forThisAddress.length >= MAX_EMPLOYERS_PER_ADDRESS) {
@@ -311,6 +331,67 @@ export const subscribe = internalMutation({
   },
 });
 
+/** Times a follow-up waits for the cooldown or the day's confirmations to free before it gives up. */
+const FOLLOW_UP_TRIES = 6;
+
+/**
+ * The one confirmation for every employer an address asked to follow inside another confirmation's ten minutes.
+ * The twin of `followUpConfirmation` in convex/caseAlerts.ts: nothing when the first email's click already
+ * confirmed them, else one charge, one email naming them all, and a bounded wait when the cooldown or the day's
+ * confirmations aren't free.
+ */
+export const followUpConfirmation = internalMutation({
+  args: { email: v.string(), attempt: v.optional(v.number()) },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const rows = await ctx.db
+      .query("employerAlerts")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .take(MAX_EMPLOYERS_PER_ADDRESS);
+    const owed = rows.filter((r) => r.confirmationOwed === true);
+    const waiting = owed.filter((r) => r.pendingSlug !== undefined);
+    for (const r of owed) {
+      if (r.pendingSlug === undefined) await ctx.db.patch(r._id, { confirmationOwed: undefined });
+    }
+    if (waiting.length === 0) return null;
+
+    const now = Date.now();
+    const attempt = args.attempt ?? 0;
+    const lastSent = rows.reduce((a, r) => Math.max(a, r.lastConfirmationSentAt ?? 0), 0);
+    const inCooldown = lastSent > 0 && now - lastSent < CONFIRMATION_COOLDOWN_MS;
+    const budget = inCooldown ? null : await admitConfirmation(ctx, "caseConfirm");
+    if (inCooldown || !budget?.allowed) {
+      if (attempt + 1 >= FOLLOW_UP_TRIES) {
+        for (const r of waiting) await ctx.db.patch(r._id, { confirmationOwed: undefined });
+        log.error("a follow-up confirmation gave up; the follows stay staged for a later click or sign-up", {
+          employers: waiting.length,
+        });
+        return null;
+      }
+      const at = inCooldown ? lastSent + CONFIRMATION_COOLDOWN_MS : now + Math.min(budget?.resetInMs ?? MS_PER_HOUR, MS_PER_HOUR);
+      await ctx.scheduler.runAt(at, internal.employerAlerts.followUpConfirmation, { email: args.email, attempt: attempt + 1 });
+      return null;
+    }
+
+    for (const r of waiting) {
+      await ctx.db.patch(r._id, { confirmationOwed: undefined, lastConfirmationSentAt: now });
+    }
+    const [first, ...rest] = [...waiting].sort((a, b) => (a.pendingName ?? a.employerName).localeCompare(b.pendingName ?? b.employerName));
+    await ctx.scheduler.runAfter(0, internal.employerAlerts.sendConfirmation, {
+      email: args.email,
+      slug: first!.pendingSlug as string,
+      employerName: first!.pendingName ?? first!.employerName,
+      scope: followScope(first!.pendingScope),
+      also: rest.map((r) => ({
+        slug: r.pendingSlug as string,
+        name: r.pendingName ?? r.employerName,
+        scope: followScope(r.pendingScope),
+      })),
+    });
+    return null;
+  },
+});
+
 export const clearConfirmationCooldown = internalMutation({
   args: { email: v.string(), slug: v.string() },
   returns: v.null(),
@@ -348,9 +429,20 @@ export const sendConfirmation = internalAction({
     scope: v.optional(scopeValidator),
     includesNews: v.optional(v.boolean()),
     includesNewsletter: v.optional(v.boolean()),
+    /** Other employers the same click confirms, each named in the email (`followUpConfirmation`). */
+    also: v.optional(v.array(v.object({ slug: v.string(), name: v.string(), scope: scopeValidator }))),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const also = args.also ?? [];
+    /** "Acme Corp (every case)": each of the others, with the size asked for when it's the bigger one. */
+    const alsoNames = also.map((e) => (e.scope === "each" ? `${e.name} (every case)` : e.name));
+    /** A failed send frees every row this email named, so asking again isn't swallowed. */
+    const freeNamed = async () => {
+      for (const slug of [args.slug, ...also.map((e) => e.slug)]) {
+        await ctx.runMutation(internal.employerAlerts.clearConfirmationCooldown, { email: args.email, slug });
+      }
+    };
     try {
       const scope = followScope(args.scope);
       const token = await makeUnsubscribeToken(args.email, unsubscribeSecret(), "employer-confirm");
@@ -361,6 +453,7 @@ export const sendConfirmation = internalAction({
           employerName: args.employerName,
           confirmUrl,
           scope,
+          alsoEmployers: alsoNames,
           includesNews: args.includesNews === true,
           includesNewsletter: args.includesNewsletter === true,
         });
@@ -377,6 +470,7 @@ export const sendConfirmation = internalAction({
           "",
           followPromise(scope),
           "",
+          ...(alsoNames.length > 0 ? [`The same click also confirms your follow of: ${alsoNames.join(", ")}`, ""] : []),
           "Confirm here:",
           confirmUrl,
           "",
@@ -400,17 +494,11 @@ export const sendConfirmation = internalAction({
           "employerAlerts.sendConfirmation",
           new Error(`Resend: ${result.error.name}: ${result.error.message}`),
         );
-        await ctx.runMutation(internal.employerAlerts.clearConfirmationCooldown, {
-          email: args.email,
-          slug: args.slug,
-        });
+        await freeNamed();
       }
     } catch (error) {
       await recordError(ctx, "action", "employerAlerts.sendConfirmation", error);
-      await ctx.runMutation(internal.employerAlerts.clearConfirmationCooldown, {
-        email: args.email,
-        slug: args.slug,
-      });
+      await freeNamed();
     }
     return null;
   },
@@ -473,6 +561,7 @@ export const confirmByToken = internalMutation({
         pendingSlug: undefined,
         pendingName: undefined,
         pendingScope: undefined,
+        confirmationOwed: undefined,
         unsubscribedAt: undefined,
         followingFrom: easternDay(now),
         // What the page already showed them is not news: case moves count from this click.
@@ -526,6 +615,7 @@ export const unsubscribeByToken = internalMutation({
         pendingSlug: undefined,
         pendingName: undefined,
         pendingScope: undefined,
+        confirmationOwed: undefined,
       });
     }
     await dropQueued(ctx, all[0]!.email, "employer");

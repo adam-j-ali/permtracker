@@ -1671,6 +1671,12 @@ export default defineSchema({
     pendingCaseNumber: v.optional(v.string()),
     /** Throttles repeat confirmations to THIS address. Records intent, not delivery. */
     lastConfirmationSentAt: v.optional(v.number()),
+    /**
+     * Staged inside another confirmation's ten-minute cooldown, so no email has named it yet. When the cooldown
+     * ends, one follow-up confirmation names every row of the address that carries this (and clears it). A
+     * click on the first email in the meantime confirms the row and clears it too.
+     */
+    confirmationOwed: v.optional(v.boolean()),
 
     /**
      * When the sweep retired the row: a year after DOL decided the case, with
@@ -2662,6 +2668,12 @@ export default defineSchema({
     caseToldThrough: v.optional(v.number()),
     /** Throttles repeat confirmations to this address. Records intent. */
     lastConfirmationSentAt: v.optional(v.number()),
+    /**
+     * Staged inside another confirmation's ten-minute cooldown, so no email has named it yet. When the cooldown
+     * ends, one follow-up confirmation names every row of the address that carries this (and clears it). A
+     * click on the first email in the meantime confirms the row and clears it too.
+     */
+    confirmationOwed: v.optional(v.boolean()),
     /**
      * The moves already told, as `<date>|<kind>|<to>` keys, newest last and
      * capped. THIS is the change detector: the doc lists a move for months,

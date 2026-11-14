@@ -1534,3 +1534,156 @@ describe("the three FLAG programs", () => {
     expect(tableReads().some((q) => q.sql.includes("FROM perm_case_status"))).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Several cases from one address
+// ---------------------------------------------------------------------------
+
+describe("several cases typed one after another", () => {
+  const A = "G-100-26125-868956";
+  const B = "G-100-26130-111111";
+  const C = "G-100-26131-222222";
+  const ADDRESS = "paralegal@example.com";
+
+  const sub = (t: ReturnType<typeof createTestContext>, caseNumber: string) =>
+    t.mutation(internal.caseAlerts.subscribe, { email: ADDRESS, caseNumber, ip: "198.51.100.9" });
+  const rowsOf = (t: ReturnType<typeof createTestContext>) =>
+    t.run(async (ctx) => ctx.db.query("caseStatusAlerts").collect());
+  const confirmations = (sends: Record<string, unknown>[]) =>
+    sends.filter((s) => String(s.subject).startsWith("Confirm alerts"));
+  const confirm = async (t: ReturnType<typeof createTestContext>) =>
+    t.mutation(internal.caseAlerts.confirmByToken, {
+      token: await makeUnsubscribeToken(ADDRESS, SECRET, "case-confirm"),
+    });
+
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("keeps a second case typed inside the ten minutes, without a second email at once", async () => {
+    // Arrange
+    const t = createTestContext();
+    stubMirrorAndResend({ cases: {} });
+    // Act
+    await sub(t, A);
+    const second = await sub(t, B);
+    // Assert: the same reply as ever, one confirmation charged, and the second case held for the click.
+    expect(second).toEqual({ ok: true, message: "Check your inbox to confirm." });
+    expect(await globalCharges(t)).toBe(1);
+    const rows = await rowsOf(t);
+    expect(rows.map((r) => r.pendingCaseNumber).sort()).toEqual([A, B].sort());
+    const held = rows.find((r) => r.pendingCaseNumber === B);
+    expect(held?.confirmationOwed).toBe(true);
+    expect(held?.lastConfirmationSentAt).toBeUndefined();
+  });
+
+  it("confirms both on the first email's click, and then writes nothing more", async () => {
+    const t = createTestContext();
+    const { sends } = stubMirrorAndResend({ cases: {} });
+    await sub(t, A);
+    await sub(t, B);
+    const done = await confirm(t);
+    expect(done?.caseNumbers.sort()).toEqual([A, B].sort());
+    // The follow-up runs when the ten minutes end and finds nothing waiting.
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(confirmations(sends)).toHaveLength(1);
+    expect((await rowsOf(t)).every((r) => r.confirmationOwed === undefined)).toBe(true);
+  });
+
+  it("writes once more when the ten minutes end, naming every case still waiting", async () => {
+    // Arrange: the first case confirmed before the others were typed, so no click is coming for them.
+    const t = createTestContext();
+    const { sends } = stubMirrorAndResend({ cases: {} });
+    await sub(t, A);
+    await confirm(t);
+    await sub(t, B);
+    await sub(t, C);
+    // Act
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    // Assert: two confirmations in all, the second naming both cases, and one charge for it.
+    const mails = confirmations(sends);
+    expect(mails).toHaveLength(2);
+    const followUp = mails[1]!;
+    expect(String(followUp.subject)).toContain(B);
+    expect(String(followUp.text)).toContain(C);
+    expect(String(followUp.html)).toContain(C);
+    expect(await globalCharges(t)).toBe(2);
+    const rows = await rowsOf(t);
+    expect(rows.filter((r) => r.confirmationOwed === true)).toHaveLength(0);
+    // And its click confirms them.
+    const done = await confirm(t);
+    expect(done?.caseNumbers.sort()).toEqual([B, C].sort());
+  });
+
+  it("holds nothing for a case that's already being watched", async () => {
+    const t = createTestContext();
+    const { sends } = stubMirrorAndResend({ cases: {} });
+    await sub(t, A);
+    await confirm(t);
+    await sub(t, A);
+    const [row] = await rowsOf(t);
+    expect(row?.pendingCaseNumber).toBeUndefined();
+    expect(row?.confirmationOwed).toBeUndefined();
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(confirmations(sends)).toHaveLength(1);
+  });
+
+  it("keeps the ceiling on cases per address inside the ten minutes too", async () => {
+    const t = createTestContext();
+    stubMirrorAndResend({ cases: {} });
+    await t.run(async (ctx) => {
+      for (let i = 0; i < MAX_CASES_PER_ADDRESS; i++) {
+        await ctx.db.insert("caseStatusAlerts", {
+          email: ADDRESS,
+          caseNumber: `P-100-26125-868${String(i).padStart(3, "0")}`,
+          createdAt: Date.now(),
+          confirmedAt: Date.now(),
+          // One of them was confirmed moments ago, so the address is inside its ten minutes.
+          ...(i === 0 ? { lastConfirmationSentAt: Date.now() } : {}),
+        });
+      }
+    });
+    await sub(t, B);
+    expect(await rowsOf(t)).toHaveLength(MAX_CASES_PER_ADDRESS);
+  });
+
+  it("drops what was waiting when the address opts out", async () => {
+    const t = createTestContext();
+    const { sends } = stubMirrorAndResend({ cases: {} });
+    await sub(t, A);
+    await sub(t, B);
+    await t.mutation(internal.caseAlerts.unsubscribeByToken, {
+      token: await makeUnsubscribeToken(ADDRESS, SECRET, "case-unsubscribe"),
+    });
+    // At once, before the follow-up has had its turn: nothing staged and nothing owed.
+    const rows = await rowsOf(t);
+    expect(rows.every((r) => r.pendingCaseNumber === undefined && r.confirmationOwed === undefined)).toBe(true);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(confirmations(sends)).toHaveLength(1);
+  });
+
+  it("waits for the day's confirmations when they're spent, and sends none of its own meanwhile", async () => {
+    // Arrange: the first case confirmed, a second waiting, then the pool filled before the ten minutes end.
+    const t = createTestContext();
+    const { sends } = stubMirrorAndResend({ cases: {} });
+    await sub(t, A);
+    await confirm(t);
+    await sub(t, B);
+    await t.run(async (ctx) => {
+      for (let i = 0; i < BUDGETS.caseConfirm.limit; i++) {
+        await ctx.db.insert("rateLimits", {
+          key: `${BUDGETS.caseConfirm.key}:all`,
+          timestamp: Date.now() + 11 * 60_000,
+          identifier: "all",
+          action: BUDGETS.caseConfirm.key,
+        });
+      }
+    });
+    // Act: just past the ten minutes, with the pool full.
+    await vi.advanceTimersByTimeAsync(10 * 60_000 + 5_000);
+    await t.finishInProgressScheduledFunctions();
+    // Assert: nothing sent, and the case still held for a later try.
+    expect(confirmations(sends)).toHaveLength(1);
+    const held = (await rowsOf(t)).find((r) => r.pendingCaseNumber === B);
+    expect(held?.confirmationOwed).toBe(true);
+  });
+});

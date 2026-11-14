@@ -60,6 +60,10 @@ const FAQS = [
     a: "No. A status change on your own case goes out at once. Everything else you follow, a filing month, the visa bulletin or an employer, is gathered into at most one email a day.",
   },
   {
+    q: "Can I watch more than one case?",
+    a: "Yes. Enter them one after another. You won't get an email for each: one click confirms every case you've entered so far, and if you add more within ten minutes, one more email names them all.",
+  },
+  {
     q: "What happens after DOL decides my case?",
     a: "The watch carries on for a year, in case of an appeal or a reversal, then stops by itself. A certification lapsing on its own clock isn't emailed.",
   },

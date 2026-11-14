@@ -18,6 +18,12 @@ export interface EmployerAlertConfirmProps {
   /** Which size of follow the click confirms: bulk moves, or every case. The email must say which. */
   scope?: "group" | "each";
   /**
+   * Other employers the same click confirms, as they should read ("Acme Corp (every case)"): the ones asked for
+   * inside this address's ten minutes after an earlier confirmation. Named above the button, because a click is
+   * consent only for what the email said.
+   */
+  alsoEmployers?: readonly string[];
+  /**
    * True when the subscriber also ticked the product-news box, so the same
    * confirm click opts them into that as well.
    *
@@ -36,6 +42,7 @@ export function EmployerAlertConfirm({
   employerName,
   confirmUrl,
   scope = "group",
+  alsoEmployers = [],
   includesNews = false,
   includesNewsletter = false,
 }: EmployerAlertConfirmProps) {
@@ -71,6 +78,12 @@ export function EmployerAlertConfirm({
           usual pace. Employer updates come at most once a day.
         </Text>
       )}
+
+      {alsoEmployers.length > 0 ? (
+        <Text className="em-text-body" style={styles.body}>
+          {`The same click also confirms your follow of ${alsoEmployers.join(", ")}.`}
+        </Text>
+      ) : null}
 
       {includesNews ? (
         <Text className="em-text-secondary" style={styles.newsNote}>

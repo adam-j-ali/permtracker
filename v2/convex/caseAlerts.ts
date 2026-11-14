@@ -450,8 +450,44 @@ export const subscribe = internalMutation({
       0,
     );
     if (lastSent > 0 && now - lastSent < CONFIRMATION_COOLDOWN_MS) {
-      // Silently skip the send. Same reply either way, so the response can
-      // never be used to probe whether an address is on the list.
+      // No second email inside the ten minutes, and no lost request either.
+      // Until Nov 14 2026 this branch returned and wrote nothing, so someone
+      // typing five case numbers in a row kept the first and was told to check
+      // their inbox for the rest. The request is held instead: staged like any
+      // other, marked as owed a confirmation, and named by ONE follow-up email
+      // when the ten minutes end (`followUpConfirmation`). A click on the first
+      // email before then confirms it with the rest, as a click always has for
+      // every case staged from the inbox. Same reply either way, so the
+      // response can never be used to probe whether an address is on the list.
+      const watched =
+        existing !== null &&
+        existing.pendingCaseNumber === undefined &&
+        existing.confirmedAt !== undefined &&
+        existing.unsubscribedAt === undefined &&
+        existing.caseClosedAt === undefined;
+      const alreadyHeld = existing !== null && existing.pendingCaseNumber !== undefined;
+      const room = existing !== null || forThisAddress.length < MAX_CASES_PER_ADDRESS;
+      if (!watched && !alreadyHeld && room) {
+        // One follow-up per address: a row already owed one means it's scheduled.
+        const scheduled = forThisAddress.some((r) => r.confirmationOwed === true);
+        if (existing) {
+          await ctx.db.patch(existing._id, { pendingCaseNumber: caseNumber, confirmationOwed: true });
+        } else {
+          await ctx.db.insert("caseStatusAlerts", {
+            email,
+            caseNumber,
+            createdAt: now,
+            source: args.source,
+            pendingCaseNumber: caseNumber,
+            confirmationOwed: true,
+          });
+        }
+        if (!scheduled) {
+          await ctx.scheduler.runAt(lastSent + CONFIRMATION_COOLDOWN_MS, internal.caseAlerts.followUpConfirmation, {
+            email,
+          });
+        }
+      }
       return { ok: true, message: NEUTRAL_REPLY };
     }
 
@@ -658,6 +694,65 @@ export const watchMyCase = mutation({
  * INTENT. Without this, a Resend outage leaves a real person looking at "check
  * your inbox", holding no email, and silently no-op'd for ten minutes.
  */
+/** Times a follow-up waits for the cooldown or the day's confirmations to free before it gives up. */
+const FOLLOW_UP_TRIES = 6;
+
+/**
+ * The one confirmation for every case an address typed inside another confirmation's ten minutes.
+ *
+ * Scheduled by `subscribe` for the moment the cooldown ends. By then the first email's click has usually
+ * confirmed everything and there's nothing owed: it sends nothing. Otherwise it charges the confirmation pool
+ * once, stamps every owed row, and sends ONE email that names them all. When the cooldown has moved (another
+ * confirmation went in between) or the pool is spent, it tries again later, a bounded number of times, and then
+ * clears the mark and records the failure, so a later sign-up from the address can schedule a fresh one.
+ */
+export const followUpConfirmation = internalMutation({
+  args: { email: v.string(), attempt: v.optional(v.number()) },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const rows = await ctx.db
+      .query("caseStatusAlerts")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .take(MAX_CASES_PER_ADDRESS);
+    const owed = rows.filter((r) => r.confirmationOwed === true);
+    // Still waiting for a click: staged, and not opted out since.
+    const waiting = owed.filter((r) => r.pendingCaseNumber !== undefined);
+    for (const r of owed) {
+      if (r.pendingCaseNumber === undefined) await ctx.db.patch(r._id, { confirmationOwed: undefined });
+    }
+    if (waiting.length === 0) return null;
+
+    const now = Date.now();
+    const attempt = args.attempt ?? 0;
+    const lastSent = rows.reduce<number>((acc, r) => Math.max(acc, r.lastConfirmationSentAt ?? 0), 0);
+    const inCooldown = lastSent > 0 && now - lastSent < CONFIRMATION_COOLDOWN_MS;
+    const budget = inCooldown ? null : await admitConfirmation(ctx, "caseConfirm");
+    if (inCooldown || !budget?.allowed) {
+      if (attempt + 1 >= FOLLOW_UP_TRIES) {
+        for (const r of waiting) await ctx.db.patch(r._id, { confirmationOwed: undefined });
+        log.error("a follow-up confirmation gave up; the cases stay staged for a later click or sign-up", {
+          cases: waiting.length,
+        });
+        return null;
+      }
+      const at = inCooldown ? lastSent + CONFIRMATION_COOLDOWN_MS : now + Math.min(budget?.resetInMs ?? MS_PER_HOUR, MS_PER_HOUR);
+      await ctx.scheduler.runAt(at, internal.caseAlerts.followUpConfirmation, { email: args.email, attempt: attempt + 1 });
+      return null;
+    }
+
+    for (const r of waiting) {
+      await ctx.db.patch(r._id, { confirmationOwed: undefined, lastConfirmationSentAt: now });
+    }
+    const numbers = waiting.map((r) => r.pendingCaseNumber as string).sort();
+    await ctx.scheduler.runAfter(0, internal.caseAlerts.sendConfirmation, {
+      email: args.email,
+      caseNumber: numbers[0]!,
+      alsoCases: numbers.slice(1),
+    });
+    return null;
+  },
+});
+
 export const clearConfirmationCooldown = internalMutation({
   args: { email: v.string(), caseNumber: v.string() },
   returns: v.null(),
@@ -735,9 +830,21 @@ export const sendConfirmation = internalAction({
      */
     includesNews: v.optional(v.boolean()),
     includesNewsletter: v.optional(v.boolean()),
+    /**
+     * Other cases the same click confirms: the ones typed inside the first confirmation's ten minutes
+     * (`followUpConfirmation`). The email names each, because a click is consent only for what the email said.
+     */
+    alsoCases: v.optional(v.array(v.string())),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const alsoCases = args.alsoCases ?? [];
+    /** A failed send frees every row this email named, so typing the numbers again isn't swallowed. */
+    const freeNamed = async () => {
+      for (const caseNumber of [args.caseNumber, ...alsoCases]) {
+        await ctx.runMutation(internal.caseAlerts.clearConfirmationCooldown, { email: args.email, caseNumber });
+      }
+    };
     try {
       const includesNews = args.includesNews === true;
       const includesNewsletter = args.includesNewsletter === true;
@@ -801,6 +908,7 @@ export const sendConfirmation = internalAction({
             includesNewsletter,
             nounWithArticle: programNounWithArticle(program),
             lookupFailed,
+            alsoCases,
           });
         },
       );
@@ -827,7 +935,12 @@ export const sendConfirmation = internalAction({
                   "and it's also what a typo looks like, so check it against your receipt.",
                 ]),
           "",
-          "Confirm here and we'll email you when its status changes:",
+          ...(alsoCases.length > 0
+            ? [`The same click also confirms alerts for: ${alsoCases.join(", ")}`, ""]
+            : []),
+          alsoCases.length > 0
+            ? "Confirm here and we'll email you when the status of any of them changes:"
+            : "Confirm here and we'll email you when its status changes:",
           confirmUrl,
           "",
           // The text part must not disagree with the HTML: both name the news
@@ -866,17 +979,11 @@ export const sendConfirmation = internalAction({
           "caseAlerts.sendConfirmation",
           new Error(`Resend: ${result.error.name}: ${result.error.message}`),
         );
-        await ctx.runMutation(internal.caseAlerts.clearConfirmationCooldown, {
-          email: args.email,
-          caseNumber: args.caseNumber,
-        });
+        await freeNamed();
       }
     } catch (error) {
       await recordError(ctx, "action", "caseAlerts.sendConfirmation", error);
-      await ctx.runMutation(internal.caseAlerts.clearConfirmationCooldown, {
-        email: args.email,
-        caseNumber: args.caseNumber,
-      });
+      await freeNamed();
     }
     return null;
   },
@@ -955,6 +1062,7 @@ export const confirmByToken = internalMutation({
         confirmedAt: row.confirmedAt ?? now,
         caseNumber,
         pendingCaseNumber: undefined,
+        confirmationOwed: undefined,
         unsubscribedAt: undefined,
         // Reopen a retired subscription only when the case number actually
         // MOVED. An explicit comparison, not a truthiness check: `subscribe`
@@ -1008,6 +1116,7 @@ export const unsubscribeByToken = internalMutation({
       await ctx.db.patch(row._id, {
         unsubscribedAt: now,
         pendingCaseNumber: undefined,
+        confirmationOwed: undefined,
       });
     }
     await dropQueued(ctx, all[0]!.email, "case");
