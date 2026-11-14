@@ -135,7 +135,11 @@ export default function Page() {
         </div>{" "}
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-soft">
           Wage request and H-1B LCA numbers work in the same box, and so do H-2A, H-2B and CW-1 numbers. On the case&apos;s
-          page you can also have your browser notify you, with no email at all.
+          page you can also have your browser notify you, with no email at all. Have several cases?{" "}
+          <a href="#list" className="link">
+            Paste them all at once
+          </a>
+          .
         </p>{" "}
         <ol aria-label="How a case alert works" className="mt-8 grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4 [&>*]:min-w-0">
           {STEPS.map((s, i) => (
