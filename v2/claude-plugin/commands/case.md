@@ -3,6 +3,6 @@ description: Look up a DOL case by number (PERM, prevailing wage, H-1B LCA, H-2A
 argument-hint: <case number, like G-100-26045-123456>
 ---
 
-Look up DOL case $ARGUMENTS with the permtracker `lookup_case` tool.
+Look up DOL case $ARGUMENTS with the permtracker `get_case` tool (pass the number as `caseNumber`).
 
 Then answer in a few plain sentences: the program, the status DOL shows today and what that status means, the employer and job, when it was filed, and, once decided, DOL's decision and its date. Say the day our record last checked DOL. If it's a pending PERM case, also call `estimate_decision` and give the estimated date with its range. Say it's an estimate and that it isn't a promise. If no record exists, say so and point to the live lookup, which asks DOL itself: https://permtracker.app/perm-case-status

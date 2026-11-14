@@ -17,6 +17,7 @@
  * and the rest of the file still renders. A partial map beats a 500.
  */
 
+import { API_BASE, MCP_TOOLS, MCP_URL } from "@/lib/api/openapi";
 import { api } from "@convex/_generated/api";
 import { getAllPosts, latestPostDate } from "@/lib/content";
 import type { ContentType } from "@/lib/content/types";
@@ -293,7 +294,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
   {
     path: "/developers",
     label: "API and MCP server",
-    blurb: "A free JSON API at https://permtracker.app/v1 with keys from Settings, and an MCP server at https://permtracker.app/mcp with no key needed. Six read-only tools: look up a PERM, prevailing wage, H-1B LCA or H-2A/H-2B case by number, estimate a PERM decision date, DOL's queues, the visa bulletin, and employer, law firm and occupation records.",
+    blurb: `A free JSON API at ${API_BASE} with keys from Settings, described in full as OpenAPI 3.1 at ${API_BASE}/openapi.json, and an MCP server at ${MCP_URL} with no key needed. ${MCP_TOOLS.length} read-only tools, one for each read endpoint: look up a PERM, prevailing wage, H-1B LCA or H-2A/H-2B case by number, find a case without its number, estimate a PERM decision date, DOL's queues, the visa bulletin, employer, law firm and occupation records, and the SOC codes for a job title.`,
   },
   {
     path: "/extension",

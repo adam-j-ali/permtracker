@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { API_BASE, ENDPOINTS } from "@/lib/api/openapi";
+import { API_BASE, API_VERSION, ENDPOINTS, MCP_URL, toolName } from "@/lib/api/openapi";
 import { DOCS_URL } from "@/lib/api/route";
 
 export const dynamic = "force-static";
@@ -10,10 +10,23 @@ export function GET(): NextResponse {
   return NextResponse.json(
     {
       name: "PERM Tracker API",
+      version: API_VERSION,
       docs: DOCS_URL,
       openapi: `${API_BASE}/openapi.json`,
+      health: `${API_BASE}/health`,
+      mcp: MCP_URL,
       auth: "Authorization: Bearer <key>. Make a free key in Settings, under API keys.",
-      endpoints: ENDPOINTS.map((e) => ({ path: e.path, summary: e.summary, example: `${API_BASE}${e.example}` })),
+      endpoints: ENDPOINTS.map((e) => ({
+        operationId: e.id,
+        method: e.method ?? "GET",
+        path: e.path,
+        group: e.tag,
+        summary: e.summary,
+        description: e.description,
+        example: `${API_BASE}${e.example}`,
+        key: e.keyless ? "none" : e.scope ? `needs the ${e.scope} scope` : "needed",
+        ...(e.tool ? { tool: toolName(e.id) } : {}),
+      })),
     },
     { headers: { "X-Robots-Tag": "noindex" } },
   );

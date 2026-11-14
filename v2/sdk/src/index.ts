@@ -18,7 +18,16 @@
  */
 
 export const DEFAULT_BASE_URL = "https://permtracker.app/v1";
-export const VERSION = "0.3.0";
+export const VERSION = "0.4.0";
+
+/** What `health()` answers. */
+export interface Health {
+  status: "ok";
+  /** The API description's version, e.g. 1.1.0. */
+  version: string;
+  docs: string;
+  openapi: string;
+}
 
 export interface PermTrackerOptions {
   /** A pt_live_ key from Settings, under API keys (pt_test_ for the sandbox). Only `lookupEmployer` works without one. */
@@ -449,6 +458,13 @@ export class PermTracker {
   /** Your key's scopes, the plan that applies, the paywall and what you've used. Not counted. */
   me(): Promise<Answer<Me>> {
     return this.get("/me");
+  }
+
+  /** Whether the API is up, with its description's version. No key needed, never counted. */
+  async health(): Promise<Health> {
+    const res = await this.send("/health", { needsKey: false }, "application/json");
+    if (!res.ok) throw await PermTracker.refusal(res);
+    return (await res.json()) as Health;
   }
 
   /**

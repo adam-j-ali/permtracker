@@ -24,6 +24,7 @@ import { NextResponse } from "next/server";
 import { SITE_URL } from "@/lib/constants/site";
 import { SCOPE_LABELS, hasScope, type ApiScope } from "@convex/lib/apiPlans";
 import { authenticate, type ApiCaller } from "./auth";
+import { errorAnchor, errorTitle } from "./errors";
 import type { ReadResult } from "./reads";
 import { sandboxAnswer } from "./sandbox";
 import { checkAllowance, countCall, takeMinute } from "./usage";
@@ -41,10 +42,18 @@ export function apiError(
   message: string,
   extra: { retryAfter?: number; url?: string; headers?: Record<string, string> } = {},
 ): NextResponse {
-  const headers: Record<string, string> = { ...BASE_HEADERS, ...extra.headers };
+  // An RFC 9457 problem document, so any client that knows the standard reads it. The `error` object inside is
+  // what version 1 has always sent, word for word: a client written against it keeps working.
+  const headers: Record<string, string> = { ...BASE_HEADERS, ...extra.headers, "Content-Type": "application/problem+json" };
   if (extra.retryAfter !== undefined) headers["Retry-After"] = String(extra.retryAfter);
   return NextResponse.json(
     {
+      type: `${DOCS_URL}#${errorAnchor(code)}`,
+      title: errorTitle(code, status),
+      status,
+      detail: message,
+      code,
+      ...(extra.retryAfter !== undefined ? { retryAfter: extra.retryAfter } : {}),
       error: {
         code,
         message,

@@ -13,7 +13,10 @@ import Link from "next/link";
 
 import { API_LIVE_DAILY_CAP, API_PLANS, GRANTABLE_SCOPES, SCOPE_LABELS } from "@convex/lib/apiPlans";
 import { RETRY_DELAYS_MS, WEBHOOK_EVENTS, WEBHOOK_EVENT_LABELS } from "@convex/lib/webhookSign";
-import { API_BASE, ENDPOINTS, MCP_TOOLS, MCP_URL } from "@/lib/api/openapi";
+import { API_CHANGES } from "@/lib/api/changes";
+import { API_ERRORS, errorAnchor } from "@/lib/api/errors";
+import { API_BASE, API_VERSION, ENDPOINTS, LEGACY_TOOLS, MCP_TOOLS, MCP_URL, TAGS } from "@/lib/api/openapi";
+import { longDate } from "@convex/lib/months";
 import { SANDBOX_CASE_NUMBERS } from "@/lib/api/sandbox";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
@@ -55,15 +58,6 @@ function Code({ children }: { children: string }) {
     </pre>
   );
 }
-
-const ERRORS: Array<[string, string, string]> = [
-  ["400", "bad_request", "The request isn't valid: the message says which part. Not counted."],
-  ["401", "missing_key, invalid_key, revoked_key, expired_key", "No key, or one we don't recognise, revoked, past its lifetime or past a rotation's 24 hours."],
-  ["403", "missing_scope, plan_feature, sandbox_key", "The key lacks the scope, the plan lacks the feature, or a sandbox key asked to change something. Not counted."],
-  ["404", "not_found", "No such record. Counted, because the lookup ran."],
-  ["429", "rate_limited, daily_limit, monthly_limit, live_daily_limit, live_api_limit", "A limit. Retry-After says how many seconds until it lifts."],
-  ["503", "unavailable, dol_unavailable, busy", "A source isn't loaded, DOL didn't answer a live lookup in time, or the site is busy. Try again shortly."],
-];
 
 /** "1 minute", "5 minutes", "2 hours": a retry wait, said plainly. */
 function wait(ms: number): string {
@@ -243,31 +237,45 @@ export default function DevelopersPage() {
           </a>{" "}
           has the same list for tools that read it.
         </p>{" "}
-        <ScrollBox label="API endpoints" className="mt-4 border-t-2 border-[var(--object-border)]">
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="bg-muted">
-              <tr>
-                <th scope="col" className="px-4 py-3 font-bold">Endpoint{" "}</th>
-                <th scope="col" className="px-4 py-3 font-bold">What it answers{" "}</th>
-                <th scope="col" className="px-4 py-3 font-bold">Example{" "}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {ENDPOINTS.map((e) => (
-                <tr key={`${e.method ?? "GET"} ${e.path}`} className="align-top">
-                  <td className="px-4 py-3 font-mono font-bold whitespace-nowrap">
-                    {e.method && e.method !== "GET" ? `${e.method} ` : ""}
-                    {e.path}{" "}
-                  </td>
-                  <td className="px-4 py-3 leading-relaxed">
-                    {e.summary}{" "}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-soft">{e.example}{" "}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </ScrollBox>{" "}
+        {TAGS.map((tag) => {
+          const rows = ENDPOINTS.filter((e) => e.tag === tag.name);
+          return (
+            <div key={tag.name} className="mt-8">
+              <h3 className="font-heading text-xl font-bold">{tag.name}</h3>{" "}
+              <p className="mt-1 max-w-3xl text-base leading-relaxed text-soft">{tag.description}</p>{" "}
+              <ScrollBox label={`${tag.name} endpoints`} className="mt-3 border-t-2 border-[var(--object-border)]">
+                <table className="w-full min-w-[640px] text-left text-sm">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th scope="col" className="px-4 py-3 font-bold">Endpoint{" "}</th>
+                      <th scope="col" className="px-4 py-3 font-bold">What it answers{" "}</th>
+                      <th scope="col" className="px-4 py-3 font-bold">Example{" "}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {rows.map((e) => (
+                      <tr key={e.id} id={`op-${e.id}`} className="scroll-mt-28 align-top">
+                        <td className="px-4 py-3 font-mono font-bold whitespace-nowrap">
+                          {e.method && e.method !== "GET" ? `${e.method} ` : ""}
+                          {e.path}{" "}
+                        </td>
+                        <td className="px-4 py-3 leading-relaxed">
+                          <span className="block font-bold">{e.summary}</span>{" "}
+                          <span className="mt-1 block">{e.description}</span>{" "}
+                          <span className="mt-1 block text-soft">
+                            {e.keyless ? "No key." : e.scope ? `Needs the ${e.scope} scope.` : "Needs a key."}{" "}
+                            {e.counted ? "Counted." : "Not counted."}
+                          </span>{" "}
+                        </td>
+                        <td className="px-4 py-3 font-mono text-soft">{e.example}{" "}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </ScrollBox>
+            </div>
+          );
+        })}{" "}
         <details className="mt-4 bg-tint px-4 py-3 border-2 border-border">
           <summary className="cursor-pointer py-2.5 font-bold">The shape of every answer</summary>
           <Code>{`{
@@ -283,25 +291,52 @@ export default function DevelopersPage() {
             allowed.
           </p>
         </details>{" "}
-        <details className="mt-3 bg-tint px-4 py-3 border-2 border-border">
-          <summary className="cursor-pointer py-2.5 font-bold">Errors</summary>
-          <p className="mt-3 text-sm leading-relaxed text-soft">
-            Every error is JSON with a code and a sentence saying what happened and what to do.
-          </p>{" "}
-          <ScrollBox label="Error codes" className="mt-3">
-            <table className="w-full min-w-[520px] text-left text-sm">
-              <tbody className="divide-y divide-border">
-                {ERRORS.map(([status, codes, meaning]) => (
-                  <tr key={status} className="align-top">
-                    <td className="py-2 pr-4 font-mono font-bold">{status}{" "}</td>
-                    <td className="py-2 pr-4 font-mono">{codes}{" "}</td>
-                    <td className="py-2">{meaning}{" "}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </ScrollBox>
-        </details>
+      </section>
+
+      <section className="mt-12" aria-labelledby="errors">
+        <h2 id="errors" className="font-heading text-2xl font-bold">
+          Errors
+        </h2>{" "}
+        <p className="mt-2 max-w-3xl text-base leading-relaxed text-soft">
+          Every refusal is JSON with a stable code and a sentence saying what happened and what to do. The body is an RFC
+          9457 problem document: <code className="font-mono">type</code>, <code className="font-mono">title</code>,{" "}
+          <code className="font-mono">status</code>, <code className="font-mono">detail</code> and{" "}
+          <code className="font-mono">code</code>. The <code className="font-mono">error</code> object that version 1.0
+          sent is still inside it, unchanged, so code written against either keeps working.
+        </p>{" "}
+        <Code>{`{
+  "type": "https://permtracker.app/developers#error-rate-limited",
+  "title": "Too many calls this minute",
+  "status": 429,
+  "detail": "The Free plan allows 10 calls a minute. Try again in 42 seconds.",
+  "code": "rate_limited",
+  "retryAfter": 42,
+  "error": { "code": "rate_limited", "message": "...", "retryAfter": 42, "docs": "https://permtracker.app/developers" }
+}`}</Code>{" "}
+        <ScrollBox label="Error codes" className="mt-4 border-t-2 border-[var(--object-border)]">
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead className="bg-muted">
+              <tr>
+                <th scope="col" className="px-4 py-3 font-bold">Status{" "}</th>
+                <th scope="col" className="px-4 py-3 font-bold">Code{" "}</th>
+                <th scope="col" className="px-4 py-3 font-bold">What it means{" "}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {API_ERRORS.map((e) => (
+                <tr key={e.code} id={errorAnchor(e.code)} className="scroll-mt-28 align-top">
+                  <td className="px-4 py-3 font-mono font-bold">{e.status}{" "}</td>
+                  <td className="px-4 py-3 font-mono">{e.code}{" "}</td>
+                  <td className="px-4 py-3 leading-relaxed">
+                    <span className="block font-bold">{e.title}</span>{" "}
+                    <span className="mt-1 block">{e.meaning}</span>{" "}
+                    <span className="mt-1 block text-soft">{e.counted ? "Counted, because the lookup ran." : "Not counted."}</span>{" "}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </ScrollBox>
       </section>
 
       <section className="mt-12" aria-labelledby="keys">
@@ -419,17 +454,32 @@ export default function DevelopersPage() {
           AI assistants
         </h2>{" "}
         <p className="mt-2 max-w-2xl text-base text-soft">
-          Six read-only tools over the Model Context Protocol. Each calls the same code as its endpoint, so an assistant
-          and the API can&rsquo;t disagree.
+          {MCP_TOOLS.length} read-only tools over the Model Context Protocol, one for each read endpoint and named after
+          it. Each calls the same code as its endpoint, so an assistant and the API can&rsquo;t disagree.
         </p>{" "}
         <ul className="mt-4 grid grid-cols-1 gap-3 [&>*]:min-w-0 sm:grid-cols-2 lg:grid-cols-3">
           {MCP_TOOLS.map((t) => (
             <li key={t.name} className="bg-tint px-4 py-3 border-2 border-border">
               <p className="font-mono text-sm font-bold">{t.name}</p>{" "}
+              <p className="mt-1 text-sm font-semibold leading-relaxed">{t.title}</p>{" "}
               <p className="mt-1 text-sm leading-relaxed text-soft">{t.summary}</p>
             </li>
           ))}
         </ul>{" "}
+        <details className="mt-4 bg-tint px-4 py-3 border-2 border-border">
+          <summary className="cursor-pointer py-2.5 font-bold">Tool names from version 1.0</summary>
+          <p className="mt-3 text-sm leading-relaxed text-soft">
+            The tools were renamed in version 1.1 to match the endpoints. A call under an old name is still answered, so
+            nothing that learned the old names breaks. The list an assistant sees shows the new names only.
+          </p>{" "}
+          <ul className="mt-3 space-y-1 text-sm">
+            {Object.entries(LEGACY_TOOLS).map(([old, now]) => (
+              <li key={old}>
+                <code className="font-mono font-bold">{old}</code> is now <code className="font-mono">{now}</code>{" "}
+              </li>
+            ))}
+          </ul>
+        </details>{" "}
         <div className="mt-6 grid grid-cols-1 gap-6 [&>*]:min-w-0 lg:grid-cols-3">
           <div>
             <h3 className="font-heading text-lg font-bold">Claude</h3>{" "}
@@ -458,6 +508,30 @@ export default function DevelopersPage() {
 }`}</Code>
           </div>
         </div>
+      </section>
+
+      <section className="mt-12" aria-labelledby="what-changed">
+        <h2 id="what-changed" className="font-heading text-2xl font-bold">
+          What changed
+        </h2>{" "}
+        <p className="mt-2 max-w-3xl text-base leading-relaxed text-soft">
+          The API is at version {API_VERSION}. Inside version 1 things are added and never taken away: an endpoint, a
+          field or an error code that shipped keeps its name and its meaning.
+        </p>{" "}
+        <ol className="mt-4 space-y-4">
+          {API_CHANGES.map((c) => (
+            <li key={c.version} className="border-2 border-border bg-card p-4">
+              <p className="font-heading text-lg font-bold">
+                Version {c.version}, {longDate(c.date) ?? c.date}
+              </p>{" "}
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-base leading-relaxed">
+                {c.changes.map((line) => (
+                  <li key={line}>{line}{" "}</li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ol>
       </section>
 
       <section className="mt-12 border-3 shadow-hard p-5 sm:p-6 bg-card border-border">

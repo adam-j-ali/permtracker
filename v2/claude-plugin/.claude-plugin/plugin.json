@@ -1,7 +1,7 @@
 {
   "name": "permtracker",
   "displayName": "PERM Tracker",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The Department of Labor's live status for any PERM, prevailing wage, H-1B LCA, H-2A, H-2B or CW-1 case, when a pending PERM case is likely to be decided, DOL's queue, visa bulletins, and employer, law firm and occupation records, from permtracker.app.",
   "author": { "name": "PERM Tracker", "email": "support@permtracker.app", "url": "https://permtracker.app" },
   "homepage": "https://permtracker.app/developers",

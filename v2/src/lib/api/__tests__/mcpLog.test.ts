@@ -20,7 +20,7 @@ describe("logMcpError", () => {
 
   it("logs every other error", () => {
     const log = vi.fn();
-    for (let i = 0; i < 3; i++) logMcpError("tool lookup_case threw: database query deadline", 1_793_100_000_000 + i, log);
+    for (let i = 0; i < 3; i++) logMcpError("tool get_case threw: database query deadline", 1_793_100_000_000 + i, log);
     expect(log).toHaveBeenCalledTimes(3);
   });
 });

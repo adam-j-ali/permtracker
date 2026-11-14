@@ -143,16 +143,25 @@ function sanitizeBigInts<T>(data: T): T {
 // PUBLIC RECORDS: the /v1 API's and the MCP server's own reads
 // =============================================================================
 
-/** The chat's name for each MCP tool: one read behind both, so the chat and an outside assistant can't disagree. */
+/**
+ * The chat's tool for each MCP tool: one read behind both, so the chat and an outside assistant can't disagree.
+ * The MCP server offers one tool per kind of record (employers, law firms, occupations); the chat keeps one
+ * search and one profile tool that take the kind, and its search is also how it finds an employer's page by name.
+ */
 export const PUBLIC_RECORD_TOOLS = {
-  lookup_case: 'lookupDolCase',
-  find_case: 'findDolCase',
+  get_case: 'lookupDolCase',
+  find_cases: 'findDolCase',
   estimate_decision: 'estimateDecision',
-  queue_status: 'dolQueue',
-  visa_bulletin: 'visaBulletin',
-  search_sponsors: 'searchSponsors',
-  employer_profile: 'sponsorProfile',
-  find_soc_code: 'findSocCode',
+  get_queue: 'dolQueue',
+  get_visa_bulletin: 'visaBulletin',
+  search_employers: 'searchSponsors',
+  search_law_firms: 'searchSponsors',
+  search_occupations: 'searchSponsors',
+  lookup_employer: 'searchSponsors',
+  get_employer: 'sponsorProfile',
+  get_law_firm: 'sponsorProfile',
+  get_occupation: 'sponsorProfile',
+  lookup_soc: 'findSocCode',
 } as const;
 
 const SPONSOR_KIND = { employer: 'employer', 'law firm': 'attorney', occupation: 'occupation' } as const;
