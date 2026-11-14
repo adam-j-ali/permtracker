@@ -5,6 +5,7 @@ import { BellRingingIcon, BuildingsIcon, CalendarCheckIcon, CurrencyDollarIcon, 
 import { PageSection } from "@/components/data/PageSection";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { BulletinAlertForm } from "@/components/tools/BulletinAlertForm";
+import { CaseListAlertForm } from "@/components/tools/CaseListAlertForm";
 import { CaseLookupForm } from "@/components/tools/CaseLookupForm";
 import { DigestSignupForm } from "@/components/tools/DigestSignupForm";
 import { FaqList } from "@/components/tools/FaqList";
@@ -15,7 +16,7 @@ import { withSocialCard } from "@/lib/socialCard";
 import { QueueAlertForm } from "../perm-processing-times/QueueAlertForm";
 
 /**
- * Every free email alert on one page: a case, a filing month, a wage request's
+ * Every free email alert on one page: a case (or a pasted list of them), a filing month, a wage request's
  * month, the visa bulletin, an employer, and the weekly digest on its own (Oct
  * 29 2026: the wage-request queue and the digest had no place here). Built for the searches that never reached the site (Search
  * Console, 3 months to Oct 28 2026: no appearance at all for any search naming
@@ -61,7 +62,7 @@ const FAQS = [
   },
   {
     q: "Can I watch more than one case?",
-    a: "Yes. Enter them one after another. You won't get an email for each: one click confirms every case you've entered so far, and if you add more within ten minutes, one more email names them all.",
+    a: "Yes, up to 100 for one email address. Paste the numbers into the list box on this page: one email names each case with DOL's status for it, and one click confirms them all. Entering them one after another works too, and you won't get an email for each.",
   },
   {
     q: "What happens after DOL decides my case?",
@@ -148,7 +149,14 @@ export default function Page() {
               </div>
             </li>
           ))}
-        </ol>
+        </ol>{" "}
+        <div id="list" className="mt-10 scroll-mt-28">
+          <h3 className="font-heading text-xl font-bold leading-snug">Several cases at once</h3>{" "}
+          <p className="mt-2 max-w-2xl text-base leading-relaxed text-soft">
+            Paste the numbers. One email names them all, each with DOL&apos;s status, and one click confirms the list.
+          </p>{" "}
+          <CaseListAlertForm source="alerts-page" className="mt-5" />
+        </div>
       </PageSection>{" "}
       <PageSection id="month" title="Your filing month">
         <div className="max-w-2xl">

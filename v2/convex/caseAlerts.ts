@@ -196,6 +196,7 @@ import {
   nextStepsText,
 } from "./lib/alertNextSteps";
 import { TEXT_LEGAL_LINE } from "./lib/textFooter";
+import { CASES_PER_ADDRESS, LIST_ENTRIES_MAX, uniqueCaseNumbers } from "../src/lib/caseList";
 
 const log = createLogger("CaseAlerts");
 
@@ -259,7 +260,7 @@ export function isLapse(from: string, to: string): boolean {
  * a household and still a small read; an attorney tracking a whole book of
  * cases belongs in the app, which has auth in front of it.
  */
-export const MAX_CASES_PER_ADDRESS = 100;
+export const MAX_CASES_PER_ADDRESS = CASES_PER_ADDRESS;
 
 /**
  * One reply for every outcome on an existing address.
@@ -303,19 +304,12 @@ function observedLabel(raw: string | number | null | undefined): string | null {
 }
 
 /**
- * The live status table holding one case number.
+ * Case numbers bucketed by the program whose live status table holds them.
  *
- * Every read in this file goes through here rather than naming a table, so
- * there is one decision rather than eight, and a program added later cannot
- * be half-wired. The value is interpolated into SQL and is safe to be: it is
- * one of four literals from a closed map, never anything a caller typed.
- * See `src/lib/flagCaseNumber.ts`.
+ * Every read of a status table takes its name from `statusTableFor(program)`, never from a string a caller
+ * typed: the name is interpolated into SQL and is safe to be, because it is one of four literals from a closed
+ * map (`src/lib/flagCaseNumber.ts`), and a program added later cannot be half-wired.
  */
-function tableForCase(caseNumber: string): string {
-  return statusTableFor(programOf(caseNumber));
-}
-
-/** Case numbers bucketed by the program table that holds them. */
 function groupByProgram(caseNumbers: string[]): Map<FlagProgram, string[]> {
   const out = new Map<FlagProgram, string[]>();
   for (const caseNumber of caseNumbers) {
@@ -582,6 +576,168 @@ export const subscribe = internalMutation({
 });
 
 /**
+ * What a list request is told: how many case numbers were read, from the request alone. It never says how many
+ * were new, held or already watched, which would tell a stranger what an address is watching.
+ */
+function listReply(read: number): string {
+  const counted = `We read ${formatInt(read)} case ${read === 1 ? "number" : "numbers"}`;
+  return read > MAX_CASES_PER_ADDRESS
+    ? `${counted} and kept the first ${MAX_CASES_PER_ADDRESS}, the most one address can watch. ${NEUTRAL_REPLY}`
+    : `${counted}. ${NEUTRAL_REPLY}`;
+}
+
+/**
+ * A pasted list of cases for one address: one request, one confirmation email naming them all, one click.
+ *
+ * The same rules as `subscribe`, applied to the list as a whole. The caller's hourly allowance and the site's
+ * confirmation pool are each charged ONCE, because one email goes out. Every number is read again here
+ * (`uniqueCaseNumbers`); the form's own count is a courtesy. A case already watched is left alone, a list sent
+ * inside the address's ten minutes is held for the one follow-up email (`followUpConfirmation`), and a full pool
+ * queues the whole list as one request (convex/confirmationQueue.ts), before any row is written.
+ */
+export const subscribeList = internalMutation({
+  args: {
+    email: v.string(),
+    caseNumbers: v.array(v.string()),
+    source: v.optional(v.string()),
+    news: v.optional(v.boolean()),
+    newsletter: v.optional(v.boolean()),
+    /** Caller IP from the HTTP layer, or "unknown" when none is resolvable. */
+    ip: v.optional(v.string()),
+    /** Set only by the confirmation queue's drain, as in `subscribe`. */
+    fromQueue: v.optional(v.boolean()),
+  },
+  returns: v.object({
+    ok: v.boolean(),
+    message: v.string(),
+    throttled: v.optional(v.boolean()),
+    queued: v.optional(v.boolean()),
+  }),
+  handler: async (ctx, args) => {
+    const email = args.email.trim().toLowerCase();
+    // Shape checks first, as in `subscribe`: free, and a refusal here costs no rate-limit row.
+    if (!isPlausibleEmail(email)) {
+      return { ok: false, message: "That email address doesn't look right." };
+    }
+    const read = uniqueCaseNumbers(args.caseNumbers.slice(0, LIST_ENTRIES_MAX));
+    if (read.length === 0) {
+      return {
+        ok: false,
+        message: "None of those look like DOL case numbers (G-, A-, P-, I-, H-, JO-A- or C-).",
+      };
+    }
+    const asked = read.slice(0, MAX_CASES_PER_ADDRESS);
+    const reply = { ok: true, message: listReply(read.length) };
+
+    const ip = args.ip?.trim();
+    if (ip && ip !== "unknown" && !args.fromQueue) {
+      const perIp = await checkAndRecordRateLimit(ctx, ip, "case_subscribe_ip", SUBSCRIBE_IP_LIMIT);
+      if (!perIp.allowed) {
+        return { ok: false, message: connectionThrottleReply(perIp.resetInMs), throttled: true };
+      }
+    }
+
+    // Every row the address holds: at the ceiling this is all of them, and one extra detects it.
+    const forThisAddress = await ctx.db
+      .query("caseStatusAlerts")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .take(MAX_CASES_PER_ADDRESS + 1);
+    const held = new Map(forThisAddress.map((r) => [r.caseNumber, r]));
+    const now = Date.now();
+    const lastSent = forThisAddress.reduce<number>((acc, r) => Math.max(acc, r.lastConfirmationSentAt ?? 0), 0);
+    const inCooldown = lastSent > 0 && now - lastSent < CONFIRMATION_COOLDOWN_MS;
+
+    // What this request stages. A watched case needs no confirmation. Inside the ten minutes a case already
+    // staged was named by the email that started them, or is owed the follow-up already.
+    let room = Math.max(0, MAX_CASES_PER_ADDRESS - forThisAddress.length);
+    const toStage: { caseNumber: string; existing: Doc<"caseStatusAlerts"> | null }[] = [];
+    for (const caseNumber of asked) {
+      const existing = held.get(caseNumber) ?? null;
+      if (existing) {
+        const staged = existing.pendingCaseNumber !== undefined;
+        const watched =
+          !staged &&
+          existing.confirmedAt !== undefined &&
+          existing.unsubscribedAt === undefined &&
+          existing.caseClosedAt === undefined;
+        if (!watched && !(inCooldown && staged)) toStage.push({ caseNumber, existing });
+      } else if (room > 0) {
+        // Only a new row can pass the ceiling; past it the rest of the list is left out.
+        room -= 1;
+        toStage.push({ caseNumber, existing: null });
+      }
+    }
+    if (toStage.length === 0) return reply;
+
+    /** Stage one case: applied only by a click from the inbox, like every request on this endpoint. */
+    const stage = async (
+      s: (typeof toStage)[number],
+      mark: { lastConfirmationSentAt: number; confirmationOwed: undefined } | { confirmationOwed: true },
+    ) => {
+      if (s.existing) {
+        await ctx.db.patch(s.existing._id, { pendingCaseNumber: s.caseNumber, ...mark });
+        return;
+      }
+      await ctx.db.insert("caseStatusAlerts", {
+        email,
+        caseNumber: s.caseNumber,
+        createdAt: now,
+        source: args.source,
+        pendingCaseNumber: s.caseNumber,
+        ...("lastConfirmationSentAt" in mark
+          ? { lastConfirmationSentAt: mark.lastConfirmationSentAt }
+          : { confirmationOwed: true as const }),
+      });
+    };
+
+    if (inCooldown) {
+      // No second email inside the ten minutes and no lost request: held for the one follow-up.
+      const scheduled = forThisAddress.some((r) => r.confirmationOwed === true);
+      for (const s of toStage) await stage(s, { confirmationOwed: true });
+      if (!scheduled) {
+        await ctx.scheduler.runAt(lastSent + CONFIRMATION_COOLDOWN_MS, internal.caseAlerts.followUpConfirmation, {
+          email,
+        });
+      }
+      return reply;
+    }
+
+    // Charged before the write, and a full pool queues the whole list before any row exists (see `subscribe`).
+    if (!args.fromQueue) {
+      const budget = await admitConfirmation(ctx, "caseConfirm");
+      if (!budget.allowed) {
+        log.warn("list confirmation can't send now (its pool or the day's count); queueing");
+        return queueConfirmation(ctx, {
+          kind: "caseList",
+          pool: "caseConfirm",
+          email,
+          // The numbers as read, so the queue keeps a short payload and the replay reads the same list.
+          args: { ...replayArgs(args), caseNumbers: asked },
+          resetInMs: budget.resetInMs,
+        });
+      }
+    }
+
+    for (const s of toStage) await stage(s, { lastConfirmationSentAt: now, confirmationOwed: undefined });
+
+    const includesNews = args.news === true;
+    if (includesNews) await stageNewsFor(ctx, email, args.source);
+    const includesNewsletter = args.newsletter === true;
+    if (includesNewsletter) await stageNewsletterFor(ctx, email, args.source);
+
+    const [first, ...rest] = toStage.map((s) => s.caseNumber);
+    await ctx.scheduler.runAfter(0, internal.caseAlerts.sendConfirmation, {
+      email,
+      caseNumber: first!,
+      alsoCases: rest,
+      includesNews,
+      includesNewsletter,
+    });
+    return reply;
+  },
+});
+
+/**
  * A signed-in person watching their own case, from onboarding.
  *
  * The alert goes to the account's own address and nowhere else, so nobody can
@@ -831,8 +987,9 @@ export const sendConfirmation = internalAction({
     includesNews: v.optional(v.boolean()),
     includesNewsletter: v.optional(v.boolean()),
     /**
-     * Other cases the same click confirms: the ones typed inside the first confirmation's ten minutes
-     * (`followUpConfirmation`). The email names each, because a click is consent only for what the email said.
+     * Other cases the same click confirms: the rest of a pasted list (`subscribeList`), or the ones typed
+     * inside an earlier confirmation's ten minutes (`followUpConfirmation`). The email names each with its
+     * status, because a click is consent only for what the email said.
      */
     alsoCases: v.optional(v.array(v.string())),
   },
@@ -862,15 +1019,29 @@ export const sendConfirmation = internalAction({
       // rather than throwing: a person who cannot confirm has no subscription
       // at all. Both parts then say the check couldn't run, never "we don't
       // hold it", which would call a correct number what a typo looks like.
+      //
+      // Every case the email names is read, in one round trip: one statement per program table, because a
+      // list can hold a PERM case and a wage request and they live in different tables.
+      const named = [args.caseNumber, ...alsoCases];
+      const onRecord = new Map<string, Row>();
       let current: Row | null = null;
       let asOf: string | null = null;
       let lookupFailed = false;
       try {
-        current = await one(
-          `SELECT current_status, employer_name, fetched_at
-             FROM ${tableForCase(args.caseNumber)} WHERE case_number = ?`,
-          [args.caseNumber],
-        );
+        const statements: Statement[] = [];
+        for (const [program, numbers] of groupByProgram(named)) {
+          const marks = placeholders(numbers.length);
+          if (!marks) continue;
+          statements.push({
+            sql: `SELECT case_number, current_status, employer_name, fetched_at
+                    FROM ${statusTableFor(program)} WHERE case_number IN (${marks})`,
+            args: numbers,
+          });
+        }
+        for (const row of (await query(statements)).flat()) {
+          if (typeof row.case_number === "string") onRecord.set(row.case_number, row);
+        }
+        current = onRecord.get(args.caseNumber) ?? null;
         // The day this case's own status was first seen, not the corpus-wide
         // freshness stamp, which would date every case alike.
         asOf = observedLabel(current?.fetched_at);
@@ -890,6 +1061,13 @@ export const sendConfirmation = internalAction({
         typeof current?.employer_name === "string"
           ? current.employer_name
           : null;
+      /** Each named case with DOL's status as we hold it, or null. Only a list of several is drawn as one. */
+      const cases = named.map((caseNumber) => {
+        const held = onRecord.get(caseNumber)?.current_status;
+        return { caseNumber, status: typeof held === "string" ? held : null };
+      });
+      const several = cases.length > 1;
+      const notHeld = cases.filter((c) => c.status === null).length;
 
       const html = await renderOrTextOnly(
         ctx,
@@ -908,7 +1086,7 @@ export const sendConfirmation = internalAction({
             includesNewsletter,
             nounWithArticle: programNounWithArticle(program),
             lookupFailed,
-            alsoCases,
+            cases: several ? cases : undefined,
           });
         },
       );
@@ -916,31 +1094,47 @@ export const sendConfirmation = internalAction({
       const result = await sendOrQueue(ctx, "case-confirmation", getResend(), {
         from: FROM_EMAIL,
         to: args.email,
-        subject: `Confirm alerts for ${noun} ${args.caseNumber}`,
+        subject: several
+          ? `Confirm alerts for ${formatInt(cases.length)} cases`
+          : `Confirm alerts for ${noun} ${args.caseNumber}`,
         html,
         text: [
-          `You asked to be told when the Department of Labor's status for ${programNounWithArticle(program)} changes.`,
-          "",
-          `Case number: ${args.caseNumber}`,
-          ...(status
+          ...(several
             ? [
-                `DOL showed: ${status}${employer ? ` at ${employer}` : ""}`,
-                // The same words as the html: asOf is the day this status was first seen, not a check.
-                asOf ? `Shown since at least ${asOf}` : "We don't have a date for this status yet.",
+                `You asked to be told when the Department of Labor's status changes for ${formatInt(cases.length)} cases.`,
+                "",
+                ...cases.map((c) => `${c.caseNumber}: ${c.status ?? (lookupFailed ? "couldn't check" : "not in our records yet")}`),
+                "",
+                ...(lookupFailed
+                  ? ["We couldn't check these case numbers just now. Check them against your receipts before you confirm.", ""]
+                  : notHeld > 0
+                    ? [
+                        `We don't hold ${formatInt(notHeld)} of them yet. That's normal for a recent filing,`,
+                        "and it's also what a typo looks like, so check against your receipts.",
+                        "",
+                      ]
+                    : []),
+                "Confirm here and we'll email you when the status of any of them changes:",
               ]
-            : lookupFailed
-              ? ["We couldn't check this case number just now. Check it against your receipt before you confirm."]
-              : [
-                  "We don't hold this case number yet. That's normal for a recent filing,",
-                  "and it's also what a typo looks like, so check it against your receipt.",
-                ]),
-          "",
-          ...(alsoCases.length > 0
-            ? [`The same click also confirms alerts for: ${alsoCases.join(", ")}`, ""]
-            : []),
-          alsoCases.length > 0
-            ? "Confirm here and we'll email you when the status of any of them changes:"
-            : "Confirm here and we'll email you when its status changes:",
+            : [
+                `You asked to be told when the Department of Labor's status for ${programNounWithArticle(program)} changes.`,
+                "",
+                `Case number: ${args.caseNumber}`,
+                ...(status
+                  ? [
+                      `DOL showed: ${status}${employer ? ` at ${employer}` : ""}`,
+                      // The same words as the html: asOf is the day this status was first seen, not a check.
+                      asOf ? `Shown since at least ${asOf}` : "We don't have a date for this status yet.",
+                    ]
+                  : lookupFailed
+                    ? ["We couldn't check this case number just now. Check it against your receipt before you confirm."]
+                    : [
+                        "We don't hold this case number yet. That's normal for a recent filing,",
+                        "and it's also what a typo looks like, so check it against your receipt.",
+                      ]),
+                "",
+                "Confirm here and we'll email you when its status changes:",
+              ]),
           confirmUrl,
           "",
           // The text part must not disagree with the HTML: both name the news

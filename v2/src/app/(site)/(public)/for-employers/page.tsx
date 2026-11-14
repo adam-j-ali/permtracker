@@ -119,6 +119,11 @@ export default async function ForEmployersPage() {
                     <Link href="/perm-case-status" className="link">
                       Look the case up
                     </Link>
+                    . Have a list of them?{" "}
+                    <Link href="/perm-case-alerts#list" className="link">
+                      Watch them all with one email
+                    </Link>
+                    .
                   </p>
                 }
               />

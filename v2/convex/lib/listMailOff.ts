@@ -106,6 +106,7 @@ const CONFIRMATION_KINDS = [
   "firm",
   "firmEdit",
   "digest",
+  "caseList",
 ] as const satisfies readonly ConfirmationKind[];
 // A kind added to the table and not here fails the typecheck, so a waiting confirmation can't be missed.
 type MissingKind = Exclude<ConfirmationKind, (typeof CONFIRMATION_KINDS)[number]>;

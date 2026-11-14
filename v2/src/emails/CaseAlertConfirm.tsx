@@ -36,6 +36,40 @@
 import { Section, Text } from "@react-email/components";
 import { EmailButton, EmailLayout, QueueStamp } from "./components";
 import { MONO_STACK, SANS_STACK } from "./components/QueueStamp";
+import { caseStatusTint, prettyStatus, type CaseStatusTint } from "../lib/statusTone";
+
+/** One case a confirmation for several names. */
+export interface ConfirmCase {
+  caseNumber: string;
+  /** DOL's status as we hold it, or null when we don't hold the case, or couldn't check. */
+  status: string | null;
+}
+
+/**
+ * Up to this many cases, the list sits above the button, where it's read before the click. A longer list goes
+ * under the button, which says so, because a button a hundred rows down isn't found.
+ */
+export const LIST_ABOVE_BUTTON_MAX = 10;
+
+/** How many of the numbers we don't hold are named in the sentence. The rest are marked in the list. */
+const NOT_HELD_NAMED = 6;
+
+/**
+ * The list's own, shorter font stacks. Every cell carries its styles inline, a list can run to 100 rows, and
+ * Gmail cuts a message off past 102 KB, taking the footer's links with it: the full stacks cost 15 KB there.
+ */
+const LIST_MONO = "'JetBrains Mono', Menlo, Consolas, monospace";
+const LIST_SANS = "'Space Grotesk', Arial, sans-serif";
+
+/** The bar beside each case in the list: the site's one status colour code. The words carry the meaning. */
+const TINT_HEX: Record<CaseStatusTint, string> = {
+  good: "#2ECC40",
+  wait: "#E8A33D",
+  bad: "#E05A44",
+  withdrawn: "#6D28D9",
+  aside: "#4B5563",
+  flat: "#D4D4D8",
+};
 
 export interface CaseAlertConfirmProps {
   /** DOL case number, normalised, as the reader typed it. */
@@ -80,11 +114,12 @@ export interface CaseAlertConfirmProps {
    */
   nounWithArticle?: string;
   /**
-   * Other case numbers the same click confirms: the ones typed inside this address's ten minutes after an
-   * earlier confirmation. Each is named here, above the button, because a click is consent only for what the
-   * email said. They're listed as typed: only the first is checked against DOL's record.
+   * Every case the click confirms, this one included, when there are several: a pasted list, or the cases typed
+   * inside this address's ten minutes after an earlier confirmation. Each is named with DOL's status as we hold
+   * it, because a click is consent only for what the email said, and the status is what catches a typo. With
+   * several, the email is about the list: `caseNumber`, `currentStatus` and `employerName` aren't drawn.
    */
-  alsoCases?: readonly string[];
+  cases?: readonly ConfirmCase[];
 }
 
 export function CaseAlertConfirm({
@@ -97,24 +132,76 @@ export function CaseAlertConfirm({
   includesNewsletter = false,
   nounWithArticle = "a PERM case",
   lookupFailed = false,
-  alsoCases = [],
+  cases = [],
 }: CaseAlertConfirmProps) {
   const known = currentStatus !== null;
+  const several = cases.length > 1;
+  const notHeld = cases.filter((c) => c.status === null).map((c) => c.caseNumber);
+  const listFirst = cases.length <= LIST_ABOVE_BUTTON_MAX;
+
+  const caseList = several ? (
+    <Section style={styles.listWrap}>
+      <table width="100%" cellPadding={0} cellSpacing={0} border={0} style={styles.list}>
+        <caption className="em-text-secondary" style={styles.listCaption}>
+          The cases this confirms
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col" align="left" className="em-text-secondary" style={styles.listHead}>
+              Case number
+            </th>
+            <th scope="col" align="left" className="em-text-secondary" style={styles.listHead}>
+              DOL&rsquo;s status
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {cases.map((c) => (
+            <tr key={c.caseNumber}>
+              <td
+                className="em-text"
+                style={{ ...styles.listNumber, borderLeft: `6px solid ${TINT_HEX[caseStatusTint(c.status)]}` }}
+              >
+                {c.caseNumber}
+              </td>
+              <td className={c.status ? "em-text-body" : "em-text-secondary"} style={c.status ? styles.listStatus : styles.listStatusNone}>
+                {c.status ? prettyStatus(c.status) : lookupFailed ? "Couldn\u2019t check" : "Not in our records yet"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Section>
+  ) : null;
 
   return (
     <EmailLayout
       previewText={
-        known
-          ? `Confirm and we'll email you when DOL's status for this case changes.`
-          : lookupFailed
-            ? `We couldn't check this case number just now. Check it before you confirm.`
-            : `We don't hold this case number yet. Check it before you confirm.`
+        several
+          ? `Confirm and we'll email you when DOL's status for any of these ${cases.length} cases changes.`
+          : known
+            ? `Confirm and we'll email you when DOL's status for this case changes.`
+            : lookupFailed
+              ? `We couldn't check this case number just now. Check it before you confirm.`
+              : `We don't hold this case number yet. Check it before you confirm.`
       }
       hideSettingsLink
-      footerText={`This address was entered to be told when ${nounWithArticle}\u2019s status changes. It isn\u2019t confirmed yet, so nothing else will be sent.`}
+      footerText={
+        several
+          ? `This address was entered to be told when the status of ${cases.length} DOL cases changes. It isn\u2019t confirmed yet, so nothing else will be sent.`
+          : `This address was entered to be told when ${nounWithArticle}\u2019s status changes. It isn\u2019t confirmed yet, so nothing else will be sent.`
+      }
     >
-      <QueueStamp eyebrow="Your case number" month={caseNumber}>
-        {known ? (
+      <QueueStamp eyebrow={several ? "Your case numbers" : "Your case number"} month={several ? `${cases.length} cases` : caseNumber}>
+        {several ? (
+          <Text className="em-text-secondary" style={styles.provenance}>
+            {lookupFailed
+              ? "Couldn\u2019t check DOL\u2019s record just now"
+              : notHeld.length === 0
+                ? `All ${cases.length} are in our records`
+                : `${cases.length - notHeld.length} of them are in our records`}
+          </Text>
+        ) : known ? (
           <>
             <Text className="em-text-secondary" style={styles.provenance}>
               Currently {currentStatus}
@@ -137,7 +224,46 @@ export function CaseAlertConfirm({
         )}
       </QueueStamp>
 
-      {known ? (
+      {several ? (
+        <>
+          <Text className="em-text-body" style={styles.body}>
+            If these are your cases, confirm below. We&rsquo;ll email you every time DOL&rsquo;s status for any of
+            them changes, and we&rsquo;ll keep watching each one for a year after it&rsquo;s decided, in case
+            it&rsquo;s appealed or reopened.
+          </Text>
+          {lookupFailed ? (
+            <Text className="em-text-body" style={styles.body}>
+              We couldn&rsquo;t check these case numbers just now. Check them against your receipts before you
+              confirm. If you confirm, we&rsquo;ll start watching them and email you the first time a status moves
+              after that.
+            </Text>
+          ) : notHeld.length > 0 ? (
+            <Text className="em-text-body" style={styles.body}>
+              {`We don\u2019t hold ${notHeld.length} of them yet: `}
+              {notHeld.slice(0, NOT_HELD_NAMED).map((number, i) => (
+                <span key={number}>
+                  {i > 0 ? ", " : ""}
+                  <span style={styles.numbers}>{number}</span>
+                </span>
+              ))}
+              {notHeld.length > NOT_HELD_NAMED ? ` and ${notHeld.length - NOT_HELD_NAMED} more, marked in the list` : ""}
+              {`. That\u2019s normal for a recent filing, and it\u2019s also what a typo looks like, so check ${notHeld.length === 1 ? "it against your receipt" : "them against your receipts"} first.`}
+            </Text>
+          ) : null}
+          <Text className="em-text-secondary" style={styles.lag}>
+            We ask DOL about watched cases every 5 minutes on weekdays from 7 AM
+            to 9 PM Eastern, and every half hour otherwise. We email a change as
+            soon as we see it, and every alert says since when DOL&rsquo;s record has shown the status.
+          </Text>
+          {listFirst ? (
+            caseList
+          ) : (
+            <Text className="em-text-body" style={styles.body}>
+              {`All ${cases.length} are listed under the button.`}
+            </Text>
+          )}
+        </>
+      ) : known ? (
         <>
           <Text className="em-text-body" style={styles.body}>
             If that&rsquo;s your case, confirm below. We&rsquo;ll email you
@@ -167,14 +293,6 @@ export function CaseAlertConfirm({
         </Text>
       )}
 
-      {alsoCases.length > 0 ? (
-        <Text className="em-text-body" style={styles.body}>
-          {`The same click also confirms alerts for the other ${alsoCases.length === 1 ? "case" : "cases"} you entered: `}
-          <span style={styles.alsoCases}>{alsoCases.join(", ")}</span>
-          .
-        </Text>
-      ) : null}
-
       {includesNews ? (
         <Text className="em-text-secondary" style={styles.newsNote}>
           You also asked for occasional product news. The same click confirms
@@ -194,6 +312,8 @@ export function CaseAlertConfirm({
         </EmailButton>
       </Section>
 
+      {several && !listFirst ? caseList : null}
+
       <Text className="em-text-secondary" style={styles.note}>
         If you didn&rsquo;t ask for this, ignore it. Nothing will be sent.
       </Text>
@@ -202,9 +322,60 @@ export function CaseAlertConfirm({
 }
 
 const styles = {
-  alsoCases: {
+  numbers: {
     fontFamily: MONO_STACK,
     fontWeight: 600 as const,
+    whiteSpace: "nowrap" as const,
+  },
+  listWrap: {
+    margin: "0 0 24px 0",
+  },
+  list: {
+    borderCollapse: "collapse" as const,
+  },
+  listCaption: {
+    fontFamily: SANS_STACK,
+    color: "#5A5A5A",
+    fontSize: "14px",
+    fontWeight: 700 as const,
+    lineHeight: "20px",
+    textAlign: "left" as const,
+    paddingBottom: "8px",
+  },
+  listHead: {
+    fontFamily: SANS_STACK,
+    color: "#5A5A5A",
+    fontSize: "14px",
+    fontWeight: 400 as const,
+    lineHeight: "20px",
+    padding: "0 12px 6px 0",
+    borderBottom: "2px solid #000001",
+  },
+  listNumber: {
+    fontFamily: LIST_MONO,
+    color: "#1A1A1A",
+    fontSize: "14px",
+    fontWeight: 600 as const,
+    lineHeight: "20px",
+    padding: "8px 12px 8px 10px",
+    borderBottom: "1px solid #D9D9D9",
+    whiteSpace: "nowrap" as const,
+  },
+  listStatus: {
+    fontFamily: LIST_SANS,
+    color: "#2A2A2A",
+    fontSize: "14px",
+    lineHeight: "20px",
+    padding: "8px 0",
+    borderBottom: "1px solid #D9D9D9",
+  },
+  listStatusNone: {
+    fontFamily: LIST_SANS,
+    color: "#5A5A5A",
+    fontSize: "14px",
+    lineHeight: "20px",
+    padding: "8px 0",
+    borderBottom: "1px solid #D9D9D9",
   },
   provenance: {
     fontFamily: MONO_STACK,
