@@ -58,6 +58,21 @@ function Harness() {
   );
 }
 
+/**
+ * The list opens on its "Looking up job codes" row and then shows the answer. Reading it the moment it opens
+ * counts that one row when the lookup is slow, so wait for the answer itself.
+ */
+async function answered(options: number): Promise<void> {
+  await waitFor(
+    () => {
+      const list = screen.getByRole("listbox");
+      expect(list).toHaveAttribute("aria-busy", "false");
+      expect(list.querySelectorAll("[role=option]")).toHaveLength(options);
+    },
+    { timeout: 3000 },
+  );
+}
+
 describe("SocPicker", () => {
   afterEach(() => {
     vi.useRealTimers();
@@ -69,8 +84,7 @@ describe("SocPicker", () => {
     render(<Harness />);
     const box = screen.getByRole("combobox", { name: "Job title or SOC code" });
     fireEvent.change(box, { target: { value: "data scientist" } });
-    const list = await screen.findByRole("listbox", {}, { timeout: 2000 });
-    expect(list.querySelectorAll("[role=option]")).toHaveLength(2);
+    await answered(2);
     expect(box).toHaveAttribute("aria-expanded", "true");
     fireEvent.keyDown(box, { key: "ArrowDown" });
     fireEvent.keyDown(box, { key: "Enter" });
@@ -128,9 +142,8 @@ describe("SocPicker", () => {
     render(<WithTitle />);
     const box = screen.getByRole("combobox", { name: "SOC code" });
     fireEvent.focus(box);
-    const list = await screen.findByRole("listbox", {}, { timeout: 2000 });
+    await answered(2);
     expect(String(fetchSpy.mock.calls[0]?.[0])).toBe("/api/soc?q=Data%20Scientist");
-    expect(list.querySelectorAll("[role=option]")).toHaveLength(2);
     fireEvent.keyDown(box, { key: "Enter" });
     expect(screen.getByTestId("value").textContent).toBe("15-2051");
     expect(picked).toHaveBeenCalledWith(expect.objectContaining({ soc: "15-2051", title: "Data Scientists" }));
