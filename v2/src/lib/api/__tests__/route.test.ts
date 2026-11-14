@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { API_PLANS } from "@convex/lib/apiPlans";
@@ -13,7 +15,7 @@ vi.mock("../usage", () => ({
   countCall: (...a: unknown[]) => countCall(...a),
 }));
 
-import { apiGet } from "../route";
+import { apiError, apiGet, DOCS_URL } from "../route";
 import { ProblemSchema } from "../schemas";
 import type { ReadResult } from "../reads";
 
@@ -176,3 +178,36 @@ describe("scopes and sandbox keys", () => {
   });
 });
 
+
+describe("the front door's own refusals under /v1", () => {
+  // nginx answers these before the app is asked, so each body is typed into its file. It has to be the body the
+  // API itself sends for the same code, or a client reading `error.code` gets nothing from the front door.
+  const conf = readFileSync("scripts/oracle/nginx/permtracker.conf", "utf8");
+
+  function typed(location: string): { status: number; body: Record<string, unknown> } {
+    const m = new RegExp(`location ${location} \\{[^']*return (\\d{3}) '([^']+)';`).exec(conf);
+    if (!m) throw new Error(`no ${location} in the front door's file`);
+    return { status: Number(m[1]), body: JSON.parse(m[2]!) as Record<string, unknown> };
+  }
+
+  it.each([
+    ["@pt_slow_down_v1", 429, "rate_limited", 30],
+    ["@pt_busy_v1", 503, "unavailable", 15],
+  ])("%s sends what the API sends for the same code", async (location, status, code, retryAfter) => {
+    // Arrange: the body typed into nginx's file.
+    const sent = typed(location);
+    // Act: the API's own refusal for that code, words and wait, with the live site's address.
+    const ours = await apiError(status, code, String(sent.body.detail), { retryAfter }).json();
+    const expected = JSON.parse(JSON.stringify(ours).replaceAll(DOCS_URL, "https://permtracker.app/developers"));
+    // Assert
+    expect(sent.status).toBe(status);
+    expect(sent.body).toEqual(expected);
+    expect(ProblemSchema.safeParse(sent.body).success).toBe(true);
+  });
+
+  it("is where /v1 sends a caller it turns away", () => {
+    const v1 = /location ~ \^\/v1\(\/\|\$\) \{[^}]*\}/.exec(conf)?.[0] ?? "";
+    expect(v1).toContain("error_page 429 @pt_slow_down_v1;");
+    expect(v1).toContain("error_page 503 @pt_busy_v1;");
+  });
+});
