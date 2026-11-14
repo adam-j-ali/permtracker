@@ -229,5 +229,54 @@
     },
     "alt": "The H-1B LCAs page: 5,975 waiting at DOL now, 3,754,961 decided with the wage offered and published through June 30, 2026, and LCAs by the month they were filed.",
     "captured": "2026-10-28"
+  },
+  "employers/email": {
+    "alt": "An example of the email, for a sample company, Halcyon Robotics. DOL certified 2 of its cases, each listed by its case number with its job title and filing month. DOL sent a request for information on 1 of its cases. Its 14 pending cases today: 2 at RFI or other review, 12 waiting for an analyst.",
+    "captured": "2026-11-13"
+  },
+  "employers/company": {
+    "capture": {
+      "url": "/perm-employers/nvidia-corporation",
+      "clip": "fromm:Right now",
+      "maxHeight": 1150,
+      "wait": 5000
+    },
+    "alt": "NVIDIA Corporation's page, the part headed Right now: 240 PERM cases waiting at DOL, 238 in analyst review and 2 with a request for information issued, the oldest filed January 6, 2026. Under it, the Follow box lists the days DOL certified its cases in batches, above the Every case too tick box.",
+    "captured": "2026-11-13"
+  },
+  "employers/case": {
+    "capture": {
+      "url": "/perm-case-status?case=G-100-26061-673145",
+      "clip": "fromm:Check and track your PERM case status",
+      "maxHeight": 1150,
+      "wait": 6000
+    },
+    "alt": "The status page of one waiting PERM case, filed March 2, 2026. DOL's status is Analyst Review, 4,831 cases in DOL's normal queue were filed before it, and the estimated decision is around November 24, 2026, about 10 days away. Beside the estimate is a form to get an email when DOL changes the case's status.",
+    "captured": "2026-11-13"
+  },
+  "employers/email-phone": {
+    "narrowOf": "email"
+  },
+  "employers/company-phone": {
+    "narrowOf": "company",
+    "capture": {
+      "url": "/perm-employers/nvidia-corporation",
+      "clip": "fromm:Right now",
+      "width": 390,
+      "height": 844,
+      "maxHeight": 620,
+      "wait": 5000
+    }
+  },
+  "employers/case-phone": {
+    "narrowOf": "case",
+    "capture": {
+      "url": "/perm-case-status?case=G-100-26061-673145",
+      "clip": "fromm:Check and track your PERM case status",
+      "width": 390,
+      "height": 844,
+      "maxHeight": 620,
+      "wait": 6000
+    }
   }
 }

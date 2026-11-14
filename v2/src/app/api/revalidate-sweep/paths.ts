@@ -45,6 +45,8 @@ export const SWEEP_PAGES = [
   "/perm-denial-risk",
   // Our own column's freshness is the sweep's record.
   "/compare",
+  // Its overview: the cases waiting at DOL by the census, and the last working day's decisions.
+  "/for-employers",
   // The wage-request, LCA and H-2A/H-2B summaries, written by
   // pwd-status-direct.yml, which calls this endpoint too.
   "/pwd-cases",

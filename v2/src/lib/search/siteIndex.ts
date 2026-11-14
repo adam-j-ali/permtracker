@@ -40,6 +40,7 @@ export const MAIN_JOBS: readonly string[] = [
  * "naics" or "nationality" to the page that filters by it.
  */
 export const PAGE_KEYWORDS: Readonly<Record<string, string>> = {
+  "/for-employers": "employer employers company hr human resources people team global mobility immigration manager in-house track our company's perm cases follow every case email when certified",
   "/perm-case-status": "check track lookup status case number dol flag g-100",
   "/case-search": "search find case employer firm without number",
   "/open-data": "open data download csv json dataset bulk licence license cc-by bulletin history",
@@ -95,6 +96,7 @@ export const PAGE_KEYWORDS: Readonly<Record<string, string>> = {
 /** Pages reached by name that no menu group holds. */
 const OTHER_GO_TO = [
   "/for-attorneys",
+  "/for-employers",
   "/open-data",
   "/badges",
   "/developers",

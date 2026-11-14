@@ -1142,6 +1142,20 @@
   "maxWidth": 1408
  },
  {
+  "slug": "for-employers",
+  "path": "/for-employers",
+  "title": "For employers",
+  "label": "Every PERM case your company has at DOL, and an email on the day one changes.",
+  "mask": "figures",
+  "shot": "for-employers.png",
+  "crop": [
+   0,
+   0,
+   2048,
+   1296
+  ]
+ },
+ {
   "slug": "guides",
   "path": "/guides",
   "title": "PERM guides",

@@ -697,6 +697,7 @@ export async function GET() {
     `- [Reviews](${BASE_URL}/reviews): Every review left by someone outside the team, newest first, with the average rating`,
     `- [PERM trackers compared](${BASE_URL}/compare): ${RIVALS.length} other PERM case trackers and green card sites checked beside this one on their own pages (${checkedPhrase(RIVALS.map((t) => t.checkedOn))}): what each looks up, where its data comes from, how fresh it is and what it costs, each mark quoted and linked`,
     `- [For professionals](${BASE_URL}/for-attorneys): The case-management side for attorneys, paralegals and HR teams, with every deadline computed per case, reminders and calendar sync`,
+    `- [For employers](${BASE_URL}/for-employers): For HR, global mobility and in-house immigration staff. Search a company to see every PERM case it has at DOL counted by status, and follow it for one email on any day one of its cases is certified, denied, questioned, put on hold, withdrawn or appealed, listed by case number. Free, no account`,
     `- [FAQ](${BASE_URL}/faq): Questions about PERM and about this site`,
     `- [Email preferences](${BASE_URL}/email-preferences): See and stop everything the site emails an address`,
     `- [Sign up](${BASE_URL}/signup): Create a free account`,

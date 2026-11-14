@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import Link from "next/link";
 
 import { EmployerFollowForm } from "@/components/employers/EmployerFollowForm";
 import { ChartTips } from "@/components/data/ChartTips";
@@ -157,7 +158,13 @@ export function EmployerFollow({
             // Under five pending cases the census has no row, and that's a known small number. An unread census
             // isn't: the box opens on the size that can never flood an inbox.
             defaultScope={defaultFollowScope(docMissing ? null : (row?.pending ?? 0))}
-          />
+          />{" "}
+          {/* For the reader who is here for work: what the tick box is for, on its own page. */}
+          <p className="mt-3 text-sm print:hidden">
+            <Link href="/for-employers" className="link">
+              PERM tracking for HR and legal teams
+            </Link>
+          </p>
         </div>
       </div>
     </section>

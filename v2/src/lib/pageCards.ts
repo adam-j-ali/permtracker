@@ -84,6 +84,7 @@ export const PAGE_CARD_ALT = {
   "contact": "Get in touch. Questions, bugs and ideas land in one inbox: support@permtracker.app or the form on the contact page.",
   "editorial-standards": "How we write and check every page. Every figure from a government record, dated, and corrected in the open.",
   "faq": "Frequently asked questions. What applicants and attorneys ask about PERM Tracker and the PERM process.",
+  "for-employers": "Track your company's PERM cases. A search for the company's page, beside an example of the email a follow sends on a day its cases change.",
   "for-attorneys": "Every PERM deadline, worked out. The app's deadline hub for sample cases: an RFI response this week, an I-140 filing and a filing window this month, and more later. Free.",
   "guides": "PERM guides. How-tos, references and checklists for the PERM process and for PERM Tracker itself.",
   "home": "PERM case status and processing times. PERM Tracker's case lookup: when a case will likely be decided, and an email when DOL moves it.",

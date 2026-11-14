@@ -84,7 +84,14 @@ export function AttorneyHero() {
                 <MagnifyingGlassIcon className="h-5 w-5" aria-hidden="true" />
                 Check a case first
               </Link>
-            </div>
+            </div>{" "}
+            {/* The other professional reader: someone at an employer who keeps track of its cases and files none. */}
+            <p className="mt-5 text-base text-white/80 dark:text-soft">
+              In HR or global mobility?{" "}
+              <Link href="/for-employers" className="font-semibold text-white underline underline-offset-2 hover:decoration-2 dark:text-foreground">
+                Track your company&apos;s cases
+              </Link>
+            </p>
           </div>
         </div>
 
