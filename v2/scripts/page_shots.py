@@ -5,9 +5,16 @@
     CAPTURE_SPEC=scripts/page-pictures.json CAPTURE_DARK=1 node scripts/capture_article_heroes.mjs <base> <dir>/dark [keys]
     python3 scripts/page_shots.py <dir> <set>
 
-<set> is a key prefix in page-pictures.json (calculators, data). Writes public/images/<set>/<name>-light.webp and
--dark.webp (1800px wide, the attorney page's tour width) and the set's TypeScript table (SETS below) with each
-file's real size and the alt text from page-pictures.json. A picture with no new capture in <dir> keeps the
+<set> is a key prefix in page-pictures.json (calculators, data, employers). Writes public/images/<set>/<name>-light.webp
+and -dark.webp (1800px wide, the attorney page's tour width, or the capture's own width when that's narrower: a
+picture is never enlarged) and the set's TypeScript table (SETS below) with each file's real size and the alt text
+from page-pictures.json. An entry with no `capture` of its own (the employers page's email, drawn from the email
+template) is a PNG put in <dir> by hand, under the same name.
+
+A picture can have a phone-width twin: an entry with `"narrowOf": "<name>"` (its capture at 390px wide) becomes
+<name>-light-phone.webp and -dark-phone.webp and the table's `narrowLight` and `narrowDark`, which the window frame
+shows below 1024px, so a phone gets the page as a phone lays it out and never a desktop capture shrunk to a
+third of its size. A picture with no new capture in <dir> keeps the
 file already published, so one page can be re-shot without re-shooting the set.
 """
 
@@ -18,10 +25,13 @@ from pathlib import Path
 from PIL import Image
 
 WIDTH = 1800
+# A phone-width capture is taken at 390px, two device pixels each.
+NARROW_WIDTH = 780
 # set -> (TypeScript file, type name, constant name)
 SETS = {
     "calculators": ("src/components/tools/calculatorShots.ts", "CalculatorShot", "CALCULATOR_SHOTS"),
     "data": ("src/components/tools/dataShots.ts", "DataShot", "DATA_SHOTS"),
+    "employers": ("src/components/marketing/employerShots.ts", "EmployerShot", "EMPLOYER_SHOTS"),
 }
 
 
@@ -34,7 +44,9 @@ def main() -> int:
     ts_path, type_name, const_name = SETS[group]
     out = Path("public/images") / group
     spec = json.loads(Path("scripts/page-pictures.json").read_text())
-    names = [k.split("/", 1)[1] for k in spec if k.startswith(f"{group}/")]
+    names = [k.split("/", 1)[1] for k in spec if k.startswith(f"{group}/") and "narrowOf" not in spec[k]]
+    # picture -> its phone-width twin's own name in the capture folder
+    narrow_of = {v["narrowOf"]: k.split("/", 1)[1] for k, v in spec.items() if k.startswith(f"{group}/") and "narrowOf" in v}
     out.mkdir(parents=True, exist_ok=True)
     entries = []
     for name in names:
@@ -44,20 +56,38 @@ def main() -> int:
             dest = out / f"{name}-{theme}.webp"
             if png.exists():
                 im = Image.open(png).convert("RGB")
-                h = round(im.height * WIDTH / im.width)
-                im = im.resize((WIDTH, h), Image.LANCZOS)
+                w = min(WIDTH, im.width)
+                h = round(im.height * w / im.width)
+                if w != im.width:
+                    im = im.resize((w, h), Image.LANCZOS)
                 im.save(dest, "WEBP", quality=82, method=6)
             elif dest.exists():
                 # Not re-captured this time: the picture already published stays, at its real size.
-                h = Image.open(dest).height
+                w, h = Image.open(dest).size
             else:
                 print(f"missing {png}, and no published {dest}", file=sys.stderr)
                 return 1
-            sizes[theme] = (h, dest.stat().st_size)
+            sizes[theme] = (h, dest.stat().st_size, w)
+            if name in narrow_of:
+                npng = src / theme / group / f"{narrow_of[name]}.png"
+                ndest = out / f"{name}-{theme}-phone.webp"
+                if npng.exists():
+                    im = Image.open(npng).convert("RGB")
+                    nw = min(NARROW_WIDTH, im.width)
+                    nh = round(im.height * nw / im.width)
+                    if nw != im.width:
+                        im = im.resize((nw, nh), Image.LANCZOS)
+                    im.save(ndest, "WEBP", quality=82, method=6)
+                elif ndest.exists():
+                    nw, nh = Image.open(ndest).size
+                else:
+                    print(f"missing {npng}, and no published {ndest}", file=sys.stderr)
+                    return 1
+                sizes[f"{theme}-phone"] = (nh, ndest.stat().st_size, nw)
         alt = spec[f"{group}/{name}"]["alt"].replace("\\", "\\\\").replace('"', '\\"')
         captured = spec[f"{group}/{name}"].get("captured")
         entries.append((name, sizes, alt, captured))
-        print(f"{name}: {WIDTH}x{sizes['light'][0]} light {sizes['light'][1] // 1024} KB, dark {sizes['dark'][1] // 1024} KB")
+        print(f"{name}: {sizes['light'][2]}x{sizes['light'][0]} light {sizes['light'][1] // 1024} KB, dark {sizes['dark'][1] // 1024} KB")
     lines = [
         "// Generated by scripts/page_shots.py from the captures listed in scripts/page-pictures.json; do not edit by hand.",
         'import type { WindowShots } from "@/components/marketing/AppWindow";',
@@ -70,8 +100,11 @@ def main() -> int:
         lines += [
             f'  "{name}": {{',
             "    shots: {",
-            f'      light: {{ src: "/images/{group}/{name}-light.webp", width: {WIDTH}, height: {sizes["light"][0]} }},',
-            f'      dark: {{ src: "/images/{group}/{name}-dark.webp", width: {WIDTH}, height: {sizes["dark"][0]} }},',
+            f'      light: {{ src: "/images/{group}/{name}-light.webp", width: {sizes["light"][2]}, height: {sizes["light"][0]} }},',
+            f'      dark: {{ src: "/images/{group}/{name}-dark.webp", width: {sizes["dark"][2]}, height: {sizes["dark"][0]} }},',
+            *([f'      narrowLight: {{ src: "/images/{group}/{name}-light-phone.webp", width: {sizes["light-phone"][2]}, height: {sizes["light-phone"][0]} }},',
+               f'      narrowDark: {{ src: "/images/{group}/{name}-dark-phone.webp", width: {sizes["dark-phone"][2]}, height: {sizes["dark-phone"][0]} }},']
+              if "light-phone" in sizes and "dark-phone" in sizes else []),
             "    },",
             f'    alt: "{alt}",',
             *([f'    captured: "{captured}",'] if captured else []),

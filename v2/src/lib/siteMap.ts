@@ -292,6 +292,7 @@ const OTHER_PAGES: readonly SitePage[] = [
   { href: OVERVIEW.href, name: OVERVIEW.name },
   { href: CALCULATORS.href, name: CALCULATORS.name },
   { href: "/for-attorneys", name: "For professionals" },
+  { href: "/for-employers", name: "For employers" },
   { href: "/visa-bulletin/family", name: "Family cutoffs" },
   { href: "/visa-bulletin/categories", name: "By category" },
   { href: "/press", name: "Press" },
@@ -405,7 +406,7 @@ export const FOOTER_COLUMNS: readonly FooterColumn[] = [
   },
   {
     title: "PERM Tracker",
-    pages: named("/about", "/reviews", "/compare", "/for-attorneys", "/press", "/open-data", "/badges", "/developers", "/extension", "/email-preferences", "/contact"),
+    pages: named("/about", "/reviews", "/compare", "/for-attorneys", "/for-employers", "/press", "/open-data", "/badges", "/developers", "/extension", "/email-preferences", "/contact"),
   },
 ];
 

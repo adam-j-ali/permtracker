@@ -168,6 +168,13 @@ export default function Page() {
             Find the employer
           </Link>
           , then follow it from its page.
+        </p>{" "}
+        <p className="mt-3 max-w-2xl text-base leading-relaxed">
+          Keeping track of a company&apos;s cases for work? Tick &ldquo;Every case too&rdquo; in that box, and see{" "}
+          <Link href="/for-employers" className="link">
+            PERM tracking for employers
+          </Link>
+          .
         </p>
       </PageSection>{" "}
       <PageSection

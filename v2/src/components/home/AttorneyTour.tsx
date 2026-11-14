@@ -1,12 +1,12 @@
-import { Fragment, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { DeadlineDocket } from "@/components/home/DeadlineDocket";
 import { JobCodeSection } from "@/components/home/JobCodeSection";
 import { AppWindow } from "@/components/marketing/AppWindow";
 import { TOUR_SHOTS, type TourSurface } from "@/components/marketing/tourShots";
 import { TourStage } from "@/components/home/TourStage";
+import { BandFacts } from "@/components/scroll/BandFacts";
 import { STAGE_BAND_NO_SCRIPT_CSS, StageBand } from "@/components/scroll/StageBand";
-import { cn } from "@/lib/utils";
 
 /**
  * The attorney page's product sections: each one a page of the signed-in app,
@@ -123,23 +123,6 @@ const SECTIONS: TourSection[] = [
   },
 ];
 
-function Facts({ facts, ink = false }: { facts: string[]; ink?: boolean }) {
-  const rule = ink ? "border-white/30 dark:border-border" : "border-border";
-  return (
-    <ul className={cn("mt-6 border-t-2", rule)}>
-      {facts.map((f) => (
-        <Fragment key={f}>
-          {" "}
-          <li className={cn("flex gap-3 border-b-2 py-3 text-base leading-snug", rule)}>
-            <span aria-hidden="true" className="mt-1.5 size-2.5 shrink-0 border-2 border-black bg-primary" />{" "}
-            <span>{f}</span>
-          </li>
-        </Fragment>
-      ))}
-    </ul>
-  );
-}
-
 /** One of the six pages as a band of the stage (StageBand, shared with the calculators page). */
 function Section({ s, index, flip, ink }: { s: TourSection; index: number; flip: boolean; ink: boolean }) {
   return (
@@ -154,7 +137,7 @@ function Section({ s, index, flip, ink }: { s: TourSection; index: number; flip:
       picture={<AppWindow url={s.url} shots={TOUR_SHOTS[s.surface]} alt={s.alt} caption="Sample cases." onBand={ink} />}
       extra={s.extra}
     >
-      <Facts facts={s.facts} ink={ink} />
+      <BandFacts facts={s.facts} ink={ink} />
     </StageBand>
   );
 }
@@ -209,7 +192,7 @@ function AssistantSection() {
             The assistant reads your cases and answers in plain words. It can update a case or sync a calendar, and asks
             before it changes anything.
           </p>{" "}
-          <Facts
+          <BandFacts
             facts={[
               "Finds cases by stage, deadline or employer",
               "Asks first before every change",

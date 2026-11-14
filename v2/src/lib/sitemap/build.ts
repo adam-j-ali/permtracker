@@ -290,6 +290,7 @@ export async function pagesEntries(): Promise<Entry[]> {
     { url: `${base}/changelog`, lastModified: at("/changelog"), images: [`${base}/og/changelog.jpg`] },
     { url: `${base}/faq`, lastModified: at("/faq"), images: [`${base}/og/faq.jpg`] },
     { url: `${base}/for-attorneys`, lastModified: at("/for-attorneys"), images: [`${base}/og/for-attorneys.jpg`] },
+    { url: `${base}/for-employers`, lastModified: at("/for-employers"), images: [`${base}/og/for-employers.jpg`] },
     { url: `${base}/email-preferences`, lastModified: at("/email-preferences"), images: [`${base}/og/email-preferences.jpg`] },
     { url: `${base}/perm-processing-times`, lastModified: at("/perm-processing-times"), images: [`${base}/og/perm-processing-times.jpg`] },
     { url: `${base}/tools`, lastModified: at("/tools"), images: [`${base}/og/tools.jpg`] },
