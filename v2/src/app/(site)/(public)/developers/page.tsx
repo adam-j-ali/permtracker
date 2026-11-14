@@ -416,7 +416,7 @@ export default function DevelopersPage() {
 
       <section className="mt-12" aria-labelledby="webhooks">
         <h2 id="webhooks" className="font-heading text-2xl font-bold">
-          Webhooks
+          How webhooks work
         </h2>{" "}
         <p className="mt-2 max-w-2xl text-base leading-relaxed text-soft">
           Register an https endpoint in Settings or with POST <code className="font-mono">/v1/webhooks</code>, choose
