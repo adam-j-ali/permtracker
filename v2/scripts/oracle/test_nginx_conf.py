@@ -13,6 +13,7 @@ Run: python3 scripts/oracle/test_nginx_conf.py   (exit 1 on any failure)
 """
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -317,7 +318,25 @@ def run(conf_text: str) -> None:
     check("/v1: exists", bool(v1))
     m = re.search(r"limit_conn\s+pt_apiall\s+(\d+);", v1)
     check("/v1: API calls together hold a share of the app's slots", m is not None and int(m.group(1)) < 64)
-    check("/v1: refusals answer JSON", "error_page 429 @pt_slow_down_api;" in v1 and "error_page 503 @pt_busy_api;" in v1)
+    # A caller turned away here reads the same body the API itself sends: a problem
+    # document with `error` as an object (src/lib/api/route.ts, apiError). The short
+    # form /api/ keeps has `error` as a word, so `error.code` reads as nothing.
+    check("/v1: refusals answer in the API's own error shape",
+          "error_page 429 @pt_slow_down_v1;" in v1 and "error_page 503 @pt_busy_v1;" in v1 and "_api;" not in v1)
+    for loc, code, secs, name in (("@pt_slow_down_v1", 429, 30, "rate_limited"), ("@pt_busy_v1", 503, 15, "unavailable")):
+        b = locs.get(loc, "")
+        check(f"{loc}: a problem document, {code} with Retry-After {secs}", "default_type application/problem+json;" in b
+              and f"Retry-After {secs} always" in b and 'Cache-Control "no-store" always' in b)
+        m = re.search(r"location " + re.escape(loc) + r" \{[^']*return " + str(code) + r" '([^']+)';", server)
+        try:
+            doc = json.loads(m.group(1)) if m else {}
+        except ValueError:
+            doc = {}
+        err = doc.get("error")
+        check(f"{loc}: `error` is an object with the code, the words and the wait",
+              isinstance(err, dict) and err.get("code") == name == doc.get("code") and doc.get("status") == code
+              and err.get("retryAfter") == secs == doc.get("retryAfter") and bool(err.get("message"))
+              and err.get("message") == doc.get("detail") and str(doc.get("type", "")).endswith("#error-" + name.replace("_", "-")))
     # The MCP server: its own cap, never the app's, a per-person rate, streams
     # passed through unbuffered.
     check("/mcp: exists", bool(mcp))
@@ -522,6 +541,10 @@ def probe() -> None:
             "        limit_req zone=pt_stale_label burst=10 nodelay;\n", "", 1),
         "frozen-label limit catches every page": good.replace('    "~^lookups:Mozilla', '    "~:Mozilla', 1),
         "API share of the app's slots removed": good.replace("        limit_conn pt_apiall 24;\n", "", 1),
+        "/v1 refusals back to the short form": good.replace(
+            "error_page 429 @pt_slow_down_v1;\n        error_page 503 @pt_busy_v1;", "error_page 429 @pt_slow_down_api;\n        error_page 503 @pt_busy_api;", 1),
+        "a /v1 refusal sends `error` as a word": good.replace('"error":{"code":"rate_limited","message":"Too many requests from this address. Try again in a few seconds.","retryAfter":30,"docs":"https://permtracker.app/developers"}}', '"error":"rate_limited"}', 1),
+        "a /v1 refusal sent as plain JSON": re.sub(r"(location @pt_busy_v1 \{\n\s*)default_type application/problem\+json;", r"\1default_type application/json;", good, count=1),
         "MCP streams hold app slots": good.replace("        limit_conn pt_mcpall 48;\n", "        limit_conn pt_mcpall 48;\n        limit_conn pt_app 64;\n", 1),
         "MCP streams buffered": good.replace("        proxy_buffering off;\n        proxy_read_timeout 3600s;\n", "        proxy_read_timeout 3600s;\n", 1),
         "refresh no longer mirrored": good.replace("        mirror /__pt_revalidate_w2;\n", "", 1),
