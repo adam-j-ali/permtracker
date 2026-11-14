@@ -298,3 +298,18 @@ function routeFiles(dir: string): string[] {
   return out;
 }
 
+
+describe("the developer page's outline", () => {
+  // The page prints each tag's name as the heading over its endpoints, and has sections of its own. Two headings
+  // with the same words read as a navigation fault, and the deploy's page check refuses the build for it.
+  it("has no section heading that is also a tag's name", () => {
+    // Arrange: the headings typed into the page, and the tags' names.
+    const page = readFileSync(join(process.cwd(), "src/app/(site)/(public)/developers/page.tsx"), "utf8");
+    const typed = [...page.matchAll(/<h[23][^>]*>\s*([^<{]+?)\s*<\/h[23]>/g)].map((m) => m[1]!.trim().toLowerCase());
+    const tags = TAGS.map((t) => t.name.toLowerCase());
+    // Assert: the page was read (a pattern that matches nothing would pass anything), and nothing is said twice.
+    expect(typed).toContain("the rules");
+    expect(typed.filter((h) => tags.includes(h))).toEqual([]);
+    expect(typed.filter((h, i) => typed.indexOf(h) !== i)).toEqual([]);
+  });
+});
