@@ -16,11 +16,12 @@
  */
 import "server-only";
 
-import { McpServer, type AuthInfo } from "@modelcontextprotocol/server";
+import { McpServer, type AuthInfo, type StandardSchemaWithJSON } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 import type { ApiCaller } from "./auth";
 import { lookupEmployer } from "./employerLookup";
+import { logShapeMiss } from "./mcpLog";
 import { API_VERSION, TOOL_ENDPOINTS, toolName, type EndpointDoc } from "./openapi";
 import { findCases, readBulletin, readCase, readEntity, readEstimate, readQueue, searchEntities, type ReadResult } from "./reads";
 import { lookupSoc } from "./socLookup";
@@ -62,7 +63,7 @@ async function admit(caller: ApiCaller): Promise<string | null> {
 }
 
 /** Run a read under the caller's limits and turn its answer into tool output. */
-async function answer(caller: ApiCaller, read: () => Promise<ReadResult<unknown>>): Promise<ToolResult> {
+async function answer(caller: ApiCaller, e: EndpointDoc, read: () => Promise<ReadResult<unknown>>): Promise<ToolResult> {
   const refused = await admit(caller);
   if (refused) return text(refused, true);
   let r: ReadResult<unknown>;
@@ -89,6 +90,11 @@ async function answer(caller: ApiCaller, read: () => Promise<ReadResult<unknown>
   // Source, date and page first, so an assistant has what it needs to cite. The same object goes out as text
   // (every client reads that) and as structured content (for clients that take typed output).
   const payload = { source: r.meta.source, asOf: r.meta.asOf, page: r.meta.url, data: (r.data ?? {}) as Record<string, unknown> };
+  // The answer goes out whatever its shape. One that misses the shape we publish is our fault to hear about.
+  const fits = e.response.schema.safeParse(r.data);
+  if (!fits.success) {
+    logShapeMiss(toolName(e.id), fits.error.issues.slice(0, 3).map((i) => i.path.join(".") || "(the answer itself)").join(", "));
+  }
   return { content: [{ type: "text", text: JSON.stringify(payload, null, 1) }], structuredContent: payload };
 }
 
@@ -148,16 +154,40 @@ function inputSchema(e: EndpointDoc) {
   return z.object(shape);
 }
 
-/** What every tool answers: where it came from first, so an assistant has what it needs to cite, then the data. */
-const outputSchema = (e: EndpointDoc) =>
-  z.object({
+/** "No such record" as data: an answer too, so it has a shape of its own. */
+const NotFoundSchema = z
+  .object({
+    found: z.literal(false).describe("False: no record matched."),
+    message: z.string().describe("What wasn't found and what to try, in a sentence."),
+  })
+  .describe("No such record. Say so; don't retry the same call.");
+
+/**
+ * What a tool answers, published in full: where it came from first, so an assistant has what it needs to cite,
+ * then the data in the operation's own shape (the one the OpenAPI document publishes), or "no such record".
+ *
+ * IT DESCRIBES, IT NEVER REFUSES. The server checks a tool's output with this object's `validate`, and a schema
+ * that refused would turn a real answer into a failed call the day a read gains a variant. So `validate` passes
+ * everything, the JSON Schema is the full one, and `answer` logs any answer that misses it (`logShapeMiss`).
+ */
+function outputSchema(e: EndpointDoc): StandardSchemaWithJSON {
+  const full = z.object({
     source: z.string().describe("Who published the underlying records."),
     asOf: z.string().nullable().describe("The date the data is true for, YYYY-MM-DD, when one applies."),
     page: z.string().describe("The page on permtracker.app that shows the same thing. Cite it."),
-    data: z
-      .record(z.string(), z.unknown())
-      .describe(`The answer, in the shape the API documents as ${e.response.schemaName}: https://permtracker.app/v1/openapi.json`),
+    data: z.union([e.response.schema, NotFoundSchema]).describe("The answer, or found: false when no record matched."),
   });
+  const { $schema: _drop, ...json } = z.toJSONSchema(full, { target: "draft-2020-12", unrepresentable: "any" }) as Record<string, unknown>;
+  void _drop;
+  return {
+    "~standard": {
+      version: 1,
+      vendor: "permtracker",
+      validate: (value: unknown) => ({ value }),
+      jsonSchema: { input: () => json, output: () => json },
+    },
+  };
+}
 
 function toolDescription(e: EndpointDoc): string {
   const args = Object.fromEntries((e.params ?? []).filter((p) => !p.apiOnly && (p.required || e.example.includes(`${p.name}=`))).map((p) => [p.name, p.example]));
@@ -192,7 +222,7 @@ export function buildMcpServer(caller: ApiCaller): McpServer {
         outputSchema: outputSchema(e),
         annotations: readOnly,
       },
-      async (args) => answer(caller, () => run(args as ToolArgs)),
+      async (args) => answer(caller, e, () => run(args as ToolArgs)),
     );
   }
 

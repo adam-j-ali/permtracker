@@ -18,6 +18,8 @@ function routePaths(): string[] {
     for (const entry of readdirSync(dir)) {
       const full = join(dir, entry);
       if (!statSync(full).isDirectory()) continue;
+      // The catch-all answers every address that ISN'T an endpoint, so it describes none.
+      if (entry.startsWith("[...") || entry === "__tests__") continue;
       const next = `${path}/${entry.replace(/^\[(.+)\]$/, "{$1}")}`;
       if (readdirSync(full).includes("route.ts")) out.push(next);
       walk(full, next);
@@ -176,8 +178,7 @@ describe("every operation is described in full", () => {
 
   it("answers every refusal as a problem document, under a shared response per status", () => {
     for (const { path, method, op } of ops) {
-      if (op.operationId === "getHealth") continue;
-      for (const status of ["400", "404", "429", "500", "503"]) {
+      for (const status of op.operationId === "getHealth" ? ["429"] : ["400", "404", "429", "500", "503"]) {
         expect(op.responses[status]?.$ref, `${method} ${path} ${status}`).toMatch(/^#\/components\/responses\//);
       }
     }

@@ -20,3 +20,18 @@ export function logMcpError(message: string, now = Date.now(), log: (...a: unkno
   log("[mcp]", message, seen?.held ? `(and ${seen.held} more like it in the last hour)` : "");
   lastLogged.set(kind, { at: now, held: 0 });
 }
+
+const shapeLogged = new Map<string, number>();
+
+/**
+ * A tool's answer fell outside the shape the server publishes for it. The assistant still got the answer; this
+ * is how we hear that a schema has drifted from what a read sends. Once an hour per tool: a drifted shape on a
+ * busy tool is one line, not thousands.
+ */
+export function logShapeMiss(tool: string, where: string, now = Date.now(), log: (...a: unknown[]) => void = console.error): void {
+  const last = shapeLogged.get(tool);
+  if (last !== undefined && now - last < 3_600_000) return;
+  shapeLogged.set(tool, now);
+  log("[mcp]", `tool ${tool} answered outside its published shape at ${where}`);
+}
+

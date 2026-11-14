@@ -302,7 +302,10 @@ export default function DevelopersPage() {
           9457 problem document: <code className="font-mono">type</code>, <code className="font-mono">title</code>,{" "}
           <code className="font-mono">status</code>, <code className="font-mono">detail</code> and{" "}
           <code className="font-mono">code</code>. The <code className="font-mono">error</code> object that version 1.0
-          sent is still inside it, unchanged, so code written against either keeps working.
+          sent is still inside it, unchanged, so code written against either keeps working. An address under{" "}
+          <code className="font-mono">/v1</code> that isn&rsquo;t an endpoint answers 404 with the code{" "}
+          <code className="font-mono">unknown_endpoint</code>, and a real endpoint asked with the wrong method answers 405
+          with no body.
         </p>{" "}
         <Code>{`{
   "type": "https://permtracker.app/developers#error-rate-limited",

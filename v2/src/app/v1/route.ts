@@ -28,6 +28,7 @@ export function GET(): NextResponse {
         ...(e.tool ? { tool: toolName(e.id) } : {}),
       })),
     },
-    { headers: { "X-Robots-Tag": "noindex" } },
+    // Readable from a browser on any site, like the OpenAPI document: it describes the API and holds no data.
+    { headers: { "X-Robots-Tag": "noindex", "Access-Control-Allow-Origin": "*" } },
   );
 }

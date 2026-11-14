@@ -618,7 +618,8 @@ function problemExample(status: number): Record<string, unknown> {
 }
 
 function errorStatuses(e: EndpointDoc): number[] {
-  if (e.id === "getHealth") return [];
+  // It reads nothing and checks no key, so the only refusal is the front door's, for an address asking too fast.
+  if (e.id === "getHealth") return [429];
   return [
     400,
     ...(e.keyless ? [] : [401]),
