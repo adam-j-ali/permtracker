@@ -602,6 +602,92 @@ describe("following every case", () => {
   });
 });
 
+describe("several employers followed one after another", () => {
+  const ADDRESS = "mobility@example.com";
+  const ask = (t: T, slug: string, name: string, scope?: "group" | "each") =>
+    t.mutation(internal.employerAlerts.subscribe, { email: ADDRESS, slug, employerName: name, scope, ip: "198.51.100.7" });
+  const rowsOf = (t: T) => t.run(async (ctx) => ctx.db.query("employerAlerts").collect());
+  const confirm = async (t: T) =>
+    t.mutation(internal.employerAlerts.confirmByToken, {
+      token: await makeUnsubscribeToken(ADDRESS, SECRET, "employer-confirm"),
+    });
+  /** Every confirmation the stub saw, which `stub`'s own list leaves out. */
+  function watchConfirmations() {
+    const seen: Record<string, unknown>[] = [];
+    const inner = global.fetch;
+    global.fetch = (async (url: unknown, init?: { body?: string }) => {
+      if (!String(url).includes("/v2/pipeline") && init?.body) {
+        const body = JSON.parse(init.body) as Record<string, unknown>;
+        if (String(body.subject ?? "").startsWith("Confirm:")) seen.push(body);
+      }
+      return inner(url as never, init as never);
+    }) as unknown as typeof fetch;
+    return seen;
+  }
+
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("keeps a second employer asked for inside the ten minutes, and confirms both on the first click", async () => {
+    // Arrange
+    const t = createTestContext();
+    stub({});
+    const mails = watchConfirmations();
+    // Act
+    await ask(t, "adobe-inc", "Adobe Inc.");
+    const second = await ask(t, "maplebear-inc", "Maplebear Inc.", "each");
+    // Assert: held for the click, with no second email.
+    expect(second.message).toBe("Check your inbox to confirm.");
+    const held = (await rowsOf(t)).find((r) => r.pendingSlug === "maplebear-inc");
+    expect(held).toMatchObject({ confirmationOwed: true, pendingScope: "each" });
+    expect(held?.lastConfirmationSentAt).toBeUndefined();
+    const done = await confirm(t);
+    expect(done?.employers.sort()).toEqual(["Adobe Inc.", "Maplebear Inc."]);
+    expect(done?.everyCase).toEqual(["Maplebear Inc."]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(mails).toHaveLength(1);
+  });
+
+  it("writes once more when the ten minutes end, naming each employer still waiting and its size", async () => {
+    const t = createTestContext();
+    stub({});
+    const mails = watchConfirmations();
+    await ask(t, "adobe-inc", "Adobe Inc.");
+    await confirm(t);
+    await ask(t, "maplebear-inc", "Maplebear Inc.", "each");
+    await ask(t, "zeta-labs", "Zeta Labs LLC");
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(mails).toHaveLength(2);
+    const followUp = mails[1]!;
+    expect(String(followUp.subject)).toBe("Confirm: follow Maplebear Inc. on PERM Tracker");
+    expect(String(followUp.text)).toContain("case by case");
+    expect(String(followUp.text)).toContain("The same click also confirms your follow of: Zeta Labs LLC");
+    expect(String(followUp.html)).toContain("Zeta Labs LLC");
+    expect((await rowsOf(t)).filter((r) => r.confirmationOwed === true)).toHaveLength(0);
+    const done = await confirm(t);
+    expect(done?.employers.sort()).toEqual(["Maplebear Inc.", "Zeta Labs LLC"]);
+  });
+
+  it("holds nothing for an employer already followed at that size, and holds a change of size", async () => {
+    const t = createTestContext();
+    stub({});
+    const mails = watchConfirmations();
+    await ask(t, "adobe-inc", "Adobe Inc.");
+    await confirm(t);
+    await ask(t, "adobe-inc", "Adobe Inc.");
+    let [row] = await rowsOf(t);
+    expect(row?.pendingSlug).toBeUndefined();
+    expect(row?.confirmationOwed).toBeUndefined();
+    // The same employer, now case by case: a real change, held and named by the follow-up.
+    await ask(t, "adobe-inc", "Adobe Inc.", "each");
+    [row] = await rowsOf(t);
+    expect(row).toMatchObject({ pendingScope: "each", confirmationOwed: true, scope: "group" });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(mails).toHaveLength(2);
+    expect(String(mails[1]!.text)).toContain("case by case");
+  });
+});
+
 describe("one email a day, whatever the address follows", () => {
   it("queues rather than sends for an address that follows two things, then sends ONE bundle", async () => {
     const t = createTestContext();

@@ -100,7 +100,7 @@ One line each. The reasons, and the incident behind each, are in the notes file 
 - A grid holding form controls needs `grid-cols-1 [&>*]:min-w-0`; `sr-only` goes on a wrapper, never a `<table>`; a table that scrolls sideways is a `ScrollBox`.
 - A social card never carries a live figure (`"mask": "figures"` in `scripts/page-cards.json`), and every public page names its card through `withSocialCard`.
 - A change to a box many pages share (the case box, the header, the footer, a list's header) gets `node scripts/phone_sweep.mjs <dev server> <a page carrying it>` through `solo-headless.sh` before the push: the deploy runs that sweep and `pnpm check` can't ([testing](docs/notes/testing.md)).
-- A new public page goes in the sitemap, the search palette, llms.txt, `scripts/known-routes.json` and the rail or menus. A new sitemap family needs `sitemap.xml` resubmitted in Search Console the same day ([seo](docs/notes/seo.md)).
+- A new public page goes in the sitemap, the search palette, llms.txt, `scripts/known-routes.json` and the rail or menus. It needs its sitemap date (`node scripts/page_dates.mjs`, once the page is committed), and a page that prints the sweep's figures joins `src/app/api/revalidate-sweep/paths.ts`. A new sitemap family needs `sitemap.xml` resubmitted in Search Console the same day ([seo](docs/notes/seo.md)).
 
 **Email and alerts**
 - Every send goes through `sendOrQueue` (Resend returns `{error}`, it never throws). A new sending path claims its line in the ledger in `convex/caseAlerts.ts`; limits live once in `convex/lib/alertBudgets.ts` ([email](docs/notes/email.md)).

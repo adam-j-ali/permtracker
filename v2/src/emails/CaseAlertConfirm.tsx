@@ -79,6 +79,12 @@ export interface CaseAlertConfirmProps {
    * of wrong that makes a reader doubt the whole subscription.
    */
   nounWithArticle?: string;
+  /**
+   * Other case numbers the same click confirms: the ones typed inside this address's ten minutes after an
+   * earlier confirmation. Each is named here, above the button, because a click is consent only for what the
+   * email said. They're listed as typed: only the first is checked against DOL's record.
+   */
+  alsoCases?: readonly string[];
 }
 
 export function CaseAlertConfirm({
@@ -91,6 +97,7 @@ export function CaseAlertConfirm({
   includesNewsletter = false,
   nounWithArticle = "a PERM case",
   lookupFailed = false,
+  alsoCases = [],
 }: CaseAlertConfirmProps) {
   const known = currentStatus !== null;
 
@@ -160,6 +167,14 @@ export function CaseAlertConfirm({
         </Text>
       )}
 
+      {alsoCases.length > 0 ? (
+        <Text className="em-text-body" style={styles.body}>
+          {`The same click also confirms alerts for the other ${alsoCases.length === 1 ? "case" : "cases"} you entered: `}
+          <span style={styles.alsoCases}>{alsoCases.join(", ")}</span>
+          .
+        </Text>
+      ) : null}
+
       {includesNews ? (
         <Text className="em-text-secondary" style={styles.newsNote}>
           You also asked for occasional product news. The same click confirms
@@ -187,6 +202,10 @@ export function CaseAlertConfirm({
 }
 
 const styles = {
+  alsoCases: {
+    fontFamily: MONO_STACK,
+    fontWeight: 600 as const,
+  },
   provenance: {
     fontFamily: MONO_STACK,
     color: "#5A5A5A",
