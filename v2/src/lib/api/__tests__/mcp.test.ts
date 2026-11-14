@@ -33,6 +33,12 @@ vi.mock("../reads", () => ({
 vi.mock("../employerLookup", () => ({ lookupEmployer: (...a: unknown[]) => lookupEmployer(...a) }));
 const lookupSoc = vi.fn();
 vi.mock("../socLookup", () => ({ lookupSoc: (...a: unknown[]) => lookupSoc(...a) }));
+const logMcpError = vi.fn();
+const logShapeMiss = vi.fn();
+vi.mock("../mcpLog", () => ({
+  logMcpError: (...a: unknown[]) => logMcpError(...a),
+  logShapeMiss: (...a: unknown[]) => logShapeMiss(...a),
+}));
 
 import { OPTIONS, POST } from "@/app/mcp/route";
 import { legacyToolCall } from "../mcp";
@@ -66,6 +72,8 @@ beforeEach(() => {
   countCall.mockReset();
   readQueue.mockReset().mockResolvedValue({ ok: true, data: { perm: { asOf: "2026-09-22" } }, meta });
   readCase.mockReset();
+  logMcpError.mockReset();
+  logShapeMiss.mockReset();
   // Every read starts each test clean and answering: a call count left by another test made one of these
   // order-dependent, which the gate's shuffled run found.
   for (const f of [readEntity, searchEntities, readEstimate, readBulletin, lookupEmployer, lookupSoc, findCases]) {
@@ -294,5 +302,51 @@ describe("a call under a tool name version 1.0 used is still answered", () => {
   it("leaves every other message as it was sent", async () => {
     const { body } = await rpc("tools/call", { name: "no_such_tool", arguments: {} });
     expect(JSON.stringify(body)).toMatch(/no_such_tool|not found|Unknown/i);
+  });
+});
+
+describe("each tool says what its answer looks like, in full", () => {
+  type Listed = { name: string; outputSchema?: { type?: string; properties?: Record<string, { anyOf?: { properties?: Record<string, unknown>; required?: string[] }[] }> } };
+
+  it("advertises the envelope and the operation's own answer shape, field by field", async () => {
+    // Act
+    const { body } = await rpc("tools/list");
+    const tools = body.result.tools as Listed[];
+    // Assert
+    for (const e of TOOL_ENDPOINTS) {
+      const out = tools.find((t) => t.name === toolName(e.id))!.outputSchema!;
+      expect(out.type, e.id).toBe("object");
+      expect(Object.keys(out.properties ?? {}).sort(), e.id).toEqual(["asOf", "data", "page", "source"]);
+      const variants = out.properties!.data!.anyOf ?? [];
+      expect(variants.length, `${e.id}: the answer, or "nothing found"`).toBe(2);
+      // The first is the answer the API documents for this operation: the same field names.
+      const example = e.response.example as Record<string, unknown>;
+      const named = Object.keys(variants[0]!.properties ?? {});
+      expect(named.length, e.id).toBeGreaterThan(1);
+      for (const field of named.filter((f) => (variants[0]!.required ?? []).includes(f))) expect(example, `${e.id}.${field}`).toHaveProperty(field);
+      // The second is "no such record", which is an answer too.
+      expect(Object.keys(variants[1]!.properties ?? {}).sort(), e.id).toEqual(["found", "message"]);
+    }
+    expect(Object.keys((tools.find((t) => t.name === "get_case")!.outputSchema!.properties!.data!.anyOf![0]!.properties ?? {}))).toContain("caseNumber");
+  });
+
+  it("never refuses a real answer for its shape, and says so in the log when one misses", async () => {
+    // Arrange: an answer that doesn't fit the published shape (a number where the case number belongs).
+    readCase.mockResolvedValue({ ok: true, data: { caseNumber: 5, somethingNew: true }, meta });
+    // Act
+    const { body } = await rpc("tools/call", { name: "get_case", arguments: { caseNumber: "G-100-26045-123456" } });
+    // Assert: the assistant still gets the answer, and we hear that the shape drifted, with where.
+    expect(body.result?.isError, JSON.stringify(body.error ?? "")).toBeUndefined();
+    expect(body.result.structuredContent.data).toEqual({ caseNumber: 5, somethingNew: true });
+    expect(logShapeMiss).toHaveBeenCalledTimes(1);
+    expect(logShapeMiss.mock.calls[0]![0]).toBe("get_case");
+    expect(String(logShapeMiss.mock.calls[0]![1])).toContain("caseNumber");
+  });
+
+  it("logs nothing when the answer fits", async () => {
+    const example = TOOL_ENDPOINTS.find((e) => e.id === "getQueue")!.response.example;
+    readQueue.mockResolvedValue({ ok: true, data: example, meta });
+    await rpc("tools/call", { name: "get_queue", arguments: {} });
+    expect(logShapeMiss).not.toHaveBeenCalled();
   });
 });

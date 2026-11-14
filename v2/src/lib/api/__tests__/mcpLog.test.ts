@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { logMcpError } from "../mcpLog";
+import { logMcpError, logShapeMiss } from "../mcpLog";
 
 /**
  * One uptime bot's malformed MCP probe was 529 of the web log's 705 lines on Oct 31 2026. A refusal that's the
@@ -24,3 +24,23 @@ describe("logMcpError", () => {
     expect(log).toHaveBeenCalledTimes(3);
   });
 });
+
+describe("an answer outside its published shape", () => {
+  it("is said once an hour per tool, naming the tool and where it missed", () => {
+    // Arrange
+    const log = vi.fn();
+    const t0 = 1_794_000_000_000;
+    // Act: three misses on one tool inside the hour, one on another tool, then one after the hour.
+    logShapeMiss("zz_tool_a", "caseNumber", t0, log);
+    logShapeMiss("zz_tool_a", "caseNumber", t0 + 60_000, log);
+    logShapeMiss("zz_tool_a", "status", t0 + 3_000_000, log);
+    logShapeMiss("zz_tool_b", "month", t0 + 61_000, log);
+    logShapeMiss("zz_tool_a", "caseNumber", t0 + 3_600_001, log);
+    // Assert
+    expect(log).toHaveBeenCalledTimes(3);
+    expect(String(log.mock.calls[0]![1])).toBe("tool zz_tool_a answered outside its published shape at caseNumber");
+    expect(String(log.mock.calls[1]![1])).toContain("zz_tool_b");
+    expect(String(log.mock.calls[2]![1])).toContain("zz_tool_a");
+  });
+});
+

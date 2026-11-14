@@ -84,7 +84,7 @@ const foundCase = z
     filedOn: day("The day the case was filed").nullable().optional(),
     decisionDate: day("The day DOL decided the case").nullable(),
     worksiteState: z.string().nullable().describe("The worksite's state, two letters, when DOL's record carries it."),
-    wageRequest: z.unknown().nullable().describe("The prevailing wage request the case used, when it can be matched."),
+    wageRequest: z.string().nullable().describe("The case number of the prevailing wage request the case used, when DOL's record names one."),
     lawFirm: z.string().nullable().optional().describe("The law firm on the case. DOL names it only once the case is decided."),
     url: z.string().describe("The case's page on permtracker.app."),
   })
