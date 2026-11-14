@@ -378,6 +378,7 @@ async function replay(
   const call = { ...args, fromQueue: true };
   // Each module's own validators check the stored arguments on the way in.
   if (kind === "case") await ctx.runMutation(internal.caseAlerts.subscribe, call as never);
+  else if (kind === "caseList") await ctx.runMutation(internal.caseAlerts.subscribeList, call as never);
   else if (kind === "employer") await ctx.runMutation(internal.employerAlerts.subscribe, call as never);
   else if (kind === "queue") await ctx.runMutation(internal.queueAlerts.subscribe, call as never);
   else if (kind === "bulletin") await ctx.runMutation(internal.bulletinAlerts.subscribe, call as never);

@@ -12,7 +12,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createTestContext } from "../../test-utils/convex";
+// Tracked, so each test's own scheduled work is settled before the next test starts (test-utils/convexSettle.ts).
+import { finishScheduledNow, settleScheduled, trackedTestContext as createTestContext } from "../../test-utils/convexSettle";
 import { internal } from "../_generated/api";
 import { makeUnsubscribeToken } from "../lib/unsubscribeToken";
 import { easternDay } from "../lib/time";
@@ -150,7 +151,9 @@ beforeEach(() => {
   vi.stubEnv("DATABASE_URL", "https://example.turso.io");
   vi.stubEnv("DATABASE_AUTH_TOKEN", "stub-token");
 });
-afterEach(() => {
+afterEach(async () => {
+  // First, while this test's stubs are still in place: a confirmation still on its way belongs to this test.
+  await settleScheduled();
   global.fetch = originalFetch;
   vi.unstubAllEnvs();
 });
@@ -551,6 +554,8 @@ describe("following every case", () => {
     expect(String(sends[0]!.subject)).toContain("Maplebear Inc.");
     const row = await t.run(async (ctx) => ctx.db.get(id));
     expect(row?.caseToldThrough).toBe(watermark);
+    // The error row is written by a job `recordError` schedules: wait for it, or the read races it.
+    await finishScheduledNow(t);
     const errors = await t.run(async (ctx) => ctx.db.query("systemErrors").take(5));
     expect(errors.map((e) => e.operation)).toContain("employerAlerts.sweep.caseMoves");
   });
@@ -611,14 +616,19 @@ describe("several employers followed one after another", () => {
     t.mutation(internal.employerAlerts.confirmByToken, {
       token: await makeUnsubscribeToken(ADDRESS, SECRET, "employer-confirm"),
     });
-  /** Every confirmation the stub saw, which `stub`'s own list leaves out. */
+  /**
+   * Every confirmation to THIS group's address the stub saw, which `stub`'s own list leaves out. To this address
+   * only: a test that ran just before, on real timers, can still have a confirmation of its own on the way, and it
+   * goes out through whichever stub is installed when it fires (Nov 14 2026: the shuffled gate counted one here).
+   */
   function watchConfirmations() {
     const seen: Record<string, unknown>[] = [];
     const inner = global.fetch;
     global.fetch = (async (url: unknown, init?: { body?: string }) => {
       if (!String(url).includes("/v2/pipeline") && init?.body) {
         const body = JSON.parse(init.body) as Record<string, unknown>;
-        if (String(body.subject ?? "").startsWith("Confirm:")) seen.push(body);
+        const mine = [body.to].flat().includes(ADDRESS);
+        if (mine && String(body.subject ?? "").startsWith("Confirm:")) seen.push(body);
       }
       return inner(url as never, init as never);
     }) as unknown as typeof fetch;

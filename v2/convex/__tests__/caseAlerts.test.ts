@@ -15,7 +15,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { createTestContext } from "../../test-utils/convex";
+// Tracked, so each test's own scheduled work is settled before the next test starts (test-utils/convexSettle.ts).
+import { settleScheduled, trackedTestContext as createTestContext } from "../../test-utils/convexSettle";
 import { internal } from "../_generated/api";
 import { MAX_CASES_PER_ADDRESS, WATCH_AFTER_DECISION_MS } from "../caseAlerts";
 import { BUDGETS, SUBSCRIBE_IP_LIMIT } from "../lib/alertBudgets";
@@ -233,7 +234,9 @@ beforeEach(() => {
   vi.stubEnv("DATABASE_AUTH_TOKEN", "stub-token");
 });
 
-afterEach(() => {
+afterEach(async () => {
+  // First, while this test's stubs are still in place: a confirmation still on its way belongs to this test.
+  await settleScheduled();
   global.fetch = originalFetch;
   vi.unstubAllEnvs();
 });
@@ -1549,8 +1552,10 @@ describe("several cases typed one after another", () => {
     t.mutation(internal.caseAlerts.subscribe, { email: ADDRESS, caseNumber, ip: "198.51.100.9" });
   const rowsOf = (t: ReturnType<typeof createTestContext>) =>
     t.run(async (ctx) => ctx.db.query("caseStatusAlerts").collect());
+  // To this group's address only: a test that ran just before, on real timers, can still have a confirmation of
+  // its own on the way, and it goes out through whichever stub is installed when it fires.
   const confirmations = (sends: Record<string, unknown>[]) =>
-    sends.filter((s) => String(s.subject).startsWith("Confirm alerts"));
+    sends.filter((s) => [s.to].flat().includes(ADDRESS) && String(s.subject).startsWith("Confirm alerts"));
   const confirm = async (t: ReturnType<typeof createTestContext>) =>
     t.mutation(internal.caseAlerts.confirmByToken, {
       token: await makeUnsubscribeToken(ADDRESS, SECRET, "case-confirm"),
@@ -1603,9 +1608,11 @@ describe("several cases typed one after another", () => {
     const mails = confirmations(sends);
     expect(mails).toHaveLength(2);
     const followUp = mails[1]!;
-    expect(String(followUp.subject)).toContain(B);
-    expect(String(followUp.text)).toContain(C);
-    expect(String(followUp.html)).toContain(C);
+    expect(String(followUp.subject)).toBe("Confirm alerts for 2 cases");
+    for (const number of [B, C]) {
+      expect(String(followUp.text)).toContain(number);
+      expect(String(followUp.html)).toContain(number);
+    }
     expect(await globalCharges(t)).toBe(2);
     const rows = await rowsOf(t);
     expect(rows.filter((r) => r.confirmationOwed === true)).toHaveLength(0);
@@ -1685,5 +1692,308 @@ describe("several cases typed one after another", () => {
     expect(confirmations(sends)).toHaveLength(1);
     const held = (await rowsOf(t)).find((r) => r.pendingCaseNumber === B);
     expect(held?.confirmationOwed).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A pasted list
+// ---------------------------------------------------------------------------
+
+describe("a pasted list of cases", () => {
+  const A = "G-100-26125-868956";
+  const B = "G-100-26130-111111";
+  /** A wage request: its status lives in another table. */
+  const WAGE = "P-100-26131-222222";
+  const ADDRESS = "mobility@example.com";
+  const read = (n: number) => `We read ${n} case ${n === 1 ? "number" : "numbers"}. Check your inbox to confirm.`;
+  const FIXTURE: MirrorFixture = {
+    cases: {
+      [A]: { status: "ANALYST REVIEW", isFinal: false },
+      [WAGE]: { status: "DETERMINATION ISSUED", isFinal: true },
+    },
+  };
+
+  const list = (t: ReturnType<typeof createTestContext>, caseNumbers: string[], over: { ip?: string; email?: string } = {}) =>
+    t.mutation(internal.caseAlerts.subscribeList, { email: ADDRESS, caseNumbers, ip: "198.51.100.9", ...over });
+  const rowsOf = (t: ReturnType<typeof createTestContext>) =>
+    t.run(async (ctx) => ctx.db.query("caseStatusAlerts").collect());
+  // To this group's address only: a test that ran just before, on real timers, can still have a confirmation of
+  // its own on the way, and it goes out through whichever stub is installed when it fires.
+  const confirmations = (sends: Record<string, unknown>[]) =>
+    sends.filter((s) => [s.to].flat().includes(ADDRESS) && String(s.subject).startsWith("Confirm alerts"));
+  const confirm = async (t: ReturnType<typeof createTestContext>) =>
+    t.mutation(internal.caseAlerts.confirmByToken, {
+      token: await makeUnsubscribeToken(ADDRESS, SECRET, "case-confirm"),
+    });
+  const fillThePool = (t: ReturnType<typeof createTestContext>) =>
+    t.run(async (ctx) => {
+      for (let i = 0; i < BUDGETS.caseConfirm.limit; i++) {
+        await ctx.db.insert("rateLimits", {
+          key: `${BUDGETS.caseConfirm.key}:all`,
+          timestamp: Date.now(),
+          identifier: "all",
+          action: BUDGETS.caseConfirm.key,
+        });
+      }
+    });
+  const many = (n: number, from = 0) => Array.from({ length: n }, (_, i) => `G-100-26125-${String(500000 + from + i)}`);
+
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("stages every case and sends one email naming each with its status", async () => {
+    // Arrange
+    const t = createTestContext();
+    const { sends } = stubMirrorAndResend(FIXTURE);
+    // Act
+    const reply = await list(t, [A, B, WAGE]);
+    // Assert: one charge for the one email, every case staged and stamped, none owed a second email.
+    expect(reply).toEqual({ ok: true, message: read(3) });
+    expect(await globalCharges(t)).toBe(1);
+    const rows = await rowsOf(t);
+    expect(rows.map((r) => r.pendingCaseNumber).sort()).toEqual([A, B, WAGE].sort());
+    expect(rows.every((r) => r.lastConfirmationSentAt !== undefined && r.confirmationOwed === undefined)).toBe(true);
+    expect(rows.every((r) => r.confirmedAt === undefined)).toBe(true);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    const mails = confirmations(sends);
+    expect(mails).toHaveLength(1);
+    const mail = mails[0]!;
+    expect(mail.subject).toBe("Confirm alerts for 3 cases");
+    for (const part of [String(mail.html), String(mail.text)]) {
+      for (const number of [A, B, WAGE]) expect(part).toContain(number);
+    }
+    expect(String(mail.text)).toContain(`${A}: ANALYST REVIEW`);
+    expect(String(mail.text)).toContain(`${B}: not in our records yet`);
+    expect(String(mail.text)).toContain(`${WAGE}: DETERMINATION ISSUED`);
+    expect(String(mail.text)).toContain("We don't hold 1 of them yet");
+    expect(String(mail.html)).toContain("Analyst Review");
+    expect(String(mail.html)).toContain("Not in our records yet");
+  });
+
+  it("reads each program's cases from its own table", async () => {
+    const t = createTestContext();
+    const { tableReads } = stubMirrorAndResend(FIXTURE);
+    await list(t, [A, B, WAGE]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    const reads = tableReads().map((q) => `${/FROM (\w+)/.exec(q.sql)?.[1]}: ${q.args.join(" ")}`);
+    expect(reads).toContain(`perm_case_status: ${A} ${B}`);
+    expect(reads).toContain(`pwd_case_status: ${WAGE}`);
+  });
+
+  it("says the read failed, and never that a case is missing, when DOL's record can't be read", async () => {
+    const t = createTestContext();
+    const { sends } = stubMirrorAndResend(FIXTURE);
+    const stubbed = global.fetch;
+    global.fetch = (async (url: unknown, init?: { body?: string }) => {
+      if (String(url).includes("/v2/pipeline")) return new Response("down", { status: 503 });
+      return stubbed(url as never, init as never);
+    }) as unknown as typeof fetch;
+    await list(t, [A, B]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    const [mail] = confirmations(sends);
+    expect(String(mail?.text)).toContain("We couldn't check these case numbers just now");
+    expect(String(mail?.text)).not.toContain("not in our records yet");
+    expect(String(mail?.html)).not.toContain("Not in our records yet");
+  });
+
+  it("confirms the whole list with one click", async () => {
+    const t = createTestContext();
+    stubMirrorAndResend(FIXTURE);
+    await list(t, [A, B, WAGE]);
+    const done = await confirm(t);
+    expect(done?.caseNumbers.sort()).toEqual([A, B, WAGE].sort());
+    const rows = await rowsOf(t);
+    expect(rows.every((r) => r.confirmedAt !== undefined && r.pendingCaseNumber === undefined)).toBe(true);
+  });
+
+  it("reads every number again on the server: junk, repeats and an overlong string are dropped", async () => {
+    const t = createTestContext();
+    stubMirrorAndResend(FIXTURE);
+    const reply = await list(t, [` ${A.toLowerCase()} `, "not a number", A, "", "x".repeat(900), B]);
+    expect(reply).toEqual({ ok: true, message: read(2) });
+    expect((await rowsOf(t)).map((r) => r.caseNumber).sort()).toEqual([A, B].sort());
+  });
+
+  it("refuses a list with no case number in it, and a bad address, before anything is charged", async () => {
+    const t = createTestContext();
+    stubMirrorAndResend(FIXTURE);
+    const none = await list(t, ["hello", "A-23043-00641"]);
+    const bad = await list(t, [A], { email: "not-an-address" });
+    expect(none.ok).toBe(false);
+    expect(none.message).toContain("None of those look like DOL case numbers");
+    expect(bad).toEqual({ ok: false, message: "That email address doesn't look right." });
+    expect(await rowsOf(t)).toHaveLength(0);
+    expect(await globalCharges(t)).toBe(0);
+    expect(await t.run((ctx) => ctx.db.query("rateLimits").collect())).toHaveLength(0);
+  });
+
+  it("charges the caller's hourly allowance once for a whole list, and stops at its limit", async () => {
+    const t = createTestContext();
+    stubMirrorAndResend(FIXTURE);
+    await list(t, [A, B, WAGE]);
+    const perIp = await t.run(async (ctx) =>
+      (await ctx.db.query("rateLimits").collect()).filter((r) => r.action === "case_subscribe_ip"),
+    );
+    expect(perIp).toHaveLength(1);
+    // The rest of the hour's attempts, each a new list for the same address (held, so no mail is spent).
+    const replies = [];
+    for (let i = 1; i < SUBSCRIBE_IP_LIMIT.limit + 2; i++) replies.push(await list(t, many(1, i)));
+    expect(replies.slice(0, SUBSCRIBE_IP_LIMIT.limit - 1).every((r) => r.ok)).toBe(true);
+    expect(replies.slice(SUBSCRIBE_IP_LIMIT.limit - 1).every((r) => !r.ok && r.throttled)).toBe(true);
+  });
+
+  it("holds a list sent inside the ten minutes, and names it in the one follow-up", async () => {
+    // Arrange: one case typed and confirmed, so the address is inside its ten minutes with nothing waiting.
+    const t = createTestContext();
+    const { sends } = stubMirrorAndResend(FIXTURE);
+    await t.mutation(internal.caseAlerts.subscribe, { email: ADDRESS, caseNumber: "G-100-26120-000001", ip: "198.51.100.9" });
+    await confirm(t);
+    // Act
+    const reply = await list(t, [A, B]);
+    // Assert: the same kind of reply, no second charge yet, both held and owed.
+    expect(reply).toEqual({ ok: true, message: read(2) });
+    expect(await globalCharges(t)).toBe(1);
+    const held = (await rowsOf(t)).filter((r) => r.pendingCaseNumber !== undefined);
+    expect(held.map((r) => r.caseNumber).sort()).toEqual([A, B].sort());
+    expect(held.every((r) => r.confirmationOwed === true && r.lastConfirmationSentAt === undefined)).toBe(true);
+    // And when the ten minutes end, one email names both.
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    const mails = confirmations(sends);
+    expect(mails).toHaveLength(2);
+    expect(mails[1]!.subject).toBe("Confirm alerts for 2 cases");
+    expect(await globalCharges(t)).toBe(2);
+  });
+
+  it("doesn't name again, inside the ten minutes, a case the first email already named", async () => {
+    // Arrange: one case typed moments ago, its confirmation not clicked yet.
+    const t = createTestContext();
+    const { sends } = stubMirrorAndResend(FIXTURE);
+    await t.mutation(internal.caseAlerts.subscribe, { email: ADDRESS, caseNumber: A, ip: "198.51.100.9" });
+    // Act: a list that repeats it and adds one.
+    await list(t, [A, B]);
+    // Assert: only the new case is owed the follow-up, and the follow-up names only that one.
+    const rows = await rowsOf(t);
+    expect(rows.find((r) => r.caseNumber === A)?.confirmationOwed).toBeUndefined();
+    expect(rows.find((r) => r.caseNumber === B)?.confirmationOwed).toBe(true);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    const mails = confirmations(sends);
+    expect(mails).toHaveLength(2);
+    expect(String(mails[1]!.subject)).toContain(B);
+    expect(String(mails[1]!.html)).not.toContain(A);
+  });
+
+  it("sends no second email for a list the first email already named in full", async () => {
+    const t = createTestContext();
+    const { sends } = stubMirrorAndResend(FIXTURE);
+    await list(t, [A, B]);
+    await list(t, [B, A]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(confirmations(sends)).toHaveLength(1);
+    expect(await globalCharges(t)).toBe(1);
+  });
+
+  it("leaves a watched case alone and confirms only the rest, with the same reply", async () => {
+    const t = createTestContext();
+    const { sends } = stubMirrorAndResend(FIXTURE);
+    await seededSubscription(t, ADDRESS, "ANALYST REVIEW", A);
+    const reply = await list(t, [A, B]);
+    expect(reply).toEqual({ ok: true, message: read(2) });
+    const rows = await rowsOf(t);
+    expect(rows.find((r) => r.caseNumber === A)?.pendingCaseNumber).toBeUndefined();
+    expect(rows.find((r) => r.caseNumber === B)?.pendingCaseNumber).toBe(B);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    const mails = confirmations(sends);
+    expect(mails).toHaveLength(1);
+    expect(String(mails[0]!.subject)).toContain(B);
+    expect(String(mails[0]!.html)).not.toContain(A);
+  });
+
+  it("sends nothing when every case is already watched, and says the same thing", async () => {
+    const t = createTestContext();
+    const { sends } = stubMirrorAndResend(FIXTURE);
+    await seededSubscription(t, ADDRESS, "ANALYST REVIEW", A);
+    const reply = await list(t, [A]);
+    expect(reply).toEqual({ ok: true, message: read(1) });
+    expect(await globalCharges(t)).toBe(0);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(confirmations(sends)).toHaveLength(0);
+  });
+
+  it("keeps the ceiling on cases per address, and says how many it kept", async () => {
+    // Arrange: five places left.
+    const t = createTestContext();
+    const { sends } = stubMirrorAndResend({ cases: {} });
+    await t.run(async (ctx) => {
+      for (let i = 0; i < MAX_CASES_PER_ADDRESS - 5; i++) {
+        await ctx.db.insert("caseStatusAlerts", {
+          email: ADDRESS,
+          caseNumber: `P-100-26125-868${String(i).padStart(3, "0")}`,
+          createdAt: Date.now(),
+          confirmedAt: Date.now(),
+        });
+      }
+    });
+    // Act
+    await list(t, many(10));
+    // Assert: only five more rows, and the email names those five.
+    expect(await rowsOf(t)).toHaveLength(MAX_CASES_PER_ADDRESS);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(confirmations(sends)[0]?.subject).toBe("Confirm alerts for 5 cases");
+  });
+
+  it("takes the first hundred of a longer list, and says so", async () => {
+    const t = createTestContext();
+    stubMirrorAndResend({ cases: {} });
+    const reply = await list(t, many(MAX_CASES_PER_ADDRESS + 30));
+    expect(reply.message).toBe(
+      `We read 130 case numbers and kept the first ${MAX_CASES_PER_ADDRESS}, the most one address can watch. Check your inbox to confirm.`,
+    );
+    expect(await rowsOf(t)).toHaveLength(MAX_CASES_PER_ADDRESS);
+  });
+
+  it("waits in the queue as one request when the day's confirmations are spent, writing no row", async () => {
+    // Arrange
+    const t = createTestContext();
+    stubMirrorAndResend(FIXTURE);
+    await fillThePool(t);
+    // Act
+    const reply = await list(t, [A, "junk", B]);
+    // Assert: queued, nothing staged, and the queue holds the list as the server read it.
+    expect(reply.ok).toBe(true);
+    expect(reply.queued).toBe(true);
+    expect(await rowsOf(t)).toHaveLength(0);
+    const waiting = await t.run((ctx) => ctx.db.query("confirmationQueue").collect());
+    expect(waiting.map((w) => w.kind)).toEqual(["caseList"]);
+    expect(JSON.parse(waiting[0]!.payload)).toEqual({ email: ADDRESS, caseNumbers: [A, B] });
+  });
+
+  it("goes out when the queue replays it, without a second charge", async () => {
+    // Arrange: the pool still full, as it is when the drain has measured room by the day's count instead.
+    const t = createTestContext();
+    const { sends } = stubMirrorAndResend(FIXTURE);
+    await fillThePool(t);
+    const before = await globalCharges(t);
+    // Act: the drain's own call.
+    await t.mutation(internal.caseAlerts.subscribeList, { email: ADDRESS, caseNumbers: [A, B], fromQueue: true });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    // Assert
+    expect(await globalCharges(t)).toBe(before);
+    expect(confirmations(sends)).toHaveLength(1);
+    expect((await rowsOf(t)).map((r) => r.pendingCaseNumber).sort()).toEqual([A, B].sort());
+  });
+
+  it("stages the news and digest opt-ins with the list, and the email says so", async () => {
+    const t = createTestContext();
+    const { sends } = stubMirrorAndResend(FIXTURE);
+    await t.mutation(internal.caseAlerts.subscribeList, {
+      email: ADDRESS,
+      caseNumbers: [A, B],
+      news: true,
+      newsletter: true,
+    });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    const [mail] = confirmations(sends);
+    expect(String(mail?.text)).toContain("You also asked for occasional product news");
+    expect(String(mail?.text)).toContain("You also asked for the weekly digest");
   });
 });

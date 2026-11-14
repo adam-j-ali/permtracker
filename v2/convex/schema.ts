@@ -2988,6 +2988,8 @@ export default defineSchema({
       v.literal("firmEdit"),
       /** The weekly digest's own sign-up (convex/digestSignup.ts). */
       v.literal("digest"),
+      /** A pasted list of cases, held as one request (`subscribeList` in convex/caseAlerts.ts). */
+      v.literal("caseList"),
     ),
     pool: v.string(),
     email: v.string(),

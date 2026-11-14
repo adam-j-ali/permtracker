@@ -24,6 +24,7 @@ import { openEmail } from "./lib/sealedEmail";
 import { newNoteToken, noteKeyOf } from "./lib/reviewNoteKey";
 import { reviewLinkFor, THANKS as SITE_REVIEW_THANKS } from "./siteReviews";
 import { normaliseFlagCaseNumber, programOf } from "../src/lib/flagCaseNumber";
+import { LIST_ENTRIES_MAX } from "../src/lib/caseList";
 import { confirmOffers, isPermWageRequest, PWD_MATCH_SENTENCE } from "./lib/alertNextSteps";
 import { MAIL_KINDS, PREFS_KINDS, type PrefsKind } from "./lib/mailKinds";
 
@@ -529,6 +530,61 @@ http.route({
       source: typeof source === "string" ? source.slice(0, 64) : undefined,
       // Same staged news opt-in as the queue-alert route; the case-alert
       // confirm click completes both, and the confirmation email says so.
+      news: news === true,
+      newsletter: newsletter === true,
+      ip: callerIp(req),
+    });
+
+    return json(result, result.ok ? 200 : result.throttled ? 429 : 400);
+  }),
+});
+
+// A pasted list of cases for one address: one request, one confirmation email
+// naming them all (`subscribeList`). Its own route, so the single-case form's
+// contract stays as it is.
+http.route({
+  path: "/case-alert/subscribe-list",
+  method: "OPTIONS",
+  handler: httpAction(async (_ctx, req) => {
+    return new Response(null, { status: 204, headers: corsHeaders(req.headers.get("Origin")) });
+  }),
+});
+
+http.route({
+  path: "/case-alert/subscribe-list",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const cors = corsHeaders(req.headers.get("Origin"));
+    const json = (body: unknown, status = 200) =>
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return json({ ok: false, message: "Malformed request." }, 400);
+    }
+    if (typeof body !== "object" || body === null) {
+      return json({ ok: false, message: "Malformed request." }, 400);
+    }
+
+    const { email, caseNumbers, source, news, newsletter } = body as Record<string, unknown>;
+    if (typeof email !== "string" || !Array.isArray(caseNumbers)) {
+      return json({ ok: false, message: "An email address and a list of case numbers are both required." }, 400);
+    }
+    // Cheap bounds before anything reads a string: how many entries cross the
+    // boundary, and how long each may be. The mutation reads every one again.
+    const numbers = caseNumbers
+      .slice(0, LIST_ENTRIES_MAX)
+      .filter((n): n is string => typeof n === "string")
+      .map((n) => n.slice(0, 64));
+    const result = await ctx.runMutation(internal.caseAlerts.subscribeList, {
+      email: email.slice(0, 320),
+      caseNumbers: numbers,
+      source: typeof source === "string" ? source.slice(0, 64) : undefined,
       news: news === true,
       newsletter: newsletter === true,
       ip: callerIp(req),

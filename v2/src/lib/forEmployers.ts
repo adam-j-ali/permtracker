@@ -25,7 +25,7 @@ export const EMPLOYER_FAQS = [
   },
   {
     q: "Will I hear the day a case is certified?",
-    a: `Yes, if you follow your company with Every case too ticked. PERM Tracker reads every waiting case's status from DOL ${CASE_CHECKS.length} times each weekday, and sends one email on a day any of your company's cases changed, in the morning or the early evening, Eastern time. To hear within minutes about one case, add an alert on that case's own page.`,
+    a: `Yes, if you follow your company with Every case too ticked. PERM Tracker reads every waiting case's status from DOL ${CASE_CHECKS.length} times each weekday, and sends one email on a day any of your company's cases changed, in the morning or the early evening, Eastern time. To hear within minutes about particular cases, paste their numbers into the list box on the alerts page: one email confirms them all.`,
   },
   {
     q: "What happens after DOL certifies a PERM case?",
