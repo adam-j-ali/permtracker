@@ -85,6 +85,23 @@ describe("EmployerFollow", () => {
     expect(posted).toEqual([{ email: "hr@example.com", slug: "acme", source: "employer-page", scope: "each" }]);
   });
 
+  it("is never stretched: the record and the form sit side by side inside the box, by the box's own width", () => {
+    // Arrange, Act
+    vi.stubEnv("NEXT_PUBLIC_CONVEX_URL", "https://example.convex.cloud");
+    const { container } = render(<EmployerFollow {...base} row={null} moves={[move(0)]} />);
+    const box = container.querySelector("#follow")!;
+    // Assert: the box measures itself, and nothing in it is pushed to the foot of a taller neighbour's height
+    // (the form used to sit at the bottom of a box stretched beside the waiting card).
+    expect(box.className.split(/\s+/)).toContain("@container");
+    expect(box.className).not.toMatch(/\bflex-col\b/);
+    expect(container.querySelector(".mt-auto")).toBeNull();
+    const grid = box.querySelector(":scope > div.grid")!;
+    expect(grid.className).toContain("@3xl:grid-cols-");
+    expect(grid.children).toHaveLength(2);
+    expect(grid.children[0]!.textContent).toContain("What DOL has done to its cases as a group");
+    expect(grid.children[1]!.querySelector("form")).not.toBeNull();
+  });
+
   it("keeps every earlier move reachable behind a show-more", () => {
     const moves = Array.from({ length: 9 }, (_, i) => move(i));
     render(<EmployerFollow {...base} row={null} moves={moves} />);

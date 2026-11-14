@@ -977,8 +977,10 @@ export default async function EmployerPage({
       <Chapter id="now" title="Right now">
         {/* The live queue first: every figure in the header comes from decided
             cases, and this is the only part that sees a case still waiting. */}
-        {/* The two boxes stretch to one height, so their ends line up across the row. */}
-        <div className="grid grid-cols-1 gap-6 [&>*]:min-w-0 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        {/* One under the other at every width. Side by side they were stretched to one height, and the shorter
+            box (nearly always the waiting one, beside a follow box listing five or six moves) ended as a frame
+            round several hundred pixels of nothing. The follow box lays its own two halves side by side. */}
+        <div className="grid grid-cols-1 gap-6 [&>*]:min-w-0">
           {pending ? <LiveQueueBand pending={pending} subject="sponsor" asOf={mirrorAsOf} /> : null}{" "}
           <EmployerFollow
             slug={canonicalSlug}

@@ -167,22 +167,23 @@ export function UnpublishedEmployer({
                 // NOTHING between them, so a stage name welds to the previous
                 // stage's count for anything walking the DOM.
                 <Fragment key={`${s.status}-${String(s.isFinal)}`}>{" "}
-                <div>
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-                    <dt className="text-sm font-bold">
-                      {s.status}
-                    </dt>{" "}
-                    <dd className="font-mono text-sm font-bold tabular-nums">
-                      {formatInt(s.n)}{" "}
-                      <span className="ml-2 font-normal text-muted-foreground">
-                        {share}
-                      </span>
-                    </dd>
-                  </div>
+                {/* One group: the status, its count, then what the status means as a second description on a
+                    line of its own. A list's group may hold only terms and descriptions: the meaning as a
+                    paragraph beside a wrapped term and count broke that for a screen reader's list. */}
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                  <dt className="text-sm font-bold">
+                    {s.status}
+                  </dt>{" "}
+                  <dd className="font-mono text-sm font-bold tabular-nums">
+                    {formatInt(s.n)}{" "}
+                    <span className="ml-2 font-normal text-muted-foreground">
+                      {share}
+                    </span>
+                  </dd>{" "}
                   {meaning ? (
-                    <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                    <dd className="mt-1 basis-full text-sm leading-relaxed text-muted-foreground">
                       {meaning}
-                    </p>
+                    </dd>
                   ) : null}
                 </div>
                 </Fragment>

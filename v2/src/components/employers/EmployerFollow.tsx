@@ -33,7 +33,7 @@ function markerClass(m: EmployerMove): string {
 
 function MoveItem({ m }: { m: EmployerMove }) {
   return (
-    <li className="relative grid grid-cols-1 gap-y-0.5 py-2 pl-6 sm:grid-cols-[6.5rem_minmax(0,1fr)] sm:gap-x-4">
+    <li className="relative grid grid-cols-1 gap-y-0.5 py-2 pl-6 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-x-4">
       <span aria-hidden="true" className={`absolute -left-[9px] top-3.5 h-4 w-4 border border-input ${markerClass(m)}`} />{" "}
       {/* The short month, as in a table: in the narrow column a long one ran a two-day move's date to three lines. */}
       <span className="text-sm font-semibold tabular-nums text-muted-foreground">{workedLabel(m.worked, (d) => monthDay(d) ?? d)}</span>{" "}
@@ -76,82 +76,81 @@ export function EmployerFollow({
   const legend = parts ? ribbonLegend(parts) : [];
   const shown = moves.slice(0, RAIL_SHOWN);
   return (
-    <section id="follow" className={cn("flex scroll-mt-28 flex-col border-2 border-border bg-card p-5 shadow-hard sm:p-6", className ?? "mt-10")}>
+    <section id="follow" className={cn("@container scroll-mt-28 border-2 border-border bg-card p-5 shadow-hard sm:p-6", className ?? "mt-10")}>
       <h2 className="font-heading text-xl font-bold">Follow {name}</h2>{" "}
       <p className="mt-2 max-w-2xl text-base leading-relaxed text-soft">
         An email when DOL moves its cases as a group: five or more on or off hold in a day, or a batch decided well above its usual pace.
-      </p>
-
-      {showPending && parts && parts.pending > 0 ? (
-        <div className="mt-6">
-          <p className="text-base font-bold">
-            {`Its ${formatInt(parts.pending)} pending PERM cases${asOf ? `, as of ${longDate(asOf)}` : ""}`}
-          </p>{" "}
-          <ChartTips label="Where its pending cases sit" className="mt-2">
-            <StatusRibbon parts={parts} label={legend.map((l) => l.text).join("; ")} />
-          </ChartTips>{" "}
-          <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
-            {legend.map((l) => (
-              <Fragment key={l.key}>
-                <li className="flex items-center gap-2">
-                  <span aria-hidden="true" className={`inline-block h-3.5 w-3.5 shrink-0 border border-input ${l.cls}`} />{" "}
-                  <span>{l.text}</span>
-                </li>{" "}
-              </Fragment>
-            ))}
-          </ul>
-        </div>
-      ) : docMissing ? (
-        <p className="mt-6 text-base text-soft">
-          Today&apos;s picture of its pending cases isn&apos;t available: the site&apos;s
-          employer census couldn&apos;t be read or is more than eight days old. It&apos;s
-          rewritten every night, so this usually clears by the next day.
-        </p>
-      ) : !showPending ? null : (
-        <p className="mt-6 text-base text-soft">
-          {`Fewer than five of its PERM cases are pending${asOf ? ` as of ${longDate(asOf)}` : ""}, and the census that draws this bar starts at five.`}
-        </p>
-      )}{" "}
-
-      <div className="mt-6">
-        <p className="text-base font-bold">What DOL has done to its cases as a group</p>{" "}
-        {docMissing ? (
-          <p className="mt-2 text-base text-soft">
-            The record of group moves couldn&apos;t be read just now, so this can&apos;t say
-            whether DOL has moved its cases as a group. Following still works.
-          </p>
-        ) : shown.length === 0 ? (
-          <p className="mt-2 text-base text-soft">
-            {logFrom ? `Nothing employer-wide since this site's record began on ${longDate(logFrom)}.` : "Nothing employer-wide in this site's record."}
-          </p>
-        ) : (
-          <ol className="mt-3 border-l-2 border-border">
-            {shown.map((m) => (
-              <Fragment key={m.key}>
-                <MoveItem m={m} />{" "}
-              </Fragment>
-            ))}
-          </ol>
-        )}{" "}
-        {!docMissing && moves.length > RAIL_SHOWN ? (
-          <details className="mt-2">
-            <summary className="min-h-11 cursor-pointer py-2 text-sm font-bold link">
-              {`Show the ${formatInt(moves.length - RAIL_SHOWN)} earlier ${moves.length - RAIL_SHOWN === 1 ? "move" : "moves"}`}
-            </summary>
-            <ol className="mt-1 border-l-2 border-border">
-              {moves.slice(RAIL_SHOWN).map((m) => (
+      </p>{" "}
+      {/* Wide: what has happened on the left, the form on the right, each as tall as its own content. Narrow: the
+          form under the record, as it always was. By the box's own width, never the screen's: beside the data rail
+          a 1024px screen leaves this box under 600px, and the form a 220px column. */}
+      <div className="mt-6 grid grid-cols-1 gap-x-10 gap-y-6 [&>*]:min-w-0 @3xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div>
+          {showPending && parts && parts.pending > 0 ? (
+            <div className="mb-6">
+              <p className="text-base font-bold">
+                {`Its ${formatInt(parts.pending)} pending PERM cases${asOf ? `, as of ${longDate(asOf)}` : ""}`}
+              </p>{" "}
+              <ChartTips label="Where its pending cases sit" className="mt-2">
+                <StatusRibbon parts={parts} label={legend.map((l) => l.text).join("; ")} />
+              </ChartTips>{" "}
+              <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                {legend.map((l) => (
+                  <Fragment key={l.key}>
+                    <li className="flex items-center gap-2">
+                      <span aria-hidden="true" className={`inline-block h-3.5 w-3.5 shrink-0 border border-input ${l.cls}`} />{" "}
+                      <span>{l.text}</span>
+                    </li>{" "}
+                  </Fragment>
+                ))}
+              </ul>
+            </div>
+          ) : docMissing ? (
+            <p className="mb-6 text-base text-soft">
+              Today&apos;s picture of its pending cases isn&apos;t available: the site&apos;s
+              employer census couldn&apos;t be read or is more than eight days old. It&apos;s
+              rewritten every night, so this usually clears by the next day.
+            </p>
+          ) : !showPending ? null : (
+            <p className="mb-6 text-base text-soft">
+              {`Fewer than five of its PERM cases are pending${asOf ? ` as of ${longDate(asOf)}` : ""}, and the census that draws this bar starts at five.`}
+            </p>
+          )}{" "}
+          <p className="text-base font-bold">What DOL has done to its cases as a group</p>{" "}
+          {docMissing ? (
+            <p className="mt-2 text-base text-soft">
+              The record of group moves couldn&apos;t be read just now, so this can&apos;t say
+              whether DOL has moved its cases as a group. Following still works.
+            </p>
+          ) : shown.length === 0 ? (
+            <p className="mt-2 text-base text-soft">
+              {logFrom ? `Nothing employer-wide since this site's record began on ${longDate(logFrom)}.` : "Nothing employer-wide in this site's record."}
+            </p>
+          ) : (
+            <ol className="mt-3 border-l-2 border-border">
+              {shown.map((m) => (
                 <Fragment key={m.key}>
                   <MoveItem m={m} />{" "}
                 </Fragment>
               ))}
             </ol>
-          </details>
-        ) : null}
-      </div>{" "}
-
-      {/* The form sits at the foot of the box, so beside a taller card it stays level with that card's end. */}
-      <div className="mt-auto pt-6">
-        <div className="border-t-2 border-border pt-5">
+          )}{" "}
+          {!docMissing && moves.length > RAIL_SHOWN ? (
+            <details className="mt-2">
+              <summary className="min-h-11 cursor-pointer py-2 text-sm font-bold link">
+                {`Show the ${formatInt(moves.length - RAIL_SHOWN)} earlier ${moves.length - RAIL_SHOWN === 1 ? "move" : "moves"}`}
+              </summary>
+              <ol className="mt-1 border-l-2 border-border">
+                {moves.slice(RAIL_SHOWN).map((m) => (
+                  <Fragment key={m.key}>
+                    <MoveItem m={m} />{" "}
+                  </Fragment>
+                ))}
+              </ol>
+            </details>
+          ) : null}
+        </div>{" "}
+        <div className="border-t-2 border-border pt-5 @3xl:border-l-2 @3xl:border-t-0 @3xl:pl-10 @3xl:pt-0">
           <EmployerFollowForm
             slug={slug}
             source="employer-page"
