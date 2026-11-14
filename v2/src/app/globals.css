@@ -357,6 +357,20 @@ html {
   }
 }
 
+/* A native tick box once it's ticked (TickRow, the alert forms): solid lime with an ink tick drawn in, so its
+   state never rests on colour alone. One named rule: written as utility classes the two parts cancelled each
+   other. The class merge read the tick's image class as a second background colour and dropped the lime, and
+   the image class itself, an escaped string in a constant, was never generated. A ticked box drew as an empty
+   one on every alert form until Nov 13 2026. */
+@utility tick-box {
+  &:checked {
+    background-color: var(--primary);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3 3 7-7' fill='none' stroke='black' stroke-width='2.5'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+}
+
 /* A hatched fill: "not decided yet", "not known", "withheld". The lines take
    the element's text colour, so a hatch is set with a text class:
    text-muted-foreground where it only marks a placeholder, text-input where

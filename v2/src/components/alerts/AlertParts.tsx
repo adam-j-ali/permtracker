@@ -1,4 +1,5 @@
 import { CaretRightIcon, CheckCircleIcon } from "@phosphor-icons/react/ssr";
+import type { ReactNode } from "react";
 
 import { MAIL_KINDS } from "@/lib/mailKinds";
 import { cn } from "@/lib/utils";
@@ -84,9 +85,40 @@ const OPT_IN_TEXT = {
   news: `${MAIL_KINDS.news.name}, now and then.`,
 } as const;
 
-/** A tick drawn into the checked box, so its state never rests on colour alone. */
-const TICK =
-  "checked:bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3 3 7-7' fill='none' stroke='black' stroke-width='2.5'/%3E%3C/svg%3E\")] checked:bg-center checked:bg-no-repeat";
+/**
+ * One tick box and its words, as every alert form draws it: the opt-ins below, and a form's own choice (the
+ * employer follow's "every case").
+ */
+export function TickRow({
+  id,
+  checked,
+  onChange,
+  className,
+  children,
+}: {
+  id: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  className?: string;
+  children: ReactNode;
+}) {
+  // The whole row is the label and at least 44px tall: a one-line row on a
+  // 390px phone had been a 23px target. No negative margin: two boxes sit 12px
+  // apart, and stretched hit areas would overlap.
+  return (
+    <label htmlFor={id} className={cn("flex min-h-11 cursor-pointer items-start gap-2.5 py-2.5", className)}>
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        // `tick-box` (globals.css) fills the ticked box lime and draws its tick.
+        className="tick-box mt-0.5 size-5 shrink-0 cursor-pointer appearance-none border border-input bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      />{" "}
+      <span className="text-sm leading-relaxed text-soft">{children}</span>
+    </label>
+  );
+}
 
 export function OptInBox({
   id,
@@ -104,23 +136,10 @@ export function OptInBox({
   /** The row's own words, for a box that adds the list `kind` names for a stated reason. */
   label?: string;
 }) {
-  // The whole row is the label and at least 44px tall: a one-line row on a
-  // 390px phone had been a 23px target. No negative margin: two boxes sit 12px
-  // apart, and stretched hit areas would overlap.
   return (
-    <label htmlFor={id} className={cn("flex min-h-11 cursor-pointer items-start gap-2.5 py-2.5", className)}>
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className={cn(
-          "mt-0.5 size-5 shrink-0 cursor-pointer appearance-none border border-input bg-card checked:bg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          TICK,
-        )}
-      />{" "}
-      <span className="text-sm leading-relaxed text-soft">{label ?? OPT_IN_TEXT[kind]}</span>
-    </label>
+    <TickRow id={id} checked={checked} onChange={onChange} className={className}>
+      {label ?? OPT_IN_TEXT[kind]}
+    </TickRow>
   );
 }
 
