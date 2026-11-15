@@ -119,6 +119,7 @@ export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hos
   const toId = useId();
   const headingId = useId();
   const hintId = useId();
+  const datesHintId = useId();
   const nameRef = useRef<HTMLInputElement>(null);
   const [typed, setTyped] = useState(employer);
   const [job, setJob] = useState("");
@@ -235,6 +236,13 @@ export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hos
           ))}
         </div>
       ) : null}{" "}
+      {/* What the boxes are for, BEFORE the boxes: five empty fields with the rule under the last one read as five
+          required fields on a phone. It stays while the reader types, so nothing above a thumb moves. */}
+      {hosted ? null : (
+        <p id={hintId} className={cn("text-sm text-muted-foreground", (heading || programs.length > 1) && "mt-4")}>
+          Fill in what you know. One box is enough, and each one more narrows the list.
+        </p>
+      )}{" "}
       {/* `grid-cols-1` and `[&>*]:min-w-0`: a control in a grid sizes from its content on iOS without them. The
           boxes share a row by the finder's own width, never the screen's: in a list page's side box a field was
           left a few characters wide. */}
@@ -242,7 +250,7 @@ export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hos
         className={cn(
           "grid grid-cols-1 gap-x-4 gap-y-3 [&>*]:min-w-0",
           !hosted && "@md:grid-cols-2 @3xl:grid-cols-3",
-          (heading || programs.length > 1) && "mt-4",
+          hosted ? (heading || programs.length > 1) && "mt-4" : "mt-3",
         )}
       >
         <div>
@@ -253,7 +261,7 @@ export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hos
           <Input
             id={nameId}
             ref={nameRef}
-            aria-describedby={!hosted && !asked ? hintId : undefined}
+            aria-describedby={hosted ? undefined : hintId}
             type="text"
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
@@ -310,6 +318,7 @@ export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hos
             </Label>{" "}
             <DateInput
               id={fromId}
+              aria-describedby={asked ? undefined : datesHintId}
               value={ownFrom}
               maxDate={today}
               onChange={(e) => {
@@ -325,6 +334,7 @@ export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hos
             </Label>{" "}
             <DateInput
               id={toId}
+              aria-describedby={asked ? undefined : datesHintId}
               value={ownTo}
               maxDate={today}
               onChange={(e) => {
@@ -339,11 +349,11 @@ export function CaseFinder({ programs = ALL_PROGRAMS, program: opensOn, day: hos
       {/* Only the one-line answers are announced: a live region around the list would read every row on each key. */}
       <div className="text-base leading-relaxed">
         {!asked ? (
-          // What the boxes are for, until one is used. A host that owns the date says it in its own label.
+          // The dates' own rule, under the dates, until a box is used: the answer then takes its place. A host
+          // that owns the date says it in its own label.
           hosted ? null : (
-            <p id={hintId} className="mt-3 text-sm text-muted-foreground">
-              Fill in what you know. One box is enough, and each one more narrows the list. One date is that day; two
-              are the days between, up to three months.
+            <p id={datesHintId} className="mt-3 text-sm text-muted-foreground">
+              One date is that day. Two are the days between, up to three months.
             </p>
           )
         ) : hostNeedsDay ? (

@@ -223,10 +223,27 @@ describe("CaseFinder, standing apart", () => {
     expect(screen.queryByRole("heading")).toBeNull();
     expect(screen.getByRole("button", { name: "PERM case" })).toHaveAttribute("aria-pressed", "true");
     for (const label of ["Employer’s name", "Job title", "Law firm", "Filed from", "Filed to"]) expect(screen.getByLabelText(label)).toBeInTheDocument();
-    const hint = screen.getByText(/Fill in what you know\. One box is enough/);
+    const hint = screen.getByText("Fill in what you know. One box is enough, and each one more narrows the list.");
     expect(screen.getByRole("textbox", { name: "Employer’s name" })).toHaveAttribute("aria-describedby", hint.id);
     await new Promise((r) => setTimeout(r, 450));
     expect(asked).toEqual([]);
+  });
+
+  it("says one box is enough BEFORE the first box, so five empty boxes never read as five required ones", () => {
+    stub();
+    render(<CaseFinder source="lookup" heading="Find your case without the number" />);
+    // Arrange: the line, and every box it speaks for.
+    const hint = screen.getByText("Fill in what you know. One box is enough, and each one more narrows the list.");
+    const boxes = ["Employer’s name", "Job title", "Law firm", "Filed from", "Filed to"].map((label) => screen.getByLabelText(label));
+    // Assert: it comes first in the page's order, which is also the order a phone shows and a screen reader reads.
+    for (const box of boxes) expect(hint.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // And the dates' own rule sits with the dates, after them, and describes both.
+    const dates = screen.getByText("One date is that day. Two are the days between, up to three months.");
+    for (const label of ["Filed from", "Filed to"]) {
+      const box = screen.getByLabelText(label);
+      expect(box).toHaveAttribute("aria-describedby", dates.id);
+      expect(box.compareDocumentPosition(dates) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
   });
 
   it("takes one date alone as that day, with nothing else typed", async () => {
@@ -235,7 +252,9 @@ describe("CaseFinder, standing apart", () => {
     typeIn("Filed from", "2026-01-30");
     await screen.findByText(/DOL’s record holds 4 PERM cases filed on January 30, 2026: 2 decided, 2 still waiting\./);
     expect(finds(asked)).toEqual([{ program: "perm", from: "2026-01-30" }]);
-    expect(screen.queryByText(/Fill in what you know/)).toBeNull();
+    // The line above the boxes stays, so nothing jumps under a thumb. The dates' rule gives its place to the answer.
+    expect(screen.getByText(/Fill in what you know\. One box is enough/)).toBeInTheDocument();
+    expect(screen.queryByText(/One date is that day/)).toBeNull();
     expect(within(screen.getByRole("list")).getAllByRole("listitem")).toHaveLength(2);
     // Nothing was typed, so nothing is said to fit, and there's no employer to search by.
     expect(screen.queryByText(/fit what you typed/)).toBeNull();
@@ -405,15 +424,18 @@ describe("CaseFinder, standing apart", () => {
 });
 
 describe("CaseFinder, opened by a press", () => {
-  it("says what its boxes are for until one is used", () => {
+  it("keeps the line that says one box is enough, and drops the dates' rule once a box is used", () => {
     stub();
     render(<CaseFinder source="test" heading="Find your case without the number" />);
     const name = screen.getByRole("textbox", { name: "Employer’s name" });
-    const hint = screen.getByText(/Fill in what you know\. One box is enough, and each one more narrows the list\. One date is that day; two are the days between, up to three months\./);
+    const hint = screen.getByText("Fill in what you know. One box is enough, and each one more narrows the list.");
     expect(name).toHaveAttribute("aria-describedby", hint.id);
+    expect(screen.getByText("One date is that day. Two are the days between, up to three months.")).toBeInTheDocument();
     type("go");
-    expect(screen.queryByText(/Fill in what you know/)).toBeNull();
-    expect(name).not.toHaveAttribute("aria-describedby");
+    expect(screen.getByText("Fill in what you know. One box is enough, and each one more narrows the list.")).toBeInTheDocument();
+    expect(name).toHaveAttribute("aria-describedby", hint.id);
+    expect(screen.queryByText(/One date is that day/)).toBeNull();
+    expect(screen.getByLabelText("Filed from")).not.toHaveAttribute("aria-describedby");
   });
 
   it("puts the cursor in the first field still empty: the name, or the first date on an employer's own page", () => {
