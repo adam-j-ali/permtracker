@@ -1,0 +1,48 @@
+#!/bin/bash
+# permtracker-weekly-reboot: restart the server for updates once a week, and only when an update asks for it.
+# Run by permtracker-weekly-reboot.timer, Sundays at 1:30 AM Eastern: after the night's upgrade (06:00 UTC plus up to
+# ten minutes, so 1:00 to 1:10 AM in winter), before the 1:35 AM database refresh and the 2:00 AM night release.
+# Updates still install every night; unattended-upgrades no longer reboots by itself (conf/apt-reboot-permtracker.conf).
+#
+# Why once a week: a restart takes the site off its Cloudflare tunnel for about a minute (edge 530, then 502 while the
+# services start). On Nov 13 and Nov 14 2026 those two minutes held every server error of three days, and one landed
+# on Googlebot, which failed Search Console's server-error validation.
+#
+# It waits, up to MAX_WAIT_MIN minutes, while the night's upgrade, the database refresh or a release is running, so a
+# restart never cuts one in half. Still busy after that, the restart waits for next Sunday and this unit fails, so the
+# morning report names it.
+set -u
+MAX_WAIT_MIN=20
+DEPLOYING=/srv/permtracker/health/deploying
+log(){ logger -t permtracker-reboot "$*"; echo "$*"; }
+
+if [ ! -f /var/run/reboot-required ]; then
+  log "no update asks for a restart this week"
+  exit 0
+fi
+pkgs=$(tr '\n' ' ' < /var/run/reboot-required.pkgs 2>/dev/null)
+
+busy(){
+  for unit in apt-daily-upgrade.service apt-daily.service permtracker-db-refresh.service; do
+    if systemctl is-active --quiet "$unit"; then echo "$unit"; return 0; fi
+  done
+  if [ -f "$DEPLOYING" ]; then
+    started=$(cat "$DEPLOYING" 2>/dev/null)
+    case "$started" in ''|*[!0-9]*) started=0;; esac
+    # A marker older than half an hour is a release that died without cleaning up, not one running.
+    if [ $(( $(date +%s) - started )) -lt 1800 ]; then echo "a release"; return 0; fi
+  fi
+  return 1
+}
+
+for i in $(seq 0 "$MAX_WAIT_MIN"); do
+  what=$(busy) || {
+    log "restarting for updates: ${pkgs:-no package list}"
+    systemctl reboot
+    exit 0
+  }
+  [ "$i" = 0 ] && log "waiting for $what to finish before the restart"
+  [ "$i" -lt "$MAX_WAIT_MIN" ] && sleep 60
+done
+log "still busy ($what) after $MAX_WAIT_MIN minutes; the restart waits for next Sunday"
+exit 1
