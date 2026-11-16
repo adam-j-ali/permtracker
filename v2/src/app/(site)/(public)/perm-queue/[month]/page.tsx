@@ -69,6 +69,8 @@ import { statusCasesHref } from "@/components/queue/statusLinks";
 import { getPermLine } from "@/lib/db/permLine";
 import { getRangeCoverage } from "@/lib/db/rangeCoverage";
 import { softFail } from "@/lib/softRead";
+import { NextStartLine } from "@/components/queue/NextMonthStart";
+import { getNextStart } from "@/lib/db/monthStarts";
 
 /**
  * One filing month, split across the queues DOL actually runs.
@@ -163,7 +165,7 @@ export default async function CohortPage({
   // review" living on this page, and the day those two disagree the queue
   // board and the calculator start quoting different frontiers for one thing.
   // The extra reads are three indexed lookups an hour per month page.
-  const [backlog, ahead, adjacent, estimator, allMonths, pace, sweep, detail, monthDays, rangeCoverage, pastDay, dolHistory] = await Promise.all([
+  const [backlog, ahead, adjacent, estimator, allMonths, pace, sweep, detail, monthDays, rangeCoverage, pastDay, dolHistory, nextStart] = await Promise.all([
     getMonthBacklog(month),
     getPendingBefore(month),
     getAdjacentMonths(month),
@@ -188,6 +190,8 @@ export default async function CohortPage({
       }),
     // DOL's kept readings, for how its month moved (the queue page's own chip).
     getProcessingTimesHistory(24).catch(softFail("perm-queue/[month]/page.getProcessingTimesHistory", [])),
+    // When DOL will likely start the month after the one it's working: said on that month's own page.
+    getNextStart().catch(softFail("perm-queue/[month]/page.getNextStart", null)),
   ]);
   if (!backlog || backlog.total === 0) notFound();
   const makeup = monthMakeup(backlog.statuses);
@@ -261,6 +265,7 @@ export default async function CohortPage({
           waitingMoved={waitingTrend(makeup.inLine + makeup.outside, pastDay?.month?.pending, pastDay?.day)}
           dolMoved={dolMonth ? queueMoveTrend(dolHistory, (h) => ({ month: analystReviewQueue(h.permQueues)?.priorityDate, asOf: h.permAsOf })) : undefined}
         />{" "}
+        {nextStart?.est.month === month ? <NextStartLine est={nextStart.est} className="mt-6" /> : null}{" "}
         {since && pastDay ? <SinceDay className="mt-6" shift={since} since={pastDay.day} hrefFor={(status) => statusCasesHref(status, month)} /> : null}{" "}
         <SourceNote compact className="mt-4" />
       </header>{" "}

@@ -46,6 +46,8 @@ import { statusCasesHref } from "@/components/queue/statusLinks";
 import { getPermLine } from "@/lib/db/permLine";
 import { permLineNote } from "@/lib/permLine";
 import { softFail } from "@/lib/softRead";
+import { NextMonthStart } from "@/components/queue/NextMonthStart";
+import { getNextStart } from "@/lib/db/monthStarts";
 import { QueueAlertForm } from "../perm-processing-times/QueueAlertForm";
 
 /**
@@ -102,7 +104,7 @@ export const metadata: Metadata = withSocialCard({
 export const revalidate = 21600;
 
 export default async function PermQueuePage() {
-  const [census, estimator, alphabet, pastDays, ebSplit, reviewByDay, permBoard, dolHistory, line] = await Promise.all([
+  const [census, estimator, alphabet, pastDays, ebSplit, reviewByDay, permBoard, dolHistory, line, nextStart] = await Promise.all([
     getBacklogCensus(),
     getEstimatorData(),
     // Its own document and its own writer, so a missing one is a missing
@@ -125,6 +127,8 @@ export default async function PermQueuePage() {
     getProcessingTimesHistory(24).catch(softFail("perm-queue/page.getProcessingTimesHistory", [])),
     // Where DOL is by our own daily check; DOL's table can sit unchanged for weeks (lib/permLine.ts).
     getPermLine().catch(softFail("perm-queue/page.getPermLine", null)),
+    // When DOL will likely start the next month, from the past-day census; without it, no such section.
+    getNextStart().catch(softFail("perm-queue/page.getNextStart", null)),
   ]);
 
   // The whole line at the end of the newest replayed day before today, for "since".
@@ -352,6 +356,10 @@ export default async function PermQueuePage() {
           </div>
         </FinePrint>
       </section>{" "}
+
+      {/* The question asked every day in the applicants' groups, answered from DOL's own record: when it'll start the
+          month after the one it's working. Under the figures it dates, above the email box for a month of one's own. */}
+      {nextStart ? <NextMonthStart est={nextStart.est} current={nextStart.current} /> : null}{" "}
 
       {/* Someone reading where the queue stands is waiting on a month of their own, so the email box sits right
           under the overview. The reached months are marked from our own daily check. */}

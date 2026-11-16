@@ -63,7 +63,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/perm-queue",
     label: "PERM queue backlog",
     blurb:
-      "The PERM backlog by filing month: how many cases are undecided, at which stage, and how far each month has progressed, from PERM Tracker's daily check of every pending case.",
+      "The PERM backlog by filing month: how many cases are undecided, at which stage, and how far each month has progressed, from PERM Tracker's daily check of every pending case. It also says when DOL will likely start deciding the next filing month, from how far the month before had got each time DOL began one.",
   },
   {
     path: "/debarments",
