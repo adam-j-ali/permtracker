@@ -1471,5 +1471,15 @@
   "credit": "Photo: CashewCraver / Wikimedia Commons, CC BY-SA 4.0",
   "source": "https://commons.wikimedia.org/wiki/File:Chet_Holifield_Federal_Building_2020.jpg",
   "alt": "The Chet Holifield Federal Building in Laguna Niguel, California, a long, stepped federal office building, seen from a hill"
+ },
+ "changelog/when-dol-starts-the-next-month": {
+  "capture": {
+   "url": "/perm-queue",
+   "wait": 5000,
+   "clip": "sel:#next-month",
+   "maxHeight": 900
+  },
+  "credit": "Screenshot of permtracker.app, November 16, 2026",
+  "alt": "The queue page's new section: when DOL will likely start March 2026, a bar of February's decided cases, and the band where the last three months began"
  }
 }
