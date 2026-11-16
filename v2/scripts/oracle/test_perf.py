@@ -218,6 +218,13 @@ def test_judge() -> None:
             "MIN(s.filing_date), MAX(s.filing_date) FROM lca_case_status s WHERE s.employer_slug >= ? GROUP BY 1, 2, 3")
     w = perf.judge(None, None, [{"runs": 61, "meanMs": 1300, "sql": emap}], None, [])
     check("the nightly employer map's group-by isn't a warning", w == [], str(w))
+    dev = "/* dev */ SELECT case_number, case_status, received_date, decision_date, employer_name, employer_slug FROM seasonal_cases WHERE employer_slug = ?"
+    w = perf.judge(None, None, [{"runs": 8, "meanMs": 1500, "sql": dev}], None, [])
+    check("a development server's page check isn't the live site's slow statement", w == [], str(w))
+    check("it's named as the page check", perf.bulk_read(dev) == "a development server checking pages against the live data",
+          str(perf.bulk_read(dev)))
+    w = perf.judge(None, None, [{"runs": 8, "meanMs": 1500, "sql": dev.replace("/* dev */ ", "")}], None, [])
+    check("the same statement from the live site still is", len(w) == 1, str(w))
     w = perf.judge(None, None, [{"runs": 6, "meanMs": 1500, "sql": "SELECT s.employer_slug, s.employer_name FROM perm_live_recent s WHERE s.employer_slug = ?"}], None, [])
     check("a page's read that starts the same way still is", len(w) == 1, str(w))
     page = "SELECT case_number, status, received_date, decision_date, days, fiscal_year, employer_name FROM perm_cases WHERE employer_slug = ?"

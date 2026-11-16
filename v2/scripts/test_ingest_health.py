@@ -33,6 +33,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import check_ingest_health as health  # noqa: E402
+import daily_monitor as dm  # noqa: E402
 
 failures: list[str] = []
 H = 3_600_000
@@ -601,6 +602,7 @@ def main() -> int:
     check_consular_record()
     check_browser_timer_heartbeats()
     check_main_combines_every_check()
+    check_freshness_rows_read_plainly()
     check_wage_views_rules()
     check_lca_numbers_rules()
     check_lca_years_rules()
@@ -837,6 +839,55 @@ def check_main_combines_every_check() -> None:
     finally:
         for name, fn in saved.items():
             setattr(health, name, fn)
+
+
+def check_freshness_rows_read_plainly() -> None:
+    """Two rows the morning report misread on Nov 16 2026. The hand-kept I-140 ranges had a freshness row nothing
+    stamped (Aug 17, while i140ProcessingTimes.ts was read Oct 31), so it warned "the agency has not republished"
+    about figures we read by hand; the hand-read check dates those from the file. And a source that hasn't
+    republished printed STALE in the table beside its own "watching" line."""
+    import contextlib
+    import io
+
+    today = datetime.date.today()
+    old = (today - datetime.timedelta(days=139)).isoformat()
+    recent = str(int(NOW) - 86_400_000)
+
+    class Rows:
+        def execute(self, sql, args=None):
+            def row(ds, as_of, budget, fetched):
+                return [{"type": "text", "value": ds}, {"type": "text", "value": as_of},
+                        {"type": "integer", "value": str(budget)}, {"type": "text", "value": "an agency"},
+                        {"type": "text", "value": "Quarterly"}, {"type": "integer", "value": fetched}]
+            return {"response": {"result": {"rows": [
+                row("daily-decisions", old, 135, recent),
+                row("uscis-i140-times", (today - datetime.timedelta(days=91)).isoformat(), 90, recent)]}}}
+
+    saved = {name: getattr(health, name) for name in CHECKS + ("Database", "check_cap_streak",
+                                                              "check_unclassified_statuses", "check_warn_states",
+                                                              "check_hand_read_figures", "check_consular_facts")}
+    try:
+        health.Database = Rows
+        for name in ("check_cap_streak", "check_unclassified_statuses", "check_warn_states", "check_hand_read_figures",
+                     "check_consular_facts"):
+            setattr(health, name, lambda *a: 0)
+        for name in CHECKS:
+            setattr(health, name, lambda db: 0)
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = health.main()
+        out = buf.getvalue()
+    finally:
+        for name, fn in saved.items():
+            setattr(health, name, fn)
+    table = {l.split()[0]: l for l in out.splitlines() if l.startswith(("daily-decisions ", "uscis-i140-times "))}
+    check("freshness: a source wait reads 'waiting' in the table, not STALE",
+          "waiting" in table.get("daily-decisions", "") and "STALE" not in table.get("daily-decisions", ""), out)
+    check("freshness: and keeps its warning, in the words the morning report reads",
+          "::warning::daily-decisions" in out and dm.SOURCE_WAIT in out, out)
+    check("freshness: the hand-kept I-140 row is left to the hand-read check",
+          "hand-read check" in table.get("uscis-i140-times", "") and "::warning::uscis-i140-times" not in out, out)
+    check("freshness: a run with only source waits is green", rc == 0, str(rc))
 
 
 def check_wage_views_rules() -> None:

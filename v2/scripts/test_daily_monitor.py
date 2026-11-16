@@ -356,6 +356,23 @@ def main() -> int:
     lines = dm.health_lines(out)
     check(lines == ["Watching: i485-inventory is 53 days old against a 45-day budget",
                     "OUR INGEST HAS STOPPED for: lca-status (has not RUN)."], f"health lines kept: {lines}")
+    # A source that hasn't republished while our ingest keeps reading it is nobody's to act on, so it waits in a
+    # green section (Nov 16 2026: five such rows made the section "to watch" every morning, and its own summary
+    # read "every dataset inside its budget, 5 to watch").
+    wait = ("::warning::daily-decisions is 139 days old against a 135-day budget; the agency has not republished "
+            "and our ingest is fine. Becomes a failure at 405 days.\n")
+    waits = dm.health_lines(wait)
+    check(waits == ["Waiting on the agency: daily-decisions is 139 days old against a 135-day budget; the agency "
+                    "has not republished and our ingest is fine. Becomes a failure at 405 days."],
+          f"a source wait is named as one: {waits}")
+    status, summary = dm.health_verdict(0, waits)
+    check(status == "ok" and summary == "our ingests are current; 1 dataset waiting on its agency to republish",
+          f"a source wait alone is green: {status}, {summary}")
+    status, summary = dm.health_verdict(0, waits + ["Watching: The browser timer x has never checked in."])
+    check(status == "warn" and summary.endswith("1 to watch"), f"anything else to watch still warns: {status}, {summary}")
+    check(dm.health_verdict(0, lines)[0] == "warn", "a warning without the source-wait words still warns")
+    check(dm.health_verdict(0, []) == ("ok", "every dataset inside its budget"), "a clean run says so")
+    check(dm.health_verdict(1, waits)[0] == "fail", "a failed check is a failure, waits or not")
     # The run that broke is named. The report said "RUNS BROKEN: 1" and nothing else on six mornings by Nov 11 2026:
     # the verdict row's BROKEN sits past column 40, and the line that names the run starts with the script's name.
     broken = dm.health_lines(
@@ -679,6 +696,14 @@ def main() -> int:
           "of the usual Sunday (1.50K pageviews against a median of 3.40K)"), "a real drop names the weekday")
     week = [v7 for k, v7 in sorted(views.items()) if k < "2026-10-18"][-7:]
     check(dm.spike_note(3409, week, "pageviews", drop=True) is not None, "control: against every day the Sunday read as a drop")
+    # A busy day is news, not a warning: the server section and PostHog's allowance line watch what a crawler's surge
+    # costs (Nov 16 2026: a busy Sunday of single-page crawler visits warned, with the allowance on course).
+    line, warn = dm.traffic_unusual(7140, prior, usual)
+    check(line == "Busier than usual: 2.1x the usual Sunday (7.14K pageviews against a median of 3.40K)" and not warn,
+          f"a busy day is noted, not warned: {line}, {warn}")
+    line, warn = dm.traffic_unusual(1500, prior, usual)
+    check(line.startswith("Unusual: 44% of the usual Sunday") and warn, f"a drop still warns: {line}, {warn}")
+    check(dm.traffic_unusual(3409, prior, usual) == (None, False), "an ordinary Sunday says nothing")
     few = {k: v7 for k, v7 in views.items() if k >= "2026-10-05"}
     check(dm.usual_prior(few, "2026-10-18")[1] == "day", "under three of that weekday falls back to the week")
 

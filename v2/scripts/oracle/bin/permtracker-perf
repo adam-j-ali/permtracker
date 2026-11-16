@@ -82,6 +82,10 @@ BULK_READS = {
     # db_migrate.py and ingest_perm_history.py share the case columns, and read
     # perm_cases and perm_cases_history 20,000 rows a page to diff a load.
     "SELECT case_number,status,received_date,decision_date,days,fiscal_year,employer_name,": "a PERM load reading a case table",
+    # src/lib/db/client.ts's DEV_STATEMENT_TAG: a development server checking pages through the tunnel sends
+    # every statement uncached, so a page check's reads average over a second and aren't the live site's
+    # (Nov 15 2026: one evening's check of the finder's pages read as two slow statements the next morning).
+    "/* dev */ ": "a development server checking pages against the live data",
 }
 # The site's own reads join columns with ", ", so none of them can match a prefix above.
 # A job whose reads do join with ", " is matched by its own shape: no file under src/ selects a
