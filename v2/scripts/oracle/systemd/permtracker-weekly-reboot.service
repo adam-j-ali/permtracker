@@ -1,0 +1,8 @@
+[Unit]
+Description=PERM Tracker: restart for updates once a week, only when an update asks for one
+After=network-online.target
+
+[Service]
+Type=oneshot
+TimeoutStartSec=30m
+ExecStart=/usr/local/bin/permtracker-weekly-reboot

@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly restart for updates, Sundays 1:30 AM Eastern: after the night's upgrade, before the 1:35 AM database refresh and the 2 AM night release
+
+[Timer]
+OnCalendar=Sun *-*-* 01:30:00 America/New_York
+# A missed Sunday is skipped, never made up at boot or at a busy hour.
+Persistent=false
+
+[Install]
+WantedBy=timers.target
