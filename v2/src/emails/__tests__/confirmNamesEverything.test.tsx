@@ -16,10 +16,14 @@ import { CASES_PER_ADDRESS } from "../../lib/caseList";
 
 const CONFIRM = "https://permtracker.app/case-alert/confirm?token=T";
 
-/** The email's words as a reader gets them: tags and the renderer's comment markers out, entities decoded. */
+/**
+ * The email's words as a reader gets them: tags out, entities decoded. The renderer's comment markers need no
+ * stripping, because an element's text never includes its comments (and a pattern that strips them is one a
+ * code scanner rightly distrusts).
+ */
 function wordsOf(html: string): string {
   const el = document.createElement("div");
-  el.innerHTML = html.replace(/<!--.*?-->/g, "");
+  el.innerHTML = html;
   return (el.textContent ?? "").replace(/\s+/g, " ");
 }
 
