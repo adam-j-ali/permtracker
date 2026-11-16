@@ -587,13 +587,22 @@ def speed_section(since: dt.datetime) -> dict:
 # ── the ingest health check ───────────────────────────────────────────────
 
 
+# check_ingest_health.py's words for a source that hasn't republished while our ingest keeps reading it. Nobody can
+# act on one until its own failure line (three times its budget), so it waits in a green section instead of counting
+# as a thing to watch (Nov 16 2026: five of them made "to watch" every morning).
+SOURCE_WAIT = "the agency has not republished and our ingest is fine"
+WAITING = "Waiting on the agency: "
+WATCHING = "Watching: "
+
+
 def health_lines(out: str) -> list[str]:
     """The lines of check_ingest_health.py's output a person needs to read."""
     keep = []
     for line in out.splitlines():
         s = line.strip()
         if s.startswith("::warning::"):
-            keep.append("Watching: " + s[len("::warning::"):])
+            text = s[len("::warning::"):]
+            keep.append((WAITING if SOURCE_WAIT in text else WATCHING) + text)
         elif s.startswith("::error::"):
             keep.append(s[len("::error::"):])
         elif s.startswith(("FAIL", "OUR INGEST HAS STOPPED", "THE SOURCE HAS BEEN SILENT",
@@ -611,17 +620,30 @@ def health_lines(out: str) -> list[str]:
     return keep[:12]
 
 
+def health_verdict(returncode: int, lines: list[str]) -> tuple[str, str]:
+    """The section's status and summary from the check's exit code and its kept lines."""
+    if returncode != 0:
+        return "fail", "the health check failed"
+    watching = sum(1 for l in lines if l.startswith(WATCHING))
+    waiting = sum(1 for l in lines if l.startswith(WAITING))
+    if not waiting:
+        summary = "every dataset inside its budget"
+    else:
+        summary = (f"our ingests are current; {waiting} dataset{'s' if waiting != 1 else ''} waiting on "
+                   f"{'their agencies' if waiting != 1 else 'its agency'} to republish")
+    if watching:
+        summary += f", {watching} to watch"
+    return ("warn" if watching else "ok"), summary
+
+
 def health_section() -> dict:
     p = subprocess.run([sys.executable, str(HERE / "check_ingest_health.py")],
                        capture_output=True, text=True, timeout=600)
     lines = health_lines(p.stdout + "\n" + p.stderr)
-    if p.returncode == 0:
-        watching = [l for l in lines if l.startswith("Watching:")]
-        return section("health", "Ingests and data freshness", "warn" if watching else "ok",
-                       "every dataset inside its budget" + (f", {len(watching)} to watch" if watching else ""),
-                       lines)
-    return section("health", "Ingests and data freshness", "fail",
-                   "the health check failed", lines or ["(no verdict line: read the Ingest health run)"])
+    status, summary = health_verdict(p.returncode, lines)
+    if status == "fail" and not lines:
+        lines = ["(no verdict line: read the Ingest health run)"]
+    return section("health", "Ingests and data freshness", status, summary, lines)
 
 
 # ── the site itself ───────────────────────────────────────────────────────
@@ -983,6 +1005,21 @@ def posthog_allowance_line(used: int, now: dt.datetime, last_day: int | None = N
     return line, warn
 
 
+def traffic_unusual(views: float, prior: list[float], usual: str) -> tuple[str | None, bool]:
+    """A line when yesterday's pageviews were far from the usual, and whether it warns.
+
+    A fall warns: the site may have stopped answering, or a page stopped being found. A rise is news only: what a
+    crawler's surge costs shows in the server section (busy pages, CPU) and in PostHog's allowance line, which warn
+    on their own (Nov 16 2026: a busy Sunday of single-page crawler visits was a morning's "to watch")."""
+    note = spike_note(views, prior, "pageviews", drop=True, usual=usual)
+    if not note:
+        return None, False
+    base = statistics.median([p for p in prior if p is not None])
+    if views > base:
+        return "Busier than usual: " + note, False
+    return "Unusual: " + note, True
+
+
 def traffic_section() -> dict:
     key = os.environ.get("POSTHOG_PERSONAL_API_KEY")
     if not key:
@@ -1010,9 +1047,10 @@ def traffic_section() -> dict:
              f"About {people:,} of them likely people (on a phone, or read more than one page); "
              "most of the rest are single-page crawler visits"]
     status = "ok"
-    note = spike_note(views, prior, "pageviews", drop=True, usual=usual)
+    note, warn = traffic_unusual(views, prior, usual)
     if note:
-        lines.append("Unusual: " + note)
+        lines.append(note)
+    if warn:
         status = "warn"
     # Its own query: a failure here says so in a line and leaves the counts above standing.
     try:

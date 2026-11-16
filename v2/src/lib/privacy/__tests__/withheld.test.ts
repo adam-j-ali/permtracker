@@ -40,7 +40,9 @@ describe("the wiring", () => {
     // Both ways a read can go (the file itself, or sqld) run the rewritten statement, never the caller's.
     expect(client).toMatch(/await localRows\(home, prepared\.sql, prepared\.args\)/);
     expect(client).toMatch(/await httpRows\(home, prepared\.sql, prepared\.args, sql\)/);
-    expect(client).toMatch(/db\.execute\(\{ sql, args: args as never\[\] \}\)/);
+    // forSqld only puts a development server's comment in front (clientDevTag.test.ts); the statement is the same one.
+    expect(client).toMatch(/db\.execute\(\{ sql: forSqld\(sql\), args: args as never\[\] \}\)/);
+    expect(client).toMatch(/return process\.env\.NODE_ENV === "development" \? DEV_STATEMENT_TAG \+ sql : sql;/);
     expect(client).toMatch(/maskRowsIndexed\(out, prepared\.ctx, mask\)/);
     const mirror = read("convex/lib/publicMirror.ts");
     expect(mirror).toMatch(/const masker = maskerForEnv\(process\.env\);/);

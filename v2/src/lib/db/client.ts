@@ -267,9 +267,26 @@ async function localRows(home: DatabaseHome, sql: string, args: unknown[]): Prom
   }
 }
 
+/**
+ * The comment a development server puts before each statement it sends.
+ *
+ * Checking pages against the live data runs a development server through the
+ * tunnel to the server's databases, and sqld's per-statement stats can't say
+ * who sent a statement. On Nov 15 2026 a page check's uncached reads averaged
+ * 1.5 s and the server's hourly reading (permtracker-perf) reported them as
+ * the live site's. sqld keeps a leading comment in the statement text it
+ * records (checked on the server, Nov 16 2026), SQLite ignores it, and that
+ * reading names these statements on their own line instead of warning.
+ */
+export const DEV_STATEMENT_TAG = "/* dev */ ";
+
+function forSqld(sql: string): string {
+  return process.env.NODE_ENV === "development" ? DEV_STATEMENT_TAG + sql : sql;
+}
+
 async function httpRows(home: DatabaseHome, sql: string, args: unknown[], what: string): Promise<Record<string, unknown>[]> {
   const db = home === "lca" ? lcaDatabase() : database();
-  const rs = await withDeadline(() => db.execute({ sql, args: args as never[] }), what.slice(0, 80), {
+  const rs = await withDeadline(() => db.execute({ sql: forSqld(sql), args: args as never[] }), what.slice(0, 80), {
     retryTransient: true,
   });
   return rs.rows.map((r) => {
@@ -381,7 +398,7 @@ function writeDatabase(home: DatabaseHome = "main"): Client {
 export async function exec(sql: string, args: unknown[] = []): Promise<number> {
   const db = writeDatabase(homeOf(sql));
   const rs = await withDeadline(
-    () => db.execute({ sql, args: args as never[] }),
+    () => db.execute({ sql: forSqld(sql), args: args as never[] }),
     sql.slice(0, 80),
   );
   return rs.rowsAffected;

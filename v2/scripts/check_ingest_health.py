@@ -1073,6 +1073,10 @@ def check_coverage_stated(db) -> int:
 # they've gone unrefreshed for most of a year.
 HAND_READ_WARN_DAYS = 120
 HAND_READ_FAIL_DAYS = 270
+# Their row in data_freshness: nothing stamps it when the file is read again, so it read Aug 17 2026 while the file
+# said Oct 31 and warned that the agency hadn't republished (Nov 16 2026). The file's own date is the one that
+# counts, so the freshness loop leaves this row to check_hand_read_figures. No page shows it.
+HAND_READ_DATASETS = frozenset({"uscis-i140-times"})
 
 
 def hand_read_verdict(as_of: datetime.date, today: datetime.date) -> str:
@@ -1157,6 +1161,9 @@ def main() -> int:
     stale, unparseable = [], []
     print(f"{'dataset':22s} {'as_of':12s} {'age':>6s} {'budget':>7s}  verdict")
     for dataset, as_of, max_age, source, _cadence, fetched_at in rows:
+        if dataset in HAND_READ_DATASETS:
+            print(f"{dataset:22s} read by hand; the hand-read check below dates it from its file")
+            continue
         d = parse_as_of(str(as_of))
         if d is None or max_age is None:
             unparseable.append((dataset, as_of))
@@ -1189,8 +1196,12 @@ def main() -> int:
         # future-dated row never prints a false "-34 days old".
         if data_stale:
             stale.append((dataset, age, budget, source))
+        # A source that hasn't republished while our ingest reads it on time is the agency's wait, not a stale
+        # ingest: freshness_verdict below decides it the same way, and its warning line says so.
+        not_run = any(s[0] == dataset + " (has not RUN)" for s in stale)
+        waiting = data_stale and not not_run and not freshness_verdict([stale[-1]])[0]
         print(f"{dataset:22s} {str(as_of):12s} {age:>5}d {budget:>6}d  "
-              f"{'STALE' if bad else 'ok'}")
+              f"{'waiting on the source' if waiting else 'STALE' if bad else 'ok'}")
 
     # Before the early returns below: a stale dataset and a failed run are
     # independent defects, and the report shows both.
@@ -1223,13 +1234,16 @@ def main() -> int:
         print(f"UNREADABLE as_of on {len(unparseable)}: "
               + ", ".join(f"{d} ({v!r})" for d, v in unparseable))
     if stale:
-        print(f"STALE: {len(stale)} dataset(s) past their own budget")
-        for dataset, age, budget, source in stale:
-            print(f"  {dataset}: {age} days old, budget {budget} - source: {source}")
         # Name which half broke: our ingest stopped running (fix us), or the
         # source stopped publishing while our ingest keeps reading it (watch
         # it). `(has not RUN)` is appended above only for the first.
         failing, watching = freshness_verdict(stale)
+        # STALE only when something here is ours or past its grace; the morning report keeps a line that starts
+        # with it, and printed beside four agency waits it read as a fault in a green section.
+        print(f"STALE: {len(stale)} dataset(s) past their own budget" if failing else
+              f"{len(stale)} dataset(s) past their own budget, each waiting on its source")
+        for dataset, age, budget, source in stale:
+            print(f"  {dataset}: {age} days old, budget {budget} - source: {source}")
         not_run = [d for d, *_ in failing if d.endswith("(has not RUN)")]
         silent = [d for d, *_ in failing if not d.endswith("(has not RUN)")]
         if not_run:
