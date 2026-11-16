@@ -84,6 +84,24 @@ describe("localRead", () => {
     expect(objectsOf(await localRead(file, "SELECT b FROM t WHERE a = ?", [2], 5000))).toEqual([{ b: "two" }]);
   });
 
+  // Nov 16 2026: an employer page's cheap read of the main database (perm_entities, by index) waited 20 s and
+  // failed, a visitor got a 500, because Amazon's LCA reads held both of the one pool's readers. Each database
+  // has its own readers now, so a slow read of one can only hold up reads of that one.
+  it("doesn't hold a read of one database behind slow reads of the other", async () => {
+    const { localRead, objectsOf } = await import("../localReads");
+    const other = join(dir, "lca.db");
+    const lca = new DatabaseSync(other);
+    lca.exec("CREATE TABLE IF NOT EXISTS l (v INTEGER)");
+    lca.close();
+    const forever = "WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n) SELECT COUNT(*) FROM n";
+    // Both of the other database's readers busy for 3 s each.
+    const slow = [localRead(other, forever, [], 3000), localRead(other, forever, [], 3000)];
+    const asked = Date.now();
+    expect(objectsOf(await localRead(file, "SELECT b FROM t WHERE a = ?", [1], 1500))).toEqual([{ b: "one" }]);
+    expect(Date.now() - asked).toBeLessThan(1500);
+    await Promise.allSettled(slow);
+  });
+
   it("reads a database put in place of the old one, as a restore does, without a restart", async () => {
     const { localRead, objectsOf } = await import("../localReads");
     const live = join(dir, "restore-target.db");

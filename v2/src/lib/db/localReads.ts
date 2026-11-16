@@ -99,12 +99,33 @@ interface Slot {
   timer: ReturnType<typeof setTimeout> | null;
 }
 
+/**
+ * One pool of readers and one queue for each database file. With one pool for both, a big employer's LCA reads
+ * (about 190,000 rows each for Amazon) held both readers while the page's cheap main-database reads waited behind
+ * them: on Nov 16 2026 one waited 20 s and a visitor got a 500. Now a slow read of one database can only hold up
+ * reads of that one.
+ */
+interface Pool {
+  slots: Slot[];
+  queue: Job[];
+}
+
+/** Readers per database file. */
 const WORKERS = Math.max(1, Number(process.env.DATABASE_LOCAL_WORKERS) || 2);
-const slots: Slot[] = [];
-const queue: Job[] = [];
+const pools = new Map<string, Pool>();
 let nextId = 1;
 
-function spawn(): Slot {
+function poolFor(path: string): Pool {
+  let pool = pools.get(path);
+  if (!pool) {
+    pool = { slots: [], queue: [] };
+    for (let i = 0; i < WORKERS; i++) pool.slots.push(spawn(pool));
+    pools.set(path, pool);
+  }
+  return pool;
+}
+
+function spawn(pool: Pool): Slot {
   const worker = spawnProcess(process.execPath, ["--no-warnings", "-e", WORKER_SOURCE], {
     stdio: ["ignore", "inherit", "inherit", "ipc"],
     serialization: "advanced",
@@ -118,19 +139,19 @@ function spawn(): Slot {
     finish(slot);
     if (m.error !== undefined) job.reject(new Error(`local read failed: ${m.error}`));
     else job.resolve({ columns: m.columns ?? [], rows: m.rows ?? [] });
-    pump();
+    pump(pool);
   });
   // A worker that dies takes only its own read with it; the read goes through sqld and a new worker takes the slot.
   const lost = (why: string) => {
     const job = slot.job;
     finish(slot);
-    replace(slot);
+    replace(pool, slot);
     job?.reject(new Error(`local read worker stopped: ${why}`));
-    pump();
+    pump(pool);
   };
   worker.on("error", (e) => lost(String(e)));
   worker.on("exit", (code, signal) => {
-    if (slots.includes(slot)) lost(`exit ${code ?? signal}`);
+    if (pool.slots.includes(slot)) lost(`exit ${code ?? signal}`);
   });
   return slot;
 }
@@ -141,9 +162,9 @@ function finish(slot: Slot): void {
   slot.job = null;
 }
 
-function replace(slot: Slot): void {
-  const i = slots.indexOf(slot);
-  if (i >= 0) slots[i] = spawn();
+function replace(pool: Pool, slot: Slot): void {
+  const i = pool.slots.indexOf(slot);
+  if (i >= 0) pool.slots[i] = spawn(pool);
 }
 
 function deadlineError(job: Job): LocalDeadlineError {
@@ -151,7 +172,8 @@ function deadlineError(job: Job): LocalDeadlineError {
 }
 
 /** A queued read whose deadline passed while it waited is refused, never started. */
-function expireWaiting(now: number): void {
+function expireWaiting(pool: Pool, now: number): void {
+  const { queue } = pool;
   for (let i = queue.length - 1; i >= 0; i--) {
     const job = queue[i] as Job;
     if (now - job.askedAt >= job.deadlineMs) {
@@ -161,9 +183,10 @@ function expireWaiting(now: number): void {
   }
 }
 
-function pump(): void {
-  expireWaiting(Date.now());
-  for (const slot of slots) {
+function pump(pool: Pool): void {
+  expireWaiting(pool, Date.now());
+  const { queue } = pool;
+  for (const slot of pool.slots) {
     if (slot.job || queue.length === 0) continue;
     const job = queue.shift() as Job;
     slot.job = job;
@@ -171,10 +194,10 @@ function pump(): void {
     slot.timer = setTimeout(() => {
       if (slot.job !== job) return;
       finish(slot);
-      replace(slot);
+      replace(pool, slot);
       slot.worker.kill("SIGKILL");
       job.reject(deadlineError(job));
-      pump();
+      pump(pool);
     }, left);
     slot.timer.unref?.();
     slot.worker.send({ id: job.id, path: job.path, sql: job.sql, args: job.args });
@@ -188,11 +211,12 @@ function bindable(v: unknown): unknown {
 }
 
 export function localRead(path: string, sql: string, args: unknown[], deadlineMs: number): Promise<LocalResult> {
-  if (slots.length === 0) for (let i = 0; i < WORKERS; i++) slots.push(spawn());
+  const pool = poolFor(path);
+  const { queue } = pool;
   return new Promise<LocalResult>((resolve, reject) => {
     const job: Job = { id: nextId++, path, sql, args: args.map(bindable), deadlineMs, askedAt: Date.now(), resolve, reject };
     queue.push(job);
-    pump();
+    pump(pool);
     // Still waiting at its deadline: refused then, not when a process frees up.
     if (queue.includes(job)) {
       const t = setTimeout(() => {
@@ -219,9 +243,12 @@ export function objectsOf(r: LocalResult): Record<string, unknown>[] {
   });
 }
 
-/** Test hook: stop every reader process and forget the queue. */
+/** Test hook: stop every reader process and forget the queues. */
 export async function resetLocalReads(): Promise<void> {
-  const old = slots.splice(0, slots.length);
-  queue.length = 0;
-  for (const s of old) s.worker.kill("SIGKILL");
+  const old = [...pools.values()];
+  pools.clear();
+  for (const pool of old) {
+    pool.queue.length = 0;
+    for (const s of pool.slots) s.worker.kill("SIGKILL");
+  }
 }
