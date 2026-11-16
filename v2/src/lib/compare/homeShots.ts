@@ -66,6 +66,13 @@ export const HOME_SHOTS: Record<string, HomeShot> = {
     height: 540,
     alt: "H1BGrader's homepage, with a teal menu bar and a search for H-1B sponsors by company, job title or city. It also shows a strip announcing its new PERM tracker, and its top H-1B sponsors, job titles and cities for FY 2026 Q3.",
   },
+  permwatch: {
+    src: "/images/compare/permwatch.webp",
+    captured: "2026-11-15",
+    width: 960,
+    height: 540,
+    alt: "PermWatch's homepage: the heading PERM processing time is 300 days, a button to estimate a decision date, a photograph of a great hall with two American flags, and three figures: 300 days, a 512-day peak and a 39-day median error.",
+  },
   greencardclock: {
     src: "/images/compare/greencardclock.webp",
     captured: "2026-10-28",

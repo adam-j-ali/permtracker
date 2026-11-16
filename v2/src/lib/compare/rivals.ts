@@ -45,6 +45,7 @@ const IL = "https://immilane.com";
 const PQ = "https://permqueue.com";
 const HP = "https://h1bperm.com";
 const HG = "https://h1bgrader.com";
+const PW = "https://permwatch.com";
 const VG = "https://visagrader.com";
 const GCC = "https://greencardclock.com";
 const LW = "https://www.lawfully.com";
@@ -353,6 +354,50 @@ export const RIVALS: readonly Tracker[] = [
       "A page for every H-1B sponsor since FY2011, with ten years of LCA and USCIS decisions",
       "A free Chrome extension on LinkedIn, Indeed, Glassdoor, Dice and Google Jobs",
       "Each PERM case's status history, dated by when it was first seen",
+    ],
+  },
+  {
+    slug: "permwatch",
+    name: "PermWatch",
+    url: PW,
+    operator: "Brightcore Technologies LLC",
+    price: "Free to read and estimate, with Pro at $49 a year or $79 once",
+    group: "perm",
+    checkedOn: "2026-11-15",
+    newestData: {
+      day: "2026-10-31",
+      note: "DOL's processing times as of October 31",
+      evidence: { url: `${PW}/data/perm.json`, quote: '"asOf": "2026-10-31"' },
+    },
+    cells: {
+      lookup: { mark: "partial", note: "With a free account, 3 PERM or wage request numbers a day. A filing date gives an estimate with no account", evidence: { url: `${PW}/alerts/`, quote: "Look up any case number (PERM or PWD) 3 a day" } },
+      pending: { mark: "partial", note: "The filing month DOL is deciding, from DOL's monthly page. It doesn't list each case", evidence: { url: PW, quote: "DOL is deciding cases filed around January 2026." } },
+      source: { mark: "partial", note: "DOL's monthly processing-times page for estimates. A saved case is checked on DOL's case status, with an account", evidence: { url: `${PW}/methodology/`, quote: "PERM and PWD figures come from the DOL FLAG processing times page" } },
+      uscis: { mark: "yes", note: "With an account: 1 receipt number free, 6 on Pro. Status-change alerts on Pro", evidence: { url: `${PW}/alerts/`, quote: "USCIS receipt numbers 1 6 6" } },
+      wage: { mark: "partial", note: "The month DOL is working on, and one wage request tracked with a free account", evidence: { url: `${PW}/alerts/`, quote: "Prevailing wage (P-) case tracking 1, checked daily" } },
+      lca: { mark: "no", note: "Not found on its 958 pages", evidence: { url: `${PW}/sitemap-index.xml` } },
+      seasonal: { mark: "no", note: "Not found on its 958 pages", evidence: { url: `${PW}/sitemap-index.xml` } },
+      alerts: { mark: "yes", note: "Free with an account: an email when a saved case's status or estimate moves", evidence: { url: `${PW}/alerts/`, quote: "Add your PERM case number and we check its status on FLAG every day and email you when it changes." } },
+      push: { mark: "partial", note: "Telegram messages on Pro. No browser notification on its homepage", evidence: { url: `${PW}/perm-trackers-compared/`, quote: "Pro adds alerts by email and Telegram." } },
+      bulletinAlerts: { mark: "partial", note: "On Pro only", evidence: { url: `${PW}/alerts/`, quote: "when the bulletin reaches your priority date" } },
+      employers: { mark: "partial", note: "Employers with 25 or more decided PERM cases", evidence: { url: PW, quote: "Public DOL data on every employer with 25 or more decided PERM cases" } },
+      bulletin: { mark: "yes", note: "The November 2026 cutoffs, matching State's, with a next-month forecast", evidence: { url: `${PW}/data/visa-bulletin.json`, quote: "In the November 2026 Visa Bulletin, the employment-based final action dates are" } },
+      community: { mark: "unknown", note: "Its homepage loads a community figure from its server. Its pages don't say what it counts" },
+      attorney: { mark: "no", note: "No case or deadline tool on any page", evidence: { url: `${PW}/sitemap-index.xml` } },
+      app: { mark: "no", note: "No app link or install option on its homepage", evidence: { url: PW } },
+      languages: { mark: "yes", note: "English, Chinese and Spanish", evidence: { url: `${PW}/llms.txt`, quote: "Available in English, Chinese (/zh/) and Spanish (/es/)." } },
+      noAccount: { mark: "partial", note: "Estimates and data need no account. A case-number lookup does", evidence: { url: `${PW}/perm-trackers-compared/`, quote: "PermWatch needs a free account to look up case numbers" } },
+      free: { mark: "partial", note: "Estimates and data are free. Pro is $49 a year, or $79 once", evidence: { url: `${PW}/alerts/`, quote: "Pro yearly $49 a year" } },
+      noAds: { mark: "yes", note: "No ad code on its homepage", evidence: { url: PW } },
+      openData: { mark: "yes", note: "JSON and CSV files of its PERM, wage request and bulletin figures", evidence: { url: `${PW}/data/perm.json` } },
+    },
+    bestFor: "A month for your PERM decision from a filing date, in English, Chinese or Spanish",
+    dataFrom: "DOL's monthly processing-times page, DOL's quarterly files and State's bulletin",
+    beatsUs: ["Chinese and Spanish", "USCIS receipt status, with an account", "Alerts by Telegram, on its paid plan"],
+    strengths: [
+      "A decision month from a filing date, with a public backtest of its own errors",
+      "English, Chinese and Spanish",
+      "Every figure dated, with JSON and CSV files to download",
     ],
   },
   {
