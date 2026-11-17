@@ -850,7 +850,10 @@ def check_freshness_rows_read_plainly() -> None:
     import io
 
     today = datetime.date.today()
-    old = (today - datetime.timedelta(days=139)).isoformat()
+    # Past the quarterly file's budget (lib_db.QUARTERLY_FILE_MAX_AGE_DAYS), which holds whatever a row was stamped
+    # with: the row below still carries the 135 that warned on Nov 17 2026 at 140 days.
+    old = (today - datetime.timedelta(days=health.QUARTERLY_FILE_MAX_AGE_DAYS + 10)).isoformat()
+    nov17 = (today - datetime.timedelta(days=140)).isoformat()
     recent = str(int(NOW) - 86_400_000)
 
     class Rows:
@@ -861,6 +864,7 @@ def check_freshness_rows_read_plainly() -> None:
                         {"type": "text", "value": "Quarterly"}, {"type": "integer", "value": fetched}]
             return {"response": {"result": {"rows": [
                 row("daily-decisions", old, 135, recent),
+                row("entities", nov17, 135, recent),
                 row("uscis-i140-times", (today - datetime.timedelta(days=91)).isoformat(), 90, recent)]}}}
 
     saved = {name: getattr(health, name) for name in CHECKS + ("Database", "check_cap_streak",
@@ -888,6 +892,8 @@ def check_freshness_rows_read_plainly() -> None:
     check("freshness: the hand-kept I-140 row is left to the hand-read check",
           "hand-read check" in table.get("uscis-i140-times", "") and "::warning::uscis-i140-times" not in out, out)
     check("freshness: a run with only source waits is green", rc == 0, str(rc))
+    check("freshness: a quarterly row 140 days old is within the quarterly file's budget, whatever it was stamped",
+          "::warning::entities" not in out and "STALE" not in next((l for l in out.splitlines() if l.startswith("entities ")), ""), out)
 
 
 def check_wage_views_rules() -> None:

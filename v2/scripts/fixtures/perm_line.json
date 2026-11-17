@@ -1,44 +1,96 @@
 {
-  "about": "Census matrices and the month our own line names (lib/permLine.ts permLineFrom, scripts/lib_perm_line.py).",
+  "about": "Census matrices and the month our own line names (convex/lib/permLine.ts permLineFrom, scripts/lib_perm_line.py). The line is the newest filing month DOL has begun: 50 or more of DOL's own decisions (a withdrawal is the employer's), with the month before 80% decided among the cases DOL can decide, or 500 decisions whatever the month before shows.",
   "cases": [
     {
-      "name": "the oldest busy month under half decided, after a busier decided one",
+      "name": "names the newest month DOL has begun, once the month before is 80% decided",
       "matrix": [
-        { "month": "2025-11", "status": "CERTIFIED", "is_final": 1, "n": 900 },
-        { "month": "2025-11", "status": "ANALYST REVIEW", "is_final": 0, "n": 100 },
-        { "month": "2025-12", "status": "CERTIFIED", "is_final": 1, "n": 400 },
-        { "month": "2025-12", "status": "ANALYST REVIEW", "is_final": 0, "n": 600 },
-        { "month": "2026-01", "status": "ANALYST REVIEW", "is_final": 0, "n": 1000 }
+        { "month": "2025-12", "status": "CERTIFIED", "is_final": 1, "n": 850 },
+        { "month": "2025-12", "status": "ANALYST REVIEW", "is_final": 0, "n": 150 },
+        { "month": "2026-01", "status": "CERTIFIED", "is_final": 1, "n": 60 },
+        { "month": "2026-01", "status": "ANALYST REVIEW", "is_final": 0, "n": 940 }
+      ],
+      "month": "2026-01"
+    },
+    {
+      "name": "withdrawals are the employer's, so they never start a month",
+      "matrix": [
+        { "month": "2025-12", "status": "CERTIFIED", "is_final": 1, "n": 900 },
+        { "month": "2025-12", "status": "ANALYST REVIEW", "is_final": 0, "n": 100 },
+        { "month": "2026-01", "status": "WITHDRAWN", "is_final": 1, "n": 300 },
+        { "month": "2026-01", "status": "DENIED", "is_final": 1, "n": 1 },
+        { "month": "2026-01", "status": "ANALYST REVIEW", "is_final": 0, "n": 700 }
       ],
       "month": "2025-12"
     },
     {
-      "name": "a thin month (under 100 cases) is skipped",
+      "name": "early decisions don't start a month while the one before is still being worked",
       "matrix": [
-        { "month": "2025-10", "status": "CERTIFIED", "is_final": 1, "n": 500 },
-        { "month": "2025-11", "status": "ANALYST REVIEW", "is_final": 0, "n": 40 },
+        { "month": "2025-11", "status": "CERTIFIED", "is_final": 1, "n": 400 },
+        { "month": "2025-11", "status": "ANALYST REVIEW", "is_final": 0, "n": 600 },
+        { "month": "2025-12", "status": "CERTIFIED", "is_final": 1, "n": 300 },
         { "month": "2025-12", "status": "ANALYST REVIEW", "is_final": 0, "n": 700 }
       ],
-      "month": "2025-12"
+      "month": "2025-11"
     },
     {
-      "name": "the first month on record is still mostly waiting: no line",
+      "name": "500 decisions start a month whatever the month before shows",
       "matrix": [
-        { "month": "2025-12", "status": "ANALYST REVIEW", "is_final": 0, "n": 700 },
-        { "month": "2026-01", "status": "ANALYST REVIEW", "is_final": 0, "n": 800 }
+        { "month": "2025-10", "status": "CERTIFIED", "is_final": 1, "n": 600 },
+        { "month": "2025-10", "status": "ANALYST REVIEW", "is_final": 0, "n": 400 },
+        { "month": "2025-11", "status": "CERTIFIED", "is_final": 1, "n": 600 },
+        { "month": "2025-11", "status": "ANALYST REVIEW", "is_final": 0, "n": 400 }
+      ],
+      "month": "2025-11"
+    },
+    {
+      "name": "the month before's share leaves out its holds and withdrawals",
+      "matrix": [
+        { "month": "2025-12", "status": "CERTIFIED", "is_final": 1, "n": 790 },
+        { "month": "2025-12", "status": "APPLICATION ON HOLD", "is_final": 0, "n": 100 },
+        { "month": "2025-12", "status": "WITHDRAWN", "is_final": 1, "n": 20 },
+        { "month": "2025-12", "status": "ANALYST REVIEW", "is_final": 0, "n": 90 },
+        { "month": "2026-01", "status": "CERTIFIED", "is_final": 1, "n": 60 },
+        { "month": "2026-01", "status": "ANALYST REVIEW", "is_final": 0, "n": 940 }
+      ],
+      "month": "2026-01"
+    },
+    {
+      "name": "a thin month (under 100 cases) is skipped, and the month before is the busy one",
+      "matrix": [
+        { "month": "2025-12", "status": "CERTIFIED", "is_final": 1, "n": 900 },
+        { "month": "2025-12", "status": "ANALYST REVIEW", "is_final": 0, "n": 100 },
+        { "month": "2026-01", "status": "ANALYST REVIEW", "is_final": 0, "n": 40 },
+        { "month": "2026-02", "status": "CERTIFIED", "is_final": 1, "n": 60 },
+        { "month": "2026-02", "status": "ANALYST REVIEW", "is_final": 0, "n": 940 }
+      ],
+      "month": "2026-02"
+    },
+    {
+      "name": "no month begun: no line",
+      "matrix": [
+        { "month": "2026-01", "status": "ANALYST REVIEW", "is_final": 0, "n": 700 },
+        { "month": "2026-02", "status": "WITHDRAWN", "is_final": 1, "n": 20 },
+        { "month": "2026-02", "status": "ANALYST REVIEW", "is_final": 0, "n": 800 }
       ],
       "month": null
     },
     {
-      "name": "exactly half decided is no longer being worked",
+      "name": "Nov 17 2026: February past half decided, March only withdrawals and a denial, so DOL is deciding February",
       "matrix": [
-        { "month": "2025-11", "status": "CERTIFIED", "is_final": 1, "n": 300 },
-        { "month": "2025-12", "status": "CERTIFIED", "is_final": 1, "n": 100 },
-        { "month": "2025-12", "status": "ANALYST REVIEW", "is_final": 0, "n": 100 },
-        { "month": "2026-01", "status": "CERTIFIED", "is_final": 1, "n": 99 },
-        { "month": "2026-01", "status": "ANALYST REVIEW", "is_final": 0, "n": 101 }
+        { "month": "2026-01", "status": "CERTIFIED", "is_final": 1, "n": 9216 },
+        { "month": "2026-01", "status": "WITHDRAWN", "is_final": 1, "n": 435 },
+        { "month": "2026-01", "status": "APPLICATION ON HOLD", "is_final": 0, "n": 1230 },
+        { "month": "2026-01", "status": "ANALYST REVIEW", "is_final": 0, "n": 754 },
+        { "month": "2026-02", "status": "CERTIFIED", "is_final": 1, "n": 2728 },
+        { "month": "2026-02", "status": "WITHDRAWN", "is_final": 1, "n": 226 },
+        { "month": "2026-02", "status": "APPLICATION ON HOLD", "is_final": 0, "n": 407 },
+        { "month": "2026-02", "status": "ANALYST REVIEW", "is_final": 0, "n": 2133 },
+        { "month": "2026-03", "status": "DENIED", "is_final": 1, "n": 3 },
+        { "month": "2026-03", "status": "WITHDRAWN", "is_final": 1, "n": 266 },
+        { "month": "2026-03", "status": "APPLICATION ON HOLD", "is_final": 0, "n": 161 },
+        { "month": "2026-03", "status": "ANALYST REVIEW", "is_final": 0, "n": 6612 }
       ],
-      "month": "2026-01"
+      "month": "2026-02"
     }
   ]
 }

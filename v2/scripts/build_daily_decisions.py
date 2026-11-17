@@ -28,7 +28,7 @@ import argparse
 import sys
 import time
 
-from lib_db import Database, query_rows, run_stmts, stmt
+from lib_db import QUARTERLY_FILE_MAX_AGE_DAYS, Database, query_rows, run_stmts, stamp_freshness, stmt
 
 SOURCE = "dol-disclosure"
 
@@ -112,6 +112,12 @@ def build(db: Database, dry_run: bool = False, source: str = SOURCE) -> int:
     if int(got[0]) != len(days) or int(got[1]) != total:
         raise RuntimeError(f"read back {got[0]} days / {got[1]} decisions, wrote {len(days)} / {total}")
     log(f"{source}: written and read back: {len(days)} days, {total:,} decisions ({len(stale)} stale days removed)")
+    if source == SOURCE:
+        # The decisions-over-time page dates its figures by this row. Nothing stamped it from Aug 26 2026, so the
+        # page said the figures hadn't refreshed in 140 days on Nov 17 while they ran to DOL's newest file.
+        stamp_freshness(db, "daily-decisions", as_of=str(days[-1][0])[:10], source="Derived from the disclosure corpus",
+                        cadence="Quarterly with the files", note=f"{len(days):,} days, {total:,} decisions",
+                        max_age_days=QUARTERLY_FILE_MAX_AGE_DAYS)
     return 0
 
 

@@ -4,6 +4,7 @@ import { SocCodeSummary } from "@/components/soc/SocCodeSummary";
 import { socProfile } from "@/lib/db/socProfile";
 import { getSocCodes } from "@/lib/db/socTitles";
 import { JobLookupBox } from "./JobLookupBox";
+import { HOME_WIDTH } from "./homeWidth";
 
 /**
  * "What does DOL call this job?": a job title box beside one real code's card, the busiest PERM code in DOL's
@@ -20,7 +21,7 @@ export async function JobLookupBand() {
   });
   return (
     <section aria-labelledby="job-lookup-heading" className="border-b-3 border-border bg-background">
-      <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-8 px-4 py-12 sm:px-8 sm:py-16 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-center lg:gap-12 [&>*]:min-w-0">
+      <div className={`mx-auto grid ${HOME_WIDTH} grid-cols-1 gap-8 px-4 py-12 sm:px-8 sm:py-16 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-center lg:gap-12 [&>*]:min-w-0`}>
         <div>
           <h2 id="job-lookup-heading" className="font-heading text-2xl font-bold sm:text-3xl">
             What does DOL call this job?

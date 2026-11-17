@@ -17,7 +17,7 @@ import time
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 from entity_identity import entity_key  # noqa: E402
-from lib_db import Database, insert_rows, query_rows, stamp_freshness  # noqa: E402
+from lib_db import QUARTERLY_FILE_MAX_AGE_DAYS, Database, insert_rows, query_rows, stamp_freshness  # noqa: E402
 from lib_slugs import plan_aliases, plan_sticky_slugs, with_aliases  # noqa: E402
 
 SCHEMA = [
@@ -383,7 +383,8 @@ def main() -> int:
     if newest:
         stamp_freshness(db, "entities", as_of=newest,
                         source="Derived from DOL's disclosure files", cadence="Rebuilt with each quarterly load",
-                        note=f"{total_entities:,} employers, firms and occupations", max_age_days=135)
+                        note=f"{total_entities:,} employers, firms and occupations",
+                        max_age_days=QUARTERLY_FILE_MAX_AGE_DAYS)
     return 0
 
 

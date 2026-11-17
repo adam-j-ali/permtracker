@@ -30,9 +30,16 @@ import pathlib
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from lib_flag_serials import code_to_date  # noqa: E402
-from lib_db import Database, query_rows, rows_of  # noqa: E402
+from lib_db import QUARTERLY_FILE_MAX_AGE_DAYS, Database, query_rows, rows_of  # noqa: E402
 import lca_numbers  # noqa: E402
 from build_lca_years import fiscal_year_of  # noqa: E402
+
+
+def budget_for(cadence: str, max_age: int) -> int:
+    """The budget a row is judged by: its own, never less than lib_db.QUARTERLY_FILE_MAX_AGE_DAYS for a quarterly
+    dataset (src/lib/db/publicData.ts budgetFor, the same rule): a row stamped with less by an older script would
+    report stale before DOL's next file could exist."""
+    return max(max_age, QUARTERLY_FILE_MAX_AGE_DAYS) if re.search(r"quarterly", cadence, re.I) else max_age
 
 
 def parse_as_of(raw: str) -> datetime.date | None:
@@ -1159,7 +1166,7 @@ def main() -> int:
     today = datetime.date.today()
     stale, unparseable = [], []
     print(f"{'dataset':22s} {'as_of':12s} {'age':>6s} {'budget':>7s}  verdict")
-    for dataset, as_of, max_age, source, _cadence, fetched_at in rows:
+    for dataset, as_of, max_age, source, cadence, fetched_at in rows:
         if dataset in HAND_READ_DATASETS:
             print(f"{dataset:22s} read by hand; the hand-read check below dates it from its file")
             continue
@@ -1169,7 +1176,7 @@ def main() -> int:
             print(f"{dataset:22s} {str(as_of):12s} {'?':>6s} {str(max_age):>7s}  UNREADABLE")
             continue
         age = (today - d).days
-        budget = int(max_age)
+        budget = budget_for(str(cadence or ""), int(max_age))
         data_stale = age > budget
         bad = data_stale
 

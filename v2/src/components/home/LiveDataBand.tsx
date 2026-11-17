@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import Link from "next/link";
+import { HOME_WIDTH } from "./homeWidth";
 
 
 
@@ -148,7 +149,7 @@ export function LiveDataBand({ children }: LiveDataBandProps) {
 
   return (
     <section aria-labelledby="pace-title" className="bg-tint">
-      <div className="mx-auto max-w-[1200px] px-4 py-12 sm:px-8 sm:py-16">
+      <div className={`mx-auto ${HOME_WIDTH} px-4 py-12 sm:px-8 sm:py-16`}>
         <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2">
           <h2 id="pace-title" className="font-heading text-2xl font-bold sm:text-3xl">
             How fast DOL is deciding cases
@@ -170,7 +171,7 @@ export function LiveDataBand({ children }: LiveDataBandProps) {
 export function DataShelf({ figures }: { figures?: DataPageFigures }) {
   return (
     <section aria-labelledby="data-shelf-heading" className="bg-tint border-b-3 border-border">
-      <div className="mx-auto max-w-[1200px] px-4 py-12 sm:px-8 sm:py-16">
+      <div className={`mx-auto ${HOME_WIDTH} px-4 py-12 sm:px-8 sm:py-16`}>
         <h2 id="data-shelf-heading" className="font-heading text-2xl font-bold sm:text-3xl">
           Look through the record
         </h2>{" "}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useRef, type CSSProperties, type FocusEvent } from "react";
 
 import { goToStep, useScrollStage, type StagePlace } from "@/components/scroll/useScrollStage";
+import { HOME_WIDTH } from "./homeWidth";
 
 /**
  * The road as a scroll stage (PREVIEW, Oct 21 2026). One DOM for every mode:
@@ -77,7 +78,7 @@ export function RoadStage({ stops }: { stops: RoadStop[] }) {
       className={`lg:motion-safe:h-[calc(100dvh-var(--site-header-h)+210vh)]`}
     >
       <div
-        className={`mx-auto max-w-[1200px] px-4 py-12 sm:px-8 sm:py-16 lg:motion-safe:sticky lg:motion-safe:top-[var(--site-header-h)] lg:motion-safe:flex lg:motion-safe:h-[calc(100dvh-var(--site-header-h))] lg:motion-safe:flex-col lg:motion-safe:justify-center lg:motion-safe:py-10`}
+        className={`mx-auto ${HOME_WIDTH} px-4 py-12 sm:px-8 sm:py-16 lg:motion-safe:sticky lg:motion-safe:top-[var(--site-header-h)] lg:motion-safe:flex lg:motion-safe:h-[calc(100dvh-var(--site-header-h))] lg:motion-safe:flex-col lg:motion-safe:justify-center lg:motion-safe:py-10`}
       >
         <h2 id="road-heading" className="font-heading text-2xl font-bold sm:text-3xl">
           The road to a green card

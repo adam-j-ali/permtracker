@@ -7,6 +7,7 @@ import type { RatingFields } from "@/lib/structuredData";
 
 import { RecordStrip } from "./RecordStrip";
 import { ReviewsLine } from "./ReviewsLine";
+import { HOME_WIDTH } from "./homeWidth";
 
 /**
  * "About PERM Tracker", on the homepage, in plain server-rendered prose.
@@ -31,7 +32,7 @@ export function AboutSection({
     <section id="about" className="py-12 sm:py-16 border-b-3 border-border">
       {/* The founder line on its own, then what people say across the full width, then the ledger (owner, Oct 23
           2026: the reviews box beside the prose left an empty space above it and read awkwardly). */}
-      <div className="mx-auto max-w-[1200px] px-4 sm:px-8">
+      <div className={`mx-auto ${HOME_WIDTH} px-4 sm:px-8`}>
         <div className="max-w-3xl">
           <h2 className="font-heading text-2xl font-bold sm:text-3xl">About PERM Tracker</h2>{" "}
           {/* The definition is the hero's opening line; screen readers and

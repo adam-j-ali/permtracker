@@ -6,6 +6,7 @@ import { renderBadge } from "@/lib/badgeRender";
 import { SITE_URL } from "@/lib/constants/site";
 import { EMBEDS, embedSnippet } from "@/lib/embeds";
 import { firmBadgeSpec } from "@/lib/firmBadge";
+import { HOME_WIDTH } from "./homeWidth";
 
 /**
  * What a firm can put on its own site, shown working: the case checker live
@@ -26,7 +27,7 @@ export function FirmSiteSection() {
 
   return (
     <section id="for-your-site" aria-labelledby="for-your-site-h" className="bg-background">
-      <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-8 sm:py-24">
+      <div className={`mx-auto ${HOME_WIDTH} px-4 py-16 sm:px-8 sm:py-24`}>
         <h2 id="for-your-site-h" className="font-heading text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
           Put PERM Tracker on your firm&apos;s site
         </h2>{" "}
