@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { choiceVariants } from "@/components/ui/choice";
 import { ChoiceRow } from "@/components/ui/choice-row";
+import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type {
   CaseListFilters,
@@ -478,12 +479,11 @@ export function CaseFilterBar({
             type="button"
             aria-pressed={activeTab === t.id}
             onClick={() => handleTabClick(t.id)}
-            className={choiceVariants({
-              on: activeTab === t.id,
-              className:
-                "min-h-11 justify-center px-1 max-sm:min-w-0 sm:px-4 " +
-                (t.id === "completed" ? "max-sm:flex-[1.5]" : "max-sm:flex-1"),
-            })}
+            className={cn(
+              choiceVariants({ on: activeTab === t.id }),
+              "min-h-11 justify-center px-1 max-sm:min-w-0 sm:px-4",
+              t.id === "completed" ? "max-sm:flex-[1.5]" : "max-sm:flex-1",
+            )}
           >
             {t.label}
           </button>
