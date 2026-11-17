@@ -14,6 +14,7 @@ import Link from "next/link";
 import { ArrowRightIcon, CaretDownIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { HOME_FAQS, type HomeFaqItem } from "./faqData";
+import { HOME_WIDTH } from "./homeWidth";
 
 
 
@@ -105,7 +106,7 @@ export function FAQSection() {
     <section id="faq" aria-labelledby="faq-h" className="relative bg-tint py-12 sm:py-16">
       {/* Two columns from lg: the heading and the way to every other
           question on the left, the answers on the right. */}
-      <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-8 px-4 [&>*]:min-w-0 sm:px-8 md:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] md:gap-10 lg:gap-14">
+      <div className={`mx-auto grid ${HOME_WIDTH} grid-cols-1 gap-8 px-4 [&>*]:min-w-0 sm:px-8 md:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] md:gap-10 lg:gap-14`}>
         <div>
           <h2 id="faq-h" className="font-heading text-3xl font-bold sm:text-4xl">
             Questions about PERM Tracker

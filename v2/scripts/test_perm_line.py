@@ -23,11 +23,18 @@ def check(name: str, ok: bool) -> None:
 for case in json.loads((HERE / "fixtures/perm_line.json").read_text())["cases"]:
     check(case["name"], pl.perm_line_month(case["matrix"]) == case["month"])
 
-src = HERE.parent / "src/lib"
-front = re.search(r"export const FRONT_MIN_CASES = (\d+)", (src / "liveQueue.ts").read_text())
-below = re.search(r"export const WORKING_BELOW = ([\d.]+)", (src / "pwdLine.ts").read_text())
-check("FRONT_MIN_CASES matches liveQueue.ts", bool(front) and int(front.group(1)) == pl.FRONT_MIN_CASES)
-check("WORKING_BELOW matches pwdLine.ts", bool(below) and float(below.group(1)) == pl.WORKING_BELOW)
+rule = (HERE.parent / "convex/lib/permLine.ts").read_text()
+
+
+def ts_const(name: str) -> float | None:
+    m = re.search(rf"export const {name} = ([\d.]+)", rule)
+    return float(m.group(1)) if m else None
+
+
+check("FRONT_MIN_CASES matches LINE_MIN_CASES", ts_const("LINE_MIN_CASES") == pl.FRONT_MIN_CASES)
+check("STARTED_MIN matches LINE_STARTED_MIN", ts_const("LINE_STARTED_MIN") == pl.STARTED_MIN)
+check("PREVIOUS_DONE matches LINE_PREVIOUS_DONE", ts_const("LINE_PREVIOUS_DONE") == pl.PREVIOUS_DONE)
+check("STARTED_FIRMLY matches LINE_STARTED_FIRMLY", ts_const("LINE_STARTED_FIRMLY") == pl.STARTED_FIRMLY)
 
 print("perm line:", "FAIL" if fails else "ok")
 sys.exit(1 if fails else 0)

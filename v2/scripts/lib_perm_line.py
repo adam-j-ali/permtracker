@@ -1,10 +1,12 @@
 """Where DOL is in the PERM line by our own daily check of its case status.
 
-The Python twin of permLineFrom in src/lib/permLine.ts: the oldest filing month with FRONT_MIN_CASES or more
-cases that DOL hasn't decided WORKING_BELOW of, read from the census matrix (one row per filing month, status
-and is_final). DOL's processing-times page stopped printing a filing month on Oct 31 2026, so the scripts that
-read DOL's month take this one when DOL prints none. scripts/fixtures/perm_line.json holds both twins to the
-same answers.
+The Python twin of permLineFrom in convex/lib/permLine.ts: the newest filing month DOL has begun deciding, read from
+the census matrix (one row per filing month and status, with is_final). A month has begun once DOL has made
+STARTED_MIN of its own decisions on it (a withdrawal is the employer's, never DOL's) and the month before is
+PREVIOUS_DONE decided among the cases DOL can decide, or once DOL has made STARTED_FIRMLY decisions on it whatever the
+month before shows. DOL's processing-times page stopped printing a filing month on Oct 31 2026, so the scripts that
+read DOL's month take this one when DOL prints none. scripts/fixtures/perm_line.json holds both twins to the same
+answers; the reasons and the measurements are in the TypeScript copy.
 """
 
 from __future__ import annotations
@@ -12,27 +14,49 @@ from __future__ import annotations
 import json
 from typing import Iterable, Mapping
 
-# src/lib/liveQueue.ts FRONT_MIN_CASES and src/lib/pwdLine.ts WORKING_BELOW; the fixture test reads both files.
+# convex/lib/permLine.ts; test_perm_line.py reads that file and holds these equal.
 FRONT_MIN_CASES = 100
-WORKING_BELOW = 0.5
+STARTED_MIN = 50
+PREVIOUS_DONE = 0.8
+STARTED_FIRMLY = 500
+
+_ON_HOLD = "APPLICATION ON HOLD"
 
 
-def perm_line_month(matrix: Iterable[Mapping]) -> str | None:
-    """The month DOL is deciding, "YYYY-MM", or None when the record doesn't reach back far enough to show it."""
-    months: dict[str, list[int]] = {}
+def _tally(matrix: Iterable[Mapping]) -> dict[str, dict[str, int]]:
+    months: dict[str, dict[str, int]] = {}
     for r in matrix:
         m = str(r.get("month") or "")
         if len(m) != 7 or m[4] != "-":
             continue
-        t = months.setdefault(m, [0, 0])
+        t = months.setdefault(m, {"total": 0, "final": 0, "dol": 0, "withdrawn": 0, "held": 0})
         n = int(r.get("n") or 0)
-        t[0] += n
+        status = str(r.get("status") or "").strip().upper()
+        t["total"] += n
         if int(r.get("is_final") or 0) == 1:
-            t[1] += n
-    busy = sorted((m, t) for m, t in months.items() if t[0] >= FRONT_MIN_CASES)
-    at = next((i for i, (_, t) in enumerate(busy) if t[1] / t[0] < WORKING_BELOW), -1)
-    # The first month on record still mostly waiting: the record doesn't show where DOL is.
-    return busy[at][0] if at > 0 else None
+            t["final"] += n
+            if status.startswith("WITHDRAWN"):
+                t["withdrawn"] += n
+            else:
+                t["dol"] += n
+        elif status == _ON_HOLD:
+            t["held"] += n
+    return months
+
+
+def perm_line_month(matrix: Iterable[Mapping]) -> str | None:
+    """The month DOL is deciding, "YYYY-MM", or None when no month on record has begun."""
+    busy = sorted((m, t) for m, t in _tally(matrix).items() if t["total"] >= FRONT_MIN_CASES)
+    line = None
+    for i, (month, t) in enumerate(busy):
+        if t["dol"] < STARTED_MIN:
+            continue
+        before = busy[i - 1][1] if i > 0 else None
+        workable = before["total"] - before["held"] - before["withdrawn"] if before else 0
+        before_done = before is None or (workable > 0 and before["dol"] / workable >= PREVIOUS_DONE)
+        if before_done or t["dol"] >= STARTED_FIRMLY:
+            line = month
+    return line
 
 
 def _rows(db, query_rows, sql: str, args: list) -> list:
@@ -63,6 +87,6 @@ def line_on(db, query_rows, day: str) -> str | None:
     newest = got[0][0] if got else None
     if not newest:
         return None
-    rows = query_rows(db, "SELECT month, is_final, SUM(n) FROM perm_census_days WHERE day = ? GROUP BY month, is_final",
-                      [newest])
-    return perm_line_month({"month": r[0], "is_final": r[1], "n": r[2]} for r in rows)
+    rows = query_rows(db, "SELECT month, status, is_final, SUM(n) FROM perm_census_days WHERE day = ? "
+                      "GROUP BY month, status, is_final", [newest])
+    return perm_line_month({"month": r[0], "status": r[1], "is_final": r[2], "n": r[3]} for r in rows)

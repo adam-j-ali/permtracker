@@ -99,8 +99,8 @@ from lib_gov_data import (  # noqa: E402
     read_shared_strings,
 )
 from lib_db import (  # noqa: E402
-    Database, add_missing_columns, case_update, query_rows, read_doc, record_run, stamp_freshness,
-    stmt, write_doc,
+    QUARTERLY_FILE_MAX_AGE_DAYS, Database, add_missing_columns, case_update, query_rows, read_doc, record_run,
+    stamp_freshness, stmt, write_doc,
 )
 
 PERFORMANCE_PAGE = "https://www.dol.gov/agencies/eta/foreign-labor/performance"
@@ -429,11 +429,9 @@ HISTORY_PAUSE_S = 2.0
 # so an employer string here matches the one the entity tables were built on.
 NAME_LEN = 80
 SOC_LEN = 10
-# How old the newest quarter's file may get before the next one is late. Measured Nov 1 2026 from the
-# Internet Archive's first capture of each PERM file: DOL posted a quarter 62 to 125 days after it ended
-# (FY2025 Q3 by Aug 31, Q4 by Dec 24, FY2026 Q1 by Apr 27, Q2 by Aug 3), so the newest file is up to
-# 92 + 125 = 217 days old the day the next appears. At 120 every quarter read "stale" for weeks.
-FRESHNESS_MAX_AGE_DAYS = 220
+# How old the newest quarter's file may get before the next one is late: lib_db.QUARTERLY_FILE_MAX_AGE_DAYS, where
+# the measurement is.
+FRESHNESS_MAX_AGE_DAYS = QUARTERLY_FILE_MAX_AGE_DAYS
 
 
 def table_ddl(table: str) -> list[str]:

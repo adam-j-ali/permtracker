@@ -17,6 +17,7 @@ import { formatInt } from "@/lib/format";
 import type { HomeMonth } from "@/lib/homeMonths";
 import { cn } from "@/lib/utils";
 import { monthTick } from "@convex/lib/months";
+import { HOME_WIDTH } from "./homeWidth";
 
 /**
  * The home page's first screen answers before it explains (owner, Oct 27 2026:
@@ -157,7 +158,7 @@ export function HeroSection({ wait = null, board, months = [], trends = {}, appr
     // grain that fade out behind the words, closed by an ink rule.
     // `hero-ground` in globals.css.
     <section id="hero" className="hero-ground">
-      <div className="mx-auto max-w-[1200px] px-4 pb-12 pt-8 sm:px-8 lg:pb-14 lg:pt-10">
+      <div className={`mx-auto ${HOME_WIDTH} px-4 pb-12 pt-8 sm:px-8 lg:pb-14 lg:pt-10`}>
         {/* THE FIRST SCREEN DOES ONE JOB: the answer, and the box that takes a case number or an employer, on a phone
             and on a wide screen alike. One grid and one copy of each part: on a wide screen the answer and the
             month chart share the left column and the box stands beside them; on a phone the box follows the answer and

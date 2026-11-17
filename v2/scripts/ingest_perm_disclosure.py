@@ -52,9 +52,6 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from lib_wage import ANNUALIZE, PERM_BAND  # noqa: E402
 from lib_recruitment import COLUMNS as RECRUITMENT_COLUMNS, recruitment_fields  # noqa: E402
 
-# How old the newest quarter may get before the next is late: the same measurement as
-# ingest_flag_disclosure.FRESHNESS_MAX_AGE_DAYS (DOL posts all its quarterly files together).
-FRESHNESS_MAX_AGE_DAYS = 220
 
 PERFORMANCE_PAGE = "https://www.dol.gov/agencies/eta/foreign-labor/performance"
 EXCEL_EPOCH = date(1899, 12, 30)  # 1900 date system, including its leap-year bug
@@ -308,7 +305,11 @@ from lib_gov_data import (  # noqa: E402
     SPREADSHEET_NS, column_index, fetch, log, read_shared_strings,
 )
 from lib_naics import normalize_naics  # noqa: E402
-from lib_db import Database, stamp_freshness  # noqa: E402
+from lib_db import QUARTERLY_FILE_MAX_AGE_DAYS, Database, stamp_freshness  # noqa: E402
+
+# How old the newest quarter may get before the next is late: lib_db.QUARTERLY_FILE_MAX_AGE_DAYS, the one number
+# every dataset built from a DOL quarterly file carries (DOL posts all its quarterly files together).
+FRESHNESS_MAX_AGE_DAYS = QUARTERLY_FILE_MAX_AGE_DAYS
 
 
 def merge_entities(bucket: dict, name_of, kind: str | None = None,

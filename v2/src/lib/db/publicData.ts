@@ -32,6 +32,7 @@ import { wageView } from "./wageViews";
 import { socGroupClause } from "@/lib/socCode";
 import { getLiveCensus, type CensusMatrixRow } from "./liveCensus";
 import { softFail } from "@/lib/softRead";
+import { budgetFor } from "@/lib/freshnessBudget";
 
 interface EntityDbRow {
   slug: string;
@@ -680,7 +681,8 @@ const freshnessUncached = async (): Promise<Record<string, DatasetFreshness>> =>
   const now = Date.now();
   for (const x of r) {
     const asOf = (x.as_of as string) ?? null;
-    const maxAgeDays = (x.max_age_days as number) ?? null;
+    const cadence = (x.cadence as string) ?? "";
+    const maxAgeDays = budgetFor(cadence, x.max_age_days == null ? null : Number(x.max_age_days));
     // A bare "2026-08" is a month, and Date.parse reads it as the 1st, which
     // makes a fresh monthly dataset look up to 30 days older than it is.
     // Anchor a month to its END so the age is the smallest true value.
@@ -709,7 +711,7 @@ const freshnessUncached = async (): Promise<Record<string, DatasetFreshness>> =>
       asOf,
       fetchedAt: (x.fetched_at as number) ?? 0,
       source: (x.source as string) ?? "",
-      cadence: (x.cadence as string) ?? "",
+      cadence,
       note: (x.note as string) ?? null,
       maxAgeDays,
       ageDays,

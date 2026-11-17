@@ -66,6 +66,9 @@ check("a case in both tables counts once, on perm_cases' date",
 check("a day no case carries loses its row", "2012-01-01" not in got)
 check("another source's rows are untouched", series(db, "sweep-observed") == {"2026-09-01": [7, 7, 0, 0]})
 check("the series sums to the cases it was built from", sum(v[0] for v in got.values()) == 5)
+fresh_row = b.query_rows(db, "SELECT as_of, max_age_days FROM data_freshness WHERE dataset = 'daily-decisions'")
+check("the PERM build stamps its freshness, dated by its newest day, with the quarterly file's budget",
+      [(str(r[0]), int(r[1])) for r in fresh_row] == [("2024-01-03", b.QUARTERLY_FILE_MAX_AGE_DAYS)])
 
 empty = fresh()
 empty.execute("INSERT INTO daily_decisions VALUES ('2024-01-02','dol-disclosure',3,3,0,0,1)")

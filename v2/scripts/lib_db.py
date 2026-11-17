@@ -579,6 +579,16 @@ class Database:
 # lives in ONE place and a new script cannot invent its own column order.
 # ---------------------------------------------------------------------------
 
+# How old the newest quarter of a DOL quarterly file may get before the next one is late. Measured Nov 1 2026 from
+# the Internet Archive's first capture of each PERM file: DOL posted a quarter 62 to 125 days after it ended (FY2025
+# Q3 by Aug 31, Q4 by Dec 24, FY2026 Q1 by Apr 27, Q2 by Aug 3), so the newest file is up to 92 + 125 = 217 days old
+# the day the next appears. At 120 every quarter read "stale" for weeks. Every dataset built from one of those files
+# carries this budget, whatever script stamps it: the case file, the H-2A, H-2B, CW-1 and LCA files, the entity pages
+# and the daily decisions (two of those carried 135 until Nov 17 2026 and warned on every page that read them).
+# src/lib/db/publicData.ts holds the same number for any quarterly row stamped before it (a test reads this file).
+QUARTERLY_FILE_MAX_AGE_DAYS = 220
+
+
 def stamp_freshness(
     db: "Database",
     dataset: str,

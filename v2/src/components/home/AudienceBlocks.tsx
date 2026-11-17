@@ -8,6 +8,7 @@ import { CaretDownIcon } from "@phosphor-icons/react/ssr";
 import { buttonVariants } from "@/components/ui/button";
 import { SpotPicture } from "@/components/ui/spot-picture";
 import type { SpotPictureName } from "@/lib/spotPictures";
+import { HOME_WIDTH } from "./homeWidth";
 
 /**
  * The two audiences, side by side, with EQUAL headings.
@@ -96,7 +97,7 @@ export function AudienceBlocks() {
       // everything inside the dark theme's tokens, in both themes.
       className="dark bg-[#161616] py-12 text-foreground sm:py-16"
     >
-      <div className="mx-auto max-w-[1200px] px-4 sm:px-8">
+      <div className={`mx-auto ${HOME_WIDTH} px-4 sm:px-8`}>
         <h2 id="who-it-is-for-heading" className="font-heading text-2xl font-bold sm:text-3xl">
           Both sides of a PERM filing
         </h2>{" "}

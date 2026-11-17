@@ -45,7 +45,7 @@ export function ViewToggle({ view, onChange, className }: ViewToggleProps) {
             }}
             className={choiceVariants({ on, className: "size-11 px-0" })}
           >
-            <Icon className="size-5" aria-hidden="true" />
+            <Icon className="size-6" weight="bold" aria-hidden="true" />
           </button>
         );
       })}

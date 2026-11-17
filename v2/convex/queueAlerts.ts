@@ -89,7 +89,7 @@ import { scaled } from "./lib/emailAllowance";
 import { isPlausibleEmail } from "./lib/emailShape";
 import { TEXT_LEGAL_LINE } from "./lib/textFooter";
 import { one } from "./lib/publicMirror";
-import { permLineFrom } from "./lib/permLine";
+import { permLineFrom, type CensusCell } from "./lib/permLine";
 import { easternDay } from "./lib/time";
 
 const log = createLogger("QueueAlerts");
@@ -1048,9 +1048,8 @@ export const sweepPermFromCheck = internalAction({
     }
     const asOf = typeof doc.asOf === "string" ? doc.asOf.slice(0, 10) : null;
     const matrix = Array.isArray(doc.matrix)
-      ? (doc.matrix as { month: string; is_final: number; n: number }[]).filter(
-          (r) => typeof r?.month === "string" && typeof r?.n === "number",
-        )
+      ? // Each row keeps its status: the line counts DOL's own decisions, never a withdrawal.
+        (doc.matrix as CensusCell[]).filter((r) => typeof r?.month === "string" && typeof r?.n === "number")
       : [];
     if (!asOf) return { swept: false, reason: "census undated" };
     const ageDays = (Date.parse(`${easternDay()}T00:00:00Z`) - Date.parse(`${asOf}T00:00:00Z`)) / 86_400_000;

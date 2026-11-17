@@ -88,7 +88,7 @@ describe("the note's words", () => {
       "You signed up for alerts on your PERM case, G-100-26070-123456, and DOL has certified it, so congratulations!",
     );
     expect(body).toContain("Next comes the I-140.");
-    // The shared timelines: a certified case's next steps are the ones people compare (Adam, Nov 17 2026).
+    // The shared timelines: a certified case's next steps are the ones people compare.
     expect(body).toContain("you can add your dates at permtracker.app/green-card-timelines");
     expect(body).toContain("3. What would help you next: the I-140, the I-485, priority date alerts, or something else?");
     expect(body).toContain("if you'd rather I didn't write again, just say so.");

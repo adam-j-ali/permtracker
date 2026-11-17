@@ -3,6 +3,7 @@ import { LockKeyIcon } from "@phosphor-icons/react/ssr";
 import { RecordList } from "@/components/data/RecordList";
 import { SpotPicture } from "@/components/ui/spot-picture";
 import { IDLE_SIGN_OUT_MINUTES } from "@/lib/auth/session";
+import { HOME_WIDTH } from "./homeWidth";
 
 /**
  * How a practice's client data is protected, as one plain list. Each line is
@@ -21,7 +22,7 @@ export function SecuritySection() {
     // An ink band (`dark` resolves every token inside to the dark theme, so the
     // list reads on it unchanged), between the grey stakes and the lime close.
     <section id="security" aria-labelledby="security-title" className="dark bg-[#141414] text-foreground">
-      <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-8 sm:py-20">
+      <div className={`mx-auto ${HOME_WIDTH} px-4 py-16 sm:px-8 sm:py-20`}>
         <div className="flex items-center gap-4">
           <span aria-hidden="true" className="grid size-12 shrink-0 place-items-center border-2 border-black bg-primary text-black">
             <LockKeyIcon weight="bold" className="size-6" />

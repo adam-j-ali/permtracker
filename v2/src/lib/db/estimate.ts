@@ -109,13 +109,14 @@ export async function getEstimatorData(): Promise<EstimatorData> {
     // The 30-day average in DOL's layout from Oct 31 2026, the month's in the older one.
     const avgRow = analystReviewAverage(snapshot.permAverageDays);
     const officialAvgDays = avgRow && avgRow.calendarDays !== null ? avgRow.calendarDays : null;
-    // No position is DOL printing "--", or (from Oct 31 2026) DOL printing no month at all.
-    if (position) {
+    // Our own daily check of DOL's case status leads, as on every page that names the month (lib/permLine.ts,
+    // lib/dolNow.ts, lib/db/dolPosition.ts): DOL's table can sit unchanged for weeks, and from Oct 31 2026 it
+    // prints no month at all. DOL's position stands in only when the check can't say.
+    const line = census ? permLineFrom(census.matrix, census.asOf) : null;
+    if (line) {
+      frontier = { analystQueueMonth: line.month, officialAvgDays, asOf: line.asOf, from: "check" };
+    } else if (position) {
       frontier = { analystQueueMonth: position.month, officialAvgDays, asOf: position.asOf, from: "dol" };
-    } else {
-      // Our own daily check of DOL's case status says where the line is, from the census already read here.
-      const line = census ? permLineFrom(census.matrix, census.asOf) : null;
-      if (line) frontier = { analystQueueMonth: line.month, officialAvgDays, asOf: line.asOf, from: "check" };
     }
   }
 
