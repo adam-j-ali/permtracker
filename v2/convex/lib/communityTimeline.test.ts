@@ -21,6 +21,7 @@ import {
   sharedDates,
   summarizeRfes,
   tallyCodes,
+  thirdFta0,
   toBoardRow,
   toOfficeRow,
   typedCodes,
@@ -520,5 +521,31 @@ describe("adding what the account reader found to a form", () => {
     expect(kept).toHaveLength(MAX_ACCOUNT_EVENTS);
     expect(kept[kept.length - 1]).toEqual(many[many.length - 1]);
     expect(validateTimeline({ route: "adjustment", ...mergeIntoTimeline(form, { accountEvents: [{ on: "2026-06-01", code: "FTA0" }] }) }, "2026-11-17").ok).toBe(true);
+  });
+});
+
+describe("after a third FTA0", () => {
+  const TODAY_ISO = "2026-11-17";
+  const at = (iso: string) => Date.parse(`${iso}T12:00:00Z`);
+  const fta = (...days: string[]) => days.map((on) => ({ on, form: "i485" as const, code: "FTA0" }));
+  const rec = (over: Partial<TimelineRecord>): TimelineRecord => ({ public: true, updatedAt: at("2026-11-10"), ...over });
+
+  it("counts both halves: a card after it, and still waiting, with medians from five", () => {
+    const cards = Array.from({ length: 5 }, (_, i) =>
+      rec({ accountEvents: fta("2026-01-01", "2026-02-01", "2026-03-01"), greenCardOn: `2026-03-${String(11 + i * 2).padStart(2, "0")}` }),
+    );
+    const waiting = [
+      rec({ accountEvents: fta("2026-05-01", "2026-06-01", "2026-07-01") }),
+      // Quiet for over 60 days: not known to be waiting.
+      rec({ accountEvents: fta("2026-05-01", "2026-06-01", "2026-07-01"), updatedAt: at("2026-08-01") }),
+      // Only two FTA0s, and an FTA0 on another form: no third on the I-485.
+      rec({ accountEvents: [...fta("2026-05-01", "2026-06-01"), { on: "2026-07-01", form: "i765", code: "FTA0" }] }),
+    ];
+    const r = thirdFta0([...cards, ...waiting], TODAY_ISO);
+    expect(r).toEqual({ reported: 7, withCard: 5, medianToCard: 14, waiting: 1, medianWaiting: null });
+  });
+
+  it("is all zeros with nothing reported", () => {
+    expect(thirdFta0([], TODAY_ISO)).toEqual({ reported: 0, withCard: 0, medianToCard: null, waiting: 0, medianWaiting: null });
   });
 });

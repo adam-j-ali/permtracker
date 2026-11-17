@@ -4,7 +4,7 @@ import { queryStatic } from "@/lib/convexStatic";
 
 import { api } from "@convex/_generated/api";
 import { ShareTimeline } from "@/components/community/ShareTimeline";
-import { AccountCodes, BoardKey, BoardTable, RfeBars, StageMedians, WhoIsWaiting } from "@/components/community/TimelineBoard";
+import { AccountCodes, BoardKey, BoardTable, RfeBars, StageMedians, ThirdFta0Line, WhoIsWaiting } from "@/components/community/TimelineBoard";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { FaqList } from "@/components/tools/FaqList";
 import { BOARD_OPENS_AT, METRIC_MIN_N, OFFICE_LIST_OPENS_AT, shareProgress } from "@/lib/communityTimeline";
@@ -234,13 +234,18 @@ export default async function GreenCardTimelinesPage() {
             </div>
           </section>
 
-          {/* Optional: a backend older than Nov 17 2026 sends no codes. */}
-          {board.codes?.length ? (
+          {/* Optional: a backend older than Nov 17 2026 sends no codes and no third-FTA0 count. */}
+          {board.codes?.length || board.thirdFta0?.reported ? (
             <section className="mt-12" aria-labelledby="codes-h">
               <h2 id="codes-h" className="font-heading text-2xl font-bold sm:text-3xl">
                 Account updates
               </h2>{" "}
-              <AccountCodes codes={board.codes} where="shared timelines" className="mt-4" />
+              {board.thirdFta0 ? (
+                <div className="mt-4">
+                  <ThirdFta0Line r={board.thirdFta0} />
+                </div>
+              ) : null}{" "}
+              <AccountCodes codes={board.codes ?? []} where="shared timelines" className="mt-4" />
             </section>
           ) : null}
         </>

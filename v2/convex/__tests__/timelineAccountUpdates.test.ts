@@ -147,6 +147,8 @@ describe("what the public sees", () => {
     expect(board.codes).toEqual([{ code: "FTA0", timelines: board.total, listed: true }]);
     expect(board.rows[0]).toMatchObject({ center: "NBC", updates: { count: 1, codes: ["FTA0"] } });
     expect(JSON.stringify(board.rows)).not.toContain("2025-09-02");
+    // One FTA0 each, so no third: the count is there and empty.
+    expect(board.thirdFta0).toEqual({ reported: 0, withCard: 0, medianToCard: null, waiting: 0, medianWaiting: null });
     const office = await t.query(api.communityTimelines.office, { office: HFD });
     expect(office.codes[0]).toMatchObject({ code: "FTA0" });
     expect(office.rows[0]!.updates).toEqual({ count: 1, codes: ["FTA0"], lastDay: 124 });

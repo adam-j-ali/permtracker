@@ -602,6 +602,47 @@ export function tallyCodes(records: readonly TimelineRecord[]): { code: string; 
     .sort((a, b) => b.timelines - a.timelines || a.code.localeCompare(b.code));
 }
 
+/** A timeline updated this recently still counts as waiting; one quiet longer isn't known to be. */
+export const STILL_WAITING_DAYS = 60;
+
+export interface ThirdFta0 {
+  /** Shown timelines whose I-485 shows a third FTA0. */
+  reported: number;
+  /** Of those, with a green card dated on or after it, and the median days from the third FTA0 to the card. */
+  withCard: number;
+  medianToCard: number | null;
+  /** Of those, with no green card and updated within STILL_WAITING_DAYS, and the median days waited since. */
+  waiting: number;
+  medianWaiting: number | null;
+}
+
+/**
+ * "A third FTA0 means approval is close" is the group's most repeated reading, and the only count online holds
+ * approved cases alone. This counts both halves from shown timelines: who got a card after it, and who is still
+ * waiting. A median prints from METRIC_MIN_N timelines; the counts always print. What people saw, never a forecast.
+ */
+export function thirdFta0(records: readonly TimelineRecord[], today: string = isoToday()): ThirdFta0 {
+  const toCard: number[] = [];
+  const waited: number[] = [];
+  let reported = 0;
+  for (const r of records) {
+    if (r.hiddenAt !== undefined) continue;
+    const third = (r.accountEvents ?? []).filter((e) => e.form === "i485" && e.code === "FTA0").map((e) => e.on).sort()[2];
+    if (!third) continue;
+    reported += 1;
+    const card = daysBetween(third, r.greenCardOn);
+    if (card !== null && card >= 0) {
+      toCard.push(card);
+      continue;
+    }
+    const quiet = daysBetween(new Date(r.updatedAt).toISOString().slice(0, 10), today);
+    const since = daysBetween(third, today);
+    if (!r.greenCardOn && quiet !== null && quiet <= STILL_WAITING_DAYS && since !== null && since >= 0) waited.push(since);
+  }
+  const median = (xs: number[]) => (xs.length >= METRIC_MIN_N ? nearestRank([...xs].sort((a, b) => a - b), 0.5) : null);
+  return { reported, withCard: toCard.length, medianToCard: median(toCard), waiting: waited.length, medianWaiting: median(waited) };
+}
+
 /** One row of the public board: no case number, no employer, no exact PERM date. */
 export interface BoardRow {
   /** "YYYY-MM": the PERM filing month, the priority-date month. */

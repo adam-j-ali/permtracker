@@ -34,6 +34,7 @@ import {
   sharedDates,
   summarizeRfes,
   tallyCodes,
+  thirdFta0,
   toBoardRow,
   toOfficeRow,
   typedCodes,
@@ -488,6 +489,14 @@ export const board = query({
     offices: v.array(v.object({ code: v.string(), shared: v.number() })),
     /** The account codes timelines report, each once METRIC_MIN_N timelines do. */
     codes: codeTallyV,
+    /** After a third FTA0 on the I-485: who got a card, who is still waiting (lib `thirdFta0`). */
+    thirdFta0: v.object({
+      reported: v.number(),
+      withCard: v.number(),
+      medianToCard: v.union(v.number(), v.null()),
+      waiting: v.number(),
+      medianWaiting: v.union(v.number(), v.null()),
+    }),
     waiting: v.object({
       open: v.boolean(),
       byStage: v.array(v.object({ id: v.string(), label: v.string(), count: v.number() })),
@@ -540,6 +549,7 @@ export const board = query({
         .map(([code, n]) => ({ code, shared: n }))
         .sort((x, y) => y.shared - x.shared || x.code.localeCompare(y.code)),
       codes: tallyCodes(records),
+      thirdFta0: thirdFta0(records),
       waiting: whoIsWaiting(records),
     };
   },
