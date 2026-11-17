@@ -309,3 +309,20 @@ test("today shows the reader's own bulletin line and looks further back at DOL's
   // Each step's line in and out sits in its own card.
   await expect(page.getByText(/^[A-Z][a-z]{2} \d+ to [A-Z][a-z]{2} \d+$/).first()).toBeVisible();
 });
+
+test("the USCIS account reader lays out a paste by date and fills the timeline form, sending nothing", async ({ page }) => {
+  await page.goto("/uscis-account-reader");
+  const sent: string[] = [];
+  page.on("request", (r) => {
+    if (r.method() !== "GET") sent.push(r.url());
+  });
+  await page.getByLabel("Paste what your USCIS account shows").fill("I-485  IAF   03/04/2026\nI-485  FTA0  06/01/2026");
+  const updates = page.getByRole("list", { name: /^Updates on I-485/ });
+  await expect(updates.getByRole("listitem")).toHaveCount(2);
+  await expect(updates.getByText("Database checks received")).toBeVisible();
+  await expect(page.getByTestId("reading").getByText(/DATABASE CHECKS RECEIVED/)).toBeVisible();
+  await page.getByRole("button", { name: "Add these to my timeline" }).click();
+  await expect(page.getByRole("group", { name: "Account update 2" })).toBeVisible();
+  // Reading a paste and filling the form send nothing (analytics may still post its page view).
+  expect(sent.filter((u) => !/\/ingest\//.test(u))).toEqual([]);
+});

@@ -199,6 +199,11 @@ function AccountUpdates({ uid, form, set }: { uid: string; form: TimelineInput; 
         <Link href="/guides/uscis-silent-updates" className="link">
           What the codes are known to mean
         </Link>
+        . Or paste your account&apos;s data into the{" "}
+        <Link href="/uscis-account-reader" className="link">
+          account reader
+        </Link>{" "}
+        and it fills these in, in your browser.
       </p>{" "}
       {events.map((e, i) => {
         const id = ids[i] ?? `${uid}-u${i}`;

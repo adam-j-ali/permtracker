@@ -48,6 +48,12 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
       "Check a case number for its live DOL status, its place in the queue, and a stage-aware decision estimate. Takes every DOL program on the same case-number counter: PERM (G-), prevailing wage requests (P-), labor condition applications for H-1B, H-1B1 and E-3 workers (I-200 to I-203), and H-2A, H-2B and CW-1 applications (H-300-, H-400-, C-500-). Works for PENDING cases as well as decided ones, because it asks DOL directly instead of reading the quarterly files. Free, no account, and it emails when the status changes. No case number? Search by employer name instead.",
   },
   {
+    path: "/uscis-account-reader",
+    label: "USCIS account updates and codes, read in the browser",
+    blurb:
+      "Paste what your own USCIS online account shows (the case data or the list of updates) and see each update by date with what its code is known to mean: FTA0, IAF, FJ, H008, IK1 and others, each labelled as quoted from a government code list, reported by filers, or unsettled. It runs in the browser: nothing is sent, stored or signed in. The updates can be added to a green card timeline, which is checked before it shows.",
+  },
+  {
     path: "/uscis-case-status",
     label: "USCIS receipt numbers decoded",
     blurb:

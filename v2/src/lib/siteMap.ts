@@ -82,6 +82,7 @@ export type DataSection =
   | "green-card-line"
   | "awaiting-visa"
   | "i485-offices"
+  | "uscis-account-reader"
   | "nvc-waiting-list"
   | "visa-issuances"
   | "consular-posts"
@@ -196,6 +197,7 @@ export const SECTIONS: DataNavSection[] = [
   t("green-card-line", "Green card line", "Your place in line", "/tools/green-card-line", "Everyone ahead of your priority date."),
   t("eb2-vs-eb3", "Green card line", "EB-2 or EB-3", "/tools/eb2-vs-eb3", "Which line has fewer people ahead of your date."),
   s("i485-offices", "Green card line", "I-485 by office", "/i485-by-field-office"),
+  s("uscis-account-reader", "Green card line", "Your USCIS account updates", "/uscis-account-reader"),
   t("i485-position", "Green card line", "I-485 queue position", "/tools/i485-queue-position", "Adjustment applications pending ahead of you."),
   s("nvc-waiting-list", "Green card line", "NVC waiting list", "/nvc-waiting-list"),
   s("visa-issuances", "Green card line", "Visas issued", "/visa-issuances"),

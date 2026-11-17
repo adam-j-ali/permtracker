@@ -15,6 +15,7 @@ import {
   formHints,
   isListedCode,
   isPermCategory,
+  mergeIntoTimeline,
   isShown,
   reviewFlags,
   sharedDates,
@@ -491,5 +492,33 @@ describe("account updates, the service center and the Supplement J date", () => 
     const a: TimelineRecord = { public: true, updatedAt: 0, i485FiledOn: "2026-03-02", biometricsOn: "2026-04-01", eadOn: "2026-06-01" };
     expect(sharedDates(a, { ...a, eadOn: undefined })).toBe(2);
     expect(sharedDates(a, { public: true, updatedAt: 0, i485FiledOn: "2026-03-03" })).toBe(0);
+  });
+});
+
+describe("adding what the account reader found to a form", () => {
+  it("fills only empty answers, adds the updates once each, and keeps the newest the form allows", () => {
+    const form = { route: "adjustment", i485FiledOn: "2026-03-01", accountEvents: [{ on: "2026-04-01", form: "i485", code: "IAF" }] };
+    const merged = mergeIntoTimeline(form, {
+      route: "consular",
+      i485FiledOn: "2026-03-02",
+      i485Center: "NBC",
+      accountEvents: [
+        { on: "2026-04-01", form: "i485", code: "iaf" },
+        { on: "2026-06-01", form: "i485", code: "FTA0" },
+      ],
+    });
+    expect(merged).toMatchObject({ route: "adjustment", i485FiledOn: "2026-03-01", i485Center: "NBC" });
+    expect(merged.accountEvents).toEqual([
+      { on: "2026-04-01", form: "i485", code: "IAF" },
+      { on: "2026-06-01", form: "i485", code: "FTA0" },
+    ]);
+    const many = Array.from({ length: MAX_ACCOUNT_EVENTS + 5 }, (_, i) => ({
+      on: new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10),
+      code: `Q${i}`,
+    }));
+    const kept = mergeIntoTimeline({}, { accountEvents: many }).accountEvents!;
+    expect(kept).toHaveLength(MAX_ACCOUNT_EVENTS);
+    expect(kept[kept.length - 1]).toEqual(many[many.length - 1]);
+    expect(validateTimeline({ route: "adjustment", ...mergeIntoTimeline(form, { accountEvents: [{ on: "2026-06-01", code: "FTA0" }] }) }, "2026-11-17").ok).toBe(true);
   });
 });

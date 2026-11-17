@@ -379,6 +379,12 @@ export default function PrivacyPage() {
               </li>{" "}
               <li>
                 We keep a timeline until you remove it, or until we take it down
+              </li>{" "}
+              <li>
+                The USCIS account reader reads what you paste into it in your
+                own browser. Nothing you paste is sent to us or stored, and
+                analytics never records it. Only what you then choose to save
+                in the timeline form reaches us, and never a receipt number
               </li>
             </ul>{" "}
 
