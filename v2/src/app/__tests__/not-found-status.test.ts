@@ -52,7 +52,7 @@ describe("content detail routes: junk slugs cannot render", () => {
     "%s/[slug] exports dynamicParams = false, so a junk slug 404s without rendering",
     async (type) => {
       const mod = await import(
-        `../(site)/(public)/${type}/[slug]/page`
+        `../(site)/(public)/${type}/[slug]/page.tsx`
       );
       expect(mod.dynamicParams).toBe(false);
     },
@@ -179,7 +179,7 @@ describe("entity detail routes: the miss is decided in metadata", () => {
       ...(await importOriginal<object>()),
       resolveEntity: vi.fn().mockResolvedValue({ row: aliasRow, canonicalSlug: "m-t-bank", viaAlias: true }),
     }));
-    const page = await import(`../(site)/(public)/${route}/[slug]/page`);
+    const page = await import(`../(site)/(public)/${route}/[slug]/page.tsx`);
     const meta = await digestOf(page.generateMetadata(params("mt-bank")));
     expect(meta).toMatch(new RegExp(`^NEXT_REDIRECT;[a-z]+;/${route}/m-t-bank;308;`));
     const body = await digestOf(page.default(params("mt-bank")));
