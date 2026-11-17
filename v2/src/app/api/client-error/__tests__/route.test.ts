@@ -13,7 +13,7 @@ vi.mock("@sentry/nextjs", () => ({ captureMessage: vi.fn() }));
 
 import * as Sentry from "@sentry/nextjs";
 import { POST } from "../route";
-import { chunkFileOf, dplOf, groupingKey, parseClientError } from "../parse";
+import { chunkFileOf, dplOf, groupingKey, isDroppedRequest, parseClientError } from "../parse";
 
 const good = { boundary: "GlobalError", outcome: "redirect-login", name: "Error", message: "Not authenticated", path: "/dashboard?case=G-100-1" };
 // Each post comes from its own address unless a test names one, so the per-address cap
@@ -113,6 +113,39 @@ describe("POST /api/client-error", () => {
       expect(msg).toBe("A page's data stream was cut on the visitor's connection (the screen reloads)");
       expect(opts).toMatchObject({ level: "warning", fingerprint: ["client-error", "connection-closed"] });
     }
+  });
+
+  it("files a request the visitor's connection dropped under the same warning, once the screen has reloaded", async () => {
+    // Safari words a fetch its connection dropped "Load failed", Chrome "Failed to fetch", Firefox "NetworkError
+    // when attempting to fetch resource.". The screen reloads and the visitor gets a fresh page: one opened an
+    // error issue and its email (Nov 17 2026, an iPhone on /perm-queue at 12:06 AM).
+    // (The shared warning allows SENTRY_PER_KEY_PER_HOUR a module, and the test above spends two: one post here.)
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await post(JSON.stringify({ ...good, boundary: "PublicDataError", outcome: "reload", name: "TypeError", message: "Load failed", path: "/perm-queue" }));
+    const calls = vi.mocked(Sentry.captureMessage).mock.calls;
+    expect(calls).toHaveLength(1);
+    expect(calls[0]![0]).toBe("A page's data stream was cut on the visitor's connection (the screen reloads)");
+    expect(calls[0]![1]).toMatchObject({ level: "warning", fingerprint: ["client-error", "connection-closed"] });
+  });
+
+  it("reads a dropped request in each browser's words, and nothing that says more", () => {
+    for (const m of ["Load failed", "TypeError: Load failed", "Failed to fetch", "NetworkError when attempting to fetch resource.", " Load failed "]) {
+      expect(isDroppedRequest(m), m).toBe(true);
+    }
+    for (const m of ["Failed to fetch dynamically imported module: https://permtracker.app/x.js", "Load failed for chunk 12", "Server Error", ""]) {
+      expect(isDroppedRequest(m), m).toBe(false);
+    }
+  });
+
+  it("keeps a dropped request as an error when the screen couldn't reload, or the message says more", async () => {
+    // "shown": the screen had already reloaded within the minute, so the same failure came back on the fresh load.
+    // A module that wouldn't import is a build-file fault with its own handling, not a dropped request.
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await post(JSON.stringify({ ...good, boundary: "PublicDataError", outcome: "shown", name: "TypeError", message: "Load failed", path: "/perm-queue" }));
+    await post(JSON.stringify({ ...good, boundary: "RouteError", outcome: "reload", name: "TypeError", message: "Failed to fetch dynamically imported module: https://permtracker.app/x.js", path: "/" }));
+    const calls = vi.mocked(Sentry.captureMessage).mock.calls;
+    expect(calls).toHaveLength(2);
+    for (const [, opts] of calls) expect(opts).toMatchObject({ level: "error" });
   });
 
   it("leaves React's other numbered errors as errors of their own", async () => {
