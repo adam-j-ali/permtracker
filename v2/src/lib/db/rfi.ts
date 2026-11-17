@@ -27,6 +27,16 @@ import "server-only";
 import { MS_PER_DAY } from "@/lib/time";
 
 import { one, rows } from "./client";
+import { stageMeta } from "@/components/rfi/stageMeta";
+import {
+  joinExits,
+  lastArrivals,
+  startFor,
+  type Arrival,
+  type StageExit,
+  type StageExitRaw,
+  type StartSource,
+} from "@/lib/stageWait";
 
 // ---------------------------------------------------------------------------
 // Shared SQL: the pending population
@@ -442,6 +452,14 @@ export function stageListing(cases: number): StageListing {
 export interface StageCase {
   caseNumber: string;
   filingDate: string | null;
+  /**
+   * DOL's denial date from its quarterly file, when the file holds this case as denied: the start of an appeal
+   * our record didn't see begin (`src/lib/stageWait.ts`). Null otherwise.
+   */
+  deniedOn: string | null;
+  /** Where the case's wait at this stage starts, filled by `listStageCasesWithStarts`; null from the bare list. */
+  startOn?: string | null;
+  startSource?: StartSource;
   employer: string | null;
   /**
    * The employer's page slug, or null when we cannot name one.
@@ -496,7 +514,8 @@ export async function listStageCases(
 ): Promise<StageCase[]> {
   const r = await rows<Record<string, unknown>>(
     `SELECT c.case_number, c.filing_date, c.employer_name, c.job_title,
-            COALESCE(l.employer_slug, p.employer_slug) AS employer_slug
+            COALESCE(l.employer_slug, p.employer_slug) AS employer_slug,
+            CASE WHEN p.status = 'denied' THEN p.decision_date END AS denied_on
        FROM perm_case_status c
        LEFT JOIN perm_live_recent l ON l.case_number = c.case_number
        LEFT JOIN perm_cases p ON p.case_number = c.case_number
@@ -508,10 +527,94 @@ export async function listStageCases(
   return r.map((x) => ({
     caseNumber: String(x.case_number),
     filingDate: x.filing_date == null ? null : String(x.filing_date),
+    deniedOn: x.denied_on == null ? null : String(x.denied_on).slice(0, 10),
     employer: x.employer_name == null ? null : String(x.employer_name),
     employerSlug: x.employer_slug == null ? null : String(x.employer_slug),
     jobTitle: x.job_title == null ? null : String(x.job_title),
   }));
+}
+
+/**
+ * The first instant our event log can hold a move, Aug 28 2026 00:00 UTC: the record's catch-up began on Aug 28
+ * (first event 01:33 UTC). Arrivals from then on are read, and `stageWait.startFor` dates only those after the
+ * catch-up (`HISTORY_FROM`); the earlier rows tell it a case was already there, which is "no start on record".
+ */
+const EVENTS_FROM_MS = Date.UTC(2026, 7, 28);
+
+/**
+ * Every arrival at a stage our check saw, each case as many times as it arrived. Read by the event log's
+ * `case_events_status_time (to_status, changed_at)` index: about 1,850 rows for RFI ISSUED, 1.7 ms on the live
+ * database (Nov 17 2026). Joined to the cases in code, never by a correlated subquery: SQLite answered that with
+ * the same status index once per case.
+ */
+export async function listStageArrivals(status: string): Promise<Arrival[]> {
+  const r = await rows<{ case_number: unknown; changed_at: unknown }>(
+    `SELECT case_number, changed_at FROM perm_case_events WHERE to_status = ? AND changed_at >= ?`,
+    [status, EVENTS_FROM_MS],
+  );
+  return r.map((x) => ({ caseNumber: String(x.case_number), at: Number(x.changed_at) }));
+}
+
+/**
+ * Every move out of a stage our check saw, newest first, with the case's details and today's status. By
+ * `case_events_from_time (from_status, changed_at)`: 2,090 rows for RFI ISSUED, 43 ms (Nov 17 2026). The
+ * record's catch-up rows are read and dropped in `stageWait.joinExits`, the one place that rule lives.
+ */
+export async function listStageExitsRaw(status: string): Promise<StageExitRaw[]> {
+  const r = await rows<Record<string, unknown>>(
+    `SELECT e.case_number, e.changed_at, e.to_status,
+            c.filing_date, c.employer_name, c.job_title, c.current_status,
+            COALESCE(l.employer_slug, p.employer_slug) AS employer_slug,
+            CASE WHEN p.status = 'denied' THEN p.decision_date END AS denied_on
+       FROM perm_case_events e
+       LEFT JOIN perm_case_status c ON c.case_number = e.case_number
+       LEFT JOIN perm_live_recent l ON l.case_number = e.case_number
+       LEFT JOIN perm_cases p ON p.case_number = e.case_number
+      WHERE e.from_status = ? AND e.changed_at >= ? AND (c.employer_name IS NULL OR c.employer_name IS NOT ?)
+   ORDER BY e.changed_at DESC`,
+    [status, EVENTS_FROM_MS, TEST_FIXTURE_EMPLOYER],
+  );
+  const str = (v: unknown) => (v == null ? null : String(v));
+  return r.map((x) => ({
+    caseNumber: String(x.case_number),
+    at: Number(x.changed_at),
+    to: String(x.to_status ?? ""),
+    filingDate: str(x.filing_date),
+    employer: str(x.employer_name),
+    employerSlug: str(x.employer_slug),
+    jobTitle: str(x.job_title),
+    nowStatus: str(x.current_status),
+    deniedOn: x.denied_on == null ? null : String(x.denied_on).slice(0, 10),
+  }));
+}
+
+/** Whether a stage is an appeal, so DOL's denial date can stand for its start (`stageWait.startFor`). */
+function isAppealStage(status: string): boolean {
+  return stageMeta(status).group === "appeal";
+}
+
+/**
+ * The cases waiting at a stage, each with where its wait starts, and every case that left it since our record
+ * began, each timed. One read of the arrivals serves both. `listStageCases`'s population and order, unchanged.
+ */
+export async function getStageHistory(
+  status: string,
+  limit: number,
+): Promise<{ cases: StageCase[]; exits: StageExit[] }> {
+  const [cases, arrivals, exitsRaw] = await Promise.all([
+    listStageCases(status, limit, 0),
+    listStageArrivals(status),
+    listStageExitsRaw(status),
+  ]);
+  const appeal = isAppealStage(status);
+  const last = lastArrivals(arrivals);
+  return {
+    cases: cases.map((c) => {
+      const s = startFor(last.get(c.caseNumber) ?? null, c.deniedOn, appeal);
+      return { ...c, startOn: s.on, startSource: s.source };
+    }),
+    exits: joinExits(exitsRaw, arrivals, appeal),
+  };
 }
 
 /**

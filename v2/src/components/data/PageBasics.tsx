@@ -758,13 +758,16 @@ export function PageBasics({
   page,
   figures = {},
   title = "FAQs",
+  entries: given,
 }: {
   page: keyof typeof BASICS | string;
   figures?: BasicsFigures;
   /** The block's heading: "FAQs" (round 3, Oct 15 2026; it read "The basics"). A page with its own question list above passes another. */
   title?: string;
+  /** Entries built by the page itself (one template, many pages: the review stages), in place of `BASICS[page]`. */
+  entries?: BasicsEntry[];
 }) {
-  const entries = BASICS[page];
+  const entries = given ?? BASICS[page];
   if (!entries || entries.length === 0) return null;
   return (
     <section className="mt-14 border-t-3 border-border">

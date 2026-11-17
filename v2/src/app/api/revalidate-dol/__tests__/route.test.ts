@@ -86,6 +86,8 @@ describe("the path list has not drifted from the pages that read the snapshot", 
     "/perm-case-status": "fully dynamic (no revalidate), so there is no cached copy to expire",
     "/badge/[kind]":
       "its three literal URLs are in DOL_PAGES; a dynamic segment cannot be handed to revalidatePath",
+    "/perm-rfi-audit/[stage]":
+      "only reconsideration-appeals prints DOL's posted month, and that literal URL is in DOL_PAGES; a dynamic segment cannot be handed to revalidatePath",
   };
 
   function walk(dir: string, out: string[] = []): string[] {

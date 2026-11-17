@@ -22,15 +22,16 @@ import { formatShareOf } from "@convex/lib/format";
  */
 const STAGE = "RECONSIDERATION APPEALS";
 
-export async function ReconsiderationNow() {
+export async function ReconsiderationNow({ part = "all" }: { part?: "all" | "dol" } = {}) {
   const [history, stats] = await Promise.all([
     getProcessingTimesHistory(120).catch(softFail("ReconsiderationNow.getProcessingTimesHistory", null)),
     getStageStats().catch(softFail("ReconsiderationNow.getStageStats", null)),
   ]);
   const posted = history ? reconsiderationPosted(history) : null;
   const ours = stats?.since ? stats : null;
-  const watched = ours ? furthestWatched(ours.durations?.find((d) => d.stage.toUpperCase() === STAGE)?.curve ?? []) : null;
-  const outcome = ours ? reconsiderationOutcome(ours.exits) : null;
+  // The stage page prints our own record from the cases themselves; it asks for DOL's posting alone.
+  const watched = ours && part === "all" ? furthestWatched(ours.durations?.find((d) => d.stage.toUpperCase() === STAGE)?.curve ?? []) : null;
+  const outcome = ours && part === "all" ? reconsiderationOutcome(ours.exits) : null;
   const since = ours ? formatAsOf(ours.since) : null;
 
   if (!posted && !watched && !outcome) {
@@ -97,6 +98,12 @@ export async function ReconsiderationNow() {
           ) : null}{" "}
           <p className="mt-2 text-sm text-muted-foreground">
             A request already waiting when our record began isn&apos;t timed, because its start isn&apos;t known.
+          </p>{" "}
+          <p className="mt-3">
+            <Link href="/perm-rfi-audit/reconsideration-appeals" className="link">
+              Every request waiting now, and every one answered since then
+            </Link>
+            , with how long each waited.
           </p>
         </div>
       ) : null}

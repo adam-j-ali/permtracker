@@ -82,7 +82,10 @@ export const GLOSSARY: GlossaryTerm[] = [
     definition:
       "The panel of DOL administrative law judges that reviews PERM denials on the record. It can affirm the denial, direct the Certifying Officer to grant the certification, or order a hearing, and nothing else.",
     cite: CFR656("656.27"),
-    see: [{ label: "Appealing a denial", href: "/guides/perm-appeal-reconsideration-balca" }],
+    see: [
+      { label: "Appealing a denial", href: "/guides/perm-appeal-reconsideration-balca" },
+      { label: "BALCA appeals waiting now", href: "/perm-rfi-audit/balca-appeals" },
+    ],
   },
   {
     term: "Case number",
@@ -428,7 +431,10 @@ export const GLOSSARY: GlossaryTerm[] = [
     definition:
       "Asking the Certifying Officer who denied a PERM to look again, within 30 days of the denial. It can only use documents DOL already had or that existed at filing and were kept on file. The officer may instead forward it to BALCA.",
     cite: CFR656("656.24"),
-    see: [{ label: "Appealing a denial", href: "/guides/perm-appeal-reconsideration-balca" }],
+    see: [
+      { label: "Appealing a denial", href: "/guides/perm-appeal-reconsideration-balca" },
+      { label: "How long reconsideration takes", href: "/perm-rfi-audit/reconsideration-appeals" },
+    ],
   },
   {
     term: "Recruitment report",
@@ -453,7 +459,10 @@ export const GLOSSARY: GlossaryTerm[] = [
     definition:
       "DOL's question to the employer before deciding a PERM, under the officer's power to request supplemental information. It's lighter than an audit. The letter sets its own deadline, and the regulation sets none.",
     cite: CFR656("656.20"),
-    see: [{ label: "RFI issued: what to do", href: "/guides/perm-rfi-issued-what-to-do" }],
+    see: [
+      { label: "RFI issued: what to do", href: "/guides/perm-rfi-issued-what-to-do" },
+      { label: "Every open RFI, and how long they take", href: "/perm-rfi-audit/rfi-issued" },
+    ],
   },
   {
     term: "Retrogression",
@@ -515,7 +524,10 @@ export const GLOSSARY: GlossaryTerm[] = [
     definition:
       "Recruitment DOL directs: the officer approves the advertisement and where it runs, applicants write to the officer, and the employer reports on each. Ordered after a failure on audit or as a two-year consequence of not responding to one.",
     cite: CFR656("656.21"),
-    see: [{ label: "Every status, explained", href: "/perm-case-statuses#supervised-recruitment" }],
+    see: [
+      { label: "Every status, explained", href: "/perm-case-statuses#supervised-recruitment" },
+      { label: "Cases in supervised recruitment", href: "/perm-rfi-audit/supervised-recruitment" },
+    ],
   },
   {
     term: "Supplement J",

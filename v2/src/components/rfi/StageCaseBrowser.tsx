@@ -6,9 +6,11 @@ import { useCallback, useMemo } from "react";
 import { FilterableStatTable, type CsvSpec, type Facet, type StatColumn } from "@/components/tools/FilterableStatTable";
 import type { StageCase } from "@/lib/db/rfi";
 import { formatInt } from "@/lib/format";
-import { MS_PER_DAY } from "@/lib/time";
 import { SITE_URL } from "@/lib/constants/site";
 import { entityHref } from "@/lib/entityPayload";
+import { daysBetween } from "@/lib/stageWait";
+import { easternDay } from "@convex/lib/time";
+import { shortDate } from "@convex/lib/months";
 
 /**
  * Every case at a review stage, browsable.
@@ -19,8 +21,9 @@ import { entityHref } from "@/lib/entityPayload";
  * past the seed. Search covers the case number, the employer and the job
  * title; every column sorts; the one facet is the filing year, because
  * "which year's filings are stuck here" is the question the page answers.
- * "Days waiting" is filing date to today, the same arithmetic the stage
- * summary uses, so the table and the figure above it cannot disagree.
+ * "Days here" counts from where the case's wait at this stage starts (`src/lib/stageWait.ts`): the day our check
+ * saw it arrive, or for an appeal our record didn't see begin, DOL's denial date. A case with neither says so
+ * rather than borrowing its filing date, which measures the whole PERM and not this step.
  */
 
 export interface StageBrowserProps {
@@ -36,13 +39,23 @@ interface StageFeed {
   rows: StageCase[];
 }
 
-function daysWaiting(filingDate: string | null): number | null {
-  if (!filingDate || !/^\d{4}-\d{2}-\d{2}/.test(filingDate)) return null;
-  const t = Date.parse(`${filingDate.slice(0, 10)}T00:00:00Z`);
-  if (!Number.isFinite(t)) return null;
-  return Math.max(0, Math.floor((Date.now() - t) / MS_PER_DAY));
+/** Days the case has waited at this stage so far, or null with no start on record. */
+export function daysHere(r: Pick<StageCase, "startOn">, today: string = easternDay()): number | null {
+  if (!r.startOn) return null;
+  return Math.max(0, daysBetween(r.startOn, today));
 }
 
+/** A day as a table prints it: "Oct 5" this year, "Sep 22, 2025" before it. */
+export function tableDay(iso: string, today: string = easternDay()): string {
+  const full = shortDate(iso) ?? iso;
+  return iso.slice(0, 4) === today.slice(0, 4) ? full.replace(/, \d{4}$/, "") : full;
+}
+
+/** Where the wait starts, as the table prints it. */
+export function hereSince(r: Pick<StageCase, "startOn" | "startSource">, today: string = easternDay()): string {
+  if (!r.startOn) return "Not on record";
+  return r.startSource === "denied" ? `Denied ${tableDay(r.startOn, today)}` : tableDay(r.startOn, today);
+}
 
 const COLUMNS: StatColumn<StageCase>[] = [
   {
@@ -81,15 +94,24 @@ const COLUMNS: StatColumn<StageCase>[] = [
     key: "filed",
     label: "Filed",
     sortValue: (r) => r.filingDate,
-    render: (r) => <span className="tabular-nums">{r.filingDate ?? ""}</span>,
+    render: (r) => <span className="whitespace-nowrap tabular-nums">{r.filingDate ?? ""}</span>,
+    secondary: true,
+  },
+  {
+    key: "since",
+    label: "Here since",
+    sortValue: (r) => r.startOn ?? null,
+    render: (r) => (
+      <span className={r.startOn ? "whitespace-nowrap tabular-nums" : "whitespace-nowrap text-muted-foreground"}>{hereSince(r)}</span>
+    ),
   },
   {
     key: "days",
-    label: "Days waiting",
+    label: "Days here",
     numeric: true,
-    sortValue: (r) => daysWaiting(r.filingDate),
+    sortValue: (r) => daysHere(r),
     render: (r) => {
-      const d = daysWaiting(r.filingDate);
+      const d = daysHere(r);
       return <span className="tabular-nums">{d === null ? "" : formatInt(d)}</span>;
     },
   },
@@ -114,14 +136,16 @@ export function StageCaseBrowser({ slug, status, seed, totalCount, asOf }: Stage
   const csv: CsvSpec<StageCase> = useMemo(
     () => ({
       filename: `perm-${slug}${asOf ? `-${asOf}` : ""}.csv`,
-      header: ["case_number", "filing_date", "employer", "job_title", "status", "days_waiting", "permtracker_url"],
+      header: ["case_number", "filing_date", "employer", "job_title", "status", "waiting_since", "waiting_since_from", "days_at_stage", "permtracker_url"],
       row: (r) => [
         r.caseNumber,
         r.filingDate,
         r.employer,
         r.jobTitle,
         status,
-        daysWaiting(r.filingDate),
+        r.startOn ?? null,
+        r.startSource === "seen" ? "our daily check" : r.startSource === "denied" ? "DOL denial date" : "",
+        daysHere(r),
         `${SITE_URL}/perm-case-status?case=${encodeURIComponent(r.caseNumber)}`,
       ],
     }),

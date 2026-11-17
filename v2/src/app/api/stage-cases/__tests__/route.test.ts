@@ -2,8 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const listStageCases = vi.fn();
 const getSweepCoverage = vi.fn();
+// The feed reads one history: the waiting cases (with where each wait starts) and the answered ones.
+const exitsRef: { current: unknown[] } = { current: [] };
+const getStageHistory = vi.fn(async (status: string, limit: number) => ({
+  cases: await listStageCases(status, limit, 0),
+  exits: exitsRef.current,
+}));
 
-vi.mock("@/lib/db/rfi", () => ({ listStageCases, LISTABLE_STAGE_MAX: 20_000 }));
+vi.mock("@/lib/db/rfi", () => ({ getStageHistory, LISTABLE_STAGE_MAX: 20_000 }));
 vi.mock("@/lib/db/sweepCoverage", () => ({ getSweepCoverage }));
 
 const { GET } = await import("../route");
@@ -18,11 +24,16 @@ const row = (n: number) => ({
   employer: n % 2 ? 'Acme "Widgets", Inc.' : "Plain Co",
   employerSlug: n % 2 ? "acme-widgets-inc" : null,
   jobTitle: "Software Developer",
+  deniedOn: null,
+  startOn: n === 1 ? "2026-10-05" : null,
+  startSource: n === 1 ? "seen" : "unknown",
 });
 
 describe("GET /api/stage-cases", () => {
   beforeEach(() => {
     listStageCases.mockReset();
+    getStageHistory.mockClear();
+    exitsRef.current = [];
     getSweepCoverage.mockReset();
     getSweepCoverage.mockResolvedValue({ finishedOn: "2026-09-08", mode: "pending", asked: 1, answered: 1 });
   });
@@ -62,8 +73,8 @@ describe("GET /api/stage-cases", () => {
     expect(res.headers.get("content-disposition")).toContain('perm-rfi-issued-2026-09-08.csv');
     const text = await res.text();
     const lines = text.trimEnd().split("\n");
-    expect(lines[0]).toBe("case_number,filing_date,employer,job_title,status,as_of");
-    expect(lines[1]).toBe('G-100-26030-100001,2026-01-30,"Acme ""Widgets"", Inc.",Software Developer,RFI ISSUED,2026-09-08');
+    expect(lines[0]).toBe("case_number,filing_date,employer,job_title,status,waiting_since,waiting_since_from,as_of");
+    expect(lines[1]).toBe('G-100-26030-100001,2026-01-30,"Acme ""Widgets"", Inc.",Software Developer,RFI ISSUED,2026-10-05,our daily check,2026-09-08');
   });
 
   it("never caches an answer with no sweep date, in JSON or CSV", async () => {
@@ -85,5 +96,36 @@ describe("GET /api/stage-cases", () => {
 
   it("rejects an unknown format", async () => {
     expect((await GET(get("stage=rfi-issued&format=xml"))).status).toBe(400);
+  });
+
+  it("serves the cases that left the stage as JSON and CSV, each with its outcome and how long it waited", async () => {
+    listStageCases.mockResolvedValue([row(1)]);
+    exitsRef.current = [
+      {
+        caseNumber: "G-100-25300-200001",
+        leftOn: "2026-11-12",
+        to: "CERTIFIED",
+        startOn: "2026-06-12",
+        startSource: "denied",
+        days: 153,
+        filingDate: "2025-01-15",
+        employer: "Plain Co",
+        employerSlug: null,
+        jobTitle: "Analyst",
+        nowStatus: "CERTIFIED",
+      },
+    ];
+    const json = await (await GET(get("stage=reconsideration-appeals&kind=answered"))).json();
+    expect(json.kind).toBe("answered");
+    expect(json.count).toBe(1);
+    expect(json.rows[0].to).toBe("CERTIFIED");
+    const text = await (await GET(get("stage=reconsideration-appeals&kind=answered&format=csv"))).text();
+    const lines = text.trimEnd().split("\n");
+    expect(lines[0]).toBe("case_number,left_on,moved_to,waiting_since,waiting_since_from,days_at_stage,filing_date,employer,job_title,status_now,as_of");
+    expect(lines[1]).toBe("G-100-25300-200001,2026-11-12,CERTIFIED,2026-06-12,DOL denial date,153,2025-01-15,Plain Co,Analyst,CERTIFIED,2026-09-08");
+  });
+
+  it("refuses a kind it doesn't know", async () => {
+    expect((await GET(get("stage=rfi-issued&kind=everything"))).status).toBe(400);
   });
 });
