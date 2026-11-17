@@ -296,14 +296,16 @@ test("today shows the reader's own bulletin line and looks further back at DOL's
   await station.getByLabel("Country of birth").selectOption("india");
   await expect(station.getByText(/^EB-3, India: current if filed before$/)).toBeVisible();
   await expect(station.getByText(/^Dates for filing:/)).toBeVisible();
-  // The decisions chart reaches back 90 and 180 days, the pick drawn as the site's choice.
-  const back = page.getByRole("group", { name: "How far back" });
-  await expect(back.getByRole("button", { name: "30 days" })).toHaveAttribute("aria-pressed", "true");
-  await back.getByRole("button", { name: "90 days" }).click();
-  await expect(back.getByRole("button", { name: "90 days" })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("img", { name: /^PERM decisions per (day|week), the last 90 days/ })).toBeVisible();
-  await back.getByRole("button", { name: "180 days" }).click();
-  await expect(page.getByRole("img", { name: /^PERM decisions per (day|week), the last 180 days/ })).toBeVisible();
+  // The decisions chart counts by day, week, month or year, the pick drawn as the site's choice, with the same days
+  // a year earlier marked.
+  const by = page.getByRole("group", { name: "Count decisions by" });
+  await expect(by.getByRole("button", { name: "Days" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Mark the same days a year earlier" })).toHaveAttribute("aria-pressed", "true");
+  await by.getByRole("button", { name: "Weeks" }).click();
+  await expect(by.getByRole("button", { name: "Weeks" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("img", { name: /^PERM decisions per week, Week of / })).toBeVisible();
+  await by.getByRole("button", { name: "Months" }).click();
+  await expect(page.getByRole("img", { name: /^PERM decisions per month, / })).toBeVisible();
   // Each step's line in and out sits in its own card.
   await expect(page.getByText(/^[A-Z][a-z]{2} \d+ to [A-Z][a-z]{2} \d+$/).first()).toBeVisible();
 });
