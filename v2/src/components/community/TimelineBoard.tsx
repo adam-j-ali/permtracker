@@ -317,6 +317,35 @@ export function AccountCodes({
   );
 }
 
+/**
+ * After a third FTA0: both halves, the cards and the still waiting. Counts always; a median only from METRIC_MIN_N.
+ * What these people saw, never a forecast for anyone else's case.
+ */
+export function ThirdFta0Line({ r }: { r: { reported: number; withCard: number; medianToCard: number | null; waiting: number; medianWaiting: number | null } }) {
+  if (r.reported === 0) return null;
+  const n = (x: number, one: string, many: string) => `${x.toLocaleString("en-US")} ${x === 1 ? one : many}`;
+  const card =
+    r.withCard === 0
+      ? "none has a green card after it yet."
+      : `${n(r.withCard, "has", "have")} a green card${r.medianToCard !== null ? `, a median of ${days(r.medianToCard)} after it` : ""}.`;
+  const wait =
+    r.waiting === 0
+      ? ""
+      : ` ${n(r.waiting, "is", "are")} still waiting${r.medianWaiting !== null ? `, a median of ${days(r.medianWaiting)} so far` : ""}.`;
+  return (
+    <div className="max-w-3xl border-l-4 border-data-info-ink bg-tint px-4 py-3">
+      <p className="text-base font-semibold">After a third FTA0</p>{" "}
+      <p className="mt-1 text-base leading-relaxed">
+        {`Of the ${n(r.reported, "timeline", "timelines")} reporting a third FTA0 on the I-485, ${card}${wait}`}
+      </p>{" "}
+      <p className="mt-1 text-sm text-muted-foreground">
+        Self-reported, and counted only from timelines updated in the last 60 days for the still waiting. A median shows
+        from {METRIC_MIN_N} timelines. It says what these people saw, not what will happen to a case.
+      </p>
+    </div>
+  );
+}
+
 export function RfeBars({ rfe }: { rfe: RfeSummary }) {
   if (rfe.total === 0) {
     return <p className="text-base text-muted-foreground">Nobody has reported an RFE yet.</p>;
