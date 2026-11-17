@@ -147,6 +147,24 @@ export async function noteQueued(ctx: MutationCtx, name: BudgetName, n = 1): Pro
   return bump(ctx, name, "queued", n);
 }
 
+/**
+ * Whether this is the day's first wait behind the site's own sign-up line, and if so, record it. A pool's notice is
+ * once a day per pool (`noteQueued`); this cause is the whole site's, so its notice is once a day across every pool
+ * (Nov 17 2026: a case confirmation at 1:18 PM and a bulletin one at 1:36 PM sent the same email twice).
+ */
+export async function claimSiteNotice(ctx: MutationCtx, name: BudgetName): Promise<boolean> {
+  const day = easternDay(Date.now());
+  const rows = await ctx.db
+    .query("budgetRefusals")
+    .withIndex("by_day_pool", (q) => q.eq("day", day))
+    .collect();
+  if (rows.some((r) => r.siteNoticeAt !== undefined)) return false;
+  const mine = rows.find((r) => r.pool === name);
+  if (mine) await ctx.db.patch(mine._id, { siteNoticeAt: Date.now() });
+  else await ctx.db.insert("budgetRefusals", { day, pool: name, count: 0, siteNoticeAt: Date.now() });
+  return true;
+}
+
 async function bump(ctx: MutationCtx, name: BudgetName, field: "count" | "queued", n: number): Promise<boolean> {
   if (n <= 0) return false;
   const day = easternDay(Date.now());

@@ -141,6 +141,17 @@ describe("a full pool queues the request", () => {
     expect(await queued(t)).toHaveLength(1);
   });
 
+  it("the site-wide line sends its notice once a day, whichever kinds wait behind it (Nov 17 2026: two)", async () => {
+    const t = createTestContext();
+    await t.run((ctx) => ctx.db.insert("emailDays", { day: utcDay(Date.now()), sent: 3, reported: PUBLIC_CEILING }));
+    await t.mutation(internal.caseAlerts.subscribe, { email: "case@example.com", caseNumber: "G-100-25324-425560" });
+    await t.mutation(internal.bulletinAlerts.subscribe, { email: "bulletin@example.com", category: "EB2", country: "india" });
+    expect(await queued(t)).toHaveLength(2);
+    // Each kind still counts its own wait; the email names one cause, so it goes once.
+    expect((await refusals(t)).filter((r) => (r.queued ?? 0) > 0)).toHaveLength(2);
+    expect(await scheduled(t, "sendAdminNotificationEmail")).toHaveLength(1);
+  });
+
   it("the admin email names the limit that held, not always the pool", () => {
     // Shaped on Monday Oct 12 2026, 11:47 AM EDT (the site past its sign-up line, the pool
     // empty), at today's line of 70: the site has sent 72.
