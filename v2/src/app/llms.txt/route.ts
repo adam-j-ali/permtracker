@@ -515,7 +515,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/green-card-timelines",
     label: "Green card timelines",
     blurb:
-      "How long the I-140, I-485, biometrics, work permit, interview and green card took for the people who report them, by step and by USCIS office: the PERM dates checked against DOL's record, everything after self-reported and labelled as such. Anyone can add their own dates with no account and no case number; each timeline is checked before it counts, and no case number or employer is shown.",
+      "How long the I-140, I-485, biometrics, work permit, Supplement J, interview and green card took for the people who report them, by step, by USCIS office and service center, with the account updates and codes (FTA0, IAF, FJ and others) people saw: the PERM dates checked against DOL's record, everything after self-reported and labelled as such. Anyone can add their own dates with no account and no case number; each timeline is checked before it counts, and no case number or employer is shown.",
   },
   {
     path: "/uscis-processing-times",

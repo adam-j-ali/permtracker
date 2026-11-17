@@ -4,10 +4,10 @@ import { queryStatic } from "@/lib/convexStatic";
 
 import { api } from "@convex/_generated/api";
 import { ShareTimeline } from "@/components/community/ShareTimeline";
-import { BoardKey, BoardTable, RfeBars, StageMedians, WhoIsWaiting } from "@/components/community/TimelineBoard";
+import { AccountCodes, BoardKey, BoardTable, RfeBars, StageMedians, WhoIsWaiting } from "@/components/community/TimelineBoard";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { FaqList } from "@/components/tools/FaqList";
-import { BOARD_OPENS_AT, METRIC_MIN_N, OFFICE_LIST_OPENS_AT } from "@/lib/communityTimeline";
+import { BOARD_OPENS_AT, METRIC_MIN_N, OFFICE_LIST_OPENS_AT, shareProgress } from "@/lib/communityTimeline";
 import { officeByCode, officeHref } from "@/lib/uscisOffices";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
@@ -125,7 +125,12 @@ export default async function GreenCardTimelinesPage() {
               Waiting on an I-140 or an I-485? Add your dates. It takes a minute, with no account and no case number, and
               we check each timeline before it counts.
             </p>{" "}
-            <ShareTimeline sharePath="/green-card-timelines" shareLabel="the green card timelines" className="mt-3" />
+            <ShareTimeline
+              sharePath="/green-card-timelines"
+              shareLabel="the green card timelines"
+              progress={shareProgress(board.shared, board.opensAt, "the board's list")}
+              className="mt-3"
+            />
           </section>
 
           <section className="mt-10" aria-labelledby="stages-h">
@@ -228,6 +233,16 @@ export default async function GreenCardTimelinesPage() {
               <RfeBars rfe={board.rfe} />
             </div>
           </section>
+
+          {/* Optional: a backend older than Nov 17 2026 sends no codes. */}
+          {board.codes?.length ? (
+            <section className="mt-12" aria-labelledby="codes-h">
+              <h2 id="codes-h" className="font-heading text-2xl font-bold sm:text-3xl">
+                Account updates
+              </h2>{" "}
+              <AccountCodes codes={board.codes} where="shared timelines" className="mt-4" />
+            </section>
+          ) : null}
         </>
       ) : (
         <NoteBanner alert className="mt-8 max-w-2xl">

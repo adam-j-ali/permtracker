@@ -24,7 +24,7 @@
  * Its author sees it at once, marked as waiting.
  */
 
-import { USCIS_OFFICES } from "../../src/lib/uscisOffices";
+import { USCIS_OFFICES, isCenter } from "../../src/lib/uscisOffices";
 import { MS_PER_DAY } from "./time";
 
 /** `perm` is false for a category that has no labor certification, so no PERM case number. */
@@ -42,6 +42,12 @@ export const isPermCategory = (id: string): boolean => CATEGORIES.some((c) => c.
 
 /** The USCIS offices a timeline can name, by USCIS's own three-letter code (src/lib/uscisOffices.json). */
 const OFFICE_CHOICES: readonly { id: string }[] = USCIS_OFFICES.map((o) => ({ id: o.code }));
+
+/**
+ * The six service centers that can hold an I-485, by USCIS's own code, read from the same office list (a center has
+ * no state). The receipt's first letters name the one that took it in (src/lib/uscis/receipt.ts).
+ */
+export const I485_CENTERS: readonly { id: string; label: string }[] = USCIS_OFFICES.filter(isCenter).map((o) => ({ id: o.code, label: o.name }));
 
 /** Chargeability as the visa bulletin splits it. */
 export const COUNTRIES = [
@@ -78,6 +84,7 @@ export const DATE_FIELDS = [
   { id: "biometricsOn", label: "Biometrics appointment", short: "Biometrics", routes: ["adjustment"] },
   { id: "eadOn", label: "Work permit (EAD) approved", short: "EAD", routes: ["adjustment"] },
   { id: "apOn", label: "Travel document (advance parole) approved", short: "Advance parole", routes: ["adjustment"] },
+  { id: "i485jApprovedOn", label: "Supplement J (I-485J) approved", short: "I-485J", routes: ["adjustment"] },
   { id: "interviewOn", label: "Interview", short: "Interview", routes: ["adjustment", "consular"] },
   { id: "greenCardOn", label: "Green card approved, or immigrant visa issued", short: "Green card", routes: ["adjustment", "consular"] },
 ] as const;
@@ -110,6 +117,46 @@ export const RFE_OUTCOMES = [
 ] as const;
 export type RfeOutcomeId = (typeof RFE_OUTCOMES)[number]["id"];
 
+/** The forms an update in a person's USCIS account can sit on. */
+export const EVENT_FORMS = [
+  { id: "i140", label: "I-140" },
+  { id: "i485", label: "I-485" },
+  { id: "i765", label: "I-765 (work permit)" },
+  { id: "i131", label: "I-131 (travel document)" },
+  { id: "i485j", label: "I-485 Supplement J" },
+] as const;
+export type EventFormId = (typeof EVENT_FORMS)[number]["id"];
+/** The forms that belong to an adjustment in the US, so never to a consular timeline. */
+const ADJUSTMENT_FORMS: readonly EventFormId[] = ["i485", "i765", "i131", "i485j"];
+
+/**
+ * The account codes the form offers, the most-named first (filers' posts, counted Nov 11 2026). The option is the
+ * code alone, exactly as the account shows it: what each one is known or reported to mean lives in the guide, never
+ * in the form, because USCIS publishes no meanings. Anything else is typed under "Other".
+ */
+export const ACCOUNT_CODES = [
+  "FTA0", "FTA1", "H008", "IAF", "FJ", "HA", "IKA", "LDA", "IMAG", "SA", "IK", "IK1", "IP", "BB", "IEA", "MBC",
+] as const;
+/** A code typed under "Other": 2 to 6 letters and digits, starting with a letter. Too short to carry a receipt or a phone number. */
+export const TYPED_CODE = /^[A-Z][A-Z0-9]{1,5}$/;
+/** The most account updates one timeline keeps. */
+export const MAX_ACCOUNT_EVENTS = 30;
+
+/** One update in a person's USCIS account: the day, the form it landed on, and the code it showed, each if known. */
+export interface AccountEvent {
+  on: string;
+  form?: EventFormId;
+  code?: string;
+}
+
+/** A code the form lists, as opposed to one somebody typed. Worked out each time, never stored. */
+export const isListedCode = (code: string): boolean => (ACCOUNT_CODES as readonly string[]).includes(code);
+
+/** The typed (unlisted) codes on a timeline, each once, sorted. */
+export function typedCodes(events: readonly AccountEvent[] | undefined): string[] {
+  return [...new Set((events ?? []).map((e) => e.code).filter((c): c is string => typeof c === "string" && !isListedCode(c)))].sort();
+}
+
 /** The board lists rows once this many people have shared theirs publicly (owner, Nov 11 2026; it was 25). */
 export const BOARD_OPENS_AT = 10;
 /** One USCIS office's own list opens once this many people there have shared theirs (owner, Nov 11 2026). */
@@ -139,14 +186,19 @@ export interface TimelineInput {
   i140Center?: string | null;
   /** The USCIS office holding the I-485, by USCIS's three-letter code. */
   fieldOffice?: string | null;
+  /** The service center that took the I-485 in, by USCIS's code (I485_CENTERS). */
+  i485Center?: string | null;
   i140FiledOn?: string | null;
   i140ApprovedOn?: string | null;
   i485FiledOn?: string | null;
   biometricsOn?: string | null;
   eadOn?: string | null;
   apOn?: string | null;
+  i485jApprovedOn?: string | null;
   interviewOn?: string | null;
   greenCardOn?: string | null;
+  /** Updates in the person's USCIS account, as the form sends them. */
+  accountEvents?: readonly { on?: string | null; form?: string | null; code?: string | null }[] | null;
   rfeForm?: string | null;
   rfeReason?: string | null;
   rfeIssuedOn?: string | null;
@@ -163,14 +215,18 @@ export interface TimelineFields {
   premium?: boolean;
   i140Center?: I140CenterId;
   fieldOffice?: string;
+  i485Center?: string;
   i140FiledOn?: string;
   i140ApprovedOn?: string;
   i485FiledOn?: string;
   biometricsOn?: string;
   eadOn?: string;
   apOn?: string;
+  i485jApprovedOn?: string;
   interviewOn?: string;
   greenCardOn?: string;
+  /** Sorted by day, exact repeats dropped. */
+  accountEvents?: AccountEvent[];
   rfeForm?: RfeFormId;
   rfeReason?: RfeReasonId;
   rfeIssuedOn?: string;
@@ -179,6 +235,16 @@ export interface TimelineFields {
   public: boolean;
 }
 
+/**
+ * Every field a timeline takes from its author as a short string, in one list: the save writes them, the HTTP layer
+ * narrows them, an edit reads them back. `premium` (yes or no) and `accountEvents` (a list) travel beside them.
+ */
+export const TIMELINE_TEXT_FIELDS = [
+  "category", "country", "route", "i140Center", "fieldOffice", "i485Center",
+  ...DATE_FIELDS.map((f) => f.id),
+  "rfeForm", "rfeReason", "rfeIssuedOn", "rfeRespondedOn", "rfeOutcome",
+] as const satisfies readonly (keyof TimelineFields & keyof TimelineInput)[];
+
 /** The choice fields, each checked against its own list. */
 export type TimelineChoiceField =
   | "category"
@@ -186,6 +252,7 @@ export type TimelineChoiceField =
   | "route"
   | "i140Center"
   | "fieldOffice"
+  | "i485Center"
   | "rfeForm"
   | "rfeReason"
   | "rfeOutcome";
@@ -203,7 +270,12 @@ export type TimelineProblem =
   | { code: "rfe-order" }
   | { code: "rfe-form" }
   | { code: "office-consular" }
-  | { code: "adjustment-only"; field: DateFieldId };
+  | { code: "adjustment-only"; field: DateFieldId }
+  | { code: "account-date" }
+  | { code: "account-form" }
+  | { code: "account-code" }
+  | { code: "account-many" }
+  | { code: "account-consular" };
 
 export type ValidationResult =
   | { ok: true; value: TimelineFields }
@@ -247,6 +319,7 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
     ["route", ROUTES, input.route, "route"],
     ["i140Center", I140_CENTERS, input.i140Center, "I-140 office"],
     ["fieldOffice", OFFICE_CHOICES, input.fieldOffice, "USCIS office"],
+    ["i485Center", I485_CENTERS, input.i485Center, "service center"],
     ["rfeForm", RFE_FORMS, input.rfeForm, "RFE form"],
     ["rfeReason", RFE_REASONS, input.rfeReason, "RFE reason"],
     ["rfeOutcome", RFE_OUTCOMES, input.rfeOutcome, "RFE outcome"],
@@ -269,6 +342,10 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
     if (v !== undefined) (out as unknown as Record<string, unknown>)[key] = v;
   }
 
+  const events = readEvents(input.accountEvents, today);
+  if (!events.ok) return events;
+  if (events.value) out.accountEvents = events.value;
+
   const any = DATE_FIELDS.some((f) => out[f.id] !== undefined);
   if (!any) return { ok: false, code: "no-dates", message: "Add at least one date after PERM to record a timeline." };
 
@@ -290,11 +367,18 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
     return { ok: false, code: "rfe-form", message: "Say which form the RFE was on." };
   }
   if (out.route === "consular") {
-    if (out.fieldOffice !== undefined) {
+    if (out.fieldOffice !== undefined || out.i485Center !== undefined) {
       return {
         ok: false,
         code: "office-consular",
         message: "A USCIS office applies to an adjustment in the US. A consular case has none.",
+      };
+    }
+    if (out.accountEvents?.some((e) => e.form !== undefined && ADJUSTMENT_FORMS.includes(e.form))) {
+      return {
+        ok: false,
+        code: "account-consular",
+        message: "An account update on the I-485, a work permit or a travel document belongs to an adjustment in the US, not consular processing.",
       };
     }
     // An adjustment-only date on a consular timeline is a contradiction the
@@ -311,6 +395,44 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
     }
   }
   return { ok: true, value: out };
+}
+
+/**
+ * The account updates as sent: each needs a day; a form and a code are optional. A typed code is upper-cased, and one
+ * that matches a listed code is the listed code. Sorted by day, then form, then code; an exact repeat is dropped.
+ */
+function readEvents(
+  raw: TimelineInput["accountEvents"],
+  today: string,
+): { ok: true; value: AccountEvent[] | undefined } | ({ ok: false; message: string } & TimelineProblem) {
+  if (raw === undefined || raw === null) return { ok: true, value: undefined };
+  if (!Array.isArray(raw)) return { ok: false, code: "account-date", message: "Enter each account date as YYYY-MM-DD, from 2005 on and not in the future." };
+  if (raw.length > MAX_ACCOUNT_EVENTS) {
+    return { ok: false, code: "account-many", message: `That's more than ${MAX_ACCOUNT_EVENTS} account updates. Keep the ${MAX_ACCOUNT_EVENTS} that matter most to you.` };
+  }
+  const seen = new Map<string, AccountEvent>();
+  for (const e of raw) {
+    const on = isoOrUndefined(e?.on, today);
+    if (on === undefined || on === null) {
+      return { ok: false, code: "account-date", message: "Enter each account date as YYYY-MM-DD, from 2005 on and not in the future." };
+    }
+    const form = pick(EVENT_FORMS, e?.form);
+    if (form === null) return { ok: false, code: "account-form", message: "That form isn't one this form records." };
+    const typed = typeof e?.code === "string" ? e.code.trim().toUpperCase() : e?.code;
+    let code: string | undefined;
+    if (typed !== undefined && typed !== null && typed !== "") {
+      if (typeof typed !== "string" || !TYPED_CODE.test(typed)) {
+        return { ok: false, code: "account-code", message: "A typed code is 2 to 6 letters and digits and starts with a letter, like FTA0." };
+      }
+      code = typed;
+    }
+    const event: AccountEvent = { on, ...(form !== undefined ? { form } : {}), ...(code !== undefined ? { code } : {}) };
+    seen.set(`${on}|${form ?? ""}|${code ?? ""}`, event);
+  }
+  const value = [...seen.values()].sort(
+    (a, b) => a.on.localeCompare(b.on) || (a.form ?? "").localeCompare(b.form ?? "") || (a.code ?? "").localeCompare(b.code ?? ""),
+  );
+  return { ok: true, value: value.length > 0 ? value : undefined };
 }
 
 /** Whole days from `a` to `b`, both ISO; null when either is missing. */
@@ -445,6 +567,41 @@ export function summarizeRfes(records: readonly TimelineRecord[]): RfeSummary {
   };
 }
 
+/** A row's account updates for the public: how many, each code once, and the newest as days from the row's start. */
+export interface UpdatesSummary {
+  count: number;
+  codes: string[];
+  /** Days from the row's own start (the PERM filing on the board, the I-485 filing on an office's list); null without one. */
+  lastDay: number | null;
+}
+
+function updatesOf(r: TimelineRecord, origin: string | null): UpdatesSummary | null {
+  const events = r.accountEvents ?? [];
+  const last = events[events.length - 1];
+  if (!last) return null;
+  const codes = [...new Set(events.map((e) => e.code).filter((c): c is string => typeof c === "string"))];
+  const day = origin ? daysBetween(origin, last.on) : null;
+  return { count: events.length, codes, lastDay: day !== null && day >= 0 ? day : null };
+}
+
+/**
+ * How many shown timelines report each account code, the most reported first. A code is printed once METRIC_MIN_N
+ * timelines report it, typed codes too, so one person's code is never a line of its own.
+ */
+export function tallyCodes(records: readonly TimelineRecord[]): { code: string; timelines: number; listed: boolean }[] {
+  const by = new Map<string, number>();
+  for (const r of records) {
+    if (r.hiddenAt !== undefined) continue;
+    for (const c of new Set((r.accountEvents ?? []).map((e) => e.code).filter((x): x is string => typeof x === "string"))) {
+      by.set(c, (by.get(c) ?? 0) + 1);
+    }
+  }
+  return [...by.entries()]
+    .filter(([, n]) => n >= METRIC_MIN_N)
+    .map(([code, timelines]) => ({ code, timelines, listed: isListedCode(code) }))
+    .sort((a, b) => b.timelines - a.timelines || a.code.localeCompare(b.code));
+}
+
 /** One row of the public board: no case number, no employer, no exact PERM date. */
 export interface BoardRow {
   /** "YYYY-MM": the PERM filing month, the priority-date month. */
@@ -460,11 +617,14 @@ export interface BoardRow {
   rfe: { form: RfeFormId; reason: RfeReasonId | null; outcome: RfeOutcomeId | null } | null;
   /** The USCIS office's code, only when that office's own list is open; null otherwise. */
   office: string | null;
+  /** The service center's code, only when enough shared timelines name it; null otherwise. */
+  center: string | null;
+  updates: UpdatesSummary | null;
   updatedMonth: string;
 }
 
-/** `showOffice`: the caller has checked that this row's office has enough shared timelines to be named. */
-export function toBoardRow(r: TimelineRecord, showOffice = false): BoardRow {
+/** `showOffice`, `showCenter`: the caller has checked that enough shared timelines name this row's office or center. */
+export function toBoardRow(r: TimelineRecord, showOffice = false, showCenter = false): BoardRow {
   const origin = r.permFiledOn ?? null;
   const stop = (id: DateFieldId | "permCertifiedOn") => {
     const iso = (r as unknown as Record<string, string | undefined>)[id];
@@ -480,12 +640,14 @@ export function toBoardRow(r: TimelineRecord, showOffice = false): BoardRow {
     permVerified: Boolean(r.permFiledOn && r.permCertifiedOn),
     rfe: r.rfeForm ? { form: r.rfeForm, reason: r.rfeReason ?? null, outcome: r.rfeOutcome ?? null } : null,
     office: showOffice ? (r.fieldOffice ?? null) : null,
+    center: showCenter ? (r.i485Center ?? null) : null,
+    updates: updatesOf(r, origin),
     updatedMonth: new Date(r.updatedAt).toISOString().slice(0, 7),
   };
 }
 
 /** The steps an office's list draws, each counted in days from the I-485 filing. */
-export const OFFICE_STOPS = ["biometricsOn", "eadOn", "apOn", "interviewOn", "greenCardOn"] as const;
+export const OFFICE_STOPS = ["biometricsOn", "eadOn", "apOn", "i485jApprovedOn", "interviewOn", "greenCardOn"] as const;
 export type OfficeStopId = (typeof OFFICE_STOPS)[number];
 
 /** One row of a USCIS office's list: no case number, no employer, no exact date. */
@@ -498,6 +660,7 @@ export interface OfficeRow {
   stops: { id: OfficeStopId; day: number | null; month: string | null }[];
   /** An RFE on the I-485, and how it ended; null when none was reported. */
   rfe: { outcome: RfeOutcomeId | null } | null;
+  updates: UpdatesSummary | null;
   updatedMonth: string;
 }
 
@@ -513,6 +676,7 @@ export function toOfficeRow(r: TimelineRecord): OfficeRow {
       return { id, day: day !== null && day >= 0 ? day : null, month: iso ? iso.slice(0, 7) : null };
     }),
     rfe: r.rfeForm === "i485" ? { outcome: r.rfeOutcome ?? null } : null,
+    updates: updatesOf(r, origin),
     updatedMonth: new Date(r.updatedAt).toISOString().slice(0, 7),
   };
 }
@@ -533,7 +697,50 @@ export function reviewFlags(r: TimelineRecord & { caseNumber?: string; permCheck
   if (r.caseNumber && r.permCheckedAt !== undefined && !r.permFiledOn) flags.push("DOL's record has no case with this number.");
   const typed = DATE_FIELDS.map((f) => r[f.id]).filter((x): x is string => typeof x === "string");
   if (typed.length >= 3 && new Set(typed).size === 1) flags.push("Every date is the same day.");
+  for (const code of typedCodes(r.accountEvents)) flags.push(`A typed code: ${code}.`);
+  const events = r.accountEvents ?? [];
+  if (r.i485FiledOn && events.some((e) => e.form === "i485" && e.on < r.i485FiledOn!)) {
+    flags.push("An account update on the I-485 is dated before the I-485 filing.");
+  }
+  const perDay = new Map<string, number>();
+  for (const e of events) perDay.set(e.on, (perDay.get(e.on) ?? 0) + 1);
+  if ([...perDay.values()].some((n) => n > 10)) flags.push("More than 10 account updates on one day.");
   return flags;
+}
+
+/**
+ * The line beside a form: how many have shared, and how many more open the list it joins. `list` names that list
+ * ("this office's list", "the board's list").
+ */
+export function shareProgress(shared: number, opensAt: number, list: string): string {
+  const people = `${shared} ${shared === 1 ? "person has" : "people have"} shared so far.`;
+  if (shared >= opensAt) return people;
+  const more = opensAt - shared;
+  return `${people} ${more} more ${more === 1 ? "opens" : "open"} ${list}.`;
+}
+
+/**
+ * What a person filling the form might add, said under it. Hints, never refusals: every field stays optional, and a
+ * save goes through without any of them.
+ */
+export function formHints(f: TimelineInput): string[] {
+  const hints: string[] = [];
+  const adjustment = f.route !== "consular";
+  if (adjustment && f.i485FiledOn && !f.fieldOffice) hints.push("The office handling your I-485 puts your dates on that office's page.");
+  if (adjustment && f.i485FiledOn && !f.i485Center) {
+    hints.push("The first three letters of your I-485 receipt name the service center that took it in.");
+  }
+  const events = f.accountEvents ?? [];
+  if (events.some((e) => e?.code && !e.form)) hints.push("Saying which form each account update was on makes the counts clearer.");
+  if (adjustment && f.i485FiledOn && events.length === 0) {
+    hints.push("Updates in your USCIS account, the dates and codes it showed, help others read their own.");
+  }
+  return hints;
+}
+
+/** How many self-reported dates two timelines share: the same step on the same day. Two or more is worth a look. */
+export function sharedDates(a: TimelineRecord, b: TimelineRecord): number {
+  return DATE_FIELDS.filter((f) => a[f.id] !== undefined && a[f.id] === b[f.id]).length;
 }
 
 /** The stages the case page draws, in order, with whether anyone reported each. */

@@ -4,12 +4,12 @@ import type { api } from "@convex/_generated/api";
 import { PageSection } from "@/components/data/PageSection";
 import { NoteBanner } from "@/components/ui/note";
 import { ScrollBox } from "@/components/ui/scroll-box";
-import { CATEGORIES, COUNTRIES, DATE_FIELDS, OFFICE_STOPS, type MetricResult } from "@/lib/communityTimeline";
+import { CATEGORIES, COUNTRIES, DATE_FIELDS, OFFICE_STOPS, shareProgress, type MetricResult } from "@/lib/communityTimeline";
 import { formatInt } from "@/lib/format";
 import { isCenter, type UscisOffice } from "@/lib/uscisOffices";
 
 import { ShareTimeline } from "./ShareTimeline";
-import { StageMedians } from "./TimelineBoard";
+import { AccountCodes, StageMedians, updatesText } from "./TimelineBoard";
 
 /**
  * "Timelines people shared from this office": what happened to I-485s at one USCIS office, as the people waiting
@@ -69,16 +69,24 @@ export function OfficeTimelines({ office, view }: { office: UscisOffice; view: O
       )}
 
       {/* The way in comes before the figures: one folded line, so it costs a phone almost nothing. */}
-      <ShareTimeline office={office.code} sharePath={sharePath} shareLabel={`${office.name}'s timelines`} className="mt-4 max-w-3xl" />
+      <ShareTimeline
+        office={office.code}
+        sharePath={sharePath}
+        shareLabel={`${office.name}'s timelines`}
+        progress={view ? shareProgress(view.shared, view.opensAt, "this office's list") : undefined}
+        className="mt-4 max-w-3xl"
+      />
 
       {view && view.total > 0 ? (
         <>
           <div className="mt-6">
             <StageMedians metrics={view.metrics as readonly MetricResult[]} />
           </div>{" "}
+          {/* Optional: a backend older than Nov 17 2026 sends no codes. */}
+          <AccountCodes codes={view.codes ?? []} where={`timelines from ${place(office)}`} className="mt-6" />{" "}
           {view.open ? (
             <ScrollBox label={`Timelines shared from ${place(office)}`} className="mt-6 border-t-2 border-[var(--object-border)]">
-              <table className="w-full min-w-[720px] border-collapse text-left text-base">
+              <table className="w-full min-w-[880px] border-collapse text-left text-base">
                 <caption className="sr-only">
                   Timelines people shared from {place(office)}: the month the I-485 was filed, then the days to each step
                 </caption>
@@ -92,6 +100,7 @@ export function OfficeTimelines({ office, view }: { office: UscisOffice; view: O
                         {`${STOP_NAME[id] ?? id} `}
                       </th>
                     ))}
+                    <th scope="col" className="px-3 py-3 text-sm font-bold">Account updates{" "}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -112,6 +121,7 @@ export function OfficeTimelines({ office, view }: { office: UscisOffice; view: O
                           {`${stopText(s)} `}
                         </td>
                       ))}
+                      <td className="px-3 py-3">{`${updatesText(r.updates)} `}</td>
                     </tr>
                   ))}
                 </tbody>

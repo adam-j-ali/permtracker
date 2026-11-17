@@ -4,17 +4,25 @@ import {
   BOARD_OPENS_AT,
   CATEGORIES,
   DATE_FIELDS,
+  I485_CENTERS,
+  MAX_ACCOUNT_EVENTS,
   METRIC_MIN_N,
+  TIMELINE_TEXT_FIELDS,
   OFFICE_LIST_OPENS_AT,
   OFFICE_METRIC_IDS,
   computeMetrics,
   daysBetween,
+  formHints,
+  isListedCode,
   isPermCategory,
   isShown,
   reviewFlags,
+  sharedDates,
   summarizeRfes,
+  tallyCodes,
   toBoardRow,
   toOfficeRow,
+  typedCodes,
   validateTimeline,
   WAITING_STAGES,
   waitingStage,
@@ -245,6 +253,7 @@ describe("an office's row and its medians", () => {
       ["biometricsOn", 40],
       ["eadOn", null],
       ["apOn", null],
+      ["i485jApprovedOn", null],
       ["interviewOn", 278],
       ["greenCardOn", 295],
     ]);
@@ -353,5 +362,134 @@ describe("whoIsWaiting", () => {
   it("leaves out hidden timelines", () => {
     const v = whoIsWaiting([...many(30, { category: "eb2", country: "row" }), ...many(10, { category: "eb2", country: "row", hiddenAt: 5 })]);
     expect(v.lines[0]!.total).toBe(30);
+  });
+});
+
+describe("account updates, the service center and the Supplement J date", () => {
+  const base = { route: "adjustment", i485FiledOn: "2026-03-02" };
+
+  it("keeps each update's day, form and code, sorted, upper-cased, with exact repeats dropped", () => {
+    const r = validateTimeline(
+      {
+        ...base,
+        accountEvents: [
+          { on: "2026-06-01", form: "i485", code: "fta0" },
+          { on: "2026-04-10", form: "i765", code: null },
+          { on: "2026-06-01", form: "i485", code: "FTA0" },
+          { on: "2026-05-05", form: "", code: " xq7 " },
+        ],
+      },
+      TODAY,
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value.accountEvents).toEqual([
+      { on: "2026-04-10", form: "i765" },
+      { on: "2026-05-05", code: "XQ7" },
+      { on: "2026-06-01", form: "i485", code: "FTA0" },
+    ]);
+    expect(typedCodes(r.value.accountEvents)).toEqual(["XQ7"]);
+    expect(isListedCode("FTA0")).toBe(true);
+  });
+
+  it("refuses an update with no day, a code that could carry a receipt or a phone number, and more than the limit", () => {
+    const bad = (accountEvents: unknown) => validateTimeline({ ...base, accountEvents } as never, TODAY);
+    expect(bad([{ form: "i485", code: "FTA0" }])).toMatchObject({ ok: false, code: "account-date" });
+    expect(bad([{ on: "2027-01-01" }])).toMatchObject({ ok: false, code: "account-date" });
+    expect(bad([{ on: "2026-05-05", code: "IOE0912345678" }])).toMatchObject({ ok: false, code: "account-code" });
+    expect(bad([{ on: "2026-05-05", code: "555-1212" }])).toMatchObject({ ok: false, code: "account-code" });
+    expect(bad([{ on: "2026-05-05", code: "1FTA" }])).toMatchObject({ ok: false, code: "account-code" });
+    expect(bad([{ on: "2026-05-05", form: "n400" }])).toMatchObject({ ok: false, code: "account-form" });
+    const many = Array.from({ length: MAX_ACCOUNT_EVENTS + 1 }, (_, i) => ({ on: `2026-01-${String((i % 28) + 1).padStart(2, "0")}`, code: `A${i}` }));
+    expect(bad(many)).toMatchObject({ ok: false, code: "account-many" });
+  });
+
+  it("takes a service center by USCIS's code, and the Supplement J date as one more adjustment date", () => {
+    expect(I485_CENTERS.map((c) => c.id).sort()).toEqual(["ESC", "NBC", "NSC", "SSC", "WSC", "YSC"]);
+    const r = validateTimeline({ ...base, i485Center: "NBC", i485jApprovedOn: "2026-07-01" }, TODAY);
+    expect(r.ok && r.value).toMatchObject({ i485Center: "NBC", i485jApprovedOn: "2026-07-01" });
+    expect(validateTimeline({ ...base, i485Center: "HAR" }, TODAY)).toMatchObject({ ok: false, code: "choice", field: "i485Center" });
+  });
+
+  it("refuses a center, an I-485 update and a Supplement J date on a consular timeline", () => {
+    const consular = { route: "consular", i140FiledOn: "2026-01-02" };
+    expect(validateTimeline({ ...consular, i485Center: "NBC" }, TODAY)).toMatchObject({ ok: false, code: "office-consular" });
+    expect(validateTimeline({ ...consular, accountEvents: [{ on: "2026-02-02", form: "i485" }] }, TODAY)).toMatchObject({
+      ok: false,
+      code: "account-consular",
+    });
+    expect(validateTimeline({ ...consular, accountEvents: [{ on: "2026-02-02", form: "i140", code: "IAF" }] }, TODAY).ok).toBe(true);
+    expect(validateTimeline({ ...consular, i485jApprovedOn: "2026-02-02" }, TODAY)).toMatchObject({ ok: false, code: "adjustment-only" });
+  });
+
+  it("lists every field the save, the HTTP layer and an edit read, once", () => {
+    for (const f of ["i485Center", "i485jApprovedOn", "fieldOffice", "biometricsOn"]) expect(TIMELINE_TEXT_FIELDS).toContain(f);
+    expect(new Set(TIMELINE_TEXT_FIELDS).size).toBe(TIMELINE_TEXT_FIELDS.length);
+    for (const f of DATE_FIELDS) expect(TIMELINE_TEXT_FIELDS).toContain(f.id);
+  });
+
+  it("tells the owner about a typed code, an update before the I-485, and a crowded day", () => {
+    const rec = {
+      ...base,
+      route: "adjustment" as const,
+      public: true,
+      updatedAt: 0,
+      accountEvents: [
+        { on: "2026-02-01", form: "i485" as const, code: "FTA0" },
+        ...Array.from({ length: 11 }, (_, i) => ({ on: "2026-06-01", code: `Z${i}` })),
+      ],
+    };
+    const flags = reviewFlags(rec);
+    expect(flags).toContain("A typed code: Z0.");
+    expect(flags.filter((f) => f.startsWith("A typed code"))).toHaveLength(11);
+    expect(flags).not.toContain("A typed code: FTA0.");
+    expect(flags).toContain("An account update on the I-485 is dated before the I-485 filing.");
+    expect(flags).toContain("More than 10 account updates on one day.");
+  });
+
+  it("prints a code's count once enough timelines report it, typed codes too", () => {
+    const rec = (i: number, codes: string[]): TimelineRecord => ({
+      public: true,
+      updatedAt: i,
+      accountEvents: codes.map((code, j) => ({ on: `2026-05-${String(j + 1).padStart(2, "0")}`, code })),
+    });
+    const records = [
+      ...Array.from({ length: METRIC_MIN_N }, (_, i) => rec(i, ["FTA0", "FTA0", "XQ7"])),
+      rec(99, ["IK1"]),
+    ];
+    expect(tallyCodes(records)).toEqual([
+      { code: "FTA0", timelines: METRIC_MIN_N, listed: true },
+      { code: "XQ7", timelines: METRIC_MIN_N, listed: false },
+    ]);
+    expect(tallyCodes(records.slice(1))).toEqual([]);
+  });
+
+  it("gives a row its updates as a count, the codes and the newest as days from its start, never a date", () => {
+    const r: TimelineRecord = {
+      public: true,
+      updatedAt: 0,
+      i485FiledOn: "2026-03-02",
+      accountEvents: [
+        { on: "2026-04-01", code: "IAF" },
+        { on: "2026-06-01", form: "i485", code: "FTA0" },
+      ],
+    };
+    expect(toOfficeRow(r).updates).toEqual({ count: 2, codes: ["IAF", "FTA0"], lastDay: 91 });
+    expect(JSON.stringify(toOfficeRow(r))).not.toContain("2026-06-01");
+    expect(toBoardRow(r).updates).toEqual({ count: 2, codes: ["IAF", "FTA0"], lastDay: null });
+  });
+
+  it("hints at what to add, never refusing a save", () => {
+    expect(formHints({ route: "adjustment", i485FiledOn: "2026-03-02" })).toHaveLength(3);
+    expect(formHints({ route: "consular", i140FiledOn: "2026-01-02" })).toEqual([]);
+    expect(formHints({ i485FiledOn: "2026-03-02", fieldOffice: "HAR", i485Center: "NBC", accountEvents: [{ on: "2026-04-01", code: "IAF" }] })).toEqual([
+      "Saying which form each account update was on makes the counts clearer.",
+    ]);
+  });
+
+  it("counts the dates two timelines share, for the owner's near-duplicate hint", () => {
+    const a: TimelineRecord = { public: true, updatedAt: 0, i485FiledOn: "2026-03-02", biometricsOn: "2026-04-01", eadOn: "2026-06-01" };
+    expect(sharedDates(a, { ...a, eadOn: undefined })).toBe(2);
+    expect(sharedDates(a, { public: true, updatedAt: 0, i485FiledOn: "2026-03-03" })).toBe(0);
   });
 });
