@@ -440,7 +440,7 @@ export function NotesJournal({
                 type="button"
                 aria-pressed={filterBy === f.id}
                 onClick={() => setFilterBy(f.id)}
-                className={choiceVariants({ on: filterBy === f.id, className: "px-3" })}
+                className={cn(choiceVariants({ on: filterBy === f.id }), "px-3")}
               >
                 {f.label}
                 <span className="text-muted-foreground tabular-nums"> {counts[f.count]}</span>

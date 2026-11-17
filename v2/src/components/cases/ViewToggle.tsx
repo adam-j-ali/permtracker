@@ -43,9 +43,11 @@ export function ViewToggle({ view, onChange, className }: ViewToggleProps) {
             onClick={() => {
               if (!on) onChange(id);
             }}
-            className={choiceVariants({ on, className: "size-11 px-0" })}
+            // cn, not cva's own className: cva only appends, so the base px-4 stayed beside px-0 and Tailwind's order
+            // kept the padding, squeezing a 24px icon to 8px wide inside the 44px button.
+            className={cn(choiceVariants({ on }), "size-11 px-0")}
           >
-            <Icon className="size-6" weight="bold" aria-hidden="true" />
+            <Icon className="size-6 shrink-0" weight="bold" aria-hidden="true" />
           </button>
         );
       })}
