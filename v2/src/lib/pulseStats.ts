@@ -1,7 +1,8 @@
 /**
  * The daily pulse: DOL's last working day of PERM decisions our sweep
- * observed, how it compares with the same weekday before it, the last 30 days
- * as bars, and the average by day of the week. Pure, so the `unit` project can
+ * observed, how it compares with the same weekday before it, the week's and
+ * the month's figures, and the average by day of the week (the decisions
+ * chart's own numbers are src/lib/decisionPeriods.ts). Pure, so the `unit` project can
  * test it; the read is src/lib/db/pulse.ts.
  *
  * WHY THE LAST WORKING DAY AND NOT THE NEWEST DAY. On Tuesday Oct 13 2026 the
@@ -23,7 +24,6 @@
 import { federalHolidayName, isFederalHoliday } from "@/lib/perm";
 import { MS_PER_DAY } from "@/lib/time";
 
-import { daysBefore, weeklyCounts } from "./byTheNumbers";
 import {
   type ActivityDay,
   type WeekdayProfile,
@@ -97,48 +97,6 @@ export function pulseHeadline(days: readonly ActivityDay[], weeks = 4): PulseHea
   const typical = against.usual;
   const changePct = typical > 0 ? Math.round(((day.total - typical) / typical) * 100) : null;
   return { day, typical, changePct, compared: against.compared, closedAfter };
-}
-
-/** The last `n` days on record, oldest first. */
-export function lastDays(days: readonly ActivityDay[], n = 30): ActivityDay[] {
-  return byDate(days).slice(-n);
-}
-
-/** The spans a decisions chart offers: a month day by day, then a quarter and a half year by week. */
-export const DECISION_SPANS = [30, 90, 180] as const;
-export type DecisionSpan = (typeof DECISION_SPANS)[number];
-/** Spans up to this many days are drawn a day a column; longer ones a week a column. */
-const DAILY_SPAN_MAX = 30;
-
-export interface DecisionBucket {
-  /** The day, or the week's Monday. */
-  start: string;
-  by: "day" | "week";
-  certified: number;
-  denied: number;
-  withdrawn: number;
-  total: number;
-  /** A week still filling: drawn as "so far", never as a drop. */
-  partial: boolean;
-}
-
-/** Decisions over the last `span` days, a column a day or a week, oldest first. */
-export function decisionBuckets(days: readonly ActivityDay[], span: DecisionSpan): DecisionBucket[] {
-  const sorted = byDate(days);
-  const through = sorted[sorted.length - 1]?.date;
-  if (!through) return [];
-  if (span <= DAILY_SPAN_MAX) {
-    return sorted.slice(-span).map((d) => ({ start: d.date, by: "day", certified: d.certified, denied: d.denied, withdrawn: d.withdrawn, total: d.total, partial: false }));
-  }
-  const from = daysBefore(through, span - 1);
-  const weekly = (k: "certified" | "denied" | "withdrawn") => weeklyCounts(sorted.map((d) => ({ date: d.date, count: d[k] })), from, through);
-  const [certified, denied, withdrawn] = [weekly("certified"), weekly("denied"), weekly("withdrawn")];
-  return certified.map((w, i) => {
-    const c = w.count;
-    const de = denied[i]!.count;
-    const wd = withdrawn[i]!.count;
-    return { start: w.week, by: "week", certified: c, denied: de, withdrawn: wd, total: c + de + wd, partial: w.partial };
-  });
 }
 
 /**

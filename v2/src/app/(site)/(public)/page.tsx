@@ -64,6 +64,8 @@ import { backlogTrend, dayTrend, waitTrend } from "@/lib/homeTrends";
 import { homeMonths } from "@/lib/homeMonths";
 import { easternDay } from "@convex/lib/time";
 import { PermPulse } from "@/components/pulse/PermPulse";
+import { getActivitySeries } from "@/lib/db/activity";
+import { decisionViews } from "@/lib/decisionPeriods";
 import { DolDaysBoard } from "@/components/pulse/DolDaysBoard";
 import { dolDays } from "@/lib/dolDays";
 import { getPwdNowDocs } from "@/lib/db/pwdDayQueue";
@@ -157,7 +159,7 @@ export default async function HomePage() {
   // The pulse reads our own sweep's record, a third clock: it moves when the
   // sweep finishes, and /api/revalidate-sweep expires this page then. Either
   // read failing drops the band, never the page.
-  const [snapshot, disclosure, record, observed, coverage, siteReviews, backlog, permBoard, line, pwdSummary, casesMeta, i140Median, wageDocs] = await Promise.all([
+  const [snapshot, disclosure, record, observed, coverage, siteReviews, backlog, permBoard, line, pwdSummary, casesMeta, i140Median, wageDocs, series] = await Promise.all([
     getProcessingTimes(),
     getDisclosureStats(),
     getRecordCounts(),
@@ -181,11 +183,20 @@ export default async function HomePage() {
     // The wage check's day document, for the week's determinations beside the week's PERM decisions. It soft-fails
     // to null inside, and the figure then says it isn't counted yet.
     getPwdNowDocs(),
+    // Both whole records of decisions (DOL's file and our check), for the chart's weeks, months and years. A failed
+    // read leaves the chart with the days above and nothing it can't count.
+    getActivitySeries().catch(softFail("home/page.getActivitySeries", [])),
   ]);
   const analyst = snapshot
     ? analystReviewQueue(snapshot.permQueues)
     : undefined;
   const lastDay = pulseHeadline(observed);
+  const fileDays = series.find((s) => s.source === "dol-disclosure")?.days ?? [];
+  const checkDays = series.find((s) => s.source === "sweep-observed")?.days ?? [];
+  // Without the whole record, the chart draws the days the board already read and claims no start date for our check.
+  const views = checkDays.length
+    ? decisionViews(fileDays, checkDays, easternDay())
+    : { ...decisionViews(fileDays, observed, easternDay()), checksFrom: null };
   // The month DOL is deciding: our check first, DOL's own table when the check can't say (lib/permLine.ts).
   const workingMonth = line?.month ?? analyst?.priorityDate ?? null;
   const months = homeMonths(backlog, workingMonth, easternDay().slice(0, 7));
@@ -234,7 +245,7 @@ export default async function HomePage() {
         }}
       />
       <LiveDataBand>
-        <PermPulse variant="charts" days={observed} checkedAt={coverage?.checkedAt ?? null} />
+        <PermPulse variant="charts" days={observed} checkedAt={coverage?.checkedAt ?? null} views={views} />
         {/* Both ends of the step in one row: the week's PERM decisions beside the week's wage determinations. */}
         <DolDaysBoard
           days={dolDays(observed, wageDocs.queue?.days ?? [], easternDay(), 14)}

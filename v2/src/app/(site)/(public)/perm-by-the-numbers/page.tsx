@@ -31,7 +31,9 @@ import {
 import { getEmployerStages } from "@/lib/db/employerStages";
 import { getProcessingTimesArchive } from "@/lib/db/openData";
 import { getProcessingTimes } from "@/lib/db/processingTimes";
-import { DecisionsOverTime } from "@/components/pulse/DecisionsOverTime";
+import { DecisionPeriods } from "@/components/pulse/DecisionPeriods";
+import { getActivitySeries } from "@/lib/db/activity";
+import { decisionViews } from "@/lib/decisionPeriods";
 import { getObservedDays } from "@/lib/db/pulse";
 import { getPwdSummary } from "@/lib/db/pwdCases";
 import { getPermWaitTrend, getPwdLine } from "@/lib/db/pwdDayQueue";
@@ -106,7 +108,7 @@ function weekColumns(weeks: readonly WeekCount[], noun: string, unitOne: string)
 }
 
 export default async function PermByTheNumbersPage() {
-  const [census, observed, coverage, stages, filings, newEmployers, rfiWeeks, rfiClock, pwd, snapshot, readings, bulletins, decidedByMonth, pwdLine, waitTrend] =
+  const [census, observed, coverage, stages, filings, newEmployers, rfiWeeks, rfiClock, pwd, snapshot, readings, bulletins, decidedByMonth, pwdLine, waitTrend, series] =
     await Promise.all([
       getBacklogCensus(),
       getObservedDays(),
@@ -123,6 +125,7 @@ export default async function PermByTheNumbersPage() {
       getDecidedByMonth(),
       getPwdLine(),
       getPermWaitTrend(),
+      getActivitySeries(),
     ]);
   // Where DOL is in the line by our own check of DOL's records, dated by it; DOL's table is the fallback.
   const permLine = await getPermLine().catch(softFail("perm-by-the-numbers/page.getPermLine", null));
@@ -133,6 +136,11 @@ export default async function PermByTheNumbersPage() {
   const atRfi = census.statuses.find((s) => s.status === "RFI ISSUED")?.count ?? 0;
 
   // The newest working day DOL decided, and the thirty days before it.
+  const views = decisionViews(
+    series.find((s) => s.source === "dol-disclosure")?.days ?? [],
+    series.find((s) => s.source === "sweep-observed")?.days ?? [],
+    easternDay(),
+  );
   const pulse = pulseHeadline(observed);
   const summary = pulseSummary(observed);
   const sorter = buildSorterRun({ statuses: census.statuses, decided: pulse?.day.total ?? null, decidedOn: pulse?.day.date ?? null });
@@ -307,7 +315,7 @@ export default async function PermByTheNumbersPage() {
                   ))}
               </dl>
             ) : null}{" "}
-            <DecisionsOverTime days={observed} spans={[30]} grow linkDays />
+            <DecisionPeriods views={views} bare grow />
           </Tile>
         ) : null}{" "}
 
