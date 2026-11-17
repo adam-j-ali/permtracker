@@ -458,6 +458,7 @@ export async function pagesEntries(): Promise<Entry[]> {
     // own directive and open ~412,000 URLs of crawl space.
     { url: `${base}/perm-case-status`, lastModified: at("/perm-case-status"), images: [`${base}/og/perm-case-status.jpg`] },
     { url: `${base}/uscis-case-status`, lastModified: at("/uscis-case-status"), images: [`${base}/og/uscis-case-status.jpg`] },
+    { url: `${base}/uscis-account-reader`, lastModified: at("/uscis-account-reader"), images: [`${base}/og/uscis-account-reader.jpg`] },
     { url: `${base}/perm-denial-risk`, lastModified: at("/perm-denial-risk"), images: [`${base}/og/perm-denial-risk.jpg`] },
     { url: `${base}/perm-rfi-audit`, lastModified: at("/perm-rfi-audit"), images: [`${base}/og/perm-rfi-audit.jpg`] },
     { url: `${base}/perm-employers/under-review`, lastModified: at("/perm-employers/under-review"), images: [`${base}/og/perm-employers-under-review.jpg`] },

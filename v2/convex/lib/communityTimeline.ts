@@ -709,6 +709,28 @@ export function reviewFlags(r: TimelineRecord & { caseNumber?: string; permCheck
 }
 
 /**
+ * Add what another source read (the account reader) to a form the person may already have filled. Their own answers
+ * stay: a field is filled only where it's empty. Account updates are added, exact repeats dropped, and only the
+ * newest MAX_ACCOUNT_EVENTS kept, so the form never refuses what it was handed.
+ */
+export function mergeIntoTimeline(form: TimelineInput, add: TimelineInput): TimelineInput {
+  const out: TimelineInput = { ...form };
+  for (const [k, v] of Object.entries(add) as [keyof TimelineInput, unknown][]) {
+    if (k === "accountEvents" || v === undefined || v === null || v === "") continue;
+    const have = out[k];
+    if (have === undefined || have === null || have === "") (out as Record<string, unknown>)[k] = v;
+  }
+  const key = (e: { on?: string | null; form?: string | null; code?: string | null }) =>
+    `${e.on ?? ""}|${e.form ?? ""}|${(e.code ?? "").trim().toUpperCase()}`;
+  const events = new Map<string, NonNullable<TimelineInput["accountEvents"]>[number]>();
+  // The person's own copy of an update wins over the one handed in.
+  for (const e of [...(form.accountEvents ?? []), ...(add.accountEvents ?? [])]) if (!events.has(key(e))) events.set(key(e), e);
+  const merged = [...events.values()].sort((a, b) => (a.on ?? "").localeCompare(b.on ?? "")).slice(-MAX_ACCOUNT_EVENTS);
+  if (merged.length > 0) out.accountEvents = merged;
+  return out;
+}
+
+/**
  * The line beside a form: how many have shared, and how many more open the list it joins. `list` names that list
  * ("this office's list", "the board's list").
  */

@@ -1566,6 +1566,20 @@
   "from": "What that means here"
  },
  {
+  "slug": "uscis-account-reader",
+  "path": "/uscis-account-reader",
+  "title": "Read your USCIS account updates",
+  "label": "Each account update by date, with what its code is known to mean.",
+  "shot": "uscis-account-reader.png",
+  "crop": [
+   0,
+   0,
+   2336,
+   1270
+  ],
+  "viewport": 1440
+ },
+ {
   "slug": "uscis-case-status",
   "path": "/uscis-case-status",
   "title": "Check a USCIS case",

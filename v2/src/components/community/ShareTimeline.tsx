@@ -6,7 +6,7 @@ import { CaretRightIcon, CheckIcon, WarningIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PERM_CASE, validateTimeline, type TimelineInput, type TimelineStatus } from "@/lib/communityTimeline";
+import { PERM_CASE, mergeIntoTimeline, validateTimeline, type TimelineInput, type TimelineStatus } from "@/lib/communityTimeline";
 import { SITE_URL } from "@/lib/constants/site";
 
 import { TimelineFormFields } from "./TimelineFormFields";
@@ -53,6 +53,7 @@ export function ShareTimeline({
   sharePath,
   shareLabel,
   progress,
+  prefill = null,
   className,
 }: {
   /** USCIS's code for the office whose page this is; prefilled in the form. */
@@ -63,6 +64,11 @@ export function ShareTimeline({
   shareLabel: string;
   /** How many have shared and how many more open the list (lib `shareProgress`), shown above the fold. */
   progress?: string;
+  /**
+   * What the account reader found, merged into the form (the person's own answers stay) and the form opened.
+   * Nothing is sent until they press Save.
+   */
+  prefill?: TimelineInput | null;
   className?: string;
 }) {
   const uid = useId();
@@ -92,7 +98,9 @@ export function ShareTimeline({
     setKey(k);
     setSaved(true);
     setStatus(mine.status);
-    setForm({ ...empty, ...mine.input });
+    // A saved timeline loads after the form drew: what the reader found joins it rather than being lost.
+    const loaded = { ...empty, ...mine.input };
+    setForm(prefill ? mergeIntoTimeline(loaded, prefill) : loaded);
     setCaseNumber(mine.caseNumber ?? "");
     // A returning author's form stays folded, so the page's own figures stay in view; a pasted code opens it.
     if (fromCode) setOpen(true);
@@ -108,6 +116,13 @@ export function ShareTimeline({
     // Runs once: the key is this browser's, whatever page the form sits on.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!prefill) return;
+    // A new reading arrives as a prop and fills the form once.
+    setForm((f) => mergeIntoTimeline(f, prefill));
+    setOpen(true);
+  }, [prefill]);
 
   const check = useMemo(() => validateTimeline(form), [form]);
   if (!usable) return null;

@@ -1511,5 +1511,15 @@
   },
   "credit": "Screenshot of permtracker.app, November 17, 2026",
   "alt": "The timeline form's account updates: the first update dated June 1, 2026 on the I-485, its code typed under Other as XQ7 with the rule beneath it, and a second update waiting for its date"
+ },
+ "changelog/read-your-uscis-account-updates": {
+  "capture": {
+   "url": "/uscis-account-reader",
+   "wait": 6000,
+   "clip": "sel:[data-testid=reading]",
+   "maxHeight": 900
+  },
+  "credit": "Screenshot of permtracker.app, November 17, 2026",
+  "alt": "The USCIS account reader after a paste: an I-485 with its receipt masked, four updates by date (IAF, FTA0 twice, IK1) each with a few words, and below them what each code is known to mean and where that reading comes from"
  }
 }

@@ -117,6 +117,7 @@ export const PAGE_CARD_ALT = {
   "security": "How your data is protected. Encryption at rest, isolated accounts, short sessions, and no client data on the public pages.",
   "accessibility": "The standard the site builds to, WCAG 2.2 AA, what it means on each page, and where to report a barrier.",
   "uscis-case-status": "A USCIS receipt number decoded: what its letters and digits encode, with links to USCIS's own status pages.",
+  "uscis-account-reader": "The USCIS account reader: paste your account's updates and see each code by date with what it's known to mean.",
   "terms": "Terms of service. The terms for using PERM Tracker, its data and its case management.",
   "visa-bulletin": "The next visa bulletin. When past bulletins first appeared (by day of the month before) and what every earlier bulletin for this month did, since October 2014.",
   "tools": "Live PERM data and free calculators: DOL's figures with their dates, and every data field.",
