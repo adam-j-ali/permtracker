@@ -25,7 +25,7 @@ import { ACCOUNT_CODE_INFO, EVIDENCE_WORDS } from "@/lib/uscis/accountCodes";
 
 const TITLE = "Read Your USCIS Account Updates and Codes";
 const DESCRIPTION =
-  "Paste what your USCIS online account shows to see each update by date and what its code, like FTA0, IAF or H008, is known to mean. It stays in your browser.";
+  "Paste what your USCIS online account shows to see each update by date and what its code, like FTA0 or IAF, is known to mean. It stays in your browser.";
 
 export const metadata: Metadata = withSocialCard(
   {
