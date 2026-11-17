@@ -2,28 +2,25 @@ import { Fragment } from "react";
 import Link from "next/link";
 import { ArrowDownIcon, ArrowUpIcon } from "@phosphor-icons/react/ssr";
 
-import { ChartTips } from "@/components/data/ChartTips";
-import { federalHolidayName } from "@/lib/perm";
+import { DecisionPeriods } from "@/components/pulse/DecisionPeriods";
 import type { ActivityDay } from "@/lib/activityStats";
-import { type ClosedDay, certifiedShare, lastDays, pulseHeadline, pulseSummary, recentWeekdays } from "@/lib/pulseStats";
+import type { DecisionViews } from "@/lib/decisionPeriods";
+import { type ClosedDay, certifiedShare, pulseHeadline, pulseSummary } from "@/lib/pulseStats";
 import { cn } from "@/lib/utils";
 import { formatInt } from "@/lib/format";
 import { checkedLabel } from "@/lib/time";
-import { WEEKDAY_NAMES, weekdayName } from "@convex/lib/months";
+import { weekdayName } from "@convex/lib/months";
 
 /**
  * PERM decisions, day by day: DOL's last working day under our check (a
- * weekend or a federal holiday after it is named, never led with), the 30
- * days before it, and the shape of a week.
+ * weekend or a federal holiday after it is named, never led with), the
+ * figures for the last week and month, and under them the decisions chart
+ * (src/components/pulse/DecisionPeriods.tsx): by day, week, month or year,
+ * beside a year earlier.
  *
- * Every figure is a count of DOL's own decisions, dated by the day DOL worked:
- * the day our sweep saw them change, or the day before when it saw them before
- * 7 AM Eastern (src/lib/dolDay.ts); nothing is modelled.
- *
- * THE BARS ARE HTML, NOT SVG. SVG text scales with its viewBox, and this
- * repo measured 13px labels rendering at 5.5px in a phone column. Divs keep
- * every label at its CSS size at any width, and a screen-reader table carries
- * the same numbers the bars draw.
+ * The day and the figures count DOL's own decisions, dated by the day DOL
+ * worked: the day our sweep saw them change, or the day before when it saw
+ * them before 7 AM Eastern (src/lib/dolDay.ts); nothing is modelled.
  *
  * Server component: it renders once per regeneration, and the sweep expires
  * the pages it sits on when it finishes (/api/revalidate-sweep).
@@ -53,6 +50,10 @@ export interface PermPulseProps {
    * (the homepage board carries the day's number, so the band shows its shape).
    */
   variant?: "band" | "block" | "charts";
+  /** Every view of the chart under the figures (src/lib/decisionPeriods.ts `decisionViews`). */
+  views: DecisionViews;
+  /** The list of every day, week, month or year under the chart. */
+  table?: boolean;
   className?: string;
 }
 
@@ -64,19 +65,10 @@ function weekNote(last7: number, prior7: number | null): string | null {
   return `${Math.abs(pct)}% ${pct > 0 ? "more" : "fewer"} than the week before (${formatInt(prior7)})`;
 }
 
-export function PermPulse({ days, checkedAt, showLink = true, variant = "band", className }: PermPulseProps) {
+export function PermPulse({ days, checkedAt, showLink = true, variant = "band", views, table = false, className }: PermPulseProps) {
   const head = pulseHeadline(days);
   if (!head) return null;
   const { day, changePct, typical, closedAfter } = head;
-  const bars = lastDays(days, 30);
-  const lastBar = bars[bars.length - 1]!;
-  const holidayOf = new Map(bars.flatMap((b) => {
-    const name = federalHolidayName(b.date);
-    return name ? [[b.date, name] as const] : [];
-  }));
-  const week = recentWeekdays(days, 4);
-  const max = Math.max(1, ...bars.map((b) => b.total));
-  const weekMax = Math.max(1, ...week.map((w) => w.mean));
   const share = certifiedShare(day);
   const weekday = (weekdayName(day.date) ?? "");
   const up = changePct !== null && changePct >= 0;
@@ -168,131 +160,15 @@ export function PermPulse({ days, checkedAt, showLink = true, variant = "band", 
           </Fragment>
         ))}
       </dl>{" "}
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3 [&>*]:min-w-0">
-        {/* Thirty days. Weekends sit low because DOL decides little then.
-            Withdrawn is the employer's own step, so it takes the withdrawn
-            purple the status chips use (Oct 27 2026; no grey marks). */}
-        <figure className="m-0 bg-card p-5 lg:col-span-2 border-2 shadow-hard-sm border-border">
-          <figcaption className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-            <span className="text-base font-semibold">The last {bars.length} days</span>{" "}
-            <span className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-soft">
-              <span className="inline-flex items-center gap-1.5">
-                <span aria-hidden="true" className="size-3 bg-data-good-ink" />
-                Certified
-              </span>{" "}
-              <span className="inline-flex items-center gap-1.5">
-                <span aria-hidden="true" className="size-3 bg-data-bad-ink" />
-                Denied
-              </span>{" "}
-              <span className="inline-flex items-center gap-1.5">
-                <span aria-hidden="true" className="size-3 bg-chart-purple" />
-                Withdrawn
-              </span>
-            </span>
-          </figcaption>{" "}
-          <div className="mt-4 flex items-baseline justify-between text-sm tabular-nums text-muted-foreground">
-            <span>{formatInt(max)}</span>
-          </div>
-          <ChartTips label="Decisions per day, the last 30 days">
-          <div
-            className="flex h-40 items-end gap-[2px] border-b-2 border-l-2 border-border pl-px sm:h-48"
-            role="img"
-            aria-label={`Decisions per day, ${dayLabel(bars[0]!.date, { month: "long", day: "numeric" })} to ${dayLabel(lastBar.date, { month: "long", day: "numeric" })}, from ${formatInt(Math.min(...bars.map((b) => b.total)))} to ${formatInt(max)} a day.`}
-          >
-            {bars.map((b) => (
-              <div
-                key={b.date}
-                data-href={`/perm-updates/${b.date}`}
-                data-tip={`${dayLabel(b.date, { weekday: "short", month: "short", day: "numeric" })}\n${formatInt(b.total)} decided\n${formatInt(b.certified)} certified\n${formatInt(b.denied)} denied\n${formatInt(b.withdrawn)} withdrawn${holidayOf.has(b.date) ? `\n${holidayOf.get(b.date)}: DOL closed` : ""}`}
-                className={cn("flex flex-1 flex-col-reverse", b.date === day.date && "outline outline-2 outline-offset-1 outline-foreground")}
-                style={{ height: `${(b.total / max) * 100}%` }}
-              >
-                <div className="bg-data-good-ink" style={{ height: `${b.total ? (b.certified / b.total) * 100 : 0}%` }} />
-                <div className="bg-data-bad-ink" style={{ height: `${b.total ? (b.denied / b.total) * 100 : 0}%` }} />
-                <div className="bg-chart-purple" style={{ height: `${b.total ? (b.withdrawn / b.total) * 100 : 0}%` }} />
-              </div>
-            ))}
-          </div>
-          </ChartTips>{" "}
-          <div className="mt-2 flex justify-between text-sm tabular-nums text-muted-foreground">
-            <span>{dayLabel(bars[0]!.date, { month: "short", day: "numeric" })}</span>{" "}
-            <span>{dayLabel(lastBar.date, { month: "short", day: "numeric" })}</span>
-          </div>
-        </figure>{" "}
+      <DecisionPeriods id={table ? "over-time" : undefined} views={views} highlightDay={day.date} table={table} className="mt-8" />{" "}
 
-        {/* The shape of a week, over the last four: working days in the
-            decided green, the weekend in sage, each with a darker cap so the
-            soft fill still reads against the card. */}
-        <figure className="m-0 bg-card p-5 border-2 shadow-hard-sm border-border">
-          <figcaption className="text-base font-semibold">A typical week</figcaption>{" "}
-          <ChartTips label="Average decisions by day of the week">
-          <div className="mt-4 flex h-40 items-end gap-2 sm:h-48" role="img" aria-label="Average decisions by day of the week over the last four weeks.">
-            {week.map((w) => {
-              // The profile counts Monday first; the shared names count Sunday first.
-              const dayName = WEEKDAY_NAMES[(w.weekday + 1) % 7];
-              return (
-              <div
-                key={w.label}
-                data-tip={w.days ? `${dayName}\nAbout ${formatInt(w.mean)} decided\nAverage of the last ${w.days} ${dayName}s` : `${dayName}\nNone on record yet`}
-                className="flex h-full flex-1 flex-col justify-end text-center"
-              >
-                <span className="mb-1 text-sm font-semibold tabular-nums">{w.days ? formatInt(w.mean) : ""}</span>{" "}
-                <div
-                  className={cn(w.days && "border-t-2 border-data-good-ink", w.weekday >= 5 ? "bg-chart-sage" : "bg-chart-green")}
-                  style={{ height: w.days ? `${Math.max(2, (w.mean / weekMax) * 100)}%` : "0" }}
-                />
-              </div>
-              );
-            })}
-          </div>
-          </ChartTips>{" "}
-          <div className="mt-2 flex gap-2 text-center text-sm text-muted-foreground">
-            {week.map((w) => (
-              <Fragment key={w.label}>
-                <span className="flex-1">{w.label.slice(0, 2)}</span>{" "}
-              </Fragment>
-            ))}
-          </div>
-        </figure>
-      </div>{" "}
-
-      {/* sr-only on a <table> can't shrink it below its content; a div can. */}
-      <div className="sr-only">
-        <table>
-          <caption>PERM decisions per day, from DOL&apos;s case status</caption>
-          <thead>
-            <tr>
-              <th scope="col">Date{" "}</th>
-              <th scope="col">Decided{" "}</th>
-              <th scope="col">Certified{" "}</th>
-              <th scope="col">Denied{" "}</th>
-              <th scope="col">Withdrawn{" "}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {bars.map((b) => (
-              <tr key={b.date}>
-                <td>{b.date}{" "}</td>
-                <td>{b.total}{" "}</td>
-                <td>{b.certified}{" "}</td>
-                <td>{b.denied}{" "}</td>
-                <td>{b.withdrawn}{" "}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>{" "}
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-        <p className="text-sm text-muted-foreground">
-          Counted from DOL&apos;s own case status, by the day DOL worked: a change our check saw before 7 AM counts on the day before.
-        </p>{" "}
-        {showLink ? (
+      {showLink ? (
+        <p className="mt-2">
           <Link href="/perm-decision-activity" className="link inline-flex min-h-11 items-center">
             Every day, and every case that moved
           </Link>
-        ) : null}
-      </div>
+        </p>
+      ) : null}
     </div>
   );
 

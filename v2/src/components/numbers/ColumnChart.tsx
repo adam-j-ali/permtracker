@@ -34,6 +34,8 @@ export interface ColumnPart {
   value: number;
   /** A fill class for one part of a stacked column. */
   fill: string;
+  /** The part's name ("Certified"): with one, the screen-reader table gives each part its own column. */
+  label?: string;
 }
 
 export interface Column {
@@ -55,6 +57,8 @@ export interface Column {
   href?: string;
   /** A short label printed above the column ("Jan ’26"), for a chart read without hovering. */
   top?: string;
+  /** A value to set the column against, drawn as a short ink line across it: the same days a year earlier. */
+  mark?: number;
 }
 
 export function ColumnChart({
@@ -72,6 +76,7 @@ export function ColumnChart({
   scaleMax,
   gapKey = "No record for this period",
   partialKey = "Still filling",
+  markKey = "A year earlier",
 }: {
   columns: readonly Column[];
   tone?: ColumnTone;
@@ -101,9 +106,23 @@ export function ColumnChart({
   gapKey?: string;
   /** The key's words for a hatched column still filling, shown only when the chart has one. */
   partialKey?: string;
+  /** The key's words and the table's heading for the columns' marks, shown only when a column has one. */
+  markKey?: string;
 }) {
   if (columns.length === 0) return null;
-  const max = Math.max(1, scaleMax ?? 0, ...columns.filter((c) => !c.gap).map((c) => c.value));
+  const max = Math.max(1, scaleMax ?? 0, ...columns.filter((c) => !c.gap).map((c) => c.value), ...columns.map((c) => c.mark ?? 0));
+  const marked = columns.some((c) => c.mark !== undefined);
+  // The named parts of the stacked columns, in order, each a column of the table.
+  const partNames = columns.find((c) => c.parts?.every((p) => p.label))?.parts?.map((p) => p.label!) ?? [];
+  // A ring in the card's colour keeps the line readable where it crosses a dark column.
+  const markOf = (c: Column) =>
+    c.mark === undefined ? null : (
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 z-10 h-[3px] bg-foreground ring-1 ring-card"
+        style={{ bottom: `calc(${(c.mark / max) * 100}% - 1px)` }}
+      />
+    );
   const labelled = columns.some((c) => c.top);
   const topShown = topsFrom === "sm" ? "hidden sm:block" : topsFrom === "xl" ? "hidden xl:block" : "";
   const topRoom = topsFrom === "sm" ? "sm:pt-7" : topsFrom === "xl" ? "xl:pt-7" : "pt-7";
@@ -123,8 +142,10 @@ export function ColumnChart({
                   key={c.key}
                   data-tip={c.tip}
                   data-href={c.href}
-                  className="h-full flex-1 border-2 border-dashed border-input"
-                />
+                  className="relative h-full flex-1 border-2 border-dashed border-input"
+                >
+                  {markOf(c)}
+                </div>
               );
             }
             const h = c.value > 0 ? Math.max(2, (c.value / max) * 100) : 0;
@@ -148,7 +169,14 @@ export function ColumnChart({
                   ))}
                 </div>
               );
-              if (!c.top) return <div key={c.key} className="flex h-full flex-1 items-end">{bar}</div>;
+              if (!c.top) {
+                return (
+                  <div key={c.key} className="relative flex h-full flex-1 items-end">
+                    {bar}
+                    {markOf(c)}
+                  </div>
+                );
+              }
               return (
                 <div key={c.key} className="relative flex h-full flex-1 items-end">
                   <span
@@ -158,16 +186,18 @@ export function ColumnChart({
                     {c.top}{" "}
                   </span>{" "}
                   {bar}
+                  {markOf(c)}
                 </div>
               );
             }
-            return (
+            const plain = (
               <div
                 key={c.key}
                 data-tip={c.tip}
                 data-href={c.href}
                 className={cn(
-                  "relative flex-1 border-t-2",
+                  "relative border-t-2",
+                  c.mark === undefined ? "flex-1" : "w-full",
                   c.now ? "border-foreground bg-primary" : FILL[tone],
                   // A whole outline around the stripes: with a top line alone, a short
                   // striped bar (and the key's small square) read as the letter Z.
@@ -182,6 +212,13 @@ export function ColumnChart({
                 ) : null}
               </div>
             );
+            if (c.mark === undefined) return plain;
+            return (
+              <div key={c.key} className="relative flex h-full flex-1 items-end">
+                {plain}
+                {markOf(c)}
+              </div>
+            );
           })}
         </div>
       </ChartTips>{" "}
@@ -189,7 +226,7 @@ export function ColumnChart({
         <span>{first}</span>{" "}
         <span>{last}</span>
       </div>{" "}
-      {columns.some((c) => c.gap) || columns.some((c) => c.partial) ? (
+      {columns.some((c) => c.gap) || columns.some((c) => c.partial) || marked ? (
         <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground" aria-label="Key">
           {columns.some((c) => c.gap) ? (
             <li className="flex items-start gap-2">
@@ -202,6 +239,12 @@ export function ColumnChart({
               <span aria-hidden="true" className="mt-0.5 inline-block size-4 shrink-0 border-2 border-foreground bg-hatch text-input" />
               {partialKey}{" "}
             </li>
+          ) : null}{" "}
+          {marked ? (
+            <li className="flex items-start gap-2">
+              <span aria-hidden="true" className="mt-2 inline-block h-[3px] w-4 shrink-0 bg-foreground ring-1 ring-card" />
+              {markKey}{" "}
+            </li>
           ) : null}
         </ul>
       ) : null}
@@ -213,6 +256,12 @@ export function ColumnChart({
             <tr>
               <th scope="col">Period{" "}</th>
               <th scope="col">{unit}{" "}</th>
+              {partNames.map((n) => (
+                <th key={n} scope="col">
+                  {n}{" "}
+                </th>
+              ))}
+              {marked ? <th scope="col">{markKey}{" "}</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -221,6 +270,10 @@ export function ColumnChart({
                 <tr>
                   <td>{c.label}{" "}</td>
                   <td>{c.gap ? "No record" : `${formatInt(c.value)}${c.partial ? " so far" : ""}`}{" "}</td>
+                  {partNames.map((n, i) => (
+                    <td key={n}>{c.gap ? "" : formatInt(c.parts?.[i]?.value ?? 0)}{" "}</td>
+                  ))}
+                  {marked ? <td>{c.mark === undefined ? "No record" : formatInt(c.mark)}{" "}</td> : null}
                 </tr>
               </Fragment>
             ))}

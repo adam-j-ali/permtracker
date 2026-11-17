@@ -30,9 +30,8 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { DecisionPaceChart } from "@/components/activity/DecisionPaceChart";
 import { PermPulse } from "@/components/pulse/PermPulse";
 import { DolDaysBoard } from "@/components/pulse/DolDaysBoard";
-import { DecisionMonths } from "@/components/activity/DecisionMonths";
 import { dolDays } from "@/lib/dolDays";
-import { monthsAgainstLastYear } from "@/lib/decisionMonths";
+import { decisionViews } from "@/lib/decisionPeriods";
 import { getPwdNowDocs } from "@/lib/db/pwdDayQueue";
 import { easternDay } from "@convex/lib/time";
 import { getSweepCoverage } from "@/lib/db/sweepCoverage";
@@ -124,10 +123,11 @@ export default async function DecisionActivityPage() {
 
   const disclosure = series.find((s) => s.source === "dol-disclosure");
   const live = series.find((s) => s.source === "sweep-observed");
-  // Two weeks of complete days, PERM beside wage determinations, and each month against a year earlier.
+  // Two weeks of complete days, PERM beside wage determinations.
   const today = easternDay();
   const sideBySide = dolDays(live?.days ?? [], wageDocs.queue?.days ?? [], today, 14);
-  const byMonth = monthsAgainstLastYear(series.find((s) => s.source === "dol-disclosure")?.days ?? [], live?.days ?? [], today, 12);
+  // The decisions chart's every view (day, week, month, year, each against a year earlier), from both records.
+  const views = decisionViews(disclosure?.days ?? [], live?.days ?? [], today);
   // The live scan is the current instrument, so it sets the headline pace. The
   // disclosure series is the fallback, never a splice of the two: the 43 days
   // between them hold no measurement at all.
@@ -178,6 +178,8 @@ export default async function DecisionActivityPage() {
             checkedAt={coverage?.checkedAt ?? null}
             showLink={false}
             variant="block"
+            views={views}
+            table
           />
         </div>
       ) : null}
@@ -424,8 +426,6 @@ export default async function DecisionActivityPage() {
           </p>
         </FinePrint>
       ) : null}
-
-      <DecisionMonths months={byMonth} checksFrom={live?.days[0]?.date ?? null} className="mt-10" />
 
       {record.length > 0 ? (
         <FigurePlate

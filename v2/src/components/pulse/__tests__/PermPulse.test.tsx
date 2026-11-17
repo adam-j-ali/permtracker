@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import type { ActivityDay } from "@/lib/activityStats";
+import { decisionViews } from "@/lib/decisionPeriods";
 import { PermPulse } from "../PermPulse";
 
 const day = (date: string, total: number, certified: number, denied = 0, withdrawn = total - certified - denied): ActivityDay =>
@@ -16,10 +17,13 @@ const DAYS: ActivityDay[] = [
   day("2026-09-29", 989, 906, 62),
 ];
 
+// Our check alone: the chart's day view draws these days and has no year-earlier mark to set them against.
+const VIEWS = decisionViews([], DAYS, "2026-09-30");
+
 const text = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
 
 describe("PermPulse", () => {
-  const html = renderToStaticMarkup(<PermPulse days={DAYS} checkedAt={Date.UTC(2026, 8, 30, 8, 58)} />);
+  const html = renderToStaticMarkup(<PermPulse views={VIEWS} days={DAYS} checkedAt={Date.UTC(2026, 8, 30, 8, 58)} />);
 
   it("leads with the newest day and compares it with the same weekday", () => {
     const t = text(html);
@@ -37,7 +41,7 @@ describe("PermPulse", () => {
   });
 
   it("carries every bar's numbers in a table a screen reader can read", () => {
-    expect(html).toContain("<td>2026-09-29 </td><td>989 </td><td>906 </td><td>62 </td><td>21 </td>");
+    expect(html).toContain("<td>Tue, Sep 29, 2026 </td><td>989 </td><td>906 </td><td>62 </td><td>21 </td>");
   });
 
   it("glues no two words together", () => {
@@ -50,7 +54,7 @@ describe("PermPulse", () => {
   it("links through to the full record unless told not to", () => {
     expect(html).toContain('href="/perm-decision-activity"');
     const block = renderToStaticMarkup(
-      <PermPulse days={DAYS} checkedAt={null} showLink={false} variant="block" />,
+      <PermPulse views={VIEWS} days={DAYS} checkedAt={null} showLink={false} variant="block" />,
     );
     expect(block).not.toContain('href="/perm-decision-activity"');
     expect(text(block)).not.toContain("Checked against DOL");
@@ -58,21 +62,19 @@ describe("PermPulse", () => {
 
   it("leads with DOL's last working day and names a holiday after it", () => {
     // Columbus Day 2026: DOL closed, 11 decided. The board had read "Decided Oct 12: 11".
+    const days = [day("2026-10-02", 629, 599, 16), day("2026-10-09", 615, 575, 29), day("2026-10-11", 6, 0, 4), day("2026-10-12", 11, 0, 4)];
     const holiday = renderToStaticMarkup(
-      <PermPulse
-        days={[day("2026-10-02", 629, 599, 16), day("2026-10-09", 615, 575, 29), day("2026-10-11", 6, 0, 4), day("2026-10-12", 11, 0, 4)]}
-        checkedAt={null}
-      />,
+      <PermPulse days={days} views={decisionViews([], days, "2026-10-13")} checkedAt={null} />,
     );
     const t = text(holiday);
     expect(t).toContain("Decided on Friday, Oct 9");
     expect(t).toContain("Monday, Oct 12 was Columbus Day, a federal holiday: DOL was closed.");
     expect(holiday).toContain("Columbus Day: DOL closed");
     // The chart still ends on its last bar.
-    expect(holiday).toContain("to October 12, from");
+    expect(holiday).toContain("to Mon, Oct 12, 2026: from");
   });
 
   it("renders nothing without a day on record", () => {
-    expect(renderToStaticMarkup(<PermPulse days={[]} checkedAt={null} />)).toBe("");
+    expect(renderToStaticMarkup(<PermPulse views={VIEWS} days={[]} checkedAt={null} />)).toBe("");
   });
 });

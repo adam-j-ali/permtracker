@@ -16,7 +16,7 @@ import {
 } from "@/components/board/BoardParts";
 import { BulletinStation, type BulletinLine } from "@/components/board/BulletinStation";
 import { StagePicker, type StageCard } from "@/components/board/StagePicker";
-import { DecisionsOverTime } from "@/components/pulse/DecisionsOverTime";
+import { DecisionPeriods } from "@/components/pulse/DecisionPeriods";
 import { buttonVariants } from "@/components/ui/button";
 import {
   aboutMonths,
@@ -36,12 +36,13 @@ import {
   type SpanReading,
 } from "@/lib/board";
 import { cutoffLabel } from "@/lib/bulletinNext";
-import { DECISION_SPANS } from "@/lib/pulseStats";
+import { decisionViews } from "@/lib/decisionPeriods";
+import { getActivitySeries } from "@/lib/db/activity";
+import { easternDay } from "@convex/lib/time";
 import { getPermBoard, getPwdBoard } from "@/lib/db/board";
 import { getBulletinBoard } from "@/lib/db/bulletin";
 import { getLiveCensus } from "@/lib/db/liveCensus";
 import { getVisaBulletins } from "@/lib/db/publicData";
-import { getObservedDays } from "@/lib/db/pulse";
 import { getSweepCoverage } from "@/lib/db/sweepCoverage";
 import { getUscisFormHistory, getUscisFormMedian } from "@/lib/db/uscisQuarterly";
 import { parseCutoff, type BulletinMonth, type CountryKey } from "@/lib/perm";
@@ -89,18 +90,17 @@ const WAITING = [
   "PENDING AUDIT RESPONSE",
 ];
 const DECIDED = ["CERTIFIED", "DENIED", "WITHDRAWN"];
-/** Days of decisions read for the 30, 90 and 180-day views, with a week's margin for the first whole week. */
-const DECISION_DAYS = Math.max(...DECISION_SPANS) + 7;
 // The archive keys categories as the bulletin codes them (EB2, EW3), not "EB-2".
 const BULLETIN_CATEGORIES = ["EB1", "EB2", "EB3", "EW3"];
 const BULLETIN_COUNTRIES: CountryKey[] = ["worldwide", "china", "india", "mexico", "philippines"];
 
 export default async function TodayPage() {
-  const [perm, pwd, census, observed, coverage, i140, bulletins, i485, i485History, bulletinBoard] = await Promise.all([
+  const [perm, pwd, census, series, coverage, i140, bulletins, i485, i485History, bulletinBoard] = await Promise.all([
     getPermBoard().catch(softFail("today/page.getPermBoard", null)),
     getPwdBoard().catch(softFail("today/page.getPwdBoard", null)),
     getLiveCensus().catch(softFail("today/page.getLiveCensus", null)),
-    getObservedDays(DECISION_DAYS).catch(softFail("today/page.getObservedDays", [])),
+    // Both whole records of decisions, DOL's file and our check, for the chart's days, weeks, months and years.
+    getActivitySeries().catch(softFail("today/page.getActivitySeries", [])),
     getSweepCoverage().catch(softFail("today/page.getSweepCoverage", null)),
     getUscisFormHistory("I-140").catch(softFail("today/page.getUscisFormHistory.i140", [])),
     getVisaBulletins().catch(softFail("today/page.getVisaBulletins", [])),
@@ -108,6 +108,12 @@ export default async function TodayPage() {
     getUscisFormHistory("I-485").catch(softFail("today/page.getUscisFormHistory.i485", [])),
     getBulletinBoard().catch(softFail("today/page.getBulletinBoard", null)),
   ]);
+
+  const views = decisionViews(
+    series.find((s) => s.source === "dol-disclosure")?.days ?? [],
+    series.find((s) => s.source === "sweep-observed")?.days ?? [],
+    easternDay(),
+  );
 
   // How many PERM cases sit in each status now, from the census.
   const nowByStatus = new Map<string, number>();
@@ -408,7 +414,7 @@ export default async function TodayPage() {
         </div>{" "}
         <h3 className="mt-12 font-heading text-lg font-bold">Decisions over time</h3>{" "}
         <div className="mt-4">
-          <DecisionsOverTime days={observed} />
+          <DecisionPeriods views={views} />
         </div>
       </section>{" "}
       {moves.length && bulletinLabel ? (

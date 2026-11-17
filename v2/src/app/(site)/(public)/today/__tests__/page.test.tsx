@@ -33,12 +33,12 @@ vi.mock("@/components/board/BoardParts", async (importOriginal) => {
 });
 vi.mock("@/components/board/BulletinStation", () => ({ BulletinStation: () => null }));
 vi.mock("@/components/board/StagePicker", () => ({ StagePicker: () => null }));
-vi.mock("@/components/pulse/DecisionsOverTime", () => ({ DecisionsOverTime: () => null }));
+vi.mock("@/components/pulse/DecisionPeriods", () => ({ DecisionPeriods: () => null }));
+vi.mock("@/lib/db/activity", () => ({ getActivitySeries: async () => [] }));
 vi.mock("@/lib/db/board", () => ({ getPermBoard: async () => board.perm, getPwdBoard: async () => null }));
 vi.mock("@/lib/db/bulletin", () => ({ getBulletinBoard: async () => null }));
 vi.mock("@/lib/db/liveCensus", () => ({ getLiveCensus: async () => null }));
 vi.mock("@/lib/db/publicData", () => ({ getVisaBulletins: async () => [] }));
-vi.mock("@/lib/db/pulse", () => ({ getObservedDays: async () => [] }));
 vi.mock("@/lib/db/sweepCoverage", () => ({ getSweepCoverage: async () => null }));
 vi.mock("@/lib/db/uscisQuarterly", () => ({ getUscisFormHistory: async () => [], getUscisFormMedian: async () => null }));
 vi.mock("@/lib/softRead", () => ({ softFail: () => () => null }));
