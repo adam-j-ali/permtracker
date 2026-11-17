@@ -78,6 +78,15 @@ export function isConnectionClosed(message: string): boolean {
 }
 
 /**
+ * A request the visitor's connection dropped, in each browser's own bare words: Safari's "Load failed", Chrome's
+ * "Failed to fetch", Firefox's "NetworkError when attempting to fetch resource.". Anchored, so a message that says
+ * more ("Failed to fetch dynamically imported module: ...") is a build-file fault and keeps its own handling.
+ */
+export function isDroppedRequest(message: string): boolean {
+  return /^(?:TypeError: )?(?:Load failed|Failed to fetch|NetworkError when attempting to fetch resource\.?)$/.test(message.trim());
+}
+
+/**
  * The build file a ChunkLoadError names, as its path under /_next/static/, or
  * null. Only a file in chunks/ or css/ passes, so the route can look for it on
  * disk without the message choosing where to look. Folder names may carry

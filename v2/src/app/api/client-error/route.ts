@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 
 import { createClientErrorBudget } from "./budget";
-import { MAX_BODY, chunkFileOf, dplOf, groupingKey, isConnectionClosed, parseClientError } from "./parse";
+import { MAX_BODY, chunkFileOf, dplOf, groupingKey, isConnectionClosed, isDroppedRequest, parseClientError } from "./parse";
 
 /**
  * POST /api/client-error: an error screen's own report, sent with
@@ -82,9 +82,11 @@ export async function POST(request: Request) {
       extra: { ...extra, dpl, live },
       fingerprint: ["client-error", "chunk-old-build"],
     });
-  } else if (isConnectionClosed(report.message)) {
-    // The page's data stream was cut on the visitor's side (React's "Connection closed."). Like a build file that
-    // didn't download, the reload cures it: one warning issue for all of them, so none alerts anybody twice.
+  } else if (isConnectionClosed(report.message) || (report.outcome === "reload" && isDroppedRequest(report.message))) {
+    // The page's data stream was cut on the visitor's side (React's "Connection closed.", or a request the browser
+    // reports as "Load failed" or "Failed to fetch"). Like a build file that didn't download, the reload cures it:
+    // one warning issue for all of them, so none alerts anybody twice. A dropped request on a screen that couldn't
+    // reload ("shown": it already had, within the minute) came back on a fresh load, so it stays an error.
     if (!budget.sentryKey("connection-closed")) return done();
     Sentry.captureMessage("A page's data stream was cut on the visitor's connection (the screen reloads)", {
       level: "warning",
