@@ -44,7 +44,7 @@ import {
 } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { BUDGETS, noteQueued, noteRefusal, windowFor, type BudgetName } from "./lib/alertBudgets";
+import { BUDGETS, claimSiteNotice, noteQueued, noteRefusal, windowFor, type BudgetName } from "./lib/alertBudgets";
 import { RECEIVED_MARGIN, dailyCeilings, msToNextUtcDay, usedToday } from "./lib/emailLimits";
 import { checkAndRecordRateLimit, checkRateLimit } from "./lib/rateLimit";
 import { siteThrottleReply } from "./lib/throttleReply";
@@ -159,7 +159,10 @@ export async function queueConfirmation(
     queuedAt: now,
   });
   const first = await noteQueued(ctx, req.pool);
-  if (first) await alertAdmin(ctx, "queued", req.pool, held.length + 1, await usedToday(ctx, now));
+  const used = await usedToday(ctx, now);
+  // Past the site's sign-up line the cause is the whole site's: one email a day, whichever kind waits first.
+  const tell = used >= dailyCeilings().publicMail ? await claimSiteNotice(ctx, req.pool) : first;
+  if (tell) await alertAdmin(ctx, "queued", req.pool, held.length + 1, used);
   await ctx.scheduler.runAfter(0, internal.confirmationQueue.drain, {});
   return { ok: true, message: reply, queued: true };
 }

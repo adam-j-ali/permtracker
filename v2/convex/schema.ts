@@ -2894,6 +2894,11 @@ export default defineSchema({
     count: v.number(),
     /** Requests a full pool queued instead (convex/confirmationQueue.ts). */
     queued: v.optional(v.number()),
+    /**
+     * When the day's one "the whole site is at its sign-up line" email went, on the row of the kind that set it off.
+     * That cause is the site's, not a pool's, so it's claimed once a day across every row (alertBudgets.claimSiteNotice).
+     */
+    siteNoticeAt: v.optional(v.number()),
   }).index("by_day_pool", ["day", "pool"]),
 
   /**
