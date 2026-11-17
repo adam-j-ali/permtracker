@@ -264,11 +264,12 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
             <>What USCIS&apos;s {center ? office.name : `field office in ${place}`} received, decided and still holds, from USCIS&apos;s own quarterly file.</>
           )}
         </p>{" "}
-        <p className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-base">
-          <Link href={INDEX} className="link font-bold">
+        {/* Standalone links, so each is a 44px target. */}
+        <p className="mt-4 flex flex-wrap gap-x-6 text-base">
+          <Link href={INDEX} className="link inline-flex min-h-11 items-center font-bold">
             Every office in one table
           </Link>{" "}
-          <a href="#timelines" className="link font-bold">
+          <a href="#timelines" className="link inline-flex min-h-11 items-center font-bold">
             Timelines people shared from here
           </a>
         </p>{" "}
