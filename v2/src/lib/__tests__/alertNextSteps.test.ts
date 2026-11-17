@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { decidedOnFromSeen, SEEN_NEXT_MORNING_BEFORE_HOUR as SCORE_HOUR } from "@/lib/scorecard/score";
 import { programOf } from "@/lib/flagCaseNumber";
 import { formPage } from "@/lib/uscisForms";
+import { reviewStages } from "@/components/rfi/stageMeta";
 import {
   alsoLinksFor,
   bulletinAlertUrl,
@@ -18,6 +19,7 @@ import {
   PWD_MATCH_SENTENCE,
   SEEN_NEXT_MORNING_BEFORE_HOUR,
   type NextStepInput,
+  stagePagePath,
 } from "@convex/lib/alertNextSteps";
 import { ETA9089_EXPIRATION_DAYS } from "@convex/lib/perm/constants";
 
@@ -72,6 +74,7 @@ describe("what comes next after a case alert", () => {
       [NEXT_PATHS.bulletinAlert, 'id="bulletin-alert"'],
       [NEXT_PATHS.queueAlert, 'id="queue-alert"'],
       [NEXT_PATHS.rfiSteps, 'id="step-by-step"'],
+      [NEXT_PATHS.shareTimeline, 'id="add-h"'],
     ];
     for (const [path, id] of anchors) {
       expect(readFileSync(pageFor(path)!, "utf8"), `${path} carries ${id}`).toContain(id);
@@ -170,9 +173,10 @@ describe("what comes next after a case alert", () => {
     expect(hrefs({ program: "lca", status: "IN PROCESS", isFinal: false })).not.toContain(queue);
     expect(hrefs({ program: "pwd", status: "IN PROCESS", isFinal: false })).toContain(queue);
     expect(hrefs({ program: "lca", status: "CERTIFIED", isFinal: true })).toEqual(["https://permtracker.app/methodology"]);
-    expect(hrefs({ program: "perm", status: "RFI ISSUED", isFinal: false })[0]).toBe(
-      "https://permtracker.app/perm-rfi-audit#step-by-step",
-    );
+    // An RFI names its own stage page first (every open RFI, how long, where they went), then the step-by-step path.
+    const rfi = hrefs({ program: "perm", status: "RFI ISSUED", isFinal: false });
+    expect(rfi[0]).toBe("https://permtracker.app/perm-rfi-audit/rfi-issued");
+    expect(rfi).toContain("https://permtracker.app/perm-rfi-audit#step-by-step");
   });
 
   it("counts from the day DOL acted, by the scorecard's own rule", () => {
@@ -217,5 +221,30 @@ describe("what comes next after a case alert", () => {
     ].join("\n");
     expect(all).not.toMatch(/—|!/);
     expect(all).not.toMatch(/\bwill be approved\b|\bguarantee/i);
+  });
+});
+
+describe("the review stages in a case alert", () => {
+  it("names the page of every stage that has one, and no other", () => {
+    for (const s of reviewStages()) expect(stagePagePath(s.status), s.status).toBe(`/perm-rfi-audit/${s.slug}`);
+    for (const s of ["ANALYST REVIEW", "CERTIFIED", "DENIED", "RECONSIDERATION APPEALS - RFI ISSUED", "WITHDRAWN"]) {
+      expect(stagePagePath(s), s).toBeNull();
+    }
+  });
+
+  it("links a case at a review stage to how long cases wait there", () => {
+    const hrefs = alsoLinksFor({ program: "perm", status: "RECONSIDERATION APPEALS", isFinal: false }).map((l) => l.href);
+    expect(hrefs).toContain("https://permtracker.app/perm-rfi-audit/reconsideration-appeals");
+    const rfi = alsoLinksFor({ program: "perm", status: "RFI ISSUED", isFinal: false }).map((l) => l.href);
+    expect(rfi).toContain("https://permtracker.app/perm-rfi-audit/rfi-issued");
+    // Only a PERM case: an LCA or a wage request has no review stages.
+    expect(alsoLinksFor({ program: "lca", status: "RFI ISSUED", isFinal: false }).map((l) => l.href).join(" ")).not.toContain("/perm-rfi-audit/");
+  });
+
+  it("points a denial at how long reconsideration is taking, and a certification at sharing a timeline", () => {
+    const denied = words(nextStepsFor({ ...base, status: "DENIED", approved: false }));
+    expect(denied).toContain("https://permtracker.app/perm-rfi-audit/reconsideration-appeals");
+    const certified = words(nextStepsFor(base));
+    expect(certified).toContain("https://permtracker.app/green-card-timelines#add-h");
   });
 });

@@ -73,7 +73,8 @@ function Figure({
 }
 
 /** One stacked bar of destinations, a mark per destination with its tooltip. */
-function MoveBar({ rows, label }: { rows: MoveRow[]; label: string }) {
+/** Where cases leaving a step went, as one bar (the key below carries the figures). */
+export function MoveBar({ rows, label }: { rows: MoveRow[]; label: string }) {
   return (
     <ChartTips label={label}>
       <div className="flex h-7 w-full overflow-hidden border-2 border-border" role="img" aria-label={label}>
@@ -91,7 +92,7 @@ function MoveBar({ rows, label }: { rows: MoveRow[]; label: string }) {
   );
 }
 
-function MoveKey({ rows }: { rows: MoveRow[] }) {
+export function MoveKey({ rows }: { rows: MoveRow[] }) {
   return (
     <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
       {rows.map((r) => (

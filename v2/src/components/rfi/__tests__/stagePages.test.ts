@@ -31,6 +31,7 @@ describe("stage page links", () => {
       "app/(site)/(public)/perm-case-statuses/page.tsx",
       "components/rfi/StageCensus.tsx",
       "components/rfi/StageGlossary.tsx",
+      "components/tools/CaseStatusResult.tsx",
     ];
     for (const f of files) {
       const src = readFileSync(path.join(root, f), "utf8");

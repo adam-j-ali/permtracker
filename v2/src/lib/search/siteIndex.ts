@@ -14,6 +14,7 @@ import {
 } from "@/lib/siteMap";
 import { FORM_PAGES } from "@/lib/uscisForms";
 import { USCIS_OFFICES, isCenter } from "@/lib/uscisOffices";
+import { reviewStages, stageInSentence } from "@/components/rfi/stageMeta";
 
 export interface SiteIndexEntry {
   label: string;
@@ -152,6 +153,14 @@ export function staticIndex(): SiteIndexEntry[] {
       { href: `/i485-by-field-office/${o.slug}`, name: center ? `${o.name}: I-485 numbers` : `${o.name} field office: I-485 numbers` },
       "USCIS offices",
       `${o.code} ${o.state} uscis ${center ? "service center" : "field office fo"} i-485 i485 pending approved timeline timelines biometrics interview how long`,
+    );
+  }
+  // One page per review stage, under the words people type ("perm reconsideration how long", "rfi issued wait").
+  for (const s of reviewStages()) {
+    add(
+      { href: `/perm-rfi-audit/${s.slug}`, name: `PERM ${stageInSentence(s.status)}: how long cases wait` },
+      "RFIs, audits and appeals",
+      `${s.status.toLowerCase()} perm status how long wait waiting time processing time cases answered appeal rfi audit`,
     );
   }
   // One row per page: a page in two lists keeps its first, most specific group.

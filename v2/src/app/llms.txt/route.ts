@@ -90,6 +90,12 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
       "How many pending cases sit in a request for information, an audit or an appeal, and the measured funnel of how RFIs resolve.",
   },
   {
+    path: "/perm-rfi-audit/reconsideration-appeals",
+    label: "PERM reconsideration appeals: how long cases wait",
+    blurb:
+      "Every PERM case waiting on a motion to reconsider a denial, with the day each wait began, DOL's last posted month for the queue, and every case answered since August 30, 2026, with where it went and how long it took. The same page exists for each review stage: rfi-issued, application-on-hold, nord-issued, request-for-review, balca-appeals.",
+  },
+  {
     path: "/filings-by-day",
     label: "Cases filed each day",
     blurb:

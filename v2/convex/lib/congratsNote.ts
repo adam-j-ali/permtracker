@@ -46,7 +46,9 @@ const WORDS: Record<
     verb: "certified",
     next:
       "Next comes the I-140. If you want a heads-up on the green card line, you can get an email whenever your " +
-      "visa bulletin cutoff moves: pick your category and country at permtracker.app/visa-bulletin.",
+      "visa bulletin cutoff moves: pick your category and country at permtracker.app/visa-bulletin. As your " +
+      "I-140 and I-485 move, you can add your dates at permtracker.app/green-card-timelines, so others waiting " +
+      "can see how long each step takes.",
     help: "the I-140, the I-485, priority date alerts, or something else?",
   },
   lca: {

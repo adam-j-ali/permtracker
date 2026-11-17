@@ -85,6 +85,7 @@ export const NEXT_PATHS = {
   denialGuide: "/guides/perm-denied-what-happens-next",
   appealGuide: "/guides/perm-appeal-reconsideration-balca",
   rfiSteps: "/perm-rfi-audit#step-by-step",
+  shareTimeline: "/green-card-timelines#add-h",
   deadlineTool: "/tools/perm-deadline-calculator",
   pwdValidity: "/tools/pwd-validity",
   lcaGuide: "/guides/what-an-lca-is",
@@ -96,6 +97,29 @@ export const NEXT_PATHS = {
 } as const;
 
 const at = (path: string) => `${SITE_URL}${path}`;
+
+/**
+ * The review stages with a page of their own on the site (`/perm-rfi-audit/<slug>`: every case waiting there, how
+ * long, and every case that left with where it went). The site's list is `reviewStages()` in
+ * `src/components/rfi/stageMeta.ts`, which Convex can't import; `alertNextSteps.test.ts` holds the two equal.
+ */
+const STAGE_PAGES: Record<string, string> = {
+  "APPLICATION ON HOLD": "application-on-hold",
+  "RFI ISSUED": "rfi-issued",
+  "NORD ISSUED": "nord-issued",
+  "SUPERVISED RECRUITMENT": "supervised-recruitment",
+  "PENDING AUDIT RESPONSE": "pending-audit-response",
+  "RECONSIDERATION APPEALS": "reconsideration-appeals",
+  "BALCA APPEALS": "balca-appeals",
+  "REQUEST FOR REVIEW": "request-for-review",
+  "DENIED - BALCA DISMISSED": "denied-balca-dismissed",
+};
+
+/** The site path of a review stage's page, or null for a status without one. */
+export function stagePagePath(status: string): string | null {
+  const slug = STAGE_PAGES[status.trim().toUpperCase()];
+  return slug ? `/perm-rfi-audit/${slug}` : null;
+}
 
 /** The visa bulletin's alert form, with the priority date shown beside it when we know it. */
 export function bulletinAlertUrl(priorityDate?: string | null): string {
@@ -177,6 +201,7 @@ function permCertified(input: NextStepInput): NextSteps {
       { href: at(NEXT_PATHS.certifiedGuide), text: "What happens after a PERM is certified, step by step" },
       { href: at(NEXT_PATHS.greenCardLine), text: "How many people stand ahead of your date" },
       { href: at(NEXT_PATHS.uscisTimes), text: "How long USCIS is taking with the I-140, from its own figures" },
+      { href: at(NEXT_PATHS.shareTimeline), text: "Add your dates to the green card timelines as your case moves" },
     ],
   };
 }
@@ -198,6 +223,7 @@ function permDenied(status: string): NextSteps {
       links: [
         { href: at(NEXT_PATHS.denialGuide), text: "What a denial means, and the options after one" },
         { href: at(NEXT_PATHS.appealGuide), text: "How reconsideration and the appeals board work" },
+        { href: at(stagePagePath("RECONSIDERATION APPEALS")!), text: "How long reconsideration is taking, from the cases we've followed" },
       ],
     };
   }
@@ -307,6 +333,10 @@ export function nextStepsFor(input: NextStepInput): NextSteps | null {
 export function alsoLinksFor(input: Pick<NextStepInput, "program" | "status" | "isFinal">): NextLink[] {
   const status = input.status.trim().toUpperCase();
   const out: NextLink[] = [];
+  const stagePage = input.program === "perm" ? stagePagePath(status) : null;
+  if (stagePage) {
+    out.push({ href: at(stagePage), text: "How long cases wait at this status, and where the ones that left went" });
+  }
   if (input.program === "perm" && status === "RFI ISSUED") {
     out.push({ href: at(NEXT_PATHS.rfiSteps), text: "What happens after an RFI, step by step, from the ones we've followed" });
   }

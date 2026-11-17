@@ -161,6 +161,15 @@ export function hasStagePage(status: string): boolean {
   return stageFromSlug(stageSlug(status)) !== null;
 }
 
+/**
+ * A stage's label inside a sentence or after "PERM": "reconsideration appeals", "application on hold", but "RFI
+ * issued", "NORD issued" and "BALCA appeals" keep the capitals DOL prints.
+ */
+export function stageInSentence(status: string): string {
+  const label = stageMeta(status).label;
+  return /^[A-Z]{2,}/.test(label) ? label : label.charAt(0).toLowerCase() + label.slice(1);
+}
+
 /** The status a URL segment names, or null. */
 export function stageFromSlug(slug: string): string | null {
   return reviewStages().find((s) => s.slug === slug)?.status ?? null;

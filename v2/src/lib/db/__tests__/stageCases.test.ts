@@ -20,6 +20,7 @@ vi.mock("../client", () => ({ rows, one }));
 const {
   LISTABLE_STAGE_MAX,
   SMALL_STAGE_MAX,
+  getStageHistory,
   listStageCases,
   stageListing,
 } = await import("../rfi");
@@ -132,6 +133,7 @@ describe("listStageCases", () => {
       {
         caseNumber: "G-100-24249-318624",
         filingDate: "2024-09-05",
+        deniedOn: null,
         employer: "ABOUT GLAMOUR INC",
         employerSlug: "about-glamour-inc",
         jobTitle: null,
@@ -139,10 +141,72 @@ describe("listStageCases", () => {
       {
         caseNumber: "G-100-26001-999999",
         filingDate: "2026-08-29",
+        deniedOn: null,
         employer: "BRAND NEW LLC",
         employerSlug: null,
         jobTitle: "Analyst",
       },
     ]);
+  });
+});
+
+describe("getStageHistory", () => {
+  // 10 AM Eastern on Nov 10 2026, inside DOL's Nov 10 day; Aug 28 is the record's catch-up.
+  const NOV10 = Date.UTC(2026, 10, 10, 15);
+  const CATCH_UP = Date.UTC(2026, 7, 28, 15);
+
+  function answer(sql: string): unknown[] {
+    if (sql.includes("FROM perm_case_status c")) {
+      return [
+        { case_number: "G-1", filing_date: "2025-01-02", employer_name: "A", employer_slug: "a", job_title: "x", denied_on: null },
+        { case_number: "G-2", filing_date: "2025-02-03", employer_name: "B", employer_slug: null, job_title: "y", denied_on: "2026-06-12" },
+        { case_number: "G-3", filing_date: "2025-03-04", employer_name: "C", employer_slug: null, job_title: "z", denied_on: null },
+      ];
+    }
+    if (sql.includes("WHERE to_status = ?")) {
+      return [
+        { case_number: "G-1", changed_at: NOV10 },
+        { case_number: "G-2", changed_at: CATCH_UP },
+        { case_number: "G-9", changed_at: NOV10 - 30 * 86_400_000 },
+      ];
+    }
+    if (sql.includes("WHERE e.from_status = ?")) {
+      return [
+        { case_number: "G-9", changed_at: NOV10, to_status: "CERTIFIED", filing_date: "2024-12-01", employer_name: "D", job_title: "w", current_status: "CERTIFIED", employer_slug: "d", denied_on: null },
+      ];
+    }
+    return [];
+  }
+
+  it("dates each waiting case from its seen arrival, or an appeal's denial, and times each exit", async () => {
+    rows.mockReset();
+    rows.mockImplementation(async (sql: string) => answer(sql.replace(/\s+/g, " ")));
+    const got = await getStageHistory("RECONSIDERATION APPEALS", 100);
+    expect(got.cases.map((c) => [c.caseNumber, c.startOn, c.startSource])).toEqual([
+      ["G-1", "2026-11-10", "seen"],
+      ["G-2", "2026-06-12", "denied"],
+      ["G-3", null, "unknown"],
+    ]);
+    expect(got.exits).toHaveLength(1);
+    expect(got.exits[0]).toMatchObject({ caseNumber: "G-9", to: "CERTIFIED", leftOn: "2026-11-10", startOn: "2026-10-11", days: 30 });
+  });
+
+  it("never uses DOL's denial date to start a wait on a stage that isn't an appeal", async () => {
+    rows.mockReset();
+    rows.mockImplementation(async (sql: string) => answer(sql.replace(/\s+/g, " ")));
+    const got = await getStageHistory("RFI ISSUED", 100);
+    expect(got.cases.find((c) => c.caseNumber === "G-2")?.startSource).toBe("unknown");
+  });
+
+  it("reads arrivals and exits by their status indexes, never by a per-case subquery", async () => {
+    rows.mockReset();
+    rows.mockResolvedValue([]);
+    await getStageHistory("RFI ISSUED", 100);
+    const sqls = rows.mock.calls.map((c) => String(c[0]).replace(/\s+/g, " "));
+    const arrivals = sqls.find((s) => s.includes("WHERE to_status = ?"))!;
+    const exits = sqls.find((s) => s.includes("WHERE e.from_status = ?"))!;
+    expect(arrivals).toContain("AND changed_at >= ?");
+    expect(exits).toContain("e.changed_at >= ?");
+    for (const s of sqls) expect(s).not.toMatch(/\(SELECT MAX/);
   });
 });

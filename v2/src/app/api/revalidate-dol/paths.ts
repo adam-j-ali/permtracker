@@ -38,6 +38,8 @@ export const DOL_PAGES = [
   "/llms.txt",
   "/perm-queue",
   "/perm-rfi-audit",
+  // The one stage page that prints DOL's posted month: reconsideration requests, until DOL dropped the line.
+  "/perm-rfi-audit/reconsideration-appeals",
   "/perm-processing-times",
   "/tools/pwd-calculator",
   // Prints the month DOL is issuing wage determinations on, and flags it on its chart.

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { GLOSSARY, glossaryLetters, glossarySorted } from "../glossary";
+import { stageFromSlug } from "@/components/rfi/stageMeta";
 
 const PUBLIC = join(process.cwd(), "src/app/(site)/(public)");
 const GUIDES = join(process.cwd(), "content/guides");
@@ -12,6 +13,8 @@ const GUIDES = join(process.cwd(), "content/guides");
 function routeExists(href: string): boolean {
   const path = href.split("#")[0] ?? "";
   if (path.startsWith("/guides/")) return existsSync(join(GUIDES, `${path.slice("/guides/".length)}.mdx`));
+  // The review stages are one route with a closed slug list (`dynamicParams = false`): a slug off the list is a 404.
+  if (path.startsWith("/perm-rfi-audit/")) return stageFromSlug(path.slice("/perm-rfi-audit/".length)) !== null;
   return existsSync(join(PUBLIC, path.slice(1), "page.tsx"));
 }
 
@@ -36,8 +39,9 @@ describe("glossary", () => {
         expect(routeExists(s.href), `${t.term} -> ${s.href}`).toBe(true);
       }
     }
-    // Control: the check can see a missing route.
+    // Control: the check can see a missing route, and a stage slug off the list.
     expect(routeExists("/no-such-page-anywhere")).toBe(false);
+    expect(routeExists("/perm-rfi-audit/analyst-review")).toBe(false);
   });
 
   it("cites only eCFR sections", () => {

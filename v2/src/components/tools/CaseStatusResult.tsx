@@ -65,6 +65,7 @@ import { caseStatusTint } from "@/lib/statusTone";
 import type { StatusCount } from "@/lib/liveQueue";
 import { getStatusMeaning, KIND_LABEL } from "@/lib/permStatus";
 import { statusAnchor } from "@/lib/statusDictionary";
+import { hasStagePage, stageSlug } from "@/components/rfi/stageMeta";
 import { isApproval } from "@/lib/caseStatusVocabulary";
 import { parseCaseNumber } from "@/lib/permCaseNumber";
 import type { RangeCoverage, RfiClock } from "@/lib/perm";
@@ -1115,7 +1116,8 @@ function StatusExplainer({
           have only been recorded since August 2026, too short a record to price those odds.
         </p>
       ) : null}{" "}
-      {/* Two standalone links under the meaning: each a 44px target (they measured 20px on a phone). */}
+      {/* The standalone links under the meaning: each a 44px target (they measured 20px on a phone). The stage page
+          shows every case at this status, how long they've waited and where those that left went. */}
       <p className="mt-4 flex flex-wrap gap-x-6 text-sm">
         {meaning.cite ? (
           <a target="_blank" href={meaning.cite.href} rel="noopener noreferrer" className={cn("inline-flex min-h-11 items-center font-mono", "link")}>
@@ -1124,6 +1126,11 @@ function StatusExplainer({
         ) : (
           <span className="inline-flex min-h-11 items-center text-muted-foreground">No published definition</span>
         )}{" "}
+        {hasStagePage(meaning.status) ? (
+          <Link href={`/perm-rfi-audit/${stageSlug(meaning.status)}`} className="link inline-flex min-h-11 items-center">
+            How long cases wait at this status
+          </Link>
+        ) : null}{" "}
         <Link href={`/perm-case-statuses#${statusAnchor(meaning.status)}`} className="link inline-flex min-h-11 items-center">
           Every status, side by side
         </Link>

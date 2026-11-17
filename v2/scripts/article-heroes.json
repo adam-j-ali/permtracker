@@ -1481,5 +1481,15 @@
   },
   "credit": "Screenshot of permtracker.app, November 16, 2026",
   "alt": "The queue page's new section: when DOL will likely start March 2026, a bar of February's decided cases, and the band where the last three months began"
+ },
+ "changelog/how-long-each-review-stage-takes": {
+  "capture": {
+   "url": "/perm-rfi-audit/reconsideration-appeals",
+   "wait": 5000,
+   "clip": "sel:#each-week",
+   "maxHeight": 900
+  },
+  "credit": "Screenshot of permtracker.app, November 17, 2026",
+  "alt": "The reconsideration page's weekly chart: the PERM cases leaving reconsideration each week since August 31, split into certified, back to review, another step, and denied or NORD issued"
  }
 }
