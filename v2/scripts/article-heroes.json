@@ -1501,5 +1501,15 @@
   },
   "credit": "Screenshot of permtracker.app, November 17, 2026",
   "alt": "The decisions chart on its month view: PERM decisions in each of the last 12 months, split into certified, denied and withdrawn, each with a mark for the same days a year earlier, an empty frame for July 2026, and a typical year by month beside it"
+ },
+ "changelog/account-updates-on-your-timeline": {
+  "capture": {
+   "url": "/i485-by-field-office/hartford-connecticut",
+   "wait": 6000,
+   "clip": "sel:#share",
+   "maxHeight": 900
+  },
+  "credit": "Screenshot of permtracker.app, November 17, 2026",
+  "alt": "The timeline form's account updates: the first update dated June 1, 2026 on the I-485, its code typed under Other as XQ7 with the rule beneath it, and a second update waiting for its date"
  }
 }

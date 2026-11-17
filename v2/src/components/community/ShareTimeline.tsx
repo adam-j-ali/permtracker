@@ -52,6 +52,7 @@ export function ShareTimeline({
   office,
   sharePath,
   shareLabel,
+  progress,
   className,
 }: {
   /** USCIS's code for the office whose page this is; prefilled in the form. */
@@ -60,6 +61,8 @@ export function ShareTimeline({
   sharePath: string;
   /** "Hartford's timelines": what the copied link leads to. */
   shareLabel: string;
+  /** How many have shared and how many more open the list (lib `shareProgress`), shown above the fold. */
+  progress?: string;
   className?: string;
 }) {
   const uid = useId();
@@ -178,6 +181,7 @@ export function ShareTimeline({
           {note}
         </p>
       ) : null}
+      {progress && !saved ? <p className="mb-2 text-sm text-muted-foreground">{progress}</p> : null}
       <details className="group border-t-2 border-border" open={open} onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}>
         <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-lg font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
           <CaretRightIcon className="size-4 shrink-0 transition-transform group-open:rotate-90" weight="bold" aria-hidden="true" />{" "}

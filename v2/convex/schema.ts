@@ -2317,14 +2317,22 @@ export default defineSchema({
     i140Center: v.optional(v.union(v.literal("nebraska"), v.literal("texas"), v.literal("other"))),
     /** The USCIS office holding the I-485: USCIS's three-letter code, one of src/lib/uscisOffices.json. */
     fieldOffice: v.optional(v.string()),
+    /** The service center that took the I-485 in: one of the six centers' codes (lib I485_CENTERS). */
+    i485Center: v.optional(v.string()),
     i140FiledOn: v.optional(v.string()),
     i140ApprovedOn: v.optional(v.string()),
     i485FiledOn: v.optional(v.string()),
     biometricsOn: v.optional(v.string()),
     eadOn: v.optional(v.string()),
     apOn: v.optional(v.string()),
+    i485jApprovedOn: v.optional(v.string()),
     interviewOn: v.optional(v.string()),
     greenCardOn: v.optional(v.string()),
+    /**
+     * Updates in the person's USCIS account, sorted by day. The form and code are checked against the lib's lists on
+     * save (EVENT_FORMS, ACCOUNT_CODES or a typed code matching TYPED_CODE), so they're stored as plain strings.
+     */
+    accountEvents: v.optional(v.array(v.object({ on: v.string(), form: v.optional(v.string()), code: v.optional(v.string()) }))),
     rfeForm: v.optional(v.union(v.literal("i140"), v.literal("i485"))),
     rfeReason: v.optional(
       v.union(

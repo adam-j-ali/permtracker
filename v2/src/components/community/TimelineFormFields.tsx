@@ -1,23 +1,29 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
-import { CaretRightIcon } from "@phosphor-icons/react";
+import { CaretRightIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 
 import { DateInput } from "@/components/forms/DateInput";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  ACCOUNT_CODES,
   CATEGORIES,
   COUNTRIES,
   DATE_FIELDS,
+  EVENT_FORMS,
   I140_CENTERS,
+  I485_CENTERS,
+  MAX_ACCOUNT_EVENTS,
   RFE_FORMS,
   RFE_OUTCOMES,
   RFE_REASONS,
   ROUTES,
   type DateFieldId,
   type TimelineInput,
+  formHints,
+  isListedCode,
 } from "@/lib/communityTimeline";
 import { USCIS_OFFICES, isCenter, officePlace } from "@/lib/uscisOffices";
 
@@ -127,6 +133,181 @@ function OfficePick({ uid, form, set }: { uid: string; form: TimelineInput; set:
   );
 }
 
+function CenterPick({ uid, form, set }: { uid: string; form: TimelineInput; set: Set }) {
+  return (
+    <div className="sm:col-span-2">
+      <Label htmlFor={`${uid}-i485-center`}>Service center that took in the I-485</Label>
+      <select
+        id={`${uid}-i485-center`}
+        className={selectCls}
+        value={form.i485Center ?? ""}
+        onChange={(e) => set("i485Center", e.target.value || null)}
+        aria-describedby={`${uid}-i485-center-hint`}
+      >
+        <option value="">Not sure</option>
+        {I485_CENTERS.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.label}
+          </option>
+        ))}
+      </select>
+      <p id={`${uid}-i485-center-hint`} className="mt-1.5 text-sm text-muted-foreground">
+        The receipt&apos;s first three letters name it: LIN Nebraska, SRC Texas, EAC Vermont, WAC California, YSC Potomac,
+        MSC or NBC the National Benefits Center. IOE means it was filed online and names none.
+      </p>
+    </div>
+  );
+}
+
+type Update = NonNullable<TimelineInput["accountEvents"]>[number];
+const OTHER = "__other";
+let rowSeq = 0;
+const rowId = () => `u${(rowSeq += 1)}`;
+
+/**
+ * The dated updates in a person's own USCIS account: each a date, the form it landed on and the code it showed. The
+ * code is a pick from the codes filers name most, "Other" with a box to type it, or none when only a date moved.
+ */
+function AccountUpdates({ uid, form, set }: { uid: string; form: TimelineInput; set: Set }) {
+  const events = form.accountEvents ?? [];
+  // A stable name for each row, so removing one never hands its "Other" box to the next.
+  const [ids, setIds] = useState<string[]>(() => events.map(rowId));
+  const [typing, setTyping] = useState<ReadonlySet<string>>(() => new Set());
+  const count = events.length;
+  useEffect(() => {
+    // A saved timeline loaded after the form drew: one name per row it brought.
+    if (ids.length !== count) setIds(Array.from({ length: count }, rowId));
+  }, [count, ids.length]);
+
+  const write = (next: Update[]) => set("accountEvents", next.length > 0 ? next : null);
+  const change = (i: number, patch: Partial<Update>) => write(events.map((e, j) => (j === i ? { ...e, ...patch } : e)));
+  const add = () => {
+    setIds([...ids, rowId()]);
+    write([...events, { on: null, form: null, code: null }]);
+  };
+  const remove = (i: number) => {
+    setIds(ids.filter((_, j) => j !== i));
+    write(events.filter((_, j) => j !== i));
+  };
+
+  return (
+    <fieldset className="grid grid-cols-1 gap-4 [&>*]:min-w-0">
+      <legend className={legendCls}>Updates in your USCIS account</legend>
+      <p className="-mt-1 text-sm leading-relaxed text-muted-foreground">
+        Each time your online account showed a new date: the day, the form it was on, and the code, if you saw one. Skip any
+        you aren&apos;t sure of.{" "}
+        <Link href="/guides/uscis-silent-updates" className="link">
+          What the codes are known to mean
+        </Link>
+      </p>{" "}
+      {events.map((e, i) => {
+        const id = ids[i] ?? `${uid}-u${i}`;
+        const code = e?.code ?? "";
+        const isOther = typing.has(id) || (code !== "" && !isListedCode(code.toUpperCase()));
+        const pick = isOther ? OTHER : code;
+        return (
+          <Fragment key={id}>
+            <fieldset className="border-2 border-border p-3">
+              <legend className="px-1 text-sm font-semibold">Account update {i + 1}</legend>
+              <div className={gridCls}>
+                <div>
+                  <Label htmlFor={`${uid}-${id}-on`}>Date it showed</Label>
+                  <DateInput id={`${uid}-${id}-on`} value={e?.on ?? ""} onChange={(ev) => change(i, { on: ev.target.value || null })} className="mt-1.5" />
+                </div>{" "}
+                <Pick
+                  id={`${uid}-${id}-form`}
+                  label="Form"
+                  value={e?.form ?? ""}
+                  empty="Not sure"
+                  options={EVENT_FORMS}
+                  onChange={(v) => change(i, { form: v || null })}
+                />{" "}
+                <div>
+                  <Label htmlFor={`${uid}-${id}-code`}>Code</Label>
+                  <select
+                    id={`${uid}-${id}-code`}
+                    className={selectCls}
+                    value={pick}
+                    onChange={(ev) => {
+                      const v = ev.target.value;
+                      const next = new Set(typing);
+                      if (v === OTHER) next.add(id);
+                      else next.delete(id);
+                      setTyping(next);
+                      change(i, { code: v === OTHER || v === "" ? null : v });
+                    }}
+                  >
+                    <option value="">No code, only a new date</option>
+                    {ACCOUNT_CODES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                    <option value={OTHER}>Other (type the code)</option>
+                  </select>
+                </div>{" "}
+                {isOther ? (
+                  <div>
+                    <Label htmlFor={`${uid}-${id}-typed`}>Type the code</Label>
+                    <Input
+                      id={`${uid}-${id}-typed`}
+                      value={code}
+                      onChange={(ev) => change(i, { code: ev.target.value.toUpperCase().slice(0, 6) || null })}
+                      autoComplete="off"
+                      autoCapitalize="characters"
+                      spellCheck={false}
+                      maxLength={6}
+                      className="mt-1.5 font-mono"
+                      aria-describedby={`${uid}-${id}-typed-hint`}
+                    />
+                    <p id={`${uid}-${id}-typed-hint`} className="mt-1.5 text-sm text-muted-foreground">
+                      2 to 6 letters and digits, starting with a letter. We look at a typed code before it shows.
+                    </p>
+                  </div>
+                ) : null}
+              </div>{" "}
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <XIcon className="size-4" weight="bold" aria-hidden="true" /> Remove account update {i + 1}
+              </button>
+            </fieldset>{" "}
+          </Fragment>
+        );
+      })}
+      {events.length < MAX_ACCOUNT_EVENTS ? (
+        <button
+          type="button"
+          onClick={add}
+          className="inline-flex min-h-11 w-fit items-center gap-1.5 border-2 border-foreground bg-card px-4 text-base font-semibold hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <PlusIcon className="size-4" weight="bold" aria-hidden="true" /> {events.length === 0 ? "Add an account update" : "Add another update"}
+        </button>
+      ) : (
+        <p className="text-sm text-muted-foreground">That&apos;s {MAX_ACCOUNT_EVENTS} updates, the most a timeline keeps.</p>
+      )}
+    </fieldset>
+  );
+}
+
+/** What the person might add, under the form. Never blocks a save. */
+function Hints({ form }: { form: TimelineInput }) {
+  const hints = formHints(form);
+  if (hints.length === 0) return null;
+  return (
+    <div className="text-sm leading-relaxed text-muted-foreground">
+      <p className="font-semibold text-foreground">Worth adding, if you have it</p>{" "}
+      <ul className="mt-1 list-disc space-y-1 pl-5">
+        {hints.map((h) => (
+          <li key={h}>{h} </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function Rfe({ uid, form, set }: { uid: string; form: TimelineInput; set: Set }) {
   return (
     <details className="group/more border-2 border-border p-2" open={Boolean(form.rfeForm)}>
@@ -229,13 +410,16 @@ export function TimelineFormFields({
           <Pick id={`${uid}-route`} label="After the I-140" value={route} options={ROUTES} onChange={(v) => set("route", v)} />{" "}
           <Pick id={`${uid}-center`} label="Where the I-140 was decided" value={form.i140Center ?? ""} empty="Not sure" options={I140_CENTERS} onChange={(v) => set("i140Center", v || null)} />{" "}
           {route === "adjustment" ? <OfficePick uid={uid} form={form} set={set} /> : null}{" "}
+          {route === "adjustment" ? <CenterPick uid={uid} form={form} set={set} /> : null}{" "}
           <Premium form={form} set={set} />
         </fieldset>{" "}
         <fieldset className={gridCls}>
           <legend className={legendCls}>Dates, only the ones that have happened</legend>
           <Dates uid={uid} ids={forRoute} form={form} set={set} />
         </fieldset>{" "}
+        <AccountUpdates uid={uid} form={form} set={set} />{" "}
         <Rfe uid={uid} form={form} set={set} />{" "}
+        <Hints form={form} />{" "}
         <ShowOnBoard form={form} set={set} kept={kept} />
       </>
     );
@@ -248,8 +432,10 @@ export function TimelineFormFields({
       <fieldset className={gridCls}>
         <legend className={legendCls}>{route === "adjustment" ? "Your I-485, only the dates that have happened" : "Your interview abroad, only the dates that have happened"}</legend>
         {route === "adjustment" ? <OfficePick uid={uid} form={form} set={set} /> : null}{" "}
+        {route === "adjustment" ? <CenterPick uid={uid} form={form} set={set} /> : null}{" "}
         <Dates uid={uid} ids={first} form={form} set={set} />
       </fieldset>{" "}
+      <AccountUpdates uid={uid} form={form} set={set} />{" "}
       <fieldset className={gridCls}>
         <legend className={legendCls}>About the case</legend>
         <Pick id={`${uid}-cat`} label="Category" value={form.category ?? ""} empty="Not saying" options={CATEGORIES} onChange={(v) => set("category", v || null)} />{" "}
@@ -285,6 +471,7 @@ export function TimelineFormFields({
         </div>
       </details>{" "}
       <Rfe uid={uid} form={form} set={set} />{" "}
+      <Hints form={form} />{" "}
       <ShowOnBoard form={form} set={set} kept={kept} />
     </>
   );

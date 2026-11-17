@@ -24,14 +24,21 @@ import {
   OFFICE_LIST_OPENS_AT,
   OFFICE_METRIC_IDS,
   PERM_CASE,
+  EVENT_FORMS,
+  TIMELINE_TEXT_FIELDS,
   computeMetrics,
+  isListedCode,
   isPermCategory,
   isShown,
   reviewFlags,
+  sharedDates,
   summarizeRfes,
+  tallyCodes,
   toBoardRow,
   toOfficeRow,
+  typedCodes,
   validateTimeline,
+  type AccountEvent,
   type TimelineRecord,
   whoIsWaiting,
 } from "./lib/communityTimeline";
@@ -110,14 +117,28 @@ const timelineInput = v.object({
   premium: v.optional(v.union(v.boolean(), v.null())),
   i140Center: v.optional(v.union(v.string(), v.null())),
   fieldOffice: v.optional(v.union(v.string(), v.null())),
+  i485Center: v.optional(v.union(v.string(), v.null())),
   i140FiledOn: v.optional(v.union(v.string(), v.null())),
   i140ApprovedOn: v.optional(v.union(v.string(), v.null())),
   i485FiledOn: v.optional(v.union(v.string(), v.null())),
   biometricsOn: v.optional(v.union(v.string(), v.null())),
   eadOn: v.optional(v.union(v.string(), v.null())),
   apOn: v.optional(v.union(v.string(), v.null())),
+  i485jApprovedOn: v.optional(v.union(v.string(), v.null())),
   interviewOn: v.optional(v.union(v.string(), v.null())),
   greenCardOn: v.optional(v.union(v.string(), v.null())),
+  accountEvents: v.optional(
+    v.union(
+      v.array(
+        v.object({
+          on: v.optional(v.union(v.string(), v.null())),
+          form: v.optional(v.union(v.string(), v.null())),
+          code: v.optional(v.union(v.string(), v.null())),
+        }),
+      ),
+      v.null(),
+    ),
+  ),
   rfeForm: v.optional(v.union(v.string(), v.null())),
   rfeReason: v.optional(v.union(v.string(), v.null())),
   rfeIssuedOn: v.optional(v.union(v.string(), v.null())),
@@ -147,12 +168,8 @@ function readCase(raw: string | undefined): string | undefined | null {
   return c.length <= 24 && PERM_CASE.test(c) ? c : null;
 }
 
-/** The self-reported fields of a row, every one written so an edit can clear it. */
-const FIELD_KEYS = [
-  "category", "country", "route", "premium", "i140Center", "fieldOffice",
-  "i140FiledOn", "i140ApprovedOn", "i485FiledOn", "biometricsOn", "eadOn", "apOn", "interviewOn", "greenCardOn",
-  "rfeForm", "rfeReason", "rfeIssuedOn", "rfeRespondedOn", "rfeOutcome",
-] as const;
+/** The self-reported fields of a row, every one written so an edit can clear it: the lib's one list, and two beside it. */
+const FIELD_KEYS = [...TIMELINE_TEXT_FIELDS, "premium", "accountEvents"] as const;
 
 /** A row from before reviews existed has no status until `backfillStatus` runs; it was public then, so it reads as approved. */
 const statusOf = (r: Doc<"communityTimelines">) => r.status ?? "approved";
@@ -246,14 +263,19 @@ export const save = internalMutation({
           permCheckedAt: undefined,
         });
       }
-      // A declined timeline that changed gets a second look. An approved one stays up, marked for the owner.
-      if (was === "declined") Object.assign(patch, { status: "pending", reviewedAt: undefined, declineReason: undefined });
-      if (was === "approved") patch.editedAt = now;
+      // A declined timeline that changed gets a second look. An approved one stays up, marked for the owner, unless
+      // the edit brings a code nobody has looked at: a typed code is the one thing on a timeline that isn't from a
+      // fixed list, so it waits for the owner like a new timeline does.
+      const before = new Set(typedCodes(existing.accountEvents as AccountEvent[] | undefined));
+      const unseen = typedCodes(fields.accountEvents).some((c) => !before.has(c));
+      const back = was === "declined" || (was === "approved" && unseen);
+      if (back) Object.assign(patch, { status: "pending", reviewedAt: undefined, declineReason: undefined, editedAt: undefined });
+      else if (was === "approved") patch.editedAt = now;
       await ctx.db.patch(existing._id, patch as Partial<Doc<"communityTimelines">>);
       if (takesCase) await ctx.scheduler.runAfter(0, internal.communityTimelines.verifyCase, { caseNumber });
       if (was !== "pending") await noteWaiting(ctx);
       if (was === "approved" && existing.hiddenAt === undefined) await refresh(ctx, existing.fieldOffice, fields.fieldOffice);
-      const status = was === "declined" ? "pending" : was;
+      const status = back ? "pending" : was;
       return {
         ok: true,
         status,
@@ -415,6 +437,8 @@ const metricV = v.object({
   p75: v.union(v.number(), v.null()),
 });
 const countV = v.object({ id: v.string(), label: v.string(), count: v.number() });
+const updatesV = v.union(v.null(), v.object({ count: v.number(), codes: v.array(v.string()), lastDay: v.union(v.number(), v.null()) }));
+const codeTallyV = v.array(v.object({ code: v.string(), timelines: v.number(), listed: v.boolean() }));
 const boardRowV = v.object({
   filedMonth: v.union(v.string(), v.null()),
   category: v.union(v.string(), v.null()),
@@ -428,6 +452,8 @@ const boardRowV = v.object({
     v.object({ form: v.string(), reason: v.union(v.string(), v.null()), outcome: v.union(v.string(), v.null()) }),
   ),
   office: v.union(v.string(), v.null()),
+  center: v.union(v.string(), v.null()),
+  updates: updatesV,
   updatedMonth: v.string(),
 });
 
@@ -460,6 +486,8 @@ export const board = query({
     rows: v.array(boardRowV),
     /** The offices whose own lists are open, with how many shared timelines each has. */
     offices: v.array(v.object({ code: v.string(), shared: v.number() })),
+    /** The account codes timelines report, each once METRIC_MIN_N timelines do. */
+    codes: codeTallyV,
     waiting: v.object({
       open: v.boolean(),
       byStage: v.array(v.object({ id: v.string(), label: v.string(), count: v.number() })),
@@ -487,11 +515,15 @@ export const board = query({
     const perOffice = new Map<string, number>();
     for (const r of shared) if (r.fieldOffice) perOffice.set(r.fieldOffice, (perOffice.get(r.fieldOffice) ?? 0) + 1);
     const officeOpen = (code: string | undefined) => code !== undefined && (perOffice.get(code) ?? 0) >= OFFICE_LIST_OPENS_AT;
+    // A center is named on a row by the office's rule: once enough shared timelines name it.
+    const perCenter = new Map<string, number>();
+    for (const r of shared) if (r.i485Center) perCenter.set(r.i485Center, (perCenter.get(r.i485Center) ?? 0) + 1);
+    const centerNamed = (code: string | undefined) => code !== undefined && (perCenter.get(code) ?? 0) >= OFFICE_LIST_OPENS_AT;
     const rows = open
       ? shared
           .sort((x, y) => y.updatedAt - x.updatedAt)
           .slice(0, BOARD_ROWS)
-          .map((r) => toBoardRow(asRecord(r), officeOpen(r.fieldOffice)))
+          .map((r) => toBoardRow(asRecord(r), officeOpen(r.fieldOffice), centerNamed(r.i485Center)))
       : [];
     return {
       total: all.length,
@@ -507,6 +539,7 @@ export const board = query({
         .filter(([code]) => officeOpen(code))
         .map(([code, n]) => ({ code, shared: n }))
         .sort((x, y) => y.shared - x.shared || x.code.localeCompare(y.code)),
+      codes: tallyCodes(records),
       waiting: whoIsWaiting(records),
     };
   },
@@ -518,6 +551,7 @@ const officeRowV = v.object({
   country: v.union(v.string(), v.null()),
   stops: v.array(v.object({ id: v.string(), day: v.union(v.number(), v.null()), month: v.union(v.string(), v.null()) })),
   rfe: v.union(v.null(), v.object({ outcome: v.union(v.string(), v.null()) })),
+  updates: updatesV,
   updatedMonth: v.string(),
 });
 
@@ -538,6 +572,8 @@ export const office = query({
     capped: v.boolean(),
     metrics: v.array(metricV),
     rows: v.array(officeRowV),
+    /** The account codes this office's timelines report, each once METRIC_MIN_N timelines do. */
+    codes: codeTallyV,
   }),
   handler: async (ctx, a) => {
     const known = a.office.length <= 8 && officeByCode(a.office) !== undefined;
@@ -558,6 +594,7 @@ export const office = query({
       open,
       capped: read.length >= PER_OFFICE_READ,
       metrics: computeMetrics(all.map(asRecord)).filter((m) => OFFICE_METRIC_IDS.includes(m.id)),
+      codes: tallyCodes(all.map(asRecord)),
       rows: open
         ? shared
             .sort((x, y) => y.updatedAt - x.updatedAt)
@@ -703,10 +740,14 @@ const adminRowV = v.object({
   /** Changed by its author since the owner approved it. */
   edited: v.boolean(),
   office: v.union(v.string(), v.null()),
+  /** The service center that took the I-485 in, by name. */
+  center: v.union(v.string(), v.null()),
   category: v.union(v.string(), v.null()),
   country: v.union(v.string(), v.null()),
   route: v.union(v.string(), v.null()),
   premium: v.boolean(),
+  /** The account updates as given; `typed` marks a code from "Other", which the owner reads before approving. */
+  updates: v.array(v.object({ on: v.string(), form: v.union(v.string(), v.null()), code: v.union(v.string(), v.null()), typed: v.boolean() })),
   /** DOL's PERM dates first, then the person's own, each in the order a case meets them. */
   dates: v.array(v.object({ label: v.string(), on: v.string(), verified: v.boolean() })),
   rfe: v.union(v.null(), v.string()),
@@ -746,10 +787,17 @@ function adminRow(r: Doc<"communityTimelines">): Infer<typeof adminRowV> {
     hidden: r.hiddenAt !== undefined,
     edited: r.editedAt !== undefined,
     office: r.fieldOffice ? (officeByCode(r.fieldOffice)?.name ?? r.fieldOffice) : null,
+    center: r.i485Center ? (officeByCode(r.i485Center)?.name ?? r.i485Center) : null,
     category: labelOf(CATEGORIES, r.category),
     country: labelOf(COUNTRIES, r.country),
     route: r.route ?? null,
     premium: r.premium === true,
+    updates: (r.accountEvents ?? []).map((e) => ({
+      on: e.on,
+      form: labelOf(EVENT_FORMS, e.form),
+      code: e.code ?? null,
+      typed: e.code !== undefined && !isListedCode(e.code),
+    })),
     dates,
     rfe,
     declineReason: labelOf(DECLINE_REASONS, r.declineReason),
@@ -777,7 +825,22 @@ export const listForAdmin = query({
     const decided = [...(await byStatus("approved", "desc")), ...(await byStatus("declined", "desc"))]
       .sort((x, y) => (y.reviewedAt ?? y.createdAt) - (x.reviewedAt ?? x.createdAt))
       .slice(0, ADMIN_READ);
-    return { waiting: waiting.map(adminRow), edited: edited.map(adminRow), decided: decided.map(adminRow) };
+    // A near-duplicate is a hint, never a refusal: another timeline among these sharing two or more dates.
+    const seen = [...new Map([...waiting, ...edited, ...decided].map((r) => [r._id, r])).values()];
+    const withRepeats = (r: Doc<"communityTimelines">) => {
+      const row = adminRow(r);
+      const twin = seen
+        .filter((o) => o._id !== r._id)
+        .map((o) => ({ o, n: sharedDates(asRecord(r), asRecord(o)) }))
+        .filter((x) => x.n >= 2)
+        .sort((a, b) => b.n - a.n)[0];
+      if (twin) {
+        const same = twin.o.ipHash === r.ipHash ? " from the same connection" : "";
+        row.flags.push(`Another timeline${same} shares ${twin.n} of its dates.`);
+      }
+      return row;
+    };
+    return { waiting: waiting.map(withRepeats), edited: edited.map(withRepeats), decided: decided.map(adminRow) };
   },
 });
 

@@ -83,7 +83,7 @@ export const PAGE_KEYWORDS: Readonly<Record<string, string>> = {
   "/perm-employers/compare": "compare sponsors side by side",
   "/layoffs": "warn layoff notices",
   "/debarments": "debarred barred banned sponsors",
-  "/green-card-timelines": "i-140 i-485 timeline timelines share my timeline add my dates community reports rfe premium ead advance parole biometrics interview field office",
+  "/green-card-timelines": "i-140 i-485 timeline timelines share my timeline add my dates community reports rfe premium ead advance parole biometrics interview field office service center silent update account update fta0 iaf fj h008 ik1 code i-485j supplement j",
   "/developers": "api developer developers key json mcp claude cursor chatgpt assistant connector openapi integration",
   "/api-terms": "api terms license licence rules",
   "/extension": "chrome extension browser add-on plugin linkedin indeed glassdoor handshake wellfound job posting sponsor h-1b",

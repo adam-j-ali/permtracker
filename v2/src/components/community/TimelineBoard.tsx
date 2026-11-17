@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import Link from "next/link";
 
 import {
   CATEGORIES,
@@ -9,6 +10,7 @@ import {
   WAITING_STAGES,
   type BoardRow,
   type MetricResult,
+  type UpdatesSummary,
   type RfeSummary,
   type WaitingView,
 } from "@/lib/communityTimeline";
@@ -155,6 +157,7 @@ const DOT: Record<string, string> = {
   biometricsOn: "bg-card",
   eadOn: "bg-chart-blue",
   apOn: "bg-chart-blue",
+  i485jApprovedOn: "bg-chart-blue",
   interviewOn: "bg-card",
   greenCardOn: "bg-primary",
 };
@@ -220,6 +223,10 @@ export function BoardTable({ rows }: { rows: readonly BoardRow[] }) {
                   {r.office && officeByCode(r.office) ? (
                     <span className="block text-muted-foreground">{`I-485 at ${officeByCode(r.office)!.name}`}</span>
                   ) : null}{" "}
+                  {/* Optional: a backend older than Nov 17 2026 sends no center. */}
+                  {r.center && officeByCode(r.center) ? (
+                    <span className="block text-muted-foreground">{`Taken in at the ${officeByCode(r.center)!.name}`}</span>
+                  ) : null}{" "}
                 </td>
                 <td className="px-3 py-3">
                   <div className="relative h-5" role="img" aria-label={words || "No dated steps yet"}>
@@ -240,6 +247,7 @@ export function BoardTable({ rows }: { rows: readonly BoardRow[] }) {
                       {r.rfe.outcome === "approved" ? ", approved after it" : r.rfe.outcome === "denied" ? ", denied" : ""}{" "}
                     </span>
                   ) : null}{" "}
+                  {r.updates ? <span className="mt-1 block text-muted-foreground">{`${updatesText(r.updates, "PERM filing")} `}</span> : null}
                 </td>
               </tr>
             );
@@ -247,6 +255,65 @@ export function BoardTable({ rows }: { rows: readonly BoardRow[] }) {
         </tbody>
       </table>
     </ChartTips>
+  );
+}
+
+/** "Account updates: 2 (IAF, FTA0), the newest on day 124 from the I-485 filing": a row's updates, or nothing. */
+export function updatesText(u: UpdatesSummary | null | undefined, from = "the I-485 filing"): string {
+  if (!u || u.count === 0) return "";
+  const codes = u.codes.length > 0 ? ` (${u.codes.join(", ")})` : "";
+  const when = u.lastDay !== null ? `, the newest on day ${u.lastDay.toLocaleString("en-US")} from ${from}` : "";
+  return `Account updates: ${u.count}${codes}${when}`;
+}
+
+/**
+ * What people saw in their USCIS accounts: how many timelines report each code. The query prints a code only once
+ * METRIC_MIN_N timelines report it. Blue, the colour for information: a count is never a pick or an action.
+ */
+export function AccountCodes({
+  codes,
+  where,
+  className,
+}: {
+  codes: readonly { code: string; timelines: number; listed: boolean }[];
+  /** "shared timelines", "timelines from the Hartford office": whose reports these are. */
+  where: string;
+  className?: string;
+}) {
+  if (codes.length === 0) return null;
+  const most = Math.max(...codes.map((c) => c.timelines), 1);
+  return (
+    <figure className={cn("m-0 max-w-3xl", className)}>
+      <figcaption>
+        <span className="block text-base font-semibold">What people saw in their USCIS accounts</span>{" "}
+        <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
+          How many {where} report each code. A code shows here once {METRIC_MIN_N} timelines report it, and a code is never
+          a decision.{" "}
+          <Link href="/guides/uscis-silent-updates" className="link">
+            What each code is known to mean
+          </Link>
+        </span>
+      </figcaption>{" "}
+      <ChartTips label="Account codes people reported" className="mt-3">
+        <ul className="grid grid-cols-1 gap-2">
+          {codes.map((c) => (
+            <Fragment key={c.code}>
+              {" "}
+              <li
+                data-tip={`${c.code}\n${c.timelines.toLocaleString("en-US")} timelines report it${c.listed ? "" : "\nTyped in by the people who reported it"}`}
+                className="grid grid-cols-[5rem_1fr_auto] items-center gap-3 text-sm"
+              >
+                <span className="font-mono font-bold">{c.code}</span>{" "}
+                <span className="h-4 border border-input bg-background" aria-hidden="true">
+                  <span className="block h-full border-r-2 border-data-info-ink bg-chart-blue" style={{ width: `${(c.timelines / most) * 100}%` }} />
+                </span>{" "}
+                <span className="tabular-nums">{c.timelines.toLocaleString("en-US")}</span>
+              </li>
+            </Fragment>
+          ))}
+        </ul>
+      </ChartTips>
+    </figure>
   );
 }
 

@@ -2,6 +2,7 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { TimelineWire } from "./communityTimelines";
+import { MAX_ACCOUNT_EVENTS, TIMELINE_TEXT_FIELDS } from "./lib/communityTimeline";
 import { consulateListed, type ReportWire } from "./consularReports";
 import { POST_SLUG, REPORT_FIELD_KEYS } from "./lib/consularReport";
 import { auth } from "./auth";
@@ -1909,11 +1910,26 @@ async function timelineBody(
 const timelineCase = (b: Record<string, unknown>): string | undefined =>
   typeof b.caseNumber === "string" && b.caseNumber.trim() !== "" ? b.caseNumber : undefined;
 
-const TIMELINE_FIELDS = [
-  "category", "country", "route", "i140Center", "fieldOffice",
-  "i140FiledOn", "i140ApprovedOn", "i485FiledOn", "biometricsOn", "eadOn", "apOn", "interviewOn", "greenCardOn",
-  "rfeForm", "rfeReason", "rfeIssuedOn", "rfeRespondedOn", "rfeOutcome",
-] as const;
+/**
+ * A request's account updates narrowed to plain short strings, or null when they aren't that shape. One past the
+ * limit still passes, so the mutation can refuse it in words.
+ */
+function timelineEvents(raw: unknown): { on: string | null; form: string | null; code: string | null }[] | null {
+  if (!Array.isArray(raw) || raw.length > MAX_ACCOUNT_EVENTS + 1) return null;
+  const short = (x: unknown, max: number): string | null | undefined =>
+    x === undefined || x === null || x === "" ? null : typeof x === "string" && x.length <= max ? x : undefined;
+  const out: { on: string | null; form: string | null; code: string | null }[] = [];
+  for (const e of raw) {
+    if (typeof e !== "object" || e === null) return null;
+    const r = e as Record<string, unknown>;
+    const on = short(r.on, 10);
+    const form = short(r.form, 8);
+    const code = short(r.code, 8);
+    if (on === undefined || form === undefined || code === undefined) return null;
+    out.push({ on, form, code });
+  }
+  return out;
+}
 
 for (const path of ["/timeline/save", "/timeline/mine", "/timeline/remove"]) {
   http.route({
@@ -1938,7 +1954,7 @@ http.route({
     // Narrow every field to a short string, a boolean or nothing; the mutation
     // validates meaning.
     const input: Record<string, string | boolean | null> = {};
-    for (const k of TIMELINE_FIELDS) {
+    for (const k of TIMELINE_TEXT_FIELDS) {
       const x = b[k];
       if (x === undefined || x === null || x === "") continue;
       if (typeof x !== "string" || x.length > 24) return json({ ok: false, message: "Malformed request." }, 400);
@@ -1946,6 +1962,11 @@ http.route({
     }
     if (typeof b.premium === "boolean") input.premium = b.premium;
     input.public = b.public === true;
+    let accountEvents: ReturnType<typeof timelineEvents> = null;
+    if (b.accountEvents !== undefined && b.accountEvents !== null) {
+      accountEvents = timelineEvents(b.accountEvents);
+      if (accountEvents === null) return json({ ok: false, message: "Malformed request." }, 400);
+    }
     const ip = callerIp(req);
     const [ipHash, editKeyHash] = await Promise.all([
       hashIp("timeline", ip),
@@ -1955,7 +1976,7 @@ http.route({
       caseNumber: timelineCase(b),
       editKeyHash,
       ipHash,
-      input: input as TimelineWire,
+      input: { ...input, ...(accountEvents ? { accountEvents } : {}) } as TimelineWire,
     });
     return json(result, result.ok ? 200 : result.throttled ? 429 : 400);
   }),
