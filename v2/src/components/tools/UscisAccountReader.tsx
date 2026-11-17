@@ -35,7 +35,7 @@ function CodeReadings({ codes }: { codes: readonly (string | null)[] }) {
   const known = [...new Set(codes)].map((c) => (c ? INFO.get(c) : undefined)).filter((x) => x !== undefined);
   if (known.length === 0) return null;
   return (
-    <dl className="mt-4 grid grid-cols-1 gap-3 text-sm leading-relaxed">
+    <dl className="mt-4 grid grid-cols-1 gap-3 text-sm leading-relaxed [&>*]:min-w-0">
       {known.map((info) => (
         <div key={info.code} className="border-l-4 border-data-info-ink bg-tint px-4 py-3">
           <dt className="font-mono font-bold">{info.code} </dt>{" "}
