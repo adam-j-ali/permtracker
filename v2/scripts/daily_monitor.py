@@ -953,6 +953,11 @@ def ai_referral_lines(rows, yday: str) -> tuple[str, list[str]]:
     return summary, lines
 
 
+# The most rows the AI query asks for. A HogQL query with no LIMIT gets 100 rows, which on Nov 18 2026 cut 1,501
+# (day, assistant, page) rows to an arbitrary sample: the report printed 27 ChatGPT visits for a day that had about 340.
+AI_ROWS_CAP = 10_000
+
+
 def ai_referrals(key: str) -> tuple[str, list[str]]:
     """Visitors whose first pageview came from an assistant, by day, assistant and landing page (PostHog)."""
     q = ("SELECT toDate(toTimeZone(timestamp, 'America/New_York')) AS d, properties.$referring_domain AS rd, "
@@ -961,13 +966,16 @@ def ai_referrals(key: str) -> tuple[str, list[str]]:
          "WHERE event = '$pageview' AND timestamp > now() - INTERVAL 8 DAY "
          "AND (properties.$referring_domain IN (" + ", ".join(f"'{d}'" for d in AI_ASSISTANTS) + ", "
          + ", ".join(f"'www.{d}'" for d in AI_ASSISTANTS) + ") OR position(properties.$current_url, 'utm_source=') > 0) "
-         "GROUP BY d, rd, url, p")
+         f"GROUP BY d, rd, url, p LIMIT {AI_ROWS_CAP}")
     d = http_json(f"https://us.posthog.com/api/projects/{POSTHOG_PROJECT}/query/",
                   {"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
                   json.dumps({"query": {"kind": "HogQLQuery", "query": q}}).encode())
     rows = [(str(r[0])[:10], r[1], r[2] or None, r[3] or "/", r[4]) for r in d.get("results", [])]
     yday = (dt.datetime.now(ET).date() - dt.timedelta(days=1)).isoformat()
-    return ai_referral_lines(rows, yday)
+    summary, lines = ai_referral_lines(rows, yday)
+    if len(rows) >= AI_ROWS_CAP:
+        lines.append(f"The AI query reached its row cap ({AI_ROWS_CAP:,} rows), so these counts are low: raise AI_ROWS_CAP.")
+    return summary, lines
 
 
 # PostHog's free plan: a million events in each billing period, which ran Oct 22 2026 12:39 UTC to
