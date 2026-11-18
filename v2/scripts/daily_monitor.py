@@ -306,6 +306,11 @@ ACCEPTED_ADVISORIES: dict[str, tuple[str, str]] = {
     # renderer, merging the renderer's own option objects, never anything a visitor sends.
     # .planning/VERSION-DECISIONS.md, Oct 28 2026.
     "GHSA-gcqx-w48m-w2h4": ("deepmerge: no fix published; merges only our own email options", "2027-01-28"),
+    # picomatch 4.0.7 (high, ReDoS from a crafted glob pattern): no fixed version exists; 4.0.7 is the latest. It
+    # reaches the shipped tree only as @sentry/nextjs's build-time Rollup plugin, matching our own build globs. No
+    # code of ours calls picomatch, and nothing a visitor sends ever becomes a glob pattern.
+    # .planning/VERSION-DECISIONS.md, Nov 18 2026.
+    "GHSA-fc5q-39xc-vjpf": ("picomatch: no fix published; only build tools match our own globs", "2026-12-18"),
 }
 
 
