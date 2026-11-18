@@ -9,6 +9,8 @@ import { ChartTips } from "@/components/data/ChartTips";
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { FinePrint } from "@/components/data/FinePrint";
 import { getRecruitmentSummary, type Paper, type RecruitmentSummary, type Spread } from "@/lib/db/recruitment";
+import { getAllPwdLink } from "@/lib/db/pwdLinks";
+import { softFail } from "@/lib/softRead";
 import { formatInt, formatShareOf } from "@/lib/format";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { LEAD_BANDS, NOTICE_METHODS, RECRUITMENT_STEPS } from "@/lib/recruitmentRecord";
@@ -155,7 +157,10 @@ function PaperList({ papers, className }: { papers: Paper[]; className?: string 
 }
 
 export default async function PermRecruitmentPage() {
-  const doc = await getRecruitmentSummary();
+  const [doc, wage] = await Promise.all([
+    getRecruitmentSummary(),
+    getAllPwdLink().catch(softFail("perm-recruitment/page.getAllPwdLink", null)),
+  ]);
   const n = (rows: { id: string; n: number }[], id: string) => rows.find((r) => r.id === id)?.n ?? 0;
   const sunday = doc ? (doc.sundayEdition.Y ?? 0) : 0;
   const sundayKnown = doc ? sunday + (doc.sundayEdition.N ?? 0) : 0;
@@ -197,7 +202,12 @@ export default async function PermRecruitmentPage() {
               {`The job order and the two Sunday ads must run ${FILING_WINDOW_WAIT_DAYS} to ${FILING_WINDOW_CLOSE_DAYS} days before filing `}
               (<span className="whitespace-nowrap">20 C.F.R. § 656.17(e)</span>).
             </p>
-            <TimingChart lead={doc.lead} />
+            <TimingChart lead={doc.lead} />{" "}
+            {wage ? (
+              <p className="mt-6 max-w-3xl text-base leading-relaxed">
+                {`From the wage determination to the PERM filing took a median of ${formatInt(wage.pwdToPerm.p50)} days, across the ${formatInt(wage.linked)} cases DOL's two files join. Half took ${formatInt(wage.pwdToPerm.p25)} to ${formatInt(wage.pwdToPerm.p75)} days. Those wage determinations were issued from ${longDate(wage.window.from)} to ${longDate(wage.window.to)}, and each employer's and law firm's own figure is on its page.`}
+              </p>
+            ) : null}
             <h3 className="mt-10 font-heading text-lg font-bold">When the first step ran</h3>{" "}
             <BarRows
               className="mt-4 max-w-3xl"

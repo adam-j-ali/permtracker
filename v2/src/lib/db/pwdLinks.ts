@@ -63,3 +63,17 @@ export const getPwdLinks = cache(async (kind: PwdLinkKind, slug: string): Promis
     throw e;
   }
 });
+
+/**
+ * Every case's row alone, for a page with no entity of its own (/perm-recruitment). Null when the table doesn't exist
+ * yet; a failed read throws, as getPwdLinks does.
+ */
+export const getAllPwdLink = cache(async (): Promise<PwdLinkRow | null> => {
+  try {
+    const got = await rows<Record<string, unknown>>("SELECT * FROM perm_pwd_stats WHERE kind = 'all' AND slug = ''");
+    return pwdLinkRow(got[0]);
+  } catch (e) {
+    if (/no such table/i.test(String(e))) return null;
+    throw e;
+  }
+});
