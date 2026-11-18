@@ -60,7 +60,7 @@ export default function TermsPage() {
       <div>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Terms of service</h1>{" "}
         <p className="mb-8 mt-4 text-lg text-muted-foreground">
-          Effective Date: February 17, 2026 | Last Updated: November 11, 2026
+          Effective Date: February 17, 2026 | Last Updated: November 18, 2026
         </p>{" "}
 
         <SectionIndex sections={SECTIONS} />
@@ -755,8 +755,9 @@ export default function TermsPage() {
               <li>Sending an email notification (for material changes)</li>
             </ul>{" "}
             <p className="text-soft leading-relaxed mt-4">
-              Your continued use of the Service after changes constitutes
-              acceptance of the new Terms.
+              Changes to these Terms that affect your rights will not apply to
+              you until you actively agree to them, by accepting them when you
+              next sign in or through the link we email you.
             </p>
           </details>{" "}
 

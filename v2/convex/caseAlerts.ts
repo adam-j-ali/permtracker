@@ -93,6 +93,7 @@
  *   webhook pause notices          20/day   (convex/webhookDelivery.ts)
  *   support mail forwards          30/day   (convex/supportEmail.ts)
  *   possible PERM matches          20/day   (convex/pipelineMatches.ts)
+ *   policy change notices          20/day   (convex/policyConsent.ts, run by hand)
  *   sign-in and reset codes        80/day   (convex/authMail.ts)
  *
  * They add up to more than 100 on purpose: the day's real count decides, and a

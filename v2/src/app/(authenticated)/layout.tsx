@@ -15,6 +15,7 @@
 import Header from "@/components/layout/Header";
 import DeletionBanner from "@/components/layout/DeletionBanner";
 import ReengagementBanner from "@/components/layout/ReengagementBanner";
+import PolicyConsentBanner from "@/components/layout/PolicyConsentBanner";
 import AudienceBanner from "@/components/layout/AudienceBanner";
 import Footer from "@/components/layout/Footer";
 import SignOutOverlay from "@/components/layout/SignOutOverlay";
@@ -82,6 +83,9 @@ export default function AuthenticatedLayout({
 
         {/* Deletion warning banner (shown when account has scheduled deletion) */}
         <DeletionBanner />
+
+        {/* A policy change that needs this account's consent (convex/policyConsent.ts); hidden until one does */}
+        <PolicyConsentBanner />
 
         {/* Weekly-summary paused banner (shown after inactivity auto-pause) */}
         <ReengagementBanner />

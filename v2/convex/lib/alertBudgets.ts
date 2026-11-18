@@ -65,6 +65,12 @@ export const BUDGETS = {
    */
   pipelineMatch: { key: "pipeline_match_global", limit: 20, label: "Possible PERM matches" },
   /**
+   * The email asking an alert subscriber without an account to accept a policy change (convex/policyConsent.ts).
+   * Sent only when the owner runs the sweep by hand after a version bump, never scheduled, so the bound spreads a
+   * change over days instead of spending the day's mail in one burst.
+   */
+  policyNotice: { key: "policy_notice_global", limit: 20, label: "Policy change notices" },
+  /**
    * Sign-in and password-reset codes (convex/authMail.ts). Not list mail: these
    * are the emails whose absence locks someone out, so the pool sits above the
    * busiest measured day instead of inside the list ledger's remainder. See the
@@ -86,6 +92,7 @@ export const LIST_MAIL_POOLS = [
   "webhookPause",
   "supportForward",
   "pipelineMatch",
+  "policyNotice",
 ] as const satisfies readonly (keyof typeof BUDGETS)[];
 
 /** Codes to one address, whatever kind: enough for a few resends, not a flood. */
