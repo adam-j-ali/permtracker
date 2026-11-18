@@ -2,8 +2,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/convexStatic", () => ({ queryStatic: vi.fn() }));
+vi.mock("@/lib/db/uscisPosted", () => ({ getUscisPosted: vi.fn(async () => null) }));
 
 import { queryStatic } from "@/lib/convexStatic";
+import { getUscisPosted } from "@/lib/db/uscisPosted";
 import { BOARD_OPENS_AT, OFFICE_LIST_OPENS_AT, computeMetrics, summarizeRfes, toBoardRow, whoIsWaiting, type TimelineRecord } from "@/lib/communityTimeline";
 import Page from "../(site)/(public)/green-card-timelines/page";
 
@@ -69,6 +71,23 @@ describe("/green-card-timelines", () => {
     expect(out).not.toContain("2025-06-17");
     expect(out).not.toContain("2026-04-02");
     expect(out).not.toMatch(/G-\d{3}-\d{5}/);
+  });
+
+  it("gives USCIS's own work permit and advance parole times beside the reports", async () => {
+    vi.mocked(queryStatic).mockResolvedValue(boardOf(Array.from({ length: 6 }, (_, i) => rec(i))) as never);
+    vi.mocked(getUscisPosted).mockResolvedValueOnce({
+      published: "2026-10-19",
+      postings: ["2026-10-19"],
+      series: [],
+      longestGapDays: 34,
+      project: "x",
+      newest: [
+        { form: "I-765", subtype: "147-C9", office: "NBC", posted: 12, postedText: null, requestDate: null, label: "Based on a pending I-485 adjustment application [(c)(9)]", officeLabel: "National Benefits Center" },
+        { form: "I-131", subtype: "141B-OTH", office: "SCD", posted: 26.5, postedText: null, requestDate: null, label: "Advance parole", officeLabel: "Service Center Operations (SCOPS)" },
+      ],
+    });
+    const out = (await html()).replace(/\s+/g, " ");
+    expect(out).toContain("USCIS&#x27;s own posted times, as of its October 19, 2026 posting: 12 months for a work permit based on a pending I-485, at the National Benefits Center, and 26.5 months for advance parole.");
   });
 
   it("labels each stage with whose record it is and prints a median only with enough timelines", async () => {
