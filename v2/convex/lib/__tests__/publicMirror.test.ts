@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { one, placeholders, query, rows } from "../publicMirror";
+import { MIRROR_ATTEMPTS, one, placeholders, query, rows } from "../publicMirror";
 
 const originalFetch = global.fetch;
 
@@ -192,5 +192,60 @@ describe("placeholders", () => {
     expect(placeholders(0)).toBeNull();
     expect(placeholders(1)).toBe("?");
     expect(placeholders(3)).toBe("?,?,?");
+  });
+});
+
+describe("a passing gateway error", () => {
+  // Cloudflare answers 520 to 524 (and a proxy 502 to 504) when the database's answer is lost on the way: the read
+  // is fine to ask again. One failed answer used to become a failed action and an alarm email (Nov 18 2026, 520).
+  function stubStatuses(statuses: number[]) {
+    const calls: number[] = [];
+    global.fetch = (async () => {
+      const status = statuses[Math.min(calls.length, statuses.length - 1)]!;
+      calls.push(status);
+      if (status !== 200) return new Response("", { status, statusText: "Origin Error" });
+      return new Response(
+        JSON.stringify({
+          results: [
+            { type: "ok", response: { type: "execute", result: { cols: [{ name: "n" }], rows: [[{ type: "integer", value: "7" }]] } } },
+            { type: "ok", response: { type: "close" } },
+          ],
+        }),
+        { status: 200 },
+      );
+    }) as unknown as typeof fetch;
+    return calls;
+  }
+
+  it("asks again after a 520 and returns the rows", async () => {
+    const calls = stubStatuses([520, 200]);
+    await expect(rows("SELECT 7 AS n")).resolves.toEqual([{ n: 7 }]);
+    expect(calls).toEqual([520, 200]);
+  });
+
+  it("gives up after its retries and names the status", async () => {
+    const calls = stubStatuses([503, 503, 503, 503]);
+    await expect(rows("SELECT 7 AS n")).rejects.toThrow("libsql HTTP 503");
+    expect(calls).toHaveLength(MIRROR_ATTEMPTS);
+  });
+
+  it("never asks again on an answer that won't change, such as a refused token", async () => {
+    const calls = stubStatuses([401, 200]);
+    await expect(rows("SELECT 7 AS n")).rejects.toThrow("libsql HTTP 401");
+    expect(calls).toEqual([401]);
+  });
+
+  it("asks again when the request itself fails on the network", async () => {
+    let n = 0;
+    const ok = stubStatuses([200]);
+    const answer = global.fetch;
+    global.fetch = (async (...a: Parameters<typeof fetch>) => {
+      n += 1;
+      if (n === 1) throw new TypeError("fetch failed");
+      return answer(...a);
+    }) as typeof fetch;
+    await expect(rows("SELECT 7 AS n")).resolves.toEqual([{ n: 7 }]);
+    expect(n).toBe(2);
+    expect(ok).toEqual([200]);
   });
 });
