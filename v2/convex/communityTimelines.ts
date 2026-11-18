@@ -26,6 +26,8 @@ import {
   PERM_CASE,
   EVENT_FORMS,
   TIMELINE_TEXT_FIELDS,
+  APPLICANTS,
+  recentApprovals,
   computeMetrics,
   isListedCode,
   isPermCategory,
@@ -115,6 +117,7 @@ const timelineInput = v.object({
   category: v.optional(v.union(v.string(), v.null())),
   country: v.optional(v.union(v.string(), v.null())),
   route: v.optional(v.union(v.string(), v.null())),
+  applicant: v.optional(v.union(v.string(), v.null())),
   premium: v.optional(v.union(v.boolean(), v.null())),
   i140Center: v.optional(v.union(v.string(), v.null())),
   fieldOffice: v.optional(v.union(v.string(), v.null())),
@@ -445,6 +448,7 @@ const boardRowV = v.object({
   category: v.union(v.string(), v.null()),
   country: v.union(v.string(), v.null()),
   route: v.union(v.string(), v.null()),
+  applicant: v.union(v.string(), v.null()),
   premium: v.union(v.boolean(), v.null()),
   stops: v.array(v.object({ id: v.string(), day: v.union(v.number(), v.null()), month: v.union(v.string(), v.null()) })),
   permVerified: v.boolean(),
@@ -467,8 +471,15 @@ const boardRowV = v.object({
  * row stands out. A row names its USCIS office only when that office's own
  * list is open.
  */
+const recentV = v.object({
+  from: v.string(),
+  through: v.string(),
+  steps: v.array(v.object({ id: v.string(), label: v.string(), count: v.union(v.number(), v.null()) })),
+});
+
 export const board = query({
-  args: {},
+  /** `today`: the Eastern day the page draws for, "YYYY-MM-DD". A query never reads the clock, so the page passes it. */
+  args: { today: v.optional(v.string()) },
   returns: v.object({
     total: v.number(),
     shared: v.number(),
@@ -510,8 +521,10 @@ export const board = query({
       ),
       unlisted: v.number(),
     }),
+    /** Approvals reported in the week through `today` (lib `recentApprovals`); null when no day was passed. */
+    recent: v.union(v.null(), recentV),
   }),
-  handler: async (ctx) => {
+  handler: async (ctx, a) => {
     // NEWEST first. `take` in creation order keeps the OLDEST 5,000, so past
     // that every new timeline would vanish from the counts and the board.
     // Past the cap the page says the
@@ -551,6 +564,7 @@ export const board = query({
       codes: tallyCodes(records),
       thirdFta0: thirdFta0(records),
       waiting: whoIsWaiting(records),
+      recent: a.today !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(a.today) ? recentApprovals(records, a.today) : null,
     };
   },
 });
@@ -559,6 +573,7 @@ const officeRowV = v.object({
   filedMonth: v.union(v.string(), v.null()),
   category: v.union(v.string(), v.null()),
   country: v.union(v.string(), v.null()),
+  applicant: v.union(v.string(), v.null()),
   stops: v.array(v.object({ id: v.string(), day: v.union(v.number(), v.null()), month: v.union(v.string(), v.null()) })),
   rfe: v.union(v.null(), v.object({ outcome: v.union(v.string(), v.null()) })),
   updates: updatesV,
@@ -755,6 +770,8 @@ const adminRowV = v.object({
   category: v.union(v.string(), v.null()),
   country: v.union(v.string(), v.null()),
   route: v.union(v.string(), v.null()),
+  /** Whose case, by its label; null when not given. */
+  applicant: v.union(v.string(), v.null()),
   premium: v.boolean(),
   /** The account updates as given; `typed` marks a code from "Other", which the owner reads before approving. */
   updates: v.array(v.object({ on: v.string(), form: v.union(v.string(), v.null()), code: v.union(v.string(), v.null()), typed: v.boolean() })),
@@ -801,6 +818,7 @@ function adminRow(r: Doc<"communityTimelines">): Infer<typeof adminRowV> {
     category: labelOf(CATEGORIES, r.category),
     country: labelOf(COUNTRIES, r.country),
     route: r.route ?? null,
+    applicant: labelOf(APPLICANTS, r.applicant),
     premium: r.premium === true,
     updates: (r.accountEvents ?? []).map((e) => ({
       on: e.on,

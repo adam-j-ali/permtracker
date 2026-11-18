@@ -64,7 +64,7 @@ export default function PrivacyPage() {
       <div>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Privacy policy</h1>{" "}
         <p className="mb-8 mt-4 text-lg text-muted-foreground">
-          Effective Date: February 17, 2026 | Last Updated: November 17, 2026
+          Effective Date: February 17, 2026 | Last Updated: November 18, 2026
         </p>{" "}
 
         <SectionIndex sections={SECTIONS} />
@@ -320,7 +320,8 @@ export default function PrivacyPage() {
                 I-140, the I-485, a biometrics appointment, a work permit, a
                 travel document, a Supplement J approval, an interview, the green
                 card) and a few choices from fixed lists, such as your category,
-                your country, the USCIS office handling your I-485 and the
+                your country, whether the case is the main applicant’s or a
+                spouse’s or child’s, the USCIS office handling your I-485 and the
                 service center that took it in. You can also add the updates
                 your own USCIS account showed: the day, the form and the code.
                 There’s no free-text box. The one thing you can type is an

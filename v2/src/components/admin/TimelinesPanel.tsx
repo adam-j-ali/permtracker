@@ -74,7 +74,7 @@ function TimelineCard({ r }: { r: Row }) {
     }
   };
   const id = r._id as Id<"communityTimelines">;
-  const about = [r.office ?? "No office given", r.category, r.country, r.route === "consular" ? "consular" : null, r.premium ? "premium I-140" : null]
+  const about = [r.office ?? "No office given", r.category, r.country, r.route === "consular" ? "consular" : null, r.applicant, r.premium ? "premium I-140" : null]
     .filter(Boolean)
     .join(", ");
   return (

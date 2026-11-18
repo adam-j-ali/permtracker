@@ -114,7 +114,10 @@ export function OfficeTimelines({ office, view }: { office: UscisOffice; view: O
                           </span>
                         ) : null}
                       </th>
-                      <td className="px-3 py-3">{`${label(CATEGORIES, r.category)} `}</td>
+                      <td className="px-3 py-3">
+                        {`${label(CATEGORIES, r.category)} `}
+                        {r.applicant === "dependent" ? <span className="block text-sm text-muted-foreground">a dependent&apos;s case</span> : null}
+                      </td>
                       <td className="px-3 py-3">{`${label(COUNTRIES, r.country)} `}</td>
                       {r.stops.map((s) => (
                         <td key={s.id} className="px-3 py-3 tabular-nums">

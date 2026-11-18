@@ -2313,6 +2313,8 @@ export default defineSchema({
       v.union(v.literal("row"), v.literal("india"), v.literal("china"), v.literal("mexico"), v.literal("philippines")),
     ),
     route: v.optional(v.union(v.literal("adjustment"), v.literal("consular"))),
+    /** Whose case: the main applicant or a spouse or child filing with them (lib APPLICANTS). */
+    applicant: v.optional(v.union(v.literal("principal"), v.literal("dependent"))),
     premium: v.optional(v.boolean()),
     i140Center: v.optional(v.union(v.literal("nebraska"), v.literal("texas"), v.literal("other"))),
     /** The USCIS office holding the I-485: USCIS's three-letter code, one of src/lib/uscisOffices.json. */

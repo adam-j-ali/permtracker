@@ -6,6 +6,7 @@ import {
   COUNTRIES,
   DATE_FIELDS,
   METRIC_MIN_N,
+  RECENT_MIN,
   ROUTES,
   WAITING_STAGES,
   type BoardRow,
@@ -13,6 +14,7 @@ import {
   type UpdatesSummary,
   type RfeSummary,
   type WaitingView,
+  type RecentApprovals,
 } from "@/lib/communityTimeline";
 import { ChartTips } from "@/components/data/ChartTips";
 import { cn } from "@/lib/utils";
@@ -184,6 +186,40 @@ export function BoardKey() {
   );
 }
 
+const dayName = (iso: string) =>
+  new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+
+/**
+ * The approvals people reported this week, so a day like a wave of work permits shows as a count. Each step prints
+ * once RECENT_MIN timelines report it in the week; below that it reads "fewer than 3", never one person's date.
+ */
+export function RecentApprovals({ recent }: { recent: RecentApprovals }) {
+  const counted = recent.steps.filter((s) => s.count !== null);
+  return (
+    <section className="mt-8 max-w-3xl" aria-labelledby="recent-h">
+      <h2 id="recent-h" className="font-heading text-2xl font-bold sm:text-3xl">
+        Approvals reported this week
+      </h2>{" "}
+      <p className="mt-2 text-base text-muted-foreground">
+        {`${dayName(recent.from)} to ${dayName(recent.through)}, by the dates people added. Each count shows once ${RECENT_MIN} timelines report one.`}
+      </p>{" "}
+      <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 [&>*]:min-w-0">
+        {recent.steps.map((s) => (
+          <li key={s.id} className="flex items-baseline justify-between gap-3 border-2 border-border px-4 py-3">
+            <span>{`${s.label} `}</span>
+            <span className={s.count === null ? "text-muted-foreground" : "font-heading text-xl font-bold tabular-nums"}>
+              {s.count === null ? `Fewer than ${RECENT_MIN}` : s.count.toLocaleString("en-US")}
+            </span>
+          </li>
+        ))}
+      </ul>{" "}
+      {counted.length === 0 ? (
+        <p className="mt-3 text-base text-soft">Got a work permit, a travel document or a green card this week? Adding the date is how a wave shows here.</p>
+      ) : null}
+    </section>
+  );
+}
+
 export function BoardTable({ rows }: { rows: readonly BoardRow[] }) {
   const far = Math.max(365, ...rows.flatMap((r) => r.stops.map((s) => s.day ?? 0)));
   const span = Math.ceil(far / 90) * 90;
@@ -219,6 +255,7 @@ export function BoardTable({ rows }: { rows: readonly BoardRow[] }) {
                 <td className="px-3 py-3">
                   {r.route ? (label(ROUTES, r.route) ?? "").replace(/ \(.*\)$/, "") : ""}
                   {r.premium ? <span className="block text-muted-foreground">premium I-140</span> : null}
+                  {r.applicant === "dependent" ? <span className="block text-muted-foreground">a dependent&apos;s case</span> : null}{" "}
                   {/* Optional: a backend older than Nov 11 2026 sends no office. */}
                   {r.office && officeByCode(r.office) ? (
                     <span className="block text-muted-foreground">{`I-485 at ${officeByCode(r.office)!.name}`}</span>
