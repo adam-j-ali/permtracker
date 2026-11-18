@@ -125,6 +125,28 @@ function config(): { url: string; token: string } {
  * failed query returns an empty array and reads exactly like a case that has
  * not moved.
  */
+/**
+ * The answers that mean the database's reply was lost on the way, not that the read was wrong: a proxy's 502 to 504
+ * and Cloudflare's 520 to 524. Every request here is a read (assertReadOnly), so asking again changes nothing.
+ */
+const PASSING_STATUSES = new Set([502, 503, 504, 520, 521, 522, 523, 524]);
+/** Tries per read: one, then up to two more after a short wait. */
+export const MIRROR_ATTEMPTS = 3;
+const RETRY_WAITS_MS = [300, 1_000];
+
+/** One POST, asked again on a passing gateway error or a dropped connection; any other answer is returned as is. */
+async function postOnce(target: string, init: RequestInit): Promise<Response> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const response = await fetch(target, init);
+      if (response.ok || !PASSING_STATUSES.has(response.status) || attempt >= MIRROR_ATTEMPTS) return response;
+    } catch (error) {
+      if (attempt >= MIRROR_ATTEMPTS) throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, RETRY_WAITS_MS[attempt - 1] ?? 1_000));
+  }
+}
+
 export async function query(statements: Statement[]): Promise<Row[][]> {
   if (statements.length === 0) return [];
   for (const s of statements) assertReadOnly(s.sql);
@@ -137,7 +159,7 @@ export async function query(statements: Statement[]): Promise<Row[][]> {
   const prepared = statements.map((s) => masker.prepare(s.sql, s.args ?? []));
 
   const { url, token } = config();
-  const response = await fetch(`${url}/v2/pipeline`, {
+  const response = await postOnce(`${url}/v2/pipeline`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
