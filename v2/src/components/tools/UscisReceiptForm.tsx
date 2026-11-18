@@ -32,6 +32,7 @@ const DOL_SHAPE = /^[A-Z]-\d/i;
 export function UscisReceiptForm({ defaultValue = "", className, live = false }: UscisReceiptFormProps) {
   const inputId = useId();
   const helpId = useId();
+  const consentId = useId();
   const [value, setValue] = useState(defaultValue);
   const [edited, setEdited] = useState(false);
 
@@ -64,7 +65,7 @@ export function UscisReceiptForm({ defaultValue = "", className, live = false }:
           enterKeyHint="search"
           maxLength={20}
           aria-invalid={malformed || undefined}
-          aria-describedby={helpId}
+          aria-describedby={`${helpId} ${consentId}`}
           className="min-h-[52px] w-full min-w-0 flex-1 basis-72 border-2 border-input bg-background px-4 py-3 font-mono text-lg tracking-tight focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
         />{" "}
         <button
@@ -95,6 +96,10 @@ export function UscisReceiptForm({ defaultValue = "", className, live = false }:
             into this page&apos;s address so you can bookmark or share what it encodes.
           </>
         )}
+      </p>{" "}
+      {/* USCIS's Case Status API bars submitting anyone's receipt number without their express consent. */}
+      <p id={consentId} className="mt-1 text-sm text-muted-foreground">
+        Enter only your own receipt number, or one its owner has asked you to check. By looking it up, you confirm that.
       </p>
     </form>
   );
