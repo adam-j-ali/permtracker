@@ -7,6 +7,8 @@
  * older than USCIS's own longest gap between postings allows.
  */
 
+import { formatAsOf } from "@/lib/dolFormat";
+import { MS_PER_DAY } from "../../convex/lib/time";
 import { getI140ProcessingTime, PROCESSING_TIMES_AS_OF, type I140Category, type I140Subtype } from "@/lib/processing-times/i140ProcessingTimes";
 
 export interface PostedRow {
@@ -206,9 +208,17 @@ export function h4EadTimes(doc: UscisPosted | null, today: string): H4EadTimes |
 export interface WaitPapers {
   published: string;
   /** The work permit based on a pending I-485 (I-765 category (c)(9)), at the National Benefits Center when posted. */
-  ead: { months: number; office: string } | null;
+  ead: PaperTime | null;
   /** Advance parole (I-131), at the office USCIS posts it under. */
-  ap: { months: number; office: string } | null;
+  ap: PaperTime | null;
+}
+
+/** One posted row: its months, USCIS's name for the office, and the codes that find its history. */
+export interface PaperTime {
+  months: number;
+  office: string;
+  subtype: string;
+  code: string;
 }
 
 /**
@@ -219,7 +229,8 @@ export interface WaitPapers {
  */
 export function waitPapers(doc: UscisPosted | null): WaitPapers | null {
   if (!doc) return null;
-  const at = (r: PostedRow | undefined) => (r && r.posted !== null ? { months: r.posted, office: r.officeLabel ?? r.office } : null);
+  const at = (r: PostedRow | undefined): PaperTime | null =>
+    r && r.posted !== null ? { months: r.posted, office: r.officeLabel ?? r.office, subtype: r.subtype, code: r.office } : null;
   const ead = doc.newest.filter((r) => r.form === "I-765" && /\(c\)\(9\)/.test(r.label ?? ""));
   const ap = doc.newest.filter((r) => r.form === "I-131" && /^advance parole$/i.test((r.label ?? "").trim()));
   return {
@@ -227,4 +238,58 @@ export function waitPapers(doc: UscisPosted | null): WaitPapers | null {
     ead: at(ead.find((r) => r.office === "NBC") ?? ead[0]),
     ap: at(ap.find((r) => r.posted !== null)),
   };
+}
+
+export interface OfficeStanding {
+  months: number;
+  /** Offices posting a strictly shorter time for the same row. */
+  shorter: number;
+  /** Offices posting a figure for the row, this one included. */
+  of: number;
+}
+
+/** Where one office's figure stands among every office USCIS posts the same form and category for, newest posting. */
+export function officeStanding(doc: UscisPosted | null, form: string, subtype: string, office: string): OfficeStanding | null {
+  if (!doc) return null;
+  const figures = doc.newest.flatMap((r) => (r.form === form && r.subtype === subtype && r.posted !== null ? [{ office: r.office, months: r.posted }] : []));
+  const mine = figures.find((r) => r.office === office);
+  if (!mine) return null;
+  return { months: mine.months, shorter: figures.filter((r) => r.months < mine.months).length, of: figures.length };
+}
+
+export interface YearChange {
+  now: number;
+  nowOn: string;
+  then: number;
+  thenOn: string;
+}
+
+/** How far from the anniversary the older posting may be: USCIS posts about monthly, so one usually falls inside. */
+const YEAR_SLACK_DAYS = 15;
+
+/**
+ * The newest posting against the one closest to a year before it, within 15 days of the anniversary; null when no
+ * posting falls there (under a year of history, or a long gap such as the Oct 2025 shutdown's).
+ */
+export function yearChange(points: readonly [string, number][]): YearChange | null {
+  const last = points[points.length - 1];
+  if (!last) return null;
+  const at = (d: string) => Date.parse(`${d}T00:00:00Z`);
+  let then: [string, number] | undefined;
+  let off = Infinity;
+  for (const p of points) {
+    const miss = Math.abs((at(last[0]) - at(p[0])) / MS_PER_DAY - 365);
+    if (miss <= YEAR_SLACK_DAYS && miss < off) {
+      then = p;
+      off = miss;
+    }
+  }
+  return then ? { now: last[1], nowOn: last[0], then: then[1], thenOn: then[0] } : null;
+}
+
+/** "up from 9.5 months in its October 20, 2025 posting", for a sentence that already gives the newest figure. */
+export function changeWords(c: YearChange): string {
+  const on = formatAsOf(c.thenOn) ?? c.thenOn;
+  if (c.now === c.then) return `the same as in its ${on} posting`;
+  return `${c.now > c.then ? "up" : "down"} from ${c.then} months in its ${on} posting`;
 }

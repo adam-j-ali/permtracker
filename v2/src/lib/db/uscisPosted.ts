@@ -21,15 +21,16 @@ export const getUscisPosted = cache(async (): Promise<UscisPosted | null> => {
 });
 
 /**
- * One field office's own posted time for family-based I-485s (subtype 131A-FAM), every posting since March 2022,
- * oldest first. USCIS posts no employment-based time per office (131A is posted for all field offices together), so
- * an office's family-based figure is the one measure of that office's own pace it publishes. A failed read throws.
+ * One posted row's history (a form, a category, an office), every posting since March 2022, oldest first. The site
+ * draws it for a field office's own family-based I-485 time (USCIS posts no employment-based time per office, only
+ * one for all field offices together) and for the work permit and advance parole rows on the I-765 and I-131 pages.
+ * One index seek on the table's key. A failed read throws.
  */
-export const getI485OfficePosted = cache(async (office: string): Promise<[string, number][]> => {
+export const getPostedHistory = cache(async (form: string, subtype: string, office: string): Promise<[string, number][]> => {
   try {
     const got = await rows<{ published: string; posted: number | string }>(
-      "SELECT published, posted FROM uscis_posted_times WHERE form = 'I-485' AND subtype = '131A-FAM' AND office = ? AND posted IS NOT NULL ORDER BY published",
-      [office],
+      "SELECT published, posted FROM uscis_posted_times WHERE form = ? AND subtype = ? AND office = ? AND posted IS NOT NULL ORDER BY published",
+      [form, subtype, office],
     );
     return got.map((r) => [String(r.published), Number(r.posted)]);
   } catch (e) {
