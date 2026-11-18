@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { settleScheduled, trackedTestContext as createTestContext } from "../../test-utils/convexSettle";
 import { api, internal } from "../_generated/api";
-import { MAX_ACCOUNT_EVENTS, MAX_CONTACTS, METRIC_MIN_N, OFFICE_LIST_OPENS_AT } from "../lib/communityTimeline";
+import { MAX_ACCOUNT_EVENTS, MAX_CONTACTS, MAX_MORE_RFES, METRIC_MIN_N, OFFICE_LIST_OPENS_AT } from "../lib/communityTimeline";
 
 /**
  * A timeline's account updates (a day, a form, a code from the list or typed), its service center and its Supplement
@@ -180,6 +180,8 @@ describe("the HTTP layer", () => {
     expect((await post(t, { key: k, i485FiledOn: "2025-05-01", accountEvents: [{ on: 20250601 }] })).status).toBe(400);
     expect((await post(t, { key: k, i485FiledOn: "2025-05-01", accountEvents: [{ on: "2025-06-01", code: "X".repeat(40) }] })).status).toBe(400);
     expect((await post(t, { key: k, i485FiledOn: "2025-05-01", contacts: "congressional" })).status).toBe(400);
+    expect((await post(t, { key: k, i485FiledOn: "2025-05-01", moreRfes: "i485" })).status).toBe(400);
+    expect((await post(t, { key: k, i485FiledOn: "2025-05-01", moreRfes: [{ form: "i485", reason: "x".repeat(40) }] })).status).toBe(400);
     expect((await post(t, { key: k, i485FiledOn: "2025-05-01", contacts: [{ on: "2025-06-01", kind: "x".repeat(40) }] })).status).toBe(400);
   });
 
@@ -219,6 +221,7 @@ describe("the HTTP layer", () => {
       cardArrivedOn: "2026-01-20",
       interview: "held",
       contacts: Array.from({ length: MAX_CONTACTS }, (_, i) => ({ on: `2025-0${(i % 9) + 1}-15`, kind: "service-request" })),
+      moreRfes: Array.from({ length: MAX_MORE_RFES }, (_, i) => ({ form: "i485", reason: "medical", issuedOn: `2025-1${i}-01`, respondedOn: `2025-1${i}-20`, outcome: "approved" })),
     };
     const ok = await post(t, { ...base, accountEvents: full });
     expect(ok.status, await ok.clone().text()).toBe(200);

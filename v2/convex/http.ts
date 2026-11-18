@@ -2,7 +2,7 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { TimelineWire } from "./communityTimelines";
-import { MAX_ACCOUNT_EVENTS, MAX_CONTACTS, TIMELINE_TEXT_FIELDS } from "./lib/communityTimeline";
+import { MAX_ACCOUNT_EVENTS, MAX_CONTACTS, MAX_MORE_RFES, TIMELINE_TEXT_FIELDS } from "./lib/communityTimeline";
 import { consulateListed, type ReportWire } from "./consularReports";
 import { POST_SLUG, REPORT_FIELD_KEYS } from "./lib/consularReport";
 import { auth } from "./auth";
@@ -1948,6 +1948,25 @@ function timelineContacts(raw: unknown): { on: string | null; kind: string | nul
   return out;
 }
 
+/** The RFEs after the first, narrowed to short strings; the mutation checks their meaning. */
+function timelineMoreRfes(raw: unknown): Record<"form" | "reason" | "issuedOn" | "respondedOn" | "outcome", string | null>[] | null {
+  if (!Array.isArray(raw) || raw.length > MAX_MORE_RFES + 1) return null;
+  const out: Record<"form" | "reason" | "issuedOn" | "respondedOn" | "outcome", string | null>[] = [];
+  for (const e of raw) {
+    if (typeof e !== "object" || e === null) return null;
+    const r = e as Record<string, unknown>;
+    const row = {} as Record<"form" | "reason" | "issuedOn" | "respondedOn" | "outcome", string | null>;
+    for (const k of ["form", "reason", "issuedOn", "respondedOn", "outcome"] as const) {
+      const x = r[k];
+      if (x === undefined || x === null || x === "") row[k] = null;
+      else if (typeof x === "string" && x.length <= 24) row[k] = x;
+      else return null;
+    }
+    out.push(row);
+  }
+  return out;
+}
+
 for (const path of ["/timeline/save", "/timeline/mine", "/timeline/remove"]) {
   http.route({
     path,
@@ -1984,6 +2003,11 @@ http.route({
       accountEvents = timelineEvents(b.accountEvents);
       if (accountEvents === null) return json({ ok: false, message: "Malformed request." }, 400);
     }
+    let moreRfes: ReturnType<typeof timelineMoreRfes> = null;
+    if (b.moreRfes !== undefined && b.moreRfes !== null) {
+      moreRfes = timelineMoreRfes(b.moreRfes);
+      if (moreRfes === null) return json({ ok: false, message: "Malformed request." }, 400);
+    }
     let contacts: ReturnType<typeof timelineContacts> = null;
     if (b.contacts !== undefined && b.contacts !== null) {
       contacts = timelineContacts(b.contacts);
@@ -1998,7 +2022,7 @@ http.route({
       caseNumber: timelineCase(b),
       editKeyHash,
       ipHash,
-      input: { ...input, ...(accountEvents ? { accountEvents } : {}), ...(contacts ? { contacts } : {}) } as TimelineWire,
+      input: { ...input, ...(accountEvents ? { accountEvents } : {}), ...(contacts ? { contacts } : {}), ...(moreRfes ? { moreRfes } : {}) } as TimelineWire,
     });
     return json(result, result.ok ? 200 : result.throttled ? 429 : 400);
   }),

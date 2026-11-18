@@ -125,3 +125,27 @@ describe("the details and what people did", () => {
     expect(JSON.stringify(board.rows)).not.toContain("2026-07-01");
   });
 });
+
+describe("more than one RFE", () => {
+  it("are saved, read back, counted and listed on a row", async () => {
+    const t = createTestContext();
+    await saveApproved(
+      t,
+      Array.from({ length: BOARD_OPENS_AT }, () => ({
+        rfeForm: "i140",
+        rfeIssuedOn: "2026-06-25",
+        rfeRespondedOn: "2026-08-19",
+        rfeOutcome: "approved",
+        i140ApprovedOn: "2026-08-25",
+        moreRfes: [{ form: "i485", issuedOn: "2026-10-26", respondedOn: "2026-10-30", outcome: "approved" }],
+        greenCardOn: "2026-11-17",
+      })),
+    );
+    const mine = await t.query(internal.communityTimelines.mine, { editKeyHash: key(0) });
+    expect(mine?.input.moreRfes).toEqual([{ form: "i485", issuedOn: "2026-10-26", respondedOn: "2026-10-30", outcome: "approved" }]);
+    const board = await t.query(api.communityTimelines.board, {});
+    expect(board.rfe.total).toBe(2 * BOARD_OPENS_AT);
+    expect(board.rows[0]!.rfes.map((e) => e.form)).toEqual(["i140", "i485"]);
+    expect(board.metrics.find((m) => m.id === "rfe-decision")).toMatchObject({ n: 2 * BOARD_OPENS_AT });
+  });
+});

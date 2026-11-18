@@ -2361,6 +2361,12 @@ export default defineSchema({
     rfeIssuedOn: v.optional(v.string()),
     rfeRespondedOn: v.optional(v.string()),
     rfeOutcome: v.optional(v.union(v.literal("pending"), v.literal("approved"), v.literal("denied"))),
+    /** RFEs after the first (lib MAX_MORE_RFES), each checked against the lib's lists on save. */
+    moreRfes: v.optional(
+      v.array(
+        v.object({ form: v.string(), reason: v.optional(v.string()), issuedOn: v.optional(v.string()), respondedOn: v.optional(v.string()), outcome: v.optional(v.string()) }),
+      ),
+    ),
     /** DOL's filing date for the case. Written by the verifier only. */
     permFiledOn: v.optional(v.string()),
     /** DOL's certification date. Written by the verifier only. */

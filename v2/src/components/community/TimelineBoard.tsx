@@ -281,12 +281,12 @@ export function BoardTable({ rows }: { rows: readonly BoardRow[] }) {
                       />
                     ))}
                   </div>
-                  {r.rfe ? (
-                    <span className="mt-1 block text-muted-foreground">
-                      RFE on the {r.rfe.form === "i140" ? "I-140" : "I-485"}
-                      {r.rfe.outcome === "approved" ? ", approved after it" : r.rfe.outcome === "denied" ? ", denied" : ""}{" "}
+                  {/* Optional: a backend older than Nov 18 2026 sends only the first RFE. */}
+                  {(r.rfes?.length ? r.rfes : r.rfe ? [r.rfe] : []).map((e, j) => (
+                    <span key={`${e.form}-${j}`} className="mt-1 block text-muted-foreground">
+                      {`RFE on the ${e.form === "i140" ? "I-140" : "I-485"}${e.outcome === "approved" ? ", approved after it" : e.outcome === "denied" ? ", denied" : ""} `}
                     </span>
-                  ) : null}{" "}
+                  ))}{" "}
                   {r.updates ? <span className="mt-1 block text-muted-foreground">{`${updatesText(r.updates, "PERM filing")} `}</span> : null}
                 </td>
               </tr>

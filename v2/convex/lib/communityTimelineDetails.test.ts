@@ -150,3 +150,39 @@ describe("the RFE's own times", () => {
     expect(computeMetrics(i485).find((x) => x.id === "rfe-decision")?.median).toBe(60);
   });
 });
+
+describe("more than one RFE", () => {
+  const first = { rfeForm: "i140", rfeReason: "ability-to-pay", rfeIssuedOn: "2026-06-25", rfeRespondedOn: "2026-08-19", rfeOutcome: "approved" };
+  const second = { form: "i485", reason: "medical", issuedOn: "2026-10-26", respondedOn: "2026-10-30", outcome: "approved" };
+
+  it("keeps the first in its own fields and the rest in a list, each checked", async () => {
+    const { MAX_MORE_RFES, rfesOf } = await import("./communityTimeline");
+    const r = validateTimeline({ ...base, ...first, moreRfes: [second] }, TODAY);
+    expect(r.ok && r.value.moreRfes).toEqual([second]);
+    expect(rfesOf(rec({ ...(r.ok ? r.value : {}) }))).toEqual([
+      { form: "i140", reason: "ability-to-pay", issuedOn: "2026-06-25", respondedOn: "2026-08-19", outcome: "approved" },
+      second,
+    ]);
+    expect(validateTimeline({ ...base, ...first, moreRfes: [{ ...second, form: undefined }] }, TODAY)).toMatchObject({ ok: false, code: "rfe-form" });
+    expect(validateTimeline({ ...base, ...first, moreRfes: [{ ...second, respondedOn: "2026-10-01" }] }, TODAY)).toMatchObject({ ok: false, code: "rfe-order" });
+    expect(validateTimeline({ ...base, ...first, moreRfes: [{ ...second, reason: "vibes" }] }, TODAY)).toMatchObject({ ok: false, code: "choice" });
+    const many = Array.from({ length: MAX_MORE_RFES + 1 }, () => second);
+    expect(validateTimeline({ ...base, ...first, moreRfes: many }, TODAY)).toMatchObject({ ok: false, code: "rfe-many" });
+  });
+
+  it("counts every RFE in the summary, the medians and the row", async () => {
+    const { summarizeRfes } = await import("./communityTimeline");
+    const one = rec({ ...base, ...(first as Partial<TimelineRecord>), moreRfes: [second as never], i140ApprovedOn: "2026-08-25", greenCardOn: "2026-11-17" });
+    const s = summarizeRfes([one]);
+    expect(s.total).toBe(2);
+    expect(s.byForm.map((f) => [f.id, f.count])).toEqual([["i140", 1], ["i485", 1]]);
+    const five = Array.from({ length: METRIC_MIN_N }, () => one);
+    const m = Object.fromEntries(computeMetrics(five).map((x) => [x.id, x]));
+    expect(m["rfe-answer"]).toMatchObject({ n: 2 * METRIC_MIN_N });
+    expect(m["rfe-decision"]).toMatchObject({ n: 2 * METRIC_MIN_N });
+    const row = toBoardRow(one);
+    expect(row.rfes.map((x) => x.form)).toEqual(["i140", "i485"]);
+    expect(row.rfe).toMatchObject({ form: "i140" });
+    expect(toOfficeRow(one).rfe).toEqual({ outcome: "approved" });
+  });
+});
