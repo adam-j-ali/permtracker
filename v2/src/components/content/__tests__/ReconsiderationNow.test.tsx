@@ -68,7 +68,7 @@ describe("ReconsiderationNow", () => {
     expect(text).toContain("Of the 430 requests our daily check watched arrive and has followed for at least 45 days, 11 (2.6%) had an answer by then.");
     // Granted: certified, back in review or on hold. Refused: a NORD or a denial. A request for review is neither.
     // The site's share rule: whole percents from 10% up, one decimal below.
-    expect(text).toContain("Of the 684 requests it has seen decided, 331 (48%) were granted and 353 were refused with a NORD or a denial.");
+    expect(text).toContain("Of the 684 requests it has seen decided, 303 (44%) ended in certification, 28 were sent back for review or put on hold, and 353 were refused with a NORD or a denial.");
   });
 
   it("holds our own record back from a document built before the catch-up was left out", async () => {

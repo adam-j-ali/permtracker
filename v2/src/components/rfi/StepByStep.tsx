@@ -273,10 +273,10 @@ export function StageMoves({
       {recon ? (
         <p className="max-w-3xl text-base leading-relaxed">
           <b className="font-bold">
-            {pct(recon.grantedShare)} of decided motions to reconsider were granted
+            {pct(recon.certifiedShare)} of decided motions to reconsider ended in certification
           </b>{" "}
-          ({int(recon.granted)} of {int(recon.decided)}): certified outright, or sent back for review. The other{" "}
-          {int(recon.refused)} were refused with a NORD or a denial.
+          ({int(recon.certified)} of {int(recon.decided)}). Another {int(recon.reopened)} were sent back for review or put
+          on hold, and {int(recon.refused)} were refused with a NORD or a denial.
         </p>
       ) : null}{" "}
       <ol className="mt-5 divide-y-2 divide-border border-2 border-border bg-card">
