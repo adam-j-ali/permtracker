@@ -5,11 +5,12 @@
  * IN ITS OWN MODULE BECAUSE A `route.ts` MAY NOT EXPORT ANYTHING ELSE (see `revalidate-dol/paths.ts`).
  * `route.test.ts` re-derives the list from the app tree.
  */
-export const USCIS_TIMES_PAGES = ["/tools/ead-extension", "/tools/uscis-case-inquiry", "/uscis-processing-times"] as const;
+export const USCIS_TIMES_PAGES = ["/green-card-timelines", "/tools/ead-extension", "/tools/uscis-case-inquiry", "/uscis-processing-times"] as const;
 
 /**
  * Each form's own page prints the posting's figures for its categories, and each USCIS office's page prints the
- * one employment-based I-485 time posted for field offices. One pattern expires a whole family, and an expired page
+ * one employment-based I-485 time posted for field offices, the office's own family-based time, and the work permit
+ * and advance parole times; /green-card-timelines prints those two as well. One pattern expires a whole family, and an expired page
  * costs one render on its next visit.
  *
  * THE PATTERN IS THE FILE PATH, ROUTE GROUPS INCLUDED (see `revalidate-bulletin/paths.ts`): without the groups the
