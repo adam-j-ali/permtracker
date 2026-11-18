@@ -674,9 +674,9 @@ export default function TermsPage() {
             </ul>{" "}
             <p className="text-soft leading-relaxed mt-4">
               If we introduce fees for features you currently use for free, we
-              will provide at least 7 days advance notice. Your continued use
-              of paid features after the effective date constitutes acceptance
-              of the applicable fees.
+              will provide at least 7 days advance notice. A change to the fees
+              for a paid feature applies to you only after you agree to it, at
+              checkout or when you next sign in.
             </p>
           </details>{" "}
 
@@ -755,9 +755,10 @@ export default function TermsPage() {
               <li>Sending an email notification (for material changes)</li>
             </ul>{" "}
             <p className="text-soft leading-relaxed mt-4">
-              Changes to these Terms that affect your rights will not apply to
-              you until you actively agree to them, by accepting them when you
-              next sign in or through the link we email you.
+              Changes to these Terms that affect how we use information you have
+              already given us will not apply to you until you actively agree to
+              them, by accepting them when you next sign in or through the link we
+              email you.
             </p>
           </details>{" "}
 

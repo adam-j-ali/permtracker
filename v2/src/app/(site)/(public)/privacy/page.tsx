@@ -1756,17 +1756,20 @@ export default function PrivacyPage() {
             <ul className="list-disc list-inside text-soft space-y-2 ml-4 mt-4">
               <li>Posting the new Privacy Policy on this page</li>{" "}
               <li>Updating the &quot;Last Updated&quot; date at the top</li>{" "}
-              <li>Sending an email notification for material changes</li>
+              <li>For a change that affects how we use information you have already given us, telling you when you next sign in if you have an account, or by email if you receive our email alerts or digest without one</li>
             </ul>{" "}
             <p className="text-soft leading-relaxed mt-4">
               If a change affects how we use information you have already given
               us, it will not apply to that information until you actively agree
-              to it. With an account, you will see the change when you next sign
-              in and be asked to accept it. For alerts without an account, we will
-              email you a link to accept it. Until you accept, we will keep
-              handling your information under the version you last agreed to, and
-              you may delete your account or end your alerts at any time. We
-              record which version you accepted and when. For alerts without an
+              to it. An account holder will see the change at their next sign-in
+              and be asked to accept it. Someone who receives our email alerts or
+              digest without an account will get an email with a link to accept it.
+              Until you accept, we will keep handling your information under the
+              version you last agreed to, and you may delete your account or stop
+              our emails at any time. Information that reached us with no account
+              and no email address, such as a push notification subscription or a
+              shared timeline, is never subject to such a change. We record which
+              version you accepted and when. For email subscribers without an
               account, that record is kept under a one-way code made from your
               email address, never the address itself.
             </p>
