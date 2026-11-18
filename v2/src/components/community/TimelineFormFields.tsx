@@ -14,6 +14,7 @@ import {
   DATE_FIELDS,
   EVENT_FORMS,
   I140_CENTERS,
+  APPLICANTS,
   I485_CENTERS,
   MAX_ACCOUNT_EVENTS,
   RFE_FORMS,
@@ -412,6 +413,7 @@ export function TimelineFormFields({
           <legend className={legendCls}>About the case</legend>
           <Pick id={`${uid}-cat`} label="Category" value={form.category ?? ""} empty="Not saying" options={CATEGORIES.filter((c) => c.perm)} onChange={(v) => set("category", v || null)} />{" "}
           <Pick id={`${uid}-country`} label="Country of chargeability" value={form.country ?? ""} empty="Not saying" options={COUNTRIES} onChange={(v) => set("country", v || null)} />{" "}
+          <Pick id={`${uid}-applicant`} label="Whose case this is" value={form.applicant ?? ""} empty="Not saying" options={APPLICANTS} onChange={(v) => set("applicant", v || null)} />{" "}
           <Pick id={`${uid}-route`} label="After the I-140" value={route} options={ROUTES} onChange={(v) => set("route", v)} />{" "}
           <Pick id={`${uid}-center`} label="Where the I-140 was decided" value={form.i140Center ?? ""} empty="Not sure" options={I140_CENTERS} onChange={(v) => set("i140Center", v || null)} />{" "}
           {route === "adjustment" ? <OfficePick uid={uid} form={form} set={set} /> : null}{" "}
@@ -444,7 +446,8 @@ export function TimelineFormFields({
       <fieldset className={gridCls}>
         <legend className={legendCls}>About the case</legend>
         <Pick id={`${uid}-cat`} label="Category" value={form.category ?? ""} empty="Not saying" options={CATEGORIES} onChange={(v) => set("category", v || null)} />{" "}
-        <Pick id={`${uid}-country`} label="Country of chargeability" value={form.country ?? ""} empty="Not saying" options={COUNTRIES} onChange={(v) => set("country", v || null)} />
+        <Pick id={`${uid}-country`} label="Country of chargeability" value={form.country ?? ""} empty="Not saying" options={COUNTRIES} onChange={(v) => set("country", v || null)} />{" "}
+        <Pick id={`${uid}-applicant`} label="Whose case this is" value={form.applicant ?? ""} empty="Not saying" options={APPLICANTS} onChange={(v) => set("applicant", v || null)} />
       </fieldset>{" "}
       <details className="group/more border-2 border-border p-2">
         <summary className={foldCls}>

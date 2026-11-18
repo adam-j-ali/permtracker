@@ -65,6 +65,13 @@ export const ROUTES = [
 ] as const;
 export type RouteId = (typeof ROUTES)[number]["id"];
 
+/** Whose case the timeline follows: the person the I-140 is for, or a spouse or child filing with them. */
+export const APPLICANTS = [
+  { id: "principal", label: "The main applicant" },
+  { id: "dependent", label: "A spouse or child (a dependent)" },
+] as const;
+export type ApplicantId = (typeof APPLICANTS)[number]["id"];
+
 export const I140_CENTERS = [
   { id: "nebraska", label: "Nebraska Service Center" },
   { id: "texas", label: "Texas Service Center" },
@@ -182,6 +189,8 @@ export interface TimelineInput {
   category?: string | null;
   country?: string | null;
   route?: string | null;
+  /** Whose case it is: the main applicant or a spouse or child (APPLICANTS). */
+  applicant?: string | null;
   premium?: boolean | null;
   i140Center?: string | null;
   /** The USCIS office holding the I-485, by USCIS's three-letter code. */
@@ -212,6 +221,7 @@ export interface TimelineFields {
   category?: CategoryId;
   country?: CountryId;
   route?: RouteId;
+  applicant?: ApplicantId;
   premium?: boolean;
   i140Center?: I140CenterId;
   fieldOffice?: string;
@@ -240,7 +250,7 @@ export interface TimelineFields {
  * narrows them, an edit reads them back. `premium` (yes or no) and `accountEvents` (a list) travel beside them.
  */
 export const TIMELINE_TEXT_FIELDS = [
-  "category", "country", "route", "i140Center", "fieldOffice", "i485Center",
+  "category", "country", "route", "applicant", "i140Center", "fieldOffice", "i485Center",
   ...DATE_FIELDS.map((f) => f.id),
   "rfeForm", "rfeReason", "rfeIssuedOn", "rfeRespondedOn", "rfeOutcome",
 ] as const satisfies readonly (keyof TimelineFields & keyof TimelineInput)[];
@@ -250,6 +260,7 @@ export type TimelineChoiceField =
   | "category"
   | "country"
   | "route"
+  | "applicant"
   | "i140Center"
   | "fieldOffice"
   | "i485Center"
@@ -317,6 +328,7 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
     ["category", CATEGORIES, input.category, "category"],
     ["country", COUNTRIES, input.country, "country"],
     ["route", ROUTES, input.route, "route"],
+    ["applicant", APPLICANTS, input.applicant, "applicant"],
     ["i140Center", I140_CENTERS, input.i140Center, "I-140 office"],
     ["fieldOffice", OFFICE_CHOICES, input.fieldOffice, "USCIS office"],
     ["i485Center", I485_CENTERS, input.i485Center, "service center"],
@@ -650,6 +662,8 @@ export interface BoardRow {
   category: CategoryId | null;
   country: CountryId | null;
   route: RouteId | null;
+  /** Whose case: the main applicant or a dependent; null when not given. */
+  applicant: ApplicantId | null;
   premium: boolean | null;
   /** Days from PERM filing to each stop, in DATE_FIELDS order; null when not reported. */
   stops: { id: DateFieldId | "permCertifiedOn"; day: number | null; month: string | null }[];
@@ -676,6 +690,7 @@ export function toBoardRow(r: TimelineRecord, showOffice = false, showCenter = f
     category: r.category ?? null,
     country: r.country ?? null,
     route: r.route ?? null,
+    applicant: r.applicant ?? null,
     premium: r.premium ?? null,
     stops: [stop("permCertifiedOn"), ...DATE_FIELDS.map((f) => stop(f.id))],
     permVerified: Boolean(r.permFiledOn && r.permCertifiedOn),
@@ -684,6 +699,46 @@ export function toBoardRow(r: TimelineRecord, showOffice = false, showCenter = f
     center: showCenter ? (r.i485Center ?? null) : null,
     updates: updatesOf(r, origin),
     updatedMonth: new Date(r.updatedAt).toISOString().slice(0, 7),
+  };
+}
+
+/** The approvals a week's count looks for, each a date a timeline carries. */
+export const RECENT_STEPS = [
+  { id: "eadOn", label: "Work permits (EAD)" },
+  { id: "apOn", label: "Travel documents (advance parole)" },
+  { id: "greenCardOn", label: "Green cards" },
+  { id: "i140ApprovedOn", label: "I-140 approvals" },
+] as const satisfies readonly { id: DateFieldId; label: string }[];
+/** The days a week's count covers, today included. */
+export const RECENT_DAYS = 7;
+/**
+ * A week's count prints once this many timelines report the step. Below it the count would say that one or two
+ * people had an approval that week, close to reading their own dates, which the board never prints.
+ */
+export const RECENT_MIN = 3;
+
+export interface RecentApprovals {
+  /** "YYYY-MM-DD", the window's first day and its last (today), both counted. */
+  from: string;
+  through: string;
+  /** In RECENT_STEPS order; `count` is null below RECENT_MIN (none, one or two). */
+  steps: { id: (typeof RECENT_STEPS)[number]["id"]; label: string; count: number | null }[];
+}
+
+/** The approvals timelines report on a day in the last RECENT_DAYS days, `today` (an Eastern "YYYY-MM-DD") included. */
+export function recentApprovals(records: readonly TimelineRecord[], today: string): RecentApprovals {
+  if (!ISO.test(today) || Number.isNaN(Date.parse(`${today}T00:00:00Z`))) throw new Error(`Not a day: ${today}`);
+  const from = new Date(Date.parse(`${today}T00:00:00Z`) - (RECENT_DAYS - 1) * MS_PER_DAY).toISOString().slice(0, 10);
+  return {
+    from,
+    through: today,
+    steps: RECENT_STEPS.map((s) => {
+      const n = records.filter((r) => {
+        const on = r[s.id];
+        return on !== undefined && on >= from && on <= today;
+      }).length;
+      return { id: s.id, label: s.label, count: n >= RECENT_MIN ? n : null };
+    }),
   };
 }
 
@@ -697,6 +752,7 @@ export interface OfficeRow {
   filedMonth: string | null;
   category: CategoryId | null;
   country: CountryId | null;
+  applicant: ApplicantId | null;
   /** Days from the I-485 filing to each step, in OFFICE_STOPS order; null when not reported or not countable. */
   stops: { id: OfficeStopId; day: number | null; month: string | null }[];
   /** An RFE on the I-485, and how it ended; null when none was reported. */
@@ -711,6 +767,7 @@ export function toOfficeRow(r: TimelineRecord): OfficeRow {
     filedMonth: origin ? origin.slice(0, 7) : null,
     category: r.category ?? null,
     country: r.country ?? null,
+    applicant: r.applicant ?? null,
     stops: OFFICE_STOPS.map((id) => {
       const iso = r[id];
       const day = origin && iso ? daysBetween(origin, iso) : null;

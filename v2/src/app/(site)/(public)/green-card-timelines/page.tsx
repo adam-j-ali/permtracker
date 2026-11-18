@@ -4,7 +4,7 @@ import { queryStatic } from "@/lib/convexStatic";
 
 import { api } from "@convex/_generated/api";
 import { ShareTimeline } from "@/components/community/ShareTimeline";
-import { AccountCodes, BoardKey, BoardTable, RfeBars, StageMedians, ThirdFta0Line, WhoIsWaiting } from "@/components/community/TimelineBoard";
+import { AccountCodes, BoardKey, BoardTable, RecentApprovals, RfeBars, StageMedians, ThirdFta0Line, WhoIsWaiting } from "@/components/community/TimelineBoard";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { FaqList } from "@/components/tools/FaqList";
 import { BOARD_OPENS_AT, METRIC_MIN_N, OFFICE_LIST_OPENS_AT, shareProgress } from "@/lib/communityTimeline";
@@ -13,6 +13,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { NoteBanner } from "@/components/ui/note";
 import { softFail } from "@/lib/softRead";
+import { easternDay } from "@/lib/time";
 
 /**
  * Green card timelines, as the people waiting report them.
@@ -48,7 +49,8 @@ export const revalidate = 21600;
 type Board = Awaited<ReturnType<typeof fetchBoard>>;
 
 async function fetchBoard() {
-  return queryStatic(api.communityTimelines.board, {}, revalidate);
+  // Today's Eastern day, so the week's approvals end today; the page redraws every few hours.
+  return queryStatic(api.communityTimelines.board, { today: easternDay(Date.now()) }, revalidate);
 }
 
 
@@ -116,6 +118,9 @@ export default async function GreenCardTimelinesPage() {
               <p className="mt-1 font-heading text-3xl font-bold tabular-nums">{board.rfe.total.toLocaleString("en-US")}</p>
             </div>
           </section>
+
+          {/* Optional: a backend older than Nov 18 2026 sends no week. */}
+          {board.recent ? <RecentApprovals recent={board.recent} /> : null}{" "}
 
           <section className="mt-8 max-w-3xl" aria-labelledby="add-h">
             <h2 id="add-h" className="sr-only">
