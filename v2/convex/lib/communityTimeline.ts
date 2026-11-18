@@ -160,6 +160,17 @@ export const RFE_OUTCOMES = [
 ] as const;
 export type RfeOutcomeId = (typeof RFE_OUTCOMES)[number]["id"];
 
+/** One RFE: the form it was on, what it asked, its dates and how it ended. */
+export interface RfeEntry {
+  form: RfeFormId;
+  reason?: RfeReasonId;
+  issuedOn?: string;
+  respondedOn?: string;
+  outcome?: RfeOutcomeId;
+}
+/** RFEs a timeline keeps beyond its first (an RFE on the I-140 and another on the I-485, say). */
+export const MAX_MORE_RFES = 3;
+
 /** The forms an update in a person's USCIS account can sit on. */
 export const EVENT_FORMS = [
   { id: "i140", label: "I-140" },
@@ -256,6 +267,8 @@ export interface TimelineInput {
   rfeIssuedOn?: string | null;
   rfeRespondedOn?: string | null;
   rfeOutcome?: string | null;
+  /** RFEs after the first, as the form sends them. */
+  moreRfes?: readonly { form?: string | null; reason?: string | null; issuedOn?: string | null; respondedOn?: string | null; outcome?: string | null }[] | null;
   public?: boolean | null;
 }
 
@@ -291,6 +304,8 @@ export interface TimelineFields {
   rfeIssuedOn?: string;
   rfeRespondedOn?: string;
   rfeOutcome?: RfeOutcomeId;
+  /** RFEs after the first, sorted by date. */
+  moreRfes?: RfeEntry[];
   public: boolean;
 }
 
@@ -341,6 +356,7 @@ export type TimelineProblem =
   | { code: "contact-date" }
   | { code: "contact-kind" }
   | { code: "contact-many" }
+  | { code: "rfe-many" }
   | { code: "account-date" }
   | { code: "account-form" }
   | { code: "account-code" }
@@ -422,6 +438,22 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
   const contacts = readContacts(input.contacts, today);
   if (!contacts.ok) return contacts;
   if (contacts.value) out.contacts = contacts.value;
+
+  const more = readMoreRfes(input.moreRfes, today);
+  if (!more.ok) return more;
+  if (more.value) {
+    // With no first RFE, the earliest of the rest becomes it, so every reader finds the first in its own fields.
+    const list = [...more.value];
+    if (out.rfeForm === undefined) {
+      const head = list.shift()!;
+      out.rfeForm = head.form;
+      if (head.reason) out.rfeReason = head.reason;
+      if (head.issuedOn) out.rfeIssuedOn = head.issuedOn;
+      if (head.respondedOn) out.rfeRespondedOn = head.respondedOn;
+      if (head.outcome) out.rfeOutcome = head.outcome;
+    }
+    if (list.length > 0) out.moreRfes = list;
+  }
 
   const any = DATE_FIELDS.some((f) => out[f.id] !== undefined);
   if (!any) return { ok: false, code: "no-dates", message: "Add at least one date after PERM to record a timeline." };
@@ -524,6 +556,42 @@ function readEvents(
   return { ok: true, value: value.length > 0 ? value : undefined };
 }
 
+/** The RFEs after the first, as sent: each needs its form; its reason, outcome and dates are checked like the first's. */
+function readMoreRfes(
+  raw: TimelineInput["moreRfes"],
+  today: string,
+): { ok: true; value: RfeEntry[] | undefined } | ({ ok: false; message: string } & TimelineProblem) {
+  if (raw === undefined || raw === null) return { ok: true, value: undefined };
+  if (!Array.isArray(raw)) return { ok: false, code: "rfe-form", message: "Say which form each RFE was on." };
+  if (raw.length > MAX_MORE_RFES) {
+    return { ok: false, code: "rfe-many", message: `A timeline keeps ${MAX_MORE_RFES + 1} RFEs at most. Keep the ones that matter most to you.` };
+  }
+  const out: RfeEntry[] = [];
+  for (const e of raw) {
+    const form = pick(RFE_FORMS, e?.form);
+    if (form === undefined || form === null) return { ok: false, code: "rfe-form", message: "Say which form each RFE was on." };
+    const reason = pick(RFE_REASONS, e?.reason);
+    if (reason === null) return { ok: false, code: "choice", field: "rfeReason", message: "That RFE reason isn't one this form records." };
+    const outcome = pick(RFE_OUTCOMES, e?.outcome);
+    if (outcome === null) return { ok: false, code: "choice", field: "rfeOutcome", message: "That RFE outcome isn't one this form records." };
+    const issuedOn = isoOrUndefined(e?.issuedOn, today);
+    const respondedOn = isoOrUndefined(e?.respondedOn, today);
+    if (issuedOn === null || respondedOn === null) return { ok: false, code: "date", message: "Enter each date as YYYY-MM-DD, from 2005 on and not in the future." };
+    if (issuedOn && respondedOn && respondedOn < issuedOn) return { ok: false, code: "rfe-order", message: "The RFE response is dated before the RFE." };
+    out.push({ form, ...(reason ? { reason } : {}), ...(issuedOn ? { issuedOn } : {}), ...(respondedOn ? { respondedOn } : {}), ...(outcome ? { outcome } : {}) });
+  }
+  out.sort((a, b) => (a.issuedOn ?? "").localeCompare(b.issuedOn ?? ""));
+  return { ok: true, value: out.length > 0 ? out : undefined };
+}
+
+/** Every RFE a timeline reports: the first, kept in its own fields, then the rest. */
+export function rfesOf(r: Pick<TimelineFields, "rfeForm" | "rfeReason" | "rfeIssuedOn" | "rfeRespondedOn" | "rfeOutcome" | "moreRfes">): RfeEntry[] {
+  const first: RfeEntry[] = r.rfeForm
+    ? [{ form: r.rfeForm, reason: r.rfeReason, issuedOn: r.rfeIssuedOn, respondedOn: r.rfeRespondedOn, outcome: r.rfeOutcome }]
+    : [];
+  return [...first, ...(r.moreRfes ?? [])];
+}
+
 /** What the person did, as sent: each needs a day and a kind from CONTACT_KINDS. Sorted by day; an exact repeat is dropped. */
 function readContacts(
   raw: TimelineInput["contacts"],
@@ -605,9 +673,9 @@ export const METRICS = [
   { id: "i485-interview", label: "I-485 filed to interview", from: "i485FiledOn", to: "interviewOn", verified: false },
   { id: "i485-gc", label: "I-485 filed to green card", from: "i485FiledOn", to: "greenCardOn", verified: false },
   { id: "gc-card", label: "Green card approved to the card in the mail", from: "greenCardOn", to: "cardArrivedOn", verified: false },
-  { id: "rfe-answer", label: "RFE issued to answered", from: "rfeIssuedOn", to: "rfeRespondedOn", verified: false },
-  // The decision after an RFE is the I-140's approval or the green card, by the form the RFE was on.
-  { id: "rfe-decision", label: "RFE answered to approved", from: "rfeRespondedOn", to: "i140ApprovedOn", toByForm: { i140: "i140ApprovedOn", i485: "greenCardOn" }, verified: false },
+  // One value per RFE (rfesOf). The decision after an RFE is the I-140's approval or the green card, by its form.
+  { id: "rfe-answer", label: "RFE issued to answered", from: "rfeIssuedOn", to: "rfeRespondedOn", perRfe: "answer", verified: false },
+  { id: "rfe-decision", label: "RFE answered to approved", from: "rfeRespondedOn", to: "i140ApprovedOn", perRfe: "decision", verified: false },
 ] as const;
 export type MetricId = (typeof METRICS)[number]["id"];
 
@@ -645,9 +713,15 @@ export function computeMetrics(records: readonly TimelineRecord[]): MetricResult
       const at = r as unknown as Record<string, string | undefined>;
       // Premium requested after filing starts its own clock; asked at filing, the filing is the start.
       const from = "fromFirst" in m && at[m.fromFirst] && at[m.fromFirst]! > (at[m.from] ?? "") ? at[m.fromFirst] : at[m.from];
-      const to = "toByForm" in m && r.rfeForm ? at[m.toByForm[r.rfeForm]] : at[m.to];
-      if ("toByForm" in m && !r.rfeForm) continue;
-      const d = daysBetween(from, to);
+      if ("perRfe" in m) {
+        for (const e of rfesOf(r)) {
+          const end = m.perRfe === "answer" ? e.respondedOn : e.form === "i140" ? r.i140ApprovedOn : r.greenCardOn;
+          const d = daysBetween(m.perRfe === "answer" ? e.issuedOn : e.respondedOn, end);
+          if (d !== null && d >= 0 && d <= 3650) vals.push(d);
+        }
+        continue;
+      }
+      const d = daysBetween(from, at[m.to]);
       if (d !== null && d >= 0 && d <= 3650) vals.push(d);
     }
     vals.sort((a, b) => a - b);
@@ -672,17 +746,17 @@ export interface RfeSummary {
 }
 
 export function summarizeRfes(records: readonly TimelineRecord[]): RfeSummary {
-  const rfes = records.filter((r) => r.hiddenAt === undefined && r.rfeForm !== undefined);
-  const count = <T extends { id: string; label: string }>(list: readonly T[], key: keyof TimelineRecord) =>
+  const rfes = records.filter((r) => r.hiddenAt === undefined).flatMap((r) => rfesOf(r));
+  const count = <T extends { id: string; label: string }>(list: readonly T[], key: keyof RfeEntry) =>
     list
-      .map((x) => ({ id: x.id as T["id"], label: x.label, count: rfes.filter((r) => r[key] === x.id).length }))
+      .map((x) => ({ id: x.id as T["id"], label: x.label, count: rfes.filter((e) => e[key] === x.id).length }))
       .filter((x) => x.count > 0)
       .sort((a, b) => b.count - a.count);
   return {
     total: rfes.length,
-    byForm: count(RFE_FORMS, "rfeForm"),
-    byReason: count(RFE_REASONS, "rfeReason"),
-    byOutcome: count(RFE_OUTCOMES, "rfeOutcome"),
+    byForm: count(RFE_FORMS, "form"),
+    byReason: count(RFE_REASONS, "reason"),
+    byOutcome: count(RFE_OUTCOMES, "outcome"),
   };
 }
 
@@ -836,7 +910,9 @@ export interface BoardRow {
   stops: { id: DateFieldId | "permCertifiedOn"; day: number | null; month: string | null }[];
   /** True when the PERM half was found in DOL's record. */
   permVerified: boolean;
+  /** The first RFE; `rfes` holds every one. */
   rfe: { form: RfeFormId; reason: RfeReasonId | null; outcome: RfeOutcomeId | null } | null;
+  rfes: { form: RfeFormId; reason: RfeReasonId | null; outcome: RfeOutcomeId | null }[];
   /** The USCIS office's code, only when that office's own list is open; null otherwise. */
   office: string | null;
   /** The service center's code, only when enough shared timelines name it; null otherwise. */
@@ -863,7 +939,8 @@ export function toBoardRow(r: TimelineRecord, showOffice = false, showCenter = f
     premium: r.premium ?? null,
     stops: [stop("permCertifiedOn"), ...DATE_FIELDS.map((f) => stop(f.id))],
     permVerified: Boolean(r.permFiledOn && r.permCertifiedOn),
-    rfe: r.rfeForm ? { form: r.rfeForm, reason: r.rfeReason ?? null, outcome: r.rfeOutcome ?? null } : null,
+    rfe: rfesOf(r).map((e) => ({ form: e.form, reason: e.reason ?? null, outcome: e.outcome ?? null }))[0] ?? null,
+    rfes: rfesOf(r).map((e) => ({ form: e.form, reason: e.reason ?? null, outcome: e.outcome ?? null })),
     office: showOffice ? (r.fieldOffice ?? null) : null,
     center: showCenter ? (r.i485Center ?? null) : null,
     updates: updatesOf(r, origin),
@@ -946,7 +1023,7 @@ export function toOfficeRow(r: TimelineRecord): OfficeRow {
       const day = origin && iso ? daysBetween(origin, iso) : null;
       return { id, day: day !== null && day >= 0 ? day : null, month: iso ? iso.slice(0, 7) : null };
     }),
-    rfe: r.rfeForm === "i485" ? { outcome: r.rfeOutcome ?? null } : null,
+    rfe: ((e) => (e ? { outcome: e.outcome ?? null } : null))(rfesOf(r).find((e) => e.form === "i485")),
     updates: updatesOf(r, origin),
     updatedMonth: new Date(r.updatedAt).toISOString().slice(0, 7),
   };

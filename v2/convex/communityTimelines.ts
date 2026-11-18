@@ -32,6 +32,7 @@ import {
   DETAIL_DATES,
   contactOutcomes,
   interviewShare,
+  rfesOf,
   computeMetrics,
   isListedCode,
   isPermCategory,
@@ -159,6 +160,20 @@ const timelineInput = v.object({
   rfeIssuedOn: v.optional(v.union(v.string(), v.null())),
   rfeRespondedOn: v.optional(v.union(v.string(), v.null())),
   rfeOutcome: v.optional(v.union(v.string(), v.null())),
+  moreRfes: v.optional(
+    v.union(
+      v.array(
+        v.object({
+          form: v.optional(v.union(v.string(), v.null())),
+          reason: v.optional(v.union(v.string(), v.null())),
+          issuedOn: v.optional(v.union(v.string(), v.null())),
+          respondedOn: v.optional(v.union(v.string(), v.null())),
+          outcome: v.optional(v.union(v.string(), v.null())),
+        }),
+      ),
+      v.null(),
+    ),
+  ),
   public: v.optional(v.union(v.boolean(), v.null())),
 });
 
@@ -184,7 +199,7 @@ function readCase(raw: string | undefined): string | undefined | null {
 }
 
 /** The self-reported fields of a row, every one written so an edit can clear it: the lib's one list, and two beside it. */
-const FIELD_KEYS = [...TIMELINE_TEXT_FIELDS, "premium", "accountEvents", "contacts"] as const;
+const FIELD_KEYS = [...TIMELINE_TEXT_FIELDS, "premium", "accountEvents", "contacts", "moreRfes"] as const;
 
 /** A row from before reviews existed has no status until `backfillStatus` runs; it was public then, so it reads as approved. */
 const statusOf = (r: Doc<"communityTimelines">) => r.status ?? "approved";
@@ -470,6 +485,7 @@ const boardRowV = v.object({
     v.null(),
     v.object({ form: v.string(), reason: v.union(v.string(), v.null()), outcome: v.union(v.string(), v.null()) }),
   ),
+  rfes: v.array(v.object({ form: v.string(), reason: v.union(v.string(), v.null()), outcome: v.union(v.string(), v.null()) })),
   office: v.union(v.string(), v.null()),
   center: v.union(v.string(), v.null()),
   updates: updatesV,
@@ -824,15 +840,15 @@ function adminRow(r: Doc<"communityTimelines">): Infer<typeof adminRowV> {
     ...DETAIL_DATES.flatMap((f) => (r[f.id] ? [{ label: f.label as string, on: r[f.id] as string, verified: false }] : [])),
     ...(r.contacts ?? []).map((c) => ({ label: labelOf(CONTACT_KINDS, c.kind) ?? c.kind, on: c.on, verified: false })),
   ];
-  const rfe = r.rfeForm
-    ? [
-        `RFE on the ${r.rfeForm === "i140" ? "I-140" : "I-485"}`,
-        r.rfeIssuedOn ? `dated ${r.rfeIssuedOn}` : null,
-        r.rfeRespondedOn ? `answered ${r.rfeRespondedOn}` : null,
-        r.rfeOutcome ?? null,
-      ]
-        .filter(Boolean)
-        .join(", ")
+  const all = rfesOf(asRecord(r));
+  const rfe = all.length
+    ? all
+        .map((e) =>
+          [`RFE on the ${e.form === "i140" ? "I-140" : "I-485"}`, e.issuedOn ? `dated ${e.issuedOn}` : null, e.respondedOn ? `answered ${e.respondedOn}` : null, e.outcome ?? null]
+            .filter(Boolean)
+            .join(", "),
+        )
+        .join("; ")
     : null;
   return {
     _id: r._id,

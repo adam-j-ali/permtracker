@@ -121,3 +121,18 @@ describe("the details and what you did", () => {
     expect(last.premiumOn).toBe("2025-12-01");
   });
 });
+
+describe("more than one RFE", () => {
+  it("offers another RFE once the first has its form, and keeps it in the list", () => {
+    render(<Form />);
+    expect(screen.queryByRole("button", { name: "Add another RFE" })).toBeNull();
+    fireEvent.change(screen.getByLabelText("On which form"), { target: { value: "i140" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add another RFE" }));
+    const second = screen.getByRole("group", { name: "Another RFE 1" });
+    fireEvent.change(within(second).getByLabelText("On which form"), { target: { value: "i485" } });
+    fireEvent.change(within(second).getByLabelText("RFE dated"), { target: { value: "2026-10-26" } });
+    expect(last.moreRfes).toEqual([{ form: "i485", reason: null, issuedOn: "2026-10-26", respondedOn: null, outcome: null }]);
+    fireEvent.click(within(second).getByRole("button", { name: "Remove RFE 2" }));
+    expect(last.moreRfes).toBeNull();
+  });
+});

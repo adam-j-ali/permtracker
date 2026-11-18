@@ -20,6 +20,7 @@ import {
   I485_CENTERS,
   INTERVIEW_OUTCOMES,
   MAX_CONTACTS,
+  MAX_MORE_RFES,
   MAX_ACCOUNT_EVENTS,
   RFE_FORMS,
   RFE_OUTCOMES,
@@ -318,6 +319,70 @@ function Hints({ form }: { form: TimelineInput }) {
   );
 }
 
+type RfeRow = { form?: string | null; reason?: string | null; issuedOn?: string | null; respondedOn?: string | null; outcome?: string | null };
+
+/** The RFEs after the first: an I-485 RFE after an I-140 one, say. Shown once the first RFE's form is picked. */
+function MoreRfes({ uid, form, set }: { uid: string; form: TimelineInput; set: Set }) {
+  const list = (form.moreRfes ?? []) as RfeRow[];
+  const [ids, setIds] = useState<string[]>(() => list.map(rowId));
+  const count = list.length;
+  useEffect(() => {
+    if (ids.length !== count) setIds(Array.from({ length: count }, rowId));
+  }, [count, ids.length]);
+  if (!form.rfeForm) return null;
+  const write = (next: RfeRow[]) => set("moreRfes", next.length > 0 ? next : null);
+  const change = (i: number, patch: RfeRow) => write(list.map((e, j) => (j === i ? { ...e, ...patch } : e)));
+  return (
+    <div className={`mt-4 grid grid-cols-1 gap-4 [&>*]:min-w-0`}>
+      {list.map((e, i) => {
+        const id = ids[i] ?? `${uid}-r${i}`;
+        return (
+          <Fragment key={id}>
+            <fieldset className="border-2 border-border p-3">
+              <legend className="px-1 text-sm font-semibold">Another RFE {i + 1}</legend>
+              <div className={gridCls}>
+                <Pick id={`${uid}-${id}-form`} label="On which form" value={e?.form ?? ""} empty="Pick one" options={RFE_FORMS} onChange={(v) => change(i, { form: v || null })} />{" "}
+                <Pick id={`${uid}-${id}-reason`} label="What it asked about" value={e?.reason ?? ""} empty="Not saying" options={RFE_REASONS} onChange={(v) => change(i, { reason: v || null })} />{" "}
+                <div>
+                  <Label htmlFor={`${uid}-${id}-issued`}>RFE dated</Label>
+                  <DateInput id={`${uid}-${id}-issued`} value={e?.issuedOn ?? ""} onChange={(ev) => change(i, { issuedOn: ev.target.value || null })} className="mt-1.5" />
+                </div>{" "}
+                <div>
+                  <Label htmlFor={`${uid}-${id}-resp`}>Response sent</Label>
+                  <DateInput id={`${uid}-${id}-resp`} value={e?.respondedOn ?? ""} onChange={(ev) => change(i, { respondedOn: ev.target.value || null })} className="mt-1.5" />
+                </div>{" "}
+                <Pick id={`${uid}-${id}-out`} label="What happened" value={e?.outcome ?? ""} empty="Not saying" options={RFE_OUTCOMES} onChange={(v) => change(i, { outcome: v || null })} className="sm:col-span-2" />
+              </div>{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setIds(ids.filter((_, j) => j !== i));
+                  write(list.filter((_, j) => j !== i));
+                }}
+                className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <XIcon className="size-4" weight="bold" aria-hidden="true" /> Remove RFE {i + 2}
+              </button>
+            </fieldset>{" "}
+          </Fragment>
+        );
+      })}
+      {list.length < MAX_MORE_RFES ? (
+        <button
+          type="button"
+          onClick={() => {
+            setIds([...ids, rowId()]);
+            write([...list, { form: null, reason: null, issuedOn: null, respondedOn: null, outcome: null }]);
+          }}
+          className="inline-flex min-h-11 w-fit items-center gap-1.5 border-2 border-foreground bg-card px-4 text-base font-semibold hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <PlusIcon className="size-4" weight="bold" aria-hidden="true" /> Add another RFE
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function Rfe({ uid, form, set }: { uid: string; form: TimelineInput; set: Set }) {
   return (
     <details className="group/more border-2 border-border p-2" open={Boolean(form.rfeForm)}>
@@ -345,7 +410,8 @@ function Rfe({ uid, form, set }: { uid: string; form: TimelineInput; set: Set })
           onChange={(v) => set("rfeOutcome", v || null)}
           className="sm:col-span-2"
         />
-      </div>
+      </div>{" "}
+      <MoreRfes uid={uid} form={form} set={set} />
     </details>
   );
 }
