@@ -90,7 +90,12 @@ export type TokenPurpose =
   /** The weekly digest's own sign-up (convex/digestSignup.ts): confirm the digest, nothing else. */
   | "digest-confirm"
   /** The rating row in a case's last alert: rate the alerts, nothing else. */
-  | "alert-rating";
+  | "alert-rating"
+  /**
+   * Accept one version of the policy (convex/policyConsent.ts). The version is part of the purpose, so a link
+   * mailed for one version never accepts another (`policyAcceptPurpose` in convex/lib/policyConsent.ts).
+   */
+  | `policy-accept:${string}`;
 
 /** The exact string that gets signed. Kept in one place so both sides agree. */
 function signedMessage(normalizedEmail: string, purpose?: TokenPurpose): string {

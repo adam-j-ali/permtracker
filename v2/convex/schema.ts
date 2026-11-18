@@ -75,9 +75,27 @@ export default defineSchema({
     // Kept as optional for backwards compat with existing documents.
     emailVerificationTime: v.optional(v.number()),
     deletedAt: v.optional(v.number()),
+    /**
+     * The policy version this account last accepted (convex/lib/policyConsent.ts). Absent means the baseline,
+     * which every account holds, so nothing is migrated and nobody is asked until a change needs it.
+     */
+    policyAcceptedVersion: v.optional(v.string()),
+    policyAcceptedAt: v.optional(v.number()),
   })
     .index("email", ["email"])
     .index("by_deleted_at", ["deletedAt"]),
+
+  /**
+   * Active consent from alert subscribers without an account (convex/policyConsent.ts): one row per address and
+   * policy version, keyed by the address's SHA-256 (`raterKeyFor`), never the address. `noticeSentAt` stamps the
+   * change email so the hand-run sweep mails each address once per version; `acceptedAt` is the click.
+   */
+  policyConsents: defineTable({
+    key: v.string(),
+    version: v.string(),
+    noticeSentAt: v.optional(v.number()),
+    acceptedAt: v.optional(v.number()),
+  }).index("by_key_version", ["key", "version"]),
 
   // Separate table for app-specific user data (survives Clerk migration)
   userProfiles: defineTable({

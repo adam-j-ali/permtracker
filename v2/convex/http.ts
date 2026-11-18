@@ -10,9 +10,11 @@ import { recordError } from "./lib/errorRecording";
 import { isLiveContactEventType } from "./marketingWebhook";
 import { Webhook } from "svix";
 import { verifyUnsubscribeToken } from "./lib/unsubscribeToken";
+import { POLICY_CONSENT_VERSION, isPolicyVersion, policyAcceptPurpose } from "./lib/policyConsent";
 import {
   badLinkPage,
   escapeHtml,
+  htmlPage,
   messagePage,
   prefsPage,
   ratingPage,
@@ -1686,6 +1688,73 @@ http.route({
     const state = await ctx.runMutation(internal.emailPrefs.stateByToken, { token });
     if (!state) return badLinkPage("This link has expired or was changed.");
     return prefsPage(state, token, url.searchParams.get("focus"));
+  }),
+});
+
+// ============================================================================
+// Accepting a policy change (convex/policyConsent.ts)
+//
+// The change email's link opens this page. GET shows what changed and a POST button, because mail gateways fetch
+// the links in inbound mail and a GET that accepted would let a scanner accept for someone. It sits under /prefs,
+// which nginx and next.config.ts already relay to Convex, so the page's relative form posts back here. The token
+// is signed for the address AND the version in `v`: a link for one version never accepts another.
+// ============================================================================
+
+function policyParams(req: Request): { token: string; version: string } | null {
+  const url = new URL(req.url);
+  const token = (url.searchParams.get("token") ?? "").slice(0, 512);
+  const version = (url.searchParams.get("v") ?? "").slice(0, 16);
+  if (!token || !isPolicyVersion(version)) return null;
+  return { token, version };
+}
+
+const POLICY_CHANGES = `${SITE_URL}/privacy#changes-to-this-policy`;
+
+http.route({
+  path: "/prefs/policy",
+  method: "GET",
+  handler: httpAction(async (_ctx, req) => {
+    const p = policyParams(req);
+    if (!p) return badLinkPage();
+    if (p.version !== POLICY_CONSENT_VERSION) {
+      return messagePage(
+        "This link is for an earlier version",
+        `The policy has changed again since this email was sent, so this link can't accept it. Nothing was changed. <a href="${POLICY_CHANGES}">Read the current policy</a>.`,
+      );
+    }
+    const secret = process.env.UNSUBSCRIBE_SECRET;
+    const email = secret ? await verifyUnsubscribeToken(p.token, secret, policyAcceptPurpose(p.version)) : null;
+    if (!email) return badLinkPage("This link was changed, or it isn't for this version of the policy.");
+    return messagePage(
+      "Accept the updated policy?",
+      `We changed how we use information you&rsquo;ve already given us. Until you accept, the alerts for ${escapeHtml(email)} keep running under the version you last agreed to. <a href="${POLICY_CHANGES}">Read what changed</a>.`,
+      { post: `/prefs/policy?token=${encodeURIComponent(p.token)}&v=${encodeURIComponent(p.version)}`, label: "Accept" },
+    );
+  }),
+});
+
+http.route({
+  path: "/prefs/policy",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const p = policyParams(req);
+    if (!p) return badLinkPage();
+    const { status } = await ctx.runMutation(internal.policyConsent.acceptByToken, { token: p.token, version: p.version, ip: callerIp(req) });
+    if (status === "throttled") {
+      return htmlPage(
+        "Too many tries",
+        `<h1>Too many tries</h1><p class="muted">This connection has sent a lot of requests in the last hour. Wait a little and try the link again.</p>`,
+        429,
+      );
+    }
+    if (status === "bad") return badLinkPage("This link was changed, or it isn't for this version of the policy.");
+    if (status === "stale") {
+      return messagePage("This link is for an earlier version", `The policy has changed again since this email was sent, so nothing was accepted. <a href="${POLICY_CHANGES}">Read the current policy</a>.`);
+    }
+    return messagePage(
+      status === "already" ? "Already accepted" : "Accepted",
+      `Thank you. The updated policy now applies to your alerts. <a href="${POLICY_CHANGES}">Read it any time</a>.`,
+    );
   }),
 });
 

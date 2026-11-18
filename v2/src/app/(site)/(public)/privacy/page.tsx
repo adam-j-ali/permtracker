@@ -1729,6 +1729,7 @@ export default function PrivacyPage() {
             <h3 className="font-heading text-lg font-bold mt-6 mb-3">What you give and what we send</h3>{" "}
             <ul className="list-disc list-inside text-soft space-y-2 ml-4">
               <li>You type a receipt number (thirteen characters, such as IOE0912345678). No account is needed and no name is asked for.</li>{" "}
+              <li>By looking up a receipt number, you confirm that it is your own case or that its owner has asked you to check it.</li>{" "}
               <li>We send that receipt number to USCIS over an encrypted connection with our API credentials. USCIS&apos;s own terms of use and privacy policy apply to what USCIS does with the request.</li>{" "}
               <li>USCIS answers with the form type, the current status text, and a dated history of status changes. It doesn&apos;t return your name or any other identifier.</li>
             </ul>{" "}
@@ -1758,8 +1759,16 @@ export default function PrivacyPage() {
               <li>Sending an email notification for material changes</li>
             </ul>{" "}
             <p className="text-soft leading-relaxed mt-4">
-              Your continued use of the service after changes constitutes
-              acceptance of the updated policy.
+              If a change affects how we use information you have already given
+              us, it will not apply to that information until you actively agree
+              to it. With an account, you will see the change when you next sign
+              in and be asked to accept it. For alerts without an account, we will
+              email you a link to accept it. Until you accept, we will keep
+              handling your information under the version you last agreed to, and
+              you may delete your account or end your alerts at any time. We
+              record which version you accepted and when. For alerts without an
+              account, that record is kept under a one-way code made from your
+              email address, never the address itself.
             </p>
           </details>{" "}
 
