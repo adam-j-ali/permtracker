@@ -232,6 +232,14 @@ export default async function UscisRfeRatesPage() {
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           How often USCIS asked for more evidence before deciding an I-129 work visa petition, every month since{" "}
           {monthLabel(firstMonth.fy, firstMonth.month)}, from the counts USCIS publishes each quarter.
+        </p>{" "}
+        <p className="mt-3 max-w-2xl text-base leading-relaxed">
+          USCIS publishes no RFE counts for the I-140 or the I-485. For those, the{" "}
+          <Link href="/green-card-timelines" className="link">
+            green card timelines
+          </Link>{" "}
+          people share count their RFEs by reason, and show how long the answer and the decision after it took once five
+          timelines report one.
         </p>
       </header>
 
