@@ -206,7 +206,7 @@ export function RecentApprovals({ recent }: { recent: RecentApprovals }) {
       <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 [&>*]:min-w-0">
         {recent.steps.map((s) => (
           <li key={s.id} className="flex items-baseline justify-between gap-3 border-2 border-border px-4 py-3">
-            <span>{`${s.label} `}</span>
+            <span>{s.label}</span>{" "}
             <span className={s.count === null ? "text-muted-foreground" : "font-heading text-xl font-bold tabular-nums"}>
               {s.count === null ? `Fewer than ${RECENT_MIN}` : s.count.toLocaleString("en-US")}
             </span>
