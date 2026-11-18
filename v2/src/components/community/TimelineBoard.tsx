@@ -254,11 +254,13 @@ export function BoardTable({ rows }: { rows: readonly BoardRow[] }) {
                 <td className="px-3 py-3">{label(CATEGORIES, r.category) ?? ""}{" "}</td>
                 <td className="px-3 py-3">{label(COUNTRIES, r.country) ?? ""}{" "}</td>
                 <td className="px-3 py-3">
-                  {r.route ? (label(ROUTES, r.route) ?? "").replace(/ \(.*\)$/, "") : ""}
+                  {r.route ? (label(ROUTES, r.route) ?? "").replace(/ \(.*\)$/, "") : ""}{" "}
                   {r.premium ? <span className="block text-muted-foreground">premium I-140</span> : null}{" "}
                   {r.applicant === "dependent" ? <span className="block text-muted-foreground">a dependent&apos;s case</span> : null}{" "}
                   {r.interview === "waived" ? <span className="block text-muted-foreground">interview waived</span> : null}{" "}
                   {r.contacts ? <span className="block text-muted-foreground">{`${contactsText(r.contacts)} `}</span> : null}{" "}
+                  {/* Optional: a backend older than Nov 18 2026 sends no H-4. */}
+                  {r.h4 ? <span className="block text-muted-foreground">{`${h4Text(r.h4)} `}</span> : null}{" "}
                   {/* Optional: a backend older than Nov 11 2026 sends no office. */}
                   {r.office && officeByCode(r.office) ? (
                     <span className="block text-muted-foreground">{`I-485 at ${officeByCode(r.office)!.name}`}</span>
@@ -362,6 +364,16 @@ export function AccountCodes({
  * What these people saw, never a forecast for anyone else's case.
  */
 /** A row's contacts in words: "2 contacts: an Emma chat, a congressional inquiry". */
+/** A row's H-4 papers in words, durations only: "H-4 extension in 181 days, H-4 work permit in 162 days, filed together". */
+export function h4Text(h: { extensionDays: number | null; workPermitDays: number | null; together: boolean }): string {
+  return [
+    h.extensionDays !== null ? `H-4 extension in ${days(h.extensionDays)}` : null,
+    h.workPermitDays !== null ? `H-4 work permit in ${days(h.workPermitDays)}${h.together ? ", filed together" : ""}` : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
 export function contactsText(c: { count: number; kinds: readonly string[] }): string {
   const names = c.kinds.map((k) => CONTACT_KINDS.find((x) => x.id === k)?.short ?? k);
   return `${c.count} ${c.count === 1 ? "contact" : "contacts"}: ${names.join(", ")}`;

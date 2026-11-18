@@ -109,6 +109,28 @@ export const DETAIL_DATES = [
 ] as const;
 export type DetailDateId = (typeof DETAIL_DATES)[number]["id"];
 
+/**
+ * A spouse's H-4 papers while the green card case runs: the extension of stay (Form I-539) and the H-4 work permit
+ * (Form I-765, category (c)(26)), each filed and approved. Either route, and no order against the green card steps:
+ * an H-4 can be extended before PERM is filed or after the I-485. They never count as the step a timeline needs.
+ */
+export const H4_DATES = [
+  { id: "h4FiledOn", label: "H-4 extension (I-539) filed", routes: ["adjustment", "consular"] },
+  { id: "h4ApprovedOn", label: "H-4 extension (I-539) approved", routes: ["adjustment", "consular"] },
+  { id: "h4EadFiledOn", label: "H-4 work permit (I-765, category (c)(26)) filed", routes: ["adjustment", "consular"] },
+  { id: "h4EadApprovedOn", label: "H-4 work permit approved", routes: ["adjustment", "consular"] },
+] as const;
+export type H4DateId = (typeof H4_DATES)[number]["id"];
+
+/**
+ * The H-4 work permit went in with the I-539: both filed, on the same day. Derived, never asked. USCIS posts the two
+ * routes as separate times (6.5 months with the I-539, 17.5 on its own, its Oct 19 2026 posting), so a median across
+ * both would describe nobody.
+ */
+export function h4FiledTogether(r: { h4FiledOn?: string; h4EadFiledOn?: string }): boolean {
+  return r.h4EadFiledOn !== undefined && r.h4EadFiledOn === r.h4FiledOn;
+}
+
 /** How the interview went, beside its date: a waived one has no date. */
 export const INTERVIEW_OUTCOMES = [
   { id: "held", label: "Held" },
@@ -256,6 +278,10 @@ export interface TimelineInput {
   premiumOn?: string | null;
   officeMovedOn?: string | null;
   cardArrivedOn?: string | null;
+  h4FiledOn?: string | null;
+  h4ApprovedOn?: string | null;
+  h4EadFiledOn?: string | null;
+  h4EadApprovedOn?: string | null;
   /** Whether the interview was held or waived (INTERVIEW_OUTCOMES). */
   interview?: string | null;
   /** What the person did to move the case, as the form sends it. */
@@ -294,6 +320,10 @@ export interface TimelineFields {
   premiumOn?: string;
   officeMovedOn?: string;
   cardArrivedOn?: string;
+  h4FiledOn?: string;
+  h4ApprovedOn?: string;
+  h4EadFiledOn?: string;
+  h4EadApprovedOn?: string;
   interview?: InterviewOutcomeId;
   /** Sorted by day, exact repeats dropped. */
   contacts?: Contact[];
@@ -317,6 +347,7 @@ export const TIMELINE_TEXT_FIELDS = [
   "category", "country", "route", "applicant", "i140Center", "fieldOffice", "i485Center",
   ...DATE_FIELDS.map((f) => f.id),
   ...DETAIL_DATES.map((f) => f.id),
+  ...H4_DATES.map((f) => f.id),
   "interview",
   "rfeForm", "rfeReason", "rfeIssuedOn", "rfeRespondedOn", "rfeOutcome",
 ] as const satisfies readonly (keyof TimelineFields & keyof TimelineInput)[];
@@ -352,6 +383,8 @@ export type TimelineProblem =
   | { code: "premium-order" }
   | { code: "card-order" }
   | { code: "office-order" }
+  | { code: "h4-order"; field: "h4ApprovedOn" }
+  | { code: "h4-ead-order"; field: "h4EadApprovedOn" }
   | { code: "interview-waived-date" }
   | { code: "contact-date" }
   | { code: "contact-kind" }
@@ -422,6 +455,7 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
   const dates: [keyof TimelineFields, unknown][] = [
     ...DATE_FIELDS.map((f) => [f.id, input[f.id]] as [keyof TimelineFields, unknown]),
     ...DETAIL_DATES.map((f) => [f.id, input[f.id]] as [keyof TimelineFields, unknown]),
+    ...H4_DATES.map((f) => [f.id, input[f.id]] as [keyof TimelineFields, unknown]),
     ["rfeIssuedOn", input.rfeIssuedOn],
     ["rfeRespondedOn", input.rfeRespondedOn],
   ];
@@ -477,6 +511,12 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
   }
   if (before(out.greenCardOn, out.cardArrivedOn)) {
     return { ok: false, code: "card-order", message: "The card arrived before its approval date." };
+  }
+  if (before(out.h4FiledOn, out.h4ApprovedOn)) {
+    return { ok: false, code: "h4-order", field: "h4ApprovedOn", message: "The H-4 extension's approval is dated before its filing." };
+  }
+  if (before(out.h4EadFiledOn, out.h4EadApprovedOn)) {
+    return { ok: false, code: "h4-ead-order", field: "h4EadApprovedOn", message: "The H-4 work permit's approval is dated before its filing." };
   }
   if (before(out.i485FiledOn, out.officeMovedOn)) {
     return { ok: false, code: "office-order", message: "The move to a field office is dated before the I-485 filing." };
@@ -680,6 +720,10 @@ export const METRICS = [
   // One value per RFE (rfesOf). The decision after an RFE is the I-140's approval or the green card, by its form.
   { id: "rfe-answer", label: "RFE issued to answered", from: "rfeIssuedOn", to: "rfeRespondedOn", perRfe: "answer", verified: false },
   { id: "rfe-decision", label: "RFE answered to approved", from: "rfeRespondedOn", to: "i140ApprovedOn", perRfe: "decision", verified: false },
+  // A spouse's H-4 papers, beside the green card steps. The work permit splits on filed together (h4FiledTogether).
+  { id: "h4-i539", label: "H-4 extension, filed to approved", from: "h4FiledOn", to: "h4ApprovedOn", verified: false },
+  { id: "h4-ead-together", label: "H-4 work permit filed with the I-539, filed to approved", from: "h4EadFiledOn", to: "h4EadApprovedOn", h4: "together", verified: false },
+  { id: "h4-ead-alone", label: "H-4 work permit filed on its own, filed to approved", from: "h4EadFiledOn", to: "h4EadApprovedOn", h4: "alone", verified: false },
 ] as const;
 export type MetricId = (typeof METRICS)[number]["id"];
 
@@ -716,6 +760,7 @@ export function computeMetrics(records: readonly TimelineRecord[]): MetricResult
     let people = 0;
     for (const r of live) {
       if ("premium" in m && r.premium !== m.premium) continue;
+      if ("h4" in m && h4FiledTogether(r) !== (m.h4 === "together")) continue;
       const at = r as unknown as Record<string, string | undefined>;
       // Premium requested after filing starts its own clock; asked at filing, the filing is the start.
       const from = "fromFirst" in m && at[m.fromFirst] && at[m.fromFirst]! > (at[m.from] ?? "") ? at[m.fromFirst] : at[m.from];
@@ -913,6 +958,25 @@ export function interviewShare(records: readonly TimelineRecord[]): { answered: 
   return { answered: told.length, waived: told.filter((r) => r.interview === "waived").length };
 }
 
+/** A row's H-4 papers as durations, filed to approved, never the dates. */
+export interface H4Summary {
+  extensionDays: number | null;
+  workPermitDays: number | null;
+  /** The work permit went in with the I-539 (h4FiledTogether). */
+  together: boolean;
+}
+
+function h4Of(r: TimelineRecord): H4Summary | null {
+  const span = (a?: string, b?: string) => {
+    const d = daysBetween(a, b);
+    return d !== null && d >= 0 ? d : null;
+  };
+  const extensionDays = span(r.h4FiledOn, r.h4ApprovedOn);
+  const workPermitDays = span(r.h4EadFiledOn, r.h4EadApprovedOn);
+  if (extensionDays === null && workPermitDays === null) return null;
+  return { extensionDays, workPermitDays, together: h4FiledTogether(r) };
+}
+
 /** One row of the public board: no case number, no employer, no exact PERM date. */
 export interface BoardRow {
   /** "YYYY-MM": the PERM filing month, the priority-date month. */
@@ -926,6 +990,8 @@ export interface BoardRow {
   interview: InterviewOutcomeId | null;
   /** How many times the person contacted someone, and the kinds in order; never the days. Null when none. */
   contacts: ContactsSummary | null;
+  /** A spouse's H-4 papers, as durations; null when neither was approved. */
+  h4: H4Summary | null;
   premium: boolean | null;
   /** Days from PERM filing to each stop, in DATE_FIELDS order; null when not reported. */
   stops: { id: DateFieldId | "permCertifiedOn"; day: number | null; month: string | null }[];
@@ -957,6 +1023,7 @@ export function toBoardRow(r: TimelineRecord, showOffice = false, showCenter = f
     applicant: r.applicant ?? null,
     interview: r.interview ?? null,
     contacts: contactsOf(r),
+    h4: h4Of(r),
     premium: r.premium ?? null,
     stops: [stop("permCertifiedOn"), ...DATE_FIELDS.map((f) => stop(f.id))],
     permVerified: Boolean(r.permFiledOn && r.permCertifiedOn),
@@ -975,7 +1042,8 @@ export const RECENT_STEPS = [
   { id: "apOn", label: "Travel documents (advance parole)" },
   { id: "greenCardOn", label: "Green cards" },
   { id: "i140ApprovedOn", label: "I-140 approvals" },
-] as const satisfies readonly { id: DateFieldId; label: string }[];
+  { id: "h4EadApprovedOn", label: "H-4 work permits" },
+] as const satisfies readonly { id: DateFieldId | H4DateId; label: string }[];
 /** The days a week's count covers, today included. */
 export const RECENT_DAYS = 7;
 /**
@@ -1025,6 +1093,7 @@ export interface OfficeRow {
   applicant: ApplicantId | null;
   interview: InterviewOutcomeId | null;
   contacts: ContactsSummary | null;
+  h4: H4Summary | null;
   /** Days from the I-485 filing to each step, in OFFICE_STOPS order; null when not reported or not countable. */
   stops: { id: OfficeStopId; day: number | null; month: string | null }[];
   /** An RFE on the I-485, and how it ended; null when none was reported. */
@@ -1042,6 +1111,7 @@ export function toOfficeRow(r: TimelineRecord): OfficeRow {
     applicant: r.applicant ?? null,
     interview: r.interview ?? null,
     contacts: contactsOf(r),
+    h4: h4Of(r),
     stops: OFFICE_STOPS.map((id) => {
       const iso = r[id];
       const day = origin && iso ? daysBetween(origin, iso) : null;

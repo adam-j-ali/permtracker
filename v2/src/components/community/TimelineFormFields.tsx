@@ -17,6 +17,7 @@ import {
   APPLICANTS,
   CONTACT_KINDS,
   DETAIL_DATES,
+  H4_DATES,
   I485_CENTERS,
   INTERVIEW_OUTCOMES,
   MAX_CONTACTS,
@@ -467,6 +468,26 @@ function Details({ uid, form, set, route }: { uid: string; form: TimelineInput; 
   );
 }
 
+/** A spouse's H-4 papers: the extension of stay (I-539) and the H-4 work permit, each filed and approved. */
+function H4({ uid, form, set }: { uid: string; form: TimelineInput; set: Set }) {
+  return (
+    <fieldset className={gridCls} aria-describedby={`${uid}-h4-hint`}>
+      <legend className={legendCls}>A spouse&apos;s H-4 (optional)</legend>
+      <p id={`${uid}-h4-hint`} className="text-sm text-muted-foreground sm:col-span-2">
+        A work permit filed on the same day as the I-539 counts as filed together.
+      </p>{" "}
+      {H4_DATES.map((f) => (
+        <Fragment key={f.id}>
+          <div>
+            <Label htmlFor={`${uid}-${f.id}`}>{f.label}</Label>
+            <DateInput id={`${uid}-${f.id}`} value={form[f.id] ?? ""} onChange={(e) => set(f.id, e.target.value || null)} className="mt-1.5" />
+          </div>{" "}
+        </Fragment>
+      ))}
+    </fieldset>
+  );
+}
+
 type ContactRow = { on?: string | null; kind?: string | null };
 
 /** What the person did to move the case: a day and a kind each, up to MAX_CONTACTS. */
@@ -609,6 +630,7 @@ export function TimelineFormFields({
         </fieldset>{" "}
         <AccountUpdates uid={uid} form={form} set={set} />{" "}
         <Contacts uid={uid} form={form} set={set} />{" "}
+        <H4 uid={uid} form={form} set={set} />{" "}
         <Rfe uid={uid} form={form} set={set} />{" "}
         <Hints form={form} />{" "}
         <ShowOnBoard form={form} set={set} kept={kept} />
@@ -664,6 +686,7 @@ export function TimelineFormFields({
           </div>
         </div>
       </details>{" "}
+      <H4 uid={uid} form={form} set={set} />{" "}
       <Rfe uid={uid} form={form} set={set} />{" "}
       <Hints form={form} />{" "}
       <ShowOnBoard form={form} set={set} kept={kept} />

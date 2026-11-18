@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import ScreenshotFigure from "@/components/content/ScreenshotFigure";
 import { BarRows } from "@/components/data/BarRows";
@@ -134,7 +135,14 @@ export default async function EadExtensionPage() {
             </a>{" "}
             (Form I-765, category (c)(26)).
           </p>
-        )}
+        )}{" "}
+        <p className="mt-3 text-base leading-relaxed text-soft">
+          People also add their own H-4 work permit dates on{" "}
+          <Link href="/green-card-timelines" className="link">
+            the green card timelines page
+          </Link>
+          , and each route, filed with the I-539 or on its own, gets a median there once five people report it.
+        </p>
       </section>
 
       <section className="mt-10 max-w-3xl">
