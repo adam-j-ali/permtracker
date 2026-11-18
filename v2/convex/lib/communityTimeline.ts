@@ -122,13 +122,23 @@ export const H4_DATES = [
 ] as const;
 export type H4DateId = (typeof H4_DATES)[number]["id"];
 
+/** How the H-4 work permit went in: with the I-539 extension, or on its own. Asked beside its dates. */
+export const H4_EAD_ROUTES = [
+  { id: "with-i539", label: "Filed with the I-539" },
+  { id: "alone", label: "Filed on its own" },
+] as const;
+export type H4EadRouteId = (typeof H4_EAD_ROUTES)[number]["id"];
+
 /**
- * The H-4 work permit went in with the I-539: both filed, on the same day. Derived, never asked. USCIS posts the two
- * routes as separate times (6.5 months with the I-539, 17.5 on its own, its Oct 19 2026 posting), so a median across
- * both would describe nobody.
+ * How the H-4 work permit went in: the person's own answer, or, when they gave none, the two filing days (the same
+ * day is with the I-539, different days on its own). Null when neither says: a blank I-539 date is not "on its own".
+ * USCIS posts the two routes as separate times (6.5 months with the I-539, 17.5 on its own, its Oct 19 2026 posting),
+ * so a median across both, or a guess put in the wrong one, describes nobody.
  */
-export function h4FiledTogether(r: { h4FiledOn?: string; h4EadFiledOn?: string }): boolean {
-  return r.h4EadFiledOn !== undefined && r.h4EadFiledOn === r.h4FiledOn;
+export function h4EadRoute(r: { h4EadRoute?: H4EadRouteId; h4FiledOn?: string; h4EadFiledOn?: string }): H4EadRouteId | null {
+  if (r.h4EadRoute) return r.h4EadRoute;
+  if (r.h4EadFiledOn === undefined || r.h4FiledOn === undefined) return null;
+  return r.h4EadFiledOn === r.h4FiledOn ? "with-i539" : "alone";
 }
 
 /** How the interview went, beside its date: a waived one has no date. */
@@ -282,6 +292,8 @@ export interface TimelineInput {
   h4ApprovedOn?: string | null;
   h4EadFiledOn?: string | null;
   h4EadApprovedOn?: string | null;
+  /** How the H-4 work permit was filed (H4_EAD_ROUTES). */
+  h4EadRoute?: string | null;
   /** Whether the interview was held or waived (INTERVIEW_OUTCOMES). */
   interview?: string | null;
   /** What the person did to move the case, as the form sends it. */
@@ -324,6 +336,7 @@ export interface TimelineFields {
   h4ApprovedOn?: string;
   h4EadFiledOn?: string;
   h4EadApprovedOn?: string;
+  h4EadRoute?: H4EadRouteId;
   interview?: InterviewOutcomeId;
   /** Sorted by day, exact repeats dropped. */
   contacts?: Contact[];
@@ -348,6 +361,7 @@ export const TIMELINE_TEXT_FIELDS = [
   ...DATE_FIELDS.map((f) => f.id),
   ...DETAIL_DATES.map((f) => f.id),
   ...H4_DATES.map((f) => f.id),
+  "h4EadRoute",
   "interview",
   "rfeForm", "rfeReason", "rfeIssuedOn", "rfeRespondedOn", "rfeOutcome",
 ] as const satisfies readonly (keyof TimelineFields & keyof TimelineInput)[];
@@ -359,6 +373,7 @@ export type TimelineChoiceField =
   | "route"
   | "applicant"
   | "interview"
+  | "h4EadRoute"
   | "i140Center"
   | "fieldOffice"
   | "i485Center"
@@ -438,6 +453,7 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
     ["route", ROUTES, input.route, "route"],
     ["applicant", APPLICANTS, input.applicant, "applicant"],
     ["interview", INTERVIEW_OUTCOMES, input.interview, "interview answer"],
+    ["h4EadRoute", H4_EAD_ROUTES, input.h4EadRoute, "H-4 work permit route"],
     ["i140Center", I140_CENTERS, input.i140Center, "I-140 office"],
     ["fieldOffice", OFFICE_CHOICES, input.fieldOffice, "USCIS office"],
     ["i485Center", I485_CENTERS, input.i485Center, "service center"],
@@ -493,7 +509,16 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
   }
 
   const any = DATE_FIELDS.some((f) => out[f.id] !== undefined);
-  if (!any) return { ok: false, code: "no-dates", message: "Add at least one date after PERM to record a timeline." };
+  if (!any) {
+    const h4Only = H4_DATES.some((f) => typeof input[f.id] === "string" && input[f.id] !== "");
+    return {
+      ok: false,
+      code: "no-dates",
+      message: h4Only
+        ? "The H-4 dates go with a green card timeline: add at least one I-140 or I-485 date too."
+        : "Add at least one date after PERM to record a timeline.",
+    };
+  }
 
   if (out.premium !== true) delete out.premiumOn;
   const before = (a?: string, b?: string) => a !== undefined && b !== undefined && b < a;
@@ -720,12 +745,16 @@ export const METRICS = [
   // One value per RFE (rfesOf). The decision after an RFE is the I-140's approval or the green card, by its form.
   { id: "rfe-answer", label: "RFE issued to answered", from: "rfeIssuedOn", to: "rfeRespondedOn", perRfe: "answer", verified: false },
   { id: "rfe-decision", label: "RFE answered to approved", from: "rfeRespondedOn", to: "i140ApprovedOn", perRfe: "decision", verified: false },
-  // A spouse's H-4 papers, beside the green card steps. The work permit splits on filed together (h4FiledTogether).
+  // A spouse's H-4 papers, beside the green card steps. The work permit splits on its route (h4EadRoute); a row
+  // that doesn't say is left out of both.
   { id: "h4-i539", label: "H-4 extension, filed to approved", from: "h4FiledOn", to: "h4ApprovedOn", verified: false },
   { id: "h4-ead-together", label: "H-4 work permit filed with the I-539, filed to approved", from: "h4EadFiledOn", to: "h4EadApprovedOn", h4: "together", verified: false },
   { id: "h4-ead-alone", label: "H-4 work permit filed on its own, filed to approved", from: "h4EadFiledOn", to: "h4EadApprovedOn", h4: "alone", verified: false },
 ] as const;
 export type MetricId = (typeof METRICS)[number]["id"];
+
+/** Medians that run beside the case rather than as a step in its order: each RFE, and a spouse's H-4 papers. */
+export const SIDE_METRIC_IDS: readonly MetricId[] = METRICS.filter((m) => "perRfe" in m || m.from.startsWith("h4")).map((m) => m.id);
 
 /** The stages one USCIS office's page measures: everything counted from the I-485 filing. */
 export const OFFICE_METRIC_IDS: readonly MetricId[] = ["i485-bio", "i485-ead", "i485-office", "i485-interview", "i485-gc"];
@@ -760,7 +789,7 @@ export function computeMetrics(records: readonly TimelineRecord[]): MetricResult
     let people = 0;
     for (const r of live) {
       if ("premium" in m && r.premium !== m.premium) continue;
-      if ("h4" in m && h4FiledTogether(r) !== (m.h4 === "together")) continue;
+      if ("h4" in m && h4EadRoute(r) !== (m.h4 === "together" ? "with-i539" : "alone")) continue;
       const at = r as unknown as Record<string, string | undefined>;
       // Premium requested after filing starts its own clock; asked at filing, the filing is the start.
       const from = "fromFirst" in m && at[m.fromFirst] && at[m.fromFirst]! > (at[m.from] ?? "") ? at[m.fromFirst] : at[m.from];
@@ -962,7 +991,7 @@ export function interviewShare(records: readonly TimelineRecord[]): { answered: 
 export interface H4Summary {
   extensionDays: number | null;
   workPermitDays: number | null;
-  /** The work permit went in with the I-539 (h4FiledTogether). */
+  /** The work permit went in with the I-539 (h4EadRoute), said only beside a work permit duration. */
   together: boolean;
 }
 
@@ -974,7 +1003,7 @@ function h4Of(r: TimelineRecord): H4Summary | null {
   const extensionDays = span(r.h4FiledOn, r.h4ApprovedOn);
   const workPermitDays = span(r.h4EadFiledOn, r.h4EadApprovedOn);
   if (extensionDays === null && workPermitDays === null) return null;
-  return { extensionDays, workPermitDays, together: h4FiledTogether(r) };
+  return { extensionDays, workPermitDays, together: workPermitDays !== null && h4EadRoute(r) === "with-i539" };
 }
 
 /** One row of the public board: no case number, no employer, no exact PERM date. */

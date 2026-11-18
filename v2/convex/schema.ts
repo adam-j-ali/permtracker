@@ -2339,6 +2339,8 @@ export default defineSchema({
     h4ApprovedOn: v.optional(v.string()),
     h4EadFiledOn: v.optional(v.string()),
     h4EadApprovedOn: v.optional(v.string()),
+    /** How the H-4 work permit was filed (lib H4_EAD_ROUTES); the filing days decide when it is absent. */
+    h4EadRoute: v.optional(v.union(v.literal("with-i539"), v.literal("alone"))),
     /** Whether the interview was held or waived (lib INTERVIEW_OUTCOMES). */
     interview: v.optional(v.union(v.literal("held"), v.literal("waived"))),
     /** What the person did to move the case, sorted by day; each kind is checked against lib CONTACT_KINDS on save. */

@@ -18,6 +18,7 @@ import {
   CONTACT_KINDS,
   DETAIL_DATES,
   H4_DATES,
+  H4_EAD_ROUTES,
   I485_CENTERS,
   INTERVIEW_OUTCOMES,
   MAX_CONTACTS,
@@ -474,7 +475,8 @@ function H4({ uid, form, set }: { uid: string; form: TimelineInput; set: Set }) 
     <fieldset className={gridCls} aria-describedby={`${uid}-h4-hint`}>
       <legend className={legendCls}>A spouse&apos;s H-4 (optional)</legend>
       <p id={`${uid}-h4-hint`} className="text-sm text-muted-foreground sm:col-span-2">
-        A work permit filed on the same day as the I-539 counts as filed together.
+        USCIS times the work permit differently when it&apos;s filed with the I-539, so say how yours went in. Left
+        blank, the same filing day as the I-539 counts as filed with it.
       </p>{" "}
       {H4_DATES.map((f) => (
         <Fragment key={f.id}>
@@ -483,7 +485,15 @@ function H4({ uid, form, set }: { uid: string; form: TimelineInput; set: Set }) 
             <DateInput id={`${uid}-${f.id}`} value={form[f.id] ?? ""} onChange={(e) => set(f.id, e.target.value || null)} className="mt-1.5" />
           </div>{" "}
         </Fragment>
-      ))}
+      ))}{" "}
+      <Pick
+        id={`${uid}-h4EadRoute`}
+        label="How the H-4 work permit was filed"
+        value={form.h4EadRoute ?? ""}
+        empty="Not sure, or no work permit"
+        options={H4_EAD_ROUTES}
+        onChange={(v) => set("h4EadRoute", v || null)}
+      />
     </fieldset>
   );
 }

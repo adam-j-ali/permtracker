@@ -188,13 +188,14 @@ describe("the HTTP layer", () => {
   it("saves a spouse's H-4 dates and refuses one that isn't a short string", { timeout: 45_000 }, async () => {
     const t = createTestContext();
     const k = "b".repeat(64);
-    const h4 = { h4FiledOn: "2025-02-01", h4ApprovedOn: "2025-08-01", h4EadFiledOn: "2025-02-01", h4EadApprovedOn: "2025-07-20" };
+    const h4 = { h4FiledOn: "2025-02-01", h4ApprovedOn: "2025-08-01", h4EadFiledOn: "2025-02-01", h4EadApprovedOn: "2025-07-20", h4EadRoute: "with-i539" };
     const ok = await post(t, { key: k, i140FiledOn: "2025-01-10", ...h4 });
     expect(ok.status, await ok.clone().text()).toBe(200);
     const [row] = await rows(t);
     expect(row).toMatchObject(h4);
     expect((await post(t, { key: k, i140FiledOn: "2025-01-10", h4EadFiledOn: 20250201 })).status).toBe(400);
     expect((await post(t, { key: k, i140FiledOn: "2025-01-10", h4FiledOn: "x".repeat(40) })).status).toBe(400);
+    expect((await post(t, { key: k, i140FiledOn: "2025-01-10", h4EadRoute: "sideways" })).status).toBe(400);
     const order = await post(t, { key: k, i140FiledOn: "2025-01-10", h4EadFiledOn: "2025-03-01", h4EadApprovedOn: "2025-02-01" });
     expect(order.status).toBe(400);
     expect(((await order.json()) as { message: string }).message).toBe("The H-4 work permit's approval is dated before its filing.");
@@ -238,6 +239,7 @@ describe("the HTTP layer", () => {
       h4ApprovedOn: "2024-07-03",
       h4EadFiledOn: "2024-01-03",
       h4EadApprovedOn: "2024-06-03",
+      h4EadRoute: "with-i539",
       interview: "held",
       contacts: Array.from({ length: MAX_CONTACTS }, (_, i) => ({ on: `2025-0${(i % 9) + 1}-15`, kind: "service-request" })),
       moreRfes: Array.from({ length: MAX_MORE_RFES }, (_, i) => ({ form: "i485", reason: "medical", issuedOn: `2025-1${i}-01`, respondedOn: `2025-1${i}-20`, outcome: "approved" })),
