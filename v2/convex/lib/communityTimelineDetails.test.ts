@@ -135,3 +135,18 @@ describe("the figures the details feed", () => {
     expect(interviewShare(rows)).toEqual({ answered: 6, waived: 3 });
   });
 });
+
+describe("the RFE's own times", () => {
+  it("measure the answer and the decision after it, the decision by the RFE's form", () => {
+    const i140 = Array.from({ length: METRIC_MIN_N }, () =>
+      rec({ rfeForm: "i140", rfeIssuedOn: "2026-03-01", rfeRespondedOn: "2026-04-15", i140ApprovedOn: "2026-05-15", greenCardOn: "2026-10-01" }),
+    );
+    const m = Object.fromEntries(computeMetrics(i140).map((x) => [x.id, x.median]));
+    expect(m["rfe-answer"]).toBe(45);
+    expect(m["rfe-decision"]).toBe(30);
+    const i485 = Array.from({ length: METRIC_MIN_N }, () =>
+      rec({ rfeForm: "i485", rfeIssuedOn: "2026-03-01", rfeRespondedOn: "2026-04-15", i140ApprovedOn: "2025-01-01", greenCardOn: "2026-06-14" }),
+    );
+    expect(computeMetrics(i485).find((x) => x.id === "rfe-decision")?.median).toBe(60);
+  });
+});

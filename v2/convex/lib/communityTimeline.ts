@@ -605,6 +605,9 @@ export const METRICS = [
   { id: "i485-interview", label: "I-485 filed to interview", from: "i485FiledOn", to: "interviewOn", verified: false },
   { id: "i485-gc", label: "I-485 filed to green card", from: "i485FiledOn", to: "greenCardOn", verified: false },
   { id: "gc-card", label: "Green card approved to the card in the mail", from: "greenCardOn", to: "cardArrivedOn", verified: false },
+  { id: "rfe-answer", label: "RFE issued to answered", from: "rfeIssuedOn", to: "rfeRespondedOn", verified: false },
+  // The decision after an RFE is the I-140's approval or the green card, by the form the RFE was on.
+  { id: "rfe-decision", label: "RFE answered to approved", from: "rfeRespondedOn", to: "i140ApprovedOn", toByForm: { i140: "i140ApprovedOn", i485: "greenCardOn" }, verified: false },
 ] as const;
 export type MetricId = (typeof METRICS)[number]["id"];
 
@@ -642,7 +645,9 @@ export function computeMetrics(records: readonly TimelineRecord[]): MetricResult
       const at = r as unknown as Record<string, string | undefined>;
       // Premium requested after filing starts its own clock; asked at filing, the filing is the start.
       const from = "fromFirst" in m && at[m.fromFirst] && at[m.fromFirst]! > (at[m.from] ?? "") ? at[m.fromFirst] : at[m.from];
-      const d = daysBetween(from, at[m.to]);
+      const to = "toByForm" in m && r.rfeForm ? at[m.toByForm[r.rfeForm]] : at[m.to];
+      if ("toByForm" in m && !r.rfeForm) continue;
+      const d = daysBetween(from, to);
       if (d !== null && d >= 0 && d <= 3650) vals.push(d);
     }
     vals.sort((a, b) => a - b);
