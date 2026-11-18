@@ -1,11 +1,12 @@
+import { render, screen, within } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { OFFICE_LIST_OPENS_AT, computeMetrics, OFFICE_METRIC_IDS, toBoardRow, toOfficeRow, type TimelineRecord } from "@/lib/communityTimeline";
+import { OFFICE_LIST_OPENS_AT, SIDE_METRIC_IDS, computeMetrics, OFFICE_METRIC_IDS, toBoardRow, toOfficeRow, type TimelineRecord } from "@/lib/communityTimeline";
 import { officeByCode } from "@/lib/uscisOffices";
 
 import { OfficeTimelines } from "../OfficeTimelines";
-import { BoardTable, h4Text } from "../TimelineBoard";
+import { BoardTable, StageMedians, h4Text } from "../TimelineBoard";
 
 /** A row's H-4 papers in words, durations only, kept apart from the lines around them. */
 const rec = (over: Partial<TimelineRecord>): TimelineRecord => ({ public: true, updatedAt: Date.UTC(2026, 10, 1), ...over });
@@ -13,8 +14,8 @@ const rec = (over: Partial<TimelineRecord>): TimelineRecord => ({ public: true, 
 const text = (html: string) => html.replace(/<[^>]+>/g, "").replace(/&#x27;/g, "'").replace(/\s+/g, " ");
 
 describe("the H-4 line", () => {
-  it("says each approved paper's days, and filed together only for the work permit", () => {
-    expect(h4Text({ extensionDays: 181, workPermitDays: 162, together: true })).toBe("H-4 extension in 181 days, H-4 work permit in 162 days, filed together");
+  it("says each approved paper's days, and filed with the I-539 only for the work permit", () => {
+    expect(h4Text({ extensionDays: 181, workPermitDays: 162, together: true })).toBe("H-4 extension in 181 days, H-4 work permit in 162 days, filed with the I-539");
     expect(h4Text({ extensionDays: null, workPermitDays: 1, together: false })).toBe("H-4 work permit in 1 day");
     expect(h4Text({ extensionDays: 30, workPermitDays: null, together: false })).toBe("H-4 extension in 30 days");
   });
@@ -34,7 +35,7 @@ describe("the H-4 line", () => {
       }),
     );
     const out = text(renderToStaticMarkup(<BoardTable rows={[row]} />));
-    expect(out).toContain("Adjusting status in the US premium I-140 a dependent's case H-4 extension in 181 days, H-4 work permit in 162 days, filed together ");
+    expect(out).toContain("Adjusting status in the US premium I-140 a dependent's case H-4 extension in 181 days, H-4 work permit in 162 days, filed with the I-539 ");
     expect(out).not.toContain("2026-06-12");
   });
 });
@@ -57,5 +58,20 @@ describe("the H-4 line on an office's list", () => {
     const out = text(renderToStaticMarkup(<OfficeTimelines office={officeByCode("HAR")!} view={view} />));
     expect(out).toContain("H-4 work permit in 184 days ");
     expect(out).not.toContain("2025-09-01");
+  });
+});
+
+describe("the empty state's list of stages", () => {
+  it("numbers only the steps in their order, and lists RFEs and the H-4 beside them without numbers", () => {
+    render(<StageMedians metrics={computeMetrics([])} />);
+    const lists = screen.getAllByRole("list");
+    const steps = within(lists[0]!).getAllByRole("listitem").map((li) => li.textContent ?? "");
+    expect(steps.some((t) => /H-4|RFE/.test(t))).toBe(false);
+    expect(steps[0]).toMatch(/^1\s?PERM filed to certified/);
+    expect(screen.getByText("Beside the case: RFEs and a spouse's H-4")).toBeTruthy();
+    const side = within(lists[1]!).getAllByRole("listitem").map((li) => li.textContent ?? "");
+    expect(side).toHaveLength(SIDE_METRIC_IDS.length);
+    expect(side.every((t) => !/^\d/.test(t.trim()))).toBe(true);
+    expect(side.join(" ")).toContain("H-4 work permit filed on its own, filed to approved");
   });
 });

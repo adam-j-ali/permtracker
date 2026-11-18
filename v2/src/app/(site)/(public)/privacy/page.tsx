@@ -330,8 +330,11 @@ export default function PrivacyPage() {
                 the case (a service request, an Emma chat, a call, a
                 congressional inquiry, the CIS Ombudsman or an expedite
                 request), each with its day, and a spouse’s H-4 dates (the H-4
-                extension and the H-4 work permit, each filed and approved),
-                which show on the site only as days from filing to approval.
+                extension and the H-4 work permit, each filed and approved, and
+                whether the work permit was filed with the extension). On the
+                site they show as days from filing to approval and that route,
+                and an H-4 work permit approved this week counts toward the
+                week&apos;s tally once five people report one.
                 No receipt number is asked for or kept.
                 There’s no free-text box. The one thing you can type is an
                 account code, 2 to 6 letters and digits, and we read any code

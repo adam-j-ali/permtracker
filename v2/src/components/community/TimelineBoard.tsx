@@ -8,6 +8,7 @@ import {
   METRIC_MIN_N,
   CONTACT_KINDS,
   RECENT_MIN,
+  SIDE_METRIC_IDS,
   ROUTES,
   WAITING_STAGES,
   type BoardRow,
@@ -21,6 +22,33 @@ import { ChartTips } from "@/components/data/ChartTips";
 import { cn } from "@/lib/utils";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { officeByCode } from "@/lib/uscisOffices";
+
+/** One stage in the empty state: its name and how many of the five reports a median needs it holds. */
+function EmptyStep({ m, n }: { m: MetricResult; n: number | null }) {
+  return (
+    <li className="flex items-start gap-3 bg-sage p-3 border-2 border-border">
+      {n !== null ? (
+        <span className="flex size-7 shrink-0 items-center justify-center border-input font-mono text-sm font-bold border">
+          {n}
+        </span>
+      ) : null}{" "}
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-bold">{m.label}</span>{" "}
+        <span aria-hidden="true" className="mt-2 flex gap-1">
+          {Array.from({ length: METRIC_MIN_N }, (_, k) => (
+            <span
+              key={k}
+              className={cn("h-2 flex-1 border border-input", k < m.n ? "bg-primary" : "bg-soft-wait")}
+            />
+          ))}
+        </span>{" "}
+        <span className="mt-1 block text-sm text-muted-foreground">
+          {`${Math.min(m.n, METRIC_MIN_N)} of ${METRIC_MIN_N} reports`}
+        </span>
+      </span>
+    </li>
+  );
+}
 
 /**
  * The visual half of the green card timelines page, server-rendered, no
@@ -53,37 +81,34 @@ export function StageMedians({ metrics }: { metrics: readonly MetricResult[] }) 
   // it holds of the five a median needs, instead of the same sentence once a
   // step. Every row is still listed, so a reader sees what will be measured.
   if (measured.length === 0) {
+    const chain = metrics.filter((m) => !SIDE_METRIC_IDS.includes(m.id));
+    const side = metrics.filter((m) => SIDE_METRIC_IDS.includes(m.id));
     return (
       <div className="border-2 border-dashed border-foreground/40 p-4 sm:p-5">
         <p className="text-base text-muted-foreground">
           {`No step has the ${METRIC_MIN_N} reports a median needs yet. Each fills in as timelines arrive.`}
         </p>{" "}
         <ol className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
-          {metrics.map((m, i) => (
+          {chain.map((m, i) => (
             <Fragment key={m.id}>
               {" "}
-              <li className="flex items-start gap-3 bg-sage p-3 border-2 border-border">
-                <span className="flex size-7 shrink-0 items-center justify-center border-input font-mono text-sm font-bold border">
-                  {i + 1}
-                </span>{" "}
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-bold">{m.label}</span>{" "}
-                  <span aria-hidden="true" className="mt-2 flex gap-1">
-                    {Array.from({ length: METRIC_MIN_N }, (_, k) => (
-                      <span
-                        key={k}
-                        className={cn("h-2 flex-1 border border-input", k < m.n ? "bg-primary" : "bg-soft-wait")}
-                      />
-                    ))}
-                  </span>{" "}
-                  <span className="mt-1 block text-sm text-muted-foreground">
-                    {`${Math.min(m.n, METRIC_MIN_N)} of ${METRIC_MIN_N} reports`}
-                  </span>
-                </span>
-              </li>
+              <EmptyStep m={m} n={i + 1} />
             </Fragment>
           ))}
-        </ol>
+        </ol>{" "}
+        {side.length > 0 ? (
+          <>
+            <p className="mt-4 text-sm font-bold">Beside the case: RFEs and a spouse&apos;s H-4</p>{" "}
+            <ul className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
+              {side.map((m) => (
+                <Fragment key={m.id}>
+                  {" "}
+                  <EmptyStep m={m} n={null} />
+                </Fragment>
+              ))}
+            </ul>
+          </>
+        ) : null}
       </div>
     );
   }
@@ -364,11 +389,11 @@ export function AccountCodes({
  * What these people saw, never a forecast for anyone else's case.
  */
 /** A row's contacts in words: "2 contacts: an Emma chat, a congressional inquiry". */
-/** A row's H-4 papers in words, durations only: "H-4 extension in 181 days, H-4 work permit in 162 days, filed together". */
+/** A row's H-4 papers in words, durations only: "H-4 extension in 181 days, H-4 work permit in 162 days, filed with the I-539". */
 export function h4Text(h: { extensionDays: number | null; workPermitDays: number | null; together: boolean }): string {
   return [
     h.extensionDays !== null ? `H-4 extension in ${days(h.extensionDays)}` : null,
-    h.workPermitDays !== null ? `H-4 work permit in ${days(h.workPermitDays)}${h.together ? ", filed together" : ""}` : null,
+    h.workPermitDays !== null ? `H-4 work permit in ${days(h.workPermitDays)}${h.together ? ", filed with the I-539" : ""}` : null,
   ]
     .filter(Boolean)
     .join(", ");

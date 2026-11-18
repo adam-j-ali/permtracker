@@ -141,7 +141,8 @@ export default async function EadExtensionPage() {
           <Link href="/green-card-timelines" className="link">
             the green card timelines page
           </Link>
-          , and each route, filed with the I-539 or on its own, gets a median there once five people report it.
+          , alongside at least one date from the green card case, such as the I-140&apos;s filing. Each route, filed with
+          the I-539 or on its own, gets a median there once five people report it.
         </p>
       </section>
 

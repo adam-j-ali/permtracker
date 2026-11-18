@@ -7,7 +7,7 @@ import {
   RECENT_MIN,
   TIMELINE_TEXT_FIELDS,
   computeMetrics,
-  h4FiledTogether,
+  h4EadRoute,
   recentApprovals,
   toBoardRow,
   toOfficeRow,
@@ -17,8 +17,9 @@ import {
 
 /**
  * A spouse's H-4 papers while the green card case runs: the extension of stay (I-539) and the H-4 work permit
- * (I-765, category (c)(26)), each filed and approved. Filed on the same day counts as filed together, which USCIS
- * posts as its own route, so the work permit's medians are split by it.
+ * (I-765, category (c)(26)), each filed and approved. USCIS posts the work permit's two routes (with the I-539, on its
+ * own) as separate times, so its medians are split by route: the person's answer, or the two filing days when they
+ * gave none, and a row that says neither is in neither median.
  */
 
 const TODAY = "2026-11-18";
@@ -54,22 +55,37 @@ describe("the H-4 dates", () => {
     expect(validateTimeline({ ...base, h4FiledOn: "last spring" }, TODAY)).toMatchObject({ ok: false, code: "date" });
   });
 
-  it("don't count as the green card step a timeline needs", () => {
-    expect(validateTimeline({ h4FiledOn: "2026-01-01" }, TODAY)).toMatchObject({ ok: false, code: "no-dates" });
+  it("don't count as the green card step a timeline needs, and the refusal says what's missing", () => {
+    expect(validateTimeline({ h4FiledOn: "2026-01-01" }, TODAY)).toMatchObject({
+      ok: false,
+      code: "no-dates",
+      message: "The H-4 dates go with a green card timeline: add at least one I-140 or I-485 date too.",
+    });
+    expect(validateTimeline({}, TODAY)).toMatchObject({ code: "no-dates", message: "Add at least one date after PERM to record a timeline." });
   });
 
-  it("count as filed together only when the work permit went in on the I-539's own day", () => {
-    expect(h4FiledTogether({ h4FiledOn: "2026-01-01", h4EadFiledOn: "2026-01-01" })).toBe(true);
-    expect(h4FiledTogether({ h4FiledOn: "2026-01-01", h4EadFiledOn: "2026-01-02" })).toBe(false);
-    expect(h4FiledTogether({ h4EadFiledOn: "2026-01-01" })).toBe(false);
-    expect(h4FiledTogether({})).toBe(false);
+  it("take the work permit's route as asked, and refuse one the form doesn't offer", () => {
+    expect(validateTimeline({ ...base, h4EadRoute: "alone" }, TODAY)).toMatchObject({ ok: true, value: { h4EadRoute: "alone" } });
+    expect(validateTimeline({ ...base, h4EadRoute: "sideways" }, TODAY)).toMatchObject({ ok: false, code: "choice", field: "h4EadRoute" });
+    expect(TIMELINE_TEXT_FIELDS).toContain("h4EadRoute");
+  });
+
+  it("read the route from the answer first, then from two filing days, and never from a missing one", () => {
+    expect(h4EadRoute({ h4FiledOn: "2026-01-01", h4EadFiledOn: "2026-01-01" })).toBe("with-i539");
+    expect(h4EadRoute({ h4FiledOn: "2026-01-01", h4EadFiledOn: "2026-01-02" })).toBe("alone");
+    // A blank I-539 date says nothing about the route.
+    expect(h4EadRoute({ h4EadFiledOn: "2026-01-01" })).toBeNull();
+    expect(h4EadRoute({})).toBeNull();
+    // The person's own answer wins over the days.
+    expect(h4EadRoute({ h4EadRoute: "with-i539", h4EadFiledOn: "2026-01-01" })).toBe("with-i539");
+    expect(h4EadRoute({ h4EadRoute: "alone", h4FiledOn: "2026-01-01", h4EadFiledOn: "2026-01-01" })).toBe("alone");
   });
 });
 
 describe("the H-4 medians", () => {
   const together = (i: number) =>
     rec({ ...base, h4FiledOn: "2026-01-01", h4ApprovedOn: "2026-07-01", h4EadFiledOn: "2026-01-01", h4EadApprovedOn: `2026-06-${String(10 + i).padStart(2, "0")}` });
-  const alone = (i: number) => rec({ ...base, h4EadFiledOn: "2025-06-01", h4EadApprovedOn: `2026-04-${String(10 + i).padStart(2, "0")}` });
+  const alone = (i: number) => rec({ ...base, h4EadRoute: "alone", h4EadFiledOn: "2025-06-01", h4EadApprovedOn: `2026-04-${String(10 + i).padStart(2, "0")}` });
   const metric = (rows: TimelineRecord[], id: string) => computeMetrics(rows).find((m) => m.id === id)!;
 
   it("split the work permit by route, so a median across both never prints", () => {
@@ -83,6 +99,13 @@ describe("the H-4 medians", () => {
     // Filed Jun 1 2025, approved Apr 10 to Apr 14 2026: the middle is Apr 12, 315 days.
     expect(a.median).toBe(315);
     expect(metric(rows, "h4-i539")).toMatchObject({ n: METRIC_MIN_N, median: 181 });
+  });
+
+  it("leave a work permit that doesn't say its route out of both", () => {
+    const silent = (i: number) => rec({ ...base, h4EadFiledOn: "2026-01-01", h4EadApprovedOn: `2026-06-${String(10 + i).padStart(2, "0")}` });
+    const rows = Array.from({ length: METRIC_MIN_N }, (_, i) => silent(i));
+    expect(metric(rows, "h4-ead-together").n).toBe(0);
+    expect(metric(rows, "h4-ead-alone").n).toBe(0);
   });
 
   it("print nothing below the floor, and count people", () => {
@@ -99,6 +122,12 @@ describe("the H-4 work permit on the board and in the week's count", () => {
   it("gives each row its H-4 durations, never a date", () => {
     const r = rec({ ...base, permFiledOn: "2025-01-10", h4FiledOn: "2026-01-01", h4ApprovedOn: "2026-07-01", h4EadFiledOn: "2026-01-01", h4EadApprovedOn: "2026-06-12" });
     expect(toBoardRow(r).h4).toEqual({ extensionDays: 181, workPermitDays: 162, together: true });
+    // A pending work permit filed with the I-539 says nothing of its route: the page prints no work permit line.
+    expect(toBoardRow(rec({ ...base, h4FiledOn: "2026-03-01", h4ApprovedOn: "2026-06-01", h4EadFiledOn: "2026-03-01" })).h4).toEqual({
+      extensionDays: 92,
+      workPermitDays: null,
+      together: false,
+    });
     expect(toOfficeRow(rec({ ...base, i485FiledOn: "2026-02-01", h4EadFiledOn: "2026-03-01", h4EadApprovedOn: "2026-09-01" })).h4).toEqual({
       extensionDays: null,
       workPermitDays: 184,

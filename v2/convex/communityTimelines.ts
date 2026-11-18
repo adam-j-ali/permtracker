@@ -32,6 +32,7 @@ import {
   CONTACT_KINDS,
   DETAIL_DATES,
   H4_DATES,
+  H4_EAD_ROUTES,
   contactOutcomes,
   interviewShare,
   rfesOf,
@@ -145,6 +146,7 @@ const timelineInput = v.object({
   h4ApprovedOn: v.optional(v.union(v.string(), v.null())),
   h4EadFiledOn: v.optional(v.union(v.string(), v.null())),
   h4EadApprovedOn: v.optional(v.union(v.string(), v.null())),
+  h4EadRoute: v.optional(v.union(v.string(), v.null())),
   interview: v.optional(v.union(v.string(), v.null())),
   contacts: v.optional(
     v.union(v.array(v.object({ on: v.optional(v.union(v.string(), v.null())), kind: v.optional(v.union(v.string(), v.null())) })), v.null()),
@@ -860,7 +862,12 @@ function adminRow(r: Doc<"communityTimelines">): Infer<typeof adminRowV> {
     ...(r.permCertifiedOn ? [{ label: "PERM certified", on: r.permCertifiedOn, verified: true }] : []),
     ...DATE_FIELDS.flatMap((f) => (r[f.id] ? [{ label: f.short as string, on: r[f.id] as string, verified: false }] : [])),
     ...DETAIL_DATES.flatMap((f) => (r[f.id] ? [{ label: f.label as string, on: r[f.id] as string, verified: false }] : [])),
-    ...H4_DATES.flatMap((f) => (r[f.id] ? [{ label: f.label as string, on: r[f.id] as string, verified: false }] : [])),
+    ...H4_DATES.flatMap((f) => {
+      if (!r[f.id]) return [];
+      // The work permit's own answer to how it went in, beside its filing date.
+      const route = f.id === "h4EadFiledOn" ? labelOf(H4_EAD_ROUTES, r.h4EadRoute) : null;
+      return [{ label: route ? `${f.label}, ${route.toLowerCase()}` : (f.label as string), on: r[f.id] as string, verified: false }];
+    }),
     ...(r.contacts ?? []).map((c) => ({ label: labelOf(CONTACT_KINDS, c.kind) ?? c.kind, on: c.on, verified: false })),
   ];
   const all = rfesOf(asRecord(r));
