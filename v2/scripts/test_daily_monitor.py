@@ -955,6 +955,21 @@ def ai_assistant_visits_are_counted() -> None:
     check(any(ln.startswith("Landing pages yesterday: /perm-queue 4, / 2") for ln in lines), f"the pages they land on ({lines})")
     check(dm.ai_referral_lines([], "2026-10-27")[0] == "No visits from AI assistants in 8 days", "none says so")
 
+    # The query names its row cap (PostHog's default is 100 rows, which cut 1,501 rows to a sample, Nov 18 2026), and
+    # an answer that fills the cap says so in a line.
+    seen: list[str] = []
+    real_http = dm.http_json
+    try:
+        def fake(url, headers, body):
+            seen.append(json.loads(body)["query"]["query"])
+            return {"results": [["2026-10-27", "chatgpt.com", None, "/perm-queue", 1]] * dm.AI_ROWS_CAP}
+        dm.http_json = fake
+        _, capped = dm.ai_referrals("key")
+    finally:
+        dm.http_json = real_http
+    check(seen and f"LIMIT {dm.AI_ROWS_CAP}" in seen[0], f"the AI query sets its own row cap ({seen[:1]})")
+    check(any("row cap" in ln for ln in capped), f"a full answer says the cap was reached ({capped[-1:]})")
+
 
 if __name__ == "__main__":
     sys.exit(main())
