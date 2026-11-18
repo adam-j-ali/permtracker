@@ -210,7 +210,7 @@ export function RecentApprovals({ recent }: { recent: RecentApprovals }) {
             <span>{s.label}</span>{" "}
             <span className={s.count === null ? "text-muted-foreground" : "font-heading text-xl font-bold tabular-nums"}>
               {s.count === null ? `Fewer than ${RECENT_MIN}` : s.count.toLocaleString("en-US")}
-            </span>
+            </span>{" "}
           </li>
         ))}
       </ul>{" "}
@@ -383,7 +383,7 @@ export function ContactOutcomes({ outcomes }: { outcomes: readonly Outcome[] }) 
       <ul className="mt-1 space-y-1 text-base leading-relaxed">
         {shown.map((o) => (
           <li key={o.kind}>
-            {`After ${/^[aeiou]/i.test(o.label) ? "an" : "a"} ${o.label}: ${n(o.reported, "timeline", "timelines")}, ${o.withCard === 0 ? "none with a green card yet" : `${o.withCard.toLocaleString("en-US")} with a green card${o.medianToCard !== null ? `, a median of ${days(o.medianToCard)} later` : ""}`}${o.waiting ? `, ${o.waiting.toLocaleString("en-US")} still waiting` : ""}.`}
+            {`After ${/^[aeiou]/i.test(o.label) ? "an" : "a"} ${o.label}: ${n(o.reported, "timeline", "timelines")}, ${o.withCard === 0 ? "none with a green card yet" : `${o.withCard.toLocaleString("en-US")} with a green card${o.medianToCard !== null ? `, a median of ${days(o.medianToCard)} later` : ""}`}${o.waiting ? `, ${o.waiting.toLocaleString("en-US")} still waiting` : ""}.`}{" "}
           </li>
         ))}
       </ul>{" "}

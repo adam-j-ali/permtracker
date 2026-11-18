@@ -20,6 +20,8 @@ describe("after a contact", () => {
     expect(screen.getByText("After a congressional inquiry: 6 timelines, 5 with a green card, a median of 32 days later, 1 still waiting.")).toBeTruthy();
     expect(screen.getByText("After an Emma or live-agent chat: 1 timeline, none with a green card yet, 1 still waiting.")).toBeTruthy();
     expect(screen.queryByText(/Ombudsman/)).toBeNull();
+    // Each item keeps its own space, so one sentence never runs into the next.
+    expect(screen.getByRole("list").textContent).toContain("1 still waiting. After an Emma");
   });
 
   it("draws nothing when nobody reports a contact", () => {
