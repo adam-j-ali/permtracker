@@ -31,7 +31,9 @@ import { countVs } from "@/lib/uscisTrends";
 import { slotShort } from "@/lib/uscisForms";
 import type { RecordFigure } from "@/lib/recordCounts";
 import { getI485OfficeQuarters } from "@/lib/db/uscisQuarterly";
-import { getUscisPosted } from "@/lib/db/uscisPosted";
+import { getI485OfficePosted, getUscisPosted } from "@/lib/db/uscisPosted";
+import { waitPapers } from "@/lib/uscisPosted";
+import { PostedI140History } from "@/components/uscis/PostedI140History";
 import { formatAsOf } from "@/lib/dolFormat";
 import {
   officeYear,
@@ -117,13 +119,15 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
   const office = officeBySlug((await params).office);
   if (!office) notFound();
 
-  const [quarters, posted, shared] = await Promise.all([
+  const [quarters, posted, shared, ownPosted] = await Promise.all([
     getI485OfficeQuarters(),
     getUscisPosted(),
     // People's own timelines from this office. A failed read is named on the page, never drawn as "nobody has shared".
     queryStatic(api.communityTimelines.office, { office: office.code }, revalidate).catch(
       softFail<OfficeTimelineView | null>("i485-by-field-office/[office].timelines", null),
     ),
+    // This office's own family-based posted time: the one per-office pace USCIS publishes. A failed read loses only it.
+    getI485OfficePosted(office.code).catch(softFail<[string, number][]>("i485-by-field-office/[office].ownPosted", [])),
   ]);
   const year = officeYear(quarters, office.code);
   const newest = quarters[quarters.length - 1];
@@ -184,6 +188,8 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
   // The one employment-based time USCIS posts for field offices, all of them together.
   const postedRow = !center && posted ? posted.newest.find((r) => r.form === "I-485" && r.subtype === EB_I485 && r.office === ALL_FIELD_OFFICES) : undefined;
   const postedMonths = postedRow && postedRow.posted !== null ? postedRow.posted : null;
+  const papers = waitPapers(posted);
+  const ownNow = ownPosted.length > 0 ? ownPosted[ownPosted.length - 1]! : null;
 
   const neighbours = center
     ? USCIS_OFFICES.filter((o) => isCenter(o) && o.code !== office.code)
@@ -366,7 +372,41 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
                 <Link href="/uscis-processing-times/i-485" className="link font-bold">
                   Every I-485 time USCIS posts
                 </Link>
-              </p>
+              </p>{" "}
+              {ownNow ? (
+                <>
+                  <p className="mt-4 max-w-2xl text-base leading-relaxed">
+                    {`The one time USCIS posts for ${office.name} alone is for family-based I-485s: ${ownNow[1]} months, as of its ${formatAsOf(ownNow[0])} posting. It isn't the wait for an employment-based case, but it moves with how busy this office is, so its history below is the closest public measure of this office's own pace.`}
+                  </p>{" "}
+                  <div className="mt-4 max-w-3xl">
+                    <PostedI140History
+                      label={`USCIS's posted time for family-based I-485s at ${office.name}, every posting since ${formatAsOf(ownPosted[0]![0])}`}
+                      series={[
+                        {
+                          form: "I-485",
+                          subtype: "131A-FAM",
+                          office: office.code,
+                          label: null,
+                          officeLabel: office.name,
+                          points: ownPosted,
+                          code: "family",
+                          name: `Family-based, ${office.name}`,
+                        },
+                      ]}
+                    />
+                  </div>
+                </>
+              ) : null}{" "}
+              {papers && (papers.ead || papers.ap) ? (
+                <p className="mt-4 max-w-2xl text-base leading-relaxed">
+                  {`While an I-485 waits, USCIS posts ${[
+                    papers.ead ? `${papers.ead.months} months for a work permit based on it (I-765, category (c)(9), at the ${papers.ead.office})` : null,
+                    papers.ap ? `${papers.ap.months} months for advance parole (I-131, at ${papers.ap.office})` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" and ")}, as of its ${formatAsOf(papers.published)} posting.`}
+                </p>
+              ) : null}
             </section>
           ) : null}
 

@@ -20,7 +20,8 @@ vi.mock("next/navigation", () => ({
 const getI485OfficeQuarters = vi.fn();
 const getUscisPosted = vi.fn();
 vi.mock("@/lib/db/uscisQuarterly", () => ({ getI485OfficeQuarters }));
-vi.mock("@/lib/db/uscisPosted", () => ({ getUscisPosted }));
+const getI485OfficePosted = vi.fn(async () => [] as [string, number][]);
+vi.mock("@/lib/db/uscisPosted", () => ({ getUscisPosted, getI485OfficePosted }));
 vi.mock("@/components/data/DataProvenance", () => ({ DataProvenance: () => null }));
 const queryStatic = vi.fn();
 vi.mock("@/lib/convexStatic", () => ({ queryStatic }));
@@ -119,6 +120,33 @@ describe("a USCIS office's page", () => {
     const { text } = await page("hartford-connecticut");
     expect(text).toContain("9.5 months, as of its October 19, 2026 posting");
     expect(text).toContain("It posts no separate time for Hartford.");
+  });
+
+  it("gives this office's own family-based time and its history, and the papers an I-485 waits on", async () => {
+    getI485OfficePosted.mockResolvedValueOnce([
+      ["2022-03-14", 20],
+      ["2026-10-19", 14.5],
+    ]);
+    getUscisPosted.mockResolvedValueOnce({
+      ...POSTED,
+      newest: [
+        ...POSTED.newest,
+        { form: "I-765", subtype: "147-C9", office: "NBC", posted: 12, label: "Based on a pending I-485 adjustment application [(c)(9)]", officeLabel: "National Benefits Center" },
+        { form: "I-131", subtype: "141B-OTH", office: "SCD", posted: 26.5, label: "Advance parole", officeLabel: "Service Center Operations (SCOPS)" },
+      ],
+    });
+    const { text } = await page("hartford-connecticut");
+    expect(getI485OfficePosted).toHaveBeenCalledWith("HAR");
+    expect(text).toContain("The one time USCIS posts for Hartford alone is for family-based I-485s: 14.5 months, as of its October 19, 2026 posting.");
+    expect(text).toContain("Family-based, Hartford");
+    expect(text).toContain(
+      "While an I-485 waits, USCIS posts 12 months for a work permit based on it (I-765, category (c)(9), at the National Benefits Center) and 26.5 months for advance parole (I-131, at Service Center Operations (SCOPS)), as of its October 19, 2026 posting.",
+    );
+  });
+
+  it("says nothing of an office's own time when USCIS posts none for it", async () => {
+    const { text } = await page("hartford-connecticut");
+    expect(text).not.toContain("alone is for family-based");
   });
 
   it("prints a withheld cell as withheld, never as a number", async () => {

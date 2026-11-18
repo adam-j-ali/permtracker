@@ -202,3 +202,29 @@ export function h4EadTimes(doc: UscisPosted | null, today: string): H4EadTimes |
   });
   return rows.length === H4_ROUTES.length ? { published: doc.published, rows } : null;
 }
+
+export interface WaitPapers {
+  published: string;
+  /** The work permit based on a pending I-485 (I-765 category (c)(9)), at the National Benefits Center when posted. */
+  ead: { months: number; office: string } | null;
+  /** Advance parole (I-131), at the office USCIS posts it under. */
+  ap: { months: number; office: string } | null;
+}
+
+/**
+ * The work permit and travel document a pending I-485 waits on, from USCIS's newest posting. Each row is found by what
+ * USCIS calls it (the (c)(9) category, "Advance parole"), never by its subtype code alone. USCIS's page prints the
+ * lower number of each pair, the `posted` figure: read on USCIS's own page Nov 18 2026 (I-765 (c)(9) at the National
+ * Benefits Center 12 months, advance parole at SCOPS 26.5).
+ */
+export function waitPapers(doc: UscisPosted | null): WaitPapers | null {
+  if (!doc) return null;
+  const at = (r: PostedRow | undefined) => (r && r.posted !== null ? { months: r.posted, office: r.officeLabel ?? r.office } : null);
+  const ead = doc.newest.filter((r) => r.form === "I-765" && /\(c\)\(9\)/.test(r.label ?? ""));
+  const ap = doc.newest.filter((r) => r.form === "I-131" && /^advance parole$/i.test((r.label ?? "").trim()));
+  return {
+    published: doc.published,
+    ead: at(ead.find((r) => r.office === "NBC") ?? ead[0]),
+    ap: at(ap.find((r) => r.posted !== null)),
+  };
+}

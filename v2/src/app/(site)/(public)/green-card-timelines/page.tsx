@@ -25,6 +25,9 @@ import { withSocialCard } from "@/lib/socialCard";
 import { NoteBanner } from "@/components/ui/note";
 import { softFail } from "@/lib/softRead";
 import { easternDay } from "@/lib/time";
+import { getUscisPosted } from "@/lib/db/uscisPosted";
+import { waitPapers } from "@/lib/uscisPosted";
+import { formatAsOf } from "@/lib/dolFormat";
 
 /**
  * Green card timelines, as the people waiting report them.
@@ -91,7 +94,12 @@ const FAQS = [
 ];
 
 export default async function GreenCardTimelinesPage() {
-  const board: Board | null = await fetchBoard().catch(softFail("green-card-timelines/page.fetchBoard", null));
+  const [board, posted] = await Promise.all([
+    fetchBoard().catch(softFail<Board | null>("green-card-timelines/page.fetchBoard", null)),
+    // USCIS's own posted times for the work permit and advance parole, beside people's reports. A failed read loses only that line.
+    getUscisPosted().catch(softFail("green-card-timelines/page.getUscisPosted", null)),
+  ]);
+  const papers = waitPapers(posted);
   // Optional chaining: a backend older than Nov 11 2026 sends no `offices`.
   const offices = (board?.offices ?? []).flatMap((o) => {
     const office = officeByCode(o.code);
@@ -165,7 +173,20 @@ export default async function GreenCardTimelinesPage() {
             </p>
             <div className="mt-5">
               <StageMedians metrics={board.metrics} />
-            </div>
+            </div>{" "}
+            {papers && (papers.ead || papers.ap) ? (
+              <p className="mt-5 max-w-2xl text-base leading-relaxed">
+                {`USCIS's own posted times, as of its ${formatAsOf(papers.published)} posting: ${[
+                  papers.ead ? `${papers.ead.months} months for a work permit based on a pending I-485, at the ${papers.ead.office}` : null,
+                  papers.ap ? `${papers.ap.months} months for advance parole` : null,
+                ]
+                  .filter(Boolean)
+                  .join(", and ")}. Each is the time within which it decided 8 cases in 10.`}{" "}
+                <Link href="/uscis-processing-times" className="link font-bold">
+                  Every time USCIS posts
+                </Link>
+              </p>
+            ) : null}
           </section>
 
           <section className="mt-12" aria-labelledby="board-h">

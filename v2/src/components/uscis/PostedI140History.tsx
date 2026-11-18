@@ -49,11 +49,18 @@ function Spark({ points, name }: { points: [string, number][]; name: string }) {
   );
 }
 
-export function PostedI140History({ series }: { series: (PostedSeries & { code: string; name: string })[] }) {
+export function PostedI140History({
+  series,
+  label = "USCIS's posted I-140 figure over time, by subtype",
+}: {
+  series: (PostedSeries & { code: string; name: string })[];
+  /** What the chart shows, for a screen reader; the I-140 page's own words by default. */
+  label?: string;
+}) {
   if (series.length === 0) return null;
   return (
     <div>
-      <ChartTips label="USCIS's posted I-140 figure over time, by subtype">
+      <ChartTips label={label}>
         <ul className="divide-y divide-border border-y-2 border-border">
           {series.map((s) => {
             const first = s.points[0];
