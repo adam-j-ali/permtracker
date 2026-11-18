@@ -91,9 +91,9 @@ export async function ReconsiderationNow({ part = "all" }: { part?: "all" | "dol
           ) : null}{" "}
           {outcome ? (
             <p className={watched ? "mt-2" : "mt-1"}>
-              Of the {formatInt(outcome.decided)} requests it has seen decided, {formatInt(outcome.granted)} (
-              {formatShareOf(outcome.granted, outcome.decided)}) were granted and {formatInt(outcome.refused)} were
-              refused with a NORD or a denial.
+              Of the {formatInt(outcome.decided)} requests it has seen decided, {formatInt(outcome.certified)} (
+              {formatShareOf(outcome.certified, outcome.decided)}) ended in certification, {formatInt(outcome.reopened)} were
+              sent back for review or put on hold, and {formatInt(outcome.refused)} were refused with a NORD or a denial.
             </p>
           ) : null}{" "}
           <p className="mt-2 text-sm text-muted-foreground">

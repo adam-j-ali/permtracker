@@ -110,23 +110,27 @@ export function movesFrom(exits: readonly Move[], from: string): { total: number
 /**
  * Motions to reconsider, decided: granted (certified outright, or sent back
  * into review or on hold) against refused (a NORD or a denial). A move to BALCA
- * or a request for review is neither and is left out of both.
+ * or a request for review is neither and is left out of both. The two halves of
+ * granted are kept apart: certified outright is the strict figure other sites
+ * print, and a case put on hold may not mean the motion was granted.
  */
 export function reconsiderationOutcome(
   exits: readonly Move[],
-): { decided: number; granted: number; refused: number; grantedShare: number } | null {
+): { decided: number; granted: number; refused: number; grantedShare: number; certified: number; reopened: number; certifiedShare: number } | null {
   const GRANTED = new Set(["CERTIFIED", "ANALYST REVIEW", "IN PROCESS", "APPLICATION ON HOLD"]);
   let granted = 0;
+  let certified = 0;
   let refused = 0;
   for (const m of exits) {
     if (m.from.trim().toUpperCase() !== "RECONSIDERATION APPEALS") continue;
     const to = m.to.trim().toUpperCase();
     if (GRANTED.has(to)) granted += m.n;
+    if (to === "CERTIFIED") certified += m.n;
     else if (to === "NORD ISSUED" || to.startsWith("DENIED")) refused += m.n;
   }
   const decided = granted + refused;
   if (decided < MIN_MOVES) return null;
-  return { decided, granted, refused, grantedShare: granted / decided };
+  return { decided, granted, refused, grantedShare: granted / decided, certified, reopened: granted - certified, certifiedShare: certified / decided };
 }
 
 export interface OutcomeCounts {

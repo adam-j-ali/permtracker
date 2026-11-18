@@ -401,10 +401,10 @@ export default async function StagePage({ params }: { params: Promise<{ stage: s
             {recon ? (
               <p className="max-w-3xl text-base leading-relaxed">
                 <b className="font-bold">
-                  {Math.round(recon.grantedShare * 100)}% of decided requests were granted
+                  {Math.round(recon.certifiedShare * 100)}% of decided requests ended in certification
                 </b>{" "}
-                ({formatInt(recon.granted)} of {formatInt(recon.decided)}): certified outright, or sent back for review.
-                The other {formatInt(recon.refused)} were refused with a NORD or a denial.
+                ({formatInt(recon.certified)} of {formatInt(recon.decided)}). Another {formatInt(recon.reopened)} were sent
+                back for review or put on hold, and {formatInt(recon.refused)} were refused with a NORD or a denial.
               </p>
             ) : null}{" "}
             <div className={recon ? "mt-4" : undefined}>

@@ -45,7 +45,7 @@ describe("where a stage leads", () => {
 
 describe("motions to reconsider", () => {
   it("counts certified or sent back as granted, a NORD or denial as refused, and BALCA as neither", () => {
-    expect(reconsiderationOutcome(EXITS)).toEqual({ decided: 407, granted: 226, refused: 181, grantedShare: 226 / 407 });
+    expect(reconsiderationOutcome(EXITS)).toEqual({ decided: 407, granted: 226, refused: 181, grantedShare: 226 / 407, certified: 205, reopened: 21, certifiedShare: 205 / 407 });
   });
 
   it("claims no rate from a handful", () => {
