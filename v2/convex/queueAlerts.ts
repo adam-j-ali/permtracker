@@ -66,6 +66,7 @@ import { api, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { ReactElement } from "react";
 import { FROM_EMAIL, getResend, sendOrQueue } from "./lib/email";
+import { recordConsentAtConfirm } from "./lib/policyConsentStore";
 import { claimHolds, deliverAlert, deliveredSince } from "./lib/alertDelivery";
 import { dropQueued } from "./lib/alertOutboxStore";
 import { SITE_URL, actionUrl } from "./lib/links";
@@ -602,6 +603,7 @@ export const confirmByToken = internalMutation({
         unsubscribedAt: undefined,
         ...(monthChanged ? { notifiedAt: undefined } : {}),
       });
+      await recordConsentAtConfirm(ctx, row.email);
 
       // Most signups name a month the queue has ALREADY passed: the form
       // offers every month back to 2020 and the frontier sits inside that

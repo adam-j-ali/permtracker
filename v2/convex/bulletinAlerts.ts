@@ -36,6 +36,7 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { ReactElement } from "react";
 import { FROM_EMAIL, getResend, sendOrQueue } from "./lib/email";
+import { recordConsentAtConfirm } from "./lib/policyConsentStore";
 import { deliverAlert } from "./lib/alertDelivery";
 import { dropQueued } from "./lib/alertOutboxStore";
 import { BUDGETS, noteRefusal, windowFor, CONFIRMATION_COOLDOWN_MS, SUBSCRIBE_IP_LIMIT, SWEEP_RESUME_DELAY_MS } from "./lib/alertBudgets";
@@ -415,6 +416,7 @@ export const confirmByToken = internalMutation({
         pendingSeries: undefined,
         unsubscribedAt: undefined,
       });
+      await recordConsentAtConfirm(ctx, row.email);
       confirmed.push(seriesLabel(row.category, row.country));
       email = row.email;
     }

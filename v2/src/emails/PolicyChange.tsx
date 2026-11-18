@@ -14,15 +14,17 @@ export interface PolicyChangeProps {
   acceptUrl: string;
   /** The address's email preferences page. */
   prefsUrl: string;
+  /** What this version changes, in one plain sentence (POLICY_CHANGE_SUMMARIES in convex/lib/policyConsent.ts). */
+  summary: string;
 }
 
-export function PolicyChange({ acceptUrl, prefsUrl }: PolicyChangeProps) {
+export function PolicyChange({ acceptUrl, prefsUrl, summary }: PolicyChangeProps) {
   return (
     <EmailLayout
       previewText="We changed how we use information you've given us. Nothing changes for you until you accept."
       settingsUrl={prefsUrl}
       settingsLabel="Email preferences"
-      footerText="You get this because this address receives PERM Tracker alerts."
+      footerText="You get this because this address receives email from PERM Tracker."
     >
       <Section style={styles.stamp}>
         <Text className="em-text-secondary" style={styles.stampEyebrow}>We updated</Text>
@@ -30,8 +32,12 @@ export function PolicyChange({ acceptUrl, prefsUrl }: PolicyChangeProps) {
       </Section>
 
       <Text className="em-text-body" style={styles.body}>
+        {summary}
+      </Text>
+
+      <Text className="em-text-body" style={styles.body}>
         The change affects how we use information you&rsquo;ve already given us, so it waits for you. Until you
-        accept it, your alerts keep running under the version you last agreed to.
+        accept it, your email from us keeps running under the version you last agreed to.
       </Text>
 
       <Section style={styles.cta}>
@@ -41,7 +47,7 @@ export function PolicyChange({ acceptUrl, prefsUrl }: PolicyChangeProps) {
       </Section>
 
       <Text className="em-text-secondary" style={styles.note}>
-        You don&rsquo;t have to do anything else, and you can turn your alerts off at any time from your email
+        You don&rsquo;t have to do anything else, and you can turn off our emails at any time from your email
         preferences.
       </Text>
     </EmailLayout>
@@ -51,6 +57,7 @@ export function PolicyChange({ acceptUrl, prefsUrl }: PolicyChangeProps) {
 PolicyChange.PreviewProps = {
   acceptUrl: "https://permtracker.app/prefs/policy?token=preview&v=2027-02-01",
   prefsUrl: "https://permtracker.app/prefs?token=preview",
+  summary: "We now share the number of alerts we send each month with a research partner, never who gets them.",
 } satisfies PolicyChangeProps;
 
 export default PolicyChange;

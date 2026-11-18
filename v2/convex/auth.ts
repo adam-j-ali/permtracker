@@ -12,6 +12,7 @@ import { validateUserName } from "./lib/nameValidation";
 import { guardCodeFlows, requireSignupPass } from "./lib/turnstilePass";
 import { noteResetOutcome } from "./lib/authOutcomes";
 import { countResetOutcomes } from "./lib/resetOutcomes";
+import { POLICY_CONSENT_VERSION } from "./lib/policyConsent";
 
 /**
  * Post-auth hook: ensure user profile exists and record login.
@@ -139,10 +140,14 @@ export const authCallbacks = {
 
     // No existing user found, create a new one.
     // Insert the normalized email so the stored value matches the lookup key.
+    // A new account agrees to the policy as it reads today (the sign-in page says so), so it's never asked to
+    // accept a change it signed up under (convex/lib/policyConsent.ts).
     const newUserId = await ctx.db.insert("users", {
       name: args.profile.name,
       image: args.profile.image,
       email,
+      policyAcceptedVersion: POLICY_CONSENT_VERSION,
+      policyAcceptedAt: Date.now(),
     });
 
     await onAuthEvent(ctx, newUserId);

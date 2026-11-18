@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Button } from "@/components/ui/button";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { captureError } from "@/lib/sentry";
 import { toast } from "@/lib/toast";
 
 /**
@@ -12,8 +14,19 @@ import { toast } from "@/lib/toast";
  * dialog, never in the way of the page. Hidden at the baseline, which every account holds, so nobody sees it until
  * the owner moves POLICY_CONSENT_VERSION. Accepting sends the version this banner was shown for, so a tab left open
  * across two changes can't accept the newer text unread.
+ *
+ * Behind its own error boundary: a failed read throws out of `useQuery`, and without the boundary that would take
+ * the whole signed-in app down for a banner almost nobody sees. A failure renders nothing and reaches Sentry.
  */
 export default function PolicyConsentBanner() {
+  return (
+    <ErrorBoundary fallback={<></>} onError={(error) => captureError(error, { operation: "PolicyConsentBanner.myStatus" })}>
+      <Banner />
+    </ErrorBoundary>
+  );
+}
+
+function Banner() {
   const status = useQuery(api.policyConsent.myStatus, {});
   const accept = useMutation(api.policyConsent.accept);
   const [busy, setBusy] = useState(false);
@@ -36,7 +49,8 @@ export default function PolicyConsentBanner() {
       <div className="mx-auto flex max-w-7xl flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <p className="min-w-0 text-sm text-foreground">
           <span className="font-medium">We updated our Privacy Policy and Terms.</span>{" "}
-          <span>The change affects how we use information you&apos;ve given us, so it applies to you only once you accept it.</span>
+          {status.summary ? <span>{status.summary}</span> : null}{" "}
+          <span>It applies to you only once you accept it.</span>
         </p>{" "}
         <div className="flex flex-shrink-0 items-center gap-3">
           <Link href="/privacy#changes-to-this-policy" className="link inline-flex min-h-11 items-center text-sm font-bold">

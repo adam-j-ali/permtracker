@@ -14,11 +14,13 @@ vi.mock("convex/react", () => ({
   useQuery: () => mockUseQuery(),
   useMutation: () => mockAccept,
 }));
+vi.mock("@/lib/sentry", () => ({ captureError: vi.fn() }));
 vi.mock("@/lib/toast", async (orig) => ({ ...(await orig<typeof import("@/lib/toast")>()), toast: { error: vi.fn(), success: vi.fn() } }));
 
 describe("PolicyConsentBanner", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseQuery.mockReset();
   });
 
   it("shows nothing at the baseline, or while signed out or loading", () => {
@@ -31,14 +33,30 @@ describe("PolicyConsentBanner", () => {
   });
 
   it("asks once a change needs consent, with a way to read it, and accepts the version it was shown", async () => {
-    mockUseQuery.mockReturnValue({ needed: true, version: "2027-02-01" });
+    mockUseQuery.mockReturnValue({ needed: true, version: "2027-02-01", summary: "We now share alert counts with a partner." });
     mockAccept.mockResolvedValue({ ok: true });
     renderWithProviders(<PolicyConsentBanner />);
     const region = screen.getByRole("region", { name: "Policy update" });
-    expect(region.textContent).toContain("We updated our Privacy Policy and Terms.");
+    expect(region.textContent).toContain("We updated our Privacy Policy and Terms. We now share alert counts with a partner. It applies to you only once you accept it.");
     expect(screen.getByRole("link", { name: "Read what changed" }).getAttribute("href")).toBe("/privacy#changes-to-this-policy");
     await userEvent.click(screen.getByRole("button", { name: "Accept" }));
     expect(mockAccept).toHaveBeenCalledWith({ version: "2027-02-01" });
+  });
+
+  it("renders nothing when its read fails, and never takes the app down with it", () => {
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockUseQuery.mockImplementation(() => {
+      throw new Error("Server Error: the read failed");
+    });
+    const { container } = renderWithProviders(
+      <>
+        <PolicyConsentBanner />
+        <p>The page</p>
+      </>,
+    );
+    expect(container.textContent).toBe("The page");
+    expect(screen.queryByText("Something went wrong")).toBeNull();
+    quiet.mockRestore();
   });
 
   it("isn't a dialog: the page around it stays usable", () => {
