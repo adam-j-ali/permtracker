@@ -20,8 +20,8 @@ vi.mock("next/navigation", () => ({
 const getI485OfficeQuarters = vi.fn();
 const getUscisPosted = vi.fn();
 vi.mock("@/lib/db/uscisQuarterly", () => ({ getI485OfficeQuarters }));
-const getI485OfficePosted = vi.fn(async () => [] as [string, number][]);
-vi.mock("@/lib/db/uscisPosted", () => ({ getUscisPosted, getI485OfficePosted }));
+const getPostedHistory = vi.fn(async () => [] as [string, number][]);
+vi.mock("@/lib/db/uscisPosted", () => ({ getUscisPosted, getPostedHistory }));
 vi.mock("@/components/data/DataProvenance", () => ({ DataProvenance: () => null }));
 const queryStatic = vi.fn();
 vi.mock("@/lib/convexStatic", () => ({ queryStatic }));
@@ -123,21 +123,27 @@ describe("a USCIS office's page", () => {
   });
 
   it("gives this office's own family-based time and its history, and the papers an I-485 waits on", async () => {
-    getI485OfficePosted.mockResolvedValueOnce([
+    getPostedHistory.mockResolvedValueOnce([
       ["2022-03-14", 20],
+      ["2025-10-20", 17],
       ["2026-10-19", 14.5],
     ]);
     getUscisPosted.mockResolvedValueOnce({
       ...POSTED,
       newest: [
         ...POSTED.newest,
+        { form: "I-485", subtype: "131A-FAM", office: "HAR", posted: 14.5 },
+        { form: "I-485", subtype: "131A-FAM", office: "BUF", posted: 10 },
+        { form: "I-485", subtype: "131A-FAM", office: "CHI", posted: 18.5 },
         { form: "I-765", subtype: "147-C9", office: "NBC", posted: 12, label: "Based on a pending I-485 adjustment application [(c)(9)]", officeLabel: "National Benefits Center" },
         { form: "I-131", subtype: "141B-OTH", office: "SCD", posted: 26.5, label: "Advance parole", officeLabel: "Service Center Operations (SCOPS)" },
       ],
     });
     const { text } = await page("hartford-connecticut");
-    expect(getI485OfficePosted).toHaveBeenCalledWith("HAR");
-    expect(text).toContain("The one time USCIS posts for Hartford alone is for family-based I-485s: 14.5 months, as of its October 19, 2026 posting.");
+    expect(getPostedHistory).toHaveBeenCalledWith("I-485", "131A-FAM", "HAR");
+    expect(text).toContain(
+      "The one time USCIS posts for Hartford alone is for family-based I-485s: 14.5 months, as of its October 19, 2026 posting, down from 17 months in its October 20, 2025 posting. Of the 3 offices it posts that time for, one posts a shorter one.",
+    );
     expect(text).toContain("Family-based, Hartford");
     expect(text).toContain(
       "While an I-485 waits, USCIS posts 12 months for a work permit based on it (I-765, category (c)(9), at the National Benefits Center) and 26.5 months for advance parole (I-131, at Service Center Operations (SCOPS)), as of its October 19, 2026 posting.",

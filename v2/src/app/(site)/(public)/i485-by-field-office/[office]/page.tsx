@@ -31,8 +31,8 @@ import { countVs } from "@/lib/uscisTrends";
 import { slotShort } from "@/lib/uscisForms";
 import type { RecordFigure } from "@/lib/recordCounts";
 import { getI485OfficeQuarters } from "@/lib/db/uscisQuarterly";
-import { getI485OfficePosted, getUscisPosted } from "@/lib/db/uscisPosted";
-import { waitPapers } from "@/lib/uscisPosted";
+import { getPostedHistory, getUscisPosted } from "@/lib/db/uscisPosted";
+import { changeWords, officeStanding, waitPapers, yearChange } from "@/lib/uscisPosted";
 import { PostedI140History } from "@/components/uscis/PostedI140History";
 import { formatAsOf } from "@/lib/dolFormat";
 import {
@@ -127,7 +127,7 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
       softFail<OfficeTimelineView | null>("i485-by-field-office/[office].timelines", null),
     ),
     // This office's own family-based posted time: the one per-office pace USCIS publishes. A failed read loses only it.
-    getI485OfficePosted(office.code).catch(softFail<[string, number][]>("i485-by-field-office/[office].ownPosted", [])),
+    getPostedHistory("I-485", "131A-FAM", office.code).catch(softFail<[string, number][]>("i485-by-field-office/[office].ownPosted", [])),
   ]);
   const year = officeYear(quarters, office.code);
   const newest = quarters[quarters.length - 1];
@@ -190,6 +190,13 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
   const postedMonths = postedRow && postedRow.posted !== null ? postedRow.posted : null;
   const papers = waitPapers(posted);
   const ownNow = ownPosted.length > 0 ? ownPosted[ownPosted.length - 1]! : null;
+  const ownYear = yearChange(ownPosted);
+  const ownPlace = officeStanding(posted, "I-485", "131A-FAM", office.code);
+  const ownPlaceText = ownPlace
+    ? ` Of the ${ownPlace.of} offices it posts that time for, ${
+        ownPlace.shorter === 0 ? "none posts" : ownPlace.shorter === 1 ? "one posts" : `${ownPlace.shorter} post`
+      } a shorter one.`
+    : "";
 
   const neighbours = center
     ? USCIS_OFFICES.filter((o) => isCenter(o) && o.code !== office.code)
@@ -376,7 +383,7 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
               {ownNow ? (
                 <>
                   <p className="mt-4 max-w-2xl text-base leading-relaxed">
-                    {`The one time USCIS posts for ${office.name} alone is for family-based I-485s: ${ownNow[1]} months, as of its ${formatAsOf(ownNow[0])} posting. It isn't the wait for an employment-based case, but it moves with how busy this office is, so its history below is the closest public measure of this office's own pace.`}
+                    {`The one time USCIS posts for ${office.name} alone is for family-based I-485s: ${ownNow[1]} months, as of its ${formatAsOf(ownNow[0])} posting${ownYear ? `, ${changeWords(ownYear)}` : ""}.${ownPlaceText} It isn't the wait for an employment-based case, but it moves with how busy this office is, so its history below is the closest public measure of this office's own pace.`}
                   </p>{" "}
                   <div className="mt-4 max-w-3xl">
                     <PostedI140History

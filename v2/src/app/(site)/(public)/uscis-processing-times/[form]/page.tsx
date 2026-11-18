@@ -24,7 +24,7 @@ import { PageSection } from "@/components/data/PageSection";
 import { ColumnChart, type Column } from "@/components/numbers/ColumnChart";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { breadcrumbSchema } from "@/lib/breadcrumbs";
-import { getUscisPosted } from "@/lib/db/uscisPosted";
+import { getPostedHistory, getUscisPosted } from "@/lib/db/uscisPosted";
 import { getHistoricalMedians, getUscisFormRows, type HistoricalMedians } from "@/lib/db/uscisQuarterly";
 import { formatAsOf } from "@/lib/dolFormat";
 import { formatInt, formatShare } from "@/lib/format";
@@ -44,7 +44,8 @@ import {
   type LinePoint,
   type Slot,
 } from "@/lib/uscisForms";
-import { isCurrent, postedByCategory, type PostedCategory } from "@/lib/uscisPosted";
+import { changeWords, isCurrent, postedByCategory, waitPapers, yearChange, type PaperTime, type PostedCategory } from "@/lib/uscisPosted";
+import { PostedI140History } from "@/components/uscis/PostedI140History";
 import { monthsLabel, quarterLabel } from "@/lib/uscisQuarterlyShape";
 import { approvalMoved, countMoved, medianMoved } from "@/lib/uscisTrends";
 import { softFail } from "@/lib/softRead";
@@ -150,6 +151,13 @@ function factsheetColumns(h: HistoricalMedians, basis: string): Column[] | null 
   }));
 }
 
+/** The I-765 and I-131 pages each lead with the one row a pending I-485 waits on; other forms have none. */
+function keyRow(form: string, ead: PaperTime | null, ap: PaperTime | null) {
+  if (form === "I-765" && ead) return { time: ead, what: "a work permit based on a pending I-485 (category (c)(9))", at: `the ${ead.office}`, name: "Work permit, (c)(9)" };
+  if (form === "I-131" && ap) return { time: ap, what: "advance parole", at: ap.office, name: "Advance parole" };
+  return null;
+}
+
 export default async function UscisFormPage({ params }: { params: Promise<{ form: string }> }) {
   const page = formPage((await params).form);
   if (!page) notFound();
@@ -161,7 +169,17 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
     getUscisPosted(),
   ]);
   // A posting too old to stand for "now" is left out: the quarterly median carries the page on its own.
-  const categories = posted && isCurrent(posted, easternDay()) ? postedRows(postedByCategory(posted, page.form)) : [];
+  const fresh = posted && isCurrent(posted, easternDay()) ? posted : null;
+  const categories = fresh ? postedRows(postedByCategory(fresh, page.form)) : [];
+  // The row most people on the I-765 and I-131 pages wait on while an I-485 is pending, answered first.
+  const papers = waitPapers(fresh);
+  const key = keyRow(page.form, papers?.ead ?? null, papers?.ap ?? null);
+  const keyHistory = key
+    ? await getPostedHistory(page.form, key.time.subtype, key.time.code).catch(
+        softFail<[string, number][]>("uscis-processing-times/[form]/page.keyHistory", []),
+      )
+    : [];
+  const keyYear = yearChange(keyHistory);
   const slots = quarterSlots(rows);
   const lines = page.lines
     .map((line) => ({ line, points: lineSeries(rows, line, slots) }))
@@ -194,6 +212,14 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
             USCIS decided half its {lines.length > 1 ? `${lead.line.label.toLowerCase()} ` : ""}
             {page.form}s within {monthsPhrase(leadNow.row.medianMonths)} in {quarterLabel(leadNow.slot.fy, leadNow.slot.quarter)},
             its median.
+          </p>
+        ) : null}{" "}
+        {key && fresh ? (
+          <p className="mt-3 text-lg leading-relaxed">
+            {`For ${key.what}, USCIS posts ${key.time.months} months at ${key.at} as of its ${formatAsOf(fresh.published)} posting${keyYear ? `, ${changeWords(keyYear)}` : ""}. That's the time within which it decided 8 cases in 10.`}{" "}
+            <a href="#posted" className="link font-bold">
+              Every posting since {formatAsOf(keyHistory[0]?.[0] ?? fresh.published)}
+            </a>
           </p>
         ) : null}
       </header>{" "}
@@ -252,6 +278,25 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
               title="USCIS's posted time, by category"
               lede={`USCIS's processing-times page prints one figure a category: the time within which it finished 80% of the cases it decided over the past six months. Posted ${formatAsOf(posted.published)}.`}
             >
+              {key && keyHistory.length > 1 ? (
+                <div className="mb-5 max-w-3xl">
+                  <PostedI140History
+                    label={`USCIS's posted time for ${key.what} at ${key.at}, every posting since ${formatAsOf(keyHistory[0]![0])}`}
+                    series={[
+                      {
+                        form: page.form,
+                        subtype: key.time.subtype,
+                        office: key.time.code,
+                        label: null,
+                        officeLabel: key.time.office,
+                        points: keyHistory,
+                        code: key.time.subtype,
+                        name: `${key.name}, ${key.time.office}`,
+                      },
+                    ]}
+                  />
+                </div>
+              ) : null}{" "}
               <div className="object p-4 sm:p-5">
                 <BarRows inline rows={categories} label={`${page.form}: the months USCIS posts, by category`} />
               </div>{" "}
