@@ -27,7 +27,10 @@ case "$job" in
     # Older months, from the Internet Archive's copies of USCIS's files (Oct 28 2026). It loads only
     # months not held and names any the Archive won't serve in its own run row, so a busy Archive costs
     # a month's wait, never this job's status.
-    timeout 30m python3 scripts/ingest_i485_inventory.py --archive || true ;;
+    timeout 30m python3 scripts/ingest_i485_inventory.py --archive || true
+    # USCIS's monthly report to Congress (Nov 18 2026): six forms' receipts, approvals, denials and pending each month,
+    # every month the data page still lists, so a revised month replaces the older copy. It writes its own run row.
+    timeout 15m python3 scripts/ingest_uscis_monthly_forms.py || { rc=1; fail ingest_uscis_monthly_forms.py "ingest exited non-zero or ran past 15m"; } ;;
   # Layoff notices from the four states read only through the Internet Archive (Louisiana, New Mexico,
   # Missouri, Nevada; Nov 1 2026). The Archive throttles GitHub's shared runners (HTTP 429 on every daily run
   # from Oct 25) and answers this server, so these four are read here and GitHub's run skips them. A state the

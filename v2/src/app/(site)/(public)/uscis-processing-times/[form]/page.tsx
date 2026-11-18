@@ -25,9 +25,13 @@ import { ColumnChart, type Column } from "@/components/numbers/ColumnChart";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { breadcrumbSchema } from "@/lib/breadcrumbs";
 import { getPostedHistory, getUscisPosted } from "@/lib/db/uscisPosted";
+import { getUscisMonthly } from "@/lib/db/uscisMonthly";
+import { deniedShare, leadLine, recentMonths } from "@/lib/uscisMonthly";
+import { ScrollBox } from "@/components/ui/scroll-box";
+import { MONTH_NAMES } from "@convex/lib/months";
 import { getHistoricalMedians, getUscisFormRows, type HistoricalMedians } from "@/lib/db/uscisQuarterly";
 import { formatAsOf } from "@/lib/dolFormat";
-import { formatInt, formatShare } from "@/lib/format";
+import { formatInt, formatShare, formatShareOf } from "@/lib/format";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { PROCESSING_TIMES_SOURCE_URL } from "@/lib/processing-times/i140ProcessingTimes";
 import { withSocialCard } from "@/lib/socialCard";
@@ -158,16 +162,25 @@ function keyRow(form: string, ead: PaperTime | null, ap: PaperTime | null) {
   return null;
 }
 
+const monthWords = (m: string) => `${MONTH_NAMES[Number(m.slice(5)) - 1]} ${m.slice(0, 4)}`;
+const monthCount = (n: number | null) => (n === null ? "Not given" : formatInt(n));
+
 export default async function UscisFormPage({ params }: { params: Promise<{ form: string }> }) {
   const page = formPage((await params).form);
   if (!page) notFound();
   const path = `/uscis-processing-times/${page.slug}`;
-  const [rows, history, posted] = await Promise.all([
+  const [rows, history, posted, monthly] = await Promise.all([
     getUscisFormRows(page.form),
     getHistoricalMedians().catch(softFail("uscis-processing-times/[form]/page.getHistoricalMedians", null)),
     // Throws on a failed read, like the rows: the page keeps its last good render for the week.
     getUscisPosted(),
+    // USCIS's monthly report to Congress, for the six forms it covers. A failed read loses only its section.
+    getUscisMonthly().catch(softFail("uscis-processing-times/[form]/page.getUscisMonthly", null)),
   ]);
+  const month = leadLine(monthly, page.form);
+  const monthRows = month && monthly ? recentMonths(monthly, month, 12) : [];
+  const monthNow = monthRows[0]?.point ?? null;
+  const monthWhat = page.form === "I-485" ? "employment-based I-485s" : `${page.form}s`;
   // A posting too old to stand for "now" is left out: the quarterly median carries the page on its own.
   const fresh = posted && isCurrent(posted, easternDay()) ? posted : null;
   const categories = fresh ? postedRows(postedByCategory(fresh, page.form)) : [];
@@ -219,6 +232,14 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
             {`For ${key.what}, USCIS posts ${key.time.months} months at ${key.at} as of its ${formatAsOf(fresh.published)} posting${keyYear ? `, ${changeWords(keyYear)}` : ""}. That's the time within which it decided 8 cases in 10.`}{" "}
             <a href="#posted" className="link font-bold">
               Every posting since {formatAsOf(keyHistory[0]?.[0] ?? fresh.published)}
+            </a>
+          </p>
+        ) : null}{" "}
+        {monthNow && monthNow.approved !== null && monthNow.denied !== null && monthNow.pending !== null && monthRows[0] ? (
+          <p className="mt-3 text-lg leading-relaxed">
+            {`In ${monthWords(monthRows[0].month)}, USCIS approved ${formatInt(monthNow.approved)} ${monthWhat} and denied ${formatInt(monthNow.denied)}, ${formatShareOf(monthNow.denied, monthNow.approved + monthNow.denied)} of those it decided. ${formatInt(monthNow.pending)} were pending at the month's end${monthNow.pending_6mo !== null ? `, ${formatInt(monthNow.pending_6mo)} of them for more than six months` : ""}.`}{" "}
+            <a href="#monthly" className="link font-bold">
+              Each month
             </a>
           </p>
         ) : null}
@@ -381,6 +402,98 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
           </PageSection>
         </>
       )}{" "}
+      {month && monthly && monthRows.length > 0 ? (
+        <PageSection
+          id="monthly"
+          title="Each month, as USCIS reports it to Congress"
+          lede={`${page.form === "I-485" ? "Employment-based I-485s" : `Every ${page.form}`}: what came in, what USCIS decided and what was still waiting at each month's end, from the monthly report USCIS files with Congress.`}
+        >
+          <ScrollBox label={`${monthWhat}, month by month`} className="border-t-2 border-[var(--object-border)]">
+            <table className="w-full min-w-[720px] border-collapse text-left text-base">
+              <caption className="sr-only">{`${monthWhat} received, approved, denied and pending each month, from USCIS's monthly report to Congress`}</caption>
+              <thead className="dark border-b border-black bg-[#141414] text-foreground">
+                <tr>
+                  <th scope="col" className="px-3 py-3 text-sm font-bold">Month{" "}</th>
+                  <th scope="col" className="px-3 py-3 text-right text-sm font-bold">Received{" "}</th>
+                  <th scope="col" className="px-3 py-3 text-right text-sm font-bold">Approved{" "}</th>
+                  <th scope="col" className="px-3 py-3 text-right text-sm font-bold">Denied{" "}</th>
+                  <th scope="col" className="px-3 py-3 text-right text-sm font-bold">Denied of decided{" "}</th>
+                  <th scope="col" className="px-3 py-3 text-right text-sm font-bold">Pending{" "}</th>
+                  <th scope="col" className="px-3 py-3 text-right text-sm font-bold">Over six months{" "}</th>
+                  <th scope="col" className="px-3 py-3 text-right text-sm font-bold">Average months{" "}</th>
+                </tr>
+              </thead>
+              <tbody className="bg-card">
+                {monthRows.map(({ month: m, point: p }) =>
+                  p ? (
+                    <tr key={m} className="border-t-2 border-border/30">
+                      <th scope="row" className="px-3 py-3 font-semibold">{monthWords(m)}{" "}</th>
+                      <td className="px-3 py-3 text-right tabular-nums">{monthCount(p.received)}{" "}</td>
+                      <td className="px-3 py-3 text-right tabular-nums">{monthCount(p.approved)}{" "}</td>
+                      <td className="px-3 py-3 text-right tabular-nums">{monthCount(p.denied)}{" "}</td>
+                      <td className="px-3 py-3 text-right tabular-nums">
+                        {(() => {
+                          const sh = deniedShare(p);
+                          return sh === null || p.denied === null || p.approved === null ? "Not given" : formatShareOf(p.denied, p.approved + p.denied);
+                        })()}{" "}
+                      </td>
+                      <td className="px-3 py-3 text-right font-bold tabular-nums">{monthCount(p.pending)}{" "}</td>
+                      <td className="px-3 py-3 text-right tabular-nums">{monthCount(p.pending_6mo)}{" "}</td>
+                      <td className="px-3 py-3 text-right tabular-nums">{p.avg_months === null ? "Not given" : p.avg_months.toFixed(1)}{" "}</td>
+                    </tr>
+                  ) : (
+                    <tr key={m} className="border-t-2 border-border/30">
+                      <th scope="row" className="px-3 py-3 font-semibold">{monthWords(m)}{" "}</th>
+                      <td colSpan={7} className="px-3 py-3 text-soft">
+                        USCIS&apos;s data page doesn&apos;t list this month&apos;s report.{" "}
+                      </td>
+                    </tr>
+                  ),
+                )}
+              </tbody>
+            </table>
+          </ScrollBox>{" "}
+          {page.form === "I-485" && monthly.newest ? (
+            <ScrollBox label={`Every I-485 basis in ${monthWords(monthly.newest)}`} className="mt-6 border-t-2 border-[var(--object-border)]">
+              <table className="w-full min-w-[560px] border-collapse text-left text-base">
+                <caption className="sr-only">{`Every I-485 basis USCIS reports, ${monthWords(monthly.newest)}`}</caption>
+                <thead className="dark border-b border-black bg-[#141414] text-foreground">
+                  <tr>
+                    <th scope="col" className="px-3 py-3 text-sm font-bold">{`Basis, ${monthWords(monthly.newest)}`}{" "}</th>
+                    <th scope="col" className="px-3 py-3 text-right text-sm font-bold">Received{" "}</th>
+                    <th scope="col" className="px-3 py-3 text-right text-sm font-bold">Approved{" "}</th>
+                    <th scope="col" className="px-3 py-3 text-right text-sm font-bold">Denied{" "}</th>
+                    <th scope="col" className="px-3 py-3 text-right text-sm font-bold">Pending{" "}</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-card">
+                  {monthly.lines
+                    .filter((l) => l.form === "I-485")
+                    .map((l) => ({ l, p: l.points.find((x) => x.month === monthly.newest) ?? null }))
+                    .filter((x) => x.p !== null)
+                    .sort((a, b) => (b.p!.pending ?? 0) - (a.p!.pending ?? 0))
+                    .map(({ l, p }) => (
+                      <tr key={l.line} className="border-t-2 border-border/30">
+                        <th scope="row" className="px-3 py-3 font-semibold">{l.basis || l.line}{" "}</th>
+                        <td className="px-3 py-3 text-right tabular-nums">{monthCount(p!.received)}{" "}</td>
+                        <td className="px-3 py-3 text-right tabular-nums">{monthCount(p!.approved)}{" "}</td>
+                        <td className="px-3 py-3 text-right tabular-nums">{monthCount(p!.denied)}{" "}</td>
+                        <td className="px-3 py-3 text-right font-bold tabular-nums">{monthCount(p!.pending)}{" "}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </ScrollBox>
+          ) : null}{" "}
+          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-soft">
+            {`The average counts months from receipt to decision over every case USCIS finished that month. USCIS says it may differ from the processing times it posts, which give the time for 8 cases in 10. USCIS also revises past months, so a month can change after it's first published. ${monthly.missing.length > 0 ? `Its data page doesn't list ${monthly.missing.length} of the months between ${monthWords(monthly.months[0]!)} and ${monthWords(monthly.newest ?? monthly.months[monthly.months.length - 1]!)}. ` : ""}From`}{" "}
+            <a href="https://www.uscis.gov/tools/reports-and-studies/immigration-and-citizenship-data" target="_blank" rel="noopener noreferrer" className="link">
+              USCIS&apos;s data page
+            </a>
+            .
+          </p>
+        </PageSection>
+      ) : null}{" "}
       {factsheet.length > 0 && history ? (
         <PageSection
           id="history"
