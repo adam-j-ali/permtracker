@@ -2330,6 +2330,14 @@ export default defineSchema({
     i485jApprovedOn: v.optional(v.string()),
     interviewOn: v.optional(v.string()),
     greenCardOn: v.optional(v.string()),
+    /** Premium processing requested after filing, the move to a field office, the card in the mail (lib DETAIL_DATES). */
+    premiumOn: v.optional(v.string()),
+    officeMovedOn: v.optional(v.string()),
+    cardArrivedOn: v.optional(v.string()),
+    /** Whether the interview was held or waived (lib INTERVIEW_OUTCOMES). */
+    interview: v.optional(v.union(v.literal("held"), v.literal("waived"))),
+    /** What the person did to move the case, sorted by day; each kind is checked against lib CONTACT_KINDS on save. */
+    contacts: v.optional(v.array(v.object({ on: v.string(), kind: v.string() }))),
     /**
      * Updates in the person's USCIS account, sorted by day. The form and code are checked against the lib's lists on
      * save (EVENT_FORMS, ACCOUNT_CODES or a typed code matching TYPED_CODE), so they're stored as plain strings.

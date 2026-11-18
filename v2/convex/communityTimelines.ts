@@ -28,6 +28,10 @@ import {
   TIMELINE_TEXT_FIELDS,
   APPLICANTS,
   recentApprovals,
+  CONTACT_KINDS,
+  DETAIL_DATES,
+  contactOutcomes,
+  interviewShare,
   computeMetrics,
   isListedCode,
   isPermCategory,
@@ -131,6 +135,13 @@ const timelineInput = v.object({
   i485jApprovedOn: v.optional(v.union(v.string(), v.null())),
   interviewOn: v.optional(v.union(v.string(), v.null())),
   greenCardOn: v.optional(v.union(v.string(), v.null())),
+  premiumOn: v.optional(v.union(v.string(), v.null())),
+  officeMovedOn: v.optional(v.union(v.string(), v.null())),
+  cardArrivedOn: v.optional(v.union(v.string(), v.null())),
+  interview: v.optional(v.union(v.string(), v.null())),
+  contacts: v.optional(
+    v.union(v.array(v.object({ on: v.optional(v.union(v.string(), v.null())), kind: v.optional(v.union(v.string(), v.null())) })), v.null()),
+  ),
   accountEvents: v.optional(
     v.union(
       v.array(
@@ -173,7 +184,7 @@ function readCase(raw: string | undefined): string | undefined | null {
 }
 
 /** The self-reported fields of a row, every one written so an edit can clear it: the lib's one list, and two beside it. */
-const FIELD_KEYS = [...TIMELINE_TEXT_FIELDS, "premium", "accountEvents"] as const;
+const FIELD_KEYS = [...TIMELINE_TEXT_FIELDS, "premium", "accountEvents", "contacts"] as const;
 
 /** A row from before reviews existed has no status until `backfillStatus` runs; it was public then, so it reads as approved. */
 const statusOf = (r: Doc<"communityTimelines">) => r.status ?? "approved";
@@ -442,6 +453,7 @@ const metricV = v.object({
 });
 const countV = v.object({ id: v.string(), label: v.string(), count: v.number() });
 const updatesV = v.union(v.null(), v.object({ count: v.number(), codes: v.array(v.string()), lastDay: v.union(v.number(), v.null()) }));
+const contactsV = v.union(v.null(), v.object({ count: v.number(), kinds: v.array(v.string()) }));
 const codeTallyV = v.array(v.object({ code: v.string(), timelines: v.number(), listed: v.boolean() }));
 const boardRowV = v.object({
   filedMonth: v.union(v.string(), v.null()),
@@ -449,6 +461,8 @@ const boardRowV = v.object({
   country: v.union(v.string(), v.null()),
   route: v.union(v.string(), v.null()),
   applicant: v.union(v.string(), v.null()),
+  interview: v.union(v.string(), v.null()),
+  contacts: contactsV,
   premium: v.union(v.boolean(), v.null()),
   stops: v.array(v.object({ id: v.string(), day: v.union(v.number(), v.null()), month: v.union(v.string(), v.null()) })),
   permVerified: v.boolean(),
@@ -500,6 +514,12 @@ export const board = query({
     offices: v.array(v.object({ code: v.string(), shared: v.number() })),
     /** The account codes timelines report, each once METRIC_MIN_N timelines do. */
     codes: codeTallyV,
+    /** After each kind of contact: who got a card and how soon (lib `contactOutcomes`). */
+    contacts: v.array(
+      v.object({ kind: v.string(), label: v.string(), reported: v.number(), withCard: v.number(), medianToCard: v.union(v.number(), v.null()), waiting: v.number() }),
+    ),
+    /** Of the green cards that say how the interview went, how many were waived (lib `interviewShare`). */
+    interviews: v.object({ answered: v.number(), waived: v.number() }),
     /** After a third FTA0 on the I-485: who got a card, who is still waiting (lib `thirdFta0`). */
     thirdFta0: v.object({
       reported: v.number(),
@@ -563,6 +583,8 @@ export const board = query({
         .sort((x, y) => y.shared - x.shared || x.code.localeCompare(y.code)),
       codes: tallyCodes(records),
       thirdFta0: thirdFta0(records),
+      contacts: contactOutcomes(records),
+      interviews: interviewShare(records),
       waiting: whoIsWaiting(records),
       recent: a.today !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(a.today) ? recentApprovals(records, a.today) : null,
     };
@@ -574,6 +596,8 @@ const officeRowV = v.object({
   category: v.union(v.string(), v.null()),
   country: v.union(v.string(), v.null()),
   applicant: v.union(v.string(), v.null()),
+  interview: v.union(v.string(), v.null()),
+  contacts: contactsV,
   stops: v.array(v.object({ id: v.string(), day: v.union(v.number(), v.null()), month: v.union(v.string(), v.null()) })),
   rfe: v.union(v.null(), v.object({ outcome: v.union(v.string(), v.null()) })),
   updates: updatesV,
@@ -772,6 +796,8 @@ const adminRowV = v.object({
   route: v.union(v.string(), v.null()),
   /** Whose case, by its label; null when not given. */
   applicant: v.union(v.string(), v.null()),
+  /** "interview waived" when it was; null otherwise. */
+  interview: v.union(v.string(), v.null()),
   premium: v.boolean(),
   /** The account updates as given; `typed` marks a code from "Other", which the owner reads before approving. */
   updates: v.array(v.object({ on: v.string(), form: v.union(v.string(), v.null()), code: v.union(v.string(), v.null()), typed: v.boolean() })),
@@ -795,6 +821,8 @@ function adminRow(r: Doc<"communityTimelines">): Infer<typeof adminRowV> {
     ...(r.permFiledOn ? [{ label: "PERM filed", on: r.permFiledOn, verified: true }] : []),
     ...(r.permCertifiedOn ? [{ label: "PERM certified", on: r.permCertifiedOn, verified: true }] : []),
     ...DATE_FIELDS.flatMap((f) => (r[f.id] ? [{ label: f.short as string, on: r[f.id] as string, verified: false }] : [])),
+    ...DETAIL_DATES.flatMap((f) => (r[f.id] ? [{ label: f.label as string, on: r[f.id] as string, verified: false }] : [])),
+    ...(r.contacts ?? []).map((c) => ({ label: labelOf(CONTACT_KINDS, c.kind) ?? c.kind, on: c.on, verified: false })),
   ];
   const rfe = r.rfeForm
     ? [
@@ -819,6 +847,7 @@ function adminRow(r: Doc<"communityTimelines">): Infer<typeof adminRowV> {
     country: labelOf(COUNTRIES, r.country),
     route: r.route ?? null,
     applicant: labelOf(APPLICANTS, r.applicant),
+    interview: r.interview === "waived" ? "interview waived" : null,
     premium: r.premium === true,
     updates: (r.accountEvents ?? []).map((e) => ({
       on: e.on,

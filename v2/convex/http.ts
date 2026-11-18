@@ -2,7 +2,7 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { TimelineWire } from "./communityTimelines";
-import { MAX_ACCOUNT_EVENTS, TIMELINE_TEXT_FIELDS } from "./lib/communityTimeline";
+import { MAX_ACCOUNT_EVENTS, MAX_CONTACTS, TIMELINE_TEXT_FIELDS } from "./lib/communityTimeline";
 import { consulateListed, type ReportWire } from "./consularReports";
 import { POST_SLUG, REPORT_FIELD_KEYS } from "./lib/consularReport";
 import { auth } from "./auth";
@@ -1931,6 +1931,23 @@ function timelineEvents(raw: unknown): { on: string | null; form: string | null;
   return out;
 }
 
+/** What a person did to move the case, narrowed to short strings; the mutation checks the day and the kind. */
+function timelineContacts(raw: unknown): { on: string | null; kind: string | null }[] | null {
+  if (!Array.isArray(raw) || raw.length > MAX_CONTACTS + 1) return null;
+  const out: { on: string | null; kind: string | null }[] = [];
+  for (const e of raw) {
+    if (typeof e !== "object" || e === null) return null;
+    const r = e as Record<string, unknown>;
+    const short = (x: unknown, max: number): string | null | undefined =>
+      x === undefined || x === null || x === "" ? null : typeof x === "string" && x.length <= max ? x : undefined;
+    const on = short(r.on, 10);
+    const kind = short(r.kind, 24);
+    if (on === undefined || kind === undefined) return null;
+    out.push({ on, kind });
+  }
+  return out;
+}
+
 for (const path of ["/timeline/save", "/timeline/mine", "/timeline/remove"]) {
   http.route({
     path,
@@ -1967,6 +1984,11 @@ http.route({
       accountEvents = timelineEvents(b.accountEvents);
       if (accountEvents === null) return json({ ok: false, message: "Malformed request." }, 400);
     }
+    let contacts: ReturnType<typeof timelineContacts> = null;
+    if (b.contacts !== undefined && b.contacts !== null) {
+      contacts = timelineContacts(b.contacts);
+      if (contacts === null) return json({ ok: false, message: "Malformed request." }, 400);
+    }
     const ip = callerIp(req);
     const [ipHash, editKeyHash] = await Promise.all([
       hashIp("timeline", ip),
@@ -1976,7 +1998,7 @@ http.route({
       caseNumber: timelineCase(b),
       editKeyHash,
       ipHash,
-      input: { ...input, ...(accountEvents ? { accountEvents } : {}) } as TimelineWire,
+      input: { ...input, ...(accountEvents ? { accountEvents } : {}), ...(contacts ? { contacts } : {}) } as TimelineWire,
     });
     return json(result, result.ok ? 200 : result.throttled ? 429 : 400);
   }),

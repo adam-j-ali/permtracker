@@ -283,10 +283,11 @@ describe("an office's row and its medians", () => {
       rec({ i485FiledOn: "2025-05-01", biometricsOn: `2025-06-${String(10 + i).padStart(2, "0")}`, interviewOn: "2026-02-03" }),
     );
     const m = computeMetrics(five).filter((x) => OFFICE_METRIC_IDS.includes(x.id));
-    expect(m.map((x) => x.id)).toEqual(["i485-bio", "i485-ead", "i485-interview", "i485-gc"]);
+    expect(m.map((x) => x.id)).toEqual(["i485-bio", "i485-ead", "i485-office", "i485-interview", "i485-gc"]);
     expect(m[0]).toMatchObject({ n: 5, median: 42 });
-    expect(m[2]).toMatchObject({ n: 5, median: 278 });
-    expect(m[3]).toMatchObject({ n: 0, median: null });
+    expect(m[2]).toMatchObject({ n: 0, median: null });
+    expect(m[3]).toMatchObject({ n: 5, median: 278 });
+    expect(m[4]).toMatchObject({ n: 0, median: null });
   });
 
   it("the board's row names the office only when told the office's list is open", () => {

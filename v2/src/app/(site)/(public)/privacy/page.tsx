@@ -319,11 +319,17 @@ export default function PrivacyPage() {
                 timelines page you can save the dates that came after PERM (the
                 I-140, the I-485, a biometrics appointment, a work permit, a
                 travel document, a Supplement J approval, an interview, the green
-                card) and a few choices from fixed lists, such as your category,
+                card, the day premium processing was requested, the move to a
+                field office, the card’s arrival) and a few choices from fixed
+                lists, such as your category,
                 your country, whether the case is the main applicant’s or a
-                spouse’s or child’s, the USCIS office handling your I-485 and the
-                service center that took it in. You can also add the updates
-                your own USCIS account showed: the day, the form and the code.
+                spouse’s or child’s, whether the interview was held or waived,
+                the USCIS office handling your I-485 and the service center that
+                took it in. You can also add the updates your own USCIS account
+                showed: the day, the form and the code, and what you did to move
+                the case (a service request, an Emma chat, a call, a
+                congressional inquiry, the CIS Ombudsman or an expedite
+                request), each with its day.
                 There’s no free-text box. The one thing you can type is an
                 account code, 2 to 6 letters and digits, and we read any code
                 that isn’t on our list before the timeline shows. A PERM case
@@ -361,8 +367,8 @@ export default function PrivacyPage() {
                 exact date. The full list shows nothing until {BOARD_OPENS_AT}{" "}
                 people have shared, and one office’s list nothing until{" "}
                 {OFFICE_LIST_OPENS_AT} people from that office have. A row shows
-                how many account updates it has and their codes, never their
-                dates, and names a service center only once{" "}
+                how many account updates and contacts it has and their codes and
+                kinds, never their dates, and names a service center only once{" "}
                 {OFFICE_LIST_OPENS_AT} shared timelines name it
               </li>{" "}
               <li>

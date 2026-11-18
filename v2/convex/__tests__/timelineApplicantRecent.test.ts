@@ -100,3 +100,28 @@ describe("approvals reported this week", () => {
     expect((await t.query(api.communityTimelines.board, { today: "yesterday" })).recent).toBeNull();
   });
 });
+
+describe("the details and what people did", () => {
+  it("are saved, read back, counted on the board, and never dated on a row", async () => {
+    const t = createTestContext();
+    await saveApproved(
+      t,
+      Array.from({ length: BOARD_OPENS_AT }, (_, i) => ({
+        interview: i < 6 ? "waived" : "held",
+        greenCardOn: "2026-09-01",
+        cardArrivedOn: "2026-09-15",
+        officeMovedOn: "2026-05-02",
+        contacts: [{ on: "2026-07-01", kind: "congressional" }],
+      })),
+    );
+    const [row] = await rows(t);
+    expect(row).toMatchObject({ interview: expect.any(String), cardArrivedOn: "2026-09-15", contacts: [{ on: "2026-07-01", kind: "congressional" }] });
+    const mine = await t.query(internal.communityTimelines.mine, { editKeyHash: key(0) });
+    expect(mine?.input.contacts).toEqual([{ on: "2026-07-01", kind: "congressional" }]);
+    const board = await t.query(api.communityTimelines.board, {});
+    expect(board.interviews).toEqual({ answered: BOARD_OPENS_AT, waived: 6 });
+    expect(board.contacts.find((c) => c.kind === "congressional")).toMatchObject({ reported: BOARD_OPENS_AT, withCard: BOARD_OPENS_AT, medianToCard: 62 });
+    expect(board.rows[0]!.contacts).toEqual({ count: 1, kinds: ["congressional"] });
+    expect(JSON.stringify(board.rows)).not.toContain("2026-07-01");
+  });
+});
