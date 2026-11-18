@@ -75,7 +75,7 @@ describe("/green-card-timelines", () => {
     vi.mocked(queryStatic).mockResolvedValue(boardOf(Array.from({ length: 6 }, (_, i) => rec(i))) as never);
     const out = await html();
     expect(out).toMatch(/PERM filed to certified.*?DOL&#x27;s record/s);
-    expect(out).toMatch(/I-140 filed to approved, premium.*?self-reported/s);
+    expect(out).toMatch(/I-140 to approved, premium.*?self-reported/s);
     expect(out).toContain("Median 289 days");
     expect(out).toContain("a median needs 5, and this stage has 0");
   });
