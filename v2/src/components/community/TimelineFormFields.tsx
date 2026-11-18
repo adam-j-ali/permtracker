@@ -15,7 +15,11 @@ import {
   EVENT_FORMS,
   I140_CENTERS,
   APPLICANTS,
+  CONTACT_KINDS,
+  DETAIL_DATES,
   I485_CENTERS,
+  INTERVIEW_OUTCOMES,
+  MAX_CONTACTS,
   MAX_ACCOUNT_EVENTS,
   RFE_FORMS,
   RFE_OUTCOMES,
@@ -346,8 +350,9 @@ function Rfe({ uid, form, set }: { uid: string; form: TimelineInput; set: Set })
   );
 }
 
-function Premium({ form, set }: { form: TimelineInput; set: Set }) {
+function Premium({ uid, form, set }: { uid: string; form: TimelineInput; set: Set }) {
   return (
+    <>
     <label className="flex min-h-11 items-center gap-3 text-base sm:col-span-2">
       <input
         type="checkbox"
@@ -355,8 +360,114 @@ function Premium({ form, set }: { form: TimelineInput; set: Set }) {
         checked={form.premium === true}
         onChange={(e) => set("premium", e.target.checked ? true : null)}
       />
-      <span>The I-140 was filed with premium processing</span>
-    </label>
+      <span>The I-140 had premium processing</span>
+    </label>{" "}
+    {form.premium === true ? <DetailDate uid={uid} id="premiumOn" form={form} set={set} /> : null}
+    </>
+  );
+}
+
+/** One of the detail dates (DETAIL_DATES), drawn like the other dates. */
+function DetailDate({ uid, id, form, set }: { uid: string; id: (typeof DETAIL_DATES)[number]["id"]; form: TimelineInput; set: Set }) {
+  const f = DETAIL_DATES.find((d) => d.id === id)!;
+  return (
+    <div>
+      <Label htmlFor={`${uid}-${id}`}>{f.label}</Label>
+      <DateInput id={`${uid}-${id}`} value={form[id] ?? ""} onChange={(e) => set(id, e.target.value || null)} className="mt-1.5" />
+    </div>
+  );
+}
+
+/** The details that refine a step: the interview answer, the move to a field office, the card. */
+function Details({ uid, form, set, route }: { uid: string; form: TimelineInput; set: Set; route: string }) {
+  return (
+    <>
+      <Pick
+        id={`${uid}-interview`}
+        label="The interview"
+        value={form.interview ?? ""}
+        empty="Not yet, or not sure"
+        options={INTERVIEW_OUTCOMES}
+        onChange={(v) => set("interview", v || null)}
+      />{" "}
+      {route === "adjustment" ? <DetailDate uid={uid} id="officeMovedOn" form={form} set={set} /> : null}{" "}
+      {route === "adjustment" ? <DetailDate uid={uid} id="cardArrivedOn" form={form} set={set} /> : null}
+    </>
+  );
+}
+
+type ContactRow = { on?: string | null; kind?: string | null };
+
+/** What the person did to move the case: a day and a kind each, up to MAX_CONTACTS. */
+function Contacts({ uid, form, set }: { uid: string; form: TimelineInput; set: Set }) {
+  const list = (form.contacts ?? []) as ContactRow[];
+  const [ids, setIds] = useState<string[]>(() => list.map(rowId));
+  const count = list.length;
+  useEffect(() => {
+    if (ids.length !== count) setIds(Array.from({ length: count }, rowId));
+  }, [count, ids.length]);
+  const write = (next: ContactRow[]) => set("contacts", next.length > 0 ? next : null);
+  const change = (i: number, patch: ContactRow) => write(list.map((c, j) => (j === i ? { ...c, ...patch } : c)));
+  return (
+    <fieldset className="grid grid-cols-1 gap-4 [&>*]:min-w-0">
+      <legend className={legendCls}>What you did to move the case</legend>
+      <p className="-mt-1 text-sm leading-relaxed text-muted-foreground">
+        A service request, an Emma chat, a call, a congressional inquiry, the Ombudsman or an expedite request, each with
+        its day. It shows how many people got a decision after each one.{" "}
+        <Link href="/guides/uscis-congressional-inquiry" className="link">
+          When a congressional inquiry helps
+        </Link>
+        .
+      </p>{" "}
+      {list.map((c, i) => {
+        const id = ids[i] ?? `${uid}-c${i}`;
+        return (
+          <Fragment key={id}>
+            <fieldset className="border-2 border-border p-3">
+              <legend className="px-1 text-sm font-semibold">Contact {i + 1}</legend>
+              <div className={gridCls}>
+                <Pick
+                  id={`${uid}-${id}-kind`}
+                  label="What you did"
+                  value={c?.kind ?? ""}
+                  empty="Pick one"
+                  options={CONTACT_KINDS}
+                  onChange={(v) => change(i, { kind: v || null })}
+                />{" "}
+                <div>
+                  <Label htmlFor={`${uid}-${id}-on`}>The day</Label>
+                  <DateInput id={`${uid}-${id}-on`} value={c?.on ?? ""} onChange={(ev) => change(i, { on: ev.target.value || null })} className="mt-1.5" />
+                </div>
+              </div>{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setIds(ids.filter((_, j) => j !== i));
+                  write(list.filter((_, j) => j !== i));
+                }}
+                className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <XIcon className="size-4" weight="bold" aria-hidden="true" /> Remove contact {i + 1}
+              </button>
+            </fieldset>{" "}
+          </Fragment>
+        );
+      })}
+      {list.length < MAX_CONTACTS ? (
+        <button
+          type="button"
+          onClick={() => {
+            setIds([...ids, rowId()]);
+            write([...list, { on: null, kind: null }]);
+          }}
+          className="inline-flex min-h-11 w-fit items-center gap-1.5 border-2 border-foreground bg-card px-4 text-base font-semibold hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <PlusIcon className="size-4" weight="bold" aria-hidden="true" /> {list.length === 0 ? "Add something you did" : "Add another"}
+        </button>
+      ) : (
+        <p className="text-sm text-muted-foreground">That&apos;s {MAX_CONTACTS}, the most a timeline keeps.</p>
+      )}
+    </fieldset>
   );
 }
 
@@ -418,13 +529,15 @@ export function TimelineFormFields({
           <Pick id={`${uid}-center`} label="Where the I-140 was decided" value={form.i140Center ?? ""} empty="Not sure" options={I140_CENTERS} onChange={(v) => set("i140Center", v || null)} />{" "}
           {route === "adjustment" ? <OfficePick uid={uid} form={form} set={set} /> : null}{" "}
           {route === "adjustment" ? <CenterPick uid={uid} form={form} set={set} /> : null}{" "}
-          <Premium form={form} set={set} />
+          <Premium uid={uid} form={form} set={set} />
         </fieldset>{" "}
         <fieldset className={gridCls}>
           <legend className={legendCls}>Dates, only the ones that have happened</legend>
-          <Dates uid={uid} ids={forRoute} form={form} set={set} />
+          <Dates uid={uid} ids={forRoute} form={form} set={set} />{" "}
+          <Details uid={uid} form={form} set={set} route={route} />
         </fieldset>{" "}
         <AccountUpdates uid={uid} form={form} set={set} />{" "}
+        <Contacts uid={uid} form={form} set={set} />{" "}
         <Rfe uid={uid} form={form} set={set} />{" "}
         <Hints form={form} />{" "}
         <ShowOnBoard form={form} set={set} kept={kept} />
@@ -440,9 +553,11 @@ export function TimelineFormFields({
         <legend className={legendCls}>{route === "adjustment" ? "Your I-485, only the dates that have happened" : "Your interview abroad, only the dates that have happened"}</legend>
         {route === "adjustment" ? <OfficePick uid={uid} form={form} set={set} /> : null}{" "}
         {route === "adjustment" ? <CenterPick uid={uid} form={form} set={set} /> : null}{" "}
-        <Dates uid={uid} ids={first} form={form} set={set} />
+        <Dates uid={uid} ids={first} form={form} set={set} />{" "}
+        <Details uid={uid} form={form} set={set} route={route} />
       </fieldset>{" "}
       <AccountUpdates uid={uid} form={form} set={set} />{" "}
+      <Contacts uid={uid} form={form} set={set} />{" "}
       <fieldset className={gridCls}>
         <legend className={legendCls}>About the case</legend>
         <Pick id={`${uid}-cat`} label="Category" value={form.category ?? ""} empty="Not saying" options={CATEGORIES} onChange={(v) => set("category", v || null)} />{" "}
@@ -458,7 +573,7 @@ export function TimelineFormFields({
           <Pick id={`${uid}-route`} label="After the I-140" value={route} options={ROUTES} onChange={(v) => set("route", v)} />{" "}
           <Pick id={`${uid}-center`} label="Where the I-140 was decided" value={form.i140Center ?? ""} empty="Not sure" options={I140_CENTERS} onChange={(v) => set("i140Center", v || null)} />{" "}
           <Dates uid={uid} ids={rest} form={form} set={set} />{" "}
-          <Premium form={form} set={set} />{" "}
+          <Premium uid={uid} form={form} set={set} />{" "}
           <div className="sm:col-span-2">
             <Label htmlFor={`${uid}-case`}>PERM case number, if the case has one</Label>
             <Input

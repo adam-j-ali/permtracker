@@ -6,6 +6,7 @@ import {
   COUNTRIES,
   DATE_FIELDS,
   METRIC_MIN_N,
+  CONTACT_KINDS,
   RECENT_MIN,
   ROUTES,
   WAITING_STAGES,
@@ -256,6 +257,8 @@ export function BoardTable({ rows }: { rows: readonly BoardRow[] }) {
                   {r.route ? (label(ROUTES, r.route) ?? "").replace(/ \(.*\)$/, "") : ""}
                   {r.premium ? <span className="block text-muted-foreground">premium I-140</span> : null}
                   {r.applicant === "dependent" ? <span className="block text-muted-foreground">a dependent&apos;s case</span> : null}{" "}
+                  {r.interview === "waived" ? <span className="block text-muted-foreground">interview waived</span> : null}{" "}
+                  {r.contacts ? <span className="block text-muted-foreground">{`${contactsText(r.contacts)} `}</span> : null}{" "}
                   {/* Optional: a backend older than Nov 11 2026 sends no office. */}
                   {r.office && officeByCode(r.office) ? (
                     <span className="block text-muted-foreground">{`I-485 at ${officeByCode(r.office)!.name}`}</span>
@@ -358,6 +361,50 @@ export function AccountCodes({
  * After a third FTA0: both halves, the cards and the still waiting. Counts always; a median only from METRIC_MIN_N.
  * What these people saw, never a forecast for anyone else's case.
  */
+/** A row's contacts in words: "2 contacts: an Emma chat, a congressional inquiry". */
+export function contactsText(c: { count: number; kinds: readonly string[] }): string {
+  const names = c.kinds.map((k) => CONTACT_KINDS.find((x) => x.id === k)?.short ?? k);
+  return `${c.count} ${c.count === 1 ? "contact" : "contacts"}: ${names.join(", ")}`;
+}
+
+type Outcome = { kind: string; label: string; reported: number; withCard: number; medianToCard: number | null; waiting: number };
+
+/**
+ * After each kind of contact, how many got a green card and how soon. Only kinds someone reported show. A median
+ * needs METRIC_MIN_N cards. It reports what these people saw, never what a contact will do.
+ */
+export function ContactOutcomes({ outcomes }: { outcomes: readonly Outcome[] }) {
+  const shown = outcomes.filter((o) => o.reported > 0);
+  if (shown.length === 0) return null;
+  const n = (x: number, one: string, many: string) => `${x.toLocaleString("en-US")} ${x === 1 ? one : many}`;
+  return (
+    <div className="max-w-3xl border-l-4 border-data-info-ink bg-tint px-4 py-3">
+      <p className="text-base font-semibold">After a contact</p>{" "}
+      <ul className="mt-1 space-y-1 text-base leading-relaxed">
+        {shown.map((o) => (
+          <li key={o.kind}>
+            {`After ${/^[aeiou]/i.test(o.label) ? "an" : "a"} ${o.label}: ${n(o.reported, "timeline", "timelines")}, ${o.withCard === 0 ? "none with a green card yet" : `${o.withCard.toLocaleString("en-US")} with a green card${o.medianToCard !== null ? `, a median of ${days(o.medianToCard)} later` : ""}`}${o.waiting ? `, ${o.waiting.toLocaleString("en-US")} still waiting` : ""}.`}
+          </li>
+        ))}
+      </ul>{" "}
+      <p className="mt-1 text-sm text-muted-foreground">
+        Self-reported. A median shows from {METRIC_MIN_N} green cards. It says what these people saw, not what a contact
+        will do for a case.
+      </p>
+    </div>
+  );
+}
+
+/** Of the green cards that say how the interview went, how many came without one, once METRIC_MIN_N say. */
+export function InterviewLine({ r }: { r: { answered: number; waived: number } }) {
+  if (r.answered < METRIC_MIN_N) return null;
+  return (
+    <p className="max-w-3xl text-base leading-relaxed">
+      {`Of the ${r.answered.toLocaleString("en-US")} green cards whose timelines say how the interview went, ${r.waived.toLocaleString("en-US")} came without one.`}
+    </p>
+  );
+}
+
 export function ThirdFta0Line({ r }: { r: { reported: number; withCard: number; medianToCard: number | null; waiting: number; medianWaiting: number | null } }) {
   if (r.reported === 0) return null;
   const n = (x: number, one: string, many: string) => `${x.toLocaleString("en-US")} ${x === 1 ? one : many}`;

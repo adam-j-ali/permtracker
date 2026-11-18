@@ -89,3 +89,35 @@ describe("the service center and the hints", () => {
     expect(screen.getByText(/The first three letters of your I-485 receipt/)).toBeTruthy();
   });
 });
+
+describe("the details and what you did", () => {
+  const contacts = () => screen.getByRole("group", { name: "What you did to move the case" });
+
+  it("adds a contact with what was done and its day, and removes it", () => {
+    render(<Form />);
+    fireEvent.click(within(contacts()).getByRole("button", { name: "Add something you did" }));
+    const first = screen.getByRole("group", { name: "Contact 1" });
+    fireEvent.change(within(first).getByLabelText("What you did"), { target: { value: "congressional" } });
+    fireEvent.change(within(first).getByLabelText("The day"), { target: { value: "2026-08-02" } });
+    expect(last.contacts).toEqual([{ on: "2026-08-02", kind: "congressional" }]);
+    fireEvent.click(within(first).getByRole("button", { name: "Remove contact 1" }));
+    expect(last.contacts).toBeNull();
+  });
+
+  it("asks how the interview went, and the move and the card on an adjustment", () => {
+    render(<Form />);
+    fireEvent.change(screen.getByLabelText("The interview"), { target: { value: "waived" } });
+    expect(last.interview).toBe("waived");
+    fireEvent.change(screen.getByLabelText("Case moved to a field office"), { target: { value: "2026-05-02" } });
+    expect(last.officeMovedOn).toBe("2026-05-02");
+    expect(screen.getByLabelText("Green card arrived in the mail")).toBeTruthy();
+  });
+
+  it("asks the premium request's day only once premium is ticked", () => {
+    render(<Form variant="case" />);
+    expect(screen.queryByLabelText("Premium processing requested, if it was after filing")).toBeNull();
+    fireEvent.click(screen.getByLabelText("The I-140 had premium processing"));
+    fireEvent.change(screen.getByLabelText("Premium processing requested, if it was after filing"), { target: { value: "2025-12-01" } });
+    expect(last.premiumOn).toBe("2025-12-01");
+  });
+});

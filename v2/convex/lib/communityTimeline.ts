@@ -97,6 +97,42 @@ export const DATE_FIELDS = [
 ] as const;
 export type DateFieldId = (typeof DATE_FIELDS)[number]["id"];
 
+/**
+ * Dates that refine a step without being a step of their own, kept apart from DATE_FIELDS so the board draws the
+ * same marks: the day premium was requested when it came after filing, the move to a field office, the card in
+ * the mail.
+ */
+export const DETAIL_DATES = [
+  { id: "premiumOn", label: "Premium processing requested, if it was after filing", routes: ["adjustment", "consular"] },
+  { id: "officeMovedOn", label: "Case moved to a field office", routes: ["adjustment"] },
+  { id: "cardArrivedOn", label: "Green card arrived in the mail", routes: ["adjustment"] },
+] as const;
+export type DetailDateId = (typeof DETAIL_DATES)[number]["id"];
+
+/** How the interview went, beside its date: a waived one has no date. */
+export const INTERVIEW_OUTCOMES = [
+  { id: "held", label: "Held" },
+  { id: "waived", label: "Waived: approved without one" },
+] as const;
+export type InterviewOutcomeId = (typeof INTERVIEW_OUTCOMES)[number]["id"];
+
+/** What a person did to move a case along, each with its day. */
+export const CONTACT_KINDS = [
+  { id: "service-request", label: "A service request (a case outside normal processing time)", short: "service request" },
+  { id: "emma", label: "A chat with Emma or a live agent", short: "Emma or live-agent chat" },
+  { id: "call", label: "A call to the USCIS Contact Center", short: "Contact Center call" },
+  { id: "congressional", label: "A congressional inquiry", short: "congressional inquiry" },
+  { id: "ombudsman", label: "A request to the CIS Ombudsman", short: "Ombudsman request" },
+  { id: "expedite", label: "An expedite request", short: "expedite request" },
+] as const;
+export type ContactKindId = (typeof CONTACT_KINDS)[number]["id"];
+/** The most contacts one timeline keeps. */
+export const MAX_CONTACTS = 8;
+export interface Contact {
+  on: string;
+  kind: ContactKindId;
+}
+
 export const RFE_FORMS = [
   { id: "i140", label: "I-140" },
   { id: "i485", label: "I-485" },
@@ -206,6 +242,13 @@ export interface TimelineInput {
   i485jApprovedOn?: string | null;
   interviewOn?: string | null;
   greenCardOn?: string | null;
+  premiumOn?: string | null;
+  officeMovedOn?: string | null;
+  cardArrivedOn?: string | null;
+  /** Whether the interview was held or waived (INTERVIEW_OUTCOMES). */
+  interview?: string | null;
+  /** What the person did to move the case, as the form sends it. */
+  contacts?: readonly { on?: string | null; kind?: string | null }[] | null;
   /** Updates in the person's USCIS account, as the form sends them. */
   accountEvents?: readonly { on?: string | null; form?: string | null; code?: string | null }[] | null;
   rfeForm?: string | null;
@@ -235,6 +278,12 @@ export interface TimelineFields {
   i485jApprovedOn?: string;
   interviewOn?: string;
   greenCardOn?: string;
+  premiumOn?: string;
+  officeMovedOn?: string;
+  cardArrivedOn?: string;
+  interview?: InterviewOutcomeId;
+  /** Sorted by day, exact repeats dropped. */
+  contacts?: Contact[];
   /** Sorted by day, exact repeats dropped. */
   accountEvents?: AccountEvent[];
   rfeForm?: RfeFormId;
@@ -252,6 +301,8 @@ export interface TimelineFields {
 export const TIMELINE_TEXT_FIELDS = [
   "category", "country", "route", "applicant", "i140Center", "fieldOffice", "i485Center",
   ...DATE_FIELDS.map((f) => f.id),
+  ...DETAIL_DATES.map((f) => f.id),
+  "interview",
   "rfeForm", "rfeReason", "rfeIssuedOn", "rfeRespondedOn", "rfeOutcome",
 ] as const satisfies readonly (keyof TimelineFields & keyof TimelineInput)[];
 
@@ -261,6 +312,7 @@ export type TimelineChoiceField =
   | "country"
   | "route"
   | "applicant"
+  | "interview"
   | "i140Center"
   | "fieldOffice"
   | "i485Center"
@@ -281,7 +333,14 @@ export type TimelineProblem =
   | { code: "rfe-order" }
   | { code: "rfe-form" }
   | { code: "office-consular" }
-  | { code: "adjustment-only"; field: DateFieldId }
+  | { code: "adjustment-only"; field: DateFieldId | DetailDateId }
+  | { code: "premium-order" }
+  | { code: "card-order" }
+  | { code: "office-order" }
+  | { code: "interview-waived-date" }
+  | { code: "contact-date" }
+  | { code: "contact-kind" }
+  | { code: "contact-many" }
   | { code: "account-date" }
   | { code: "account-form" }
   | { code: "account-code" }
@@ -329,6 +388,7 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
     ["country", COUNTRIES, input.country, "country"],
     ["route", ROUTES, input.route, "route"],
     ["applicant", APPLICANTS, input.applicant, "applicant"],
+    ["interview", INTERVIEW_OUTCOMES, input.interview, "interview answer"],
     ["i140Center", I140_CENTERS, input.i140Center, "I-140 office"],
     ["fieldOffice", OFFICE_CHOICES, input.fieldOffice, "USCIS office"],
     ["i485Center", I485_CENTERS, input.i485Center, "service center"],
@@ -345,6 +405,7 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
 
   const dates: [keyof TimelineFields, unknown][] = [
     ...DATE_FIELDS.map((f) => [f.id, input[f.id]] as [keyof TimelineFields, unknown]),
+    ...DETAIL_DATES.map((f) => [f.id, input[f.id]] as [keyof TimelineFields, unknown]),
     ["rfeIssuedOn", input.rfeIssuedOn],
     ["rfeRespondedOn", input.rfeRespondedOn],
   ];
@@ -357,6 +418,10 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
   const events = readEvents(input.accountEvents, today);
   if (!events.ok) return events;
   if (events.value) out.accountEvents = events.value;
+
+  const contacts = readContacts(input.contacts, today);
+  if (!contacts.ok) return contacts;
+  if (contacts.value) out.contacts = contacts.value;
 
   const any = DATE_FIELDS.some((f) => out[f.id] !== undefined);
   if (!any) return { ok: false, code: "no-dates", message: "Add at least one date after PERM to record a timeline." };
@@ -371,6 +436,18 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
   // An I-485 filed before the I-140 is NOT checked: concurrent filing puts
   // them in on the same day, and a refiled or upgraded I-140 can carry a
   // later date than the I-485 it supports. A person's own dates are theirs.
+  if (before(out.i140FiledOn, out.premiumOn)) {
+    return { ok: false, code: "premium-order", message: "Premium processing is dated before the I-140 filing." };
+  }
+  if (before(out.greenCardOn, out.cardArrivedOn)) {
+    return { ok: false, code: "card-order", message: "The card arrived before its approval date." };
+  }
+  if (before(out.i485FiledOn, out.officeMovedOn)) {
+    return { ok: false, code: "office-order", message: "The move to a field office is dated before the I-485 filing." };
+  }
+  if (out.interview === "waived" && out.interviewOn !== undefined) {
+    return { ok: false, code: "interview-waived-date", message: "A waived interview has no date. Remove the date, or say it was held." };
+  }
   if (before(out.rfeIssuedOn, out.rfeRespondedOn)) {
     return { ok: false, code: "rfe-order", message: "The RFE response is dated before the RFE." };
   }
@@ -395,7 +472,7 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
     }
     // An adjustment-only date on a consular timeline is a contradiction the
     // board would print as fact. Refuse it rather than silently dropping it.
-    for (const f of DATE_FIELDS) {
+    for (const f of [...DATE_FIELDS, ...DETAIL_DATES]) {
       if (out[f.id] !== undefined && !(f.routes as readonly string[]).includes("consular")) {
         return {
           ok: false,
@@ -444,6 +521,29 @@ function readEvents(
   const value = [...seen.values()].sort(
     (a, b) => a.on.localeCompare(b.on) || (a.form ?? "").localeCompare(b.form ?? "") || (a.code ?? "").localeCompare(b.code ?? ""),
   );
+  return { ok: true, value: value.length > 0 ? value : undefined };
+}
+
+/** What the person did, as sent: each needs a day and a kind from CONTACT_KINDS. Sorted by day; an exact repeat is dropped. */
+function readContacts(
+  raw: TimelineInput["contacts"],
+  today: string,
+): { ok: true; value: Contact[] | undefined } | ({ ok: false; message: string } & TimelineProblem) {
+  if (raw === undefined || raw === null) return { ok: true, value: undefined };
+  const bad = { ok: false as const, code: "contact-date" as const, message: "Enter each date you contacted someone as YYYY-MM-DD, from 2005 on and not in the future." };
+  if (!Array.isArray(raw)) return bad;
+  if (raw.length > MAX_CONTACTS) {
+    return { ok: false, code: "contact-many", message: `That's more than ${MAX_CONTACTS} contacts. Keep the ${MAX_CONTACTS} that matter most to you.` };
+  }
+  const seen = new Map<string, Contact>();
+  for (const c of raw) {
+    const on = isoOrUndefined(c?.on, today);
+    if (on === undefined || on === null) return bad;
+    const kind = pick(CONTACT_KINDS, c?.kind);
+    if (kind === undefined || kind === null) return { ok: false, code: "contact-kind", message: "Pick what you did from the list." };
+    seen.set(`${on}|${kind}`, { on, kind });
+  }
+  const value = [...seen.values()].sort((a, b) => a.on.localeCompare(b.on) || a.kind.localeCompare(b.kind));
   return { ok: true, value: value.length > 0 ? value : undefined };
 }
 
@@ -497,17 +597,19 @@ export function isShown(r: { status?: TimelineStatus; hiddenAt?: number }): bool
 export const METRICS = [
   { id: "perm", label: "PERM filed to certified", from: "permFiledOn", to: "permCertifiedOn", verified: true },
   { id: "cert-to-i140", label: "PERM certified to I-140 filed", from: "permCertifiedOn", to: "i140FiledOn", verified: false },
-  { id: "i140-premium", label: "I-140 filed to approved, premium", from: "i140FiledOn", to: "i140ApprovedOn", premium: true, verified: false },
+  { id: "i140-premium", label: "I-140 to approved, premium, from the day premium was requested", from: "i140FiledOn", fromFirst: "premiumOn", to: "i140ApprovedOn", premium: true, verified: false },
   { id: "i140-regular", label: "I-140 filed to approved, regular", from: "i140FiledOn", to: "i140ApprovedOn", premium: false, verified: false },
   { id: "i485-bio", label: "I-485 filed to biometrics", from: "i485FiledOn", to: "biometricsOn", verified: false },
   { id: "i485-ead", label: "I-485 filed to work permit", from: "i485FiledOn", to: "eadOn", verified: false },
+  { id: "i485-office", label: "I-485 filed to the move to a field office", from: "i485FiledOn", to: "officeMovedOn", verified: false },
   { id: "i485-interview", label: "I-485 filed to interview", from: "i485FiledOn", to: "interviewOn", verified: false },
   { id: "i485-gc", label: "I-485 filed to green card", from: "i485FiledOn", to: "greenCardOn", verified: false },
+  { id: "gc-card", label: "Green card approved to the card in the mail", from: "greenCardOn", to: "cardArrivedOn", verified: false },
 ] as const;
 export type MetricId = (typeof METRICS)[number]["id"];
 
 /** The stages one USCIS office's page measures: everything counted from the I-485 filing. */
-export const OFFICE_METRIC_IDS: readonly MetricId[] = ["i485-bio", "i485-ead", "i485-interview", "i485-gc"];
+export const OFFICE_METRIC_IDS: readonly MetricId[] = ["i485-bio", "i485-ead", "i485-office", "i485-interview", "i485-gc"];
 
 export interface MetricResult {
   id: MetricId;
@@ -537,10 +639,10 @@ export function computeMetrics(records: readonly TimelineRecord[]): MetricResult
     const vals: number[] = [];
     for (const r of live) {
       if ("premium" in m && r.premium !== m.premium) continue;
-      const d = daysBetween(
-        (r as unknown as Record<string, string | undefined>)[m.from],
-        (r as unknown as Record<string, string | undefined>)[m.to],
-      );
+      const at = r as unknown as Record<string, string | undefined>;
+      // Premium requested after filing starts its own clock; asked at filing, the filing is the start.
+      const from = "fromFirst" in m && at[m.fromFirst] && at[m.fromFirst]! > (at[m.from] ?? "") ? at[m.fromFirst] : at[m.from];
+      const d = daysBetween(from, at[m.to]);
       if (d !== null && d >= 0 && d <= 3650) vals.push(d);
     }
     vals.sort((a, b) => a - b);
@@ -655,6 +757,62 @@ export function thirdFta0(records: readonly TimelineRecord[], today: string = is
   return { reported, withCard: toCard.length, medianToCard: median(toCard), waiting: waited.length, medianWaiting: median(waited) };
 }
 
+export interface ContactsSummary {
+  count: number;
+  /** Each kind once, in the order the person first did it. */
+  kinds: ContactKindId[];
+}
+
+/** A row's contacts as a count and their kinds, never their days. */
+export function contactsOf(r: TimelineRecord): ContactsSummary | null {
+  const list = r.contacts ?? [];
+  if (list.length === 0) return null;
+  return { count: list.length, kinds: [...new Set(list.map((c) => c.kind))] };
+}
+
+export interface ContactOutcome {
+  kind: ContactKindId;
+  label: string;
+  /** Timelines reporting at least one contact of this kind. */
+  reported: number;
+  /** Of those, how many have a green card dated after the first such contact. */
+  withCard: number;
+  /** Days from the first contact of the kind to the card, at METRIC_MIN_N cards or more; null below. */
+  medianToCard: number | null;
+  /** Still waiting, edited within STILL_WAITING_DAYS, with no card. */
+  waiting: number;
+}
+
+/** After each kind of contact: how many got a green card and how soon. A person's own effort, never a promise of what it does. */
+export function contactOutcomes(records: readonly TimelineRecord[], today: string = isoToday()): ContactOutcome[] {
+  return CONTACT_KINDS.map((k) => {
+    const toCard: number[] = [];
+    let reported = 0;
+    let waiting = 0;
+    for (const r of records) {
+      if (r.hiddenAt !== undefined) continue;
+      const first = (r.contacts ?? []).filter((c) => c.kind === k.id).map((c) => c.on).sort()[0];
+      if (!first) continue;
+      reported += 1;
+      const card = daysBetween(first, r.greenCardOn);
+      if (card !== null && card >= 0) {
+        toCard.push(card);
+        continue;
+      }
+      const quiet = daysBetween(new Date(r.updatedAt).toISOString().slice(0, 10), today);
+      if (!r.greenCardOn && quiet !== null && quiet <= STILL_WAITING_DAYS) waiting += 1;
+    }
+    const median = toCard.length >= METRIC_MIN_N ? nearestRank([...toCard].sort((a, b) => a - b), 0.5) : null;
+    return { kind: k.id, label: k.short, reported, withCard: toCard.length, medianToCard: median, waiting };
+  });
+}
+
+/** Of the green cards whose timeline says how the interview went (an answer or a date), how many were waived. */
+export function interviewShare(records: readonly TimelineRecord[]): { answered: number; waived: number } {
+  const told = records.filter((r) => r.hiddenAt === undefined && r.greenCardOn && (r.interview !== undefined || r.interviewOn !== undefined));
+  return { answered: told.length, waived: told.filter((r) => r.interview === "waived").length };
+}
+
 /** One row of the public board: no case number, no employer, no exact PERM date. */
 export interface BoardRow {
   /** "YYYY-MM": the PERM filing month, the priority-date month. */
@@ -664,6 +822,10 @@ export interface BoardRow {
   route: RouteId | null;
   /** Whose case: the main applicant or a dependent; null when not given. */
   applicant: ApplicantId | null;
+  /** Held or waived; null when not given. */
+  interview: InterviewOutcomeId | null;
+  /** How many times the person contacted someone, and the kinds in order; never the days. Null when none. */
+  contacts: ContactsSummary | null;
   premium: boolean | null;
   /** Days from PERM filing to each stop, in DATE_FIELDS order; null when not reported. */
   stops: { id: DateFieldId | "permCertifiedOn"; day: number | null; month: string | null }[];
@@ -691,6 +853,8 @@ export function toBoardRow(r: TimelineRecord, showOffice = false, showCenter = f
     country: r.country ?? null,
     route: r.route ?? null,
     applicant: r.applicant ?? null,
+    interview: r.interview ?? null,
+    contacts: contactsOf(r),
     premium: r.premium ?? null,
     stops: [stop("permCertifiedOn"), ...DATE_FIELDS.map((f) => stop(f.id))],
     permVerified: Boolean(r.permFiledOn && r.permCertifiedOn),
@@ -753,6 +917,8 @@ export interface OfficeRow {
   category: CategoryId | null;
   country: CountryId | null;
   applicant: ApplicantId | null;
+  interview: InterviewOutcomeId | null;
+  contacts: ContactsSummary | null;
   /** Days from the I-485 filing to each step, in OFFICE_STOPS order; null when not reported or not countable. */
   stops: { id: OfficeStopId; day: number | null; month: string | null }[];
   /** An RFE on the I-485, and how it ended; null when none was reported. */
@@ -768,6 +934,8 @@ export function toOfficeRow(r: TimelineRecord): OfficeRow {
     category: r.category ?? null,
     country: r.country ?? null,
     applicant: r.applicant ?? null,
+    interview: r.interview ?? null,
+    contacts: contactsOf(r),
     stops: OFFICE_STOPS.map((id) => {
       const iso = r[id];
       const day = origin && iso ? daysBetween(origin, iso) : null;

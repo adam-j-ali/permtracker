@@ -4,7 +4,18 @@ import { queryStatic } from "@/lib/convexStatic";
 
 import { api } from "@convex/_generated/api";
 import { ShareTimeline } from "@/components/community/ShareTimeline";
-import { AccountCodes, BoardKey, BoardTable, RecentApprovals, RfeBars, StageMedians, ThirdFta0Line, WhoIsWaiting } from "@/components/community/TimelineBoard";
+import {
+  AccountCodes,
+  BoardKey,
+  BoardTable,
+  ContactOutcomes,
+  InterviewLine,
+  RecentApprovals,
+  RfeBars,
+  StageMedians,
+  ThirdFta0Line,
+  WhoIsWaiting,
+} from "@/components/community/TimelineBoard";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { FaqList } from "@/components/tools/FaqList";
 import { BOARD_OPENS_AT, METRIC_MIN_N, OFFICE_LIST_OPENS_AT, shareProgress } from "@/lib/communityTimeline";
@@ -251,6 +262,23 @@ export default async function GreenCardTimelinesPage() {
                 </div>
               ) : null}{" "}
               <AccountCodes codes={board.codes ?? []} where="shared timelines" className="mt-4" />
+            </section>
+          ) : null}
+
+          {/* Optional: a backend older than Nov 18 2026 sends no contacts and no interview answers. */}
+          {board.contacts?.some((o) => o.reported > 0) || (board.interviews?.answered ?? 0) > 0 ? (
+            <section className="mt-12" aria-labelledby="contacts-h">
+              <h2 id="contacts-h" className="font-heading text-2xl font-bold sm:text-3xl">
+                Interviews, and what people did to move a case
+              </h2>{" "}
+              {board.interviews ? (
+                <div className="mt-4">
+                  <InterviewLine r={board.interviews} />
+                </div>
+              ) : null}{" "}
+              <div className="mt-4">
+                <ContactOutcomes outcomes={board.contacts ?? []} />
+              </div>
             </section>
           ) : null}
         </>
