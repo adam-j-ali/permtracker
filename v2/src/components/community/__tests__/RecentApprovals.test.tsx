@@ -14,10 +14,12 @@ describe("approvals reported this week", () => {
     render(<RecentApprovals recent={recentApprovals(rows, "2026-11-18")!} />);
     expect(screen.getByRole("heading", { name: "Approvals reported this week" })).toBeTruthy();
     expect(screen.getByText(`Nov 12 to Nov 18, by the dates people added. Each count shows once ${RECENT_MIN} people report one.`)).toBeTruthy();
-    const items = screen.getAllByRole("listitem").map((li) => li.textContent);
+    const items = screen.getAllByRole("listitem").map((li) => li.textContent?.trim());
     expect(items).toHaveLength(RECENT_STEPS.length);
     expect(items[0]).toBe(`Work permits (EAD) ${RECENT_MIN + 1}`);
     expect(items[1]).toBe(`Travel documents (advance parole) Fewer than ${RECENT_MIN}`);
+    // Each item keeps its own space, so a count never runs into the next step's name.
+    expect(screen.getByRole("list").textContent).toContain(`(EAD) ${RECENT_MIN + 1} Travel`);
     // With one count printed, the ask to add a date isn't needed.
     expect(screen.queryByText(/is how a wave shows here/)).toBeNull();
   });
