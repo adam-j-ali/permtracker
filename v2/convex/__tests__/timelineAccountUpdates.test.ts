@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createTestContext } from "../../test-utils/convex";
+import { settleScheduled, trackedTestContext as createTestContext } from "../../test-utils/convexSettle";
 import { api, internal } from "../_generated/api";
 import { MAX_ACCOUNT_EVENTS, METRIC_MIN_N, OFFICE_LIST_OPENS_AT } from "../lib/communityTimeline";
 
@@ -25,7 +25,9 @@ beforeEach(() => {
   global.fetch = (async () =>
     new Response(JSON.stringify({ results: [] }), { status: 200, headers: { "Content-Type": "application/json" } })) as unknown as typeof fetch;
 });
-afterEach(() => {
+afterEach(async () => {
+  // Saving and approving schedule the owner's notice: let it finish under this file's fetch stub (convexSettle.ts).
+  await settleScheduled();
   global.fetch = originalFetch;
   vi.unstubAllEnvs();
 });
