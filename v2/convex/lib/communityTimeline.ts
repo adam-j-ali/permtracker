@@ -597,7 +597,7 @@ export function isShown(r: { status?: TimelineStatus; hiddenAt?: number }): bool
 export const METRICS = [
   { id: "perm", label: "PERM filed to certified", from: "permFiledOn", to: "permCertifiedOn", verified: true },
   { id: "cert-to-i140", label: "PERM certified to I-140 filed", from: "permCertifiedOn", to: "i140FiledOn", verified: false },
-  { id: "i140-premium", label: "I-140 to approved, premium, from the day premium was requested", from: "i140FiledOn", fromFirst: "premiumOn", to: "i140ApprovedOn", premium: true, verified: false },
+  { id: "i140-premium", label: "I-140 to approved, premium", from: "i140FiledOn", fromFirst: "premiumOn", to: "i140ApprovedOn", premium: true, verified: false },
   { id: "i140-regular", label: "I-140 filed to approved, regular", from: "i140FiledOn", to: "i140ApprovedOn", premium: false, verified: false },
   { id: "i485-bio", label: "I-485 filed to biometrics", from: "i485FiledOn", to: "biometricsOn", verified: false },
   { id: "i485-ead", label: "I-485 filed to work permit", from: "i485FiledOn", to: "eadOn", verified: false },
