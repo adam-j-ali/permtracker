@@ -205,7 +205,7 @@ export default async function PermRecruitmentPage() {
             <TimingChart lead={doc.lead} />{" "}
             {wage ? (
               <p className="mt-6 max-w-3xl text-base leading-relaxed">
-                {`From the wage determination to the PERM filing took a median of ${formatInt(wage.pwdToPerm.p50)} days, across the ${formatInt(wage.linked)} cases DOL's two files join. Half took ${formatInt(wage.pwdToPerm.p25)} to ${formatInt(wage.pwdToPerm.p75)} days. Those wage determinations were issued from ${longDate(wage.window.from)} to ${longDate(wage.window.to)}, and each employer's and law firm's own figure is on its page.`}
+                {`From the wage determination to the PERM filing took a median of ${formatInt(wage.pwdToPerm.p50)} days, across the ${formatInt(wage.linked)} cases DOL's two files join. Half took ${formatInt(wage.pwdToPerm.p25)} to ${formatInt(wage.pwdToPerm.p75)} days. Those wage determinations were issued from ${longDate(wage.window.from)} to ${longDate(wage.window.to)}. An employer's or law firm's own figure is on its page once 10 of its cases join.`}
               </p>
             ) : null}
             <h3 className="mt-10 font-heading text-lg font-bold">When the first step ran</h3>{" "}

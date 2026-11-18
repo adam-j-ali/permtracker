@@ -132,7 +132,7 @@ describe("more than one RFE", () => {
     fireEvent.change(within(second).getByLabelText("On which form"), { target: { value: "i485" } });
     fireEvent.change(within(second).getByLabelText("RFE dated"), { target: { value: "2026-10-26" } });
     expect(last.moreRfes).toEqual([{ form: "i485", reason: null, issuedOn: "2026-10-26", respondedOn: null, outcome: null }]);
-    fireEvent.click(within(second).getByRole("button", { name: "Remove RFE 2" }));
+    fireEvent.click(within(second).getByRole("button", { name: "Remove another RFE 1" }));
     expect(last.moreRfes).toBeNull();
   });
 });

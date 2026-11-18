@@ -60,8 +60,12 @@ export const revalidate = 21600;
 type Board = Awaited<ReturnType<typeof fetchBoard>>;
 
 async function fetchBoard() {
-  // Today's Eastern day, so the week's approvals end today; the page redraws every few hours.
-  return queryStatic(api.communityTimelines.board, { today: easternDay(Date.now()) }, revalidate);
+  // Today's Eastern day, so the week's approvals end today; the page redraws every few hours. That read's cache key
+  // changes each day, so a failed first read of a new day falls back to the plain board, whose key never changes:
+  // the page then loses only the week, never the whole board.
+  return queryStatic(api.communityTimelines.board, { today: easternDay(Date.now()) }, revalidate).catch(() =>
+    queryStatic(api.communityTimelines.board, {}, revalidate),
+  );
 }
 
 
@@ -130,7 +134,7 @@ export default async function GreenCardTimelinesPage() {
             </div>
           </section>
 
-          {/* Optional: a backend older than Nov 18 2026 sends no week. */}
+          {/* No week when the page fell back to the plain board. */}
           {board.recent ? <RecentApprovals recent={board.recent} /> : null}{" "}
 
           <section className="mt-8 max-w-3xl" aria-labelledby="add-h">
@@ -266,7 +270,7 @@ export default async function GreenCardTimelinesPage() {
           ) : null}
 
           {/* Optional: a backend older than Nov 18 2026 sends no contacts and no interview answers. */}
-          {board.contacts?.some((o) => o.reported > 0) || (board.interviews?.answered ?? 0) > 0 ? (
+          {board.contacts?.some((o) => o.reported > 0) || board.interviews ? (
             <section className="mt-12" aria-labelledby="contacts-h">
               <h2 id="contacts-h" className="font-heading text-2xl font-bold sm:text-3xl">
                 Interviews, and what people did to move a case

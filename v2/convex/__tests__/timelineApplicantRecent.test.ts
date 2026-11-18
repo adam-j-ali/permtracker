@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { settleScheduled, trackedTestContext as createTestContext } from "../../test-utils/convexSettle";
 import { api, internal } from "../_generated/api";
 import { BOARD_OPENS_AT, RECENT_MIN } from "../lib/communityTimeline";
+import { easternDay } from "../lib/time";
 
 /**
  * Whose case a timeline follows, saved, read back and shown on its row; and the board's count of approvals reported
@@ -80,24 +81,29 @@ describe("whose case a timeline follows", () => {
 });
 
 describe("approvals reported this week", () => {
-  it("counts the days inside the week through the day passed, and holds a step below the floor", async () => {
+  // The week ends on the real Eastern day, so the dates are built back from it.
+  const today = easternDay(Date.now());
+  const back = (n: number) => easternDay(Date.parse(`${today}T12:00:00Z`) - n * 86_400_000);
+
+  it("counts the days inside the week through today, and holds a step below the floor", async () => {
     const t = createTestContext();
     await saveApproved(t, [
-      ...Array.from({ length: RECENT_MIN }, (_, i) => ({ eadOn: `2026-11-1${2 + i}` })),
-      { eadOn: "2026-11-01" },
-      { apOn: "2026-11-17" },
+      ...Array.from({ length: RECENT_MIN }, (_, i) => ({ i485FiledOn: back(300), eadOn: back(i) })),
+      { i485FiledOn: back(300), eadOn: back(20) },
+      { i485FiledOn: back(300), apOn: back(1) },
     ]);
-    const board = await t.query(api.communityTimelines.board, { today: "2026-11-18" });
-    expect(board.recent).toMatchObject({ from: "2026-11-12", through: "2026-11-18" });
+    const board = await t.query(api.communityTimelines.board, { today });
+    expect(board.recent).toMatchObject({ from: back(6), through: today });
     const by = Object.fromEntries(board.recent!.steps.map((s) => [s.id, s.count]));
     expect(by.eadOn).toBe(RECENT_MIN);
     expect(by.apOn).toBeNull();
   });
 
-  it("is null without a day, and for a day that isn't one", async () => {
+  it("is null without a day, and any day but today or yesterday gets today's week", async () => {
     const t = createTestContext();
     expect((await t.query(api.communityTimelines.board, {})).recent).toBeNull();
-    expect((await t.query(api.communityTimelines.board, { today: "yesterday" })).recent).toBeNull();
+    expect((await t.query(api.communityTimelines.board, { today: "yesterday" })).recent).toMatchObject({ through: today });
+    expect((await t.query(api.communityTimelines.board, { today: "2026-03-05" })).recent).toMatchObject({ through: today });
   });
 });
 
@@ -146,6 +152,6 @@ describe("more than one RFE", () => {
     const board = await t.query(api.communityTimelines.board, {});
     expect(board.rfe.total).toBe(2 * BOARD_OPENS_AT);
     expect(board.rows[0]!.rfes.map((e) => e.form)).toEqual(["i140", "i485"]);
-    expect(board.metrics.find((m) => m.id === "rfe-decision")).toMatchObject({ n: 2 * BOARD_OPENS_AT });
+    expect(board.metrics.find((m) => m.id === "rfe-decision")).toMatchObject({ n: BOARD_OPENS_AT });
   });
 });

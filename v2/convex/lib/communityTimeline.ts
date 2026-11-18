@@ -445,6 +445,9 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
     // With no first RFE, the earliest of the rest becomes it, so every reader finds the first in its own fields.
     const list = [...more.value];
     if (out.rfeForm === undefined) {
+      if (out.rfeReason || out.rfeIssuedOn || out.rfeRespondedOn || out.rfeOutcome) {
+        return { ok: false, code: "rfe-form", message: "Say which form the RFE was on." };
+      }
       const head = list.shift()!;
       out.rfeForm = head.form;
       if (head.reason) out.rfeReason = head.reason;
@@ -458,6 +461,7 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
   const any = DATE_FIELDS.some((f) => out[f.id] !== undefined);
   if (!any) return { ok: false, code: "no-dates", message: "Add at least one date after PERM to record a timeline." };
 
+  if (out.premium !== true) delete out.premiumOn;
   const before = (a?: string, b?: string) => a !== undefined && b !== undefined && b < a;
   if (before(out.i140FiledOn, out.i140ApprovedOn)) {
     return { ok: false, code: "i140-order", message: "The I-140 approval is dated before its filing." };
@@ -708,29 +712,45 @@ export function computeMetrics(records: readonly TimelineRecord[]): MetricResult
   const live = records.filter((r) => r.hiddenAt === undefined);
   return METRICS.map((m) => {
     const vals: number[] = [];
+    // Timelines that gave a value: one per value, except the per-RFE medians, where a timeline may give several.
+    let people = 0;
     for (const r of live) {
       if ("premium" in m && r.premium !== m.premium) continue;
       const at = r as unknown as Record<string, string | undefined>;
       // Premium requested after filing starts its own clock; asked at filing, the filing is the start.
       const from = "fromFirst" in m && at[m.fromFirst] && at[m.fromFirst]! > (at[m.from] ?? "") ? at[m.fromFirst] : at[m.from];
       if ("perRfe" in m) {
-        for (const e of rfesOf(r)) {
+        const all = rfesOf(r);
+        let added = false;
+        for (const e of all) {
+          if (m.perRfe === "decision") {
+            // The decision follows this RFE only when it ended in approval and no later RFE came on the same form.
+            if (e.outcome !== "approved") continue;
+            if (all.some((x) => x !== e && x.form === e.form && x.issuedOn && e.respondedOn && x.issuedOn > e.respondedOn)) continue;
+          }
           const end = m.perRfe === "answer" ? e.respondedOn : e.form === "i140" ? r.i140ApprovedOn : r.greenCardOn;
           const d = daysBetween(m.perRfe === "answer" ? e.issuedOn : e.respondedOn, end);
-          if (d !== null && d >= 0 && d <= 3650) vals.push(d);
+          if (d !== null && d >= 0 && d <= 3650) {
+            vals.push(d);
+            added = true;
+          }
         }
+        if (added) people += 1;
         continue;
       }
       const d = daysBetween(from, at[m.to]);
-      if (d !== null && d >= 0 && d <= 3650) vals.push(d);
+      if (d !== null && d >= 0 && d <= 3650) {
+        vals.push(d);
+        people += 1;
+      }
     }
     vals.sort((a, b) => a - b);
-    const enough = vals.length >= METRIC_MIN_N;
+    const enough = people >= METRIC_MIN_N;
     return {
       id: m.id,
       label: m.label,
       verified: m.verified,
-      n: vals.length,
+      n: people,
       median: enough ? nearestRank(vals, 0.5) : null,
       p25: enough ? nearestRank(vals, 0.25) : null,
       p75: enough ? nearestRank(vals, 0.75) : null,
@@ -872,6 +892,7 @@ export function contactOutcomes(records: readonly TimelineRecord[], today: strin
       if (r.hiddenAt !== undefined) continue;
       const first = (r.contacts ?? []).filter((c) => c.kind === k.id).map((c) => c.on).sort()[0];
       if (!first) continue;
+      if (r.greenCardOn && r.greenCardOn < first) continue;
       reported += 1;
       const card = daysBetween(first, r.greenCardOn);
       if (card !== null && card >= 0) {
@@ -958,10 +979,11 @@ export const RECENT_STEPS = [
 /** The days a week's count covers, today included. */
 export const RECENT_DAYS = 7;
 /**
- * A week's count prints once this many timelines report the step. Below it the count would say that one or two
- * people had an approval that week, close to reading their own dates, which the board never prints.
+ * A week's count prints once this many people report the step, the same floor as every median. Below it the count
+ * would say that one or two people had an approval that week, close to reading their own dates. People, not rows: a
+ * principal and two dependents saved from one connection share their days and count once.
  */
-export const RECENT_MIN = 3;
+export const RECENT_MIN = METRIC_MIN_N;
 
 export interface RecentApprovals {
   /** "YYYY-MM-DD", the window's first day and its last (today), both counted. */
@@ -972,17 +994,19 @@ export interface RecentApprovals {
 }
 
 /** The approvals timelines report on a day in the last RECENT_DAYS days, `today` (an Eastern "YYYY-MM-DD") included. */
-export function recentApprovals(records: readonly TimelineRecord[], today: string): RecentApprovals {
-  if (!ISO.test(today) || Number.isNaN(Date.parse(`${today}T00:00:00Z`))) throw new Error(`Not a day: ${today}`);
+export function recentApprovals(records: readonly (TimelineRecord & { ipHash?: string })[], today: string): RecentApprovals | null {
+  if (!ISO.test(today) || Number.isNaN(Date.parse(`${today}T00:00:00Z`)) || new Date(`${today}T00:00:00Z`).toISOString().slice(0, 10) !== today) return null;
   const from = new Date(Date.parse(`${today}T00:00:00Z`) - (RECENT_DAYS - 1) * MS_PER_DAY).toISOString().slice(0, 10);
   return {
     from,
     through: today,
     steps: RECENT_STEPS.map((s) => {
-      const n = records.filter((r) => {
-        const on = r[s.id];
-        return on !== undefined && on >= from && on <= today;
-      }).length;
+      const n = new Set(
+        records
+          .map((r, i) => ({ on: r[s.id], who: r.ipHash ?? `row-${i}` }))
+          .filter((x) => x.on !== undefined && x.on >= from && x.on <= today)
+          .map((x) => x.who),
+      ).size;
       return { id: s.id, label: s.label, count: n >= RECENT_MIN ? n : null };
     }),
   };
@@ -1140,9 +1164,9 @@ export const WAITING_MIN_CELL = 5;
 
 /** The furthest step a timeline reports. */
 export function waitingStage(r: TimelineRecord): WaitingStageId {
-  if (r.greenCardOn) return "done";
-  // Biometrics, a work permit and a travel document each follow an I-485, so any of them places the case there.
-  if (r.i485FiledOn || r.biometricsOn || r.eadOn || r.apOn) return "i485";
+  if (r.greenCardOn || r.cardArrivedOn) return "done";
+  // Biometrics, a work permit, a travel document and a move to a field office each follow an I-485.
+  if (r.i485FiledOn || r.biometricsOn || r.eadOn || r.apOn || r.officeMovedOn) return "i485";
   // An interview in the US is the I-485's; abroad it follows the approved I-140.
   if (r.interviewOn) return r.route === "consular" ? "approved" : "i485";
   if (r.i140ApprovedOn) return "approved";
