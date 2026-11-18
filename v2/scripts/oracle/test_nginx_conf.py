@@ -199,6 +199,10 @@ def run(conf_text: str) -> None:
     check("email links send only the headers the backend needs",
           "proxy_pass_request_headers off;" in mail and "proxy_set_header X-Forwarded-For $remote_addr;" in mail
           and "proxy_set_header Content-Type $content_type;" in mail)
+    # The backend replaces X-Forwarded-For with whoever connected (this server), so the visitor's address must
+    # also go where it reads it, or every click on an emailed link shares one per-address limit (Nov 18 2026).
+    check("email links pass the visitor's address where the backend reads it",
+          "proxy_set_header X-PT-Client-IP $remote_addr;" in mail)
     check("email-link pages are never stored", 'add_header Cache-Control "private, no-store" always;' in mail
           and "proxy_hide_header Cache-Control;" in mail)
     check("email-link pages can't be framed", "add_header X-Frame-Options DENY always;" in mail)
@@ -549,6 +553,9 @@ def probe() -> None:
         "MCP streams buffered": good.replace("        proxy_buffering off;\n        proxy_read_timeout 3600s;\n", "        proxy_read_timeout 3600s;\n", 1),
         "refresh no longer mirrored": good.replace("        mirror /__pt_revalidate_w2;\n", "", 1),
         "email links forward Cloudflare's headers": good.replace("        proxy_pass_request_headers off;\n", "", 1),
+        "email links drop the visitor's address": good.replace(
+            "        proxy_set_header X-Forwarded-For $remote_addr;\n        proxy_set_header X-PT-Client-IP $remote_addr;\n",
+            "        proxy_set_header X-Forwarded-For $remote_addr;\n", 1),
         "email-link pages stored again": good.replace('        add_header Cache-Control "private, no-store" always;\n', "", 1),
         "edge no longer serves stale on errors": good.replace(", stale-if-error=86400", "", 1),
         "browsers keep reusing stored navigation data": good.replace('"public, max-age=0, must-revalidate";', '"public, s-maxage=604800, stale-while-revalidate=30931200";', 1),

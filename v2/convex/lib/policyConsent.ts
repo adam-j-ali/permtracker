@@ -19,6 +19,13 @@ export const POLICY_BASELINE_VERSION = "2026-11-18";
 /** The newest version that needs active consent. Equal to the baseline until a change affects information given. */
 export const POLICY_CONSENT_VERSION = "2026-11-18";
 
+/**
+ * What each version above the baseline changes, in one plain sentence. The banner, the accept page and the change
+ * email all print it, so a person accepts something they were told. A test fails any version above the baseline
+ * that has none. The baseline needs none: nobody is asked to accept it.
+ */
+export const POLICY_CHANGE_SUMMARIES: Readonly<Record<string, string>> = {};
+
 const VERSION_SHAPE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** A version as the routes take it: an ISO day, nothing longer. */
@@ -42,9 +49,31 @@ export function policyAcceptPurpose(version: string): `policy-accept:${string}` 
 /** Accept requests from one caller: enough for a household sharing an address, not a script's burst. */
 export const POLICY_ACCEPT_IP_LIMIT = { limit: 20, windowMs: MS_PER_HOUR };
 
-/** The alert tables whose confirmed, live subscribers get a change email when they hold no account. */
-export const NOTICE_TABLES = ["caseStatusAlerts", "dolQueueAlerts", "bulletinAlerts", "employerAlerts"] as const;
+/**
+ * The lists whose confirmed, live subscribers get a change email when they hold no account: the four alert kinds
+ * and the weekly digest signed up for on its own (`newsletterSubscribers`), each with the ref prefix its rows carry
+ * in queued mail, so an opt-out drops a queued copy (convex/lib/alertOutboxStore.ts).
+ */
+export const NOTICE_TABLES = ["caseStatusAlerts", "dolQueueAlerts", "bulletinAlerts", "employerAlerts", "newsletterSubscribers"] as const;
 export type NoticeTable = (typeof NOTICE_TABLES)[number];
+export const NOTICE_REF: Readonly<Record<NoticeTable, string>> = {
+  caseStatusAlerts: "case",
+  dolQueueAlerts: "queue",
+  bulletinAlerts: "bulletin",
+  employerAlerts: "employer",
+  newsletterSubscribers: "digest",
+};
+
+/**
+ * A row still in use: not unsubscribed, and for the kinds that finish, not finished (a queue alert sent its one
+ * email, a case alert's case closed). An address whose only rows are finished has nothing running to consent for.
+ */
+export function liveRow(table: NoticeTable, row: { unsubscribedAt?: number; notifiedAt?: number; caseClosedAt?: number }): boolean {
+  if (row.unsubscribedAt !== undefined) return false;
+  if (table === "dolQueueAlerts") return row.notifiedAt === undefined;
+  if (table === "caseStatusAlerts") return row.caseClosedAt === undefined;
+  return true;
+}
 
 /** Rows read per sweep step: small enough for one mutation, many steps a minute. */
 export const NOTICE_PAGE = 50;

@@ -137,6 +137,7 @@ import type { ReactElement } from "react";
 import { FROM_EMAIL, getResend, sendOrQueue } from "./lib/email";
 import { SITE_URL, actionUrl } from "./lib/links";
 import { prefsLink } from "./lib/prefsLink";
+import { recordConsentAtConfirm } from "./lib/policyConsentStore";
 import { formatAsOf } from "../src/lib/dolFormat";
 import {
   canonicalStatus,
@@ -833,6 +834,7 @@ export const watchMyCase = mutation({
         confirmedAt: now,
       });
     }
+    await recordConsentAtConfirm(ctx, email);
     // The first alert must be a change, not today's status restated.
     await ctx.scheduler.runAfter(0, internal.caseAlerts.seedLastSeen, { email });
     return {
@@ -1268,6 +1270,7 @@ export const confirmByToken = internalMutation({
           ? { caseClosedAt: undefined, lastSeenStatus: undefined }
           : {}),
       });
+      await recordConsentAtConfirm(ctx, row.email);
       confirmed.push(caseNumber);
     }
 

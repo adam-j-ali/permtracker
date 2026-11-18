@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { POLICY_BASELINE_VERSION, POLICY_CONSENT_VERSION, isPolicyVersion, needsConsent, policyAcceptPurpose } from "./policyConsent";
+import { POLICY_BASELINE_VERSION, POLICY_CHANGE_SUMMARIES, POLICY_CONSENT_VERSION, isPolicyVersion, needsConsent, policyAcceptPurpose } from "./policyConsent";
 import { makeUnsubscribeToken, verifyUnsubscribeToken } from "./unsubscribeToken";
 
 /** Active consent to a policy change: who must accept, and which link accepts what. */
@@ -41,5 +41,18 @@ describe("the accept link", () => {
     // And an accept token can't be replayed through the bare (legacy) check.
     const accept = await makeUnsubscribeToken("a@example.com", SECRET, policyAcceptPurpose("2027-02-01"));
     expect(await verifyUnsubscribeToken(accept, SECRET)).toBeNull();
+  });
+});
+
+describe("what each version changes", () => {
+  it("has one plain sentence for every version above the baseline, so nobody accepts something they weren't told", () => {
+    const versions = new Set([POLICY_CONSENT_VERSION, ...Object.keys(POLICY_CHANGE_SUMMARIES)]);
+    for (const v of versions) {
+      if (v <= POLICY_BASELINE_VERSION) continue;
+      const said = POLICY_CHANGE_SUMMARIES[v] ?? "";
+      expect(said, `version ${v} has no summary`).toMatch(/^[A-Z].{20,300}\.$/);
+    }
+    // The baseline is nobody's to accept, so it carries none.
+    expect(POLICY_CHANGE_SUMMARIES[POLICY_BASELINE_VERSION]).toBeUndefined();
   });
 });

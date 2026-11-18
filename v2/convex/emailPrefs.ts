@@ -101,6 +101,7 @@ async function renderOrTextOnly(
   }
 }
 import { checkAndRecordRateLimit } from "./lib/rateLimit";
+import { recordConsentAtConfirm } from "./lib/policyConsentStore";
 import { stageNewsFor } from "./lib/newsConsent";
 import { createLogger } from "./lib/logging";
 import { connectionThrottleReply } from "./lib/throttleReply";
@@ -183,6 +184,7 @@ export const confirmNewsForEmail = internalMutation({
         confirmedAt: row.confirmedAt ?? Date.now(),
         unsubscribedAt: undefined,
       });
+      await recordConsentAtConfirm(ctx, email);
     }
     return null;
   },
@@ -207,6 +209,7 @@ export const confirmNewsletterForEmail = internalMutation({
         confirmedAt: row.confirmedAt ?? Date.now(),
         unsubscribedAt: undefined,
       });
+      await recordConsentAtConfirm(ctx, email);
     }
     return null;
   },

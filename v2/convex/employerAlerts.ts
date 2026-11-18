@@ -54,6 +54,7 @@ import {
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { FROM_EMAIL, getResend, sendOrQueue } from "./lib/email";
+import { recordConsentAtConfirm } from "./lib/policyConsentStore";
 import { SITE_URL, actionUrl } from "./lib/links";
 import { prefsLink } from "./lib/prefsLink";
 import {
@@ -568,6 +569,7 @@ export const confirmByToken = internalMutation({
         caseToldThrough: now,
         ...(moved || row.unsubscribedAt !== undefined ? { toldMoves: [] } : {}),
       });
+      await recordConsentAtConfirm(ctx, row.email);
       confirmed.push(name);
       if (scope === "each") everyCase.push(name);
     }

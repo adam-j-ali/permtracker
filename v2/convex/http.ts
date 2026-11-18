@@ -10,7 +10,7 @@ import { recordError } from "./lib/errorRecording";
 import { isLiveContactEventType } from "./marketingWebhook";
 import { Webhook } from "svix";
 import { verifyUnsubscribeToken } from "./lib/unsubscribeToken";
-import { POLICY_CONSENT_VERSION, isPolicyVersion, policyAcceptPurpose } from "./lib/policyConsent";
+import { POLICY_CHANGE_SUMMARIES, POLICY_CONSENT_VERSION, isPolicyVersion, policyAcceptPurpose } from "./lib/policyConsent";
 import {
   badLinkPage,
   escapeHtml,
@@ -1725,9 +1725,10 @@ http.route({
     const secret = process.env.UNSUBSCRIBE_SECRET;
     const email = secret ? await verifyUnsubscribeToken(p.token, secret, policyAcceptPurpose(p.version)) : null;
     if (!email) return badLinkPage("This link was changed, or it isn't for this version of the policy.");
+    const summary = POLICY_CHANGE_SUMMARIES[p.version];
     return messagePage(
       "Accept the updated policy?",
-      `We changed how we use information you&rsquo;ve already given us. Until you accept, the alerts for ${escapeHtml(email)} keep running under the version you last agreed to. <a href="${POLICY_CHANGES}">Read what changed</a>.`,
+      `${summary ? `${escapeHtml(summary)} ` : ""}The change affects how we use information you&rsquo;ve already given us, so until you accept it, the email we send ${escapeHtml(email)} keeps running under the version you last agreed to. <a href="${POLICY_CHANGES}">Read what changed</a>.`,
       { post: `/prefs/policy?token=${encodeURIComponent(p.token)}&v=${encodeURIComponent(p.version)}`, label: "Accept" },
     );
   }),
@@ -1753,7 +1754,7 @@ http.route({
     }
     return messagePage(
       status === "already" ? "Already accepted" : "Accepted",
-      `Thank you. The updated policy now applies to your alerts. <a href="${POLICY_CHANGES}">Read it any time</a>.`,
+      `Thank you. The updated policy now applies to the email we send you. <a href="${POLICY_CHANGES}">Read it any time</a>.`,
     );
   }),
 });

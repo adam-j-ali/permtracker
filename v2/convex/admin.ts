@@ -25,6 +25,7 @@ import { recordError } from "./lib/errorRecording";
 import { buildDefaultProfile } from "./lib/userDefaults";
 import { render } from "@react-email/render";
 import { AdminEmail } from "../src/emails/AdminEmail";
+import { POLICY_CONSENT_VERSION } from "./lib/policyConsent";
 
 /**
  * Copy all data from one user to another.
@@ -413,6 +414,8 @@ export const createTestUserInternal = internalMutation({
     const userId = await ctx.db.insert("users", {
       email: args.email,
       name: args.name,
+      policyAcceptedVersion: POLICY_CONSENT_VERSION,
+      policyAcceptedAt: Date.now(),
     });
 
     // Create authAccount entry for password auth
