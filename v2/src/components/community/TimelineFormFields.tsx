@@ -329,7 +329,8 @@ function MoreRfes({ uid, form, set }: { uid: string; form: TimelineInput; set: S
   useEffect(() => {
     if (ids.length !== count) setIds(Array.from({ length: count }, rowId));
   }, [count, ids.length]);
-  if (!form.rfeForm) return null;
+  // Hidden only while it holds nothing: a list the person filled stays in sight even if the first RFE is cleared.
+  if (!form.rfeForm && list.length === 0) return null;
   const write = (next: RfeRow[]) => set("moreRfes", next.length > 0 ? next : null);
   const change = (i: number, patch: RfeRow) => write(list.map((e, j) => (j === i ? { ...e, ...patch } : e)));
   return (
@@ -361,7 +362,7 @@ function MoreRfes({ uid, form, set }: { uid: string; form: TimelineInput; set: S
                 }}
                 className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <XIcon className="size-4" weight="bold" aria-hidden="true" /> Remove RFE {i + 2}
+                <XIcon className="size-4" weight="bold" aria-hidden="true" /> Remove another RFE {i + 1}
               </button>
             </fieldset>{" "}
           </Fragment>
@@ -424,7 +425,11 @@ function Premium({ uid, form, set }: { uid: string; form: TimelineInput; set: Se
         type="checkbox"
         className="size-5 shrink-0 accent-primary"
         checked={form.premium === true}
-        onChange={(e) => set("premium", e.target.checked ? true : null)}
+        onChange={(e) => {
+          set("premium", e.target.checked ? true : null);
+          // The request day means nothing without premium.
+          if (!e.target.checked) set("premiumOn", null);
+        }}
       />
       <span>The I-140 had premium processing</span>
     </label>{" "}
@@ -479,7 +484,7 @@ function Contacts({ uid, form, set }: { uid: string; form: TimelineInput; set: S
       <legend className={legendCls}>What you did to move the case</legend>
       <p className="-mt-1 text-sm leading-relaxed text-muted-foreground">
         A service request, an Emma chat, a call, a congressional inquiry, the Ombudsman or an expedite request, each with
-        its day. It shows how many people got a decision after each one.{" "}
+        its day. It shows how many people got a green card after each one.{" "}
         <Link href="/guides/uscis-congressional-inquiry" className="link">
           When a congressional inquiry helps
         </Link>

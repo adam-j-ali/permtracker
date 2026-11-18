@@ -32,6 +32,11 @@ describe("the detail dates and the interview answer", () => {
     expect(INTERVIEW_OUTCOMES.map((o) => o.id)).toEqual(["held", "waived"]);
   });
 
+  it("drop a premium date when premium isn't ticked", () => {
+    const r = validateTimeline({ ...base, i140FiledOn: "2025-10-01", premiumOn: "2025-12-01" }, TODAY);
+    expect(r.ok && "premiumOn" in r.value).toBe(false);
+  });
+
   it("are saved when they fit the other dates", () => {
     const r = validateTimeline(
       {
@@ -52,7 +57,7 @@ describe("the detail dates and the interview answer", () => {
 
   it("refuses each one that contradicts another date", () => {
     const cases: [Record<string, unknown>, string][] = [
-      [{ i140FiledOn: "2025-10-01", premiumOn: "2025-09-01" }, "premium-order"],
+      [{ premium: true, i140FiledOn: "2025-10-01", premiumOn: "2025-09-01" }, "premium-order"],
       [{ greenCardOn: "2026-09-01", cardArrivedOn: "2026-08-01" }, "card-order"],
       [{ officeMovedOn: "2025-12-01" }, "office-order"],
       [{ interview: "waived", interviewOn: "2026-06-01" }, "interview-waived-date"],
@@ -139,13 +144,13 @@ describe("the figures the details feed", () => {
 describe("the RFE's own times", () => {
   it("measure the answer and the decision after it, the decision by the RFE's form", () => {
     const i140 = Array.from({ length: METRIC_MIN_N }, () =>
-      rec({ rfeForm: "i140", rfeIssuedOn: "2026-03-01", rfeRespondedOn: "2026-04-15", i140ApprovedOn: "2026-05-15", greenCardOn: "2026-10-01" }),
+      rec({ rfeForm: "i140", rfeIssuedOn: "2026-03-01", rfeRespondedOn: "2026-04-15", rfeOutcome: "approved", i140ApprovedOn: "2026-05-15", greenCardOn: "2026-10-01" }),
     );
     const m = Object.fromEntries(computeMetrics(i140).map((x) => [x.id, x.median]));
     expect(m["rfe-answer"]).toBe(45);
     expect(m["rfe-decision"]).toBe(30);
     const i485 = Array.from({ length: METRIC_MIN_N }, () =>
-      rec({ rfeForm: "i485", rfeIssuedOn: "2026-03-01", rfeRespondedOn: "2026-04-15", i140ApprovedOn: "2025-01-01", greenCardOn: "2026-06-14" }),
+      rec({ rfeForm: "i485", rfeIssuedOn: "2026-03-01", rfeRespondedOn: "2026-04-15", rfeOutcome: "approved", i140ApprovedOn: "2025-01-01", greenCardOn: "2026-06-14" }),
     );
     expect(computeMetrics(i485).find((x) => x.id === "rfe-decision")?.median).toBe(60);
   });
@@ -178,8 +183,18 @@ describe("more than one RFE", () => {
     expect(s.byForm.map((f) => [f.id, f.count])).toEqual([["i140", 1], ["i485", 1]]);
     const five = Array.from({ length: METRIC_MIN_N }, () => one);
     const m = Object.fromEntries(computeMetrics(five).map((x) => [x.id, x]));
-    expect(m["rfe-answer"]).toMatchObject({ n: 2 * METRIC_MIN_N });
-    expect(m["rfe-decision"]).toMatchObject({ n: 2 * METRIC_MIN_N });
+    // Two RFEs each, but the floor and n count timelines, not RFEs.
+    expect(m["rfe-answer"]).toMatchObject({ n: METRIC_MIN_N });
+    expect(m["rfe-decision"]).toMatchObject({ n: METRIC_MIN_N });
+    // Four people, however many RFEs each, print no median.
+    const four = Array.from({ length: METRIC_MIN_N - 1 }, () => one);
+    expect(computeMetrics(four).find((x) => x.id === "rfe-answer")).toMatchObject({ n: METRIC_MIN_N - 1, median: null });
+    // A denied RFE, and one followed by another RFE on its form, give no decision time.
+    const denied = rec({ ...base, rfeForm: "i140", rfeIssuedOn: "2026-01-01", rfeRespondedOn: "2026-02-01", rfeOutcome: "denied", i140ApprovedOn: "2026-09-01" });
+    const twice = rec({ ...base, rfeForm: "i485", rfeIssuedOn: "2026-01-01", rfeRespondedOn: "2026-02-01", rfeOutcome: "approved", moreRfes: [{ form: "i485", issuedOn: "2026-03-01", respondedOn: "2026-03-20", outcome: "approved" }], greenCardOn: "2026-05-19" });
+    expect(computeMetrics([denied]).find((x) => x.id === "rfe-decision")).toMatchObject({ n: 0 });
+    const t = computeMetrics(Array.from({ length: METRIC_MIN_N }, () => twice)).find((x) => x.id === "rfe-decision");
+    expect(t).toMatchObject({ n: METRIC_MIN_N, median: 60 });
     const row = toBoardRow(one);
     expect(row.rfes.map((x) => x.form)).toEqual(["i140", "i485"]);
     expect(row.rfe).toMatchObject({ form: "i140" });

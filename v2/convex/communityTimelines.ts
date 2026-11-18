@@ -27,6 +27,7 @@ import {
   EVENT_FORMS,
   TIMELINE_TEXT_FIELDS,
   APPLICANTS,
+  METRIC_MIN_N,
   recentApprovals,
   CONTACT_KINDS,
   DETAIL_DATES,
@@ -57,7 +58,7 @@ import { createLogger } from "./lib/logging";
 import { sendOwnerMail } from "./lib/ownerMail";
 import { query as mirrorQuery } from "./lib/publicMirror";
 import { checkAndRecordRateLimit } from "./lib/rateLimit";
-import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from "./lib/time";
+import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE, easternDay } from "./lib/time";
 import { officeByCode } from "../src/lib/uscisOffices";
 
 /**
@@ -507,6 +508,13 @@ const recentV = v.object({
   steps: v.array(v.object({ id: v.string(), label: v.string(), count: v.union(v.number(), v.null()) })),
 });
 
+/** The day a week's count ends: the caller's when it is today or yesterday in Eastern time, today otherwise. */
+function recentDay(asked: string): string {
+  const now = Date.now();
+  const today = easternDay(now);
+  return asked === today || asked === easternDay(now - MS_PER_DAY) ? asked : today;
+}
+
 export const board = query({
   /** `today`: the Eastern day the page draws for, "YYYY-MM-DD". A query never reads the clock, so the page passes it. */
   args: { today: v.optional(v.string()) },
@@ -535,7 +543,7 @@ export const board = query({
       v.object({ kind: v.string(), label: v.string(), reported: v.number(), withCard: v.number(), medianToCard: v.union(v.number(), v.null()), waiting: v.number() }),
     ),
     /** Of the green cards that say how the interview went, how many were waived (lib `interviewShare`). */
-    interviews: v.object({ answered: v.number(), waived: v.number() }),
+    interviews: v.union(v.null(), v.object({ answered: v.number(), waived: v.number() })),
     /** After a third FTA0 on the I-485: who got a card, who is still waiting (lib `thirdFta0`). */
     thirdFta0: v.object({
       reported: v.number(),
@@ -600,9 +608,12 @@ export const board = query({
       codes: tallyCodes(records),
       thirdFta0: thirdFta0(records),
       contacts: contactOutcomes(records),
-      interviews: interviewShare(records),
+      // Like every figure on the page, the interview share leaves the query only past the median's floor.
+      interviews: ((x) => (x.answered >= METRIC_MIN_N ? x : null))(interviewShare(records)),
       waiting: whoIsWaiting(records),
-      recent: a.today !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(a.today) ? recentApprovals(records, a.today) : null,
+      // The week ends on the page's day only when that is today or yesterday in Eastern time; any other day gets
+      // today's week. A window the caller could slide over history would date each approval by its edges.
+      recent: a.today === undefined ? null : recentApprovals(records, recentDay(a.today)),
     };
   },
 });
