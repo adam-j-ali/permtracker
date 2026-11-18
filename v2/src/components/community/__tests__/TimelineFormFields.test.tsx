@@ -136,3 +136,20 @@ describe("more than one RFE", () => {
     expect(last.moreRfes).toBeNull();
   });
 });
+
+describe("a spouse's H-4", () => {
+  for (const variant of ["open", "case"] as const) {
+    it(`takes the four H-4 dates on the ${variant} form, each by its own label, on either route`, () => {
+      render(<Form variant={variant} start={{ route: "consular" }} />);
+      const h4 = screen.getByRole("group", { name: "A spouse's H-4 (optional)" });
+      expect(within(h4).getByText("A work permit filed on the same day as the I-539 counts as filed together.")).toBeTruthy();
+      fireEvent.change(within(h4).getByLabelText("H-4 extension (I-539) filed"), { target: { value: "2026-01-05" } });
+      fireEvent.change(within(h4).getByLabelText("H-4 extension (I-539) approved"), { target: { value: "2026-07-01" } });
+      fireEvent.change(within(h4).getByLabelText("H-4 work permit (I-765, category (c)(26)) filed"), { target: { value: "2026-01-05" } });
+      fireEvent.change(within(h4).getByLabelText("H-4 work permit approved"), { target: { value: "2026-06-20" } });
+      expect(last).toMatchObject({ h4FiledOn: "2026-01-05", h4ApprovedOn: "2026-07-01", h4EadFiledOn: "2026-01-05", h4EadApprovedOn: "2026-06-20" });
+      fireEvent.change(within(h4).getByLabelText("H-4 work permit approved"), { target: { value: "" } });
+      expect(last.h4EadApprovedOn).toBeNull();
+    });
+  }
+});

@@ -2334,6 +2334,11 @@ export default defineSchema({
     premiumOn: v.optional(v.string()),
     officeMovedOn: v.optional(v.string()),
     cardArrivedOn: v.optional(v.string()),
+    /** A spouse's H-4 extension (I-539) and H-4 work permit, each filed and approved (lib H4_DATES). */
+    h4FiledOn: v.optional(v.string()),
+    h4ApprovedOn: v.optional(v.string()),
+    h4EadFiledOn: v.optional(v.string()),
+    h4EadApprovedOn: v.optional(v.string()),
     /** Whether the interview was held or waived (lib INTERVIEW_OUTCOMES). */
     interview: v.optional(v.union(v.literal("held"), v.literal("waived"))),
     /** What the person did to move the case, sorted by day; each kind is checked against lib CONTACT_KINDS on save. */

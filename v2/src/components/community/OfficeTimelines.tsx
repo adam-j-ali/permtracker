@@ -9,7 +9,7 @@ import { formatInt } from "@/lib/format";
 import { isCenter, type UscisOffice } from "@/lib/uscisOffices";
 
 import { ShareTimeline } from "./ShareTimeline";
-import { AccountCodes, StageMedians, contactsText, updatesText } from "./TimelineBoard";
+import { AccountCodes, StageMedians, contactsText, h4Text, updatesText } from "./TimelineBoard";
 
 /**
  * "Timelines people shared from this office": what happened to I-485s at one USCIS office, as the people waiting
@@ -118,7 +118,9 @@ export function OfficeTimelines({ office, view }: { office: UscisOffice; view: O
                         {`${label(CATEGORIES, r.category)} `}
                         {r.applicant === "dependent" ? <span className="block text-sm text-muted-foreground">a dependent&apos;s case</span> : null}{" "}
                         {r.interview === "waived" ? <span className="block text-sm text-muted-foreground">interview waived</span> : null}{" "}
-                        {r.contacts ? <span className="block text-sm text-muted-foreground">{`${contactsText(r.contacts)} `}</span> : null}
+                        {r.contacts ? <span className="block text-sm text-muted-foreground">{`${contactsText(r.contacts)} `}</span> : null}{" "}
+                        {/* Optional: a backend older than Nov 18 2026 sends no H-4. */}
+                        {r.h4 ? <span className="block text-sm text-muted-foreground">{`${h4Text(r.h4)} `}</span> : null}
                       </td>
                       <td className="px-3 py-3">{`${label(COUNTRIES, r.country)} `}</td>
                       {r.stops.map((s) => (

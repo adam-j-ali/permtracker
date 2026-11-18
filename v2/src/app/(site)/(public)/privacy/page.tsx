@@ -329,7 +329,10 @@ export default function PrivacyPage() {
                 showed: the day, the form and the code, and what you did to move
                 the case (a service request, an Emma chat, a call, a
                 congressional inquiry, the CIS Ombudsman or an expedite
-                request), each with its day.
+                request), each with its day, and a spouse’s H-4 dates (the H-4
+                extension and the H-4 work permit, each filed and approved),
+                which show on the site only as days from filing to approval.
+                No receipt number is asked for or kept.
                 There’s no free-text box. The one thing you can type is an
                 account code, 2 to 6 letters and digits, and we read any code
                 that isn’t on our list before the timeline shows. A PERM case

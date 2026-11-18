@@ -31,6 +31,7 @@ import {
   recentApprovals,
   CONTACT_KINDS,
   DETAIL_DATES,
+  H4_DATES,
   contactOutcomes,
   interviewShare,
   rfesOf,
@@ -140,6 +141,10 @@ const timelineInput = v.object({
   premiumOn: v.optional(v.union(v.string(), v.null())),
   officeMovedOn: v.optional(v.union(v.string(), v.null())),
   cardArrivedOn: v.optional(v.union(v.string(), v.null())),
+  h4FiledOn: v.optional(v.union(v.string(), v.null())),
+  h4ApprovedOn: v.optional(v.union(v.string(), v.null())),
+  h4EadFiledOn: v.optional(v.union(v.string(), v.null())),
+  h4EadApprovedOn: v.optional(v.union(v.string(), v.null())),
   interview: v.optional(v.union(v.string(), v.null())),
   contacts: v.optional(
     v.union(v.array(v.object({ on: v.optional(v.union(v.string(), v.null())), kind: v.optional(v.union(v.string(), v.null())) })), v.null()),
@@ -470,6 +475,10 @@ const metricV = v.object({
 const countV = v.object({ id: v.string(), label: v.string(), count: v.number() });
 const updatesV = v.union(v.null(), v.object({ count: v.number(), codes: v.array(v.string()), lastDay: v.union(v.number(), v.null()) }));
 const contactsV = v.union(v.null(), v.object({ count: v.number(), kinds: v.array(v.string()) }));
+const h4V = v.union(
+  v.null(),
+  v.object({ extensionDays: v.union(v.number(), v.null()), workPermitDays: v.union(v.number(), v.null()), together: v.boolean() }),
+);
 const codeTallyV = v.array(v.object({ code: v.string(), timelines: v.number(), listed: v.boolean() }));
 const boardRowV = v.object({
   filedMonth: v.union(v.string(), v.null()),
@@ -479,6 +488,7 @@ const boardRowV = v.object({
   applicant: v.union(v.string(), v.null()),
   interview: v.union(v.string(), v.null()),
   contacts: contactsV,
+  h4: h4V,
   premium: v.union(v.boolean(), v.null()),
   stops: v.array(v.object({ id: v.string(), day: v.union(v.number(), v.null()), month: v.union(v.string(), v.null()) })),
   permVerified: v.boolean(),
@@ -625,6 +635,7 @@ const officeRowV = v.object({
   applicant: v.union(v.string(), v.null()),
   interview: v.union(v.string(), v.null()),
   contacts: contactsV,
+  h4: h4V,
   stops: v.array(v.object({ id: v.string(), day: v.union(v.number(), v.null()), month: v.union(v.string(), v.null()) })),
   rfe: v.union(v.null(), v.object({ outcome: v.union(v.string(), v.null()) })),
   updates: updatesV,
@@ -849,6 +860,7 @@ function adminRow(r: Doc<"communityTimelines">): Infer<typeof adminRowV> {
     ...(r.permCertifiedOn ? [{ label: "PERM certified", on: r.permCertifiedOn, verified: true }] : []),
     ...DATE_FIELDS.flatMap((f) => (r[f.id] ? [{ label: f.short as string, on: r[f.id] as string, verified: false }] : [])),
     ...DETAIL_DATES.flatMap((f) => (r[f.id] ? [{ label: f.label as string, on: r[f.id] as string, verified: false }] : [])),
+    ...H4_DATES.flatMap((f) => (r[f.id] ? [{ label: f.label as string, on: r[f.id] as string, verified: false }] : [])),
     ...(r.contacts ?? []).map((c) => ({ label: labelOf(CONTACT_KINDS, c.kind) ?? c.kind, on: c.on, verified: false })),
   ];
   const all = rfesOf(asRecord(r));
