@@ -22,6 +22,8 @@ const getUscisPosted = vi.fn();
 const getPostedHistory = vi.fn(async () => [] as [string, number][]);
 vi.mock("@/lib/db/uscisPosted", () => ({ getUscisPosted, getPostedHistory }));
 vi.mock("@/components/data/DataProvenance", () => ({ DataProvenance: () => null }));
+const getUscisMonthly = vi.fn(async () => null as unknown);
+vi.mock("@/lib/db/uscisMonthly", () => ({ getUscisMonthly }));
 
 const { default: UscisFormPage } = await import("../page");
 
@@ -46,6 +48,8 @@ const page = async (form: string) => {
 };
 
 beforeEach(() => {
+  getUscisMonthly.mockReset();
+  getUscisMonthly.mockResolvedValue(null);
   getUscisPosted.mockReset();
   getPostedHistory.mockReset();
   getUscisPosted.mockResolvedValue(POSTED);
@@ -89,5 +93,42 @@ describe("the row a pending I-485 waits on, first", () => {
     getUscisPosted.mockResolvedValue({ ...POSTED, published: "2026-06-01", postings: ["2026-06-01"] });
     const text = await page("i-765");
     expect(text).not.toContain("For a work permit based on");
+  });
+});
+
+const pt = (month: string, approved: number, denied: number, pending: number) => ({
+  month, received: 17190, approved, denied, pending, pending_6mo: 155350, avg_months: 12.9,
+});
+const MONTHLY = {
+  newest: "2026-09",
+  months: ["2026-07", "2026-09"],
+  missing: ["2026-08"],
+  source: "USCIS",
+  lines: [
+    { form: "I-485", line: "Adjust Status (Employment)", basis: "Employment", points: [pt("2026-07", 12927, 1169, 269963), pt("2026-09", 8068, 1497, 278532)] },
+    { form: "I-485", line: "Adjust Status (Family)", basis: "Family", points: [pt("2026-09", 26428, 5903, 609857)] },
+  ],
+};
+
+describe("USCIS's monthly report to Congress, on a form it covers", () => {
+  it("answers the newest month first, then lists each month, a month it doesn't list as its own row", async () => {
+    getUscisMonthly.mockResolvedValue(MONTHLY);
+    const text = await page("i-485");
+    expect(text).toContain(
+      "In September 2026, USCIS approved 8,068 employment-based I-485s and denied 1,497, 16% of those it decided. 278,532 were pending at the month's end, 155,350 of them for more than six months.",
+    );
+    expect(text).toContain("Each month, as USCIS reports it to Congress");
+    expect(text).toContain("September 2026 17,190 8,068 1,497 16% 278,532 155,350 12.9");
+    expect(text).toContain("August 2026 USCIS's data page doesn't list this month's report.");
+    // Every basis in the newest month, the largest pile first.
+    expect(text.indexOf("Family 17,190 26,428")).toBeGreaterThan(-1);
+    expect(text.indexOf("Family 17,190")).toBeLessThan(text.indexOf("Employment 17,190"));
+    expect(text).toContain("USCIS says it may differ from the processing times it posts");
+  });
+
+  it("says nothing of it on a form the report doesn't cover", async () => {
+    getUscisMonthly.mockResolvedValue(MONTHLY);
+    const text = await page("i-140");
+    expect(text).not.toContain("as USCIS reports it to Congress");
   });
 });

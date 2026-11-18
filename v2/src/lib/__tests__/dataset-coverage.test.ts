@@ -99,8 +99,9 @@ describe("dataset coverage", () => {
     expect(policyIds.length).toBeGreaterThanOrEqual(10);
     const policy = ids.filter((d) => /^(policy-|rule-pipeline)/.test(d));
     expect([...policy].sort()).toEqual([...policyIds].sort());
-    // 57 on Nov 5 2026: State's nonimmigrant issuances by post and its refusals by ground added two.
-    expect(ids.length - warnStates.length - policy.length).toBeLessThanOrEqual(57);
+    // 57 on Nov 5 2026: State's nonimmigrant issuances by post and its refusals by ground added two. 58 on Nov 18
+    // 2026: USCIS's monthly report to Congress (uscis-monthly-forms).
+    expect(ids.length - warnStates.length - policy.length).toBeLessThanOrEqual(58);
     const read = new Set<string>();
     for (const f of ["ingest_warn.py", "warn_states.py"]) {
       const src = readFileSync(join(ROOT, "scripts", f), "utf8");

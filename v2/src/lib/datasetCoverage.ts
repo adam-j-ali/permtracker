@@ -80,6 +80,8 @@ export const DATASET_COVERAGE: Readonly<Record<string, string>> = {
     "USCIS's own case status text and dated history for a receipt number, read from its Case Status API at lookup time and kept twelve months after the last lookup. Nothing is estimated.",
   "i485-inventory":
     "USCIS's count of pending I-485s by priority date and country. Employment-based only: USCIS doesn't publish a family-based equivalent.",
+  "uscis-monthly-forms":
+    "USCIS's monthly report to Congress: receipts, approvals, denials and pending for six forms, the I-485 split by basis. Its average processing time counts every case finished that month and isn't the 8-in-10 time USCIS posts, and USCIS revises past months.",
   "uscis-i140-counts":
     "USCIS I-140 receipts, approvals and denials by quarter. A denial here isn't a PERM denial. It comes from a different agency at a different stage.",
   "uscis-i140-times":
@@ -299,6 +301,7 @@ export const DATASET_LABELS: Readonly<Record<string, string>> = {
   "visa-annual-limits": "Annual visa limits",
   "uscis-case-status": "USCIS case statuses",
   "i485-inventory": "I-485 pending inventory",
+  "uscis-monthly-forms": "USCIS monthly form counts",
   "uscis-i140-counts": "I-140 counts",
   "uscis-i140-times": "I-140 times",
   "i140-trends": "I-140 filings by category",
