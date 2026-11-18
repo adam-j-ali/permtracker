@@ -63,9 +63,10 @@ async function fetchBoard() {
   // Today's Eastern day, so the week's approvals end today; the page redraws every few hours. That read's cache key
   // changes each day, so a failed first read of a new day falls back to the plain board, whose key never changes:
   // the page then loses only the week, never the whole board.
-  return queryStatic(api.communityTimelines.board, { today: easternDay(Date.now()) }, revalidate).catch(() =>
-    queryStatic(api.communityTimelines.board, {}, revalidate),
-  );
+  return queryStatic(api.communityTimelines.board, { today: easternDay(Date.now()) }, revalidate).catch((error: unknown) => {
+    softFail("green-card-timelines/page.fetchBoard(today)", null)(error);
+    return queryStatic(api.communityTimelines.board, {}, revalidate);
+  });
 }
 
 
