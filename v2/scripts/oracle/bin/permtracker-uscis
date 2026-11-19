@@ -107,7 +107,11 @@ case "$job" in
     c="${2:-}"; o="${3:-}"
     if [ -z "$c" ] || [ -z "$o" ]; then echo "usage: permtracker-uscis visastats <cases.json> <officers.json>"; exit 2; fi
     timeout 10m python3 scripts/ingest_visastats.py --cases "$c" --officers "$o" \
-      || { rc=1; fail ingest_visastats.py "the VisaStats bundles ($c, $o) were refused"; } ;;
+      || { rc=1; fail ingest_visastats.py "the VisaStats bundles ($c, $o) were refused"; }
+    # Its cases join the merged list now, not at the next hourly build.
+    site_refresh_env
+    timeout 5m python3 scripts/build_reported_cases.py \
+      || { rc=1; fail build_reported_cases.py "the reported-cases build after the VisaStats load failed"; } ;;
   # The months of nonimmigrant issuances by post that only the Internet Archive still serves (State's PDFs, March
   # 2017 to September 2022; Nov 5 2026). Run by hand: it loads only months not held, waits between requests, refuses
   # February 2017's by-post-and-nationality layout, and when the Archive stops answering it keeps what it loaded

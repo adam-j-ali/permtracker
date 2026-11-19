@@ -1,54 +1,38 @@
 import "server-only";
 import { cache } from "react";
 
-import type { SheetCase } from "../communitySheets";
+import { fromRow, type ReportedCase } from "../reportedCases";
 import { rows } from "./client";
 
 type Row = Record<string, string | number | null>;
 
-const text = (v: unknown): string | null => (v === null || v === undefined || v === "" ? null : String(v));
-
 /**
- * Every case the community sheets hold for one USCIS office (`community_case_reports`, loaded hourly by
- * scripts/ingest_community_sheets.py), in the sheet's own order. Before the first load the table isn't there, which is
- * the one answer read as "no cases"; any other failure throws, and the page names what it couldn't read.
+ * Every case people reported for one USCIS office, merged across sources (`reported_cases`, built hourly by
+ * scripts/build_reported_cases.py), newest transfer first. A case that adds nothing to a possible repeat and a case
+ * no shown source holds never come back. Before the first build the table isn't there, which is the one answer read as
+ * "no cases"; any other failure throws, and the page names what it couldn't read.
  */
-export const getOfficeSheetCases = cache(async (office: string): Promise<SheetCase[]> => {
+export const getOfficeReportedCases = cache(async (office: string): Promise<ReportedCase[]> => {
   let got: Row[];
   try {
     got = await rows<Row>(
-      "SELECT source, row_no, category, visa_availability, visa_status, chargeability, country, priority_date, " +
-        "priority_note, receipt_date, biometrics_date, transfer_date, approval_date, card_date, valid_as_of " +
-        "FROM community_case_reports WHERE office = ? ORDER BY source, row_no",
+      "SELECT case_id, source_names, possible_dupes, category, chargeability, priority_date, priority_note, " +
+        "i485_receipt, biometrics, transfer, i485_decision, i485_decided, card, visa_available, nonimmigrant_status, " +
+        "as_of FROM reported_cases WHERE office = ? AND shows = 1 AND adds_nothing = 0 " +
+        "ORDER BY transfer IS NULL, transfer DESC, i485_receipt DESC, case_id",
       [office],
     );
   } catch (e) {
     if (/no such table/i.test(String(e))) return [];
     throw e;
   }
-  return got.map((r) => ({
-    source: String(r.source),
-    rowNo: Number(r.row_no),
-    category: text(r.category),
-    visaAvailability: text(r.visa_availability),
-    visaStatus: text(r.visa_status),
-    chargeability: text(r.chargeability),
-    country: text(r.country),
-    priorityDate: text(r.priority_date),
-    priorityNote: text(r.priority_note),
-    receiptDate: text(r.receipt_date),
-    biometricsDate: text(r.biometrics_date),
-    transferDate: text(r.transfer_date),
-    approvalDate: text(r.approval_date),
-    cardDate: text(r.card_date),
-    validAsOf: text(r.valid_as_of),
-  }));
+  return got.map(fromRow);
 });
 
-/** When the newest sheet load for an office finished, epoch ms, or null before the first. */
-export const getSheetsReadAt = cache(async (): Promise<number | null> => {
+/** When the reported-cases list was last built, epoch ms, or null before the first build. */
+export const getReportedCasesBuiltAt = cache(async (): Promise<number | null> => {
   try {
-    const got = await rows<{ at: number | string | null }>("SELECT max(fetched_at) AS at FROM community_case_reports");
+    const got = await rows<{ at: number | string | null }>("SELECT max(built_at) AS at FROM reported_cases");
     const at = Number(got[0]?.at);
     return Number.isFinite(at) && at > 0 ? at : null;
   } catch (e) {

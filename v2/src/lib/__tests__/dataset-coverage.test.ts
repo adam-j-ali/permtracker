@@ -106,8 +106,9 @@ describe("dataset coverage", () => {
     expect([...policy].sort()).toEqual([...policyIds].sort());
     // 57 on Nov 5 2026: State's nonimmigrant issuances by post and its refusals by ground added two. 58 on Nov 18
     // 2026: USCIS's monthly report to Congress (uscis-monthly-forms). 60 on Nov 19 2026: the community sheets
-    // (community-sheet-sfv-filers) and VisaStats' tracker (community-visastats).
-    expect(ids.length - warnStates.length - policy.length).toBeLessThanOrEqual(60);
+    // (community-sheet-sfv-filers) and VisaStats' tracker (community-visastats); 61 the same day: the merged list of
+    // reported cases (reported-cases).
+    expect(ids.length - warnStates.length - policy.length).toBeLessThanOrEqual(61);
     const read = new Set<string>();
     for (const f of ["ingest_warn.py", "warn_states.py"]) {
       const src = readFileSync(join(ROOT, "scripts", f), "utf8");

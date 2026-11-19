@@ -258,7 +258,6 @@ def main() -> int:
         ensure_table(db)
     failed: list[str] = []
     notes: list[str] = []
-    offices: set[str] = set()
     for sheet in sheets:
         try:
             if a.from_file:
@@ -278,7 +277,6 @@ def main() -> int:
                 from lib_db import stamp_freshness
                 stamp_freshness(db, f"community-sheet-{sheet['key']}", source=export_url(sheet).split("/export")[0],
                                 cadence="hourly", note=line, max_age_days=3)
-                offices.add(sheet["office"])
             notes.append(line)
         except Exception as e:  # noqa: BLE001
             # One sheet's trouble never costs the others, and never passes quietly: it ends the run red.
@@ -286,11 +284,7 @@ def main() -> int:
             print(f"::error::{msg}", flush=True)
             failed.append(msg)
     if db is not None:
-        if offices:
-            from lib_policy_feed import expire_policy_page
-            ok = expire_policy_page(print, route="/api/revalidate-timelines", body={"offices": sorted(offices)})
-            if ok is False:
-                notes.append("the office pages weren't refreshed; their own window will")
+        # The office pages read the merged list, so scripts/build_reported_cases.py (the next step) refreshes them.
         from lib_db import record_run
         status = "ok" if not failed else ("partial" if notes else "failed")
         record_run(db, SCRIPT, status=status, rows_written=None,
