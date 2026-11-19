@@ -119,3 +119,22 @@ describe("checkNote", () => {
     expect(checkNote("x".repeat(NOTE_MAX + 1)).ok).toBe(false);
   });
 });
+
+describe("the link check on a stranger's review", () => {
+  // NFKC can grow the 2,000 characters six-fold, and the check's unbounded runs made each anonymous POST cost about
+  // 0.3 s before any per-IP budget (Nov 19 2026 security review). Bounded runs keep it linear.
+  it.each([
+    ["a character NFKC grows six-fold", "㌖".repeat(REVIEW_TEXT_MAX)],
+    ["one long word with no dot or @", "a".repeat(REVIEW_TEXT_MAX)],
+    ["at signs with nothing after", "a@".repeat(REVIEW_TEXT_MAX / 2)],
+  ])("reads %s quickly", (_shape, text) => {
+    const started = performance.now();
+    checkReview({ rating: 5, text });
+    expect(performance.now() - started).toBeLessThan(150);
+  });
+
+  it("still finds a link written in full-width letters at the end of a long review", () => {
+    const text = `${"great ".repeat(300)}ｈｔｔｐｓ://ｓｐａｍ.ｅｘａｍｐｌｅ`;
+    expect(checkReview({ rating: 5, text }).ok).toBe(false);
+  });
+});
