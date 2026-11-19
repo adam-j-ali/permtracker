@@ -448,6 +448,32 @@ def main() -> int:
     check("watched: never run is not a failure (it is new)", health.check_watched(WatchedDB(None)) == 0)
     check("watched: nothing for 4 hours FAILS", health.check_watched(WatchedDB(4.0)) == 1)
 
+    # --- the PERM daytime pass (every 15 minutes on weekdays, Nov 19 2026) ----
+    class DaytimeDB:
+        def __init__(self, at_ms):
+            self.at_ms = at_ms
+        def execute(self, sql, args=None):
+            assert "ingest_case_status_direct.py --active" in str(args), "read the wrong script key"
+            rows = [] if self.at_ms is None else [[{"type": "integer", "value": str(self.at_ms)},
+                                                    {"type": "text", "value": "active: 17,613 checked"}]]
+            return {"response": {"result": {"rows": rows}}}
+    def et_ms(day, hh, mm):
+        from zoneinfo import ZoneInfo
+        return int(datetime.datetime.combine(datetime.date.fromisoformat(day), datetime.time(hh, mm),
+                                             tzinfo=ZoneInfo("America/New_York")).timestamp() * 1000)
+    tue_2pm = et_ms("2026-11-24", 14, 0)
+    check("daytime: a run 20 minutes ago passes", health.check_daytime_pass(DaytimeDB(tue_2pm - 20 * 60_000), tue_2pm) == 0)
+    check("daytime: a 45-minute gap from giving way passes",
+          health.check_daytime_pass(DaytimeDB(tue_2pm - 75 * 60_000), tue_2pm) == 0)
+    check("daytime: nothing for 3 hours on a Tuesday afternoon FAILS",
+          health.check_daytime_pass(DaytimeDB(tue_2pm - 3 * 3_600_000), tue_2pm) == 1)
+    mon_6am = et_ms("2026-11-23", 6, 0)
+    check("daytime: Friday evening's last run still passes on Monday at 6 AM",
+          health.check_daytime_pass(DaytimeDB(et_ms("2026-11-20", 19, 48)), mon_6am) == 0)
+    check("daytime: a run that stopped Friday at noon FAILS by Monday",
+          health.check_daytime_pass(DaytimeDB(et_ms("2026-11-20", 12, 0)), mon_6am) == 1)
+    check("daytime: never run is not a failure (it is new)", health.check_daytime_pass(DaytimeDB(None), tue_2pm) == 0)
+
     # --- the serial gap sweep ------------------------------------------------
     # Probed, not found: a sweep that recovers nothing is the goal state. The
     # gate exists for the two ways the sweep goes quiet without erroring - it
@@ -798,7 +824,7 @@ def check_one_source_of_many_is_a_watch() -> None:
 
 CHECKS = ("check_runs", "check_frontier", "check_discovery_yield", "check_backfill", "check_gap_sweep",
           "check_nightly_builders",
-          "check_watched", "check_lookup_demand", "check_coverage_stated", "check_precomputed_docs",
+          "check_watched", "check_daytime_pass", "check_lookup_demand", "check_coverage_stated", "check_precomputed_docs",
           "check_wage_views", "check_lca_numbers", "check_lca_years")
 
 
