@@ -28,6 +28,10 @@ on:
     # 07:00 UTC on the 10th of every month, after the quarterly PERM ingest
     # (the 8th) so the two never contend for DOL's goodwill on one morning.
     - cron: "0 7 10 * *"
+    # And the 22nd, two days after PERM's own monthly check (the 20th): a
+    # quarter DOL posts after the 10th (FY2026 Q4 came between Nov 14 and 17)
+    # would otherwise wait a month. A run that finds the same file skips the write.
+    - cron: "0 7 22 * *"
   workflow_dispatch:
     inputs:
       program:
