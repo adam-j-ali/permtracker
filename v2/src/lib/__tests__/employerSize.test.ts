@@ -16,9 +16,15 @@ describe("typicalEmployerSize", () => {
     expect(typicalEmployerSize([r(10), r(20), r(30), r(40)])?.employees).toBe(25);
   });
 
-  it("leaves out a headcount of 0 and a year before 1700", () => {
-    const size = typicalEmployerSize([r(0, 1066), r("120", "1999"), r(null, 1999)]);
-    expect(size).toEqual({ employees: 120, since: 1999, basis: 1 });
+  it("keeps a headcount of 0 as the employer reported it, and leaves out a year before 1700", () => {
+    // Arrange, Act: an employer whose filings all say 0 employees on payroll (816 did in fiscal year 2025).
+    const none = typicalEmployerSize([r(0, 1066), r("0", "2019"), r(null, 2019)]);
+    // Assert
+    expect(none).toEqual({ employees: 0, since: 2019, basis: 2 });
+  });
+
+  it("lets the middle outvote one 0 among real headcounts", () => {
+    expect(typicalEmployerSize([r(0), r(120), r(130)])?.employees).toBe(120);
   });
 
   it("takes the year most applications give, the newest on a tie", () => {
@@ -27,7 +33,7 @@ describe("typicalEmployerSize", () => {
   });
 
   it("is null when no application gives either", () => {
-    expect(typicalEmployerSize([r(null), r(0, 1500)])).toBeNull();
+    expect(typicalEmployerSize([r(null), r(null, 1500), r("many")])).toBeNull();
     expect(typicalEmployerSize([])).toBeNull();
   });
 
@@ -35,5 +41,6 @@ describe("typicalEmployerSize", () => {
     expect(sizeNote({ basis: 5, since: 2008 })).toBe("In business since 2008");
     expect(sizeNote({ basis: 5, since: null })).toBe("Typical of its 5 newest filings");
     expect(sizeNote({ basis: 1, since: null })).toBe("On its newest filing");
+    expect(sizeNote({ basis: 3, since: 2019, employees: 0 })).toBe("None on payroll, as its filings report it");
   });
 });
