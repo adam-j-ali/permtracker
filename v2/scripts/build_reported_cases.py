@@ -4,7 +4,10 @@ Reads what the loaders stored (the community sheets, VisaStats' tracker, and the
 they're loaded), turns each row into a merge record, merges them (scripts/lib_reported_cases.py) and replaces
 `reported_cases`. The pages read that table; the office pages whose cases changed are refreshed.
 
-Run: python3 scripts/build_reported_cases.py [--dry-run]
+Run: python3 scripts/build_reported_cases.py [--from-convex] [--dry-run]
+
+The server runs it hourly with --from-convex (permtracker-uscis reported-cases), the one writer of the table, and again
+after each VisaStats load.
 
 A row the merge can't read is left out and counted in the run's note, never allowed to stop the build. A build that
 would shrink the stored list by more than half is refused (`--force` stores it), so one broken source can't empty
@@ -25,7 +28,7 @@ TABLE = "reported_cases"
 KEEP_SHARE = 0.5
 COLUMNS = ("case_id", *rc.FIELDS, "as_of", "sources", "source_names", "checked", "shows", "possible_dupes",
            "adds_nothing", "conflicts", "built_at")
-INTS = {"premium", "visa_available", "checked", "shows", "adds_nothing", "built_at"}
+INTS = {"visa_available", "checked", "shows", "adds_nothing", "built_at"}
 # A sheet's "visa availability": available, not available; "Approved" and "Unknown" say nothing about the number.
 VISA_AVAILABLE = {"visa available": True, "available": True, "current": True, "not available": False,
                   "not current": False}
@@ -74,7 +77,7 @@ def visastats_record(row: dict) -> dict | None:
     decision = (row.get("decision") or "").strip().lower() or None
     decision = decision if decision in rc.DECISIONS else None
     rfe_days = sorted(json.loads(row.get("rfe_dates") or "[]"))
-    premium = {"with filing": True, "after filing": True, "none": False}.get(row.get("premium") or "")
+    premium = row.get("premium") if row.get("premium") in rc.PREMIUMS else None
     return {
         "source": "visastats", "key": str(row["row_no"]), "as_of": row.get("updated") or row.get("created"),
         "category": petition, "center": row.get("service_center"),
@@ -88,10 +91,73 @@ def visastats_record(row: dict) -> dict | None:
     }
 
 
+# Our own forms' words, as the merge's.
+TIMELINE_CATEGORIES = {"eb1": "EB-1", "eb2": "EB-2", "eb2-niw": "EB-2 NIW", "eb3": "EB-3", "eb3-other": "EB-3 EW"}
+CONSULAR_LINES = {"eb1": "EB-1", "eb2": "EB-2", "eb3": "EB-3", "ew": "EB-3 EW", "eb4": "EB-4", "eb5": "EB-5"}
+CENTERS_BY_NAME = {"nebraska": "NSC", "texas": "TSC"}
+CONSULAR_OUTCOME = {"waiting": "pending", "approved": "approved", "issued": "issued", "passport-returned": "issued",
+                    "221g": "221g", "refused": "refused", "cancelled": "pending", "rescheduled": "pending"}
+
+
+def _et_day(ms) -> str | None:
+    from lib_db import et_date
+    return et_date(int(ms)) if ms else None
+
+
+def timeline_record(row: dict) -> dict:
+    """A timeline shared on this site (Convex's export) as a merge record: owner-reviewed, so checked. A private one
+    only stops a repeat (`shows` false), and the merge keeps its dates off every page."""
+    consular = row.get("route") == "consular"
+    premium = None
+    if row.get("premium") is not None:
+        premium = "after filing" if row.get("premiumOn") else ("yes" if row["premium"] else "none")
+    approved = row.get("greenCardOn")
+    rfe_form = row.get("rfeForm")
+    return {
+        "source": "timeline", "key": str(row["id"]), "checked": True, "shows": bool(row.get("public")),
+        "as_of": _et_day(row.get("updatedAt")),
+        "category": TIMELINE_CATEGORIES.get(row.get("category") or ""),
+        "chargeability": _country(row.get("country")),
+        "office": row.get("fieldOffice"), "center": CENTERS_BY_NAME.get(row.get("i140Center") or ""),
+        "premium": premium,
+        "perm_filed": row.get("permFiledOn"), "perm_decided": row.get("permCertifiedOn"),
+        "perm_decision": "approved" if row.get("permCertifiedOn") else None,
+        "i140_receipt": row.get("i140FiledOn"), "i140_decided": row.get("i140ApprovedOn"),
+        "i140_decision": "approved" if row.get("i140ApprovedOn") else None,
+        "i140_rfe_issued": row.get("rfeIssuedOn") if rfe_form == "i140" else None,
+        "i140_rfe_answered": row.get("rfeRespondedOn") if rfe_form == "i140" else None,
+        "i485_rfe_issued": row.get("rfeIssuedOn") if rfe_form == "i485" else None,
+        "i485_receipt": None if consular else row.get("i485FiledOn"),
+        "biometrics": None if consular else row.get("biometricsOn"),
+        "ead": row.get("eadOn"), "ap": row.get("apOn"), "transfer": row.get("officeMovedOn"),
+        "interview": None if consular else row.get("interviewOn"),
+        "i485_decided": None if consular else approved,
+        "i485_decision": "approved" if approved and not consular else None,
+        "card": row.get("cardArrivedOn"),
+        "consular_interview": row.get("interviewOn") if consular else None,
+        "visa_issued": approved if consular else None,
+        "consular_outcome": "issued" if approved and consular else None,
+    }
+
+
+def consular_record(row: dict) -> dict:
+    """A consulate report shared on this site as a merge record. Reports post at once and are moderated after, so
+    they aren't counted as checked."""
+    outcome = CONSULAR_OUTCOME.get(row.get("outcome") or "")
+    return {
+        "source": "consular-report", "key": str(row["id"]), "checked": False, "shows": True,
+        "as_of": _et_day(row.get("updatedAt")),
+        "post": row.get("post"), "category": CONSULAR_LINES.get(row.get("line") or ""),
+        "nvc_complete": row.get("nvcCompleteMonth"), "consular_scheduled": row.get("scheduledOn"),
+        "consular_interview": row.get("interviewOn"), "consular_outcome": outcome,
+        "visa_issued": row.get("resolvedOn") if outcome == "issued" else None,
+    }
+
+
 def post_record(row: dict) -> dict:
     """A Reddit or Telegram report (community_post_reports) is stored in the merge's own shape."""
     out = {k: v for k, v in row.items() if (k in rc.FIELDS or k in rc.META_FIELDS) and v is not None}
-    for k in ("checked", "shows", "premium", "visa_available"):
+    for k in ("checked", "shows", "visa_available"):
         if k in out:
             out[k] = bool(int(out[k]))
     return out
@@ -99,7 +165,8 @@ def post_record(row: dict) -> dict:
 
 def build_cases(sources: dict[str, list[dict]]) -> tuple[list[dict], dict]:
     """Merge every source's rows. `sources`: "sheets", "visastats" and "posts", each a list of stored rows."""
-    makers = {"sheets": sheet_record, "visastats": visastats_record, "posts": post_record}
+    makers = {"sheets": sheet_record, "visastats": visastats_record, "posts": post_record,
+              "timelines": timeline_record, "consular": consular_record}
     records, left_out = [], 0
     for name, rows in sources.items():
         for row in rows:
@@ -130,7 +197,7 @@ def case_row(case: dict, built_at: int) -> dict:
     row = {"case_id": case["id"]}
     for f in rc.FIELDS:
         v = case.get(f)
-        row[f] = (1 if v else 0) if f in ("premium", "visa_available") and v is not None else v
+        row[f] = (1 if v else 0) if f == "visa_available" and v is not None else v
     row.update({
         "as_of": case.get("as_of"),
         "sources": json.dumps(case["sources"]),
@@ -156,9 +223,19 @@ def table_exists(db, name: str) -> bool:
     return bool(query_rows(db, "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", [name]))
 
 
-def read_sources(db) -> dict[str, list[dict]]:
+def read_convex() -> dict[str, list[dict]]:
+    """Our own timelines and consulate reports, from Convex's GET /reported-export (the server's secret). A read that
+    fails raises: a build without them would drop every shared timeline and let a private one's repeat show."""
+    from check_watched_cases import convex_call
+    doc = convex_call("/reported-export")
+    if not doc.get("ok") or not isinstance(doc.get("timelines"), list) or not isinstance(doc.get("consular"), list):
+        raise RuntimeError(f"Convex's export answered without its lists: {str(doc)[:200]}")
+    return {"timelines": doc["timelines"], "consular": doc["consular"]}
+
+
+def read_sources(db, convex: bool = False) -> dict[str, list[dict]]:
     from lib_db import query_dicts
-    out: dict[str, list[dict]] = {}
+    out: dict[str, list[dict]] = read_convex() if convex else {}
     for name, table in (("sheets", "community_case_reports"), ("visastats", "community_i140_reports"),
                         ("posts", "community_post_reports")):
         if table_exists(db, table):
@@ -201,12 +278,14 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--dry-run", action="store_true", help="read and merge; write nothing")
     ap.add_argument("--force", action="store_true", help="store a list that lost more than half its cases")
+    ap.add_argument("--from-convex", action="store_true",
+                    help="also merge the timelines and consulate reports shared on this site (the server's run)")
     a = ap.parse_args()
     started = time.time()
     from lib_db import Database, record_run, stamp_freshness
     db = Database()
     try:
-        sources = read_sources(db)
+        sources = read_sources(db, convex=a.from_convex)
         cases, counts = build_cases(sources)
         line = (f"{counts['cases']} cases ({counts['people']} people) from {counts['records']} records: "
                 f"{counts['merged']} merged across sources, {counts['likely']} likely repeats joined, "

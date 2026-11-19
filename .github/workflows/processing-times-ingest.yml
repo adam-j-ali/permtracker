@@ -143,19 +143,6 @@ jobs:
           python3 scripts/ingest_community_sheets.py \
             || python3 scripts/record_ingest_failure.py --script ingest_community_sheets.py --note "community sheets failed"
 
-      # Every source's reported cases merged into one list, each person once (scripts/build_reported_cases.py).
-      # It runs after the sheets, refreshes only the office pages whose cases changed, and refuses a build that
-      # would lose more than half the stored list.
-      - name: Reported cases
-        if: always()
-        working-directory: v2
-        timeout-minutes: 5
-        env:
-          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
-        run: |
-          python3 scripts/build_reported_cases.py \
-            || python3 scripts/record_ingest_failure.py --script build_reported_cases.py --note "the reported-cases build failed"
-
       # Forty-seven states and DC (scripts/ingest_warn.py and scripts/warn_states.py).
       # A state whose site is down that day is named in the run's note and its
       # own freshness row is the alarm; a parse that breaks turns the run partial.

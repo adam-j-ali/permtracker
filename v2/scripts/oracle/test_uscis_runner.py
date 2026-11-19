@@ -101,6 +101,15 @@ def main() -> int:
         check("every source failing fails the unit", rc == 1, out[-300:])
         check("...with a failure row for each", len(recorded) == len(ran), f"{len(recorded)} rows, {len(ran)} sources")
 
+        print("reported-cases")
+        rc, out, ran, recorded = run(root, "reported-cases", "")
+        check("the hourly build runs with Convex's export and exits 0",
+              rc == 0 and ran == ["build_reported_cases.py"] and "--from-convex" in SCRIPT.read_text(), f"{rc} {ran}")
+        rc, out, ran, recorded = run(root, "reported-cases", "build_reported_cases.py")
+        check("a failed build fails the unit and records why", rc == 1 and len(recorded) == 1, out[-300:])
+        timer = (HERE / "systemd" / "permtracker-uscis@reported-cases.timer").read_text()
+        check("it runs hourly at :35, after GitHub's :05 sheet ingest", "OnCalendar=*-*-* *:35:00 America/New_York" in timer)
+
         print("flag-notice")
         rc, out, _, _ = run(root, "flag-notice", "")
         check("a clean read exits 0", rc == 0, out[-300:])

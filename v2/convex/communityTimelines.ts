@@ -694,6 +694,75 @@ export const office = query({
   },
 });
 
+/** The dates and categories of one shown timeline, for the merged list of reported cases. No case number, no hash. */
+const mergeRowV = v.object({
+  id: v.string(),
+  /** Whether the person chose to list it: a private one only stops a repeat, and none of its dates show. */
+  public: v.boolean(),
+  updatedAt: v.number(),
+  category: v.optional(v.string()),
+  country: v.optional(v.string()),
+  route: v.optional(v.string()),
+  premium: v.optional(v.boolean()),
+  premiumOn: v.optional(v.string()),
+  i140Center: v.optional(v.string()),
+  fieldOffice: v.optional(v.string()),
+  permFiledOn: v.optional(v.string()),
+  permCertifiedOn: v.optional(v.string()),
+  i140FiledOn: v.optional(v.string()),
+  i140ApprovedOn: v.optional(v.string()),
+  i485FiledOn: v.optional(v.string()),
+  biometricsOn: v.optional(v.string()),
+  eadOn: v.optional(v.string()),
+  apOn: v.optional(v.string()),
+  officeMovedOn: v.optional(v.string()),
+  interviewOn: v.optional(v.string()),
+  greenCardOn: v.optional(v.string()),
+  cardArrivedOn: v.optional(v.string()),
+  rfeForm: v.optional(v.string()),
+  rfeIssuedOn: v.optional(v.string()),
+  rfeRespondedOn: v.optional(v.string()),
+});
+
+/**
+ * Every shown timeline's dates, for scripts/build_reported_cases.py (GET /reported-export, the server's secret).
+ * Internal, and narrower than any page's read: dates, categories and offices only.
+ */
+export const exportForMerge = internalQuery({
+  args: {},
+  returns: v.array(mergeRowV),
+  handler: async (ctx) => {
+    const rows = await ctx.db.query("communityTimelines").order("desc").take(SCAN_CAP);
+    return rows.filter(shows).map((r) => ({
+      id: r._id,
+      public: r.public,
+      updatedAt: r.updatedAt,
+      category: r.category,
+      country: r.country,
+      route: r.route,
+      premium: r.premium,
+      premiumOn: r.premiumOn,
+      i140Center: r.i140Center,
+      fieldOffice: r.fieldOffice,
+      permFiledOn: r.permFiledOn,
+      permCertifiedOn: r.permCertifiedOn,
+      i140FiledOn: r.i140FiledOn,
+      i140ApprovedOn: r.i140ApprovedOn,
+      i485FiledOn: r.i485FiledOn,
+      biometricsOn: r.biometricsOn,
+      eadOn: r.eadOn,
+      apOn: r.apOn,
+      officeMovedOn: r.officeMovedOn,
+      interviewOn: r.interviewOn,
+      greenCardOn: r.greenCardOn,
+      cardArrivedOn: r.cardArrivedOn,
+      rfeForm: r.rfeForm,
+      rfeIssuedOn: r.rfeIssuedOn,
+      rfeRespondedOn: r.rfeRespondedOn,
+    }));
+  },
+});
+
 /** Write DOL's PERM dates onto every row for a case. The only writer of `perm*`. */
 export const setPermHalf = internalMutation({
   args: {

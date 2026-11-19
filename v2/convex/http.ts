@@ -2539,6 +2539,24 @@ http.route({
   }),
 });
 
+/**
+ * The shared timelines and consulate reports the server merges into the list of reported cases
+ * (scripts/build_reported_cases.py --from-convex): dates and categories only, behind the server's secret.
+ */
+http.route({
+  path: "/reported-export",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    const refused = await watchedGate(req);
+    if (refused) return refused;
+    const [timelines, consular] = await Promise.all([
+      ctx.runQuery(internal.communityTimelines.exportForMerge, {}),
+      ctx.runQuery(internal.consularReports.exportForMerge, {}),
+    ]);
+    return serverJson({ ok: true, timelines, consular }, 200);
+  }),
+});
+
 /** A watched case moved: run the email, browser-push and webhook sweeps now. Each is idempotent. */
 http.route({
   path: "/watched-cases/sweep",

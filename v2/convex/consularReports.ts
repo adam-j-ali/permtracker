@@ -352,6 +352,48 @@ export const clearIpHashes = internalMutation({
 });
 
 /** Admin: take a report off every figure, from the CLI (`npx convex run`), as the timelines' hide does. */
+/** The employment-based immigrant visa lines: the ones the merged list of reported cases follows. */
+const EMPLOYMENT_LINES = new Set(["eb1", "eb2", "eb3", "ew", "eb4", "eb5"]);
+
+/**
+ * The shown employment-based reports' dates, for scripts/build_reported_cases.py (GET /reported-export, the server's
+ * secret). Internal: post, line, dates and outcome only.
+ */
+export const exportForMerge = internalQuery({
+  args: {},
+  returns: v.array(
+    v.object({
+      id: v.string(),
+      updatedAt: v.number(),
+      post: v.string(),
+      line: v.optional(v.string()),
+      nvcCompleteMonth: v.optional(v.string()),
+      scheduledOn: v.optional(v.string()),
+      interviewOn: v.optional(v.string()),
+      outcome: v.string(),
+      approvedOn: v.optional(v.string()),
+      resolvedOn: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx) => {
+    const rows = await ctx.db.query("consularReports").order("desc").take(POST_READ);
+    return rows
+      .filter((r) => !r.hidden && r.category === "employment" && (r.line === undefined || EMPLOYMENT_LINES.has(r.line)))
+      .map((r) => ({
+        id: r._id,
+        updatedAt: r.updatedAt,
+        post: r.post,
+        line: r.line,
+        nvcCompleteMonth: r.nvcCompleteMonth,
+        scheduledOn: r.scheduledOn,
+        interviewOn: r.interviewOn,
+        outcome: r.outcome,
+        approvedOn: r.approvedOn,
+        resolvedOn: r.resolvedOn,
+      }));
+  },
+});
+
 export const hide = internalMutation({
   args: { id: v.id("consularReports"), hidden: v.boolean() },
   returns: v.null(),

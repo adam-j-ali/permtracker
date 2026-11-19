@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule for permtracker-uscis@reported-cases
+# Every source's reported cases merged into one list, hourly at :35, after GitHub's :05 sheet ingest (Nov 19 2026).
+[Timer]
+OnCalendar=*-*-* *:35:00 America/New_York
+Persistent=true
+Unit=permtracker-uscis@reported-cases.service
+
+[Install]
+WantedBy=timers.target

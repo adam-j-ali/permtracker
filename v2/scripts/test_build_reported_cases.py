@@ -57,7 +57,7 @@ def main() -> int:
           "a sheet line with only its chargeability")
 
     v = b.visastats_record(visa_row())
-    check(v["category"] == "EB-2 NIW" and v["center"] == "TSC" and v["premium"] is True, "the petition, centre, premium")
+    check(v["category"] == "EB-2 NIW" and v["center"] == "TSC" and v["premium"] == "after filing", "the petition, centre, premium")
     check(v["i140_receipt"] == "2025-03-14", "a self-petition's priority date is its filing day")
     check(v["i140_rfe_issued"] == "2025-06-01" and v["i140_rfe_answered"] == "2025-07-15", "the RFE and its answer")
     check(v["i140_decision"] == "approved" and v["i140_decided"] == "2025-09-02", "the decision and its day")
@@ -66,7 +66,7 @@ def main() -> int:
           "an EB-2 through PERM: its priority date is the PERM day, never the I-140's")
     check(b.visastats_record(visa_row(petition="O-1A")) is None, "an O-1 isn't a green card case")
     check(b.visastats_record(visa_row(petition="")) is None, "a row with no petition is left out")
-    check(b.visastats_record(visa_row(premium="none"))["premium"] is False, "premium not pursued")
+    check(b.visastats_record(visa_row(premium="none"))["premium"] == "none", "premium not pursued")
     p = b.visastats_record(visa_row(decision="Pending", decision_date=None))
     check(p["i140_decision"] == "pending" and p.get("i140_decided") is None, "a pending petition has no decision day")
     check(b.visastats_record(visa_row(rfe_responded="Yes, sent"))["i140_rfe_answered"] is None,
@@ -100,6 +100,47 @@ def main() -> int:
     tl = b.post_record({"source": "timeline", "key": "t1", "checked": "1", "shows": "0", "transfer": "2026-01-02",
                         "card": None})
     check(tl["checked"] is True and tl["shows"] is False and "card" not in tl, "a stored 0 is false, a null is gone")
+
+    # Our own timelines and consulate reports, from Convex's export.
+    tl = {"id": "t1", "public": True, "updatedAt": 1795118400000, "category": "eb2-niw", "country": "india",
+          "route": "adjustment", "premium": True, "premiumOn": "2026-02-01", "i140Center": "texas", "fieldOffice": "SFV",
+          "permFiledOn": "2025-08-01", "permCertifiedOn": "2026-05-02", "i140FiledOn": "2026-01-10",
+          "i140ApprovedOn": "2026-02-20", "i485FiledOn": "2026-06-12", "biometricsOn": "2026-07-08",
+          "officeMovedOn": "2026-09-24", "interviewOn": "2026-10-20", "greenCardOn": "2026-11-03",
+          "cardArrivedOn": "2026-11-12", "rfeForm": "i140", "rfeIssuedOn": "2026-01-30", "rfeRespondedOn": "2026-02-10"}
+    r = b.timeline_record(tl)
+    check(r["source"] == "timeline" and r["checked"] is True and r["shows"] is True, "a shared timeline is checked and shows")
+    check(r["category"] == "EB-2 NIW" and r["chargeability"] == "India" and r["center"] == "TSC" and r["office"] == "SFV",
+          "its category, country, centre and office in the merge's words")
+    check(r["premium"] == "after filing", "premium asked after filing")
+    check(r["perm_decided"] == "2026-05-02" and r["perm_decision"] == "approved", "DOL's certification")
+    check(r["transfer"] == "2026-09-24" and r["i485_decided"] == "2026-11-03" and r["card"] == "2026-11-12",
+          "the transfer, the approval and the card")
+    check(r["i140_rfe_issued"] == "2026-01-30" and r["i140_rfe_answered"] == "2026-02-10" and r.get("i485_rfe_issued") is None,
+          "an I-140 RFE lands on the I-140")
+    check(r["as_of"] == "2026-11-19", "as of its last change, an Eastern day")
+    private = b.timeline_record({**tl, "public": False})
+    check(private["shows"] is False, "a private timeline doesn't show")
+    consular = b.timeline_record({**tl, "route": "consular", "i485FiledOn": None, "interviewOn": "2026-08-01",
+                                  "greenCardOn": "2026-08-05"})
+    check(consular["consular_interview"] == "2026-08-01" and consular["visa_issued"] == "2026-08-05"
+          and consular["consular_outcome"] == "issued" and consular.get("interview") is None
+          and consular.get("i485_decided") is None,
+          "a consular timeline's interview and visa land on the consular step")
+    check(b.timeline_record({**tl, "premium": True, "premiumOn": None})["premium"] == "yes"
+          and b.timeline_record({**tl, "premium": False, "premiumOn": None})["premium"] == "none", "premium kinds")
+    cr = b.consular_record({"id": "c1", "updatedAt": 1795118400000, "post": "mumbai", "line": "eb3",
+                            "nvcCompleteMonth": "2026-03", "scheduledOn": "2026-05-02", "interviewOn": "2026-06-10",
+                            "outcome": "passport-returned", "resolvedOn": "2026-06-20"})
+    check(cr["post"] == "mumbai" and cr["category"] == "EB-3" and cr["nvc_complete"] == "2026-03"
+          and cr["consular_outcome"] == "issued" and cr["visa_issued"] == "2026-06-20" and cr["checked"] is False,
+          "a consulate report: posted at once, so unchecked, and a returned passport is an issued visa")
+    check(b.consular_record({"id": "c2", "updatedAt": 1, "post": "mumbai", "outcome": "221g"})["consular_outcome"] == "221g"
+          and b.consular_record({"id": "c3", "updatedAt": 1, "post": "mumbai", "outcome": "rescheduled"})["consular_outcome"] == "pending",
+          "a 221(g) stays one; a rescheduled interview is still pending")
+    cases, counts = b.build_cases({"sheets": [sheet_row(country="India")], "timelines": [{**tl, "public": False}]})
+    check(len(cases) == 1 and counts["merged"] == 1 and cases[0]["shows"] and cases[0].get("card") is None,
+          "a private timeline matching the sheet's row merges, and its card day stays private")
 
     # A bad row from one source is counted and left out, never allowed to stop the build.
     cases, counts = b.build_cases({"sheets": [sheet_row(), sheet_row(row_no=3, transfer_date="9/24/2026")]})

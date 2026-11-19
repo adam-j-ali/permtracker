@@ -34,20 +34,45 @@ from collections import defaultdict
 
 # The dates a case can hold. Every one is "YYYY-MM-DD", or "YYYY-MM" when only the month was given.
 DATE_FIELDS = (
-    "priority_date",
+    # Before PERM: the H-1B and its LCA, then the wage request.
+    "h1b_filed", "h1b_decided", "lca_certified", "pwd_filed", "pwd_issued",
+    # PERM.
+    "perm_filed", "perm_audit", "perm_decided", "priority_date",
+    # The I-140.
     "i140_receipt", "i140_rfe_issued", "i140_rfe_answered", "i140_decided",
+    # Adjustment at a USCIS office.
     "i485_receipt", "biometrics", "ead", "ap", "i485_rfe_issued", "transfer", "interview", "i485_decided", "card",
+    # Or the consular path.
+    "nvc_complete", "consular_scheduled", "consular_interview", "visa_issued",
 )
 # What a case is, compared for contradictions and never counted toward a match.
 IDENTITY_FIELDS = ("category", "office", "center", "post", "chargeability")
-DECISION_FIELDS = ("i140_decision", "i485_decision")
+DECISION_FIELDS = ("h1b_decision", "perm_decision", "i140_decision", "i485_decision", "consular_outcome")
 # Carried along, never compared: what a source adds about the wait (a sheet's "visa available", the status held
 # while waiting, a priority date given in words).
 OTHER_FIELDS = ("premium", "visa_available", "nonimmigrant_status", "priority_note")
 META_FIELDS = ("source", "key", "person", "as_of", "checked", "shows")
 FIELDS = DATE_FIELDS + IDENTITY_FIELDS + DECISION_FIELDS + OTHER_FIELDS
 
-DECISIONS = ("approved", "denied", "pending")
+DECISIONS = ("approved", "denied", "withdrawn", "pending")
+# A consulate's outcomes: a 221(g) is a hold for more documents, after which the visa is issued or refused.
+CONSULAR_OUTCOMES = ("issued", "refused", "221g", "approved", "pending")
+# How far along an outcome is: a later one replaces an earlier one, and never contradicts it. "approved" is a
+# consulate's approval at the window, before the visa is printed.
+CONSULAR_PROGRESS = {"pending": 0, "221g": 1, "approved": 1}
+DECISION_PROGRESS = {"pending": 0}
+# Premium processing, most specific first: from the filing, added later, said yes with no timing, or not used.
+PREMIUMS = ("with filing", "after filing", "yes", "none")
+PREMIUM_DETAIL = {"with filing": 3, "after filing": 3, "yes": 2, "none": 1}
+
+
+def outcomes_for(field: str) -> tuple[str, ...]:
+    return CONSULAR_OUTCOMES if field == "consular_outcome" else DECISIONS
+
+
+def progress(field: str, v: str) -> int:
+    """How far along a decision is: a later one replaces an earlier one. Each field has its own words."""
+    return (CONSULAR_PROGRESS if field == "consular_outcome" else DECISION_PROGRESS).get(v, 2)
 # Our own reviewed sources first, then the sheets, then the trackers and chats. The first member founds a case's id.
 SOURCE_RANK = {"timeline": 0, "consular-report": 1, "visastats": 30, "reddit": 40, "telegram": 50}
 SHEET_RANK = 20  # any other source name is a community sheet's key
@@ -82,8 +107,10 @@ def check_record(r: dict) -> None:
         if isinstance(v, str) and DAY_RE.match(v):
             dt.date.fromisoformat(v)  # a 31st of February raises
     for f in DECISION_FIELDS:
-        if r.get(f) is not None and r[f] not in DECISIONS:
-            raise ValueError(f"{f} must be one of {DECISIONS}, got {r[f]!r}")
+        if r.get(f) is not None and r[f] not in outcomes_for(f):
+            raise ValueError(f"{f} must be one of {outcomes_for(f)}, got {r[f]!r}")
+    if r.get("premium") is not None and r["premium"] not in PREMIUMS:
+        raise ValueError(f"premium must be one of {PREMIUMS}, got {r['premium']!r}")
 
 
 def _day(v: str) -> dt.date:
@@ -138,7 +165,7 @@ def _agree(field: str, a, b) -> bool:
     if field == "chargeability":
         return countries_agree(a, b)
     if field in DECISION_FIELDS:
-        return a == b or "pending" in (a, b)
+        return a == b or progress(field, a) < 2 or progress(field, b) < 2
     return str(a).strip().upper() == str(b).strip().upper()
 
 
@@ -178,7 +205,9 @@ def adds_to(r: dict, case: dict) -> bool:
             return True
         if f == "chargeability" and _country(have) in REST_OF_WORLD and _country(v) not in REST_OF_WORLD:
             return True
-        if f in DECISION_FIELDS and have == "pending":
+        if f in DECISION_FIELDS and progress(f, v) > progress(f, have):
+            return True
+        if f == "premium" and PREMIUM_DETAIL[v] > PREMIUM_DETAIL.get(have, 0):
             return True
     return False
 
@@ -201,7 +230,7 @@ def fold_people(records: list[dict]) -> list[dict]:
                 if v is None:
                     continue
                 old = folded.get(f)
-                if old is not None and old != v and not (f in DECISION_FIELDS and old == "pending"):
+                if old is not None and old != v and not (f in DECISION_FIELDS and progress(f, old) < progress(f, v)):
                     if not (f in DATE_FIELDS and MONTH_RE.match(old) and v.startswith(old)):
                         folded["conflicts"].append({"field": f, "values": [old, v]})
                 folded[f] = v
@@ -217,7 +246,9 @@ def _better(f: str, cur, cur_m: dict | None, v, m: dict) -> bool:
     if cur is None:
         return True
     if f in DECISION_FIELDS:
-        return cur == "pending" and v != "pending"
+        return progress(f, v) > progress(f, cur)
+    if f == "premium":
+        return PREMIUM_DETAIL[v] > PREMIUM_DETAIL.get(cur, 0)
     if f in DATE_FIELDS and MONTH_RE.match(cur) and DAY_RE.match(v):
         return True
     if f in DATE_FIELDS and DAY_RE.match(cur) and MONTH_RE.match(v):
@@ -238,9 +269,6 @@ def _combine(members: list[dict]) -> dict:
         for f in FIELDS:
             v = m.get(f)
             if v is None:
-                continue
-            if f == "premium":
-                out[f] = bool(out.get(f)) or bool(v)
                 continue
             if f == "priority_note" and out.get("priority_date"):
                 continue
