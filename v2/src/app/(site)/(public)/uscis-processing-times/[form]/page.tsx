@@ -19,6 +19,7 @@ import { HourglassMediumIcon, SealCheckIcon, TrayIcon, UsersIcon } from "@phosph
 import { BarRows, type BarRow } from "@/components/data/BarRows";
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { FinePrint } from "@/components/data/FinePrint";
+import { MonthlyDecisionBars } from "@/components/data/MonthlyDecisionBars";
 import { Figure, FigureRow } from "@/components/data/FigureRow";
 import { PageSection } from "@/components/data/PageSection";
 import { ColumnChart, type Column } from "@/components/numbers/ColumnChart";
@@ -26,7 +27,7 @@ import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { breadcrumbSchema } from "@/lib/breadcrumbs";
 import { getPostedHistory, getUscisPosted } from "@/lib/db/uscisPosted";
 import { getUscisMonthly } from "@/lib/db/uscisMonthly";
-import { deniedShare, leadLine, recentMonths } from "@/lib/uscisMonthly";
+import { decisionTrend, deniedShare, everyMonth, leadLine, recentMonths } from "@/lib/uscisMonthly";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { MONTH_NAMES } from "@convex/lib/months";
 import { getHistoricalMedians, getUscisFormRows, type HistoricalMedians } from "@/lib/db/uscisQuarterly";
@@ -181,6 +182,8 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
   const monthRows = month && monthly ? recentMonths(monthly, month, 12) : [];
   const monthNow = monthRows[0]?.point ?? null;
   const monthWhat = page.form === "I-485" ? "employment-based I-485s" : `${page.form}s`;
+  // The newest month against the year before: the first thing to check when decisions fall (the N-400, Nov 2026).
+  const trend = month && monthly ? decisionTrend(monthly, month) : null;
   // A posting too old to stand for "now" is left out: the quarterly median carries the page on its own.
   const fresh = posted && isCurrent(posted, easternDay()) ? posted : null;
   const categories = fresh ? postedRows(postedByCategory(fresh, page.form)) : [];
@@ -237,7 +240,11 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
         ) : null}{" "}
         {monthNow && monthNow.approved !== null && monthNow.denied !== null && monthNow.pending !== null && monthRows[0] ? (
           <p className="mt-3 text-lg leading-relaxed">
-            {`In ${monthWords(monthRows[0].month)}, USCIS approved ${formatInt(monthNow.approved)} ${monthWhat} and denied ${formatInt(monthNow.denied)}, ${formatShareOf(monthNow.denied, monthNow.approved + monthNow.denied)} of those it decided. ${formatInt(monthNow.pending)} were pending at the month's end${monthNow.pending_6mo !== null ? `, ${formatInt(monthNow.pending_6mo)} of them for more than six months` : ""}.`}{" "}
+            {`In ${monthWords(monthRows[0].month)}, USCIS decided ${formatInt(monthNow.approved + monthNow.denied)} ${monthWhat}: ${formatInt(monthNow.approved)} approved and ${formatInt(monthNow.denied)} denied (${formatShareOf(monthNow.denied, monthNow.approved + monthNow.denied)}).`}{" "}
+            {trend?.before && trend.share !== null
+              ? `That's ${formatShare(trend.share)} of the ${formatInt(trend.before.average)} a month it decided on average from ${monthWords(trend.before.from)} to ${monthWords(trend.before.to)}${trend.before.counted < 12 ? `, over the ${trend.before.counted} months it reported` : ""}.`
+              : ""}{" "}
+            {`${formatInt(monthNow.pending)} were pending at the month's end${trend?.pendingYearAgo != null ? `, against ${formatInt(trend.pendingYearAgo)} a year earlier` : ""}${monthNow.pending_6mo !== null ? `, and ${formatInt(monthNow.pending_6mo)} of them had waited more than six months` : ""}.`}{" "}
             <a href="#monthly" className="link font-bold">
               Each month
             </a>
@@ -408,6 +415,12 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
           title="Each month, as USCIS reports it to Congress"
           lede={`${page.form === "I-485" ? "Employment-based I-485s" : `Every ${page.form}`}: what came in, what USCIS decided and what was still waiting at each month's end, from the monthly report USCIS files with Congress.`}
         >
+          <MonthlyDecisionBars
+            months={everyMonth(monthly, month)}
+            nouns={monthWhat}
+            label={`${monthWhat} USCIS decided each month, approved and denied, from its monthly report to Congress`}
+            className="mb-8"
+          />{" "}
           <ScrollBox label={`${monthWhat}, month by month`} className="border-t-2 border-[var(--object-border)]">
             <table className="w-full min-w-[720px] border-collapse text-left text-base">
               <caption className="sr-only">{`${monthWhat} received, approved, denied and pending each month, from USCIS's monthly report to Congress`}</caption>

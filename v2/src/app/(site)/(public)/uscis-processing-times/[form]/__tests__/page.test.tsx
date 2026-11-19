@@ -115,8 +115,11 @@ describe("USCIS's monthly report to Congress, on a form it covers", () => {
     getUscisMonthly.mockResolvedValue(MONTHLY);
     const text = await page("i-485");
     expect(text).toContain(
-      "In September 2026, USCIS approved 8,068 employment-based I-485s and denied 1,497, 16% of those it decided. 278,532 were pending at the month's end, 155,350 of them for more than six months.",
+      "In September 2026, USCIS decided 9,565 employment-based I-485s: 8,068 approved and 1,497 denied (16%). 278,532 were pending at the month's end, and 155,350 of them had waited more than six months.",
     );
+    // Too few months a year earlier to compare, and too few to draw: neither is shown.
+    expect(text).not.toContain("a month it decided on average");
+    expect(text).not.toContain("USCIS decided each month, approved and denied");
     expect(text).toContain("Each month, as USCIS reports it to Congress");
     expect(text).toContain("September 2026 17,190 8,068 1,497 16% 278,532 155,350 12.9");
     expect(text).toContain("August 2026 USCIS's data page doesn't list this month's report.");
@@ -124,6 +127,27 @@ describe("USCIS's monthly report to Congress, on a form it covers", () => {
     expect(text.indexOf("Family 17,190 26,428")).toBeGreaterThan(-1);
     expect(text.indexOf("Family 17,190")).toBeLessThan(text.indexOf("Employment 17,190"));
     expect(text).toContain("USCIS says it may differ from the processing times it posts");
+  });
+
+  it("sets the newest month against the year before, over the months USCIS reported (the N-400 drop, Nov 2026)", async () => {
+    const months: string[] = [];
+    for (let y = 2024; y <= 2026; y++) for (let m = 1; m <= 12; m++) months.push(`${y}-${String(m).padStart(2, "0")}`);
+    const held = months.filter((m) => m >= "2024-11" && m <= "2026-09");
+    getUscisMonthly.mockResolvedValue({
+      newest: "2026-09", months: held, missing: [], source: "USCIS",
+      lines: [{
+        form: "N-400", line: "Application for Naturalization", basis: "",
+        points: held.map((m) => (m === "2026-09" ? pt(m, 19187, 4227, 842677) : m === "2025-09" ? pt(m, 71181, 7198, 537769) : pt(m, 74000, 8000, 600000))),
+      }],
+    });
+    const text = await page("n-400");
+    expect(text).toContain("In September 2026, USCIS decided 23,414 N-400s: 19,187 approved and 4,227 denied (18%).");
+    // Oct 2024 to Sep 2025: October 2024 isn't held, so 11 months count; (10 x 82,000 + 78,379) / 11 = 81,671.
+    expect(text).toContain("That's 29% of the 81,671 a month it decided on average from October 2024 to September 2025, over the 11 months it reported.");
+    // Every month held is drawn, with its figures for a screen reader.
+    expect(text).toContain("N-400s USCIS decided each month, approved and denied, from its monthly report to Congress");
+    expect(text).toContain("November 2024 74,000 8,000");
+    expect(text).toContain("842,677 were pending at the month's end, against 537,769 a year earlier");
   });
 
   it("says nothing of it on a form the report doesn't cover", async () => {
