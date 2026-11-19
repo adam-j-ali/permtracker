@@ -214,6 +214,9 @@ def ensure_table(db) -> None:
     # Table and column names are this module's constants, never input.
     # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query
     db.execute(f"CREATE TABLE IF NOT EXISTS {TABLE} (case_id TEXT PRIMARY KEY, {cols})")
+    # CREATE ... IF NOT EXISTS never adds a column to a table an older build made: the merge's fields grow.
+    from lib_db import add_missing_columns
+    add_missing_columns(db, TABLE, {c: ("INTEGER" if c in INTS else "TEXT") for c in COLUMNS if c != "case_id"})
     db.execute(f"CREATE INDEX IF NOT EXISTS {TABLE}_office ON {TABLE} (office, transfer)")  # nosemgrep
     db.execute(f"CREATE INDEX IF NOT EXISTS {TABLE}_category ON {TABLE} (category, i140_decided)")  # nosemgrep
 
