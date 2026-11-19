@@ -69,7 +69,7 @@ import {
 import { internal } from "./_generated/api";
 import { FROM_EMAIL, getResend, sendOrQueue } from "./lib/email";
 import { SITE_URL, actionUrl } from "./lib/links";
-import { getCurrentUserIdOrNull, getUserByEmail } from "./lib/auth";
+import { getCurrentUserIdOrNull, getUserByEmail, isEmailVerified } from "./lib/auth";
 import {
   makeUnsubscribeToken,
   verifyUnsubscribeToken,
@@ -632,6 +632,9 @@ async function accountEmail(ctx: QueryCtx): Promise<string | null> {
   if (!userId) return null;
   const user = await ctx.db.get(userId);
   if (!user || user.deletedAt || !user.email) return null;
+  // Only a proved address: an account whose code was never entered may hold someone else's, and what's sent there
+  // (watched case numbers, queue months, follows) is theirs. Same rule as API keys and case alerts.
+  if (!(await isEmailVerified(ctx, userId))) return null;
   return user.email.toLowerCase().trim();
 }
 
