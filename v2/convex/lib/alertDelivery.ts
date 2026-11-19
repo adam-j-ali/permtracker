@@ -20,6 +20,10 @@
  *   about the same case still waiting is dropped, so no bundle repeats it.
  *   Queue, bulletin and employer news still follow the rule above.
  *
+ * - On a paid email plan (EMAIL_DAILY_LIMIT above 100), an employer's move
+ *   goes now too (owner's call, Nov 18 2026). The free plan keeps it for
+ *   the day's one email.
+ *
  * A queued item counts as delivered for the producer's own change detector,
  * so the producer never re-queues it; the outbox owns retries from then on.
  * A failed direct send returns `failed` and the producer does NOT advance,
@@ -33,6 +37,7 @@
 import { internal } from "../_generated/api";
 import type { ActionCtx, MutationCtx } from "../_generated/server";
 import { FROM_EMAIL, getResend, sendOrQueue } from "./email";
+import { savingEmail } from "./emailAllowance";
 import { easternDay } from "./time";
 
 export type AlertKind = "case" | "queue" | "bulletin" | "employer" | "match";
@@ -41,6 +46,13 @@ export type AlertRef = `${AlertKind}:${string}`;
 
 /** Kinds that never wait for a bundle. */
 export const IMMEDIATE_KINDS: ReadonlySet<AlertKind> = new Set<AlertKind>(["case"]);
+/** Kinds that never wait on a paid email plan, and wait on the free one. */
+export const IMMEDIATE_ON_PAID_PLAN: ReadonlySet<AlertKind> = new Set<AlertKind>(["employer"]);
+
+/** True when an alert of this kind leaves now instead of waiting for the address's one email of the day. */
+export function sendsAtOnce(kind: AlertKind): boolean {
+  return IMMEDIATE_KINDS.has(kind) || (!savingEmail() && IMMEDIATE_ON_PAID_PLAN.has(kind));
+}
 
 /**
  * How long a sweep's claim on a send holds. A sweep writes its claim in a mutation BEFORE it calls deliverAlert
@@ -125,7 +137,7 @@ export async function deliverAlert(ctx: ActionCtx, item: AlertItem): Promise<Del
     day,
   });
 
-  if (!state.sendNow && !IMMEDIATE_KINDS.has(item.kind)) {
+  if (!state.sendNow && !sendsAtOnce(item.kind)) {
     await ctx.runMutation(internal.alertOutbox.enqueue, {
       email: item.email,
       kind: item.kind,
