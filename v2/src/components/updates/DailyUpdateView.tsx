@@ -12,7 +12,7 @@ import { UPDATES_PATH, daySpan, monthsToDraw, shareLabel, shareLine, trendAgains
 import type { DayCase } from "@/lib/filingDay";
 import { formatInt } from "@/lib/format";
 import { federalHolidayName } from "@/lib/perm";
-import { nextCheckLabel } from "@/lib/sweepSchedule";
+import { daytimeChecksRunning, nextCheckLabel } from "@/lib/sweepSchedule";
 import { checkedLabel, easternDay } from "@/lib/time";
 import { longDate, shortDate, weekdayName } from "@convex/lib/months";
 
@@ -111,6 +111,8 @@ export function DailyUpdateView({ day, perm, wage, cases, final, checkedAt, now,
   const dayLabel = longDate(day) ?? day;
   const holiday = federalHolidayName(day);
   const nextCheck = final ? null : nextCheckLabel(now);
+  // Today, in the daytime reads' hours: the counts rise every quarter hour, so the next full read isn't the news.
+  const daytime = !final && day === easternDay(now) && daytimeChecksRunning(now);
   const f = perm.certifiedFiled;
   const core = perm.certifiedCore;
   const busiest = perm.busiestFilingDay;
@@ -176,8 +178,17 @@ export function DailyUpdateView({ day, perm, wage, cases, final, checkedAt, now,
           <>This day is complete: it ran from 7 AM Eastern to 7 AM the next morning, when DOL&apos;s evening work lands.</>
         ) : (
           <>
-            These counts can still rise.{checkedAt ? ` Our last check of DOL's record finished ${checkedLabel(checkedAt)}.` : ""}
-            {nextCheck ? ` The next starts at ${nextCheck} Eastern, and the list follows about half an hour later.` : ""}
+            {daytime ? (
+              <>
+                These counts can still rise: the cases DOL is deciding are read every 15 minutes until 8 PM Eastern.
+                {checkedAt ? ` The last read of every pending case finished ${checkedLabel(checkedAt)}.` : ""}
+              </>
+            ) : (
+              <>
+                These counts can still rise.{checkedAt ? ` Our last check of DOL's record finished ${checkedLabel(checkedAt)}.` : ""}
+                {nextCheck ? ` The next starts at ${nextCheck} Eastern, and the list follows about half an hour later.` : ""}
+              </>
+            )}
           </>
         )}
       </p>{" "}
