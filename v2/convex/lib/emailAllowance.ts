@@ -23,9 +23,14 @@
  * - The alerts one sweep may send (case and employer alerts 18, queue alerts
  *   40, bulletin alerts 12; the rest go next run) -> scaled by the same factor.
  *
+ * - An employer's move -> sent at once, like a case's status change, instead
+ *   of waiting for the address's one email of the day (owner's call, Nov 18
+ *   2026; convex/lib/alertDelivery.ts).
+ *
  * Kept on purpose either way, because they're about what helps people rather
- * than what costs: one alert email per person per day, with a status change
- * always sent at once (convex/lib/alertDelivery.ts); deadline reminders
+ * than what costs: one alert email per person per day for queue, bulletin and
+ * possible-PERM news, with a status change always sent at once
+ * (convex/lib/alertDelivery.ts); deadline reminders
  * gathered into one email a day; no email for a progress-only or job
  * description change; at most 10 emails from one bulk stage change; the
  * weekly summary paused after 74 days of no sign-in (convex/reengagement.ts,
