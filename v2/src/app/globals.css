@@ -1286,6 +1286,9 @@ html {
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading;
+    /* Even lines: a long title on a phone breaks into lines of near-equal length, never one word alone on the last.
+       A browser without it ignores it. */
+    text-wrap: balance;
   }
 }
 
