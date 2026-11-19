@@ -775,6 +775,58 @@ def check_watched(db) -> int:
     return 0
 
 
+# The PERM daytime pass (ingest_case_status_direct.py --active, every 15 minutes Mon to Fri 7 AM to 7:45 PM Eastern,
+# since Nov 19 2026). check_runs reads its failures; this catches it stopping, which records nothing. The newest run
+# must be no more than DAYTIME_SLACK_MIN before the last slot that is DAYTIME_SETTLE_MIN gone: a run skipped to give
+# way to a full pass, or to its lock, leaves gaps of 30 to 45 minutes, and a weekend leaves Friday's last slot.
+DAYTIME_SLOTS = [(h, m) for h in range(7, 20) for m in (0, 15, 30, 45)]
+DAYTIME_SETTLE_MIN = 30
+DAYTIME_SLACK_MIN = 60
+
+
+def last_daytime_slot(now_ms: int) -> int:
+    """The newest weekday slot of the daytime pass at least DAYTIME_SETTLE_MIN before `now_ms`, epoch ms."""
+    from zoneinfo import ZoneInfo  # noqa: PLC0415
+    et = ZoneInfo("America/New_York")
+    edge = datetime.datetime.fromtimestamp(now_ms / 1000, et) - datetime.timedelta(minutes=DAYTIME_SETTLE_MIN)
+    day = edge.date()
+    for _ in range(8):
+        if day.weekday() < 5:
+            for h, m in reversed(DAYTIME_SLOTS):
+                at = datetime.datetime.combine(day, datetime.time(h, m), tzinfo=et)
+                if at <= edge:
+                    return int(at.timestamp() * 1000)
+        day -= datetime.timedelta(days=1)
+    return 0
+
+
+def check_daytime_pass(db, now_ms: int | None = None) -> int:
+    """Fail when the PERM daytime pass has stopped recording runs."""
+    now_ms = int(NOW_MS if now_ms is None else now_ms)
+    try:
+        res = db.execute(
+            "SELECT finished_at, note FROM ingest_runs WHERE script = ? ORDER BY finished_at DESC LIMIT 1",
+            ["ingest_case_status_direct.py --active"])
+        rows = rows_of(res)
+    except RuntimeError as exc:
+        return unreadable("daytime pass", exc)
+    if not rows or rows[0][0] is None:
+        print("daytime pass      : never run")
+        return 0
+    last = int(rows[0][0])
+    age_h = (now_ms - last) / 3_600_000
+    print(f"daytime pass      : last run {age_h:.1f}h ago ({str(rows[0][1] or '')[:80]})")
+    due = last_daytime_slot(now_ms)
+    if last < due - DAYTIME_SLACK_MIN * 60_000:
+        from zoneinfo import ZoneInfo  # noqa: PLC0415
+        slot = datetime.datetime.fromtimestamp(due / 1000, ZoneInfo("America/New_York")).strftime("%A %b %-d, %-I:%M %p ET")
+        print(f"\nThe PERM daytime pass has not recorded a run since {age_h:.1f} hours ago, before its slot on "
+              f"{slot}. Check permtracker-sweep@case-status-active.timer on the server: the day's "
+              "decisions now wait for the four passes.")
+        return 1
+    return 0
+
+
 # A job that stops on its own budget every run is not keeping up. One capped
 # run is a job doing its work and records `ok`; a streak of them is capacity
 # running short, the leading signal a generous lag budget misses. A warning,
@@ -1221,6 +1273,7 @@ def main() -> int:
     gapsweep_bad = check_gap_sweep(db)
     builders_bad = check_nightly_builders(db)
     watched_bad = check_watched(db)
+    daytime_bad = check_daytime_pass(db)
     check_cap_streak(db)        # a warning only; see CAP_STREAK_RUNS
     check_unclassified_statuses(db)   # a warning only; see its docstring
     check_warn_states(db)             # a warning only; see its docstring
@@ -1279,7 +1332,7 @@ def main() -> int:
     # An unreadable date is a real defect too: it means DataProvenance cannot
     # compute an age either, so the page silently stops warning about that row.
     if (runs_bad or frontier_bad or yield_bad or backfill_bad or demand_bad
-            or coverage_bad or gapsweep_bad or builders_bad or watched_bad or docs_bad or views_bad
+            or coverage_bad or gapsweep_bad or builders_bad or watched_bad or daytime_bad or docs_bad or views_bad
             or lca_numbers_bad or lca_years_bad or handread_bad or unparseable):
         return 1
     print("All datasets within their declared freshness budgets, every ingest's "
