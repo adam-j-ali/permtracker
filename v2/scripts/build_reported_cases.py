@@ -35,6 +35,8 @@ VISA_AVAILABLE = {"visa available": True, "available": True, "current": True, "n
 # Country codes and names the sources use, as the names the pages print.
 COUNTRIES = {"in": "India", "india": "India", "cn": "China", "china": "China", "mx": "Mexico", "mexico": "Mexico",
              "ph": "Philippines", "philippines": "Philippines", "irn": "Iran", "ir": "Iran", "row": "ROW"}
+# VisaStats' "RFE / NOID STATUS": what came, or that nothing did.
+VISASTATS_RFE = {"rfe received": "rfe", "noid received": "noid", "never received": "none"}
 # Petitions filed by the person themself: the priority date is the I-140's own filing day.
 SELF_PETITIONS = {"EB-2 NIW", "EB-1A"}
 GREEN_CARD = re.compile(r"^EB-?\d")
@@ -86,6 +88,7 @@ def visastats_record(row: dict) -> dict | None:
         "i140_receipt": _day(row.get("priority_date")) if petition in SELF_PETITIONS else None,
         "i140_rfe_issued": rfe_days[0] if rfe_days else None,
         "i140_rfe_answered": _day((row.get("rfe_responded") or "").strip()),
+        "i140_rfe": VISASTATS_RFE.get((row.get("rfe_status") or "").strip().lower()),
         "i140_decision": decision,
         "i140_decided": _day(row.get("decision_date")) if decision in ("approved", "denied") else None,
     }
@@ -125,6 +128,7 @@ def timeline_record(row: dict) -> dict:
         "i140_receipt": row.get("i140FiledOn"), "i140_decided": row.get("i140ApprovedOn"),
         "i140_decision": "approved" if row.get("i140ApprovedOn") else None,
         "i140_rfe_issued": row.get("rfeIssuedOn") if rfe_form == "i140" else None,
+        "i140_rfe": "rfe" if rfe_form == "i140" else None,
         "i140_rfe_answered": row.get("rfeRespondedOn") if rfe_form == "i140" else None,
         "i485_rfe_issued": row.get("rfeIssuedOn") if rfe_form == "i485" else None,
         "i485_receipt": None if consular else row.get("i485FiledOn"),

@@ -50,7 +50,7 @@ IDENTITY_FIELDS = ("category", "office", "center", "post", "chargeability")
 DECISION_FIELDS = ("h1b_decision", "perm_decision", "i140_decision", "i485_decision", "consular_outcome")
 # Carried along, never compared: what a source adds about the wait (a sheet's "visa available", the status held
 # while waiting, a priority date given in words).
-OTHER_FIELDS = ("premium", "visa_available", "nonimmigrant_status", "priority_note")
+OTHER_FIELDS = ("premium", "i140_rfe", "visa_available", "nonimmigrant_status", "priority_note")
 META_FIELDS = ("source", "key", "person", "as_of", "checked", "shows")
 FIELDS = DATE_FIELDS + IDENTITY_FIELDS + DECISION_FIELDS + OTHER_FIELDS
 
@@ -64,6 +64,9 @@ DECISION_PROGRESS = {"pending": 0}
 # Premium processing, most specific first: from the filing, added later, said yes with no timing, or not used.
 PREMIUMS = ("with filing", "after filing", "yes", "none")
 PREMIUM_DETAIL = {"with filing": 3, "after filing": 3, "yes": 2, "none": 1}
+# Whether an I-140 got a request for evidence or a notice of intent to deny: a yes beats "none" (it came later).
+I140_RFE = ("noid", "rfe", "none")
+I140_RFE_DETAIL = {"noid": 3, "rfe": 2, "none": 1}
 
 
 def outcomes_for(field: str) -> tuple[str, ...]:
@@ -111,6 +114,8 @@ def check_record(r: dict) -> None:
             raise ValueError(f"{f} must be one of {outcomes_for(f)}, got {r[f]!r}")
     if r.get("premium") is not None and r["premium"] not in PREMIUMS:
         raise ValueError(f"premium must be one of {PREMIUMS}, got {r['premium']!r}")
+    if r.get("i140_rfe") is not None and r["i140_rfe"] not in I140_RFE:
+        raise ValueError(f"i140_rfe must be one of {I140_RFE}, got {r['i140_rfe']!r}")
 
 
 def _day(v: str) -> dt.date:
@@ -209,6 +214,8 @@ def adds_to(r: dict, case: dict) -> bool:
             return True
         if f == "premium" and PREMIUM_DETAIL[v] > PREMIUM_DETAIL.get(have, 0):
             return True
+        if f == "i140_rfe" and I140_RFE_DETAIL[v] > I140_RFE_DETAIL.get(have, 0):
+            return True
     return False
 
 
@@ -249,6 +256,8 @@ def _better(f: str, cur, cur_m: dict | None, v, m: dict) -> bool:
         return progress(f, v) > progress(f, cur)
     if f == "premium":
         return PREMIUM_DETAIL[v] > PREMIUM_DETAIL.get(cur, 0)
+    if f == "i140_rfe":
+        return I140_RFE_DETAIL[v] > I140_RFE_DETAIL.get(cur, 0)
     if f in DATE_FIELDS and MONTH_RE.match(cur) and DAY_RE.match(v):
         return True
     if f in DATE_FIELDS and DAY_RE.match(cur) and MONTH_RE.match(v):

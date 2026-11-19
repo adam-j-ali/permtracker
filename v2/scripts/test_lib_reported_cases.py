@@ -218,6 +218,18 @@ def main() -> int:
     except ValueError:
         check(True, "refuses a premium kind it doesn't know")
 
+    # 19. Whether an I-140 got an RFE: carried, never compared, and a yes beats "none" (the RFE came later).
+    v1 = rec("visastats", "51", category="EB-2 NIW", i140_receipt="2026-01-05", i140_decided="2026-03-01",
+             i140_rfe_issued="2026-02-01", i140_rfe="none")
+    v2 = rec("telegram", "u51", category="EB-2 NIW", i140_receipt="2026-01-05", i140_decided="2026-03-01",
+             i140_rfe_issued="2026-02-01", i140_rfe="rfe")
+    check(rc.merge([v1, v2])[0]["i140_rfe"] == "rfe", "an RFE beats none")
+    try:
+        rc.merge([rec("reddit", "x10", i140_rfe="maybe")])
+        check(False, "refuses an RFE answer it doesn't know")
+    except ValueError:
+        check(True, "refuses an RFE answer it doesn't know")
+
     # 15. Bad input is refused, never guessed.
     for bad, what in ((rec("reddit", "x", transfer="9/24/2026"), "a date not in ISO form"),
                       (rec("reddit", "x", nickname="z"), "a field the merge doesn't know"),
