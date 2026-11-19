@@ -82,3 +82,21 @@ export function nextCheckLabel(from: number): string | null {
   if (day === nextDay(today)) return `${clock} tomorrow`;
   return `${clock} ${new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { timeZone: "UTC", weekday: "long" })}`;
 }
+
+/**
+ * The daytime pass (permtracker-sweep@case-status-active.timer, since Nov 19 2026): every 15 minutes on weekdays from
+ * 7 AM to 7:45 PM Eastern, it reads the pending cases DOL is deciding now, so the day's counts rise through the day
+ * between the full reads above. sweepSchedule.test.ts holds this to the timer file.
+ */
+export const DAYTIME_CHECKS = { first: "07:00", last: "19:45", everyMinutes: 15, weekdays: true } as const;
+
+/** Whether a daytime read is due within the quarter hour at `ms`: a weekday between 7 AM and 8 PM Eastern. */
+export function daytimeChecksRunning(ms: number): boolean {
+  if (DAYTIME_CHECKS.weekdays && !isWeekday(easternDay(ms))) return false;
+  const minutes = (hhmm: string) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    return (h ?? 0) * 60 + (m ?? 0);
+  };
+  const now = minutes(easternClock(ms));
+  return now >= minutes(DAYTIME_CHECKS.first) && now < minutes(DAYTIME_CHECKS.last) + DAYTIME_CHECKS.everyMinutes;
+}

@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { CASE_CHECKS, clockLabel, nextCheckAfter, nextCheckLabel } from "@/lib/sweepSchedule";
+import { CASE_CHECKS, DAYTIME_CHECKS, clockLabel, daytimeChecksRunning, nextCheckAfter, nextCheckLabel } from "@/lib/sweepSchedule";
 
 /** An Eastern wall-clock time in November 2026 (UTC-5) as epoch ms. */
 const est = (day: string, hhmm: string) => Date.parse(`${day}T${hhmm}:00-05:00`);
@@ -62,5 +62,24 @@ describe("the case checks' clock", () => {
     expect(clockLabel("00:30")).toBe("12:30 AM");
     expect(nextCheckLabel(est("2026-11-11", "14:00"))).toBe("3:40 PM");
     expect(nextCheckLabel(est("2026-11-11", "21:00"))).toBe("4:10 AM tomorrow");
+  });
+});
+
+describe("the daytime reads", () => {
+  it("are the server's own timer", () => {
+    const timer = readFileSync(resolve(process.cwd(), "scripts/oracle/systemd/permtracker-sweep@case-status-active.timer"), "utf8");
+    const [fh] = DAYTIME_CHECKS.first.split(":");
+    const [lh] = DAYTIME_CHECKS.last.split(":");
+    expect(timer).toContain(`OnCalendar=Mon..Fri *-*-* ${fh}..${lh}:00/${DAYTIME_CHECKS.everyMinutes}:00 America/New_York`);
+  });
+
+  it("run on a weekday from 7 AM until 8 PM Eastern, and never on a weekend", () => {
+    // Thursday Nov 19 2026.
+    expect(daytimeChecksRunning(est("2026-11-19", "14:58"))).toBe(true);
+    expect(daytimeChecksRunning(est("2026-11-19", "07:00"))).toBe(true);
+    expect(daytimeChecksRunning(est("2026-11-19", "19:59"))).toBe(true);
+    expect(daytimeChecksRunning(est("2026-11-19", "20:00"))).toBe(false);
+    expect(daytimeChecksRunning(est("2026-11-19", "06:59"))).toBe(false);
+    expect(daytimeChecksRunning(est("2026-11-21", "12:00"))).toBe(false);
   });
 });
