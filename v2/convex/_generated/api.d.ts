@@ -202,6 +202,7 @@ import type * as lib_perm_validators_validateCase from "../lib/perm/validators/v
 import type * as lib_permLine from "../lib/permLine.js";
 import type * as lib_pipelineMatch from "../lib/pipelineMatch.js";
 import type * as lib_policyConsent from "../lib/policyConsent.js";
+import type * as lib_policyConsentStore from "../lib/policyConsentStore.js";
 import type * as lib_posthog from "../lib/posthog.js";
 import type * as lib_prefsLink from "../lib/prefsLink.js";
 import type * as lib_publicMirror from "../lib/publicMirror.js";
@@ -479,6 +480,7 @@ declare const fullApi: ApiFromModules<{
   "lib/permLine": typeof lib_permLine;
   "lib/pipelineMatch": typeof lib_pipelineMatch;
   "lib/policyConsent": typeof lib_policyConsent;
+  "lib/policyConsentStore": typeof lib_policyConsentStore;
   "lib/posthog": typeof lib_posthog;
   "lib/prefsLink": typeof lib_prefsLink;
   "lib/publicMirror": typeof lib_publicMirror;
