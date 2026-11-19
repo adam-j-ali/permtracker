@@ -359,9 +359,10 @@ def record_quiet_run(db: Database, script: str, *, written: int, note: str = "",
     return record_run(db, script, status="ok", rows_written=written, note=note, started_at=started_at)
 
 
-def expire_policy_page(log=print, route: str = "/api/revalidate-policy") -> bool | None:
+def expire_policy_page(log=print, route: str = "/api/revalidate-policy", body: dict | None = None) -> bool | None:
     """Ask the site to rebuild the policy page now, after a write. `route` names another
-    refresh route a source's rows also show on (the embassies' notices: the consulate pages).
+    refresh route a source's rows also show on (the embassies' notices: the consulate pages). `body` is sent as JSON
+    for a route that takes one (the timelines route's `{ offices: [...] }`).
 
     Reads REVALIDATE_SECRET and REVALIDATE_BASE (default https://permtracker.app;
     the server sets http://127.0.0.1:8081, nginx, which sends the call to both
@@ -379,7 +380,12 @@ def expire_policy_page(log=print, route: str = "/api/revalidate-policy") -> bool
     headers = {"x-revalidate-secret": secret, "User-Agent": "permtracker policy feed"}
     if "127.0.0.1" in base or "localhost" in base:
         headers["Host"] = "permtracker.app"
-    req = urllib.request.Request(base + route, data=b"", method="POST", headers=headers)
+    data = b""
+    if body is not None:
+        import json
+        data = json.dumps(body).encode()
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(base + route, data=data, method="POST", headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=60) as r:
             ok = r.status == 200

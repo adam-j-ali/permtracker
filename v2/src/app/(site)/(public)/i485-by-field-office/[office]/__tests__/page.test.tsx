@@ -25,6 +25,9 @@ vi.mock("@/lib/db/uscisPosted", () => ({ getUscisPosted, getPostedHistory }));
 vi.mock("@/components/data/DataProvenance", () => ({ DataProvenance: () => null }));
 const queryStatic = vi.fn();
 vi.mock("@/lib/convexStatic", () => ({ queryStatic }));
+const getOfficeSheetCases = vi.fn();
+const getSheetsReadAt = vi.fn(async () => Date.UTC(2026, 10, 19, 18, 16));
+vi.mock("@/lib/db/communityReports", () => ({ getOfficeSheetCases, getSheetsReadAt }));
 
 const { default: UscisOfficePage, generateStaticParams, generateMetadata } = await import("../page");
 
@@ -98,6 +101,15 @@ beforeEach(() => {
   getUscisPosted.mockResolvedValue(POSTED);
   queryStatic.mockReset();
   queryStatic.mockResolvedValue(sharedView(0));
+  getOfficeSheetCases.mockReset();
+  getOfficeSheetCases.mockResolvedValue([]);
+});
+
+/** A community sheet's case at the San Fernando Valley office (src/lib/communitySheets.ts). */
+const sheetCase = (rowNo: number, transferDate: string, approvalDate: string | null) => ({
+  source: "sfv-filers", rowNo, category: "EB-3", visaAvailability: approvalDate ? "Approved" : "Visa available",
+  visaStatus: "H1B", chargeability: "row", country: "ROW", priorityDate: "2024-06-15", priorityNote: null,
+  receiptDate: "2026-05-01", biometricsDate: "2026-05-20", transferDate, approvalDate, cardDate: null, validAsOf: "2026-11-17",
 });
 
 describe("a USCIS office's page", () => {
@@ -239,6 +251,37 @@ describe("a USCIS office's page", () => {
     expect(generateStaticParams()).toHaveLength(99);
     await expect(UscisOfficePage({ params: Promise.resolve({ office: "not-an-office" }) })).rejects.toThrow("NOT_FOUND");
     await expect(generateMetadata({ params: Promise.resolve({ office: "not-an-office" }) })).rejects.toThrow("NOT_FOUND");
+  });
+
+  it("lists a community sheet's cases for the office, credited and linked, with each transfer day's count", async () => {
+    getOfficeSheetCases.mockResolvedValue([
+      sheetCase(1, "2026-06-06", "2026-07-26"),
+      sheetCase(2, "2026-06-06", "2026-07-16"),
+      sheetCase(3, "2026-06-06", "2026-08-05"),
+      sheetCase(4, "2026-09-24", null),
+    ]);
+    const { container, text } = await page("san-fernando-valley-california");
+    expect(getOfficeSheetCases).toHaveBeenCalledWith("SFV");
+    expect(text).toContain("Cases people track in the San Fernando Filers sheet");
+    expect(text).toContain("holds 4 employment-based I-485s at the San Fernando Valley field office");
+    expect(text).toContain("Nothing in it is checked");
+    expect(text).toContain("4 cases in a community sheet");
+    const link = [...container.querySelectorAll("a")].find((a) => a.textContent === "Open the San Fernando Filers sheet");
+    expect(link?.getAttribute("href")).toMatch(/^https:\/\/docs\.google\.com\/spreadsheets\/d\/[\w-]+\/htmlview$/);
+    expect(link?.getAttribute("target")).toBe("_blank");
+    const june = [...container.querySelectorAll("tr")].find((r) => r.textContent?.startsWith("Jun 6, 2026"));
+    expect(june?.textContent?.replace(/\s+/g, " ").trim()).toBe("Jun 6, 2026 3 3 50 0");
+  });
+
+  it("shows no sheet section for an office no sheet follows", async () => {
+    const { text } = await page("hartford-connecticut");
+    expect(text).not.toContain("community sheet");
+  });
+
+  it("says the sheet's cases can't be read when the read fails, never that there are none", async () => {
+    getOfficeSheetCases.mockRejectedValue(new Error("connection reset"));
+    const { text } = await page("san-fernando-valley-california");
+    expect(text).toContain("The cases from the community sheet can't be read right now");
   });
 
   it("titles the page with the phrase people search and keeps it short", async () => {

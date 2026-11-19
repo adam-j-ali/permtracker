@@ -130,6 +130,19 @@ jobs:
           python3 scripts/ingest_balca.py \
             || python3 scripts/record_ingest_failure.py --script ingest_balca.py --note "BALCA caselists failed"
 
+      # The public community sheets people keep their own I-485 cases in (scripts/data/community_sheets.json),
+      # every run, hourly: a small CSV export each. A sheet that changed its columns, fell under its floor or lost
+      # more than half its rows is refused, the stored copy stays and the run records the failure.
+      - name: Community sheets
+        if: always()
+        working-directory: v2
+        timeout-minutes: 5
+        env:
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
+        run: |
+          python3 scripts/ingest_community_sheets.py \
+            || python3 scripts/record_ingest_failure.py --script ingest_community_sheets.py --note "community sheets failed"
+
       # Forty-seven states and DC (scripts/ingest_warn.py and scripts/warn_states.py).
       # A state whose site is down that day is named in the run's note and its
       # own freshness row is the alarm; a parse that breaks turns the run partial.

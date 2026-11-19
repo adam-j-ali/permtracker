@@ -147,6 +147,10 @@ export const DATASET_COVERAGE: Readonly<Record<string, string>> = {
   "warn-notices-wa":
     "Washington WARN notices, read a page at a time from the state's own searchable database.",
   "warn-notices-al": "Alabama WARN notices from the Department of Workforce's list, since 2019.",
+  "community-sheet-sfv-filers":
+    "The San Fernando Filers sheet, a public Google Sheet people keep their own I-485 cases in at USCIS's San Fernando Valley field office, read every hour. Self-reported and unchecked; the usernames and receipt numbers stay in the sheet.",
+  "community-visastats":
+    "VisaStats' community tracker of self-reported EB-2 NIW, EB-1A and O-1 I-140 cases and its RFE officer lookup, copied in a browser each week (its robots.txt closes its API). Its policy allows copying; the author aliases and free text aren't shown.",
   "warn-notices-ak": "Alaska WARN notices from the Department of Labor's list, since 2019.",
   "warn-notices-az":
     "Arizona WARN notices from the state's job-center search, since 2019. Counts come from each notice's own page, newest first: a run reads the new ones, and the state's weekly read fills the rest, so an older notice can wait up to a week for its count.",
@@ -335,6 +339,8 @@ export const DATASET_LABELS: Readonly<Record<string, string>> = {
   "warn-notices-tx": "Texas WARN notices",
   "warn-notices-wa": "Washington WARN notices",
   "warn-notices-al": "Alabama WARN notices",
+  "community-sheet-sfv-filers": "The San Fernando Filers sheet",
+  "community-visastats": "VisaStats' community tracker",
   "warn-notices-ak": "Alaska WARN notices",
   "warn-notices-az": "Arizona WARN notices",
   "warn-notices-co": "Colorado WARN notices",

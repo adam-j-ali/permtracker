@@ -35,6 +35,11 @@ function registeredDatasets(): string[] {
       ids.add(m[1]!);
     }
     for (const m of src.matchAll(/dataset\s*=\s*["']([a-z0-9-]+)["']/g)) ids.add(m[1]!);
+    // The community sheets stamp `community-sheet-<key>` from scripts/data/community_sheets.json, which no literal names.
+    if (src.includes("community-sheet-{sheet['key']}")) {
+      const sheets = JSON.parse(readFileSync(join(ROOT, "scripts/data/community_sheets.json"), "utf8")) as { sheets: { key: string }[] };
+      for (const s of sheets.sheets) ids.add(`community-sheet-${s.key}`);
+    }
     // A program table names its dataset as `"freshness": "h2a-disclosure"`
     // and stamps it through `cfg["freshness"]`, which the call pattern above
     // cannot see. Every FLAG program (disclosure files and live sweeps) is
@@ -100,8 +105,9 @@ describe("dataset coverage", () => {
     const policy = ids.filter((d) => /^(policy-|rule-pipeline)/.test(d));
     expect([...policy].sort()).toEqual([...policyIds].sort());
     // 57 on Nov 5 2026: State's nonimmigrant issuances by post and its refusals by ground added two. 58 on Nov 18
-    // 2026: USCIS's monthly report to Congress (uscis-monthly-forms).
-    expect(ids.length - warnStates.length - policy.length).toBeLessThanOrEqual(58);
+    // 2026: USCIS's monthly report to Congress (uscis-monthly-forms). 60 on Nov 19 2026: the community sheets
+    // (community-sheet-sfv-filers) and VisaStats' tracker (community-visastats).
+    expect(ids.length - warnStates.length - policy.length).toBeLessThanOrEqual(60);
     const read = new Set<string>();
     for (const f of ["ingest_warn.py", "warn_states.py"]) {
       const src = readFileSync(join(ROOT, "scripts", f), "utf8");
