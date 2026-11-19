@@ -12,7 +12,11 @@ describe("the case checks' clock", () => {
   it("is the server's own timers, one for one", () => {
     // Arrange: every case-status timer the server runs, read from the unit files.
     const dir = resolve(process.cwd(), "scripts/oracle/systemd");
-    const timers = readdirSync(dir).filter((f) => /^permtracker-sweep@case-status-.*\.timer$/.test(f));
+    // The daytime pass (case-status-active, every 15 minutes on weekdays) reads only the cases DOL is deciding now,
+    // so it isn't a check of every pending case and the page never names it as the next one.
+    const timers = readdirSync(dir).filter(
+      (f) => /^permtracker-sweep@case-status-.*\.timer$/.test(f) && f !== "permtracker-sweep@case-status-active.timer",
+    );
     const onServer = timers.map((f) => {
       const m = readFileSync(resolve(dir, f), "utf8").match(/^OnCalendar=(Mon\.\.Fri )?\*-\*-\* (\d{2}:\d{2}):00 America\/New_York$/m);
       if (!m) throw new Error(`${f}: its OnCalendar line isn't one this test can read`);

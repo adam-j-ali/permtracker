@@ -176,9 +176,29 @@ def main() -> int:
     map_limit = int(re.fullmatch(r"timeout (\d+)m", calls[at - 1]).group(1))
     check("the employer map has an hour, inside the unit's own limit", map_limit == 60 and map_limit < limit, f"map {map_limit}m, unit {limit}min")
     check("the release goes live about 100 minutes before the 4:10 AM sweep, so the rebuild still runs after it", give_way <= 90, f"give way {give_way}")
+    # The daytime pass isn't among them: it runs every 15 minutes, so the rebuild after a deploy would never run.
     timers = sorted(p.name.split("@")[1].removesuffix(".timer") for p in (HERE / "systemd").glob("permtracker-sweep@case-status-*.timer"))
     asked = sorted(re.search(r"for t in ([a-z -]+); do", src).group(1).split())
-    check("every case-status timer is one it checks before starting", timers == asked, f"timers {timers}, asked {asked}")
+    check("every case-status timer but the daytime pass is one it checks before starting",
+          [x for x in timers if x != "case-status-active"] == asked and "case-status-active" in timers,
+          f"timers {timers}, asked {asked}")
+
+    # 4b. The daytime pass (Nov 19 2026): only the cases DOL is deciding, the day's pages, nothing heavy.
+    code, calls, out = run("case-status-active", next_sweep_min=60)
+    check("a daytime pass asks DOL about the cases it's deciding, rebuilds nothing, and refreshes the day's pages",
+          code == 0 and scripts_run(calls) == ["ingest_case_status_direct.py --active"]
+          and expired(calls) == ["revalidate-sweep"], f"{code} {scripts_run(calls)} {expired(calls)}")
+    code, calls, out = run("case-status-active", next_sweep_min=10)
+    check("and steps aside when one of the four passes is due within 15 minutes",
+          code == 0 and scripts_run(calls) == [] and expired(calls) == [] and "skipping this daytime pass" in out,
+          f"{code} {scripts_run(calls)} {out[-200:]}")
+    code, calls, out = run("case-status-active", next_sweep_min=60, fail="ingest_case_status_direct.py --active")
+    check("a failed daytime pass ends red, records the failure, and refreshes nothing",
+          code == 1 and expired(calls) == [] and any("record_ingest_failure.py" in c and "--active" in c for c in calls),
+          f"{code} {out[-300:]}")
+    timer = (HERE / "systemd" / "permtracker-sweep@case-status-active.timer").read_text()
+    check("its timer runs every 15 minutes on weekdays, Eastern, and never catches up a missed run",
+          "OnCalendar=Mon..Fri *-*-* 07..19:00/15:00 America/New_York" in timer and "Persistent=false" in timer)
 
     # 5. A failure is red, and nothing is expired over a half-built set.
     code, calls, out = run("case-status-docs", next_sweep_min=400, fail="ingest_case_status_direct.py --docs")
