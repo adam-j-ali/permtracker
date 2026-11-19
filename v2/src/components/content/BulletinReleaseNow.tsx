@@ -4,6 +4,8 @@ import { releaseByDay, releaseSummary } from "@/lib/bulletinRelease";
 import { getVisaBulletins } from "@/lib/db/publicData";
 import { shiftMonth } from "@convex/lib/months";
 import { softFail } from "@/lib/softRead";
+import { waitingCheck } from "@/lib/bulletinReadCheck";
+import { getBulletinRead } from "@/lib/db/bulletinReadCheck";
 
 /**
  * When the next visa bulletin usually comes out, for an article: the same
@@ -15,15 +17,21 @@ import { softFail } from "@/lib/softRead";
 export async function BulletinReleaseNow() {
   const summary = releaseSummary(BULLETIN_FIRST_CAPTURES);
   if (!summary) return null;
-  const held = await getVisaBulletins().catch(softFail("BulletinReleaseNow.getVisaBulletins", []));
+  const [held, check] = await Promise.all([
+    getVisaBulletins().catch(softFail("BulletinReleaseNow.getVisaBulletins", [])),
+    // Our daily read of State's page; without it the chart's line about today falls back to past years.
+    getBulletinRead().catch(softFail("BulletinReleaseNow.getBulletinRead", null)),
+  ]);
   const newest = held.map((b) => b.bulletinMonth).sort().pop();
   if (!newest) return null;
+  const next = shiftMonth(newest, 1);
   return (
     <BulletinRelease
       rows={releaseByDay(BULLETIN_FIRST_CAPTURES)}
       summary={summary}
-      next={shiftMonth(newest, 1)}
+      next={next}
       measured={BULLETIN_CAPTURES_MEASURED}
+      checkedAt={waitingCheck(next, check)?.checkedAt}
     />
   );
 }

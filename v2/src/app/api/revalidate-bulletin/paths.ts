@@ -31,6 +31,7 @@ export const BULLETIN_PAGES = [
   "/open-data/visa-bulletins.json",
   // The bulletin gate drawing in this guide steps through the archive.
   "/guides/how-the-visa-bulletin-works",
+  "/guides/when-does-the-visa-bulletin-come-out",
   // EB-2 and EB-3 for one country, read live from the newest bulletin (EbLinesNow).
   "/blog/eb2-vs-eb3-by-the-numbers",
   // The sitemap child that lists the month pages, so a new month is advertised
