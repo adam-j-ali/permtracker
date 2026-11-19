@@ -368,6 +368,14 @@ def main() -> int:
     check(not any("rescind" in r["company"].lower() for r in hi), "a Hawaii letter rescinding a notice is not a notice", f)
     check(any(r["kind"] == "Update" and r["company"] == "DFS Group L.P." for r in hi),
           "a Hawaii update letter is marked as one", f)
+    # The archive's address comes from the WARN page's own link (it moved in Nov 2026), and
+    # the last known address stands in only when the page links none.
+    hi_page = ('<p><a href="https://labor.hawaii.gov/wdd/warn-notices/warn-notice-amentum/">Amentum</a> '
+               '<a href="https://labor.hawaii.gov/wdc/warn-archive/" target="_blank">WARN Act Notice Archive</a></p>')
+    check(ws.hawaii_archive_url(hi_page) == "https://labor.hawaii.gov/wdc/warn-archive/",
+          "Hawaii's archive address is read from its WARN page's own link", f)
+    check(ws.hawaii_archive_url("<p>no archive link here</p>") == ws.HI_ARCHIVE,
+          "a Hawaii page that links no archive falls back to the last known address", f)
     amentum = ws.parse_hawaii_notice(b("hi_notice_amentum.html").decode(), "https://labor.hawaii.gov/x")
     check(amentum and amentum["employees"] == 62 and amentum["notice_date"] == "2026-08-20"
           and amentum["effective_date"] == "2026-10-31", "a Hawaii notice page gives its date, count and effective day", f)
