@@ -104,6 +104,14 @@ export const authCallbacks = {
     // Normalize before BOTH the lookup and the insert so Google (any casing)
     // matches the normalized stored value and we never create a duplicate.
     const email = args.profile.email?.trim().toLowerCase();
+    // Google's own answer on whether this address is the Google account's. An unverified one never makes a user or
+    // links to one: linking would hand an existing account over (the admin's included: requireAdmin is email
+    // equality), and a new user would hold the address unproven, so a later password sign-up for it would link to a
+    // user whoever holds the Google account can sign in to. Only an explicit false refuses; a profile without the
+    // flag signs in as before.
+    if (args.type === "oauth" && args.profile.emailVerified === false) {
+      throw new ConvexError(UNVERIFIED_GOOGLE_EMAIL);
+    }
     if (email) {
       // Use the "email" index (schema.ts line 62) for O(1) lookup instead of full table scan.
       /* eslint-disable @typescript-eslint/no-explicit-any -- Convex FilterApi can't resolve "email" index */
@@ -113,12 +121,6 @@ export const authCallbacks = {
         .first();
 
       if (existingUser) {
-        // Google's own answer on whether this address is the Google account's: linking an unverified address to an
-        // existing account (the admin's included: requireAdmin is email equality) would hand that account over.
-        // Only an explicit false refuses; a profile without the flag links as before.
-        if (args.type === "oauth" && args.profile.emailVerified === false) {
-          throw new ConvexError(UNVERIFIED_GOOGLE_EMAIL);
-        }
         // Link to the existing user account
         // Update profile info if available (Google may have newer name/image)
         const updates: Record<string, unknown> = {};
@@ -163,7 +165,7 @@ export const authCallbacks = {
 
 /** What a Google sign-in with an address Google hasn't verified is told. */
 export const UNVERIFIED_GOOGLE_EMAIL =
-  "Google hasn't verified this email address, so it can't sign in to an existing account. Verify it with Google, or sign in with your password.";
+  "Google hasn't verified this email address, so it can't be used to sign in here. Verify it with Google, or use your email and a password.";
 
 /**
  * Convex Auth's default OIDC profile, plus Google's email_verified claim, which the default drops. Same id (the

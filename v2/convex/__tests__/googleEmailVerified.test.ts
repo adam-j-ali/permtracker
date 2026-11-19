@@ -5,6 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { createTestContext } from "../../test-utils/convex";
+import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { authCallbacks, googleProfile, UNVERIFIED_GOOGLE_EMAIL } from "../auth";
 
@@ -37,6 +38,27 @@ describe("a Google sign-in for an address an account already has", () => {
     const existing = await t.run((ctx) => ctx.db.insert("users", { email: "owner@example.com" }));
     expect(await t.run((ctx) => googleSignIn(ctx, { email: "OWNER@example.com", emailVerified: true }))).toBe(existing);
     expect(await t.run((ctx) => googleSignIn(ctx, { email: "owner@example.com" }))).toBe(existing);
+  });
+});
+
+describe("a Google sign-in for an address no account has yet", () => {
+  // Creating the user would put the address on it unproven, and a later password sign-up for that address links to
+  // the same user (createOrUpdateUser links by email), so whoever holds the Google account could sign in to it.
+  it("is refused when Google says the address isn't verified, and no user is made", async () => {
+    const t = createTestContext();
+    await expect(
+      t.run((ctx) => googleSignIn(ctx, { email: "someone@example.com", emailVerified: false })),
+    ).rejects.toThrow(UNVERIFIED_GOOGLE_EMAIL);
+    const users = await t.run((ctx) => ctx.db.query("users").take(10));
+    expect(users).toHaveLength(0);
+  });
+
+  it("makes the account as before when Google verified it, or didn't say", async () => {
+    const t = createTestContext();
+    const id = await t.run((ctx) => googleSignIn(ctx, { email: "New@Example.com", emailVerified: true }));
+    expect((await t.run((ctx) => ctx.db.get(id as Id<"users">)))?.email).toBe("new@example.com");
+    const other = await t.run((ctx) => googleSignIn(ctx, { email: "other@example.com" }));
+    expect((await t.run((ctx) => ctx.db.get(other as Id<"users">)))?.email).toBe("other@example.com");
   });
 });
 
