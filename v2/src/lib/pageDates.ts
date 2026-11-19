@@ -204,6 +204,7 @@ export const OWN_DATE: ReadonlySet<string> = new Set([
   "/law-firm-rankings/[state]",
   "/h1b-cap-exempt-employers",
   "/reviews",
+  "/perm-updates/[day]",
 ]);
 
 /** A route's date, from its code and its figures. */
@@ -220,6 +221,19 @@ export function pageDate(route: string, sources: DateSources): string {
 export function bulletinMonthDate(isNewest: boolean, sources: DateSources): string {
   const route = "/visa-bulletin/[month]";
   return isNewest ? newer(sources.bulletin, changed(route)) : changed(route);
+}
+
+/**
+ * A day's decisions page (/perm-updates/<day>). While DOL works the day, every check can raise its counts, so it takes
+ * the day of the last check; a closed day's counts settle the next morning (the 7 AM rule in src/lib/dolDay.ts), so
+ * it takes that day, never later than the last check. The template's day wins when it's newer.
+ */
+export function updatesDayDate(day: string, final: boolean, sources: DateSources): string {
+  const route = "/perm-updates/[day]";
+  const sweep = sources.sweep ?? null;
+  if (!final) return newer(sweep, changed(route));
+  const settled = new Date(Date.parse(`${day}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+  return newer(sweep && sweep < settled ? sweep : settled, changed(route));
 }
 
 /**

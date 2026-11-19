@@ -3,8 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { DataProvenance } from "@/components/data/DataProvenance";
+import { SiteBreadcrumbs } from "@/components/layout/SiteBreadcrumbs";
 import { DailyUpdateView } from "@/components/updates/DailyUpdateView";
 import { loadDailyUpdate } from "@/components/updates/loadDailyUpdate";
+import { getDateSources } from "@/lib/db/dateSources";
+import { changed, updatesDayDate } from "@/lib/pageDates";
 import { longDate } from "@convex/lib/months";
 
 /**
@@ -42,6 +45,8 @@ export default async function PermUpdatesDayPage({ params }: { params: Promise<P
   if (!load) notFound();
   if (load.kind === "outside") {
     return (
+      <>
+      <SiteBreadcrumbs date={changed("/perm-updates/[day]")} />
       <div className="mx-auto max-w-[1200px] px-4 pt-6 pb-12 sm:px-6 sm:pb-16">
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">PERM decisions, {longDate(day)}</h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
@@ -57,10 +62,14 @@ export default async function PermUpdatesDayPage({ params }: { params: Promise<P
           </Link>
         </p>
       </div>
+      </>
     );
   }
+  // Dated by the day itself (updatesDayDate): the template's day said "Updated November 11" over Nov 19's counts.
+  const updated = updatesDayDate(load.props.day, load.props.final, await getDateSources());
   return (
     <>
+      <SiteBreadcrumbs date={updated} />
       <DailyUpdateView {...load.props} />
       <div className="mx-auto max-w-[1200px] px-4 pb-12 sm:px-6">
         <DataProvenance datasets={["perm-case-status", "pwd-status"]} />
