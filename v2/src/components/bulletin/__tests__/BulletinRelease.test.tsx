@@ -54,6 +54,26 @@ describe("BulletinRelease", () => {
     expect(text).not.toMatch(/may well be up/);
   });
 
+  it("says what our own read of State's page found instead of guessing from past years (Nov 19 2026)", () => {
+    // 8 of 12 were out by the 14th, so the archive alone would say "may well be up". This morning's read says otherwise.
+    render(
+      <BulletinRelease rows={rows} summary={summary} next="2026-10" measured="2026-09-26" today="2026-09-14"
+        checkedAt={Date.parse("2026-09-14T15:37:00Z")} />,
+    );
+    const text = document.body.textContent ?? "";
+    expect(text).toMatch(/In at least 8 of the 12 months with evidence, the bulletin was already out by this day of the month before\./);
+    expect(text).toMatch(/State.s page didn.t list the October 2026 bulletin when we last checked \(September 14, 2026, 11:37 AM ET\), so this one is later than most\./);
+    expect(text).not.toMatch(/may well be up/);
+  });
+
+  it("adds our read to the early-month line too", () => {
+    render(
+      <BulletinRelease rows={rows} summary={summary} next="2026-10" measured="2026-09-26" today="2026-09-01"
+        checkedAt={Date.parse("2026-09-01T15:37:00Z")} />,
+    );
+    expect(document.body.textContent).toMatch(/probably isn.t out yet\. State.s page didn.t list it when we last checked \(September 1, 2026, 11:37 AM ET\)\./);
+  });
+
   it("says nothing about today once the reader is past the month before", () => {
     render(<BulletinRelease rows={rows} summary={summary} next="2026-10" measured="2026-09-26" today="2026-10-02" />);
     expect(document.body.textContent).not.toContain("Today is");

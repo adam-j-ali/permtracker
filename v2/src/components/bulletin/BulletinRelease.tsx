@@ -6,7 +6,7 @@ import { ordinal, type ReleaseSummary } from "@/lib/bulletinRelease";
 import { ChartHit } from "@/components/data/ChartHit";
 import { ChartTips } from "@/components/data/ChartTips";
 import { MoreText } from "@/components/data/MoreText";
-import { easternDay } from "@/lib/time";
+import { easternDay, emailStamp } from "@/lib/time";
 import { MONTH_NAMES, monthYear, shiftMonth } from "@convex/lib/months";
 
 function monthName(ym: string): string {
@@ -23,6 +23,11 @@ export interface BulletinReleaseProps {
   measured: string;
   /** Eastern date, `YYYY-MM-DD`. Read in the browser when absent, so a cached page never carries an old "today". */
   today?: string;
+  /**
+   * When our own read of State's page last found `next` not out (`waitingCheck`, epoch ms). With it, the line about
+   * today says what that read found instead of guessing from past years.
+   */
+  checkedAt?: number;
 }
 
 /**
@@ -30,7 +35,7 @@ export interface BulletinReleaseProps {
  * bulletins the Internet Archive had already captured by each day. The
  * State Department announces no date; this is the only evidence there is.
  */
-export function BulletinRelease({ rows, summary, next, measured, today: todayProp }: BulletinReleaseProps) {
+export function BulletinRelease({ rows, summary, next, measured, today: todayProp, checkedAt }: BulletinReleaseProps) {
   const titleId = `${useId()}-release`;
   const [today, setToday] = useState<string | null>(todayProp ?? null);
   useEffect(() => {
@@ -69,6 +74,14 @@ export function BulletinRelease({ rows, summary, next, measured, today: todayPro
             <>
               None of the {byToday.of} bulletins with evidence was out this early in the month before, so the{" "}
               {monthName(next)} bulletin probably isn&apos;t out yet.
+              {checkedAt ? ` State\u2019s page didn\u2019t list it when we last checked (${emailStamp(checkedAt)}).` : null}
+            </>
+          ) : checkedAt ? (
+            <>
+              In at least <b className="font-bold tabular-nums">{byToday.captured}</b> of the {byToday.of} months with
+              evidence, the bulletin was already out by this day of the month before.{" "}
+              {`State\u2019s page didn\u2019t list the ${monthName(next)} bulletin when we last checked (${emailStamp(checkedAt)})`}
+              {byToday.captured * 2 >= byToday.of ? ", so this one is later than most." : "."}
             </>
           ) : (
             <>

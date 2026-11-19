@@ -205,7 +205,16 @@ case "$job" in
       *) echo "usage: permtracker-uscis browser-check <bulletin-read|iv-tool-read|state-pages-read|uscis-times|gsc-round|embassy-read> [note]"; exit 2 ;;
     esac
     python3 -c 'import sys; sys.path.insert(0, "scripts"); from lib_db import Database, record_run; sys.exit(0 if record_run(Database(), "browser-timer:" + sys.argv[1], status="ok", note=sys.argv[2][:300]) else 1)' "$name" "$note" \
-      || { rc=1; echo "the heartbeat for $name was not recorded"; } ;;
+      || { rc=1; echo "the heartbeat for $name was not recorded"; }
+    # A read of State's bulletin page refreshes the bulletin pages, so their line about the next bulletin
+    # ("isn't out yet: State's page didn't list it when we last checked ...") carries this read (Nov 19 2026).
+    case "$name:$note" in
+      bulletin-read:loaded*)
+        REVALIDATE_SECRET="$(sed -n 's/^REVALIDATE_SECRET=//p' /srv/permtracker/app/env/production.env | head -1)"
+        [ -n "$REVALIDATE_SECRET" ] && curl -s -m 60 -o /dev/null -w "refresh %{http_code}\n" -X POST \
+          -H "Host: permtracker.app" -H "x-revalidate-secret: $REVALIDATE_SECRET" \
+          http://127.0.0.1:8081/api/revalidate-bulletin || true ;;
+    esac ;;
   posted-times)
     if timeout 20m nice -n 10 python3 scripts/ingest_uscis_posted_times.py; then
       REVALIDATE_SECRET="$(sed -n 's/^REVALIDATE_SECRET=//p' /srv/permtracker/app/env/production.env | head -1)"

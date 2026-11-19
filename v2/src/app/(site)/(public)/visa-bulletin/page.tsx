@@ -44,7 +44,10 @@ import { getUscisCharts } from "@/lib/uscisChartsFetch";
 import { computeI485Position } from "@/lib/i485/position";
 import { BulletinRelease } from "@/components/bulletin/BulletinRelease";
 import { BULLETIN_CAPTURES_MEASURED, BULLETIN_FIRST_CAPTURES } from "@/lib/bulletinCaptures";
-import { releaseByDay, releaseSummary } from "@/lib/bulletinRelease";
+import { ordinal, releaseByDay, releaseSummary } from "@/lib/bulletinRelease";
+import { waitingCheck } from "@/lib/bulletinReadCheck";
+import { getBulletinRead } from "@/lib/db/bulletinReadCheck";
+import { emailStamp } from "@/lib/time";
 import {
   sameMonthMoves,
   summariseMoves,
@@ -188,7 +191,7 @@ interface Row {
 }
 
 export default async function VisaBulletinPage() {
-  const [series, board, cells, limitsDoc, uscisCharts] = await Promise.all([
+  const [series, board, cells, limitsDoc, uscisCharts, check] = await Promise.all([
     // The archive's reads throw: caught, a refresh during a database blip stored
     // "not available" for a day. Thrown, the last good page stays.
     getVisaBulletinSeries(),
@@ -196,6 +199,8 @@ export default async function VisaBulletinPage() {
     getI485Cells().catch(softFail("visa-bulletin/page.getI485Cells", {} as Record<string, [number, number, number, number][]>)),
     getVisaAnnualLimits().catch(softFail("visa-bulletin/page.getVisaAnnualLimits", null)),
     getUscisCharts(),
+    // Our daily read of State's page. Without it, the page falls back to the past years' release days.
+    getBulletinRead().catch(softFail("visa-bulletin/page.getBulletinRead", null)),
   ]);
   const spill = latestLimits(limitsDoc);
   const usage = latestUsage(limitsDoc);
@@ -221,6 +226,9 @@ export default async function VisaBulletinPage() {
   // on publication). The stored `archived_at` is the LATEST capture, which
   // mostly falls after the bulletin's own month began and says nothing.
   const release = releaseSummary(BULLETIN_FIRST_CAPTURES);
+  // The question a visitor in the month before brings: is the next one out, and when will it be?
+  const waiting = waitingCheck(next, check);
+  const dueIn = monthName(targetMonth === 1 ? 12 : targetMonth - 1);
   const inventoryAsOf = Object.keys(cells).length ? "USCIS's newest monthly inventory" : null;
 
   const sections = CATEGORIES.map((cat) => {
@@ -267,6 +275,17 @@ export default async function VisaBulletinPage() {
           Then what it moved, and what each earlier {monthName(targetMonth)} bulletin did, from {series.length}{" "}
           bulletins since {monthLabel(series[0]!.bulletinMonth)}.
         </span>
+      </p>{" "}
+      <p className="mt-3 max-w-3xl text-lg leading-relaxed">
+        {waiting
+          ? `The ${monthLabel(next)} bulletin isn't out yet: State's page didn't list it when we last checked (${emailStamp(waiting.checkedAt)}).`
+          : `The ${monthLabel(next)} bulletin usually comes out in ${dueIn}.`}{" "}
+        {release?.halfBy
+          ? `Half of past bulletins were out by the ${ordinal(release.halfBy)} of the month before${release.ninetyBy ? `, and nine in ten by the ${ordinal(release.ninetyBy)}` : ""}.`
+          : null}{" "}
+        <a href="#bulletin-release" className="link font-bold">
+          When it comes out
+        </a>
       </p>{" "}
       <UscisChartNote charts={uscisCharts} className="mt-6" />
       <ConsularPauseNote className="mt-6" />{" "}
@@ -425,7 +444,7 @@ export default async function VisaBulletinPage() {
         </div>
       ) : null}
 
-      <h2 className="mt-12 font-heading text-2xl font-bold tracking-tight">When it comes out</h2>{" "}
+      <h2 id="bulletin-release" className="mt-12 scroll-mt-24 font-heading text-2xl font-bold tracking-tight">When it comes out</h2>{" "}
       <p className="mt-3 max-w-3xl text-base leading-relaxed text-soft">
         Expect {monthLabel(next)} in {monthName(targetMonth === 1 ? 12 : targetMonth - 1)}. The Department announces no
         date, so each bulletin&apos;s first capture by the Internet Archive marks the day it was out by.
@@ -436,6 +455,7 @@ export default async function VisaBulletinPage() {
           summary={release}
           next={next}
           measured={BULLETIN_CAPTURES_MEASURED}
+          checkedAt={waiting?.checkedAt}
         />
       ) : null}
 
