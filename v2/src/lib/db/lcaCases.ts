@@ -39,6 +39,8 @@ export const lca = makeFlagProgram({
   disclosureByDateIndex: "lca_cases_recv",
   // A name with a job title tests the title on the index ("EMC" and one title: 15 s became 0.03 s).
   disclosureByTitleIndex: "lca_cases_emp_title",
+  // The older files with a job title ("Deloitte" and one title walked 97,155 old LCAs: Sentry 61, Nov 19 2026).
+  disclosureHistoryByTitleIndex: "lca_cases_history_emp_title",
 });
 
 export const normaliseLcaCaseNumber = lca.normalise;

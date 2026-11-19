@@ -69,6 +69,12 @@ export interface FlagProgramConfig {
    * a job title: it tests the title without opening each filing. Only `lca_cases` has one.
    */
   disclosureByTitleIndex?: string;
+  /**
+   * The same title index on the older files' table (`disclosureHistoryTable`), read when a job title narrows the
+   * search. Without it the older files fill the list on the employer index alone, opening every old filing under
+   * the name to test its title. While it isn't built, the read falls back to the employer index.
+   */
+  disclosureHistoryByTitleIndex?: string;
 }
 
 /**
@@ -688,16 +694,26 @@ export function makeFlagProgram(config: FlagProgramConfig): FlagProgram {
     // the sort is bounded by that employer's older filings.
     if (!historyTable || found.length >= take) return found.map(toDisclosed);
     const seen = new Set(found.map((r) => String(r.case_number)));
-    const older = await fromHistory(
-      () =>
-        rows<DisclosedDbRow>(
-          `SELECT ${DISCLOSED_COLS} FROM ${historyTable} INDEXED BY ${historyTable}_emp ` +
-            `WHERE ${conds.join(" AND ")} ` +
-            "ORDER BY received_date DESC, case_number DESC LIMIT ?",
-          [...params, take - found.length],
-        ),
-      [] as DisclosedDbRow[],
-    );
+    const readOlder = (onIndex: string) =>
+      rows<DisclosedDbRow>(
+        `SELECT ${DISCLOSED_COLS} FROM ${historyTable} INDEXED BY ${onIndex} ` +
+          `WHERE ${conds.join(" AND ")} ` +
+          "ORDER BY received_date DESC, case_number DESC LIMIT ?",
+        [...params, take - found.length],
+      );
+    // A JOB TITLE IS TESTED ON THE OLDER FILES' TITLE INDEX TOO. On the employer index alone, "Deloitte" and
+    // "Security Engineer" opened each of Deloitte's 97,155 FY2008 to FY2019 LCAs and passed the 20 s deadline
+    // (Sentry 61, Nov 19 2026). Until that index is built, the employer index still answers.
+    const byTitle = titled.conds.length ? config.disclosureHistoryByTitleIndex : undefined;
+    const older = await fromHistory(async () => {
+      if (!byTitle) return readOlder(`${historyTable}_emp`);
+      try {
+        return await readOlder(byTitle);
+      } catch (e) {
+        if (/no such index/i.test(String(e))) return readOlder(`${historyTable}_emp`);
+        throw e;
+      }
+    }, [] as DisclosedDbRow[]);
     return [...found, ...older.filter((r) => !seen.has(String(r.case_number)))].map(toDisclosed);
   };
 

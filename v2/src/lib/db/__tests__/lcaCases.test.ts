@@ -126,6 +126,37 @@ describe("the published LCA file: a name with a job title counts the title's mat
   });
 });
 
+describe("the older LCA files with a job title read on their own title index (Sentry 61, Nov 19 2026)", () => {
+  it("tests the title on the history table's title index, so it never opens each old filing", async () => {
+    // "Deloitte" and "Security Engineer": the current files gave too few, so the older files filled the rest on
+    // the employer index alone, opening each of Deloitte's 97,155 FY2008 to FY2019 LCAs: past the 20 s deadline.
+    one.mockResolvedValueOnce({ n: 3 });
+    await searchLcaDisclosed({ text: "Deloitte", title: "Security Engineer" });
+    const [sql, args] = rows.mock.calls[1]!;
+    expect(sql).toContain("FROM lca_cases_history INDEXED BY lca_cases_history_emp_title WHERE employer_slug >= ? AND employer_slug < ? AND job_title LIKE ?");
+    expect(args).toEqual(["deloitte", "deloittf", "%Security Engineer%", 200]);
+  });
+
+  it("keeps the employer index for the older files when no title narrows the search", async () => {
+    one.mockResolvedValueOnce({ n: 3 });
+    await searchLcaDisclosed({ text: "tuopu" });
+    expect(rows.mock.calls[1]![0]).toContain("FROM lca_cases_history INDEXED BY lca_cases_history_emp WHERE");
+  });
+
+  it("falls back to the employer index while the title index isn't built", async () => {
+    one.mockResolvedValueOnce({ n: 3 });
+    rows.mockResolvedValueOnce([]).mockRejectedValueOnce(new Error("SQLITE_ERROR: no such index: lca_cases_history_emp_title"));
+    await expect(searchLcaDisclosed({ text: "Deloitte", title: "Security Engineer" })).resolves.toEqual([]);
+    expect(rows.mock.calls[2]![0]).toContain("FROM lca_cases_history INDEXED BY lca_cases_history_emp WHERE");
+  });
+
+  it("still throws any other failure of the older files' read", async () => {
+    one.mockResolvedValueOnce({ n: 3 });
+    rows.mockResolvedValueOnce([]).mockRejectedValueOnce(new Error("database query deadline (20000ms, local read)"));
+    await expect(searchLcaDisclosed({ text: "Deloitte", title: "Security Engineer" })).rejects.toThrow(/deadline/);
+  });
+});
+
 describe("the wage request an LCA cites in DOL's file", () => {
   it("answers the number as the file printed it, cleaned", async () => {
     one.mockResolvedValueOnce({ pw_case: " p-100-25340-123456 " });
