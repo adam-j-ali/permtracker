@@ -26,7 +26,7 @@ describe("the employers page's facts", () => {
     const hours = /"employer-alerts",\s*"(\d+) ([\d,]+) \* \* \*"/.exec(crons)?.[2]?.split(",").map(Number) ?? [];
     // Assert: two runs, landing at 7 or 8 AM and 6 or 7 PM Eastern whichever way the clocks stand.
     expect(hours).toEqual([12, 23]);
-    expect(answer("Will I hear")).toContain("in the morning or the early evening, Eastern time");
+    expect(answer("Will I hear")).toContain("in the morning, in the early evening, or both, Eastern time");
   });
 
   it("gives the days after a certification as the site's own status page does", () => {
@@ -34,12 +34,12 @@ describe("the employers page's facts", () => {
     expect(answer("What happens after DOL certifies")).toContain("180 calendar days from the date DOL granted it");
   });
 
-  it("names the tick box by its own label, and promises once a day as the follow does", () => {
+  it("names the tick box by its own label, and promises at most twice a day as the follow does", () => {
     expect(EVERY_CASE_LABEL.startsWith("Every case too")).toBe(true);
     expect(EMPLOYER_STEPS[1].title).toBe("Tick Every case too");
     expect(answer("Will I hear")).toContain("Every case too");
-    expect(followPromise("each")).toContain("one email a day at most");
-    expect(answer("Will I hear")).toContain("one email on a day");
+    expect(followPromise("each")).toContain("two emails a day at most");
+    expect(answer("Will I hear")).toContain("in the early evening, or both");
   });
 
   it("says it's free and promises nothing about later", () => {
