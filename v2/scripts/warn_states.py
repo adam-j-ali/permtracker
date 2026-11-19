@@ -1645,7 +1645,9 @@ def load_job_center(state: str) -> Callable[[str | None], list[dict]]:
 # the date from the letter's file name, and no count, because the count is only
 # in the letter.
 HI_PAGE = "https://labor.hawaii.gov/wdd/warn-notices/"
-HI_ARCHIVE = "https://labor.hawaii.gov/wdc/real-time-warn-updates/"
+# The archive's address is read from the WARN page's own link; this is the last
+# known one (moved from /wdc/real-time-warn-updates/ in November 2026).
+HI_ARCHIVE = "https://labor.hawaii.gov/wdc/warn-archive/"
 HI_FILE_DATE = re.compile(r"/((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*)-(\d{1,2})-(20\d\d)-", re.I)
 
 
@@ -1701,6 +1703,14 @@ def parse_hawaii_archive(page: str, base: str) -> list[dict]:
     return out
 
 
+def hawaii_archive_url(page: str) -> str:
+    """The archive the WARN page links, by the link's own words, or the last known address."""
+    for url, text in links(page, HI_PAGE):
+        if text and "archive" in text.lower() and "labor.hawaii.gov" in url:
+            return url
+    return HI_ARCHIVE
+
+
 def parse_hawaii(data: bytes) -> list[dict]:
     """A saved year page of the archive."""
     return finish(parse_hawaii_archive(decode(data), HI_ARCHIVE), SINCE)
@@ -1727,14 +1737,15 @@ def load_hawaii(f: str | None) -> list[dict]:
         if row:
             out.append(row)
     pause()
-    archive = get_text(HI_ARCHIVE)
-    out.extend(parse_hawaii_archive(archive, HI_ARCHIVE))
+    archive_url = hawaii_archive_url(current)
+    archive = get_text(archive_url, referer=HI_PAGE)
+    out.extend(parse_hawaii_archive(archive, archive_url))
     years = years_to_read("HI")
-    for url, text in links(archive, HI_ARCHIVE):
+    for url, text in links(archive, archive_url):
         m = re.search(r"\b(20\d\d) WARN Notices", text, re.I)
-        if m and int(m[1]) in years and url.rstrip("/") != HI_ARCHIVE.rstrip("/"):
+        if m and int(m[1]) in years and url.rstrip("/") != archive_url.rstrip("/"):
             pause()
-            out.extend(parse_hawaii_archive(get_text(url, referer=HI_ARCHIVE), url))
+            out.extend(parse_hawaii_archive(get_text(url, referer=archive_url), url))
     # Held rows keep the id they were written with.
     return reassign(finish(out, SINCE) + kept)
 
