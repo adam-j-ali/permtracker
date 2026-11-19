@@ -711,6 +711,20 @@ def main() -> int:
     finally:
         lib_db.time.time = real_time
 
+    # The daytime pass's window (Nov 19 2026): where 99 in 100 of the week's decisions were filed, plus three weeks.
+    week = ["2026-02-10"] * 3178 + ["2026-03-20"] * 675 + ["2026-01-15"] * 673 + ["2025-12-01"] * 408 \
+        + ["2026-04-02"] * 5 + ["2026-10-06"]
+    check("one case filed in October doesn't stretch the window past where DOL is deciding",
+          csd.active_cutoff(week) == "2026-04-10", str(csd.active_cutoff(week)))
+    check("the window reaches three weeks past the edge",
+          csd.active_cutoff(["2026-03-01"] * 100) == "2026-03-22", str(csd.active_cutoff(["2026-03-01"] * 100)))
+    check("too few decisions to place the window: none, and the four passes cover it",
+          csd.active_cutoff(["2026-03-01"] * 49) is None)
+    check("a value that isn't a day is passed over, never guessed at",
+          csd.active_cutoff(["2026-03-01"] * 50 + [None, "", "March 2026", "2026-13", "2026-02-30"]) == "2026-03-22")
+    check("a timestamp after the day still reads as its day",
+          csd.active_cutoff(["2026-03-01 00:00:00"] * 60) == "2026-03-22")
+
     return 1 if failures else 0
 
 

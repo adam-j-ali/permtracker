@@ -34,6 +34,7 @@ import argparse
 import datetime
 import json
 import pathlib
+import re
 import subprocess
 import sys
 import time
@@ -196,7 +197,48 @@ DISCOVERY_BUDGET_MIN = {"full": 120, "pending": 100, "discover": 95}
 # written. A loop that stops on this budget records `ok`, names the budget and
 # how many cases are left (BUDGET_NOTE), and the cases it didn't reach wait
 # for the next pass; `rotated` moves which ones those are each day.
-SWEEP_BUDGET_MIN = {"full": 110, "pending": 80}
+SWEEP_BUDGET_MIN = {"full": 110, "pending": 80, "active": 10}
+
+# The daytime pass (--active, Nov 19 2026): the pending cases DOL is deciding now, every 15 minutes on weekdays, so a
+# decision made at noon shows within the quarter hour instead of at the 3:40 PM pass. The four passes read DOL at
+# 4:10 AM, 10:40 AM, 3:40 PM and 8:10 PM, and between 10:40 and 3:40, the hours DOL decides most, nothing read it: on
+# Nov 19 the page counted 225 decisions while another tracker counted 417. DOL decides in filing order, so "deciding
+# now" is every pending case filed up to ACTIVE_AHEAD_DAYS past where 99 in 100 of the last week's certifications and
+# denials were filed: one Oct 2026 case among 5,034 decided cases (Feb and Mar 2026 filings) would otherwise have
+# stretched the window over everything. On Nov 19 that was 19,377 cases, 388 requests, about 3.5 minutes. A withdrawal
+# is the employer's act and lands on any month, so it waits for the next of the four passes.
+ACTIVE_LOOKBACK_DAYS = 7
+ACTIVE_AHEAD_DAYS = 21
+ACTIVE_SHARE = 0.99
+ACTIVE_MIN_DECISIONS = 50
+
+
+def active_cutoff(filing_days: list, ahead: int = ACTIVE_AHEAD_DAYS) -> str | None:
+    """The last filing day the daytime pass covers: ACTIVE_SHARE of the recent decisions' filing days, plus `ahead`.
+
+    None when there are too few decisions to say where DOL is (a holiday week), and the four passes cover the rest.
+    A value that isn't a day is passed over, never guessed at.
+    """
+    def day(v) -> str | None:
+        d = str(v)[:10] if v else ""
+        try:
+            return datetime.date.fromisoformat(d).isoformat() if re.fullmatch(r"\d{4}-\d{2}-\d{2}", d) else None
+        except ValueError:  # a 30th of February
+            return None
+
+    days = sorted(d for d in map(day, filing_days) if d)
+    if len(days) < ACTIVE_MIN_DECISIONS:
+        return None
+    edge = datetime.date.fromisoformat(days[min(len(days) - 1, int(len(days) * ACTIVE_SHARE))])
+    return (edge + datetime.timedelta(days=ahead)).isoformat()
+
+
+def active_through(db, today: datetime.date) -> str | None:
+    since = datetime.datetime.combine(today - datetime.timedelta(days=ACTIVE_LOOKBACK_DAYS), datetime.time(), tzinfo=ET)
+    rows = query_rows(db, "SELECT s.filing_date FROM perm_case_events e JOIN perm_case_status s "
+                          "ON s.case_number = e.case_number WHERE e.to_status IN ('CERTIFIED', 'DENIED') "
+                          "AND e.changed_at >= ?", [int(since.timestamp() * 1000)])
+    return active_cutoff([r[0] for r in rows])
 # The full pass starts at one of this many slices, a different one each day, so
 # a pass that runs out of time never leaves the same cases unchecked twice.
 FULL_PASS_SLICES = 7
@@ -1998,6 +2040,8 @@ def main() -> int:
              "when the 180-day I-140 window lapses, and nothing tells us "
              "except looking. Daily.",
     )
+    ap.add_argument("--active", action="store_true",
+                    help="Only the pending cases DOL is deciding now (active_through): every 15 minutes on weekdays.")
     ap.add_argument("--limit", type=int, help="Stop after this many cases.")
     ap.add_argument("--offset", type=int, default=0)
     ap.add_argument("--discover-cap", type=int, default=DISCOVERY_REQUEST_CAP,
@@ -2069,7 +2113,19 @@ def main() -> int:
     db.execute("""CREATE INDEX IF NOT EXISTS case_status_stage
         ON perm_case_status (current_status, is_final, filing_date)""")
 
-    if args.full:
+    through = None
+    sql_args: list = []
+    if args.active:
+        through = active_through(db, datetime.date.fromisoformat(et_today()))
+        if through is None:
+            log("active: too few decisions in the last week to say where DOL is; the four passes cover it")
+            record_run(db, "ingest_case_status_direct.py --active", status="ok", rows_written=0,
+                       note="too few decisions in the last week to place the daytime pass")
+            return 0
+        # The covering index case_status_final (is_final, filing_date) bounds this read to the window.
+        where, sql_args = "WHERE (is_final=0 OR is_final='0') AND filing_date <= ?", [through]
+        log(f"active: pending cases filed through {through}")
+    elif args.full:
         where = ""
     elif args.pending or not args.limit:
         where = "WHERE is_final=0 OR is_final='0'"
@@ -2078,11 +2134,11 @@ def main() -> int:
     sql = (f"SELECT case_number, current_status, employer_name, job_title "
            f"FROM perm_case_status {where} ORDER BY case_number "
            f"LIMIT {args.limit or 10**9} OFFSET {args.offset}")
-    rows = {r[0]: r[1:] for r in query_rows(db, sql)}
+    rows = {r[0]: r[1:] for r in query_rows(db, sql, sql_args)}
     todo = sorted(rows)
     if args.full and not args.limit and not args.offset:
         todo = rotated(todo, datetime.date.fromisoformat(et_today()))
-    pass_mode = "full" if args.full else "pending" if args.pending else None
+    pass_mode = "full" if args.full else "pending" if args.pending else "active" if args.active else None
     loop_deadline = t0 + SWEEP_BUDGET_MIN[pass_mode] * 60 if pass_mode else None
     log(f"{len(todo):,} cases to check, {BATCH} per request "
         f"= {(len(todo)+BATCH-1)//BATCH:,} requests\n")
@@ -2178,6 +2234,21 @@ def main() -> int:
 
     log(f"wrote     {written['u']:,} status changes, {written['e']:,} events")
 
+    if checked and args.active:
+        # Not a check of every case: no freshness stamp, no sweep record, no walk. Only the series the day's pages
+        # print from the events just written; the census and stages wait for the four passes.
+        failed = run_independently([("observed_decisions", lambda: write_observed_decisions(db)),
+                                    ("month_detail", lambda: write_month_detail(db))])
+        status = sweep_run_status(todo=len(todo), checked=checked, truncated=truncated, tail_failed=len(failed))
+        note = (f"active: {checked:,} of {len(todo):,} pending cases filed through {through} checked, "
+                f"{moved:,} moved, {requests:,} requests, {time.time() - started:.0f}s"
+                + (f"; {BUDGET_NOTE}, the rest wait for the next pass" if budget_stopped else "")
+                + (f"; DOL stopped answering after {checked:,}" if truncated else "")
+                + (f"; failed: {', '.join(k for k, _ in failed)}" if failed else ""))
+        recorded = record_run(db, "ingest_case_status_direct.py --active", status=status,
+                              rows_written=written["u"], note=note, started_at=started)
+        return 1 if not recorded or len(failed) >= TAIL_FAILURES_RED else 0
+
     # Stamp freshness so check_ingest_health.py can see this ingest stop, but
     # only on a run that got somewhere: a run that died on its first batch must
     # not refresh the clock, or a broken ingest would report itself healthy.
@@ -2263,7 +2334,7 @@ def main() -> int:
         # or its answers changed shape. A run row says so, or the run would be
         # green and the health check would hear of it days later.
         log("NOT stamping freshness: this run checked nothing")
-        mode = "full" if args.full else "pending"
+        mode = "full" if args.full else "active" if args.active else "pending"
         record_run(db, f"ingest_case_status_direct.py --{mode}",
                    status=sweep_run_status(todo=len(todo), checked=0, truncated=truncated, tail_failed=0),
                    rows_written=0, started_at=started,

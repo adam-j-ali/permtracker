@@ -1,5 +1,5 @@
 #!/bin/bash
-# permtracker-sweep <case-status-full|case-status-pending|case-status-docs|pwd-pending|pwd-full|pwd-active|ingest-health>
+# permtracker-sweep <case-status-full|case-status-pending|case-status-active|case-status-docs|pwd-pending|pwd-full|pwd-active|ingest-health>
 #
 # The DOL sweeps that ran on GitHub's runners until Nov 7 2026, now here: flag.dol.gov answers this
 # server, and GitHub's Actions terms are for building, testing and shipping the software, not for
@@ -9,6 +9,10 @@
 # One run of a job at a time (flock), so a slow full pass and the next timer never overlap.
 # case-status-docs is started by permtracker-deploy after a release goes live: it rebuilds the stored
 # documents from the tables, asks DOL nothing, and gives way to any sweep that is about to run.
+# case-status-active (every 15 minutes, weekdays 7 AM to 7:45 PM Eastern, since Nov 19 2026) asks DOL only about the
+# pending cases it is deciding now, rebuilds nothing heavy and refreshes the pages that print the day's decisions. It
+# gives way to the four passes: it skips a run when one is due within ACTIVE_GIVE_WAY minutes, and the shared lock
+# skips it while one runs.
 set -uo pipefail
 job="${1:-}"; R="${PT_REPO:-/srv/permtracker/repo}"; V2=$R/v2; ENV_DIR="${PT_ENV_DIR:-/srv/permtracker/app/env}"
 exec 9>"/run/lock/permtracker-sweep-${job%%-*}.lock" 2>/dev/null || exec 9>"/tmp/permtracker-sweep-${job%%-*}.lock"
@@ -121,6 +125,17 @@ docs_after_deploy(){
   [ ${#failed[@]} -eq 0 ] && expire revalidate-sweep
 }
 
+ACTIVE_GIVE_WAY=15
+active_pass(){
+  local soon; soon=$(minutes_to_next_case_sweep)
+  if [ "$soon" -lt "$ACTIVE_GIVE_WAY" ]; then
+    echo "a case sweep starts in $soon minutes and reads every pending case itself; skipping this daytime pass"; return 0
+  fi
+  if ! timeout 14m nice -n 10 python3 scripts/ingest_case_status_direct.py --active; then
+    fail "ingest_case_status_direct.py --active" "the daytime pass failed or ran past 14m"; failed+=("sweep")
+  fi
+  [ ${#failed[@]} -eq 0 ] && expire revalidate-sweep
+}
 pwd_status(){  # pwd_status <pending|full|active>
   local mode="$1" limit=170m
   [ "$mode" = active ] && limit=30m
@@ -144,6 +159,7 @@ pwd_status(){  # pwd_status <pending|full|active>
 case "$job" in
   case-status-full) case_status full ;;
   case-status-pending) case_status pending ;;
+  case-status-active) active_pass ;;
   case-status-docs) docs_after_deploy ;;
   pwd-pending) pwd_status pending ;;
   pwd-full) pwd_status full ;;
@@ -151,7 +167,7 @@ case "$job" in
   ingest-health)
     python3 scripts/check_ingest_health.py || failed+=("check_ingest_health.py")
     python3 scripts/check_invariants.py || failed+=("check_invariants.py") ;;
-  *) echo "usage: permtracker-sweep <case-status-full|case-status-pending|case-status-docs|pwd-pending|pwd-full|pwd-active|ingest-health>"; exit 2 ;;
+  *) echo "usage: permtracker-sweep <case-status-full|case-status-pending|case-status-active|case-status-docs|pwd-pending|pwd-full|pwd-active|ingest-health>"; exit 2 ;;
 esac
 if [ ${#failed[@]} -gt 0 ]; then
   echo "these steps failed and the run carried on: ${failed[*]}"; exit 1

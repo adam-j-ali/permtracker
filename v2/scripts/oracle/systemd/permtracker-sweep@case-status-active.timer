@@ -1,0 +1,11 @@
+[Unit]
+Description=Schedule for permtracker-sweep@case-status-active
+# The pending cases DOL is deciding now, every 15 minutes through its working day (since Nov 19 2026). Each run gives
+# way to the four passes (bin/permtracker-sweep, ACTIVE_GIVE_WAY) and isn't caught up after a missed run.
+[Timer]
+OnCalendar=Mon..Fri *-*-* 07..19:00/15:00 America/New_York
+Persistent=false
+Unit=permtracker-sweep@case-status-active.service
+
+[Install]
+WantedBy=timers.target
