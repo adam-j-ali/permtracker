@@ -12,6 +12,8 @@ import {
   MAX_DOCUMENTS_PER_CASE,
   MAX_DOCUMENT_NAME_LENGTH,
   DOCUMENT_CAP_MESSAGE,
+  UPLOAD_CLAIM_WINDOW_MS,
+  UPLOAD_GONE_MESSAGE,
 } from "./lib/documents";
 
 /**
@@ -103,16 +105,21 @@ export const saveDocument = mutation({
       throw new ConvexError(`Content type ${args.contentType} is not allowed`);
     }
 
-    // Re-validate size
-    if (args.fileSize > MAX_DOCUMENT_SIZE_BYTES) {
+    // The file must be an upload from the last hour (UPLOAD_CLAIM_WINDOW_MS), read from storage's own record: an
+    // older id names someone's saved document, and the id is all this mutation is given. Its size is the size
+    // storage measured; the size the browser sent is checked above only so a refusal comes before the upload.
+    const fileId = ctx.db.system.normalizeId("_storage", args.storageId);
+    const file = fileId ? await ctx.db.system.get(fileId) : null;
+    if (!fileId || !file || Date.now() - file._creationTime > UPLOAD_CLAIM_WINDOW_MS) {
+      throw new ConvexError(UPLOAD_GONE_MESSAGE);
+    }
+    if (args.fileSize > MAX_DOCUMENT_SIZE_BYTES || file.size > MAX_DOCUMENT_SIZE_BYTES) {
       throw new ConvexError("That file is over 20 MB, the most one document holds.");
     }
 
-    const url = await ctx.storage.getUrl(
-      args.storageId as Id<"_storage">
-    );
+    const url = await ctx.storage.getUrl(fileId);
     if (!url) {
-      throw new ConvexError("Failed to get storage URL");
+      throw new ConvexError(UPLOAD_GONE_MESSAGE);
     }
 
     const existing = caseDoc.documents || [];
@@ -124,9 +131,9 @@ export const saveDocument = mutation({
       id: newEntryId("doc"),
       name: args.fileName.slice(0, MAX_DOCUMENT_NAME_LENGTH),
       url,
-      storageId: args.storageId,
+      storageId: fileId,
       mimeType: args.contentType,
-      size: args.fileSize,
+      size: file.size,
       uploadedAt: Date.now(),
       category: args.category,
     };
