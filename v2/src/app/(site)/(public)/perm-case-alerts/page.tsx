@@ -58,7 +58,7 @@ const FAQS = [
   },
   {
     q: "Will you fill my inbox?",
-    a: "No. A status change on your own case goes out at once. Everything else you follow, a filing month, the visa bulletin or an employer, is gathered into at most one email a day.",
+    a: "No. A status change on your own case goes out at once, and news about an employer you follow goes out after each of the day's two checks. A filing month and the visa bulletin are gathered into at most one email a day.",
   },
   {
     q: "Can I watch more than one case?",

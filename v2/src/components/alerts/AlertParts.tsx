@@ -51,7 +51,7 @@ export function EmailField({
  * The note under an alert form. Fixed text on every render, never a message
  * that depends on the address: a reply that varied would tell a stranger
  * whether an address is signed up. The rest of the rules (one email a day for
- * bundled alerts, one confirmation every 10 minutes) are said once the form
+ * filing-month and bulletin alerts, one confirmation every 10 minutes) are said once the form
  * has been sent, which is when they apply.
  */
 export function AlertNote({ limit, id, className }: { limit?: string; id?: string; className?: string }) {
@@ -73,8 +73,8 @@ export function AlertDone({ message, queued, className }: { message: string; que
       <span>
         <b className="font-semibold text-foreground">{message}</b>{" "}
         {queued ? "Confirm it when it arrives. Nothing is sent until you do." : "Nothing is sent until you confirm."} No
-        email within 10 minutes? Try again then. A change to a case is emailed at once, and other alerts from one day come
-        together in one email.
+        email within 10 minutes? Try again then. A change to a case, or news about an employer you follow, is emailed when
+        we find it. A filing month and the visa bulletin come together in one email a day.
       </span>
     </p>
   );

@@ -67,15 +67,15 @@ export function EmployerAlertConfirm({
           You asked to follow this employer&rsquo;s PERM cases, case by case.
           Confirm and we&rsquo;ll email you each time the status of one of them
           changes: a certification, a denial, a request for information, a
-          hold, a withdrawal or an appeal. That&rsquo;s one email a day at
-          most, on days something changed.
+          hold, a withdrawal or an appeal. We check DOL twice a day, so
+          that&rsquo;s two emails a day at most, on days something changed.
         </Text>
       ) : (
         <Text className="em-text-body" style={styles.body}>
           You asked to follow this employer&rsquo;s PERM cases. Confirm and
           we&rsquo;ll email you when DOL puts five or more of them on hold or
           takes them off it in a day, or decides a batch of them well above its
-          usual pace. Employer updates come at most once a day.
+          usual pace. Employer updates come at most twice a day.
         </Text>
       )}
 

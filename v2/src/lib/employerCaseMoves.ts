@@ -59,8 +59,8 @@ export const EVERY_CASE_LABEL = "Every case too: an email each time one of its c
  */
 export function followPromise(scope: FollowScope): string {
   return scope === "each"
-    ? "We'll email you each time the status of one of its PERM cases changes: a certification, a denial, a request for information, a hold, a withdrawal or an appeal. That's one email a day at most, on days something changed."
-    : "We'll email you when DOL moves five or more of its PERM cases on or off hold in a day, or decides a batch of them well above its usual pace. Employer updates come at most once a day.";
+    ? "We'll email you each time the status of one of its PERM cases changes: a certification, a denial, a request for information, a hold, a withdrawal or an appeal. We check DOL twice a day, so that's two emails a day at most, on days something changed."
+    : "We'll email you when DOL moves five or more of its PERM cases on or off hold in a day, or decides a batch of them well above its usual pace. Employer updates come at most twice a day.";
 }
 
 /** Why the reader got an alert, by the size of follow they chose: the email's footer. */
