@@ -57,6 +57,12 @@ export const NOTE_WINDOW_MS = 2 * MS_PER_HOUR;
 export const NOTE_KEEP_MS = 90 * MS_PER_DAY;
 /** The owner's "reviews are waiting" email: at most one a day. */
 const NOTICE_LIMIT = { limit: 1, windowMs: MS_PER_DAY };
+/**
+ * How long the owner's "reviews waiting" email waits after a review is queued: well past the minute in which a mail
+ * scanner opens every box of an alert email (alertRatings.BURST_MS). A scanner's first open queues a review that the
+ * rest of its burst takes back, and an email sent at once named a review the admin page no longer had (Nov 19 2026).
+ */
+export const NOTICE_DELAY_MS = 5 * 60_000;
 /** The most reviews the public read hands back; the page's rows hold the newest 36 and its full list 12 a page. */
 const PUBLIC_READ = 500;
 const ADMIN_READ = 100;
@@ -246,11 +252,20 @@ async function adjustTally(ctx: MutationCtx, rating: number, delta: 1 | -1): Pro
   await ctx.db.patch(row._id, { stars, updatedAt: Date.now() });
 }
 
-/** Tell the owner reviews wait: one email a day at most, charged before it's scheduled. */
+/**
+ * Tell the owner reviews wait, once the scanner's minute has passed (NOTICE_DELAY_MS). The once-a-day limit is charged
+ * when the email is about to go (`chargeNotice`), so a notice whose review a scanner took back spends nothing.
+ */
 async function noteWaiting(ctx: MutationCtx): Promise<void> {
-  const notice = await checkAndRecordRateLimit(ctx, "admin", "site_review_notice", NOTICE_LIMIT);
-  if (notice.allowed) await ctx.scheduler.runAfter(0, internal.siteReviews.notifyOwner, {});
+  await ctx.scheduler.runAfter(NOTICE_DELAY_MS, internal.siteReviews.notifyOwner, {});
 }
+
+/** Spend the day's one owner notice; false when it's spent. Charged just before the send it guards. */
+export const chargeNotice = internalMutation({
+  args: {},
+  returns: v.boolean(),
+  handler: async (ctx) => (await checkAndRecordRateLimit(ctx, "admin", "site_review_notice", NOTICE_LIMIT)).allowed,
+});
 
 /**
  * A written review takes the place of the same person's waiting rating in the queue: one person counts once, and
@@ -770,7 +785,7 @@ export const waitingCount = internalQuery({
   },
 });
 
-/** One email to the owner: the reviews waiting right now. The caller charged the once-a-day limit. */
+/** One email to the owner: the reviews waiting right now, read at send time. Charges the once-a-day limit itself. */
 export const notifyOwner = internalAction({
   args: {},
   returns: v.null(),
@@ -783,6 +798,7 @@ export const notifyOwner = internalAction({
     try {
       const waiting = await ctx.runQuery(internal.siteReviews.waitingCount, {});
       if (waiting.length === 0) return null;
+      if (!(await ctx.runMutation(internal.siteReviews.chargeNotice, {}))) return null;
       const lines = waiting
         .slice(0, 20)
         .map((w) => `- ${w.name}, ${w.rating} of 5${w.text ? `: ${w.text.length > 160 ? `${w.text.slice(0, 157)}...` : w.text}` : " (no words)"}`);
