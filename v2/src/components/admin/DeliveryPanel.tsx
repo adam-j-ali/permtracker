@@ -224,7 +224,7 @@ export function DeliveryPanel({ data }: { data: Delivery }) {
           ) : null}
           <div className="mt-3 border-2 border-border bg-card">
             <div aria-hidden="true" className={cn("hidden gap-x-4 bg-muted px-3 py-2 text-sm font-bold lg:grid", ALERT_COLS)}>
-              <span>Sent</span> <span>Signed up</span> <span>To</span> <span>What</span> <span>State</span>
+              <span>When</span> <span>Signed up</span> <span>To</span> <span>What</span> <span>State</span>
             </div>{" "}
             <ul className="divide-y-2 divide-border">
               {data.recent.map((r, i) => (
@@ -243,7 +243,13 @@ export function DeliveryPanel({ data }: { data: Delivery }) {
                     <span className="sr-only">State:</span>{" "}
                     <span className={`inline-block px-1.5 py-0.5 font-bold ${STATUS_CLASS[r.status] ?? ""}`}>{r.status}</span>{" "}
                     <span className="block text-muted-foreground">
-                      {r.direct ? "straight out" : r.bundleSize && r.bundleSize > 1 ? `in a bundle of ${r.bundleSize}` : ""}
+                      {r.status === "queued"
+                        ? "goes in the next daily email"
+                        : r.direct
+                          ? "straight out"
+                          : r.bundleSize && r.bundleSize > 1
+                            ? `in a bundle of ${r.bundleSize}`
+                            : ""}
                     </span>
                   </div>{" "}
                   <div className="order-3 col-span-2 min-w-0 [overflow-wrap:anywhere] lg:col-span-1">
@@ -251,7 +257,7 @@ export function DeliveryPanel({ data }: { data: Delivery }) {
                     {`${r.email} `}
                   </div>{" "}
                   <div className="order-4 col-span-2 tabular-nums lg:order-1 lg:col-span-1">
-                    <span className="text-muted-foreground lg:sr-only">{"Sent "}</span>
+                    <span className="text-muted-foreground lg:sr-only">{r.status === "queued" ? "Queued " : "Sent "}</span>
                     {`${when(r.sentAt ?? r.createdAt)} `}
                   </div>{" "}
                   <div className="order-5 col-span-2 lg:order-2 lg:col-span-1">
