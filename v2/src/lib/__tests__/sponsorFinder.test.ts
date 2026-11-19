@@ -56,6 +56,13 @@ describe("sponsor finder filters", () => {
     expect(finderWhere(parseFinder({ debarred: "1" }, STATES), ANY).where).not.toContain("debarred");
   });
 
+  it("reads a sort named after an object's built-ins as the default, never as a sort", () => {
+    // `in` walks the prototype chain, so `?sort=constructor` passed and the query became ORDER BY undefined (a 500).
+    for (const sort of ["constructor", "__proto__", "toString", "hasOwnProperty", "valueOf"]) {
+      expect(parseFinder({ sort }, STATES).sort).toBe(DEFAULT_FILTERS.sort);
+    }
+  });
+
   it("rates, medians and their sorts use the employer page's own floors, once each", () => {
     const rated = finderWhere(parseFinder({ rate: "0.9", sort: "rate" }, STATES), ANY).where;
     expect(rated).toContain(`>= ${MIN_DECIDED_FOR_RATE}`);
