@@ -20,11 +20,11 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { FaqList } from "@/components/tools/FaqList";
 import { DataProvenance } from "@/components/data/DataProvenance";
-import { OfficeSheetCases } from "@/components/community/OfficeSheetCases";
+import { OfficeReportedCases } from "@/components/community/OfficeReportedCases";
 import { OfficeTimelines, type OfficeTimelineView } from "@/components/community/OfficeTimelines";
 import { NoteBanner } from "@/components/ui/note";
-import type { SheetCase } from "@/lib/communitySheets";
-import { getOfficeSheetCases, getSheetsReadAt } from "@/lib/db/communityReports";
+import type { ReportedCase } from "@/lib/reportedCases";
+import { getOfficeReportedCases, getReportedCasesBuiltAt } from "@/lib/db/communityReports";
 import { queryStatic } from "@/lib/convexStatic";
 import { softFail } from "@/lib/softRead";
 import { api } from "@convex/_generated/api";
@@ -123,7 +123,7 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
   const office = officeBySlug((await params).office);
   if (!office) notFound();
 
-  const [quarters, posted, shared, ownPosted, sheetCases, sheetsReadAt] = await Promise.all([
+  const [quarters, posted, shared, ownPosted, reported, reportedAt] = await Promise.all([
     getI485OfficeQuarters(),
     getUscisPosted(),
     // People's own timelines from this office. A failed read is named on the page, never drawn as "nobody has shared".
@@ -133,8 +133,8 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
     // This office's own family-based posted time: the one per-office pace USCIS publishes. A failed read loses only it.
     getPostedHistory("I-485", "131A-FAM", office.code).catch(softFail<[string, number][]>("i485-by-field-office/[office].ownPosted", [])),
     // The cases a community sheet keeps for this office. A failed read is named on the page (null), never "none".
-    getOfficeSheetCases(office.code).catch(softFail<SheetCase[] | null>("i485-by-field-office/[office].sheetCases", null)),
-    getSheetsReadAt().catch(softFail<number | null>("i485-by-field-office/[office].sheetsReadAt", null)),
+    getOfficeReportedCases(office.code).catch(softFail<ReportedCase[] | null>("i485-by-field-office/[office].reported", null)),
+    getReportedCasesBuiltAt().catch(softFail<number | null>("i485-by-field-office/[office].reportedAt", null)),
   ]);
   const year = officeYear(quarters, office.code);
   const newest = quarters[quarters.length - 1];
@@ -292,9 +292,9 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
           <a href="#timelines" className="link inline-flex min-h-11 items-center font-bold">
             Timelines people shared from here
           </a>{" "}
-          {sheetCases && sheetCases.length > 0 ? (
-            <a href="#community-sheet" className="link inline-flex min-h-11 items-center font-bold">
-              {formatInt(sheetCases.length)} cases in a community sheet
+          {reported && reported.length > 0 ? (
+            <a href="#reported-cases" className="link inline-flex min-h-11 items-center font-bold">
+              {formatInt(reported.length)} cases people reported here
             </a>
           ) : null}
         </p>{" "}
@@ -459,12 +459,12 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
 
       <OfficeTimelines office={office} view={shared} />
 
-      {sheetCases === null ? (
+      {reported === null ? (
         <NoteBanner alert className="mt-12 max-w-2xl">
-          <p>The cases from the community sheet can&apos;t be read right now. Try again in a few minutes.</p>
+          <p>The cases people reported here can&apos;t be read right now. Try again in a few minutes.</p>
         </NoteBanner>
       ) : (
-        <OfficeSheetCases cases={sheetCases} readAt={sheetsReadAt} officeName={theOffice(office)} />
+        <OfficeReportedCases cases={reported} builtAt={reportedAt} officeName={theOffice(office)} />
       )}
 
       <section className="mt-12">
