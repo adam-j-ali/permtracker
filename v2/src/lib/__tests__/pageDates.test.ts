@@ -12,6 +12,7 @@ import {
   pageDate,
   routeOf,
   TEMPLATE_DAY,
+  updatesDayDate,
 } from "@/lib/pageDates";
 
 const dates = PAGE_DATES as Record<string, string>;
@@ -42,6 +43,18 @@ describe("pageDate", () => {
     // DOL's processing-times stamp says nothing about a bulletin (Nov 2 2026: the November bulletin read
     // "Updated October 21", DOL's day, where the site first held it on October 22).
     expect(bulletinMonthDate(true, { dol: "2099-01-01" })).toBe(changed("/visa-bulletin/[month]"));
+  });
+
+  it("dates a day's decisions page by its last check while DOL works it, and by the morning it closed after", () => {
+    // Nov 19 2026: the page for that day, counts rising, read "Updated November 11", the template's day.
+    const template = changed("/perm-updates/[day]");
+    expect(updatesDayDate("2099-03-04", false, { sweep: "2099-03-04" })).toBe("2099-03-04");
+    expect(updatesDayDate("2099-03-03", true, { sweep: "2099-03-09" })).toBe("2099-03-04");
+    // Never later than the last check, and never before the template changed what the page says.
+    expect(updatesDayDate("2099-03-03", true, { sweep: "2099-03-03" })).toBe("2099-03-03");
+    expect(updatesDayDate("2000-01-03", true, { sweep: "2099-03-09" })).toBe(template);
+    expect(updatesDayDate("2099-03-04", false, {})).toBe(template);
+    expect(OWN_DATE.has("/perm-updates/[day]")).toBe(true);
   });
 
   it("dates the bulletin pages by the bulletin and the published-file lists by DOL's files", () => {
