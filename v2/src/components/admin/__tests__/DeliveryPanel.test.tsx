@@ -77,7 +77,19 @@ describe("the admin page's latest alerts", () => {
     expect(row).toHaveTextContent("7 days before, confirmed after under a minute");
     expect(row).toHaveTextContent("straight out");
     const heads = latest().querySelector('[aria-hidden="true"]');
-    expect(heads).toHaveTextContent("Sent Signed up To What State");
+    expect(heads).toHaveTextContent("When Signed up To What State");
+  });
+
+  it("calls a waiting alert queued, with the time it was queued, never sent", () => {
+    // Arrange: an employer alert held because its address already had its one email of the day.
+    const queued = alert({ kind: "employer", status: "queued", title: "Example Co", line: "DOL certified 1 of its cases", sentAt: null, direct: null });
+    // Act
+    render(<DeliveryPanel data={data([queued])} />);
+    // Assert
+    const row = within(latest()).getByRole("listitem");
+    expect(row).toHaveTextContent(/Queued Nov 10, 1:07 PM EST/);
+    expect(row).not.toHaveTextContent(/Sent Nov/);
+    expect(row).toHaveTextContent("goes in the next daily email");
   });
 
   it("the address sits in a box with a width of its own, so it wraps inside that width", () => {
