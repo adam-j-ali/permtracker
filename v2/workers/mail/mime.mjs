@@ -70,7 +70,8 @@ export function decodeWords(value) {
 
 /** "Name <a@b>" or "a@b" as { name, address }. */
 export function parseAddress(value) {
-  const v = decodeWords(value || "").trim();
+  // A stranger writes the header, and "<" with no ">" makes the match backtrack: a real one is far shorter.
+  const v = decodeWords((value || "").slice(0, 2_000)).trim();
   const m = v.match(/^(.*?)\s*<([^>]+)>\s*$/);
   if (m) return { name: m[1].replace(/^"|"$/g, "").trim() || undefined, address: m[2].trim() };
   return { name: undefined, address: v };

@@ -25,7 +25,11 @@ const OWN_SENDERS = ["notifications@permtracker.app"];
 const SELF_ADDRESSED_ON_PURPOSE = ["support@permtracker.app"];
 
 /** The bare address out of "Name <addr>" or "addr". */
-const bare = (from: string) => (from.match(/<([^>]+)>/)?.[1] ?? from).trim().toLowerCase();
+/** Cut before the match: a stranger writes the header, and "<" with no ">" backtracks. */
+const bare = (from: string) => {
+  const f = from.slice(0, 2_000);
+  return (f.match(/<([^>]+)>/)?.[1] ?? f).trim().toLowerCase();
+};
 
 export function shouldForwardInbound(toEmail: string, forwardTo: string, fromEmail = ""): boolean {
   const to = toEmail.toLowerCase();

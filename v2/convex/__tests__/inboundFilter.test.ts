@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createTestContext } from "../../test-utils/convex";
 import { api, internal } from "../_generated/api";
+import { emailPreview } from "../inboundFilter";
 import { HELD_KEEP_DAYS } from "../lib/spamCheck";
 import { MS_PER_DAY } from "../lib/time";
 
@@ -349,5 +350,20 @@ describe("the contact form", () => {
     });
     expect(res.status).toBe(400);
     expect(await t.run(async (ctx) => ctx.db.query("contactMessages").collect())).toHaveLength(0);
+  });
+});
+
+describe("the admin page's preview of a message", () => {
+  it("reads the words, tags out", () => {
+    expect(emailPreview({ bodyHtml: "<p>Hello <b>there</b></p>" })).toBe("Hello there");
+    expect(emailPreview({ bodyText: "  plain\n\n words ", bodyHtml: "<p>other</p>" })).toBe("plain words");
+  });
+
+  // A stranger's stored HTML of 300,000 opening brackets ran the tag regex for about 77 s, past Convex's query limit,
+  // so the admin page failed while that message was among the newest (Nov 19 2026 security review).
+  it("reads a hostile message quickly", () => {
+    const started = performance.now();
+    emailPreview({ bodyHtml: "<".repeat(300_000) });
+    expect(performance.now() - started).toBeLessThan(200);
   });
 });
