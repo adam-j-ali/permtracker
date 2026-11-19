@@ -1,0 +1,15 @@
+{
+  "read": "2026-11-19",
+  "page": "https://cdle.colorado.gov/employers/layoff-separations/layoff-warn-list",
+  "how": "Read in a browser on Nov 19 2026. Colorado's page refuses this server and GitHub's runners; its sheets, on Google, answer both. Add each new year's sheet from the page when Colorado opens it (the run fails after January without it).",
+  "sheets": [
+    {"year": 2026, "id": "19jmo4Cwj933cmSBKV1t0zZ5O-2H5IpiLIhSH9MF8WF0", "gid": "1928499704"},
+    {"year": 2025, "id": "1aFv4ntRhjnTMFKqBnuzbIkExCWgp6vnblYGm_h9GUeI", "gid": "879377649"},
+    {"year": 2024, "id": "1tDQPJ8jVqmyGbLYs6hUZiiNQIsablkZyLJt8rLIzanY", "gid": "879377649"},
+    {"year": 2023, "id": "1ATu4-rs7Rw59UOYcdN-tNZCuyEe3am59Fm8wKqATl7E"},
+    {"year": 2022, "id": "1YPKuuH-bU2ARJjXkFufY3f8_S8pnLusHbBY0RtapE3M"},
+    {"year": 2021, "id": "1HO8Fnm_4xey3Ctt6mYIig61Zx5iNq6_j_dlIaJvBS6o"},
+    {"year": 2020, "id": "1Km1mSUnCGE3EtZQTnZEUwxbdDTOcDZmNx6bviTwl2jI"},
+    {"year": 2019, "id": "1GZEh1FUcHFfovdKeagTHFiv_P-PVVx64Bk4Szc963Gs"}
+  ]
+}

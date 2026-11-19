@@ -286,6 +286,49 @@ def main() -> int:
     no_gid = [u for y, u in sheets if y == 2022]
     check(no_gid and "gid=" not in no_gid[0], "a sheet linked without a tab is exported without guessing one", f)
 
+    # Colorado's page refuses this server and GitHub's runners (Nov 18 2026); its sheets answer. The fallback reads the
+    # links saved from a browser, only on a refusal, and never without this year's sheet past January.
+    import json as _json
+    import tempfile
+    import urllib.error as _ue
+    from lib_gov_data import RobotsDisallowed as _RD
+    real_get_text = ws.get_text
+    try:
+        def refusing(exc):
+            def _get(*_a, **_k):
+                raise exc
+            return _get
+        nov = dt.date(2026, 11, 19)
+        ws.get_text = refusing(_RD("closed by robots.txt"))
+        got = ws.colorado_sheet_list(today=nov)
+        check(got and got[0][0] == 2026 and "gid=1928499704" in got[0][1],
+              "Colorado's page closed by robots.txt reads the saved sheets, this year's first with its tab", f)
+        ws.get_text = refusing(_ue.HTTPError(ws.CO_PAGE, 403, "Forbidden", None, None))
+        check(bool(ws.colorado_sheet_list(today=nov)), "a 403 from Colorado's page reads the saved sheets too", f)
+        ws.get_text = refusing(ValueError("layout changed"))
+        try:
+            ws.colorado_sheet_list(today=nov)
+            check(False, "a page that answers without its links fails rather than using old ones", f)
+        except ValueError:
+            check(True, "a page that answers without its links fails rather than using old ones", f)
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as tmp:
+            _json.dump({"read": "2026-11-19", "sheets": [{"year": 2026, "id": "abc"}]}, tmp)
+        ws.get_text = refusing(_RD("closed"))
+        try:
+            ws.colorado_sheet_list(today=dt.date(2027, 3, 2), path=tmp.name)
+            check(False, "past January, a saved list without the year's sheet fails and names the file", f)
+        except ValueError as e:
+            check("colorado_warn_sheets.json" in str(e) and "2027" in str(e),
+                  "past January, a saved list without the year's sheet fails and names the file", f)
+        check(bool(ws.colorado_sheet_list(today=dt.date(2027, 1, 8), path=tmp.name)),
+              "in January, a saved list without the new year's sheet warns and reads last year's", f)
+        os.unlink(tmp.name)
+    finally:
+        ws.get_text = real_get_text
+    saved_on, saved = ws.saved_colorado_sheets()
+    check(saved_on == "2026-11-19" and {y for y, _ in saved} >= set(range(2019, 2027)),
+          "the saved Colorado list covers every year the reader reads, 2019 to 2026", f)
+
     ky = ws.parse_kentucky(b("ky_prior.xlsx"))
     led = next((r for r in ky if r["company"] == "LED VANCE LLC"), {})
     check(led.get("notice_date") == "2019-01-25" and led.get("effective_date") == "2019-09-27",

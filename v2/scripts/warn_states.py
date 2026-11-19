@@ -39,12 +39,14 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import os
 import re
 import time
 import urllib.error
 import urllib.parse
 from collections.abc import Callable
 
+from lib_gov_data import RobotsDisallowed
 from lib_warn import (
     DATE_TOKEN, archive_copy, archive_captures, archive_index, cell, clean, col, csv_rows, decode, find_header,
     NoneSince, finish, first_date, get, get_text, header_of, get_with, is_pdf, is_unreachable, is_xlsx, join_site, links,
@@ -488,13 +490,52 @@ def colorado_sheets(page: str) -> list[tuple[int | None, str]]:
     return out
 
 
+# Colorado's page refuses this server and GitHub's runners (CloudFront's 403 to one, a robots.txt that closes the
+# site to the other, from Nov 18 2026), while the sheets it links, on Google, answer both. So when the page refuses,
+# the reader takes the links it listed when last read in a browser. A year missing from them is ours to add.
+CO_SAVED = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "colorado_warn_sheets.json")
+
+
+def saved_colorado_sheets(path: str = CO_SAVED) -> tuple[str, list[tuple[int | None, str]]]:
+    """The day the saved links were read, and (year, CSV export url) for each, newest first."""
+    with open(path) as fh:
+        doc = json.load(fh)
+    sheets = [(s["year"], f"https://docs.google.com/spreadsheets/d/{s['id']}/export?format=csv"
+               + (f"&gid={s['gid']}" if s.get("gid") else "")) for s in doc["sheets"]]
+    return doc["read"], sorted(sheets, key=lambda t: -(t[0] or 0))
+
+
+def colorado_sheet_list(today: dt.date | None = None, path: str = CO_SAVED) -> list[tuple[int | None, str]]:
+    """The sheets to read: the page's links, or the saved ones when the page refuses this runner.
+
+    Only a refusal falls back (robots.txt, a 403, the site down). A page that answers with no sheet links has been
+    redesigned, which the saved list can't speak for, so it fails as before. The saved list without this year's
+    sheet fails too, naming the file, except in January, when Colorado may not have opened the year's sheet yet."""
+    try:
+        sheets = colorado_sheets(get_text(CO_PAGE))
+    except Exception as e:  # noqa: BLE001
+        if not (isinstance(e, RobotsDisallowed) or is_unreachable(e)):
+            raise
+        read_on, sheets = saved_colorado_sheets(path)
+        this = (today or dt.date.today()).year
+        why = f"its page refused this runner ({type(e).__name__})"
+        if this not in {y for y, _ in sheets}:
+            msg = (f"Colorado: {why}, and the sheet links saved on {read_on} have no {this} sheet. Read the page in a "
+                   f"browser and add it to scripts/data/colorado_warn_sheets.json")
+            if (today or dt.date.today()).month > 1:
+                raise ValueError(msg) from e
+            print(f"::warning::{msg} (January: Colorado may not have opened it yet)", flush=True)
+        print(f"::warning::Colorado: {why}; reading the sheets its page listed on {read_on}", flush=True)
+        return sheets
+    if not sheets:
+        raise ValueError("no Google Sheets linked from the Colorado page")
+    return sheets
+
+
 def load_colorado(f: str | None) -> list[dict]:
     if f:
         return parse_colorado(read(f))
-    page = get_text(CO_PAGE)
-    sheets = colorado_sheets(page)
-    if not sheets:
-        raise ValueError("no Google Sheets linked from the Colorado page")
+    sheets = colorado_sheet_list()
     out: list[dict] = []
     years = years_to_read("CO")
     for year, url in sheets:
