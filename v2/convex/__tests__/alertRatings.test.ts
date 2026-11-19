@@ -168,6 +168,31 @@ describe("the page", () => {
     expect(left.filter((r) => r.source === "alert")).toHaveLength(0);
   });
 
+  // Nov 19 2026: a scanner's first open queued a review, the owner's "Reviews waiting for you: 1" went out at once,
+  // and the burst a minute later took the review back, so the email named a review the admin page didn't have.
+  it("waits past the scanner's minute before telling the owner a review waits", async () => {
+    const t = createTestContext();
+    await watching(t);
+    const before = Date.now();
+    await open(t, 2);
+    const jobs = await t.run((ctx) => ctx.db.system.query("_scheduled_functions").collect());
+    const notice = jobs.filter((j) => j.name.includes("siteReviews") && j.name.includes("notifyOwner"));
+    expect(notice).toHaveLength(1);
+    expect(notice[0]!.scheduledTime - before).toBeGreaterThanOrEqual(5 * 60_000);
+  });
+
+  it("sends nothing, and keeps the day's notice, when the review it was for is gone", async () => {
+    vi.stubEnv("SECURITY_ALERT_EMAIL", "owner@example.com");
+    try {
+      const t = createTestContext();
+      await t.action(internal.siteReviews.notifyOwner, {});
+      const charged = await t.run((ctx) => ctx.db.query("rateLimits").collect());
+      expect(charged.filter((r) => JSON.stringify(r).includes("site_review_notice"))).toHaveLength(0);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("never counts an open from a fetcher's browser line, or from none", async () => {
     for (const browser of ["python-requests/2.32.3", "Mozilla/5.0 (compatible; Barracuda Sentinel)", null]) {
       const t = createTestContext();
