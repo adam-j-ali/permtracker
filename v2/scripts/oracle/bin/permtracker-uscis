@@ -118,6 +118,18 @@ case "$job" in
     convex_export_env
     timeout 5m python3 scripts/build_reported_cases.py --from-convex \
       || { rc=1; fail build_reported_cases.py "the reported-cases build after the VisaStats load failed"; } ;;
+  # People's own case reports from Reddit (and Telegram) posts, prepared on the owner's Mac by
+  # scripts/ingest_community_posts.py prepare (dates and categories only, the author link salted there), then merged.
+  #   sudo -u permtracker permtracker-uscis community-posts /srv/permtracker/inbox/reddit-records.json
+  community-posts)
+    f="${2:-}"
+    if [ -z "$f" ]; then echo "usage: permtracker-uscis community-posts <records.json>"; exit 2; fi
+    timeout 10m python3 scripts/ingest_community_posts.py load "$f" \
+      || { rc=1; fail ingest_community_posts.py "the community posts ($f) were refused"; }
+    site_refresh_env
+    convex_export_env
+    timeout 5m python3 scripts/build_reported_cases.py --from-convex \
+      || { rc=1; fail build_reported_cases.py "the reported-cases build after the posts load failed"; } ;;
   # Every source's reported cases merged into one list, each person once, hourly: the sheets (loaded by GitHub's
   # hourly ingest), VisaStats, the posts, and the timelines and consulate reports shared on this site, read from
   # Convex with the watched-cases secret. The one writer of reported_cases; it refreshes only the offices that changed.

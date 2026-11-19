@@ -72,6 +72,10 @@ def main() -> int:
     check(b.visastats_record(visa_row(rfe_responded="Yes, sent"))["i140_rfe_answered"] is None,
           "an answer in words gives no day")
     check(b.visastats_record(visa_row(chargeability="IRN"))["chargeability"] == "Iran", "IRN is Iran")
+    check(b.visastats_record(visa_row())["i140_rfe"] == "rfe"
+          and b.visastats_record(visa_row(rfe_status="Never Received"))["i140_rfe"] == "none"
+          and b.visastats_record(visa_row(rfe_status="NOID Received"))["i140_rfe"] == "noid"
+          and b.visastats_record(visa_row(rfe_status=None))["i140_rfe"] is None, "whether an RFE or a NOID came")
     check(b.visastats_record(visa_row(chargeability="ROW"))["chargeability"] == "ROW", "ROW stays rest of world")
 
     # End to end: the sheet's row and a matching post are one case; VisaStats' rows are their own.

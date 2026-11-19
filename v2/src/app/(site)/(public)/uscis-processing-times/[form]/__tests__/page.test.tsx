@@ -5,7 +5,7 @@
  * form's page carries that sentence.
  */
 import { render } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/navigation", () => ({
@@ -24,6 +24,8 @@ vi.mock("@/lib/db/uscisPosted", () => ({ getUscisPosted, getPostedHistory }));
 vi.mock("@/components/data/DataProvenance", () => ({ DataProvenance: () => null }));
 const getUscisMonthly = vi.fn(async () => null as unknown);
 vi.mock("@/lib/db/uscisMonthly", () => ({ getUscisMonthly }));
+const getReportedI140Cases = vi.fn(async () => [] as unknown[]);
+vi.mock("@/lib/db/communityReports", () => ({ getReportedI140Cases }));
 
 const { default: UscisFormPage } = await import("../page");
 
@@ -48,6 +50,8 @@ const page = async (form: string) => {
 };
 
 beforeEach(() => {
+  getReportedI140Cases.mockReset();
+  getReportedI140Cases.mockResolvedValue([]);
   getUscisMonthly.mockReset();
   getUscisMonthly.mockResolvedValue(null);
   getUscisPosted.mockReset();
@@ -154,5 +158,42 @@ describe("USCIS's monthly report to Congress, on a form it covers", () => {
     getUscisMonthly.mockResolvedValue(MONTHLY);
     const text = await page("i-140");
     expect(text).not.toContain("as USCIS reports it to Congress");
+  });
+});
+
+describe("the I-140s people reported, on the I-140's page", () => {
+  const niw = (n: number, premium: string | null = "with filing") => ({
+    category: "EB-2 NIW", premium, filed: "2026-01-01", decision: n === 5 ? "denied" : "approved",
+    decided: `2026-02-${String(n + 9).padStart(2, "0")}`, rfe: n === 1 ? "rfe" : "none",
+  });
+
+  const quarter = { fy: 2026, quarter: 3, quarterEnd: "2026-06-30", title: "Immigrant Petition for Alien Workers",
+    received: 30000, approved: 25000, denied: 2000, completed: 27000, pending: 80000, medianMonths: 4.1 };
+  beforeEach(() => getUscisFormRows.mockResolvedValue([quarter] as never));
+  afterEach(() => getUscisFormRows.mockResolvedValue([]));
+
+  it("shows the median days by category and premium, credited, and says nothing in it is checked", async () => {
+    getReportedI140Cases.mockResolvedValue([1, 2, 3, 4, 5].map((n) => niw(n)));
+    const text = await page("i-140");
+    expect(getReportedI140Cases).toHaveBeenCalled();
+    expect(text).toContain("What people reported about their own I-140s");
+    expect(text).toContain("5 I-140s people reported themselves, 5 of them decided");
+    expect(text).toContain("Nothing here is checked");
+    expect(text).toContain("EB-2 NIW, premium from filing");
+    expect(text).toContain("42 days");
+    expect(text).toContain("80% approved, 20% got an RFE or a NOID");
+  });
+
+  it("reads nothing and shows nothing on another form's page", async () => {
+    const text = await page("i-485");
+    expect(getReportedI140Cases).not.toHaveBeenCalled();
+    expect(text).not.toContain("What people reported about their own I-140s");
+  });
+
+  it("loses only its own section when the read fails", async () => {
+    getReportedI140Cases.mockRejectedValue(new Error("connection reset"));
+    const text = await page("i-140");
+    expect(text).not.toContain("What people reported about their own I-140s");
+    expect(text).toContain("Median months, quarter by quarter");
   });
 });
