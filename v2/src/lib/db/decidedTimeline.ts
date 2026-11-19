@@ -25,11 +25,11 @@ const num = (v: unknown): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
-/** The employer's headcount and founding year as typed on a form; 0 employees or a year before 1700 is a slip, not a fact. */
+/** The employer's headcount and founding year as typed on a form; 0 employees is its own answer, a year before 1700 a slip. */
 function employerFacts(payroll: unknown, year: unknown): DecidedTimelineRead["employer"] {
   const employees = num(payroll);
   const since = num(year);
-  return { employees: employees && employees > 0 ? employees : null, since: since && since >= 1700 ? since : null };
+  return { employees: employees !== null && employees >= 0 ? employees : null, since: since && since >= 1700 ? since : null };
 }
 
 export async function getDecidedTimeline(caseNumber: string): Promise<DecidedTimelineRead | null> {

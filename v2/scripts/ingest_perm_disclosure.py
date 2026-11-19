@@ -395,8 +395,9 @@ PERM_TRACKED = (
 
 # A wage request's case number as FLAG prints it ("P-100-24339-516453").
 PWD_NUMBER_RE = re.compile(r"^P-\d{3}-\d{5}-\d{6}$")
-# The bounds a headcount and a founding year must fall in to be read at all: a
-# typo such as 0 employees or the year 20 is left blank rather than averaged.
+# The bounds a headcount and a founding year must fall in to be read at all. A headcount of 0 is the employer's
+# own answer (a new company, a household, a firm of owners only: 1,061 decided applications in fiscal year 2025),
+# so it's kept as DOL printed it; the readers' median outvotes a lone 0 among real counts. The year 20 is a typo.
 PAYROLL_MAX = 5_000_000
 YEAR_MIN = 1600
 
@@ -405,6 +406,11 @@ def pwd_number(raw) -> str | None:
     """The wage request's number, upper case without spaces, or None when it isn't one."""
     v = re.sub(r"\s+", "", str(raw or "")).upper()
     return v if PWD_NUMBER_RE.match(v) else None
+
+
+def payroll_of(raw) -> int | None:
+    """The employer's headcount as the form gives it, 0 included, or None for a blank, a word or a figure out of range."""
+    return whole_in(raw, 0, PAYROLL_MAX)
 
 
 def whole_in(raw, lo: int, hi: int | None) -> int | None:
@@ -910,7 +916,7 @@ def parse_file(
                         "naics": normalize_naics(rec.get("naics")),
                         "worksiteCity": " ".join((rec.get("worksite_city") or "").split())[:60] or None,
                         "pwdNumber": pwd_number(rec.get("pwd_number")),
-                        "empPayroll": whole_in(rec.get("emp_payroll"), 1, PAYROLL_MAX),
+                        "empPayroll": payroll_of(rec.get("emp_payroll")),
                         "empYear": whole_in(rec.get("emp_year"), YEAR_MIN, int(decided[:4]) if decided else None),
                         "layoff": yes_no(rec.get("layoff")),
                         **worker_fields(rec),

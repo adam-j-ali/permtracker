@@ -33,7 +33,7 @@ export function DecidedTimeline({ read }: { read: DecidedTimelineRead | null }) 
   const { employees, since } = read.employer;
   const pwd = read.record.pwd;
   const facts = [
-    employees ? `its size as ${formatInt(employees)} ${employees === 1 ? "employee" : "employees"}` : null,
+    employees !== null ? `its size as ${formatInt(employees)} ${employees === 1 ? "employee" : "employees"}` : null,
     since ? `its founding year as ${since}` : null,
   ].filter(Boolean);
   return (

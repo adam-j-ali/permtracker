@@ -892,7 +892,7 @@ export default async function EmployerPage({
         ? { label: "Main worksite state", value: topState.label, note: share(topState.n) }
         : null,
     topIndustry ? { label: "Industry", value: topIndustry.label, note: `NAICS ${topIndustry.codes[0]}` } : null,
-    size?.employees
+    size && size.employees !== null
       ? { label: "Employees", value: formatInt(size.employees), note: sizeNote(size) }
       : size?.since
         ? { label: "In business since", value: String(size.since), note: "As its filings give it" }

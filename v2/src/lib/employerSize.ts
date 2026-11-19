@@ -6,7 +6,9 @@
  * decided case says 14 employees where its filings around it say 784 to 805.
  * So the figure is the middle of the newest applications that carry one, and
  * the year the one they give most often (the newest such year on a tie). A
- * headcount of 0 or a year before 1700 is a slip and doesn't count.
+ * headcount of 0 is the employer's own answer and counts like any other, so an
+ * employer whose filings all say 0 shows 0, and a lone 0 among real counts is
+ * outvoted by the middle. A year before 1700 is a slip and doesn't count.
  */
 
 /** How many of the newest applications the figure is read from. */
@@ -44,7 +46,7 @@ export function typicalEmployerSize(rowsNewestFirst: EmployerSizeRow[]): Employe
   const firstSeen = new Map<number, number>();
   rowsNewestFirst.slice(0, SIZE_SAMPLE).forEach((r, i) => {
     const e = num(r.emp_payroll);
-    if (e !== null && e > 0) heads.push(e);
+    if (e !== null && e >= 0) heads.push(e);
     const y = num(r.emp_year);
     if (y !== null && y >= 1700) {
       years.set(y, (years.get(y) ?? 0) + 1);
@@ -62,8 +64,9 @@ export function typicalEmployerSize(rowsNewestFirst: EmployerSizeRow[]): Employe
   return { employees, since, basis: heads.length };
 }
 
-/** The note under the headcount: the founding year when there is one, else where the figure comes from. */
-export function sizeNote(size: Pick<EmployerSize, "basis" | "since">): string {
+/** The note under the headcount: none on payroll said as reported, the founding year when there is one, else where the figure comes from. */
+export function sizeNote(size: Pick<EmployerSize, "basis" | "since"> & { employees?: number | null }): string {
+  if (size.employees === 0) return "None on payroll, as its filings report it";
   if (size.since) return `In business since ${size.since}`;
   return size.basis > 1 ? `Typical of its ${size.basis} newest filings` : "On its newest filing";
 }
