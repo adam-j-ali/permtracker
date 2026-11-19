@@ -142,6 +142,18 @@ def main() -> int:
     check(len(cases) == 1 and counts["merged"] == 1 and cases[0]["shows"] and cases[0].get("card") is None,
           "a private timeline matching the sheet's row merges, and its card day stays private")
 
+    # A table made by an older build gains the new columns before the first write that names them (Nov 19 2026:
+    # the server's first run with every step failed on "no column named h1b_filed").
+    from lib_sqlite_shim import SqliteTurso
+    db = SqliteTurso()
+    db.execute("CREATE TABLE reported_cases (case_id TEXT PRIMARY KEY, office TEXT, transfer TEXT, built_at INTEGER)")
+    b.ensure_table(db)
+    from lib_db import query_rows
+    cols = {r[1] for r in query_rows(db, "PRAGMA table_info(reported_cases)")}
+    check(set(b.COLUMNS) <= cols, f"an old table gains every column: missing {sorted(set(b.COLUMNS) - cols)[:5]}")
+    changed = b.write(db, [b.case_row(c, 5) for c in b.build_cases({"sheets": [sheet_row()]})[0]])
+    check(changed == {"SFV"}, f"and the first write to it lands: {changed}")
+
     # A bad row from one source is counted and left out, never allowed to stop the build.
     cases, counts = b.build_cases({"sheets": [sheet_row(), sheet_row(row_no=3, transfer_date="9/24/2026")]})
     check(len(cases) == 1 and counts["left_out"] == 1, "a row the merge can't read is left out and counted")
