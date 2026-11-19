@@ -282,6 +282,7 @@ export function LoginPageClient() {
                 id="code"
                 name="code"
                 type="text"
+                autoComplete="one-time-code"
                 placeholder="XXXXXXXXXXXX"
                 maxLength={12}
                 required
