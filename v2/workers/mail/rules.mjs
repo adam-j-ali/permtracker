@@ -11,7 +11,13 @@ export const OWN_SENDERS = ["notifications@permtracker.app"];
 /** Where the site sends to itself on purpose: the contact form writes to support@. */
 export const SELF_ADDRESSED_ON_PURPOSE = ["support@permtracker.app"];
 
-const bare = (from) => ((from || "").match(/<([^>]+)>/)?.[1] ?? from ?? "").trim().toLowerCase();
+/** The most of a From header any address check reads: a stranger writes it, and "<" with no ">" backtracks. */
+export const ADDRESS_HEADER_MAX = 2_000;
+
+const bare = (from) => {
+  const f = (from || "").slice(0, ADDRESS_HEADER_MAX);
+  return (f.match(/<([^>]+)>/)?.[1] ?? f).trim().toLowerCase();
+};
 
 /** Whether a message to `to` from `from` goes on to the owner's inbox. */
 export function shouldForward(to, ownerEmail, from = "") {
@@ -121,14 +127,52 @@ export const AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 /** How long the forward may wait on the AI and on Convex's verdict. Past it, it forwards. */
 export const CHECK_TIMEOUT_MS = 4_000;
 
+/** The most HTML the check reads. The message itself is at most CHECK_MAX_BYTES. */
+const HTML_READ_MAX = 300_000;
+
+/**
+ * The HTML's words: tags out, style and script blocks out, each link's address kept, in one pass.
+ *
+ * A stranger writes this HTML, so nothing here may backtrack: three regexes did (an unclosed link repeated ran in
+ * cubic time, 2 s for 10,000 characters, Nov 19 2026), and the email handler ran out of CPU before the forward. Each
+ * step finds the next "<" and its ">" with indexOf and moves past both, so every character is read a fixed number
+ * of times. An unclosed tag or block ends the words: the rest is markup.
+ */
+export function htmlWords(html) {
+  const lower = html.toLowerCase();
+  const out = [];
+  let i = 0;
+  while (i < html.length) {
+    const lt = html.indexOf("<", i);
+    if (lt < 0) {
+      out.push(html.slice(i));
+      break;
+    }
+    out.push(html.slice(i, lt));
+    const gt = html.indexOf(">", lt);
+    if (gt < 0) break;
+    const block = /^<(style|script)\b/.exec(lower.slice(lt, Math.min(gt, lt + 8)));
+    if (block) {
+      const close = lower.indexOf(`</${block[1]}`, gt);
+      const end = close < 0 ? -1 : html.indexOf(">", close);
+      if (end < 0) break;
+      out.push(" ");
+      i = end + 1;
+      continue;
+    }
+    // Anchored, lazy and on one tag only, so it reads the tag once.
+    const href = /^<a\s[^>]*?\bhref="([^"]*)"/i.exec(html.slice(lt, gt + 1));
+    out.push(href && href[1] ? ` ${href[1]} ` : " ");
+    i = gt + 1;
+  }
+  return out.join("");
+}
+
 /** The words the check reads: the text part, or the HTML part with its tags taken out. */
 export function checkText(parsed) {
   if (parsed?.text) return parsed.text.slice(0, 20_000);
   if (!parsed?.html) return "";
-  return parsed.html
-    .replace(/<(style|script)[\s\S]*?<\/\1>/gi, " ")
-    .replace(/<a\s[^>]*href="([^"]+)"[^>]*>/gi, " $1 ")
-    .replace(/<[^>]+>/g, " ")
+  return htmlWords(parsed.html.slice(0, HTML_READ_MAX))
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/\s+/g, " ")

@@ -132,8 +132,21 @@ export async function aiOpinionFromWorker(
 // The admin page
 // ============================================================================
 
-const snippet = (row: Doc<"supportEmails">): string =>
-  (row.bodyText || (row.bodyHtml ?? "").replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim().slice(0, 280);
+/** How much of a message the preview reads: its 280 characters come from the start, so the rest is never needed. */
+const PREVIEW_READ_MAX = 4_000;
+
+/**
+ * The admin page's preview of a message. A stranger writes the body (up to 300,000 characters stored), and the tag
+ * regex is quadratic on unclosed brackets, so the body is cut before any regex reads it.
+ */
+export function emailPreview(row: Pick<Doc<"supportEmails">, "bodyText" | "bodyHtml">): string {
+  const words = row.bodyText
+    ? row.bodyText.slice(0, PREVIEW_READ_MAX)
+    : (row.bodyHtml ?? "").slice(0, PREVIEW_READ_MAX).replace(/<[^>]+>/g, " ");
+  return words.replace(/\s+/g, " ").trim().slice(0, 280);
+}
+
+const snippet = (row: Doc<"supportEmails">): string => emailPreview(row);
 
 const listRow = (row: Doc<"supportEmails">) => ({
   id: row._id,

@@ -108,4 +108,32 @@ describe('the spam check in the Worker', () => {
     expect(read).not.toContain('p{}');
     expect(checkText(null)).toBe('');
   });
+
+  // A stranger's HTML-only message, shaped to make a backtracking regex run for seconds (Nov 19 2026 security review:
+  // 10,000 characters of an unclosed link took 2 s, cubically, and the email handler ran out of CPU before the forward).
+  it.each([
+    ['an unclosed link, repeated', '<a href="x" '.repeat(5_000)],
+    ['opening brackets only', '<'.repeat(250_000)],
+    ['an unclosed style block, repeated', '<style'.repeat(40_000)],
+  ])('reads %s in linear time', (_shape, html) => {
+    const started = performance.now();
+    checkText({ html });
+    expect(performance.now() - started).toBeLessThan(500);
+  });
+
+  it('checks a hostile From header quickly, and still reads a normal one', () => {
+    const started = performance.now();
+    shouldForward('support@permtracker.app', 'owner@example.com', '<'.repeat(200_000));
+    shouldForwardInbound('support@permtracker.app', 'owner@example.com', '<'.repeat(200_000));
+    expect(performance.now() - started).toBeLessThan(200);
+    expect(shouldForward('demo@permtracker.app', OWNER, 'PERM Tracker <notifications@permtracker.app>')).toBe(false);
+    expect(shouldForwardInbound('demo@permtracker.app', OWNER, 'PERM Tracker <notifications@permtracker.app>')).toBe(false);
+  });
+
+  it('keeps a link that sits after a tag with no end on its own line', () => {
+    const read = checkText({ html: '<p>Hi <a class="b" href="https://ok.example/y">there</a> <b>bold</b>' });
+    expect(read).toContain('https://ok.example/y');
+    expect(read).toContain('Hi');
+    expect(read).toContain('bold');
+  });
 });

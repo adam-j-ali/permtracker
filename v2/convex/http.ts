@@ -198,7 +198,8 @@ http.route({
       }
 
       // Parse sender — format: "Name <email>" or just "email"
-      let fromEmail = data.from || "";
+      // Cut first: a stranger writes the header, and "<" with no ">" makes the match below backtrack.
+      let fromEmail = (data.from || "").slice(0, 2_000);
       let fromName: string | undefined;
       const nameMatch = fromEmail.match(/^(.+?)\s*<(.+?)>$/);
       if (nameMatch) {
