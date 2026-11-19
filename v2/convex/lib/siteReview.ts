@@ -19,8 +19,11 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
  * top-level domain ("followersnow.com"). Reviews are words about the site, and a link is how review spam pays.
  * The domain list is deliberately short: "e.g.", "U.S.", "St.Louis" and "2.0" must stay ordinary writing.
  */
+// Each run is bounded by the internet's own limits (an address's local part 64, its domain 255, a domain label 63),
+// so every starting point reads a fixed number of characters: unbounded runs made the check quadratic on a stranger's
+// text, about 0.3 s a review after NFKC grew it six-fold (Nov 19 2026).
 const LINK_RE =
-  /\b(?:https?|ftp):\/\/|\bwww\.|[^\s@]+@[^\s@]+\.[a-z]{2,}|\b[a-z0-9-]+\.(?:com|net|org|io|app|co|ly|me|info|biz|xyz|ru|cn|top|site|online|link|click|shop|store|live|gg|tv|us|uk|in)\b/i;
+  /\b(?:https?|ftp):\/\/|\bwww\.|[^\s@]{1,64}@[^\s@]{1,255}\.[a-z]{2,}|\b[a-z0-9-]{1,63}\.(?:com|net|org|io|app|co|ly|me|info|biz|xyz|ru|cn|top|site|online|link|click|shop|store|live|gg|tv|us|uk|in)\b/i;
 
 /**
  * Characters that never belong in a review: control characters (tab and new line kept), the byte-order mark, and
