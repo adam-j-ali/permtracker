@@ -1,0 +1,15 @@
+{
+  "about": "Public community sheets people keep their own green card cases in, loaded by scripts/ingest_community_sheets.py. The username and receipt-number columns never leave the sheet.",
+  "sheets": [
+    {
+      "key": "sfv-filers",
+      "name": "San Fernando Filers",
+      "office": "SFV",
+      "sheet_id": "14d7MktWRIB7Wb7qvKDlVALyVz9KzgU5h2oLrBQhZxvo",
+      "gid": "0",
+      "shared": "2026-09-15",
+      "shared_where": "r/EB2 and r/USCIS_EB3",
+      "min_rows": 50
+    }
+  ]
+}
