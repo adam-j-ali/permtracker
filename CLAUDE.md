@@ -123,8 +123,8 @@ Each was decided once and holds until the owner changes it. The reasons are in t
 - Nothing is posted or replied to on X or elsewhere for the site without the owner's yes for that post (Oct 11).
 
 **Email**
-- Resend's free plan stays: sign-ups may use 70 of the 100 a day and alerts keep 15 above that (Oct 13); mail anyone can set off stops at 55 (Oct 10). `EMAIL_DAILY_LIMIT` above 100 puts every saving back (Oct 12).
-- One alert email per person per day, with a status change always sent at once (Sep 26, Oct 7).
+- On Resend's paid plan since Nov 18 2026 (no daily cap): `EMAIL_DAILY_LIMIT` is 1600 on prod, so every saving is back (Oct 12) and each ceiling is the same share of it as the free plan's 70 and 85 of 100 (Oct 10, Oct 13).
+- One alert email per person per day, with a status change always sent at once (Sep 26, Oct 7), and on the paid plan an employer's move too, after each of the day's two checks (Nov 18).
 - The weekly case summary stays on Monday for every account and goes only in a week something changed; the sample case sends nothing (Oct 12).
 - A box opened in an alert email saves its rating at once (Oct 12, Oct 24). A congratulations note goes two business days after a good decision, read by a person, one per address, never twice (Oct 22, Oct 23).
 - Reviews are the site's own: the owner approves each, declining only spam and abuse; a review needs no name (Oct 23, Nov 2). Visitor reports on consulate pages post at once and are moderated after (Nov 5).
