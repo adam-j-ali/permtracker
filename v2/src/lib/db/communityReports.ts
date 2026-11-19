@@ -61,3 +61,48 @@ export const getReportedI140Cases = cache(async (): Promise<I140Case[]> => {
   }
   return got.map(fromI140Row);
 });
+
+export interface ReportedOverview {
+  /** Cases shown, each person once. */
+  people: number;
+  /** Of those, the ones more than one source reported. */
+  inSeveral: number;
+  bySource: { source: string; cases: number }[];
+  /** Employment-based I-485s by USCIS office, the most reported first. */
+  offices: { office: string; cases: number }[];
+  i140s: number;
+}
+
+const SHOWN = "shows = 1 AND adds_nothing = 0";
+
+/** The whole merged list at a glance, for the timelines page. Null before the first build. */
+export const getReportedOverview = cache(async (): Promise<ReportedOverview | null> => {
+  try {
+    const [totals, sources, offices] = await Promise.all([
+      rows<Row>(
+        `SELECT count(*) AS people, sum(CASE WHEN json_array_length(source_names) > 1 THEN 1 ELSE 0 END) AS several, ` +
+          `sum(CASE WHEN i140_decision IS NOT NULL OR i140_receipt IS NOT NULL THEN 1 ELSE 0 END) AS i140s ` +
+          `FROM reported_cases WHERE ${SHOWN}`,
+      ),
+      rows<Row>(
+        `SELECT j.value AS source, count(*) AS cases FROM reported_cases, json_each(reported_cases.source_names) j ` +
+          `WHERE ${SHOWN} GROUP BY j.value ORDER BY cases DESC, source`,
+      ),
+      rows<Row>(
+        `SELECT office, count(*) AS cases FROM reported_cases WHERE ${SHOWN} AND office IS NOT NULL ` +
+          `AND (category IS NULL OR category <> 'Family') GROUP BY office ORDER BY cases DESC, office`,
+      ),
+    ]);
+    const t = totals[0];
+    return {
+      people: Number(t?.people ?? 0),
+      inSeveral: Number(t?.several ?? 0),
+      i140s: Number(t?.i140s ?? 0),
+      bySource: sources.map((r) => ({ source: String(r.source), cases: Number(r.cases) })),
+      offices: offices.map((r) => ({ office: String(r.office), cases: Number(r.cases) })),
+    };
+  } catch (e) {
+    if (/no such table/i.test(String(e))) return null;
+    throw e;
+  }
+});

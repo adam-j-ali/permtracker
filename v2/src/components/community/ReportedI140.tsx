@@ -45,7 +45,8 @@ export function ReportedI140({ cases }: { cases: readonly I140Case[] }) {
         <a href={VISASTATS} target="_blank" rel="noopener noreferrer" className="link">
           VisaStats&apos; community tracker
         </a>
-        , the rest from timelines shared here, each case counted once.
+        , the rest from timelines shared here, each case counted once. Premium added later is counted from the filing
+        day too, so its bar includes the wait before premium was asked for.
       </p>{" "}
       {bars.length > 0 ? (
         <div className="object mt-4 p-4 sm:p-5">

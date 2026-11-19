@@ -20,6 +20,8 @@ import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { FaqList } from "@/components/tools/FaqList";
 import { BOARD_OPENS_AT, METRIC_MIN_N, OFFICE_LIST_OPENS_AT, shareProgress } from "@/lib/communityTimeline";
 import { officeByCode, officeHref } from "@/lib/uscisOffices";
+import { ReportedOverview } from "@/components/community/ReportedOverview";
+import { getReportedOverview } from "@/lib/db/communityReports";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { NoteBanner } from "@/components/ui/note";
@@ -94,10 +96,12 @@ const FAQS = [
 ];
 
 export default async function GreenCardTimelinesPage() {
-  const [board, posted] = await Promise.all([
+  const [board, posted, reported] = await Promise.all([
     fetchBoard().catch(softFail<Board | null>("green-card-timelines/page.fetchBoard", null)),
     // USCIS's own posted times for the work permit and advance parole, beside people's reports. A failed read loses only that line.
     getUscisPosted().catch(softFail("green-card-timelines/page.getUscisPosted", null)),
+    // Every source's reported cases at a glance. A failed read loses only that section.
+    getReportedOverview().catch(softFail("green-card-timelines/page.getReportedOverview", null)),
   ]);
   const papers = waitPapers(posted);
   // Optional chaining: a backend older than Nov 11 2026 sends no `offices`.
@@ -145,6 +149,8 @@ export default async function GreenCardTimelinesPage() {
 
           {/* No week when the page fell back to the plain board. */}
           {board.recent ? <RecentApprovals recent={board.recent} /> : null}{" "}
+
+          <ReportedOverview overview={reported} />{" "}
 
           <section className="mt-8 max-w-3xl" aria-labelledby="add-h">
             <h2 id="add-h" className="sr-only">
