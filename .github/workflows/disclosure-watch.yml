@@ -1,0 +1,38 @@
+name: DOL disclosure watch
+# Each night, reads DOL's disclosure page once (www.dol.gov answers GitHub's runners and refuses the server and the
+# owner's Mac) and starts the PERM or FLAG loader for any workbook the last night's read didn't list. PERM first; the
+# FLAG files the next night, so the two heavy loads never share a night. A run that GitHub starts after 6 AM Eastern
+# reads and reports only, and the next night starts the load (scripts/watch_disclosure_files.py). The monthly
+# schedules on the loaders themselves stay as backstops.
+
+on:
+  schedule:
+    # 06:23 UTC: 1:23 AM EST, 2:23 AM EDT. Off the hour, where GitHub's queue is shortest.
+    - cron: "23 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: disclosure-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      DATABASE_LCA_URL: ${{ secrets.DATABASE_LCA_URL }}
+      DATABASE_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: "3.12"
+      - name: Read DOL's page and start any new load
+        working-directory: v2
+        run: python3 scripts/watch_disclosure_files.py
