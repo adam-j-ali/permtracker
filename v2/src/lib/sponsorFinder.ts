@@ -142,7 +142,8 @@ export function parseFinder(params: Params, states: ReadonlySet<string>): Finder
     senior: first(params.senior) === "1",
     capExempt: first(params.cap) === "1",
     includeDebarred: first(params.debarred) === "1",
-    sort: sort in SORTS ? (sort as FinderSort) : DEFAULT_SORT,
+    // Own keys only: `in` walks the prototype chain, so "constructor" passed and the query read ORDER BY undefined.
+    sort: Object.hasOwn(SORTS, sort) ? (sort as FinderSort) : DEFAULT_SORT,
     page: Number.isFinite(page) && page >= 1 ? Math.min(page, MAX_PAGE) : 1,
     per: oneOf(PER_STEPS, Number(first(params.per))),
   };
