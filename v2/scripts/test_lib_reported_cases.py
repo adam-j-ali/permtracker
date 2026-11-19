@@ -173,6 +173,51 @@ def main() -> int:
     ids = [x["id"] for x in rc.merge(pool)]
     check(len(ids) == len(set(ids)), "every case has its own id")
 
+    # 16. Every step of the journey merges by the same rules: a wage request, PERM, H-1B and the consular step.
+    tg = rec("telegram", "u10", person="h9", pwd_filed="2025-01-06", pwd_issued="2025-07-14", perm_filed="2025-08-01",
+             perm_decided="2026-09-03", perm_decision="approved", category="EB-2")
+    tl = rec("timeline", "t9", checked=True, pwd_issued="2025-07-14", perm_filed="2025-08-01", perm_decided="2026-09-03",
+             i140_receipt="2026-09-20", i140_decided="2026-10-01", i140_decision="approved", premium="with filing",
+             category="EB-2")
+    cases = rc.merge([tg, tl])
+    check(len(cases) == 1, "a chat's PERM dates and a timeline's join on three days across the steps")
+    c = cases[0]
+    check(c["pwd_issued"] == "2025-07-14" and c["i140_decided"] == "2026-10-01" and c["perm_decision"] == "approved",
+          "the case holds the wage request, PERM and the I-140, each from the source that gave it")
+    h1 = rec("reddit", "p20", h1b_filed="2025-04-01", h1b_decided="2025-05-02", h1b_decision="approved",
+             lca_certified="2025-03-20")
+    check(len(rc.merge([h1])) == 1 and rc.merge([h1])[0]["lca_certified"] == "2025-03-20", "the H-1B and LCA steps")
+
+    # 17. A 221(g) and then a visa is the case moving on; a visa and a refusal can't both be true.
+    nvc = rec("consular-report", "r1", checked=True, post="mumbai", priority_date="2023-01-10", nvc_complete="2026-03", consular_scheduled="2026-05-02",
+              consular_interview="2026-06-10", consular_outcome="221g", category="EB-3")
+    later = rec("reddit", "p21", post="mumbai", priority_date="2023-01-10", consular_scheduled="2026-05-02", consular_interview="2026-06-10",
+                visa_issued="2026-07-01", consular_outcome="issued", nvc_complete="2026-03-15")
+    cases = rc.merge([nvc, later])
+    check(len(cases) == 1 and cases[0]["consular_outcome"] == "issued", "a 221(g) followed by a visa merges as issued")
+    two_days = {**later, "key": "p24"}
+    del two_days["priority_date"]
+    check(len(rc.merge([nvc, two_days])) == 2, "two consular days alone never carry a visa onto someone")
+    refused = {**later, "key": "p22", "consular_outcome": "refused", "visa_issued": None}
+    refused = {k: v for k, v in refused.items() if v is not None}
+    issued = {**nvc, "key": "r2", "consular_outcome": "issued"}
+    check(len(rc.merge([issued, refused])) == 2, "issued against refused keeps them apart")
+    other_post = {**later, "key": "p23", "post": "new-delhi"}
+    check(len(rc.merge([nvc, other_post])) == 2, "another consulate keeps them apart")
+
+    # 18. Premium processing: the kind a source names, the most specific winning; never a reason to keep cases apart.
+    a1 = rec("visastats", "41", category="EB-1A", i140_receipt="2026-01-05", i140_rfe_issued="2026-02-01",
+             i140_decided="2026-03-01", premium="none")
+    a2 = rec("telegram", "u41", category="EB-1A", i140_receipt="2026-01-05", i140_rfe_issued="2026-02-01",
+             i140_decided="2026-03-01", premium="after filing")
+    cases = rc.merge([a1, a2])
+    check(len(cases) == 1 and cases[0]["premium"] == "after filing", "premium added later beats none")
+    try:
+        rc.merge([rec("reddit", "x9", premium="maybe")])
+        check(False, "refuses a premium kind it doesn't know")
+    except ValueError:
+        check(True, "refuses a premium kind it doesn't know")
+
     # 15. Bad input is refused, never guessed.
     for bad, what in ((rec("reddit", "x", transfer="9/24/2026"), "a date not in ISO form"),
                       (rec("reddit", "x", nickname="z"), "a field the merge doesn't know"),

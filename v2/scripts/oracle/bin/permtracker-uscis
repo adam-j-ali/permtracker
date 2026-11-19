@@ -16,6 +16,11 @@ rc=0
 # A reader that asks the site to rebuild its pages (lib_policy_feed.expire_policy_page and its siblings) reads
 # these two; without them it takes the run for a local one and asks nothing, silently. nginx sends the call to
 # both web copies. The secret is the site's own, read from its env file and never printed.
+convex_export_env(){  # Convex's export (GET /reported-export) through the watched-cases secret
+  export WATCHED_CASES_SECRET_FILE=/srv/permtracker/secrets/watched_cases_secret
+  NEXT_PUBLIC_CONVEX_URL="$(sed -n 's/^NEXT_PUBLIC_CONVEX_URL=//p' /srv/permtracker/app/env/production.env | tr -d '"' | head -1)"
+  export NEXT_PUBLIC_CONVEX_URL
+}
 site_refresh_env(){
   export REVALIDATE_BASE=http://127.0.0.1:8081
   REVALIDATE_SECRET="$(sed -n 's/^REVALIDATE_SECRET=//p' /srv/permtracker/app/env/production.env | head -1)"
@@ -110,8 +115,18 @@ case "$job" in
       || { rc=1; fail ingest_visastats.py "the VisaStats bundles ($c, $o) were refused"; }
     # Its cases join the merged list now, not at the next hourly build.
     site_refresh_env
-    timeout 5m python3 scripts/build_reported_cases.py \
+    convex_export_env
+    timeout 5m python3 scripts/build_reported_cases.py --from-convex \
       || { rc=1; fail build_reported_cases.py "the reported-cases build after the VisaStats load failed"; } ;;
+  # Every source's reported cases merged into one list, each person once, hourly: the sheets (loaded by GitHub's
+  # hourly ingest), VisaStats, the posts, and the timelines and consulate reports shared on this site, read from
+  # Convex with the watched-cases secret. The one writer of reported_cases; it refreshes only the offices that changed.
+  #   sudo -u permtracker permtracker-uscis reported-cases
+  reported-cases)
+    site_refresh_env
+    convex_export_env
+    timeout 5m python3 scripts/build_reported_cases.py --from-convex \
+      || { rc=1; fail build_reported_cases.py "the hourly reported-cases build failed"; } ;;
   # The months of nonimmigrant issuances by post that only the Internet Archive still serves (State's PDFs, March
   # 2017 to September 2022; Nov 5 2026). Run by hand: it loads only months not held, waits between requests, refuses
   # February 2017's by-post-and-nationality layout, and when the Archive stops answering it keeps what it loaded
