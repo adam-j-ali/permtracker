@@ -9,6 +9,7 @@ import schema from "./schema";
 import { getCurrentUserId, getCurrentUserIdOrNull, verifyOwnership } from "./lib/auth";
 import { rateLimiter } from "./rateLimitConfig";
 import { logCreate, logUpdate, logDelete } from "./lib/audit";
+import { DOCUMENTS_THROUGH_UPLOAD_MESSAGE, filesNotHeld } from "./lib/documents";
 import { validateCaseText } from "./lib/validation";
 import { readUserCases, USER_CASES_MAX } from "./lib/userCases";
 import { encryptToken, decryptToken, isEncryptedToken } from "./lib/crypto";
@@ -477,6 +478,11 @@ export const create = mutation({
     // Input length validation (PI1 — Processing Integrity)
     validateCaseText(args);
 
+    // A new case holds no files yet: documents come in through documents.saveDocument (filesNotHeld).
+    if (args.documents && filesNotHeld([], args.documents).length > 0) {
+      throw new ConvexError(DOCUMENTS_THROUGH_UPLOAD_MESSAGE);
+    }
+
     const now = Date.now();
 
     const {
@@ -875,6 +881,11 @@ export const update = mutation({
     // Check not deleted
     if (caseDoc!.deletedAt !== undefined) {
       throw new ConvexError("Cannot update deleted case");
+    }
+
+    // A document list may keep, drop or rename the case's own files and never name another (filesNotHeld).
+    if (args.documents !== undefined && filesNotHeld(caseDoc!.documents, args.documents).length > 0) {
+      throw new ConvexError(DOCUMENTS_THROUGH_UPLOAD_MESSAGE);
     }
 
     // Capture old state for audit logging
