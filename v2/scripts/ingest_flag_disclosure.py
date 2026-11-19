@@ -552,12 +552,14 @@ def index_ddl(table: str) -> list[str]:
         # lca_cases, the one table big enough to need it; created on production by hand that night.
         f"CREATE INDEX IF NOT EXISTS {table}_soc_state_st_dec ON {table} "
         "(substr(soc_code, 1, 7), worksite_state, case_status, decision_date)",
-        # A name with a job title (`disclosureByTitleIndex`): the title is in the index, so the search tests it
-        # without opening each filing. "EMC" holds 2,204 LCAs and 37 under one title; newest-first walked every LCA
-        # in the file for them (15 to 20 s under load, Sentry 59, Nov 1 2026), this index answers in 0.03 s.
-        # Created on production by hand on Nov 2 2026.
-        f"CREATE INDEX IF NOT EXISTS {table}_emp_title ON {table} (employer_slug, received_date, job_title)",
     ] if table == "lca_cases" else []) + ([
+        # A name with a job title (`disclosureByTitleIndex`, and `disclosureHistoryByTitleIndex` for the older
+        # files): the title is in the index, so the search tests it without opening each filing. "EMC" holds 2,204
+        # LCAs and 37 under one title; newest-first walked every LCA in the file for them (15 to 20 s under load,
+        # Sentry 59, Nov 1 2026), this index answers in 0.03 s. Created on production by hand on Nov 2 2026. The
+        # older files had none until "Deloitte" and one title opened 97,155 of them (Sentry 61, Nov 19 2026).
+        f"CREATE INDEX IF NOT EXISTS {table}_emp_title ON {table} (employer_slug, received_date, job_title)",
+    ] if table in ("lca_cases", "lca_cases_history") else []) + ([
         # The yearly rankings and an employer's years read a whole fiscal year at a time (build_h1b_ranks.py,
         # build_lca_years.py); the current table is read the same way and is a third the size.
         f"CREATE INDEX IF NOT EXISTS {table}_fy ON {table} (fiscal_year, case_status, visa_class)",
