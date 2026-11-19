@@ -118,3 +118,64 @@ export function recentMonths(doc: UscisMonthly, line: MonthlyLine, n = 12): { mo
   }
   return out;
 }
+
+/** Every month from the first the doc holds to the newest, oldest first, a month USCIS doesn't list as `point: null`. */
+export function everyMonth(doc: UscisMonthly, line: MonthlyLine): { month: string; point: MonthlyPoint | null }[] {
+  return recentMonths(doc, line, 12 * 50).reverse();
+}
+
+/** A month's key `n` months before `month` ("2026-09", 12 is "2025-09"). */
+function monthsBefore(month: string, n: number): string {
+  const total = Number(month.slice(0, 4)) * 12 + (Number(month.slice(5)) - 1) - n;
+  return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, "0")}`;
+}
+
+/** Fewer months than this in the year before and the comparison isn't made. */
+const YEAR_BEFORE_MIN_MONTHS = 6;
+
+export interface DecisionTrend {
+  /** The newest month, "2026-09". */
+  month: string;
+  /** Approved plus denied in that month. */
+  decided: number;
+  /** The monthly average decided over the 12 months ending a year before, over the months USCIS reported. */
+  before: { from: string; to: string; average: number; counted: number } | null;
+  /** `decided` as a share of `before.average`. */
+  share: number | null;
+  pending: number | null;
+  pendingYearAgo: number | null;
+}
+
+/**
+ * The newest month's decisions against the year before: what a reader of the monthly report would check first
+ * when decisions fall (the N-400's did, from about 80,000 a month to about 23,000 by September 2026). Null when the
+ * newest month gives no approvals or denials; `before` is null with fewer than six months reported a year before.
+ */
+export function decisionTrend(doc: UscisMonthly, line: MonthlyLine): DecisionTrend | null {
+  const month = doc.newest;
+  if (!month) return null;
+  const byMonth = new Map(line.points.map((p) => [p.month, p]));
+  const now = byMonth.get(month);
+  if (!now || now.approved === null || now.denied === null) return null;
+  const decided = now.approved + now.denied;
+  const from = monthsBefore(month, 23);
+  const to = monthsBefore(month, 12);
+  const year = line.points.filter((p) => p.month >= from && p.month <= to && p.approved !== null && p.denied !== null);
+  const before =
+    year.length >= YEAR_BEFORE_MIN_MONTHS
+      ? {
+          from,
+          to,
+          average: Math.round(year.reduce((s, p) => s + p.approved! + p.denied!, 0) / year.length),
+          counted: year.length,
+        }
+      : null;
+  return {
+    month,
+    decided,
+    before,
+    share: before && before.average > 0 ? decided / before.average : null,
+    pending: now.pending,
+    pendingYearAgo: byMonth.get(to)?.pending ?? null,
+  };
+}

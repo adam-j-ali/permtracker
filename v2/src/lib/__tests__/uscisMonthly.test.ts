@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { deniedShare, leadLine, parseUscisMonthly, recentMonths } from "../uscisMonthly";
+import { decisionTrend, deniedShare, everyMonth, leadLine, parseUscisMonthly, recentMonths } from "../uscisMonthly";
 
 /** USCIS's monthly report to Congress, as the pages read it: checked, a lead line per form, gaps kept as gaps. */
 const point = (month: string, approved: number | null, denied: number | null) => ({
@@ -55,5 +55,57 @@ describe("USCIS's monthly report to Congress", () => {
     expect(rows[2]!.point).toBeNull();
     expect(rows[0]!.point?.approved).toBe(8068);
     expect(recentMonths(d, leadLine(d, "I-485")!, 2).map((r) => r.month)).toEqual(["2026-09", "2026-08"]);
+  });
+});
+
+describe("each month in a row, and the newest month against the year before (the N-400 drop, Nov 19 2026)", () => {
+  // Two years of one form, oldest first: 80,000 decided a month in the earlier year, 20,000 in the newest month, with
+  // one month of the earlier year that USCIS's listing doesn't carry.
+  const months: string[] = [];
+  for (let y = 2024; y <= 2026; y++) for (let m = 1; m <= 12; m++) months.push(`${y}-${String(m).padStart(2, "0")}`);
+  const held = months.filter((m) => m >= "2024-10" && m <= "2026-09" && m !== "2024-12");
+  const pts = held.map((m) => ({
+    month: m, received: 50000,
+    approved: m === "2026-09" ? 16000 : m <= "2025-09" ? 72000 : 30000,
+    denied: m === "2026-09" ? 4000 : m <= "2025-09" ? 8000 : 5000,
+    pending: m === "2026-09" ? 840000 : m === "2025-09" ? 540000 : 600000,
+    pending_6mo: 100, avg_months: 10,
+  }));
+  const twoYears = parseUscisMonthly(JSON.stringify({
+    newest: "2026-09", months: held, missing: ["2024-12"], source: "USCIS",
+    lines: [{ form: "N-400", line: "Application for Naturalization", basis: "", points: pts }],
+  }))!;
+  const line = leadLine(twoYears, "N-400")!;
+
+  it("lists every month from the first held to the newest, oldest first, a missing month as a gap", () => {
+    const all = everyMonth(twoYears, line);
+    expect(all[0]!.month).toBe("2024-10");
+    expect(all.at(-1)!.month).toBe("2026-09");
+    expect(all).toHaveLength(24);
+    expect(all.find((m) => m.month === "2024-12")!.point).toBeNull();
+  });
+
+  it("sets the newest month's decisions against the monthly average of the year before, over the months USCIS reported", () => {
+    const t = decisionTrend(twoYears, line)!;
+    expect(t.month).toBe("2026-09");
+    expect(t.decided).toBe(20000);
+    // Oct 2024 to Sep 2025 is 12 months; December 2024 isn't listed, so 11 count.
+    expect(t.before).toEqual({ from: "2024-10", to: "2025-09", average: 80000, counted: 11 });
+    expect(t.share).toBeCloseTo(0.25, 5);
+    expect(t.pending).toBe(840000);
+    expect(t.pendingYearAgo).toBe(540000);
+  });
+
+  it("says nothing it can't count: fewer than six months a year before, or no decisions in the newest month", () => {
+    const short = parseUscisMonthly(JSON.stringify({
+      newest: "2026-09", months: ["2025-08", "2025-09", "2026-09"], missing: [], source: "USCIS",
+      lines: [{ form: "N-400", line: "x", basis: "", points: pts.filter((p) => ["2025-08", "2025-09", "2026-09"].includes(p.month)) }],
+    }))!;
+    expect(decisionTrend(short, leadLine(short, "N-400")!)!.before).toBeNull();
+    const blank = parseUscisMonthly(JSON.stringify({
+      newest: "2026-09", months: held, missing: [], source: "USCIS",
+      lines: [{ form: "N-400", line: "x", basis: "", points: pts.map((p) => (p.month === "2026-09" ? { ...p, approved: null } : p)) }],
+    }))!;
+    expect(decisionTrend(blank, leadLine(blank, "N-400")!)).toBeNull();
   });
 });
