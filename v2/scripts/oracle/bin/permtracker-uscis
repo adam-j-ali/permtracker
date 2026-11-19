@@ -99,6 +99,15 @@ case "$job" in
     else
       rc=1; fail ingest_iv_scheduling.py "the IV scheduling table ($f) was refused"
     fi ;;
+  # VisaStats' community tracker, copied in the owner's Chrome each week (its robots.txt closes /api/, so nothing
+  # here asks the site): the EB and O tracker's bundle and the RFE officer lookup's (scripts/ingest_visastats.py).
+  # A refused bundle keeps the stored copy and records why. The I-140 pages rebuild after a write.
+  #   sudo -u permtracker permtracker-uscis visastats /tmp/cases.json /tmp/officers.json
+  visastats)
+    c="${2:-}"; o="${3:-}"
+    if [ -z "$c" ] || [ -z "$o" ]; then echo "usage: permtracker-uscis visastats <cases.json> <officers.json>"; exit 2; fi
+    timeout 10m python3 scripts/ingest_visastats.py --cases "$c" --officers "$o" \
+      || { rc=1; fail ingest_visastats.py "the VisaStats bundles ($c, $o) were refused"; } ;;
   # The months of nonimmigrant issuances by post that only the Internet Archive still serves (State's PDFs, March
   # 2017 to September 2022; Nov 5 2026). Run by hand: it loads only months not held, waits between requests, refuses
   # February 2017's by-post-and-nationality layout, and when the Archive stops answering it keeps what it loaded
@@ -201,8 +210,8 @@ case "$job" in
   browser-check)
     name="${2:-}"; note="${3:-checked}"
     case "$name" in
-      bulletin-read|iv-tool-read|state-pages-read|uscis-times|gsc-round|embassy-read) ;;
-      *) echo "usage: permtracker-uscis browser-check <bulletin-read|iv-tool-read|state-pages-read|uscis-times|gsc-round|embassy-read> [note]"; exit 2 ;;
+      bulletin-read|iv-tool-read|state-pages-read|uscis-times|gsc-round|embassy-read|visastats-read) ;;
+      *) echo "usage: permtracker-uscis browser-check <bulletin-read|iv-tool-read|state-pages-read|uscis-times|gsc-round|embassy-read|visastats-read> [note]"; exit 2 ;;
     esac
     python3 -c 'import sys; sys.path.insert(0, "scripts"); from lib_db import Database, record_run; sys.exit(0 if record_run(Database(), "browser-timer:" + sys.argv[1], status="ok", note=sys.argv[2][:300]) else 1)' "$name" "$note" \
       || { rc=1; echo "the heartbeat for $name was not recorded"; }
