@@ -9,7 +9,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from lib_offices import office_code  # noqa: E402
+from lib_offices import office_code, office_in_post  # noqa: E402
 
 
 def main() -> int:
@@ -34,6 +34,29 @@ def main() -> int:
         check(office_code(text), want, text)
     for text in ("Portland", "Charleston", "SA", "Oakland", "Texas", "", None, "pending", "local", "N/A"):
         check(office_code(text), None, f"can't be told: {text!r}")
+    # A post's own field office, from the words around it: the name before "FO" or "field office", after
+    # "transferred to", or after "interview at". One office named, or None; a service centre is never a field office.
+    santa_ana = ("Stuck at Santa Ana FO since early Feb 2026.  Anyone else?\nEB2->EB3 (Interfile) India PERM.\n"
+                 "Per Emma, 485/485Js were transferred to Santa Ana FO (non-local) in early Feb 2026.\n"
+                 "08/15/26: EAD/AP combo card approved. Notice issued by Texas SC.")
+    for text, want in (
+        (santa_ana, "SAA"),
+        ("Transferred to San Fernando Valley on 9/24, interview waived", "SFV"),
+        ("NBC -> Tampa FO on 4/28, still waiting", "TAM"),
+        ("Interview at Newark on 3/4, approved the same day", "NEW"),
+        ("Case moved from NBC to the Orlando field office", "ORL"),
+        ("Stuck At Santa Ana FO", "SAA"),
+    ):
+        check(office_in_post(text), want, f"post: {text[:40]!r}")
+    for text, why in (
+        ("Case transferred to NBC last week", "a service centre"),
+        ("My friend is at Tampa FO and mine is at Orlando FO", "two offices"),
+        ("My field office is so slow, no update since March", "no office named"),
+        ("Portland FO, interview done", "Portland alone is two offices"),
+        ("Interview at 10 AM tomorrow", "a time, not a place"),
+        ("", "nothing"),
+    ):
+        check(office_in_post(text), None, f"post with {why}")
     print(f"{failures} failed")
     return 1 if failures else 0
 
