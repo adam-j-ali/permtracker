@@ -39,7 +39,8 @@ beforeEach(() => {
   vi.stubEnv("BLOCKED_EMAILS", "");
   resendSends = 0;
   global.fetch = (async (url: unknown) => {
-    if (String(url).includes("api.resend.com")) {
+    // The parsed host, so a URL that only mentions Resend somewhere never counts as a send.
+    if (new URL(String(url)).hostname === "api.resend.com") {
       resendSends += 1;
       return new Response(JSON.stringify({ id: `email-${resendSends}` }), { status: 200, headers: { "Content-Type": "application/json" } });
     }
