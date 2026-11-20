@@ -47,7 +47,7 @@ import { getHistoricalMedians, getUscisFormRows, type HistoricalMedians } from "
 import { formatAsOf } from "@/lib/dolFormat";
 import { formatInt, formatShare, formatShareOf } from "@/lib/format";
 import { openGraphBase } from "@/lib/openGraphBase";
-import { PROCESSING_TIMES_SOURCE_URL } from "@/lib/processing-times/i140ProcessingTimes";
+import { getI140ProcessingTime, PROCESSING_TIMES_AS_OF, PROCESSING_TIMES_SOURCE_URL } from "@/lib/processing-times/i140ProcessingTimes";
 import { withSocialCard } from "@/lib/socialCard";
 import { easternDay } from "@/lib/time";
 import {
@@ -62,7 +62,7 @@ import {
   type LinePoint,
   type Slot,
 } from "@/lib/uscisForms";
-import { changeWords, isCurrent, postedByCategory, waitPapers, yearChange, type PaperTime, type PostedCategory } from "@/lib/uscisPosted";
+import { changeWords, i140ReadIsNewer, isCurrent, postedByCategory, waitPapers, yearChange, type PaperTime, type PostedCategory } from "@/lib/uscisPosted";
 import { PostedI140History } from "@/components/uscis/PostedI140History";
 import { monthsLabel, quarterLabel } from "@/lib/uscisQuarterlyShape";
 import { approvalMoved, countMoved, medianMoved } from "@/lib/uscisTrends";
@@ -126,6 +126,24 @@ function postedRows(categories: readonly PostedCategory[]): BarRow[] {
       text: c.min === null || c.max === null ? "" : c.min === c.max ? monthsPhrase(c.max) : `${monthsLabel(c.min)} to ${monthsPhrase(c.max)}`,
     };
   });
+}
+
+/**
+ * The I-140 rows from the figures read by hand on USCIS's page, for when USCIS has posted again and the daily copies
+ * haven't caught up (i140ReadIsNewer). Service Center Operations only, with no question date: that comes back with
+ * the next copy.
+ */
+function readI140Rows(): BarRow[] {
+  return (["EB-1", "EB-2", "EB-2-NIW", "EB-3"] as const)
+    .flatMap((c) => getI140ProcessingTime(c)?.subtypes ?? [])
+    .map((s) => ({
+      key: s.code,
+      label: `${s.label} (${s.code})`,
+      sub: undefined,
+      value: s.months80,
+      nullText: "No figure posted",
+      text: monthsPhrase(s.months80),
+    }));
 }
 
 function medianColumns(points: readonly LinePoint[]): Column[] {
@@ -208,7 +226,9 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
   const trend = month && monthly ? decisionTrend(monthly, month) : null;
   // A posting too old to stand for "now" is left out: the quarterly median carries the page on its own.
   const fresh = posted && isCurrent(posted, easternDay()) ? posted : null;
-  const categories = fresh ? postedRows(postedByCategory(fresh, page.form)) : [];
+  // The I-140's newest figures, read by hand, when USCIS posted again after the copies stopped (Nov 19 and 20 2026).
+  const i140Read = page.form === "I-140" && fresh !== null && i140ReadIsNewer(fresh);
+  const categories = fresh ? (i140Read ? readI140Rows() : postedRows(postedByCategory(fresh, page.form))) : [];
   // The row most people on the I-765 and I-131 pages wait on while an I-485 is pending, answered first.
   const papers = waitPapers(fresh);
   const key = keyRow(page.form, papers?.ead ?? null, papers?.ap ?? null);
@@ -371,7 +391,11 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
             <PageSection
               id="posted"
               title="USCIS's posted time, by category"
-              lede={`USCIS's processing-times page prints one figure a category: the time within which it finished 80% of the cases it decided over the past six months. Posted ${formatAsOf(posted.published)}.`}
+              lede={
+                i140Read
+                  ? `USCIS's processing-times page prints one figure a category: the time within which it finished 80% of the cases it decided over the past six months. USCIS has posted since the ${formatAsOf(posted.published)} posting our daily copy holds. These are the figures read on its page on ${formatAsOf(PROCESSING_TIMES_AS_OF)}, for Service Center Operations.`
+                  : `USCIS's processing-times page prints one figure a category: the time within which it finished 80% of the cases it decided over the past six months. Posted ${formatAsOf(posted.published)}.`
+              }
             >
               {key && keyHistory.length > 1 ? (
                 <div className="mb-5 max-w-3xl">
@@ -401,11 +425,17 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
                 <a href={PROCESSING_TIMES_SOURCE_URL} target="_blank" rel="noopener noreferrer" className="link">
                   USCIS&apos;s processing-times page
                 </a>
-                , as copied each day by the open-source{" "}
-                <a href={posted.project} target="_blank" rel="noopener noreferrer" className="link">
-                  jzebedee/uscis project
-                </a>
-                .{" "}
+                {i140Read ? (
+                  <>, read there {formatAsOf(PROCESSING_TIMES_AS_OF)}.{" "}</>
+                ) : (
+                  <>
+                    , as copied each day by the open-source{" "}
+                    <a href={posted.project} target="_blank" rel="noopener noreferrer" className="link">
+                      jzebedee/uscis project
+                    </a>
+                    .{" "}
+                  </>
+                )}
                 <Link href={`/tools/uscis-case-inquiry?form=${encodeURIComponent(page.form)}`} className="link">
                   Put your own {page.form} on the calendar
                 </Link>

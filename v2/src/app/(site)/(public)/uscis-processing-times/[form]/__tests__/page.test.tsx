@@ -60,6 +60,30 @@ beforeEach(() => {
   getPostedHistory.mockResolvedValue([]);
 });
 
+describe("the I-140's posted times when USCIS has posted again", () => {
+  // Nov 20 2026: USCIS posted new times; the daily copies stopped at the Oct 19 posting, and our hand reading on
+  // USCIS's page is newer. The page prints the reading, says why, and gives the copy back its place once it catches up.
+  const withI140 = (posted: number) => ({
+    ...POSTED,
+    newest: [...POSTED.newest, row("I-140", "136A-E11", "SCD", posted, "Extraordinary ability (E11)", "Service Center Operations (SCOPS)")],
+  });
+
+  const quarter = { fy: 2026, quarter: 3, quarterEnd: "2026-06-30", title: "Immigrant Petition for Alien Workers",
+    received: 30000, approved: 25000, denied: 2000, completed: 27000, pending: 80000, medianMonths: 4.1 };
+  beforeEach(() => getUscisFormRows.mockResolvedValue([quarter] as never));
+  afterEach(() => getUscisFormRows.mockResolvedValue([]));
+
+  it("prints the figures read by hand, dated, when they're newer than the copy and differ", async () => {
+    getUscisPosted.mockResolvedValue(withI140(1.5));
+    const text = await page("i-140");
+    expect(text).toContain("USCIS has posted since the October 19, 2026 posting our daily copy holds. These are the figures read on its page on");
+    expect(text).toContain("Extraordinary ability (E11)");
+    expect(text).not.toContain("1.5 months");
+    expect(text).toContain("read there");
+    expect(text).not.toContain("as copied each day by the open-source");
+  });
+});
+
 describe("the row a pending I-485 waits on, first", () => {
   it("gives the (c)(9) work permit at the National Benefits Center, and how it moved in a year", async () => {
     getPostedHistory.mockResolvedValueOnce([

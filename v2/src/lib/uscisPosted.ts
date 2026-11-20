@@ -113,17 +113,37 @@ const CATEGORIES: I140Category[] = ["EB-1", "EB-2", "EB-2-NIW", "EB-3"];
  * does, with the day it was read.
  */
 export function i140Figures(doc: UscisPosted | null, today: string): I140Figures {
-  const typed = CATEGORIES.flatMap((c) => getI140ProcessingTime(c)?.subtypes ?? []);
-  if (!doc || !isCurrent(doc, today)) return { subtypes: typed, asOf: PROCESSING_TIMES_AS_OF, from: "read" };
-  const posted = new Map(
-    doc.newest.filter((r) => r.form === "I-140" && r.office === I140_OFFICE && r.posted !== null).map((r) => [i140Code(r.subtype), r.posted as number]),
-  );
-  if (posted.size === 0) return { subtypes: typed, asOf: PROCESSING_TIMES_AS_OF, from: "read" };
+  const typed = typedI140();
+  const read: I140Figures = { subtypes: typed, asOf: PROCESSING_TIMES_AS_OF, from: "read" };
+  if (!doc || !isCurrent(doc, today)) return read;
+  const posted = i140Posted(doc);
+  if (posted.size === 0 || i140ReadIsNewer(doc)) return read;
   return {
     subtypes: typed.map((s) => (posted.has(s.code) ? { ...s, months80: posted.get(s.code) as number } : s)),
     asOf: doc.published,
     from: "posted",
   };
+}
+
+const typedI140 = () => CATEGORIES.flatMap((c) => getI140ProcessingTime(c)?.subtypes ?? []);
+
+/** USCIS's posted months for each I-140 subtype at Service Center Operations, by code. */
+function i140Posted(doc: UscisPosted): Map<string, number> {
+  return new Map(
+    doc.newest.filter((r) => r.form === "I-140" && r.office === I140_OFFICE && r.posted !== null).map((r) => [i140Code(r.subtype), r.posted as number]),
+  );
+}
+
+/**
+ * Whether the I-140 figures read by hand on USCIS's page are newer than the posting the daily copies hold, and say
+ * something else. USCIS has posted again and the copies haven't caught up (Nov 19 and 20 2026: the project's daily
+ * build failed the morning USCIS posted new times), so the newest reading is printed until a copy carries the same
+ * figures.
+ */
+export function i140ReadIsNewer(doc: UscisPosted): boolean {
+  if (PROCESSING_TIMES_AS_OF <= doc.published) return false;
+  const posted = i140Posted(doc);
+  return typedI140().some((s) => posted.has(s.code) && posted.get(s.code) !== s.months80);
 }
 
 /** Each I-140 subtype's line at Service Center Operations, in the typed order, with at least two postings. */
