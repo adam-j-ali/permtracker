@@ -36,9 +36,23 @@ describe("scorecardAlarms", () => {
     ]);
   });
 
+  it("says a late bulletin is late, never that the grading stopped", () => {
+    // December 2026's bulletin still "Coming Soon" on Nov 20: 18 predictions past their day, November's graded Oct 22.
+    const open = Array.from({ length: 18 }, () =>
+      row({ program: "bulletin", model: "archive-capture-days", recordedOn: "2026-11-08", predicted: "2026-11-12", decidedOn: null, outcome: null }),
+    );
+    const graded = row({ program: "bulletin", model: "archive-capture-days", recordedOn: "2026-10-11", predicted: "2026-10-14", decidedOn: "2026-10-22", outcome: "PUBLISHED" });
+    const said = scorecardAlarms([...open, graded], "2026-11-20").join(" ");
+    expect(said).toContain("18 predictions are a week or more past their day with no bulletin to grade them by: State hasn't published the next bulletin");
+    expect(said).not.toContain("may have stopped");
+    // Inside the week, nothing to say.
+    expect(scorecardAlarms([...open, graded], "2026-11-16")).toEqual([]);
+  });
+
   it("waits out the visa bulletin's monthly quiet, then says a whole window went unrecorded", () => {
     // Recorded only in the run-up to each bulletin (Oct 8 to 11 for November 2026).
-    const bulletin = row({ program: "bulletin", model: "archive-capture-days", recordedOn: "2026-10-11", predicted: "2026-10-14" });
+    // Graded when November's bulletin appeared (Oct 22), so only the recording gap is under test here.
+    const bulletin = row({ program: "bulletin", model: "archive-capture-days", recordedOn: "2026-10-11", predicted: "2026-10-14", decidedOn: "2026-10-22", outcome: "PUBLISHED" });
     expect(scorecardAlarms([bulletin], "2026-10-15")).toEqual([]);
     expect(scorecardAlarms([bulletin], "2026-11-10")).toEqual([]);
     expect(scorecardAlarms([bulletin], "2026-11-25").join(" ")).toContain("Visa bulletin release days: nothing recorded since 2026-10-11");
