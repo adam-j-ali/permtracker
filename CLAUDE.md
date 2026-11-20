@@ -129,6 +129,7 @@ Each was decided once and holds until the owner changes it. The reasons are in t
 - A box opened in an alert email saves its rating at once (Oct 12, Oct 24). A congratulations note goes two business days after a good decision, read by a person, one per address, never twice (Oct 22, Oct 23).
 - Reviews are the site's own: the owner approves each, declining only spam and abuse; a review needs no name (Oct 23, Nov 2). Visitor reports on consulate pages post at once and are moderated after (Nov 5).
 - A shared green card timeline waits for the owner's review before it counts (Nov 12).
+- A saved case's dates count in the public figures only by its account's own switch in Settings, off by default: dates and the I-140's kind only, never listed (Nov 19, built Nov 20).
 - A law firm's own words wait for the admin's review before they show (Oct 5).
 
 **Look and feel**

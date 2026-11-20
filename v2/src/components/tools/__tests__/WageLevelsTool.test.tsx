@@ -19,6 +19,15 @@ describe("WageLevelsTool", () => {
     expect(screen.getByLabelText("Job title or SOC code")).toHaveFocus();
   });
 
+  it("starts on the state a link names, so a case's job lands one step from its wages", () => {
+    // Arrange
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}")));
+    // Act
+    render(<WageLevelsTool initialSoc="15-1252" initialState="CA" />);
+    // Assert
+    expect(screen.getByLabelText("State")).toHaveValue("CA");
+  });
+
   it("asks for the state next, once a code is in", () => {
     // Arrange
     vi.stubGlobal("fetch", vi.fn(async () => new Response("{}")));
