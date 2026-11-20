@@ -162,12 +162,18 @@ export async function purgeAllUserData(
     await dropReminderRetries(ctx, r);
     await ctx.db.delete("reminderRecipients", r._id);
   }
-  // And the account's count of invitations to each address (keyed hashes, never addresses). The site-wide refusal
-  // list (reminderRefusals) isn't the account's and stays.
+  // And the account's count of invitations to each address, and the refusals its second people gave it by a
+  // reminder's Stop link (keyed hashes, never addresses). A refusal of every account ("Don't invite me again") names
+  // no account and stays.
   for await (const c of ctx.db
     .query("reminderInviteCounts")
     .withIndex("by_userId_and_addressKey", (q) => q.eq("userId", userId))) {
     await ctx.db.delete("reminderInviteCounts", c._id);
+  }
+  for await (const r of ctx.db
+    .query("reminderRefusals")
+    .withIndex("by_userId_and_addressKey", (q) => q.eq("userId", userId))) {
+    await ctx.db.delete("reminderRefusals", r._id);
   }
 
   // Delete all user's notifications
