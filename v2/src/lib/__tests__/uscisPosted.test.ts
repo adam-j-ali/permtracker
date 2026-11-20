@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { getI140ProcessingTime, PROCESSING_TIMES_AS_OF } from "@/lib/processing-times/i140ProcessingTimes";
-import { h4EadTimes, i140Code, i140Figures, i140Series, isCurrent, parseUscisPosted, postedByCategory } from "@/lib/uscisPosted";
+import { h4EadTimes, i140Code, i140Figures, i140ReadIsNewer, i140Series, isCurrent, parseUscisPosted, postedByCategory } from "@/lib/uscisPosted";
 
 /** USCIS's posted figures take the place of the typed ones only while they're current, code by code. */
 
@@ -40,13 +40,42 @@ describe("parseUscisPosted", () => {
   });
 });
 
+/** A day before or after the hand reading's date, "YYYY-MM-DD". */
+const dayFrom = (iso: string, days: number) => new Date(Date.parse(`${iso}T12:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
+const typedOf = (code: string) =>
+  (["EB-1", "EB-2", "EB-2-NIW", "EB-3"] as const).flatMap((c) => getI140ProcessingTime(c)?.subtypes ?? []).find((s) => s.code === code)!.months80;
+
 describe("i140Figures", () => {
   it("takes USCIS's newest posting while it's current, with USCIS's date", () => {
-    const f = i140Figures(parseUscisPosted(doc("2026-10-19", 2.5)), "2026-10-31");
+    const after = dayFrom(PROCESSING_TIMES_AS_OF, 3);
+    const f = i140Figures(parseUscisPosted(doc(after, 2.5)), dayFrom(after, 5));
     expect(f.from).toBe("posted");
-    expect(f.asOf).toBe("2026-10-19");
+    expect(f.asOf).toBe(after);
     expect(f.subtypes.find((s) => s.code === "E21")?.months80).toBe(2.5);
     expect(f.subtypes.find((s) => s.code === "E11")?.months80).toBe(34);
+  });
+
+  it("prints the hand reading when it's newer than the posting and a figure differs", () => {
+    // Nov 20 2026: USCIS posted new times; the daily copies stopped at the Oct 19 posting.
+    const before = dayFrom(PROCESSING_TIMES_AS_OF, -32);
+    const d = parseUscisPosted(doc(before, 2.5))!;
+    expect(i140ReadIsNewer(d)).toBe(true);
+    const f = i140Figures(d, PROCESSING_TIMES_AS_OF);
+    expect(f.from).toBe("read");
+    expect(f.asOf).toBe(PROCESSING_TIMES_AS_OF);
+    expect(f.subtypes.find((s) => s.code === "E11")?.months80).toBe(typedOf("E11"));
+  });
+
+  it("goes back to the posting once a copy carries the figures read by hand", () => {
+    const before = dayFrom(PROCESSING_TIMES_AS_OF, -1);
+    const same = parseUscisPosted(doc(before, typedOf("E21"), {
+      newest: [
+        { form: "I-140", subtype: "136A-E21", office: "SCD", posted: typedOf("E21"), postedText: "x Months", requestDate: null },
+        { form: "I-140", subtype: "136A-E11", office: "SCD", posted: typedOf("E11"), postedText: "x Months", requestDate: null },
+      ],
+    }))!;
+    expect(i140ReadIsNewer(same)).toBe(false);
+    expect(i140Figures(same, PROCESSING_TIMES_AS_OF).from).toBe("posted");
   });
 
   it("keeps the typed figure for a code the posting lacks or prints only a note for", () => {

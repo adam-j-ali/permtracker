@@ -29,6 +29,11 @@ def check(name: str, ok: bool, detail: str = "") -> None:
 
 
 check("a posting date reads as USCIS wrote it", u.iso("October 19, 2026") == "2026-10-19")
+# The project builds one file a day. Nov 19 and 20 2026 its build failed the morning USCIS posted new times, and the
+# old 4-day threshold stayed quiet while the pages showed the Oct 19 posting.
+check("a file two days old means one missed build, and says what to do",
+      (u.stall_note("2026-11-18", u.dt.date(2026, 11, 20)) or "").startswith("the project's newest file is 2 days old"))
+check("yesterday's file is the normal state", u.stall_note("2026-11-19", u.dt.date(2026, 11, 20)) is None)
 check("a date in another shape is no date", u.iso("19/10/2026") is None and u.iso("") is None)
 check("months stay months", u.months(32.5, "Months") == 32.5)
 check("weeks and days become months", u.months(2, "Weeks") == round(14 / (365.25 / 12), 2) and u.months(15, "Days") == round(15 / (365.25 / 12), 2))

@@ -315,6 +315,18 @@ def build_doc(db: Database, newest_tag: str | None) -> dict:
     }
 
 
+STALL_DAYS = 2  # the project builds one file a day: two days without a new one is a missed build
+
+
+def stall_note(newest_tag: str, today: dt.date) -> str | None:
+    """What the run says when the project's daily copies have stopped, or None while they arrive."""
+    lag = (today - dt.date.fromisoformat(newest_tag)).days
+    if lag < STALL_DAYS:
+        return None
+    return (f"the project's newest file is {lag} days old (its daily build stopped); if USCIS has posted, read its "
+            f"page by hand (the uscis-times timer)")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--backfill", action="store_true", help="read every release back to 2022")
@@ -386,13 +398,13 @@ def main() -> int:
         if not doc["published"]:
             raise RuntimeError("no posting held after the load")
         write_doc(db, DOC, doc)
-        lag = (dt.date.today() - dt.date.fromisoformat(newest_tag)).days
         notes = [f"{loaded:,} releases read ({unreadable:,} unreadable); newest posting {doc['published']}, "
                  f"{len(doc['postings']):,} postings held"]
-        if lag > 4:
+        stalled = stall_note(newest_tag, dt.date.today())
+        if stalled:
             # The project's own run stopped: a source that has gone quiet, not our failure (the budget below alarms).
-            print(f"::warning::the project's newest daily file is {newest_tag}, {lag} days old", flush=True)
-            notes.append(f"the project's newest file is {lag} days old")
+            print(f"::warning::{stalled}", flush=True)
+            notes.append(stalled)
         if doc["handCheck"]["differs"]:
             print(f"::warning::typed I-140 figures differ from USCIS's newest posting: "
                   f"{'; '.join(doc['handCheck']['differs'])}", flush=True)
