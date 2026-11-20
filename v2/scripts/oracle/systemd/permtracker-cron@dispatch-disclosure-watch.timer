@@ -1,0 +1,8 @@
+[Unit]
+Description=Schedule for permtracker-cron@dispatch-disclosure-watch
+[Timer]
+OnCalendar=*-*-* 01:23:00 America/New_York
+Persistent=true
+Unit=permtracker-cron@dispatch-disclosure-watch.service
+[Install]
+WantedBy=timers.target
