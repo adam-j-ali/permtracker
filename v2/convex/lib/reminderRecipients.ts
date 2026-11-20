@@ -54,15 +54,35 @@ export function normaliseRecipientEmail(raw: string): string | null {
 }
 
 /**
- * Anything a reader might follow: a scheme, a www., an address (an @) or a bare domain, a dot then two letters or more
- * that end the word ("irs-refund.example/claim", "irs.gov.", "IRS.GOV") or a punycode one. A dot before a space or a
- * single letter ("St. Jude", "U.S. Steel") is no domain. A false alarm only hides a name, so the rule leans wide.
+ * Anything a reader might follow: a scheme's "://", a www., an address (an @) or a bare domain, a dot then two letters or more
+ * that end the word ("irs-refund.example/claim", "irs.gov.", "IRS.GOV", "irs.gоv" with a Cyrillic о) or a punycode one,
+ * and any letter outside plain ASCII next to a dot ("пример.рф", "irs.сom"). A dot before a space or a single letter
+ * ("St. Jude", "U.S. Steel") is no domain. A false alarm only hides a name, so the rule leans wide. Every part runs
+ * in time linear in the text: a scheme is found by its "://" alone, since a letter run before it would be rescanned
+ * from each of its letters.
  */
-const LOOKS_LIKE_A_LINK = /(?:[a-z][a-z0-9+.-]*:\/\/|www\.|@|\.(?:[a-z]{2,}|xn--[a-z0-9-]+)(?![a-z0-9-]))/i;
+const LOOKS_LIKE_A_LINK =
+  /(?::\/\/|www\.|@|\.(?:\p{L}{2,}|xn--[a-z0-9-]+)(?![\p{L}\p{N}-])|[^\P{L}\x00-\x7F]\.|\.[^\P{L}\x00-\x7F])/iu;
 
-/** Whether text typed by an account reads like a link or an address (LOOKS_LIKE_A_LINK). */
+/** A phone number: seven digits or more, with only spaces, dots, dashes or parentheses between them. */
+const LOOKS_LIKE_A_PHONE = /(?:\p{Nd}[\s.()\p{Pd}]*){7,}/u;
+
+/** Characters a mail app shows as a full stop that NFKC leaves alone or turns into another of them: 。．｡․﹒ */
+const DOT_LIKE = /[。．｡․﹒]/g;
+
+/**
+ * The text as a reader sees it, for the tests above: invisible format characters (zero-width spaces and joiners, the
+ * soft hyphen, \p{Cf}) taken out, look-alike forms folded to plain ones (NFKC: "ｃｏｍ" is "com", "＠" is "@") and
+ * every dot-like character read as a dot.
+ */
+function asSeen(text: string): string {
+  return text.replace(/\p{Cf}/gu, "").normalize("NFKC").replace(DOT_LIKE, ".");
+}
+
+/** Whether text typed by an account reads like a link, an address or a phone number, however it's dressed up. */
 export function looksLikeALink(text: string): boolean {
-  return LOOKS_LIKE_A_LINK.test(text);
+  const seen = asSeen(text);
+  return LOOKS_LIKE_A_LINK.test(seen) || LOOKS_LIKE_A_PHONE.test(seen);
 }
 
 /**
