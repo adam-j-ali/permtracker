@@ -130,6 +130,15 @@ export const CRON_JOBS: Record<string, CronJob> = {
     zone: "America/New_York",
     description: "a full Convex export, sealed on the runner and copied to R2 by the server, nightly",
   },
+  // DOL's disclosure page, read once a night, starting the PERM or FLAG loader for a newly posted workbook
+  // (scripts/watch_disclosure_files.py). GitHub's own schedule for it never fired on its first night (Nov 20 2026),
+  // and the PERM loader's own monthly slot didn't either, so the server starts it like the jobs above.
+  "disclosure-watch": {
+    workflow: "disclosure-watch.yml",
+    schedule: "23 1 * * *",
+    zone: "America/New_York",
+    description: "DOL's disclosure page read for new quarterly workbooks, starting their load, nightly",
+  },
   // The site goes live once a night (scripts/deploy_plan.py): a push outside
   // 1 to 5 AM Eastern builds and stops, and this run ships main if anything
   // the site is built from changed since the live commit, at 2 AM Eastern.
@@ -155,6 +164,7 @@ export const WORKFLOW_NAMES: Record<string, string> = {
   "convex-backup.yml": "Convex backup (sealed, to R2)",
   "oracle-deploy.yml": "Oracle build and deploy",
   "newsworthy.yml": "Newsworthy check",
+  "disclosure-watch.yml": "DOL disclosure watch",
 };
 
 /**

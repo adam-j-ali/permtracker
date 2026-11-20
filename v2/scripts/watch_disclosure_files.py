@@ -55,10 +55,11 @@ def program_of(name: str) -> str:
 def plan(listed: list[str], seen: list[str] | None) -> tuple[str | None, list[str]]:
     """What to start tonight, and which names count as seen once it's started.
 
-    No earlier read (`seen` is None) starts nothing: the first night only records. Otherwise PERM goes first when it
-    has a new file; the FLAG files go on a night with no new PERM file."""
-    if seen is None:
-        return None, list(listed)
+    No earlier read (`seen` is None) counts every listed file as new: a first read that only recorded the listing
+    swallowed FY2026 Q4, posted before the watch began (Nov 20 2026), and the loaders write only what changed, so an
+    extra load costs nothing. PERM goes first when it has a new file; the FLAG files go on a night with no new PERM
+    file. `--seed` still records a listing without starting anything, by hand."""
+    seen = seen or []
     new = [n for n in listed if n not in set(seen)]
     for program in ("perm", "flag"):
         mine = [n for n in new if program_of(n) == program]
@@ -90,7 +91,10 @@ def main() -> int:
     row = dicts_of(db.execute("SELECT json FROM perm_docs WHERE key = ?", [DOC]))
     seen = json.loads(row[0]["json"])["files"] if row else None
     if a.seed:
-        seen = None
+        write_doc(db, DOC, {"files": listed, "checkedAt": dt.datetime.now(dt.timezone.utc).isoformat(),
+                            "started": None, "page": PAGE})
+        log(f"recorded {len(listed)} files as seen; started nothing")
+        return 0
     program, now_seen = plan(listed, seen)
     new = [n for n in listed if seen is not None and n not in set(seen)]
     log(f"DOL lists {len(listed)} disclosure files; new since the last read: {', '.join(new) or 'none'}")

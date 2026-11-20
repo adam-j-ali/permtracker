@@ -37,8 +37,13 @@ def main() -> int:
 
     q3 = ["PERM_Disclosure_Data_FY2026_Q3.xlsx", "PW_Disclosure_Data_FY2026_Q3.xlsx", "LCA_Disclosure_Data_FY2026_Q3.xlsx"]
     q4 = q3 + ["PERM_Disclosure_Data_FY2026_Q4.xlsx", "PW_Disclosure_Data_FY2026_Q4.xlsx", "LCA_Disclosure_Data_FY2026_Q4.xlsx"]
-    program, seen = w.plan(q3, None)
-    check(program is None and seen == q3, "the first read records the listing and starts nothing")
+    # The first read treats every file as new (Nov 20 2026: a watch started after DOL posted FY2026 Q4 recorded the
+    # quarter as seen and nothing ever loaded it). The loaders write only what changed, so an extra load costs nothing.
+    program, first = w.plan(q3, None)
+    check(program == "perm" and "PW_Disclosure_Data_FY2026_Q3.xlsx" not in first,
+          f"the first read starts PERM and leaves the FLAG files new for the next night: {program} {first}")
+    program, _ = w.plan(q3, first)
+    check(program == "flag", "and the next night starts the FLAG files")
     program, seen = w.plan(q4, q3)
     check(program == "perm", "a quarter with new PERM and FLAG files starts PERM first")
     check("PERM_Disclosure_Data_FY2026_Q4.xlsx" in seen and "PW_Disclosure_Data_FY2026_Q4.xlsx" not in seen,
