@@ -5,7 +5,7 @@ import type { StepGroup } from "@/lib/reportedSummary";
  * and people's reported cases (src/components/community/StepBothSources.tsx). A page is listed with its steps, or
  * exempt with the reason. `src/app/__tests__/step-pages-show-both-sources.test.ts` fails when a page in the site
  * map's step groups is missing here, or when a listed page doesn't render the section, so a new step page can't
- * ship showing one source (owner, Nov 20 2026: "find and fix all and going forward so it's not wackamole").
+ * ship showing one source.
  */
 
 /** Each step's name, as a link's words: "the wage request: the agency's figures". */
