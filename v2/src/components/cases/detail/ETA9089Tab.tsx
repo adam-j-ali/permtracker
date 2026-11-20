@@ -10,17 +10,22 @@ import { WindowCard } from "./WindowCard";
 import { ResponseEntryGrid } from "./ResponseEntryGrid";
 import { PublicNumber } from "./PublicNumber";
 import { dolCasePageHref } from "@/lib/cases/publicLinks";
+import { LayoffCheckCard } from "./LayoffCheckCard";
+import type { LookupEmployer } from "@/lib/api/employerLookup";
 
 interface ETA9089TabProps {
   caseData: CaseDetailData;
   filingWindowOpens?: string;
   filingWindowCloses?: string;
+  /** The employer's public page, when its name matches exactly (useEmployerPage), for the layoff check. */
+  employer?: LookupEmployer | null;
 }
 
 export function ETA9089Tab({
   caseData,
   filingWindowOpens,
   filingWindowCloses,
+  employer = null,
 }: ETA9089TabProps) {
   const rfiEntries = caseData.rfiEntries || [];
 
@@ -155,7 +160,10 @@ export function ETA9089Tab({
           emptyIcon={<FileTextIcon className="h-8 w-8" />}
           emptyDescription="Entries will appear here if DOL issues a request during audit."
         />
-      </Link>
+      </Link>{" "}
+
+      {/* The six months before filing, against the employer's WARN notices (20 CFR 656.17(k)). */}
+      <LayoffCheckCard employer={employer} eta9089FilingDate={caseData.eta9089FilingDate} />
     </div>
   );
 }

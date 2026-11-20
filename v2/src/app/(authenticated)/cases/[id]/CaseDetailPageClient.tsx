@@ -659,7 +659,12 @@ function CaseDetail({ caseId, caseData }: CaseDetailProps) {
           <RecruitmentTab caseData={caseData} onUpload={handleUploadDocument} />
         </TabPanel>
         <TabPanel id="eta9089" activeTab={activeTab}>
-          <ETA9089Tab caseData={caseData} filingWindowOpens={gatedFilingWindowOpens} filingWindowCloses={gatedFilingWindowCloses} />
+          <ETA9089Tab
+            caseData={caseData}
+            filingWindowOpens={gatedFilingWindowOpens}
+            filingWindowCloses={gatedFilingWindowCloses}
+            employer={employerPage}
+          />
         </TabPanel>
         <TabPanel id="i140" activeTab={activeTab}>
           <I140Tab caseData={caseData} />

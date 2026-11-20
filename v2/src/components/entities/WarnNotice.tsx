@@ -33,6 +33,16 @@ export function WarnNoticeBand({ rows, pageName }: { rows: Notice[]; pageName: s
         .
       </p>{" "}
       <ul className="mt-4 divide-y divide-border/40 border-t border-border/40">
+        <WarnNoticeItems rows={rows} />
+      </ul>
+    </section>
+  );
+}
+
+/** One line per notice, as the state printed it: the employer's page and the case page's layoff check both list them so. */
+export function WarnNoticeItems({ rows }: { rows: Notice[] }) {
+  return (
+    <>
         {rows.map((r) => (
           <li key={r.id} className="py-3 text-sm leading-relaxed">
             <span className="font-bold">{long(r.noticeDate)}</span>
@@ -46,7 +56,6 @@ export function WarnNoticeBand({ rows, pageName }: { rows: Notice[]; pageName: s
             {r.site ? <span className="block text-muted-foreground">{r.site}</span> : null}
           {" "}</li>
         ))}
-      </ul>
-    </section>
+    </>
   );
 }
