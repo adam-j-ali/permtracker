@@ -34,6 +34,7 @@ import { CaseMilestones } from "@/components/tools/CaseMilestones";
 import { AnswerNext, WATCH_ANCHOR } from "@/components/tools/AnswerNext";
 import { CertifiedNextWatch } from "@/components/tools/CertifiedNextWatch";
 import { RecordList, type RecordRow } from "@/components/data/RecordList";
+import { AddToMyCases } from "@/components/tools/AddToMyCases";
 import type { PermCaseDetail } from "@/lib/db/permCaseDetail";
 import { naicsTitle } from "@/lib/naicsTitles";
 import {
@@ -286,6 +287,16 @@ export function CaseStatusResult({
         estimate={estimate}
         progress={progress}
         seenFinalOn={isFinal && status && history ? seenInStatusSince(history, status) : null}
+      />{" "}
+      <AddToMyCases
+        record={{
+          caseNumber: result.caseNumber,
+          ...(live?.employerName || decided?.employerName ? { employer: (live?.employerName ?? decided?.employerName)! } : {}),
+          ...(live?.jobTitle || decided?.jobTitle ? { title: (live?.jobTitle ?? decided?.jobTitle)! } : {}),
+          ...(filingDate ? { filed: filingDate.slice(0, 10) } : {}),
+          ...(decided?.decisionDate ? { decided: decided.decisionDate.slice(0, 10) } : {}),
+          ...(status ? { outcome: status } : {}),
+        }}
       />
 
       {check?.stale && !isFinal ? (
