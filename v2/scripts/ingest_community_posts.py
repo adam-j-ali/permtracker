@@ -2,12 +2,15 @@
 
 Two steps, so nothing but dates and categories ever leaves the machine the posts were read on:
 
-    python3 scripts/ingest_community_posts.py prepare --reddit rows.json --out records.json   # on the owner's Mac
-    python3 scripts/ingest_community_posts.py load records.json                              # on the server
+    python3 scripts/ingest_community_posts.py prepare --reddit rows.json --out records.json      # on the owner's Mac
+    python3 scripts/ingest_community_posts.py prepare --telegram messages/ --chats chats.json --out records.json
+    python3 scripts/ingest_community_posts.py load records.json                                 # on the server
 
-`prepare` reads the rows a reader collected (Reddit through Arctic Shift only), keeps each post's dates and category,
-and replaces the author's hash with one salted by COMMUNITY_SALT (or ~/.config/permtracker/community-salt), so one
-person's posts still link and no one can be traced back from it. Quotes, notes, links and subreddits are dropped.
+`prepare` reads the rows a reader collected (Reddit through Arctic Shift only; Telegram through the owner's own
+signed-in reader, one messages/<chat>.jsonl per chat), keeps each post's dates and category, and links one person's
+posts by a hash salted with COMMUNITY_SALT (or ~/.config/permtracker/community-salt), so no one can be traced back from
+it. Text, quotes, notes, links and chat names are dropped. Telegram posts are read by scripts/lib_post_dates.py, which
+takes a date only beside its label and never guesses one; the chat says what kind of post it is (--chats).
 `load` replaces that source's rows, refusing a file that lost more than half of them, and
 scripts/build_reported_cases.py merges them with every other source at its next run.
 """
@@ -23,6 +26,7 @@ import sys
 import time
 from pathlib import Path
 
+import lib_post_dates as post_dates
 import lib_reported_cases as rc
 
 TABLE = "community_post_reports"
@@ -64,6 +68,59 @@ def reddit_record(row: dict, salt: str) -> dict:
         "transfer": _date(row.get("transfer_to_sfv_date")),
         "i485_decided": approved, "i485_decision": "approved" if approved else None,
     }
+
+
+# What each Telegram chat is about comes from a private file beside the messages (chats.json: {"chats": {name:
+# {"kind": "perm" | "i485" | "mixed", "office": code?}}}), so a bare "filed" or "approved" is read as the right form, and
+# an office's own chat names its office. A chat that isn't listed there is never read.
+KINDS = ("perm", "i485", "mixed")
+
+
+def read_chat_specs(path: Path) -> dict[str, dict]:
+    specs = json.loads(path.read_text(encoding="utf-8"))["chats"]
+    for chat, spec in specs.items():
+        if spec.get("kind") not in KINDS:
+            raise ValueError(f"{chat}: kind must be one of {KINDS}")
+    return specs
+
+
+def telegram_records(chat: str, rows: list[dict], spec: dict | None) -> list[dict]:
+    """One chat's posts as merge records: only the posts lib_post_dates can read without guessing."""
+    if spec is None:
+        return []
+    from zoneinfo import ZoneInfo
+    eastern = ZoneInfo("America/New_York")
+    order = post_dates.chat_order([r.get("text") or "" for r in rows])
+    out = []
+    for r in rows:
+        posted = dt.datetime.fromisoformat(r["date"]).astimezone(eastern).date()
+        fields = post_dates.read_post(r.get("text") or "", posted, spec["kind"], order)
+        if not fields:
+            continue
+        rec = {"source": "telegram", "key": f"{chat}:{r['id']}", "as_of": posted.isoformat(), **fields}
+        if r.get("sender"):
+            rec["person"] = str(r["sender"])
+        if spec.get("office"):
+            rec["office"] = spec["office"]
+        rc.check_record(rec)
+        out.append(rec)
+    return out
+
+
+def prepare_telegram(folder: Path, specs: dict[str, dict]) -> tuple[list[dict], dict]:
+    records, counts = [], {"chats": 0, "messages": 0, "records": 0, "skipped_chats": []}
+    for path in sorted(folder.glob("*.jsonl")):
+        chat = path.stem
+        if chat not in specs:
+            counts["skipped_chats"].append(chat)
+            continue
+        rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        mine = telegram_records(chat, rows, specs[chat])
+        records += mine
+        counts["chats"] += 1
+        counts["messages"] += len(rows)
+    counts["records"] = len(records)
+    return records, counts
 
 
 def prepare(rows: list[dict], salt: str) -> tuple[list[dict], dict]:
@@ -120,12 +177,24 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("prepare")
-    p.add_argument("--reddit", required=True, help="the Reddit reader's rows (JSON with a 'rows' list)")
+    src = p.add_mutually_exclusive_group(required=True)
+    src.add_argument("--reddit", help="the Reddit reader's rows (JSON with a 'rows' list)")
+    src.add_argument("--telegram", help="the Telegram reader's messages/ folder, one <chat>.jsonl per chat")
+    p.add_argument("--chats", help="with --telegram: the private chats.json saying what each chat is about")
     p.add_argument("--out", required=True)
     l_ = sub.add_parser("load")
     l_.add_argument("records")
     l_.add_argument("--force", action="store_true")
     a = ap.parse_args()
+    if a.cmd == "prepare" and a.telegram:
+        if not a.chats:
+            ap.error("--telegram needs --chats")
+        rows, counts = prepare_telegram(Path(a.telegram), read_chat_specs(Path(a.chats)))
+        Path(a.out).write_text(json.dumps(rows))
+        os.chmod(a.out, 0o600)
+        print(f"{counts['records']:,} records from {counts['messages']:,} messages in {counts['chats']} chats in {a.out}"
+              + (f"; not read (not listed): {', '.join(counts['skipped_chats'])}" if counts["skipped_chats"] else ""))
+        return 0
     if a.cmd == "prepare":
         doc = json.load(open(a.reddit, encoding="utf-8"))
         rows, counts = prepare(doc["rows"] if isinstance(doc, dict) else doc, read_salt())
@@ -144,7 +213,8 @@ def main() -> int:
         n = load(db, records, force=a.force)
         sources = sorted({r["source"] for r in records})
         for s in sources:
-            stamp_freshness(db, f"community-posts-{s}", source="https://arctic-shift.photon-reddit.com" if s == "reddit" else s,
+            stamp_freshness(db, f"community-posts-{s}",
+                            source={"reddit": "https://arctic-shift.photon-reddit.com", "telegram": "https://t.me"}.get(s, s),
                             cadence="by hand", note=f"{sum(r['source'] == s for r in records):,} reports", max_age_days=60)
         record_run(db, "ingest_community_posts.py", status="ok", rows_written=n,
                    note=f"{n:,} reports from {', '.join(sources)}", started_at=started)

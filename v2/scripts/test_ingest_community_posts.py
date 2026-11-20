@@ -68,6 +68,40 @@ def main() -> int:
     except ValueError:
         check(True, "refuses an empty salt")
 
+    # Telegram: the reader's rows, one chat at a time.
+    def msg(i, text, sender="s1", date="2023-10-24T16:00:00+00:00"):
+        return {"id": i, "date": date, "sender": sender, "reply_to": None, "text": text}
+
+    posts = [msg(1, "PERM certified! Filing date: 11/29/2022 Approval date: 10/24/2023"),
+             msg(2, "anyone approved today?", sender="s2"),
+             msg(3, "Just heard from a friend, 9/16 approved today", sender="s3")]
+    perm, sfv_spec = {"kind": "perm"}, {"kind": "i485", "office": "SFV"}
+    recs = icp.telegram_records("a-chat", posts, perm)
+    check(len(recs) == 1 and recs[0]["key"] == "a-chat:1" and recs[0]["source"] == "telegram", f"one readable post: {recs}")
+    check(recs[0]["perm_filed"] == "2022-11-29" and recs[0]["perm_decided"] == "2023-10-24"
+          and recs[0]["perm_decision"] == "approved", "its dates and decision")
+    check(recs[0]["person"] == "s1" and recs[0]["as_of"] == "2023-10-24", "the reader's salted sender, the post's Eastern day")
+    late = icp.telegram_records("a-chat", [msg(9, "Perm certified today", date="2023-10-25T02:30:00+00:00")], perm)
+    check(late and late[0]["perm_decided"] == "2023-10-24", f"a post at 10:30 PM Eastern is that Eastern day: {late}")
+    text = json.dumps(recs)
+    check("certified!" not in text and "Filing" not in text, "no text kept")
+    check(icp.telegram_records("someone", posts, None) == [], "a chat that isn't listed is never read")
+    sfv = icp.telegram_records("an-office", [msg(5, "I485 RD: 08/14/2025 GC approved 11/03/2026",
+                                                date="2026-11-04T15:00:00+00:00")], sfv_spec)
+    check(sfv and sfv[0]["office"] == "SFV" and sfv[0]["i485_decided"] == "2026-11-03", f"an office's own chat: {sfv}")
+    import tempfile
+    from pathlib import Path
+    with tempfile.TemporaryDirectory() as d:
+        good, bad = Path(d, "good.json"), Path(d, "bad.json")
+        good.write_text(json.dumps({"chats": {"a": {"kind": "perm"}, "b": {"kind": "i485", "office": "SFV"}}}))
+        bad.write_text(json.dumps({"chats": {"a": {"kind": "guess"}}}))
+        check(icp.read_chat_specs(good)["b"]["office"] == "SFV", "the chats file is read")
+        try:
+            icp.read_chat_specs(bad)
+            check(False, "refuses a chat of an unknown kind")
+        except ValueError:
+            check(True, "refuses a chat of an unknown kind")
+
     print(f"{failures} failed")
     return 1 if failures else 0
 
