@@ -15,17 +15,24 @@ import { shiftMonth } from "@convex/lib/months";
  * past-day census (perm_census_days): the day each month's decisions began,
  * and how far the month before had got at the end of the day before.
  *
- * MEASURED, Nov 16 2026, on the three starts the record holds (December 2025
- * on Sep 22, January 2026 on Oct 20, February 2026 on Nov 10): the month
- * before was 80.0%, 80.9% and 82.5% decided, counting only the cases DOL can
- * decide (the ones on hold left out). That's the steadiest of the measures
- * tried; the share of all filings decided ran 73.8% to 79.9%, and the count
- * still in analyst review 1,603 to 2,607.
+ * MEASURED, Nov 20 2026, on the four starts the record holds (December 2025
+ * on Sep 22, January 2026 on Oct 20, February 2026 on Nov 10, March 2026 on
+ * Nov 17): the month before had 2,607, 2,557, 1,603 and 2,258 cases still in
+ * analyst review. The estimate below dates the next start by that count.
  *
- * Run on the record as it stood each working day, the estimate below named
- * each real start, or a working day either side of it, through the two weeks
- * before it (monthStart.test.ts keeps that backtest). Three starts is a short
- * record, and the page says so.
+ * Until Nov 20 it used the share of the month before that was decided (on
+ * hold left out): 80.0%, 80.9% and 82.5% at the first three starts, the
+ * steadiest measure on those. Then March began with February 54% decided:
+ * February was a small month (5,494 filings to March's 7,042), and DOL began
+ * the next month at about the same count left, whatever the month's size. The
+ * share rule's first live estimate, Fri Nov 20, was three working days late.
+ *
+ * Run on the record as it stood each working day in the two weeks before each
+ * start, the count rule named the real day or a working day either side of it
+ * on 22 of 23 days; the other, the first working day after February began, it
+ * ran three working days late (monthStart.test.ts keeps that backtest). The
+ * share rule managed 20 of 23, up to seven working days late. Four starts is
+ * a short record, and the page says so.
  */
 
 /** One filing month at the end of one past DOL day, as `perm_census_days` holds it. */
@@ -161,16 +168,16 @@ interface Shared {
   inLine: number;
   held: number;
   share: number;
-  /** The lowest and highest share the month before had reached at the starts read. */
-  shareLow: number;
-  shareHigh: number;
+  /** The fewest and the most cases the month before still had in analyst review at the starts read. */
+  inLineLow: number;
+  inLineHigh: number;
   basedOn: MonthStart[];
 }
 
 export type NextStart =
   | (Shared & {
       state: "estimate";
-      /** Decisions still to go before the current month reaches the lowest and the highest share. */
+      /** Decisions still to go before the current month is down to the most and the fewest left at those starts. */
       needLow: number;
       needHigh: number;
       /** The current month's decisions per working day; null when there's too little to measure. */
@@ -180,7 +187,7 @@ export type NextStart =
       to: string | null;
     })
   | (Shared & {
-      /** Past the highest share already: the next month is due on the next working day. */
+      /** Down to the fewest left at those starts already: the next month is due on the next working day. */
       state: "due";
       from: string;
     });
@@ -188,11 +195,11 @@ export type NextStart =
 /**
  * When the month after the one DOL is working will likely start.
  *
- * The current month is the newest start on record. It reaches the share the
- * month before had at each recent start after `need / pace` working days,
- * and the next month begins the working day after that: what each start in
- * the record did. Null when there is no start on record or no live figures
- * for the current month.
+ * The current month is the newest start on record. It's down to the count
+ * the month before still had in analyst review at each recent start after
+ * `need / pace` working days, and the next month begins the working day after
+ * that: what each start in the record did. Null when there is no start on
+ * record or no live figures for the current month.
  *
  * The pace divides by working days from the federal calendar rather than by
  * days that carry a decision (dolPace.ts's businessDayPace): the census
@@ -217,9 +224,9 @@ export function estimateNextStart({
   if (!asOf) return null;
 
   const basedOn = starts.slice(-STARTS_USED);
-  const shares = basedOn.map((s) => s.previousShare);
-  const shareLow = Math.min(...shares);
-  const shareHigh = Math.max(...shares);
+  const left = basedOn.map((s) => s.previousInLine);
+  const inLineLow = Math.min(...left);
+  const inLineHigh = Math.max(...left);
   const shared: Shared = {
     month: shiftMonth(latest.month, 1),
     current: latest.month,
@@ -230,12 +237,13 @@ export function estimateNextStart({
     inLine: live.inLine,
     held: live.held,
     share: live.decided / workable,
-    shareLow,
-    shareHigh,
+    inLineLow,
+    inLineHigh,
     basedOn,
   };
-  const needLow = Math.max(0, Math.ceil(shareLow * workable - live.decided));
-  const needHigh = Math.max(0, Math.ceil(shareHigh * workable - live.decided));
+  // The soonest start comes when the month is down to the most any recent start had left, the latest at the fewest.
+  const needLow = Math.max(0, live.inLine - inLineHigh);
+  const needHigh = Math.max(0, live.inLine - inLineLow);
   if (needHigh === 0) return { ...shared, state: "due", from: addBusinessDays(asOf, 1) };
 
   const pace = currentPace(series, days, latest, asOf);
