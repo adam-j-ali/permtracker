@@ -8,6 +8,7 @@ const docs: RecordDocs = {
   sweepCoverage: JSON.stringify({ finishedOn: "2026-09-07", mode: "pending" }),
   pwSummary: JSON.stringify({ rows: 634638, latestDecision: "2026-06-30" }),
   lcaSummary: JSON.stringify({ rows: 437496, latestDecision: "2026-06-30" }),
+  lcaHistorySummary: null,
   bulletinCount: 84,
   bulletinLatest: "2026-09",
 };
@@ -23,6 +24,16 @@ describe("deriveRecordCounts", () => {
       [84, "2026-09", "newest"],
     ]);
     expect(new Set(figures.map((f) => f.href)).size).toBe(5);
+  });
+
+  it("counts the FY2008 to FY2019 LCA files with the newer ones, dated by the newer", () => {
+    // Nov 20 2026: the homepage printed 3,754,961 (FY2020 on) while the older files held 5,839,865 more.
+    const lca = deriveRecordCounts({
+      ...docs,
+      lcaSummary: JSON.stringify({ rows: 3754961, latestDecision: "2026-06-30" }),
+      lcaHistorySummary: JSON.stringify({ rows: 5839865, latestDecision: "2019-09-30" }),
+    }).find((f) => f.href === "/lca-cases");
+    expect(lca).toMatchObject({ value: 9594826, asOf: "2026-06-30" });
   });
 
   it("dates the pending count by the SWEEP, not by the remainder doc's own stamp", () => {

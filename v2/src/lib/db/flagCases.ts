@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { MS_PER_DAY } from "@/lib/time";
 import { exec, one, rows, rowsPaged } from "./client";
+import { mergeDisclosureSummaries } from "@/lib/disclosureSummary";
 import { slugify } from "@/lib/entitySlug";
 import { parseCaseNumber } from "@/lib/permCaseNumber";
 import { LIVE_SEARCH_MAX, narrowingClauses } from "./cases";
@@ -752,14 +753,21 @@ export function makeFlagProgram(config: FlagProgramConfig): FlagProgram {
     return [...found, ...older.filter((r) => !seen.has(String(r.case_number)))].map(toDisclosed);
   };
 
+  // A program whose older files have a table of their own has a summary for each, and counts both
+  // (src/lib/disclosureSummary.ts says why). The older one's key is the newer's with "_history".
   const getDisclosureSummary = cache(async (): Promise<FlagDisclosureSummary | null> => {
     if (!config.disclosureDocKey) return null;
-    const r = await one<{ json: string; computed_at: number }>(
-      "SELECT json, computed_at FROM perm_docs WHERE key = ?",
-      [config.disclosureDocKey],
+    const historyKey = config.disclosureHistoryTable ? `${config.disclosureDocKey}_history` : null;
+    const keys = historyKey ? [config.disclosureDocKey, historyKey] : [config.disclosureDocKey];
+    const found = await rows<{ key: string; json: string; computed_at: number }>(
+      `SELECT key, json, computed_at FROM perm_docs WHERE key IN (${keys.map(() => "?").join(", ")})`,
+      keys,
     );
-    if (!r) return null;
-    return parseDisclosureSummaryDoc(String(r.json), Number(r.computed_at));
+    const read = (key: string | null) => {
+      const r = key ? found.find((x) => x.key === key) : undefined;
+      return r ? parseDisclosureSummaryDoc(String(r.json), Number(r.computed_at)) : null;
+    };
+    return mergeDisclosureSummaries(read(config.disclosureDocKey), read(historyKey));
   });
 
   const getSummary = cache(async (): Promise<FlagSummary | null> => {
