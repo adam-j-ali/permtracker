@@ -62,6 +62,7 @@ import {
   INVITE_MS,
   caseLine,
   confirmUrl,
+  inviteCaseLine,
   inviterName,
   normaliseRecipientEmail,
   reminderConfirmPurpose,
@@ -276,7 +277,8 @@ export const inviteDetails = internalQuery({
     return {
       email: row.email,
       inviter: await inviterFor(ctx, row.userId),
-      caseLine: caseLine(caseDoc.positionTitle, caseDoc.employerName),
+      // Not yet confirmed: a title or employer that reads like a link is never put in front of this address.
+      caseLine: inviteCaseLine(caseDoc.positionTitle, caseDoc.employerName),
     };
   },
 });
@@ -338,9 +340,9 @@ export const sendInvite = internalAction({
 /** The invitation as plain text, for mail apps that show no HTML. */
 export function inviteText(inviter: string, line: string, link: string): string {
   return [
-    `${sentenceStart(inviter)} tracks a PERM case on PERM Tracker and asked us to send you its deadline reminders too.`,
+    `Deadline reminders for ${line}`,
     "",
-    `The case: ${line}`,
+    `${sentenceStart(inviter)} tracks this PERM case on PERM Tracker and asked us to send you its deadline reminders too.`,
     "",
     "When one of its deadlines comes near, we'll email you its name and its date. The emails name the employer, the job title and the deadlines, and nothing else from the case. Each one has a link that stops them with one click.",
     "",
@@ -373,7 +375,8 @@ export const confirmByToken = internalMutation({
     if (!email || email !== row.email) return null;
     const caseDoc = await liveCase(ctx, row);
     if (!caseDoc) return null;
-    const line = caseLine(caseDoc.positionTitle, caseDoc.employerName);
+    // The page the invitation's button lands on names the case as the invitation did.
+    const line = inviteCaseLine(caseDoc.positionTitle, caseDoc.employerName);
     if (row.status === "confirmed") return { state: "already" as const, caseLine: line };
     if (row.status !== "waiting" || Date.now() - row.invitedAt > INVITE_MS) return null;
     await ctx.db.patch("reminderRecipients", row._id, { status: "confirmed", confirmedAt: Date.now() });

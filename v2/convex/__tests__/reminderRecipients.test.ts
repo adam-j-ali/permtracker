@@ -138,6 +138,34 @@ describe("adding a second person to a case's reminders", () => {
     expect(JSON.stringify(sent[0])).not.toContain("evil.example");
   });
 
+  it("calls the case \"a PERM case\" when its job title reads like a link; once confirmed, the reminders name it", async () => {
+    const SCAM = "Refund due: verify at irs-refund.example/claim";
+    const { t, owner, caseId } = await setup();
+    await t.run((ctx) => ctx.db.patch(caseId, { positionTitle: SCAM }));
+    await owner.mutation(api.reminderRecipients.invite, { caseId, email: "para@firm.example" });
+    await finishScheduledNow(t);
+    const invite = sent[0]!;
+    expect(JSON.stringify(invite)).not.toContain("irs-refund");
+    expect(invite.text).toContain("Deadline reminders for a PERM case");
+    expect(invite.html).toContain("a PERM case");
+
+    // The page the Confirm button lands on says the same.
+    const [row] = await rows(t);
+    const confirmed = await t.mutation(internal.reminderRecipients.confirmByToken, {
+      token: await confirmToken(row!._id, "para@firm.example"),
+      recipientId: row!._id,
+    });
+    expect(confirmed).toEqual({ state: "confirmed", caseLine: "a PERM case" });
+
+    // The person confirmed: their reminders name the case as its owner typed it.
+    sent = [];
+    await t.action(internal.reminderRecipients.sendCopy, {
+      recipientId: row!._id,
+      items: [{ deadlineType: "PWD expiration", deadlineDate: "2026-12-01", daysUntil: 7, urgency: "urgent" }],
+    });
+    expect(sent[0]!.subject).toContain(SCAM);
+  });
+
   it("refuses the owner's own address, an address that isn't one, and a blocked one, writing and sending nothing", async () => {
     const { t, owner, ownerEmail, caseId } = await setup();
     for (const email of [ownerEmail.toUpperCase(), "not-an-address", "blocked@example.com"]) {

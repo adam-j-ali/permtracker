@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  A_PERM_CASE,
   INVITE_DAYS,
   RECIPIENT_EMAIL_MAX,
   SOMEONE,
+  caseLine,
   copiesByCase,
+  inviteCaseLine,
   inviterName,
   normaliseRecipientEmail,
   reminderCopySubject,
@@ -65,6 +68,42 @@ describe("who the email says asked", () => {
 
   it("keeps a long name to one line", () => {
     expect(inviterName("A".repeat(300), undefined).length).toBeLessThanOrEqual(60);
+  });
+});
+
+describe("what the invitation calls the case", () => {
+  const SCAM = "Refund due: verify at irs-refund.example/claim";
+
+  it("is the job title at the employer, as the reminders name it", () => {
+    expect(inviteCaseLine("Robotics Engineer", "ACME Robotics")).toBe("Robotics Engineer at ACME Robotics");
+    expect(inviteCaseLine("Robotics Engineer", "ACME Robotics")).toBe(caseLine("Robotics Engineer", "ACME Robotics"));
+  });
+
+  it("is \"a PERM case\" when the job title reads like a link, so a stranger's inbox never carries one under our name", () => {
+    expect(A_PERM_CASE).toBe("a PERM case");
+    expect(inviteCaseLine(SCAM, "ACME Robotics")).toBe(A_PERM_CASE);
+  });
+
+  it("is \"a PERM case\" when the employer reads like a link or an address", () => {
+    for (const employer of [
+      SCAM,
+      "Visit https://evil.example",
+      "www.evil.example",
+      "Call billing@bank.example",
+      "Pay at irs.gov.",
+      "IRS.GOV",
+      "pay.example?x=1",
+      "ACME (acme-refund.example)",
+      "shop.xn--p1ai",
+    ]) {
+      expect(inviteCaseLine("Robotics Engineer", employer), employer).toBe(A_PERM_CASE);
+    }
+  });
+
+  it("keeps an ordinary name with a full stop in it", () => {
+    for (const employer of ["ACME Robotics, Inc.", "St. Jude Medical", "U.S. Steel", "J.P. Morgan Chase & Co."]) {
+      expect(inviteCaseLine("Sr. Engineer", employer), employer).toBe(caseLine("Sr. Engineer", employer));
+    }
   });
 });
 

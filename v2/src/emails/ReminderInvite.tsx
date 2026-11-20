@@ -2,7 +2,8 @@
  * The one email a case's second reminder recipient gets before they say yes (convex/reminderRecipients.ts).
  *
  * It says who asked (the account's display name, or "a PERM Tracker user"), for which case (the job title at the
- * employer), what the reminders hold and how to stop them, with one Confirm button. Its link opens a page with a
+ * employer, or "a PERM case" when either reads like a link: inviteCaseLine), what the reminders hold and how to stop
+ * them, with one Confirm button. Its link opens a page with a
  * button: opening the link confirms nothing. Ignored, nothing else is ever sent.
  */
 import { Section, Text } from "@react-email/components";
@@ -13,7 +14,7 @@ import { INVITE_DAYS, sentenceStart } from "../../convex/lib/reminderRecipients"
 export interface ReminderInviteProps {
   /** Who asked, as the email may show it (convex/lib/reminderRecipients.ts, `inviterName`). */
   inviter: string;
-  /** "Robotics Engineer at ACME Robotics". */
+  /** "Robotics Engineer at ACME Robotics", or "a PERM case" (convex/lib/reminderRecipients.ts, `inviteCaseLine`). */
   caseLine: string;
   /** Absolute, row-scoped confirmation URL. */
   confirmUrl: string;
