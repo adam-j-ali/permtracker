@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { SocCodeLink } from "@/components/soc/SocCodeLink";
 import { DolUnanswered } from "@/components/tools/DolUnanswered";
-import { lookupLcaCaseOutcome, lookupLcaDisclosed, lookupLcaWageRequest, type LcaDisclosedRow } from "@/lib/db/lcaCasesTypes";
+import { lookupLcaCaseOutcome, lookupLcaDisclosed, lookupLcaRecord, type LcaDisclosedRow, type LcaRecordDetail } from "@/lib/db/lcaCasesTypes";
+import { naicsTitle } from "@/lib/naicsTitles";
 import { formatWage } from "@/lib/wageFormat";
 import { YearlyPayNote } from "@/components/data/YearlyPayNote";
 import { WatchThisNumber } from "@/components/tools/WatchThisNumber";
@@ -51,8 +52,20 @@ function employerLink(name: string | null) {
  * The decided record from DOL's quarterly LCA file: what the live endpoint never says. A few LCAs cite the
  * wage request their wage came from, and that one links to its own page.
  */
-function Disclosed({ d, wageRequest }: { d: LcaDisclosedRow; wageRequest: string | null }) {
+function Disclosed({ d, detail }: { d: LcaDisclosedRow; detail: LcaRecordDetail | null }) {
   const wage = formatWage(d.wage, d.wageUnit);
+  const wageRequest = detail?.wageRequest ?? null;
+  const prevailing = detail ? formatWage(detail.prevailingWage, detail.prevailingUnit) : null;
+  // How far the offer sits above the prevailing wage, only when both are in the same unit.
+  const above =
+    detail?.prevailingWage && d.wage && detail.prevailingUnit && d.wageUnit && detail.prevailingUnit.toUpperCase() === d.wageUnit.toUpperCase() && d.wage >= detail.prevailingWage
+      ? Math.round((d.wage / detail.prevailingWage - 1) * 100)
+      : null;
+  // Either read fills a field the other lacks.
+  const firm = d.attorneyName ? { name: d.attorneyName, slug: d.attorneySlug } : detail?.attorneyName ? { name: detail.attorneyName, slug: detail.attorneySlug } : null;
+  const industry = naicsTitle(d.naics ?? detail?.naics);
+  const place = [d.worksiteCity ?? detail?.worksiteCity, detail?.worksiteCounty ? `${detail.worksiteCounty} County` : null, d.worksiteState].filter(Boolean).join(", ");
+  const answer = (v: boolean | null | undefined) => (v === true ? "Yes" : v === false ? "No" : null);
   return (
     <PageSection title="DOL's record" lede="From DOL's quarterly disclosure file: the wage and the job, which the live record never says.">
       {wage ? <p className="font-heading text-3xl font-bold sm:text-4xl">{wage}</p> : null}{" "}
@@ -74,8 +87,37 @@ function Disclosed({ d, wageRequest }: { d: LcaDisclosedRow; wageRequest: string
                 },
               ]
             : []),
-          ...(d.worksiteState ? [{ label: "Worksite state", value: d.worksiteState }] : []),
+          ...(prevailing
+            ? [{ label: "Prevailing wage", value: `${prevailing}${detail?.level ? `, Level ${detail.level}` : ""}${above !== null ? `; the offer is ${above}% above it` : ""}` }]
+            : detail?.level
+              ? [{ label: "Prevailing wage level", value: `Level ${detail.level}` }]
+              : []),
+          ...(detail?.prevailingSource ? [{ label: "Prevailing wage from", value: detail.prevailingSource }] : []),
+          ...(place ? [{ label: "Worksite", value: place }] : []),
           ...(d.visaClass ? [{ label: "Visa class", value: d.visaClass }] : []),
+          ...(detail?.workers ? [{ label: "Workers", value: String(detail.workers) }] : []),
+          ...(detail?.kinds.length ? [{ label: "Kind of petition", value: detail.kinds.join("; ") }] : []),
+          ...(detail?.begins || detail?.ends
+            ? [{ label: "The job's dates", value: `${formatDay(detail?.begins) ?? "Not given"} to ${formatDay(detail?.ends) ?? "not given"}` }]
+            : []),
+          ...(firm
+            ? [
+                {
+                  label: "Law firm",
+                  raw: true,
+                  value: firm.slug ? (
+                    <Link href={`/perm-attorneys/${firm.slug}`} className="link">
+                      {firm.name}
+                    </Link>
+                  ) : (
+                    firm.name
+                  ),
+                },
+              ]
+            : []),
+          ...(industry ? [{ label: "Industry", value: `${industry.title} (NAICS ${industry.code})` }] : []),
+          ...(answer(detail?.h1bDependent) ? [{ label: "H-1B dependent employer", value: answer(detail?.h1bDependent)! }] : []),
+          ...(answer(detail?.willfulViolator) ? [{ label: "Found a willful violator", value: answer(detail?.willfulViolator)! }] : []),
           { label: "Received by DOL", value: formatDay(d.receivedDate) ?? "Unknown" },
           { label: "Decided", value: formatDay(d.decisionDate) ?? "Unknown" },
           ...(wageRequest
@@ -98,12 +140,12 @@ function Disclosed({ d, wageRequest }: { d: LcaDisclosedRow; wageRequest: string
 }
 
 export async function LcaLookup({ caseNumber }: { caseNumber: string }) {
-  const [{ row, dolMiss }, disclosed, wageRequest] = await Promise.all([
+  const [{ row, dolMiss }, disclosed, detail] = await Promise.all([
     // A failure to read our own table is also "could not settle it", never "no record".
     lookupLcaCaseOutcome(caseNumber).catch(softFail("LcaStatusResult.lookupLcaCaseOutcome", { row: null, dolMiss: "records" as const })),
     lookupLcaDisclosed(caseNumber).catch(softFail("LcaStatusResult.lookupLcaDisclosed", null)),
-    // The record stands without this link, so a failed read is recorded and the row is left out.
-    lookupLcaWageRequest(caseNumber).catch(softFail("LcaStatusResult.lookupLcaWageRequest", null)),
+    // The record stands without these rows, so a failed read is recorded and the rows are left out.
+    lookupLcaRecord(caseNumber).catch(softFail("LcaStatusResult.lookupLcaRecord", null)),
   ]);
   const label = (n: string) => (
     <>
@@ -126,7 +168,7 @@ export async function LcaLookup({ caseNumber }: { caseNumber: string }) {
           </b>
           . Its live case system didn&apos;t return the number, so the record below is from the quarterly file.
         </AnswerPanel>
-        <Disclosed d={disclosed} wageRequest={wageRequest} />
+        <Disclosed d={disclosed} detail={detail} />
         <PageSection title="The record">
           <RecordList
             rows={[
@@ -195,7 +237,7 @@ export async function LcaLookup({ caseNumber }: { caseNumber: string }) {
         .{filed ? ` It was filed ${filed}.` : ""} {statusMeaning(row.status)}
       </AnswerPanel>
 
-      {disclosed ? <Disclosed d={disclosed} wageRequest={wageRequest} /> : null}
+      {disclosed ? <Disclosed d={disclosed} detail={detail} /> : null}
 
       <PageSection title="The record" lede="As DOL holds it.">
         <RecordList

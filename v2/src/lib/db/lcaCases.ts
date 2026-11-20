@@ -54,14 +54,81 @@ export const searchLcaDisclosed = lca.searchDisclosed;
 export const getLcaDisclosureSummary = lca.getDisclosureSummary;
 
 /**
- * The wage request an LCA cites, as DOL's quarterly file prints it. A few do (the cell is empty on
- * nearly every row), so this is its own one-row read: the shared column list is also read from the
- * older files' table, which has no such column. Null when the file holds no such LCA or names no
- * wage request; a failed read throws, so the page can say it couldn't read it.
+ * What DOL's quarterly file prints about a decided LCA's job beyond the shared columns: the prevailing wage, its level
+ * and where it came from, the worksite city and county, the workers, the kind of petition, the job's dates, the law
+ * firm, the industry, the employer's H-1B-dependent and willful-violator answers, and the wage request it cites (a
+ * few rows do). The current files' table first, then the FY2008 to FY2019 one (`lca_cases_history`, the same
+ * columns), so an older LCA keeps every field. Null when neither holds the LCA; a missing older table is "none
+ * there", and any other failed read throws, so the page can say so.
  */
-export async function lookupLcaWageRequest(input: string): Promise<string | null> {
+export interface LcaRecordDetail {
+  wageRequest: string | null;
+  level: string | null;
+  prevailingWage: number | null;
+  prevailingUnit: string | null;
+  /** "OFLC wage data, 7/1/2019 - 6/30/2020", or the other survey the employer named. */
+  prevailingSource: string | null;
+  worksiteCity: string | null;
+  worksiteCounty: string | null;
+  workers: number | null;
+  /** The form's kinds of petition with a worker in them, in the form's order. */
+  kinds: string[];
+  begins: string | null;
+  ends: string | null;
+  attorneyName: string | null;
+  attorneySlug: string | null;
+  naics: string | null;
+  h1bDependent: boolean | null;
+  willfulViolator: boolean | null;
+}
+
+/** The LCA form's kinds of petition (section B), each a count of workers in DOL's file. */
+const PETITION_KINDS: readonly [string, string][] = [
+  ["new_employment", "New employment"],
+  ["continued_employment", "Continuing the same job with the same employer"],
+  ["change_previous_employment", "A change to the same job"],
+  ["new_concurrent_employment", "New concurrent employment"],
+  ["change_employer", "A change of employer"],
+  ["amended_petition", "An amended petition"],
+];
+
+const cell = (v: unknown) => (v == null || String(v).trim() === "" ? null : String(v).trim());
+const count = (v: unknown) => (cell(v) === null || !Number.isFinite(Number(v)) ? null : Number(v));
+const yes = (v: unknown) => (cell(v) === null ? null : /^(y|yes|true|1)$/i.test(String(v).trim()));
+
+export async function lookupLcaRecord(input: string): Promise<LcaRecordDetail | null> {
   const caseNumber = lca.normalise(input);
   if (!caseNumber) return null;
-  const row = await one<{ pw_case: string | null }>("SELECT pw_case FROM lca_cases WHERE case_number = ? LIMIT 1", [caseNumber]);
-  return wageRequestNumber(row?.pw_case);
+  const cols = `pw_case, wage_level, pw_wage, pw_unit, pw_oes_year, pw_other_source, pw_other_year, pw_survey_publisher,
+            pw_survey_name, worksite_city, worksite_county, workers, ${PETITION_KINDS.map(([c]) => c).join(", ")},
+            begin_date, end_date, attorney_name, attorney_slug, naics, h1b_dependent, willful_violator`;
+  const r =
+    (await one<Record<string, unknown>>(`SELECT ${cols} FROM lca_cases WHERE case_number = ? LIMIT 1`, [caseNumber])) ??
+    (await one<Record<string, unknown>>(`SELECT ${cols} FROM lca_cases_history WHERE case_number = ? LIMIT 1`, [caseNumber]).catch(
+      (err: unknown) => {
+        if (/no such table/i.test(err instanceof Error ? err.message : String(err))) return null;
+        throw err;
+      },
+    ));
+  if (!r) return null;
+  const other = [cell(r.pw_other_source), cell(r.pw_survey_publisher), cell(r.pw_survey_name)].filter(Boolean).join(", ");
+  const otherYear = cell(r.pw_other_year);
+  return {
+    wageRequest: wageRequestNumber(cell(r.pw_case)),
+    level: cell(r.wage_level),
+    prevailingWage: count(r.pw_wage),
+    prevailingUnit: cell(r.pw_unit),
+    prevailingSource: cell(r.pw_oes_year) ? `OFLC wage data, ${cell(r.pw_oes_year)}` : other ? `${other}${otherYear ? ` (${otherYear})` : ""}` : null,
+    worksiteCity: cell(r.worksite_city),
+    worksiteCounty: cell(r.worksite_county),
+    workers: count(r.workers),
+    kinds: PETITION_KINDS.filter(([c]) => (count(r[c]) ?? 0) > 0).map(([, label]) => label),
+    begins: cell(r.begin_date)?.slice(0, 10) ?? null,
+    ends: cell(r.end_date)?.slice(0, 10) ?? null,
+    attorneyName: cell(r.attorney_name),
+    attorneySlug: cell(r.attorney_slug),
+    naics: cell(r.naics),
+    h1bDependent: yes(r.h1b_dependent),
+    willfulViolator: yes(r.willful_violator),
+  };
 }

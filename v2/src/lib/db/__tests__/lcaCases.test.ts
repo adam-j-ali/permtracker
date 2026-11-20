@@ -19,7 +19,7 @@ vi.mock("../client", () => ({
   },
 }));
 
-const { LCA_FINAL_STATUSES, listLcaCases, lookupLcaDisclosed, lookupLcaWageRequest, normaliseLcaCaseNumber, searchLcaCases, searchLcaDisclosed } =
+const { LCA_FINAL_STATUSES, listLcaCases, lookupLcaDisclosed, lookupLcaRecord, normaliseLcaCaseNumber, searchLcaCases, searchLcaDisclosed } =
   await import("../lcaCases");
 const { BROAD_NAME_ROWS } = await import("../flagCases");
 
@@ -157,32 +157,56 @@ describe("the older LCA files with a job title read on their own title index (Se
   });
 });
 
-describe("the wage request an LCA cites in DOL's file", () => {
-  it("answers the number as the file printed it, cleaned", async () => {
-    one.mockResolvedValueOnce({ pw_case: " p-100-25340-123456 " });
-    await expect(lookupLcaWageRequest(" i-200-26055-173457 ")).resolves.toBe("P-100-25340-123456");
+describe("what DOL's file prints about an LCA's job", () => {
+  const ROW = {
+    pw_case: " p-100-25340-123456 ", wage_level: "II", pw_wage: "118000", pw_unit: "Year", pw_oes_year: "7/1/2025 - 6/30/2026",
+    worksite_city: "San Jose", worksite_county: "Santa Clara", workers: "1", new_employment: "1", continued_employment: "0",
+    change_previous_employment: "0", new_concurrent_employment: "0", change_employer: "0", amended_petition: "0",
+    begin_date: "2026-01-05", end_date: "2029-01-04", attorney_name: "Firm LLP", attorney_slug: "firm-llp", naics: "541511",
+    h1b_dependent: "N", willful_violator: "No",
+  };
+
+  it("reads the current files' table, cleaning the wage request number and naming the petition", async () => {
+    one.mockResolvedValueOnce(ROW);
+    const got = await lookupLcaRecord(" i-200-26055-173457 ");
+    expect(got).toMatchObject({
+      wageRequest: "P-100-25340-123456", level: "II", prevailingWage: 118000, prevailingSource: "OFLC wage data, 7/1/2025 - 6/30/2026",
+      worksiteCity: "San Jose", worksiteCounty: "Santa Clara", workers: 1, kinds: ["New employment"], h1bDependent: false,
+      willfulViolator: false, attorneySlug: "firm-llp", naics: "541511",
+    });
     const [sql, args] = one.mock.calls[0]!;
-    expect(sql).toContain("SELECT pw_case FROM lca_cases WHERE case_number = ?");
+    expect(sql).toContain("FROM lca_cases WHERE case_number = ?");
     expect(args).toEqual(["I-200-26055-173457"]);
+    expect(one).toHaveBeenCalledTimes(1);
   });
 
-  it("answers nothing for an empty cell, a cell that isn't a wage request, or a number the file doesn't hold", async () => {
-    one.mockResolvedValueOnce({ pw_case: null });
-    await expect(lookupLcaWageRequest("I-200-26055-1")).resolves.toBeNull();
-    one.mockResolvedValueOnce({ pw_case: "N/A" });
-    await expect(lookupLcaWageRequest("I-200-26055-1")).resolves.toBeNull();
-    one.mockResolvedValueOnce(null);
-    await expect(lookupLcaWageRequest("I-200-26055-1")).resolves.toBeNull();
+  it("falls back to the FY2008 to FY2019 table, which carries the same fields, so an older LCA keeps them", async () => {
+    one.mockResolvedValueOnce(null).mockResolvedValueOnce({ ...ROW, pw_oes_year: null, pw_other_source: "Other", pw_survey_publisher: "Radford", pw_other_year: "2015" });
+    const got = await lookupLcaRecord("I-200-15055-1");
+    expect(one.mock.calls[1]![0]).toContain("FROM lca_cases_history WHERE case_number = ?");
+    expect(got).toMatchObject({ level: "II", prevailingWage: 118000, prevailingSource: "Other, Radford (2015)" });
   });
 
-  it("never asks about something that isn't an LCA number", async () => {
-    await expect(lookupLcaWageRequest("G-100-26055-173457")).resolves.toBeNull();
+  it("answers nothing for a number neither table holds, a missing older table, or something that isn't an LCA number", async () => {
+    one.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+    await expect(lookupLcaRecord("I-200-26055-1")).resolves.toBeNull();
+    one.mockResolvedValueOnce(null).mockRejectedValueOnce(new Error("no such table: lca_cases_history"));
+    await expect(lookupLcaRecord("I-200-26055-1")).resolves.toBeNull();
+    one.mockReset();
+    await expect(lookupLcaRecord("G-100-26055-173457")).resolves.toBeNull();
     expect(one).not.toHaveBeenCalled();
   });
 
-  it("lets a failed read fail, so the page can say it couldn't read it", async () => {
+  it("names no wage request for an empty cell or one that isn't a wage request", async () => {
+    one.mockResolvedValueOnce({ ...ROW, pw_case: "N/A" });
+    expect((await lookupLcaRecord("I-200-26055-1"))?.wageRequest).toBeNull();
+  });
+
+  it("lets any other failed read fail, so the page can say it couldn't read it", async () => {
     one.mockRejectedValueOnce(new Error("query deadline"));
-    await expect(lookupLcaWageRequest("I-200-26055-1")).rejects.toThrow(/deadline/);
+    await expect(lookupLcaRecord("I-200-26055-1")).rejects.toThrow(/deadline/);
+    one.mockResolvedValueOnce(null).mockRejectedValueOnce(new Error("query deadline"));
+    await expect(lookupLcaRecord("I-200-26055-1")).rejects.toThrow(/deadline/);
   });
 });
 

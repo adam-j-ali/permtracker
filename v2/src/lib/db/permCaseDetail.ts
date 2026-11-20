@@ -10,7 +10,9 @@ import { getPwdDetail, type PwdDetail } from "./pwdDetail";
  * wage request it names, with that determination's level and requirements (`pwd_cases`, through `pwd_number`).
  * Nothing about the worker as a person (citizenship, birth country, schooling) is read: those belong in aggregates.
  *
- * Keyed reads by case number; a failed read is null, so the page keeps its decision section.
+ * The current files' table first, then FY2020 to FY2023's (`perm_cases_history`), which carries the same job fields
+ * but no wage request number, so an older case keeps what its file printed. Keyed reads by case number; a failed
+ * read is null, so the page keeps its decision section.
  */
 export interface PermCaseDetail {
   attorneyName: string | null;
@@ -26,12 +28,17 @@ export interface PermCaseDetail {
 const text = (v: unknown) => (v == null || v === "" ? null : String(v));
 
 export async function getPermCaseDetail(caseNumber: string): Promise<PermCaseDetail | null> {
-  const got = await rows<Record<string, unknown>>(
-    `SELECT attorney_name, attorney_slug, naics, worksite_city, job_education, layoff, pwd_number
-       FROM perm_cases WHERE case_number = ? LIMIT 1`,
-    [caseNumber],
-  ).catch(softFail("permCaseDetail.read", null));
-  const r = got?.[0];
+  const cols = "attorney_name, attorney_slug, naics, worksite_city, job_education, layoff";
+  const got = await rows<Record<string, unknown>>(`SELECT ${cols}, pwd_number FROM perm_cases WHERE case_number = ? LIMIT 1`, [
+    caseNumber,
+  ]).catch(softFail("permCaseDetail.read", null));
+  const older =
+    got && !got.length
+      ? await rows<Record<string, unknown>>(`SELECT ${cols} FROM perm_cases_history WHERE case_number = ? LIMIT 1`, [caseNumber]).catch(
+          softFail("permCaseDetail.readHistory", null),
+        )
+      : null;
+  const r = got?.[0] ?? older?.[0];
   if (!r) return null;
   const pwdNumber = text(r.pwd_number);
   const layoff = text(r.layoff);
