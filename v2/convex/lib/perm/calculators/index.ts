@@ -149,6 +149,7 @@ export {
   type StepState,
 } from './greenCardPlan';
 export {
+  casePriorityDate,
   estimatePriorityDate,
   parseCutoff,
   monthsToReach,

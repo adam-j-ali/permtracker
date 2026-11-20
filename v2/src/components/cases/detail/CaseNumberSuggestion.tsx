@@ -19,6 +19,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { canonicalStatus } from "@/lib/caseStatusVocabulary";
 import { formatDay } from "@/lib/dolFormat";
+import { PublicNumber } from "./PublicNumber";
+import { dolCasePageHref } from "@/lib/cases/publicLinks";
 
 interface Candidate {
   caseNumber: string;
@@ -107,8 +109,8 @@ export function CaseNumberSuggestion({
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <p className="text-muted-foreground">
             This looks like this case on DOL:{" "}
-            <span className="font-mono font-semibold text-foreground">{one.caseNumber}</span> ({detail(one)}). Is this
-            it?
+            <PublicNumber value={one.caseNumber} href={dolCasePageHref(one.caseNumber)} className="font-mono font-semibold text-foreground" />{" "}
+            ({detail(one)}). Is this it?
           </p>{" "}
           <span className="flex shrink-0 gap-2">
             <Button size="sm" disabled={!!busy} onClick={() => link(one.caseNumber)}>
@@ -128,7 +130,8 @@ export function CaseNumberSuggestion({
             {result.candidates.map((c) => (
               <li key={c.caseNumber} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                 <span>
-                  <span className="font-mono text-foreground">{c.caseNumber}</span> ({detail(c)})
+                  <PublicNumber value={c.caseNumber} href={dolCasePageHref(c.caseNumber)} className="font-mono text-foreground" />{" "}
+                  ({detail(c)})
                 </span>{" "}
                 <Button size="sm" variant="outline" disabled={!!busy} onClick={() => link(c.caseNumber)}>
                   Use this

@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 import { buildEditUrl, buildEditSectionUrl } from "@/lib/cases/editDeepLinks";
 import type { CaseDetailData } from "./case-detail-types";
 import { fmtISODate, fmtCurrency } from "./case-detail-utils";
+import { PublicNumber } from "./PublicNumber";
+import { dolCasePageHref } from "@/lib/cases/publicLinks";
 
 export type { JobDescEditProps } from "./JobDescriptionCard";
 
@@ -151,7 +153,7 @@ export function OverviewTab({
                     <div className="field-cell">
                       <div className="fc-label">PWD Case #</div>
                       <div className={`fc-val fc-val-text mono ${!caseData.pwdCaseNumber ? "dim" : ""}`} title={caseData.pwdCaseNumber || undefined}>
-                        {caseData.pwdCaseNumber || "-"}
+                        <PublicNumber value={caseData.pwdCaseNumber} href={dolCasePageHref(caseData.pwdCaseNumber)} />
                       </div>
                     </div>
                     <div className="field-cell">

@@ -238,6 +238,7 @@ export {
   planStages,
   RECRUITMENT_MIN_DAYS,
   SIDE_STAGES,
+  casePriorityDate,
   estimatePriorityDate,
   parseCutoff,
   monthsToReach,

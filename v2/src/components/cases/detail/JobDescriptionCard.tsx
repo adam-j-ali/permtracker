@@ -13,6 +13,8 @@ import { handleOperationError } from "@/lib/errors";
 import { descriptionBlocks } from "@/lib/jobDescriptionText";
 import type { CaseDetailData } from "./case-detail-types";
 import { fmtCurrency } from "./case-detail-utils";
+import { PublicNumber } from "./PublicNumber";
+import { socWagePageHref } from "@/lib/cases/publicLinks";
 
 /** Saving and clearing the case's job description. Each throws when the write fails, so the editor stays open. */
 export interface JobDescEditProps {
@@ -114,7 +116,8 @@ export function JobDescriptionCard({ caseData, jobDescProps }: { caseData: CaseD
           <div className={`fc-val fc-val-text ${!caseData.socCode ? "dim" : ""}`} title={caseData.socTitle || undefined}>
             {caseData.socCode ? (
               <>
-                <span className="font-mono">{caseData.socCode}</span> {caseData.socTitle || ""}
+                <PublicNumber value={caseData.socCode} href={socWagePageHref(caseData.socCode)} className="font-mono" />{" "}
+                {caseData.socTitle || ""}
               </>
             ) : (
               "-"

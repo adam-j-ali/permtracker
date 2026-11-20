@@ -8,6 +8,8 @@ import type { CaseDetailData } from "./case-detail-types";
 import { fmtISODate, fmtISOShort, computeWindowStatus } from "./case-detail-utils";
 import { WindowCard } from "./WindowCard";
 import { ResponseEntryGrid } from "./ResponseEntryGrid";
+import { PublicNumber } from "./PublicNumber";
+import { dolCasePageHref } from "@/lib/cases/publicLinks";
 
 interface ETA9089TabProps {
   caseData: CaseDetailData;
@@ -71,7 +73,7 @@ export function ETA9089Tab({
               </div>
               <div className="field-cell">
                 <div className="fc-label">Case number</div>
-                <div className={`fc-val fc-val-text mono ${!caseData.eta9089CaseNumber ? "dim" : ""}`} title={caseData.eta9089CaseNumber || undefined}>{caseData.eta9089CaseNumber || "-"}</div>
+                <div className={`fc-val fc-val-text mono ${!caseData.eta9089CaseNumber ? "dim" : ""}`} title={caseData.eta9089CaseNumber || undefined}><PublicNumber value={caseData.eta9089CaseNumber} href={dolCasePageHref(caseData.eta9089CaseNumber)} /></div>
               </div>
               <div className="field-cell">
                 <div className="fc-label">Audit date</div>

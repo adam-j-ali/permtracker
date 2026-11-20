@@ -33,7 +33,6 @@
  */
 
 import { Fragment, useState } from "react";
-import Link from "next/link";
 import { useMutation } from "convex/react";
 import { HourglassMediumIcon } from "@phosphor-icons/react";
 import { api } from "@convex/_generated/api";
@@ -51,6 +50,7 @@ import { holidayLine, type CaseEstimate } from "@/lib/caseEstimate";
 import type { LineAheadRow } from "@/lib/queueAhead";
 import { CaseNumberSuggestion } from "./CaseNumberSuggestion";
 import { canonicalStatus } from "@/lib/caseStatusVocabulary";
+import { NewTabLink } from "@/components/ui/new-tab-link";
 
 export interface CaseEstimateSectionCase {
   _id: Id<"cases">;
@@ -551,8 +551,9 @@ export function CaseEstimateSection({ caseData }: { caseData: CaseEstimateSectio
               </>
             ) : null}{" "}
             <p>
-              Every model and its spread is on <Link href="/tools/perm-timeline-calculator">the timeline calculator</Link>
-              , and how each is computed on <Link href="/methodology">the methodology page</Link>.
+              Every model and its spread is on{" "}
+              <NewTabLink href="/tools/perm-timeline-calculator">the timeline calculator</NewTabLink>, and how each is
+              computed on <NewTabLink href="/methodology">the methodology page</NewTabLink>.
             </p>
           </FinePrint>
         </div>
