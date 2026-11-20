@@ -14,7 +14,14 @@ import { softFail } from "@/lib/softRead";
  * and a COUNT walks every row. The one live query is over `visa_bulletins`,
  * which holds one row per month.
  */
-const KEYS = ["cases_meta", "live_remainder", "sweep_coverage", "flag_disclosure_summary_pw", "flag_disclosure_summary_lca"] as const;
+const KEYS = [
+  "cases_meta",
+  "live_remainder",
+  "sweep_coverage",
+  "flag_disclosure_summary_pw",
+  "flag_disclosure_summary_lca",
+  "flag_disclosure_summary_lca_history",
+] as const;
 
 export const getRecordCounts = cache(async (): Promise<RecordFigure[]> => {
   const [docs, bulletin] = await Promise.all([
@@ -33,6 +40,7 @@ export const getRecordCounts = cache(async (): Promise<RecordFigure[]> => {
     sweepCoverage: byKey.get("sweep_coverage") ?? null,
     pwSummary: byKey.get("flag_disclosure_summary_pw") ?? null,
     lcaSummary: byKey.get("flag_disclosure_summary_lca") ?? null,
+    lcaHistorySummary: byKey.get("flag_disclosure_summary_lca_history") ?? null,
     bulletinCount: bulletin ? Number(bulletin.n) : null,
     bulletinLatest: bulletin?.latest ?? null,
   });

@@ -220,8 +220,9 @@ describe("the decided half: DOL's quarterly file", () => {
     expect(parseDisclosureSummaryDoc("not json", 1)).toBeNull();
     // a date that is not YYYY-MM-DD is dropped, not passed through
     expect(parseDisclosureSummaryDoc(JSON.stringify({ rows: 1, latestDecision: "June 2026" }), 1)?.latestDecision).toBeNull();
-    one.mockResolvedValueOnce({ json: JSON.stringify({ rows: 5, files: {} }), computed_at: 7 });
+    rows.mockResolvedValueOnce([{ key: "flag_disclosure_summary_pw", json: JSON.stringify({ rows: 5, files: {} }), computed_at: 7 }]);
     expect(await getPwdDisclosureSummary()).toMatchObject({ rows: 5, computedAt: 7 });
-    expect(one.mock.calls[0]![1]).toEqual(["flag_disclosure_summary_pw"]);
+    // Wage requests have no older files' table, so only their own summary is asked for.
+    expect(rows.mock.calls.at(-1)![1]).toEqual(["flag_disclosure_summary_pw"]);
   });
 });

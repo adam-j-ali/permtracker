@@ -20,9 +20,10 @@ export interface RecordDocs {
   liveRemainder: string | null;
   /** perm_docs['sweep_coverage']: when the pending sweep last finished. */
   sweepCoverage: string | null;
-  /** perm_docs['flag_disclosure_summary_pw'] and ['..._lca']. */
+  /** perm_docs['flag_disclosure_summary_pw'] and ['..._lca'], and the LCA's older files (['..._lca_history']). */
   pwSummary: string | null;
   lcaSummary: string | null;
+  lcaHistorySummary: string | null;
   /** Bulletin archive: how many months, and the newest. */
   bulletinCount: number | null;
   bulletinLatest: string | null;
@@ -96,9 +97,11 @@ export function deriveRecordCounts(docs: RecordDocs): RecordFigure[] {
 
   const lca = parse(docs.lcaSummary);
   if (lca && isCount(lca.rows) && isDate(lca.latestDecision)) {
+    // The FY2008 to FY2019 files are counted with the newer ones (src/lib/disclosureSummary.ts); the date stays the newer's.
+    const older = parse(docs.lcaHistorySummary);
     out.push({
       href: "/lca-cases",
-      value: lca.rows,
+      value: lca.rows + (older && isCount(older.rows) ? older.rows : 0),
       label: "H-1B labor condition applications",
       asOf: lca.latestDecision.slice(0, 10),
       asOfKind: "through",

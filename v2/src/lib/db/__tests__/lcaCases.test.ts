@@ -19,7 +19,7 @@ vi.mock("../client", () => ({
   },
 }));
 
-const { LCA_FINAL_STATUSES, listLcaCases, lookupLcaDisclosed, lookupLcaRecord, normaliseLcaCaseNumber, searchLcaCases, searchLcaDisclosed } =
+const { LCA_FINAL_STATUSES, getLcaDisclosureSummary, listLcaCases, lookupLcaDisclosed, lookupLcaRecord, normaliseLcaCaseNumber, searchLcaCases, searchLcaDisclosed } =
   await import("../lcaCases");
 const { BROAD_NAME_ROWS } = await import("../flagCases");
 
@@ -266,5 +266,18 @@ describe("DOL's FY2008 to FY2019 files, in lca_cases_history", () => {
     rows.mockResolvedValueOnce([row("I-200-21001-1", "2021-01-05")])
       .mockRejectedValueOnce(new Error("SQLite error: no such table: lca_cases_history"));
     await expect(searchLcaDisclosed({ text: "acme", limit: 50 })).resolves.toHaveLength(1);
+  });
+});
+
+describe("the LCA's record counts both tables' files (Nov 20 2026)", () => {
+  it("adds the FY2008 to FY2019 summary to the newer one, dated by the newer", async () => {
+    // The homepage, /lca-cases and /case-search printed 3,754,961 while the older files held 5,839,865 more.
+    rows.mockResolvedValueOnce([
+      { key: "flag_disclosure_summary_lca", json: JSON.stringify({ rows: 3754961, earliestReceived: "2016-04-27", latestDecision: "2026-06-30", files: { "FY2026_Q3.xlsx": 437496 } }), computed_at: 2 },
+      { key: "flag_disclosure_summary_lca_history", json: JSON.stringify({ rows: 5839865, earliestReceived: "2007-09-26", latestDecision: "2019-09-30", files: { "FY2008.xlsx": 405641 } }), computed_at: 1 },
+    ]);
+    const summary = await getLcaDisclosureSummary();
+    expect(rows.mock.calls.at(-1)![1]).toEqual(["flag_disclosure_summary_lca", "flag_disclosure_summary_lca_history"]);
+    expect(summary).toMatchObject({ rows: 9594826, earliestReceived: "2007-09-26", latestDecision: "2026-06-30" });
   });
 });
