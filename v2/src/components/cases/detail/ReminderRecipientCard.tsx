@@ -29,7 +29,8 @@ const BADGE = { waiting: "Waiting to confirm", confirmed: "On", stopped: "Stoppe
 /**
  * "Reminders for someone else" on a case's Overview: the case's deadline reminders sent to a second person too, a
  * paralegal or the employer's HR contact (convex/reminderRecipients.ts). One per case. The address gets one email to
- * confirm; once it does, it gets this case's reminders by the switches in Settings, each with a one-click stop. The
+ * confirm; once it does, it gets this case's reminders by the owner's email switches in Settings (the same rule as the
+ * owner's own reminder email: emailsDeadlineReminder), each with a one-click stop. The
  * card shows the address and where it stands, and removes it after a confirm.
  */
 export function ReminderRecipientCard({ caseId, closed = false }: { caseId: Id<"cases">; closed?: boolean }) {
@@ -94,7 +95,7 @@ export function ReminderRecipientCard({ caseId, closed = false }: { caseId: Id<"
       <div className="detail-card-body space-y-4">
         <p className="text-base text-muted-foreground">
           Send this case&apos;s deadline reminders to one more person, like a paralegal or the employer&apos;s HR
-          contact. They get the reminders your deadline switches in Settings allow, for this case only. Each email
+          contact. They get the reminders your email switches in Settings send you, for this case only. Each email
           names the employer, the job title and the deadlines.
         </p>{" "}
         {closed ? (

@@ -695,6 +695,22 @@ export function shouldSendEmail(
   return true;
 }
 
+/** The notification a deadline reminder is filed as: an RFI's or an RFE's due date has its own kind. */
+export function reminderNotificationType(deadlineType: string): NotificationType {
+  if (deadlineType === "rfi_due") return "rfi_alert";
+  if (deadlineType === "rfe_due") return "rfe_alert";
+  return "deadline_reminder";
+}
+
+/**
+ * Whether the day's reminder for this deadline is emailed, by the person's switches alone: the master email switch,
+ * "Deadline reminders" and the switch for its kind of deadline (shouldSendEmail, which no priority changes). A case's
+ * second reminder recipient gets exactly what this allows for the case's owner.
+ */
+export function emailsDeadlineReminder(deadlineType: string, prefs: UserNotificationPrefs): boolean {
+  return shouldSendEmail(reminderNotificationType(deadlineType), "normal", prefs, deadlineType);
+}
+
 /**
  * Whether a push goes for a notification: the push switch, and quiet hours.
  * The email switches have no say, so email off with push on still pushes.
