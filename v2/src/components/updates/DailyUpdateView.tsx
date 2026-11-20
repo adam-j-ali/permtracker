@@ -181,7 +181,7 @@ export function DailyUpdateView({ day, perm, wage, cases, final, checkedAt, now,
             {daytime ? (
               <>
                 These counts can still rise: the cases DOL is deciding are read every 15 minutes until 8 PM Eastern.
-                {checkedAt ? ` The last read of every pending case finished ${checkedLabel(checkedAt)}.` : ""}
+                {checkedAt ? ` The last read finished ${checkedLabel(checkedAt)}.` : ""}
               </>
             ) : (
               <>

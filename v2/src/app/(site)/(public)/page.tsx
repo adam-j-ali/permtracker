@@ -53,7 +53,7 @@ import { getProcessingTimes } from "@/lib/db/processingTimes";
 import { getRecordCounts } from "@/lib/db/recordCounts";
 import { getSiteReviews } from "@/lib/reviews/read";
 import { getObservedDays } from "@/lib/db/pulse";
-import { getSweepCoverage } from "@/lib/db/sweepCoverage";
+import { getCheckTimes, getSweepCoverage } from "@/lib/db/sweepCoverage";
 import { getBacklogMatrix } from "@/lib/db/backlog";
 import { getPermBoard } from "@/lib/db/board";
 import { getPermLine } from "@/lib/db/permLine";
@@ -159,12 +159,12 @@ export default async function HomePage() {
   // The pulse reads our own sweep's record, a third clock: it moves when the
   // sweep finishes, and /api/revalidate-sweep expires this page then. Either
   // read failing drops the band, never the page.
-  const [snapshot, disclosure, record, observed, coverage, siteReviews, backlog, permBoard, line, pwdSummary, casesMeta, i140Median, wageDocs, series] = await Promise.all([
+  const [snapshot, disclosure, record, observed, checks, siteReviews, backlog, permBoard, line, pwdSummary, casesMeta, i140Median, wageDocs, series] = await Promise.all([
     getProcessingTimes(),
     getDisclosureStats(),
     getRecordCounts(),
     getObservedDays().catch(softFail("home/page.getObservedDays", [])),
-    getSweepCoverage().catch(softFail("home/page.getSweepCoverage", null)),
+    getCheckTimes().catch(softFail("home/page.getCheckTimes", null)),
     // The site's approved reviews; never throws (falls back to the last recorded rating).
     getSiteReviews(),
     // The census doc the queue pages read: every filing month, decided and
@@ -240,12 +240,12 @@ export default async function HomePage() {
           frontierMonth: workingMonth,
           lastDay: lastDay ? { date: lastDay.day.date, total: lastDay.day.total } : null,
           pending: record.find((f) => f.href === "/perm-case-status")?.value ?? null,
-          checkedAt: coverage?.checkedAt ?? null,
+          checks,
           pwdPending,
         }}
       />
       <LiveDataBand>
-        <PermPulse variant="charts" days={observed} checkedAt={coverage?.checkedAt ?? null} views={views} />
+        <PermPulse variant="charts" days={observed} checkedAt={checks?.newest ?? null} views={views} />
         {/* Both ends of the step in one row: the week's PERM decisions beside the week's wage determinations. */}
         <DolDaysBoard
           days={dolDays(observed, wageDocs.queue?.days ?? [], easternDay(), 14)}

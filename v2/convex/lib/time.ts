@@ -62,6 +62,11 @@ export function emailStamp(at: Date | number = new Date()): string {
   return `${LONG_DAY.format(at)}, ${CLOCK.format(at)} ET`;
 }
 
+/** "5:25 AM ET": a time of day in Eastern, for a sentence that already names the day. */
+export function clockLabel(ms: number): string {
+  return `${CLOCK.format(ms)} ET`;
+}
+
 /** "5:25 AM ET, Oct 1": when something was checked, as a reader can check it. */
 export function checkedLabel(ms: number): string {
   return `${CLOCK.format(ms)} ET, ${SHORT_DAY.format(ms)}`;

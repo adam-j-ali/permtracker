@@ -38,6 +38,36 @@ def main() -> int:
     # quarters of every request and the run reports success.
     check("BATCH is the measured ceiling of 50", csd.BATCH == 50, str(csd.BATCH))
 
+    # --- the newest check's time ------------------------------------------
+    # The daytime pass rewrites the decisions every 15 minutes, while the pages printed the last complete read's
+    # time under them: "checked 10:55 AM" over figures from 12:45 PM (Nov 20 2026). Each pass stores its own finish.
+    d = csd.latest_check_doc("active", 18025, 17990, 1795196000000)
+    check("a pass that checked cases stores its finish time and its counts",
+          d == {"mode": "active", "asked": 18025, "checked": 17990, "finishedAt": 1795196000000}, str(d))
+    check("a pass that checked nothing stores nothing", csd.latest_check_doc("active", 18025, 0, 1) is None)
+
+    class _Db:
+        def __init__(self, fail: bool = False):
+            self.rows: list = []
+            self.fail = fail
+
+        def execute(self, sql, args=None, **_):
+            if self.fail:
+                raise RuntimeError("database refused")
+            self.rows.append((sql, args))
+
+    db = _Db()
+    csd.write_latest_check(db, "full", asked=430000, checked=429000)
+    check("the stamp is one perm_docs row under latest_check, dated by the pass's own finish",
+          len(db.rows) == 1 and db.rows[0][1][0] == "latest_check"
+          and db.rows[0][1][2] == csd.json.loads(db.rows[0][1][1])["finishedAt"], str(db.rows))
+    try:
+        csd.write_latest_check(_Db(fail=True), "active", asked=10, checked=10)
+        survived = True
+    except Exception:  # noqa: BLE001
+        survived = False
+    check("a refused stamp write never fails the pass that earned it", survived)
+
     # --- the run row's status -------------------------------------------------
     # A sweep with cases to check that checked none used to return 0 with no run
     # row at all, so the health check heard of it days later through freshness.

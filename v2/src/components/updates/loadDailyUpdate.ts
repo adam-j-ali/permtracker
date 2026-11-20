@@ -4,7 +4,7 @@ import type { DailyUpdateViewProps } from "@/components/updates/DailyUpdateView"
 import { dayCases, daysBefore, summariseDay } from "@/lib/dailyUpdate";
 import { getActivitySeries } from "@/lib/db/activity";
 import { getChangeCalendar, getChangeDay } from "@/lib/db/changes";
-import { getSweepCoverage } from "@/lib/db/sweepCoverage";
+import { getCheckTimes } from "@/lib/db/sweepCoverage";
 import { dolDayOf } from "@/lib/dolDay";
 import { federalHolidayName } from "@/lib/perm";
 import { isDolWorkday, usualFor } from "@/lib/pulseStats";
@@ -35,10 +35,10 @@ const nextOf = (day: string) => new Date(Date.parse(`${day}T12:00:00Z`) + 86_400
 export async function loadDailyUpdate(asked: string | null): Promise<DailyLoad | null> {
   const now = Date.now();
   const today = dolDayOf(now);
-  const [calendar, seriesAll, coverage] = await Promise.all([
+  const [calendar, seriesAll, checks] = await Promise.all([
     getChangeCalendar(),
     getActivitySeries().catch(softFail("perm-updates.series", [])),
-    getSweepCoverage(),
+    getCheckTimes(),
   ]);
   const withPerm = calendar.days.filter((d) => d.byProgram.perm > 0).map((d) => d.date).sort((a, b) => b.localeCompare(a));
   const since = calendar.observedSince;
@@ -77,7 +77,7 @@ export async function loadDailyUpdate(asked: string | null): Promise<DailyLoad |
       wage,
       cases: dayCases(changes, "perm"),
       final,
-      checkedAt: coverage?.checkedAt ?? null,
+      checkedAt: checks?.newest ?? null,
       now,
       usual: { certified: usual("certified"), denied: usual("denied"), withdrawn: usual("withdrawn") },
       earlier: daysBefore(series, day, 10),

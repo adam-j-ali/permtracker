@@ -376,7 +376,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
   {
     path: "/perm-by-the-numbers",
     label: "PERM by the numbers",
-    blurb: "The PERM totals DOL's own case records add up to and DOL doesn't publish, counted each night from its case-status search: cases waiting by stage and filing month, holds by employer with the day each began, decisions per day, new filings by week, job and employer, employers new to PERM, RFIs issued per week, wage requests waiting, and every reading of DOL's processing-times page.",
+    blurb: "The PERM totals DOL's own case records add up to and DOL doesn't publish, recounted each time we read its case-status search in full, up to four times a day: cases waiting by stage and filing month, holds by employer with the day each began, decisions per day, new filings by week, job and employer, employers new to PERM, RFIs issued per week, wage requests waiting, and every reading of DOL's processing-times page.",
   },
   {
     path: "/today",
