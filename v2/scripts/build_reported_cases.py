@@ -25,7 +25,9 @@ from typing import NamedTuple
 
 import lib_reported_cases as rc
 
-SCRIPT = "build_reported_cases"
+# The name the server's job records a failure under (bin/permtracker-uscis), so a success clears it (Nov 20 2026: the
+# successes went under the bare name and ingest-health kept reading one 2:35 AM failure as the newest run).
+SCRIPT = "build_reported_cases.py"
 TABLE = "reported_cases"
 KEEP_SHARE = 0.5
 COLUMNS = ("case_id", *rc.FIELDS, "as_of", "sources", "source_names", "checked", "shows", "possible_dupes",
