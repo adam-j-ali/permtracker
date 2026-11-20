@@ -40,7 +40,8 @@ export function degreeOf(label: string | null | undefined): Degree | null {
   if (l.startsWith("associate")) return "associate";
   if (l.startsWith("bachelor")) return "bachelor";
   if (l.startsWith("master")) return "master";
-  if (l.startsWith("doctoral") || l.startsWith("doctorate") || l.includes("professional degree")) return "doctorate";
+  // DOL's PWD file says "Doctorate (PhD)" and "Other degree (JD, MD, etc.)": the form's professional degrees.
+  if (l.startsWith("doctoral") || l.startsWith("doctorate") || l.includes("professional degree") || l.startsWith("other degree")) return "doctorate";
   return null;
 }
 

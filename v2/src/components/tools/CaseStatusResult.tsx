@@ -34,6 +34,8 @@ import { CaseMilestones } from "@/components/tools/CaseMilestones";
 import { AnswerNext, WATCH_ANCHOR } from "@/components/tools/AnswerNext";
 import { CertifiedNextWatch } from "@/components/tools/CertifiedNextWatch";
 import { RecordList, type RecordRow } from "@/components/data/RecordList";
+import type { PermCaseDetail } from "@/lib/db/permCaseDetail";
+import { naicsTitle } from "@/lib/naicsTitles";
 import {
   CaseEstimate,
   CaseEstimatePanel,
@@ -158,6 +160,8 @@ export interface CaseStatusResultProps {
   sameDay?: SameDay | null;
   /** "YYYY-MM-DD", passed in so every elapsed figure shares one clock. */
   today: string;
+  /** The job-level fields from DOL's file and its wage request's level and requirements (decided cases). */
+  detail?: PermCaseDetail | null;
 }
 
 /**
@@ -197,6 +201,7 @@ export function CaseStatusResult({
   timeline = null,
   wageRequests = null,
   history = null,
+  detail = null,
   today,
 }: CaseStatusResultProps) {
   const { live, decided, cohort, employer, statusOutlook } = result;
@@ -337,7 +342,7 @@ export function CaseStatusResult({
         />
       ) : null}
 
-      {decided ? <TheDecision decided={decided} duration={duration} cohort={cohort} wage={wage} /> : null}{" "}
+      {decided ? <TheDecision decided={decided} duration={duration} cohort={cohort} wage={wage} detail={detail} /> : null}{" "}
       {decided ? <DecidedTimeline read={timeline} /> : null}{" "}
       {!decided ? (
         <EmployerWageRequests found={wageRequests} employerName={result.live?.employerName ?? null} jobTitle={result.live?.jobTitle ?? null} />
@@ -868,11 +873,13 @@ function Position({
 /* ------------------------------------------------------------------ */
 
 function TheDecision({
+  detail = null,
   decided,
   duration,
   cohort,
   wage,
 }: {
+  detail?: PermCaseDetail | null;
   decided: NonNullable<CaseLookupResult["decided"]>;
   duration: CohortDuration | null;
   cohort: CaseLookupResult["cohort"];
@@ -944,6 +951,7 @@ function TheDecision({
         </p>
       ) : null}
 
+      {detail ? <PermJobRecord detail={detail} state={decided.state} /> : null}{" "}
       {wage ? <WageLadder wage={wage} /> : null}
     </PageSection>
   );
@@ -1354,4 +1362,53 @@ export function WontSay({ isFinal }: { isFinal: boolean }) {
       </li>
     </ul>
   );
+}
+
+
+/** The job as DOL's PERM file prints it, and the wage request it names with that determination's level and needs. */
+function PermJobRecord({ detail, state }: { detail: PermCaseDetail; state: string | null }) {
+  const industry = naicsTitle(detail.naics);
+  const pwd = detail.pwd;
+  const need = pwd
+    ? [pwd.education && pwd.education.toLowerCase() !== "none" ? pwd.education : null, pwd.experienceMonths ? `${pwd.experienceMonths} months of experience` : null]
+        .filter(Boolean)
+        .join(", ")
+    : "";
+  const rows: RecordRow[] = [
+    ...(detail.pwdNumber
+      ? [
+          {
+            label: "Its wage request",
+            raw: true,
+            value: (
+              <Link href={`/perm-case-status?case=${encodeURIComponent(detail.pwdNumber)}`} className="link font-mono">
+                {detail.pwdNumber}
+              </Link>
+            ),
+          },
+        ]
+      : []),
+    ...(pwd?.level ? [{ label: "Wage level DOL set", value: `Level ${pwd.level}` }] : []),
+    ...(need ? [{ label: "What the job requires", value: need }] : []),
+    ...(detail.jobEducation && !need ? [{ label: "Education the job requires", value: detail.jobEducation }] : []),
+    ...(detail.worksiteCity || state ? [{ label: "Worksite", value: [detail.worksiteCity, state].filter(Boolean).join(", ") }] : []),
+    ...(industry ? [{ label: "Industry", value: `${industry.title} (NAICS ${industry.code})` }] : []),
+    ...(detail.attorneyName
+      ? [
+          {
+            label: "Law firm",
+            raw: true,
+            value: detail.attorneySlug ? (
+              <Link href={`/perm-attorneys/${detail.attorneySlug}`} className="link">
+                {detail.attorneyName}
+              </Link>
+            ) : (
+              detail.attorneyName
+            ),
+          },
+        ]
+      : []),
+    ...(detail.layoff !== null ? [{ label: "Layoffs in the occupation", value: detail.layoff ? "The employer reported some in the six months before filing" : "None reported" }] : []),
+  ];
+  return rows.length ? <RecordList className="mt-6" rows={rows} /> : null;
 }
