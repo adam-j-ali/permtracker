@@ -118,6 +118,7 @@ Page Structure:
 3. Collapsible Sections
 - PWD Section: Filing date, determination date, expiration (auto-calculated)
 - Recruitment Section: Notice of filing, job order, Sunday ads, additional methods
+- Recruitment tab, "Share with your client": makes a private link to a read-only page of the case's recruitment record (the employer, the job title, the recruitment steps and their dates, the filing window and the applicant log). It updates as you work and needs no sign-in, so anyone with the link can see it. The beneficiary, notes, documents, case numbers and the wage aren't shown, nor notes on applicants hired or still being considered. The link is shown once, when it's made: copy it then. The tab says when it was made and last opened. "Turn off the link" stops it at once; to share again, make a new link. One link per case at a time
 - ETA 9089 Section: Filing date, certification, expiration, RFI entries
 - I-140 Section: Filing date, approval date, RFE entries
 - Case Info: Employer details, job title, SOC code, wage info

@@ -183,6 +183,33 @@ export default function PrivacyPage() {
               </li>
             </ul>{" "}
 
+            <h3 id="shared-recruitment-records" className="font-heading text-lg font-bold mt-6 mb-3">
+              Recruitment Records You Share by Link
+            </h3>{" "}
+            <ul className="list-disc list-inside text-soft space-y-2 ml-4">
+              <li>
+                If you share a case&apos;s recruitment record by link, anyone with the link can see that record,
+                with no sign-in, until you turn the link off: the employer, the job title, the recruitment steps
+                and their dates, the filing window and the recruitment log (each applicant&apos;s reference, the
+                dates they applied and were contacted, how they were contacted, the outcome and the reason you
+                recorded). Nothing else from your account is shown
+              </li>{" "}
+              <li>
+                That leaves out the beneficiary identifier, notes, documents, case numbers and the wage, and any
+                note you keep on an applicant you hired or are still considering
+              </li>{" "}
+              <li>
+                We keep only a one-way hash of the link, so it can&apos;t be shown again. The page it opens runs
+                no analytics, isn&apos;t indexed by search engines and tells the browser not to pass its address
+                on. We note the day the link was last opened, to show you on the case, and the note says nothing
+                about who opened it
+              </li>{" "}
+              <li>
+                A link you turn off stops working at once. A link is deleted when you delete its case or your
+                account
+              </li>
+            </ul>{" "}
+
             <h3 className="font-heading text-lg font-bold mt-6 mb-3">
               User Preferences
             </h3>{" "}
@@ -1426,7 +1453,8 @@ export default function PrivacyPage() {
               </li>{" "}
               <li>
                 <strong>Ahrefs Web Analytics:</strong> Cookieless, aggregate
-                page-view analytics loaded on every page. It sets no cookies,
+                page-view analytics loaded on every page except a recruitment
+                record shared by link. It sets no cookies,
                 stores no identifiers on your device and collects no personal
                 data; we see page counts and referrers, not people.
               </li>{" "}

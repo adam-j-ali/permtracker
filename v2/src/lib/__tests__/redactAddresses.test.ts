@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { redactAddresses, redactEventAddresses, redactIdentifiers } from "@/lib/analyticsRedact";
+import { isPrivatePageEvent, isPrivatePath, redactAddresses, redactEventAddresses, redactIdentifiers } from "@/lib/analyticsRedact";
 
 /**
  * What a page address may tell PostHog. The Privacy Policy says case numbers are
@@ -154,5 +154,47 @@ describe("redactAddresses", () => {
   it("survives a missing bag and values that aren't strings", () => {
     expect(() => redactAddresses(undefined)).not.toThrow();
     expect(run({ $current_url: 42 }).$current_url).toBe(42);
+  });
+});
+
+/**
+ * A recruitment record shared by link (/share/recruitment/<key>): the address is the key, and the page shows a
+ * client's applicants, so nothing from that page goes to PostHog, and the key is taken out of any address that
+ * carries it anywhere else (a link pasted into the site search, say).
+ */
+describe("a shared recruitment record", () => {
+  const KEY = "Zk3_x-9QwErTyUiOpAsDfGhJkLzXcVbNm1234567890";
+  const page = `https://permtracker.app/share/recruitment/${KEY}`;
+
+  it("sends PostHog nothing from the shared page, whichever field names it", () => {
+    expect(isPrivatePageEvent({ event: "$pageview", properties: { $current_url: page } })).toBe(true);
+    expect(isPrivatePageEvent({ event: "$autocapture", properties: { $pathname: `/share/recruitment/${KEY}` } })).toBe(true);
+    expect(isPrivatePageEvent({ event: "$exception", properties: { $current_url: "https://permtracker.app/share/recruitment/off" } })).toBe(true);
+    expect(isPrivatePageEvent({ event: "$pageview", properties: { $current_url: "https://permtracker.app/perm-recruitment" } })).toBe(false);
+    expect(isPrivatePageEvent({ event: "$pageview", properties: { $current_url: "https://permtracker.app/sharepoint" } })).toBe(false);
+    expect(isPrivatePageEvent({ event: "$pageview" })).toBe(false);
+    expect(isPrivatePageEvent(null)).toBe(false);
+  });
+
+  it("never starts PostHog on a shared page, whose flags request would carry the address", () => {
+    expect(isPrivatePath("/share/recruitment/abc")).toBe(true);
+    expect(isPrivatePath("/share")).toBe(true);
+    expect(isPrivatePath("/sharepoint")).toBe(false);
+    expect(isPrivatePath("/perm-recruitment")).toBe(false);
+    const src = readFileSync(join(process.cwd(), "src/instrumentation-client.ts"), "utf8");
+    expect(src).toMatch(/const onPrivatePage =[^;]*isPrivatePath\(window\.location\.pathname\)/);
+    expect(src).toMatch(/if \(posthogKey && !onLocalHost && !onPrivatePage\) \{/);
+  });
+
+  it("is dropped in before_send too, before anything else reads the event", () => {
+    const src = readFileSync(join(process.cwd(), "src/instrumentation-client.ts"), "utf8");
+    expect(src).toMatch(/if \(isPrivatePageEvent\(event\)\) return null;/);
+    expect(src.indexOf("isPrivatePageEvent(event)")).toBeLessThan(src.indexOf("redactEventAddresses(event);"));
+  });
+
+  it("takes the key out of any address that carries it", () => {
+    expect(run({ $referrer: page }).$referrer).toBe("https://permtracker.app/share/recruitment/redacted");
+    expect(run({ $current_url: `https://permtracker.app/case-search?q=${encodeURIComponent(page)}` }).$current_url).not.toContain(KEY);
+    expect(redactIdentifiers(`see /share/recruitment/${KEY} for it`)).toBe("see /share/recruitment/redacted for it");
   });
 });
