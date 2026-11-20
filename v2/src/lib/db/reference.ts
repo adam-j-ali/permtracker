@@ -410,6 +410,37 @@ export async function wageLevelHistory(code: string, area: string, collection: "
 }
 
 /** The newest wage year's four levels for each of `codes` in one area. */
+/**
+ * One occupation's four levels in one area for one wage year (the July that opens it), from DOL's own published wage
+ * file as the reference job stores it (`oflc_wage_levels`, all industries). The wage-levels tool answers from this when
+ * DOL's live search can't, so a slow or down DOL site never leaves a reader with nothing. Null when the file holds no
+ * full row for it; a failed read throws, so the caller says the read failed rather than "no wage".
+ */
+export async function storedWageLevels(
+  code: string,
+  area: string,
+  wageYear: number,
+): Promise<{ level: "I" | "II" | "III" | "IV"; hourly: number; yearly: number }[] | null> {
+  const soc = socGroup(code);
+  if (!soc || !/^\d{2,7}$/.test(area) || !Number.isInteger(wageYear)) return null;
+  const got = await rows<Record<string, unknown>>(
+    "SELECT l1, l2, l3, l4, label FROM oflc_wage_levels WHERE wage_year = ? AND collection = 'alc' AND area = ? AND soc7 = ? LIMIT 1",
+    [wageYear, area, soc],
+  );
+  const r = got[0];
+  if (!r) return null;
+  const label = r.label == null || r.label === "" ? null : String(r.label);
+  const levels = [num(r.l1), num(r.l2), num(r.l3), num(r.l4)];
+  if (levels.some((v) => v == null || !Number.isFinite(v) || v <= 0)) return null;
+  const annual = isAnnual(levels, label);
+  const yearly = toYearly(levels, label);
+  return (["I", "II", "III", "IV"] as const).map((level, i) => ({
+    level,
+    hourly: annual ? Math.round((yearly[i]! / HOURS_PER_YEAR) * 100) / 100 : levels[i]!,
+    yearly: yearly[i]!,
+  }));
+}
+
 export async function wageLevelsForArea(area: string, codes: string[]): Promise<(WageLevelYear & { soc: string })[]> {
   const socs = [...new Set(codes.map(socGroup).filter((s): s is string => !!s))].slice(0, 40);
   if (!/^\d{2,7}$/.test(area) || !socs.length) return [];

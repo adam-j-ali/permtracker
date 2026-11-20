@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const storedWageLevels = vi.fn(async () => null as unknown);
+vi.mock("@/lib/db/reference", () => ({ storedWageLevels }));
+
 const { GET } = await import("../route");
 const { GET: AREAS } = await import("../../wage-areas/route");
 
@@ -20,6 +23,8 @@ describe("GET /api/wage-levels", () => {
   const fetchMock = vi.fn();
   beforeEach(() => {
     fetchMock.mockReset();
+    storedWageLevels.mockReset();
+    storedWageLevels.mockResolvedValue(null);
     vi.stubGlobal("fetch", fetchMock);
   });
   afterEach(() => vi.unstubAllGlobals());
@@ -73,6 +78,46 @@ describe("GET /api/wage-levels", () => {
     expect(res.status).toBe(502);
     expect(res.headers.get("Cache-Control")).toBe("no-store");
   });
+  it("answers from the stored wage file when DOL fails, says so, and caches it only an hour", async () => {
+    const FILE = [
+      { level: "I", hourly: 51.34, yearly: 106787 },
+      { level: "II", hourly: 64.52, yearly: 134202 },
+      { level: "III", hourly: 77.71, yearly: 161637 },
+      { level: "IV", hourly: 90.89, yearly: 189051 },
+    ];
+    for (const fail of [() => fetchMock.mockResolvedValue(new Response("busy", { status: 503 })),
+                        () => fetchMock.mockRejectedValue(new Error("reset")),
+                        () => fetchMock.mockResolvedValue(new Response(JSON.stringify({ surprise: true }), { status: 200 }))]) {
+      fail();
+      storedWageLevels.mockResolvedValue(FILE);
+      const res = await GET(get("/api/wage-levels?soc=15-1252&area=31080&year=2026"));
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { from: string; levels: unknown[]; source: string; seriesYear: number };
+      expect(body.from).toBe("file");
+      expect(body.levels).toEqual(FILE);
+      expect(body.seriesYear).toBe(2026);
+      expect(body.source).toContain("wage-data-downloads");
+      expect(res.headers.get("Cache-Control")).toContain("s-maxage=3600");
+    }
+    expect(storedWageLevels).toHaveBeenCalledWith("15-1252", "31080", 2026);
+  });
+
+  it("keeps DOL's failure when the stored file has nothing or can't be read", async () => {
+    fetchMock.mockResolvedValue(new Response("busy", { status: 503 }));
+    storedWageLevels.mockResolvedValue(null);
+    expect((await GET(get("/api/wage-levels?soc=15-1252&area=31080&year=2026"))).status).toBe(502);
+    storedWageLevels.mockRejectedValue(new Error("db down"));
+    const res = await GET(get("/api/wage-levels?soc=15-1252&area=31080&year=2026"));
+    expect(res.status).toBe(502);
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
+  });
+
+  it("never asks the stored file when DOL answers", async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify(DOL), { status: 200 }));
+    await GET(get("/api/wage-levels?soc=15-1252&area=31080&year=2026"));
+    expect(storedWageLevels).not.toHaveBeenCalled();
+  });
+
 });
 
 describe("GET /api/wage-areas", () => {
