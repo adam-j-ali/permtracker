@@ -33,6 +33,7 @@ import { ArrowSquareOutIcon, CaretDownIcon, CaretUpIcon, WarningIcon as AlertTri
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { handleOperationError } from "@/lib/errors";
+import { toast } from "@/lib/toast";
 import { useAuthContext } from "@/lib/contexts/AuthContext";
 
 /**
@@ -86,11 +87,30 @@ export default function AutoClosureAlertBanner() {
   // Mutations for dismissing alerts
   const dismissOne = useMutation(api.deadlineEnforcement.dismissAutoClosureAlert);
   const dismissAll = useMutation(api.deadlineEnforcement.dismissAllAutoClosureAlerts);
+  const reopen = useMutation(api.cases.reopenCase);
 
   // Don’t render if no alerts or still loading
   if (!alerts || alerts.length === 0) {
     return null;
   }
+
+  // Reopen the case, then clear its alert: the closure it reports is undone.
+  const handleReopen = async (caseId: Id<"cases">, notificationId: Id<"notifications">) => {
+    if (busy) return;
+    setBusy(notificationId);
+    try {
+      await reopen({ id: caseId });
+      await dismissOne({ notificationId });
+      toast.success("Case reopened");
+    } catch (error) {
+      handleOperationError(error, {
+        userMessage: "Couldn’t reopen the case. Try again.",
+        context: { operation: "reopenFromClosureAlert" },
+      });
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const handleDismissOne = async (notificationId: Id<"notifications">) => {
     if (busy) return;
@@ -202,19 +222,34 @@ export default function AutoClosureAlertBanner() {
 
             <div className="flex items-center gap-1 ml-2">
               {alert.caseId && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="min-h-11"
+                  disabled={busy !== null}
+                  onClick={() => handleReopen(alert.caseId!, alert.notificationId)}
+                  aria-label={`Reopen ${alert.employerName} - ${alert.positionTitle}`}
+                >
+                  Reopen
+                </Button>
+              )}{" "}
+              {alert.caseId && (
                 <Link
                   href={`/cases/${alert.caseId}`}
-                  className="p-1.5 text-data-warn-ink hover:text-data-warn-ink transition-colors"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center text-data-warn-ink transition-colors"
                   title="View case"
+                  aria-label={`View ${alert.employerName} - ${alert.positionTitle}`}
                 >
-                  <ArrowSquareOutIcon className="w-4 h-4" />
+                  <ArrowSquareOutIcon className="w-4 h-4" aria-hidden="true" />
                 </Link>
               )}
               <button
+                type="button"
                 onClick={() => handleDismissOne(alert.notificationId)}
                 disabled={busy !== null}
                 aria-busy={busy === alert.notificationId}
-                className="p-1.5 text-data-warn-ink hover:text-data-warn-ink transition-colors disabled:opacity-50"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center text-data-warn-ink transition-colors disabled:opacity-50"
                 title="Dismiss alert"
                 aria-label={`Dismiss alert for ${alert.employerName} - ${alert.positionTitle}`}
               >
