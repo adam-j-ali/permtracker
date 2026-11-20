@@ -14,7 +14,7 @@ import {
  * declared in robots.txt and submitted in Search Console, so breaking it
  * would forfeit the submission and its history for a cosmetic gain.
  */
-export const revalidate = 86400;
+export const revalidate = 3600;
 
 export async function GET() {
   // The freshest date any child carries, so the index does not claim a
@@ -31,7 +31,9 @@ export async function GET() {
       // Cloudflare already serves application/xml compressed, so no .gz here:
       // both size limits in play are measured on the UNCOMPRESSED bytes, so
       // gzipping the file itself would buy exactly nothing.
-      "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=86400",
+      // An hour, not the children's day: the index names how many files each family has, and a load that
+      // changes that count must not point search engines at files that no longer exist for a day.
+      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=3600",
     },
   });
 }
