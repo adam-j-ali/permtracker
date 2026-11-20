@@ -8,22 +8,32 @@
  * 2. the case is the caller's, live, and not the sample case;
  * 3. the address isn't the account's own, the account's own address is confirmed, and the address isn't blocked;
  * 4. the case has no second person yet (one per case);
- * 5. the account's daily cap (REMINDER_INVITES_PER_ACCOUNT), checked without charging;
- * 6. the shared daily pool (BUDGETS.reminderInvite) and the day's public ceiling, charged; a refusal is counted for
+ * 5. the address isn't on the refusal list (it clicked Stop, or "Don't invite me again"), and this account hasn't
+ *    invited it REMINDER_INVITES_PER_ADDRESS times already, a lapsed or removed invitation counting; both are read by
+ *    the address's keyed hash (reminderAddressKey), never the address;
+ * 6. the account's daily cap (REMINDER_INVITES_PER_ACCOUNT), checked without charging;
+ * 7. the shared daily pool (BUDGETS.reminderInvite) and the day's public ceiling, charged; a refusal is counted for
  *    the admin panel and nothing is queued, because the owner is right there to try again tomorrow;
- * 7. then the account's cap is charged, the row written as "waiting" and the one invitation scheduled.
+ * 8. then the account's cap and its count for the address are charged, the row written as "waiting" and the one
+ *    invitation scheduled.
  *
  * THE INVITATION. One email, never repeated. Its Confirm link opens a page with a POST button (convex/http.ts): a GET
  * changes nothing, so a mail scanner opening the link confirms nothing. The link is an HMAC over the address, signed
  * for `reminder-confirm:<row id>` (convex/lib/unsubscribeToken.ts), so it confirms that row and no other, and a row
  * that was stopped or removed can't be brought back by replaying it. A waiting row is deleted 30 days after the
- * invitation (`expireInvites`, run by the daily retention job).
+ * invitation (`expireInvites`, run by the daily retention job). Its "Don't invite me again" link (and its
+ * List-Unsubscribe header) is signed for `reminder-decline:<row id>` and opens a page with a POST button too: it ends
+ * the invitation and puts the address on the refusal list (`declineByToken`).
  *
  * THE REMINDERS. The daily reminder run (convex/deadlineDigest.ts) gives each confirmed person that case's reminders
- * due that day, by the owner's own switch for each kind of deadline, in one email a day (`sendCopy`). Each send
- * charges BUDGETS.reminderCopy before it goes and stamps the Eastern day, so a second run the same day sends nothing.
- * Every email carries a one-click stop, in its List-Unsubscribe header and as a link, signed for
- * `reminder-stop:<row id>`.
+ * due that day that the owner's own email switches allow (the master switch, "Deadline reminders" and each kind's
+ * switch: emailsDeadlineReminder), in one email a day (`sendCopy`). Each send charges BUDGETS.reminderCopy before it
+ * goes and stamps the Eastern day, so a second run the same day sends nothing. Every email carries a one-click stop,
+ * in its List-Unsubscribe header and as a link, signed for `reminder-stop:<row id>`.
+ *
+ * THE REFUSAL LIST. A Stop click, like "Don't invite me again", puts the address on a site-wide list kept only as an
+ * HMAC of the address under UNSUBSCRIBE_SECRET (table reminderRefusals). No account can invite it again, and the owner
+ * is told so plainly. The list is never shown and can't be read back as addresses.
  *
  * THE END. Stopping erases the address and keeps the row as "stopped", so the owner sees what happened. The owner
  * removing it deletes the row. It goes with its case (cases.remove, through clearCaseReferences) and with the account
@@ -60,13 +70,17 @@ import { createLogger } from "./lib/logging";
 import { checkAndRecordRateLimit, checkRateLimit, recordRateLimitAttempt } from "./lib/rateLimit";
 import {
   INVITE_MS,
+  REMINDER_INVITES_PER_ADDRESS,
   caseLine,
   confirmUrl,
+  declineUrl,
   inviteCaseLine,
   inviterName,
   normaliseRecipientEmail,
+  reminderAddressKey,
   reminderConfirmPurpose,
   reminderCopySubject,
+  reminderDeclinePurpose,
   reminderInviteSubject,
   reminderRef,
   reminderStopPurpose,
@@ -112,6 +126,50 @@ async function rowsOf(ctx: QueryCtx | MutationCtx, caseId: Id<"cases">): Promise
     .query("reminderRecipients")
     .withIndex("by_caseId", (q) => q.eq("caseId", caseId))
     .take(ROWS_PER_CASE);
+}
+
+/** What the owner is told when the address is on the refusal list. */
+export const REFUSED_ADDRESS = "That address asked not to get these reminders.";
+
+/** What the owner is told when the account has invited the address REMINDER_INVITES_PER_ADDRESS times already. */
+export const INVITED_ENOUGH = "You've invited that address twice already, so we can't send it another invitation.";
+
+/** Whether an address (by its keyed hash) asked never to be added again. */
+async function isRefused(ctx: QueryCtx | MutationCtx, addressKey: string): Promise<boolean> {
+  const row = await ctx.db
+    .query("reminderRefusals")
+    .withIndex("by_addressKey", (q) => q.eq("addressKey", addressKey))
+    .first();
+  return row !== null;
+}
+
+/** Put an address on the refusal list, once, as its keyed hash only. */
+async function refuseAddress(ctx: MutationCtx, email: string): Promise<void> {
+  const addressKey = await reminderAddressKey(email, secret());
+  if (await isRefused(ctx, addressKey)) return;
+  await ctx.db.insert("reminderRefusals", { addressKey, refusedAt: Date.now() });
+}
+
+/** This account's count of invitations to one address (by its keyed hash), or null when it never invited it. */
+async function inviteCountOf(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<"users">,
+  addressKey: string,
+): Promise<Doc<"reminderInviteCounts"> | null> {
+  return await ctx.db
+    .query("reminderInviteCounts")
+    .withIndex("by_userId_and_addressKey", (q) => q.eq("userId", userId).eq("addressKey", addressKey))
+    .first();
+}
+
+/**
+ * End a row because its person said no (Stop, or "Don't invite me again"): what's waiting for it in the retry queue
+ * goes, the address is erased, and the row stays as "stopped" for the owner to see.
+ */
+async function endByPerson(ctx: MutationCtx, row: Doc<"reminderRecipients">): Promise<void> {
+  await dropReminderRetries(ctx, row);
+  // Patching a field to undefined deletes it: the address goes, the row stays for the owner to see.
+  await ctx.db.patch("reminderRecipients", row._id, { status: "stopped", stoppedAt: Date.now(), email: undefined });
 }
 
 /** Who the emails say asked: the account's display name in Settings, else its sign-in name, else nobody named. */
@@ -213,6 +271,12 @@ export const invite = mutation({
     if ((await rowsOf(ctx, args.caseId)).length > 0) {
       return { ok: false as const, message: "This case already has a second person. Remove them first to add someone else." };
     }
+    const addressKey = await reminderAddressKey(email, secret());
+    if (await isRefused(ctx, addressKey)) return { ok: false as const, message: REFUSED_ADDRESS };
+    const invitedBefore = await inviteCountOf(ctx, userId, addressKey);
+    if (invitedBefore && invitedBefore.count >= REMINDER_INVITES_PER_ADDRESS) {
+      return { ok: false as const, message: INVITED_ENOUGH };
+    }
 
     const perAccount = await checkRateLimit(ctx, userId, ACCOUNT_LIMIT_ACTION, REMINDER_INVITES_PER_ACCOUNT);
     if (!perAccount.allowed) {
@@ -231,13 +295,19 @@ export const invite = mutation({
       };
     }
     await recordRateLimitAttempt(ctx, userId, ACCOUNT_LIMIT_ACTION);
+    const now = Date.now();
+    if (invitedBefore) {
+      await ctx.db.patch("reminderInviteCounts", invitedBefore._id, { count: invitedBefore.count + 1, lastInvitedAt: now });
+    } else {
+      await ctx.db.insert("reminderInviteCounts", { userId, addressKey, count: 1, lastInvitedAt: now });
+    }
 
     const recipientId = await ctx.db.insert("reminderRecipients", {
       userId,
       caseId: args.caseId,
       email,
       status: "waiting",
-      invitedAt: Date.now(),
+      invitedAt: now,
     });
     await ctx.scheduler.runAfter(0, internal.reminderRecipients.sendInvite, { recipientId });
     return { ok: true as const };
@@ -304,11 +374,17 @@ export const sendInvite = internalAction({
     try {
       const token = await makeUnsubscribeToken(details.email, secret(), reminderConfirmPurpose(recipientId));
       const link = confirmUrl(token, recipientId);
+      const never = declineUrl(
+        await makeUnsubscribeToken(details.email, secret(), reminderDeclinePurpose(recipientId)),
+        recipientId,
+      );
       let html: string | undefined;
       try {
         const { render } = await import("@react-email/render");
         const { ReminderInvite } = await import("../src/emails/ReminderInvite");
-        html = await render(ReminderInvite({ inviter: details.inviter, caseLine: details.caseLine, confirmUrl: link }));
+        html = await render(
+          ReminderInvite({ inviter: details.inviter, caseLine: details.caseLine, confirmUrl: link, declineUrl: never }),
+        );
       } catch (error) {
         await recordError(ctx, "action", "reminderRecipients.sendInvite.render", error);
       }
@@ -321,7 +397,12 @@ export const sendInvite = internalAction({
           to: details.email,
           subject: reminderInviteSubject(details.inviter),
           html,
-          text: inviteText(details.inviter, details.caseLine, link),
+          text: inviteText(details.inviter, details.caseLine, link, never),
+          // The mail app's own Unsubscribe button is "Don't invite me again": a one-click POST to its page.
+          headers: {
+            "List-Unsubscribe": `<${never}>`,
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+          },
         },
         { priority: "public", refs: [reminderRef(recipientId)] },
       );
@@ -338,7 +419,7 @@ export const sendInvite = internalAction({
 });
 
 /** The invitation as plain text, for mail apps that show no HTML. */
-export function inviteText(inviter: string, line: string, link: string): string {
+export function inviteText(inviter: string, line: string, link: string, never: string): string {
   return [
     `Deadline reminders for ${line}`,
     "",
@@ -350,6 +431,9 @@ export function inviteText(inviter: string, line: string, link: string): string 
     link,
     "",
     "If you don't want these, ignore this email. Nothing more will be sent, and we'll delete your address in 30 days.",
+    "",
+    "Don't want to be asked again? Use this link, and no one on PERM Tracker can invite this address again.",
+    `Don't invite me again: ${never}`,
     "",
     "PERM Tracker",
     SITE_URL,
@@ -399,15 +483,38 @@ export const stopByToken = internalMutation({
     if (args.token.length > TOKEN_MAX || args.recipientId.length > 64) return null;
     const email = await verifyUnsubscribeToken(args.token, secret(), reminderStopPurpose(args.recipientId));
     if (!email) return null;
-    // Whatever the row's state, nothing kept for this row in the retry queue goes to the address that asked to stop.
+    // Whatever the row's state, the address asked to stop: nobody invites it again, and nothing kept for this row in
+    // the retry queue goes to it.
+    await refuseAddress(ctx, email);
     const ref = reminderRef(args.recipientId);
     await dropRetries(ctx, email, (r) => (r.refs ?? []).includes(ref));
     const row = await rowById(ctx, args.recipientId);
     if (!row || row.status === "stopped") return "already" as const;
     if (row.email !== email) return null;
-    // Patching a field to undefined deletes it: the address goes, the row stays for the owner to see.
-    await ctx.db.patch("reminderRecipients", row._id, { status: "stopped", stoppedAt: Date.now(), email: undefined });
+    await endByPerson(ctx, row);
     return "stopped" as const;
+  },
+});
+
+/**
+ * "Don't invite me again", from the invitation (and its mail app's Unsubscribe button). The address goes on the
+ * refusal list, so no account can invite it again, and the invitation it came in ends like a stop: its retries go, the
+ * address is erased and the row stays as "stopped" for the owner. A valid link for a row that's already gone still
+ * refuses the address. Only a link signed for this purpose does it.
+ */
+export const declineByToken = internalMutation({
+  args: { token: v.string(), recipientId: v.string() },
+  returns: v.union(v.null(), v.literal("declined")),
+  handler: async (ctx, args) => {
+    if (args.token.length > TOKEN_MAX || args.recipientId.length > 64) return null;
+    const email = await verifyUnsubscribeToken(args.token, secret(), reminderDeclinePurpose(args.recipientId));
+    if (!email) return null;
+    await refuseAddress(ctx, email);
+    const ref = reminderRef(args.recipientId);
+    await dropRetries(ctx, email, (r) => (r.refs ?? []).includes(ref));
+    const row = await rowById(ctx, args.recipientId);
+    if (row && row.status !== "stopped" && row.email === email) await endByPerson(ctx, row);
+    return "declined" as const;
   },
 });
 

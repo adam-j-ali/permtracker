@@ -10,7 +10,7 @@ import { deadlineDigestWords } from "./deadlineDigestWords";
 import { isPlausibleEmail } from "./emailShape";
 import { SITE_URL } from "./links";
 import { emailsDeadlineReminder, type UserNotificationPrefs } from "./notificationHelpers";
-import type { TokenPurpose } from "./unsubscribeToken";
+import { keyedHash, type TokenPurpose } from "./unsubscribeToken";
 import { MS_PER_DAY } from "./time";
 
 /** The longest address SMTP allows. */
@@ -19,6 +19,22 @@ export const RECIPIENT_EMAIL_MAX = 254;
 /** Days an invitation waits for its click before it's deleted. */
 export const INVITE_DAYS = 30;
 export const INVITE_MS = INVITE_DAYS * MS_PER_DAY;
+
+/**
+ * Invitations one account may send one address, in all: a lapsed or removed invitation counts, so the form can't be
+ * used to keep mailing someone who never said yes.
+ */
+export const REMINDER_INVITES_PER_ADDRESS = 2;
+
+/**
+ * The address as the refusal list (reminderRefusals) and the invitation count (reminderInviteCounts) keep it: an
+ * HMAC of the trimmed, lowercased address under UNSUBSCRIBE_SECRET, so a row can be found again by the address but
+ * the address can't be read back from it. The signed message starts `reminder-address-key:`, which is no token's
+ * purpose, so a row is never a link's signature.
+ */
+export async function reminderAddressKey(email: string, secret: string): Promise<string> {
+  return await keyedHash(`reminder-address-key:${email.trim().toLowerCase()}`, secret);
+}
 
 /** Who the invitation says asked, when the account has no name it can show. */
 export const SOMEONE = "a PERM Tracker user";
@@ -165,9 +181,19 @@ export function reminderStopPurpose(recipientId: string): TokenPurpose {
   return `reminder-stop:${recipientId}`;
 }
 
+/**
+ * The invitation's "Don't invite me again" link's purpose, its own: neither a confirm nor a stop link declines, and it
+ * confirms or stops nothing. Scoped to the row it was mailed for, and it still refuses the address once that row is
+ * gone.
+ */
+export function reminderDeclinePurpose(recipientId: string): TokenPurpose {
+  return `reminder-decline:${recipientId}`;
+}
+
 /** The paths of the confirm and stop pages (convex/http.ts), under the alert links nginx already relays. */
 export const REMINDER_CONFIRM_PATH = "/case-alert/reminders/confirm";
 export const REMINDER_STOP_PATH = "/case-alert/reminders/stop";
+export const REMINDER_DECLINE_PATH = "/case-alert/reminders/decline";
 
 function linkFor(path: string, token: string, recipientId: string): string {
   return `${SITE_URL}${path}?token=${encodeURIComponent(token)}&r=${encodeURIComponent(recipientId)}`;
@@ -181,4 +207,9 @@ export function confirmUrl(token: string, recipientId: string): string {
 /** The one-click stop link, in each reminder and its List-Unsubscribe header. */
 export function stopUrl(token: string, recipientId: string): string {
   return linkFor(REMINDER_STOP_PATH, token, recipientId);
+}
+
+/** The invitation's "Don't invite me again" link, and its List-Unsubscribe header: a page with a button. */
+export function declineUrl(token: string, recipientId: string): string {
+  return linkFor(REMINDER_DECLINE_PATH, token, recipientId);
 }
