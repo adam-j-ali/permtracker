@@ -25,6 +25,7 @@ import { JourneyNow } from "@/components/content/JourneyNow";
 import { QuarterName, QuarterNow } from "@/components/content/QuarterNow";
 import { OnHoldNow } from "@/components/content/OnHoldNow";
 import { AppealStepsNow } from "@/components/content/AppealStepsNow";
+import { ReportedMedianNow, ReportedStepsNow } from "@/components/content/ReportedStepsNow";
 import { ReconsiderationNow } from "@/components/content/ReconsiderationNow";
 import { RfiJourneyNow } from "@/components/content/RfiJourneyNow";
 import { DolNow } from "@/components/content/DolNow";
@@ -204,6 +205,10 @@ export const mdxComponents: MDXComponents = {
   RfiFigure,
   // The RFI page's step-by-step figures, today's values with their counts (an async server component).
   AppealStepsNow,
+  // Each step's days from every case people reported, and one step's median in a sentence (async server components;
+  // the hourly reported-cases build refreshes the pages that draw them).
+  ReportedStepsNow,
+  ReportedMedianNow,
   ReconsiderationNow,
   RfiJourneyNow,
   // A visa bulletin cutoff as a gate on a rail of priority dates, stepped through one line's real bulletins (an async server component).

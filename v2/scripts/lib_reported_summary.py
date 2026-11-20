@@ -47,6 +47,7 @@ STEPS = (
     _s("i485-office", "I-485 filed to the move to a field office", "i485_receipt", "transfer", "i485"),
     _s("i485-interview", "I-485 filed to interview", "i485_receipt", "interview", "i485"),
     _s("i485-gc", "I-485 filed to green card", "i485_receipt", "i485_decided", "i485"),
+    _s("office-gc", "Move to a field office to green card", "transfer", "i485_decided", "i485"),
     _s("interview-gc", "Interview to green card", "interview", "i485_decided", "i485"),
     _s("gc-card", "Green card approved to the card in the mail", "i485_decided", "card", "i485"),
     _s("nvc-interview", "NVC documents accepted to the consulate interview", "nvc_complete", "consular_interview", "consular"),

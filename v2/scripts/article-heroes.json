@@ -1,1525 +1,1561 @@
 {
- "guides/ultimate-perm-guide-2026": {
-  "photo": {
-   "file": "dol-frances-perkins-building-sign.jpg",
-   "focus": [
-    0.55,
-    0.5
-   ]
-  },
-  "credit": "Photo: G. Edward Johnson / Wikimedia Commons, CC BY 4.0",
-  "source": "https://commons.wikimedia.org/wiki/File:Department_of_Labor_sign_Washington_DC_2025-02-07_15-38-08.jpg",
-  "alt": "The sign outside the Frances Perkins Building, the Department of Labor's headquarters at 200 Constitution Avenue NW in Washington"
- },
- "guides/complete-perm-filing-guide": {
-  "pdf": {
-   "file": "eta9089.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "Form ETA-9089, page 1. U.S. Department of Labor, expires 02/28/2029",
-  "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/ETA-9089-Application-for-Perm-Employment-Certification-Expires02-28-29.pdf",
-  "alt": "The first page of Form ETA-9089, the Application for Permanent Employment Certification, with the Labor Department's seal"
- },
- "guides/waiting-on-your-green-card": {
-  "photo": {
-   "file": "uscis-green-card-2023-redesign-guide.jpg",
-   "focus": [
-    0.5,
-    0.12
-   ]
-  },
-  "credit": "Image: U.S. Citizenship and Immigration Services",
-  "source": "https://www.uscis.gov/sites/default/files/document/guides/GreenCard_Comparison_EN.PDF.pdf",
-  "alt": "USCIS's guide to the 2023 green card, showing the old and redesigned cards front and back"
- },
- "guides/getting-started": {
-  "tour": {
-   "file": "dashboard-light.webp",
-   "focus": [
-    0.5,
-    0.0
-   ]
-  },
-  "credit": "The PERM Tracker app, drawn from a sample firm's cases",
-  "alt": "The PERM Tracker dashboard: the deadlines due this week and this month across a firm's cases"
- },
- "guides/the-data-pages-and-what-each-answers": {
-  "capture": {
-   "url": "/tools"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "The data overview on permtracker.app: DOL's oldest month in review, its average days to decide and the wage requests waiting, each dated"
- },
- "guides/check-perm-case-status": {
-  "capture": {
-   "url": "/perm-case-status?case=G-100-26251-220642"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "A PERM case looked up on permtracker.app: DOL's status in plain English and the estimated decision date"
- },
- "guides/what-perm-case-statuses-mean": {
-  "capture": {
-   "url": "/perm-case-statuses"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "Every status DOL prints on a PERM case, with how many cases sit at each one today"
- },
- "guides/perm-application-on-hold-meaning": {
-  "capture": {
-   "url": "/perm-employers/under-review"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "The employers with PERM cases on hold, at an RFI or under appeal, led by DOL's newest employer-wide move"
- },
- "guides/perm-rfi-issued-what-to-do": {
-  "capture": {
-   "url": "/perm-rfi-audit/rfi-issued"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "The open PERM RFIs, counted and listed oldest filing first"
- },
- "guides/perm-nord-issued-meaning": {
-  "capture": {
-   "url": "/perm-rfi-audit/nord-issued"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "The PERM cases DOL shows as NORD issued, counted and dated"
- },
- "guides/perm-denied-what-happens-next": {
-  "capture": {
-   "url": "/perm-rfi-audit/reconsideration-appeals"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "The PERM cases waiting on a request for reconsideration"
- },
- "guides/perm-appeal-reconsideration-balca": {
-  "capture": {
-   "url": "/perm-rfi-audit/balca-appeals"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "The PERM cases appealed to the Board of Alien Labor Certification Appeals"
- },
- "guides/perm-case-number-format": {
-  "capture": {
-   "url": "/perm-case-status?case=G-100-26251-220680",
-   "clip": "fold:What the case number says"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "A PERM case number on permtracker.app with its parts read out: the program, the filing day and the serial"
- },
- "guides/find-your-dol-case-number": {
-  "pdf": {
-   "file": "eta9089.pdf",
-   "page": 1,
-   "top": 0.0,
-   "anchor": "bottom"
-  },
-  "credit": "Form ETA-9089, page 2, the box DOL fills in. U.S. Department of Labor",
-  "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/ETA-9089-Application-for-Perm-Employment-Certification-Expires02-28-29.pdf",
-  "alt": "The foot of a Form ETA-9089 page, where DOL prints the PERM case number once the form is filed"
- },
- "guides/find-a-dol-case-number-by-employer": {
-  "capture": {
-   "url": "/case-search"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "The all-programs search on permtracker.app: PERM, wage requests, H-1B LCAs and seasonal filings counted, with a search by employer"
- },
- "guides/check-perm-received-without-receipt": {
-  "capture": {
-   "url": "/perm-cases"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "Every decided PERM case on permtracker.app, with decisions per working day drawn as a line"
- },
- "guides/look-up-a-perm-case-by-number": {
-  "capture": {
-   "url": "/perm-employers/microsoft-corporation"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "Microsoft's PERM record on permtracker.app, with a case-number box to look up one of its cases"
- },
- "guides/tracking-a-case-without-an-account": {
-  "tour": {
-   "file": "email-light.webp",
-   "focus": [
-    0.5,
-    0.0
-   ]
-  },
-  "credit": "The PERM Tracker app, drawn from a sample firm's cases",
-  "alt": "A PERM Tracker reminder email listing a case's next deadlines"
- },
- "guides/how-the-perm-queue-works": {
-  "capture": {
-   "url": "/perm-queue"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "Where the PERM queue stands: the oldest filing month DOL still has open, the month it is reviewing and how fast it moves"
- },
- "guides/where-your-filing-month-sits": {
-  "capture": {
-   "url": "/perm-queue/2026-01"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "One filing month on permtracker.app: the share decided, by outcome, and where DOL has reached"
- },
- "guides/how-accurate-are-perm-estimates": {
-  "photo": {
-   "file": "navy-stopwatch-pft.jpg",
-   "focus": [
-    0.3,
-    0.5
-   ]
-  },
-  "credit": "Photo: U.S. Navy, Chief Photographer's Mate Chris Desmond / Wikimedia Commons, public domain",
-  "source": "https://commons.wikimedia.org/wiki/File:US_Navy_030506-N-5862D-128_An_instructor_in_the_Freedom_Hall_athletic_complex_uses_a_stopwatch_while_recruits_run_a_1.5-mile_track_during_a_Physical_Fitness_Test_(PFT).jpg",
-  "alt": "An instructor holds up a stopwatch while recruits run laps on an indoor track"
- },
- "guides/reading-the-perm-data": {
-  "capture": {
-   "url": "/open-data"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "The open data page: the visa bulletin archive and DOL's processing-times readings, as CSV and JSON"
- },
- "guides/compute-every-perm-deadline": {
-  "capture": {
-   "url": "/tools/perm-deadline-calculator"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "The PERM deadline calculator: every date in a case computed from the wage determination and recruitment dates"
- },
- "guides/the-perm-deadlines-that-matter": {
-  "tour": {
-   "file": "hub-light.webp",
-   "focus": [
-    0.0,
-    0.0
-   ]
-  },
-  "credit": "The PERM Tracker app, drawn from a sample firm's cases",
-  "alt": "The PERM Tracker Deadlines panel: overdue, this week, this month and later"
- },
- "guides/three-180-day-clocks": {
-  "capture": {
-   "url": "/tools/green-card-timeline?where=perm-certified&date=2026-06-01&pd=2025-09-15"
-  },
-  "credit": "Screenshot of permtracker.app, October 28, 2026",
-  "alt": "The green card timeline for a certified PERM: the priority date, the I-140, the visa bulletin wait and the green card, each dated on one time line"
- },
- "guides/perm-recruitment-checklist": {
-  "pdf": {
-   "file": "eta9089.pdf",
-   "page": 4,
-   "top": 0.0
-  },
-  "credit": "Form ETA-9089, Section H: recruitment information. U.S. Department of Labor",
-  "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/ETA-9089-Application-for-Perm-Employment-Certification-Expires02-28-29.pdf",
-  "alt": "Section H of Form ETA-9089, where the employer records every recruitment step and its dates"
- },
- "guides/perm-document-checklist": {
-  "pdf": {
-   "file": "eta9089-appA.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "Form ETA-9089 Appendix A, page 1. U.S. Department of Labor",
-  "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/ETA-9089-AppendixA-Expires02-28-29.pdf",
-  "alt": "The first page of Appendix A to Form ETA-9089: the foreign worker's information and education"
- },
- "guides/tracking-perm-deadlines": {
-  "tour": {
-   "file": "calendar-light.webp",
-   "focus": [
-    0.5,
-    0.0
-   ]
-  },
-  "credit": "The PERM Tracker app, drawn from a sample firm's cases",
-  "alt": "The PERM Tracker calendar, with each case's deadlines on the days they fall"
- },
- "guides/recruitment-tracking": {
-  "tour": {
-   "file": "case-detail-light.webp",
-   "focus": [
-    0.5,
-    0.0
-   ]
-  },
-  "credit": "The PERM Tracker app, drawn from a sample firm's cases",
-  "alt": "A case in PERM Tracker: its next step, its timeline of completed steps and its prevailing wage"
- },
- "guides/manual-vs-automated-tracking": {
-  "tour": {
-   "file": "cases-light.webp",
-   "focus": [
-    0.0,
-    0.0
-   ]
-  },
-  "credit": "The PERM Tracker app, drawn from a sample firm's cases",
-  "alt": "The PERM Tracker case list, each case with its stage and next deadline"
- },
- "guides/how-dol-sets-a-prevailing-wage": {
-  "pdf": {
-   "file": "eta9141.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "Form ETA-9141, page 1. U.S. Department of Labor",
-  "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/Form%20ETA-9141%20-%20508%20Compliant%20-%20Expires%2007-31-2026.pdf",
-  "alt": "The first page of Form ETA-9141, the Application for Prevailing Wage Determination"
- },
- "guides/track-a-prevailing-wage-request": {
-  "capture": {
-   "url": "/pwd-cases"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "Prevailing wage requests on permtracker.app: the requests waiting at DOL, the decided ones, and a search by employer"
- },
- "guides/explore-perm-wages": {
-  "capture": {
-   "url": "/perm-wages"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "What PERM jobs pay: the whole wage ladder from DOL's certified filings"
- },
- "guides/what-an-lca-is": {
-  "pdf": {
-   "file": "eta9035.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "Form ETA-9035 and 9035E, page 1. U.S. Department of Labor",
-  "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/Form%20ETA-9035_exp%2010.31.2027.pdf",
-  "alt": "The first page of Form ETA-9035, the Labor Condition Application for nonimmigrant workers"
- },
- "guides/look-up-an-lca-by-number": {
-  "capture": {
-   "url": "/lca-cases"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "H-1B LCAs on permtracker.app: the ones DOL confirms each day, the decided ones with their wages, and a search by employer"
- },
- "guides/look-up-a-sponsor": {
-  "capture": {
-   "url": "/perm-employers/apple-inc"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "Apple's PERM record on permtracker.app: filings, approvals, wages and days to a decision"
- },
- "guides/look-up-a-law-firm": {
-  "capture": {
-   "url": "/perm-attorneys/fragomen-del-rey-bernsen-loewy-llp"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "Fragomen's PERM record on permtracker.app: cases filed, approval rate and median days"
- },
- "guides/employer-layoffs-and-your-perm": {
-  "capture": {
-   "url": "/layoffs"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "Layoff notices against PERM sponsors, from four states' WARN filings"
- },
- "guides/employer-stopped-filing-perms": {
-  "capture": {
-   "url": "/perm-employers/intel-corporation"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "Intel's PERM record on permtracker.app, with its filings year by year"
- },
- "guides/read-the-denial-and-audit-rates": {
-  "capture": {
-   "url": "/perm-denial-risk"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "What gets denied: DOL's denial rates by form question, job and worksite"
- },
- "guides/approved-i140-no-visa-number-eb2-india": {
-  "pdf": {
-   "file": "i-140.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "Form I-140, page 1. U.S. Citizenship and Immigration Services, edition 06/07/24",
-  "source": "https://www.uscis.gov/sites/default/files/document/forms/i-140.pdf",
-  "alt": "The first page of Form I-140, the Immigrant Petition for Alien Workers"
- },
- "guides/how-the-visa-bulletin-works": {
-  "pdf": {
-   "file": "visabulletin_October2026.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "The October 2026 Visa Bulletin, page 1. U.S. Department of State",
-  "source": "https://adoption.state.gov/content/dam/visas/Bulletins/visabulletin_October2026.pdf",
-  "alt": "The first page of the State Department's Visa Bulletin for October 2026"
- },
- "guides/read-your-priority-date-history": {
-  "photo": {
-   "file": "state-dept-harry-s-truman-building.jpg",
-   "focus": [
-    0.5,
-    0.5
-   ]
-  },
-  "credit": "Photo: U.S. Department of State",
-  "source": "https://commons.wikimedia.org/wiki/File:Harry_S._Truman_Building_(54731264448).jpg",
-  "alt": "The Harry S Truman Building in Washington, the State Department's headquarters, which publishes the visa bulletin"
- },
- "guides/ead-and-advance-parole-timelines": {
-  "photo": {
-   "file": "uscis-ead-current-front-sample-m274.jpg",
-   "focus": [
-    0.5,
-    0.5
-   ],
-   "fit": "contain"
-  },
-  "credit": "Image: U.S. Citizenship and Immigration Services",
-  "source": "https://www.uscis.gov/i-9-central/form-i-9-resources/handbook-for-employers-m-274/50-automatic-extensions-of-employment-authorization-documents-eads-in-certain-circumstances",
-  "alt": "USCIS's specimen employment authorization card, with the category and the card's expiry date circled"
- },
- "guides/i485-vs-i485j-supplement-j": {
-  "pdf": {
-   "file": "i-485supj.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "Form I-485 Supplement J, page 1. U.S. Citizenship and Immigration Services, edition 09/18/26",
-  "source": "https://www.uscis.gov/sites/default/files/document/forms/i-485supj.pdf",
-  "alt": "The first page of Supplement J to Form I-485, the confirmation of a valid job offer"
- },
- "guides/i693-medical-exam": {
-  "pdf": {
-   "file": "i-693.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "Form I-693, page 1. U.S. Citizenship and Immigration Services, edition 01/20/25",
-  "source": "https://www.uscis.gov/sites/default/files/document/forms/i-693.pdf",
-  "alt": "The first page of Form I-693, the Report of Immigration Medical Examination and Vaccination Record"
- },
- "guides/uscis-receipt-number": {
-  "photo": {
-   "file": "uscis-office-monument-sign-dekalb-georgia.jpg",
-   "focus": [
-    0.5,
-    0.5
-   ]
-  },
-  "credit": "Photo: Gulbenk / Wikimedia Commons, CC BY-SA 3.0",
-  "source": "https://commons.wikimedia.org/wiki/File:U.S._Citizenship_and_Immigration_Service.jpg",
-  "alt": "The U.S. Citizenship and Immigration Services sign outside an office in DeKalb County, Georgia"
- },
- "guides/what-emma-told-you": {
-  "photo": {
-   "file": "uscis-sacramento-waiting-room-highsmith-loc.jpg",
-   "focus": [
-    0.5,
-    0.5
-   ]
-  },
-  "credit": "Photo: Carol M. Highsmith, Library of Congress",
-  "source": "https://www.loc.gov/item/2020720066/",
-  "alt": "The USCIS waiting room in the John E. Moss Federal Building, Sacramento"
- },
- "guides/fastest-field-office-eb-i485": {
-  "pdf": {
-   "file": "i-485.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "Form I-485, page 1. U.S. Citizenship and Immigration Services, edition 09/18/26",
-  "source": "https://www.uscis.gov/sites/default/files/document/forms/i-485.pdf",
-  "alt": "The first page of Form I-485, the Application to Register Permanent Residence or Adjust Status"
- },
- "guides/uscis-processing-times-median-vs-80-percent": {
-  "capture": {
-   "url": "/uscis-processing-times"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "USCIS processing times by form, the median from USCIS's own quarterly files"
- },
- "guides/eb2-vs-eb3-perm": {
-  "capture": {
-   "url": "/tools/eb2-vs-eb3"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "EB-2 or EB-3 for one priority date: the two lines side by side"
- },
- "guides/eb3-other-workers": {
-  "pdf": {
-   "file": "visabulletin_September2026.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "The September 2026 Visa Bulletin, page 1. U.S. Department of State",
-  "source": "https://adoption.state.gov/content/dam/visas/Bulletins/visabulletin_September2026.pdf",
-  "alt": "The first page of the State Department's Visa Bulletin for September 2026"
- },
- "guides/perm-vs-niw": {
-  "capture": {
-   "url": "/tools/which-green-card"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "Which green card fits: the employment-based routes compared"
- },
- "guides/h2a-case-status-and-timing": {
-  "pdf": {
-   "file": "eta9142a.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "Form ETA-9142A, page 1. U.S. Department of Labor",
-  "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/FR_01_%20Form%20ETA-9142A_11-30-2025.pdf",
-  "alt": "The first page of Form ETA-9142A, the H-2A Application for Temporary Employment Certification"
- },
- "guides/h2b-and-cw1-case-status-and-timing": {
-  "pdf": {
-   "file": "eta9142b.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "Form ETA-9142B, page 1. U.S. Department of Labor",
-  "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/Form-ETA-9142B-1205-0509.pdf",
-  "alt": "The first page of Form ETA-9142B, the H-2B Application for Temporary Employment Certification"
- },
- "blog/data-note-application-on-hold-september-2026": {
-  "photo": {
-   "file": "dol-frances-perkins-building-facade.jpg",
-   "focus": [
-    0.5,
-    0.5
-   ]
-  },
-  "credit": "Photo: ajay_suresh / Wikimedia Commons, CC BY 2.0",
-  "source": "https://commons.wikimedia.org/wiki/File:Frances_Perkins_Building_-_Department_of_Labor_(53839145147).jpg",
-  "alt": "The Frances Perkins Building, the Department of Labor's headquarters, seen across the lawn"
- },
- "blog/dol-perm-file-fy2026-q3": {
-  "capture": {
-   "url": "/blog/dol-perm-file-fy2026-q3",
-   "clip": "fromm:How many PERM cases did DOL decide?",
-   "maxHeight": 440,
-   "css": "aside.lg\\:block{display:none!important}"
-  },
-  "credit": "Chart from DOL's PERM disclosure file, permtracker.app",
-  "alt": "PERM decisions in April to June 2026 against the quarter before and a year before, as bars"
- },
- "blog/eb2-vs-eb3-by-the-numbers": {
-  "capture": {
-   "url": "/visa-bulletin/categories"
-  },
-  "credit": "Screenshot of permtracker.app, October 28, 2026",
-  "alt": "Every visa bulletin line on permtracker.app, each employment category and country with its cutoff"
- },
- "blog/companies-sponsoring-most-green-cards": {
-  "capture": {
-   "url": "/perm-employers"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "Who sponsors the most: the ten busiest PERM employers as bars"
- },
- "blog/perm-salary-data-by-occupation": {
-  "capture": {
-   "url": "/tools/salary-explorer"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "The salary explorer: certified PERM wages filtered by job, state and year"
- },
- "blog/perm-processing-times-2026": {
-  "capture": {
-   "url": "/perm-processing-times"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "PERM processing times: the month DOL is reviewing and its average days to a decision, from DOL's own page"
- },
- "blog/what-law-firm-volume-tells-you": {
-  "capture": {
-   "url": "/perm-attorneys"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "Who files the most PERM cases: the ten busiest law firms as bars"
- },
- "blog/why-perm-cases-are-denied": {
-  "capture": {
-   "url": "/perm-rfi-audit"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "RFIs, audits and appeals: how many PERM cases sit at each review stage"
- },
- "blog/what-is-perm-labor-certification": {
-  "photo": {
-   "file": "lbj-signs-immigration-act-1965-liberty-island.jpg",
-   "focus": [
-    0.5,
-    0.5
-   ]
-  },
-  "credit": "Photo: Yoichi Okamoto, LBJ Library",
-  "source": "https://commons.wikimedia.org/wiki/File:President_Lyndon_B._Johnson_Signing_of_the_Immigration_and_Nationality_Act_of_1965_(02)_-_restoration1.jpg",
-  "alt": "President Lyndon B. Johnson signing the Immigration and Nationality Act of 1965 at Liberty Island, the law that made labor certification part of employment-based immigration"
- },
- "blog/perm-audit-what-it-means": {
-  "pdf": {
-   "file": "eta9089.pdf",
-   "page": 3,
-   "top": 0.0
-  },
-  "credit": "Form ETA-9089, Section G: job requirements. U.S. Department of Labor",
-  "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/ETA-9089-Application-for-Perm-Employment-Certification-Expires02-28-29.pdf",
-  "alt": "Section G of Form ETA-9089, the job's requirements, the answers an audit most often questions"
- },
- "blog/what-dol-publishes-about-perm": {
-  "photo": {
-   "file": "dol-frances-perkins-building-exterior-dol-photo.jpg",
-   "focus": [
-    0.5,
-    0.5
-   ]
-  },
-  "credit": "Photo: U.S. Department of Labor / Wikimedia Commons, CC BY 2.0",
-  "source": "https://commons.wikimedia.org/wiki/File:DOL_Exterior_(30086642774).jpg",
-  "alt": "The corner of the Frances Perkins Building, the Department of Labor's headquarters, with its sign"
- },
- "blog/how-perm-wage-data-is-published": {
-  "capture": {
-   "url": "/perm-wages/software-developers"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "Software developers on permtracker.app: median certified wage, filings and the wage ladder year by year"
- },
- "blog/what-an-employers-perm-record-shows": {
-  "capture": {
-   "url": "/perm-employers/oracle-america-inc"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "Oracle's PERM record on permtracker.app, from DOL's disclosure files and its live case statuses"
- },
- "blog/is-my-company-still-filing-perm": {
-  "capture": {
-   "url": "/perm-decision-activity"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "DOL's PERM decisions day by day, with the newest day against the same weekday before it"
- },
- "blog/what-to-do-while-you-wait": {
-  "photo": {
-   "file": "ellis-island-registry-room-nps.jpg",
-   "focus": [
-    0.5,
-    0.5
-   ]
-  },
-  "credit": "Photo: National Park Service",
-  "source": "https://commons.wikimedia.org/wiki/File:The_Registry_Room,_Ellis_Island%27s_Great_Hall_(32dd2c98-1dd8-b71b-0baa-d21a283d8f42).jpg",
-  "alt": "The Registry Room, the great hall at Ellis Island where arriving immigrants waited to be processed"
- },
- "blog/common-perm-audit-triggers": {
-  "photo": {
-   "file": "recruitment-job-fair-nyc-transit.jpg",
-   "focus": [
-    0.5,
-    0.5
-   ]
-  },
-  "credit": "Photo: Metropolitan Transportation Authority / Wikimedia Commons, CC BY 2.0",
-  "source": "https://commons.wikimedia.org/wiki/File:More_Than_1,000_Applicants_Attend_NYC_Transit_Job_Fair_in_Brooklyn_(53525177069).jpg",
-  "alt": "Applicants lined up at an NYC Transit job fair in Brooklyn; a job fair is one of the recruitment steps a PERM case can use"
- },
- "blog/best-immigration-case-management-tools": {
-  "tour": {
-   "file": "cases-dark.webp",
-   "focus": [
-    0.0,
-    0.0
-   ]
-  },
-  "credit": "The PERM Tracker app, drawn from a sample firm's cases",
-  "alt": "The PERM Tracker case list in dark mode"
- },
- "changelog/a-clearer-site-and-did-you-mean": {
-  "capture": {
-   "url": "/uscis-rfe-rates",
-   "clip": "fromm:Every I-129 visa, by fiscal year"
-  },
-  "credit": "Screenshot of permtracker.app, October 28, 2026",
-  "alt": "How often USCIS asked for more evidence on each I-129 work visa, a small chart per visa by fiscal year, on permtracker.app"
- },
- "changelog/search-by-job-and-the-recruitment-record": {
-  "capture": {
-   "url": "/perm-recruitment",
-   "clip": "fromm:How long before filing"
-  },
-  "credit": "Screenshot of permtracker.app, October 28, 2026",
-  "alt": "How long before filing each PERM recruitment step ran, against the rule's 30-to-180-day window, on permtracker.app"
- },
- "changelog/layoffs-rules-and-every-step-today": {
-  "capture": {
-   "url": "/policy-changes",
-   "clip": "fromm:Rules in the pipeline"
-  },
-  "credit": "Screenshot of permtracker.app, October 28, 2026",
-  "alt": "Rules on their way, each with its steps from White House review to the Federal Register, on permtracker.app"
- },
- "changelog/uscis-forms-firm-rankings-and-visa-waits": {
-  "capture": {
-   "url": "/uscis-processing-times/i-140",
-   "clip": "fromm:Median months, quarter by quarter"
-  },
-  "credit": "Screenshot of permtracker.app, October 29, 2026",
-  "alt": "USCIS's median months for the I-140 quarter by quarter, and what it received, decided and had waiting, as columns, on permtracker.app"
- },
- "changelog/the-whole-green-card-plan": {
-  "capture": {
-   "url": "/tools/green-card-timeline?where=perm-certified&pd=2025-03-14&cat=EB2&country=worldwide",
-   "clip": "fromm:How long each step takes"
-  },
-  "credit": "Screenshot of permtracker.app, October 28, 2026",
-  "alt": "The green card timeline drawn as a chart: each step from the PERM to the green card as a dated bar, on permtracker.app"
- },
- "changelog/alerts-in-minutes-and-measured-estimates": {
-  "tour": {
-   "file": "notifications-light.webp",
-   "focus": [
-    0.5,
-    0.0
-   ]
-  },
-  "credit": "The PERM Tracker app, drawn from a sample firm's cases",
-  "alt": "PERM Tracker notifications: deadline reminders and status changes, newest first"
- },
- "changelog/case-status-and-first-party-data": {
-  "capture": {
-   "url": "/perm-case-status"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "The PERM case lookup on permtracker.app"
- },
- "changelog/corrections": {
-  "capture": {
-   "url": "/methodology"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "How the numbers are computed: six readings of one PERM average side by side"
- },
- "changelog/every-case-every-sponsor": {
-  "capture": {
-   "url": "/perm-employers/browse"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "Every PERM employer with a page, A to Z"
- },
- "changelog/january-2026-visual-refresh": {
-  "tour": {
-   "file": "dashboard-dark.webp",
-   "focus": [
-    0.5,
-    0.0
-   ]
-  },
-  "credit": "The PERM Tracker app, drawn from a sample firm's cases",
-  "alt": "The PERM Tracker dashboard in dark mode"
- },
- "changelog/launch-perm-tracker-2": {
-  "tour": {
-   "file": "hub-dark.webp",
-   "focus": [
-    0.0,
-    0.0
-   ]
-  },
-  "credit": "The PERM Tracker app, drawn from a sample firm's cases",
-  "alt": "The PERM Tracker Deadlines panel in dark mode"
- },
- "changelog/law-firms-and-denial-rates": {
-  "capture": {
-   "url": "/perm-attorneys/berry-appleman-leiden-llp"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "Berry Appleman & Leiden's PERM record on permtracker.app"
- },
- "changelog/live-data-and-two-doors": {
-  "capture": {
-   "url": "/"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "The permtracker.app homepage: a case lookup and DOL's live queue"
- },
- "changelog/march-2026-timeline-and-ux": {
-  "tour": {
-   "file": "timeline-light.webp",
-   "focus": [
-    0.0,
-    0.0
-   ]
-  },
-  "credit": "The PERM Tracker app, drawn from a sample firm's cases",
-  "alt": "The PERM Tracker timeline: every case's stages laid out by month"
- },
- "changelog/one-page-per-employer": {
-  "capture": {
-   "url": "/perm-employers/amazon-com-services-llc"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "Amazon's employer page, which now gathers every program it files under any spelling"
- },
- "changelog/open-data-api-and-seasonal-visas": {
-  "capture": {
-   "url": "/seasonal-cases"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "H-2A, H-2B and CW-1 filings on permtracker.app, counted by form"
- },
- "changelog/september-bulletin-layoffs-and-rules": {
-  "capture": {
-   "url": "/policy-changes"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "Policy changes on the record: every rule and notice on these programs from the Federal Register"
- },
- "changelog/the-whole-field-three-ways": {
-  "capture": {
-   "url": "/perm-by-state"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "PERM filings state by state, as a map"
- },
- "changelog/uscis-data-and-following-employers": {
-  "capture": {
-   "url": "/i485-by-field-office"
-  },
-  "credit": "Screenshot of permtracker.app, October 15, 2026",
-  "alt": "The I-485 by field office: what each USCIS office received, decided and holds"
- },
- "guides/dol-average-vs-your-wait": {
-  "capture": {
-   "url": "/perm-processing-times",
-   "clip": "h:How fast it advances"
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "How fast DOL's PERM queue has advanced, month by month, on permtracker.app"
- },
- "guides/eb2-india-forecasts-how-close": {
-  "capture": {
-   "url": "/visa-bulletin/categories/eb2-india",
-   "clip": "h:A fiscal year at a time"
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "The EB-2 India final action cutoff, a fiscal year at a time, from every visa bulletin"
- },
- "guides/employer-barred-from-perm": {
-  "capture": {
-   "url": "/debarments/settlements",
-   "clip": "h:Cloudera, the one barred from PERM",
-   "width": 1000,
-   "fit": "contain",
-   "css": "section[aria-labelledby=cloudera] > div { padding-bottom: 10px !important; }"
-  },
-  "credit": "Screenshot of permtracker.app, November 1, 2026",
-  "alt": "Cloudera's case on a time line: DOL's suspension, the settlement, and the 24 months it agreed to file no PERM application"
- },
- "guides/employer-suspended-from-perm": {
-  "capture": {
-   "url": "/perm-employers/under-review",
-   "clip": "h:When DOL moved them",
-   "width": 1000,
-   "fit": "contain"
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "The days DOL moved an employer's PERM cases on hold or off it, and how many on each"
- },
- "guides/find-your-lca-without-the-number": {
-  "capture": {
-   "url": "/lca-cases",
-   "clip": "h:LCAs by the month they were filed",
-   "width": 960,
-   "fit": "contain"
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "H-1B LCAs by the month they were filed: how many DOL has decided and how many still wait"
- },
- "guides/green-card-sponsors-for-your-job": {
-  "capture": {
-   "url": "/sponsor-finder",
-   "width": 1000
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "The sponsor finder on permtracker.app, filtering PERM sponsors by their record"
- },
- "guides/h1b-60-day-grace-period-proposal": {
-  "pdf": {
-   "file": "fr-2026-18631.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "Federal Register, 91 FR 57807, September 11, 2026 (proposed rule). Office of the Federal Register",
-  "source": "https://www.govinfo.gov/content/pkg/FR-2026-09-11/pdf/2026-18631.pdf",
-  "alt": "The first page of the Federal Register proposal to end the discretionary 60-day grace period"
- },
- "guides/h1b-six-year-limit-with-perm-pending": {
-  "capture": {
-   "url": "/tools/h1b-six-year-limit",
-   "width": 1000
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "The H-1B six-year limit and PERM 365-day rule calculator on permtracker.app"
- },
- "guides/how-long-perm-recruitment-stays-valid": {
-  "pdf": {
-   "file": "cfr656-17.pdf",
-   "page": 1,
-   "top": 0.0,
-   "anchor": "bottom"
-  },
-  "credit": "20 CFR 656.17, Code of Federal Regulations, 2025 edition. U.S. Government Publishing Office",
-  "source": "https://www.govinfo.gov/content/pkg/CFR-2025-title20-vol3/pdf/CFR-2025-title20-vol3-sec656-17.pdf",
-  "alt": "20 CFR 656.17(e), the required pre-filing recruitment and its 30 and 180 days"
- },
- "guides/i140-revoked-before-after-180-days": {
-  "capture": {
-   "url": "/tools/priority-date-retention",
-   "width": 1000
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "The priority date retention and I-485 portability calculator on permtracker.app"
- },
- "guides/i485-inventory-month-by-month": {
-  "capture": {
-   "url": "/tools/i485-queue-position",
-   "clip": "h:The whole pending inventory, release by release"
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "USCIS's employment-based I-485 inventory, release by release"
- },
- "guides/opt-to-green-card-employers": {
-  "capture": {
-   "url": "/opt-employers",
-   "width": 1000
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "The employers with the largest counts of students on OPT and CPT, from ICE's own lists"
- },
- "guides/perm-audit-file-index": {
-  "pdf": {
-   "file": "cfr656-10.pdf",
-   "page": 3,
-   "top": 0.42
-  },
-  "credit": "20 CFR 656.10, Code of Federal Regulations, 2025 edition. U.S. Government Publishing Office",
-  "source": "https://www.govinfo.gov/content/pkg/CFR-2025-title20-vol3/pdf/CFR-2025-title20-vol3-sec656-10.pdf",
-  "alt": "20 CFR 656.10(f), the five years an employer keeps a PERM file"
- },
- "guides/perm-audit-response": {
-  "capture": {
-   "url": "/tools/rfi-deadline",
-   "width": 1000
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "The RFI and audit response deadline calculator on permtracker.app"
- },
- "guides/perm-business-necessity": {
-  "pdf": {
-   "file": "eta9141.pdf",
-   "page": 2,
-   "top": 0.3
-  },
-  "credit": "Form ETA-9141, page 3. U.S. Department of Labor, expires 07/31/2026",
-  "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/Form%20ETA-9141%20-%20508%20Compliant%20-%20Expires%2007-31-2026.pdf",
-  "alt": "Form ETA-9141's minimum job requirements, the part business necessity has to justify"
- },
- "guides/perm-certified-what-next": {
-  "capture": {
-   "url": "/tools/i140-calculator",
-   "width": 1000
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "The I-140 queue calculator on permtracker.app"
- },
- "guides/perm-employer-questionnaire": {
-  "pdf": {
-   "file": "eta9141.pdf",
-   "page": 1,
-   "top": 0.0,
-   "anchor": "bottom"
-  },
-  "credit": "Form ETA-9141, page 2. U.S. Department of Labor, expires 07/31/2026",
-  "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/Form%20ETA-9141%20-%20508%20Compliant%20-%20Expires%2007-31-2026.pdf",
-  "alt": "Form ETA-9141's job offer section, where an employer's answers end up"
- },
- "guides/perm-layoff-rule-for-employers": {
-  "pdf": {
-   "file": "cfr656-17.pdf",
-   "page": 4,
-   "top": 0.0,
-   "anchor": "bottom"
-  },
-  "credit": "20 CFR 656.17, Code of Federal Regulations, 2025 edition. U.S. Government Publishing Office",
-  "source": "https://www.govinfo.gov/content/pkg/CFR-2025-title20-vol3/pdf/CFR-2025-title20-vol3-sec656-17.pdf",
-  "alt": "20 CFR 656.17(k), the layoff rule for PERM employers"
- },
- "guides/perm-notice-of-filing-sample": {
-  "pdf": {
-   "file": "eta9089.pdf",
-   "page": 5,
-   "top": 0.12
-  },
-  "credit": "Form ETA-9089, page 6. U.S. Department of Labor, expires 02/28/2029",
-  "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/ETA-9089-Application-for-Perm-Employment-Certification-Expires02-28-29.pdf",
-  "alt": "Form ETA-9089's notice of posting questions, from the bargaining representative to the employer's own media"
- },
- "guides/perm-recruitment-failed-h1b-clock": {
-  "capture": {
-   "url": "/tools/h1b-six-year-limit",
-   "clip": "fromm:FAQs",
-   "width": 1000
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "Questions on the H-1B six-year limit and the PERM 365-day rule, answered from the regulations"
- },
- "guides/perm-recruitment-report-sample": {
-  "pdf": {
-   "file": "cfr656-17.pdf",
-   "page": 3,
-   "top": 0.0,
-   "anchor": "bottom"
-  },
-  "credit": "20 CFR 656.17, Code of Federal Regulations, 2025 edition. U.S. Government Publishing Office",
-  "source": "https://www.govinfo.gov/content/pkg/CFR-2025-title20-vol3/pdf/CFR-2025-title20-vol3-sec656-17.pdf",
-  "alt": "20 CFR 656.17(g), the recruitment report DOL requires"
- },
- "guides/perm-sunday-ads-additional-recruitment-steps": {
-  "pdf": {
-   "file": "eta9089-instructions.pdf",
-   "page": 12,
-   "top": 0.1
-  },
-  "credit": "Form ETA-9089 General Instructions, page 13. U.S. Department of Labor, expires 02/28/2029",
-  "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/ETA-9089-General-Instructions-Expires%2002-28-29.pdf",
-  "alt": "Form ETA-9089's instructions for the Sunday ads and the additional recruitment steps"
- },
- "guides/priority-date-current-perm-pending": {
-  "pdf": {
-   "file": "uscis-aos-chart.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "Adjusting Status to Become a U.S. Permanent Resident. U.S. Citizenship and Immigration Services",
-  "source": "https://www.uscis.gov/sites/default/files/document/charts/AoS_WebGraphic_V6_En.pdf",
-  "alt": "USCIS's guide to adjusting status: the petition, the visa bulletin chart and the I-485"
- },
- "guides/priority-date-retrogressed-after-filing": {
-  "capture": {
-   "url": "/visa-bulletin/categories/eb2-india",
-   "clip": "h:How the cutoff has moved"
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "How the EB-2 India cutoff has moved, forward and back, bulletin by bulletin"
- },
- "guides/salary-high-enough-perm-h1b": {
-  "capture": {
-   "url": "/tools/wage-levels",
-   "width": 1000
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "The prevailing wage levels tool on permtracker.app, DOL's four levels for a job and area"
- },
- "guides/special-handling-university-teachers": {
-  "pdf": {
-   "file": "eta9089-appD.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "Form ETA-9089 Appendix D, page 1. U.S. Department of Labor, expires 02/28/2029",
-  "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/ETA-9089-AppendixD-Expires02-28-29.pdf",
-  "alt": "Appendix D of Form ETA-9089, special recruitment for college and university teachers"
- },
- "guides/eta-9089-expiration-and-i140-deadline": {
-  "pdf": {
-   "file": "eta9089-final.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "Form ETA-9089 Final Determination, page 1. U.S. Department of Labor, expires 02/28/2029",
-  "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/ETA-9089-Final-Determination-Expires02-28-29.pdf",
-  "alt": "DOL's final determination: the certification approval with its filing, determination and expiration dates"
- },
- "guides/ead-renewal-no-automatic-extension": {
-  "pdf": {
-   "file": "fr-2026-20955.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "Federal Register, 91 FR 65306, October 14, 2026 (final rule). Office of the Federal Register",
-  "source": "https://www.govinfo.gov/content/pkg/FR-2026-10-14/pdf/2026-20955.pdf",
-  "alt": "The first page of the final rule removing automatic extensions for certain EADs"
- },
- "blog/client-status-updates-without-the-email-load": {
-  "capture": {
-   "url": "/for-attorneys",
-   "clip": "h:Put PERM Tracker on your firm's site"
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "The case-status box a firm can put on its own site, from permtracker.app"
- },
- "blog/docketwise-alternatives-for-perm": {
-  "capture": {
-   "url": "/for-attorneys",
-   "clip": "h:Type the dates. The rest is worked out."
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "A PERM case form that works out the deadlines from the dates entered"
- },
- "blog/docketwise-vs-inszoom-lollylaw-eimmigration": {
-  "capture": {
-   "url": "/for-attorneys",
-   "clip": "h:One page for the whole case"
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "One page for a whole PERM case, its dates, deadlines and history"
- },
- "blog/free-immigration-case-management-software": {
-  "capture": {
-   "url": "/calculators",
-   "clip": "h:Which one answers your question?"
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "The free PERM calculators on permtracker.app, matched to the question each answers"
- },
- "blog/h1b-sponsors-layoff-notices-october-2026": {
-  "capture": {
-   "url": "/layoffs",
-   "clip": "h:The notices, by month and by sponsor",
-   "width": 1000
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "WARN layoff notices from H-1B and PERM sponsors, by month and by sponsor"
- },
- "blog/immigration-software-pricing-2026": {
-  "photo": {
-   "file": "paperless-work-desk-with-an-ipad-imac-and-a-macbook.jpg",
-   "focus": [
-    0.5,
-    0.5
-   ]
-  },
-  "credit": "Photo: FirmBee / Wikimedia Commons, CC0",
-  "source": "https://commons.wikimedia.org/wiki/File:Paperless_work_desk_with_an_iPad,_iMac_and_a_MacBook.jpg",
-  "alt": "A desk with a desktop computer, a laptop and a tablet"
- },
- "blog/opt-fee-proposal-2026": {
-  "pdf": {
-   "file": "fr-2026-20660.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "Federal Register, 91 FR 64566, October 8, 2026 (proposed rule). Office of the Federal Register",
-  "source": "https://www.govinfo.gov/content/pkg/FR-2026-10-08/pdf/2026-20660.pdf",
-  "alt": "The first page of the Federal Register proposal to charge fees for Optional Practical Training"
- },
- "blog/perm-attorney-fees-employer-must-pay": {
-  "pdf": {
-   "file": "fr-2007-e7-9250.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "Federal Register, 72 FR 27904, May 17, 2007 (final rule). Office of the Federal Register",
-  "source": "https://www.govinfo.gov/content/pkg/FR-2007-05-17/pdf/E7-9250.pdf",
-  "alt": "The first page of the 2007 PERM rule that made the employer pay its own attorney's fees"
- },
- "blog/perm-queue-october-2026": {
-  "capture": {
-   "url": "/perm-queue",
-   "clip": "h:The wall, by filing month"
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "The PERM cases still waiting, by the month they were filed"
- },
- "blog/proposed-perm-rule-rin-1205-ac29": {
-  "pdf": {
-   "file": "fr-2004-04-27653.pdf",
-   "page": 0,
-   "top": 0.0
-  },
-  "credit": "Federal Register, 69 FR 77326, December 27, 2004 (final rule). Office of the Federal Register",
-  "source": "https://www.govinfo.gov/content/pkg/FR-2004-12-27/pdf/04-27653.pdf",
-  "alt": "The first page of the 2004 rule that created PERM, the rule a new proposal would change"
- },
- "blog/rule-changes-since-august-2026": {
-  "capture": {
-   "url": "/policy-changes",
-   "clip": "h:The last twelve months",
-   "width": 960,
-   "fit": "contain"
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "Twelve months of Federal Register rules and DOL announcements on a timeline"
- },
- "blog/vendor-data-security-questions": {
-  "capture": {
-   "url": "/security"
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "How permtracker.app is run and secured, from its security page"
- },
- "guides/when-does-the-visa-bulletin-come-out": {
-  "capture": {
-   "url": "/visa-bulletin",
-   "clip": "fromm:When it comes out",
-   "width": 1000
-  },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "The days of the month by which past visa bulletins were already out, on permtracker.app"
- },
- "guides/perm-filing-window-worked-example": {
-  "capture": {
-   "url": "/tools/perm-deadline-calculator",
-   "fill": [
-    {
-     "sel": "main input[type=date] >> nth=0",
-     "text": "2026-03-10"
+  "guides/ultimate-perm-guide-2026": {
+    "photo": {
+      "file": "dol-frances-perkins-building-sign.jpg",
+      "focus": [
+        0.55,
+        0.5
+      ]
     },
-    {
-     "sel": "main input[type=date] >> nth=1",
-     "text": "2026-04-06"
+    "credit": "Photo: G. Edward Johnson / Wikimedia Commons, CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Department_of_Labor_sign_Washington_DC_2025-02-07_15-38-08.jpg",
+    "alt": "The sign outside the Frances Perkins Building, the Department of Labor's headquarters at 200 Constitution Avenue NW in Washington"
+  },
+  "guides/complete-perm-filing-guide": {
+    "pdf": {
+      "file": "eta9089.pdf",
+      "page": 0,
+      "top": 0.0
     },
-    {
-     "sel": "main input[type=date] >> nth=2",
-     "text": "2026-05-06"
-    }
-   ],
-   "clip": "h:Your PERM deadlines",
-   "width": 1000,
-   "fit": "contain",
-   "maxHeight": 700
+    "credit": "Form ETA-9089, page 1. U.S. Department of Labor, expires 02/28/2029",
+    "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/ETA-9089-Application-for-Perm-Employment-Certification-Expires02-28-29.pdf",
+    "alt": "The first page of Form ETA-9089, the Application for Permanent Employment Certification, with the Labor Department's seal"
   },
-  "credit": "Screenshot of permtracker.app, October 17, 2026",
-  "alt": "The PERM deadline calculator with the example's dates: the filing window opens June 5, 2026 and closes October 3, 2026"
- },
- "guides/file-perm-after-prevailing-wage-expires": {
-  "pdf": {
-   "file": "karl-storz-2011-per-00040.pdf",
-   "page": 15,
-   "top": 0.0,
-   "anchor": "bottom"
-  },
-  "credit": "Karl Storz Endoscopy-America, 2011-PER-00040 (Dec. 1, 2011), page 16. U.S. Department of Labor, Board of Alien Labor Certification Appeals",
-  "source": "https://www.oalj.dol.gov/DECISIONS/ALJ/PER/2011/In_re_KARL_STORZ_ENDOSCOPY_2011PER00040_(DEC_01_2011)_091125_CADEC_SD.PDF",
-  "alt": "The page of the Board's en banc Karl Storz decision holding that an employer who begins recruitment before its wage determination must file while the determination is valid"
- },
- "guides/uscis-silent-updates": {
-  "photo": {
-   "file": "uscis-asc-jamaica-queens-tdorante10.jpg",
-   "focus": [
-    0.5,
-    0.45
-   ]
-  },
-  "credit": "Photo: Tdorante10 / Wikimedia Commons, CC BY-SA 4.0",
-  "source": "https://commons.wikimedia.org/wiki/File:Jamaica_Av_153rd_St_td_(2022-04-11)_02_-_USCIS_Application_Support_Center.jpg",
-  "alt": "A USCIS Application Support Center on Jamaica Avenue in Queens, New York, where applicants give fingerprints and photos"
- },
- "guides/how-to-find-your-soc-code": {
-  "capture": {
-   "url": "/soc-codes/data-scientist",
-   "clip": "fromm:SOC code for Data Scientist",
-   "maxHeight": 1000
-  },
-  "credit": "Screenshot of permtracker.app, October 29, 2026",
-  "alt": "The SOC codes employers filed Data Scientist under on permtracker.app, each with its share of the filings, BLS pay and Job Zone"
- },
- "guides/perm-job-description-from-soc-code": {
-  "photo": {
-   "file": "us-employment-service-this-way-to-a-job-1943.jpg",
-   "focus": [
-    0.5,
-    0.45
-   ]
-  },
-  "credit": "Photo: Office of War Information, 1943, Library of Congress",
-  "source": "https://commons.wikimedia.org/wiki/File:Advertisement_of_the_United_States_Employment_Service,_8d16963v.jpg",
-  "alt": "A 1943 sign over a storefront that reads This Way to a Job, U.S. Employment Service"
- },
- "changelog/federal-records-and-three-calculators": {
-  "capture": {
-   "url": "/wage-violations",
-   "clip": "fromm:H-1B"
-  },
-  "credit": "Screenshot of permtracker.app, November 2, 2026",
-  "alt": "H-1B wage violations by fiscal year, and the largest back wages, on permtracker.app"
- },
- "changelog/layoffs-reported-on-perm": {
-  "capture": {
-   "url": "/perm-layoff-disclosures",
-   "clip": "fromm:Whose applications said yes"
-  },
-  "credit": "Screenshot of permtracker.app, November 3, 2026",
-  "alt": "The layoffs reported on PERM page: one hundred squares showing one employer's share of the applications that said yes"
- },
- "changelog/where-dol-is-and-job-codes": {
-  "tour": {
-   "file": "job-code-light.webp",
-   "focus": [
-    0.5,
-    0.0
-   ]
-  },
-  "credit": "The PERM Tracker app, drawn from a sample firm's cases",
-  "alt": "The case form's SOC code box offering the codes employers filed Operations Research Analyst under, with each code's share"
- },
- "guides/immigrant-visa-interview-pause": {
-  "photo": {
-   "file": "us-embassy-london-nine-elms.jpg",
-   "focus": [
-    0.55,
-    0.5
-   ]
-  },
-  "credit": "Photo: Curran2 / Wikimedia Commons, CC BY-SA 4.0",
-  "source": "https://commons.wikimedia.org/w/index.php?curid=57591541",
-  "alt": "The US Embassy in London at Nine Elms, seen across the Thames from Pimlico"
- },
- "changelog/consulates-and-the-interview-pause": {
-  "capture": {
-   "url": "/consular-posts",
-   "clip": "sel:main figure",
-   "css": "main figure li:nth-child(n+9){display:none!important}"
-  },
-  "credit": "Screenshot of permtracker.app, November 3, 2026",
-  "alt": "The consulates page: how far back each post is scheduling employment cases, Dhaka, Manila, Ciudad Juárez and Guangzhou first"
- },
- "changelog/every-visa-at-each-consulate": {
-  "capture": {
-   "url": "/consular-posts",
-   "clip": "sel:main figure",
-   "css": "main figure li:nth-child(n+9){display:none!important}"
-  },
-  "credit": "Screenshot of permtracker.app, November 5, 2026",
-  "alt": "The consulates page: how far back each post is scheduling cases, with a switch for employment, family preference and immediate relative visas"
- },
- "guides/how-long-lca-certification-takes": {
-  "photo": {
-   "file": "how-long-lca-certification-takes.jpg",
-   "focus": [
-    0.47,
-    0.5
-   ]
-  },
-  "credit": "Photo: G. Edward Johnson / Wikimedia Commons, CC BY 4.0",
-  "source": "https://commons.wikimedia.org/wiki/File:Department_of_Labor_entrance_Washington_DC_2025-02-04_12-40-36.jpg",
-  "alt": "The fountain entrance of the Frances Perkins Building in Washington, the Department of Labor's headquarters, with DEPARTMENT OF LABOR lettered above the doors"
- },
- "guides/perm-rfi-response-time": {
-  "photo": {
-   "file": "perm-rfi-response-time.jpg",
-   "focus": [
-    0.45,
-    0.5
-   ]
-  },
-  "credit": "Photo: Niklas Bildhauer / Wikimedia Commons, CC BY-SA 2.0",
-  "source": "https://commons.wikimedia.org/wiki/File:FileStack.jpg",
-  "alt": "A thick stack of papers held in a ring binder, seen edge on, with a few blue, green and yellow sheets among the white"
- },
- "guides/remote-work-and-perm": {
-  "photo": {
-   "file": "remote-work-and-perm.jpg",
-   "focus": [
-    0.5,
-    0.5
-   ]
-  },
-  "credit": "Photo: Free-Photos / Pixabay, via Wikimedia Commons, CC0",
-  "source": "https://commons.wikimedia.org/wiki/File:Home-office-336377.jpg",
-  "alt": "A laptop, an open notebook with a pen, a phone and a cup of coffee on a wooden table, the kind of home desk a remote job is done from"
- },
- "guides/where-to-file-perm-worksite": {
-  "photo": {
-   "file": "where-to-file-perm-worksite.jpg",
-   "focus": [
-    0.5,
-    0.52
-   ]
-  },
-  "credit": "Photo: Tdorante10 / Wikimedia Commons, CC BY-SA 4.0",
-  "source": "https://commons.wikimedia.org/wiki/File:South_Av_Corporate_Park_SI_td_(2025-07-28)_013a_-_Southport_Plaza_(1150_South_Avenue).jpg",
-  "alt": "Southport Plaza, a long beige office building behind a fence and a parking lot in the Staten Island Corporate Park, the kind of office campus a consultant can be placed at"
- },
- "guides/perm-experience-gained-with-employer": {
-  "photo": {
-   "file": "perm-experience-gained-with-employer.jpg",
-   "focus": [
-    0.5,
-    0.5
-   ]
-  },
-  "credit": "Photo: NASA Glenn Research Center, GRC-1955-C-39724, February 21, 1955 / Wikimedia Commons, public domain",
-  "source": "https://commons.wikimedia.org/wiki/File:NACA_Apprentice_is_Trained_on_the_Lab%27s_Altitude_Systems_(GRC-1955-C-39724).jpg",
-  "alt": "An apprentice works among the curved steel vanes of a large air duct at NACA's Lewis Flight Propulsion Laboratory in 1955, while a second worker stands on the vanes above"
- },
- "guides/green-card-job-future-job": {
-  "photo": {
-   "file": "green-card-job-future-job.jpg",
-   "focus": [
-    0.4,
-    0.25
-   ]
-  },
-  "credit": "Photo: Bradley Weber, May 10, 2011 / Wikimedia Commons, CC BY 2.0",
-  "source": "https://commons.wikimedia.org/wiki/File:Help_Wanted_-_Nebraska_(44113871694).jpg",
-  "alt": "A hand-painted Help Wanted sign on a wooden post at the edge of a grass field in Nebraska, under a clear sky"
- },
- "guides/priority-date-retention-new-employer": {
-  "photo": {
-   "file": "priority-date-retention-new-employer.jpg",
-   "focus": [
-    0.45,
-    0.5
-   ]
-  },
-  "credit": "Photo: Carol M. Highsmith, April 5, 2016. Carol M. Highsmith Archive, Library of Congress, Prints and Photographs Division",
-  "source": "https://commons.wikimedia.org/wiki/File:Revolving_door._New_Carrollton_Federal_Office_Building,_New_Carrollton,_Maryland_LCCN2016648245.tif",
-  "alt": "A glass revolving door at the entrance of a federal office building in New Carrollton, Maryland, the way out of one workplace and into the next"
- },
- "guides/perm-case-tracking-spreadsheet": {
-  "photo": {
-   "file": "perm-case-tracking-spreadsheet.jpg",
-   "focus": [
-    0.5,
-    0.5
-   ]
-  },
-  "credit": "John Carlin, account book, 1835 to 1856. The Metropolitan Museum of Art, via Wikimedia Commons, CC0",
-  "source": "https://commons.wikimedia.org/wiki/File:Account_Book_Ledger_MET_DP214203.jpg",
-  "alt": "An account book from the 1830s open to two pages of dated, handwritten entries in ruled columns, kept by the painter John Carlin"
- },
- "guides/why-prevailing-wage-ends-june-30": {
-  "photo": {
-   "file": "why-prevailing-wage-ends-june-30.jpg",
-   "focus": [
-    0.5,
-    0.85
-   ]
-  },
-  "credit": "Edward Penfield, April May June 1897 calendar, color lithograph. Library of Congress, Prints and Photographs Division",
-  "source": "https://commons.wikimedia.org/wiki/File:April_May_June_1897_calendar_LCCN2015646485.jpg",
-  "alt": "The calendar grid of a printed 1897 calendar by Edward Penfield, showing April, May and June, the stretch of the year when a new determination runs for 90 days"
- },
- "guides/uscis-congressional-inquiry": {
-  "photo": {
-   "file": "uscis-congressional-inquiry.jpg",
-   "focus": [
-    0.5,
-    0.5
-   ]
-  },
-  "credit": "Photo: Bill Koplitz, FEMA, December 4, 2007 / Wikimedia Commons, public domain",
-  "source": "https://commons.wikimedia.org/wiki/File:FEMA_-_34358_-_US_Capitol_from_the_West_Side.jpg",
-  "alt": "The U.S. Capitol's dome and columned west front, seen from below under a clear blue sky"
- },
- "changelog/find-a-case-without-its-number": {
-  "capture": {
-   "url": "/perm-case-status",
-   "wait": 4000,
-   "open": "button:has-text(\"Find it by employer and filing date\")",
-   "fill": [
-    {
-     "sel": "input[autocomplete=\"organization\"]",
-     "text": "UBS"
+  "guides/waiting-on-your-green-card": {
+    "photo": {
+      "file": "uscis-green-card-2023-redesign-guide.jpg",
+      "focus": [
+        0.5,
+        0.12
+      ]
     },
-    {
-     "sel": "section:has(> p:text-is(\"Find your case without the number\")) input[type=\"date\"]",
-     "text": "2026-01-05",
-     "wait": 2500
-    }
-   ],
-   "clip": "sel:main div:has(> form[method=\"get\"])",
-   "maxHeight": 1100
+    "credit": "Image: U.S. Citizenship and Immigration Services",
+    "source": "https://www.uscis.gov/sites/default/files/document/guides/GreenCard_Comparison_EN.PDF.pdf",
+    "alt": "USCIS's guide to the 2023 green card, showing the old and redesigned cards front and back"
   },
-  "credit": "Screenshot of permtracker.app, November 10, 2026",
-  "alt": "The case finder open under the case number box on permtracker.app, listing one employer's four PERM cases filed on January 5, 2026, each with its status"
- },
- "changelog/the-answer-first-and-uscis-times-by-category": {
-  "capture": {
-   "url": "/",
-   "wait": 5000
+  "guides/getting-started": {
+    "tour": {
+      "file": "dashboard-light.webp",
+      "focus": [
+        0.5,
+        0.0
+      ]
+    },
+    "credit": "The PERM Tracker app, drawn from a sample firm's cases",
+    "alt": "The PERM Tracker dashboard: the deadlines due this week and this month across a firm's cases"
   },
-  "credit": "Screenshot of permtracker.app, November 10, 2026",
-  "alt": "The top of permtracker.app's homepage: the month DOL is working on with its chart on the left, and on the right the case number box with links to I-140 times, the visa bulletin and I-485 times"
- },
- "changelog/case-lists-start-with-the-search": {
-  "capture": {
-   "url": "/pwd-cases",
-   "wait": 7000,
-   "height": 1380
+  "guides/the-data-pages-and-what-each-answers": {
+    "capture": {
+      "url": "/tools"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "The data overview on permtracker.app: DOL's oldest month in review, its average days to decide and the wage requests waiting, each dated"
   },
-  "credit": "Screenshot of permtracker.app, November 11, 2026",
-  "alt": "The top of permtracker.app's wage request list: the title, one box that takes an employer or a case number, and three figures with small charts under it"
- },
- "blog/h1b-offers-after-the-weighted-lottery": {
-  "photo": {
-   "file": "chet-holifield-federal-building-2020.jpg",
-   "focus": [
-    0.5,
-    0.62
-   ]
+  "guides/check-perm-case-status": {
+    "capture": {
+      "url": "/perm-case-status?case=G-100-26251-220642"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "A PERM case looked up on permtracker.app: DOL's status in plain English and the estimated decision date"
   },
-  "credit": "Photo: CashewCraver / Wikimedia Commons, CC BY-SA 4.0",
-  "source": "https://commons.wikimedia.org/wiki/File:Chet_Holifield_Federal_Building_2020.jpg",
-  "alt": "The Chet Holifield Federal Building in Laguna Niguel, California, a long, stepped federal office building, seen from a hill"
- },
- "changelog/when-dol-starts-the-next-month": {
-  "capture": {
-   "url": "/perm-queue",
-   "wait": 5000,
-   "clip": "sel:#next-month",
-   "maxHeight": 900
+  "guides/what-perm-case-statuses-mean": {
+    "capture": {
+      "url": "/perm-case-statuses"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "Every status DOL prints on a PERM case, with how many cases sit at each one today"
   },
-  "credit": "Screenshot of permtracker.app, November 16, 2026",
-  "alt": "The queue page's new section: when DOL will likely start March 2026, a bar of February's decided cases, and the band where the last three months began"
- },
- "changelog/how-long-each-review-stage-takes": {
-  "capture": {
-   "url": "/perm-rfi-audit/reconsideration-appeals",
-   "wait": 5000,
-   "clip": "sel:#each-week",
-   "maxHeight": 900
+  "guides/perm-application-on-hold-meaning": {
+    "capture": {
+      "url": "/perm-employers/under-review"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "The employers with PERM cases on hold, at an RFI or under appeal, led by DOL's newest employer-wide move"
   },
-  "credit": "Screenshot of permtracker.app, November 17, 2026",
-  "alt": "The reconsideration page's weekly chart: the PERM cases leaving reconsideration each week since August 31, split into certified, back to review, another step, and denied or NORD issued"
- },
- "changelog/decisions-by-day-week-month-or-year": {
-  "capture": {
-   "url": "/perm-decision-activity#by-month",
-   "wait": 6000,
-   "clip": "sel:#over-time",
-   "maxHeight": 900
+  "guides/perm-rfi-issued-what-to-do": {
+    "capture": {
+      "url": "/perm-rfi-audit/rfi-issued"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "The open PERM RFIs, counted and listed oldest filing first"
   },
-  "credit": "Screenshot of permtracker.app, November 17, 2026",
-  "alt": "The decisions chart on its month view: PERM decisions in each of the last 12 months, split into certified, denied and withdrawn, each with a mark for the same days a year earlier, an empty frame for July 2026, and a typical year by month beside it"
- },
- "changelog/account-updates-on-your-timeline": {
-  "capture": {
-   "url": "/i485-by-field-office/hartford-connecticut",
-   "wait": 6000,
-   "clip": "sel:#share",
-   "maxHeight": 900
+  "guides/perm-nord-issued-meaning": {
+    "capture": {
+      "url": "/perm-rfi-audit/nord-issued"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "The PERM cases DOL shows as NORD issued, counted and dated"
   },
-  "credit": "Screenshot of permtracker.app, November 17, 2026",
-  "alt": "The timeline form's account updates: the first update dated June 1, 2026 on the I-485, its code typed under Other as XQ7 with the rule beneath it, and a second update waiting for its date"
- },
- "changelog/read-your-uscis-account-updates": {
-  "capture": {
-   "url": "/uscis-account-reader",
-   "wait": 6000,
-   "clip": "sel:[data-testid=reading]",
-   "maxHeight": 900
+  "guides/perm-denied-what-happens-next": {
+    "capture": {
+      "url": "/perm-rfi-audit/reconsideration-appeals"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "The PERM cases waiting on a request for reconsideration"
   },
-  "credit": "Screenshot of permtracker.app, November 17, 2026",
-  "alt": "The USCIS account reader after a paste: an I-485 with its receipt masked, four updates by date (IAF, FTA0 twice, IK1) each with a few words, and below them what each code is known to mean and where that reading comes from"
- }
+  "guides/perm-appeal-reconsideration-balca": {
+    "capture": {
+      "url": "/perm-rfi-audit/balca-appeals"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "The PERM cases appealed to the Board of Alien Labor Certification Appeals"
+  },
+  "guides/perm-case-number-format": {
+    "capture": {
+      "url": "/perm-case-status?case=G-100-26251-220680",
+      "clip": "fold:What the case number says"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "A PERM case number on permtracker.app with its parts read out: the program, the filing day and the serial"
+  },
+  "guides/find-your-dol-case-number": {
+    "pdf": {
+      "file": "eta9089.pdf",
+      "page": 1,
+      "top": 0.0,
+      "anchor": "bottom"
+    },
+    "credit": "Form ETA-9089, page 2, the box DOL fills in. U.S. Department of Labor",
+    "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/ETA-9089-Application-for-Perm-Employment-Certification-Expires02-28-29.pdf",
+    "alt": "The foot of a Form ETA-9089 page, where DOL prints the PERM case number once the form is filed"
+  },
+  "guides/find-a-dol-case-number-by-employer": {
+    "capture": {
+      "url": "/case-search"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "The all-programs search on permtracker.app: PERM, wage requests, H-1B LCAs and seasonal filings counted, with a search by employer"
+  },
+  "guides/check-perm-received-without-receipt": {
+    "capture": {
+      "url": "/perm-cases"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "Every decided PERM case on permtracker.app, with decisions per working day drawn as a line"
+  },
+  "guides/look-up-a-perm-case-by-number": {
+    "capture": {
+      "url": "/perm-employers/microsoft-corporation"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "Microsoft's PERM record on permtracker.app, with a case-number box to look up one of its cases"
+  },
+  "guides/tracking-a-case-without-an-account": {
+    "tour": {
+      "file": "email-light.webp",
+      "focus": [
+        0.5,
+        0.0
+      ]
+    },
+    "credit": "The PERM Tracker app, drawn from a sample firm's cases",
+    "alt": "A PERM Tracker reminder email listing a case's next deadlines"
+  },
+  "guides/how-the-perm-queue-works": {
+    "capture": {
+      "url": "/perm-queue"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "Where the PERM queue stands: the oldest filing month DOL still has open, the month it is reviewing and how fast it moves"
+  },
+  "guides/where-your-filing-month-sits": {
+    "capture": {
+      "url": "/perm-queue/2026-01"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "One filing month on permtracker.app: the share decided, by outcome, and where DOL has reached"
+  },
+  "guides/how-accurate-are-perm-estimates": {
+    "photo": {
+      "file": "navy-stopwatch-pft.jpg",
+      "focus": [
+        0.3,
+        0.5
+      ]
+    },
+    "credit": "Photo: U.S. Navy, Chief Photographer's Mate Chris Desmond / Wikimedia Commons, public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:US_Navy_030506-N-5862D-128_An_instructor_in_the_Freedom_Hall_athletic_complex_uses_a_stopwatch_while_recruits_run_a_1.5-mile_track_during_a_Physical_Fitness_Test_(PFT).jpg",
+    "alt": "An instructor holds up a stopwatch while recruits run laps on an indoor track"
+  },
+  "guides/reading-the-perm-data": {
+    "capture": {
+      "url": "/open-data"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "The open data page: the visa bulletin archive and DOL's processing-times readings, as CSV and JSON"
+  },
+  "guides/compute-every-perm-deadline": {
+    "capture": {
+      "url": "/tools/perm-deadline-calculator"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "The PERM deadline calculator: every date in a case computed from the wage determination and recruitment dates"
+  },
+  "guides/the-perm-deadlines-that-matter": {
+    "tour": {
+      "file": "hub-light.webp",
+      "focus": [
+        0.0,
+        0.0
+      ]
+    },
+    "credit": "The PERM Tracker app, drawn from a sample firm's cases",
+    "alt": "The PERM Tracker Deadlines panel: overdue, this week, this month and later"
+  },
+  "guides/three-180-day-clocks": {
+    "capture": {
+      "url": "/tools/green-card-timeline?where=perm-certified&date=2026-06-01&pd=2025-09-15"
+    },
+    "credit": "Screenshot of permtracker.app, October 28, 2026",
+    "alt": "The green card timeline for a certified PERM: the priority date, the I-140, the visa bulletin wait and the green card, each dated on one time line"
+  },
+  "guides/perm-recruitment-checklist": {
+    "pdf": {
+      "file": "eta9089.pdf",
+      "page": 4,
+      "top": 0.0
+    },
+    "credit": "Form ETA-9089, Section H: recruitment information. U.S. Department of Labor",
+    "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/ETA-9089-Application-for-Perm-Employment-Certification-Expires02-28-29.pdf",
+    "alt": "Section H of Form ETA-9089, where the employer records every recruitment step and its dates"
+  },
+  "guides/perm-document-checklist": {
+    "pdf": {
+      "file": "eta9089-appA.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "Form ETA-9089 Appendix A, page 1. U.S. Department of Labor",
+    "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/ETA-9089-AppendixA-Expires02-28-29.pdf",
+    "alt": "The first page of Appendix A to Form ETA-9089: the foreign worker's information and education"
+  },
+  "guides/tracking-perm-deadlines": {
+    "tour": {
+      "file": "calendar-light.webp",
+      "focus": [
+        0.5,
+        0.0
+      ]
+    },
+    "credit": "The PERM Tracker app, drawn from a sample firm's cases",
+    "alt": "The PERM Tracker calendar, with each case's deadlines on the days they fall"
+  },
+  "guides/recruitment-tracking": {
+    "tour": {
+      "file": "case-detail-light.webp",
+      "focus": [
+        0.5,
+        0.0
+      ]
+    },
+    "credit": "The PERM Tracker app, drawn from a sample firm's cases",
+    "alt": "A case in PERM Tracker: its next step, its timeline of completed steps and its prevailing wage"
+  },
+  "guides/manual-vs-automated-tracking": {
+    "tour": {
+      "file": "cases-light.webp",
+      "focus": [
+        0.0,
+        0.0
+      ]
+    },
+    "credit": "The PERM Tracker app, drawn from a sample firm's cases",
+    "alt": "The PERM Tracker case list, each case with its stage and next deadline"
+  },
+  "guides/how-dol-sets-a-prevailing-wage": {
+    "pdf": {
+      "file": "eta9141.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "Form ETA-9141, page 1. U.S. Department of Labor",
+    "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/Form%20ETA-9141%20-%20508%20Compliant%20-%20Expires%2007-31-2026.pdf",
+    "alt": "The first page of Form ETA-9141, the Application for Prevailing Wage Determination"
+  },
+  "guides/track-a-prevailing-wage-request": {
+    "capture": {
+      "url": "/pwd-cases"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "Prevailing wage requests on permtracker.app: the requests waiting at DOL, the decided ones, and a search by employer"
+  },
+  "guides/explore-perm-wages": {
+    "capture": {
+      "url": "/perm-wages"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "What PERM jobs pay: the whole wage ladder from DOL's certified filings"
+  },
+  "guides/what-an-lca-is": {
+    "pdf": {
+      "file": "eta9035.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "Form ETA-9035 and 9035E, page 1. U.S. Department of Labor",
+    "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/Form%20ETA-9035_exp%2010.31.2027.pdf",
+    "alt": "The first page of Form ETA-9035, the Labor Condition Application for nonimmigrant workers"
+  },
+  "guides/look-up-an-lca-by-number": {
+    "capture": {
+      "url": "/lca-cases"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "H-1B LCAs on permtracker.app: the ones DOL confirms each day, the decided ones with their wages, and a search by employer"
+  },
+  "guides/look-up-a-sponsor": {
+    "capture": {
+      "url": "/perm-employers/apple-inc"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "Apple's PERM record on permtracker.app: filings, approvals, wages and days to a decision"
+  },
+  "guides/look-up-a-law-firm": {
+    "capture": {
+      "url": "/perm-attorneys/fragomen-del-rey-bernsen-loewy-llp"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "Fragomen's PERM record on permtracker.app: cases filed, approval rate and median days"
+  },
+  "guides/employer-layoffs-and-your-perm": {
+    "capture": {
+      "url": "/layoffs"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "Layoff notices against PERM sponsors, from four states' WARN filings"
+  },
+  "guides/employer-stopped-filing-perms": {
+    "capture": {
+      "url": "/perm-employers/intel-corporation"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "Intel's PERM record on permtracker.app, with its filings year by year"
+  },
+  "guides/read-the-denial-and-audit-rates": {
+    "capture": {
+      "url": "/perm-denial-risk"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "What gets denied: DOL's denial rates by form question, job and worksite"
+  },
+  "guides/approved-i140-no-visa-number-eb2-india": {
+    "pdf": {
+      "file": "i-140.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "Form I-140, page 1. U.S. Citizenship and Immigration Services, edition 06/07/24",
+    "source": "https://www.uscis.gov/sites/default/files/document/forms/i-140.pdf",
+    "alt": "The first page of Form I-140, the Immigrant Petition for Alien Workers"
+  },
+  "guides/how-the-visa-bulletin-works": {
+    "pdf": {
+      "file": "visabulletin_October2026.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "The October 2026 Visa Bulletin, page 1. U.S. Department of State",
+    "source": "https://adoption.state.gov/content/dam/visas/Bulletins/visabulletin_October2026.pdf",
+    "alt": "The first page of the State Department's Visa Bulletin for October 2026"
+  },
+  "guides/read-your-priority-date-history": {
+    "photo": {
+      "file": "state-dept-harry-s-truman-building.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
+    },
+    "credit": "Photo: U.S. Department of State",
+    "source": "https://commons.wikimedia.org/wiki/File:Harry_S._Truman_Building_(54731264448).jpg",
+    "alt": "The Harry S Truman Building in Washington, the State Department's headquarters, which publishes the visa bulletin"
+  },
+  "guides/ead-and-advance-parole-timelines": {
+    "photo": {
+      "file": "uscis-ead-current-front-sample-m274.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ],
+      "fit": "contain"
+    },
+    "credit": "Image: U.S. Citizenship and Immigration Services",
+    "source": "https://www.uscis.gov/i-9-central/form-i-9-resources/handbook-for-employers-m-274/50-automatic-extensions-of-employment-authorization-documents-eads-in-certain-circumstances",
+    "alt": "USCIS's specimen employment authorization card, with the category and the card's expiry date circled"
+  },
+  "guides/i485-vs-i485j-supplement-j": {
+    "pdf": {
+      "file": "i-485supj.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "Form I-485 Supplement J, page 1. U.S. Citizenship and Immigration Services, edition 09/18/26",
+    "source": "https://www.uscis.gov/sites/default/files/document/forms/i-485supj.pdf",
+    "alt": "The first page of Supplement J to Form I-485, the confirmation of a valid job offer"
+  },
+  "guides/i693-medical-exam": {
+    "pdf": {
+      "file": "i-693.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "Form I-693, page 1. U.S. Citizenship and Immigration Services, edition 01/20/25",
+    "source": "https://www.uscis.gov/sites/default/files/document/forms/i-693.pdf",
+    "alt": "The first page of Form I-693, the Report of Immigration Medical Examination and Vaccination Record"
+  },
+  "guides/uscis-receipt-number": {
+    "photo": {
+      "file": "uscis-office-monument-sign-dekalb-georgia.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
+    },
+    "credit": "Photo: Gulbenk / Wikimedia Commons, CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:U.S._Citizenship_and_Immigration_Service.jpg",
+    "alt": "The U.S. Citizenship and Immigration Services sign outside an office in DeKalb County, Georgia"
+  },
+  "guides/what-emma-told-you": {
+    "photo": {
+      "file": "uscis-sacramento-waiting-room-highsmith-loc.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
+    },
+    "credit": "Photo: Carol M. Highsmith, Library of Congress",
+    "source": "https://www.loc.gov/item/2020720066/",
+    "alt": "The USCIS waiting room in the John E. Moss Federal Building, Sacramento"
+  },
+  "guides/fastest-field-office-eb-i485": {
+    "pdf": {
+      "file": "i-485.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "Form I-485, page 1. U.S. Citizenship and Immigration Services, edition 09/18/26",
+    "source": "https://www.uscis.gov/sites/default/files/document/forms/i-485.pdf",
+    "alt": "The first page of Form I-485, the Application to Register Permanent Residence or Adjust Status"
+  },
+  "guides/uscis-processing-times-median-vs-80-percent": {
+    "capture": {
+      "url": "/uscis-processing-times"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "USCIS processing times by form, the median from USCIS's own quarterly files"
+  },
+  "guides/eb2-vs-eb3-perm": {
+    "capture": {
+      "url": "/tools/eb2-vs-eb3"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "EB-2 or EB-3 for one priority date: the two lines side by side"
+  },
+  "guides/eb3-other-workers": {
+    "pdf": {
+      "file": "visabulletin_September2026.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "The September 2026 Visa Bulletin, page 1. U.S. Department of State",
+    "source": "https://adoption.state.gov/content/dam/visas/Bulletins/visabulletin_September2026.pdf",
+    "alt": "The first page of the State Department's Visa Bulletin for September 2026"
+  },
+  "guides/perm-vs-niw": {
+    "capture": {
+      "url": "/tools/which-green-card"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "Which green card fits: the employment-based routes compared"
+  },
+  "guides/h2a-case-status-and-timing": {
+    "pdf": {
+      "file": "eta9142a.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "Form ETA-9142A, page 1. U.S. Department of Labor",
+    "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/FR_01_%20Form%20ETA-9142A_11-30-2025.pdf",
+    "alt": "The first page of Form ETA-9142A, the H-2A Application for Temporary Employment Certification"
+  },
+  "guides/h2b-and-cw1-case-status-and-timing": {
+    "pdf": {
+      "file": "eta9142b.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "Form ETA-9142B, page 1. U.S. Department of Labor",
+    "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/Form-ETA-9142B-1205-0509.pdf",
+    "alt": "The first page of Form ETA-9142B, the H-2B Application for Temporary Employment Certification"
+  },
+  "blog/data-note-application-on-hold-september-2026": {
+    "photo": {
+      "file": "dol-frances-perkins-building-facade.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
+    },
+    "credit": "Photo: ajay_suresh / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Frances_Perkins_Building_-_Department_of_Labor_(53839145147).jpg",
+    "alt": "The Frances Perkins Building, the Department of Labor's headquarters, seen across the lawn"
+  },
+  "blog/dol-perm-file-fy2026-q3": {
+    "capture": {
+      "url": "/blog/dol-perm-file-fy2026-q3",
+      "clip": "fromm:How many PERM cases did DOL decide?",
+      "maxHeight": 440,
+      "css": "aside.lg\\:block{display:none!important}"
+    },
+    "credit": "Chart from DOL's PERM disclosure file, permtracker.app",
+    "alt": "PERM decisions in April to June 2026 against the quarter before and a year before, as bars"
+  },
+  "blog/eb2-vs-eb3-by-the-numbers": {
+    "capture": {
+      "url": "/visa-bulletin/categories"
+    },
+    "credit": "Screenshot of permtracker.app, October 28, 2026",
+    "alt": "Every visa bulletin line on permtracker.app, each employment category and country with its cutoff"
+  },
+  "blog/companies-sponsoring-most-green-cards": {
+    "capture": {
+      "url": "/perm-employers"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "Who sponsors the most: the ten busiest PERM employers as bars"
+  },
+  "blog/perm-salary-data-by-occupation": {
+    "capture": {
+      "url": "/tools/salary-explorer"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "The salary explorer: certified PERM wages filtered by job, state and year"
+  },
+  "blog/perm-processing-times-2026": {
+    "capture": {
+      "url": "/perm-processing-times"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "PERM processing times: the month DOL is reviewing and its average days to a decision, from DOL's own page"
+  },
+  "blog/what-law-firm-volume-tells-you": {
+    "capture": {
+      "url": "/perm-attorneys"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "Who files the most PERM cases: the ten busiest law firms as bars"
+  },
+  "blog/why-perm-cases-are-denied": {
+    "capture": {
+      "url": "/perm-rfi-audit"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "RFIs, audits and appeals: how many PERM cases sit at each review stage"
+  },
+  "blog/what-is-perm-labor-certification": {
+    "photo": {
+      "file": "lbj-signs-immigration-act-1965-liberty-island.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
+    },
+    "credit": "Photo: Yoichi Okamoto, LBJ Library",
+    "source": "https://commons.wikimedia.org/wiki/File:President_Lyndon_B._Johnson_Signing_of_the_Immigration_and_Nationality_Act_of_1965_(02)_-_restoration1.jpg",
+    "alt": "President Lyndon B. Johnson signing the Immigration and Nationality Act of 1965 at Liberty Island, the law that made labor certification part of employment-based immigration"
+  },
+  "blog/perm-audit-what-it-means": {
+    "pdf": {
+      "file": "eta9089.pdf",
+      "page": 3,
+      "top": 0.0
+    },
+    "credit": "Form ETA-9089, Section G: job requirements. U.S. Department of Labor",
+    "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/ETA-9089-Application-for-Perm-Employment-Certification-Expires02-28-29.pdf",
+    "alt": "Section G of Form ETA-9089, the job's requirements, the answers an audit most often questions"
+  },
+  "blog/what-dol-publishes-about-perm": {
+    "photo": {
+      "file": "dol-frances-perkins-building-exterior-dol-photo.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
+    },
+    "credit": "Photo: U.S. Department of Labor / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:DOL_Exterior_(30086642774).jpg",
+    "alt": "The corner of the Frances Perkins Building, the Department of Labor's headquarters, with its sign"
+  },
+  "blog/how-perm-wage-data-is-published": {
+    "capture": {
+      "url": "/perm-wages/software-developers"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "Software developers on permtracker.app: median certified wage, filings and the wage ladder year by year"
+  },
+  "blog/what-an-employers-perm-record-shows": {
+    "capture": {
+      "url": "/perm-employers/oracle-america-inc"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "Oracle's PERM record on permtracker.app, from DOL's disclosure files and its live case statuses"
+  },
+  "blog/is-my-company-still-filing-perm": {
+    "capture": {
+      "url": "/perm-decision-activity"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "DOL's PERM decisions day by day, with the newest day against the same weekday before it"
+  },
+  "blog/what-to-do-while-you-wait": {
+    "photo": {
+      "file": "ellis-island-registry-room-nps.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
+    },
+    "credit": "Photo: National Park Service",
+    "source": "https://commons.wikimedia.org/wiki/File:The_Registry_Room,_Ellis_Island%27s_Great_Hall_(32dd2c98-1dd8-b71b-0baa-d21a283d8f42).jpg",
+    "alt": "The Registry Room, the great hall at Ellis Island where arriving immigrants waited to be processed"
+  },
+  "blog/common-perm-audit-triggers": {
+    "photo": {
+      "file": "recruitment-job-fair-nyc-transit.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
+    },
+    "credit": "Photo: Metropolitan Transportation Authority / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:More_Than_1,000_Applicants_Attend_NYC_Transit_Job_Fair_in_Brooklyn_(53525177069).jpg",
+    "alt": "Applicants lined up at an NYC Transit job fair in Brooklyn; a job fair is one of the recruitment steps a PERM case can use"
+  },
+  "blog/best-immigration-case-management-tools": {
+    "tour": {
+      "file": "cases-dark.webp",
+      "focus": [
+        0.0,
+        0.0
+      ]
+    },
+    "credit": "The PERM Tracker app, drawn from a sample firm's cases",
+    "alt": "The PERM Tracker case list in dark mode"
+  },
+  "changelog/a-clearer-site-and-did-you-mean": {
+    "capture": {
+      "url": "/uscis-rfe-rates",
+      "clip": "fromm:Every I-129 visa, by fiscal year"
+    },
+    "credit": "Screenshot of permtracker.app, October 28, 2026",
+    "alt": "How often USCIS asked for more evidence on each I-129 work visa, a small chart per visa by fiscal year, on permtracker.app"
+  },
+  "changelog/search-by-job-and-the-recruitment-record": {
+    "capture": {
+      "url": "/perm-recruitment",
+      "clip": "fromm:How long before filing"
+    },
+    "credit": "Screenshot of permtracker.app, October 28, 2026",
+    "alt": "How long before filing each PERM recruitment step ran, against the rule's 30-to-180-day window, on permtracker.app"
+  },
+  "changelog/layoffs-rules-and-every-step-today": {
+    "capture": {
+      "url": "/policy-changes",
+      "clip": "fromm:Rules in the pipeline"
+    },
+    "credit": "Screenshot of permtracker.app, October 28, 2026",
+    "alt": "Rules on their way, each with its steps from White House review to the Federal Register, on permtracker.app"
+  },
+  "changelog/uscis-forms-firm-rankings-and-visa-waits": {
+    "capture": {
+      "url": "/uscis-processing-times/i-140",
+      "clip": "fromm:Median months, quarter by quarter"
+    },
+    "credit": "Screenshot of permtracker.app, October 29, 2026",
+    "alt": "USCIS's median months for the I-140 quarter by quarter, and what it received, decided and had waiting, as columns, on permtracker.app"
+  },
+  "changelog/the-whole-green-card-plan": {
+    "capture": {
+      "url": "/tools/green-card-timeline?where=perm-certified&pd=2025-03-14&cat=EB2&country=worldwide",
+      "clip": "fromm:How long each step takes"
+    },
+    "credit": "Screenshot of permtracker.app, October 28, 2026",
+    "alt": "The green card timeline drawn as a chart: each step from the PERM to the green card as a dated bar, on permtracker.app"
+  },
+  "changelog/alerts-in-minutes-and-measured-estimates": {
+    "tour": {
+      "file": "notifications-light.webp",
+      "focus": [
+        0.5,
+        0.0
+      ]
+    },
+    "credit": "The PERM Tracker app, drawn from a sample firm's cases",
+    "alt": "PERM Tracker notifications: deadline reminders and status changes, newest first"
+  },
+  "changelog/case-status-and-first-party-data": {
+    "capture": {
+      "url": "/perm-case-status"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "The PERM case lookup on permtracker.app"
+  },
+  "changelog/corrections": {
+    "capture": {
+      "url": "/methodology"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "How the numbers are computed: six readings of one PERM average side by side"
+  },
+  "changelog/every-case-every-sponsor": {
+    "capture": {
+      "url": "/perm-employers/browse"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "Every PERM employer with a page, A to Z"
+  },
+  "changelog/january-2026-visual-refresh": {
+    "tour": {
+      "file": "dashboard-dark.webp",
+      "focus": [
+        0.5,
+        0.0
+      ]
+    },
+    "credit": "The PERM Tracker app, drawn from a sample firm's cases",
+    "alt": "The PERM Tracker dashboard in dark mode"
+  },
+  "changelog/launch-perm-tracker-2": {
+    "tour": {
+      "file": "hub-dark.webp",
+      "focus": [
+        0.0,
+        0.0
+      ]
+    },
+    "credit": "The PERM Tracker app, drawn from a sample firm's cases",
+    "alt": "The PERM Tracker Deadlines panel in dark mode"
+  },
+  "changelog/law-firms-and-denial-rates": {
+    "capture": {
+      "url": "/perm-attorneys/berry-appleman-leiden-llp"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "Berry Appleman & Leiden's PERM record on permtracker.app"
+  },
+  "changelog/live-data-and-two-doors": {
+    "capture": {
+      "url": "/"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "The permtracker.app homepage: a case lookup and DOL's live queue"
+  },
+  "changelog/march-2026-timeline-and-ux": {
+    "tour": {
+      "file": "timeline-light.webp",
+      "focus": [
+        0.0,
+        0.0
+      ]
+    },
+    "credit": "The PERM Tracker app, drawn from a sample firm's cases",
+    "alt": "The PERM Tracker timeline: every case's stages laid out by month"
+  },
+  "changelog/one-page-per-employer": {
+    "capture": {
+      "url": "/perm-employers/amazon-com-services-llc"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "Amazon's employer page, which now gathers every program it files under any spelling"
+  },
+  "changelog/open-data-api-and-seasonal-visas": {
+    "capture": {
+      "url": "/seasonal-cases"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "H-2A, H-2B and CW-1 filings on permtracker.app, counted by form"
+  },
+  "changelog/september-bulletin-layoffs-and-rules": {
+    "capture": {
+      "url": "/policy-changes"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "Policy changes on the record: every rule and notice on these programs from the Federal Register"
+  },
+  "changelog/the-whole-field-three-ways": {
+    "capture": {
+      "url": "/perm-by-state"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "PERM filings state by state, as a map"
+  },
+  "changelog/uscis-data-and-following-employers": {
+    "capture": {
+      "url": "/i485-by-field-office"
+    },
+    "credit": "Screenshot of permtracker.app, October 15, 2026",
+    "alt": "The I-485 by field office: what each USCIS office received, decided and holds"
+  },
+  "guides/dol-average-vs-your-wait": {
+    "capture": {
+      "url": "/perm-processing-times",
+      "clip": "h:How fast it advances"
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "How fast DOL's PERM queue has advanced, month by month, on permtracker.app"
+  },
+  "guides/eb2-india-forecasts-how-close": {
+    "capture": {
+      "url": "/visa-bulletin/categories/eb2-india",
+      "clip": "h:A fiscal year at a time"
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "The EB-2 India final action cutoff, a fiscal year at a time, from every visa bulletin"
+  },
+  "guides/employer-barred-from-perm": {
+    "capture": {
+      "url": "/debarments/settlements",
+      "clip": "h:Cloudera, the one barred from PERM",
+      "width": 1000,
+      "fit": "contain",
+      "css": "section[aria-labelledby=cloudera] > div { padding-bottom: 10px !important; }"
+    },
+    "credit": "Screenshot of permtracker.app, November 1, 2026",
+    "alt": "Cloudera's case on a time line: DOL's suspension, the settlement, and the 24 months it agreed to file no PERM application"
+  },
+  "guides/employer-suspended-from-perm": {
+    "capture": {
+      "url": "/perm-employers/under-review",
+      "clip": "h:When DOL moved them",
+      "width": 1000,
+      "fit": "contain"
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "The days DOL moved an employer's PERM cases on hold or off it, and how many on each"
+  },
+  "guides/find-your-lca-without-the-number": {
+    "capture": {
+      "url": "/lca-cases",
+      "clip": "h:LCAs by the month they were filed",
+      "width": 960,
+      "fit": "contain"
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "H-1B LCAs by the month they were filed: how many DOL has decided and how many still wait"
+  },
+  "guides/green-card-sponsors-for-your-job": {
+    "capture": {
+      "url": "/sponsor-finder",
+      "width": 1000
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "The sponsor finder on permtracker.app, filtering PERM sponsors by their record"
+  },
+  "guides/h1b-60-day-grace-period-proposal": {
+    "pdf": {
+      "file": "fr-2026-18631.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "Federal Register, 91 FR 57807, September 11, 2026 (proposed rule). Office of the Federal Register",
+    "source": "https://www.govinfo.gov/content/pkg/FR-2026-09-11/pdf/2026-18631.pdf",
+    "alt": "The first page of the Federal Register proposal to end the discretionary 60-day grace period"
+  },
+  "guides/h1b-six-year-limit-with-perm-pending": {
+    "capture": {
+      "url": "/tools/h1b-six-year-limit",
+      "width": 1000
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "The H-1B six-year limit and PERM 365-day rule calculator on permtracker.app"
+  },
+  "guides/how-long-perm-recruitment-stays-valid": {
+    "pdf": {
+      "file": "cfr656-17.pdf",
+      "page": 1,
+      "top": 0.0,
+      "anchor": "bottom"
+    },
+    "credit": "20 CFR 656.17, Code of Federal Regulations, 2025 edition. U.S. Government Publishing Office",
+    "source": "https://www.govinfo.gov/content/pkg/CFR-2025-title20-vol3/pdf/CFR-2025-title20-vol3-sec656-17.pdf",
+    "alt": "20 CFR 656.17(e), the required pre-filing recruitment and its 30 and 180 days"
+  },
+  "guides/i140-revoked-before-after-180-days": {
+    "capture": {
+      "url": "/tools/priority-date-retention",
+      "width": 1000
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "The priority date retention and I-485 portability calculator on permtracker.app"
+  },
+  "guides/i485-inventory-month-by-month": {
+    "capture": {
+      "url": "/tools/i485-queue-position",
+      "clip": "h:The whole pending inventory, release by release"
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "USCIS's employment-based I-485 inventory, release by release"
+  },
+  "guides/opt-to-green-card-employers": {
+    "capture": {
+      "url": "/opt-employers",
+      "width": 1000
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "The employers with the largest counts of students on OPT and CPT, from ICE's own lists"
+  },
+  "guides/perm-audit-file-index": {
+    "pdf": {
+      "file": "cfr656-10.pdf",
+      "page": 3,
+      "top": 0.42
+    },
+    "credit": "20 CFR 656.10, Code of Federal Regulations, 2025 edition. U.S. Government Publishing Office",
+    "source": "https://www.govinfo.gov/content/pkg/CFR-2025-title20-vol3/pdf/CFR-2025-title20-vol3-sec656-10.pdf",
+    "alt": "20 CFR 656.10(f), the five years an employer keeps a PERM file"
+  },
+  "guides/perm-audit-response": {
+    "capture": {
+      "url": "/tools/rfi-deadline",
+      "width": 1000
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "The RFI and audit response deadline calculator on permtracker.app"
+  },
+  "guides/perm-business-necessity": {
+    "pdf": {
+      "file": "eta9141.pdf",
+      "page": 2,
+      "top": 0.3
+    },
+    "credit": "Form ETA-9141, page 3. U.S. Department of Labor, expires 07/31/2026",
+    "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/Form%20ETA-9141%20-%20508%20Compliant%20-%20Expires%2007-31-2026.pdf",
+    "alt": "Form ETA-9141's minimum job requirements, the part business necessity has to justify"
+  },
+  "guides/perm-certified-what-next": {
+    "capture": {
+      "url": "/tools/i140-calculator",
+      "width": 1000
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "The I-140 queue calculator on permtracker.app"
+  },
+  "guides/perm-employer-questionnaire": {
+    "pdf": {
+      "file": "eta9141.pdf",
+      "page": 1,
+      "top": 0.0,
+      "anchor": "bottom"
+    },
+    "credit": "Form ETA-9141, page 2. U.S. Department of Labor, expires 07/31/2026",
+    "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/Form%20ETA-9141%20-%20508%20Compliant%20-%20Expires%2007-31-2026.pdf",
+    "alt": "Form ETA-9141's job offer section, where an employer's answers end up"
+  },
+  "guides/perm-layoff-rule-for-employers": {
+    "pdf": {
+      "file": "cfr656-17.pdf",
+      "page": 4,
+      "top": 0.0,
+      "anchor": "bottom"
+    },
+    "credit": "20 CFR 656.17, Code of Federal Regulations, 2025 edition. U.S. Government Publishing Office",
+    "source": "https://www.govinfo.gov/content/pkg/CFR-2025-title20-vol3/pdf/CFR-2025-title20-vol3-sec656-17.pdf",
+    "alt": "20 CFR 656.17(k), the layoff rule for PERM employers"
+  },
+  "guides/perm-notice-of-filing-sample": {
+    "pdf": {
+      "file": "eta9089.pdf",
+      "page": 5,
+      "top": 0.12
+    },
+    "credit": "Form ETA-9089, page 6. U.S. Department of Labor, expires 02/28/2029",
+    "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/ETA-9089-Application-for-Perm-Employment-Certification-Expires02-28-29.pdf",
+    "alt": "Form ETA-9089's notice of posting questions, from the bargaining representative to the employer's own media"
+  },
+  "guides/perm-recruitment-failed-h1b-clock": {
+    "capture": {
+      "url": "/tools/h1b-six-year-limit",
+      "clip": "fromm:FAQs",
+      "width": 1000
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "Questions on the H-1B six-year limit and the PERM 365-day rule, answered from the regulations"
+  },
+  "guides/perm-recruitment-report-sample": {
+    "pdf": {
+      "file": "cfr656-17.pdf",
+      "page": 3,
+      "top": 0.0,
+      "anchor": "bottom"
+    },
+    "credit": "20 CFR 656.17, Code of Federal Regulations, 2025 edition. U.S. Government Publishing Office",
+    "source": "https://www.govinfo.gov/content/pkg/CFR-2025-title20-vol3/pdf/CFR-2025-title20-vol3-sec656-17.pdf",
+    "alt": "20 CFR 656.17(g), the recruitment report DOL requires"
+  },
+  "guides/perm-sunday-ads-additional-recruitment-steps": {
+    "pdf": {
+      "file": "eta9089-instructions.pdf",
+      "page": 12,
+      "top": 0.1
+    },
+    "credit": "Form ETA-9089 General Instructions, page 13. U.S. Department of Labor, expires 02/28/2029",
+    "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/ETA-9089-General-Instructions-Expires%2002-28-29.pdf",
+    "alt": "Form ETA-9089's instructions for the Sunday ads and the additional recruitment steps"
+  },
+  "guides/priority-date-current-perm-pending": {
+    "pdf": {
+      "file": "uscis-aos-chart.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "Adjusting Status to Become a U.S. Permanent Resident. U.S. Citizenship and Immigration Services",
+    "source": "https://www.uscis.gov/sites/default/files/document/charts/AoS_WebGraphic_V6_En.pdf",
+    "alt": "USCIS's guide to adjusting status: the petition, the visa bulletin chart and the I-485"
+  },
+  "guides/priority-date-retrogressed-after-filing": {
+    "capture": {
+      "url": "/visa-bulletin/categories/eb2-india",
+      "clip": "h:How the cutoff has moved"
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "How the EB-2 India cutoff has moved, forward and back, bulletin by bulletin"
+  },
+  "guides/salary-high-enough-perm-h1b": {
+    "capture": {
+      "url": "/tools/wage-levels",
+      "width": 1000
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "The prevailing wage levels tool on permtracker.app, DOL's four levels for a job and area"
+  },
+  "guides/special-handling-university-teachers": {
+    "pdf": {
+      "file": "eta9089-appD.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "Form ETA-9089 Appendix D, page 1. U.S. Department of Labor, expires 02/28/2029",
+    "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/ETA-9089-AppendixD-Expires02-28-29.pdf",
+    "alt": "Appendix D of Form ETA-9089, special recruitment for college and university teachers"
+  },
+  "guides/eta-9089-expiration-and-i140-deadline": {
+    "pdf": {
+      "file": "eta9089-final.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "Form ETA-9089 Final Determination, page 1. U.S. Department of Labor, expires 02/28/2029",
+    "source": "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/ETA-9089-Final-Determination-Expires02-28-29.pdf",
+    "alt": "DOL's final determination: the certification approval with its filing, determination and expiration dates"
+  },
+  "guides/ead-renewal-no-automatic-extension": {
+    "pdf": {
+      "file": "fr-2026-20955.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "Federal Register, 91 FR 65306, October 14, 2026 (final rule). Office of the Federal Register",
+    "source": "https://www.govinfo.gov/content/pkg/FR-2026-10-14/pdf/2026-20955.pdf",
+    "alt": "The first page of the final rule removing automatic extensions for certain EADs"
+  },
+  "blog/client-status-updates-without-the-email-load": {
+    "capture": {
+      "url": "/for-attorneys",
+      "clip": "h:Put PERM Tracker on your firm's site"
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "The case-status box a firm can put on its own site, from permtracker.app"
+  },
+  "blog/docketwise-alternatives-for-perm": {
+    "capture": {
+      "url": "/for-attorneys",
+      "clip": "h:Type the dates. The rest is worked out."
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "A PERM case form that works out the deadlines from the dates entered"
+  },
+  "blog/docketwise-vs-inszoom-lollylaw-eimmigration": {
+    "capture": {
+      "url": "/for-attorneys",
+      "clip": "h:One page for the whole case"
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "One page for a whole PERM case, its dates, deadlines and history"
+  },
+  "blog/free-immigration-case-management-software": {
+    "capture": {
+      "url": "/calculators",
+      "clip": "h:Which one answers your question?"
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "The free PERM calculators on permtracker.app, matched to the question each answers"
+  },
+  "blog/h1b-sponsors-layoff-notices-october-2026": {
+    "capture": {
+      "url": "/layoffs",
+      "clip": "h:The notices, by month and by sponsor",
+      "width": 1000
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "WARN layoff notices from H-1B and PERM sponsors, by month and by sponsor"
+  },
+  "blog/immigration-software-pricing-2026": {
+    "photo": {
+      "file": "paperless-work-desk-with-an-ipad-imac-and-a-macbook.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
+    },
+    "credit": "Photo: FirmBee / Wikimedia Commons, CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Paperless_work_desk_with_an_iPad,_iMac_and_a_MacBook.jpg",
+    "alt": "A desk with a desktop computer, a laptop and a tablet"
+  },
+  "blog/opt-fee-proposal-2026": {
+    "pdf": {
+      "file": "fr-2026-20660.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "Federal Register, 91 FR 64566, October 8, 2026 (proposed rule). Office of the Federal Register",
+    "source": "https://www.govinfo.gov/content/pkg/FR-2026-10-08/pdf/2026-20660.pdf",
+    "alt": "The first page of the Federal Register proposal to charge fees for Optional Practical Training"
+  },
+  "blog/perm-attorney-fees-employer-must-pay": {
+    "pdf": {
+      "file": "fr-2007-e7-9250.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "Federal Register, 72 FR 27904, May 17, 2007 (final rule). Office of the Federal Register",
+    "source": "https://www.govinfo.gov/content/pkg/FR-2007-05-17/pdf/E7-9250.pdf",
+    "alt": "The first page of the 2007 PERM rule that made the employer pay its own attorney's fees"
+  },
+  "blog/perm-queue-october-2026": {
+    "capture": {
+      "url": "/perm-queue",
+      "clip": "h:The wall, by filing month"
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "The PERM cases still waiting, by the month they were filed"
+  },
+  "blog/proposed-perm-rule-rin-1205-ac29": {
+    "pdf": {
+      "file": "fr-2004-04-27653.pdf",
+      "page": 0,
+      "top": 0.0
+    },
+    "credit": "Federal Register, 69 FR 77326, December 27, 2004 (final rule). Office of the Federal Register",
+    "source": "https://www.govinfo.gov/content/pkg/FR-2004-12-27/pdf/04-27653.pdf",
+    "alt": "The first page of the 2004 rule that created PERM, the rule a new proposal would change"
+  },
+  "blog/rule-changes-since-august-2026": {
+    "capture": {
+      "url": "/policy-changes",
+      "clip": "h:The last twelve months",
+      "width": 960,
+      "fit": "contain"
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "Twelve months of Federal Register rules and DOL announcements on a timeline"
+  },
+  "blog/vendor-data-security-questions": {
+    "capture": {
+      "url": "/security"
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "How permtracker.app is run and secured, from its security page"
+  },
+  "guides/when-does-the-visa-bulletin-come-out": {
+    "capture": {
+      "url": "/visa-bulletin",
+      "clip": "fromm:When it comes out",
+      "width": 1000
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "The days of the month by which past visa bulletins were already out, on permtracker.app"
+  },
+  "guides/perm-filing-window-worked-example": {
+    "capture": {
+      "url": "/tools/perm-deadline-calculator",
+      "fill": [
+        {
+          "sel": "main input[type=date] >> nth=0",
+          "text": "2026-03-10"
+        },
+        {
+          "sel": "main input[type=date] >> nth=1",
+          "text": "2026-04-06"
+        },
+        {
+          "sel": "main input[type=date] >> nth=2",
+          "text": "2026-05-06"
+        }
+      ],
+      "clip": "h:Your PERM deadlines",
+      "width": 1000,
+      "fit": "contain",
+      "maxHeight": 700
+    },
+    "credit": "Screenshot of permtracker.app, October 17, 2026",
+    "alt": "The PERM deadline calculator with the example's dates: the filing window opens June 5, 2026 and closes October 3, 2026"
+  },
+  "guides/file-perm-after-prevailing-wage-expires": {
+    "pdf": {
+      "file": "karl-storz-2011-per-00040.pdf",
+      "page": 15,
+      "top": 0.0,
+      "anchor": "bottom"
+    },
+    "credit": "Karl Storz Endoscopy-America, 2011-PER-00040 (Dec. 1, 2011), page 16. U.S. Department of Labor, Board of Alien Labor Certification Appeals",
+    "source": "https://www.oalj.dol.gov/DECISIONS/ALJ/PER/2011/In_re_KARL_STORZ_ENDOSCOPY_2011PER00040_(DEC_01_2011)_091125_CADEC_SD.PDF",
+    "alt": "The page of the Board's en banc Karl Storz decision holding that an employer who begins recruitment before its wage determination must file while the determination is valid"
+  },
+  "guides/uscis-silent-updates": {
+    "photo": {
+      "file": "uscis-asc-jamaica-queens-tdorante10.jpg",
+      "focus": [
+        0.5,
+        0.45
+      ]
+    },
+    "credit": "Photo: Tdorante10 / Wikimedia Commons, CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Jamaica_Av_153rd_St_td_(2022-04-11)_02_-_USCIS_Application_Support_Center.jpg",
+    "alt": "A USCIS Application Support Center on Jamaica Avenue in Queens, New York, where applicants give fingerprints and photos"
+  },
+  "guides/how-to-find-your-soc-code": {
+    "capture": {
+      "url": "/soc-codes/data-scientist",
+      "clip": "fromm:SOC code for Data Scientist",
+      "maxHeight": 1000
+    },
+    "credit": "Screenshot of permtracker.app, October 29, 2026",
+    "alt": "The SOC codes employers filed Data Scientist under on permtracker.app, each with its share of the filings, BLS pay and Job Zone"
+  },
+  "guides/perm-job-description-from-soc-code": {
+    "photo": {
+      "file": "us-employment-service-this-way-to-a-job-1943.jpg",
+      "focus": [
+        0.5,
+        0.45
+      ]
+    },
+    "credit": "Photo: Office of War Information, 1943, Library of Congress",
+    "source": "https://commons.wikimedia.org/wiki/File:Advertisement_of_the_United_States_Employment_Service,_8d16963v.jpg",
+    "alt": "A 1943 sign over a storefront that reads This Way to a Job, U.S. Employment Service"
+  },
+  "changelog/federal-records-and-three-calculators": {
+    "capture": {
+      "url": "/wage-violations",
+      "clip": "fromm:H-1B"
+    },
+    "credit": "Screenshot of permtracker.app, November 2, 2026",
+    "alt": "H-1B wage violations by fiscal year, and the largest back wages, on permtracker.app"
+  },
+  "changelog/layoffs-reported-on-perm": {
+    "capture": {
+      "url": "/perm-layoff-disclosures",
+      "clip": "fromm:Whose applications said yes"
+    },
+    "credit": "Screenshot of permtracker.app, November 3, 2026",
+    "alt": "The layoffs reported on PERM page: one hundred squares showing one employer's share of the applications that said yes"
+  },
+  "changelog/where-dol-is-and-job-codes": {
+    "tour": {
+      "file": "job-code-light.webp",
+      "focus": [
+        0.5,
+        0.0
+      ]
+    },
+    "credit": "The PERM Tracker app, drawn from a sample firm's cases",
+    "alt": "The case form's SOC code box offering the codes employers filed Operations Research Analyst under, with each code's share"
+  },
+  "guides/immigrant-visa-interview-pause": {
+    "photo": {
+      "file": "us-embassy-london-nine-elms.jpg",
+      "focus": [
+        0.55,
+        0.5
+      ]
+    },
+    "credit": "Photo: Curran2 / Wikimedia Commons, CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/w/index.php?curid=57591541",
+    "alt": "The US Embassy in London at Nine Elms, seen across the Thames from Pimlico"
+  },
+  "changelog/consulates-and-the-interview-pause": {
+    "capture": {
+      "url": "/consular-posts",
+      "clip": "sel:main figure",
+      "css": "main figure li:nth-child(n+9){display:none!important}"
+    },
+    "credit": "Screenshot of permtracker.app, November 3, 2026",
+    "alt": "The consulates page: how far back each post is scheduling employment cases, Dhaka, Manila, Ciudad Juárez and Guangzhou first"
+  },
+  "changelog/every-visa-at-each-consulate": {
+    "capture": {
+      "url": "/consular-posts",
+      "clip": "sel:main figure",
+      "css": "main figure li:nth-child(n+9){display:none!important}"
+    },
+    "credit": "Screenshot of permtracker.app, November 5, 2026",
+    "alt": "The consulates page: how far back each post is scheduling cases, with a switch for employment, family preference and immediate relative visas"
+  },
+  "guides/how-long-lca-certification-takes": {
+    "photo": {
+      "file": "how-long-lca-certification-takes.jpg",
+      "focus": [
+        0.47,
+        0.5
+      ]
+    },
+    "credit": "Photo: G. Edward Johnson / Wikimedia Commons, CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Department_of_Labor_entrance_Washington_DC_2025-02-04_12-40-36.jpg",
+    "alt": "The fountain entrance of the Frances Perkins Building in Washington, the Department of Labor's headquarters, with DEPARTMENT OF LABOR lettered above the doors"
+  },
+  "guides/perm-rfi-response-time": {
+    "photo": {
+      "file": "perm-rfi-response-time.jpg",
+      "focus": [
+        0.45,
+        0.5
+      ]
+    },
+    "credit": "Photo: Niklas Bildhauer / Wikimedia Commons, CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:FileStack.jpg",
+    "alt": "A thick stack of papers held in a ring binder, seen edge on, with a few blue, green and yellow sheets among the white"
+  },
+  "guides/remote-work-and-perm": {
+    "photo": {
+      "file": "remote-work-and-perm.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
+    },
+    "credit": "Photo: Free-Photos / Pixabay, via Wikimedia Commons, CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Home-office-336377.jpg",
+    "alt": "A laptop, an open notebook with a pen, a phone and a cup of coffee on a wooden table, the kind of home desk a remote job is done from"
+  },
+  "guides/where-to-file-perm-worksite": {
+    "photo": {
+      "file": "where-to-file-perm-worksite.jpg",
+      "focus": [
+        0.5,
+        0.52
+      ]
+    },
+    "credit": "Photo: Tdorante10 / Wikimedia Commons, CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:South_Av_Corporate_Park_SI_td_(2025-07-28)_013a_-_Southport_Plaza_(1150_South_Avenue).jpg",
+    "alt": "Southport Plaza, a long beige office building behind a fence and a parking lot in the Staten Island Corporate Park, the kind of office campus a consultant can be placed at"
+  },
+  "guides/perm-experience-gained-with-employer": {
+    "photo": {
+      "file": "perm-experience-gained-with-employer.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
+    },
+    "credit": "Photo: NASA Glenn Research Center, GRC-1955-C-39724, February 21, 1955 / Wikimedia Commons, public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:NACA_Apprentice_is_Trained_on_the_Lab%27s_Altitude_Systems_(GRC-1955-C-39724).jpg",
+    "alt": "An apprentice works among the curved steel vanes of a large air duct at NACA's Lewis Flight Propulsion Laboratory in 1955, while a second worker stands on the vanes above"
+  },
+  "guides/green-card-job-future-job": {
+    "photo": {
+      "file": "green-card-job-future-job.jpg",
+      "focus": [
+        0.4,
+        0.25
+      ]
+    },
+    "credit": "Photo: Bradley Weber, May 10, 2011 / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Help_Wanted_-_Nebraska_(44113871694).jpg",
+    "alt": "A hand-painted Help Wanted sign on a wooden post at the edge of a grass field in Nebraska, under a clear sky"
+  },
+  "guides/priority-date-retention-new-employer": {
+    "photo": {
+      "file": "priority-date-retention-new-employer.jpg",
+      "focus": [
+        0.45,
+        0.5
+      ]
+    },
+    "credit": "Photo: Carol M. Highsmith, April 5, 2016. Carol M. Highsmith Archive, Library of Congress, Prints and Photographs Division",
+    "source": "https://commons.wikimedia.org/wiki/File:Revolving_door._New_Carrollton_Federal_Office_Building,_New_Carrollton,_Maryland_LCCN2016648245.tif",
+    "alt": "A glass revolving door at the entrance of a federal office building in New Carrollton, Maryland, the way out of one workplace and into the next"
+  },
+  "guides/perm-case-tracking-spreadsheet": {
+    "photo": {
+      "file": "perm-case-tracking-spreadsheet.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
+    },
+    "credit": "John Carlin, account book, 1835 to 1856. The Metropolitan Museum of Art, via Wikimedia Commons, CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Account_Book_Ledger_MET_DP214203.jpg",
+    "alt": "An account book from the 1830s open to two pages of dated, handwritten entries in ruled columns, kept by the painter John Carlin"
+  },
+  "guides/why-prevailing-wage-ends-june-30": {
+    "photo": {
+      "file": "why-prevailing-wage-ends-june-30.jpg",
+      "focus": [
+        0.5,
+        0.85
+      ]
+    },
+    "credit": "Edward Penfield, April May June 1897 calendar, color lithograph. Library of Congress, Prints and Photographs Division",
+    "source": "https://commons.wikimedia.org/wiki/File:April_May_June_1897_calendar_LCCN2015646485.jpg",
+    "alt": "The calendar grid of a printed 1897 calendar by Edward Penfield, showing April, May and June, the stretch of the year when a new determination runs for 90 days"
+  },
+  "guides/uscis-congressional-inquiry": {
+    "photo": {
+      "file": "uscis-congressional-inquiry.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
+    },
+    "credit": "Photo: Bill Koplitz, FEMA, December 4, 2007 / Wikimedia Commons, public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:FEMA_-_34358_-_US_Capitol_from_the_West_Side.jpg",
+    "alt": "The U.S. Capitol's dome and columned west front, seen from below under a clear blue sky"
+  },
+  "changelog/find-a-case-without-its-number": {
+    "capture": {
+      "url": "/perm-case-status",
+      "wait": 4000,
+      "open": "button:has-text(\"Find it by employer and filing date\")",
+      "fill": [
+        {
+          "sel": "input[autocomplete=\"organization\"]",
+          "text": "UBS"
+        },
+        {
+          "sel": "section:has(> p:text-is(\"Find your case without the number\")) input[type=\"date\"]",
+          "text": "2026-01-05",
+          "wait": 2500
+        }
+      ],
+      "clip": "sel:main div:has(> form[method=\"get\"])",
+      "maxHeight": 1100
+    },
+    "credit": "Screenshot of permtracker.app, November 10, 2026",
+    "alt": "The case finder open under the case number box on permtracker.app, listing one employer's four PERM cases filed on January 5, 2026, each with its status"
+  },
+  "changelog/the-answer-first-and-uscis-times-by-category": {
+    "capture": {
+      "url": "/",
+      "wait": 5000
+    },
+    "credit": "Screenshot of permtracker.app, November 10, 2026",
+    "alt": "The top of permtracker.app's homepage: the month DOL is working on with its chart on the left, and on the right the case number box with links to I-140 times, the visa bulletin and I-485 times"
+  },
+  "changelog/case-lists-start-with-the-search": {
+    "capture": {
+      "url": "/pwd-cases",
+      "wait": 7000,
+      "height": 1380
+    },
+    "credit": "Screenshot of permtracker.app, November 11, 2026",
+    "alt": "The top of permtracker.app's wage request list: the title, one box that takes an employer or a case number, and three figures with small charts under it"
+  },
+  "blog/h1b-offers-after-the-weighted-lottery": {
+    "photo": {
+      "file": "chet-holifield-federal-building-2020.jpg",
+      "focus": [
+        0.5,
+        0.62
+      ]
+    },
+    "credit": "Photo: CashewCraver / Wikimedia Commons, CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Chet_Holifield_Federal_Building_2020.jpg",
+    "alt": "The Chet Holifield Federal Building in Laguna Niguel, California, a long, stepped federal office building, seen from a hill"
+  },
+  "changelog/when-dol-starts-the-next-month": {
+    "capture": {
+      "url": "/perm-queue",
+      "wait": 5000,
+      "clip": "sel:#next-month",
+      "maxHeight": 900
+    },
+    "credit": "Screenshot of permtracker.app, November 16, 2026",
+    "alt": "The queue page's new section: when DOL will likely start March 2026, a bar of February's decided cases, and the band where the last three months began"
+  },
+  "changelog/how-long-each-review-stage-takes": {
+    "capture": {
+      "url": "/perm-rfi-audit/reconsideration-appeals",
+      "wait": 5000,
+      "clip": "sel:#each-week",
+      "maxHeight": 900
+    },
+    "credit": "Screenshot of permtracker.app, November 17, 2026",
+    "alt": "The reconsideration page's weekly chart: the PERM cases leaving reconsideration each week since August 31, split into certified, back to review, another step, and denied or NORD issued"
+  },
+  "changelog/decisions-by-day-week-month-or-year": {
+    "capture": {
+      "url": "/perm-decision-activity#by-month",
+      "wait": 6000,
+      "clip": "sel:#over-time",
+      "maxHeight": 900
+    },
+    "credit": "Screenshot of permtracker.app, November 17, 2026",
+    "alt": "The decisions chart on its month view: PERM decisions in each of the last 12 months, split into certified, denied and withdrawn, each with a mark for the same days a year earlier, an empty frame for July 2026, and a typical year by month beside it"
+  },
+  "changelog/account-updates-on-your-timeline": {
+    "capture": {
+      "url": "/i485-by-field-office/hartford-connecticut",
+      "wait": 6000,
+      "clip": "sel:#share",
+      "maxHeight": 900
+    },
+    "credit": "Screenshot of permtracker.app, November 17, 2026",
+    "alt": "The timeline form's account updates: the first update dated June 1, 2026 on the I-485, its code typed under Other as XQ7 with the rule beneath it, and a second update waiting for its date"
+  },
+  "changelog/read-your-uscis-account-updates": {
+    "capture": {
+      "url": "/uscis-account-reader",
+      "wait": 6000,
+      "clip": "sel:[data-testid=reading]",
+      "maxHeight": 900
+    },
+    "credit": "Screenshot of permtracker.app, November 17, 2026",
+    "alt": "The USCIS account reader after a paste: an I-485 with its receipt masked, four updates by date (IAF, FTA0 twice, IK1) each with a few words, and below them what each code is known to mean and where that reading comes from"
+  },
+  "guides/i485-timeline-each-step": {
+    "capture": {
+      "url": "/green-card-timelines",
+      "clip": "h:The I-485",
+      "width": 1000
+    },
+    "credit": "Screenshot of permtracker.app, November 20, 2026",
+    "alt": "Each step of an employment-based I-485 drawn as a bar of days, from the cases people reported to PERM Tracker"
+  },
+  "guides/i485-interview-to-green-card": {
+    "capture": {
+      "url": "/green-card-timelines",
+      "clip": "h:Approvals reported this week",
+      "width": 1000
+    },
+    "credit": "Screenshot of permtracker.app, November 20, 2026",
+    "alt": "The work permits and green cards people reported this week on PERM Tracker, counted from every source"
+  },
+  "guides/i485-transferred-to-field-office": {
+    "capture": {
+      "url": "/i485-by-field-office/san-fernando-valley-california",
+      "clip": "h:How long each step took here, as people report it",
+      "width": 1000
+    },
+    "credit": "Screenshot of permtracker.app, November 20, 2026",
+    "alt": "The days from filing an I-485 to its move to a field office, and from the move to the green card, from the cases people reported to PERM Tracker"
+  },
+  "changelog/every-reported-case-every-figure": {
+    "capture": {
+      "url": "/green-card-timelines",
+      "clip": "h:Who's waiting, and where",
+      "width": 1000
+    },
+    "credit": "Screenshot of permtracker.app, November 20, 2026",
+    "alt": "Who's waiting, and where: the people heard from in the last year, at the furthest step each reported, counted from every source"
+  }
 }
