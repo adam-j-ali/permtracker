@@ -329,6 +329,40 @@ export const dolBasisFor = cache(async (code: string): Promise<DolBasis | null> 
   };
 });
 
+/** One O*NET occupation under a job code, as DOL's yearly table gives it: what the level estimate compares against. */
+export interface OccupationBasisRow {
+  onetCode: string;
+  title: string;
+  jobZone: number | null;
+  education: string | null;
+  appendixA: boolean;
+}
+
+/**
+ * Every O*NET occupation DOL's newest table holds under a six-digit job code, the ".00" one first: its Job Zone,
+ * usual education and Appendix A status (`oflc_occupation_basis`, from each year's OFLC wage file). Empty when the
+ * code has none; a failed read throws, so the caller says it couldn't read the table.
+ */
+export async function occupationsForSoc(code: string): Promise<{ wageYear: number; occupations: OccupationBasisRow[] }> {
+  const soc = socGroup(code);
+  if (!soc) return { wageYear: 0, occupations: [] };
+  const got = await rows<Record<string, unknown>>(
+    "SELECT wage_year, onet_code, title, job_zone, education, appendix_a FROM oflc_occupation_basis " +
+      "WHERE soc7 = ? AND wage_year = (SELECT max(wage_year) FROM oflc_occupation_basis WHERE soc7 = ?) ORDER BY onet_code",
+    [soc, soc],
+  );
+  return {
+    wageYear: got.length ? Number(got[0]!.wage_year) : 0,
+    occupations: got.map((r) => ({
+      onetCode: String(r.onet_code),
+      title: String(r.title ?? ""),
+      jobZone: r.job_zone == null || r.job_zone === "" ? null : Number(r.job_zone),
+      education: r.education == null || r.education === "" ? null : String(r.education),
+      appendixA: Number(r.appendix_a) === 1,
+    })),
+  };
+}
+
 export interface WageLevelYear {
   wageYear: number;
   /** As DOL publishes them: hourly, or yearly when `annual`. */

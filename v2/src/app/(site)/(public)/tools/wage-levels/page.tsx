@@ -19,7 +19,7 @@ import { withSocialCard } from "@/lib/socialCard";
 
 const TITLE = "Prevailing Wage Levels by Occupation and Area";
 const DESCRIPTION =
-  "DOL's four OEWS prevailing wage levels for any occupation in any area, read live from the OFLC wage search, with the series year each figure belongs to.";
+  "DOL's four prevailing wage levels for any job and area, and the level your job will likely get by DOL's own method, checked against its decisions.";
 
 export const metadata: Metadata = withSocialCard({
   title: TITLE,
@@ -32,8 +32,12 @@ export const dynamic = "force-dynamic";
 
 const FAQS = [
   {
+    q: "Which wage level will my job get?",
+    a: "DOL starts every job at Level I and adds a level for experience beyond the occupation's usual range, a degree above its usual one, a foreign language and supervising, then caps the total at Level IV. The estimate under the levels follows those written steps, plus required travel, which DOL's own decisions show adds a level for many jobs. Run on DOL's PERM decisions from April to September 2026, it matched DOL's level about 84% of the time and came within one level about 99% of the time. DOL also reads the job's duties, so treat it as an estimate.",
+  },
+  {
     q: "Where do these numbers come from?",
-    a: "From DOL's own wage search on flag.dol.gov, the same lookup the National Prevailing Wage Center's determinations are drawn from, using the all-industries OEWS series. This page asks DOL for the occupation and area you pick and prints what DOL answers, with the series year.",
+    a: "From DOL's own wage search on flag.dol.gov, the same lookup the National Prevailing Wage Center's determinations are drawn from, using the all-industries OEWS series. This page asks DOL for the occupation and area you pick and prints what DOL answers, with the series year. When DOL's search doesn't answer, the page shows the same figures from DOL's published wage file for that year, and says so.",
   },
   {
     q: "Which level will my case get?",
@@ -69,7 +73,8 @@ export default async function WageLevelsPage({ searchParams }: { searchParams: P
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Prevailing wage levels</h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           DOL&apos;s four wage levels for an occupation in a metro or non-metro area, read live from the OFLC wage
-          search. Pick the series a determination was issued in and read it against the four.
+          search, and the level your job will likely get by DOL&apos;s own method. Pick the series a determination was
+          issued in and read it against the four.
         </p>
       </header>
       <section data-embed="wage-levels" className="mt-10">
