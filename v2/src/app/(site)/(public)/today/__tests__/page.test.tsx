@@ -39,7 +39,7 @@ vi.mock("@/lib/db/board", () => ({ getPermBoard: async () => board.perm, getPwdB
 vi.mock("@/lib/db/bulletin", () => ({ getBulletinBoard: async () => null }));
 vi.mock("@/lib/db/liveCensus", () => ({ getLiveCensus: async () => null }));
 vi.mock("@/lib/db/publicData", () => ({ getVisaBulletins: async () => [] }));
-vi.mock("@/lib/db/sweepCoverage", () => ({ getSweepCoverage: async () => null }));
+vi.mock("@/lib/db/sweepCoverage", () => ({ getSweepCoverage: async () => null, getCheckTimes: async () => null }));
 vi.mock("@/lib/db/uscisQuarterly", () => ({ getUscisFormHistory: async () => [], getUscisFormMedian: async () => null }));
 vi.mock("@/lib/softRead", () => ({ softFail: () => () => null }));
 

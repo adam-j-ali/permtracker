@@ -4,6 +4,7 @@ import { cache } from "react";
 import { MS_PER_DAY } from "@/lib/time";
 import { one } from "./client";
 import { softFail } from "@/lib/softRead";
+import { checkTimes, type CheckTimes } from "@/lib/checkTimes";
 
 /**
  * When our DOL sweep last finished, and how much of the corpus it answered.
@@ -52,6 +53,29 @@ export const getSweepCoverage = cache(async (): Promise<SweepCoverage | null> =>
   } catch {
     return null;
   }
+});
+
+/**
+ * When any pass last finished asking DOL, epoch ms: perm_docs['latest_check'], stamped by every pass that checked
+ * cases, the 15-minute daytime pass included. The same eight-day cutoff as the complete read's record.
+ */
+export const getLatestCheck = cache(async (): Promise<number | null> => {
+  const r = await one<{ computed_at: number | string }>(
+    "SELECT computed_at FROM perm_docs WHERE key = ?",
+    ["latest_check"],
+  ).catch(softFail("sweepCoverage.getLatestCheck", null));
+  if (!r) return null;
+  const at = Number(r.computed_at);
+  return Number.isFinite(at) && Date.now() - at <= MAX_AGE_MS ? at : null;
+});
+
+/** The times a page prints for DOL's PERM record: the newest check, and the last complete read beside it. */
+export const getCheckTimes = cache(async (): Promise<CheckTimes | null> => {
+  const [coverage, latest] = await Promise.all([
+    getSweepCoverage().catch(softFail("sweepCoverage.getCheckTimes.coverage", null)),
+    getLatestCheck(),
+  ]);
+  return checkTimes(latest, coverage?.checkedAt ?? null);
 });
 
 /** The later of two ISO timestamps/dates, comparing their date part. */

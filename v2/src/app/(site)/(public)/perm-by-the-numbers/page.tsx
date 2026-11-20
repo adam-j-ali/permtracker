@@ -250,11 +250,11 @@ export default async function PermByTheNumbersPage() {
       <header className="max-w-3xl">
         <h1 className="font-heading text-4xl font-bold leading-tight">{H1}</h1>{" "}
         <p className="mt-4 text-lg leading-relaxed text-soft">
-          What DOL&rsquo;s own case records add up to, counted each night from its case-status search. DOL doesn&rsquo;t
+          What DOL&rsquo;s own case records add up to, recounted each time we read its case-status search in full, up to four times a day. DOL doesn&rsquo;t
           publish these totals itself.
         </p>{" "}
         {coverage ? (
-          <p className="mt-3 font-mono text-sm text-muted-foreground">Checked against DOL {checkedLabel(coverage.checkedAt)}</p>
+          <p className="mt-3 font-mono text-sm text-muted-foreground">Every waiting case read in full by {checkedLabel(coverage.checkedAt)}</p>
         ) : null}
       </header>{" "}
 

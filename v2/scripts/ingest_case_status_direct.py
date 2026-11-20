@@ -1095,6 +1095,34 @@ def write_employer_stages(db) -> None:
         f"{len(payload):,} bytes)")
 
 
+LATEST_CHECK_DOC = "latest_check"
+
+
+def latest_check_doc(mode: str, asked: int, checked: int, finished_ms: int) -> dict | None:
+    """perm_docs['latest_check']: when a pass last finished asking DOL, by any pass.
+
+    The pages print this as "checked": the daytime pass rewrites the decisions every 15 minutes, so the time of the
+    last complete read (sweep_coverage) sits under figures newer than it. None for a run that checked nothing, which
+    must never move the time a page prints.
+    """
+    if checked <= 0:
+        return None
+    return {"mode": mode, "asked": int(asked), "checked": int(checked), "finishedAt": int(finished_ms)}
+
+
+def write_latest_check(db, mode: str, asked: int, checked: int) -> None:
+    """Store the newest check's time. A failed write is logged: the pages then print the last complete read's
+    time, which is older but still true."""
+    doc = latest_check_doc(mode, asked, checked, int(time.time() * 1000))
+    if doc is None:
+        return
+    try:
+        write_doc(db, LATEST_CHECK_DOC, doc, computed_at=doc["finishedAt"])
+        log(f"wrote     latest_check ({mode}: {checked:,} of {asked:,} checked)")
+    except Exception as exc:  # noqa: BLE001 - a stamp must never fail the pass that earned it
+        log(f"NOT writing latest_check: {exc}")
+
+
 def write_sweep_coverage(db) -> None:
     """Project the newest complete sweep into perm_docs['sweep_coverage'].
 
@@ -2233,6 +2261,10 @@ def main() -> int:
         log("reconcile mode: statuses corrected, NO events written")
 
     log(f"wrote     {written['u']:,} status changes, {written['e']:,} events")
+
+    # A test slice (--limit, --offset) or a reconcile isn't a check a page can print.
+    if not (args.limit or args.offset or args.reconcile):
+        write_latest_check(db, pass_mode or "pending", asked=len(todo), checked=checked)
 
     if checked and args.active:
         # Not a check of every case: no freshness stamp, no sweep record, no walk. Only the series the day's pages

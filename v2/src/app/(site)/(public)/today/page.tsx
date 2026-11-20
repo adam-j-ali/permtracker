@@ -43,14 +43,14 @@ import { getPermBoard, getPwdBoard } from "@/lib/db/board";
 import { getBulletinBoard } from "@/lib/db/bulletin";
 import { getLiveCensus } from "@/lib/db/liveCensus";
 import { getVisaBulletins } from "@/lib/db/publicData";
-import { getSweepCoverage } from "@/lib/db/sweepCoverage";
+import { getCheckTimes } from "@/lib/db/sweepCoverage";
 import { getUscisFormHistory, getUscisFormMedian } from "@/lib/db/uscisQuarterly";
 import { parseCutoff, type BulletinMonth, type CountryKey } from "@/lib/perm";
 import { GROUPS, SECTIONS } from "@/lib/siteMap";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { cn } from "@/lib/utils";
-import { checkedLabel } from "@/lib/time";
+import { checkedPhrase } from "@/lib/checkTimes";
 import { monthDay, monthYear, shiftMonth, shortDate } from "@convex/lib/months";
 import { softFail } from "@/lib/softRead";
 
@@ -95,13 +95,13 @@ const BULLETIN_CATEGORIES = ["EB1", "EB2", "EB3", "EW3"];
 const BULLETIN_COUNTRIES: CountryKey[] = ["worldwide", "china", "india", "mexico", "philippines"];
 
 export default async function TodayPage() {
-  const [perm, pwd, census, series, coverage, i140, bulletins, i485, i485History, bulletinBoard] = await Promise.all([
+  const [perm, pwd, census, series, checks, i140, bulletins, i485, i485History, bulletinBoard] = await Promise.all([
     getPermBoard().catch(softFail("today/page.getPermBoard", null)),
     getPwdBoard().catch(softFail("today/page.getPwdBoard", null)),
     getLiveCensus().catch(softFail("today/page.getLiveCensus", null)),
     // Both whole records of decisions, DOL's file and our check, for the chart's days, weeks, months and years.
     getActivitySeries().catch(softFail("today/page.getActivitySeries", [])),
-    getSweepCoverage().catch(softFail("today/page.getSweepCoverage", null)),
+    getCheckTimes().catch(softFail("today/page.getCheckTimes", null)),
     getUscisFormHistory("I-140").catch(softFail("today/page.getUscisFormHistory.i140", [])),
     getVisaBulletins().catch(softFail("today/page.getVisaBulletins", [])),
     getUscisFormMedian("I-485", "Employment").catch(softFail("today/page.getUscisFormMedian.i485", null)),
@@ -300,7 +300,7 @@ export default async function TodayPage() {
       <header className="flex flex-wrap items-end justify-between gap-x-10 gap-y-3">
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Where every step stands today</h1>{" "}
         <p className="text-sm text-soft">
-          From DOL, USCIS and the State Department{coverage?.checkedAt ? <>, checked {checkedLabel(coverage.checkedAt)}</> : null}
+          From DOL, USCIS and the State Department{checks ? <>, PERM cases {checkedPhrase(checks)}</> : null}
         </p>
       </header>{" "}
       <div className="mt-10">

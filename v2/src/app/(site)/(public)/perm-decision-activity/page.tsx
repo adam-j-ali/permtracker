@@ -34,7 +34,7 @@ import { dolDays } from "@/lib/dolDays";
 import { decisionViews } from "@/lib/decisionPeriods";
 import { getPwdNowDocs } from "@/lib/db/pwdDayQueue";
 import { easternDay } from "@convex/lib/time";
-import { getSweepCoverage } from "@/lib/db/sweepCoverage";
+import { getCheckTimes } from "@/lib/db/sweepCoverage";
 import { OutcomeMix } from "@/components/activity/OutcomeMix";
 import { WeekdayShape } from "@/components/activity/WeekdayShape";
 import { ChangeFeedBrowser } from "@/components/activity/ChangeFeedBrowser";
@@ -99,7 +99,7 @@ function monthYear(iso: string | undefined): string | null {
 }
 
 export default async function DecisionActivityPage() {
-  const [series, mirrorSize, activity, windows, coverage, wageDocs] = await Promise.all([
+  const [series, mirrorSize, activity, windows, checks, wageDocs] = await Promise.all([
     getActivitySeries(),
     getLiveMirrorSize(),
     // The event record is days old, so a failure here must not take the whole
@@ -116,7 +116,7 @@ export default async function DecisionActivityPage() {
     // lands or the sweep runs, so a hardcoded pair of dates would silently
     // under-report coverage for months.
     getCoverageWindows().catch(softFail<CoverageWindows>("perm-decision-activity/page.getCoverageWindows", { decided: null, observed: null })),
-    getSweepCoverage().catch(softFail("perm-decision-activity/page.getSweepCoverage", null)),
+    getCheckTimes().catch(softFail("perm-decision-activity/page.getCheckTimes", null)),
     // The wage check's day document, for the determinations beside PERM's decisions. It soft-fails to null inside,
     // and the board then says "not counted" for the wage side.
     getPwdNowDocs(),
@@ -176,7 +176,7 @@ export default async function DecisionActivityPage() {
         <div className="mt-8">
           <PermPulse
             days={live.days.slice(-56)}
-            checkedAt={coverage?.checkedAt ?? null}
+            checkedAt={checks?.newest ?? null}
             showLink={false}
             variant="block"
             views={views}

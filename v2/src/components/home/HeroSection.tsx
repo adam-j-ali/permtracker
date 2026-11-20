@@ -11,7 +11,7 @@ import { CaseLookupForm } from "@/components/tools/CaseLookupForm";
 import { CasePromises } from "@/components/tools/CasePromises";
 import { HeroSteps } from "@/components/home/HeroSteps";
 import { aboutMonths } from "@/lib/board";
-import { checkedLabel } from "@/lib/time";
+import { checkedPhrase, type CheckTimes } from "@/lib/checkTimes";
 import { formatMonth, formatMonthDay } from "@/lib/dolFormat";
 import { formatInt } from "@/lib/format";
 import type { HomeMonth } from "@/lib/homeMonths";
@@ -49,8 +49,8 @@ export interface HeroBoard {
   pending: number | null;
   /** Prevailing wage requests waiting at DOL, from its own backlog table. */
   pwdPending?: number | null;
-  /** When the sweep last checked DOL, epoch ms. */
-  checkedAt: number | null;
+  /** When DOL's record was last checked, and last read in full. */
+  checks: CheckTimes | null;
 }
 
 export interface HeroSectionProps {
@@ -188,7 +188,7 @@ export function HeroSection({ wait = null, board, months = [], trends = {}, appr
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-base text-soft sm:text-lg">
           From the Department of Labor&apos;s own records
-          {board?.checkedAt ? <>, checked {checkedLabel(board.checkedAt)}</> : null}.
+          {board?.checks ? <>, {checkedPhrase(board.checks)}</> : null}.
         </p>{" "}
         </div>{" "}
         <div className="lg:[grid-area:box]">
