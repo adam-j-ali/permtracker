@@ -111,9 +111,11 @@ export function MonthlyFlow({ months, gapReason }: { months: readonly FlowMonth[
             <span aria-hidden="true" className={`inline-block size-3 border border-input ${o.fill}`} /> {o.label}{" "}
           </li>
         ))}
-        <li className="flex items-center gap-2">
-          <span aria-hidden="true" className="inline-block h-3 w-3 border-2 border-dashed border-input" /> no complete record{" "}
-        </li>
+        {totals.noRecord.length > 0 ? (
+          <li className="flex items-center gap-2">
+            <span aria-hidden="true" className="inline-block h-3 w-3 border-2 border-dashed border-input" /> no complete record{" "}
+          </li>
+        ) : null}
       </ul>{" "}
       {totals.noRecord.length > 0 ? (
         <p className="mt-3 text-sm text-soft">

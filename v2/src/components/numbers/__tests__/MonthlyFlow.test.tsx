@@ -36,6 +36,29 @@ describe("MonthlyFlow", () => {
     expect(screen.getByText(/have no complete record: the reason\./)).toBeTruthy();
   });
 
+  it("shows no key for a missing month when every month has a record", () => {
+    // DOL's newest file reaching past the day the sweep began: every month has a record.
+    const whole = monthlyFlow({
+      from: "2026-07",
+      today: "2026-10-28",
+      filed: [{ month: "2026-07", total: 9000 }],
+      decided: ["2026-07", "2026-08", "2026-09", "2026-10"].map((month) => ({
+        month,
+        source: "dol-disclosure" as const,
+        total: 100,
+        certified: 90,
+        denied: 5,
+        withdrawn: 5,
+      })),
+      spans: [
+        { source: "dol-disclosure", first: "2015-10-01", last: "2026-09-30" },
+        { source: "sweep-observed", first: "2026-08-27", last: "2026-10-26" },
+      ],
+    });
+    render(<MonthlyFlow months={whole} gapReason="the reason." />);
+    expect(screen.queryByText(/no complete record/)).toBeNull();
+  });
+
   it("totals the months picked, and switching the period changes them", () => {
     render(<MonthlyFlow months={flow} gapReason="r." />);
     const total = (text: string) => screen.queryAllByText(text).some((e) => e.tagName === "DD");
