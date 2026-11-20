@@ -292,9 +292,13 @@ def main() -> int:
         n = load(db, records, force=a.force)
         sources = sorted({r["source"] for r in records})
         for s in sources:
+            # Telegram loads every hour from the owner's Mac, so a day without one means that job stopped; Reddit is
+            # loaded by hand.
+            hourly = s == "telegram"
             stamp_freshness(db, f"community-posts-{s}",
                             source={"reddit": "https://arctic-shift.photon-reddit.com", "telegram": "https://t.me"}.get(s, s),
-                            cadence="by hand", note=f"{sum(r['source'] == s for r in records):,} reports", max_age_days=60)
+                            cadence="hourly, from the owner's Mac" if hourly else "by hand",
+                            note=f"{sum(r['source'] == s for r in records):,} reports", max_age_days=1 if hourly else 60)
         record_run(db, "ingest_community_posts.py", status="ok", rows_written=n,
                    note=f"{n:,} reports from {', '.join(sources)}", started_at=started)
         print(f"{n:,} reports loaded")
