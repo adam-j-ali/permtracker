@@ -11,6 +11,7 @@ import * as Sentry from "@sentry/nextjs";
 
 import { serverEventFromStrayPost } from "./src/lib/exceptionNoise";
 import { createSentryBudget } from "./src/lib/sentryBudget";
+import { scrubShareKeys } from "./src/lib/sentryRedact";
 
 // A per-process ceiling on what reaches Sentry in an hour (src/lib/sentryBudget.ts):
 // far above a normal day, so a storm cannot spend the monthly allowance.
@@ -46,8 +47,11 @@ Sentry.init({
 
 
   // A stranger's POST to a page (a scanner, a broken client) is not an error of ours: src/lib/exceptionNoise.ts.
-  beforeSend: (event) => (serverEventFromStrayPost(event) ? null : budget.error(event)),
-  beforeSendLog: (log) => budget.log(log),
+  // Nothing sent carries a shared recruitment record's key: an error's request URL and path, a trace's spans and a
+  // log line all name the page by its address (scrubShareKeys, src/lib/sentryRedact.ts).
+  beforeSend: (event) => (serverEventFromStrayPost(event) ? null : budget.error(scrubShareKeys(event))),
+  beforeSendTransaction: (event) => scrubShareKeys(event),
+  beforeSendLog: (log) => budget.log(scrubShareKeys(log)),
 
   integrations: [
     // Forward console.warn and console.error to Sentry Logs

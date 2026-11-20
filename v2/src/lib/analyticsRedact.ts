@@ -49,9 +49,17 @@ const REDACTED = "[redacted]";
  */
 const SHARE_KEY = /((?:\/|%2F)share(?:\/|%2F)recruitment(?:\/|%2F))[A-Za-z0-9_-]+/gi;
 
+/**
+ * A string with every share link's key replaced by "redacted", the path before it kept. PostHog's scrub below and
+ * Sentry's (src/lib/sentryRedact.ts, scrubShareKeys) both use it, as does /api/client-error.
+ */
+export function redactShareKey(s: string): string {
+  return s.replace(SHARE_KEY, "$1redacted");
+}
+
 /** A string with every identifier replaced. */
 export function redactIdentifiers(s: string): string {
-  let out = s.replace(SHARE_KEY, "$1redacted");
+  let out = redactShareKey(s);
   for (const re of IDENTIFIERS) out = out.replace(re, REDACTED);
   return out;
 }

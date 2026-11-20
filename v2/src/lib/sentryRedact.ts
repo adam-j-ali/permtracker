@@ -1,7 +1,10 @@
 import { redactDeep, redactEmails } from "@convex/lib/redactEmails";
+import { redactShareKey } from "@/lib/analyticsRedact";
 
 /**
- * No email address leaves the browser for Sentry (Nov 4 2026): the backend already replaces each with a short
+ * No email address, and no share link's key (scrubShareKeys, below), leaves the browser for Sentry.
+ *
+ * Email addresses (Nov 4 2026): the backend already replaces each with a short
  * label (convex/lib/sentry.ts), and the browser had still sent the signed-in person's address and name as the
  * Sentry user, plus any address inside a message. The user keeps its id only, and every address in the
  * event's message, exception values, breadcrumbs, request address and extra data becomes the same label
@@ -28,5 +31,39 @@ export async function redactBrowserEvent<E extends EventLike>(event: E): Promise
   }
   if (event.request?.url) event.request.url = await redactEmails(event.request.url);
   if (event.extra) event.extra = (await redactDeep(event.extra)) as Record<string, unknown>;
-  return event;
+  return scrubShareKeys(event);
+}
+
+/** How deep an event is walked. Sentry normalises events to a few levels, so nothing it sends is deeper. */
+const SCRUB_DEPTH = 16;
+
+/**
+ * No recruitment record's share key reaches Sentry (Nov 20 2026). The page at /share/recruitment/<key> opens to
+ * anyone holding the key, and the Privacy Policy says we keep only a one-way hash of it, but an error, a trace or a
+ * log line names the page by its address: the request URL, onRequestError's `extra.path` (src/instrumentation.ts), a
+ * navigation breadcrumb, a span's `url.full`. Every string in the event, at any depth, has the key replaced by
+ * "redacted" (redactShareKey), and the path before it stays, so the page is still recognisable. In place, and
+ * returned, for beforeSend, beforeSendTransaction and beforeSendLog alike; an object seen twice is walked once.
+ */
+export function scrubShareKeys<E>(event: E): E {
+  const seen = new WeakSet<object>();
+  const walk = (value: unknown, depth: number): unknown => {
+    if (typeof value === "string") return redactShareKey(value);
+    if (!value || typeof value !== "object" || depth > SCRUB_DEPTH || seen.has(value)) return value;
+    seen.add(value);
+    if (Array.isArray(value)) {
+      for (let i = 0; i < value.length; i++) {
+        const next = walk(value[i], depth + 1);
+        if (next !== value[i]) value[i] = next;
+      }
+    } else {
+      const bag = value as Record<string, unknown>;
+      for (const k of Object.keys(bag)) {
+        const next = walk(bag[k], depth + 1);
+        if (next !== bag[k]) bag[k] = next;
+      }
+    }
+    return value;
+  };
+  return walk(event, 0) as E;
 }

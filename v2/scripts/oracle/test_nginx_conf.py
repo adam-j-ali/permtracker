@@ -509,18 +509,55 @@ def run(conf_text: str) -> None:
     check("defend: main access log still written", "access_log /var/log/nginx/access.log pt_main;" in server_level)
     main_fmt = re.search(r"log_format pt_main ((?:'[^']*'\s*)+);", head)
     main_text = "".join(re.findall(r"'([^']*)'", main_fmt.group(1))) if main_fmt else ""
-    check("main log keeps the combined fields first", main_text.startswith(
-        '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" '))
+    check("main log keeps the combined fields first, the request line through the share-key map", main_text.startswith(
+        '$remote_addr - $remote_user [$time_local] "$pt_log_request" $status $body_bytes_sent "$http_referer" "$http_user_agent" '))
     check("main log records nginx's time, the app's time and Next's cache answer",
           all(f in main_text for f in ("rt=$request_time", "urt=$upstream_response_time", "nc=$upstream_http_x_nextjs_cache")))
     fmt = re.search(r"log_format pt_defend '([^']*)'", head)
     check("defend: log records time, status, network, crawler flag, path and browser",
-          fmt is not None and fmt.group(1).startswith('$msec $status $http_x_pt_asn $http_x_pt_verified_bot "$request_uri" "$http_user_agent"'))
+          fmt is not None and fmt.group(1).startswith('$msec $status $http_x_pt_asn $http_x_pt_verified_bot "$pt_log_uri" "$http_user_agent"'))
     # $uri of a turned-away request is the busy page's /503.html; the defense
     # needs the page the visitor asked for (Oct 12 2026).
     check("defend: the path is the one asked for, not the busy page's", fmt is not None and '"$uri"' not in fmt.group(1))
     check("defense log records whether a request is a pre-load",
           fmt is not None and fmt.group(1).endswith('"$http_user_agent" $http_next_router_prefetch'))
+
+    # A recruitment record shared by link opens to anyone holding the key in its
+    # path (/share/recruitment/<key>), and the Privacy Policy says only a one-way
+    # hash of it is kept (Nov 20 2026). Both request logs write the request
+    # through a map that blanks the key and keeps the rest: the method, the path
+    # before the key, any query string and the protocol.
+    check("share keys: the main log never writes the raw request line",
+          '"$request"' not in main_text and "$request " not in main_text)
+    check("share keys: the defense log never writes the raw path",
+          fmt is not None and "$request_uri" not in fmt.group(1))
+    check("share keys: the defense log's map reads the path asked for, not the busy page's",
+          map_body(head, "pt_log_uri")[0] == "$request_uri")
+
+    def logged(out_var: str, source: str, value: str) -> str:
+        got = eval_map(head, out_var, {source: value})
+        return value if got == f"${source}" else got
+
+    request_cases = [
+        ("GET /share/recruitment/q7Zt0Lw_-3fXbV9kR2mN8pS1uY4eH6c HTTP/1.1", "GET /share/recruitment/redacted HTTP/1.1"),
+        ("GET /share/recruitment/q7Zt0Lw_-3f?_rsc=1x9 HTTP/2.0", "GET /share/recruitment/redacted?_rsc=1x9 HTTP/2.0"),
+        ("HEAD /Share//Recruitment/q7Zt0Lw_-3f HTTP/1.1", "HEAD /Share//Recruitment/redacted HTTP/1.1"),
+        ("GET /share%2Frecruitment%2Fq7Zt0Lw_-3f HTTP/1.1", "GET /share%2Frecruitment/redacted HTTP/1.1"),
+        ("GET /perm-case-status?case=I-200-1 HTTP/1.1", "GET /perm-case-status?case=I-200-1 HTTP/1.1"),
+        ("GET /share HTTP/1.1", "GET /share HTTP/1.1"),
+    ]
+    bad = [(v, logged("pt_log_request", "request", v)) for v, want in request_cases
+           if logged("pt_log_request", "request", v) != want]
+    check("share keys: the main log blanks the key and keeps the rest of the request line", not bad, str(bad))
+    uri_cases = [
+        ("/share/recruitment/q7Zt0Lw_-3fXbV9kR2mN8pS1uY4eH6c", "/share/recruitment/redacted"),
+        ("/share/recruitment/q7Zt0Lw_-3f?_rsc=1x9", "/share/recruitment/redacted?_rsc=1x9"),
+        ("/SHARE/recruitment/q7Zt0Lw_-3f/", "/SHARE/recruitment/redacted"),
+        ("/perm-employers/acme-inc", "/perm-employers/acme-inc"),
+    ]
+    bad = [(v, logged("pt_log_uri", "request_uri", v)) for v, want in uri_cases
+           if logged("pt_log_uri", "request_uri", v) != want]
+    check("share keys: the defense log blanks the key and keeps the rest of the path", not bad, str(bad))
 
     check("lookup: an exact-match location", LOOKUP in locs, str([s for s in locs if "perm-case-status" in s]))
 
@@ -542,7 +579,12 @@ def probe() -> None:
         "people refused instead of slowed": good.replace("zone=pt_page burst=300 delay=150", "zone=pt_page burst=300 nodelay", 1),
         "search engines refused instead of paced": good.replace("zone=pt_search burst=120 delay=8", "zone=pt_search burst=120 nodelay", 1),
         "refusal page drops its status": good.replace("error_page 429 @pt_slow_down;", "error_page 429 = @pt_slow_down;"),
-        "defense log records the busy page's path": good.replace('"$request_uri" "$http_user_agent"', '"$uri" "$http_user_agent"', 1),
+        "defense log records the busy page's path": good.replace('"$pt_log_uri" "$http_user_agent"', '"$uri" "$http_user_agent"', 1),
+        "defense log's share-key map reads the busy page's path": good.replace("map $request_uri $pt_log_uri", "map $uri $pt_log_uri", 1),
+        "main log records share keys again": good.replace('"$pt_log_request" $status', '"$request" $status', 1),
+        "defense log records share keys again": good.replace('"$pt_log_uri" "$http_user_agent"', '"$request_uri" "$http_user_agent"', 1),
+        "share-key map misses a capitalised path": good.replace('"~*^(?<pt_lr_head>', '"~^(?<pt_lr_head>', 1),
+        "share-key map drops the query string": good.replace('"$pt_lu_head/redacted$pt_lu_tail"', '"$pt_lu_head/redacted"', 1),
         "forms relay the decoded path": good.replace("proxy_pass https://$pt_convex_site$pt_c_path$is_args$args;", "proxy_pass https://$pt_convex_site$uri$is_args$args;", 1),
         "forms pass an unmatched path through": good.replace("default /__pt_refused; }", "default $uri; }", 1),
         "forms path allows a line break": good.replace('"~^/c(/[A-Za-z0-9/_.~-]*)(\\?|$)" $1;', '"~^/c(/.*)" $1;', 1),

@@ -9,6 +9,8 @@
 
 import * as Sentry from "@sentry/nextjs";
 
+import { scrubShareKeys } from "./src/lib/sentryRedact";
+
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
 
@@ -30,4 +32,7 @@ Sentry.init({
   // Debug mode (very noisy — only enable when troubleshooting Sentry itself)
   debug: false,
 
+  // Nothing sent carries a shared recruitment record's key (scrubShareKeys, src/lib/sentryRedact.ts).
+  beforeSend: (event) => scrubShareKeys(event),
+  beforeSendTransaction: (event) => scrubShareKeys(event),
 });
