@@ -259,12 +259,15 @@ export function AddCasePageClient() {
                 <>
                   {" "}
                   You can{" "}
-                  <button
-                    onClick={() => router.push(`/cases/${duplicateCaseId}`)}
+                  {/* A new tab, so the case typed here stays on screen (an in-tab move would lose it). */}
+                  <a
+                    href={`/cases/${duplicateCaseId}`}
+                    target="_blank"
+                    rel="noopener"
                     className="text-primary-text underline font-medium"
                   >
-                    view the existing case
-                  </button>{" "}
+                    view the existing case (opens in a new tab)
+                  </a>{" "}
                   or create a new one anyway.
                 </>
               )}
