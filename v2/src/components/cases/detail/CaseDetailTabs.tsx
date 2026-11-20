@@ -27,6 +27,11 @@ const TABS: TabConfig[] = [
   { id: "notes", label: "Notes", icon: StickyNote },
 ];
 
+/** True for a tab this page has, so a value read from the address can be trusted. */
+export function isTabId(value: string | null | undefined): value is TabId {
+  return TABS.some((t) => t.id === value);
+}
+
 interface CaseDetailTabsProps {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;

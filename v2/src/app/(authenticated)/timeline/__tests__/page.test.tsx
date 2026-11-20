@@ -349,6 +349,25 @@ describe("TimelinePage - Select Cases Button", () => {
     expect(screen.getByText("All")).toBeInTheDocument();
   });
 
+  it("tells an account whose cases are all off the timeline so, and offers the picker", async () => {
+    const closed = createMockTimelineCase({ caseStatus: "closed" });
+    setupMocks({ preferences: { timeRange: 6 }, cases: [], allCases: [closed] });
+
+    const { user } = renderWithProviders(<TimelinePage />);
+
+    expect(screen.getByRole("heading", { name: "None of your cases are on the timeline" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Add your first case" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Choose cases" }));
+  });
+
+  it("asks an account with no cases to add one", () => {
+    setupMocks({ preferences: { timeRange: 6 }, cases: [], allCases: [] });
+
+    renderWithProviders(<TimelinePage />);
+
+    expect(screen.getByRole("link", { name: "Add your first case" })).toHaveAttribute("href", "/cases/new");
+  });
+
   it("counts a chosen closed case against every case the picker offers (Oct 30 2026)", () => {
     const open = createMockTimelineCase();
     // Chosen: a closed case's own switch set on (convex/lib/timelineShow.ts).

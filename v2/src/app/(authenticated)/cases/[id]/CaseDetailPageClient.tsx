@@ -2,7 +2,7 @@
 
 import { formatCaseStatus, formatProgressStatus } from "@convex/lib/notificationHelpers";
 import { use, useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import Link from "next/link";
 import { api } from "@convex/_generated/api";
@@ -32,11 +32,7 @@ import { normaliseCaseNumber } from "@/lib/caseNumberShape";
 import { LiveStatusChip } from "@/components/cases/LiveStatusChip";
 import { ProgressStatusBadge } from "@/components/status/progress-status-badge";
 import { getStageIndex } from "@/components/cases/detail/next-up-section.utils";
-import {
-  CaseDetailTabs,
-  TabPanel,
-  type TabId,
-} from "@/components/cases/detail/CaseDetailTabs";
+import { CaseDetailTabs, TabPanel, type TabId, isTabId } from "@/components/cases/detail/CaseDetailTabs";
 import { OverviewTab } from "@/components/cases/detail/OverviewTab";
 import { RecruitmentTab } from "@/components/cases/detail/RecruitmentTab";
 import { ETA9089Tab } from "@/components/cases/detail/ETA9089Tab";
@@ -483,7 +479,17 @@ function CaseDetail({ caseId, caseData }: CaseDetailProps) {
   };
 
   // Which detail tab is open
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  // The open tab is in the address (?tab=), so a reload, Back or a link lands on it.
+  const searchParams = useSearchParams();
+  const tabInAddress = searchParams.get("tab");
+  const [activeTab, setActiveTabState] = useState<TabId>(isTabId(tabInAddress) ? tabInAddress : "overview");
+  const setActiveTab = useCallback(
+    (tab: TabId) => {
+      setActiveTabState(tab);
+      router.replace(tab === "overview" ? `/cases/${caseId}` : `/cases/${caseId}?tab=${tab}`, { scroll: false });
+    },
+    [router, caseId],
+  );
 
   const isClosed = caseData.caseStatus === "closed";
   const caseName = `${caseData.employerName} - ${caseData.positionTitle}`;
