@@ -28,6 +28,7 @@ import {
   generateNotificationMessage,
   calculatePriority,
   shouldSendEmail,
+  urgentDays,
   shouldSendPush,
   type NotificationType,
 } from "./lib/notificationHelpers";
@@ -116,7 +117,7 @@ export const runDeadlineReminders = internalAction({
         employerName: reminder.employerName,
         beneficiaryIdentifier: reminder.beneficiaryIdentifier,
       });
-      const priority = calculatePriority(reminder.daysUntilDeadline, notificationType);
+      const priority = calculatePriority(reminder.daysUntilDeadline, notificationType, urgentDays(reminder.userPrefs));
 
       // In-app notification stays per (case, deadline) — only the email consolidates.
       await ctx.runMutation(internal.notifications.createNotification, {
@@ -132,7 +133,7 @@ export const runDeadlineReminders = internalAction({
       });
       processed++;
 
-      const sendEmail = shouldSendEmail(notificationType, priority, reminder.userPrefs);
+      const sendEmail = shouldSendEmail(notificationType, priority, reminder.userPrefs, reminder.deadlineType);
 
       if (sendEmail) {
         emailWorthy.push({

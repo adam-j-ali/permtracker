@@ -6,8 +6,10 @@ import {
   generateNotificationTitle,
   generateNotificationMessage,
   calculatePriority,
+  DEADLINE_REMINDER_SWITCH,
   formatDeadlineType,
   shouldSendEmail,
+  urgentDays,
   shouldSendPush,
   getNotificationIcon,
   type UserNotificationPrefs,
@@ -894,6 +896,17 @@ describe("Notifications", () => {
         expect(calculatePriority(5, "rfi_alert")).toBe("urgent");
         expect(calculatePriority(-2, "rfe_alert")).toBe("urgent");
       });
+
+      // Settings' "Urgent deadline threshold" was saved and never read: urgent was fixed at 7 days.
+      it("reaches as far as the person's own urgent threshold", () => {
+        expect(calculatePriority(10, "deadline_reminder")).toBe("high");
+        expect(calculatePriority(10, "deadline_reminder", urgentDays({ urgentDeadlineDays: 10 }))).toBe("urgent");
+        expect(calculatePriority(11, "deadline_reminder", urgentDays({ urgentDeadlineDays: 10 }))).toBe("high");
+        expect(calculatePriority(3, "deadline_reminder", urgentDays({ urgentDeadlineDays: 2 }))).toBe("high");
+        expect(urgentDays({})).toBe(7);
+        expect(urgentDays({ urgentDeadlineDays: 0 })).toBe(7);
+        expect(urgentDays({ urgentDeadlineDays: 45 })).toBe(7);
+      });
     });
 
     describe("shouldSendEmail", () => {
@@ -930,6 +943,30 @@ describe("Notifications", () => {
       it("respects type-specific preferences - rfe_alert", () => {
         const prefs = { ...basePrefs, emailRfeAlerts: false };
         expect(shouldSendEmail("rfe_alert", "high", prefs)).toBe(false);
+      });
+
+      // Settings' six "Which deadlines to remind you about" switches were saved and never read (Nov 10 audit, email A4).
+      it("holds a reminder whose deadline switch is off, and only that one", () => {
+        const prefs = { ...basePrefs, emailDeadlineReminderI140: false };
+        expect(shouldSendEmail("deadline_reminder", "high", prefs, "i140_filing_deadline")).toBe(false);
+        expect(shouldSendEmail("deadline_reminder", "high", prefs, "pwd_expiration")).toBe(true);
+        expect(shouldSendEmail("deadline_reminder", "high", { ...basePrefs, emailDeadlineReminderRecruitment: false }, "second_sunday_ad_deadline")).toBe(false);
+        expect(shouldSendEmail("deadline_reminder", "high", { ...basePrefs, emailDeadlineReminderEta9089: false }, "eta9089_expiration")).toBe(false);
+      });
+
+      it("covers every deadline a reminder is sent for with one of the six switches", () => {
+        for (const [deadline, covering] of Object.entries(DEADLINE_REMINDER_SWITCH)) {
+          expect(shouldSendEmail("deadline_reminder", "high", { ...basePrefs, [covering]: false }, deadline)).toBe(false);
+          expect(shouldSendEmail("deadline_reminder", "high", basePrefs, deadline)).toBe(true);
+        }
+      });
+
+      it("sends an RFI or RFE reminder by Deadline reminders and its own switch", () => {
+        expect(shouldSendEmail("rfi_alert", "high", basePrefs, "rfi_due")).toBe(true);
+        expect(shouldSendEmail("rfi_alert", "high", { ...basePrefs, emailDeadlineReminderRfi: false }, "rfi_due")).toBe(false);
+        expect(shouldSendEmail("rfe_alert", "high", { ...basePrefs, emailDeadlineReminderRfe: false })).toBe(false);
+        expect(shouldSendEmail("rfe_alert", "high", { ...basePrefs, emailDeadlineReminderRfi: false })).toBe(true);
+        expect(shouldSendEmail("rfi_alert", "high", { ...basePrefs, emailDeadlineReminders: false }, "rfi_due")).toBe(false);
       });
 
       // The reminder email goes once a day at a fixed hour and each reminder
