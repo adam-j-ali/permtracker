@@ -57,9 +57,10 @@ import { stepTrend, windowText, type ReportedSummary } from "@/lib/reportedSumma
  * not exist yet renders the empty state rather than failing the route.
  */
 
-const TITLE = "Green Card Timelines, as Reported";
+// The searched phrase first (Search Console, Nov 2026: "green card timeline", "perm timeline tracker").
+const TITLE = "Green Card Timeline: How Long Each Step Takes";
 const DESCRIPTION =
-  "How long the I-140 and I-485 took, by step and by USCIS office, from the people waiting. Self-reported, checked before it shows, case numbers hidden.";
+  "Each green card step's days, PERM to the card, from thousands of cases people reported in Telegram groups, sheets, Reddit and here. Updated hourly.";
 const PATH = "/green-card-timelines";
 
 export const metadata: Metadata = withSocialCard({
@@ -241,7 +242,22 @@ export default async function GreenCardTimelinesPage() {
                 </p>
                 <div className="mt-5">
                   <StepsByStage steps={summary.steps} />
-                </div>
+                </div>{" "}
+                <p className="mt-6 max-w-3xl text-base leading-relaxed">
+                  What each step means, and what to do while you wait:{" "}
+                  <Link href="/guides/i485-timeline-each-step" className="link font-bold">
+                    the I-485 timeline
+                  </Link>
+                  ,{" "}
+                  <Link href="/guides/i485-transferred-to-field-office" className="link font-bold">
+                    a transfer to a field office
+                  </Link>{" "}
+                  and{" "}
+                  <Link href="/guides/i485-interview-to-green-card" className="link font-bold">
+                    the wait after the interview
+                  </Link>
+                  .
+                </p>
               </>
             ) : (
               <>

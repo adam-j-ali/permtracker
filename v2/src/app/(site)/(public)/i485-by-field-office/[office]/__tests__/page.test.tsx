@@ -293,7 +293,7 @@ describe("a USCIS office's page", () => {
 
   it("titles the page with the phrase people search and keeps it short", async () => {
     const meta = await generateMetadata({ params: Promise.resolve({ office: "hartford-connecticut" }) });
-    expect(meta.title).toBe("Hartford USCIS Field Office I-485 Numbers");
+    expect(meta.title).toBe("Hartford USCIS Field Office Processing Times");
     const long = await generateMetadata({ params: Promise.resolve({ office: "charlotte-amalie-us-virgin-islands" }) });
     expect(String(long.title).length).toBeLessThanOrEqual(45);
     expect(meta.alternates?.canonical).toBe("/i485-by-field-office/hartford-connecticut");
