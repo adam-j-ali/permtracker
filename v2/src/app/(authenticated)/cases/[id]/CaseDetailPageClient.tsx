@@ -1,7 +1,7 @@
 "use client";
 
 import { formatCaseStatus, formatProgressStatus } from "@convex/lib/notificationHelpers";
-import { use, useState, useEffect, useMemo, useCallback } from "react";
+import { use, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import Link from "next/link";
@@ -43,6 +43,7 @@ import { ETA9089Tab } from "@/components/cases/detail/ETA9089Tab";
 import { I140Tab } from "@/components/cases/detail/I140Tab";
 import { DocumentsTab } from "@/components/cases/detail/DocumentsTab";
 import { CaseEmployerLine, useEmployerPage } from "@/components/cases/detail/CaseEmployerLine";
+import { onTimeline } from "@convex/lib/timelineShow";
 import { NotesTab } from "@/components/cases/detail/NotesTab";
 import { NotLegalAdviceNotice } from "@/components/legal/NotLegalAdviceNotice";
 import { cn } from "@/lib/utils";
@@ -231,16 +232,8 @@ function CaseDetail({ caseId, caseData }: CaseDetailProps) {
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const [isTogglingCalendarSync, setIsTogglingCalendarSync] = useState(false);
 
-  // Check if case is on timeline
-  const timelinePrefs = useQuery(api.timeline.getPreferences);
-  const isOnTimeline = useMemo(() => {
-    if (!timelinePrefs) return true; // Default to true while loading
-    if (timelinePrefs.selectedCaseIds === null || timelinePrefs.selectedCaseIds === undefined) {
-      // null/undefined means all active cases are on timeline
-      return caseData.caseStatus !== "closed";
-    }
-    return timelinePrefs.selectedCaseIds.includes(caseId);
-  }, [timelinePrefs, caseId, caseData.caseStatus]);
+  // On the timeline: the case's own switch, the same one the form shows (convex/lib/timelineShow.ts)
+  const isOnTimeline = onTimeline(caseData);
 
   // Get derived dates with fallback calculation (fixes filing window showing "-")
   const derivedDates = useDerivedDates(caseData);
@@ -582,9 +575,9 @@ function CaseDetail({ caseId, caseData }: CaseDetailProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 border-2 shadow-hard-sm p-1 border-border" onCloseAutoFocus={(e) => e.preventDefault()}>
-                <DropdownMenuItem onSelect={handleToggleTimeline} disabled={isUpdating || timelinePrefs === undefined}>
+                <DropdownMenuItem onSelect={handleToggleTimeline} disabled={isUpdating}>
                   <ChartBarHorizontalIcon className="size-4" />
-                  {timelinePrefs === undefined ? "Checking the timeline…" : isOnTimeline ? "Remove from timeline" : "Show on timeline"}
+                  {isOnTimeline ? "Remove from timeline" : "Show on timeline"}
                 </DropdownMenuItem>
                 {isClosed ? (
                   <DropdownMenuItem onSelect={handleReopen} disabled={isUpdating}>

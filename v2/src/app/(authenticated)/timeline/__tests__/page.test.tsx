@@ -86,7 +86,7 @@ function createMockTimelineCase(
  * Setup mocks for specific scenario
  */
 function setupMocks(options: {
-  preferences?: { timeRange: 3 | 6 | 12 | 24; selectedCaseIds?: string[] | null } | null;
+  preferences?: { timeRange: 3 | 6 | 12 | 24; selectedCaseIds?: null } | null;
   cases?: any[];
   allCases?: any[];
 }) {
@@ -351,9 +351,10 @@ describe("TimelinePage - Select Cases Button", () => {
 
   it("counts a chosen closed case against every case the picker offers (Oct 30 2026)", () => {
     const open = createMockTimelineCase();
-    const closed = createMockTimelineCase({ caseStatus: "closed" });
+    // Chosen: a closed case's own switch set on (convex/lib/timelineShow.ts).
+    const closed = { ...createMockTimelineCase({ caseStatus: "closed" }), showOnTimeline: true };
     setupMocks({
-      preferences: { timeRange: 6, selectedCaseIds: [open._id, closed._id] },
+      preferences: { timeRange: 6 },
       cases: [open, closed],
       allCases: [open, closed],
     });
