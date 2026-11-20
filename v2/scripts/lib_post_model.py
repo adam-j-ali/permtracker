@@ -92,7 +92,14 @@ ead_approved (work permit, I-765); ap_approved (advance parole, I-131); transfer
 centre); interview (the I-485 interview day); i485_approved (green card approved) or i485_denied; card_produced (the
 green card itself produced or mailed, never a work permit card).
 
-category: EB-1, EB-2, EB-2 NIW or EB-3 when the post says which; otherwise null."""
+category: EB-1, EB-2, EB-2 NIW or EB-3 when the post says which; otherwise null.
+A post's text may come in labelled parts. Lines after "[Earlier, the same person wrote:]" are the poster's own earlier
+message: read them as part of the post. Lines after "[Text in the screenshot they posted:]" are read from the
+picture the poster shared of their own case page or notice: read them as part of the post. Lines after "[Replying to
+another member, whose words these are:]" are someone else's message, given only so the reply makes sense: never take
+a step, a date or a category from them for the poster, unless the poster's own words plainly say the same happened to
+them (a question "approved on Nov 3?" answered "yes, same day" gives that date). Read the post itself after
+"[This post:]"."""
 
 SCHEMA = {
     "type": "object",

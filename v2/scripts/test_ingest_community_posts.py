@@ -184,6 +184,91 @@ def main() -> int:
                               source="reddit")[0]
     check(eb and eb[0].get("category") != "Family", f"an employment case that names a spouse isn't Family: {eb}")
 
+    # Context: a post that gives nothing alone is read with the person's own earlier words, the post it answers and its
+    # screenshot (lib_post_context), the model reading it under its own key.
+    import lib_post_context as pc
+
+    def at(minutes):
+        return f"2026-11-20T15:{minutes:02d}:00+00:00"
+
+    def tmsg(i, text, sender, minute, reply_to=None):
+        return {"id": i, "date": at(minute), "sender": sender, "reply_to": reply_to, "text": text}
+
+    thread_rows = [tmsg(1, "Got SU on EAD and AP", "mqo", 0),
+                   tmsg(2, "What's your SC? NBC?", "ghost", 4, reply_to=1),
+                   tmsg(3, "For EAD is NBC and for AP is TSC, both approved 11/18/2026", "mqo", 9, reply_to=2),
+                   tmsg(4, "Did you get the I-485 approved on 11/18/2026?", "q", 20),
+                   tmsg(5, "yes", "ans", 21, reply_to=4),
+                   tmsg(6, "biometrics done", "late", 30),
+                   tmsg(10, "Anyone got their I-485 approved this week?", "asker", 45),
+                   tmsg(11, "mine 11/18/2026", "replier", 46, reply_to=10),
+                   tmsg(12, "Congrats!!", "fan", 47, reply_to=11),
+                   tmsg(7, "on 11/02/2026", "late", 41)]
+    th = pc.Thread(thread_rows)
+    own, answered = th.context(thread_rows[2])
+    check([o["id"] for o in own] == [1] and answered["id"] == 2,
+          "a reply to a question about the person's own post: their post counts as theirs, the question is context")
+    check(th.context(thread_rows[6]) == ([], None), "a follow-on 11 minutes later isn't read as the same report")
+    check([o["id"] for o in pc.Thread([tmsg(8, "a", "x", 0), tmsg(9, "b", "x", 9)]).context(tmsg(9, "b", "x", 9))[0]] == [8],
+          "the person's previous post within 10 minutes is theirs")
+    wider = pc.labelled(["Got SU on EAD and AP"], "What's your SC? NBC?", "For EAD is NBC")
+    check(wider.index(pc.EARLIER) < wider.index(pc.ANSWERING) < wider.index(pc.THIS_POST), "each part labelled, in order")
+    check(pc.screenshot_lines("Hello\nOn November 18, 2026, we approved your Form I-765\nRandom line\nCase Was Approved")
+          == "On November 18, 2026, we approved your Form I-765\nCase Was Approved", "a screenshot keeps its date and step lines")
+    check(len(pc.screenshot_lines("approved 11/18/2026\n" * 200)) <= pc.SCREENSHOT_MAX, "and no more than its cap")
+
+    ctx_asked: list[dict] = []
+
+    def ctx_stand_in(prompt: str) -> dict:
+        batch = json.loads(prompt)
+        ctx_asked.extend(batch)
+        return {"posts": [{"id": p["id"], "own_case": True, "category": None,
+                           "steps": [{"step": "ead_approved", "date": "2026-11-18"}]} for p in batch]}
+
+    with tempfile.TemporaryDirectory() as d:
+        folder, cache, shots = Path(d, "messages"), Path(d, "model-reads.jsonl"), Path(d, "ocr.jsonl")
+        folder.mkdir()
+        (folder / "eadap.jsonl").write_text("\n".join(json.dumps(r) for r in thread_rows) + "\n")
+        # A photo sent with no caption: only the screenshot reader has it.
+        shots.write_text(json.dumps({"chat": "eadap", "id": 50, "date": at(50), "sender": "pic", "reply_to": None,
+                                     "text": "", "image_text": "Account updates\nOn November 17, 2026, we approved your "
+                                                               "Form I-765, Application for Employment Authorization"}) + "\n")
+        specs = {"eadap": {"kind": "i485"}}
+        recs, counts = icp.prepare_telegram(folder, specs, cache, ask=True, runner=ctx_stand_in, images_path=shots)
+        by_id = {p["id"]: p for p in ctx_asked}
+        check("eadap:3#ctx" in by_id and pc.EARLIER in by_id["eadap:3#ctx"]["text"]
+              and "Got SU on EAD and AP" in by_id["eadap:3#ctx"]["text"], f"asked with the person's own earlier post: {sorted(by_id)}")
+        check("eadap:11#ctx" in by_id and pc.ANSWERING in by_id["eadap:11#ctx"]["text"]
+              and "Anyone got their I-485" in by_id["eadap:11#ctx"]["text"],
+              "an answer that writes its own date is asked with the question, labelled as another member's")
+        check("eadap:5#ctx" not in by_id and "eadap:12#ctx" not in by_id,
+              "a bare yes or a congrats carries no step or date of its own and is never asked")
+        check("eadap:50#ctx" in by_id and pc.SCREENSHOT in by_id["eadap:50#ctx"]["text"],
+              "a photo with no caption is a post, asked with its screenshot's text")
+        check(counts["screenshots"] == 1, f"the screenshots are counted: {counts}")
+        no_model = icp.telegram_records("eadap", thread_rows, {"kind": "i485"})[0]
+        check(not any(r.get("person") == "ans" for r in no_model),
+              "the regex parser never takes another member's date for the poster")
+        check(all(not k.endswith("#ctx") for k in (r["key"] for r in recs)), "records keep the post's own key")
+        ctx_asked.clear()
+        icp.prepare_telegram(folder, specs, cache, ask=True, runner=ctx_stand_in, images_path=shots)
+        check(ctx_asked == [], "a post read with its context is asked once")
+    with tempfile.TemporaryDirectory() as d:
+        folder, cache = Path(d, "messages"), Path(d, "model-reads.jsonl")
+        folder.mkdir()
+        (folder / "eadap.jsonl").write_text("\n".join(json.dumps(r) for r in thread_rows) + "\n")
+        ctx_asked.clear()
+        saved_cap = icp.CONTEXT_ASK_CAP
+        icp.CONTEXT_ASK_CAP = 1
+        try:
+            _, capped = icp.prepare_telegram(folder, {"eadap": {"kind": "i485"}}, cache, ask=True, runner=ctx_stand_in)
+        finally:
+            icp.CONTEXT_ASK_CAP = saved_cap
+        wider_asked = [p for p in ctx_asked if p["id"].endswith("#ctx")]
+        check(len(wider_asked) == 1 and capped["context_waiting"] >= 1,
+              f"no more context asks a run than the cap, newest first, the rest counted: {capped}")
+        check(wider_asked and wider_asked[0]["posted"] == max(p["posted"] for p in wider_asked), "the newest goes first")
+
     print(f"{failures} failed")
     return 1 if failures else 0
 

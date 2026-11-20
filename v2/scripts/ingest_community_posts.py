@@ -27,12 +27,17 @@ import time
 from pathlib import Path
 
 import lib_offices as offices
+import lib_post_context as post_context
 import lib_post_dates as post_dates
 import lib_post_model as post_model
 import lib_reported_cases as rc
 
 TABLE = "community_post_reports"
 KEEP_SHARE = 0.5
+# Posts asked about with their context or screenshot each run, newest first (the hourly run asks the model on the
+# owner's plan): the rest wait for the next run, and the count left is printed.
+CONTEXT_ASK_CAP = 400
+CONTEXT_KEY = "#ctx"  # a saved model answer for a post read with its context or screenshot
 DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 MONTH = re.compile(r"^\d{4}-\d{2}$")
 CATEGORIES = {"eb1": "EB-1", "eb2": "EB-2", "eb2-niw": "EB-2 NIW", "eb3": "EB-3", "family": "Family"}
@@ -137,7 +142,7 @@ def _record(chat: str, row: dict, posted: dt.date, spec: dict, fields: dict, sou
 
 def telegram_records(chat: str, rows: list[dict], spec: dict | None,
                      model_reads: dict[str, dict | None] | None = None,
-                     source: str = "telegram") -> tuple[list[dict], list[dict]]:
+                     source: str = "telegram", images: dict[tuple, str] | None = None) -> tuple[list[dict], list[dict]]:
     """One chat's (or subreddit's) posts as merge records, and the posts still worth asking the model about.
 
     The parser reads first (lib_post_dates). A post it can't read but that writes a date and names a step takes the
@@ -149,21 +154,53 @@ def telegram_records(chat: str, rows: list[dict], spec: dict | None,
     eastern = ZoneInfo("America/New_York")
     model_reads = model_reads or {}
     order = post_dates.chat_order([r.get("text") or "" for r in rows])
+    thread = post_context.Thread(rows)
     out, to_ask = [], []
     for r in rows:
-        text = r.get("text") or ""
+        if not r.get("date"):
+            continue
+        plain = r.get("text") or ""
+        text = post_context.own_text(r, images, (chat, r["id"]))  # its words and its screenshot's useful lines
         posted = dt.datetime.fromisoformat(r["date"]).astimezone(eastern).date()
         fields = post_dates.read_post(text, posted, spec["kind"], order)
         if fields:
             out.append(_record(chat, r, posted, spec, fields, source))
             continue
-        if not post_model.worth_asking(text):
-            continue
+        # Nothing alone: the person's own earlier words count as theirs (lib_post_context).
+        own, answered = thread.context(r)
+        earlier = [post_context.own_text(o, images, (chat, o["id"])) for o in own]
+        if earlier:
+            # Only what this post adds counts: the earlier words alone already made their own record when they could,
+            # so a follow-on that only carries on talking ("Houston") is never a second copy of that report.
+            fields = post_context.added(post_dates.read_post(post_context.own_words(earlier, text), posted, spec["kind"], order),
+                                        post_dates.read_post(post_context.own_words(earlier, ""), posted, spec["kind"], order))
+            if fields:
+                out.append(_record(chat, r, posted, spec, fields, source))
+                continue
         key = post_key(source, chat, r["id"])
-        asked = {"id": key, "posted": posted.isoformat(), "kind": spec["kind"], "text": text}
+        asked = {"id": key, "posted": posted.isoformat(), "kind": spec["kind"], "text": plain}
+        extended = bool(earlier or answered or text != plain)
         if key in model_reads:
             # Saved answers pass today's checks again, so a check added later reaches them too.
             fields = post_model.recheck(model_reads[key], asked)
+            if fields:
+                out.append(_record(chat, r, posted, spec, fields, source))
+                continue
+            if not extended:
+                continue
+        elif not extended:
+            if post_model.worth_asking(plain):
+                to_ask.append(asked)
+            continue
+        # The model reads it again with its context, under its own key, so every saved answer stays valid.
+        wider = post_context.labelled(earlier, (answered or {}).get("text"), text) if (earlier or answered) else text
+        # The post itself must carry part of a report (a step or a date): a "congrats!" under someone's approval is
+        # never asked about.
+        if not post_model.worth_asking(wider) or not post_context.carries_report(text):
+            continue
+        asked = {**asked, "id": f"{key}{CONTEXT_KEY}", "text": wider}
+        if asked["id"] in model_reads:
+            fields = post_model.recheck(model_reads[asked["id"]], asked)
             if fields:
                 out.append(_record(chat, r, posted, spec, fields, source))
         else:
@@ -185,21 +222,30 @@ def load_model_reads(path: Path) -> dict[str, dict | None]:
 
 def prepare_telegram(folder: Path, specs: dict[str, dict], model_cache: Path | None = None, ask: bool = False,
                      runner=post_model.claude_runner, source: str = "telegram",
-                     extra: list[dict] | None = None) -> tuple[list[dict], dict]:
+                     extra: list[dict] | None = None, images_path: Path | None = None) -> tuple[list[dict], dict]:
     """Every listed chat's records. With model_cache, saved model answers fill in what the parser can't read; with
     ask, the posts not yet asked are asked now and their answers saved as each batch comes back."""
     reads = load_model_reads(model_cache) if model_cache else {}
     counts = {"chats": 0, "messages": 0, "records": 0, "skipped_chats": [], "asked": 0, "to_ask": 0}
+    images, photo_rows = post_context.load_images(images_path)
+    counts["screenshots"] = len(images)
     chats = []
     for path in sorted(folder.glob("*.jsonl")):
         if path.stem not in specs:
             counts["skipped_chats"].append(path.stem)
             continue
-        chats.append((path.stem, _rows(path)))
+        rows = _rows(path)
+        have = {r["id"] for r in rows}
+        # A photo sent with no caption has no saved post: its screenshot row stands for it.
+        rows += [p for p in photo_rows.get(path.stem, []) if p["id"] not in have and p.get("date")]
+        chats.append((path.stem, rows))
     # Posts already read by hand (`extra`) are never read again or asked about.
     done = {r["key"] for r in extra or []}
-    pending = [p for chat, rows in chats for p in telegram_records(chat, rows, specs[chat], reads, source)[1]
-               if p["id"] not in done]
+    pending = [p for chat, rows in chats for p in telegram_records(chat, rows, specs[chat], reads, source, images)[1]
+               if p["id"].removesuffix(CONTEXT_KEY) not in done]
+    wider = sorted((p for p in pending if p["id"].endswith(CONTEXT_KEY)), key=lambda p: p["posted"], reverse=True)
+    counts["context_waiting"] = max(0, len(wider) - CONTEXT_ASK_CAP)
+    pending = [p for p in pending if not p["id"].endswith(CONTEXT_KEY)] + wider[:CONTEXT_ASK_CAP]
     counts["to_ask"] = len(pending)
     failure = None
     if ask and model_cache and pending:
@@ -219,12 +265,12 @@ def prepare_telegram(folder: Path, specs: dict[str, dict], model_cache: Path | N
         counts["asked"] = sum(1 for p in pending if p["id"] in reads)
     records = list(extra or [])
     for chat, rows in chats:
-        records += [r for r in telegram_records(chat, rows, specs[chat], reads, source)[0] if r["key"] not in done]
+        records += [r for r in telegram_records(chat, rows, specs[chat], reads, source, images)[0] if r["key"] not in done]
         counts["chats"] += 1
         counts["messages"] += len(rows)
     counts["records"] = len(records)
     counts["by_hand"] = len(extra or [])
-    counts["model_records"] = sum(1 for r in records if reads.get(r["key"]))
+    counts["model_records"] = sum(1 for r in records if reads.get(r["key"]) or reads.get(f"{r['key']}{CONTEXT_KEY}"))
     if failure:
         counts["failure"] = failure
     return records, counts
@@ -294,6 +340,8 @@ def main() -> int:
     p.add_argument("--chats", help="with --telegram: the private chats.json saying what each chat is about")
     p.add_argument("--model-reads", help="with --telegram: the saved model answers (a private JSONL file)")
     p.add_argument("--ask", action="store_true", help="with --model-reads: ask the model about posts not yet asked")
+    p.add_argument("--images", help="with --telegram or --posts: the screenshot reader's private JSONL (each photo's "
+                                    "redacted text), read with each post")
     p.add_argument("--out", required=True)
     l_ = sub.add_parser("load")
     l_.add_argument("records")
@@ -310,13 +358,17 @@ def main() -> int:
             ap.error(f"--with holds records from another source than {source}")
         rows, counts = prepare_telegram(Path(a.telegram or a.posts), read_chat_specs(Path(a.chats)),
                                         Path(a.model_reads) if a.model_reads else None, ask=a.ask,
-                                        source=source, extra=extra)
+                                        source=source, extra=extra,
+                                        images_path=Path(a.images) if a.images else None)
         Path(a.out).write_text(json.dumps(rows))
         os.chmod(a.out, 0o600)
         print(f"{counts['records']:,} records ({counts['model_records']:,} read by the model) from "
               f"{counts['messages']:,} messages in {counts['chats']} chats"
               + (f" and {counts['by_hand']:,} read by hand" if counts.get("by_hand") else "") + f" in {a.out}; "
               f"{counts['to_ask']:,} posts were waiting for the model, {counts['asked']:,} asked now"
+              + (f"; {counts['screenshots']:,} screenshots read with their posts" if counts.get("screenshots") else "")
+              + (f"; {counts['context_waiting']:,} more to read with their context in later runs"
+                 if counts.get("context_waiting") else "")
               + (f"; not read (not listed): {', '.join(counts['skipped_chats'])}" if counts["skipped_chats"] else ""))
         if counts.get("failure"):
             print(f"::error::{counts['failure']}", flush=True)
