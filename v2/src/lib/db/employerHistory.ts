@@ -9,7 +9,7 @@ import { beforeFirstLoad } from "./firstLoad";
  *
  * Both tables are written by `scripts/ingest_perm_history.py`:
  * `perm_employer_years` from DOL's closed-year files (and FY2024 onward from
- * `perm_cases` after every load), `perm_cases_history` for FY2020 to FY2023.
+ * `perm_cases` after every load), `perm_cases_history` for FY2008 to FY2023.
  * A name that no longer matches today's page (a company renamed, a spelling
  * the merge does not join) is simply not in the series, which is why the
  * chart says "matched to this page" rather than "every filing".

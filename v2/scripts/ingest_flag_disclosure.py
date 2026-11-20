@@ -574,7 +574,7 @@ def index_ddl(table: str) -> list[str]:
 
 
 # DOL's H-1B files before FY2020 (FY2008 to FY2019, three older layouts) go to a table of their own in the LCA
-# database, `lca_cases_history`, as PERM's FY2016 to FY2023 do (`perm_cases_history`). `lca_cases` keeps
+# database, `lca_cases_history`, as PERM's FY2008 to FY2023 do (`perm_cases_history`). `lca_cases` keeps
 # FY2020 on, so everything built from it stays as it was: the salary explorer's figures, the SOC finder's
 # titles (the older years filed 2010 SOC codes), the employer map and the searches' index plans. Readers that
 # want every year (a case by its number, the case search, an employer's years) read both.
