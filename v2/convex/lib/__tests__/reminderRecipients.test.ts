@@ -10,7 +10,7 @@ import {
   REMINDER_INVITES_PER_ADDRESS,
   copiesByCase,
   declineUrl,
-  inviteCaseLine,
+  safeCaseLine,
   inviterName,
   looksLikeALink,
   normaliseRecipientEmail,
@@ -84,13 +84,13 @@ describe("what the invitation calls the case", () => {
   const SCAM = "Refund due: verify at irs-refund.example/claim";
 
   it("is the job title at the employer, as the reminders name it", () => {
-    expect(inviteCaseLine("Robotics Engineer", "ACME Robotics")).toBe("Robotics Engineer at ACME Robotics");
-    expect(inviteCaseLine("Robotics Engineer", "ACME Robotics")).toBe(caseLine("Robotics Engineer", "ACME Robotics"));
+    expect(safeCaseLine("Robotics Engineer", "ACME Robotics")).toBe("Robotics Engineer at ACME Robotics");
+    expect(safeCaseLine("Robotics Engineer", "ACME Robotics")).toBe(caseLine("Robotics Engineer", "ACME Robotics"));
   });
 
   it("is \"a PERM case\" when the job title reads like a link, so a stranger's inbox never carries one under our name", () => {
     expect(A_PERM_CASE).toBe("a PERM case");
-    expect(inviteCaseLine(SCAM, "ACME Robotics")).toBe(A_PERM_CASE);
+    expect(safeCaseLine(SCAM, "ACME Robotics")).toBe(A_PERM_CASE);
   });
 
   it("is \"a PERM case\" when the employer reads like a link or an address", () => {
@@ -105,13 +105,13 @@ describe("what the invitation calls the case", () => {
       "ACME (acme-refund.example)",
       "shop.xn--p1ai",
     ]) {
-      expect(inviteCaseLine("Robotics Engineer", employer), employer).toBe(A_PERM_CASE);
+      expect(safeCaseLine("Robotics Engineer", employer), employer).toBe(A_PERM_CASE);
     }
   });
 
   it("keeps an ordinary name with a full stop in it", () => {
     for (const employer of ["ACME Robotics, Inc.", "St. Jude Medical", "U.S. Steel", "J.P. Morgan Chase & Co."]) {
-      expect(inviteCaseLine("Sr. Engineer", employer), employer).toBe(caseLine("Sr. Engineer", employer));
+      expect(safeCaseLine("Sr. Engineer", employer), employer).toBe(caseLine("Sr. Engineer", employer));
     }
   });
 
@@ -123,13 +123,13 @@ describe("what the invitation calls the case", () => {
       "irs-refund․com", // ․ one dot leader
       "irs-refund﹒com", // ﹒ small full stop
     ]) {
-      expect(inviteCaseLine("Robotics Engineer", employer), employer).toBe(A_PERM_CASE);
+      expect(safeCaseLine("Robotics Engineer", employer), employer).toBe(A_PERM_CASE);
     }
   });
 
   it("is \"a PERM case\" when the domain is typed in fullwidth letters", () => {
-    expect(inviteCaseLine("Robotics Engineer", "irs.ｃｏｍ")).toBe(A_PERM_CASE); // irs.ｃｏｍ
-    expect(inviteCaseLine("Robotics Engineer", "ｗｗｗ.evil")).toBe(A_PERM_CASE); // ｗｗｗ.evil
+    expect(safeCaseLine("Robotics Engineer", "irs.ｃｏｍ")).toBe(A_PERM_CASE); // irs.ｃｏｍ
+    expect(safeCaseLine("Robotics Engineer", "ｗｗｗ.evil")).toBe(A_PERM_CASE); // ｗｗｗ.evil
   });
 
   it("is \"a PERM case\" when invisible characters sit between the letters", () => {
@@ -140,7 +140,7 @@ describe("what the invitation calls the case", () => {
       "w﻿ww.evil", // zero-width no-break space
       "irs.c­om", // soft hyphen
     ]) {
-      expect(inviteCaseLine("Robotics Engineer", employer), JSON.stringify(employer)).toBe(A_PERM_CASE);
+      expect(safeCaseLine("Robotics Engineer", employer), JSON.stringify(employer)).toBe(A_PERM_CASE);
     }
   });
 
@@ -151,7 +151,7 @@ describe("what the invitation calls the case", () => {
       "пример.рф", // пример.рф
       "banké.x",
     ]) {
-      expect(inviteCaseLine("Robotics Engineer", employer), employer).toBe(A_PERM_CASE);
+      expect(safeCaseLine("Robotics Engineer", employer), employer).toBe(A_PERM_CASE);
     }
   });
 
@@ -164,9 +164,9 @@ describe("what the invitation calls the case", () => {
       "ACME ８００５５５０１９９", // fullwidth digits
       "ACME 800–555–0199", // en dashes
     ]) {
-      expect(inviteCaseLine("Robotics Engineer", employer), employer).toBe(A_PERM_CASE);
+      expect(safeCaseLine("Robotics Engineer", employer), employer).toBe(A_PERM_CASE);
     }
-    expect(inviteCaseLine("Call 800-555-0199 today", "ACME Robotics")).toBe(A_PERM_CASE);
+    expect(safeCaseLine("Call 800-555-0199 today", "ACME Robotics")).toBe(A_PERM_CASE);
   });
 
   it("keeps ordinary names with accents, a few digits or a year", () => {
@@ -178,7 +178,7 @@ describe("what the invitation calls the case", () => {
       "ACME 2024 Holdings",
       "123 Main Street Partners",
     ]) {
-      expect(inviteCaseLine("Software Engineer II", employer), employer).toBe(caseLine("Software Engineer II", employer));
+      expect(safeCaseLine("Software Engineer II", employer), employer).toBe(caseLine("Software Engineer II", employer));
     }
   });
 });
@@ -279,6 +279,13 @@ describe("the email's subject", () => {
 
   it("keeps a long title and employer short", () => {
     expect(reminderCopySubject(1, 0, "T".repeat(500), "E".repeat(500)).length).toBeLessThanOrEqual(160);
+  });
+
+  it("calls the case \"a PERM case\" when its words read like a link or a phone number, as the invitation does", () => {
+    expect(reminderCopySubject(1, 0, "Verify at irs-refund.example", "Acme Corp")).toBe(
+      "1 PERM deadline needs your attention: a PERM case",
+    );
+    expect(reminderCopySubject(1, 0, "Analyst", "Call (800) 555-0199")).toBe("1 PERM deadline needs your attention: a PERM case");
   });
 });
 

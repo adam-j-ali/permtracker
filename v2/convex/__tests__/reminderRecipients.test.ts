@@ -153,7 +153,7 @@ describe("adding a second person to a case's reminders", () => {
     expect(JSON.stringify(sent[0])).not.toContain("evil.example");
   });
 
-  it("calls the case \"a PERM case\" when its job title reads like a link; once confirmed, the reminders name it", async () => {
+  it("calls the case \"a PERM case\" when its job title reads like a link, in the invitation, its page and the reminders", async () => {
     const SCAM = "Refund due: verify at irs-refund.example/claim";
     const { t, owner, caseId } = await setup();
     await t.run((ctx) => ctx.db.patch(caseId, { positionTitle: SCAM }));
@@ -172,13 +172,38 @@ describe("adding a second person to a case's reminders", () => {
     });
     expect(confirmed).toEqual({ state: "confirmed", caseLine: "a PERM case" });
 
-    // The person confirmed: their reminders name the case as its owner typed it.
+    // The person confirmed: their reminders call it "a PERM case" too.
     sent = [];
     await t.action(internal.reminderRecipients.sendCopy, {
       recipientId: row!._id,
       items: [{ deadlineType: "PWD expiration", deadlineDate: "2026-12-01", daysUntil: 7, urgency: "urgent" }],
     });
-    expect(sent[0]!.subject).toContain(SCAM);
+    expect(sent[0]!.subject).toBe("1 PERM deadline needs your attention: a PERM case");
+    expect(JSON.stringify(sent[0])).not.toContain("irs-refund");
+  });
+
+  it("calls the case \"a PERM case\" in the reminders when the owner renames it to a link or a phone number after the person confirmed", async () => {
+    const { t, owner, caseId } = await setup();
+    await owner.mutation(api.reminderRecipients.invite, { caseId, email: "para@firm.example" });
+    await finishScheduledNow(t);
+    const [row] = await rows(t);
+    await t.mutation(internal.reminderRecipients.confirmByToken, {
+      token: await confirmToken(row!._id, "para@firm.example"),
+      recipientId: row!._id,
+    });
+    const items = [{ deadlineType: "PWD expiration", deadlineDate: "2026-12-01", daysUntil: 7, urgency: "urgent" as const }];
+    for (const [i, title] of ["Refund due: verify at irs-refund\u3002com", "Call 800-555-0199 to verify"].entries()) {
+      await t.run((ctx) => ctx.db.patch(caseId, { positionTitle: title }));
+      // A new day, so the day's reminder goes again.
+      await t.run((ctx) => ctx.db.patch(row!._id, { lastSentDay: undefined }));
+      sent = [];
+      await t.action(internal.reminderRecipients.sendCopy, { recipientId: row!._id, items });
+      const mail = sent[0]!;
+      expect(mail.subject, title).toBe("1 PERM deadline needs your attention: a PERM case");
+      expect(mail.text, title).toContain("Deadline reminders for a PERM case");
+      expect(mail.html, title).toContain("a PERM case");
+      expect(JSON.stringify(mail), title).not.toContain(i === 0 ? "irs-refund" : "555-0199");
+    }
   });
 
   it("refuses the owner's own address, an address that isn't one, and a blocked one, writing and sending nothing", async () => {
