@@ -15,6 +15,7 @@ import { purgeAllUserData } from "../lib/deletion";
 import { INVITE_MS, reminderConfirmPurpose, reminderStopPurpose } from "../lib/reminderRecipients";
 import { makeUnsubscribeToken } from "../lib/unsubscribeToken";
 import { easternDay } from "../lib/time";
+import { utcDay } from "../lib/emailLimits";
 
 const SECRET = "test-secret-for-reminder-recipients";
 
@@ -350,6 +351,119 @@ describe("stopping, removing and the address's end", () => {
     expect(out).toEqual({ deleted: 1 });
     expect((await rows(t)).map((r) => r._id)).toEqual([id]);
     expect(await t.run((ctx) => ctx.db.get(old))).toBeNull();
+  });
+});
+
+describe("mail waiting in the retry queue goes when the person does", () => {
+  /** Today's count at its ceiling, so every send waits in the retry queue (the admin already told today). */
+  const fillToday = (t: T) =>
+    t.run(async (ctx) => {
+      const now = Date.now();
+      const day = await ctx.db
+        .query("emailDays")
+        .withIndex("by_day", (q) => q.eq("day", utcDay(now)))
+        .unique();
+      if (day) await ctx.db.patch(day._id, { sent: 1_000_000, alertedAt: now });
+      else await ctx.db.insert("emailDays", { day: utcDay(now), sent: 1_000_000, alertedAt: now });
+    });
+  const waiting = (t: T) => t.run((ctx) => ctx.db.query("emailRetries").collect());
+  const copyItems = [{ deadlineType: "PWD expiration", deadlineDate: "2026-12-01", daysUntil: 7, urgency: "urgent" as const }];
+
+  /** A confirmed person whose day's reminders are waiting in the retry queue. */
+  async function queuedCopy() {
+    const s = await setup();
+    await s.owner.mutation(api.reminderRecipients.invite, { caseId: s.caseId, email: "para@firm.example" });
+    await finishScheduledNow(s.t);
+    const [row] = await rows(s.t);
+    await s.t.mutation(internal.reminderRecipients.confirmByToken, {
+      token: await confirmToken(row!._id, "para@firm.example"),
+      recipientId: row!._id,
+    });
+    await fillToday(s.t);
+    sent = [];
+    await s.t.action(internal.reminderRecipients.sendCopy, { recipientId: row!._id, items: copyItems });
+    expect(sent).toEqual([]);
+    return { ...s, id: row!._id };
+  }
+
+  /** A person whose invitation is waiting in the retry queue: Resend had an outage when it went. */
+  async function queuedInvite() {
+    const s = await setup();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(JSON.stringify({ name: "internal_server_error", message: "outage", statusCode: 500 }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+    await s.owner.mutation(api.reminderRecipients.invite, { caseId: s.caseId, email: "para@firm.example" });
+    await finishScheduledNow(s.t);
+    expect(sent).toEqual([]);
+    const [row] = await rows(s.t);
+    return { ...s, id: row!._id };
+  }
+
+  it("a queued reminder or invitation carries its row's ref", async () => {
+    const copy = await queuedCopy();
+    expect(await waiting(copy.t)).toEqual([
+      expect.objectContaining({ to: "para@firm.example", kind: "reminder-copy", refs: [`reminder:${copy.id}`] }),
+    ]);
+    const invite = await queuedInvite();
+    expect(await waiting(invite.t)).toEqual([
+      expect.objectContaining({ to: "para@firm.example", kind: "reminder-invite", refs: [`reminder:${invite.id}`] }),
+    ]);
+  });
+
+  it("the stop link drops it", async () => {
+    const { t, id } = await queuedCopy();
+    await t.mutation(internal.reminderRecipients.stopByToken, { token: await stopToken(id, "para@firm.example"), recipientId: id });
+    expect(await waiting(t)).toEqual([]);
+  });
+
+  it("the owner's Remove drops it", async () => {
+    const { t, owner, caseId } = await queuedCopy();
+    await owner.mutation(api.reminderRecipients.remove, { caseId });
+    expect(await waiting(t)).toEqual([]);
+  });
+
+  it("deleting the case drops it", async () => {
+    const { t, owner, caseId } = await queuedCopy();
+    await owner.mutation(api.cases.remove, { id: caseId });
+    expect(await waiting(t)).toEqual([]);
+  });
+
+  it("deleting the account drops it", async () => {
+    const { t, owner } = await queuedCopy();
+    await t.run((ctx) => purgeAllUserData(ctx, owner.userId));
+    expect((await waiting(t)).filter((r) => r.to === "para@firm.example")).toEqual([]);
+  });
+
+  it("an invitation that lapses drops its queued copy", async () => {
+    const { t, id } = await queuedInvite();
+    const now = Date.now();
+    await t.run((ctx) => ctx.db.patch(id, { invitedAt: now - INVITE_MS - 1000 }));
+    await t.mutation(internal.reminderRecipients.expireInvites, { now });
+    expect(await waiting(t)).toEqual([]);
+  });
+
+  it("leaves another person's waiting mail alone", async () => {
+    const { t, owner, caseId } = await queuedCopy();
+    await t.run((ctx) =>
+      ctx.db.insert("emailRetries", {
+        kind: "reminder-copy",
+        to: "para@firm.example",
+        payload: "{}",
+        queuedAt: 1,
+        nextAttemptAt: 1,
+        attempts: 0,
+        lastError: "daily_ceiling",
+        refs: ["reminder:another-row"],
+      }),
+    );
+    await owner.mutation(api.reminderRecipients.remove, { caseId });
+    expect((await waiting(t)).map((r) => r.refs)).toEqual([["reminder:another-row"]]);
   });
 });
 

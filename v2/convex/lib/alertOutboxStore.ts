@@ -9,6 +9,7 @@
 
 import type { Doc } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
+import { reminderRef } from "./reminderRecipients";
 
 type Kind = "case" | "queue" | "bulletin" | "employer" | "match";
 
@@ -62,4 +63,18 @@ export async function dropRetries(
     dropped += 1;
   }
   return dropped;
+}
+
+/**
+ * Delete what's waiting in the retry queue for a case's second reminder recipient (convex/reminderRecipients.ts):
+ * its invitation or a day's reminders, by the row's ref. Every path that stops, removes or deletes the row calls this
+ * first, while the address is still known, so a person who's gone gets nothing a retry kept.
+ */
+export async function dropReminderRetries(
+  ctx: MutationCtx,
+  row: { _id: string; email?: string },
+): Promise<number> {
+  if (!row.email) return 0;
+  const ref = reminderRef(row._id);
+  return await dropRetries(ctx, row.email, (r) => (r.refs ?? []).includes(ref));
 }
