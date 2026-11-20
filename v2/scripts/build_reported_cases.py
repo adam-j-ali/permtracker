@@ -323,18 +323,25 @@ class Changes(NamedTuple):
 
 
 def write(db, rows: list[dict], force: bool = False) -> Changes:
-    """Replace the stored list: new rows in first, then the rows this build didn't write out. Returns what changed:
-    the offices whose shown cases changed, and whether any shown case did."""
+    """Bring the stored list to this build: the cases that are new or changed are written, the ones gone are deleted
+    by id, and one statement gives every case this build's stamp (the pages' "last built"). Returns what changed: the
+    offices whose shown cases changed, and whether any shown case did.
+
+    Only the changes go over the wire: rewriting all of them each hour (20,000 cases by Nov 20 2026) took the build
+    from 80 seconds to past its 5-minute limit."""
     from lib_db import query_dicts, query_rows, stmt
     stored = int(query_rows(db, f"SELECT count(*) FROM {TABLE}")[0][0] or 0)  # nosemgrep
     if stored and len(rows) < stored * KEEP_SHARE and not force:
         raise RuntimeError(f"{len(rows)} cases against {stored} stored, more than half gone: the stored list stays")
     stored_rows = query_dicts(db, f"SELECT * FROM {TABLE}")  # nosemgrep
     before, before_all = office_digests(stored_rows), list_digest(stored_rows)
+    held = {r["case_id"]: _fingerprint(r) for r in stored_rows}
+    ids = {r["case_id"] for r in rows}
     stamp = rows[0]["built_at"] if rows else int(time.time() * 1000)
     sql = f"INSERT OR REPLACE INTO {TABLE} ({', '.join(COLUMNS)}) VALUES ({', '.join('?' * len(COLUMNS))})"  # nosemgrep
-    reqs = [stmt(sql, [r[c] for c in COLUMNS]) for r in rows]
-    reqs.append(stmt(f"DELETE FROM {TABLE} WHERE built_at < ?", [stamp]))  # nosemgrep
+    reqs = [stmt(sql, [r[c] for c in COLUMNS]) for r in rows if held.get(r["case_id"]) != _fingerprint(r)]
+    reqs += [stmt(f"DELETE FROM {TABLE} WHERE case_id = ?", [cid]) for cid in held if cid not in ids]  # nosemgrep
+    reqs.append(stmt(f"UPDATE {TABLE} SET built_at = ?", [stamp]))  # nosemgrep
     for i in range(0, len(reqs), 200):
         db.pipeline(reqs[i:i + 200])
     after = office_digests(rows)
