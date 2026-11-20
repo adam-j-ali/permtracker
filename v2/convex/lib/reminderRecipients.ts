@@ -26,14 +26,38 @@ export const INVITE_MS = INVITE_DAYS * MS_PER_DAY;
  */
 export const REMINDER_INVITES_PER_ADDRESS = 2;
 
+/** Gmail's two domains, one inbox: googlemail.com is read as gmail.com. */
+const GMAIL_DOMAINS = new Set(["gmail.com", "googlemail.com"]);
+
+/**
+ * The inbox an address reaches, so the refusal list and the invitation count can't be walked around by another
+ * spelling of it: trimmed and lowercased, a "+tag" dropped from the local part on every domain, and on Gmail the
+ * local part's dots dropped and googlemail.com read as gmail.com. A local part that would be left empty is kept as
+ * it was. Only the keys use it: mail still goes to the address as typed.
+ */
+export function canonicalAddress(email: string): string {
+  const lower = email.trim().toLowerCase();
+  const at = lower.lastIndexOf("@");
+  if (at < 0) return lower;
+  let local = lower.slice(0, at);
+  let domain = lower.slice(at + 1);
+  const plus = local.indexOf("+");
+  if (plus > 0) local = local.slice(0, plus);
+  if (GMAIL_DOMAINS.has(domain)) {
+    domain = "gmail.com";
+    local = local.replace(/\./g, "") || local;
+  }
+  return `${local}@${domain}`;
+}
+
 /**
  * The address as the refusal list (reminderRefusals) and the invitation count (reminderInviteCounts) keep it: an
- * HMAC of the trimmed, lowercased address under UNSUBSCRIBE_SECRET, so a row can be found again by the address but
- * the address can't be read back from it. The signed message starts `reminder-address-key:`, which is no token's
- * purpose, so a row is never a link's signature.
+ * HMAC of its inbox (canonicalAddress) under UNSUBSCRIBE_SECRET, so a row can be found again by any spelling of the
+ * address but the address can't be read back from it. The signed message starts `reminder-address-key:`, which is no
+ * token's purpose, so a row is never a link's signature.
  */
 export async function reminderAddressKey(email: string, secret: string): Promise<string> {
-  return await keyedHash(`reminder-address-key:${email.trim().toLowerCase()}`, secret);
+  return await keyedHash(`reminder-address-key:${canonicalAddress(email)}`, secret);
 }
 
 /** Who the invitation says asked, when the account has no name it can show. */
