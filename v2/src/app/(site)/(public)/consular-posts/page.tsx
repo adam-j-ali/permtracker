@@ -8,6 +8,9 @@
  * Expired by /api/revalidate-consular when a new table is stored.
  */
 
+import { StepFigures } from "@/components/community/StepFigures";
+import { getReportedSummary } from "@/lib/db/reportedSummary";
+import { stepsIn, type ReportedSummary } from "@/lib/reportedSummary";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CheckCircleIcon, HourglassMediumIcon, StampIcon } from "@phosphor-icons/react/ssr";
@@ -54,10 +57,13 @@ export const metadata: Metadata = withSocialCard(
 
 export default async function ConsularPostsPage() {
   // Visitors' own reports (convex/consularReports.ts): the page renders State's figures without them.
-  const [index, reports] = await Promise.all([
+  const [index, reports, summary] = await Promise.all([
     getConsularIndex(),
     queryStatic(api.consularReports.overview, {}, revalidate).catch(softFail("consular-posts.reports", null)),
+    // The consulate steps from every case people reported (community sheets and reports, merged hourly).
+    getReportedSummary().catch(softFail<ReportedSummary | null>("consular-posts.summary", null)),
   ]);
+  const consularSteps = summary ? stepsIn(summary.steps, "consular") : [];
   const { asOf, posts } = index;
   const listed = posts.filter((p) => p.now);
   const caughtUp = asOf ? listed.filter((p) => monthsBehind(p.now?.employment, asOf) === 0).length : 0;
@@ -167,7 +173,19 @@ export default async function ConsularPostsPage() {
       ) : null}
 
       <NivByPost pages={new Map(posts.map((p) => [p.key, p.slug]))} className="mt-10" />{" "}
-      {reports ? <ReportedPosts busiest={reports.busiest} posts={posts} className="mt-10" /> : null}
+      {reports ? <ReportedPosts busiest={reports.busiest} posts={posts} className="mt-10" /> : null}{" "}
+      {consularSteps.some((st) => st.median !== null) ? (
+        <section className="mt-10" aria-labelledby="reported-steps-h">
+          <h2 id="reported-steps-h" className="font-heading text-2xl font-bold sm:text-3xl">
+            How long the consulate steps took, as people report it
+          </h2>{" "}
+          <p className="mt-2 max-w-2xl text-base text-muted-foreground">
+            Every consulate together, from community sheets and the reports here, each person once, over the cases that
+            finished each step in the last 6 months (12 when 6 hold too few). Each consulate&apos;s page has its own.
+          </p>
+          <StepFigures steps={consularSteps} allHref="/green-card-timelines" className="mt-5" />
+        </section>
+      ) : null}
 
       <section className="mt-12" aria-labelledby="every-post">
         <h2 id="every-post" className="font-heading text-2xl font-bold">

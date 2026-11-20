@@ -30,13 +30,22 @@ import { easternDay } from "@/lib/time";
 import { getUscisPosted } from "@/lib/db/uscisPosted";
 import { waitPapers } from "@/lib/uscisPosted";
 import { formatAsOf } from "@/lib/dolFormat";
+import { Figure, FigureRow } from "@/components/data/FigureRow";
+import { StepsByStage } from "@/components/community/StepFigures";
+import { getReportedSummary } from "@/lib/db/reportedSummary";
+import { formatInt } from "@/lib/format";
+import { stepTrend, windowText, type ReportedSummary } from "@/lib/reportedSummary";
 
 /**
  * Green card timelines, as the people waiting report them.
  *
- * The PERM half of every timeline is read from DOL's own record by case
- * number; everything after PERM is self-reported, because USCIS publishes
- * nothing case by case, and the page says which is which at every figure.
+ * Every figure counts every case people reported, from every source we read
+ * (Telegram groups, community sheets, Reddit, VisaStats and the timelines
+ * shared here), each person once: the hourly build works them out
+ * (scripts/lib_reported_summary.py) over the cases that finished each step in
+ * the last 6 months, so past years never outvote this one. The timelines
+ * shared here are the checked part, and keep their own board, RFE reasons,
+ * account codes and contacts, which only their form asks about.
  * No case number, no employer and no exact PERM date appears here: a row is a
  * filing month and days since filing. The board lists rows only once enough
  * people have chosen to share, so no one row stands alone. Every timeline is
@@ -78,6 +87,10 @@ async function fetchBoard() {
 /** The questions people ask about this page, with answers that hold whatever the counts are. */
 const FAQS = [
   {
+    q: "Where do these figures come from?",
+    a: "From every place people report their own dates that we read: public Telegram groups about PERM and green cards, public community sheets, Reddit, VisaStats' tracker and the timelines shared on this site. Each person counts once: two reports join only when three of their dates match. Each step counts the cases that finished it in the last 6 months, or 12 when 6 hold too few, so older years don't outvote this one. No name, username or message is shown.",
+  },
+  {
     q: "Are these USCIS's processing times?",
     a: "No. USCIS publishes its own times across every case, and they're on this site's USCIS processing times page. These are dates people typed in about their own case, so they say what those people saw. USCIS publishes nothing case by case, which is why this page exists.",
   },
@@ -95,13 +108,53 @@ const FAQS = [
   },
 ];
 
+/** The headline: how many cases, and the two steps people ask about most, each against the 6 months before. */
+function Headline({ summary }: { summary: ReportedSummary }) {
+  const step = (id: string) => summary.steps.find((s) => s.id === id && s.median !== null);
+  const gc = step("i485-gc");
+  const perm = step("perm");
+  const i140 = step("i140-premium");
+  return (
+    <FigureRow className="mt-8">
+      <Figure label="Cases people reported" value={formatInt(summary.headline.cases)} note="every source, each person once" />
+      {gc ? (
+        <Figure
+          label="I-485 filed to green card"
+          value={`${formatInt(gc.median!)} days`}
+          trend={stepTrend(gc) ?? undefined}
+          note={`median of ${formatInt(gc.n)} decided in ${windowText(gc.windowDays)}${gc.before ? ", against the 6 months before" : ""}`}
+        />
+      ) : null}
+      {perm ? (
+        <Figure
+          label="PERM filed to decided"
+          value={`${formatInt(perm.median!)} days`}
+          trend={stepTrend(perm) ?? undefined}
+          note={`median of ${formatInt(perm.n)} decided in ${windowText(perm.windowDays)}${perm.before ? ", against the 6 months before" : ""}`}
+        />
+      ) : null}
+      {i140 ? (
+        <Figure
+          label="I-140 with premium processing"
+          value={`${formatInt(i140.median!)} days`}
+          trend={stepTrend(i140) ?? undefined}
+          note={`median of ${formatInt(i140.n)} decided in ${windowText(i140.windowDays)}${i140.before ? ", against the 6 months before" : ""}`}
+        />
+      ) : null}
+      <Figure label="Green cards in the last 30 days" value={formatInt(summary.headline.greenCards30)} note="reported by the people who got them" />
+    </FigureRow>
+  );
+}
+
 export default async function GreenCardTimelinesPage() {
-  const [board, posted, reported] = await Promise.all([
+  const [board, posted, reported, summary] = await Promise.all([
     fetchBoard().catch(softFail<Board | null>("green-card-timelines/page.fetchBoard", null)),
     // USCIS's own posted times for the work permit and advance parole, beside people's reports. A failed read loses only that line.
     getUscisPosted().catch(softFail("green-card-timelines/page.getUscisPosted", null)),
     // Every source's reported cases at a glance. A failed read loses only that section.
     getReportedOverview().catch(softFail("green-card-timelines/page.getReportedOverview", null)),
+    // Every figure over every source (the hourly build's summary). Without it the page falls back to the shared timelines'.
+    getReportedSummary().catch(softFail<ReportedSummary | null>("green-card-timelines/page.getReportedSummary", null)),
   ]);
   const papers = waitPapers(posted);
   // Optional chaining: a backend older than Nov 11 2026 sends no `offices`.
@@ -123,15 +176,19 @@ export default async function GreenCardTimelinesPage() {
       <header>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Green card timelines</h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          How long each step after PERM took, from the people who went through it. The PERM dates are checked against
-          DOL&apos;s record. The rest is self-reported, because USCIS doesn&apos;t publish it case by case.
+          {summary
+            ? `How long each step took, from ${formatInt(summary.headline.cases)} cases people reported in Telegram groups, community sheets, Reddit, VisaStats and on this site, each person once. Self-reported, because USCIS doesn't publish it case by case.`
+            : "How long each step after PERM took, from the people who went through it. Self-reported, because USCIS doesn't publish it case by case."}
         </p>
       </header>
+
+      {summary ? <Headline summary={summary} /> : null}
 
       {board ? (
         <>
           {/* Soft grounds by meaning (round 3, Oct 15 2026): the record in sage,
               what's shared in green, RFEs in the waiting yellow. */}
+          {summary ? null : (
           <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3 [&>*]:min-w-0" aria-label="The record so far">
             <div className="bg-sage p-5 border-2 shadow-hard border-border">
               <p className="text-sm text-muted-foreground">Timelines added</p>{" "}
@@ -146,11 +203,14 @@ export default async function GreenCardTimelinesPage() {
               <p className="mt-1 font-heading text-3xl font-bold tabular-nums">{board.rfe.total.toLocaleString("en-US")}</p>
             </div>
           </section>
+          )}
 
           {/* No week when the page fell back to the plain board. */}
-          {board.recent ? <RecentApprovals recent={board.recent} /> : null}{" "}
-
-          <ReportedOverview overview={reported} />{" "}
+          {summary?.week ? (
+            <RecentApprovals recent={summary.week} />
+          ) : board.recent ? (
+            <RecentApprovals recent={board.recent} />
+          ) : null}{" "}
 
           <section className="mt-8 max-w-3xl" aria-labelledby="add-h">
             <h2 id="add-h" className="sr-only">
@@ -172,14 +232,29 @@ export default async function GreenCardTimelinesPage() {
             <h2 id="stages-h" className="font-heading text-2xl font-bold sm:text-3xl">
               How long each step took
             </h2>{" "}
-            <p className="mt-2 max-w-2xl text-base text-muted-foreground">
-              The bar is the middle half of the reports and the amber tick is the median. Every timeline counts here,
-              shared on the board or not
-              {board.scanCapped ? `, up to the newest ${board.scanCap.toLocaleString("en-US")}` : ""}.
-            </p>
-            <div className="mt-5">
-              <StageMedians metrics={board.metrics} />
-            </div>{" "}
+            {summary ? (
+              <>
+                <p className="mt-2 max-w-2xl text-base text-muted-foreground">
+                  The bar is the middle half of the cases and the amber tick is the median. Each step counts the cases
+                  that finished it in the last 6 months, or 12 when 6 hold too few, so older years don&apos;t outvote
+                  this one. The blue line is the median by the month each case finished.
+                </p>
+                <div className="mt-5">
+                  <StepsByStage steps={summary.steps} />
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="mt-2 max-w-2xl text-base text-muted-foreground">
+                  The bar is the middle half of the reports and the amber tick is the median. Every timeline counts here,
+                  shared on the board or not
+                  {board.scanCapped ? `, up to the newest ${board.scanCap.toLocaleString("en-US")}` : ""}.
+                </p>
+                <div className="mt-5">
+                  <StageMedians metrics={board.metrics} />
+                </div>
+              </>
+            )}{" "}
             {papers && (papers.ead || papers.ap) ? (
               <p className="mt-5 max-w-2xl text-base leading-relaxed">
                 {`USCIS's own posted times, as of its ${formatAsOf(papers.published)} posting: ${[
@@ -195,10 +270,37 @@ export default async function GreenCardTimelinesPage() {
             ) : null}
           </section>
 
+          <section className="mt-12" aria-labelledby="waiting-h">
+            <h2 id="waiting-h" className="font-heading text-2xl font-bold sm:text-3xl">
+              Who&apos;s waiting, and where
+            </h2>{" "}
+            <p className="mt-2 max-w-2xl text-base text-muted-foreground">
+              {summary?.waiting.open
+                ? `The ${formatInt(summary.waiting.heard)} people heard from in the last year, at the furthest step each reported, then by category and country. Someone who last posted two years ago isn't counted as still waiting. Counts only, so no line can be traced to a person.`
+                : "Each timeline at the furthest step it reports, by category and country. Counts only, from every timeline here, so no line can be traced to a person."}
+            </p>
+            <div className="mt-5">
+              {summary?.waiting.open ? (
+                <WhoIsWaiting waiting={summary.waiting} total={summary.waiting.heard} noun={["person", "people"]} />
+              ) : /* Optional chaining: a backend older than this page sends no `waiting`. */ board.waiting?.open ? (
+                <WhoIsWaiting waiting={board.waiting} total={board.total} />
+              ) : (
+                <p className="text-base text-muted-foreground">
+                  Opens at {board.opensAt} timelines, like the board. {board.total.toLocaleString("en-US")} so far.
+                </p>
+              )}
+            </div>
+          </section>
+
+          <ReportedOverview overview={reported} />{" "}
+
           <section className="mt-12" aria-labelledby="board-h">
             <h2 id="board-h" className="font-heading text-2xl font-bold sm:text-3xl">
-              The board
+              Timelines shared here
             </h2>{" "}
+            <p className="mt-2 max-w-2xl text-base text-muted-foreground">
+              {`${formatInt(board.total)} ${board.total === 1 ? "timeline was" : "timelines were"} shared on this site and checked by us before ${board.total === 1 ? "it counts" : "they count"}, and ${formatInt(board.shared)} of them chose to be listed. Every one counts in the figures above. The RFE reasons, account updates and contacts below come only from these, because only this form asks.`}
+            </p>{" "}
             {board.open ? (
               <>
                 <p className="mt-2 max-w-2xl text-base text-muted-foreground">
@@ -221,8 +323,8 @@ export default async function GreenCardTimelinesPage() {
                   Opens at {board.opensAt} shared timelines. {board.shared.toLocaleString("en-US")} so far.
                 </p>{" "}
                 <p className="mt-2">
-                  A board with a handful of rows lets anyone pick one person out, so it stays shut until there are
-                  enough to read as a crowd. The medians above already count every timeline added.
+                  A list with a handful of rows lets anyone pick one person out, so it stays shut until there are
+                  enough to read as a crowd. The figures above already count every case, these included.
                 </p>
               </NoteBanner>
             )}
@@ -249,32 +351,12 @@ export default async function GreenCardTimelinesPage() {
             </p>
           </section>
 
-          <section className="mt-12" aria-labelledby="waiting-h">
-            <h2 id="waiting-h" className="font-heading text-2xl font-bold sm:text-3xl">
-              Who&apos;s waiting, and where
-            </h2>{" "}
-            <p className="mt-2 max-w-2xl text-base text-muted-foreground">
-              Each timeline at the furthest step it reports, by category and country. Counts only, from every timeline
-              here, so no line can be traced to a person.
-            </p>
-            <div className="mt-5">
-              {/* Optional chaining: a backend older than this page sends no `waiting`. */}
-              {board.waiting?.open ? (
-                <WhoIsWaiting waiting={board.waiting} total={board.total} />
-              ) : (
-                <p className="text-base text-muted-foreground">
-                  Opens at {board.opensAt} timelines, like the board. {board.total.toLocaleString("en-US")} so far.
-                </p>
-              )}
-            </div>
-          </section>
-
           <section className="mt-12" aria-labelledby="rfe-h">
             <h2 id="rfe-h" className="font-heading text-2xl font-bold sm:text-3xl">
               Requests for evidence
             </h2>{" "}
             <p className="mt-2 max-w-2xl text-base text-muted-foreground">
-              What the RFEs people reported asked about, and how they ended. It&apos;s self-reported, and people who got one
+              What the RFEs on the timelines shared here asked about, and how they ended. It&apos;s self-reported, and people who got one
               are likelier to say so than people who didn&apos;t. So read it as a list of reasons. It isn&apos;t a rate.
             </p>
             <div className="mt-5">

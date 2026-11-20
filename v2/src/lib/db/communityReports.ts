@@ -1,7 +1,6 @@
 import "server-only";
 import { cache } from "react";
 
-import { fromI140Row, type I140Case } from "../reportedI140";
 import { fromRow, type ReportedCase } from "../reportedCases";
 import { rows } from "./client";
 
@@ -48,20 +47,6 @@ export const getReportedCasesBuiltAt = cache(async (): Promise<number | null> =>
  * Every I-140 people reported, merged across sources: the cases with an I-140 date or decision. A case that adds
  * nothing to a possible repeat, or that no shown source holds, never comes back. Empty before the first build.
  */
-export const getReportedI140Cases = cache(async (): Promise<I140Case[]> => {
-  let got: Row[];
-  try {
-    got = await rows<Row>(
-      "SELECT category, premium, i140_receipt, priority_date, i140_decision, i140_decided, i140_rfe FROM reported_cases " +
-        "WHERE shows = 1 AND adds_nothing = 0 AND (i140_decision IS NOT NULL OR i140_receipt IS NOT NULL)",
-    );
-  } catch (e) {
-    if (/no such table/i.test(String(e))) return [];
-    throw e;
-  }
-  return got.map(fromI140Row);
-});
-
 export interface ReportedOverview {
   /** Cases shown, each person once. */
   people: number;

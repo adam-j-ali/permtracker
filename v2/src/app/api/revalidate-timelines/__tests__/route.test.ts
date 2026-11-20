@@ -92,7 +92,8 @@ describe("the path list", () => {
     const routes = pages
       .map((f) => "/" + relative(appDir, f).replace(/\/?page\.tsx$/, "").split("/").filter((s) => !s.startsWith("(")).join("/"))
       .filter((r) => !r.startsWith("/i485-by-field-office/"))
-      .map((r) => r.replace("/[form]", "/i-140"))
+      // The form page draws the summary for each form people report (FORM_STEPS in that page).
+      .flatMap((r) => (r.includes("/[form]") ? ["i-140", "i-485", "i-765", "i-131", "i-129"].map((f) => r.replace("/[form]", `/${f}`)) : [r]))
       .sort();
     expect(routes.length).toBeGreaterThan(0);
     for (const route of routes) expect(FIXED_PAGES).toContain(route); // every page reading the list is refreshed
