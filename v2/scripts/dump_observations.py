@@ -39,9 +39,12 @@ TABLES: list[tuple[str, int]] = [
     ("perm_case_status", 300_000),
     ("pwd_case_status", 50_000),
     ("lca_case_status", 100_000),
+    # 340,655 rows on Nov 20 2026; the floor sits well under it, so only a broken dump trips it.
+    ("seasonal_case_status", 200_000),
     ("perm_case_events", 100_000),
     ("pwd_case_events", 1),
     ("lca_case_events", 1),
+    ("seasonal_case_events", 1),
     ("perm_docs", 10),
     ("data_freshness", 10),
     ("ingest_runs", 1),
