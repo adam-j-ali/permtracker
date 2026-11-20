@@ -128,7 +128,7 @@ export function SafetyInspections({
                 {i.city || i.state ? `, ${[i.city, i.state].filter(Boolean).join(", ")}` : ""}: {inspectionType(i.type)}
                 {i.closeDate ? "" : ", still open"}. {citedLine({ ...i, open: !i.closeDate })}{" "}
                 <span className="block text-muted-foreground">
-                  As inspected: {i.name}.{" "}
+                  As inspected: {i.name}{i.scope ? `, in a ${i.scope} inspection` : ""}.{" "}
                   <a href={inspectionUrl(i.activityNr)} rel="noopener noreferrer" target="_blank" className="link">
                     OSHA&apos;s record of inspection {i.activityNr}
                   </a>

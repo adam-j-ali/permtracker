@@ -10,9 +10,9 @@ const summary: OshaSummary = {
   inspections: 4, withViolations: 2, violations: 9, serious: 5, willful: 1, repeat: 0,
   penalty: 82000, initialPenalty: 151000, open: 1, afterHarm: 1, firstOpen: "2017-02-06", lastOpen: "2025-11-03",
   newest: [
-    { activityNr: "1700000", name: "NORTHWIND TRADERS INC.", city: "Austin", state: "TX", type: "M", openDate: "2025-11-03",
+    { activityNr: "1700000", name: "NORTHWIND TRADERS INC.", city: "Austin", state: "TX", type: "M", scope: "safety" as const, openDate: "2025-11-03",
       closeDate: null, violations: 3, serious: 2, willful: 1, repeat: 0, penalty: 70000 },
-    { activityNr: "1600000", name: "NORTHWIND TRADERS INC.", city: "Austin", state: "TX", type: "H", openDate: "2019-04-01",
+    { activityNr: "1600000", name: "NORTHWIND TRADERS INC.", city: "Austin", state: "TX", type: "H", scope: null, openDate: "2019-04-01",
       closeDate: "2019-06-01", violations: 0, serious: 0, willful: 0, repeat: 0, penalty: 0 },
   ],
 };
@@ -24,6 +24,9 @@ describe("the employer page's OSHA section", () => {
     expect(html).toContain("2 cited a violation");
     expect(html).toContain("$82,000");
     expect(html).toContain("$151,000 when first assessed");
+    // OSHA's own safety-or-health field, said only where OSHA gave it.
+    expect(html).toContain("As inspected: NORTHWIND TRADERS INC., in a safety inspection.");
+    expect(html).not.toContain("in a health inspection");
     expect(html).toContain("1 inspection still open; 1 after an accident, a death or a catastrophe.");
     expect(html).toContain("different companies can have similar names");
     expect(html).toContain("After a death or catastrophe, still open.");

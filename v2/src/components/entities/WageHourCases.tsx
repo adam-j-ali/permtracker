@@ -40,7 +40,7 @@ function caseLine(c: WhdCase): string {
   const parts = [plural(c.violations, "violation")];
   if (c.backWages > 0) parts.push(`${money(c.backWages)} in back wages to ${plural(c.workersOwed, "worker")}`);
   if (c.penalties > 0) parts.push(`${money(c.penalties)} in penalties`);
-  return `${parts.join(", ")}.`;
+  return `${parts.join(", ")}.${c.repeat ? ` DOL found the violations ${c.repeat}.` : ""}`;
 }
 
 export function WageHourCases({
@@ -84,7 +84,8 @@ export function WageHourCases({
         </div>{" "}
         <div className="py-3 sm:pl-4">
           <dt className="text-sm text-muted-foreground">Penalties assessed</dt>{" "}
-          <dd className="font-heading text-2xl font-bold tabular-nums">{money(summary.penalties)}</dd>
+          <dd className="font-heading text-2xl font-bold tabular-nums">{money(summary.penalties)}</dd>{" "}
+          {summary.repeatCases > 0 ? <dd className="text-sm">{`${plural(summary.repeatCases, "case")} DOL found repeated or willful`}</dd> : null}
         </div>
       </dl>{" "}
 
@@ -94,7 +95,8 @@ export function WageHourCases({
             <li key={label} className="text-base">
               <span className="mr-2 inline-block bg-soft-warn px-1.5 font-bold">{label}</span>{" "}
               {plural(t.cases, "case")}, {plural(t.violations, "violation")}
-              {t.backWages > 0 ? `, ${money(t.backWages)} in back wages to ${plural(t.workers, "worker")}` : ""}.{" "}
+              {t.backWages > 0 ? `, ${money(t.backWages)} in back wages to ${plural(t.workers, "worker")}` : ""}
+              {t.penalties > 0 ? `, ${money(t.penalties)} in penalties` : ""}.{" "}
             </li>
           ))}
         </ul>
@@ -115,7 +117,8 @@ export function WageHourCases({
                 {c.visa.map((v) => (
                   <span key={v.program} className="block">
                     {v.program}: {plural(v.violations, "violation")}
-                    {v.backWages > 0 ? `, ${money(v.backWages)} to ${plural(v.workers, "worker")}` : ""}.{" "}
+                    {v.backWages > 0 ? `, ${money(v.backWages)} to ${plural(v.workers, "worker")}` : ""}
+                    {v.penalties > 0 ? `, ${money(v.penalties)} in penalties` : ""}.{" "}
                   </span>
                 ))}
                 <span className="block text-muted-foreground">

@@ -20,6 +20,10 @@ export interface TaaPetition {
   /** DOL's estimate of the workers in the group. */
   workers: number | null;
   product: string | null;
+  /** DOL's PETITION_DATE, IMPACT_DATE and EXPIRATION_DATE, under DOL's own names. */
+  petitionDate: string | null;
+  impactDate: string | null;
+  expirationDate: string | null;
 }
 
 type Row = Record<string, string | number | null>;
@@ -29,7 +33,7 @@ const s = (v: unknown) => (v === null || v === undefined || v === "" ? null : St
 export const taaForSlug = cache(async (slug: string): Promise<TaaPetition[]> => {
   try {
     const got = await rows<Row>(
-      "SELECT petition, name, city, state, det_code, det_date, workers, product FROM taa_petitions " +
+      "SELECT petition, name, city, state, det_code, det_date, workers, product, petition_date, impact_date, expiration_date FROM taa_petitions " +
         "WHERE employer_slug = ? ORDER BY det_date DESC, petition LIMIT 200",
       [slug],
     );
@@ -42,6 +46,9 @@ export const taaForSlug = cache(async (slug: string): Promise<TaaPetition[]> => 
       decided: String(r.det_date),
       workers: r.workers === null || r.workers === undefined || r.workers === "" ? null : Number(r.workers),
       product: s(r.product),
+      petitionDate: s(r.petition_date),
+      impactDate: s(r.impact_date),
+      expirationDate: s(r.expiration_date),
     }));
   } catch (e) {
     if (/no such table/i.test(String(e))) return [];

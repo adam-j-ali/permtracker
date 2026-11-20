@@ -73,7 +73,8 @@ function ProgramBlock({ p, first, last }: { p: WhdBoardProgram; first: number; l
         </div>{" "}
         <div className="border-b-2 border-border py-3 sm:border-b-0 sm:border-r-2 sm:px-4">
           <dt className="text-sm text-muted-foreground">Back wages agreed</dt>{" "}
-          <dd className="font-heading text-3xl font-bold tabular-nums">{money(p.backWages)}</dd>
+          <dd className="font-heading text-3xl font-bold tabular-nums">{money(p.backWages)}</dd>{" "}
+          {p.penalties > 0 ? <dd className="text-sm">{`and ${money(p.penalties)} in penalties`}</dd> : null}
         </div>{" "}
         <div className="py-3 sm:pl-4">
           <dt className="text-sm text-muted-foreground">Workers owed</dt>{" "}
