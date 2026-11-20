@@ -10,7 +10,7 @@ import { formatInt } from "@/lib/format";
 import type { MonthStart, NextStart } from "@/lib/monthStart";
 import { ANALYST_REVIEW } from "@/lib/searchStages";
 import { cn } from "@/lib/utils";
-import { formatShare, formatShareOf } from "@convex/lib/format";
+import { formatShareOf } from "@convex/lib/format";
 
 import { stageOf } from "./stages";
 import { MONTH_NAMES, monthDay, monthYear, weekdayName } from "@convex/lib/months";
@@ -70,11 +70,15 @@ export function answerLine(est: NextStart): string {
   return `Likely between ${day(est.from)} and ${day(est.to)}`;
 }
 
-/** "80% to 82%", or one share when the starts agree. */
-function shareSpan(est: NextStart): string {
-  const lo = formatShare(est.shareLow);
-  const hi = formatShare(est.shareHigh);
+/** "1,600 to 2,600", or one count when the starts agree: to the hundred, since a range doesn't hold the tens. */
+function lineSpan(est: NextStart): string {
+  const lo = formatInt(roundHundred(est.inLineLow));
+  const hi = formatInt(roundHundred(est.inLineHigh));
   return lo === hi ? lo : `${lo} to ${hi}`;
+}
+
+function roundHundred(n: number): number {
+  return n < 100 ? n : Math.round(n / 100) * 100;
 }
 
 /** "the last three months", "the last month". */
@@ -99,9 +103,10 @@ export function NextMonthStart({
   const now = monthName(est.current);
   const next = monthName(est.month);
   const pct = (n: number) => `${(n / workable) * 100}%`;
-  const decidedShare = formatShareOf(split.decided, workable);
-  const lowPct = est.shareLow * 100;
-  const highPct = est.shareHigh * 100;
+  // Where the month will stand when it's down to each count: the more left, the sooner.
+  const at = (left: number) => Math.min(100, Math.max(0, ((workable - left) / workable) * 100));
+  const lowPct = at(est.inLineHigh);
+  const highPct = at(est.inLineLow);
 
   return (
     <PageSection
@@ -110,9 +115,9 @@ export function NextMonthStart({
       className={className}
       lede={
         <>
-          DOL began each of {lastOnes(est.basedOn.length, "month")} once the month before was about {shareSpan(est)}{" "}
-          decided.{" "}
-          {now} is {decidedShare} decided.
+          DOL began each of {lastOnes(est.basedOn.length, "month")} once the month before was down to about{" "}
+          {lineSpan(est)} cases in analyst review.{" "}
+          {now} has {formatInt(est.inLine)} in analyst review.
         </>
       }
     >
@@ -138,7 +143,7 @@ export function NextMonthStart({
             <div
               className="absolute -top-8 bottom-0 border-x-2 border-foreground bg-foreground/15"
               style={{ left: `${lowPct}%`, width: `max(2px, ${highPct - lowPct}%)` }}
-              data-tip={`Where ${lastOnes(est.basedOn.length, "month")} began\nThe month before was ${shareSpan(est)} decided`}
+              data-tip={`Where ${lastOnes(est.basedOn.length, "month")} began\nThe month before had about ${lineSpan(est)} in analyst review`}
             />{" "}
             <span
               className="absolute -top-8 whitespace-nowrap pr-2 text-sm font-bold leading-6"
@@ -196,21 +201,26 @@ export function NextMonthStart({
         <div className="max-w-prose space-y-3 text-base leading-relaxed text-soft">
           <p>
             A start is the first day DOL decided 50 or more of a month&rsquo;s cases. The month before is read as it
-            stood the evening before. Only its cases DOL can decide count, so the ones on hold are left out: DOL set
-            them aside.
+            stood the evening before: how many of its cases were still in analyst review. DOL began each recent month
+            with about that many left, whatever the size of the month.
+          </p>{" "}
+          <p>
+            Until Nov 20, 2026 this used the share of the month before that was decided instead. That share was 80%
+            to 82% at the first three starts, then March 2026 began with February only 54% decided: February was a
+            small month. Its last estimate named Friday, Nov 20, three working days after the real start on Tuesday, Nov 17.
           </p>{" "}
           <p>
             The pace is {now}&rsquo;s decisions per working day since it began, over the last week at most. Weekends
             and federal holidays aren&rsquo;t working days.
           </p>{" "}
           <p>
-            We ran it on the record as it stood each working day before the last two starts. In the two weeks before
-            each start, it named the real day or a working day either side of it. Three weeks out, it ran up to four
-            working days late.
+            We ran it on the record as it stood each working day in the two weeks before the last three starts. It
+            named the real day or a working day either side of it on 22 of the 23 days. On the other, the first
+            working day after February began, it ran three working days late.
           </p>{" "}
           <p>
             DOL publishes none of this. PERM Tracker reads it from DOL&rsquo;s own case statuses, case by case, each
-            day. Three starts is a short record, and the date moves when DOL&rsquo;s pace does.
+            day. Four starts is a short record, and the date moves when DOL&rsquo;s pace does.
           </p>
         </div>
       </FinePrint>
@@ -232,7 +242,7 @@ export function startSentence(est: NextStart): string {
     return `DOL will likely start ${label} after about ${formatInt(roundTen(est.needHigh))} more ${now} decisions.`;
   }
   const when = est.from === est.to ? `on ${day(est.from)}` : `between ${day(est.from)} and ${day(est.to)}`;
-  return `DOL will likely start ${label} ${when}, once ${now} is about ${shareSpan(est)} decided.`;
+  return `DOL will likely start ${label} ${when}, once ${now} is down to about ${lineSpan(est)} in analyst review.`;
 }
 
 export function NextStartLine({ est, className }: { est: NextStart; className?: string }) {
@@ -294,8 +304,7 @@ function PastStart({ start }: { start: MonthStart }) {
         <span className="block h-full flex-1 bg-card bg-hatch text-input" />
       </span>{" "}
       <span className="mt-3 block text-sm leading-relaxed text-soft">
-        {monthName(start.previous)} was {share} decided, with {formatInt(start.previousInLine)} still in analyst
-        review.
+        {monthName(start.previous)} had {formatInt(start.previousInLine)} still in analyst review, {share} decided.
       </span>
     </li>
   );

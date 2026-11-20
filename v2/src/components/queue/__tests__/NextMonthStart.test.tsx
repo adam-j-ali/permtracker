@@ -42,31 +42,33 @@ const shared = {
   inLine: 2975,
   held: 407,
   share: 2043 / 5087,
-  shareLow: 0.7996,
-  shareHigh: 0.8248,
+  inLineLow: 1603,
+  inLineHigh: 2607,
   basedOn: starts,
 };
 
 const estimate: NextStart = {
   ...shared,
   state: "estimate",
-  needLow: 2025,
-  needHigh: 2153,
+  needLow: 368,
+  needHigh: 1372,
   pace: 603,
-  from: "2026-11-20",
-  to: "2026-11-20",
+  from: "2026-11-17",
+  to: "2026-11-19",
 };
 
 describe("NextMonthStart", () => {
   it("answers with the day, the work left and the pace, in rounded figures", () => {
     render(<NextMonthStart est={estimate} current={february} />);
     expect(screen.getByRole("heading", { level: 2, name: "When DOL starts March 2026" })).toBeTruthy();
-    expect(screen.getByText("Likely Friday, Nov 20")).toBeTruthy();
+    expect(screen.getByText("Likely between Tuesday, Nov 17 and Thursday, Nov 19")).toBeTruthy();
     const body = document.body.textContent ?? "";
-    expect(body).toContain("DOL began each of the last three months once the month before was about 80% to 82% decided.");
-    expect(body).toContain("February is 40% decided.");
-    expect(body).toContain("About 2,030 to 2,150 more February decisions to go.");
-    expect(body).toContain("about 600 a working day since it began on Tuesday, Nov 10, which takes about 4 working days.");
+    expect(body).toContain(
+      "DOL began each of the last three months once the month before was down to about 1,600 to 2,600 cases in analyst review.",
+    );
+    expect(body).toContain("February has 2,975 in analyst review.");
+    expect(body).toContain("About 370 to 1,370 more February decisions to go.");
+    expect(body).toContain("about 600 a working day since it began on Tuesday, Nov 10, which takes about 3 working days.");
     expect(body).toContain("407 on hold left out");
   });
 
@@ -77,12 +79,12 @@ describe("NextMonthStart", () => {
     expect(screen.getByText("2,975")).toBeTruthy();
   });
 
-  it("lists the last starts newest first, each with the month before's share", () => {
+  it("lists the last starts newest first, each with what the month before had left", () => {
     render(<NextMonthStart est={estimate} current={february} />);
     expect(screen.getByRole("heading", { level: 3, name: "The last three starts" })).toBeTruthy();
     const items = screen.getAllByRole("listitem").filter((li) => /Began/.test(li.textContent ?? ""));
     expect(items.map((li) => li.querySelector("span")?.textContent)).toEqual(["February 2026", "January 2026", "December 2025"]);
-    expect(items[0]?.textContent).toContain("January was 82% decided, with 1,603 still in analyst review.");
+    expect(items[0]?.textContent).toContain("January had 1,603 still in analyst review, 82% decided.");
   });
 
   it("says a range, a due day and a count without a pace in their own words", () => {
@@ -90,7 +92,7 @@ describe("NextMonthStart", () => {
       "Likely between Thursday, Nov 19 and Monday, Nov 23",
     );
     expect(answerLine({ ...shared, state: "due", from: "2026-11-10" })).toBe("Due now: likely Tuesday, Nov 10");
-    expect(answerLine({ ...estimate, pace: null, from: null, to: null })).toBe("After about 2,153 more February decisions");
+    expect(answerLine({ ...estimate, pace: null, from: null, to: null })).toBe("After about 1,372 more February decisions");
   });
 
   it("keeps every word apart in the rendered text", () => {

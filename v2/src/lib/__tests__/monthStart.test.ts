@@ -13,10 +13,11 @@ import fixture from "./monthStart.fixture.json";
 
 /**
  * The fixture is the past-day census (perm_census_days) for filing months
- * October 2025 to March 2026, Aug 30 to Nov 15 2026: each day's total, decided,
+ * October 2025 to March 2026, Aug 30 to Nov 19 2026: each day's total, decided,
  * on-hold and analyst-review counts per filing month, as the server held them
- * on Nov 16 2026. The three starts it holds (December on Sep 22, January on
- * Oct 20, February on Nov 10) are DOL's real ones.
+ * on Nov 16 2026 (through Nov 15) and Nov 20 (Nov 16 to 19). The four starts it
+ * holds (December on Sep 22, January on Oct 20, February on Nov 10, March on
+ * Nov 17) are DOL's real ones.
  */
 const series = fixture as MonthDay[];
 
@@ -36,18 +37,21 @@ function asOf(day: string, month: string) {
 describe("findMonthStarts", () => {
   const starts = findMonthStarts(series);
 
-  it("finds the three starts DOL made inside the record, on their days", () => {
+  it("finds the four starts DOL made inside the record, on their days", () => {
     expect(starts.map((s) => [s.month, s.day])).toEqual([
       ["2025-12", "2026-09-22"],
       ["2026-01", "2026-10-20"],
       ["2026-02", "2026-11-10"],
+      ["2026-03", "2026-11-17"],
     ]);
   });
 
   it("measures the month before at the end of the day before, holds left out", () => {
+    // March began with February 54% decided, where the three before had begun at 80 to 82.5%: February was a
+    // small month. The count still in analyst review held: 1,603 to 2,607 at all four.
     const shares = starts.map((s) => Math.round(s.previousShare * 1000) / 10);
-    expect(shares).toEqual([80, 80.9, 82.5]);
-    expect(starts.map((s) => s.previousInLine)).toEqual([2607, 2557, 1603]);
+    expect(shares).toEqual([80, 80.9, 82.5, 53.8]);
+    expect(starts.map((s) => s.previousInLine)).toEqual([2607, 2557, 1603, 2258]);
     expect(starts[2]).toMatchObject({ previous: "2026-01", previousWorkable: 11635 - 1230, previousDecided: 8582 });
   });
 
@@ -126,20 +130,23 @@ describe("estimateNextStart", () => {
       workable: 5087,
       inLine: 2975,
       held: 407,
-      needLow: 2025,
-      needHigh: 2153,
+      inLineLow: 1603,
+      inLineHigh: 2607,
+      // 2,975 in analyst review against the 2,607 and 1,603 the last three starts began at.
+      needLow: 368,
+      needHigh: 1372,
       // 1,809 decided since the end of Nov 9, over Nov 10, 12 and 13 (Nov 11 is Veterans Day).
       pace: 603,
-      from: "2026-11-20",
-      to: "2026-11-20",
+      // March began Tue Nov 17. The share rule this replaced said Fri Nov 20.
+      from: "2026-11-17",
+      to: "2026-11-19",
     });
     expect(est?.basedOn).toHaveLength(3);
   });
 
   // The backtest, kept: run each business day on the record as it stood, the
   // estimate named the real start or the business day either side of it
-  // through the two weeks before each start. Earlier it ran up to four
-  // business days late (Oct 22 for February: Nov 17), which the card says.
+  // through the two weeks before the January and February starts.
   it.each([
     ["2026-10-06", "2026-10-20"], ["2026-10-07", "2026-10-20"], ["2026-10-08", "2026-10-20"],
     ["2026-10-09", "2026-10-20"], ["2026-10-13", "2026-10-20"], ["2026-10-14", "2026-10-20"],
@@ -151,14 +158,28 @@ describe("estimateNextStart", () => {
     const current = actual === "2026-10-20" ? "2025-12" : "2026-01";
     const { known, live } = asOf(day, current);
     const est = estimateNextStart({ series: known, starts: findMonthStarts(known), live });
-    expect(est?.state).toBe("estimate");
-    if (est?.state !== "estimate" || !est.from || !est.to) throw new Error("no date");
-    expect(businessDaysApart(est.from, actual)).toBeLessThanOrEqual(1);
-    expect(businessDaysApart(est.to, actual)).toBeLessThanOrEqual(1);
-    expect(est.to >= est.from).toBe(true);
+    // A month already down to the count reads as due on the next working day: Nov 6 to 9 for February, a day early.
+    if (!est || (est.state === "estimate" && (!est.from || !est.to))) throw new Error("no date");
+    const from = est.from!;
+    const to = est.state === "estimate" ? est.to! : est.from;
+    expect(businessDaysApart(from, actual)).toBeLessThanOrEqual(1);
+    expect(businessDaysApart(to, actual)).toBeLessThanOrEqual(1);
+    expect(to >= from).toBe(true);
   });
 
-  it("says the start is due once the month passes the share and the next one hasn't begun", () => {
+  // And March, from the first day there was a February pace to read: Nov 12 (the first working day after February
+  // began, its pace one day old) said Nov 20 to 24, three working days late; Nov 13 and Nov 16 held the real day
+  // or a working day either side of it.
+  it.each([["2026-11-13"], ["2026-11-16"]])("as of %s its range holds March's start, within a business day", (day) => {
+    const { known, live } = asOf(day, "2026-02");
+    const est = estimateNextStart({ series: known, starts: findMonthStarts(known), live });
+    if (est?.state !== "estimate" || !est.from || !est.to) throw new Error("no date");
+    const actual = "2026-11-17";
+    const inside = est.from <= actual && actual <= est.to;
+    expect(inside || businessDaysApart(est.from, actual) <= 1 || businessDaysApart(est.to, actual) <= 1).toBe(true);
+  });
+
+  it("says the start is due once the month is down to the count and the next one hasn't begun", () => {
     const { known, live } = asOf("2026-11-09", "2026-01");
     const est = estimateNextStart({ series: known, starts: findMonthStarts(known), live });
     expect(est).toMatchObject({ state: "due", month: "2026-02", current: "2026-01", from: "2026-11-10" });
@@ -175,8 +196,8 @@ describe("estimateNextStart", () => {
   });
 
   it("skips Thanksgiving when it counts working days", () => {
-    // July is 40% decided when August starts on Mon Nov 9. August then sits at 50 decided until Nov 17
-    // and gains 40 a working day to 250 on Tue Nov 24: 150 short of July's 40%, so four working days.
+    // July has 600 in analyst review when August starts on Mon Nov 9. August then sits at 50 decided until Nov 17
+    // and gains 40 a working day to 250 on Tue Nov 24: 750 in line, 150 above July's 600, so four working days.
     // Counted past Thanksgiving (Thu Nov 26) those are Nov 25, 27, 30 and Dec 1, and the start is Wed Dec 2.
     // Counting the holiday as a working day would say Tue Dec 1.
     const days = ["2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06", "2026-11-09", "2026-11-10",
