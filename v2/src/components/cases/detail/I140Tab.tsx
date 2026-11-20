@@ -8,6 +8,7 @@ import type { CaseDetailData } from "./case-detail-types";
 import { fmtISODate, computeWindowStatus } from "./case-detail-utils";
 import { WindowCard } from "./WindowCard";
 import { ResponseEntryGrid } from "./ResponseEntryGrid";
+import { ReportedI140ForCase } from "./ReportedI140ForCase";
 
 interface I140TabProps {
   caseData: CaseDetailData;
@@ -132,6 +133,14 @@ export function I140Tab({ caseData }: I140TabProps) {
           </div>
         </Link>
       </div>
+
+      {/* How I-140s like this one are going, from every case people reported */}
+      <ReportedI140ForCase
+        category={caseData.i140Category}
+        premium={caseData.i140PremiumProcessing}
+        filedOn={caseData.i140FilingDate}
+        decidedOn={caseData.i140ApprovalDate || caseData.i140DenialDate}
+      />{" "}
 
       {/* RFE Section */}
       <Link href={buildEditSectionUrl(caseData._id, "i140")} className="detail-card-link" title="Edit in case form">
