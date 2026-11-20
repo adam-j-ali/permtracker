@@ -311,7 +311,9 @@ def office_summaries(cases: list[dict], today: dt.date) -> dict[str, dict]:
     """Each office with OFFICE_FLOOR cases or more: its I-485 steps and who's waiting there."""
     by_office: dict[str, list[dict]] = {}
     for c in cases:
-        if c.get("office"):
+        # The office pages are about employment-based I-485s: a family case reported at an office counts nowhere on
+        # them (the office list leaves it out the same way, src/lib/db/communityReports.ts).
+        if c.get("office") and c.get("category") != "Family":
             by_office.setdefault(c["office"], []).append(c)
     steps = [s for s in STEPS if s["id"] in OFFICE_STEPS]
     out = {}

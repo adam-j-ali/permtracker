@@ -26,6 +26,7 @@ import sys
 import time
 from pathlib import Path
 
+import lib_offices as offices
 import lib_post_dates as post_dates
 import lib_post_model as post_model
 import lib_reported_cases as rc
@@ -105,12 +106,31 @@ def post_key(source: str, chat: str, row_id) -> str:
     return str(row_id) if source == "reddit" else f"{chat}:{row_id}"
 
 
+# A post about a marriage or family case, which the employment-based figures leave out, unless it also names an
+# employment-based step (an EB case whose spouse is a derivative is still an EB case).
+FAMILY_CASE = re.compile(r"\b(marriage|married to a (?:us |u\.s\. )?citizen|spouse of a (?:us |u\.s\. )?citizen|"
+                         r"family[- ]based|i-?130|k-?1|ir-?1|cr-?1|fianc[eé]e?)\b", re.I)
+EMPLOYMENT_CASE = re.compile(r"\b(eb-?[123]\w*|niw|perm|i-?140|employment[- ]based|labou?r cert\w*)\b", re.I)
+
+# The steps an I-485 takes at a field office, or on its way there.
+ADJUSTMENT_STEPS = frozenset({"i485_receipt", "biometrics", "transfer", "interview", "i485_decided", "ead", "ap", "card"})
+
+
 def _record(chat: str, row: dict, posted: dt.date, spec: dict, fields: dict, source: str = "telegram") -> dict:
     rec = {"source": source, "key": post_key(source, chat, row["id"]), "as_of": posted.isoformat(), **fields}
     if row.get("sender"):
         rec["person"] = str(row["sender"])
     if spec.get("office"):
         rec["office"] = spec["office"]
+    elif ADJUSTMENT_STEPS & fields.keys() and "office" not in fields:
+        # A post in a general chat that names the one field office its case is at ("transferred to Santa Ana FO")
+        # counts toward that office. Only for an I-485 step: the office has nothing to do with PERM or the I-140.
+        code = offices.office_in_post(row.get("text"))
+        if code:
+            rec["office"] = code
+    text = row.get("text") or ""
+    if "category" not in rec and FAMILY_CASE.search(text) and not EMPLOYMENT_CASE.search(text):
+        rec["category"] = "Family"
     rc.check_record(rec)
     return rec
 

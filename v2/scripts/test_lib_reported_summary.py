@@ -108,6 +108,11 @@ def main() -> int:
     offices = rs.office_summaries(office, TODAY)
     check(list(offices) == ["SFV"] and {s["id"] for s in offices["SFV"]["steps"]} == set(rs.OFFICE_STEPS),
           "an office with 25 cases gets a summary, one with 4 doesn't")
+    # The office pages are about employment-based I-485s: family cases reported there count nowhere on them.
+    family = [dict(c, office="SFV", category="Family") for c in recent]
+    fam = rs.office_summaries(office + family, TODAY)
+    check(fam["SFV"]["cases"] == offices["SFV"]["cases"] and "SFV" not in rs.office_summaries(family, TODAY),
+          f"a family case counts toward no office: {fam['SFV']['cases']} vs {offices['SFV']['cases']}")
 
     # Every group has its steps, the ids are unique, and every field a step reads is one the merge carries.
     import lib_reported_cases as rc

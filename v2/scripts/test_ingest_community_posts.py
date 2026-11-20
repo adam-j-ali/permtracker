@@ -160,6 +160,30 @@ def main() -> int:
         check(keys == ["41", "42"] and next(r for r in got if r["key"] == "41").get("office") == "SFV"
               and counts["by_hand"] == 1, f"a post read by hand stays as read, the rest are read: {keys} {counts}")
 
+    # A post that names its field office counts toward that office, when it reports an I-485 step; a PERM post that
+    # names one doesn't (the office has nothing to do with PERM), and an office's own chat keeps its office.
+    named = icp.telegram_records("USCIS_EB3", [msg(51, "I-485 RD 10/14/2025, transferred to Santa Ana FO, GC approved "
+                                                       "11/03/2026", date="2026-11-04T15:00:00+00:00")], sub,
+                                 source="reddit")[0]
+    check(named and named[0].get("office") == "SAA", f"a post naming its office counts there: {named}")
+    perm_only = icp.telegram_records("a-chat", [msg(52, "Perm certified today, my lawyer is near Tampa FO",
+                                                    date="2023-10-24T16:00:00+00:00")], perm)[0]
+    check(perm_only and "office" not in perm_only[0], f"a PERM post never gets an office: {perm_only}")
+    kept = icp.telegram_records("an-office", [msg(53, "I485 RD: 08/14/2025 transferred to Tampa FO, GC approved 11/03/2026",
+                                                  date="2026-11-04T15:00:00+00:00")], sfv_spec)[0]
+    check(kept and kept[0]["office"] == "SFV", f"an office's own chat keeps its office: {kept}")
+
+    # A post about a marriage or family case is marked Family, so the employment-based figures can leave it out; a post
+    # that also names an employment-based step keeps its own category.
+    marriage = icp.telegram_records("USCIS", [msg(54, "Marriage based AOS. I-485 RD 10/14/2025, interview at Chicago FO, "
+                                                     "GC approved 11/03/2026", date="2026-11-04T15:00:00+00:00")], sub,
+                                    source="reddit")[0]
+    check(marriage and marriage[0].get("category") == "Family", f"a marriage case is marked Family: {marriage}")
+    eb = icp.telegram_records("USCIS", [msg(55, "Through PERM. After our marriage my wife joined as a derivative. "
+                                               "I-485 RD 10/14/2025, GC approved 11/03/2026", date="2026-11-04T15:00:00+00:00")], sub,
+                              source="reddit")[0]
+    check(eb and eb[0].get("category") != "Family", f"an employment case that names a spouse isn't Family: {eb}")
+
     print(f"{failures} failed")
     return 1 if failures else 0
 

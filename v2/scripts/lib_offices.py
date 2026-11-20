@@ -104,3 +104,38 @@ def _one_office(text: str | None) -> str | None:
                 if len(places) == 1 and rest in STATES.values() | STATES.keys():
                     return places[0][0]
     return None
+
+
+# Where a post names the field office its case is at: the words before "FO" or "field office", after "transferred
+# to" (or moved, sent), and after "interview at" (or in). Names start with a capital ("Santa Ana", "SFV", "LA"), so a
+# time ("interview at 10 AM") or a plain word ("my field office") names nothing.
+_NAME = r"((?:[A-Z][\w.'’-]*\s+){0,3}[A-Z][\w.'’-]*)"
+_POST_PLACES = (
+    re.compile(_NAME + r"\s*(?:FO|F\.O\.|[Ff]ield [Oo]ffice)\b"),
+    re.compile(r"\b(?:[Tt]ransferr?ed|[Mm]oved|[Ss]ent)\b[^.\n]{0,40}?\bto\s+(?:the\s+)?" + _NAME),
+    re.compile(r"\b[Ii]nterview(?:ed)?\s+(?:at|in)\s+(?:the\s+)?" + _NAME),
+)
+
+
+@functools.lru_cache(maxsize=1)
+def _centres() -> frozenset[str]:
+    """Service centres and the NBC, which file work but hold no interviews: never a case's field office."""
+    with open(OFFICES_FILE) as fh:
+        return frozenset(o["code"] for o in json.load(fh) if not o["state"])
+
+
+def office_in_post(text: str | None) -> str | None:
+    """The one field office a post says its case is at, or None when it names none, names a centre only, or names
+    two (a friend's and the poster's can't be told apart)."""
+    found: set[str] = set()
+    for pattern in _POST_PLACES:
+        for m in pattern.finditer(text or ""):
+            words = m.group(1).split()
+            # The longest run of words that names an office: "Stuck At Santa Ana" names Santa Ana.
+            for i in range(len(words)):
+                code = office_code(" ".join(words[i:]))
+                if code:
+                    if code not in _centres():
+                        found.add(code)
+                    break
+    return found.pop() if len(found) == 1 else None
