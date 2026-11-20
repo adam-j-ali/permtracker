@@ -121,7 +121,7 @@ export function LevelEstimator({
             {usable.length > 1 ? (
               <label className="grid grid-cols-1 gap-1 text-base [&>*]:min-w-0">
                 <span className="font-bold">Closest occupation</span>
-                <select className="min-h-11 w-full max-w-md border-2 border-input bg-background px-2" value={onet} onChange={(e) => setOnet(e.target.value)}>
+                <select className="min-h-11 w-full min-w-0 max-w-md border-2 border-input bg-background px-2" value={onet} onChange={(e) => setOnet(e.target.value)}>
                   {usable.map((r) => (
                     <option key={r.onetCode} value={r.onetCode}>
                       {`${r.title} (Job Zone ${r.jobZone})`}
@@ -132,7 +132,7 @@ export function LevelEstimator({
             ) : null}
             <label className="grid grid-cols-1 gap-1 text-base [&>*]:min-w-0">
               <span className="font-bold">Degree the job requires</span>
-              <select className="min-h-11 w-full max-w-md border-2 border-input bg-background px-2" value={degree} onChange={(e) => setDegree(e.target.value as Degree)}>
+              <select className="min-h-11 w-full min-w-0 max-w-md border-2 border-input bg-background px-2" value={degree} onChange={(e) => setDegree(e.target.value as Degree)}>
                 {DEGREES.map((d) => (
                   <option key={d} value={d}>
                     {DEGREE_LABELS[d]}
