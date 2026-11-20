@@ -123,11 +123,25 @@ describe("a case's reminders for someone else", () => {
     expect(screen.getByText("para@firm.example gets this case's deadline reminders. They confirmed on November 20, 2026.")).toBeInTheDocument();
   });
 
-  it("says the person stopped them, with no address left to show", () => {
-    state.recipient = row({ status: "stopped", email: null, stoppedAt: AT });
+  it("says the person stopped them, with no address left to show, and that it can't be added again", () => {
+    state.recipient = row({ status: "stopped", email: null, confirmedAt: AT, stoppedAt: AT });
     render(<ReminderRecipientCard caseId={caseId} />);
     expect(screen.getByText("Stopped")).toBeInTheDocument();
-    expect(screen.getByText(/stopped these reminders on November 20, 2026, and we deleted their address\./)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "The second person stopped these reminders on November 20, 2026, and we deleted their address. That address can't be added again. Remove this to add someone else.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("says the person asked not to be invited, when they never confirmed", () => {
+    state.recipient = row({ status: "stopped", email: null, confirmedAt: null, stoppedAt: AT });
+    render(<ReminderRecipientCard caseId={caseId} />);
+    expect(
+      screen.getByText(
+        "The person you invited asked not to get these reminders on November 20, 2026, and we deleted their address. That address can't be added again. Remove this to add someone else.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("removes only after a confirm", async () => {

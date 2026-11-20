@@ -30,7 +30,8 @@ const BADGE = { waiting: "Waiting to confirm", confirmed: "On", stopped: "Stoppe
  * "Reminders for someone else" on a case's Overview: the case's deadline reminders sent to a second person too, a
  * paralegal or the employer's HR contact (convex/reminderRecipients.ts). One per case. The address gets one email to
  * confirm; once it does, it gets this case's reminders by the owner's email switches in Settings (the same rule as the
- * owner's own reminder email: emailsDeadlineReminder), each with a one-click stop. The
+ * owner's own reminder email: emailsDeadlineReminder), each with a one-click stop. A stop, or "Don't invite me again"
+ * in the invitation, leaves the row stopped with no address, and that address can't be invited again. The
  * card shows the address and where it stands, and removes it after a confirm.
  */
 export function ReminderRecipientCard({ caseId, closed = false }: { caseId: Id<"cases">; closed?: boolean }) {
@@ -82,6 +83,12 @@ export function ReminderRecipientCard({ caseId, closed = false }: { caseId: Id<"
 
   const day = (ms: number | null) => (ms ? longDate(easternDay(ms)) : null);
   const who = recipient?.email ?? "the second person";
+  // Stopped: by a reminder's Stop link, or, never confirmed, by "Don't invite me again" in the invitation.
+  const stoppedHow =
+    recipient?.confirmedAt === null
+      ? "The person you invited asked not to get these reminders"
+      : "The second person stopped these reminders";
+  const stoppedLine = `${stoppedHow} on ${day(recipient?.stoppedAt ?? null)}, and we deleted their address. That address can't be added again. Remove this to add someone else.`;
 
   return (
     <section className="detail-card" aria-labelledby={`${id}-h`}>
@@ -147,7 +154,7 @@ export function ReminderRecipientCard({ caseId, closed = false }: { caseId: Id<"
                   : `We've invited ${who}. Their reminders start once they confirm. If they don't within ${INVITE_DAYS} days, the invitation and their address are deleted.`
                 : recipient.status === "confirmed"
                   ? `${who} gets this case's deadline reminders. They confirmed on ${day(recipient.confirmedAt)}.`
-                  : `The second person stopped these reminders on ${day(recipient.stoppedAt)}, and we deleted their address. Remove this to add someone else.`}
+                  : stoppedLine}
             </p>{" "}
             <Button type="button" variant="outline" className="min-h-11" onClick={() => setConfirming(true)}>
               Remove
