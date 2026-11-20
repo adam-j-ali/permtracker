@@ -26,7 +26,9 @@ describe("the privacy page and deleted cases", () => {
     for (const part of [caseData, retention]) {
       expect(part).toContain("{DELETED_CASE_DAYS} days so you can restore it from Settings");
       expect(part).toMatch(/then (it&apos;s|it is) erased/i);
-      expect(part).toMatch(/documents and recruitment log are deleted when you delete the case/);
+      expect(part).toMatch(/documents and recruitment log are deleted when you delete the case or replace it/);
+      // Replacing a case by importing a file deletes it the same way (cases.importCases).
+      expect(part).toMatch(/when you delete a case, or replace it by importing a file, we keep a copy/i);
     }
     expect(page).toContain('import { DELETED_CASE_DAYS } from "@convex/lib/deletedCases"');
     expect(retention).not.toMatch(/\b30 days so you can restore/);
