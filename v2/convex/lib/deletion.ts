@@ -86,6 +86,25 @@ export async function deleteCaseShares(ctx: MutationCtx, caseIds: readonly Id<"c
   return n;
 }
 
+/**
+ * Delete the second reminder recipients of the given cases (convex/reminderRecipients.ts): run when a case is
+ * deleted, as the Privacy Policy says. A case holds one, so the read is small.
+ */
+export async function deleteCaseReminderRecipients(ctx: MutationCtx, caseIds: readonly Id<"cases">[]): Promise<number> {
+  let n = 0;
+  for (const caseId of caseIds) {
+    const rows = await ctx.db
+      .query("reminderRecipients")
+      .withIndex("by_caseId", (q) => q.eq("caseId", caseId))
+      .take(50);
+    for (const r of rows) {
+      await ctx.db.delete("reminderRecipients", r._id);
+      n += 1;
+    }
+  }
+  return n;
+}
+
 export async function purgeAllUserData(
   ctx: MutationCtx,
   userId: Id<"users">
@@ -133,6 +152,11 @@ export async function purgeAllUserData(
   // The links that shared those cases' recruitment records stop with the account (the Privacy Policy says so).
   for await (const share of ctx.db.query("recruitmentShares").withIndex("by_userId", (q) => q.eq("userId", userId))) {
     await ctx.db.delete("recruitmentShares", share._id);
+  }
+
+  // So does anyone else who got those cases' deadline reminders (convex/reminderRecipients.ts).
+  for await (const r of ctx.db.query("reminderRecipients").withIndex("by_userId", (q) => q.eq("userId", userId))) {
+    await ctx.db.delete("reminderRecipients", r._id);
   }
 
   // Delete all user's notifications

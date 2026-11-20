@@ -687,6 +687,32 @@ export default defineSchema({
     .index("by_caseId", ["caseId"])
     .index("by_userId", ["userId"]),
 
+  /**
+   * A second person who gets a case's deadline reminders too, a paralegal or the employer's HR contact
+   * (convex/reminderRecipients.ts). One per case, added by the case's own account. The address gets one invitation
+   * and nothing more until it confirms; a waiting invitation is deleted after 30 days. Once confirmed, the daily
+   * reminder run sends it that case's due reminders, by the owner's own deadline switches. Stopping them (the link in
+   * each email) erases the address and keeps the row as "stopped" so the owner sees it; the owner removing it deletes
+   * the row; it goes with its case and with the account (lib/deletion.ts), as the Privacy Policy says.
+   */
+  reminderRecipients: defineTable({
+    userId: v.id("users"),
+    caseId: v.id("cases"),
+    /** Trimmed and lowercased. Erased when the person stops the reminders. */
+    email: v.optional(v.string()),
+    status: v.union(v.literal("waiting"), v.literal("confirmed"), v.literal("stopped")),
+    invitedAt: v.number(),
+    confirmedAt: v.optional(v.number()),
+    stoppedAt: v.optional(v.number()),
+    /** Set when the invitation couldn't be sent and won't be tried again. */
+    inviteFailedAt: v.optional(v.number()),
+    /** The Eastern day the last reminder went, so a day's run never sends twice. */
+    lastSentDay: v.optional(v.string()),
+  })
+    .index("by_caseId", ["caseId"])
+    .index("by_userId", ["userId"])
+    .index("by_status_and_invitedAt", ["status", "invitedAt"]),
+
   // Notifications for deadline alerts and system messages
   notifications: defineTable({
     // Relationships

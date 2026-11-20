@@ -95,7 +95,13 @@ export type TokenPurpose =
    * Accept one version of the policy (convex/policyConsent.ts). The version is part of the purpose, so a link
    * mailed for one version never accepts another (`policyAcceptPurpose` in convex/lib/policyConsent.ts).
    */
-  | `policy-accept:${string}`;
+  | `policy-accept:${string}`
+  /**
+   * A case's second reminder recipient (convex/reminderRecipients.ts): confirm the invitation, or stop the
+   * reminders. The recipient row's id is part of the purpose, so a link for one row never acts on another.
+   */
+  | `reminder-confirm:${string}`
+  | `reminder-stop:${string}`;
 
 /** The exact string that gets signed. Kept in one place so both sides agree. */
 function signedMessage(normalizedEmail: string, purpose?: TokenPurpose): string {

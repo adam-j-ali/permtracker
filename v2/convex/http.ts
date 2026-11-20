@@ -30,6 +30,7 @@ import { normaliseFlagCaseNumber, programOf } from "../src/lib/flagCaseNumber";
 import { LIST_ENTRIES_MAX } from "../src/lib/caseList";
 import { confirmOffers, isPermWageRequest, PWD_MATCH_SENTENCE } from "./lib/alertNextSteps";
 import { MAIL_KINDS, PREFS_KINDS, type PrefsKind } from "./lib/mailKinds";
+import { REMINDER_CONFIRM_PATH, REMINDER_STOP_PATH } from "./lib/reminderRecipients";
 
 const isPrefsKind = (k: string): k is PrefsKind => (PREFS_KINDS as readonly string[]).includes(k);
 import { SLUG_RE as EMPLOYER_SLUG_RE, employerNameFor } from "./employerAlerts";
@@ -684,6 +685,104 @@ http.route({
       "Stop your case alerts?",
       "You'll stop receiving status alerts for every PERM case this address is watching.",
       { post: `/case-alert/unsubscribe?token=${encodeURIComponent(token)}` },
+    );
+  }),
+});
+
+// A case's deadline reminders, sent to a second person too (convex/reminderRecipients.ts). The invitation's Confirm
+// link and every reminder's Stop link open a page with one button: a GET changes nothing, so a mail scanner opening
+// the link confirms or stops nothing. The mail app's own Unsubscribe button POSTs straight to the stop route. Neither
+// route sends mail, and each mutation behind them is internal.
+
+/** The token and recipient row from a reminder link, length-capped first; null when either is missing. */
+function reminderLink(req: Request): { token: string; r: string } | null {
+  const url = new URL(req.url);
+  const token = url.searchParams.get("token") ?? "";
+  const r = url.searchParams.get("r") ?? "";
+  if (!token || !r || token.length > 512 || r.length > 64) return null;
+  return { token, r };
+}
+
+/** The page's own form target, every part encoded and the whole escaped for the attribute. */
+function reminderAction(path: string, l: { token: string; r: string }): string {
+  return escapeHtml(`${path}?token=${encodeURIComponent(l.token)}&r=${encodeURIComponent(l.r)}`);
+}
+
+/** A reminder link that can't be used. No button: the preferences page holds nothing for this address. */
+function reminderBadLink(reason: string): Response {
+  return htmlPage(
+    "This link doesn't work",
+    `<h1>This link doesn't work</h1><p class="muted">${escapeHtml(reason)}</p>`,
+    400,
+  );
+}
+
+http.route({
+  path: REMINDER_CONFIRM_PATH,
+  method: "GET",
+  handler: httpAction(async (_ctx, req) => {
+    const l = reminderLink(req);
+    if (!l) return reminderBadLink("This invitation link is incomplete. Open it again from the email.");
+    return messagePage(
+      "Confirm the deadline reminders",
+      "We'll email you this PERM case's deadline reminders when they're due. Each one has a link that stops them with one click.",
+      { post: reminderAction(REMINDER_CONFIRM_PATH, l), label: "Confirm the reminders" },
+    );
+  }),
+});
+
+http.route({
+  path: REMINDER_CONFIRM_PATH,
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const l = reminderLink(req);
+    if (!l) return reminderBadLink("This invitation link is incomplete. Open it again from the email.");
+    const result = await ctx.runMutation(internal.reminderRecipients.confirmByToken, { token: l.token, recipientId: l.r });
+    if (!result) {
+      return reminderBadLink(
+        "This invitation is no longer open. It may be past its 30 days, or it was removed or stopped. Ask the person who added you to send a new one.",
+      );
+    }
+    const line = escapeHtml(result.caseLine);
+    if (result.state === "already") {
+      return messagePage("You're already set", `Nothing more to do. The deadline reminders for ${line} come to this address.`);
+    }
+    return messagePage(
+      "You're set",
+      `We'll email you the deadline reminders for ${line} when they're due. Each one has a link that stops them with one click.`,
+    );
+  }),
+});
+
+http.route({
+  path: REMINDER_STOP_PATH,
+  method: "GET",
+  handler: httpAction(async (_ctx, req) => {
+    const l = reminderLink(req);
+    if (!l) return reminderBadLink("This link is incomplete. Use the Stop link in your latest reminder email.");
+    return messagePage(
+      "Stop these deadline reminders?",
+      "You'll stop getting this PERM case's deadline reminders, and we'll delete your address from it.",
+      { post: reminderAction(REMINDER_STOP_PATH, l), label: "Stop the reminders" },
+    );
+  }),
+});
+
+// POST is also what Gmail and Apple Mail send for one-click List-Unsubscribe.
+http.route({
+  path: REMINDER_STOP_PATH,
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const l = reminderLink(req);
+    if (!l) return reminderBadLink("This link is incomplete. Use the Stop link in your latest reminder email.");
+    const result = await ctx.runMutation(internal.reminderRecipients.stopByToken, { token: l.token, recipientId: l.r });
+    if (!result) return reminderBadLink("This link was changed or isn't one of ours. Use the Stop link in your latest reminder email.");
+    if (result === "already") {
+      return messagePage("These reminders are already off", "Nothing more will be sent to you for this case.");
+    }
+    return messagePage(
+      "The reminders are off",
+      "We won't send you this case's deadline reminders again, and we've deleted your address from it.",
     );
   }),
 });

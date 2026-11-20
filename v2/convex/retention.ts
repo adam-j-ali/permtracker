@@ -11,9 +11,11 @@
  *
  * The run also starts `toolCache.cleanExpired` (chat tool results expire by
  * their own TTL rather than by age, so that cleanup lives with the cache),
- * `inboundFilter.pruneHeld` (mail the spam filter held, 30 days after it was held)
- * and `eraseDeletedCaseCopies` (a deleted case's copy in the change log,
- * DELETED_CASE_DAYS after the deletion, with the rest of that case's change history).
+ * `inboundFilter.pruneHeld` (mail the spam filter held, 30 days after it was held),
+ * `eraseDeletedCaseCopies` (a deleted case's copy in the change log,
+ * DELETED_CASE_DAYS after the deletion, with the rest of that case's change history)
+ * and `reminderRecipients.expireInvites` (an invitation to a case's deadline
+ * reminders nobody confirmed, 30 days after it was sent).
  *
  * Not here, on purpose: the rest of `auditLogs` (kept indefinitely by the retention
  * policy, docs/compliance/DATA_RETENTION.md, and removed with an account),
@@ -173,6 +175,8 @@ export const pruneOperationalLogs = internalMutation({
       await ctx.scheduler.runAfter(0, internal.inboundFilter.pruneHeld, {});
       // Deleted cases' copies, once they can't be restored (convex/lib/deletedCases.ts).
       await ctx.scheduler.runAfter(0, internal.retention.eraseDeletedCaseCopies, { now });
+      // Invitations to a case's deadline reminders nobody confirmed, 30 days on (convex/reminderRecipients.ts).
+      await ctx.scheduler.runAfter(0, internal.reminderRecipients.expireInvites, { now });
     }
     return out;
   },
