@@ -48,7 +48,6 @@ vi.mock("next/navigation", () => ({
 // Mock Convex hooks
 const mockCaseData = vi.fn();
 const mockUserProfile = vi.fn();
-const mockTimelinePrefs = vi.fn();
 const mockRemove = vi.fn();
 const mockUpdate = vi.fn();
 const mockReopenCase = vi.fn();
@@ -69,21 +68,16 @@ vi.mock("convex/react", () => ({
     // Queries are called in this order per render:
     // 1. case data (CaseDetailPageClient)
     // 2. user profile (CaseDetail)
-    // 3. timeline preferences (CaseDetail)
+    // (The timeline's settings were a third until Nov 20 2026: the menu reads the case's own switch now.)
     const idx = queryCallIndex++;
-    const position = idx % 3;
+    const position = idx % 2;
     if (position === 0) {
       // Case data query - reset mutation position for new render
       mutationPositionInRender = 0;
       return mockCaseData();
     }
-    if (position === 1) {
-      // User profile query
-      return mockUserProfile();
-    }
-    // Timeline preferences query
-    const result = mockTimelinePrefs();
-    return result || { selectedCaseIds: null };
+    // User profile query
+    return mockUserProfile();
   },
   useMutation: () => {
     // Return mutations in order they are called in component:
@@ -263,7 +257,6 @@ function resetMocks() {
   mockRemoveFromTimeline.mockReset();
   mockClearJobDescription.mockReset();
   mockUserProfile.mockReturnValue(null);
-  mockTimelinePrefs.mockReturnValue({ selectedCaseIds: null });
 }
 
 // LOADING STATE TESTS
@@ -877,6 +870,17 @@ describe("CaseDetailPage - Timeline Toggle", () => {
 
     await user.click(screen.getByRole("button", { name: /actions/i }));
     expect(await screen.findByRole("menuitem", { name: /timeline/i })).toBeInTheDocument();
+  });
+
+  it("reads the case's own switch: switched off in the form, the menu offers to show it and does", async () => {
+    mockCaseData.mockReturnValue({ ...createMockCaseData(), showOnTimeline: false });
+
+    const { user } = await renderPageAndWait("test-id");
+
+    await user.click(screen.getByRole("button", { name: /actions/i }));
+    await user.click(await screen.findByRole("menuitem", { name: "Show on timeline" }));
+    await waitFor(() => expect(mockAddToTimeline).toHaveBeenCalledWith({ caseId: "test-id" }));
+    expect(mockRemoveFromTimeline).not.toHaveBeenCalled();
   });
 });
 
