@@ -79,11 +79,15 @@ export function isConnectionClosed(message: string): boolean {
 
 /**
  * A request the visitor's connection dropped, in each browser's own bare words: Safari's "Load failed", Chrome's
- * "Failed to fetch", Firefox's "NetworkError when attempting to fetch resource.". Anchored, so a message that says
- * more ("Failed to fetch dynamically imported module: ...") is a build-file fault and keeps its own handling.
+ * "Failed to fetch", Firefox's "NetworkError when attempting to fetch resource.", and "network error" for a response
+ * cut while its body was still being read (Huawei Browser 132 on Android, Sentry 64, Nov 20 2026, the screen's reload
+ * curing it both times). Anchored, so a message that says more ("Failed to fetch dynamically imported module: ...")
+ * is a build-file fault and keeps its own handling.
  */
 export function isDroppedRequest(message: string): boolean {
-  return /^(?:TypeError: )?(?:Load failed|Failed to fetch|NetworkError when attempting to fetch resource\.?)$/.test(message.trim());
+  return /^(?:TypeError: )?(?:Load failed|Failed to fetch|NetworkError when attempting to fetch resource\.?|network error)$/.test(
+    message.trim(),
+  );
 }
 
 /**
