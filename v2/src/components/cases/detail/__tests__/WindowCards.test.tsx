@@ -10,6 +10,13 @@
  * (20 CFR 656.40(c), Karl Storz).
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+
+// The recruitment tab reads the applicant log; these tests are about its windows, so the log is empty.
+vi.mock("convex/react", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("convex/react")>()),
+  useQuery: () => [],
+  useMutation: () => vi.fn(),
+}));
 import { screen } from "@testing-library/react";
 import { renderWithProviders } from "../../../../../test-utils/render-utils";
 import { ETA9089Tab } from "../ETA9089Tab";

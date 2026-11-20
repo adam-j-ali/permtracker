@@ -13,6 +13,7 @@ import type { MutationCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { recordError } from "./errorRecording";
 import { deleteCaseDocumentBlobs } from "./caseDocumentBlobs";
+import { APPLICANTS_PER_CASE_MAX } from "./perm/recruitment/applicantReport";
 
 interface PurgeResult {
   /** The deleted user's email, captured before the user row is removed. */
@@ -47,6 +48,25 @@ interface PurgeResult {
  * This is the single source of truth for user deletion.
  * Both `deleteUserAdmin` and `permanentlyDeleteAccount` call this.
  */
+/**
+ * Delete the applicant logs of the given cases: run when a case is deleted, as the Privacy Policy's Case Data list
+ * says. Bounded by the log's per-case cap.
+ */
+export async function deleteCaseApplicants(ctx: MutationCtx, caseIds: readonly Id<"cases">[]): Promise<number> {
+  let n = 0;
+  for (const caseId of caseIds) {
+    const rows = await ctx.db
+      .query("recruitmentApplicants")
+      .withIndex("by_caseId", (q) => q.eq("caseId", caseId))
+      .take(APPLICANTS_PER_CASE_MAX + 1);
+    for (const r of rows) {
+      await ctx.db.delete(r._id);
+      n += 1;
+    }
+  }
+  return n;
+}
+
 export async function purgeAllUserData(
   ctx: MutationCtx,
   userId: Id<"users">
@@ -82,6 +102,14 @@ export async function purgeAllUserData(
       { resourceId: failedBlobs.join(",").slice(0, 500), userId }
     );
   }
+
+  // Delete the applicant logs the user kept for those cases (the Privacy Policy's Case Data list says they go with
+  // the account), by the user's own index so a log whose case is already gone goes too.
+  const applicants = await ctx.db
+    .query("recruitmentApplicants")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .collect();
+  for (const a of applicants) await ctx.db.delete(a._id);
 
   // Delete all user's notifications
   const notifications = await ctx.db

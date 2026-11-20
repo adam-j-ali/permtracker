@@ -138,6 +138,13 @@ export default function PrivacyPage() {
                 Notes, and any documents you upload to a case. An uploaded file is
                 deleted when you delete it, its case or your account
               </li>{" "}
+              <li>
+                A recruitment log you keep for a case: for each applicant, a reference
+                you choose (the form asks for no name or contact details), the dates the
+                applicant applied and was contacted, how they were contacted, and the
+                job-related reason you recorded. It is deleted when you delete it, its
+                case or your account
+              </li>{" "}
               <li>RFI/RFE information and response dates</li>
             </ul>{" "}
             <h3 id="counted-cases" className="font-heading text-lg font-bold mt-6 mb-3">

@@ -1,6 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
+import { useQuery } from "convex/react";
+import { api } from "@convex/_generated/api";
+import { recruitmentReport } from "@convex/lib/perm/recruitment/applicantReport";
+import { caseRecruitmentSteps } from "@convex/lib/perm/recruitment/steps";
+import { ApplicantLog } from "./recruitment/ApplicantLog";
+import { RecruitmentProof } from "./recruitment/RecruitmentProof";
+import { RecruitmentReportCard } from "./recruitment/RecruitmentReportCard";
 import { format, parseISO, differenceInDays, addDays } from "date-fns";
 import { ChartBarIcon, CheckIcon, ClockIcon, FileTextIcon, FlagIcon, InfoIcon, NewspaperIcon, UsersIcon } from "@phosphor-icons/react";
 import Link from "next/link";
@@ -127,9 +134,17 @@ function StatusTooltip({ color, message }: { color: "amber" | "emerald"; message
 
 interface RecruitmentTabProps {
   caseData: CaseDetailData;
+  /** Upload a file into a recruitment step's proof slot; resolves to the reason it failed, or null. */
+  onUpload?: (file: File, category: "recruitment", step: string) => Promise<string | null>;
 }
 
-export function RecruitmentTab({ caseData }: RecruitmentTabProps) {
+export function RecruitmentTab({ caseData, onUpload }: RecruitmentTabProps) {
+  // The applicant log, read once for the log, the report and the summary's count.
+  const applicants = useQuery(api.recruitmentApplicants.listForCase, { caseId: caseData._id });
+  const steps = useMemo(() => caseRecruitmentSteps(caseData), [caseData]);
+  const report = useMemo(() => recruitmentReport(caseData, applicants ?? []), [caseData, applicants]);
+  // The log's count once it has entries; the number typed in the case form before the log existed otherwise.
+  const applicantCount = applicants?.length ? applicants.length : caseData.recruitmentApplicantsCount;
   // PWD validity period (determination -> expiration). Once the ETA 9089 is
   // filed, or recruitment began inside it, its end no longer limits the case.
   const windowStart = caseData.pwdDeterminationDate;
@@ -386,7 +401,7 @@ export function RecruitmentTab({ caseData }: RecruitmentTabProps) {
           <div className="field-grid" style={{ padding: 0, borderBottom: "1px solid var(--border)" }}>
             <div className="field-cell">
               <div className="fc-label">Applicants</div>
-              <div className="fc-val">{caseData.recruitmentApplicantsCount || "-"}</div>
+              <div className="fc-val">{applicantCount || "-"}</div>
             </div>
             <div className="field-cell">
               <div className="fc-label flex items-center gap-1">
@@ -429,6 +444,26 @@ export function RecruitmentTab({ caseData }: RecruitmentTabProps) {
           )}
         </div>
       </div>
+
+      <ApplicantLog caseId={caseData._id} applicants={applicants} steps={steps} />
+      {onUpload ? (
+        <RecruitmentProof
+          caseId={caseData._id}
+          steps={steps}
+          documents={(caseData.documents ?? []).map((d) => ({ id: d.id, name: d.name, url: d.url, ...(d.step ? { step: d.step } : {}) }))}
+          filingWindowOpens={caseData.filingWindowOpens ?? null}
+          filed={!!caseData.eta9089FilingDate}
+          onUpload={onUpload}
+        />
+      ) : null}
+      <RecruitmentReportCard
+        report={report}
+        applicants={applicants ?? []}
+        documents={(caseData.documents ?? []).map((d) => ({ name: d.name, url: d.url, mimeType: d.mimeType, category: d.category ?? null, step: d.step ?? null }))}
+        employer={caseData.employerName ?? null}
+        position={caseData.positionTitle ?? null}
+        caseNumber={caseData.caseNumber ?? null}
+      />
     </div>
   );
 }

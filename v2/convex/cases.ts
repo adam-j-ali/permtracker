@@ -27,6 +27,7 @@ import { normaliseFlagCaseNumber } from "../src/lib/flagCaseNumber";
 import { scheduleCalendarSync, scheduleCalendarSyncBulk } from "./lib/calendarSyncHelpers";
 import { loggers } from "./lib/logging";
 import { recordError } from "./lib/errorRecording";
+import { deleteCaseApplicants } from "./lib/deletion";
 import { deleteCaseDocumentBlobs } from "./lib/caseDocumentBlobs";
 
 const log = loggers.cases;
@@ -1256,6 +1257,13 @@ async function clearCaseReferences(
     }
   } catch (err) {
     await failed("duplicateOf references", "cleanupDuplicateOf", err);
+  }
+
+  // The applicant logs kept for these cases go with them (the Privacy Policy's Case Data list says so).
+  try {
+    await deleteCaseApplicants(ctx, caseIds);
+  } catch (err) {
+    await failed("applicant logs", "cleanupApplicants", err);
   }
 }
 

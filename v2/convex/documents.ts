@@ -4,6 +4,7 @@ import type { Id } from "./_generated/dataModel";
 import { getCurrentUserId, verifyOwnership } from "./lib/auth";
 import { recordError } from "./lib/errorRecording";
 import { newEntryId } from "./lib/ids";
+import { recruitmentStep } from "./lib/perm/recruitment/steps";
 import { rateLimiter } from "./rateLimitConfig";
 import {
   ALLOWED_DOCUMENT_EXTENSIONS,
@@ -87,12 +88,15 @@ export const saveDocument = mutation({
         v.literal("general")
       )
     ),
+    /** The recruitment step the file proves (convex/lib/perm/recruitment/steps.ts), when it's uploaded into a slot. */
+    step: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await getCurrentUserId(ctx);
     const caseDoc = await ctx.db.get(args.caseId);
     await verifyOwnership(ctx, caseDoc, "case");
     if (!caseDoc) throw new ConvexError("Case not found");
+    if (args.step !== undefined && !recruitmentStep(args.step)) throw new ConvexError("That isn't a recruitment step.");
 
     // Re-validate extension (defense-in-depth — client may skip step 1)
     const ext = args.fileName.split(".").pop()?.toLowerCase();
@@ -135,7 +139,9 @@ export const saveDocument = mutation({
       mimeType: args.contentType,
       size: file.size,
       uploadedAt: Date.now(),
-      category: args.category,
+      // A file uploaded into a step's slot is a recruitment document.
+      category: args.step ? ("recruitment" as const) : args.category,
+      ...(args.step ? { step: args.step } : {}),
     };
 
     await ctx.db.patch(args.caseId, {
@@ -143,6 +149,37 @@ export const saveDocument = mutation({
     });
 
     return docEntry.id;
+  },
+});
+
+/**
+ * Say which recruitment step a saved document proves, or that it proves none (`step` null). The file and its other
+ * details stay as they are.
+ */
+export const setDocumentStep = mutation({
+  args: {
+    caseId: v.id("cases"),
+    documentId: v.string(),
+    step: v.union(v.string(), v.null()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await getCurrentUserId(ctx);
+    const caseDoc = await ctx.db.get(args.caseId);
+    await verifyOwnership(ctx, caseDoc, "case");
+    if (!caseDoc) throw new ConvexError("Case not found");
+    if (args.step !== null && !recruitmentStep(args.step)) throw new ConvexError("That isn't a recruitment step.");
+    const docs = caseDoc.documents || [];
+    if (!docs.some((d) => d.id === args.documentId)) throw new ConvexError("That document isn't on this case.");
+    await ctx.db.patch(args.caseId, {
+      documents: docs.map((d) => {
+        if (d.id !== args.documentId) return d;
+        const { step: _old, ...rest } = d;
+        void _old;
+        return args.step === null ? rest : { ...rest, step: args.step, category: "recruitment" as const };
+      }),
+    });
+    return null;
   },
 });
 
