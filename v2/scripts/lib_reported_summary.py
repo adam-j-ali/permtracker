@@ -13,6 +13,7 @@ share form promises that) and is never listed.
 from __future__ import annotations
 
 import datetime as dt
+import re
 import statistics
 
 FLOOR = 5            # no figure from fewer cases (the board's METRIC_MIN_N)
@@ -62,6 +63,7 @@ APPROVAL = {"i485_decided": "i485_decision", "i140_decided": "i140_decision", "p
 
 # The board's stages and labels (convex/lib/communityTimeline.ts WAITING_STAGES), plus the consulate's.
 STAGES = (
+    ("pwd", "Wage request or recruitment"),
     ("perm", "PERM pending"),
     ("certified", "PERM certified, I-140 not filed"),
     ("i140", "I-140 pending"),
@@ -71,9 +73,15 @@ STAGES = (
     ("done", "Green card received"),
 )
 CATEGORY_LABELS = {"EB-1": "EB-1", "EB-1A": "EB-1", "EB-1B": "EB-1", "EB-2": "EB-2", "EB-2 NIW": "EB-2 with a national interest waiver",
-                   "EB-3": "EB-3", "Family": "Family"}
+                   "EB-3": "EB-3", "EB-3 EW": "EB-3 other workers", "Family": "Family"}
 COUNTRY_LABELS = {"row": "Rest of world", "rest of world": "Rest of world", "india": "India", "china": "China (mainland born)",
-                  "mexico": "Mexico", "philippines": "Philippines"}
+                  "mexico": "Mexico", "philippines": "Philippines",
+                  # The other ways sources write the four with their own line, so none falls into Rest of world.
+                  "in": "India", "ind": "India", "indian": "India",
+                  "cn": "China (mainland born)", "prc": "China (mainland born)", "mainland china": "China (mainland born)",
+                  "china mainland": "China (mainland born)", "china (mainland)": "China (mainland born)",
+                  "china (mainland born)": "China (mainland born)", "chinese": "China (mainland born)",
+                  "mx": "Mexico", "mexican": "Mexico", "ph": "Philippines", "phl": "Philippines", "filipino": "Philippines"}
 MIN_CELL = 5         # a category and country line shows from this many people (the board's WAITING_MIN_CELL)
 
 I140_CATEGORIES = ("EB-2 NIW", "EB-1A", "EB-1B", "EB-1", "EB-2", "EB-3")
@@ -105,17 +113,38 @@ def _premium(c: dict) -> str | None:
     return "premium" if p in ("yes", "with filing") else "regular" if p == "none" else None
 
 
+# A month-only end counts as the month's 15th on a span this long or longer, where half a month is a small share of
+# the wait (at most about 12%); a shorter step needs both days. Most Reddit reports and every consulate report's NVC
+# month give a month only, and were dropped from every figure until Nov 20 2026.
+MONTH_SPAN_MIN = 120
+
+
+def _when(v) -> tuple[dt.date | None, bool]:
+    """A field's day, and whether it was a month only (then the 15th)."""
+    d = _day(v)
+    if d:
+        return d, False
+    if isinstance(v, str) and re.fullmatch(r"\d{4}-\d{2}", v):
+        try:
+            return dt.date(int(v[:4]), int(v[5:7]), 15), True
+        except ValueError:
+            return None, False
+    return None, False
+
+
 def spans(cases: list[dict], step: dict) -> list[tuple[dt.date, int]]:
     """(the day the step finished, its days) for every case that holds both ends."""
     a, b, prem = step["from"], step["to"], step["premium"]
     out = []
     for c in cases:
-        start, end = _day(c.get(a)), _day(c.get(b))
+        (start, rough_start), (end, rough_end) = _when(c.get(a)), _when(c.get(b))
         if not start or not end or not _approved(c, b):
             continue
         if prem and _premium(c) != prem:
             continue
         d = (end - start).days
+        if (rough_start or rough_end) and d < MONTH_SPAN_MIN:
+            continue
         if 0 <= d <= MAX_DAYS:
             out.append((end, d))
     return out
@@ -188,11 +217,25 @@ def stage(c: dict) -> str:
         return "certified"
     if c.get("perm_filed"):
         return "perm"
+    # Before PERM: the wage request, then recruitment under its wage, until PERM is filed.
+    if c.get("pwd_filed") or c.get("pwd_issued"):
+        return "pwd"
     return ""
 
 
+# What a source writes for "no country": never a country.
+NO_COUNTRY = {"", "n/a", "na", "-", "--", "?", "unknown", "none", "not given", "not said", "other", "tbd"}
+
+
 def _country(v) -> str | None:
-    return COUNTRY_LABELS.get(str(v or "").strip().lower())
+    """The bulletin line a country is charged to: its own for the four with one, Rest of world for every other
+    country (Nov 20 2026: Canada, Nigeria and Iran counted as no country), None for a placeholder."""
+    t = str(v or "").strip().lower()
+    if t in COUNTRY_LABELS:
+        return COUNTRY_LABELS[t]
+    if t in NO_COUNTRY or not re.search(r"[a-z]{2}", t):
+        return None
+    return "Rest of world"
 
 
 def waiting(cases: list[dict], today: dt.date) -> dict:
@@ -202,6 +245,9 @@ def waiting(cases: list[dict], today: dt.date) -> dict:
     by_stage = {s: 0 for s in ids}
     lines: dict[tuple[str, str], list[int]] = {}
     unlisted = 0
+    # The people no line shows, by step: those who gave no category or country (most at PERM and before, when
+    # neither is known yet) and those on a line under MIN_CELL. Without it a step's column read all zeros.
+    unlisted_by = [0] * len(ids)
     heard = 0
     for c in cases:
         last = _day(c.get("as_of"))
@@ -218,6 +264,7 @@ def waiting(cases: list[dict], today: dt.date) -> dict:
         ctry = _country(c.get("chargeability"))
         if not cat or not ctry:
             unlisted += 1
+            unlisted_by[ids.index(s)] += 1
             continue
         lines.setdefault((cat, ctry), [0] * len(ids))[ids.index(s)] += 1
     shown = []
@@ -225,13 +272,15 @@ def waiting(cases: list[dict], today: dt.date) -> dict:
         total = sum(counts)
         if total < MIN_CELL:
             unlisted += total
+            unlisted_by = [a + b for a, b in zip(unlisted_by, counts)]
             continue
         shown.append({"category": cat, "country": ctry, "total": total,
                       "counts": [n if n >= MIN_CELL or n == 0 else None for n in counts]})
     shown.sort(key=lambda x: (-x["total"], x["category"], x["country"]))
     return {"open": heard >= MIN_CELL, "heardDays": HEARD_DAYS, "heard": heard,
             "byStage": [{"id": s, "label": label, "count": by_stage[s]} for s, label in STAGES],
-            "lines": shown, "unlisted": unlisted}
+            "lines": shown, "unlisted": unlisted,
+            "unlistedCounts": [n if n >= MIN_CELL or n == 0 else None for n in unlisted_by]}
 
 
 def i140_figures(cases: list[dict], today: dt.date) -> list[dict]:
