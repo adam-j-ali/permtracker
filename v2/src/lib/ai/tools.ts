@@ -1539,7 +1539,7 @@ export const reopenCaseTool = tool({
 
 ## WHEN NOT TO USE:
 - Case is not closed (already active)
-- The case was deleted: a deleted case can't be brought back from the chat
+- The case was deleted: the owner restores a deleted case from Settings (Support, Recently deleted) for 30 days, never from the chat
 - You don't have the caseId
 
 ## BEHAVIOR:
@@ -1560,15 +1560,16 @@ export const reopenCaseTool = tool({
 /**
  * Delete Case Tool
  *
- * Permanently deletes a case. DESTRUCTIVE - always requires confirmation.
+ * Deletes a case: its owner can restore it from Settings for 30 days, without its documents and recruitment log.
+ * DESTRUCTIVE - always requires confirmation.
  */
 export const deleteCaseTool = tool({
-  description: `PERMANENTLY delete a PERM case. This cannot be undone!
+  description: `Delete a PERM case. The chat can't bring it back: the owner can restore it from Settings (Support, Recently deleted) for 30 days, and its uploaded documents and recruitment log are erased at once and never come back.
 
 ## WHEN TO USE:
-- User explicitly requests permanent deletion
-- User confirms they want data removed forever
-- After user acknowledges this is irreversible
+- User explicitly asks to delete the case, not close it
+- User confirms they want it removed
+- After user acknowledges its documents and recruitment log are erased at once
 
 ## WHEN NOT TO USE:
 - User just wants to "delete" a case (use archiveCase for soft delete)
@@ -1576,10 +1577,10 @@ export const deleteCaseTool = tool({
 - You're unsure of user's intent
 
 ## BEHAVIOR:
-- Case is permanently removed from database
-- All associated data is deleted
+- Case leaves the account; a copy is kept 30 days so the owner can restore it from Settings, then erased
+- Its uploaded documents and recruitment log are erased at once
 - Calendar events are deleted
-- CANNOT BE UNDONE
+- CAN'T BE UNDONE FROM THE CHAT
 
 ## EXAMPLES:
 - "Permanently delete": { caseId: "abc123" }
@@ -1751,11 +1752,11 @@ Use EITHER "all" OR "caseIds", not both:
 /**
  * Bulk Delete Cases Tool
  *
- * PERMANENTLY deletes multiple cases at once. Cannot be undone!
- * DESTRUCTIVE - Always requires confirmation with extra warning.
+ * Deletes multiple cases at once: their owner can restore each from Settings for 30 days, without its documents
+ * and recruitment log. DESTRUCTIVE - Always requires confirmation with extra warning.
  */
 export const bulkDeleteCasesTool = tool({
-  description: `PERMANENTLY delete multiple cases at once. This cannot be undone!
+  description: `Delete multiple cases at once. The chat can't bring them back: the owner can restore each from Settings (Support, Recently deleted) for 30 days, and their uploaded documents and recruitment logs are erased at once and never come back.
 
 ## HIGHLY DESTRUCTIVE - Requires explicit confirmation with warning
 
@@ -1780,7 +1781,7 @@ Use EITHER "all" OR "caseIds", not both:
 ## NOTES:
 - ALWAYS prefer bulkArchiveCases unless user explicitly says "permanent"
 - ALWAYS ask for explicit confirmation before executing
-- ALWAYS warn user this cannot be undone
+- ALWAYS warn user that documents and recruitment logs are erased at once, and that the cases can be restored only from Settings, for 30 days
 - This is a HIGHLY DESTRUCTIVE action`,
 
   inputSchema: BulkDeleteCasesInputSchema,

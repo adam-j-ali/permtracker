@@ -13,6 +13,8 @@ import { SectionIndex } from "@/components/legal/SectionIndex";
 import { LEGAL_DBA, LEGAL_FORM, LEGAL_NAME, POSTAL_ADDRESS, TRADE_NAME } from "@/lib/constants/about";
 // The floors the policy states are the ones the code holds, read from the same constants.
 import { BOARD_OPENS_AT, METRIC_MIN_N, MIN_CASE_REPORTERS, OFFICE_LIST_OPENS_AT } from "@/lib/communityTimeline";
+// How long a deleted case can be restored, the same constant the restore and the retention run read.
+import { DELETED_CASE_DAYS } from "@convex/lib/deletedCases";
 import { openGraphBase } from "@/lib/openGraphBase";
 import Link from "next/link";
 
@@ -144,6 +146,12 @@ export default function PrivacyPage() {
                 applicant applied and was contacted, how they were contacted, and the
                 job-related reason you recorded. It is deleted when you delete it, its
                 case or your account
+              </li>{" "}
+              <li>
+                When you delete a case, we keep a copy of it for {DELETED_CASE_DAYS} days so you can restore it from
+                Settings. Then it&apos;s erased, along with our record of the changes made to the case. Its
+                documents and recruitment log are deleted when you delete the case, so a restored case comes back
+                without them. It also comes back without the employer&apos;s FEIN, which the copy never holds
               </li>{" "}
               <li>RFI/RFE information and response dates</li>
             </ul>{" "}
@@ -1521,6 +1529,12 @@ export default function PrivacyPage() {
                 <a href="mailto:support@permtracker.app" className="link">
                   support@permtracker.app
                 </a>
+              </li>{" "}
+              <li>
+                <strong>Deleted cases:</strong> when you delete a case, we keep a copy of it for{" "}
+                {DELETED_CASE_DAYS} days so you can restore it from Settings. Then it&apos;s erased, along with
+                our record of the changes made to it. Its documents and recruitment log are deleted when you delete
+                the case
               </li>{" "}
               <li>
                 <strong>Email alert sign-ups</strong> you never confirm are

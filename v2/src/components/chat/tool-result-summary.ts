@@ -173,7 +173,7 @@ export function summarizeToolResult(tool: string, result?: string): string {
       }
       case 'bulkDeleteCases': {
         const r = parsed as { successCount?: number };
-        return `Permanently deleted ${r.successCount || 0} cases`;
+        return `Deleted ${r.successCount || 0} case${r.successCount === 1 ? '' : 's'}`;
       }
       case 'bulkCalendarSync': {
         const r = parsed as { successCount?: number; action?: string };

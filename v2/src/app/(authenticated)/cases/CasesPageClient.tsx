@@ -62,7 +62,7 @@ import { useNavigationLoading } from "@/hooks/useNavigationLoading";
 import { CasesLoadingSkeleton, NewUserEmptyState } from "./components";
 import { sortCases } from "@convex/lib/caseListHelpers";
 import { compareByCustomOrder, orderLookup } from "@/lib/cases/customOrder";
-import { CASE_DELETE_WARNING } from "@/lib/cases/deleteWarning";
+import { CASE_DELETE_WARNING, caseDeleteWarning } from "@/lib/cases/deleteWarning";
 import {
   exportFullCasesJSON,
   exportFullCasesCSV,
@@ -1125,14 +1125,14 @@ export function CasesPageClient() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className={`size-5 ${confirmDialog.type === "delete" ? "text-destructive" : "text-primary"}`} />
-              {confirmDialog.type === "delete" && "Delete Cases"}
+              {confirmDialog.type === "delete" && "Delete cases"}
               {confirmDialog.type === "archive" && "Archive Cases"}
               {confirmDialog.type === "reopen" && "Re-open Cases"}
             </DialogTitle>
             <DialogDescription>
               {confirmDialog.type === "delete" && (
                 <>
-                  Delete {confirmDialog.count} case{confirmDialog.count !== 1 ? "s" : ""}? {CASE_DELETE_WARNING}
+                  Delete {confirmDialog.count} case{confirmDialog.count !== 1 ? "s" : ""}? {caseDeleteWarning(confirmDialog.count)}
                 </>
               )}
               {confirmDialog.type === "archive" && (
