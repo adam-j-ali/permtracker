@@ -7,11 +7,12 @@
 | Data Type | Retention | Mechanism | Notes |
 |-----------|-----------|-----------|-------|
 | User accounts & profiles | Until deletion | User-initiated | 30-day grace period on deletion |
-| PERM cases | Until deletion | User-initiated | Soft delete, then purge with account |
+| PERM cases | Until deletion | User-initiated | Deleted at once, with their uploaded files and recruitment log; purged with the account |
+| Deleted cases' copies | **30 days** after the deletion | Daily cron (3:20 AM UTC), `retention.eraseDeletedCaseCopies` | The `auditLogs` row of a case's deletion holds the whole case so its owner can restore it from Settings (`caseRestore.restoreDeleted`, since Nov 20 2026). Then the copy is erased and the case's other `auditLogs` rows (its creation and edits) are deleted; the deletion's row keeps who, which case and when (`erasedAt`). `DELETED_CASE_DAYS` in `convex/lib/deletedCases.ts` |
 | AI conversations | **90 days** | Daily cron (3 AM UTC) | Auto-deleted after 90 days of inactivity |
 | Read notifications | **90 days** | Hourly cron (:30) | Unread notifications preserved regardless of age |
 | Rate limit records | **24 hours** | Hourly cron (:15) | Processed in batches of 100 |
-| Audit logs | **Indefinite** | N/A | Required for compliance, never auto-deleted |
+| Audit logs | **Indefinite** | N/A | Required for compliance, never auto-deleted, except a deleted case's (the row above) |
 | System error logs | **180 days** | Daily cron (3:20 AM UTC) | `systemErrors`; `convex/retention.ts` (since Sep 29 2026) |
 | Email events (Resend webhook) | **365 days** | Daily cron (3:20 AM UTC) | `marketingEvents` |
 | AI provider usage counters | **90 days** | Daily cron (3:20 AM UTC) | `apiUsage` |
@@ -34,7 +35,7 @@ All cleanup runs via `convex/crons.ts`:
 | `rate-limit-cleanup` | Hourly :15 | `cleanupRateLimits` |
 | `conversation-ttl-cleanup` | Daily 3:00 AM UTC | `cleanupExpiredConversations` |
 | `confirmation-queue-drain` | Every 15 minutes | `confirmationQueue.drain` (sends, and drops requests past 3 days) |
-| `operational-log-retention` | Daily 3:20 AM UTC | `retention.pruneOperationalLogs` |
+| `operational-log-retention` | Daily 3:20 AM UTC | `retention.pruneOperationalLogs`, which then starts `retention.eraseDeletedCaseCopies` |
 
 ## Account Deletion
 

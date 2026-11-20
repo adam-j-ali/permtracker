@@ -821,7 +821,7 @@ export default defineSchema({
     .index("by_conversation_id", ["conversationId"])
     .index("by_created_at", ["createdAt"]),
 
-  // Audit logging for detailed change tracking (append-only)
+  // Audit logging for detailed change tracking (append-only, but for a deleted case's copy: convex/lib/deletedCases.ts)
   auditLogs: defineTable({
     userId: v.id("users"), // Who made the change
     tableName: v.string(), // Which table was affected
@@ -849,13 +849,23 @@ export default defineSchema({
       })
     ),
     timestamp: v.number(),
+    // A case's deletion row holds the whole case (`changes`) for DELETED_CASE_DAYS, so its owner can restore it from
+    // Settings (convex/caseRestore.ts). When it was restored, as which new case, and when the retention run erased
+    // the copy, keeping the row's who and when.
+    restoredAt: v.optional(v.number()),
+    restoredCaseId: v.optional(v.id("cases")),
+    erasedAt: v.optional(v.number()),
   })
     .index("by_user_id", ["userId"])
     .index("by_table_name", ["tableName"])
     .index("by_document_id", ["documentId"])
     .index("by_timestamp", ["timestamp"])
     .index("by_user_and_table", ["userId", "tableName"])
-    .index("by_user_and_timestamp", ["userId", "timestamp"]),
+    .index("by_user_and_timestamp", ["userId", "timestamp"])
+    // An account's case deletions not yet restored, newest first: Settings' "Recently deleted".
+    .index("by_user_table_action_restored_and_timestamp", ["userId", "tableName", "action", "restoredAt", "timestamp"])
+    // Case deletions whose copy is still held, oldest first: the retention run's erasure.
+    .index("by_table_action_erased_and_timestamp", ["tableName", "action", "erasedAt", "timestamp"]),
 
   // Custom case order (drag-drop reordering)
   userCaseOrder: defineTable({

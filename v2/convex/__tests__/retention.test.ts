@@ -231,3 +231,92 @@ describe("stopped browser notifications", () => {
     expect(left).toEqual({ cases: ["open", "recent"], lines: ["open"] });
   });
 });
+
+describe("deleted cases' copies", () => {
+  setupSchedulerTests();
+
+  it("erases a deleted case's copy and its change history 30 days after the deletion, and keeps who deleted it and when", async () => {
+    const t = createTestContext();
+    const { DELETED_CASE_DAYS } = await import("../lib/deletedCases");
+    expect(DELETED_CASE_DAYS).toBe(30);
+    const now = Date.now();
+    const ids = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert("users", { name: "Owner" });
+      const row = (documentId: string, action: "create" | "update" | "delete", timestamp: number, tableName = "cases") =>
+        ctx.db.insert("auditLogs", {
+          userId, tableName, documentId, action, timestamp,
+          changes: [{ field: "employerName", oldValue: '"Acme Corp"', newValue: '"Acme Corp"' }],
+        });
+      return {
+        userId,
+        oldCreate: await row("case-old", "create", now - 60 * DAY),
+        oldUpdate: await row("case-old", "update", now - 50 * DAY),
+        oldDelete: await row("case-old", "delete", now - (DELETED_CASE_DAYS + 1) * DAY),
+        recentCreate: await row("case-recent", "create", now - 40 * DAY),
+        recentDelete: await row("case-recent", "delete", now - (DELETED_CASE_DAYS - 1) * DAY),
+        liveUpdate: await row("case-live", "update", now - 90 * DAY),
+        oldNote: await row("note-old", "delete", now - 90 * DAY, "notifications"),
+      };
+    });
+    await t.mutation(internal.retention.pruneOperationalLogs, { now });
+    await finishScheduledFunctions(t);
+
+    const after = await t.run(async (ctx) => {
+      const get = async (id: (typeof ids)["oldCreate"]) => await ctx.db.get(id);
+      return {
+        oldCreate: await get(ids.oldCreate),
+        oldUpdate: await get(ids.oldUpdate),
+        oldDelete: await get(ids.oldDelete),
+        recentCreate: await get(ids.recentCreate),
+        recentDelete: await get(ids.recentDelete),
+        liveUpdate: await get(ids.liveUpdate),
+        oldNote: await get(ids.oldNote),
+      };
+    });
+    // The case deleted more than 30 days ago: its history is gone, and its deletion keeps who and when, no copy.
+    expect(after.oldCreate).toBeNull();
+    expect(after.oldUpdate).toBeNull();
+    expect(after.oldDelete).toMatchObject({ userId: ids.userId, action: "delete", documentId: "case-old" });
+    expect(after.oldDelete!.changes).toBeUndefined();
+    expect(after.oldDelete!.erasedAt).toBe(now);
+    // Still inside the 30 days, a live case, and other tables' rows are untouched.
+    expect(after.recentCreate!.changes).toHaveLength(1);
+    expect(after.recentDelete!.changes).toHaveLength(1);
+    expect(after.liveUpdate!.changes).toHaveLength(1);
+    expect(after.oldNote!.changes).toHaveLength(1);
+
+    // A second run finds nothing left to erase and doesn't start another.
+    const out = await t.mutation(internal.retention.eraseDeletedCaseCopies, { now });
+    expect(out).toEqual({ copies: 0, history: 0 });
+    const pending = await t.run(async (ctx) =>
+      (await ctx.db.system.query("_scheduled_functions").collect()).filter(
+        (j) => j.name.includes("eraseDeletedCaseCopies") && j.state.kind === "pending",
+      ),
+    );
+    expect(pending).toEqual([]);
+  });
+
+  it("keeps going over a long history, a batch at a time", async () => {
+    const t = createTestContext();
+    const { DELETED_CASE_DAYS } = await import("../lib/deletedCases");
+    const { ERASE_BATCH } = await import("../retention");
+    const now = Date.now();
+    await t.run(async (ctx) => {
+      const userId = await ctx.db.insert("users", { name: "Owner" });
+      for (let i = 0; i < ERASE_BATCH + 5; i++) {
+        await ctx.db.insert("auditLogs", { userId, tableName: "cases", documentId: "busy", action: "update", timestamp: now - 90 * DAY });
+      }
+      await ctx.db.insert("auditLogs", {
+        userId, tableName: "cases", documentId: "busy", action: "delete", timestamp: now - (DELETED_CASE_DAYS + 2) * DAY,
+        changes: [{ field: "employerName", oldValue: '"Busy Co"' }],
+      });
+    });
+    const first = await t.mutation(internal.retention.eraseDeletedCaseCopies, { now });
+    expect(first).toEqual({ copies: 0, history: ERASE_BATCH });
+    await finishScheduledFunctions(t);
+    const left = await t.run(async (ctx) => await ctx.db.query("auditLogs").collect());
+    expect(left).toHaveLength(1);
+    expect(left[0]!.changes).toBeUndefined();
+    expect(left[0]!.erasedAt).toBe(now);
+  });
+});

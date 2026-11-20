@@ -10,10 +10,12 @@
  * in batches so a backlog can never make one run too big.
  *
  * The run also starts `toolCache.cleanExpired` (chat tool results expire by
- * their own TTL rather than by age, so that cleanup lives with the cache) and
- * `inboundFilter.pruneHeld` (mail the spam filter held, 30 days after it was held).
+ * their own TTL rather than by age, so that cleanup lives with the cache),
+ * `inboundFilter.pruneHeld` (mail the spam filter held, 30 days after it was held)
+ * and `eraseDeletedCaseCopies` (a deleted case's copy in the change log,
+ * DELETED_CASE_DAYS after the deletion, with the rest of that case's change history).
  *
- * Not here, on purpose: `auditLogs` (kept indefinitely by the retention
+ * Not here, on purpose: the rest of `auditLogs` (kept indefinitely by the retention
  * policy, docs/compliance/DATA_RETENTION.md, and removed with an account),
  * people's own content (cases, notes, messages sent to us), and the tables
  * that already have their own cleanup (notifications, conversations, rate
@@ -23,6 +25,7 @@ import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
 import { internalMutation } from "./_generated/server";
+import { DELETED_CASE_DAYS } from "./lib/deletedCases";
 import { MS_PER_DAY } from "./lib/time";
 
 /** Days each table keeps. Read by the tests and the retention doc. */
@@ -168,6 +171,57 @@ export const pruneOperationalLogs = internalMutation({
       await ctx.scheduler.runAfter(0, internal.toolCache.cleanExpired, {});
       // Mail the spam filter held, 30 days after it was held (convex/inboundFilter.ts).
       await ctx.scheduler.runAfter(0, internal.inboundFilter.pruneHeld, {});
+      // Deleted cases' copies, once they can't be restored (convex/lib/deletedCases.ts).
+      await ctx.scheduler.runAfter(0, internal.retention.eraseDeletedCaseCopies, { now });
+    }
+    return out;
+  },
+});
+
+/** Change-log rows one erasure run deletes or empties; a longer backlog reschedules itself. */
+export const ERASE_BATCH = 500;
+/** Deletions one erasure run reads. Each holds a whole case, so the read stays small. */
+const ERASE_COPIES_READ = 100;
+
+/**
+ * DELETED_CASE_DAYS after a case was deleted, the change log's copy of it is erased: the case can't be restored
+ * from Settings any more, so nothing of it is kept. The case's other change-log rows (its creation and every edit,
+ * which hold its values too) are deleted, and the deletion's own row loses the copy and keeps who deleted which case
+ * and when, with `erasedAt`. The index leads with whether a copy is still held, so an erased deletion is never read
+ * again. A run that erased something and had more to do starts the next; one that erased nothing never does.
+ */
+export const eraseDeletedCaseCopies = internalMutation({
+  args: { now: v.number() },
+  returns: v.object({ copies: v.number(), history: v.number() }),
+  handler: async (ctx, args) => {
+    const cutoff = args.now - DELETED_CASE_DAYS * MS_PER_DAY;
+    const out = { copies: 0, history: 0 };
+    let more = false;
+    const deletions = await ctx.db
+      .query("auditLogs")
+      .withIndex("by_table_action_erased_and_timestamp", (q) =>
+        q.eq("tableName", "cases").eq("action", "delete").eq("erasedAt", undefined).lt("timestamp", cutoff),
+      )
+      .take(ERASE_COPIES_READ + 1);
+    if (deletions.length > ERASE_COPIES_READ) more = true;
+    deletions: for (const deletion of deletions.slice(0, ERASE_COPIES_READ)) {
+      for await (const row of ctx.db
+        .query("auditLogs")
+        .withIndex("by_document_id", (q) => q.eq("documentId", deletion.documentId))) {
+        if (row._id === deletion._id || row.tableName !== "cases") continue;
+        if (out.history + out.copies >= ERASE_BATCH) {
+          more = true;
+          break deletions;
+        }
+        await ctx.db.delete(row._id);
+        out.history++;
+      }
+      // Patching a field to undefined deletes it: the copy goes, the row's who and when stay.
+      await ctx.db.patch(deletion._id, { changes: undefined, erasedAt: args.now });
+      out.copies++;
+    }
+    if (more && out.history + out.copies > 0) {
+      await ctx.scheduler.runAfter(0, internal.retention.eraseDeletedCaseCopies, args);
     }
     return out;
   },

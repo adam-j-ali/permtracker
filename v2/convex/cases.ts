@@ -342,14 +342,15 @@ type CaseArgsFitTable = false extends
 const _caseArgsFitTable: CaseArgsFitTable = true;
 void _caseArgsFitTable;
 
-type CaseCreateArgs = ObjectType<typeof caseCreateArgs>;
+/** `create`'s arguments: a case's own fields, as a person enters them. */
+export type CaseCreateArgs = ObjectType<typeof caseCreateArgs>;
 
 /**
  * What `create` would store, worked out without writing: derived dates,
  * validation, and the stage the dates put the new case at. `create` writes from
  * it and `previewCreate` reports it, so they can't disagree.
  */
-function planCaseCreate(args: CaseCreateArgs) {
+export function planCaseCreate(args: CaseCreateArgs) {
   // Calculate derived dates for queryability
   const isProfessionalOccupation = args.isProfessionalOccupation ?? false;
   const derivedDates = calculateDerivedDates({
@@ -460,6 +461,160 @@ export const previewCreate = query({
   },
 });
 
+/** What `create` works out for its arguments before writing (planCaseCreate). */
+export type CaseCreatePlan = ReturnType<typeof planCaseCreate>;
+
+/** The fields `create` takes, by name. */
+export const CASE_CREATE_FIELDS: readonly string[] = Object.keys(caseCreateArgs);
+
+/**
+ * Stores a new case by create's rules and returns its id: the derived recruitment dates and deadlines, the ETA 9089's
+ * expiration and the stage from `plan`, the DOL case number a step's box carries, the timeline switch, the defaults,
+ * the change log's creation row and the calendar sync. `create` writes through it, and so does a restored case
+ * (caseRestore.restoreDeleted), with `keep` holding what the deleted case had that a new one can't be given. Errors
+ * are recorded under `source`.
+ */
+export async function insertCaseByCreateRules(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  args: CaseCreateArgs,
+  plan: CaseCreatePlan,
+  source: string,
+  keep: Partial<WithoutSystemFields<Doc<"cases">>> = {},
+): Promise<Id<"cases">> {
+  const now = Date.now();
+  const {
+    isProfessionalOccupation,
+    derivedDates,
+    eta9089ExpirationDate,
+    effectiveCaseStatus,
+    effectiveProgressStatus,
+  } = plan;
+
+  const caseId = await ctx.db.insert("cases", {
+    userId: userId,
+    employerName: args.employerName,
+    beneficiaryIdentifier: args.beneficiaryIdentifier ?? "",
+    positionTitle: args.positionTitle,
+
+    // Apply auto-calculated or overridden status
+    caseStatus: effectiveCaseStatus,
+    progressStatus: effectiveProgressStatus,
+    priorityLevel: args.priorityLevel ?? "normal",
+    isFavorite: args.isFavorite ?? false,
+    isPinned: args.isPinned ?? false,
+    isProfessionalOccupation,
+    recruitmentApplicantsCount: args.recruitmentApplicantsCount ?? 0,
+    additionalRecruitmentMethods: args.additionalRecruitmentMethods ?? [],
+    tags: args.tags ?? [],
+    documents: args.documents ?? [],
+    calendarSyncEnabled: args.calendarSyncEnabled ?? true,
+    // Unset unless asked off: it then follows the case, on while open (convex/lib/timelineShow.ts)
+    showOnTimeline: timelineSwitchForNewCase(args.showOnTimeline),
+
+    // Optional dates
+    pwdFilingDate: args.pwdFilingDate,
+    pwdDeterminationDate: args.pwdDeterminationDate,
+    pwdExpirationDate: args.pwdExpirationDate,
+    pwdCaseNumber: args.pwdCaseNumber,
+    pwdWageAmount: args.pwdWageAmount,
+    pwdWageLevel: args.pwdWageLevel,
+    jobOrderStartDate: args.jobOrderStartDate,
+    jobOrderEndDate: args.jobOrderEndDate,
+    sundayAdFirstDate: args.sundayAdFirstDate,
+    sundayAdSecondDate: args.sundayAdSecondDate,
+    sundayAdNewspaper: args.sundayAdNewspaper,
+    additionalRecruitmentStartDate: args.additionalRecruitmentStartDate,
+    additionalRecruitmentEndDate: args.additionalRecruitmentEndDate,
+    recruitmentNotes: args.recruitmentNotes,
+    recruitmentSummaryCustom: args.recruitmentSummaryCustom,
+    noticeOfFilingStartDate: args.noticeOfFilingStartDate,
+    noticeOfFilingEndDate: args.noticeOfFilingEndDate,
+    // Derived dates (auto-calculated for queryability)
+    recruitmentStartDate: derivedDates.recruitmentStartDate ?? undefined,
+    recruitmentEndDate: derivedDates.recruitmentEndDate ?? undefined,
+    filingWindowOpens: derivedDates.filingWindowOpens ?? undefined,
+    filingWindowCloses: derivedDates.filingWindowCloses ?? undefined,
+    recruitmentWindowCloses: derivedDates.recruitmentWindowCloses ?? undefined,
+    eta9089FilingDate: args.eta9089FilingDate,
+    eta9089AuditDate: args.eta9089AuditDate,
+    eta9089CertificationDate: args.eta9089CertificationDate,
+    eta9089ExpirationDate,
+    eta9089DenialDate: args.eta9089DenialDate,
+    eta9089ReconsiderationDate: args.eta9089ReconsiderationDate,
+    eta9089ReconsiderationDeniedDate: args.eta9089ReconsiderationDeniedDate,
+    eta9089BalcaRequestDate: args.eta9089BalcaRequestDate,
+    eta9089CaseNumber: args.eta9089CaseNumber,
+    // RFI/RFE entries arrays (default to empty)
+    rfiEntries: args.rfiEntries ?? [],
+    rfeEntries: args.rfeEntries ?? [],
+    i140FilingDate: args.i140FilingDate,
+    i140ReceiptDate: args.i140ReceiptDate,
+    i140ReceiptNumber: args.i140ReceiptNumber,
+    i140ApprovalDate: args.i140ApprovalDate,
+    i140DenialDate: args.i140DenialDate,
+    i140Category: args.i140Category,
+    i140PremiumProcessing: args.i140PremiumProcessing,
+    i140ServiceCenter: args.i140ServiceCenter,
+
+    // Optional text fields. A DOL number typed only in a step's box becomes the case's DOL number, so it's
+    // watched wherever it was entered (convex/lib/dolCaseNumber.ts).
+    caseNumber: dolCaseNumberOnCreate(args),
+    internalCaseNumber: args.internalCaseNumber,
+    employerFein: await encryptFein(args.employerFein),
+    socCode: args.socCode,
+    socTitle: args.socTitle,
+    jobOrderState: args.jobOrderState,
+    jobDescriptionPositionTitle: args.jobDescriptionPositionTitle,
+    jobDescription: args.jobDescription,
+    jobDescriptionTemplateId: args.jobDescriptionTemplateId,
+    progressStatusOverride: args.progressStatusOverride,
+    notes: args.notes,
+    calendarEventIds: args.calendarEventIds,
+
+    // Duplicate tracking
+    duplicateOf: args.duplicateOf,
+    markedAsDuplicateAt: args.duplicateOf ? now : undefined,
+
+    // Sample case flag
+    isSample: args.isSample,
+
+    // Timestamps
+    createdAt: now,
+    updatedAt: now,
+
+    // What a restored case had that a new one can't be given (convex/caseRestore.ts).
+    ...keep,
+  });
+
+  // Audit log: record the case creation
+  const newCase = await ctx.db.get(caseId);
+  try {
+    await logCreate(ctx, "cases", caseId, newCase as Record<string, unknown>);
+  } catch (auditError) {
+    // Log audit failure but don't fail the operation - case was created successfully
+    log.error('Failed to log case creation', { resourceId: caseId, error: auditError instanceof Error ? auditError.message : String(auditError) });
+    await recordError(ctx, "mutation", `${source}.audit`, auditError, { userId, resourceId: caseId.toString() });
+  }
+
+  // Schedule Google Calendar sync for the new case (best-effort, non-blocking)
+  // Only sync if case-level calendarSyncEnabled is not explicitly false
+  if (newCase?.calendarSyncEnabled !== false) {
+    try {
+      const syncResult = await scheduleCalendarSync(ctx, userId, caseId);
+      if (syncResult.scheduled) {
+        log.info('Scheduled sync for new case', { resourceId: caseId });
+      }
+    } catch (calendarError) {
+      // Log calendar sync failure but don't fail the operation - case was created successfully
+      log.error('Failed to schedule sync for new case', { resourceId: caseId, error: calendarError instanceof Error ? calendarError.message : String(calendarError) });
+      await recordError(ctx, "mutation", `${source}.calendar`, calendarError, { userId, resourceId: caseId.toString() });
+    }
+  }
+
+  return caseId;
+}
+
 /**
  * Create a new case
  * Sets defaults for all optional fields
@@ -480,122 +635,13 @@ export const create = mutation({
       throw new ConvexError(DOCUMENTS_THROUGH_UPLOAD_MESSAGE);
     }
 
-    const now = Date.now();
-
-    const {
-      isProfessionalOccupation,
-      derivedDates,
-      eta9089ExpirationDate,
-      validationErrors,
-      effectiveCaseStatus,
-      effectiveProgressStatus,
-    } = planCaseCreate(args);
+    const plan = planCaseCreate(args);
+    const { validationErrors, effectiveCaseStatus } = plan;
     if (validationErrors.length > 0) {
       throw new ConvexError(`Validation failed: ${validationErrors.join("; ")}`);
     }
 
-    const caseId = await ctx.db.insert("cases", {
-      userId: userId,
-      employerName: args.employerName,
-      beneficiaryIdentifier: args.beneficiaryIdentifier ?? "",
-      positionTitle: args.positionTitle,
-
-      // Apply auto-calculated or overridden status
-      caseStatus: effectiveCaseStatus,
-      progressStatus: effectiveProgressStatus,
-      priorityLevel: args.priorityLevel ?? "normal",
-      isFavorite: args.isFavorite ?? false,
-      isPinned: args.isPinned ?? false,
-      isProfessionalOccupation,
-      recruitmentApplicantsCount: args.recruitmentApplicantsCount ?? 0,
-      additionalRecruitmentMethods: args.additionalRecruitmentMethods ?? [],
-      tags: args.tags ?? [],
-      documents: args.documents ?? [],
-      calendarSyncEnabled: args.calendarSyncEnabled ?? true,
-      // Unset unless asked off: it then follows the case, on while open (convex/lib/timelineShow.ts)
-      showOnTimeline: timelineSwitchForNewCase(args.showOnTimeline),
-
-      // Optional dates
-      pwdFilingDate: args.pwdFilingDate,
-      pwdDeterminationDate: args.pwdDeterminationDate,
-      pwdExpirationDate: args.pwdExpirationDate,
-      pwdCaseNumber: args.pwdCaseNumber,
-      pwdWageAmount: args.pwdWageAmount,
-      pwdWageLevel: args.pwdWageLevel,
-      jobOrderStartDate: args.jobOrderStartDate,
-      jobOrderEndDate: args.jobOrderEndDate,
-      sundayAdFirstDate: args.sundayAdFirstDate,
-      sundayAdSecondDate: args.sundayAdSecondDate,
-      sundayAdNewspaper: args.sundayAdNewspaper,
-      additionalRecruitmentStartDate: args.additionalRecruitmentStartDate,
-      additionalRecruitmentEndDate: args.additionalRecruitmentEndDate,
-      recruitmentNotes: args.recruitmentNotes,
-      recruitmentSummaryCustom: args.recruitmentSummaryCustom,
-      noticeOfFilingStartDate: args.noticeOfFilingStartDate,
-      noticeOfFilingEndDate: args.noticeOfFilingEndDate,
-      // Derived dates (auto-calculated for queryability)
-      recruitmentStartDate: derivedDates.recruitmentStartDate ?? undefined,
-      recruitmentEndDate: derivedDates.recruitmentEndDate ?? undefined,
-      filingWindowOpens: derivedDates.filingWindowOpens ?? undefined,
-      filingWindowCloses: derivedDates.filingWindowCloses ?? undefined,
-      recruitmentWindowCloses: derivedDates.recruitmentWindowCloses ?? undefined,
-      eta9089FilingDate: args.eta9089FilingDate,
-      eta9089AuditDate: args.eta9089AuditDate,
-      eta9089CertificationDate: args.eta9089CertificationDate,
-      eta9089ExpirationDate,
-      eta9089DenialDate: args.eta9089DenialDate,
-      eta9089ReconsiderationDate: args.eta9089ReconsiderationDate,
-      eta9089ReconsiderationDeniedDate: args.eta9089ReconsiderationDeniedDate,
-      eta9089BalcaRequestDate: args.eta9089BalcaRequestDate,
-      eta9089CaseNumber: args.eta9089CaseNumber,
-      // RFI/RFE entries arrays (default to empty)
-      rfiEntries: args.rfiEntries ?? [],
-      rfeEntries: args.rfeEntries ?? [],
-      i140FilingDate: args.i140FilingDate,
-      i140ReceiptDate: args.i140ReceiptDate,
-      i140ReceiptNumber: args.i140ReceiptNumber,
-      i140ApprovalDate: args.i140ApprovalDate,
-      i140DenialDate: args.i140DenialDate,
-      i140Category: args.i140Category,
-      i140PremiumProcessing: args.i140PremiumProcessing,
-      i140ServiceCenter: args.i140ServiceCenter,
-
-      // Optional text fields. A DOL number typed only in a step's box becomes the case's DOL number, so it's
-      // watched wherever it was entered (convex/lib/dolCaseNumber.ts).
-      caseNumber: dolCaseNumberOnCreate(args),
-      internalCaseNumber: args.internalCaseNumber,
-      employerFein: await encryptFein(args.employerFein),
-      socCode: args.socCode,
-      socTitle: args.socTitle,
-      jobOrderState: args.jobOrderState,
-      jobDescriptionPositionTitle: args.jobDescriptionPositionTitle,
-      jobDescription: args.jobDescription,
-      jobDescriptionTemplateId: args.jobDescriptionTemplateId,
-      progressStatusOverride: args.progressStatusOverride,
-      notes: args.notes,
-      calendarEventIds: args.calendarEventIds,
-
-      // Duplicate tracking
-      duplicateOf: args.duplicateOf,
-      markedAsDuplicateAt: args.duplicateOf ? now : undefined,
-
-      // Sample case flag
-      isSample: args.isSample,
-
-      // Timestamps
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    // Audit log: record the case creation
-    try {
-      const newCase = await ctx.db.get(caseId);
-      await logCreate(ctx, "cases", caseId, newCase as Record<string, unknown>);
-    } catch (auditError) {
-      // Log audit failure but don't fail the operation - case was created successfully
-      log.error('Failed to log case creation', { resourceId: caseId, error: auditError instanceof Error ? auditError.message : String(auditError) });
-      await recordError(ctx, "mutation", "cases.createCase.audit", auditError, { userId, resourceId: caseId.toString() });
-    }
+    const caseId = await insertCaseByCreateRules(ctx, userId, args, plan, "cases.createCase");
 
     // Create notification for case creation (v1 parity)
     // Check if user has emailStatusUpdates enabled before creating notification
@@ -641,21 +687,6 @@ export const create = mutation({
       // Log notification failure but don't fail the operation - case was created successfully
       log.error('Failed to create case creation notification', { resourceId: caseId, error: notificationError instanceof Error ? notificationError.message : String(notificationError) });
       await recordError(ctx, "mutation", "cases.createCase.notification", notificationError, { userId, resourceId: caseId.toString() });
-    }
-
-    // Schedule Google Calendar sync for the new case (best-effort, non-blocking)
-    // Only sync if case-level calendarSyncEnabled is not explicitly false
-    if (args.calendarSyncEnabled !== false) {
-      try {
-        const syncResult = await scheduleCalendarSync(ctx, userId, caseId);
-        if (syncResult.scheduled) {
-          log.info('Scheduled sync for new case', { resourceId: caseId });
-        }
-      } catch (calendarError) {
-        // Log calendar sync failure but don't fail the operation - case was created successfully
-        log.error('Failed to schedule sync for new case', { resourceId: caseId, error: calendarError instanceof Error ? calendarError.message : String(calendarError) });
-        await recordError(ctx, "mutation", "cases.createCase.calendar", calendarError, { userId, resourceId: caseId.toString() });
-      }
     }
 
     return caseId;
