@@ -35,6 +35,7 @@ import { StepsByStage } from "@/components/community/StepFigures";
 import { getReportedSummary } from "@/lib/db/reportedSummary";
 import { formatInt } from "@/lib/format";
 import { stepTrend, windowText, type ReportedSummary } from "@/lib/reportedSummary";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 /**
  * Green card timelines, as the people waiting report them.
@@ -468,6 +469,7 @@ export default async function GreenCardTimelinesPage() {
         </div>
       </details>
 
+      <StepBothSources here="/green-card-timelines" groups={["pwd", "perm", "i140", "i485", "consular"]} reported={false} />{" "}
       <section className="mt-12 max-w-3xl">
         <h2 className="font-heading text-2xl font-bold sm:text-3xl">Questions about these timelines</h2>{" "}
         <FaqList items={FAQS} />

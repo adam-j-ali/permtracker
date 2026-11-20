@@ -9,6 +9,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { getI140Trends } from "@/lib/db/publicData";
 import { quartersFor, totalsFor } from "@/lib/i140Trends";
 import { withSocialCard } from "@/lib/socialCard";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 /**
  * I-140 outcomes by category, quarter by quarter.
@@ -126,6 +127,7 @@ export default async function I140TrendsPage() {
         <I140Trends rows={rows} />
       </section>
 
+      <StepBothSources here="/tools/i140-trends" groups={["i140"]} />{" "}
       <section className="mt-12">
         <h2 className="font-heading text-2xl font-bold">FAQs</h2>
         <FaqList items={FAQS} />

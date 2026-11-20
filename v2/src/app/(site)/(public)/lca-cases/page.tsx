@@ -11,6 +11,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { getLcaSummary, getLcaDisclosureSummary } from "@/lib/db/lcaCases";
 import { SearchParamsBoundary } from "@/hooks/useUrlSearchParams";
 import { longDate } from "@convex/lib/months";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 /**
  * Labor condition applications, findable by employer as DOL confirms them.
@@ -99,6 +100,7 @@ export default async function LcaCasesPage() {
         </section>
       ) : null}
 
+      <StepBothSources here="/lca-cases" groups={["h1b"]} />{" "}
       <PageBasics page="lca-cases" />{" "}
     </div>
   );

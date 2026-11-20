@@ -42,6 +42,7 @@ import {
 } from "@/lib/uscisQuarterlyShape";
 import { SITE_URL } from "@/lib/constants/site";
 import { formatInt } from "@/lib/format";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 const TITLE = "I-485 Processing by USCIS Field Office";
 const DESCRIPTION =
@@ -350,6 +351,7 @@ export default async function I485ByFieldOfficePage() {
         </ul>
       </section>
 
+      <StepBothSources here="/i485-by-field-office" groups={["i485"]} />{" "}
       <PageBasics title="More questions"
         page="i485-by-field-office"
         figures={{

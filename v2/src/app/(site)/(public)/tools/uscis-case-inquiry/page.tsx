@@ -13,6 +13,7 @@ import { withSocialCard } from "@/lib/socialCard";
 import { medianCoversWholeForm, medianLineFor, pickMedian } from "@/lib/uscisInquiry";
 import { quarterLabel } from "@/lib/uscisQuarterlyShape";
 import { longDate } from "@convex/lib/months";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 /**
  * A USCIS case on its own calendar: from the form, the office and the receipt date, the day half of such cases
@@ -122,6 +123,7 @@ export default async function UscisCaseInquiryPage() {
           </p>
         )}
       </section>
+      <StepBothSources here="/tools/uscis-case-inquiry" groups={["i140", "i485"]} />{" "}
       <section className="mt-12">
         <h2 className="font-heading text-2xl font-bold">FAQs</h2>
         <FaqList items={FAQS} />

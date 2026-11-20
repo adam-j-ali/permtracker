@@ -20,6 +20,7 @@ import { longDate } from "@convex/lib/months";
 import { getPwdBoard } from "@/lib/db/board";
 import { backlogTrend } from "@/lib/homeTrends";
 import { softFail } from "@/lib/softRead";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 /**
  * Prevailing wage requests, findable by employer before the PERM exists.
@@ -193,6 +194,7 @@ export default async function PwdCasesPage() {
         </p>
       </section>{" "}
 
+      <StepBothSources here="/pwd-cases" groups={["pwd"]} />{" "}
       <PageBasics page="pwd-cases" />{" "}
     </div>
   );

@@ -35,6 +35,7 @@ import { SearchParamsBoundary } from "@/hooks/useUrlSearchParams";
 import { formatInt } from "@/lib/format";
 import { filedLastMonth, waitingSplit } from "@/lib/figureVisuals";
 import { SITE_URL } from "@/lib/constants/site";
+import { StepBothSources } from "@/components/community/StepBothSources";
 const TITLE = "PERM Case Search";
 const DESCRIPTION =
   "Search every PERM case in DOL's published disclosure window by case number, employer, law firm, state or occupation, with the wage and the days it took.";
@@ -253,6 +254,7 @@ export default async function PermCasesPage() {
           </p>
         </div>
       </section>
+      <StepBothSources here="/perm-cases" groups={["perm"]} />{" "}
       <PageBasics page="perm-cases" />{" "}
       <DataProvenance datasets={["perm-cases"]} />
     </div>

@@ -16,6 +16,7 @@ import { QueueAlertForm } from "../../perm-processing-times/QueueAlertForm";
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { withSocialCard } from "@/lib/socialCard";
 import { buttonVariants } from "@/components/ui/button";
+import { StepBothSources } from "@/components/community/StepBothSources";
 /**
  * Prevailing wage determination queue calculator.
  *
@@ -128,6 +129,7 @@ export default async function PwdCalculatorPage() {
         />
       </section>
 
+      <StepBothSources here="/tools/pwd-calculator" groups={["pwd"]} />{" "}
       <section className="mt-12">
         <h2 className="font-heading text-2xl font-bold">FAQs</h2>
         <FaqList items={FAQS} />

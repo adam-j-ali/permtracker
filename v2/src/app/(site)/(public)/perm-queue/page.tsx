@@ -49,6 +49,7 @@ import { softFail } from "@/lib/softRead";
 import { NextMonthStart } from "@/components/queue/NextMonthStart";
 import { getNextStart } from "@/lib/db/monthStarts";
 import { QueueAlertForm } from "../perm-processing-times/QueueAlertForm";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 /**
  * Where DOL's PERM queue stands right now, from a per-case scan.
@@ -461,6 +462,7 @@ export default async function PermQueuePage() {
         <OctoberNote />
       </div>{" "}
 
+      <StepBothSources here="/perm-queue" groups={["perm"]} />{" "}
       <PageBasics page="perm-queue" />{" "}
       <DataProvenance
         datasets={["perm-case-status", "processing-times", "perm-cases"]}

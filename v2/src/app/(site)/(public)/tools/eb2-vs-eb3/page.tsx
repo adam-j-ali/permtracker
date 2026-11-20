@@ -8,6 +8,7 @@ import { DataProvenance } from "@/components/data/DataProvenance";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { getLineSnapshot } from "@/lib/db/greenCardLine";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 /**
  * EB-2 and EB-3 for one priority date, side by side. The counts are the green
@@ -83,6 +84,7 @@ export default async function Eb2VsEb3Page() {
         <Eb2VsEb3 snapshot={snapshot} />
       </section>{" "}
 
+      <StepBothSources here="/tools/eb2-vs-eb3" groups={["i485"]} />{" "}
       <section className="mt-12">
         <h2 className="font-heading text-2xl font-bold">FAQs</h2>{" "}
         <FaqList items={FAQS} />

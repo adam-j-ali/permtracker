@@ -58,6 +58,7 @@ import { MoreText } from "@/components/data/MoreText";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { MONTH_NAMES, shiftMonth } from "@convex/lib/months";
 import { softFail } from "@/lib/softRead";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 const TITLE = "The Next Visa Bulletin, From Every Past One";
 const DESCRIPTION =
@@ -528,6 +529,7 @@ export default async function VisaBulletinPage() {
         <FaqList items={FAQS} />
       </div>
 
+      <StepBothSources here="/visa-bulletin" groups={["i485", "consular"]} />{" "}
       <DataProvenance datasets={["visa-bulletin", "i485-inventory"]} />
 
       <ToolPageFooter

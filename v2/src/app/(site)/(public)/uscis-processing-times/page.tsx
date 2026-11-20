@@ -53,6 +53,7 @@ import { SITE_URL } from "@/lib/constants/site";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { FORM_PAGES, slotShort } from "@/lib/uscisForms";
 import { monthsVs, pointBefore } from "@/lib/uscisTrends";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 const TITLE = "USCIS Processing Times by Form (Median)";
 const DESCRIPTION =
@@ -625,6 +626,7 @@ export default async function UscisProcessingTimesPage() {
         </ul>
       </section>
 
+      <StepBothSources here="/uscis-processing-times" groups={["i140", "i485"]} />{" "}
       <PageBasics page="uscis-processing-times" title="More questions" />{" "}
       <DataProvenance datasets={["uscis-form-quarters"]} />
     </div>

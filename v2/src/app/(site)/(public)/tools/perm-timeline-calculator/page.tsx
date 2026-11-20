@@ -26,6 +26,7 @@ import { DataProvenance } from "@/components/data/DataProvenance";
 import { withSocialCard } from "@/lib/socialCard";
 import { buttonVariants } from "@/components/ui/button";
 import { softFail } from "@/lib/softRead";
+import { StepBothSources } from "@/components/community/StepBothSources";
 /**
  * PERM decision-date calculator.
  *
@@ -172,6 +173,7 @@ export default async function PermTimelineCalculatorPage() {
         <QueueAlertForm source="perm-timeline-calculator" newestMonth={currentMonthUtc()} />
       </section>
 
+      <StepBothSources here="/tools/perm-timeline-calculator" groups={["perm"]} />{" "}
       <section className="mt-12">
         <h2 className="font-heading text-2xl font-bold">FAQs</h2>
         <FaqList items={FAQS} />

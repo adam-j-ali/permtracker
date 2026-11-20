@@ -11,6 +11,7 @@ import { WageLevelsTool } from "@/components/tools/WageLevelsTool";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { SOC_CODE_RE, socGroup } from "@/lib/socCode";
 import { withSocialCard } from "@/lib/socialCard";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 /**
  * DOL's four prevailing wage levels for an occupation in an area, read live
@@ -83,6 +84,7 @@ export default async function WageLevelsPage({ searchParams }: { searchParams: P
       <section data-embed="wage-levels" className="mt-10">
         <WageLevelsTool initialSoc={initialSoc} initialState={initialState} ruleStage={ruleStage} />
       </section>
+      <StepBothSources here="/tools/wage-levels" groups={["pwd"]} />{" "}
       <section className="mt-12">
         <h2 className="font-heading text-2xl font-bold">FAQs</h2>
         <FaqList items={FAQS} />

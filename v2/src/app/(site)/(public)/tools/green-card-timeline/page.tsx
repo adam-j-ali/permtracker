@@ -13,6 +13,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { easternDay } from "@convex/lib/time";
 import { softFail } from "@/lib/softRead";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 /**
  * The employment-based green card for one case, every step dated (owner, Oct 27 2026:
@@ -98,6 +99,7 @@ export default async function GreenCardTimelinePage() {
           <GreenCardPlanner reading={reading} check={check} today={easternDay()} consularNote={<ConsularPauseNote />} />
         </SearchParamsBoundary>
       </section>
+      <StepBothSources here="/tools/green-card-timeline" groups={["pwd", "perm", "i140", "i485", "consular"]} />{" "}
       <section className="mt-12">
         <h2 className="font-heading text-2xl font-bold">FAQs</h2>{" "}
         <FaqList items={FAQS} />

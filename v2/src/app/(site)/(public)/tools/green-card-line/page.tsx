@@ -13,6 +13,7 @@ import { getBulletinCheck } from "@/lib/db/bulletinCheck";
 import { getLineSnapshot } from "@/lib/db/greenCardLine";
 import { paceByLine } from "@/lib/perm";
 import { softFail } from "@/lib/softRead";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 /**
  * The whole employment-based line in front of one priority date: approved
@@ -114,6 +115,7 @@ export default async function GreenCardLinePage() {
         <GreenCardLine snapshot={snapshot} pace={pace} check={check} />
       </section>{" "}
 
+      <StepBothSources here="/tools/green-card-line" groups={["i485"]} />{" "}
       <section className="mt-12">
         <h2 className="font-heading text-2xl font-bold">FAQs</h2>{" "}
         <FaqList items={FAQS} />

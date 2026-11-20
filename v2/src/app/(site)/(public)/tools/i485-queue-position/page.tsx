@@ -30,6 +30,7 @@ import {
 import type { I485CellTable } from "@/lib/i485/position";
 import { withSocialCard } from "@/lib/socialCard";
 import { SearchParamsBoundary } from "@/hooks/useUrlSearchParams";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 /**
  * Queue position inside USCIS's employment-based I-485 pending inventory.
@@ -174,6 +175,7 @@ export default async function I485QueuePositionPage() {
         </SearchParamsBoundary>
       </section>{" "}
 
+      <StepBothSources here="/tools/i485-queue-position" groups={["i485"]} />{" "}
       <section className="mt-12">
         <h2 className="font-heading text-2xl font-bold">FAQs</h2>{" "}
         <FaqList items={FAQS} />

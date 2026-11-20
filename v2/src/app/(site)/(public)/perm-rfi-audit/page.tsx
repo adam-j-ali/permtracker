@@ -64,6 +64,7 @@ import { MoreText } from "@/components/data/MoreText";
 import { SITE_URL } from "@/lib/constants/site";
 import { monthDay, monthYear } from "@convex/lib/months";
 import { softFail } from "@/lib/softRead";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 const TITLE = "PERM RFI, Audits and Appeals";
 // 148 characters unescaped. Measure the UNESCAPED text: house style is
@@ -523,6 +524,7 @@ export default async function PermRfiAuditPage() {
               .
             </p>
           </FinePrint>{" "}
+          <StepBothSources here="/perm-rfi-audit" groups={["perm"]} />{" "}
           <PageBasics page="perm-rfi-audit" />{" "}
           <DataProvenance
             datasets={["perm-case-status", "rfi-funnel", "processing-times"]}
