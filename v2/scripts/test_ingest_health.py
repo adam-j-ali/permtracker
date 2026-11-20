@@ -632,6 +632,7 @@ def main() -> int:
     check_wage_views_rules()
     check_lca_numbers_rules()
     check_lca_years_rules()
+    check_coverage_rules()
     print(f"\n  {len(failures)} failure(s)")
     return 1 if failures else 0
 
@@ -996,6 +997,34 @@ def check_lca_years_rules() -> None:
     check("lca years: no chart table fails", years("2026-06-30", None, with_table=False) == 1)
     check("lca years: no LCA decision at all fails", years(None, 2026) == 1)
 
+
+
+def check_coverage_rules() -> None:
+    """A community sheet's sentence is built from its entry in community_sheets.json, so a registered sheet is
+    covered; a dataset with no sentence anywhere still fails (Nov 20 2026: 18 sheets read as missing)."""
+    import contextlib
+    import io
+
+    here = pathlib.Path(health.__file__).resolve().parent
+    typed = (here.parent / "src" / "lib" / "datasetCoverage.ts").read_text()
+    # A sheet whose sentence is only built from the list, never typed (the San Fernando sheet has one of its own).
+    sheet = next(s["key"] for s in json.loads((here / "data" / "community_sheets.json").read_text())["sheets"]
+                 if f"community-sheet-{s['key']}" not in typed)
+
+    def run(datasets: list[str]) -> tuple[int, str]:
+        class DB:
+            def execute(self, sql, args=None):
+                return {"response": {"result": {"rows": [[{"type": "text", "value": d}] for d in datasets]}}}
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = health.check_coverage_stated(DB())
+        return code, out.getvalue()
+
+    check("coverage: a sheet in community_sheets.json is covered", run([f"community-sheet-{sheet}", "perm-case-status"])[0] == 0)
+    code, said = run([f"community-sheet-{sheet}", "a-dataset-nobody-described"])
+    check("coverage: a dataset with no sentence still fails", code == 1 and "a-dataset-nobody-described" in said
+          and f"community-sheet-{sheet}" not in said)
+    check("coverage: a sheet no longer in the list is no longer covered", run(["community-sheet-not-a-real-sheet"])[0] == 1)
 
 if __name__ == "__main__":
     sys.exit(main())
