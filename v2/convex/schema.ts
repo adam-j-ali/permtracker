@@ -668,6 +668,25 @@ export default defineSchema({
     .index("by_caseId", ["caseId"])
     .index("by_userId", ["userId"]),
 
+  /**
+   * A case's recruitment record shared with the client by link (convex/recruitmentShares.ts). Only the SHA-256 of the
+   * link's key is stored (convex/lib/shareToken.ts), so a link can't be shown again. One live link per case: a
+   * turned-off link answers nothing and is cleared when the next one is made. `lastViewedOn` is the Eastern day the
+   * page was last opened, noted by the page's script, never by the request itself. Deleted with its case and with
+   * the account (cases.remove, lib/deletion.ts), as the Privacy Policy says.
+   */
+  recruitmentShares: defineTable({
+    userId: v.id("users"),
+    caseId: v.id("cases"),
+    tokenHash: v.string(),
+    createdAt: v.number(),
+    turnedOffAt: v.optional(v.number()),
+    lastViewedOn: v.optional(v.string()),
+  })
+    .index("by_tokenHash", ["tokenHash"])
+    .index("by_caseId", ["caseId"])
+    .index("by_userId", ["userId"]),
+
   // Notifications for deadline alerts and system messages
   notifications: defineTable({
     // Relationships

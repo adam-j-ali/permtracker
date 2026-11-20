@@ -26,7 +26,7 @@ import { shouldSendEmail, formatCaseStatus, formatProgressStatus, buildUserNotif
 import { scheduleCalendarSync, scheduleCalendarSyncBulk } from "./lib/calendarSyncHelpers";
 import { loggers } from "./lib/logging";
 import { recordError } from "./lib/errorRecording";
-import { deleteCaseApplicants } from "./lib/deletion";
+import { deleteCaseApplicants, deleteCaseShares } from "./lib/deletion";
 import { deleteCaseDocumentBlobs } from "./lib/caseDocumentBlobs";
 import { dolCaseNumberOnCreate, dolCaseNumberOnUpdate, dolNumberKey } from "./lib/dolCaseNumber";
 import { timelineSwitchForEdit, timelineSwitchForNewCase } from "./lib/timelineShow";
@@ -1311,6 +1311,13 @@ async function clearCaseReferences(
   } catch (err) {
     await failed("applicant logs", "cleanupApplicants", err);
   }
+
+  // So do the links that shared their recruitment records (convex/recruitmentShares.ts).
+  try {
+    await deleteCaseShares(ctx, caseIds);
+  } catch (err) {
+    await failed("share links", "cleanupShares", err);
+  }
 }
 
 /**
@@ -2452,6 +2459,14 @@ export const importCases = mutation({
           } catch (cleanupError) {
             log.error('Failed to cleanup conversations during import replace', { resourceId: existingCaseId, error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) });
             await recordError(ctx, "mutation", "cases.importCases.replaceCleanupConversations", cleanupError, { userId, resourceId: existingCaseId.toString() });
+          }
+
+          // A link that shared the replaced case's recruitment record stops with it.
+          try {
+            await deleteCaseShares(ctx, [existingCaseId]);
+          } catch (cleanupError) {
+            log.error('Failed to cleanup share links during import replace', { resourceId: existingCaseId, error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) });
+            await recordError(ctx, "mutation", "cases.importCases.replaceCleanupShares", cleanupError, { userId, resourceId: existingCaseId.toString() });
           }
 
           // Hard delete the existing case

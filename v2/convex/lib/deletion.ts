@@ -67,6 +67,25 @@ export async function deleteCaseApplicants(ctx: MutationCtx, caseIds: readonly I
   return n;
 }
 
+/**
+ * Delete the share links of the given cases (convex/recruitmentShares.ts): run when a case is deleted, as the Privacy
+ * Policy says. A case holds one live link and at most one turned off, so the read is small.
+ */
+export async function deleteCaseShares(ctx: MutationCtx, caseIds: readonly Id<"cases">[]): Promise<number> {
+  let n = 0;
+  for (const caseId of caseIds) {
+    const rows = await ctx.db
+      .query("recruitmentShares")
+      .withIndex("by_caseId", (q) => q.eq("caseId", caseId))
+      .take(50);
+    for (const r of rows) {
+      await ctx.db.delete("recruitmentShares", r._id);
+      n += 1;
+    }
+  }
+  return n;
+}
+
 export async function purgeAllUserData(
   ctx: MutationCtx,
   userId: Id<"users">
@@ -110,6 +129,11 @@ export async function purgeAllUserData(
     .withIndex("by_userId", (q) => q.eq("userId", userId))
     .collect();
   for (const a of applicants) await ctx.db.delete(a._id);
+
+  // The links that shared those cases' recruitment records stop with the account (the Privacy Policy says so).
+  for await (const share of ctx.db.query("recruitmentShares").withIndex("by_userId", (q) => q.eq("userId", userId))) {
+    await ctx.db.delete("recruitmentShares", share._id);
+  }
 
   // Delete all user's notifications
   const notifications = await ctx.db

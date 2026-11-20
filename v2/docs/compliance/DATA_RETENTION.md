@@ -8,6 +8,7 @@
 |-----------|-----------|-----------|-------|
 | User accounts & profiles | Until deletion | User-initiated | 30-day grace period on deletion |
 | PERM cases | Until deletion | User-initiated | Deleted at once, with their uploaded files and recruitment log; purged with the account |
+| Recruitment record share links | Until turned off or the case is deleted | User-initiated | `recruitmentShares`: the SHA-256 of the link's key, never the key, and the Eastern day it was last opened. A turned-off link answers nothing and is deleted when the case's next link is made; every link goes with its case and with the account (since Nov 20 2026) |
 | Deleted cases' copies | **30 days** after the deletion | Daily cron (3:20 AM UTC), `retention.eraseDeletedCaseCopies` | The `auditLogs` row of a case's deletion holds the whole case so its owner can restore it from Settings (`caseRestore.restoreDeleted`, since Nov 20 2026). Then the copy is erased and the case's other `auditLogs` rows (its creation and edits) are deleted; the deletion's row keeps who, which case and when (`erasedAt`). `DELETED_CASE_DAYS` in `convex/lib/deletedCases.ts` |
 | AI conversations | **90 days** | Daily cron (3 AM UTC) | Auto-deleted after 90 days of inactivity |
 | Read notifications | **90 days** | Hourly cron (:30) | Unread notifications preserved regardless of age |
