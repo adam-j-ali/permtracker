@@ -898,7 +898,14 @@ export function CasesPageClient() {
     // The tour points at this page's list; an account with no cases still gets the step (Oct 26 2026).
     return (
       <div data-tour="cases-list">
-        <NewUserEmptyState onAddCase={handleAddCase} isAddingCase={isAddingCase} />
+        <NewUserEmptyState onAddCase={handleAddCase} isAddingCase={isAddingCase} onImport={() => setImportModalOpen(true)} />
+        {/* An account with no cases yet can bring its cases in: the moment someone with a spreadsheet arrives. */}
+        <ImportModal
+          open={importModalOpen}
+          onOpenChange={setImportModalOpen}
+          onImport={handleImport}
+          checkDuplicates={handleCheckDuplicates}
+        />
       </div>
     );
   }

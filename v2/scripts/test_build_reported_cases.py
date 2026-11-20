@@ -149,12 +149,14 @@ def main() -> int:
           "a 221(g) stays one; a rescheduled interview is still pending")
     # A case saved in the app by an account that chose to count it: dates only, counted, never listed.
     app = {"id": "k1", "updatedAt": 1795118400000, "pwdFilingDate": "2025-01-10", "pwdDeterminationDate": "2025-07-01",
-           "eta9089FilingDate": "2025-10-01", "eta9089CertificationDate": "2026-06-15", "i140FilingDate": "2026-07-01",
+           "eta9089FilingDate": "2025-10-01", "eta9089AuditDate": "2026-01-20", "eta9089CertificationDate": "2026-06-15",
+           "i140FilingDate": "2026-07-01",
            "i140DenialDate": "2026-09-01", "i140Category": "EB-2-NIW", "i140PremiumProcessing": False}
     ar = b.app_record(app)
     check(ar["source"] == "app" and ar["shows"] is False and ar["category"] == "EB-2 NIW" and ar["premium"] == "none",
           "an app case is counted, never shown, its category in the merge's words")
     check(ar["pwd_filed"] == "2025-01-10" and ar["pwd_issued"] == "2025-07-01" and ar["perm_decision"] == "approved"
+          and ar["perm_audit"] == "2026-01-20"
           and ar["i140_decided"] == "2026-09-01" and ar["i140_decision"] == "denied", "its steps and decisions")
     check(not {"employerName", "positionTitle", "caseNumber", "notes"} & set(ar), "nothing but dates and the I-140's kind")
     app_cases, _ = b.build_cases({"app": [app]})

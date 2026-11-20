@@ -264,7 +264,8 @@ export function calculateNextAction(caseData: NextUpCaseData): NextAction | null
   if (!caseData.pwdDeterminationDate) {
     return {
       action: "Wait for PWD",
-      description: "Awaiting DOL determination (typically 4-6 months)",
+      // No typed wait: the likely day, from DOL's own line, is the decision card at the foot of the Overview.
+      description: "Awaiting DOL's determination. The likely day, from DOL's own line, is at the foot of this page",
       icon: createElement(HourglassIcon, { className: "h-5 w-5" }),
       urgency: "normal",
     };
