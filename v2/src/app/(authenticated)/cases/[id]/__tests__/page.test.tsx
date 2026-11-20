@@ -30,6 +30,9 @@ import { renderWithProviders } from "../../../../../../test-utils/render-utils";
 // Mock router
 const mockPush = vi.fn();
 const mockBack = vi.fn();
+const mockReplace = vi.fn();
+// The address's query, settable per test (the open tab lives in ?tab=).
+let mockSearch = new URLSearchParams();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -37,11 +40,11 @@ vi.mock("next/navigation", () => ({
     back: mockBack,
     forward: vi.fn(),
     refresh: vi.fn(),
-    replace: vi.fn(),
+    replace: mockReplace,
     prefetch: vi.fn(),
   }),
   usePathname: () => "/cases/test-case-id",
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearch,
   useParams: () => ({ id: "test-case-id" }),
 }));
 
@@ -246,6 +249,7 @@ async function renderPageAndWait(caseId: string) {
 
 function resetMocks() {
   vi.clearAllMocks();
+  mockSearch = new URLSearchParams();
   queryCallIndex = 0;
   mutationPositionInRender = 0;
   mockRemove.mockReset();
@@ -855,6 +859,32 @@ describe("CaseDetailPage - Archive and Reopen", () => {
 });
 
 // TIMELINE TOGGLE TESTS
+
+describe("CaseDetailPage - The open tab in the address", () => {
+  beforeEach(resetMocks);
+
+  it("opens on the tab the address names, and a click puts the new tab in the address", async () => {
+    mockSearch = new URLSearchParams("tab=recruitment");
+    mockCaseData.mockReturnValue(createMockCaseData());
+
+    const { user } = await renderPageAndWait("test-id");
+
+    expect(screen.getByRole("tab", { name: /Recruitment/ })).toHaveAttribute("aria-selected", "true");
+    await user.click(screen.getByRole("tab", { name: /ETA 9089/ }));
+    expect(mockReplace).toHaveBeenCalledWith("/cases/test-id?tab=eta9089", { scroll: false });
+    await user.click(screen.getByRole("tab", { name: /Overview/ }));
+    expect(mockReplace).toHaveBeenLastCalledWith("/cases/test-id", { scroll: false });
+  });
+
+  it("opens on Overview for a tab it doesn't have", async () => {
+    mockSearch = new URLSearchParams("tab=billing");
+    mockCaseData.mockReturnValue(createMockCaseData());
+
+    await renderPageAndWait("test-id");
+
+    expect(screen.getByRole("tab", { name: /Overview/ })).toHaveAttribute("aria-selected", "true");
+  });
+});
 
 describe("CaseDetailPage - Timeline Toggle", () => {
   beforeEach(() => {

@@ -242,16 +242,28 @@ export function TimelinePageClient() {
             hasActiveSelection={hasActiveSelection}
           />
 
-        {/* Empty: a title, one sentence, one action */}
-        <div className="bg-tint px-4 py-12 text-center">
-          <h2 className="font-heading text-xl font-bold">No cases to display</h2>{" "}
-          <p className="mx-auto mt-2 max-w-md text-muted-foreground">
-            Add a case and its stages and dates appear here across time.
-          </p>
-          <Link href="/cases/new" className={buttonVariants({ className: "mt-5" })}>
-            Add your first case
-          </Link>
-        </div>
+        {/* Empty: a title, one sentence, one action. With cases, all closed or taken off, the action is the picker. */}
+        {totalCaseCount > 0 ? (
+          <div className="bg-tint px-4 py-12 text-center">
+            <h2 className="font-heading text-xl font-bold">None of your cases are on the timeline</h2>{" "}
+            <p className="mx-auto mt-2 max-w-md text-muted-foreground">
+              Closed cases leave it, and any case can be taken off. Choose the ones to show.
+            </p>
+            <Button type="button" className="mt-5" onClick={openCaseSelector}>
+              Choose cases
+            </Button>
+          </div>
+        ) : (
+          <div className="bg-tint px-4 py-12 text-center">
+            <h2 className="font-heading text-xl font-bold">No cases to display</h2>{" "}
+            <p className="mx-auto mt-2 max-w-md text-muted-foreground">
+              Add a case and its stages and dates appear here across time.
+            </p>
+            <Link href="/cases/new" className={buttonVariants({ className: "mt-5" })}>
+              Add your first case
+            </Link>
+          </div>
+        )}
 
         {/* Case Selection Modal */}
         <CaseSelectionModal
