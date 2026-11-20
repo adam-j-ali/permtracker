@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { withSocialCard } from "@/lib/socialCard";
 
@@ -170,6 +171,27 @@ export default async function PwdCasesPage() {
           />
         </section>
       ) : null}{" "}
+
+      <section className="mt-12 max-w-3xl" aria-labelledby="your-wage-h">
+        <h2 id="your-wage-h" className="font-heading text-xl font-bold">
+          What wage will your job get?
+        </h2>{" "}
+        <p className="mt-2 text-base leading-relaxed">
+          DOL sets one of four levels for the job&apos;s occupation and area.{" "}
+          <Link href="/tools/wage-levels" className="link font-bold">
+            See the four wages and the level your job will likely get
+          </Link>
+          , by DOL&apos;s own method.{" "}
+          <Link href="/guides/how-dol-sets-a-prevailing-wage" className="link">
+            How DOL sets a prevailing wage
+          </Link>{" "}
+          explains each step, and{" "}
+          <Link href="/tools/pwd-validity" className="link">
+            how long a determination lasts
+          </Link>{" "}
+          once it&apos;s issued.
+        </p>
+      </section>{" "}
 
       <PageBasics page="pwd-cases" />{" "}
     </div>

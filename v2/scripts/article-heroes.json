@@ -1557,5 +1557,37 @@
     },
     "credit": "Screenshot of permtracker.app, November 20, 2026",
     "alt": "Who's waiting, and where: the people heard from in the last year, at the furthest step each reported, counted from every source"
+  },
+  "changelog/wage-level-estimate": {
+    "capture": {
+      "url": "/tools/wage-levels?soc=15-1252",
+      "steps": [
+        {
+          "select": "State",
+          "option": "California"
+        },
+        {
+          "select": "Area",
+          "option": "San Jose"
+        },
+        {
+          "click": "Look up the four levels"
+        },
+        {
+          "waitFor": "Which level will DOL likely give this job?"
+        },
+        {
+          "fill": "Months of experience the job requires",
+          "text": "40"
+        },
+        {
+          "waitFor": "Likely level"
+        }
+      ],
+      "clip": "h:Which level will DOL likely give this job?",
+      "width": 1280
+    },
+    "credit": "Screenshot of permtracker.app, November 20, 2026",
+    "alt": "The wage level estimate for a software developer job in San Jose: 40 months of required experience gives Level III, each step shown with the points it adds"
   }
 }
