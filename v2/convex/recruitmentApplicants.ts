@@ -17,7 +17,7 @@ import { recruitmentStep } from "./lib/perm/recruitment/steps";
  * nothing here screens or ranks an applicant. Every read and write checks that the case is the caller's own.
  */
 
-const outcomeV = v.union(
+export const outcomeV = v.union(
   v.literal("pending"),
   v.literal("not_qualified"),
   v.literal("no_response"),
@@ -27,7 +27,7 @@ const outcomeV = v.union(
   v.literal("hired"),
   v.literal("other"),
 );
-const contactV = v.union(v.literal("email"), v.literal("phone"), v.literal("letter"), v.literal("in_person"), v.literal("other"));
+export const contactV = v.union(v.literal("email"), v.literal("phone"), v.literal("letter"), v.literal("in_person"), v.literal("other"));
 
 const fields = {
   ref: v.string(),
