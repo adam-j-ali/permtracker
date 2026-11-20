@@ -269,9 +269,10 @@ def _better(f: str, cur, cur_m: dict | None, v, m: dict) -> bool:
     return bool(m.get("checked")) and not (cur_m or {}).get("checked")
 
 
-def _combine(members: list[dict]) -> dict:
-    """The case's values: every field from its best member. A member that doesn't show adds nothing shown."""
-    shown = [m for m in members if m.get("shows", True)]
+def _combine(members: list[dict], everyone: bool = False) -> dict:
+    """The case's values: every field from its best member. A member that doesn't show adds nothing shown, except to
+    the anonymous figures (`everyone`), which count a private timeline as its form promises."""
+    shown = members if everyone else [m for m in members if m.get("shows", True)]
     out: dict = {}
     by: dict[str, dict] = {}
     for m in sorted(shown, key=lambda m: (rank(m["source"]), m["key"])):
@@ -365,7 +366,11 @@ def merge(records: list[dict]) -> list[dict]:
         cases.append({
             "id": f"{first['source']}:{first['key']}",
             **{f: shown.get(f) for f in FIELDS},
-            "sources": [{"source": m["source"], "key": m["key"], "likely": m["likely"]} for m in c["members"]],
+            "sources": [{"source": m["source"], "key": m["key"], "likely": m["likely"], "shows": m.get("shows", True)}
+                        for m in c["members"]],
+            # What the anonymous figures count (scripts/lib_reported_summary.py): every member, a private one too.
+            "figures": {**_combine(c["members"], everyone=True),
+                        "as_of": max((m["as_of"] for m in c["members"] if m.get("as_of")), default=None)},
             "checked": any(m.get("checked") and m.get("shows", True) for m in c["members"]),
             "shows": any(m.get("shows", True) for m in c["members"]),
             "conflicts": [x for m in c["members"] for x in m.get("conflicts", [])],
