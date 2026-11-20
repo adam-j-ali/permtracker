@@ -464,8 +464,8 @@ describe("sitemap.ts", () => {
     expect(missing).toEqual([]);
   });
 
-  it("opts into daily ISR via revalidate=86400", async () => {
-    expect(revalidate).toBe(86400);
+  it("renews the index within the hour, so a load that changes a family's file count never lists a missing file for long", async () => {
+    expect(revalidate).toBe(3600);
   });
 
   it("the article hubs' lastModified derives from the newest post's date or updated", async () => {

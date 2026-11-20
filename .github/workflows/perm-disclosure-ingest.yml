@@ -184,3 +184,25 @@ jobs:
           curl -fsS -X POST https://permtracker.app/api/revalidate-disclosure \
             -H "x-revalidate-secret: $REVALIDATE_SECRET" \
             || { echo "::error::revalidation call failed: the pages keep the previous quarter until their window"; exit 1; }
+
+      # A load changes how many sitemap files a family has (Nov 20 2026: the live-only employers went from 7 files to
+      # 5), and Cloudflare's copy of the index kept naming the two that were gone, which answer 404. Drop that copy so
+      # the next request lists what exists. Skips cleanly without the secrets; a refusal fails this step, so it shows.
+      - name: Drop Cloudflare's copy of the sitemap index
+        if: success()
+        continue-on-error: true
+        env:
+          CF_PURGE_TOKEN: ${{ secrets.CF_PURGE_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+        run: |
+          if [ -z "$CF_PURGE_TOKEN" ] || [ -z "$CF_ZONE_ID" ]; then
+            echo "::notice::CF_PURGE_TOKEN or CF_ZONE_ID not set: the index refreshes within its hour"; exit 0
+          fi
+          # Cloudflare's answer goes to a file and is read as JSON: nothing fetched is run.
+          curl -sS --max-time 30 -o "$RUNNER_TEMP/sitemap-purge.json" -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
+            -H "Authorization: Bearer $CF_PURGE_TOKEN" -H "Content-Type: application/json" \
+            --data '{"files":["https://permtracker.app/sitemap.xml"]}'
+          python3 -c 'import json,sys
+          j = json.load(open(sys.argv[1]))
+          print("purge: the sitemap index is fetched fresh" if j.get("success") else "::error::purge refused: " + json.dumps(j.get("errors"))[:200])
+          sys.exit(0 if j.get("success") else 1)' "$RUNNER_TEMP/sitemap-purge.json"
