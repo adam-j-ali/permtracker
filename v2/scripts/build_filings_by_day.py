@@ -38,6 +38,7 @@ import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from lib_db import Database, et_today, query_rows, record_run, write_doc  # noqa: E402
+from lib_flag_serials import SEASONAL_WAGE_REQUEST_FROM  # noqa: E402
 
 SCRIPT = "build_filings_by_day.py"
 DOC = "filings_by_day"
@@ -50,9 +51,13 @@ PROGRAMS: dict[str, dict] = {
     # `is_final IN (0, 1)` lets SQLite seek the (is_final, filing_date) index twice.
     "perm": {"live": "perm_case_status", "live_where": "is_final IN (0, 1) AND ",
              "files": ["perm_cases", "perm_cases_history"]},
-    "pwd": {"live": "pwd_case_status", "live_where": "", "files": ["pwd_cases"]},
+    # Each file with the rows of it that are the program's own: DOL's prevailing wage file holds the H-2B and CW-1
+    # wage requests too, and those are the seasonal programs' (lib_flag_serials.SEASONAL_WAGE_REQUEST_FROM).
+    "pwd": {"live": "pwd_case_status", "live_where": "",
+            "files": [("pwd_cases", f"p.case_number < '{SEASONAL_WAGE_REQUEST_FROM}'")]},
     "lca": {"live": "lca_case_status", "live_where": "", "files": ["lca_case_numbers"]},
-    "seasonal": {"live": "seasonal_case_status", "live_where": "", "files": ["seasonal_cases"]},
+    "seasonal": {"live": "seasonal_case_status", "live_where": "",
+                 "files": ["seasonal_cases", ("pwd_cases", f"p.case_number >= '{SEASONAL_WAGE_REQUEST_FROM}'")]},
 }
 
 
@@ -94,8 +99,10 @@ def program_days(db: Database, cfg: dict, since: str, until: str) -> tuple[list[
     file_only: list = []
     mismatch: list = []
     earlier: list[str] = []
-    for f in cfg["files"]:
-        not_earlier = "".join(f" AND NOT EXISTS (SELECT 1 FROM {e} x WHERE x.case_number = p.case_number)" for e in earlier)
+    for entry in cfg["files"]:
+        f, own = entry if isinstance(entry, tuple) else (entry, "")
+        own = f" AND {own}" if own else ""
+        not_earlier = own + "".join(f" AND NOT EXISTS (SELECT 1 FROM {e} x WHERE x.case_number = p.case_number)" for e in earlier)
         file_only += query_rows(db, f"""
             SELECT p.received_date, COUNT(*) FROM {f} p
              WHERE p.received_date >= ? AND p.received_date <= ?

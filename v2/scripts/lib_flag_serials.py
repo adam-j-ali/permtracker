@@ -127,6 +127,11 @@ def decode_filing_date(case_number: str) -> str | None:
 # application (ETA-9142C); DOL's live service answers both under its own visa
 # names (measured Oct 3 2026: 14 of 60 serials our ledger had recorded as "no
 # case" were H-2A job orders, and one was a CW-1 application).
+# Whose wage request a P- number is, in DOL's prevailing wage file (`pwd_cases`): below this, the ETA-9141 queue's
+# own (P-100 PERM, P-200 to P-203 H-1B, H-1B1, E-3); from it on, H-2B (P-400) and CW-1 (P-500), which belong to the
+# seasonal programs. The site's copy is src/lib/wageRequestRanges.ts, and its test pins the two together.
+SEASONAL_WAGE_REQUEST_FROM = "P-400-"
+
 ALL_FLAG_PREFIXES = ("I-200-", "P-100-", "G-100-", "H-300-", "P-400-", "H-400-",
                      "JO-A-300-", "G-200-", "I-203-", "P-200-", "G-300-", "P-500-",
                      "I-201-", "I-202-", "P-203-", "P-201-", "P-202-", "G-400-", "C-500-")

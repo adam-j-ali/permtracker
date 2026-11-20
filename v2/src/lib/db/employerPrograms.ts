@@ -1,4 +1,5 @@
 import "server-only";
+import { seasonalApplicationSql } from "@/lib/wageRequestRanges";
 
 import { cache } from "react";
 
@@ -27,13 +28,16 @@ interface Tables {
   live: string;
   annual: string;
   visaType: string | null;
+  /** `visa_class` on the published table, so the decided count is the same cases as the pending one. */
+  visaClass: string | null;
 }
 
 const TABLES: Record<"perm" | "pwd" | "lca", Tables> = {
   // perm_cases stores the wage yearly already (ingest_perm_disclosure.py converts it), so the expression is the column.
-  perm: { published: "perm_cases", live: "", annual: "wage", visaType: null },
-  pwd: { published: "pwd_cases", live: "pwd_case_status", annual: ANNUAL_WAGE_SQL, visaType: PWD_VISA_CLASS },
-  lca: { published: "lca_cases", live: "lca_case_status", annual: ANNUAL_WAGE_SQL, visaType: null },
+  perm: { published: "perm_cases", live: "", annual: "wage", visaType: null, visaClass: null },
+  // PERM's wage requests, decided and pending alike: never the H-1B or H-2B ones the same file holds.
+  pwd: { published: "pwd_cases", live: "pwd_case_status", annual: ANNUAL_WAGE_SQL, visaType: PWD_VISA_CLASS, visaClass: PWD_VISA_CLASS },
+  lca: { published: "lca_cases", live: "lca_case_status", annual: ANNUAL_WAGE_SQL, visaType: null, visaClass: null },
 };
 
 /** The employer index on each published table, by name. */
@@ -46,11 +50,13 @@ const EMP_INDEX: Record<"perm" | "pwd" | "lca", string> = {
 async function programLine(program: "perm" | "pwd" | "lca", match: EmployerMatch): Promise<ProgramLine> {
   const t = TABLES[program];
   const where = match.where;
+  // The published file's own visa column; the live table names it `visa_type`, applied below.
+  const filed = t.visaClass ? `${where} AND visa_class = '${t.visaClass}'` : where;
   const [counts, live] = await Promise.all([
     one<{ n: number | string; wage_n: number | string }>(
       `SELECT COUNT(*) AS n, ` +
         `SUM(CASE WHEN (${t.annual}) BETWEEN ? AND ? THEN 1 ELSE 0 END) AS wage_n ` +
-        `FROM ${t.published} INDEXED BY ${EMP_INDEX[program]} WHERE ${where}`,
+        `FROM ${t.published} INDEXED BY ${EMP_INDEX[program]} WHERE ${filed}`,
       [MIN_ANNUAL, MAX_ANNUAL, ...match.args],
     ),
     t.live
@@ -67,7 +73,7 @@ async function programLine(program: "perm" | "pwd" | "lca", match: EmployerMatch
   if (wageN > 0) {
     const mid = await one<{ annual: number | string }>(
       `SELECT (${t.annual}) AS annual FROM ${t.published} INDEXED BY ${EMP_INDEX[program]} ` +
-        `WHERE ${where} AND (${t.annual}) BETWEEN ? AND ? ORDER BY annual LIMIT 1 OFFSET ?`,
+        `WHERE ${filed} AND (${t.annual}) BETWEEN ? AND ? ORDER BY annual LIMIT 1 OFFSET ?`,
       [...match.args, MIN_ANNUAL, MAX_ANNUAL, medianOffset(wageN)],
     );
     median = mid ? Number(mid.annual) : null;
@@ -102,7 +108,8 @@ async function seasonalLine(match: EmployerMatch): Promise<ProgramLine | null> {
       [MIN_HOURLY, MAX_HOURLY, ...match.args],
     ),
     one<{ n: number | string }>(
-      `SELECT COUNT(*) AS n FROM seasonal_case_status INDEXED BY seasonal_case_status_emp WHERE ${where} AND is_final = 0`,
+      // Applications only, as `seasonal_cases` holds: the H-2B and CW-1 wage requests are left to their own pages.
+      `SELECT COUNT(*) AS n FROM seasonal_case_status INDEXED BY seasonal_case_status_emp WHERE ${where} AND is_final = 0 AND ${seasonalApplicationSql()}`,
       match.args,
     ).catch(softFail("employerPrograms.seasonalPending", null)),
   ]);

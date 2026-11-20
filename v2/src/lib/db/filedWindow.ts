@@ -5,6 +5,7 @@ import type { FilingProgram } from "@/lib/filingsByDay";
 import { wageRequestNumber } from "@/lib/caseLinks";
 import { formatWage, looksYearly, LOOKS_YEARLY_SHORT } from "@/lib/wageFormat";
 
+import { fileOnlyWhere, liveFileCol, liveFileJoins, PROGRAM_FILES } from "@/lib/wageRequestRanges";
 import { rows } from "./client";
 import { keepLinkableSlugs } from "./entityLinks";
 import { LIKE_ESCAPE, likeContains } from "./like";
@@ -180,37 +181,50 @@ const FLAG_FILE_COLS =
   "p.case_status AS status, p.worksite_state AS state, p.wage AS wage, p.wage_unit AS wage_unit, p.pw_case AS wage_request, " +
   "p.attorney_name AS attorney_name, 1 AS is_final, 1 AS file_only";
 
-/** Wage requests and the seasonal programs: one live table and one published file, both on the main database. */
-async function flagWindow(from: string, to: string, n: WindowNarrow, liveTable: string, fileTable: string): Promise<Row[]> {
+/**
+ * Wage requests and the seasonal programs: one live table and their published files, all on the main database, each
+ * file read for its program's own rows (src/lib/wageRequestRanges.ts): the H-2B and CW-1 wage requests in DOL's
+ * prevailing wage file are the seasonal programs', never the wage request program's.
+ */
+async function flagWindow(from: string, to: string, n: WindowNarrow, liveTable: string, program: "pwd" | "seasonal"): Promise<Row[]> {
+  const files = PROGRAM_FILES[program];
   const byFirm = n.firmWords.length > 0;
   const file = narrowing(n, { employer: "p.employer_name", title: "p.job_title", firm: "p.attorney_name" });
   if (byFirm) {
-    return rows<Row>(
-      `SELECT ${FLAG_FILE_COLS} FROM ${fileTable} p WHERE p.received_date BETWEEN ? AND ?${file.sql}
-        ORDER BY p.received_date DESC, p.case_number LIMIT ?`,
-      [from, to, ...file.args, WINDOW_READ_MAX],
+    const found = await Promise.all(
+      files.map((f, i) =>
+        rows<Row>(
+          `SELECT ${FLAG_FILE_COLS} FROM ${f.table} p WHERE p.received_date BETWEEN ? AND ?${fileOnlyWhere(files, i)}${file.sql}
+            ORDER BY p.received_date DESC, p.case_number LIMIT ?`,
+          [from, to, ...file.args, WINDOW_READ_MAX],
+        ),
+      ),
     );
+    return found.flat();
   }
   const live = narrowing(n, { employer: "s.employer_name", title: "s.job_title" });
-  const [liveRows, fileRows] = await Promise.all([
+  const pick = (col: string) => liveFileCol(files, col);
+  const [liveRows, ...fileReads] = await Promise.all([
     rows<Row>(
       `SELECT s.case_number, s.current_status AS status, s.employer_name, s.employer_slug, s.job_title, s.is_final,
-              s.filing_date AS filed_on, p.received_date AS file_date, p.decision_date AS decided,
-              p.worksite_state AS state, p.wage AS wage, p.wage_unit AS wage_unit, p.pw_case AS wage_request,
-              p.attorney_name AS attorney_name
-         FROM ${liveTable} s LEFT JOIN ${fileTable} p ON p.case_number = s.case_number
+              s.filing_date AS filed_on, ${pick("received_date")} AS file_date, ${pick("decision_date")} AS decided,
+              ${pick("worksite_state")} AS state, ${pick("wage")} AS wage, ${pick("wage_unit")} AS wage_unit,
+              ${pick("pw_case")} AS wage_request, ${pick("attorney_name")} AS attorney_name
+         FROM ${liveTable} s ${liveFileJoins(files)}
         WHERE s.filing_date BETWEEN ? AND ?${live.sql}
         ORDER BY s.filing_date DESC, s.case_number LIMIT ?`,
       [from, to, ...live.args, WINDOW_READ_MAX],
     ),
-    rows<Row>(
-      `SELECT ${FLAG_FILE_COLS} FROM ${fileTable} p
-        WHERE p.received_date BETWEEN ? AND ? AND NOT EXISTS (SELECT 1 FROM ${liveTable} s WHERE s.case_number = p.case_number)${file.sql}
-        ORDER BY p.received_date DESC, p.case_number LIMIT ?`,
-      [from, to, ...file.args, WINDOW_READ_MAX],
+    ...files.map((f, i) =>
+      rows<Row>(
+        `SELECT ${FLAG_FILE_COLS} FROM ${f.table} p
+          WHERE p.received_date BETWEEN ? AND ? AND NOT EXISTS (SELECT 1 FROM ${liveTable} s WHERE s.case_number = p.case_number)${fileOnlyWhere(files, i)}${file.sql}
+          ORDER BY p.received_date DESC, p.case_number LIMIT ?`,
+        [from, to, ...file.args, WINDOW_READ_MAX],
+      ),
     ),
   ]);
-  return [...liveRows, ...fileRows];
+  return [...liveRows, ...fileReads.flat()];
 }
 
 /**
@@ -276,8 +290,8 @@ export async function getFiledInWindow(
 ): Promise<{ cases: FoundCase[]; capped: boolean }> {
   const got =
     program === "perm" ? await permWindow(from, to, narrow)
-    : program === "pwd" ? await flagWindow(from, to, narrow, "pwd_case_status", "pwd_cases")
-    : program === "seasonal" ? await flagWindow(from, to, narrow, "seasonal_case_status", "seasonal_cases")
+    : program === "pwd" ? await flagWindow(from, to, narrow, "pwd_case_status", "pwd")
+    : program === "seasonal" ? await flagWindow(from, to, narrow, "seasonal_case_status", "seasonal")
     : await lcaWindow(from, to, narrow);
   // One row a case: the live row first, so a case two reads both carried keeps its live status.
   const seen = new Set<string>();

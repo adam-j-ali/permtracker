@@ -75,6 +75,18 @@ export interface FlagProgramConfig {
    * the name to test its title. While it isn't built, the read falls back to the employer index.
    */
   disclosureHistoryByTitleIndex?: string;
+  /**
+   * The rows of `disclosureTable` that are this program's own, as SQL, when the file holds another program's too:
+   * DOL's prevailing wage file holds the H-2B and CW-1 wage requests, which are the seasonal programs'
+   * (src/lib/wageRequestRanges.ts). Applied to every search of the file.
+   */
+  disclosureOwn?: (alias?: string) => string;
+  /**
+   * Another file that holds some of this program's decided rows, with the SQL naming them: the seasonal programs'
+   * H-2B and CW-1 wage requests are in DOL's prevailing wage file. Read by number when `disclosureTable` misses, and
+   * merged newest first into an employer search.
+   */
+  disclosureExtra?: { table: string; own: (alias?: string) => string };
 }
 
 /**
@@ -636,6 +648,11 @@ export function makeFlagProgram(config: FlagProgramConfig): FlagProgram {
       [cn],
     );
     if (r) return toDisclosed(r);
+    const extra = config.disclosureExtra;
+    if (extra) {
+      const x = await one<DisclosedDbRow>(`SELECT ${DISCLOSED_COLS} FROM ${extra.table} WHERE case_number = ? AND ${extra.own()}`, [cn]);
+      if (x) return toDisclosed(x);
+    }
     if (!historyTable) return null;
     const old = await fromHistory(
       () => one<DisclosedDbRow>(`SELECT ${DISCLOSED_COLS} FROM ${historyTable} WHERE case_number = ?`, [cn]),
@@ -653,7 +670,7 @@ export function makeFlagProgram(config: FlagProgramConfig): FlagProgram {
     // ingest's (employer_slug, received_date) index, so the month narrowing
     // and the ordering both ride the same range read.
     const narrow = narrowingClauses("received_date", args);
-    const conds = [scope.where, ...narrow.conds];
+    const conds = [scope.where, ...narrow.conds, ...(config.disclosureOwn ? [config.disclosureOwn()] : [])];
     const params: (string | number)[] = [...scope.args, ...narrow.params];
     if ((args.visa ?? "default") === "default" && config.defaultVisaClass) {
       conds.push("visa_class = ?");
@@ -682,12 +699,30 @@ export function makeFlagProgram(config: FlagProgramConfig): FlagProgram {
       );
       if (Number(counted?.n) > BROAD_NAME_ROWS) index = config.disclosureByDateIndex;
     }
-    const found = await rows<DisclosedDbRow>(
+    const main = await rows<DisclosedDbRow>(
       `SELECT ${DISCLOSED_COLS} FROM ${disclosureTable} INDEXED BY ${index} ` +
         `WHERE ${conds.join(" AND ")} ` +
         "ORDER BY received_date DESC, case_number DESC LIMIT ?",
       [...params, take],
     );
+    // The program's rows in its other file, on that file's employer index, merged newest first into one page.
+    const extra = config.disclosureExtra;
+    const found = extra
+      ? [
+          ...main,
+          ...(await rows<DisclosedDbRow>(
+            `SELECT ${DISCLOSED_COLS} FROM ${extra.table} INDEXED BY ${extra.table}_emp ` +
+              `WHERE ${[scope.where, ...narrow.conds, extra.own()].join(" AND ")} ` +
+              "ORDER BY received_date DESC, case_number DESC LIMIT ?",
+            [...scope.args, ...narrow.params, take],
+          )),
+        ]
+          .sort((a, b) =>
+            String(b.received_date ?? "").localeCompare(String(a.received_date ?? "")) ||
+            String(b.case_number).localeCompare(String(a.case_number)),
+          )
+          .slice(0, take)
+      : main;
     // THE OLDER FILES FILL WHAT'S LEFT. Every row there was filed before every row in the current table's
     // files (FY2019 and earlier against FY2020 on), so appending them keeps the list newest first, and a name
     // that fills its limit from the current files never reads them. One employer's own range on `_emp`, so

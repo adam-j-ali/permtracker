@@ -774,6 +774,26 @@ describe("lookupUnifiedCase", () => {
     expect(sqls.some((s) => s.includes("perm_cases"))).toBe(false);
   });
 
+  it("reads an H-2B or CW-1 wage request's decided record from DOL's prevailing wage file, its live row under seasonal", async () => {
+    await lookupUnifiedCase("P-400-26272-268643");
+    const sqls = one.mock.calls.map((c) => String(c[0]));
+    expect(sqls.some((s) => s.includes("FROM pwd_cases WHERE case_number = ?"))).toBe(true);
+    expect(sqls.some((s) => s.includes("FROM seasonal_case_status WHERE case_number = ?"))).toBe(true);
+    expect(sqls.some((s) => s.includes("seasonal_cases WHERE"))).toBe(false);
+  });
+
+  it("finds an LCA decided before FY2020 in the older files' table, and only when the current one has none", async () => {
+    one.mockImplementation(async (sql: string) =>
+      sql.includes("FROM lca_cases_history") ? { case_number: "I-07135-3458699", case_status: "CERTIFIED" } : null,
+    );
+    const out = await lookupUnifiedCase("I-07135-3458699");
+    const sqls = one.mock.calls.map((c) => String(c[0]));
+    expect(sqls.filter((s) => s.includes("FROM lca_cases WHERE case_number = ?"))).toHaveLength(1);
+    expect(sqls.some((s) => s.includes("FROM lca_cases_history WHERE case_number = ?"))).toBe(true);
+    expect(out.flagPublished?.caseNumber).toBe("I-07135-3458699");
+    expect(out.unread).toEqual([]);
+  });
+
   it("degrades one half at a time rather than failing the lookup", async () => {
     one.mockRejectedValueOnce(new Error("database query deadline"));
     const out = await lookupUnifiedCase("G-100-26125-868956");

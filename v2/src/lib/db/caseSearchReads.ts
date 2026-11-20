@@ -30,6 +30,7 @@ import { wageRequestNumber } from "@/lib/caseLinks";
 import { ANNUAL_WAGE_SQL } from "@/lib/wageFormat";
 import { socGroup, socGroupClause } from "@/lib/socCode";
 import { programOf } from "@/lib/flagCaseNumber";
+import { isSeasonalWageRequest } from "@/lib/wageRequestRanges";
 import { boundEnd, boundStart, fiscalYearSpan } from "@convex/lib/months";
 import { LIKE_ESCAPE, likeContains } from "./like";
 import { softFail } from "@/lib/softRead";
@@ -1484,10 +1485,12 @@ export async function lookupUnifiedCase(caseNumber: string): Promise<CaseLookupR
   }
 
   const t = FLAG_TABLES[program];
-  const [pub, live] = await Promise.all([
-    t.published
+  // An H-2B or CW-1 wage request is a seasonal case decided in DOL's prevailing wage file (src/lib/wageRequestRanges.ts).
+  const publishedTable = program === "seasonal" && isSeasonalWageRequest(caseNumber) ? "pwd_cases" : t.published;
+  const [first, live] = await Promise.all([
+    publishedTable
       ? one<DisclosedDbRow>(
-          `SELECT ${DISCLOSED_COLS} FROM ${t.published} WHERE case_number = ?`,
+          `SELECT ${DISCLOSED_COLS} FROM ${publishedTable} WHERE case_number = ?`,
           [caseNumber],
         ).catch(failed("published"))
       : null,
@@ -1495,6 +1498,14 @@ export async function lookupUnifiedCase(caseNumber: string): Promise<CaseLookupR
       caseNumber,
     ]).catch(failed("live")),
   ]);
+  // An LCA decided before FY2020 is in DOL's older files' table, the same columns (FY2008 to FY2019); a missing
+  // table is "not there", and any other failure says the published half couldn't be read.
+  const pub =
+    first || program !== "lca"
+      ? first
+      : await one<DisclosedDbRow>(`SELECT ${DISCLOSED_COLS} FROM lca_cases_history WHERE case_number = ?`, [caseNumber]).catch(
+          (e: unknown) => (/no such table/i.test(String(e)) ? null : failed("published")(e)),
+        );
   return {
     ...blank,
     flagPublished: pub ? toDisclosed(pub) : null,

@@ -58,6 +58,17 @@ describe("the seasonal line on an employer page", () => {
     expect(median?.[1]).toEqual(["mcrp-farms", "mcrp-farmt", 5, 200, 5]);
   });
 
+  it("counts one kind of case a line: applications pending beside applications decided, PERM wage requests both ways", async () => {
+    answer({ n: 12, wage_n: 11, certified: 340 }, 2, 16.08);
+    await getEmployerPrograms("mcrp-farms");
+    const sqls = one.mock.calls.map((c) => String(c[0]));
+    // The seasonal pending count leaves out the H-2B and CW-1 wage requests the decided file never holds.
+    expect(sqls.find((s) => s.includes("FROM seasonal_case_status"))).toContain("AND case_number < 'P-400-'");
+    // Decided wage requests are PERM's, as the pending count is; the live table's column is visa_type.
+    expect(sqls.find((s) => s.includes("FROM pwd_cases") && s.includes("COUNT(*)"))).toContain("visa_class = 'PERM'");
+    expect(sqls.find((s) => s.includes("FROM pwd_case_status"))).not.toContain("visa_class");
+  });
+
   it("is null for an employer that files none, so the page shows no empty line", async () => {
     answer({ n: 0, wage_n: 0, certified: null }, 0, 0);
     const out = await getEmployerPrograms("mcrp-farms");
