@@ -11,7 +11,11 @@ import { BoardTable, StageMedians, h4Text } from "../TimelineBoard";
 /** A row's H-4 papers in words, durations only, kept apart from the lines around them. */
 const rec = (over: Partial<TimelineRecord>): TimelineRecord => ({ public: true, updatedAt: Date.UTC(2026, 10, 1), ...over });
 /** The cell's text as a reader gets it: tags out, runs of space as one, the way a page collapses them. */
-const text = (html: string) => html.replace(/<[^>]+>/g, "").replace(/&#x27;/g, "'").replace(/\s+/g, " ");
+const text = (html: string) => {
+  const box = document.createElement("div");
+  box.innerHTML = html;
+  return (box.textContent ?? "").replace(/\s+/g, " ");
+};
 
 describe("the H-4 line", () => {
   it("says each approved paper's days, and filed with the I-539 only for the work permit", () => {
