@@ -43,6 +43,8 @@ export interface WaitingSummary {
   byStage: { id: string; label: string; count: number }[];
   lines: { category: string; country: string; counts: (number | null)[]; total: number }[];
   unlisted: number;
+  /** The people no line shows, by step (no category or country given, or a line under 5). Absent before Nov 20 2026. */
+  unlistedCounts?: (number | null)[];
 }
 
 export interface I140Summary {

@@ -74,6 +74,19 @@ def main() -> int:
           and rs.step_figure(cases, step("i140-regular"), TODAY)["median"] == 180
           and rs.step_figure(cases, step("i140-premium"), TODAY)["n"] == 20, "premium and regular kept apart")
 
+    # A month-only date counts, as the 15th, only on a span of 120 days or more, where half a month is a small part of
+    # the wait (Nov 20 2026: every month-only report, most of Reddit's and every consulate report's NVC month, was
+    # dropped). A short step keeps needing both days.
+    month_cases = [{"nvc_complete": "2026-01", "consular_interview": "2026-06-20", "consular_outcome": "issued",
+                    "visa_issued": "2026-06-25"}]
+    got = rs.spans(month_cases, step("nvc-interview"))
+    check(got and got[0][1] == (dt.date(2026, 6, 20) - dt.date(2026, 1, 15)).days, f"a month-only start counts on a long step: {got}")
+    short = [{"i485_receipt": "2026-05", "biometrics": "2026-06-10"}]
+    check(rs.spans(short, step("i485-bio")) == [], "and never on a short one")
+    both = [{"i485_receipt": "2025-06", "i485_decided": "2026-05", "i485_decision": "approved"}]
+    check(rs.spans(both, step("i485-gc"))[0][1] == (dt.date(2026, 5, 15) - dt.date(2025, 6, 15)).days,
+          "two month-only ends count from the 15th to the 15th")
+
     # A span past ten years, or a negative one, is a typo.
     bad = [{"i485_receipt": ago(5000), "i485_decided": ago(10), "i485_decision": "approved"},
            {"i485_receipt": ago(10), "i485_decided": ago(50), "i485_decision": "approved"}]
@@ -91,8 +104,31 @@ def main() -> int:
           "only people heard from within a year count, a denial leaves")
     check(len(w["lines"]) == 1 and w["lines"][0]["country"] == "India" and w["lines"][0]["total"] == 6
           and w["unlisted"] == 6, "a line under five people folds into the unlisted count")
+    # The step before PERM counts, and the people who gave no category or country are counted by step too, so a
+    # column never reads all zeros while those people sit in one line under the table (Nov 20 2026).
+    pre = people + [{"pwd_filed": ago(90), "as_of": ago(15)}] * 7
+    w2 = rs.waiting(pre, TODAY)
+    ids = [s_["id"] for s_ in w2["byStage"]]
+    check(ids[0] == "pwd" and w2["byStage"][0]["count"] == 7, f"the wage request is its own first step: {w2['byStage'][:2]}")
+    by = dict(zip(ids, w2["unlistedCounts"]))
+    check(by["pwd"] == 7 and by["perm"] is None and by["i140"] is None and by["i485"] == 0,
+          f"the unlisted people by step, under five shown as under five: {by}")
+    check(sum(x or 0 for x in w2["unlistedCounts"]) <= w2["unlisted"], "the by-step counts never add past the unlisted total")
+    check(rs.stage({"pwd_issued": ago(30)}) == "pwd" and rs.stage({"pwd_filed": ago(90), "perm_filed": ago(10)}) == "perm",
+          "a wage request is the step until PERM is filed")
     check(rs.stage({"post": "mumbai", "nvc_complete": ago(30)}) == "consular"
           and rs.stage({"post": "mumbai", "visa_issued": ago(3)}) == "done", "the consulate has its own stage")
+
+    # Every country but the four with their own bulletin line is Rest of world (Nov 20 2026: Canada, Nigeria and Iran
+    # counted as "no country"); a placeholder says nothing; EB-3 other workers has its own line.
+    check([rs._country(v) for v in ("India", "ROW", "Canada", "nigeria", "Iran", "Brazil")]
+          == ["India", "Rest of world", "Rest of world", "Rest of world", "Rest of world", "Rest of world"],
+          "any other country is Rest of world")
+    check([rs._country(v) for v in ("", None, "N/A", "-", "unknown", "?", "na")] == [None] * 7, "a placeholder is no country")
+    check([rs._country(v) for v in ("IN", "PRC", "Mainland China", "Taiwan", "Hong Kong", "PH", "Indian")]
+          == ["India", "China (mainland born)", "China (mainland born)", "Rest of world", "Rest of world", "Philippines", "India"],
+          "the four's other spellings keep their line; Taiwan and Hong Kong are Rest of world")
+    check(rs.CATEGORY_LABELS.get("EB-3 EW") == "EB-3 other workers", "EB-3 other workers is a line")
 
     # The I-140s by category and premium, over the window.
     nv = [{"category": "EB-2 NIW", "premium": "none", "i140_receipt": ago(300), "i140_decided": ago(30 + k),

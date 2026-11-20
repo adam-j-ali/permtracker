@@ -530,7 +530,11 @@ export function RfeBars({ rfe }: { rfe: RfeSummary }) {
 type WaitingCounts = Pick<WaitingView, "unlisted"> & {
   byStage: readonly { id: string; label: string; count: number }[];
   lines: readonly { category: string; country: string; counts: readonly (number | null)[]; total: number }[];
+  /** The people no line shows, by step; the summary's, not the board's. */
+  unlistedCounts?: readonly (number | null)[];
 };
+
+const cellText = (c: number | null) => (c === null ? "under 5 " : `${c.toLocaleString("en-US")} `);
 
 export function WhoIsWaiting({
   waiting,
@@ -543,12 +547,16 @@ export function WhoIsWaiting({
   noun?: readonly [string, string];
 }) {
   const [one, many] = noun;
-  const most = Math.max(...waiting.byStage.map((s) => s.count), 1);
+  // A step nobody is at here drops out of the bars and the table (an office's people are past the steps before the
+  // I-485, so those columns could only read 0); the counts keep their own step by index.
+  const kept = waiting.byStage.flatMap((s, i) => (s.count > 0 ? [{ ...s, i }] : []));
+  const stages = kept.length ? kept : waiting.byStage.map((s, i) => ({ ...s, i }));
+  const most = Math.max(...stages.map((s) => s.count), 1);
   return (
     <div className="grid grid-cols-1 gap-6 [&>*]:min-w-0">
       <ChartTips label={`${many[0]!.toUpperCase()}${many.slice(1)} by the step they've reached`}>
         <ul className="grid grid-cols-1 gap-2">
-          {waiting.byStage.map((s) => (
+          {stages.map((s) => (
             <Fragment key={s.id}>
               {" "}
               <li
@@ -574,7 +582,7 @@ export function WhoIsWaiting({
                 <th scope="col" className="p-2 font-bold">
                   Category and country{" "}
                 </th>
-                {waiting.byStage.map((s) => (
+                {stages.map((s) => (
                   <th key={s.id} scope="col" className="p-2 text-right font-bold">
                     {`${s.label} `}
                   </th>
@@ -582,23 +590,49 @@ export function WhoIsWaiting({
               </tr>
             </thead>
             <tbody>
+              {/* Everyone first, so each step's column carries its real count even where people gave no category
+                  or country (most at PERM and before, when neither is known yet). */}
+              {waiting.unlistedCounts ? (
+                <tr className="border-b-2 border-border font-bold">
+                  <th scope="row" className="p-2 text-left font-bold">
+                    {`Everyone heard from `}
+                  </th>
+                  {stages.map((s) => (
+                    <td key={s.id} className="p-2 text-right tabular-nums">
+                      {`${s.count.toLocaleString("en-US")} `}
+                    </td>
+                  ))}
+                </tr>
+              ) : null}
               {waiting.lines.map((l) => (
                 <tr key={`${l.category}|${l.country}`} className="border-b border-border/50">
                   <th scope="row" className="p-2 text-left font-bold">
                     {`${l.category}, ${l.country} `}
                   </th>
-                  {l.counts.map((c, i) => (
-                    <td key={waiting.byStage[i]?.id ?? i} className="p-2 text-right tabular-nums">
-                      {c === null ? "under 5 " : `${c.toLocaleString("en-US")} `}
+                  {stages.map((s) => (
+                    <td key={s.id} className="p-2 text-right tabular-nums">
+                      {cellText(l.counts[s.i] ?? 0)}
                     </td>
                   ))}
                 </tr>
               ))}
+              {waiting.unlistedCounts ? (
+                <tr className="border-t-2 border-border">
+                  <th scope="row" className="p-2 text-left font-bold">
+                    {`No category or country given, or a line under 5 `}
+                  </th>
+                  {stages.map((s) => (
+                    <td key={s.id} className="p-2 text-right tabular-nums">
+                      {cellText(waiting.unlistedCounts?.[s.i] ?? 0)}
+                    </td>
+                  ))}
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </ScrollBox>
       ) : null}{" "}
-      {waiting.unlisted ? (
+      {waiting.unlisted && (!waiting.unlistedCounts || !waiting.lines.length) ? (
         <p className="text-sm text-muted-foreground">
           {`${waiting.unlisted.toLocaleString("en-US")} more ${waiting.unlisted === 1 ? `${one} sits` : `${many} sit`} on a category and country with fewer than 5 ${many}, or gave neither, so ${waiting.unlisted === 1 ? "it isn't" : "they aren't"} listed by line.`}
         </p>
