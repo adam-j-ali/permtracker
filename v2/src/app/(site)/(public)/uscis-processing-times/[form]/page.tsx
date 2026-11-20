@@ -238,6 +238,48 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
   const first = slots[0];
   const last = slots[slots.length - 1];
 
+  // People's reported cases, beside USCIS's figures or on their own when USCIS's quarterly file isn't loaded:
+  // the reported figures never wait on the official read.
+  const reported = (
+    <>
+      {page.form === "I-140" && summary ? (
+        <ReportedI140 figures={summary.i140} steps={reportedSteps} />
+      ) : reportedSteps.some((st) => st.median !== null) ? (
+        <PageSection
+          id="reported"
+          title={`What people reported about their own ${page.form}s`}
+          lede={`From ${formatInt(summary!.headline.cases)} cases people reported in Telegram groups, community sheets, Reddit, VisaStats and on this site, each person once, over the cases that finished each step in the last 6 months (12 when 6 hold too few). Self-reported, beside USCIS's own figures, never in place of them.`}
+        >
+          <StepFigures steps={reportedSteps} allHref="/green-card-timelines" />{" "}
+          {page.form === "I-485" ? (
+            <p className="mt-2 max-w-3xl text-base leading-relaxed">
+              Each step explained:{" "}
+              <Link href="/guides/i485-timeline-each-step" className="link">
+                the I-485 timeline
+              </Link>
+              ,{" "}
+              <Link href="/guides/i485-transferred-to-field-office" className="link">
+                a transfer to a field office
+              </Link>{" "}
+              and{" "}
+              <Link href="/guides/i485-interview-to-green-card" className="link">
+                the wait after the interview
+              </Link>
+              .
+            </p>
+          ) : page.form === "I-765" || page.form === "I-131" ? (
+            <p className="mt-2 max-w-3xl text-base leading-relaxed">
+              <Link href="/guides/ead-and-advance-parole-timelines" className="link">
+                The work permit and travel document while an I-485 is pending
+              </Link>
+              , from USCIS&apos;s figures and these.
+            </p>
+          ) : null}
+        </PageSection>
+      ) : null}
+    </>
+  );
+
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 pb-20 pt-10 sm:px-6 sm:pt-14">
       <JsonLdScript schema={breadcrumbSchema(path, `${page.form} processing time`)} />
@@ -281,6 +323,9 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
           </a>
           .
         </p>
+      ) : null}{" "}
+      {rows.length === 0 ? (
+        reported
       ) : (
         <>
           <FigureRow className="mt-8">
@@ -368,41 +413,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
               </p>
             </PageSection>
           ) : null}{" "}
-          {page.form === "I-140" && summary ? (
-            <ReportedI140 figures={summary.i140} steps={reportedSteps} />
-          ) : reportedSteps.some((st) => st.median !== null) ? (
-            <PageSection
-              id="reported"
-              title={`What people reported about their own ${page.form}s`}
-              lede={`From ${formatInt(summary!.headline.cases)} cases people reported in Telegram groups, community sheets, Reddit, VisaStats and on this site, each person once, over the cases that finished each step in the last 6 months (12 when 6 hold too few). Self-reported, beside USCIS's own figures, never in place of them.`}
-            >
-              <StepFigures steps={reportedSteps} allHref="/green-card-timelines" />{" "}
-              {page.form === "I-485" ? (
-                <p className="mt-2 max-w-3xl text-base leading-relaxed">
-                  Each step explained:{" "}
-                  <Link href="/guides/i485-timeline-each-step" className="link">
-                    the I-485 timeline
-                  </Link>
-                  ,{" "}
-                  <Link href="/guides/i485-transferred-to-field-office" className="link">
-                    a transfer to a field office
-                  </Link>{" "}
-                  and{" "}
-                  <Link href="/guides/i485-interview-to-green-card" className="link">
-                    the wait after the interview
-                  </Link>
-                  .
-                </p>
-              ) : page.form === "I-765" || page.form === "I-131" ? (
-                <p className="mt-2 max-w-3xl text-base leading-relaxed">
-                  <Link href="/guides/ead-and-advance-parole-timelines" className="link">
-                    The work permit and travel document while an I-485 is pending
-                  </Link>
-                  , from USCIS&apos;s figures and these.
-                </p>
-              ) : null}
-            </PageSection>
-          ) : null}{" "}
+          {reported}{" "}
           <PageSection
             id="median"
             title="Median months, quarter by quarter"
