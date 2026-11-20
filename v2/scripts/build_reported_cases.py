@@ -156,6 +156,32 @@ def timeline_record(row: dict) -> dict:
     }
 
 
+APP_CATEGORIES = {"EB-1": "EB-1", "EB-2": "EB-2", "EB-2-NIW": "EB-2 NIW", "EB-3": "EB-3"}
+
+
+def app_record(row: dict) -> dict:
+    """A case saved in the app by an account that chose to count its cases in the public figures (Settings; Convex's
+    caseFigures.exportForMerge): its dates, the I-140's category and premium processing, nothing else. It counts in
+    the figures and is never listed or named as a source (`shows` false). Each case is its own person: an attorney's
+    account holds many people's cases."""
+    premium = None
+    if row.get("i140PremiumProcessing") is not None:
+        premium = "yes" if row["i140PremiumProcessing"] else "none"
+    certified, denied = row.get("eta9089CertificationDate"), row.get("eta9089DenialDate")
+    approved, refused = row.get("i140ApprovalDate"), row.get("i140DenialDate")
+    return {
+        "source": "app", "key": str(row["id"]), "checked": True, "shows": False,
+        "as_of": _et_day(row.get("updatedAt")),
+        "category": APP_CATEGORIES.get(row.get("i140Category") or ""),
+        "premium": premium,
+        "pwd_filed": row.get("pwdFilingDate"), "pwd_issued": row.get("pwdDeterminationDate"),
+        "perm_filed": row.get("eta9089FilingDate"), "perm_decided": certified or denied,
+        "perm_decision": "approved" if certified else ("denied" if denied else None),
+        "i140_receipt": row.get("i140FilingDate"), "i140_decided": approved or refused,
+        "i140_decision": "approved" if approved else ("denied" if refused else None),
+    }
+
+
 def consular_record(row: dict) -> dict:
     """A consulate report shared on this site as a merge record. Reports post at once and are moderated after, so
     they aren't counted as checked."""
@@ -182,7 +208,7 @@ def post_record(row: dict) -> dict:
 def build_cases(sources: dict[str, list[dict]]) -> tuple[list[dict], dict]:
     """Merge every source's rows. `sources`: "sheets", "visastats" and "posts", each a list of stored rows."""
     makers = {"sheets": sheet_record, "visastats": visastats_record, "posts": post_record,
-              "timelines": timeline_record, "consular": consular_record}
+              "timelines": timeline_record, "consular": consular_record, "app": app_record}
     records, left_out = [], 0
     for name, rows in sources.items():
         for row in rows:
@@ -250,7 +276,11 @@ def read_convex() -> dict[str, list[dict]]:
     doc = convex_call("/reported-export")
     if not doc.get("ok") or not isinstance(doc.get("timelines"), list) or not isinstance(doc.get("consular"), list):
         raise RuntimeError(f"Convex's export answered without its lists: {str(doc)[:200]}")
-    return {"timelines": doc["timelines"], "consular": doc["consular"]}
+    # The cases counted from the app: absent from a Convex deployment older than the setting (Nov 20 2026).
+    app = doc.get("cases", [])
+    if not isinstance(app, list):
+        raise RuntimeError(f"Convex's export answered with a cases list that isn't one: {str(app)[:200]}")
+    return {"timelines": doc["timelines"], "consular": doc["consular"], "app": app}
 
 
 def read_sources(db, convex: bool = False) -> dict[str, list[dict]]:

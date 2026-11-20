@@ -77,7 +77,7 @@ def progress(field: str, v: str) -> int:
     """How far along a decision is: a later one replaces an earlier one. Each field has its own words."""
     return (CONSULAR_PROGRESS if field == "consular_outcome" else DECISION_PROGRESS).get(v, 2)
 # Our own reviewed sources first, then the sheets, then the trackers and chats. The first member founds a case's id.
-SOURCE_RANK = {"timeline": 0, "consular-report": 1, "visastats": 30, "reddit": 40, "telegram": 50}
+SOURCE_RANK = {"timeline": 0, "consular-report": 1, "app": 2, "visastats": 30, "reddit": 40, "telegram": 50}
 SHEET_RANK = 20  # any other source name is a community sheet's key
 # Countries with their own line in the Visa Bulletin: never "rest of world".
 OWN_LINE = {"india", "china", "mexico", "philippines", "el salvador", "guatemala", "honduras"}

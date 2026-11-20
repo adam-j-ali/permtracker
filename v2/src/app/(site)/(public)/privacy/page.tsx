@@ -64,7 +64,7 @@ export default function PrivacyPage() {
       <div>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Privacy policy</h1>{" "}
         <p className="mb-8 mt-4 text-lg text-muted-foreground">
-          Effective Date: February 17, 2026 | Last Updated: November 18, 2026
+          Effective Date: February 17, 2026 | Last Updated: November 20, 2026
         </p>{" "}
 
         <SectionIndex sections={SECTIONS} />
@@ -139,6 +139,33 @@ export default function PrivacyPage() {
                 deleted when you delete it, its case or your account
               </li>{" "}
               <li>RFI/RFE information and response dates</li>
+            </ul>{" "}
+            <h3 id="counted-cases" className="font-heading text-lg font-bold mt-6 mb-3">
+              Cases You Choose to Count in the Public Figures
+            </h3>{" "}
+            <ul className="list-disc list-inside text-soft space-y-2 ml-4">
+              <li>
+                If you switch on &quot;Count my cases in the public figures&quot;
+                in Settings, the dates on the cases saved in your account are
+                included, each hour, in the figures our public pages show for how
+                long each step takes: the day a prevailing wage request was filed
+                and issued, the day a PERM application was filed and decided, and
+                the day an I-140 was filed and decided, with the I-140&apos;s
+                category and whether premium processing was used
+              </li>{" "}
+              <li>
+                Nothing else is included: no name, employer, position, case
+                number, beneficiary identifier, note, document or account detail.
+                A case counted this way is never listed, shown on its own or named
+                as a source on any page. Your cases are counted together with
+                every other reported case, and no wait time is shown from fewer
+                than five cases
+              </li>{" "}
+              <li>
+                The setting is off unless you switch it on. When you switch it off,
+                or delete a case or your account, that case&apos;s dates leave the
+                figures at the next hourly update
+              </li>
             </ul>{" "}
 
             <h3 className="font-heading text-lg font-bold mt-6 mb-3">

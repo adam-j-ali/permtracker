@@ -2540,7 +2540,7 @@ http.route({
 });
 
 /**
- * The shared timelines and consulate reports the server merges into the list of reported cases
+ * The shared timelines, consulate reports and counted app cases the server merges into the list of reported cases
  * (scripts/build_reported_cases.py --from-convex): dates and categories only, behind the server's secret.
  */
 http.route({
@@ -2549,11 +2549,13 @@ http.route({
   handler: httpAction(async (ctx, req) => {
     const refused = await watchedGate(req);
     if (refused) return refused;
-    const [timelines, consular] = await Promise.all([
+    const [timelines, consular, cases] = await Promise.all([
       ctx.runQuery(internal.communityTimelines.exportForMerge, {}),
       ctx.runQuery(internal.consularReports.exportForMerge, {}),
+      // The saved cases of accounts that chose to count them in the public figures: dates only.
+      ctx.runQuery(internal.caseFigures.exportForMerge, {}),
     ]);
-    return serverJson({ ok: true, timelines, consular }, 200);
+    return serverJson({ ok: true, timelines, consular, cases }, 200);
   }),
 });
 

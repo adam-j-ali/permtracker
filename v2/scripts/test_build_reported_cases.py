@@ -147,6 +147,19 @@ def main() -> int:
     check(b.consular_record({"id": "c2", "updatedAt": 1, "post": "mumbai", "outcome": "221g"})["consular_outcome"] == "221g"
           and b.consular_record({"id": "c3", "updatedAt": 1, "post": "mumbai", "outcome": "rescheduled"})["consular_outcome"] == "pending",
           "a 221(g) stays one; a rescheduled interview is still pending")
+    # A case saved in the app by an account that chose to count it: dates only, counted, never listed.
+    app = {"id": "k1", "updatedAt": 1795118400000, "pwdFilingDate": "2025-01-10", "pwdDeterminationDate": "2025-07-01",
+           "eta9089FilingDate": "2025-10-01", "eta9089CertificationDate": "2026-06-15", "i140FilingDate": "2026-07-01",
+           "i140DenialDate": "2026-09-01", "i140Category": "EB-2-NIW", "i140PremiumProcessing": False}
+    ar = b.app_record(app)
+    check(ar["source"] == "app" and ar["shows"] is False and ar["category"] == "EB-2 NIW" and ar["premium"] == "none",
+          "an app case is counted, never shown, its category in the merge's words")
+    check(ar["pwd_filed"] == "2025-01-10" and ar["pwd_issued"] == "2025-07-01" and ar["perm_decision"] == "approved"
+          and ar["i140_decided"] == "2026-09-01" and ar["i140_decision"] == "denied", "its steps and decisions")
+    check(not {"employerName", "positionTitle", "caseNumber", "notes"} & set(ar), "nothing but dates and the I-140's kind")
+    app_cases, _ = b.build_cases({"app": [app]})
+    check(len(app_cases) == 1 and app_cases[0]["figures"].get("pwd_issued") == "2025-07-01"
+          and "app" not in b.case_row(app_cases[0], 0)["source_names"], f"it counts in the figures and is never named: {app_cases}")
     cases, counts = b.build_cases({"sheets": [sheet_row(country="India")], "timelines": [{**tl, "public": False}]})
     check(len(cases) == 1 and counts["merged"] == 1 and cases[0]["shows"] and cases[0].get("card") is None,
           "a private timeline matching the sheet's row merges, and its card day stays private")
