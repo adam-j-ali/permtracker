@@ -385,8 +385,16 @@ def written_dates(text: str, posted: dt.date) -> set[str]:
 
     A day that reads both ways gives both; a day without a year gives the post's year and the years either side; a day
     also gives its month; "today" and "yesterday" give the post's day and the day before."""
+    explicit, yearless = dates_written(text, posted)
+    return explicit | yearless
+
+
+def dates_written(text: str, posted: dt.date) -> tuple[set[str], set[str]]:
+    """written_dates, split: (the readings of dates written with a year, "today" and "yesterday" among them; the
+    readings a day without a year gives). A reading in the second set alone took its year from the post."""
     t = " ".join((text or "").split())
     found: set[str] = set()
+    yearless: set[str] = set()
     for m in DATE_RE.finditer(t):
         if m.group("mdy") and not m.group("mdyy") and not m.group("msuf"):
             # "March 19" is a day here as well as a possible month and year: a guard takes every reading.
@@ -394,7 +402,7 @@ def written_dates(text: str, posted: dt.date) -> set[str]:
             for year in (posted.year - 1, posted.year, posted.year + 1):
                 try:
                     d = dt.date(year, month, day).isoformat()
-                    found.update({d, d[:7]})
+                    yearless.update({d, d[:7]})
                 except ValueError:
                     pass
         for order in ("mdy", "dmy"):
@@ -411,14 +419,13 @@ def written_dates(text: str, posted: dt.date) -> set[str]:
                     except ValueError:
                         pass
             for v in values:
-                found.add(v)
-                found.add(v[:7])
+                (found if has_year else yearless).update({v, v[:7]})
     low = t.lower()
     for word, back in RELATIVE.items():
         if re.search(rf"\b{word}\b", low):
             d = posted - dt.timedelta(days=back)
             found.update({d.isoformat(), d.isoformat()[:7]})
-    return found
+    return found, yearless
 
 
 def read_post(text: str, posted: dt.date, kind: str, order: str) -> dict | None:

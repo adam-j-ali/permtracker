@@ -8,6 +8,11 @@ to a model here, in batches, through the Claude Code command line on the owner's
 The model is trusted for one thing only: which step a date belongs to. Everything else is checked here:
 
 - two days for one step (often a spouse's and the poster's own) leave that step out, and the rest stands;
+- a day written without a year keeps the year the model gave it only when that's the most recent such day on or
+  before the post. A PERM filing day or priority date written
+  without a year is never used ("PD: 7/17" in an August 2024 approval is July 2023, not 2024), as the parser rules;
+- an I-485 decided within three weeks of its receipt is a misreading (that's an I-140 under premium processing), and
+  both I-485 dates are left out;
 - every date it returns must be one the post writes (lib_post_dates.written_dates: a day that reads both ways gives
   both readings, a day without a year gives the nearby years, "today" gives the post's day). One date the post
   doesn't write and the whole answer for that post is dropped, since a made-up date means it misread the post;
@@ -31,6 +36,10 @@ import lib_reported_cases as rc
 MODEL = "haiku"
 EFFORT = "low"
 BATCH = 40
+# Steps whose day, written without a year, can't be placed: a PERM filing or priority date is often a year or more
+# before the post. The parser never uses one either.
+NO_YEARLESS = {"perm_filed", "priority_date", "pwd_filed", "pwd_issued"}
+FAST_I485_DAYS = 21
 WORKERS = 3     # batches asked at once: each is a `claude` process of about 250 MB on an 8 GB Mac
 MAX_TEXT = 1200
 # A post worth asking about: it writes a date and names a step. Everything else gives nothing and isn't asked.
@@ -126,12 +135,25 @@ def prompt_for(posts: list[dict]) -> str:
                        for p in posts], ensure_ascii=False)
 
 
+def _placed(date: str, field: str, posted: dt.date) -> bool:
+    """A day written without a year, as the model placed it: only the most recent such day on or before the post,
+    and never a PERM filing or priority date."""
+    if field in NO_YEARLESS or len(date) != 10:
+        return False
+    d = dt.date.fromisoformat(date)
+    if d > posted:
+        return False
+    try:
+        a_year_on = d.replace(year=d.year + 1)
+    except ValueError:  # February 29th
+        a_year_on = d + dt.timedelta(days=365)
+    return a_year_on > posted
+
+
 def from_answer(answer: dict, post: dict) -> dict | None:
     """One post's answer as the merge's fields, or None when it isn't the poster's own case or fails a check."""
     if not answer.get("own_case"):
         return None
-    posted = dt.date.fromisoformat(post["posted"])
-    written = post_dates.written_dates(post["text"], posted)
     out: dict[str, str] = {}
     torn: set[str] = set()
     for item in answer.get("steps") or []:
@@ -141,8 +163,8 @@ def from_answer(answer: dict, post: dict) -> dict | None:
         field, decision_field, decision = spec
         date = item.get("date")
         if date is not None:
-            if not (rc.DAY_RE.match(date) or rc.MONTH_RE.match(date)) or date not in written:
-                return None  # a date the post doesn't write: it misread the post
+            if not (isinstance(date, str) and (rc.DAY_RE.match(date) or rc.MONTH_RE.match(date))):
+                return None
             if out.get(field, date) != date:
                 torn.add(field)  # two days for one step (a spouse's and the poster's): that step says nothing
             out[field] = date
@@ -150,13 +172,36 @@ def from_answer(answer: dict, post: dict) -> dict | None:
             if out.get(decision_field, decision) != decision:
                 return None  # approved and denied at once
             out[decision_field] = decision
-    for field in torn:
-        out.pop(field, None)
-    if not post_dates.sound(out, posted, own=True):
-        return None
     if answer.get("category") in CATEGORIES:
         out["category"] = answer["category"]
-    return out
+    return _checked(out, post, torn)
+
+
+def recheck(fields: dict | None, post: dict) -> dict | None:
+    """A saved answer through today's checks: the saved fields are checked again on every run, so a check added
+    later reaches the answers already saved, at no cost."""
+    return _checked(dict(fields), post, set()) if fields else None
+
+
+def _checked(out: dict, post: dict, torn: set[str]) -> dict | None:
+    posted = dt.date.fromisoformat(post["posted"])
+    explicit, yearless = post_dates.dates_written(post["text"], posted)
+    for field in post_dates.DATE_KEYS:
+        date = out.get(field)
+        if date is None:
+            continue
+        if date not in explicit and date not in yearless:
+            return None  # a date the post doesn't write: it misread the post
+        if date not in explicit and not _placed(date, field, posted):
+            torn.add(field)  # a day without a year the post can't place for this step
+    for field in torn:
+        out.pop(field, None)
+    received, decided = out.get("i485_receipt"), out.get("i485_decided")
+    if received and decided and len(received) == len(decided) == 10 and \
+            (dt.date.fromisoformat(decided) - dt.date.fromisoformat(received)).days < FAST_I485_DAYS:
+        for f in ("i485_receipt", "i485_decided", "i485_decision"):
+            out.pop(f, None)
+    return out if post_dates.sound(out, posted, own=True) else None
 
 
 def worth_asking(text: str) -> bool:

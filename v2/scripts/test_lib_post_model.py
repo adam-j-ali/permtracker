@@ -78,6 +78,35 @@ def main() -> int:
     check(r == {"perm_filed": "2023-08", "perm_decision": "approved"},
           f"a decision with no day counts beside a date, and a category it doesn't know is left out: {r}")
 
+    # Days written without a year.
+    p7 = post("g", "PERM approved not sure when (notified by employer) PD: 7/17 Good luck everyone", posted="2024-08-21",
+              kind="perm")
+    check(pm.from_answer(answer("g", [("perm_filed", "2024-07-17"), ("perm_approved", None)]), p7) is None,
+          "a PERM filing day without a year is never placed: 'PD: 7/17' in an August 2024 approval is 2023")
+    p8 = post("h", "EB3 RD 04/22 Bio 06/01, 2 fta0 after bio", posted="2026-09-03")
+    r = pm.from_answer(answer("h", [("i485_filed", "2026-04-22"), ("biometrics", "2026-06-01")], category="EB-3"), p8)
+    check(r == {"i485_receipt": "2026-04-22", "biometrics": "2026-06-01", "category": "EB-3"},
+          f"a receipt and biometrics without a year take the most recent such days: {r}")
+    check(pm.from_answer(answer("h", [("i485_filed", "2025-04-22"), ("biometrics", "2026-06-01")]), p8) is None,
+          "a year further back than the most recent such day is left out, and one date is too little")
+    check(pm._placed("2026-04-22", "i485_receipt", dt.date(2026, 9, 3)) and
+          not pm._placed("2025-04-22", "i485_receipt", dt.date(2026, 9, 3)) and
+          not pm._placed("2026-12-05", "biometrics", dt.date(2026, 11, 20)) and
+          pm._placed("2025-12-05", "biometrics", dt.date(2026, 11, 20)) and
+          pm._placed("2024-02-29", "ead", dt.date(2024, 3, 1)) and
+          not pm._placed("2024-07-17", "perm_filed", dt.date(2024, 8, 21)),
+          "the most recent such day on or before the post, a leap day too, and never a PERM filing day")
+    p9 = post("i", "Filled on Nov 26th, Approved Today. My receipt number starts with IOE", posted="2024-12-03")
+    check(pm.from_answer(answer("i", [("i485_filed", "2024-11-26"), ("i485_approved", "2024-12-03")]), p9) is None,
+          "an I-485 decided a week after its receipt is a premium I-140 misread: both I-485 dates go")
+
+    # A saved answer is checked again with today's checks.
+    check(pm.recheck({"i485_receipt": "2024-11-26", "i485_decided": "2024-12-03", "i485_decision": "approved"}, p9) is None,
+          "an answer saved before a check existed is held to it on the next run")
+    r = pm.recheck({"i485_receipt": "2026-04-22", "biometrics": "2026-06-01", "category": "EB-3"}, p8)
+    check(r == {"i485_receipt": "2026-04-22", "biometrics": "2026-06-01", "category": "EB-3"}, f"a sound one stands: {r}")
+    check(pm.recheck(None, p8) is None and pm.recheck({}, p8) is None, "nothing saved gives nothing")
+
     # The written dates themselves.
     w = pd.written_dates("filed 02/03/2024, approved 6/1", dt.date(2024, 6, 2))
     check({"2024-02-03", "2024-03-02", "2024-06-01", "2024-01-06", "2024-02", "2024-06"} <= w,

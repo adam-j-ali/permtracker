@@ -130,11 +130,14 @@ def telegram_records(chat: str, rows: list[dict], spec: dict | None,
         if not post_model.worth_asking(text):
             continue
         key = f"{chat}:{r['id']}"
+        asked = {"id": key, "posted": posted.isoformat(), "kind": spec["kind"], "text": text}
         if key in model_reads:
-            if model_reads[key]:
-                out.append(_record(chat, r, posted, spec, model_reads[key]))
+            # Saved answers pass today's checks again, so a check added later reaches them too.
+            fields = post_model.recheck(model_reads[key], asked)
+            if fields:
+                out.append(_record(chat, r, posted, spec, fields))
         else:
-            to_ask.append({"id": key, "posted": posted.isoformat(), "kind": spec["kind"], "text": text})
+            to_ask.append(asked)
     return out, to_ask
 
 
@@ -186,7 +189,7 @@ def prepare_telegram(folder: Path, specs: dict[str, dict], model_cache: Path | N
         counts["chats"] += 1
         counts["messages"] += len(rows)
     counts["records"] = len(records)
-    counts["model_records"] = sum(1 for r in records if r["key"] in reads and reads[r["key"]])
+    counts["model_records"] = sum(1 for r in records if reads.get(r["key"]))
     if failure:
         counts["failure"] = failure
     return records, counts
