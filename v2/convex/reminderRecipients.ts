@@ -1,21 +1,25 @@
 /**
  * A case's deadline reminders, sent to a second person too: a paralegal, or the employer's HR contact.
  *
- * ADDING ONE. The case's own account types an address on the case (`invite`). Checks run cheapest first, and every
- * refusal leaves nothing behind (v2/CLAUDE.md, "Charge a budget before the side effect it guards"):
+ * ADDING ONE. The case's own account types an address on the case (`invite`). Checks run in this order, and nothing
+ * is written or sent until all pass, except the charge in step 5 (v2/CLAUDE.md, "Charge a budget before the side
+ * effect it guards"):
  *
  * 1. the address's shape (length first, then the pattern: convex/lib/reminderRecipients.ts);
  * 2. the case is the caller's, live, and not the sample case;
- * 3. the address isn't the account's own, the account's own address is confirmed, and the address isn't blocked;
+ * 3. the address isn't the account's own, and the account's own address is confirmed;
  * 4. the case has no second person yet (one per case);
- * 5. the address isn't on the refusal list (it clicked Stop, or "Don't invite me again"), and this account hasn't
- *    invited it REMINDER_INVITES_PER_ADDRESS times already, a lapsed or removed invitation counting; both are read by
- *    the address's keyed hash (reminderAddressKey), never the address;
- * 6. the account's daily cap (REMINDER_INVITES_PER_ACCOUNT), checked without charging;
- * 7. the shared daily pool (BUDGETS.reminderInvite) and the day's public ceiling, charged; a refusal is counted for
- *    the admin panel and nothing is queued, because the owner is right there to try again tomorrow;
- * 8. then the account's cap and its count for the address are charged, the row written as "waiting" and the one
- *    invitation scheduled.
+ * 5. the account's daily cap (REMINDER_INVITES_PER_ACCOUNT), CHARGED for this try whatever comes next, so the
+ *    refusal list and the blocklist can't be read by trying addresses: each try spends one of the day's;
+ * 6. the shared daily pool (BUDGETS.reminderInvite) and the day's public ceiling, read without charging, so a full
+ *    pool answers before the address is looked at; a refusal is counted for the admin panel and nothing is queued,
+ *    because the owner is right there to try again tomorrow;
+ * 7. the address isn't blocked, isn't on the refusal list (it said "Don't invite me again", or stopped this account's
+ *    reminders), and this account hasn't invited it REMINDER_INVITES_PER_ADDRESS times already, a lapsed or removed
+ *    invitation counting. The list and the count are read by the address's keyed hash (reminderAddressKey: any
+ *    spelling of the same inbox is one key), never the address. All three get one answer (CANT_INVITE);
+ * 8. then the pool is charged, the account's count for the address goes up, the row is written as "waiting" and the
+ *    one invitation scheduled.
  *
  * THE INVITATION. One email, never repeated. Its Confirm link opens a page with a POST button (convex/http.ts): a GET
  * changes nothing, so a mail scanner opening the link confirms nothing. The link is an HMAC over the address, signed
@@ -56,7 +60,7 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
-import { admitConfirmation } from "./confirmationQueue";
+import { admitConfirmation, confirmationWouldWait } from "./confirmationQueue";
 import { dropReminderRetries, dropRetries } from "./lib/alertOutboxStore";
 import { BUDGETS, REMINDER_INVITES_PER_ACCOUNT, noteRefusal, windowFor } from "./lib/alertBudgets";
 import { getCurrentUserId, isEmailVerified } from "./lib/auth";
@@ -67,7 +71,7 @@ import { isEmailBlocked } from "./lib/emailBlocklist";
 import { recordError } from "./lib/errorRecording";
 import { SITE_URL } from "./lib/links";
 import { createLogger } from "./lib/logging";
-import { checkAndRecordRateLimit, checkRateLimit, recordRateLimitAttempt } from "./lib/rateLimit";
+import { checkAndRecordRateLimit } from "./lib/rateLimit";
 import {
   INVITE_MS,
   REMINDER_INVITES_PER_ADDRESS,
@@ -128,11 +132,21 @@ async function rowsOf(ctx: QueryCtx | MutationCtx, caseId: Id<"cases">): Promise
     .take(ROWS_PER_CASE);
 }
 
-/** What the owner is told when the address is on the refusal list. */
-export const REFUSED_ADDRESS = "That address asked not to get these reminders.";
+/**
+ * The one answer for an address we won't invite: on the refusal list, blocked, or invited by this account
+ * REMINDER_INVITES_PER_ADDRESS times already. One answer for all, so trying addresses can't tell which refused.
+ */
+export const CANT_INVITE = "We can't send an invitation to that address.";
 
-/** What the owner is told when the account has invited the address REMINDER_INVITES_PER_ADDRESS times already. */
-export const INVITED_ENOUGH = "You've invited that address twice already, so we can't send it another invitation.";
+/** The account has tried REMINDER_INVITES_PER_ACCOUNT addresses today. */
+const DAY_SPENT = `You've sent ${REMINDER_INVITES_PER_ACCOUNT.limit} invitations today. You can send more tomorrow.`;
+
+/** The shared pool or the day's public ceiling is full: counted for the admin panel, nothing queued. */
+async function poolFull(ctx: MutationCtx): Promise<{ ok: false; message: string }> {
+  await noteRefusal(ctx, "reminderInvite");
+  log.warn("reminder invitation refused: the day's pool or public ceiling is full");
+  return { ok: false, message: "We've sent as many invitations as we can today. Please try again tomorrow." };
+}
 
 /** Whether an address (by its keyed hash) asked never to be added again. */
 async function isRefused(ctx: QueryCtx | MutationCtx, addressKey: string): Promise<boolean> {
@@ -265,36 +279,29 @@ export const invite = mutation({
     if (!(await isEmailVerified(ctx, userId))) {
       return { ok: false as const, message: "Confirm your own email address first, then you can add someone." };
     }
-    if (isEmailBlocked(email)) {
-      return { ok: false as const, message: "We can't send email to that address." };
-    }
     if ((await rowsOf(ctx, args.caseId)).length > 0) {
       return { ok: false as const, message: "This case already has a second person. Remove them first to add someone else." };
     }
+
+    // Every try from here on is charged to the account's day, whatever the address, so the refusal list and the
+    // blocklist can't be read by trying addresses: a returned refusal still commits this charge.
+    const perAccount = await checkAndRecordRateLimit(ctx, userId, ACCOUNT_LIMIT_ACTION, REMINDER_INVITES_PER_ACCOUNT);
+    if (!perAccount.allowed) return { ok: false as const, message: DAY_SPENT };
+    // A full pool answers before the address is looked at, so it answers every address alike.
+    if (await confirmationWouldWait(ctx, "reminderInvite")) return await poolFull(ctx);
+
     const addressKey = await reminderAddressKey(email, secret());
-    if (await isRefused(ctx, addressKey)) return { ok: false as const, message: REFUSED_ADDRESS };
     const invitedBefore = await inviteCountOf(ctx, userId, addressKey);
-    if (invitedBefore && invitedBefore.count >= REMINDER_INVITES_PER_ADDRESS) {
-      return { ok: false as const, message: INVITED_ENOUGH };
+    if (
+      isEmailBlocked(email) ||
+      (await isRefused(ctx, addressKey)) ||
+      (invitedBefore !== null && invitedBefore.count >= REMINDER_INVITES_PER_ADDRESS)
+    ) {
+      return { ok: false as const, message: CANT_INVITE };
     }
 
-    const perAccount = await checkRateLimit(ctx, userId, ACCOUNT_LIMIT_ACTION, REMINDER_INVITES_PER_ACCOUNT);
-    if (!perAccount.allowed) {
-      return {
-        ok: false as const,
-        message: `You've sent ${REMINDER_INVITES_PER_ACCOUNT.limit} invitations today. You can send more tomorrow.`,
-      };
-    }
     const pool = await admitConfirmation(ctx, "reminderInvite");
-    if (!pool.allowed) {
-      await noteRefusal(ctx, "reminderInvite");
-      log.warn("reminder invitation refused: the day's pool or public ceiling is full");
-      return {
-        ok: false as const,
-        message: "We've sent as many invitations as we can today. Please try again tomorrow.",
-      };
-    }
-    await recordRateLimitAttempt(ctx, userId, ACCOUNT_LIMIT_ACTION);
+    if (!pool.allowed) return await poolFull(ctx);
     const now = Date.now();
     if (invitedBefore) {
       await ctx.db.patch("reminderInviteCounts", invitedBefore._id, { count: invitedBefore.count + 1, lastInvitedAt: now });
