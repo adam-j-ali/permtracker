@@ -129,10 +129,10 @@ describe("POST /api/client-error", () => {
   });
 
   it("reads a dropped request in each browser's words, and nothing that says more", () => {
-    for (const m of ["Load failed", "TypeError: Load failed", "Failed to fetch", "NetworkError when attempting to fetch resource.", " Load failed "]) {
+    for (const m of ["Load failed", "TypeError: Load failed", "Failed to fetch", "NetworkError when attempting to fetch resource.", " Load failed ", "network error", "TypeError: network error"]) {
       expect(isDroppedRequest(m), m).toBe(true);
     }
-    for (const m of ["Failed to fetch dynamically imported module: https://permtracker.app/x.js", "Load failed for chunk 12", "Server Error", ""]) {
+    for (const m of ["Failed to fetch dynamically imported module: https://permtracker.app/x.js", "Load failed for chunk 12", "Server Error", "network error at line 4", ""]) {
       expect(isDroppedRequest(m), m).toBe(false);
     }
   });
