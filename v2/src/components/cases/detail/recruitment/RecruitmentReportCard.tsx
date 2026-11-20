@@ -67,7 +67,7 @@ export function RecruitmentReportCard({
         <h2 id={`${id}-h`} className="flex items-center gap-1.5">
           <FileTextIcon className="h-3.5 w-3.5" aria-hidden="true" />
           Recruitment report
-        </h2>
+        </h2>{" "}
         <span className="head-badge">Draft</span>
       </div>
       <div className="detail-card-body space-y-4">

@@ -121,7 +121,7 @@ export function ApplicantLog({
         <h2 id={`${id}-h`} className="flex items-center gap-1.5">
           <UsersIcon className="h-3.5 w-3.5" aria-hidden="true" />
           Applicants
-        </h2>
+        </h2>{" "}
         {applicants?.length ? <span className="head-badge">{applicants.length}</span> : null}
       </div>
       <div className="detail-card-body space-y-4">
