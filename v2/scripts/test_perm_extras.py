@@ -277,6 +277,7 @@ def main() -> int:
     load(db, incoming)
     check(f"a second identical load writes nothing (saw {db.sql})", db.sql == [])
 
+
     for raw, want in [(541511, "541511"), ("541511.0", "541511"), (" 5415 ", "5415"),
                       ("54-1511", None), ("", None), (None, None), ("0", None), ("5415119", None)]:
         check(f"normalize_naics({raw!r}) == {want!r}", normalize_naics(raw) == want)
@@ -287,8 +288,28 @@ def main() -> int:
 
     facets_check()
     recruitment_check(db, incoming)
+
     employer_check(db, incoming)
     layoff_check(db, incoming)
+
+    # A case DOL's files stop publishing leaves the table, so the table and every figure built from the files are one
+    # population (Nov 20 2026: FY2026 Q4 left out 420 Q3 cases and the wage bands disagreed with risk.byWage).
+    load(db, incoming[:3])
+    left = {r[0] for r in db.conn.execute("SELECT case_number FROM perm_cases")}
+    check(f"the case DOL dropped is removed (left {sorted(left)})", case(4)["caseNumber"] not in left and len(left) == 3)
+    # A loss past the ceiling reads as a parsing fault: nothing removed, and the load fails.
+    art = pathlib.Path(tempfile.mkdtemp())
+    with gzip.open(art / "perm-cases.ndjson.gz", "wt") as f:
+        f.write(json.dumps(incoming[0]) + "\n")
+    (art / "perm-payload.json").write_text(json.dumps({"topEmployers": [], "topAttorneys": []}))
+    argv = sys.argv
+    sys.argv = ["db_migrate.py", str(art), "--incremental"]
+    try:
+        rc = db_migrate.main()
+    finally:
+        sys.argv = argv
+    kept = db.conn.execute("SELECT count(*) FROM perm_cases").fetchone()[0]
+    check(f"a loss past 1% refuses and removes nothing (exit {rc}, {kept} rows)", rc == 1 and kept == 3)
 
     print(f"\n{len(FAILS)} failed" if FAILS else "\nall passed")
     return 1 if FAILS else 0
