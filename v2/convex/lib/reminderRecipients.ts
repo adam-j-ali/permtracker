@@ -193,18 +193,19 @@ export function caseLine(jobTitle: string, employerName: string): string {
 export const A_PERM_CASE = "a PERM case";
 
 /**
- * The case as the invitation and its Confirm page name it, to an address that hasn't said yes: the case line, or "a
- * PERM case" when the job title or the employer, as typed, reads like a link or an address (the rule inviterName
- * uses). Both are checked whole, before any clipping, so nobody can put a link in an email to a stranger under our
- * name. The reminders a confirmed person gets keep the case line.
+ * The case as everything sent to the second person names it (the invitation, its Confirm page, and each reminder's
+ * subject and body): the case line, or "a PERM case" when the job title or the employer, as typed, reads like a link,
+ * an address or a phone number (looksLikeALink, the rule inviterName uses). Both are checked whole, before any
+ * clipping, and on every send, so an owner who renames the case after the person confirmed can't put a link in an
+ * email under our name either.
  */
-export function inviteCaseLine(jobTitle: string, employerName: string): string {
+export function safeCaseLine(jobTitle: string, employerName: string): string {
   return looksLikeALink(jobTitle) || looksLikeALink(employerName) ? A_PERM_CASE : caseLine(jobTitle, employerName);
 }
 
-/** The second person's subject: the owner's digest subject, then the case it's about. */
+/** The second person's subject: the owner's digest subject, then the case it's about (safeCaseLine). */
 export function reminderCopySubject(total: number, overdue: number, jobTitle: string, employerName: string): string {
-  return `${deadlineDigestWords(total, overdue).subject}: ${caseLine(jobTitle, employerName)}`;
+  return `${deadlineDigestWords(total, overdue).subject}: ${safeCaseLine(jobTitle, employerName)}`;
 }
 
 /**

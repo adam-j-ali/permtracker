@@ -16,7 +16,7 @@ import { deadlineDigestWords } from "../../convex/lib/deadlineDigestWords";
 import type { CopyItem } from "../../convex/lib/reminderRecipients";
 
 export interface ReminderCopyProps {
-  /** "Robotics Engineer at ACME Robotics". */
+  /** "Robotics Engineer at ACME Robotics", or "a PERM case" (convex/lib/reminderRecipients.ts, `safeCaseLine`). */
   caseLine: string;
   /** The case's reminders due today, most urgent first. */
   items: CopyItem[];

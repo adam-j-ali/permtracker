@@ -77,10 +77,8 @@ import { checkAndRecordRateLimit } from "./lib/rateLimit";
 import {
   INVITE_MS,
   REMINDER_INVITES_PER_ADDRESS,
-  caseLine,
   confirmUrl,
   declineUrl,
-  inviteCaseLine,
   inviterName,
   normaliseRecipientEmail,
   reminderAddressKey,
@@ -90,6 +88,7 @@ import {
   reminderInviteSubject,
   reminderRef,
   reminderStopPurpose,
+  safeCaseLine,
   sentenceStart,
   stopUrl,
   type CopyItem,
@@ -370,8 +369,8 @@ export const inviteDetails = internalQuery({
     return {
       email: row.email,
       inviter: await inviterFor(ctx, row.userId),
-      // Not yet confirmed: a title or employer that reads like a link is never put in front of this address.
-      caseLine: inviteCaseLine(caseDoc.positionTitle, caseDoc.employerName),
+      // A title or employer that reads like a link or a phone number is never put in front of this address.
+      caseLine: safeCaseLine(caseDoc.positionTitle, caseDoc.employerName),
     };
   },
 });
@@ -483,7 +482,7 @@ export const confirmByToken = internalMutation({
     const caseDoc = await liveCase(ctx, row);
     if (!caseDoc) return null;
     // The page the invitation's button lands on names the case as the invitation did.
-    const line = inviteCaseLine(caseDoc.positionTitle, caseDoc.employerName);
+    const line = safeCaseLine(caseDoc.positionTitle, caseDoc.employerName);
     if (row.status === "confirmed") return { state: "already" as const, caseLine: line };
     if (row.status !== "waiting" || Date.now() - row.invitedAt > INVITE_MS) return null;
     await ctx.db.patch("reminderRecipients", row._id, { status: "confirmed", confirmedAt: Date.now() });
@@ -610,7 +609,8 @@ export const admitCopy = internalMutation({
     await ctx.db.patch("reminderRecipients", recipientId, { lastSentDay: today });
     return {
       email: row.email,
-      caseLine: caseLine(caseDoc.positionTitle, caseDoc.employerName),
+      // Read on every send, so a case renamed after the person confirmed is filtered too.
+      caseLine: safeCaseLine(caseDoc.positionTitle, caseDoc.employerName),
       jobTitle: caseDoc.positionTitle,
       employerName: caseDoc.employerName,
     };
