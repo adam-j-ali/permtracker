@@ -536,9 +536,11 @@ describe("the second person's daily reminders", () => {
     const mail = sent[0]!;
     expect(mail.to).toBe("para@firm.example");
     expect(mail.subject).toBe("1 PERM deadline needs your attention: Robotics Engineer at ACME Robotics");
-    for (const words of ["PWD expiration", "Jordan Lee", "Robotics Engineer at ACME Robotics"]) {
+    for (const words of ["PWD expiration", "Robotics Engineer at ACME Robotics", "You confirmed these reminders."]) {
       expect(mail.text).toContain(words);
     }
+    // The reminders name nobody: the invitation said who asked.
+    expect(JSON.stringify(mail)).not.toContain("Jordan Lee");
     const link = /Stop these reminders: (\S+)/.exec(String(mail.text))?.[1];
     expect(link).toBeDefined();
     const url = new URL(link!);

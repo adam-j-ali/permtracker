@@ -2,8 +2,8 @@
 /**
  * The two emails a case's second reminder recipient can get (convex/reminderRecipients.ts). The invitation names who
  * asked and the case, says what the reminders hold, carries one Confirm button and no way into an account, and says
- * what happens if it's ignored. The reminder lists that case's deadlines, says when it was checked in Eastern time,
- * and carries its one-click stop and no settings link.
+ * what happens if it's ignored. The reminder lists that case's deadlines, says the reader confirmed them and when it
+ * was checked in Eastern time, names nobody, and carries its one-click stop and no settings link.
  */
 import { render } from "@react-email/render";
 import { describe, expect, it } from "vitest";
@@ -57,10 +57,9 @@ describe("the reminder", () => {
     { deadlineType: "PWD expiration", deadlineDate: "2026-11-27", daysUntil: 7, urgency: "urgent" as const },
   ];
 
-  it("lists the case's deadlines, most urgent first, and says who added the reader and when it was checked", async () => {
+  it("lists the case's deadlines, most urgent first, and says the reader confirmed them and when it was checked", async () => {
     const html = await render(
       ReminderCopy({
-        inviter: "Jordan Lee",
         caseLine: "Robotics Engineer at ACME Robotics",
         items,
         checkedAt: "November 20, 2026, 9:00 AM ET",
@@ -72,12 +71,14 @@ describe("the reminder", () => {
     expect(text).toContain("2 deadlines need attention, 1 overdue. Here’s what’s due, most urgent first.");
     expect(text.indexOf("ETA 9089 filing window closes")).toBeLessThan(text.indexOf("PWD expiration"));
     expect(text).toContain("November 27, 2026");
-    expect(text).toContain("Jordan Lee added you to this case’s reminders, and you confirmed them. Checked November 20, 2026, 9:00 AM ET.");
+    expect(text).toContain("You confirmed these reminders. Checked November 20, 2026, 9:00 AM ET.");
+    // The account that added the reader isn't named: the invitation already said who asked.
+    expect(text).not.toMatch(/added you/);
   });
 
   it("carries the one-click stop and no settings link", async () => {
     const html = await render(
-      ReminderCopy({ inviter: "Jordan Lee", caseLine: "Analyst at Initech", items, checkedAt: "November 20, 2026, 9:00 AM ET", stopUrl: STOP }),
+      ReminderCopy({ caseLine: "Analyst at Initech", items, checkedAt: "November 20, 2026, 9:00 AM ET", stopUrl: STOP }),
     );
     const links = linksOf(html);
     expect(links).toContainEqual({ href: STOP, text: "Stop these reminders" });

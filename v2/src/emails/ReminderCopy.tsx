@@ -1,7 +1,8 @@
 /**
  * A case's deadline reminders for the second person who confirmed them (convex/reminderRecipients.ts): the same rows
- * the owner's daily email shows, for this one case, with who added them, when it was checked (Eastern) and a
- * one-click stop that pairs with the email's List-Unsubscribe header.
+ * the owner's daily email shows, for this one case, a line saying the reader confirmed them, when it was checked
+ * (Eastern) and a one-click stop that pairs with the email's List-Unsubscribe header. It names nobody: the
+ * invitation said who asked, and the Privacy Policy says these name the employer, the job title and the deadlines.
  *
  * The second person has no account, so there's no link into the app and no settings link: the stop link is the way
  * out. Nothing of the case beyond the employer, the job title and the deadlines is shown.
@@ -12,11 +13,9 @@ import { SANS_STACK } from "./components/QueueStamp";
 import { urgencyHeadStyle, urgencyHeadText, urgencyRow, urgencyRowLast } from "./components/emailStyles";
 import { formatDateForDisplay, formatRelativeDays, getUrgencyColor } from "../../convex/lib/digestHelpers";
 import { deadlineDigestWords } from "../../convex/lib/deadlineDigestWords";
-import { sentenceStart, type CopyItem } from "../../convex/lib/reminderRecipients";
+import type { CopyItem } from "../../convex/lib/reminderRecipients";
 
 export interface ReminderCopyProps {
-  /** Who added this person, as the email may show it. */
-  inviter: string;
   /** "Robotics Engineer at ACME Robotics". */
   caseLine: string;
   /** The case's reminders due today, most urgent first. */
@@ -35,7 +34,7 @@ const SECTIONS: ReadonlyArray<{ key: CopyItem["urgency"]; label: string; color: 
   { key: "later", label: "Coming up", color: "#2563EB" },
 ];
 
-export function ReminderCopy({ inviter, caseLine, items, checkedAt, stopUrl }: ReminderCopyProps) {
+export function ReminderCopy({ caseLine, items, checkedAt, stopUrl }: ReminderCopyProps) {
   const words = deadlineDigestWords(items.length, items.filter((i) => i.urgency === "overdue").length);
   return (
     <EmailLayout
@@ -104,14 +103,13 @@ export function ReminderCopy({ inviter, caseLine, items, checkedAt, stopUrl }: R
       })}
 
       <Text className="em-text-secondary" style={styles.note}>
-        {sentenceStart(inviter)} added you to this case&rsquo;s reminders, and you confirmed them. Checked {checkedAt}.
+        You confirmed these reminders. Checked {checkedAt}.
       </Text>
     </EmailLayout>
   );
 }
 
 ReminderCopy.PreviewProps = {
-  inviter: "Jordan Lee",
   caseLine: "Robotics Engineer at ACME Robotics",
   checkedAt: "November 20, 2026, 9:00 AM ET",
   stopUrl: "https://permtracker.app/case-alert/reminders/stop?token=preview&r=preview",
