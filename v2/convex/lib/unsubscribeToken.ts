@@ -97,15 +97,26 @@ export type TokenPurpose =
    */
   | `policy-accept:${string}`
   /**
-   * A case's second reminder recipient (convex/reminderRecipients.ts): confirm the invitation, or stop the
-   * reminders. The recipient row's id is part of the purpose, so a link for one row never acts on another.
+   * A case's second reminder recipient (convex/reminderRecipients.ts): confirm the invitation, stop the reminders, or
+   * "Don't invite me again" from the invitation. The recipient row's id is part of the purpose, so a link for one row
+   * never acts on another.
    */
   | `reminder-confirm:${string}`
-  | `reminder-stop:${string}`;
+  | `reminder-stop:${string}`
+  | `reminder-decline:${string}`;
 
 /** The exact string that gets signed. Kept in one place so both sides agree. */
 function signedMessage(normalizedEmail: string, purpose?: TokenPurpose): string {
   return purpose ? `${purpose}:${normalizedEmail}` : normalizedEmail;
+}
+
+/**
+ * HMAC-SHA256 of `message` under `secret`, base64url: a keyed one-way hash for a value that must be found again but
+ * never kept (convex/lib/reminderRecipients.ts, reminderAddressKey). The caller picks a message no token signs: a
+ * token signs `<purpose>:<email>` for a purpose in TokenPurpose.
+ */
+export async function keyedHash(message: string, secret: string): Promise<string> {
+  return toBase64Url(await hmacSha256(message, secret));
 }
 
 /** Build an action token for an email address, scoped to one purpose. */

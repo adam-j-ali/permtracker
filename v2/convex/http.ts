@@ -30,7 +30,7 @@ import { normaliseFlagCaseNumber, programOf } from "../src/lib/flagCaseNumber";
 import { LIST_ENTRIES_MAX } from "../src/lib/caseList";
 import { confirmOffers, isPermWageRequest, PWD_MATCH_SENTENCE } from "./lib/alertNextSteps";
 import { MAIL_KINDS, PREFS_KINDS, type PrefsKind } from "./lib/mailKinds";
-import { REMINDER_CONFIRM_PATH, REMINDER_STOP_PATH } from "./lib/reminderRecipients";
+import { REMINDER_CONFIRM_PATH, REMINDER_DECLINE_PATH, REMINDER_STOP_PATH } from "./lib/reminderRecipients";
 
 const isPrefsKind = (k: string): k is PrefsKind => (PREFS_KINDS as readonly string[]).includes(k);
 import { SLUG_RE as EMPLOYER_SLUG_RE, employerNameFor } from "./employerAlerts";
@@ -690,9 +690,10 @@ http.route({
 });
 
 // A case's deadline reminders, sent to a second person too (convex/reminderRecipients.ts). The invitation's Confirm
-// link and every reminder's Stop link open a page with one button: a GET changes nothing, so a mail scanner opening
-// the link confirms or stops nothing. The mail app's own Unsubscribe button POSTs straight to the stop route. Neither
-// route sends mail, and each mutation behind them is internal.
+// and "Don't invite me again" links and every reminder's Stop link open a page with one button: a GET changes
+// nothing, so a mail scanner opening the link confirms, declines or stops nothing. The mail app's own Unsubscribe
+// button POSTs straight to the stop route (a reminder) or the decline route (the invitation). No route sends mail,
+// and each mutation behind them is internal.
 
 /** The token and recipient row from a reminder link, length-capped first; null when either is missing. */
 function reminderLink(req: Request): { token: string; r: string } | null {
@@ -762,7 +763,7 @@ http.route({
     if (!l) return reminderBadLink("This link is incomplete. Use the Stop link in your latest reminder email.");
     return messagePage(
       "Stop these deadline reminders?",
-      "You'll stop getting this PERM case's deadline reminders, and we'll delete your address from it.",
+      "You'll stop getting this PERM case's deadline reminders, and we'll delete your address from it. No one on PERM Tracker can invite this address to a case's reminders again.",
       { post: reminderAction(REMINDER_STOP_PATH, l), label: "Stop the reminders" },
     );
   }),
@@ -782,7 +783,37 @@ http.route({
     }
     return messagePage(
       "The reminders are off",
-      "We won't send you this case's deadline reminders again, and we've deleted your address from it.",
+      "We won't send you this case's deadline reminders again, and we've deleted your address from it. No one on PERM Tracker can invite this address to a case's reminders again.",
+    );
+  }),
+});
+
+http.route({
+  path: REMINDER_DECLINE_PATH,
+  method: "GET",
+  handler: httpAction(async (_ctx, req) => {
+    const l = reminderLink(req);
+    if (!l) return reminderBadLink("This link is incomplete. Open it again from the invitation email.");
+    return messagePage(
+      "Don't invite me again?",
+      "No one on PERM Tracker can invite this address to a case's deadline reminders again, and this invitation ends.",
+      { post: reminderAction(REMINDER_DECLINE_PATH, l), label: "Don't invite me again" },
+    );
+  }),
+});
+
+// POST is also what Gmail and Apple Mail send for the invitation's one-click List-Unsubscribe.
+http.route({
+  path: REMINDER_DECLINE_PATH,
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const l = reminderLink(req);
+    if (!l) return reminderBadLink("This link is incomplete. Open it again from the invitation email.");
+    const result = await ctx.runMutation(internal.reminderRecipients.declineByToken, { token: l.token, recipientId: l.r });
+    if (!result) return reminderBadLink("This link was changed or isn't one of ours. Open it again from the invitation email.");
+    return messagePage(
+      "We won't invite you again",
+      "No one on PERM Tracker can invite this address to a case's deadline reminders again, and this invitation has ended.",
     );
   }),
 });

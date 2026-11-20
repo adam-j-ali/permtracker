@@ -3,10 +3,11 @@
  *
  * It says who asked (the account's display name, or "a PERM Tracker user"), for which case (the job title at the
  * employer, or "a PERM case" when either reads like a link: inviteCaseLine), what the reminders hold and how to stop
- * them, with one Confirm button. Its link opens a page with a
- * button: opening the link confirms nothing. Ignored, nothing else is ever sent.
+ * them, with one Confirm button. Its link opens a page with a button: opening the link confirms nothing. Ignored,
+ * nothing else is ever sent. Under the button, "Don't invite me again" opens a page whose button puts the address on
+ * the refusal list, so no account can invite it again.
  */
-import { Section, Text } from "@react-email/components";
+import { Link, Section, Text } from "@react-email/components";
 import { EmailButton, EmailLayout } from "./components";
 import { SANS_STACK } from "./components/QueueStamp";
 import { INVITE_DAYS, sentenceStart } from "../../convex/lib/reminderRecipients";
@@ -18,9 +19,11 @@ export interface ReminderInviteProps {
   caseLine: string;
   /** Absolute, row-scoped confirmation URL. */
   confirmUrl: string;
+  /** Absolute "Don't invite me again" URL, signed for its own purpose (reminderDeclinePurpose). */
+  declineUrl: string;
 }
 
-export function ReminderInvite({ inviter, caseLine, confirmUrl }: ReminderInviteProps) {
+export function ReminderInvite({ inviter, caseLine, confirmUrl, declineUrl }: ReminderInviteProps) {
   const who = sentenceStart(inviter);
   return (
     <EmailLayout
@@ -53,6 +56,15 @@ export function ReminderInvite({ inviter, caseLine, confirmUrl }: ReminderInvite
         If you don&rsquo;t want these, ignore this email. Nothing more will be sent, and we&rsquo;ll delete your
         address in {INVITE_DAYS} days.
       </Text>
+
+      <Text className="em-text-secondary" style={styles.note}>
+        Don&rsquo;t want to be asked again? Use this link, and no one on PERM Tracker can invite this address again.
+      </Text>
+      <Text className="em-text-secondary" style={styles.declineLine}>
+        <Link href={declineUrl} className="em-link" style={styles.declineLink}>
+          Don&rsquo;t invite me again
+        </Link>
+      </Text>
     </EmailLayout>
   );
 }
@@ -61,6 +73,7 @@ ReminderInvite.PreviewProps = {
   inviter: "Jordan Lee",
   caseLine: "Robotics Engineer at ACME Robotics",
   confirmUrl: "https://permtracker.app/case-alert/reminders/confirm?token=preview&r=preview",
+  declineUrl: "https://permtracker.app/case-alert/reminders/decline?token=preview&r=preview",
 } satisfies ReminderInviteProps;
 
 export default ReminderInvite;
@@ -71,5 +84,8 @@ const styles = {
   stampValue: { fontFamily: SANS_STACK, color: "#1A1A1A", fontSize: "24px", fontWeight: 700, lineHeight: "30px", margin: 0 },
   body: { fontFamily: SANS_STACK, color: "#2A2A2A", fontSize: "16px", lineHeight: "26px", margin: "0 0 20px 0" },
   cta: { marginBottom: "20px" },
-  note: { fontFamily: SANS_STACK, color: "#5A5A5A", fontSize: "14px", lineHeight: "20px", margin: 0 },
+  note: { fontFamily: SANS_STACK, color: "#5A5A5A", fontSize: "14px", lineHeight: "20px", margin: "0 0 12px 0" },
+  declineLine: { fontFamily: SANS_STACK, fontSize: "14px", lineHeight: "18px", margin: 0 },
+  // A standalone control on its own line: inline-block with padding makes the hit box 44px tall.
+  declineLink: { color: "#5A5A5A", textDecoration: "underline", display: "inline-block", padding: "13px 4px" },
 } as const;

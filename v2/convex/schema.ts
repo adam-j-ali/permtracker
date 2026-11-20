@@ -713,6 +713,29 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_status_and_invitedAt", ["status", "invitedAt"]),
 
+  /**
+   * Addresses that asked never to be added to a case's deadline reminders again (convex/reminderRecipients.ts): by
+   * the Stop link in a reminder, or "Don't invite me again" in an invitation. Site-wide: every account's invitation
+   * to one is refused. Only a keyed one-way hash of the address is kept (reminderAddressKey), never the address, so
+   * the list can be asked about one address but can't say who's on it. Kept indefinitely, as the Privacy Policy says.
+   */
+  reminderRefusals: defineTable({
+    addressKey: v.string(),
+    refusedAt: v.number(),
+  }).index("by_addressKey", ["addressKey"]),
+
+  /**
+   * How many invitations to a case's deadline reminders one account has sent one address, in all, for the cap of
+   * REMINDER_INVITES_PER_ADDRESS (convex/lib/reminderRecipients.ts). The address as the same keyed one-way hash,
+   * never the address. Goes with the account (lib/deletion.ts).
+   */
+  reminderInviteCounts: defineTable({
+    userId: v.id("users"),
+    addressKey: v.string(),
+    count: v.number(),
+    lastInvitedAt: v.number(),
+  }).index("by_userId_and_addressKey", ["userId", "addressKey"]),
+
   // Notifications for deadline alerts and system messages
   notifications: defineTable({
     // Relationships

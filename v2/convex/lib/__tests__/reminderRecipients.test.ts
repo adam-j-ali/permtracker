@@ -6,14 +6,20 @@ import {
   RECIPIENT_EMAIL_MAX,
   SOMEONE,
   caseLine,
+  REMINDER_INVITES_PER_ADDRESS,
   copiesByCase,
+  declineUrl,
   inviteCaseLine,
   inviterName,
   normaliseRecipientEmail,
+  reminderAddressKey,
+  reminderConfirmPurpose,
   reminderCopySubject,
+  reminderDeclinePurpose,
   reminderStopPurpose,
   stopUrl,
 } from "../reminderRecipients";
+import { makeUnsubscribeToken } from "../unsubscribeToken";
 import { buildUserNotificationPrefs, type UserNotificationPrefs } from "../notificationHelpers";
 
 /**
@@ -192,5 +198,47 @@ describe("the one-click stop", () => {
 
   it("gives an invitation thirty days", () => {
     expect(INVITE_DAYS).toBe(30);
+  });
+});
+
+describe("\"Don't invite me again\"", () => {
+  it("has its own purpose, scoped to one invitation, so no other link declines and it confirms or stops nothing", () => {
+    expect(reminderDeclinePurpose("abc123")).toBe("reminder-decline:abc123");
+    expect(reminderDeclinePurpose("abc123")).not.toBe(reminderStopPurpose("abc123"));
+    expect(reminderDeclinePurpose("abc123")).not.toBe(reminderConfirmPurpose("abc123"));
+  });
+
+  it("opens its own page on the site with the row and the signed token", () => {
+    expect(declineUrl("tok/en+", "row1")).toBe("https://permtracker.app/case-alert/reminders/decline?token=tok%2Fen%2B&r=row1");
+  });
+});
+
+describe("the address as the refusal list and the invitation count keep it", () => {
+  const SECRET = "a-test-secret";
+
+  it("is a keyed one-way hash of the lowercased address, never the address", async () => {
+    const key = await reminderAddressKey("para@firm.example", SECRET);
+    expect(key).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(key).not.toContain("para");
+    expect(await reminderAddressKey("  Para@FIRM.example ", SECRET)).toBe(key);
+    expect(await reminderAddressKey("other@firm.example", SECRET)).not.toBe(key);
+  });
+
+  it("needs the secret: another key gives another hash", async () => {
+    expect(await reminderAddressKey("para@firm.example", "another-secret")).not.toBe(
+      await reminderAddressKey("para@firm.example", SECRET),
+    );
+  });
+
+  it("is never the signature of a link we mail, so the table can't be used to make one", async () => {
+    const key = await reminderAddressKey("para@firm.example", SECRET);
+    for (const purpose of [undefined, reminderStopPurpose("r1"), reminderDeclinePurpose("r1")] as const) {
+      const token = await makeUnsubscribeToken("para@firm.example", SECRET, purpose);
+      expect(token.split(".")[1]).not.toBe(key);
+    }
+  });
+
+  it("lets one account invite one address twice in all", () => {
+    expect(REMINDER_INVITES_PER_ADDRESS).toBe(2);
   });
 });

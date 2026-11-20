@@ -12,6 +12,7 @@ import { ReminderCopy } from "../ReminderCopy";
 import { ReminderInvite } from "../ReminderInvite";
 
 const CONFIRM = "https://permtracker.app/case-alert/reminders/confirm?token=T&r=R";
+const DECLINE = "https://permtracker.app/case-alert/reminders/decline?token=D&r=R";
 const STOP = "https://permtracker.app/case-alert/reminders/stop?token=S&r=R";
 
 /** The rendered email as a document: parsed, never run. */
@@ -27,7 +28,9 @@ function linksOf(html: string): { href: string; text: string }[] {
 
 describe("the invitation", () => {
   it("names who asked and the case, says what comes and how it stops, above one Confirm button", async () => {
-    const html = await render(ReminderInvite({ inviter: "Jordan Lee", caseLine: "Robotics Engineer at ACME Robotics", confirmUrl: CONFIRM }));
+    const html = await render(
+      ReminderInvite({ inviter: "Jordan Lee", caseLine: "Robotics Engineer at ACME Robotics", confirmUrl: CONFIRM, declineUrl: DECLINE }),
+    );
     const text = wordsOf(html);
     expect(text).toContain("Robotics Engineer at ACME Robotics");
     expect(text).toContain("Jordan Lee tracks this PERM case on PERM Tracker and asked us to send you its deadline reminders too.");
@@ -39,13 +42,27 @@ describe("the invitation", () => {
     expect(confirm).toEqual([{ href: CONFIRM, text: "Confirm the reminders" }]);
   });
 
+  it("offers a way never to be invited again, after the Confirm button", async () => {
+    const html = await render(
+      ReminderInvite({ inviter: "Jordan Lee", caseLine: "Analyst at Initech", confirmUrl: CONFIRM, declineUrl: DECLINE }),
+    );
+    expect(linksOf(html).filter((a) => a.href === DECLINE)).toEqual([{ href: DECLINE, text: "Don’t invite me again" }]);
+    const text = wordsOf(html);
+    expect(text.indexOf("Confirm the reminders")).toBeLessThan(text.indexOf("Don’t invite me again"));
+    expect(text).toMatch(/no one on PERM Tracker can invite this address again/i);
+  });
+
   it("opens a sentence with \"A PERM Tracker user\" when no name can be shown", async () => {
-    const html = await render(ReminderInvite({ inviter: "a PERM Tracker user", caseLine: "Analyst at Initech", confirmUrl: CONFIRM }));
+    const html = await render(
+      ReminderInvite({ inviter: "a PERM Tracker user", caseLine: "Analyst at Initech", confirmUrl: CONFIRM, declineUrl: DECLINE }),
+    );
     expect(wordsOf(html)).toContain("A PERM Tracker user tracks this PERM case");
   });
 
   it("carries no link into the app or its settings", async () => {
-    const html = await render(ReminderInvite({ inviter: "Jordan Lee", caseLine: "Analyst at Initech", confirmUrl: CONFIRM }));
+    const html = await render(
+      ReminderInvite({ inviter: "Jordan Lee", caseLine: "Analyst at Initech", confirmUrl: CONFIRM, declineUrl: DECLINE }),
+    );
     const hrefs = linksOf(html).map((a) => a.href);
     expect(hrefs.some((h) => /\/settings|\/dashboard|\/cases\//.test(h))).toBe(false);
   });

@@ -12,7 +12,13 @@ import { createAuthenticatedContext } from "../../test-utils/convex";
 import { finishScheduledNow, settleScheduled, trackedTestContext } from "../../test-utils/convexSettle";
 import { BUDGETS, REMINDER_INVITES_PER_ACCOUNT, windowFor } from "../lib/alertBudgets";
 import { purgeAllUserData } from "../lib/deletion";
-import { INVITE_MS, reminderConfirmPurpose, reminderStopPurpose } from "../lib/reminderRecipients";
+import {
+  INVITE_MS,
+  reminderAddressKey,
+  reminderConfirmPurpose,
+  reminderDeclinePurpose,
+  reminderStopPurpose,
+} from "../lib/reminderRecipients";
 import { makeUnsubscribeToken } from "../lib/unsubscribeToken";
 import { easternDay } from "../lib/time";
 import { utcDay } from "../lib/emailLimits";
@@ -100,6 +106,12 @@ async function confirmToken(id: string, email: string) {
 async function stopToken(id: string, email: string) {
   return makeUnsubscribeToken(email, SECRET, reminderStopPurpose(id));
 }
+async function declineToken(id: string, email: string) {
+  return makeUnsubscribeToken(email, SECRET, reminderDeclinePurpose(id));
+}
+
+/** The refusal the owner sees for an address that asked not to get these. */
+const REFUSED = "That address asked not to get these reminders.";
 
 describe("adding a second person to a case's reminders", () => {
   it("stores the address trimmed and lowercased, waiting, and sends one invitation naming who asked and the case", async () => {
@@ -379,6 +391,173 @@ describe("stopping, removing and the address's end", () => {
     expect(out).toEqual({ deleted: 1 });
     expect((await rows(t)).map((r) => r._id)).toEqual([id]);
     expect(await t.run((ctx) => ctx.db.get(old))).toBeNull();
+  });
+});
+
+describe("an address that asked not to be added, and the cap on asking again", () => {
+  /** The account's own address confirmed, as `setup` does for the owner. */
+  const verify = (t: T, userId: Id<"users">) =>
+    t.run(async (ctx) => {
+      const user = await ctx.db.get(userId);
+      await ctx.db.insert("authAccounts", {
+        userId,
+        provider: "password",
+        providerAccountId: user!.email!,
+        emailVerified: user!.email!,
+      });
+    });
+  const refusals = (t: T) => t.run((ctx) => ctx.db.query("reminderRefusals").collect());
+  const counts = (t: T) => t.run((ctx) => ctx.db.query("reminderInviteCounts").collect());
+
+  /** The owner invites para@ and the person confirms, then clicks Stop. */
+  async function stopped() {
+    const s = await setup();
+    await s.owner.mutation(api.reminderRecipients.invite, { caseId: s.caseId, email: "para@firm.example" });
+    await finishScheduledNow(s.t);
+    const [row] = await rows(s.t);
+    await s.t.mutation(internal.reminderRecipients.confirmByToken, {
+      token: await confirmToken(row!._id, "para@firm.example"),
+      recipientId: row!._id,
+    });
+    await s.t.mutation(internal.reminderRecipients.stopByToken, {
+      token: await stopToken(row!._id, "para@firm.example"),
+      recipientId: row!._id,
+    });
+    return { ...s, id: row!._id };
+  }
+
+  it("an address that clicked Stop can't be invited again by any account, and the owner is told plainly", async () => {
+    const { t, owner, other, caseId } = await stopped();
+    await owner.mutation(api.reminderRecipients.remove, { caseId });
+    sent = [];
+    expect(await owner.mutation(api.reminderRecipients.invite, { caseId, email: " PARA@firm.example" })).toEqual({
+      ok: false,
+      message: REFUSED,
+    });
+    await verify(t, other.userId);
+    const theirs = await t.run((ctx) => ctx.db.insert("cases", caseRow(other.userId)));
+    expect(await other.mutation(api.reminderRecipients.invite, { caseId: theirs, email: "para@firm.example" })).toEqual({
+      ok: false,
+      message: REFUSED,
+    });
+    expect(await rows(t)).toEqual([]);
+    await finishScheduledNow(t);
+    expect(sent).toEqual([]);
+  });
+
+  it("keeps only a keyed one-way hash of the address, once", async () => {
+    const { t, id } = await stopped();
+    // A second click on the same Stop link adds nothing.
+    await t.mutation(internal.reminderRecipients.stopByToken, { token: await stopToken(id, "para@firm.example"), recipientId: id });
+    const list = await refusals(t);
+    expect(list).toHaveLength(1);
+    expect(list[0]!.addressKey).toBe(await reminderAddressKey("para@firm.example", SECRET));
+    expect(JSON.stringify(list)).not.toContain("para");
+  });
+
+  it("\"Don't invite me again\" in the invitation ends it and refuses the address from then on", async () => {
+    const { t, owner, caseId } = await setup();
+    await owner.mutation(api.reminderRecipients.invite, { caseId, email: "para@firm.example" });
+    await finishScheduledNow(t);
+    const invite = sent[0]!;
+    const link = /Don't invite me again: (\S+)/.exec(String(invite.text))?.[1];
+    expect(link).toBeDefined();
+    const url = new URL(link!);
+    expect(url.pathname).toBe("/case-alert/reminders/decline");
+    expect(invite.html).toContain(link!.replace(/&/g, "&amp;"));
+    // The mail app's own Unsubscribe button does the same, by a one-click POST.
+    expect(invite.headers!["List-Unsubscribe"]).toBe(`<${link!}>`);
+    expect(invite.headers!["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
+
+    const [row] = await rows(t);
+    const out = await t.mutation(internal.reminderRecipients.declineByToken, {
+      token: url.searchParams.get("token")!,
+      recipientId: row!._id,
+    });
+    expect(out).toBe("declined");
+    const [after] = await rows(t);
+    expect(after!.status).toBe("stopped");
+    expect("email" in after!).toBe(false);
+    expect(await refusals(t)).toHaveLength(1);
+
+    await owner.mutation(api.reminderRecipients.remove, { caseId });
+    expect(await owner.mutation(api.reminderRecipients.invite, { caseId, email: "para@firm.example" })).toEqual({
+      ok: false,
+      message: REFUSED,
+    });
+  });
+
+  it("still refuses the address when the invitation is already gone", async () => {
+    const { t, owner, caseId } = await setup();
+    await owner.mutation(api.reminderRecipients.invite, { caseId, email: "para@firm.example" });
+    await finishScheduledNow(t);
+    const [row] = await rows(t);
+    await owner.mutation(api.reminderRecipients.remove, { caseId });
+    const out = await t.mutation(internal.reminderRecipients.declineByToken, {
+      token: await declineToken(row!._id, "para@firm.example"),
+      recipientId: row!._id,
+    });
+    expect(out).toBe("declined");
+    expect(await refusals(t)).toHaveLength(1);
+  });
+
+  it("a decline link is its own: no other link declines, and it confirms or stops nothing", async () => {
+    const { t, owner, caseId } = await setup();
+    await owner.mutation(api.reminderRecipients.invite, { caseId, email: "para@firm.example" });
+    await finishScheduledNow(t);
+    const [row] = await rows(t);
+    const id = row!._id;
+    for (const token of [
+      await confirmToken(id, "para@firm.example"),
+      await stopToken(id, "para@firm.example"),
+      await declineToken("another-row", "para@firm.example"),
+      await makeUnsubscribeToken("para@firm.example", "wrong-secret", reminderDeclinePurpose(id)),
+      "x".repeat(5000),
+    ]) {
+      expect(await t.mutation(internal.reminderRecipients.declineByToken, { token, recipientId: id })).toBeNull();
+    }
+    const decline = await declineToken(id, "para@firm.example");
+    expect(await t.mutation(internal.reminderRecipients.confirmByToken, { token: decline, recipientId: id })).toBeNull();
+    expect(await t.mutation(internal.reminderRecipients.stopByToken, { token: decline, recipientId: id })).toBeNull();
+    expect((await rows(t))[0]!.status).toBe("waiting");
+    expect(await refusals(t)).toEqual([]);
+  });
+
+  it("one account invites one address twice in all, a lapsed invitation counting", async () => {
+    const { t, owner, other, caseId } = await setup();
+    // The first lapses, never confirmed.
+    expect((await owner.mutation(api.reminderRecipients.invite, { caseId, email: "para@firm.example" })).ok).toBe(true);
+    const now = Date.now();
+    const [first] = await rows(t);
+    await t.run((ctx) => ctx.db.patch(first!._id, { invitedAt: now - INVITE_MS - 1000 }));
+    await t.mutation(internal.reminderRecipients.expireInvites, { now });
+    expect(await rows(t)).toEqual([]);
+    // The second is removed by the owner.
+    expect((await owner.mutation(api.reminderRecipients.invite, { caseId, email: "para@firm.example" })).ok).toBe(true);
+    await owner.mutation(api.reminderRecipients.remove, { caseId });
+    // A third is refused, however it's typed, and writes nothing.
+    expect(await owner.mutation(api.reminderRecipients.invite, { caseId, email: "Para@Firm.example " })).toEqual({
+      ok: false,
+      message: "You've invited that address twice already, so we can't send it another invitation.",
+    });
+    expect(await rows(t)).toEqual([]);
+    expect((await counts(t)).map((c) => c.count)).toEqual([2]);
+    // Another address, or another account, isn't held by it.
+    expect((await owner.mutation(api.reminderRecipients.invite, { caseId, email: "hr@employer.example" })).ok).toBe(true);
+    await verify(t, other.userId);
+    const theirs = await t.run((ctx) => ctx.db.insert("cases", caseRow(other.userId)));
+    expect((await other.mutation(api.reminderRecipients.invite, { caseId: theirs, email: "para@firm.example" })).ok).toBe(true);
+    // The count keeps the address as the same keyed hash, never the address.
+    expect(JSON.stringify(await counts(t))).not.toContain("para");
+    await finishScheduledNow(t);
+  });
+
+  it("the account's invitation counts go with it; the refusal list stays", async () => {
+    const { t, owner } = await stopped();
+    expect(await counts(t)).toHaveLength(1);
+    await t.run((ctx) => purgeAllUserData(ctx, owner.userId));
+    expect(await counts(t)).toEqual([]);
+    expect(await refusals(t)).toHaveLength(1);
   });
 });
 
@@ -749,6 +928,21 @@ describe("the confirm and stop pages", () => {
     expect((await rows(t))[0]!.status).toBe("stopped");
   });
 
+  it("opening the decline link changes nothing; its button, or the mail app's one-click POST, declines", async () => {
+    const { t, id } = await invited();
+    const link = path("/case-alert/reminders/decline", await declineToken(id, "para@firm.example"), id);
+    const page = await t.fetch(link, { method: "GET" });
+    expect(page.status).toBe(200);
+    const html = await page.text();
+    expect(html).toContain('<form method="POST"');
+    expect(html).toContain("t invite me again");
+    expect((await rows(t))[0]!.status).toBe("waiting");
+    const done = await t.fetch(link, { method: "POST", body: "List-Unsubscribe=One-Click" });
+    expect(done.status).toBe(200);
+    expect(await done.text()).toContain("can invite this address");
+    expect((await rows(t))[0]!.status).toBe("stopped");
+  });
+
   it("answers a forged or incomplete link with a 400 and changes nothing", async () => {
     const { t, id } = await invited();
     for (const link of [
@@ -756,6 +950,8 @@ describe("the confirm and stop pages", () => {
       `/case-alert/reminders/confirm?r=${id}`,
       path("/case-alert/reminders/stop", "forged.token", id),
       path("/case-alert/reminders/stop", "x".repeat(600), id),
+      path("/case-alert/reminders/decline", "forged.token", id),
+      `/case-alert/reminders/decline?r=${id}`,
     ]) {
       const res = await t.fetch(link, { method: "POST" });
       expect(res.status, link).toBe(400);
