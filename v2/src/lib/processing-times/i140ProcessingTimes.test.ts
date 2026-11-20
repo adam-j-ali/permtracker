@@ -18,18 +18,18 @@ describe("getI140ProcessingTime", () => {
 
   it("spans the whole category when its subtypes disagree", () => {
     // EB-1 runs from an outstanding professor at 15 months to extraordinary
-    // ability at 32.5 (USCIS, read 2026-09-26). Collapsing that to one figure
+    // ability at 36 (USCIS, read 2026-11-20). Collapsing that to one figure
     // is the original bug.
     const eb1 = getI140ProcessingTime("EB-1");
     expect(eb1?.lowMonths).toBe(15);
-    expect(eb1?.highMonths).toBe(32.5);
+    expect(eb1?.highMonths).toBe(36);
     expect(eb1?.subtypes).toHaveLength(3);
   });
 
   it.each([
-    ["EB-2", 3, 3],
-    ["EB-2-NIW", 30, 30],
-    ["EB-3", 4, 25.5],
+    ["EB-2", 3.5, 3.5],
+    ["EB-2-NIW", 32, 32],
+    ["EB-3", 4.5, 26.5],
   ])("reports %s as %s to %s months", (category, low, high) => {
     const range = getI140ProcessingTime(category as I140Category);
     expect(range?.lowMonths).toBe(low);
