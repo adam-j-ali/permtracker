@@ -7,6 +7,7 @@ import { useCallback, useMemo, useState } from "react";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { onTimeline } from "@convex/lib/timelineShow";
 import { currentPage, loginHrefFor } from "@/lib/auth/returnTo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useKeptWhileLoading } from "@/hooks/useKeptWhileLoading";
@@ -88,7 +89,6 @@ export function TimelinePageClient() {
     store.setQuery(api.timeline.getPreferences, {}, {
       ...current,
       ...(args.timeRange !== undefined ? { timeRange: args.timeRange } : {}),
-      ...(args.selectedCaseIds !== undefined ? { selectedCaseIds: args.selectedCaseIds } : {}),
     });
   });
 
@@ -105,20 +105,11 @@ export function TimelinePageClient() {
     }));
   }, [allCasesRaw]);
 
-  // Get selected IDs from preferences (or all active if undefined/null)
-  const selectedIds: Set<string> = useMemo(() => {
-    if (!preferences) return new Set<string>();
-    if (preferences.selectedCaseIds === null || preferences.selectedCaseIds === undefined) {
-      // null/undefined means "all active cases" - return IDs of all non-closed cases
-      return new Set(
-        allCasesForSelection
-          .filter((c) => c.caseStatus !== "closed")
-          .map((c) => c._id)
-      );
-    }
-    // Explicit selection
-    return new Set(preferences.selectedCaseIds.map((id) => String(id)));
-  }, [preferences, allCasesForSelection]);
+  // The cases on the timeline now: each case's own switch (convex/lib/timelineShow.ts)
+  const selectedIds: Set<string> = useMemo(
+    () => new Set((allCasesRaw ?? []).filter((c) => onTimeline(c)).map((c) => String(c._id))),
+    [allCasesRaw],
+  );
 
   // Handle time range change
   const handleTimeRangeChange = useCallback(
@@ -148,24 +139,9 @@ export function TimelinePageClient() {
   // Handle saving case selection
   const handleSaveSelection = useCallback(
     async (newSelectedIds: string[]) => {
-      // If all active cases are selected, save as undefined (null) to mean "all"
-      const activeCaseIds = allCasesForSelection
-        .filter((c) => c.caseStatus !== "closed")
-        .map((c) => c._id);
-
-      const isAllActiveSelected =
-        newSelectedIds.length === activeCaseIds.length &&
-        activeCaseIds.every((id) => newSelectedIds.includes(id));
-
-      // Empty array or all active cases selected = save as null (show all active)
+      // Exactly the cases picked are on the timeline, none included: each case's switch is set to match.
       try {
-        if (newSelectedIds.length === 0 || isAllActiveSelected) {
-          await updatePreferences({ selectedCaseIds: null });
-        } else {
-          await updatePreferences({
-            selectedCaseIds: newSelectedIds as Id<"cases">[],
-          });
-        }
+        await updatePreferences({ selectedCaseIds: newSelectedIds as Id<"cases">[] });
       } catch (error) {
         handleOperationError(error, {
           userMessage: "Couldn’t save the case selection. Try again.",
@@ -175,20 +151,14 @@ export function TimelinePageClient() {
       }
       setCaseSelectorOpen(false);
     },
-    [updatePreferences, allCasesForSelection]
+    [updatePreferences]
   );
 
-  // Calculate whether there’s an explicit selection (not "all active")
-  const hasActiveSelection = useMemo(() => {
-    if (!preferences) return false;
-    // If selectedCaseIds is null or undefined, it means "all active" = no active filter
-    // If it’s an array, there’s an explicit selection
-    return (
-      preferences.selectedCaseIds !== null &&
-      preferences.selectedCaseIds !== undefined &&
-      preferences.selectedCaseIds.length > 0
-    );
-  }, [preferences]);
+  // A picked set: some case shows, or doesn't, other than by its status (every open case and no closed one)
+  const hasActiveSelection = useMemo(
+    () => (allCasesRaw ?? []).some((c) => onTimeline(c) !== (c.caseStatus !== "closed")),
+    [allCasesRaw],
+  );
 
   // Every case the picker offers, closed ones included: the picker can select a
   // closed case, so counting only open ones read "Cases 36/35" (Oct 30 2026).

@@ -23,12 +23,13 @@ import { filterBySearch, projectCaseForCard, sortCases, determineReopenStatus } 
 import { calculateDerivedDates, resolveEta9089ExpirationDate } from "./lib/derivedCalculations";
 import { validateCase, mapToValidatorFormat, calculateAutoStatus } from "./lib/perm";
 import { shouldSendEmail, formatCaseStatus, formatProgressStatus, buildUserNotificationPrefs } from "./lib/notificationHelpers";
-import { normaliseFlagCaseNumber } from "../src/lib/flagCaseNumber";
 import { scheduleCalendarSync, scheduleCalendarSyncBulk } from "./lib/calendarSyncHelpers";
 import { loggers } from "./lib/logging";
 import { recordError } from "./lib/errorRecording";
 import { deleteCaseApplicants } from "./lib/deletion";
 import { deleteCaseDocumentBlobs } from "./lib/caseDocumentBlobs";
+import { dolCaseNumberOnCreate, dolCaseNumberOnUpdate, dolNumberKey } from "./lib/dolCaseNumber";
+import { timelineSwitchForEdit, timelineSwitchForNewCase } from "./lib/timelineShow";
 
 const log = loggers.cases;
 
@@ -106,11 +107,6 @@ const DEADLINE_RELEVANT_FIELDS = [
  * use listFiltered instead.
  */
 
-/** One spelling per DOL number, so a reformatted number isn't read as a new case. */
-function dolNumberKey(n: unknown): string {
-  if (typeof n !== "string") return "";
-  return normaliseFlagCaseNumber(n)?.caseNumber ?? n.trim().toUpperCase();
-}
 
 export const list = query({
   args: {
@@ -516,7 +512,8 @@ export const create = mutation({
       tags: args.tags ?? [],
       documents: args.documents ?? [],
       calendarSyncEnabled: args.calendarSyncEnabled ?? true,
-      showOnTimeline: args.showOnTimeline ?? true,
+      // Unset unless asked off: it then follows the case, on while open (convex/lib/timelineShow.ts)
+      showOnTimeline: timelineSwitchForNewCase(args.showOnTimeline),
 
       // Optional dates
       pwdFilingDate: args.pwdFilingDate,
@@ -563,8 +560,9 @@ export const create = mutation({
       i140PremiumProcessing: args.i140PremiumProcessing,
       i140ServiceCenter: args.i140ServiceCenter,
 
-      // Optional text fields
-      caseNumber: args.caseNumber,
+      // Optional text fields. A DOL number typed only in a step's box becomes the case's DOL number, so it's
+      // watched wherever it was entered (convex/lib/dolCaseNumber.ts).
+      caseNumber: dolCaseNumberOnCreate(args),
       internalCaseNumber: args.internalCaseNumber,
       employerFein: await encryptFein(args.employerFein),
       socCode: args.socCode,
@@ -899,6 +897,23 @@ export const update = mutation({
     const updates: Record<string, unknown> = {};
     for (const [key, val] of Object.entries(rawUpdates)) {
       updates[key] = val === null ? undefined : val;
+    }
+
+    // A DOL number typed only in a step's box (the ETA 9089's or the wage
+    // request's) becomes the case's DOL number, which the watch follows.
+    const carried = dolCaseNumberOnUpdate(caseDoc!, {
+      caseNumber: "caseNumber" in updates ? (updates.caseNumber as string | undefined) : caseDoc!.caseNumber,
+      eta9089CaseNumber:
+        "eta9089CaseNumber" in updates ? (updates.eta9089CaseNumber as string | undefined) : caseDoc!.eta9089CaseNumber,
+      pwdCaseNumber: "pwdCaseNumber" in updates ? (updates.pwdCaseNumber as string | undefined) : caseDoc!.pwdCaseNumber,
+    });
+    if (carried !== null) updates.caseNumber = carried;
+
+    // The timeline switch the form sends back unchanged is no change: an unset one keeps following the case.
+    if ("showOnTimeline" in updates) {
+      const next = timelineSwitchForEdit(caseDoc!, updates.showOnTimeline as boolean | undefined);
+      if (next === "keep") delete updates.showOnTimeline;
+      else updates.showOnTimeline = next;
     }
 
     // A different DOL number is a different DOL case: its live status starts
@@ -2542,7 +2557,7 @@ export const importCases = mutation({
           createdAt: e.createdAt ?? now,
         })),
         calendarSyncEnabled: caseData.calendarSyncEnabled ?? true,
-        showOnTimeline: caseData.showOnTimeline ?? true,
+        showOnTimeline: timelineSwitchForNewCase(caseData.showOnTimeline),
 
         // Optional dates
         pwdFilingDate: caseData.pwdFilingDate,
@@ -2587,8 +2602,8 @@ export const importCases = mutation({
         i140PremiumProcessing: caseData.i140PremiumProcessing,
         i140ServiceCenter: caseData.i140ServiceCenter,
 
-        // Optional text fields
-        caseNumber: caseData.caseNumber,
+        // Optional text fields (the DOL number as in create: convex/lib/dolCaseNumber.ts)
+        caseNumber: dolCaseNumberOnCreate(caseData),
         internalCaseNumber: caseData.internalCaseNumber,
         employerFein: await encryptFein(caseData.employerFein),
         socCode: caseData.socCode,

@@ -3,18 +3,21 @@
  *
  * Provides functions for the case timeline visualization feature:
  * 1. getPreferences - Get user's timeline preferences (or defaults)
- * 2. updatePreferences - Update selectedCaseIds and/or timeRange
- * 3. addCaseToTimeline - Add single case to selected list
- * 4. removeCaseFromTimeline - Remove single case from selected list
+ * 2. updatePreferences - Save the range, and set which cases the timeline shows
+ * 3. addCaseToTimeline - Put one case on the timeline
+ * 4. removeCaseFromTimeline - Take one case off it
+ *
+ * Which cases show is each case's own switch (convex/lib/timelineShow.ts).
  * 5. getCasesForTimeline - Get cases with all timeline-relevant data
  */
 
-import { query, mutation } from "./_generated/server";
+import { query, mutation, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { getCurrentUserId, getCurrentUserIdOrNull } from "./lib/auth";
 import { readUserCases } from "./lib/userCases";
 import { caseDeadlineDates, type CaseDeadlineDates } from "./lib/caseDates";
+import { onTimeline, timelineSwitchFor } from "./lib/timelineShow";
 
 /**
  * Timeline time range type
@@ -57,15 +60,38 @@ export const getPreferences = query({
     }
 
     return {
-      selectedCaseIds: preferences.selectedCaseIds ?? null,
+      // Retired: which cases show is each case's own switch now (convex/lib/timelineShow.ts). Kept in the answer
+      // for a page built before Nov 20 2026, which reads null as "every open case".
+      selectedCaseIds: null,
       timeRange: preferences.timeRange,
     };
   },
 });
 
 /**
- * Update user's timeline preferences
- * Creates preferences if they don't exist, otherwise updates
+ * Patch one case's timeline switch when it changes what the timeline shows. Patching to undefined deletes the field,
+ * which is what an unset switch is. A view choice, so the case's own "updated" time stays as it was.
+ */
+async function setCaseOnTimeline(ctx: MutationCtx, c: Doc<"cases">, show: boolean): Promise<void> {
+  if (onTimeline(c) === show) return;
+  await ctx.db.patch(c._id, { showOnTimeline: timelineSwitchFor(c, show) });
+}
+
+/** The signed-in person's live case by id, or a "Case not found" error. */
+async function ownCase(ctx: MutationCtx, userId: Id<"users">, caseId: Id<"cases">): Promise<Doc<"cases">> {
+  const caseDoc = await ctx.db.get(caseId);
+  if (!caseDoc || caseDoc.userId !== userId || caseDoc.deletedAt !== undefined) {
+    throw new Error("Case not found");
+  }
+  return caseDoc;
+}
+
+/**
+ * Save the timeline's range, and which cases it shows.
+ *
+ * `selectedCaseIds` sets each case's own switch (convex/lib/timelineShow.ts): the cases listed are on the timeline and
+ * every other case is off it, an empty list included. `null` puts every case back to following its status (on while
+ * open). The list itself is no longer stored.
  */
 export const updatePreferences = mutation({
   args: {
@@ -76,177 +102,64 @@ export const updatePreferences = mutation({
     const userId = await getCurrentUserId(ctx);
     const now = Date.now();
 
-    // Query for existing preferences
+    if (args.selectedCaseIds !== undefined) {
+      const { cases } = await readUserCases(ctx, userId);
+      const shown = args.selectedCaseIds === null ? null : new Set<string>(args.selectedCaseIds);
+      for (const c of cases) {
+        if (shown === null) {
+          if (c.showOnTimeline !== undefined) await ctx.db.patch(c._id, { showOnTimeline: undefined });
+        } else {
+          await setCaseOnTimeline(ctx, c, shown.has(c._id));
+        }
+      }
+    }
+
     const existingPreferences = await ctx.db
       .query("timelinePreferences")
       .withIndex("by_user_id", (q) => q.eq("userId", userId))
       .first();
 
     if (existingPreferences) {
-      // Update existing preferences
-      const updates: Partial<{
-        selectedCaseIds: Id<"cases">[] | undefined;
-        timeRange: TimeRange;
-        updatedAt: number;
-      }> = { updatedAt: now };
-
-      // Only update fields that are provided
-      if (args.selectedCaseIds !== undefined) {
-        updates.selectedCaseIds = args.selectedCaseIds === null ? undefined : args.selectedCaseIds;
-      }
-      if (args.timeRange !== undefined) {
-        updates.timeRange = args.timeRange;
-      }
-
-      await ctx.db.patch(existingPreferences._id, updates);
-      return existingPreferences._id;
-    } else {
-      // Create new preferences
-      const preferencesId = await ctx.db.insert("timelinePreferences", {
-        userId: userId,
-        selectedCaseIds: args.selectedCaseIds === null ? undefined : args.selectedCaseIds,
-        timeRange: args.timeRange ?? DEFAULT_TIME_RANGE,
-        createdAt: now,
+      await ctx.db.patch(existingPreferences._id, {
         updatedAt: now,
+        ...(args.timeRange !== undefined ? { timeRange: args.timeRange } : {}),
+        // A list saved before the switch became the one store is retired once the cases carry it.
+        ...(args.selectedCaseIds !== undefined ? { selectedCaseIds: undefined } : {}),
       });
-      return preferencesId;
+      return existingPreferences._id;
     }
+    return await ctx.db.insert("timelinePreferences", {
+      userId: userId,
+      timeRange: args.timeRange ?? DEFAULT_TIME_RANGE,
+      createdAt: now,
+      updatedAt: now,
+    });
   },
 });
 
-/**
- * Add a single case to the timeline selection
- * If selectedCaseIds is null (all cases), creates explicit list with all current active cases + new case
- */
+/** Put one case on the timeline (the case page's menu). */
 export const addCaseToTimeline = mutation({
   args: {
     caseId: v.id("cases"),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const userId = await getCurrentUserId(ctx);
-    const now = Date.now();
-
-    // Verify the case exists and belongs to user
-    const caseDoc = await ctx.db.get(args.caseId);
-    if (!caseDoc || caseDoc.userId !== userId || caseDoc.deletedAt !== undefined) {
-      throw new Error("Case not found");
-    }
-
-    // Get existing preferences
-    const existingPreferences = await ctx.db
-      .query("timelinePreferences")
-      .withIndex("by_user_id", (q) => q.eq("userId", userId))
-      .first();
-
-    if (!existingPreferences) {
-      // No preferences exist - create with just this case selected
-      const preferencesId = await ctx.db.insert("timelinePreferences", {
-        userId: userId,
-        selectedCaseIds: [args.caseId],
-        timeRange: DEFAULT_TIME_RANGE,
-        createdAt: now,
-        updatedAt: now,
-      });
-      return preferencesId;
-    }
-
-    // Get current selected case IDs
-    let currentSelection = existingPreferences.selectedCaseIds;
-
-    if (currentSelection === undefined) {
-      // null/undefined means "all cases" - we need to get all active cases and add this one
-      const { cases: allCases } = await readUserCases(ctx, userId);
-
-      const activeCaseIds = allCases
-        .filter((c) => c.caseStatus !== "closed")
-        .map((c) => c._id);
-
-      // Add the new case if not already included
-      if (!activeCaseIds.includes(args.caseId)) {
-        activeCaseIds.push(args.caseId);
-      }
-
-      currentSelection = activeCaseIds;
-    } else {
-      // Explicit list - add if not already included
-      if (!currentSelection.includes(args.caseId)) {
-        currentSelection = [...currentSelection, args.caseId];
-      }
-    }
-
-    await ctx.db.patch(existingPreferences._id, {
-      selectedCaseIds: currentSelection,
-      updatedAt: now,
-    });
-
-    return existingPreferences._id;
+    await setCaseOnTimeline(ctx, await ownCase(ctx, userId, args.caseId), true);
+    return null;
   },
 });
 
-/**
- * Remove a single case from the timeline selection
- */
+/** Take one case off the timeline (the case page's menu). */
 export const removeCaseFromTimeline = mutation({
   args: {
     caseId: v.id("cases"),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const userId = await getCurrentUserId(ctx);
-    const now = Date.now();
-
-    // Get existing preferences
-    const existingPreferences = await ctx.db
-      .query("timelinePreferences")
-      .withIndex("by_user_id", (q) => q.eq("userId", userId))
-      .first();
-
-    if (!existingPreferences) {
-      // No preferences - nothing to remove from
-      // Create preferences with all active cases except this one
-      const { cases: allCases } = await readUserCases(ctx, userId);
-
-      const activeCaseIds = allCases
-        .filter(
-          (c) =>
-            c.caseStatus !== "closed" &&
-            c._id !== args.caseId
-        )
-        .map((c) => c._id);
-
-      const preferencesId = await ctx.db.insert("timelinePreferences", {
-        userId: userId,
-        selectedCaseIds: activeCaseIds,
-        timeRange: DEFAULT_TIME_RANGE,
-        createdAt: now,
-        updatedAt: now,
-      });
-      return preferencesId;
-    }
-
-    let currentSelection = existingPreferences.selectedCaseIds;
-
-    if (currentSelection === undefined) {
-      // null/undefined means "all cases" - get all active cases except this one
-      const { cases: allCases } = await readUserCases(ctx, userId);
-
-      currentSelection = allCases
-        .filter(
-          (c) =>
-            c.caseStatus !== "closed" &&
-            c._id !== args.caseId
-        )
-        .map((c) => c._id);
-    } else {
-      // Explicit list - remove the case
-      currentSelection = currentSelection.filter((id) => id !== args.caseId);
-    }
-
-    await ctx.db.patch(existingPreferences._id, {
-      selectedCaseIds: currentSelection,
-      updatedAt: now,
-    });
-
-    return existingPreferences._id;
+    await setCaseOnTimeline(ctx, await ownCase(ctx, userId, args.caseId), false);
+    return null;
   },
 });
 
@@ -280,7 +193,7 @@ interface TimelineCaseData extends CaseDeadlineDates {
 
 /**
  * Get cases with all timeline-relevant data
- * Filters based on user preferences (selectedCaseIds, timeRange)
+ * The cases whose own switch puts them on the timeline
  */
 export const getCasesForTimeline = query({
   args: {
@@ -293,29 +206,11 @@ export const getCasesForTimeline = query({
       return [];
     }
 
-    // Get user's preferences
-    const preferences = await ctx.db
-      .query("timelinePreferences")
-      .withIndex("by_user_id", (q) => q.eq("userId", userId))
-      .first();
-
     // Live cases, newest first (convex/lib/userCases.ts)
     const { cases: allCases } = await readUserCases(ctx, userId);
 
-    // Leave out cases hidden from the timeline
-    let filteredCases = allCases.filter((c) => c.showOnTimeline !== false);
-
-    // Apply selection filter
-    const selectedCaseIds = preferences?.selectedCaseIds;
-    if (selectedCaseIds !== undefined && selectedCaseIds.length > 0) {
-      // Explicit list of selected cases
-      const selectedSet = new Set(selectedCaseIds);
-      filteredCases = filteredCases.filter((c) => selectedSet.has(c._id));
-    } else if (selectedCaseIds === undefined) {
-      // null/undefined means all active (non-closed) cases
-      filteredCases = filteredCases.filter((c) => c.caseStatus !== "closed");
-    }
-    // Note: empty array means no cases selected
+    // Each case's own switch, unset meaning on while open (convex/lib/timelineShow.ts)
+    const filteredCases = allCases.filter((c) => onTimeline(c));
 
     // Map to timeline data format
     return filteredCases.map((caseDoc) => ({

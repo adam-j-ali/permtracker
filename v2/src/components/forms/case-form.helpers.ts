@@ -4,6 +4,7 @@
  * Default values and utility functions for form initialization and validation.
  */
 
+import { onTimeline } from "@convex/lib/timelineShow";
 import type { CaseFormData } from "@/lib/forms/case-form-schema";
 
 // ============================================================================
@@ -65,7 +66,8 @@ export function initializeFormData(
     isProfessionalOccupation: base.isProfessionalOccupation ?? false,
     isFavorite: base.isFavorite ?? false,
     calendarSyncEnabled: base.calendarSyncEnabled ?? true,
-    showOnTimeline: base.showOnTimeline ?? true,
+    // What the timeline shows for this case: its own switch, or on while it's open (convex/lib/timelineShow.ts)
+    showOnTimeline: onTimeline({ showOnTimeline: base.showOnTimeline, caseStatus: base.caseStatus || "pwd" }),
     priorityLevel: base.priorityLevel || "normal",
     notes: base.notes || [],
     tags: base.tags || [],
