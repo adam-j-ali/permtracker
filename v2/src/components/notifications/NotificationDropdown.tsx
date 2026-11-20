@@ -421,7 +421,7 @@ export default function NotificationDropdown() {
         <footer
           className={cn(
             "border-t-2 border-border",
-            "px-4 py-2.5 text-center"
+            "flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2.5"
           )}
         >
           {isOnNotificationsPage ? (
@@ -456,7 +456,13 @@ export default function NotificationDropdown() {
                 <ArrowRightIcon className="size-4 transition-transform duration-150 motion-safe:group-hover:translate-x-1" weight="bold" aria-hidden="true" />
               )}
             </Link>
-          )}
+          )}{" "}
+          <Link
+            href="/settings?tab=notifications"
+            className="inline-flex min-h-11 items-center font-heading text-sm font-semibold text-muted-foreground transition-colors hover:text-primary-text"
+          >
+            Notification settings
+          </Link>
         </footer>
       )}
     </div>
