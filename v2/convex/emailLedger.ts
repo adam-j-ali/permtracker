@@ -31,6 +31,7 @@ import {
   utcDay,
 } from "./lib/emailLimits";
 import { createLogger } from "./lib/logging";
+import { reminderRetryStillWanted } from "./lib/reminderRecipientStore";
 import { MS_PER_MINUTE } from "./lib/time";
 
 const log = createLogger("EmailLedger");
@@ -168,7 +169,11 @@ export const hasDueRetry = internalQuery({
   },
 });
 
-/** Drop retries past two weeks (counted as lost), then claim up to `limit` that are due. */
+/**
+ * Drop retries past two weeks (counted as lost), then claim up to `limit` that are due. A due retry for a case's
+ * second reminder recipient who's gone, stopped, or no longer has that address is deleted instead, uncounted: the
+ * person said no or was removed, and the email was never owed (reminderRetryStillWanted).
+ */
 export const claimRetries = internalMutation({
   args: { limit: v.number() },
   returns: v.array(v.object({ id: v.id("emailRetries"), kind: v.string(), payload: v.string() })),
@@ -192,6 +197,12 @@ export const claimRetries = internalMutation({
     for (const r of due) {
       if (out.length >= args.limit) break;
       if (r.claimedAt !== undefined && now - r.claimedAt < CLAIM_LEASE_MS) continue;
+      // Mail for a case's second person goes only while that person is still there to get it.
+      if (!(await reminderRetryStillWanted(ctx, r))) {
+        await ctx.db.delete(r._id);
+        log.info("dropped a queued email for a second reminder recipient who is gone", { kind: r.kind });
+        continue;
+      }
       await ctx.db.patch(r._id, { claimedAt: now, attempts: r.attempts + 1 });
       out.push({ id: r._id, kind: r.kind, payload: r.payload });
     }

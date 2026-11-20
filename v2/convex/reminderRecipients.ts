@@ -74,9 +74,12 @@ import { recordError } from "./lib/errorRecording";
 import { SITE_URL } from "./lib/links";
 import { createLogger } from "./lib/logging";
 import { checkAndRecordRateLimit } from "./lib/rateLimit";
+import { liveCase } from "./lib/reminderRecipientStore";
 import {
   INVITE_MS,
+  REMINDER_COPY_KIND,
   REMINDER_INVITES_PER_ADDRESS,
+  REMINDER_INVITE_KIND,
   confirmUrl,
   declineUrl,
   inviterName,
@@ -215,15 +218,6 @@ async function inviterFor(ctx: QueryCtx | MutationCtx, userId: Id<"users">): Pro
     }
   }
   return inviterName(fullName, user?.name);
-}
-
-/** The case a row is for, while it's live and its account is too; null otherwise. */
-async function liveCase(ctx: QueryCtx | MutationCtx, row: Doc<"reminderRecipients">): Promise<Doc<"cases"> | null> {
-  const caseDoc = await ctx.db.get("cases", row.caseId);
-  if (!caseDoc || caseDoc.userId !== row.userId || caseDoc.deletedAt !== undefined) return null;
-  const user = await ctx.db.get("users", row.userId);
-  if (!user || user.deletedAt !== undefined) return null;
-  return caseDoc;
 }
 
 /** The row a link names, by its id as the link carries it; null for one that isn't an id of this table. */
@@ -412,7 +406,7 @@ export const sendInvite = internalAction({
       }
       const result = await sendOrQueue(
         ctx,
-        "reminder-invite",
+        REMINDER_INVITE_KIND,
         getResend(),
         {
           from: FROM_EMAIL,
@@ -642,7 +636,7 @@ export const sendCopy = internalAction({
       }
       const result = await sendOrQueue(
         ctx,
-        "reminder-copy",
+        REMINDER_COPY_KIND,
         getResend(),
         {
           from: FROM_EMAIL,
