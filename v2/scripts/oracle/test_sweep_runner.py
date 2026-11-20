@@ -103,7 +103,7 @@ def scripts_run(calls: list[str]) -> list[str]:
     out = []
     for c in calls:
         m = re.match(r"python3 scripts/(\S+\.py)((?: --[a-z-]+(?: \d+)?)*)", c)
-        if m and m.group(1) != "record_ingest_failure.py":
+        if m and m.group(1) not in ("record_ingest_failure.py", "purge_edge.py"):
             out.append((m.group(1) + m.group(2)).strip())
     return out
 
@@ -117,7 +117,26 @@ def expired(calls: list[str]) -> list[str]:
     return [m.group(1) for c in calls if (m := re.search(r"/api/(revalidate-[a-z-]+)", c))]
 
 
+def purged(calls: list[str]) -> bool:
+    """Whether the edge purge ran, and only after the sweep's pages were expired."""
+    at = [i for i, c in enumerate(calls) if "scripts/purge_edge.py" in c]
+    exp = [i for i, c in enumerate(calls) if "/api/revalidate-sweep" in c]
+    return len(at) == 1 and bool(exp) and exp[0] < at[0]
+
+
 def main() -> int:
+    # 0. After the sweep's pages are expired, Cloudflare's copies of them are dropped (purge_edge.py), and a refused
+    # purge ends the run red while every step before it still ran.
+    code, calls, out = run("case-status-active", next_sweep_min=600)
+    check("a daytime pass drops Cloudflare's copies of the pages it expired, after expiring them",
+          code == 0 and purged(calls), f"{code} {[c for c in calls if 'purge' in c or 'revalidate' in c]}")
+    code, calls, out = run("case-status-pending", fail="purge_edge.py")
+    check("a refused purge ends the run red, with the pass and its builders run",
+          code != 0 and scripts_run(calls)[:1] == ["ingest_case_status_direct.py --pending"] and purged(calls)
+          and any("record_ingest_failure.py" in c and "purge_edge.py" in c for c in calls), f"{code} {out[-300:]}")
+    code, calls, out = run("case-status-pending", fail="build_filings_by_day.py")
+    check("no purge when the pages weren't expired", not any("purge_edge.py" in c for c in calls), str(calls[-5:]))
+
     # 1. The passes keep their order.
     code, calls, out = run("case-status-pending")
     check("a pending pass runs the pass, the builders, the filings by day, in that order",
