@@ -174,6 +174,16 @@ def main() -> int:
           and rec["visa_issued"] == "2025-07-24" and rec["consular_outcome"] == "issued",
           "a consulate interview is the consular one in the merge, and a ready visa is an issued one")
 
+    # Tab names as Google writes them on the sheet's page: JavaScript escapes, then HTML entities.
+    page = ('items.push({name: "June \\x2725", pageUrl: "x", gid: "11"}); '
+            'items.push({name: "R\\u0026D \\/ misc", pageUrl: "x", gid: "12"}); '
+            'items.push({name: "Q\\"s &amp; A", pageUrl: "x", gid: "13"});')
+    check(cs.tabs_in(page) == [("June '25", "11"), ("R&D / misc", "12"), ('Q"s & A', "13")],
+          f"tab names read as written: {cs.tabs_in(page)}")
+    first = next(x for x in cs.load_config() if x["key"] == "i485-status-first")
+    check(cs.chosen_tabs(first, cs.tabs_in(page)) == [("June '25", "11", None)],
+          "the live config's month tabs match a name Google escaped")
+
     print("ALL PASS" if not failures else f"{failures} FAILED")
     return 1 if failures else 0
 
