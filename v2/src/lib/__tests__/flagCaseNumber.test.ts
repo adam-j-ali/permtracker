@@ -54,6 +54,8 @@ describe("programOf", () => {
       // through to PERM.
       ["I-201-26125-868956", "lca"],
       ["I-202-26125-868956", "lca"],
+      // DOL's FY2008 file prints e-file numbers with no visa segment (lca_cases_history, read Nov 20 2026).
+      ["I-07135-3458699", "lca"],
       // H-2A, H-2B and the H-2B wage request, on the same counter (Oct 1 2026).
       ["H-300-26272-266803", "seasonal"],
       ["H-400-26050-650195", "seasonal"],
@@ -216,9 +218,10 @@ describe("the prefix rules", () => {
       pwd.includes("/^P-(?:100|200|201|202|203)-\\d{5}-\\d+$/"),
       "pwdCases.ts no longer uses the same prefix pattern as flagCaseNumber.ts",
     ).toBe(true);
+    // The LCA reader takes the one rule from here (both shapes, Nov 20 2026), so there's no copy to drift.
     expect(
-      lca.includes("/^I-\\d{3}-\\d{5}-\\d+$/"),
-      "lcaCases.ts no longer uses the same prefix pattern as flagCaseNumber.ts",
+      lca.includes("numberRe: LCA_NUMBER_RE") && lca.includes('import { LCA_NUMBER_RE } from "@/lib/flagCaseNumber"'),
+      "lcaCases.ts no longer takes its number rule from flagCaseNumber.ts",
     ).toBe(true);
   });
 });

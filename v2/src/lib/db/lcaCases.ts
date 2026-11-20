@@ -1,5 +1,6 @@
 import "server-only";
 import { wageRequestNumber } from "@/lib/caseLinks";
+import { LCA_NUMBER_RE } from "@/lib/flagCaseNumber";
 import { one } from "./client";
 import { makeFlagProgram } from "./flagCases";
 
@@ -25,7 +26,7 @@ export const LCA_FINAL_STATUSES: ReadonlySet<string> = new Set([
 export const lca = makeFlagProgram({
   key: "lca",
   table: "lca_case_status",
-  numberRe: /^I-\d{3}-\d{5}-\d+$/,
+  numberRe: LCA_NUMBER_RE,
   finalStatuses: LCA_FINAL_STATUSES,
   docKey: "lca_live_summary",
   discoverySource: "flag.dol.gov/recaptcha/caseStatus (DOL, via lookup)",
