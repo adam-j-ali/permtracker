@@ -18,7 +18,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 from entity_identity import entity_key  # noqa: E402
 from lib_db import QUARTERLY_FILE_MAX_AGE_DAYS, Database, insert_rows, query_rows, stamp_freshness  # noqa: E402
-from lib_slugs import plan_aliases, plan_sticky_slugs, with_aliases  # noqa: E402
+from lib_slugs import carry_vanished, plan_aliases, plan_sticky_slugs, with_aliases  # noqa: E402
 
 SCHEMA = [
     # Only these two are rebuilt wholesale: every row in them is derived from the
@@ -192,6 +192,15 @@ def main() -> int:
     except Exception:  # noqa: BLE001 - first run: no table yet
         pass
     log(f"  prior entities: {sum(len(v) for v in prior_slug.values()):,} slugs held")
+    # The full prior rows, for an entity whose cases left DOL's newest file but stay stored (lib_slugs.carry_vanished).
+    prior_rows: dict[tuple[str, str], tuple] = {}
+    try:
+        for r in query_rows(db, "SELECT kind, slug, name, merge_key, total, certified, denied, median_days, "
+                                "median_annual_wage, state, code FROM perm_entities"):
+            prior_rows[(r[0], r[1])] = tuple(r)
+    except Exception:  # noqa: BLE001 - first run: no table yet
+        pass
+    carried: dict[str, list[tuple]] = {}
 
     planned: dict[str, list] = {}
     alias_rows: list[tuple[str, str, str]] = []
@@ -216,7 +225,14 @@ def main() -> int:
         key_slug = with_aliases(key_slug, (payload.get("keyAliases") or {}).get(kind) or {})
         aliases, unresolved = plan_aliases(vanished, prior_key.get(kind, {}), key_slug)
         alias_rows.extend((kind, old, target) for old, target in aliases)
-        unresolved_all.extend((kind, old) for old in unresolved)
+        kept, refused = carry_vanished([u for u in unresolved if (kind, u) in prior_rows],
+                                       total_prior=len(prior_slug.get(kind, {})))
+        refused += [u for u in unresolved if (kind, u) not in prior_rows]
+        carried[kind] = [prior_rows[(kind, u)] for u in kept]
+        if kept:
+            log(f"    {kind:11s} {len(kept):,} kept from their prior rows: their cases left DOL's newest file and "
+                f"stay stored ({', '.join(kept[:5])}{'...' if len(kept) > 5 else ''})")
+        unresolved_all.extend((kind, old) for old in refused)
         planned[kind] = [(slug, name_of(item), item) for slug, item in assigned]
         # Counted by the same key the planner used (an occupation's key carries
         # its SOC code), so the log's kept and new counts are true.
@@ -248,6 +264,10 @@ def main() -> int:
                 item.get("medianDays"), item.get("medianAnnualWage"),
                 item.get("state"), item.get("code"),
             ))
+        # Then the entities kept from their prior rows, ranked after this run's.
+        for i, row in enumerate(carried.get(kind, []), start=len(out) + 1):
+            _k, slug, name, key, total, certified, denied, days, wage, state, code = row
+            out.append((kind, slug, name, key, i, int(total or 0), certified, denied, days, wage, state, code))
         n = insert_rows(db, "perm_entities_next",
                         ["kind", "slug", "name", "merge_key", "rank", "total",
                          "certified", "denied", "median_days",

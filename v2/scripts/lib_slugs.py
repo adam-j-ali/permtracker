@@ -118,3 +118,19 @@ def plan_aliases(vanished: list[str], prior_key: dict[str, str],
         else:
             unresolved.append(old)
     return aliases, unresolved
+
+
+# Up to this share of a kind's prior entities may leave DOL's newest file and keep their pages. More reads as a
+# change in how names are matched, which must be looked at, so the load refuses.
+CARRY_SHARE = 0.01
+
+
+def carry_vanished(unresolved: list[str], total_prior: int) -> tuple[list[str], list[str]]:
+    """(slugs kept with their prior entity row, slugs the load must refuse over). A slug no entity holds this run
+    and no alias reaches is an entity whose cases left DOL's newest file (Nov 20 2026: FY2026 Q4 dropped 88
+    employers' only cases, denials DOL took back). Its cases stay stored, so its page stays, from its prior row."""
+    if not unresolved:
+        return [], []
+    if len(unresolved) <= max(1, int(total_prior * CARRY_SHARE)):
+        return list(unresolved), []
+    return [], list(unresolved)

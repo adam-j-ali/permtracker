@@ -13,7 +13,7 @@ import pathlib
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from lib_slugs import plan_aliases, plan_sticky_slugs, with_aliases, with_unique_slugs  # noqa: E402
+from lib_slugs import carry_vanished, plan_aliases, plan_sticky_slugs, with_aliases, with_unique_slugs  # noqa: E402
 from db_migrate_public import prior_maps  # noqa: E402
 
 FAILURES: list[str] = []
@@ -139,6 +139,14 @@ def main() -> int:
     ks3 = with_aliases({"bigpanda": "bigpanda-inc"}, {"bigpanda": "big panda", "big panda inc": "big panda"})
     check("the canonical key reaches the page named by a minority spelling", ks3.get("big panda"), "bigpanda-inc")
     check("and so does every other spelling of the group", ks3.get("big panda inc"), "bigpanda-inc")
+
+    # An entity whose cases left DOL's newest file keeps its page (Nov 20 2026: 88 employers, each one denied case DOL
+    # dropped from FY2026 Q4, would have turned into 404s); a loss past 1% of a kind reads as a matching change and
+    # still refuses.
+    kept, refused = carry_vanished(["a", "b"], total_prior=1000)
+    check("a small loss is kept", (kept, refused), (["a", "b"], []))
+    kept, refused = carry_vanished([str(i) for i in range(11)], total_prior=1000)
+    check("a loss past 1% refuses", (len(kept), len(refused)), (0, 11))
 
     print()
     print(f"{CHECKS} checks")
