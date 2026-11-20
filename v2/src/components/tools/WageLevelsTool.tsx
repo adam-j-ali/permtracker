@@ -158,9 +158,12 @@ const STATES = Object.entries(US_STATE_NAMES)
 
 export function WageLevelsTool({
   initialSoc = "",
+  initialState = "",
   ruleStage = null,
 }: {
   initialSoc?: string;
+  /** A two-letter state to start on (a case's job state, from its job card's link); "" for none. */
+  initialState?: string;
   /** Where DOL's proposed wage rule stands, from the rule watch, for the "under the proposal" table. */
   ruleStage?: WageRuleStage | null;
 }) {
@@ -168,7 +171,7 @@ export function WageLevelsTool({
   const areaId = useId();
   const socId = useId();
   const currentSeries = useMemo(() => seriesYearFor(easternDay()), []);
-  const [state, setState] = useState("");
+  const [state, setState] = useState(initialState);
   const [seriesYear, setSeriesYear] = useState(currentSeries);
   const [area, setArea] = useState("");
   const [soc, setSoc] = useState(initialSoc);

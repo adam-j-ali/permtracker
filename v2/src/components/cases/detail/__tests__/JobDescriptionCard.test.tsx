@@ -46,6 +46,18 @@ describe("JobDescriptionCard", () => {
     expect(link).toHaveAttribute("target", "_blank");
   });
 
+  it("links the job's code and state to DOL's four wages and the likely level, or the PWD's own level beside them", () => {
+    render(<JobDescriptionCard caseData={caseData({ socCode: "15-1252", jobOrderState: "CA" })} />);
+    expect(screen.getByRole("link", { name: "Estimate the wage level and see DOL's four wages" })).toHaveAttribute(
+      "href", "/tools/wage-levels?soc=15-1252&state=CA");
+  });
+
+  it("compares a set wage with the four levels once the PWD names its level", () => {
+    render(<JobDescriptionCard caseData={caseData({ socCode: "15-1252", pwdWageLevel: "Level II" })} />);
+    expect(screen.getByRole("link", { name: "Compare this wage with DOL's four levels" })).toHaveAttribute(
+      "href", "/tools/wage-levels?soc=15-1252");
+  });
+
   it("draws the description as written: paragraphs, and lines starting with a dash as a list", () => {
     render(<JobDescriptionCard caseData={caseData({ jobDescription: "Develop software.\n\n- Analyze needs.\n- Write code." })} />);
     expect(screen.getByText("Develop software.")).toBeInTheDocument();

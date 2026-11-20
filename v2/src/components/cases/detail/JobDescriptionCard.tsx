@@ -135,7 +135,10 @@ export function JobDescriptionCard({ caseData, jobDescProps }: { caseData: CaseD
           {/* DOL's four wages for this job code in any area, and the level the job will likely get by DOL's own
               method (src/lib/wageLevelEstimate.ts), on the public tool with the code filled in. */}
           <p className="mt-3 text-sm">
-            <Link href={`/tools/wage-levels?soc=${encodeURIComponent(caseData.socCode)}`} className="link font-bold">
+            <Link
+              href={`/tools/wage-levels?soc=${encodeURIComponent(caseData.socCode)}${caseData.jobOrderState ? `&state=${encodeURIComponent(caseData.jobOrderState)}` : ""}`}
+              className="link font-bold"
+            >
               {caseData.pwdWageLevel ? "Compare this wage with DOL's four levels" : "Estimate the wage level and see DOL's four wages"}
             </Link>
           </p>
