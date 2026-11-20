@@ -1,5 +1,5 @@
 {
-  "about": "Public community sheets people keep their own green card cases in, loaded by scripts/ingest_community_sheets.py. The username and receipt-number columns never leave the sheet.",
+  "about": "Public community sheets people keep their own green card cases in (I-485s at USCIS offices, I-140s, and immigrant visas at consulates), loaded hourly by scripts/ingest_community_sheets.py. Usernames, names, profile links, receipt numbers and blocks, comments and free text never leave the sheet.",
   "sheets": [
     {
       "key": "sfv-filers",
@@ -9,7 +9,405 @@
       "gid": "0",
       "shared": "2026-09-15",
       "shared_where": "r/EB2 and r/USCIS_EB3",
+      "min_rows": 50,
+      "headers": {
+        "category": [
+          "Status"
+        ],
+        "receipt_date": [
+          "RD"
+        ],
+        "approval_date": [
+          "Approval"
+        ]
+      },
+      "required": [
+        "category",
+        "receipt_date",
+        "transfer_date",
+        "approval_date"
+      ]
+    },
+    {
+      "key": "i485-status-2026",
+      "name": "I-485 Status Update Sheet",
+      "sheet_id": "1XnvWM3eA_RDXRDrZ54Opp4d7gi8qR-zx03AzOBsB8p0",
+      "tabs": [
+        {
+          "match": "^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]* ?'?\\d{2}$"
+        }
+      ],
+      "shared": "2026-11-14",
+      "shared_where": "r/EB2NIW_I485_AOS",
+      "min_rows": 300
+    },
+    {
+      "key": "i485-status-locked",
+      "name": "I-485 Status Filer (locked copy)",
+      "sheet_id": "1a4s5ArJCJK43SpN0RZXxRa6PZaW-IUNe",
+      "tabs": [
+        {
+          "match": "^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]* ?'?\\d{2}$"
+        }
+      ],
+      "shared_where": "r/EB2NIW_I485_AOS",
+      "min_rows": 300
+    },
+    {
+      "key": "i485-status-first",
+      "name": "I-485 Status Filer (first copy)",
+      "sheet_id": "1rg0ZqadJ3_fd8pWQ9WoDpzZCU6KQEJ5vX1vUkd0DKXI",
+      "tabs": [
+        {
+          "match": "^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]* ?'?\\d{2}$"
+        }
+      ],
+      "shared_where": "r/EB2NIW_I485_AOS",
+      "min_rows": 150
+    },
+    {
+      "key": "discord-eb-aos",
+      "name": "USCIS EB AOS (Discord)",
+      "sheet_id": "1FKPCx473VXDQlOqUlHkfEBbi5p_lJ0opUQWaFvAK548",
+      "tabs": [
+        {
+          "match": "^TimeLine$"
+        }
+      ],
+      "shared_where": "the EB Based AOS Discord",
+      "min_rows": 500,
+      "headers": {
+        "category": [
+          "column 1"
+        ],
+        "row": [
+          "category"
+        ],
+        "ignore": [
+          "rfe",
+          "last api update"
+        ]
+      }
+    },
+    {
+      "key": "eb-interview-list",
+      "name": "EB Interview List",
+      "sheet_id": "1Pa0WJQJVsjln7v8f8i1IcaNFwhsj5slvr2CMgGrHgqw",
+      "tabs": [
+        {
+          "match": "^Interview Table$"
+        }
+      ],
+      "required": [
+        "interview_date"
+      ],
+      "shared_where": "the EB Based AOS Discord and Reddit",
+      "min_rows": 40
+    },
+    {
+      "key": "la-fo-2026",
+      "name": "EB AOS LA Field Office Transfer in 2026",
+      "sheet_id": "1yyrV9svibgm2UjTd6wbIRu4threg3RzOfZmwLFjlCLA",
+      "tabs": [
+        {
+          "match": "^LA$",
+          "office": "LOS"
+        },
+        {
+          "match": "^LA County$",
+          "office": "LAC"
+        }
+      ],
+      "shared_where": "r/USCIS",
+      "min_rows": 120
+    },
+    {
+      "key": "la-fo-2025",
+      "name": "EB AOS LA Field Office 2025",
+      "sheet_id": "1UbvkxKOFIEDdmR9GURUkLfTP-DxISVDB",
+      "tabs": [
+        {
+          "match": "^LA FO",
+          "office": "LOS"
+        },
+        {
+          "match": "^LA County FO",
+          "office": "LAC"
+        },
+        {
+          "match": "^Transferred to other FO$"
+        }
+      ],
+      "shared_where": "r/USCIS",
       "min_rows": 50
+    },
+    {
+      "key": "santa-ana-fo",
+      "name": "Santa Ana FO EB I-485 Tracker",
+      "sheet_id": "1vjr_HKsI0RyRtb6-klCginA3-JfKO_ekrZorjItlayM",
+      "tabs": [
+        {
+          "match": "^SA FO - EB I485 Tracker$",
+          "office": "SAA"
+        }
+      ],
+      "shared_where": "r/USCIS",
+      "min_rows": 70
+    },
+    {
+      "key": "san-bernardino-fo",
+      "name": "San Bernardino EB Cases",
+      "sheet_id": "1GMX2Q2BWTFXupjUcG3mDVDggu8LzeTwYV5w_4zIAmDE",
+      "tabs": [
+        {
+          "match": "^timelines_sb$",
+          "office": "SBD"
+        },
+        {
+          "match": "^timelines_other$"
+        }
+      ],
+      "headers": {
+        "ignore": [
+          "why other",
+          "cross",
+          "country of concern"
+        ]
+      },
+      "shared_where": "r/USCIS",
+      "min_rows": 190
+    },
+    {
+      "key": "sacramento-fo",
+      "name": "Sacramento FO case tracker",
+      "sheet_id": "1v-Dr1sSDVR1TWYCIdfqwptscam0NXP7KY2EKwDUfTCg",
+      "tabs": [
+        {
+          "match": "^data$",
+          "office": "SAC"
+        }
+      ],
+      "headers": {
+        "ignore": [
+          "pd current"
+        ]
+      },
+      "shared_where": "r/USCIS",
+      "min_rows": 45
+    },
+    {
+      "key": "seattle-fo",
+      "name": "Seattle FO tracker",
+      "sheet_id": "1vVOkOBRPhUkz6U-tegSza8R06TOrVxklTBVQMQK7ID4",
+      "tabs": [
+        {
+          "match": "^Seattle FO$",
+          "office": "SEA"
+        }
+      ],
+      "shared_where": "r/EB2NIW_I485_AOS",
+      "min_rows": 1
+    },
+    {
+      "key": "eb1b-aos",
+      "name": "EB-1B AOS timeline",
+      "sheet_id": "16mrKROoyADDWumNMmD6hql1UBSDHLmga_EO7As8jy2E",
+      "tabs": [
+        {
+          "match": "^AOS Timeline$"
+        }
+      ],
+      "category": "EB-1",
+      "shared_where": "r/eb_1a",
+      "min_rows": 1
+    },
+    {
+      "key": "i485-form-2018",
+      "name": "I-485 Data (Responses)",
+      "sheet_id": "1ThqRzajXOlJMpTlSyFDZLa657XQCfRXlRTN-Y6FO7jE",
+      "tabs": [
+        {
+          "match": "^Data-Sorted by Filing Date$"
+        }
+      ],
+      "headers": {
+        "ignore": [
+          "adjusted filing date",
+          "i 140 filing center",
+          "filing type",
+          "i 140 status",
+          "ap ead requested",
+          "medical exam",
+          "ready to be scheduled",
+          "case result"
+        ]
+      },
+      "shared_where": "Reddit",
+      "min_rows": 150
+    },
+    {
+      "key": "i485-tracker-2009",
+      "name": "485 tracker (2009 to 2022)",
+      "sheet_id": "148pOP9Zqd6arArSH0bSzeC-5fK_Uxf-p4pb0GrL5-gQ",
+      "tabs": [
+        {
+          "match": "^Tracker$"
+        }
+      ],
+      "headers": {
+        "ignore": [
+          "msc src series",
+          "interview ready date",
+          "485 last status change date",
+          "status",
+          "link for interview experience"
+        ]
+      },
+      "shared_where": "Trackitt",
+      "min_rows": 120
+    },
+    {
+      "key": "chinese-eb-survey",
+      "name": "Green Card Tracker (Chinese EB survey)",
+      "sheet_id": "1UMScs5XM3KN7j0qo0WJEWpMUfKil2QJLMms6_B3IlO8",
+      "tabs": [
+        {
+          "match": "^Form Responses 1$"
+        }
+      ],
+      "headers": {
+        "priority_date": [
+          "5 your pd"
+        ],
+        "category": [
+          "3 your immigration type"
+        ],
+        "office": [
+          "10 transferred to which center"
+        ],
+        "receipt_date": [
+          "11 rd date"
+        ],
+        "biometrics_date": [
+          "12 fingerprint date"
+        ],
+        "interview_date": [
+          "13 interview date"
+        ],
+        "ead_date": [
+          "14 combo date"
+        ],
+        "approval_date": [
+          "15 i 485 approval date"
+        ],
+        "born_in_china": [
+          "1 were you or your spouse born"
+        ],
+        "ignore": [
+          "timestamp",
+          "information source",
+          "2 how many i 140",
+          "4 no of cards",
+          "6 does your spouse",
+          "7 what is your spouse",
+          "8 what is your spouse",
+          "9 i 485 status",
+          "16 rfe information",
+          "pd type",
+          "pd stats",
+          "23 type"
+        ]
+      },
+      "shared": "2020-08-28",
+      "shared_where": "survey.ebgreencard.com",
+      "min_rows": 600
+    },
+    {
+      "key": "niw-i140-jul-2026",
+      "name": "NIW I-140 tracker (July 2026 filers)",
+      "sheet_id": "1Q8xJog_IIoq97jo43u226bJAZuZeOsq_O6O8H7tX1w0",
+      "tabs": [
+        {
+          "match": "^Sheet1$"
+        }
+      ],
+      "category": "EB-2 NIW",
+      "required": [
+        "i140_receipt_date"
+      ],
+      "headers": {
+        "i140_receipt_date": [
+          "filing date"
+        ],
+        "i140_approval_date": [
+          "approval denial date",
+          "approval date"
+        ],
+        "ignore": [
+          "field",
+          "years of experience",
+          "pp filing date",
+          "filing mode",
+          "exceptional ability",
+          "service center",
+          "rfe date",
+          "rfe response date",
+          "education",
+          "proposed endeavor"
+        ]
+      },
+      "shared_where": "r/EB2_NIW",
+      "min_rows": 10
+    },
+    {
+      "key": "nvc-case-dates",
+      "name": "NVC case dates (r/NationalVisaCenter)",
+      "sheet_id": "1uRBzLPjcwjB25j6Dv1hbbU6V6KS9gT7zdSMgfvmy6Z4",
+      "tabs": [
+        {
+          "match": "^Form Responses 1$"
+        }
+      ],
+      "required": [
+        "nvc_complete"
+      ],
+      "headers": {
+        "ignore": [
+          "timestamp",
+          "nvc case creation date",
+          "expedite processing",
+          "column 11"
+        ]
+      },
+      "shared_where": "r/NationalVisaCenter",
+      "min_rows": 150
+    },
+    {
+      "key": "juarez-ir1-cr1",
+      "name": "IR-1/CR-1 F1 Ciudad Juarez interview wait times",
+      "sheet_id": "1omDM3XmhO72N-KcYG-lpadogppY3iIjXXUuB7iLoYD4",
+      "tabs": [
+        {
+          "match": "^Data$"
+        }
+      ],
+      "post": "ciudad-juarez",
+      "required": [
+        "nvc_complete"
+      ],
+      "headers": {
+        "category": [
+          "visa type"
+        ],
+        "ignore": [
+          "source",
+          "expedited",
+          "waiting time",
+          "profile link"
+        ]
+      },
+      "shared_where": "VisaJourney",
+      "min_rows": 40
     }
   ]
 }

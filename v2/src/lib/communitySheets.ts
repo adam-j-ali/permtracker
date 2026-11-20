@@ -1,5 +1,5 @@
 /**
- * The public community sheets people keep their own I-485 cases in (scripts/data/community_sheets.json), read hourly
+ * The public community sheets people keep their own green card cases in (scripts/data/community_sheets.json), read hourly
  * by scripts/ingest_community_sheets.py. Their rows reach the pages through the merged list of reported cases
  * (src/lib/reportedCases.ts), with every other source's.
  *
@@ -11,12 +11,12 @@ import config from "../../scripts/data/community_sheets.json";
 export interface CommunitySheet {
   key: string;
   name: string;
-  /** USCIS's own code for the office the sheet follows. */
-  office: string;
+  /** USCIS's own code for the office the sheet follows; none for a sheet that follows every office. */
+  office?: string;
   /** The sheet's read-only view. */
   url: string;
-  /** The day it was first shared, and where. */
-  shared: string;
+  /** The day it was first shared, when that day is known, and where it was found. */
+  shared?: string;
   sharedWhere: string;
 }
 

@@ -36,37 +36,62 @@ TABLE = "community_case_reports"
 SCRIPT = "ingest_community_sheets.py"
 # A stored copy is replaced only by a sheet holding at least this share of it: vandalism or a bad export never wins.
 KEEP_SHARE = 0.5
+PAUSE = 1.2  # seconds between one sheet's tab exports, so the hourly read stays a polite one
+# The run's own deadline, under the workflow step's 20 minutes: a run that's slow stops on its own, names the sheets
+# it didn't reach and ends red, so a timeout never kills it before the failure is recorded.
+DEADLINE_S = 15 * 60
 
-# Each column by its header, matched whole after lowercasing and squeezing spaces. "Status" is the category, and
-# "Current Visa Status" is the visa the person holds now, so a header is never matched by a part of it.
-HEADERS: dict[str, tuple[str, ...]] = {
-    "category": ("status",),
-    "visa_availability": ("visa availability",),
-    "visa_status": ("current visa status",),
-    "priority_date": ("priority date",),
-    "receipt_date": ("rd", "receipt date"),
-    "biometrics_date": ("bio", "biometrics"),
-    "transfer_date": ("transfer",),
-    "country": ("country",),
-    "dependent": ("dependent",),
-    "approval_date": ("approval",),
-    "card_date": ("card received",),
-}
-# Headers whose words run long or change: matched by how they start.
-HEADER_PREFIXES: dict[str, tuple[str, ...]] = {
-    "silent_updates": ("silent updates",),
-    "fta0": ("3rd (or 4th", "fta0", "3rd fta0"),
-    "fta1": ("fta1",),
-    "rfe": ("rfe",),
-    "valid_as_of": ("information valid as of", "valid as of"),
-}
-REQUIRED = ("category", "receipt_date", "transfer_date", "approval_date")
+# Each column by what its header means, matched on the header lowercased with everything but letters and digits as
+# spaces ("I-485 Received\nDate (RD)" reads "i 485 received date rd"). The sheets word the same column many ways
+# ("RD", "Receipt / Filing Date", "receipt_date"), and the words that mean something else stay apart: "GC Received
+# Date" is the card, never the receipt; "Status" is a case's status in one sheet and its category in another, so it
+# means the category only where a sheet's config says so. The first pattern a header fits wins, and each field takes
+# the first column that fits it.
+SKIP = re.compile(r"\b(dependent|derivative|i 485j|days|counter|since|percentile|estimate|p\d\d|user|username|"
+                  r"comments?|notes?|questions?|discord|reddit|block|lockbox|submission|notice|why|display)\b|^name$")
+PATTERNS: tuple[tuple[str, re.Pattern], ...] = tuple((f, re.compile(p)) for f, p in (
+    ("card_date", r"^(gc|green card|card) (received|receive|in hand)( date)?$|^card received"),
+    ("post", r"^(u s )?(embassy|consulate)( or consulate)?$|^u s embassy or consulate$|^consulate$"),
+    ("nvc_complete", r"documentarily qualified|^dq( date)?$|^date dq"),
+    ("consular_scheduled", r"^interview letter|^date interview assigned"),
+    ("visa_issued", r"^visa (ready|issued)( date)?$"),
+    ("i140_approval_date", r"^i 140 approv(al|ed)( date)?$"),
+    ("approval_date", r"^(gc |green card |i 485 |primary s )?(approval( close)?( date)?|approved( close)? date|"
+                      r"approved on( if approved)?)$|^date approved$"),
+    ("receipt_date", r"^(i 485 )?(received|receipt|receive|filing|rd)( date)?( rd)?$|^receipt filing date$|^rd$"),
+    ("priority_date", r"^(i 140 )?(priority date|pd)( pd)?$"),
+    ("category", r"^(eb )?category$|^eb type$|^eb1 2 3$|^visa category$|^eb category$"),
+    ("visa_status", r"^(underlying|underlaying|current visa) status$"),
+    ("visa_availability", r"^visa availability$"),
+    ("biometrics_date", r"^(biometric|biometrics|bio|fingerprints?)( date| done| appointment)?$"),
+    ("ead_date", r"^ead( and ap| ap)?( i 765)?( approval| approved)?( date)?( if applied)?( primary)?$"
+                 r"|^ap ead (received|approval|approved)( date)?$"),
+    ("transfer_date", r"transfer"),
+    ("moved_to", r"^fo if moved"),
+    ("office", r"^(latest )?(field office|fo|office|local office)( name)?( local non local)?$"),
+    ("still_here", r"^case still at\b"),
+    ("interview_date", r"^interview( date)?( if any)?$|^interview yes or no$|^date of interview$"),
+    ("silent_updates", r"^silent (api )?updates?"),
+    ("fta0", r"^(3rd|third)( or 4th| or latest)?( fta0| fta)?|^fta ?0|^fta updates"),
+    ("fta1", r"^(recent )?fta ?1"),
+    ("rfe", r"^rfe"),
+    ("dependent", r"^dependent$"),
+    ("row", r"^row( non row| nrow)?$"),
+    ("country", r"^country( of birth| of chargeability)?$|^chargeability$"),
+    ("valid_as_of", r"^(information )?valid as of|^last updated"),
+))
+DEFAULT_REQUIRED = ("receipt_date",)
 COLUMNS = ("source", "row_no", "office", "category", "visa_availability", "visa_status", "chargeability", "country",
            "priority_date", "priority_note", "receipt_date", "biometrics_date", "transfer_date", "silent_updates",
-           "fta0", "fta1", "rfe", "dependent", "approval_date", "card_date", "valid_as_of", "fetched_at")
+           "fta0", "fta1", "rfe", "dependent", "approval_date", "card_date", "valid_as_of", "interview_date",
+           "ead_date", "i140_approval_date", "i140_receipt_date", "post", "nvc_complete", "consular_scheduled",
+           "visa_issued", "fetched_at")
 
-CATEGORIES = {"eb-1": "EB-1", "eb1": "EB-1", "eb-2": "EB-2", "eb2": "EB-2", "eb2-niw": "EB-2 NIW", "eb-2 niw": "EB-2 NIW",
-              "eb2 niw": "EB-2 NIW", "niw": "EB-2 NIW", "eb-3": "EB-3", "eb3": "EB-3", "eb-1a": "EB-1", "eb1a": "EB-1"}
+CATEGORIES = {"eb1": "EB-1", "eb1a": "EB-1", "eb1b": "EB-1", "eb1c": "EB-1", "eb2": "EB-2", "eb2niw": "EB-2 NIW",
+              "niw": "EB-2 NIW", "eb2nationalinterestwaiver": "EB-2 NIW", "eb3": "EB-3", "eb3skilled": "EB-3",
+              "eb3unskilled": "EB-3", "eb3professional": "EB-3", "eb3ew": "EB-3", "ew": "EB-3",
+              "eb3otherworkers": "EB-3", "eb2perm": "EB-2", "eb3perm": "EB-3", "marriage": "Family",
+              "marriagebased": "Family", "familybased": "Family", "family": "Family", "ir1": "Family", "cr1": "Family"}
 CHARGEABILITY = {"india": "india", "china": "china", "mexico": "mexico", "philippines": "philippines"}
 
 
@@ -78,34 +103,115 @@ def norm(h: str) -> str:
     return re.sub(r"\s+", " ", (h or "").strip().lower())
 
 
-def column_map(header: list[str]) -> dict[str, int]:
+def header_key(h: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9]+", " ", (h or "").lower())).strip()
+
+
+def column_map(header: list[str], sheet: dict | None = None) -> dict[str, int]:
+    """Each field's column in a header row: the sheet's own names first (its config's "headers"), then the patterns."""
+    named = {f: {header_key(n) for n in names} for f, names in ((sheet or {}).get("headers") or {}).items()}
     out: dict[str, int] = {}
     for i, h in enumerate(header):
-        n = norm(h)
-        for field, names in HEADERS.items():
-            if field not in out and n in names:
-                out[field] = i
-        for field, starts in HEADER_PREFIXES.items():
-            if field not in out and any(n.startswith(s) for s in starts):
-                out[field] = i
-    missing = [f for f in REQUIRED if f not in out]
-    if missing:
-        raise Refused(f"the sheet's columns changed: no {', '.join(missing)} column in {header[:20]}")
+        k = header_key(h)
+        if not k:
+            continue
+        # A sheet's own names match a header exactly or as its opening words ("11 rd date" for "11. RD date 您的...").
+        own = [f for f, names in named.items() if (f == "ignore" or f not in out)
+               and any(k == n or k.startswith(n + " ") for n in names)]
+        if own:
+            if own[0] != "ignore":
+                out[own[0]] = i
+            continue
+        if SKIP.search(k) and k != "dependent":
+            continue
+        for field, pattern in PATTERNS:
+            if field in named:
+                continue  # the sheet names this field's column itself
+            if pattern.search(k):
+                if field not in out:
+                    out[field] = i
+                break
     return out
 
 
+def find_header(rows: list[list[str]], sheet: dict, tab: str) -> tuple[int, dict[str, int]]:
+    """The header row (a tab may carry a banner above it) and its columns, or Refused naming what's missing."""
+    required = tuple(sheet.get("required") or DEFAULT_REQUIRED)
+    for i, r in enumerate(rows[:15]):
+        cols = column_map(r, sheet)
+        if all(f in cols for f in required):
+            return i, cols
+    first = next((r for r in rows if any(c.strip() for c in r)), [])
+    raise Refused(f"the sheet's columns changed: tab {tab!r} has no {', '.join(required)} column in "
+                  f"{[c for c in first if c.strip()][:20]}")
+
+
 def parse_date(v: str) -> str | None:
-    """A whole date as the sheet writes it (11/15/2026, 11/15/26, 11-15-2026), or None."""
+    """A whole date as a sheet writes it (11/15/2026, 11/15/26, 11-15-2026, 2026-11-15, Nov 15, 2026), or None."""
     v = (v or "").strip()
     m = re.fullmatch(r"(\d{1,2})[/-](\d{1,2})[/-](\d{2}|\d{4})", v)
-    if not m:
+    if m:
+        mo, d, y = int(m[1]), int(m[2]), int(m[3])
+        y = y + 2000 if y < 100 else y
+        try:
+            return dt.date(y, mo, d).isoformat()
+        except ValueError:
+            return None
+    m = re.fullmatch(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:[ T].*)?", v)
+    if m:
+        try:
+            return dt.date(int(m[1]), int(m[2]), int(m[3])).isoformat()
+        except ValueError:
+            return None
+    if re.search(r"[a-z]", v, re.I) and re.search(r"\b20\d{2}\b", v):
+        import lib_post_dates
+        got = lib_post_dates.parse_date(v, dt.date.today(), "mdy")
+        if got and got[1] and len(got[0]) == 10:
+            return got[0]
+    return None
+
+
+FULL_DATE = re.compile(r"\b\d{1,2}[/-]\d{1,2}[/-](?:\d{4}|\d{2})\b|\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b")
+MONTHS = ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+
+def cell_date(v: str) -> str | None:
+    """A cell's date: the whole cell, or the first full date written in it ("EAD & AP 6/12/2026", "6/12/2026 (primary),
+    6/15/26 (derivative)": the applicant's own comes first). A day without a year gives nothing."""
+    whole = parse_date(v)
+    if whole:
+        return whole
+    m = FULL_DATE.search(v or "")
+    return parse_date(m.group(0)) if m else None
+
+
+def month_of(v: str) -> str | None:
+    """A month and year alone ("2023-Mar", "Mar 2023", "03/2023", "2023-03") as YYYY-MM, or None."""
+    v = (v or "").strip().lower()
+    m = (re.fullmatch(r"(\d{4})[-/ ]([a-z]{3})[a-z]*", v) or re.fullmatch(r"([a-z]{3})[a-z]*\.?,?[-/ ](\d{4})", v))
+    if m:
+        year, mon = (m[1], m[2]) if m[1].isdigit() else (m[2], m[1])
+        return f"{year}-{MONTHS.index(mon) + 1:02d}" if mon in MONTHS else None
+    m = re.fullmatch(r"(\d{1,2})[-/](\d{4})", v) or re.fullmatch(r"(\d{4})[-/](\d{1,2})", v)
+    if m:
+        year, month = (m[2], m[1]) if len(m[1]) <= 2 else (m[1], m[2])
+        return f"{year}-{int(month):02d}" if 1 <= int(month) <= 12 else None
+    return None
+
+
+def category_of(raw: str) -> str | None:
+    k = re.sub(r"[^a-z0-9]", "", (raw or "").lower())
+    if not k:
         return None
-    mo, d, y = int(m[1]), int(m[2]), int(m[3])
-    y = y + 2000 if y < 100 else y
-    try:
-        return dt.date(y, mo, d).isoformat()
-    except ValueError:
-        return None
+    if k in CATEGORIES:
+        return CATEGORIES[k]
+    for prefix, cat in (("eb2niw", "EB-2 NIW"), ("eb1", "EB-1"), ("eb2", "EB-2"), ("eb3", "EB-3")):
+        if k.startswith(prefix):
+            return cat
+    # A family category as a consulate sheet writes it ("IR-1: Spouse of a U.S. Citizen", "F2A: ...", "CR-1").
+    if re.match(r"(ir|cr)\d|f(1|2a|2b|3|4)", k):
+        return "Family"
+    return None
 
 
 def month_days(v: str, after: str | None, before: str) -> list[str]:
@@ -143,59 +249,119 @@ def yes_with_day(v: str, after: str | None, before: str) -> str | None:
     return None
 
 
-def parse_sheet(data: bytes, sheet: dict, today: str) -> tuple[list[dict], dict]:
-    """The rows to store and a count of what was read, skipped and kept as words."""
-    rows = list(csv.reader(io.StringIO(data.decode("utf-8", errors="replace"))))
-    if not rows:
-        raise Refused("the export was empty")
-    cols = column_map(rows[0])
+def parse_tab(rows: list[list[str]], sheet: dict, today: str, tab: str, counts: dict,
+              tab_office: str | None = None) -> list[dict]:
+    """One tab's cases, unnumbered. A tab that is one office's (LA, LA County) gives that office to a row naming none."""
+    head, cols = find_header(rows, sheet, tab)
     cell = lambda r, f: (r[cols[f]].strip() if f in cols and cols[f] < len(r) else "")  # noqa: E731
     out: list[dict] = []
-    counts = {"read": 0, "empty": 0, "priority_words": 0, "bad_dates": 0}
-    for r in rows[1:]:
+    # A step after the priority date: a row with only a priority date isn't a case yet (the I-485 not yet filed).
+    dated = ("receipt_date", "biometrics_date", "transfer_date", "approval_date", "card_date", "interview_date",
+             "ead_date", "i140_approval_date", "i140_receipt_date", "nvc_complete", "consular_scheduled", "visa_issued")
+    for r in rows[head + 1:]:
         if not any(c.strip() for c in r):
             continue
         counts["read"] += 1
         receipt = parse_date(cell(r, "receipt_date"))
         category_raw = cell(r, "category")
-        if not receipt and not category_raw:
-            counts["empty"] += 1
+        if not any(cell_date(cell(r, f)) for f in dated):
+            counts["empty"] += 1  # a row with no date gives the merge nothing
             continue
         valid = parse_date(cell(r, "valid_as_of"))
         # A day listed without a year falls on or before the row's own as-of day (today when it has none).
         before = valid if valid and valid <= today else today
         pd_raw = cell(r, "priority_date")
-        pd = parse_date(pd_raw)
+        pd = parse_date(pd_raw) or month_of(pd_raw)
         if pd_raw and not pd:
             counts["priority_words"] += 1
-        for f in ("biometrics_date", "transfer_date", "approval_date", "card_date"):
-            if cell(r, f) and not parse_date(cell(r, f)):
-                counts["bad_dates"] += 1
+        for f in ("biometrics_date", "transfer_date", "approval_date", "card_date", "interview_date", "ead_date"):
+            v = cell(r, f)
+            if v and re.search(r"\d", v) and not cell_date(v):
+                counts["bad_dates"] += 1  # a day written without its year, or a shape no rule reads
         country = cell(r, "country")
+        row_word = norm(cell(r, "row"))
         dep = norm(cell(r, "dependent"))
+        office = tab_office or sheet.get("office")
+        if "office" in cols:
+            from lib_offices import office_code
+            written = cell(r, "office")
+            office = office_code(written) or (office if not written else None)
+            if written and office is None:
+                counts["unknown_offices"] = counts.get("unknown_offices", 0) + 1
+        post = sheet.get("post")
+        if "post" in cols:
+            from lib_posts import post_key
+            post = post_key(cell(r, "post")) or (post if not cell(r, "post") else None)
+            if cell(r, "post") and post is None:
+                counts["unknown_posts"] = counts.get("unknown_posts", 0) + 1
+        if norm(cell(r, "still_here")).startswith("no"):
+            office = None  # the case moved on from the sheet's office, to one the sheet doesn't name
+        if cell(r, "moved_to"):
+            from lib_offices import office_code
+            office = office_code(cell(r, "moved_to"))  # moved away: the office it moved to, when that reads
+        if norm(category_raw) in ("row", "nrow", "non row", "non-row"):
+            # Some sheets keep ROW/NROW (rest of world or not) under "Category": that's chargeability.
+            row_word, category_raw = norm(category_raw), ""
+        category = category_of(category_raw) or sheet.get("category")
+        if category_raw and category is None:
+            counts["unknown_categories"] = counts.get("unknown_categories", 0) + 1
+        chargeability = CHARGEABILITY.get(norm(country), "row" if country else None)
+        if chargeability is None and norm(cell(r, "born_in_china")).startswith("yes"):
+            chargeability = "china"
+        if chargeability is None and row_word in ("row", "yes"):
+            chargeability = "row"
         out.append({
-            "source": sheet["key"], "row_no": len(out) + 1, "office": sheet["office"],
-            "category": CATEGORIES.get(norm(category_raw), category_raw or None),
+            "source": sheet["key"], "office": office or "",
+            "category": category,
             "visa_availability": cell(r, "visa_availability") or None,
             "visa_status": cell(r, "visa_status") or None,
-            "chargeability": CHARGEABILITY.get(norm(country), "row" if country else None),
+            "chargeability": chargeability,
             "country": country or None,
             "priority_date": pd, "priority_note": None if pd else (pd_raw or None),
             "receipt_date": receipt,
-            "biometrics_date": parse_date(cell(r, "biometrics_date")),
-            "transfer_date": parse_date(cell(r, "transfer_date")),
+            "biometrics_date": cell_date(cell(r, "biometrics_date")),
+            "transfer_date": cell_date(cell(r, "transfer_date")),
             "silent_updates": json.dumps(month_days(cell(r, "silent_updates"), receipt, before)),
             "fta0": yes_with_day(cell(r, "fta0"), receipt, before),
             "fta1": yes_with_day(cell(r, "fta1"), receipt, before),
             "rfe": yes_with_day(cell(r, "rfe"), receipt, before),
             "dependent": 1 if dep.startswith("y") else 0 if dep.startswith("n") else None,
-            "approval_date": parse_date(cell(r, "approval_date")),
-            "card_date": parse_date(cell(r, "card_date")),
+            "approval_date": cell_date(cell(r, "approval_date")),
+            "card_date": cell_date(cell(r, "card_date")),
             "valid_as_of": valid,
+            "interview_date": cell_date(cell(r, "interview_date")),
+            "ead_date": cell_date(cell(r, "ead_date")),
+            "i140_approval_date": cell_date(cell(r, "i140_approval_date")),
+            "i140_receipt_date": cell_date(cell(r, "i140_receipt_date")),
+            "post": post,
+            "nvc_complete": cell_date(cell(r, "nvc_complete")),
+            "consular_scheduled": cell_date(cell(r, "consular_scheduled")),
+            "visa_issued": cell_date(cell(r, "visa_issued")),
         })
+    return out
+
+
+def parse_tabs(tabs: list[tuple], sheet: dict, today: str) -> tuple[list[dict], dict]:
+    """Every chosen tab's cases, numbered across the tabs in their order, and a count of what was read. Each tab is
+    (name, export) or (name, export, the tab's own office)."""
+    counts = {"read": 0, "empty": 0, "priority_words": 0, "bad_dates": 0, "tabs": len(tabs)}
+    out: list[dict] = []
+    for tab in tabs:
+        name, data = tab[0], tab[1]
+        rows = list(csv.reader(io.StringIO(data.decode("utf-8", errors="replace"))))
+        if not rows:
+            raise Refused(f"tab {name!r}: the export was empty")
+        out += parse_tab(rows, sheet, today, name, counts, tab[2] if len(tab) > 2 else None)
+    for i, r in enumerate(out, 1):
+        r["row_no"] = i
     if len(out) < sheet.get("min_rows", 1):
         raise Refused(f"{len(out)} cases, under the sheet's floor of {sheet.get('min_rows', 1)}")
     return out, counts
+
+
+def parse_sheet(data: bytes, sheet: dict, today: str) -> tuple[list[dict], dict]:
+    """A one-tab sheet's cases (the export of one gid)."""
+    return parse_tabs([(sheet.get("gid", "0"), data)], sheet, today)
 
 
 def ensure_table(db) -> None:
@@ -207,6 +373,11 @@ def ensure_table(db) -> None:
         biometrics_date TEXT, transfer_date TEXT, silent_updates TEXT, fta0 TEXT, fta1 TEXT, rfe TEXT,
         dependent INTEGER, approval_date TEXT, card_date TEXT, valid_as_of TEXT, fetched_at INTEGER NOT NULL,
         PRIMARY KEY (source, row_no))""")
+    # Columns added Nov 19 2026 for the sheets that hold more steps: an older table gains them before the first write.
+    from lib_db import add_missing_columns
+    add_missing_columns(db, TABLE, {c: "TEXT" for c in ("interview_date", "ead_date", "i140_approval_date",
+                                                         "i140_receipt_date", "post", "nvc_complete",
+                                                         "consular_scheduled", "visa_issued")})
     # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query
     db.execute(f"CREATE INDEX IF NOT EXISTS {TABLE}_office ON {TABLE} (office, transfer_date)")
 
@@ -226,6 +397,27 @@ def write(db, sheet: dict, rows: list[dict], force: bool = False) -> int:
     for i in range(0, len(reqs), 200):
         db.pipeline(reqs[i:i + 200])
     return len(rows)
+
+
+def chosen_tabs(sheet: dict, listed: list[tuple[str, str]]) -> list[tuple[str, str, str | None]]:
+    """The tabs a sheet's config asks for, from the sheet's own list of (name, gid): (name, gid, the tab's office). A
+    pattern that matches no tab refuses the sheet, so a renamed tab never passes for an empty one."""
+    out = []
+    for spec in sheet["tabs"]:
+        hits = [(n, g) for n, g in listed if re.search(spec["match"], n.strip(), re.I)]
+        if not hits:
+            raise Refused(f"no tab matches {spec['match']!r} in {[n for n, _ in listed][:30]}")
+        out += [(n, g, spec.get("office")) for n, g in hits]
+    return out
+
+
+def list_tabs(sheet_id: str) -> list[tuple[str, str]]:
+    """A sheet's tabs as (name, gid), read from its public page."""
+    import html as html_lib
+    from lib_gov_data import fetch
+    page = fetch(f"https://docs.google.com/spreadsheets/d/{sheet_id}/htmlview").decode("utf-8", "replace")
+    found = re.findall(r'items\.push\(\{name: "((?:[^"\\]|\\.)*)", pageUrl: "[^"]*", gid: "(\d+)"', page)
+    return [(html_lib.unescape(n.replace("\\/", "/")), g) for n, g in found]
 
 
 def load_config(path: str = CONFIG) -> list[dict]:
@@ -259,23 +451,38 @@ def main() -> int:
     failed: list[str] = []
     notes: list[str] = []
     for sheet in sheets:
+        if time.time() - started > DEADLINE_S:
+            msg = f"{sheet['name']}: not read, the run passed its {DEADLINE_S // 60}-minute deadline"
+            print(f"::error::{msg}", flush=True)
+            failed.append(msg)
+            continue
         try:
             if a.from_file:
                 with open(a.from_file, "rb") as fh:
-                    data = fh.read()
+                    rows, counts = parse_sheet(fh.read(), sheet, today)
+            elif "tabs" in sheet:
+                from lib_gov_data import fetch
+                tabs = []
+                for name, gid, office in chosen_tabs(sheet, list_tabs(sheet["sheet_id"])):
+                    time.sleep(PAUSE)
+                    tabs.append((name, fetch(export_url({**sheet, "gid": gid})), office))
+                rows, counts = parse_tabs(tabs, sheet, today)
             else:
                 from lib_gov_data import fetch
-                data = fetch(export_url(sheet))
-            rows, counts = parse_sheet(data, sheet, today)
+                rows, counts = parse_sheet(fetch(export_url(sheet)), sheet, today)
             approved = sum(1 for r in rows if r["approval_date"])
             line = (f"{sheet['name']}: {len(rows)} cases ({approved} approved), {counts['empty']} empty rows skipped"
                     + (f", {counts['priority_words']} priority dates in words" if counts["priority_words"] else "")
-                    + (f", {counts['bad_dates']} dates that don't read" if counts["bad_dates"] else ""))
+                    + (f", {counts['bad_dates']} dates that don't read" if counts["bad_dates"] else "")
+                    + (f", {counts['unknown_offices']} offices that don't read" if counts.get("unknown_offices") else "")
+                    + (f", {counts['unknown_categories']} categories that don't read"
+                       if counts.get("unknown_categories") else ""))
             print(line, flush=True)
             if db is not None:
                 write(db, sheet, rows, force=a.force)
                 from lib_db import stamp_freshness
-                stamp_freshness(db, f"community-sheet-{sheet['key']}", source=export_url(sheet).split("/export")[0],
+                stamp_freshness(db, f"community-sheet-{sheet['key']}",
+                                source=f"https://docs.google.com/spreadsheets/d/{sheet['sheet_id']}",
                                 cadence="hourly", note=line, max_age_days=3)
             notes.append(line)
         except Exception as e:  # noqa: BLE001
