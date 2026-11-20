@@ -222,6 +222,37 @@ describe("A deleted case takes its uploaded files with it", () => {
     expect(await t.run((ctx) => ctx.db.system.get(storageId))).toBeNull();
   });
 
+  it("replacing a case by import deletes its stored file and its recruitment log, as a delete does", async () => {
+    const t = createTestContext();
+    const user = await createAuthenticatedContext(t, "User 1");
+    const { caseId, storageId } = await caseWithFile(t, user);
+    await t.run((ctx) =>
+      ctx.db.insert("recruitmentApplicants", {
+        userId: user.userId,
+        caseId,
+        ref: "A-1",
+        outcome: "not_qualified",
+        reason: "No degree",
+        createdAt: 1,
+        updatedAt: 1,
+      }),
+    );
+
+    const result = await user.mutation(api.cases.importCases, {
+      cases: [{ employerName: "Test Corp", beneficiaryIdentifier: "John D.", positionTitle: "Engineer" }],
+      resolutions: { "0": "replace" },
+    });
+    await finishScheduledFunctions(t);
+
+    expect(result.replacedCount).toBe(1);
+    expect(await t.run((ctx) => ctx.db.get(caseId))).toBeNull();
+    expect(await t.run((ctx) => ctx.db.system.get(storageId))).toBeNull();
+    const applicants = await t.run((ctx) =>
+      ctx.db.query("recruitmentApplicants").withIndex("by_caseId", (q) => q.eq("caseId", caseId)).take(5),
+    );
+    expect(applicants).toEqual([]);
+  });
+
   it("deleting cases in bulk deletes their stored files", async () => {
     const t = createTestContext();
     const user = await createAuthenticatedContext(t, "User 1");

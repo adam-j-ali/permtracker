@@ -2398,93 +2398,14 @@ export const importCases = mutation({
             await recordError(ctx, "mutation", "cases.importCases.replaceCalendar", calendarError, { userId, resourceId: existingCaseId.toString() });
           }
 
-          // Clean up userCaseOrder
-          try {
-            const userCaseOrder = await ctx.db
-              .query("userCaseOrder")
-              .withIndex("by_user_id", (q) => q.eq("userId", userId))
-              .first();
-            if (userCaseOrder && userCaseOrder.caseIds.includes(existingCaseId)) {
-              await ctx.db.patch(userCaseOrder._id, {
-                caseIds: userCaseOrder.caseIds.filter((id) => id !== existingCaseId),
-                updatedAt: now,
-              });
-            }
-          } catch (cleanupError) {
-            log.error('Failed to cleanup userCaseOrder during import replace', { resourceId: existingCaseId, error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) });
-            await recordError(ctx, "mutation", "cases.importCases.replaceCleanupCaseOrder", cleanupError, { userId, resourceId: existingCaseId.toString() });
-          }
-
-          // Clean up timelinePreferences
-          try {
-            const timelinePrefs = await ctx.db
-              .query("timelinePreferences")
-              .withIndex("by_user_id", (q) => q.eq("userId", userId))
-              .first();
-            if (timelinePrefs?.selectedCaseIds?.includes(existingCaseId)) {
-              await ctx.db.patch(timelinePrefs._id, {
-                selectedCaseIds: timelinePrefs.selectedCaseIds.filter((id) => id !== existingCaseId),
-                updatedAt: now,
-              });
-            }
-          } catch (cleanupError) {
-            log.error('Failed to cleanup timelinePreferences during import replace', { resourceId: existingCaseId, error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) });
-            await recordError(ctx, "mutation", "cases.importCases.replaceCleanupTimeline", cleanupError, { userId, resourceId: existingCaseId.toString() });
-          }
-
-          // Clean up dismissedDeadlines
-          try {
-            const userProfile = await ctx.db
-              .query("userProfiles")
-              .withIndex("by_user_id", (q) => q.eq("userId", userId))
-              .first();
-            if (userProfile?.dismissedDeadlines.some((d) => d.caseId === existingCaseId)) {
-              await ctx.db.patch(userProfile._id, {
-                dismissedDeadlines: userProfile.dismissedDeadlines.filter((d) => d.caseId !== existingCaseId),
-                updatedAt: now,
-              });
-            }
-          } catch (cleanupError) {
-            log.error('Failed to cleanup dismissedDeadlines during import replace', { resourceId: existingCaseId, error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) });
-            await recordError(ctx, "mutation", "cases.importCases.replaceCleanupDismissedDeadlines", cleanupError, { userId, resourceId: existingCaseId.toString() });
-          }
-
-          // Clean up conversation references
-          try {
-            const conversations = await ctx.db
-              .query("conversations")
-              .withIndex("by_user_id", (q) => q.eq("userId", userId))
-              .collect();
-            for (const conv of conversations) {
-              if (conv.metadata?.relatedCaseId === existingCaseId) {
-                await ctx.db.patch(conv._id, {
-                  metadata: { ...conv.metadata, relatedCaseId: undefined },
-                  updatedAt: now,
-                });
-              }
-            }
-          } catch (cleanupError) {
-            log.error('Failed to cleanup conversations during import replace', { resourceId: existingCaseId, error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) });
-            await recordError(ctx, "mutation", "cases.importCases.replaceCleanupConversations", cleanupError, { userId, resourceId: existingCaseId.toString() });
-          }
-
-          // A link that shared the replaced case's recruitment record stops with it.
-          try {
-            await deleteCaseShares(ctx, [existingCaseId]);
-          } catch (cleanupError) {
-            log.error('Failed to cleanup share links during import replace', { resourceId: existingCaseId, error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) });
-            await recordError(ctx, "mutation", "cases.importCases.replaceCleanupShares", cleanupError, { userId, resourceId: existingCaseId.toString() });
-          }
-
-          // So does the second person who got its deadline reminders.
-          try {
-            await deleteCaseReminderRecipients(ctx, [existingCaseId]);
-          } catch (cleanupError) {
-            log.error('Failed to cleanup reminder recipients during import replace', { resourceId: existingCaseId, error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) });
-            await recordError(ctx, "mutation", "cases.importCases.replaceCleanupReminderRecipients", cleanupError, { userId, resourceId: existingCaseId.toString() });
-          }
-
-          // Hard delete the existing case
+          // Then what other records hold about it (its applicant log, its share links and its second reminder
+          // recipient among them), its stored files, and the case: the same steps cases.remove takes.
+          await clearCaseReferences(ctx, userId, [existingCaseId], {
+            source: "cases.importCases.replace",
+            suffix: " during import replace",
+            resourceId: existingCaseId,
+          });
+          await deleteCaseFiles(ctx, userId, existingCase, "cases.importCases.replace.storage");
           await ctx.db.delete(existingCaseId);
 
           existingKeyMap.delete(key);
