@@ -16,6 +16,7 @@ the pages.
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 import re
 import sys
@@ -216,7 +217,8 @@ def case_row(case: dict, built_at: int) -> dict:
     row.update({
         "as_of": case.get("as_of"),
         "sources": json.dumps(case["sources"]),
-        "source_names": json.dumps(sorted({m["source"] for m in case["sources"]})),
+        # A private timeline's source is never named: the case it joined shows only where its public reports came from.
+        "source_names": json.dumps(sorted({m["source"] for m in case["sources"] if m.get("shows", True)})),
         "checked": int(case["checked"]), "shows": int(case["shows"]),
         "possible_dupes": json.dumps(case["possible_dupes"]), "adds_nothing": int(case["adds_nothing"]),
         "conflicts": json.dumps(case["conflicts"]), "built_at": built_at,
@@ -310,6 +312,31 @@ def write(db, rows: list[dict], force: bool = False) -> Changes:
                    before_all != list_digest(rows))
 
 
+SUMMARY_TABLE = "reported_summary"
+
+
+def summary_rows(cases: list[dict], today) -> dict[str, str]:
+    """Every summary the pages read (scripts/lib_reported_summary.py), by key, as stored JSON. Counted from every
+    member's dates, a private timeline's too, which no figure can trace back to a person."""
+    import lib_reported_summary as rs
+    return {k: json.dumps(v, sort_keys=True, separators=(",", ":"))
+            for k, v in rs.all_summaries([c["figures"] for c in cases], today).items()}
+
+
+def write_summaries(db, bodies: dict[str, str]) -> set[str]:
+    """Store the summaries and drop the ones no longer made. Returns the keys whose figures changed."""
+    from lib_db import query_rows, stmt
+    db.execute(f"CREATE TABLE IF NOT EXISTS {SUMMARY_TABLE} (key TEXT PRIMARY KEY, body TEXT NOT NULL, built_at INTEGER NOT NULL)")
+    stored = {k: b for k, b in query_rows(db, f"SELECT key, body FROM {SUMMARY_TABLE}")}  # nosemgrep
+    built = int(time.time() * 1000)
+    reqs = [stmt(f"INSERT OR REPLACE INTO {SUMMARY_TABLE} (key, body, built_at) VALUES (?, ?, ?)", [k, b, built])  # nosemgrep
+            for k, b in bodies.items()]
+    reqs.append(stmt(f"DELETE FROM {SUMMARY_TABLE} WHERE built_at < ?", [built]))  # nosemgrep
+    for i in range(0, len(reqs), 200):
+        db.pipeline(reqs[i:i + 200])
+    return {k for k in set(stored) | set(bodies) if stored.get(k) != bodies.get(k)}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--dry-run", action="store_true", help="read and merge; write nothing")
@@ -328,17 +355,29 @@ def main() -> int:
                 f"{counts['possible_dupes']} possible repeats kept apart, {counts['left_out']} rows left out")
         print(line, flush=True)
         if a.dry_run:
+            from lib_db import et_today
+            bodies = summary_rows(cases, dt.date.fromisoformat(et_today()))
+            whole = json.loads(bodies["all"])
+            print(f"summaries: {len(bodies)} ({sum(k.startswith('office:') for k in bodies)} offices, "
+                  f"{sum(k.startswith('post:') for k in bodies)} consulates); {whole['headline']}", flush=True)
+            for f in whole["steps"]:
+                print(f"  {f['label']}: n={f['n']} window={f['windowDays']} median={f['median']} before={f['before']}", flush=True)
             return 0
         ensure_table(db)
         built = int(time.time() * 1000)
         changed = write(db, [case_row(c, built) for c in cases], force=a.force)
+        from lib_db import et_today
+        moved = write_summaries(db, summary_rows(cases, dt.date.fromisoformat(et_today())))
         stamp_freshness(db, "reported-cases", source="https://permtracker.app/green-card-timelines",
                         cadence="hourly", note=line, max_age_days=3)
         notes = [line]
-        if changed.anything or changed.offices:
+        offices = changed.offices | {k.split(":", 1)[1] for k in moved if k.startswith("office:")}
+        posts = sorted(k.split(":", 1)[1] for k in moved if k.startswith("post:"))
+        if changed.anything or offices or moved:
             from lib_policy_feed import expire_policy_page
-            ok = expire_policy_page(print, route="/api/revalidate-timelines", body={"offices": sorted(changed.offices)})
-            notes.append(f"refreshed the list's pages{' and ' + ', '.join(sorted(changed.offices)) if changed.offices else ''}"
+            ok = expire_policy_page(print, route="/api/revalidate-timelines",
+                                    body={"offices": sorted(offices), "posts": posts})
+            notes.append(f"refreshed the list's pages{' and ' + ', '.join(sorted(offices)) if offices else ''}"
                          if ok else "the pages weren't refreshed; their own window will")
         record_run(db, SCRIPT, status="ok", rows_written=len(cases), note="; ".join(notes), started_at=started)
         return 0
