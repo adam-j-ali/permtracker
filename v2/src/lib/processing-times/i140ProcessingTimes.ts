@@ -84,13 +84,14 @@ export interface ProcessingTimeRange {
  * date beside them, so this is when they were read, not when USCIS set them.
  * Read again Oct 22 and Oct 31 2026: all eight unchanged since Sep 26. On Oct 31 the
  * labels were matched to USCIS's own (E31 also covers E32 professionals; the nurse line
- * is "Schedule A Nurses").
+ * is "Schedule A Nurses"). Read Nov 20 2026, the morning USCIS posted new times: seven of
+ * the eight changed (only E12 held at 15 months); the labels were unchanged.
  *
  * A test asserts this stays current. The previous table sat untouched for
  * sixteen months while quietly reporting numbers a quarter of the real value,
  * because nothing in the codebase could tell that it had gone stale.
  */
-export const PROCESSING_TIMES_AS_OF = "2026-10-31";
+export const PROCESSING_TIMES_AS_OF = "2026-11-20";
 
 /** Where these came from, rendered next to the figures. */
 export const PROCESSING_TIMES_SOURCE_URL =
@@ -98,20 +99,20 @@ export const PROCESSING_TIMES_SOURCE_URL =
 
 const SUBTYPES: Record<Exclude<I140Category, "">, I140Subtype[]> = {
   "EB-1": [
-    { code: "E11", label: "Extraordinary ability", months80: 32.5, premiumBusinessDays: 15 },
+    { code: "E11", label: "Extraordinary ability", months80: 36, premiumBusinessDays: 15 },
     { code: "E12", label: "Outstanding professor or researcher", months80: 15, premiumBusinessDays: 15 },
-    { code: "E13", label: "Multinational executive or manager", months80: 27.5, premiumBusinessDays: 45 },
+    { code: "E13", label: "Multinational executive or manager", months80: 29.5, premiumBusinessDays: 45 },
   ],
   "EB-2": [
-    { code: "E21", label: "Advanced degree or exceptional ability", months80: 3, premiumBusinessDays: 15 },
+    { code: "E21", label: "Advanced degree or exceptional ability", months80: 3.5, premiumBusinessDays: 15 },
   ],
   "EB-2-NIW": [
-    { code: "NIW", label: "National interest waiver", months80: 30, premiumBusinessDays: 45 },
+    { code: "NIW", label: "National interest waiver", months80: 32, premiumBusinessDays: 45 },
   ],
   "EB-3": [
-    { code: "E31", label: "Skilled worker or professional", months80: 4, premiumBusinessDays: 15 },
-    { code: "EW3", label: "Unskilled worker", months80: 9, premiumBusinessDays: 15 },
-    { code: "NUR", label: "Schedule A nurse", months80: 25.5, premiumBusinessDays: 15 },
+    { code: "E31", label: "Skilled worker or professional", months80: 4.5, premiumBusinessDays: 15 },
+    { code: "EW3", label: "Unskilled worker", months80: 8.5, premiumBusinessDays: 15 },
+    { code: "NUR", label: "Schedule A nurse", months80: 26.5, premiumBusinessDays: 15 },
   ],
 };
 
