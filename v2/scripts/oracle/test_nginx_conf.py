@@ -75,7 +75,7 @@ def map_body(head: str, out_var: str) -> tuple[str, str]:
 def eval_map(head: str, out_var: str, env: dict[str, str]) -> str:
     """The value nginx gives `out_var`: its source with variables filled in,
     the first matching regex in file order (~* ignores case), an exact key,
-    or the default. A value naming a capture (`$bot`) takes the capture."""
+    or the default. A value holding variables or captures (`$bot`, `pg:$path`) has them filled in, as nginx does."""
     source, body = map_body(head, out_var)
     value_of = lambda v: env.get(v, eval_map(head, v, env) if map_body(head, v)[1] else "")
     text = re.sub(r"\$(\w+)", lambda m: value_of(m.group(1)), source)
@@ -91,7 +91,8 @@ def eval_map(head: str, out_var: str, env: dict[str, str]) -> str:
             pattern = key[2:] if key.startswith("~*") else key[1:]
             m = re.search(pattern.replace("(?<", "(?P<"), text, flags)
             if m:
-                return m.group(val[1:]) if val.startswith("$") else val
+                groups = {k: v for k, v in m.groupdict().items() if v is not None}
+                return re.sub(r"\$(\w+)", lambda g: groups[g.group(1)] if g.group(1) in groups else value_of(g.group(1)), val)
         elif key == text:
             return val
     return default
@@ -258,14 +259,23 @@ def run(conf_text: str) -> None:
     # switches, so the build before's payloads can't reach the live page (Sentry 5N, Nov 5 2026).
     # eval_map can't read pt_cdn_cc's quoted values, so the edge label comes from map_label above.
     tag = lambda cc, path, rsc, hdr="": eval_map(head, "pt_cache_tag",
-                                                 {"pt_cdn_cc": edge(cc, path, rsc), "arg__rsc": rsc, "http_rsc": hdr})
-    check("stored navigation data is tagged for the deploy's purge", tag(page, "/perm-queue", "1a2b3") == "rsc",
+                                                 {"pt_cdn_cc": edge(cc, path, rsc), "arg__rsc": rsc, "http_rsc": hdr,
+                                                  "uri": path})
+    tags = lambda cc, path, rsc, hdr="": [x for x in tag(cc, path, rsc, hdr).split(",") if x]
+    check("stored navigation data is tagged for the deploy's purge", "rsc" in tags(page, "/perm-queue", "1a2b3"),
           tag(page, "/perm-queue", "1a2b3"))
-    check("an employer page's stored navigation data is tagged too", tag(page, "/perm-employers/adobe-inc", "x9") == "rsc")
-    check("a page itself is never tagged, so a deploy keeps Cloudflare's copies of pages",
-          tag(page, "/perm-employers/adobe-inc", "") == "" and tag(page, "/", "") == "")
-    check("a private answer is never tagged", tag("private, no-store", "/perm-queue", "1a2b3") == "")
-    check("navigation data asked for by Next's RSC header alone is tagged", tag(page, "/perm-queue", "", "1") == "rsc")
+    check("an employer page's stored navigation data is tagged too", "rsc" in tags(page, "/perm-employers/adobe-inc", "x9"))
+    check("a page carries its own tag and never rsc, so a deploy keeps Cloudflare's copies of pages",
+          tags(page, "/perm-employers/adobe-inc", "") == ["pg:/perm-employers/adobe-inc"] and tags(page, "/", "") == ["pg:/"],
+          f"{tag(page, '/perm-employers/adobe-inc', '')} {tag(page, '/', '')}")
+    check("a page and its navigation data share the page's tag, so a sweep's purge drops both",
+          "pg:/today" in tags(page, "/today", "") and "pg:/today" in tags(page, "/today", "1a2b3"),
+          f"{tag(page, '/today', '')} {tag(page, '/today', '1a2b3')}")
+    check("an address outside the tag's characters gets no page tag, its navigation data still rsc",
+          tags(page, "/perm-employers/caf\u00e9", "") == [] and tags(page, "/perm-employers/caf\u00e9", "x9") == ["rsc"])
+    check("a private answer is never tagged", tag("private, no-store", "/perm-queue", "1a2b3") == ""
+          and tag("private, no-store", "/today", "") == "")
+    check("navigation data asked for by Next's RSC header alone is tagged", "rsc" in tags(page, "/perm-queue", "", "1"))
     check("the tag is sent from the server block every page location inherits",
           "add_header Cache-Tag $pt_cache_tag;" in server.split("location", 1)[0])
     browser = re.search(r"map \$upstream_http_cache_control \$pt_browser_cc\s*\{([^}]*)\}", head)
@@ -599,8 +609,9 @@ def probe() -> None:
         "php probes sent to the app": good.replace("        return 404;\n    }", "        proxy_pass http://permtracker_app;\n    }", 1),
         "WordPress folders matched anywhere in the path": good.replace("|^/(wp-admin|", "|/(wp-admin|", 1),
         "navigation data left untagged": good.replace("    add_header Cache-Tag $pt_cache_tag;\n", "", 1),
-        "pages tagged with their navigation data": good.replace('"~^[^|]+\\|.+$" rsc;', '"~^[^|]+\\|" rsc;', 1),
-        "private answers tagged": good.replace('"~^[^|]+\\|.+$" rsc;', '"~\\|.+$" rsc;', 1),
+        "pages tagged with their navigation data": good.replace('"pg:$pt_tag_page";', '"rsc,pg:$pt_tag_page";', 1),
+        "private answers tagged": good.replace('"~^[^|]+\\|[^|]+\\|(?<pt_tag_path>', '"~\\|[^|]+\\|(?<pt_tag_path>', 1),
+        "pages left without their own tag": good.replace('"pg:$pt_tag_page";', '"";', 1),
     }
     global failures
     for name, text in mutations.items():
