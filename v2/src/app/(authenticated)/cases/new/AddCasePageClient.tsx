@@ -1,6 +1,8 @@
 
 "use client";
 
+import { ClipboardTextIcon } from "@phosphor-icons/react";
+
 import { useRouter } from "next/navigation";
 import { useState, useCallback, useMemo } from "react";
 import { useMutation, useConvex } from "convex/react";
@@ -23,6 +25,8 @@ import { CarriedDatesNote } from "./CarriedDatesNote";
 import { useCarriedDates } from "@/hooks/useCarriedDates";
 import { forgetCarried } from "@/lib/carriedCase";
 import { carriedCaseFields } from "@/lib/carriedCaseFields";
+import { dolCarriedFields } from "@/lib/dolCarried";
+import { useDolCarry } from "@/hooks/useDolCarry";
 import type { CaseFormData } from "@/lib/forms/case-form-schema";
 import type { Id } from "@convex/_generated/dataModel";
 
@@ -53,7 +57,13 @@ export function AddCasePageClient() {
   // Dates brought from the public deadline calculator (src/lib/carriedCase.ts)
   // fill the form; `key` remounts it once they're read after hydration.
   const { dates: carried, key: carriedKey } = useCarriedDates();
-  const carriedInitial = useMemo(() => (carried ? carriedCaseFields(carried) : undefined), [carried]);
+  // A public case page's "Add to my cases" (src/lib/dolCarried.ts): DOL's public record of the case.
+  const { record: dolRecord, key: dolKey } = useDolCarry();
+  const carriedInitial = useMemo(() => {
+    const fromCalculator = carried ? carriedCaseFields(carried) : undefined;
+    const fromDol = dolRecord ? dolCarriedFields(dolRecord) : undefined;
+    return fromCalculator || fromDol ? { ...fromDol, ...fromCalculator } : undefined;
+  }, [carried, dolRecord]);
 
   // ============================================================================
   // HANDLERS
@@ -84,6 +94,7 @@ export function AddCasePageClient() {
           case_id: caseId,
           is_duplicate_override: !!duplicateOf,
           from_calculator: Boolean(carried),
+          from_public_case: Boolean(dolRecord),
         });
         if (carried) forgetCarried();
         toast.success("Case created");
@@ -212,10 +223,18 @@ export function AddCasePageClient() {
       <NewCaseHeading />
 
       {carried ? <CarriedDatesNote dates={carried} /> : null}
+      {dolRecord ? (
+        <div className="mb-4 flex items-start gap-3 border-2 border-border bg-tint p-4" role="note">
+          <ClipboardTextIcon className="mt-0.5 size-5 shrink-0 text-primary-text" aria-hidden="true" />{" "}
+          <p className="text-sm leading-relaxed">
+            {`Filled from DOL's public record of ${dolRecord.caseNumber}. Check each field, add what DOL's record doesn't hold, and save.`}
+          </p>
+        </div>
+      ) : null}
 
       {/* Case Form */}
       <CaseForm
-        key={carriedKey}
+        key={`${carriedKey}${dolKey}`}
         mode="add"
         initialData={carriedInitial}
         onSuccess={handleFormSuccess}

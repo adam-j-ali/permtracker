@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SocCodeLink } from "@/components/soc/SocCodeLink";
 import { PwdLikelySection } from "@/components/tools/PwdLikelySection";
+import { AddToMyCases } from "@/components/tools/AddToMyCases";
 import { getPwdDetail, type PwdDetail } from "@/lib/db/pwdDetail";
 import { getPwdLikely } from "@/lib/db/pwdLikely";
 import { naicsTitle } from "@/lib/naicsTitles";
@@ -380,7 +381,21 @@ export async function PwdLookup({ caseNumber }: { caseNumber: string }) {
           : pending && !notPerm && oews
             ? ` DOL is working requests received in ${formatMonth(oews)} where the wage comes from the OEWS survey.`
             : ""}
-      </AnswerPanel>
+      </AnswerPanel>{" "}
+      {!notPerm ? (
+        <AddToMyCases
+          record={{
+            caseNumber: row.caseNumber,
+            ...(row.employerName ? { employer: row.employerName } : {}),
+            ...(row.jobTitle ? { title: row.jobTitle } : {}),
+            ...(row.filingDate ? { filed: row.filingDate.slice(0, 10) } : {}),
+            ...(disclosed?.decisionDate || detail?.determinedOn ? { decided: (detail?.determinedOn ?? disclosed?.decisionDate)!.slice(0, 10) } : {}),
+            outcome: row.status,
+            ...(detail?.level ? { level: detail.level } : {}),
+            ...(disclosed?.wage && disclosed.wageUnit && /^y/i.test(disclosed.wageUnit) ? { wage: disclosed.wage } : {}),
+          }}
+        />
+      ) : null}
 
       {notPerm ? (
         <p className="mt-6 max-w-2xl text-sm leading-relaxed text-muted-foreground">
