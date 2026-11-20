@@ -75,7 +75,7 @@ export function RecruitmentProof({
         <h2 id={`${id}-h`} className="flex items-center gap-1.5">
           <PaperclipIcon className="h-3.5 w-3.5" aria-hidden="true" />
           Proof of each step
-        </h2>
+        </h2>{" "}
         {stillMissing.length ? (
           <span className="head-badge">{`${stillMissing.length} missing`}</span>
         ) : (
