@@ -178,6 +178,24 @@ def main() -> int:
     again = b.write(db, [b.case_row(c, 6) for c in b.build_cases({"sheets": [sheet_row()]})[0]])
     check(not again.offices and not again.anything, f"the same list written again refreshes nothing: {again}")
 
+    # Each hour sends only the cases that changed, plus one statement that restamps the list (Nov 20 2026: rewriting
+    # all 20,000 every hour took the build to its 5-minute limit). A case gone from the build is deleted by its id.
+    sent = []
+    real = db.pipeline
+    db.pipeline = lambda reqs: (sent.extend(reqs), real(reqs))[1]
+    two = b.build_cases({"sheets": [sheet_row(), sheet_row(row_no=4, transfer_date="2026-10-01", i485_receipt="2025-12-01")]})[0]
+    b.write(db, [b.case_row(c, 7) for c in two])
+    inserts = [r for r in sent if "INSERT" in str(r)]
+    check(len(inserts) == 1, f"only the new case is written: {len(inserts)} inserts")
+    sent.clear()
+    b.write(db, [b.case_row(c, 8) for c in two])
+    check(not [r for r in sent if "INSERT" in str(r)], f"an unchanged list writes no case: {sent}")
+    check(int(query_rows(db, "SELECT min(built_at) FROM reported_cases")[0][0]) == 8, "and every case carries this build's stamp")
+    sent.clear()
+    b.write(db, [b.case_row(c, 9) for c in two[:1]], force=True)
+    check(int(query_rows(db, "SELECT count(*) FROM reported_cases")[0][0]) == 1, "a case gone from the build is deleted")
+    db.pipeline = real
+
     # A bad row from one source is counted and left out, never allowed to stop the build.
     cases, counts = b.build_cases({"sheets": [sheet_row(), sheet_row(row_no=3, transfer_date="9/24/2026")]})
     check(len(cases) == 1 and counts["left_out"] == 1, "a row the merge can't read is left out and counted")
