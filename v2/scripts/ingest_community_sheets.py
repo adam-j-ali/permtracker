@@ -411,13 +411,27 @@ def chosen_tabs(sheet: dict, listed: list[tuple[str, str]]) -> list[tuple[str, s
     return out
 
 
+def _js_string(text: str) -> str:
+    """A JavaScript string literal's text as it reads: Google writes "June '25" as June \\x2725 on the sheet's page."""
+    def one(m: re.Match) -> str:
+        e = m.group(1)
+        if e[0] in "xu" and len(e) > 1:
+            return chr(int(e[1:], 16))
+        return {"n": "\n", "t": "\t"}.get(e, e)
+    return re.sub(r"\\(x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|.)", one, text)
+
+
+def tabs_in(page: str) -> list[tuple[str, str]]:
+    """The (name, gid) of every tab a sheet's public page lists."""
+    import html as html_lib
+    found = re.findall(r'items\.push\(\{name: "((?:[^"\\]|\\.)*)", pageUrl: "[^"]*", gid: "(\d+)"', page)
+    return [(html_lib.unescape(_js_string(n)), g) for n, g in found]
+
+
 def list_tabs(sheet_id: str) -> list[tuple[str, str]]:
     """A sheet's tabs as (name, gid), read from its public page."""
-    import html as html_lib
     from lib_gov_data import fetch
-    page = fetch(f"https://docs.google.com/spreadsheets/d/{sheet_id}/htmlview").decode("utf-8", "replace")
-    found = re.findall(r'items\.push\(\{name: "((?:[^"\\]|\\.)*)", pageUrl: "[^"]*", gid: "(\d+)"', page)
-    return [(html_lib.unescape(n.replace("\\/", "/")), g) for n, g in found]
+    return tabs_in(fetch(f"https://docs.google.com/spreadsheets/d/{sheet_id}/htmlview").decode("utf-8", "replace"))
 
 
 def load_config(path: str = CONFIG) -> list[dict]:
