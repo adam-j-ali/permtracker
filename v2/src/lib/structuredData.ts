@@ -67,6 +67,8 @@ export function getSoftwareApplicationSchema(baseUrl: string) {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication' as const,
     name: 'PERM Tracker',
+    // The same other names as the Organization and the WebSite, so all three say they're one brand.
+    alternateName: ALTERNATE_NAMES,
     applicationCategory: APP_CATEGORY,
     operatingSystem: 'Web Browser',
     isAccessibleForFree: true,
@@ -318,6 +320,8 @@ export function getHomepageRatingPartialSchema(baseUrl: string, rating: RatingFi
     // category - an item failing required-field validation. Duplicating the
     // identity fields costs bytes and removes the ambiguity entirely.
     name: 'PERM Tracker',
+    alternateName: ALTERNATE_NAMES,
+    url: baseUrl,
     // MUST match the @graph node's category. Both carry SCHEMA_IDS.software(),
     // so they are one entity by @id - and this one still said
     // 'BusinessApplication', left behind when the graph node deliberately moved

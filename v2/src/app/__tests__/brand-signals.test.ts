@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { getWebSiteSchema } from "@/lib/structuredData";
+import { getHomepageRatingPartialSchema, getSoftwareApplicationSchema, getWebSiteSchema } from "@/lib/structuredData";
 
 /**
  * The signals Google corroborates a site name against, pinned.
@@ -128,5 +128,18 @@ describe("WebSite schema site-name candidates", () => {
     // markup cannot fix - it is generic, and the rival tracker declares the
     // identical string - so the backup is the only lever we actually hold.
     expect(schema.alternateName).toContain("permtracker.app");
+  });
+});
+
+describe("The app's schema names the same brand", () => {
+  // The Organization, the WebSite and the SoftwareApplication are one brand: all three carry the same other names, and
+  // both SoftwareApplication nodes (the site-wide one and the homepage's rating node, merged by @id) carry the address.
+  it("gives both SoftwareApplication nodes the brand's other names and its address", () => {
+    const site = getWebSiteSchema("https://permtracker.app");
+    for (const app of [getSoftwareApplicationSchema("https://permtracker.app"), getHomepageRatingPartialSchema("https://permtracker.app")]) {
+      expect(app.name).toBe(BRAND);
+      expect(app.alternateName).toEqual(site.alternateName);
+      expect(app.url).toBe("https://permtracker.app");
+    }
   });
 });
