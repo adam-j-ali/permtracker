@@ -35,9 +35,11 @@
  * goes and stamps the Eastern day, so a second run the same day sends nothing. Every email carries a one-click stop,
  * in its List-Unsubscribe header and as a link, signed for `reminder-stop:<row id>`.
  *
- * THE REFUSAL LIST. A Stop click, like "Don't invite me again", puts the address on a site-wide list kept only as an
- * HMAC of the address under UNSUBSCRIBE_SECRET (table reminderRefusals). No account can invite it again, and the owner
- * is told so plainly. The list is never shown and can't be read back as addresses.
+ * THE REFUSAL LIST. "Don't invite me again" puts the address on a list that refuses every account; a reminder's Stop
+ * puts it there for the account that added it only, and that entry goes with the account. Both are kept only as an
+ * HMAC of the address's inbox under UNSUBSCRIBE_SECRET (table reminderRefusals). The list is never shown, can't be
+ * read back as addresses, and can't be read by trying them: a refused address gets the same answer as a blocked or
+ * twice-invited one, and each try spends one of the account's day.
  *
  * THE END. Stopping erases the address and keeps the row as "stopped", so the owner sees what happened. The owner
  * removing it deletes the row. It goes with its case (cases.remove, through clearCaseReferences) and with the account
@@ -148,20 +150,34 @@ async function poolFull(ctx: MutationCtx): Promise<{ ok: false; message: string 
   return { ok: false, message: "We've sent as many invitations as we can today. Please try again tomorrow." };
 }
 
-/** Whether an address (by its keyed hash) asked never to be added again. */
-async function isRefused(ctx: QueryCtx | MutationCtx, addressKey: string): Promise<boolean> {
-  const row = await ctx.db
+/** The refusal an address (by its keyed hash) gave one account, or every account when `userId` is undefined. */
+async function refusalOf(
+  ctx: QueryCtx | MutationCtx,
+  addressKey: string,
+  userId: Id<"users"> | undefined,
+): Promise<Doc<"reminderRefusals"> | null> {
+  return await ctx.db
     .query("reminderRefusals")
-    .withIndex("by_addressKey", (q) => q.eq("addressKey", addressKey))
+    .withIndex("by_userId_and_addressKey", (q) => q.eq("userId", userId).eq("addressKey", addressKey))
     .first();
-  return row !== null;
 }
 
-/** Put an address on the refusal list, once, as its keyed hash only. */
-async function refuseAddress(ctx: MutationCtx, email: string): Promise<void> {
+/**
+ * Whether an address (by its keyed hash) refused this account's invitations: "Don't invite me again", which refuses
+ * every account, or a Stop on this account's reminders.
+ */
+async function isRefused(ctx: QueryCtx | MutationCtx, addressKey: string, userId: Id<"users">): Promise<boolean> {
+  return (await refusalOf(ctx, addressKey, undefined)) !== null || (await refusalOf(ctx, addressKey, userId)) !== null;
+}
+
+/**
+ * Put an address on the refusal list, once, as its keyed hash only: for one account (a reminder's Stop) or, with no
+ * account, for every account ("Don't invite me again").
+ */
+async function refuseAddress(ctx: MutationCtx, email: string, userId?: Id<"users">): Promise<void> {
   const addressKey = await reminderAddressKey(email, secret());
-  if (await isRefused(ctx, addressKey)) return;
-  await ctx.db.insert("reminderRefusals", { addressKey, refusedAt: Date.now() });
+  if (await refusalOf(ctx, addressKey, userId)) return;
+  await ctx.db.insert("reminderRefusals", { addressKey, refusedAt: Date.now(), ...(userId ? { userId } : {}) });
 }
 
 /** This account's count of invitations to one address (by its keyed hash), or null when it never invited it. */
@@ -294,7 +310,7 @@ export const invite = mutation({
     const invitedBefore = await inviteCountOf(ctx, userId, addressKey);
     if (
       isEmailBlocked(email) ||
-      (await isRefused(ctx, addressKey)) ||
+      (await isRefused(ctx, addressKey, userId)) ||
       (invitedBefore !== null && invitedBefore.count >= REMINDER_INVITES_PER_ADDRESS)
     ) {
       return { ok: false as const, message: CANT_INVITE };
@@ -480,8 +496,10 @@ export const confirmByToken = internalMutation({
 // ============================================================================
 
 /**
- * The stop link (and the mail app's own Unsubscribe button). The address is erased and the row kept as "stopped".
- * A valid link for a row that's already stopped or was removed answers "already": nothing more will be sent either way.
+ * The stop link (and the mail app's own Unsubscribe button). The address is erased and the row kept as "stopped",
+ * and the account that added the address can't invite it again; other accounts still can ("Don't invite me again", in
+ * an invitation, is what refuses them all). A valid link for a row that's already stopped or was removed answers
+ * "already": nothing more will be sent either way. A removed row names no account, so nothing is refused for it.
  */
 export const stopByToken = internalMutation({
   args: { token: v.string(), recipientId: v.string() },
@@ -490,14 +508,15 @@ export const stopByToken = internalMutation({
     if (args.token.length > TOKEN_MAX || args.recipientId.length > 64) return null;
     const email = await verifyUnsubscribeToken(args.token, secret(), reminderStopPurpose(args.recipientId));
     if (!email) return null;
-    // Whatever the row's state, the address asked to stop: nobody invites it again, and nothing kept for this row in
-    // the retry queue goes to it.
-    await refuseAddress(ctx, email);
+    // Whatever the row's state, nothing kept for this row in the retry queue goes to the address.
     const ref = reminderRef(args.recipientId);
     await dropRetries(ctx, email, (r) => (r.refs ?? []).includes(ref));
     const row = await rowById(ctx, args.recipientId);
-    if (!row || row.status === "stopped") return "already" as const;
-    if (row.email !== email) return null;
+    if (!row) return "already" as const;
+    // A stopped row's address is erased; the link, signed for this row, says whose it was.
+    if (row.status !== "stopped" && row.email !== email) return null;
+    await refuseAddress(ctx, email, row.userId);
+    if (row.status === "stopped") return "already" as const;
     await endByPerson(ctx, row);
     return "stopped" as const;
   },

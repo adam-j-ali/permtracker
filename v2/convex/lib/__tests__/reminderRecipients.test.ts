@@ -21,6 +21,7 @@ import {
   reminderStopPurpose,
   stopUrl,
 } from "../reminderRecipients";
+import { APP_GUIDE_SECTIONS } from "../rag/appGuideKnowledge";
 import { makeUnsubscribeToken } from "../unsubscribeToken";
 import { buildUserNotificationPrefs, type UserNotificationPrefs } from "../notificationHelpers";
 
@@ -366,5 +367,24 @@ describe("the address as the refusal list and the invitation count keep it", () 
 
   it("lets one account invite one address twice in all", () => {
     expect(REMINDER_INVITES_PER_ADDRESS).toBe(2);
+  });
+});
+
+describe("what the chat's guide says about refusals", () => {
+  const guide = APP_GUIDE_SECTIONS.map((s) => s.content).find((c) => c.includes("Reminders for someone else")) ?? "";
+
+  it("finds the card's entry", () => {
+    expect(guide.length).toBeGreaterThan(200);
+  });
+
+  it("says a Stop refuses only the account that added the address, and \"Don't invite me again\" every account", () => {
+    expect(guide).toContain("An address that stopped these reminders can't be added again by your account");
+    expect(guide).toContain("one that chose \"Don't invite me again\" in its invitation can't be added by anyone");
+    expect(guide).not.toContain("An address that stopped these reminders or chose");
+  });
+
+  it("says a refused address gets one plain answer, and each try counts toward the day's five", () => {
+    expect(guide).toContain("We can't send an invitation to that address");
+    expect(guide).toContain("Each try counts toward the 5 a day");
   });
 });

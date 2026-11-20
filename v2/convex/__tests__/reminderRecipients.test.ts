@@ -429,37 +429,59 @@ describe("an address that asked not to be added, and the cap on asking again", (
     return { ...s, id: row!._id };
   }
 
-  it("an address that clicked Stop can't be invited again by any account, and the owner is told plainly", async () => {
-    const { t, owner, other, caseId } = await stopped();
+  it("an address that clicked Stop can't be invited again by the account that added it, under any spelling", async () => {
+    const { t, owner, caseId } = await stopped();
     await owner.mutation(api.reminderRecipients.remove, { caseId });
     sent = [];
-    expect(await owner.mutation(api.reminderRecipients.invite, { caseId, email: " PARA@firm.example" })).toEqual({
-      ok: false,
-      message: REFUSED,
-    });
-    await verify(t, other.userId);
-    const theirs = await t.run((ctx) => ctx.db.insert("cases", caseRow(other.userId)));
-    expect(await other.mutation(api.reminderRecipients.invite, { caseId: theirs, email: "para@firm.example" })).toEqual({
-      ok: false,
-      message: REFUSED,
-    });
+    for (const email of [" PARA@firm.example", "para+again@firm.example"]) {
+      expect(await owner.mutation(api.reminderRecipients.invite, { caseId, email }), email).toEqual({
+        ok: false,
+        message: REFUSED,
+      });
+    }
     expect(await rows(t)).toEqual([]);
     await finishScheduledNow(t);
     expect(sent).toEqual([]);
   });
 
-  it("keeps only a keyed one-way hash of the address, once", async () => {
-    const { t, id } = await stopped();
+  it("Stop refuses only the account that added the address: another account can still invite it", async () => {
+    const { t, other } = await stopped();
+    await verify(t, other.userId);
+    const theirs = await t.run((ctx) => ctx.db.insert("cases", caseRow(other.userId)));
+    expect(await other.mutation(api.reminderRecipients.invite, { caseId: theirs, email: "para@firm.example" })).toEqual({
+      ok: true,
+    });
+    await finishScheduledNow(t);
+  });
+
+  it("keeps only a keyed one-way hash of the address with the account that added it, once", async () => {
+    const { t, owner, id } = await stopped();
     // A second click on the same Stop link adds nothing.
     await t.mutation(internal.reminderRecipients.stopByToken, { token: await stopToken(id, "para@firm.example"), recipientId: id });
     const list = await refusals(t);
     expect(list).toHaveLength(1);
     expect(list[0]!.addressKey).toBe(await reminderAddressKey("para@firm.example", SECRET));
+    expect(list[0]!.userId).toBe(owner.userId);
     expect(JSON.stringify(list)).not.toContain("para");
   });
 
-  it("\"Don't invite me again\" in the invitation ends it and refuses the address from then on", async () => {
-    const { t, owner, caseId } = await setup();
+  it("a Stop link for a row the owner already removed records nothing: there's no account to refuse", async () => {
+    const s = await setup();
+    await s.owner.mutation(api.reminderRecipients.invite, { caseId: s.caseId, email: "para@firm.example" });
+    await finishScheduledNow(s.t);
+    const [row] = await rows(s.t);
+    await s.owner.mutation(api.reminderRecipients.remove, { caseId: s.caseId });
+    expect(
+      await s.t.mutation(internal.reminderRecipients.stopByToken, {
+        token: await stopToken(row!._id, "para@firm.example"),
+        recipientId: row!._id,
+      }),
+    ).toBe("already");
+    expect(await refusals(s.t)).toEqual([]);
+  });
+
+  it("\"Don't invite me again\" in the invitation ends it and refuses the address to every account from then on", async () => {
+    const { t, owner, other, caseId } = await setup();
     await owner.mutation(api.reminderRecipients.invite, { caseId, email: "para@firm.example" });
     await finishScheduledNow(t);
     const invite = sent[0]!;
@@ -482,9 +504,18 @@ describe("an address that asked not to be added, and the cap on asking again", (
     expect(after!.status).toBe("stopped");
     expect("email" in after!).toBe(false);
     expect(await refusals(t)).toHaveLength(1);
+    // Kept for every account: no account is named on it.
+    expect((await refusals(t))[0]!.userId).toBeUndefined();
 
     await owner.mutation(api.reminderRecipients.remove, { caseId });
     expect(await owner.mutation(api.reminderRecipients.invite, { caseId, email: "para@firm.example" })).toEqual({
+      ok: false,
+      message: REFUSED,
+    });
+    // Every other account is refused too.
+    await verify(t, other.userId);
+    const theirs = await t.run((ctx) => ctx.db.insert("cases", caseRow(other.userId)));
+    expect(await other.mutation(api.reminderRecipients.invite, { caseId: theirs, email: "para@firm.example" })).toEqual({
       ok: false,
       message: REFUSED,
     });
@@ -673,12 +704,19 @@ describe("an address that asked not to be added, and the cap on asking again", (
     expect(good).toEqual(refused);
   });
 
-  it("the account's invitation counts go with it; the refusal list stays", async () => {
-    const { t, owner } = await stopped();
-    expect(await counts(t)).toHaveLength(1);
+  it("the account's invitation counts and its Stop refusals go with it; the list for every account stays", async () => {
+    const s = await stopped();
+    const { t, owner } = s;
+    // A second address declined another account's invitation: that refusal names no account.
+    await declinedElsewhere(s, "hr@employer.example");
+    expect(await refusals(t)).toHaveLength(2);
+    expect(await counts(t)).toHaveLength(2);
     await t.run((ctx) => purgeAllUserData(ctx, owner.userId));
-    expect(await counts(t)).toEqual([]);
-    expect(await refusals(t)).toHaveLength(1);
+    expect((await counts(t)).filter((c) => c.userId === owner.userId)).toEqual([]);
+    const left = await refusals(t);
+    expect(left).toHaveLength(1);
+    expect(left[0]!.addressKey).toBe(await reminderAddressKey("hr@employer.example", SECRET));
+    expect(left[0]!.userId).toBeUndefined();
   });
 });
 
@@ -1041,11 +1079,18 @@ describe("the confirm and stop pages", () => {
     await t.mutation(internal.reminderRecipients.confirmByToken, { token: await confirmToken(id, "para@firm.example"), recipientId: id });
     const link = path("/case-alert/reminders/stop", await stopToken(id, "para@firm.example"), id);
     const page = await t.fetch(link, { method: "GET" });
-    expect(await page.text()).toContain("Stop the reminders");
+    const pageHtml = await page.text();
+    expect(pageHtml).toContain("Stop the reminders");
+    // Stop refuses the account that added the address, and only that one.
+    expect(pageHtml).toContain("The account that added you");
+    expect(pageHtml).not.toContain("No one on PERM Tracker");
     expect((await rows(t))[0]!.status).toBe("confirmed");
     const done = await t.fetch(link, { method: "POST", body: "List-Unsubscribe=One-Click" });
     expect(done.status).toBe(200);
-    expect(await done.text()).toContain("The reminders are off");
+    const doneHtml = await done.text();
+    expect(doneHtml).toContain("The reminders are off");
+    expect(doneHtml).toContain("The account that added you");
+    expect(doneHtml).not.toContain("No one on PERM Tracker");
     expect((await rows(t))[0]!.status).toBe("stopped");
   });
 

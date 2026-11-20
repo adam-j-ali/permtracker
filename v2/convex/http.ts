@@ -763,7 +763,7 @@ http.route({
     if (!l) return reminderBadLink("This link is incomplete. Use the Stop link in your latest reminder email.");
     return messagePage(
       "Stop these deadline reminders?",
-      "You'll stop getting this PERM case's deadline reminders, and we'll delete your address from it. No one on PERM Tracker can invite this address to a case's reminders again.",
+      "You'll stop getting this PERM case's deadline reminders, and we'll delete your address from it. The account that added you can't invite this address again.",
       { post: reminderAction(REMINDER_STOP_PATH, l), label: "Stop the reminders" },
     );
   }),
@@ -783,7 +783,7 @@ http.route({
     }
     return messagePage(
       "The reminders are off",
-      "We won't send you this case's deadline reminders again, and we've deleted your address from it. No one on PERM Tracker can invite this address to a case's reminders again.",
+      "We won't send you this case's deadline reminders again, and we've deleted your address from it. The account that added you can't invite this address again.",
     );
   }),
 });
