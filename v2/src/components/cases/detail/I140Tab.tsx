@@ -9,6 +9,9 @@ import { fmtISODate, computeWindowStatus } from "./case-detail-utils";
 import { WindowCard } from "./WindowCard";
 import { ResponseEntryGrid } from "./ResponseEntryGrid";
 import { ReportedI140ForCase } from "./ReportedI140ForCase";
+import { PublicNumber } from "./PublicNumber";
+import { BULLETIN_CATEGORIES_HREF, receiptPageHref } from "@/lib/cases/publicLinks";
+import { casePriorityDate } from "@/lib/perm";
 
 interface I140TabProps {
   caseData: CaseDetailData;
@@ -18,6 +21,7 @@ export function I140Tab({ caseData }: I140TabProps) {
   const rfeEntries = caseData.rfeEntries || [];
 
   const isFiled = !!caseData.i140FilingDate;
+  const priority = casePriorityDate(caseData);
   const isApproved = !!caseData.i140ApprovalDate;
   const isDenied = !!caseData.i140DenialDate;
   const statusLabel = isApproved ? "Approved" : isDenied ? "Denied" : isFiled ? "Filed" : "Pending";
@@ -60,12 +64,18 @@ export function I140Tab({ caseData }: I140TabProps) {
               <div className="field-cell">
                 <div className="fc-label">Category</div>
                 <div className={`fc-val ${!caseData.i140Category ? "dim" : ""}`}>
-                  {caseData.i140Category || "-"}
+                  <PublicNumber value={caseData.i140Category} href={caseData.i140Category ? BULLETIN_CATEGORIES_HREF : null} />
                 </div>
               </div>
               <div className="field-cell">
                 <div className="fc-label">Filing date</div>
                 <div className={`fc-val num ${!isFiled ? "dim" : ""}`}>{fmtISODate(caseData.i140FilingDate)}</div>
+              </div>
+              <div className="field-cell">
+                <div className="fc-label">Priority date</div>
+                <div className={`fc-val num ${!priority ? "dim" : ""}`} title={priority ? (priority.from === "eta9089" ? "The ETA 9089's filing day" : "The I-140's filing day") : undefined}>
+                  {priority ? fmtISODate(priority.date) : "-"}
+                </div>
               </div>
               <div className="field-cell">
                 <div className="fc-label">Premium processing</div>
@@ -85,7 +95,7 @@ export function I140Tab({ caseData }: I140TabProps) {
               <div className="field-cell">
                 <div className="fc-label">Receipt number</div>
                 <div className={`fc-val fc-val-text mono ${!caseData.i140ReceiptNumber ? "dim" : ""}`} title={caseData.i140ReceiptNumber || undefined}>
-                  {caseData.i140ReceiptNumber || "-"}
+                  <PublicNumber value={caseData.i140ReceiptNumber} href={receiptPageHref(caseData.i140ReceiptNumber)} />
                 </div>
               </div>
               <div className="field-cell">

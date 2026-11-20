@@ -262,3 +262,19 @@ export function paceByLine<C extends PaceBasis>(cells: readonly C[], keyOf: (cel
   }
   return out;
 }
+
+
+/**
+ * A case's priority date, by 8 CFR 204.5(d) (read from eCFR, Nov 20 2026): with a labor certification, the day DOL
+ * accepted the application for processing, which is the ETA 9089's filing day; without one (EB-1, and EB-2 by national
+ * interest waiver), the day the I-140 was properly filed. Null until that day is on the case.
+ */
+export function casePriorityDate(c: {
+  i140Category?: string | null;
+  eta9089FilingDate?: string | null;
+  i140FilingDate?: string | null;
+}): { date: string; from: "eta9089" | "i140" } | null {
+  const noLaborCertification = c.i140Category === "EB-1" || c.i140Category === "EB-2-NIW";
+  if (noLaborCertification) return c.i140FilingDate ? { date: c.i140FilingDate, from: "i140" } : null;
+  return c.eta9089FilingDate ? { date: c.eta9089FilingDate, from: "eta9089" } : null;
+}
