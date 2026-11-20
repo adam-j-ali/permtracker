@@ -73,7 +73,7 @@ try {
   });
   const page = await ctx.newPage();
   for (const [slug, s] of jobs) {
-    const { url, scroll, wait, clip, width, height, maxHeight, open, fill, click, css, clock, ready, settle } = s.capture;
+    const { url, scroll, wait, clip, width, height, maxHeight, open, fill, click, steps, css, clock, ready, settle } = s.capture;
     try {
       await page.setViewportSize({ width: width ?? 1200, height: height ?? 900 });
       // A Storybook capture of the app runs on the day its sample firm was
@@ -90,6 +90,29 @@ try {
         await page.locator(sel).first().click();
         await page.waitForTimeout(600);
       }
+      // "steps": in order, for a tool that answers in stages (pick a state, then
+      // its area, press the button, then type into what the answer opens). Each
+      // names its control the way a reader does: { select: "Label", option: "Text
+      // in the option" }, { fill: "Label", text }, { click: "Button name" } or
+      // { waitFor: "Exact text on the page" }.
+      for (const st of steps ?? []) {
+        if (st.select) {
+          const box = page.getByLabel(st.select, { exact: true });
+          const option = box.locator("option", { hasText: st.option }).first();
+          await option.waitFor({ state: "attached", timeout: 60000 });
+          await box.selectOption((await option.getAttribute("value")) ?? st.option);
+        } else if (st.fill) {
+          await page.getByLabel(st.fill, { exact: true }).fill(st.text);
+        } else if (st.click) {
+          await page.getByRole("button", { name: st.click, exact: true }).click();
+        } else if (st.waitFor) {
+          await page.getByText(st.waitFor, { exact: true }).last().waitFor({ timeout: 90000 });
+        } else {
+          throw new Error(`a step must select, fill, click or waitFor: ${JSON.stringify(st)}`);
+        }
+        await page.waitForTimeout(600);
+      }
+      if (steps?.length) await page.waitForTimeout(1500);
       // Type into boxes on the page (a list's own search, a calculator's
       // dates), then let it answer.
       for (const f of fill ? [fill].flat() : []) {

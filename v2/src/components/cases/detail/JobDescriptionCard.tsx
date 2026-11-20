@@ -6,6 +6,7 @@ import { BriefcaseIcon, CheckIcon, CopyIcon, PencilIcon, TrashIcon } from "@phos
 import type { Id } from "@convex/_generated/dataModel";
 import { JobDescriptionEditor } from "@/components/job-description/JobDescriptionEditor";
 import { copyToClipboard } from "@/components/job-description/shared";
+import Link from "next/link";
 import { SocCodeCard } from "@/components/soc/SocCodeSummary";
 import { Button } from "@/components/ui/button";
 import { handleOperationError } from "@/lib/errors";
@@ -130,7 +131,14 @@ export function JobDescriptionCard({ caseData, jobDescProps }: { caseData: CaseD
 
       {caseData.socCode ? (
         <div className="detail-card-body border-t-2 border-border">
-          <SocCodeCard code={caseData.socCode} />
+          <SocCodeCard code={caseData.socCode} />{" "}
+          {/* DOL's four wages for this job code in any area, and the level the job will likely get by DOL's own
+              method (src/lib/wageLevelEstimate.ts), on the public tool with the code filled in. */}
+          <p className="mt-3 text-sm">
+            <Link href={`/tools/wage-levels?soc=${encodeURIComponent(caseData.socCode)}`} className="link font-bold">
+              {caseData.pwdWageLevel ? "Compare this wage with DOL's four levels" : "Estimate the wage level and see DOL's four wages"}
+            </Link>
+          </p>
         </div>
       ) : null}
 
