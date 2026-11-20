@@ -110,8 +110,11 @@ async function declineToken(id: string, email: string) {
   return makeUnsubscribeToken(email, SECRET, reminderDeclinePurpose(id));
 }
 
-/** The refusal the owner sees for an address that asked not to get these. */
-const REFUSED = "That address asked not to get these reminders.";
+/**
+ * The one answer the owner gets for an address we won't invite: refused, blocked, or invited twice already. One answer
+ * for all, so trying addresses can't tell which of them refused.
+ */
+const REFUSED = "We can't send an invitation to that address.";
 
 describe("adding a second person to a case's reminders", () => {
   it("stores the address trimmed and lowercased, waiting, and sends one invitation naming who asked and the case", async () => {
@@ -538,7 +541,7 @@ describe("an address that asked not to be added, and the cap on asking again", (
     // A third is refused, however it's typed, and writes nothing.
     expect(await owner.mutation(api.reminderRecipients.invite, { caseId, email: "Para@Firm.example " })).toEqual({
       ok: false,
-      message: "You've invited that address twice already, so we can't send it another invitation.",
+      message: REFUSED,
     });
     expect(await rows(t)).toEqual([]);
     expect((await counts(t)).map((c) => c.count)).toEqual([2]);
@@ -584,10 +587,90 @@ describe("an address that asked not to be added, and the cap on asking again", (
     }
     expect(await owner.mutation(api.reminderRecipients.invite, { caseId, email: "Para+3@firm.example" })).toEqual({
       ok: false,
-      message: "You've invited that address twice already, so we can't send it another invitation.",
+      message: REFUSED,
     });
     expect((await counts(t)).map((c) => c.count)).toEqual([2]);
     await finishScheduledNow(t);
+  });
+
+  /** Today's per-account cap emptied, so a test can try more addresses than one day allows. */
+  const resetCaps = (t: T) =>
+    t.run(async (ctx) => {
+      for (const r of await ctx.db.query("rateLimits").collect()) {
+        if (r.action === "reminder_invite_account") await ctx.db.delete(r._id);
+      }
+    });
+
+  /** An address another account's invitation was declined for: on the site-wide list. */
+  async function declinedElsewhere(s: Awaited<ReturnType<typeof setup>>, email: string) {
+    await verify(s.t, s.other.userId);
+    const theirs = await s.t.run((ctx) => ctx.db.insert("cases", caseRow(s.other.userId)));
+    await s.other.mutation(api.reminderRecipients.invite, { caseId: theirs, email });
+    await finishScheduledNow(s.t);
+    const row = (await rows(s.t)).find((r) => r.caseId === theirs)!;
+    await s.t.mutation(internal.reminderRecipients.declineByToken, { token: await declineToken(row._id, email), recipientId: row._id });
+  }
+
+  it("gives a refused, a blocked and an invited-twice address the same answer", async () => {
+    const s = await setup();
+    const { t, owner, caseId } = s;
+    await declinedElsewhere(s, "para@firm.example");
+    for (let i = 0; i < 2; i++) {
+      expect((await owner.mutation(api.reminderRecipients.invite, { caseId, email: "hr@employer.example" })).ok).toBe(true);
+      await owner.mutation(api.reminderRecipients.remove, { caseId });
+    }
+    await resetCaps(t);
+    const answers = [];
+    for (const email of ["para@firm.example", "blocked@example.com", "hr@employer.example"]) {
+      answers.push(await owner.mutation(api.reminderRecipients.invite, { caseId, email }));
+    }
+    expect(answers).toEqual([
+      { ok: false, message: REFUSED },
+      { ok: false, message: REFUSED },
+      { ok: false, message: REFUSED },
+    ]);
+    expect((await rows(t)).filter((r) => r.caseId === caseId)).toEqual([]);
+    await finishScheduledNow(t);
+  });
+
+  it("charges every try to the account's daily cap, so the list can't be read by trying addresses", async () => {
+    const s = await setup();
+    const { t, owner, caseId } = s;
+    await declinedElsewhere(s, "para@firm.example");
+    sent = [];
+    const n = REMINDER_INVITES_PER_ACCOUNT.limit;
+    for (let i = 0; i < n; i++) {
+      const email = i % 2 === 0 ? "para@firm.example" : "blocked@example.com";
+      expect(await owner.mutation(api.reminderRecipients.invite, { caseId, email })).toEqual({ ok: false, message: REFUSED });
+    }
+    // The day's tries are spent: a good address and a refused one now get the same "tomorrow".
+    const good = await owner.mutation(api.reminderRecipients.invite, { caseId, email: "fresh@firm.example" });
+    expect(good).toEqual({ ok: false, message: expect.stringContaining("tomorrow") });
+    expect(await owner.mutation(api.reminderRecipients.invite, { caseId, email: "para@firm.example" })).toEqual(good);
+    expect((await rows(t)).filter((r) => r.caseId === caseId)).toEqual([]);
+    await finishScheduledNow(t);
+    expect(sent).toEqual([]);
+  });
+
+  it("a full shared pool gives a refused address and a good one the same answer", async () => {
+    const s = await setup();
+    const { t, owner, caseId } = s;
+    await declinedElsewhere(s, "para@firm.example");
+    await t.run(async (ctx) => {
+      const now = Date.now();
+      for (let i = 0; i < windowFor("reminderInvite").limit; i++) {
+        await ctx.db.insert("rateLimits", {
+          key: `${BUDGETS.reminderInvite.key}:all`,
+          timestamp: now,
+          identifier: "all",
+          action: BUDGETS.reminderInvite.key,
+        });
+      }
+    });
+    const refused = await owner.mutation(api.reminderRecipients.invite, { caseId, email: "para@firm.example" });
+    const good = await owner.mutation(api.reminderRecipients.invite, { caseId, email: "fresh@firm.example" });
+    expect(refused).toEqual({ ok: false, message: expect.stringContaining("as many invitations as we can today") });
+    expect(good).toEqual(refused);
   });
 
   it("the account's invitation counts go with it; the refusal list stays", async () => {
