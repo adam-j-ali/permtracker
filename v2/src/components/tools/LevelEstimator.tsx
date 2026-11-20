@@ -119,7 +119,7 @@ export function LevelEstimator({
         <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2 [&>*]:min-w-0">
           <div className="grid grid-cols-1 gap-4 [&>*]:min-w-0">
             {usable.length > 1 ? (
-              <label className="grid gap-1 text-base">
+              <label className="grid grid-cols-1 gap-1 text-base [&>*]:min-w-0">
                 <span className="font-bold">Closest occupation</span>
                 <select className="min-h-11 w-full max-w-md border-2 border-input bg-background px-2" value={onet} onChange={(e) => setOnet(e.target.value)}>
                   {usable.map((r) => (
@@ -130,7 +130,7 @@ export function LevelEstimator({
                 </select>
               </label>
             ) : null}
-            <label className="grid gap-1 text-base">
+            <label className="grid grid-cols-1 gap-1 text-base [&>*]:min-w-0">
               <span className="font-bold">Degree the job requires</span>
               <select className="min-h-11 w-full max-w-md border-2 border-input bg-background px-2" value={degree} onChange={(e) => setDegree(e.target.value as Degree)}>
                 {DEGREES.map((d) => (
@@ -140,7 +140,7 @@ export function LevelEstimator({
                 ))}
               </select>
             </label>
-            <div className="grid gap-1 text-base">
+            <div className="grid grid-cols-1 gap-1 text-base [&>*]:min-w-0">
               <label htmlFor={`${id}-months`} className="font-bold">
                 Months of experience the job requires
               </label>
@@ -160,7 +160,7 @@ export function LevelEstimator({
                 24 months is 2 years. Count only what the job requires, not what the worker has.
               </span>
             </div>
-            <fieldset className="grid gap-2">
+            <fieldset className="grid grid-cols-1 gap-2 [&>*]:min-w-0">
               <legend className="mb-1 text-base font-bold">The job also requires</legend>
               {(
                 [
@@ -192,9 +192,9 @@ export function LevelEstimator({
                   {estimate.mayBeHigher ? " " : null}
                   {estimate.mayBeHigher ? <span className="ml-1 text-base font-bold text-muted-foreground">{"or higher"}</span> : null}
                 </p>{" "}
-                <ol className="mt-3 grid gap-2 text-base">
+                <ol className="mt-3 grid grid-cols-1 gap-2 text-base [&>*]:min-w-0">
                   {estimate.steps.map((s) => (
-                    <li key={s.step} className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-2">
+                    <li key={s.step} className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-2 [&>*]:min-w-0">
                       <span className={cn("font-mono font-bold tabular-nums", s.points > 0 ? "text-foreground" : "text-muted-foreground")}>
                         {`+${s.points}`}
                       </span>{" "}
