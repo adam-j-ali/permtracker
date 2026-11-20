@@ -313,6 +313,8 @@ def main() -> int:
         log("  guard: the artifact carries no fingerprint (an older parser); loading unguarded")
 
     incremental = "--incremental" in sys.argv
+    # The share of the stored cases that may leave the table in one load (cases DOL took out of its files).
+    STALE_SHARE = 0.01
     if incremental:
         # CREATE TABLE runs only on a full load; an incremental load writes into
         # the live table, which would reject a column it has never had.
@@ -373,8 +375,10 @@ def main() -> int:
             if len(pending) >= STMTS_PER_REQUEST:
                 flush_request()
 
+    seen: set[str] = set()
     for row in rows_from(cases, employers, firms):
         if incremental:
+            seen.add(str(row[0]))
             stored = have.get(str(row[0]))
             if stored and stored[0] == row_fingerprint(row):
                 mine = extras_of(row)
@@ -404,10 +408,26 @@ def main() -> int:
            f"{', '.join(EXTRA)} only)" if incremental else ""))
 
     if incremental:
+        # A case DOL no longer publishes leaves the table, as a full load would leave it out: the case table and
+        # every figure built from the files (risk.byWage, the wage bands) describe one population. FY2026 Q4 left
+        # out 420 cases its Q3 file held (Nov 20 2026); their live status stays in perm_live_recent, which holds
+        # every live case the files don't. A loss past STALE_SHARE of the table reads as a parsing fault: refuse.
+        stale = [c for c in have if c not in seen]
+        if stale:
+            if len(stale) > max(1, int(len(have) * STALE_SHARE)):
+                log(f"  FATAL: {len(stale):,} stored cases are missing from DOL's files, past {STALE_SHARE:.0%} of the "
+                    f"table; nothing removed (e.g. {', '.join(stale[:5])})")
+                return 1
+            for i in range(0, len(stale), 500):
+                part = stale[i:i + 500]
+                db.execute(f"DELETE FROM perm_cases WHERE case_number IN ({','.join('?' * len(part))})", part)  # nosemgrep
+            log(f"  removed {len(stale):,} cases DOL's newest files no longer publish (e.g. {', '.join(stale[:3])})")
         # The indexes already exist and were maintained by the writes above.
         # Rebuilding them would undo the entire point of the incremental path.
         got = int(db.scalar("SELECT count(*) FROM perm_cases") or 0)
-        log(f"  VERIFY count(*) = {got:,}")
+        log(f"  VERIFY count(*) = {got:,}  (DOL's files hold {len(seen):,})")
+        if got != len(seen):
+            log("  FATAL: the table and DOL's files disagree after the load"); return 1
         write_fingerprint(db, fingerprint)
         return 0
 
