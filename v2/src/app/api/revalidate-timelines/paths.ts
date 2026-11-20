@@ -4,6 +4,16 @@
  */
 export const TIMELINE_PAGES: readonly string[] = ["/green-card-timelines", "/perm-processing-times"];
 
+/**
+ * The other pages that read the merged list of reported cases (`src/lib/db/communityReports.ts`), refreshed with the
+ * board's whenever the list changes: the I-140 form page shows the I-140s people reported. The timelines page reads
+ * the list too, and is already among the board's pages.
+ */
+export const LIST_PAGES: readonly string[] = ["/uscis-processing-times/i-140"];
+
+/** Every fixed page a valid call refreshes. */
+export const FIXED_PAGES: readonly string[] = [...TIMELINE_PAGES, ...LIST_PAGES];
+
 /** The family each USCIS office's page lives under. */
 export const OFFICE_PAGES = "/i485-by-field-office";
 

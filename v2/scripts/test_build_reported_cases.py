@@ -101,6 +101,11 @@ def main() -> int:
     check(b.office_digests(stored) == b.office_digests(rebuilt), "a rebuild that changed nothing refreshes nothing")
     moved = [{**rebuilt[0], "transfer": "2026-09-30"}, *rebuilt[1:]]
     check(b.office_digests(moved)["SFV"] != b.office_digests(rebuilt)["SFV"], "a changed day refreshes its office")
+    check(b.list_digest(stored) == b.list_digest(rebuilt), "the whole list: a rebuild that changed nothing changes nothing")
+    officeless = [{**r, "office": None} for r in rebuilt]
+    later = [{**officeless[0], "i140_decided": "2026-10-01"}, *officeless[1:]]
+    check(b.office_digests(later) == b.office_digests(officeless) and b.list_digest(later) != b.list_digest(officeless),
+          "a change to a case with no office still changes the whole list (the overview and the I-140 page read it)")
     tl = b.post_record({"source": "timeline", "key": "t1", "checked": "1", "shows": "0", "transfer": "2026-01-02",
                         "card": None})
     check(tl["checked"] is True and tl["shows"] is False and "card" not in tl, "a stored 0 is false, a null is gone")
@@ -156,7 +161,9 @@ def main() -> int:
     cols = {r[1] for r in query_rows(db, "PRAGMA table_info(reported_cases)")}
     check(set(b.COLUMNS) <= cols, f"an old table gains every column: missing {sorted(set(b.COLUMNS) - cols)[:5]}")
     changed = b.write(db, [b.case_row(c, 5) for c in b.build_cases({"sheets": [sheet_row()]})[0]])
-    check(changed == {"SFV"}, f"and the first write to it lands: {changed}")
+    check(changed.offices == {"SFV"} and changed.anything, f"and the first write to it lands: {changed}")
+    again = b.write(db, [b.case_row(c, 6) for c in b.build_cases({"sheets": [sheet_row()]})[0]])
+    check(not again.offices and not again.anything, f"the same list written again refreshes nothing: {again}")
 
     # A bad row from one source is counted and left out, never allowed to stop the build.
     cases, counts = b.build_cases({"sheets": [sheet_row(), sheet_row(row_no=3, transfer_date="9/24/2026")]})

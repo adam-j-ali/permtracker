@@ -1,8 +1,10 @@
 /**
  * Refresh the pages that show people's shared timelines when the owner approves, declines, hides or deletes one,
- * or its author changes or removes one that was showing (convex/communityTimelines.ts, `refreshPages`).
+ * or its author changes or removes one that was showing (convex/communityTimelines.ts, `refreshPages`), and the
+ * pages that read the merged list of reported cases whenever its hourly build changes it
+ * (scripts/build_reported_cases.py).
  *
- * The board's pages are fixed (TIMELINE_PAGES in paths.ts). The call may also name USCIS offices by USCIS's own
+ * The board's pages and the list's are fixed (FIXED_PAGES in paths.ts). The call may also name USCIS offices by USCIS's own
  * code; each is looked up in the site's office list and only its own page is refreshed, so nothing here can be
  * aimed at another page or expire the whole family. A code the list doesn't hold is skipped and named in the answer.
  * `revalidatePath` marks each page stale; the next visitor pays for one render.
@@ -11,7 +13,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
-import { MAX_OFFICES, OFFICE_PAGES, TIMELINE_PAGES } from "./paths";
+import { FIXED_PAGES, MAX_OFFICES, OFFICE_PAGES } from "./paths";
 import { secretMatches } from "@/lib/secretMatch";
 import { softFail } from "@/lib/softRead";
 import { officeByCode } from "@/lib/uscisOffices";
@@ -28,8 +30,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Expected { offices: string[] }" }, { status: 400 });
   }
 
-  for (const path of TIMELINE_PAGES) revalidatePath(path);
-  const refreshed: string[] = [...TIMELINE_PAGES];
+  for (const path of FIXED_PAGES) revalidatePath(path);
+  const refreshed: string[] = [...FIXED_PAGES];
   const unknown: string[] = [];
   for (const code of new Set(named as string[])) {
     const office = officeByCode(code);

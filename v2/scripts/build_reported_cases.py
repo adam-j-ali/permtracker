@@ -20,6 +20,7 @@ import json
 import re
 import sys
 import time
+from typing import NamedTuple
 
 import lib_reported_cases as rc
 
@@ -251,26 +252,43 @@ def read_sources(db, convex: bool = False) -> dict[str, list[dict]]:
     return out
 
 
+def _fingerprint(r: dict) -> str:
+    # Every value through `canon`, so a row read back from the database (integers as strings) matches the row this
+    # build wrote.
+    from lib_db import canon
+    return "\x1e".join(canon(r.get(c)) for c in COLUMNS if c != "built_at")
+
+
 def office_digests(rows: list[dict]) -> dict[str, str]:
     """A fingerprint of each office's shown cases, to refresh only the offices that changed."""
-    from lib_db import canon, canon_hash
+    from lib_db import canon_hash
     per: dict[str, list[str]] = {}
     for r in rows:
         if r.get("office") and int(r.get("shows") or 0):
-            # Every value through `canon`, so a row read back from the database (integers as strings) matches the
-            # row this build wrote.
-            per.setdefault(r["office"], []).append("\x1e".join(canon(r.get(c)) for c in COLUMNS if c != "built_at"))
+            per.setdefault(r["office"], []).append(_fingerprint(r))
     return {o: canon_hash(sorted(v)) for o, v in per.items()}
 
 
-def write(db, rows: list[dict], force: bool = False) -> set[str]:
-    """Replace the stored list: new rows in first, then the rows this build didn't write out. Returns the offices
-    whose shown cases changed."""
+def list_digest(rows: list[dict]) -> str:
+    """A fingerprint of every shown case, office or not: the overview and the I-140 page read the whole list."""
+    from lib_db import canon_hash
+    return canon_hash(sorted(_fingerprint(r) for r in rows if int(r.get("shows") or 0)))
+
+
+class Changes(NamedTuple):
+    offices: set[str]   # the offices whose shown cases changed: their own pages are refreshed
+    anything: bool      # any shown case changed: the pages reading the whole list are refreshed
+
+
+def write(db, rows: list[dict], force: bool = False) -> Changes:
+    """Replace the stored list: new rows in first, then the rows this build didn't write out. Returns what changed:
+    the offices whose shown cases changed, and whether any shown case did."""
     from lib_db import query_dicts, query_rows, stmt
     stored = int(query_rows(db, f"SELECT count(*) FROM {TABLE}")[0][0] or 0)  # nosemgrep
     if stored and len(rows) < stored * KEEP_SHARE and not force:
         raise RuntimeError(f"{len(rows)} cases against {stored} stored, more than half gone: the stored list stays")
-    before = office_digests(query_dicts(db, f"SELECT * FROM {TABLE}"))  # nosemgrep
+    stored_rows = query_dicts(db, f"SELECT * FROM {TABLE}")  # nosemgrep
+    before, before_all = office_digests(stored_rows), list_digest(stored_rows)
     stamp = rows[0]["built_at"] if rows else int(time.time() * 1000)
     sql = f"INSERT OR REPLACE INTO {TABLE} ({', '.join(COLUMNS)}) VALUES ({', '.join('?' * len(COLUMNS))})"  # nosemgrep
     reqs = [stmt(sql, [r[c] for c in COLUMNS]) for r in rows]
@@ -278,7 +296,8 @@ def write(db, rows: list[dict], force: bool = False) -> set[str]:
     for i in range(0, len(reqs), 200):
         db.pipeline(reqs[i:i + 200])
     after = office_digests(rows)
-    return {o for o in set(before) | set(after) if before.get(o) != after.get(o)}
+    return Changes({o for o in set(before) | set(after) if before.get(o) != after.get(o)},
+                   before_all != list_digest(rows))
 
 
 def main() -> int:
@@ -306,11 +325,11 @@ def main() -> int:
         stamp_freshness(db, "reported-cases", source="https://permtracker.app/green-card-timelines",
                         cadence="hourly", note=line, max_age_days=3)
         notes = [line]
-        if changed:
+        if changed.anything or changed.offices:
             from lib_policy_feed import expire_policy_page
-            ok = expire_policy_page(print, route="/api/revalidate-timelines", body={"offices": sorted(changed)})
-            notes.append(f"refreshed {', '.join(sorted(changed))}" if ok else "the office pages weren't refreshed; "
-                         "their own window will")
+            ok = expire_policy_page(print, route="/api/revalidate-timelines", body={"offices": sorted(changed.offices)})
+            notes.append(f"refreshed the list's pages{' and ' + ', '.join(sorted(changed.offices)) if changed.offices else ''}"
+                         if ok else "the pages weren't refreshed; their own window will")
         record_run(db, SCRIPT, status="ok", rows_written=len(cases), note="; ".join(notes), started_at=started)
         return 0
     except Exception as e:  # noqa: BLE001
