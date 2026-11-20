@@ -16,7 +16,30 @@
  * One sentence per dataset, in the reader's terms. `dataset-coverage.test.ts`
  * fails on a dataset without one.
  */
+import sheetConfig from "../../scripts/data/community_sheets.json";
+import { officeByCode } from "./uscisOffices";
+
+/**
+ * Each community sheet's sentence and name, from its own entry in scripts/data/community_sheets.json, so a sheet added
+ * there is described here without a second list. A sheet with a sentence of its own below keeps that one.
+ */
+const SHEET_COVERAGE: Record<string, string> = Object.fromEntries(
+  sheetConfig.sheets.map((s) => {
+    const office = "office" in s && typeof s.office === "string" ? officeByCode(s.office) : undefined;
+    const where = office ? ` at USCIS's ${office.name} field office` : "";
+    return [
+      `community-sheet-${s.key}`,
+      `The ${s.name} sheet, a public Google Sheet people keep their own green card cases in${where}, read every hour. ` +
+        "Self-reported and unchecked; usernames, names, receipt numbers and comments stay in the sheet.",
+    ];
+  }),
+);
+const SHEET_LABELS: Record<string, string> = Object.fromEntries(
+  sheetConfig.sheets.map((s) => [`community-sheet-${s.key}`, `The ${s.name} sheet`]),
+);
+
 export const DATASET_COVERAGE: Readonly<Record<string, string>> = {
+  ...SHEET_COVERAGE,
   // --- DOL quarterly disclosure files: decided only -----------------------
   "perm-cases":
     "Decided PERM cases only. A case still waiting isn't in here, so counts and durations describe finished cases.",
@@ -155,6 +178,8 @@ export const DATASET_COVERAGE: Readonly<Record<string, string>> = {
     "Every case people reported themselves, from the community sheets, VisaStats' tracker and the posts this site reads, merged so each person is one case: two reports join only when three of their dates match and nothing contradicts. Unchecked, and only as complete as what people chose to share.",
   "community-posts-reddit":
     "People's own case dates from Reddit posts and comments, read every day: only the dates and categories, never a username, a quote or a link. Unchecked, and only as complete as what people posted.",
+  "community-posts-telegram":
+    "People's own case dates from public Telegram groups about PERM and green cards, read every hour: only the dates, categories and offices, never a name, a username or a message's words. Read by a parser and a small model, every date checked against what the post itself writes. Unchecked, and only as complete as what people posted.",
   "warn-notices-ak": "Alaska WARN notices from the Department of Labor's list, since 2019.",
   "warn-notices-az":
     "Arizona WARN notices from the state's job-center search, since 2019. Counts come from each notice's own page, newest first: a run reads the new ones, and the state's weekly read fills the rest, so an older notice can wait up to a week for its count.",
@@ -281,6 +306,7 @@ export function coverageFor(dataset: string): string | null {
  * line printed the registry id, "h2a-disclosure:", to readers.
  */
 export const DATASET_LABELS: Readonly<Record<string, string>> = {
+  ...SHEET_LABELS,
   "perm-cases": "Case data",
   "pw-disclosure": "Wage determinations",
   "lca-disclosure": "LCA disclosures",
@@ -347,6 +373,7 @@ export const DATASET_LABELS: Readonly<Record<string, string>> = {
   "community-visastats": "VisaStats' community tracker",
   "reported-cases": "Cases people reported, merged",
   "community-posts-reddit": "Reddit posts and comments",
+  "community-posts-telegram": "Telegram groups' posts",
   "warn-notices-ak": "Alaska WARN notices",
   "warn-notices-az": "Arizona WARN notices",
   "warn-notices-co": "Colorado WARN notices",
