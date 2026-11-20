@@ -14,10 +14,11 @@ interface QuickStatsPanelProps {
 // The figure itself, at once. A count-up used to start when the panel scrolled
 // into view and reset to 0 whenever the case data arrived after that, with its
 // observer already gone, so the panel could sit at "0 days left" for good.
-function CountUpStat({ target, color, label, sub }: { target: number; color?: string; label: string; sub: string }) {
+function CountUpStat({ target, color, label, sub }: { target: number | null; color?: string; label: string; sub: string }) {
   return (
     <div className="stat">
-      <div className="stat-val" style={color ? { color } : undefined}>{target}</div>
+      {/* No date is a dash, never a 0 that reads as "expires today". */}
+      <div className="stat-val" style={color ? { color } : undefined}>{target === null ? "-" : target}</div>
       <div className="stat-label">{label}</div>
       <div className="stat-sub">{sub}</div>
     </div>
@@ -69,7 +70,7 @@ export function QuickStatsPanel({ caseData }: QuickStatsPanelProps) {
           <CountUpStat target={etaFiledDays} color="var(--stage-eta9089-ink)" label="ETA 9089 filed" sub="days with DOL" />
         ) : (
           <CountUpStat
-            target={pwdExpiryDays}
+            target={caseData.pwdExpirationDate ? pwdExpiryDays : null}
             color={caseData.pwdExpirationDate && pwdExpiryDays <= 30 ? "var(--data-warn-ink)" : "var(--stage-pwd-ink)"}
             label="PWD expires"
             sub={caseData.pwdExpirationDate ? "days left" : "no date yet"}
