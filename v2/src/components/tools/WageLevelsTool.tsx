@@ -33,7 +33,7 @@ const usd = (n: number, digits = 0) => n.toLocaleString("en-US", { style: "curre
 type Result =
   | { kind: "idle" }
   | { kind: "loading" }
-  | { kind: "levels"; levels: WageLevel[]; seriesYear: number; soc: string; areaLabel: string; source: string }
+  | { kind: "levels"; levels: WageLevel[]; seriesYear: number; soc: string; areaLabel: string; source: string; fromFile: boolean }
   | { kind: "none"; message: string }
   | { kind: "error"; message: string };
 
@@ -224,7 +224,7 @@ export function WageLevelsTool({
     loadHistory(soc.trim(), area);
     try {
       const res = await fetch(`/api/wage-levels?soc=${encodeURIComponent(soc.trim())}&area=${area}&year=${seriesYear}`);
-      const j = (await res.json().catch(() => null)) as { ok?: boolean; levels?: WageLevel[] | null; message?: string; soc?: string; seriesYear?: number; source?: string } | null;
+      const j = (await res.json().catch(() => null)) as { ok?: boolean; levels?: WageLevel[] | null; message?: string; soc?: string; seriesYear?: number; source?: string; from?: string } | null;
       if (!res.ok || !j?.ok) {
         setResult({ kind: "error", message: j?.message ?? "DOL couldn't be reached. Try again in a moment." });
         return;
@@ -233,7 +233,7 @@ export function WageLevelsTool({
         setResult({ kind: "none", message: j.message ?? "DOL publishes no wage for that occupation in that area." });
         return;
       }
-      setResult({ kind: "levels", levels: j.levels, seriesYear: j.seriesYear ?? seriesYear, soc: j.soc ?? soc, areaLabel: areas?.find((a) => String(a.value) === area)?.label ?? area, source: j.source ?? "https://flag.dol.gov/wage-data/wage-search" });
+      setResult({ kind: "levels", levels: j.levels, seriesYear: j.seriesYear ?? seriesYear, soc: j.soc ?? soc, areaLabel: areas?.find((a) => String(a.value) === area)?.label ?? area, source: j.source ?? "https://flag.dol.gov/wage-data/wage-search", fromFile: j.from === "file" });
     } catch {
       setResult({ kind: "error", message: "That didn't go through, which usually means the connection dropped." });
     }
@@ -317,7 +317,9 @@ export function WageLevelsTool({
       {result.kind === "levels" ? (
         <div className="mt-6">
           <p className="text-sm text-muted-foreground">
-            SOC {result.soc}, {result.areaLabel}, the July {result.seriesYear} to June {result.seriesYear + 1} series. DOL&apos;s figures, read just now.
+            {result.fromFile
+              ? `SOC ${result.soc}, ${result.areaLabel}, the July ${result.seriesYear} to June ${result.seriesYear + 1} series. DOL's figures from its published wage file for that year: its live search didn't answer just now.`
+              : `SOC ${result.soc}, ${result.areaLabel}, the July ${result.seriesYear} to June ${result.seriesYear + 1} series. DOL's figures, read just now.`}
           </p>{" "}
           <div className="mt-4">
             <WageLadder levels={result.levels} />
@@ -325,7 +327,7 @@ export function WageLevelsTool({
           <p className="mt-3 text-sm text-muted-foreground">
             Source:{" "}
             <a target="_blank" href={result.source} rel="noopener noreferrer" className="link">
-              OFLC wage search
+              {result.fromFile ? "OFLC wage data downloads" : "OFLC wage search"}
             </a>
             , all-industries OEWS. The level a case is set at depends on the job&apos;s requirements, which DOL decides on the ETA-9141.
           </p>{" "}

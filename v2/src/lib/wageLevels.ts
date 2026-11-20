@@ -16,6 +16,8 @@ import { socGroup } from "@/lib/socCode";
 export const WAGE_SEARCH_URL = "https://flag.dol.gov/recaptcha/wageSearch";
 export const AREA_OPTIONS_URL = "https://flag.dol.gov/flag/api/getAreaOptions";
 export const WAGE_SEARCH_PAGE = "https://flag.dol.gov/wage-data/wage-search";
+/** DOL's page of the yearly wage files the stored copy is read from (scripts/ingest_oflc_wages.py). */
+export const WAGE_DOWNLOADS_PAGE = "https://flag.dol.gov/wage-data/wage-data-downloads";
 
 /** BLS area codes are numeric, up to six digits. */
 export const AREA_RE = /^\d{1,6}$/;
