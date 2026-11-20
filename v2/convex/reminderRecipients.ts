@@ -458,7 +458,7 @@ export const copyTargets = internalQuery({
  */
 export const admitCopy = internalMutation({
   args: { recipientId: v.id("reminderRecipients") },
-  returns: v.union(v.null(), v.object({ email: v.string(), inviter: v.string(), caseLine: v.string(), jobTitle: v.string(), employerName: v.string() })),
+  returns: v.union(v.null(), v.object({ email: v.string(), caseLine: v.string(), jobTitle: v.string(), employerName: v.string() })),
   handler: async (ctx, { recipientId }) => {
     const row = await ctx.db.get("reminderRecipients", recipientId);
     if (!row || row.status !== "confirmed" || !row.email) return null;
@@ -477,7 +477,6 @@ export const admitCopy = internalMutation({
     await ctx.db.patch("reminderRecipients", recipientId, { lastSentDay: today });
     return {
       email: row.email,
-      inviter: await inviterFor(ctx, row.userId),
       caseLine: caseLine(caseDoc.positionTitle, caseDoc.employerName),
       jobTitle: caseDoc.positionTitle,
       employerName: caseDoc.employerName,
@@ -503,7 +502,7 @@ export const sendCopy = internalAction({
         const { render } = await import("@react-email/render");
         const { ReminderCopy } = await import("../src/emails/ReminderCopy");
         html = await render(
-          ReminderCopy({ inviter: admitted.inviter, caseLine: admitted.caseLine, items, checkedAt, stopUrl: stop }),
+          ReminderCopy({ caseLine: admitted.caseLine, items, checkedAt, stopUrl: stop }),
         );
       } catch (error) {
         await recordError(ctx, "action", "reminderRecipients.sendCopy.render", error);
@@ -517,7 +516,7 @@ export const sendCopy = internalAction({
           to: admitted.email,
           subject: reminderCopySubject(items.length, overdue, admitted.jobTitle, admitted.employerName),
           html,
-          text: copyText(admitted.inviter, admitted.caseLine, items, checkedAt, stop),
+          text: copyText(admitted.caseLine, items, checkedAt, stop),
           headers: {
             "List-Unsubscribe": `<${stop}>`,
             "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
@@ -536,8 +535,8 @@ export const sendCopy = internalAction({
   },
 });
 
-/** The reminders as plain text, for mail apps that show no HTML. */
-export function copyText(inviter: string, line: string, items: readonly CopyItem[], checkedAt: string, stop: string): string {
+/** The reminders as plain text, for mail apps that show no HTML. It names nobody: the invitation said who asked. */
+export function copyText(line: string, items: readonly CopyItem[], checkedAt: string, stop: string): string {
   const words = deadlineDigestWords(items.length, items.filter((i) => i.urgency === "overdue").length);
   return [
     `Deadline reminders for ${line}`,
@@ -546,7 +545,7 @@ export function copyText(inviter: string, line: string, items: readonly CopyItem
     "",
     ...items.map((i) => `- ${i.deadlineType}: ${formatDateForDisplay(i.deadlineDate)} (${formatRelativeDays(i.daysUntil).toLowerCase()})`),
     "",
-    `${sentenceStart(inviter)} added you to this case's reminders, and you confirmed them. Checked ${checkedAt}.`,
+    `You confirmed these reminders. Checked ${checkedAt}.`,
     "",
     `Stop these reminders: ${stop}`,
     "",
