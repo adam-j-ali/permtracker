@@ -5,8 +5,12 @@
  * and Sentry isn't loaded on the sign-in pages, so they also tell our own server.
  *
  * Only these fields, each capped, and the path without its query string, so a
- * case number or a token in an address never reaches the log.
+ * case number or a token in an address never reaches the log. A shared
+ * recruitment record's key (/share/recruitment/<key>) is blanked wherever it
+ * appears, in the path, the message or the stack: the error screen there is the
+ * root one, and the Privacy Policy keeps only a one-way hash of the key.
  */
+import { redactShareKey } from "@/lib/analyticsRedact";
 
 export const OUTCOMES = ["shown", "reload", "redirect-login", "reload-stale"] as const;
 
@@ -47,10 +51,10 @@ export function parseClientError(body: unknown): ClientErrorReport | null {
     boundary,
     outcome,
     name: cut(b.name, 60) ?? "Error",
-    message: cut(b.message, 300) ?? "",
+    message: redactShareKey(cut(b.message, 300) ?? ""),
     digest: cut(b.digest, 40),
-    path: path.split(/[?#]/)[0] ?? path,
-    stack: typeof b.stack === "string" ? b.stack.slice(0, 1500) : null,
+    path: redactShareKey(path.split(/[?#]/)[0] ?? path),
+    stack: typeof b.stack === "string" ? redactShareKey(b.stack.slice(0, 1500)) : null,
   };
 }
 

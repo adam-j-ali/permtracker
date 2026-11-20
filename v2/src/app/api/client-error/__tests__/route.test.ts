@@ -30,6 +30,20 @@ describe("parseClientError", () => {
     expect(r).not.toHaveProperty("extra");
   });
 
+  it("blanks a shared recruitment record's key in the path, the message and the stack", () => {
+    const key = "q7Zt0Lw_-3fXbV9kR2mN8pS1uY4eH6cJ0aD5gK7iO2s";
+    const r = parseClientError({
+      ...good,
+      path: `/share/recruitment/${key}?x=1`,
+      message: `Failed to read https://permtracker.app/share/recruitment/${key}`,
+      stack: `Error: at /share/recruitment/${key}:1:2`,
+    });
+    expect(JSON.stringify(r)).not.toContain(key);
+    expect(r!.path).toBe("/share/recruitment/redacted");
+    expect(r!.message).toBe("Failed to read https://permtracker.app/share/recruitment/redacted");
+    expect(r!.stack).toBe("Error: at /share/recruitment/redacted:1:2");
+  });
+
   it("refuses what isn't a report", () => {
     expect(parseClientError(null)).toBeNull();
     expect(parseClientError({ ...good, boundary: "<script>" })).toBeNull();
