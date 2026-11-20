@@ -552,6 +552,44 @@ describe("an address that asked not to be added, and the cap on asking again", (
     await finishScheduledNow(t);
   });
 
+  it("refuses a +tag or another Gmail spelling of a refused address, and mails the address as it was typed", async () => {
+    const { t, owner, other, caseId } = await setup();
+    await owner.mutation(api.reminderRecipients.invite, { caseId, email: "Para.Legal+Cases@gmail.com" });
+    await finishScheduledNow(t);
+    expect(sent[0]!.to).toBe("para.legal+cases@gmail.com");
+    const [row] = await rows(t);
+    expect(row!.email).toBe("para.legal+cases@gmail.com");
+    expect(
+      await t.mutation(internal.reminderRecipients.declineByToken, {
+        token: await declineToken(row!._id, "para.legal+cases@gmail.com"),
+        recipientId: row!._id,
+      }),
+    ).toBe("declined");
+    await verify(t, other.userId);
+    const theirs = await t.run((ctx) => ctx.db.insert("cases", caseRow(other.userId)));
+    for (const email of ["paralegal@gmail.com", "Para.Legal+new@googlemail.com", "p.a.r.a.legal@gmail.com"]) {
+      expect(await other.mutation(api.reminderRecipients.invite, { caseId: theirs, email }), email).toEqual({
+        ok: false,
+        message: REFUSED,
+      });
+    }
+    expect(await refusals(t)).toHaveLength(1);
+  });
+
+  it("doesn't give an account a third invitation to the same inbox under a +tag", async () => {
+    const { t, owner, caseId } = await setup();
+    for (const email of ["para@firm.example", "para+2@firm.example"]) {
+      expect((await owner.mutation(api.reminderRecipients.invite, { caseId, email })).ok, email).toBe(true);
+      await owner.mutation(api.reminderRecipients.remove, { caseId });
+    }
+    expect(await owner.mutation(api.reminderRecipients.invite, { caseId, email: "Para+3@firm.example" })).toEqual({
+      ok: false,
+      message: "You've invited that address twice already, so we can't send it another invitation.",
+    });
+    expect((await counts(t)).map((c) => c.count)).toEqual([2]);
+    await finishScheduledNow(t);
+  });
+
   it("the account's invitation counts go with it; the refusal list stays", async () => {
     const { t, owner } = await stopped();
     expect(await counts(t)).toHaveLength(1);

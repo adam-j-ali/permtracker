@@ -5,6 +5,7 @@ import {
   INVITE_DAYS,
   RECIPIENT_EMAIL_MAX,
   SOMEONE,
+  canonicalAddress,
   caseLine,
   REMINDER_INVITES_PER_ADDRESS,
   copiesByCase,
@@ -307,6 +308,24 @@ describe("\"Don't invite me again\"", () => {
   });
 });
 
+describe("the address as one inbox", () => {
+  it("is lowercased, with a +tag dropped on every domain", () => {
+    expect(canonicalAddress(" Para+News@Firm.Example ")).toBe("para@firm.example");
+    expect(canonicalAddress("para+a+b@firm.example")).toBe("para@firm.example");
+    expect(canonicalAddress("p.ara@firm.example")).toBe("p.ara@firm.example");
+  });
+
+  it("drops a Gmail address's dots and reads googlemail.com as gmail.com", () => {
+    expect(canonicalAddress("Para.Legal+promo@googlemail.com")).toBe("paralegal@gmail.com");
+    expect(canonicalAddress("p.a.r.a@gmail.com")).toBe("para@gmail.com");
+  });
+
+  it("keeps a local part that would be left empty", () => {
+    expect(canonicalAddress("+tag@firm.example")).toBe("+tag@firm.example");
+    expect(canonicalAddress(".@gmail.com")).toBe(".@gmail.com");
+  });
+});
+
 describe("the address as the refusal list and the invitation count keep it", () => {
   const SECRET = "a-test-secret";
 
@@ -316,6 +335,19 @@ describe("the address as the refusal list and the invitation count keep it", () 
     expect(key).not.toContain("para");
     expect(await reminderAddressKey("  Para@FIRM.example ", SECRET)).toBe(key);
     expect(await reminderAddressKey("other@firm.example", SECRET)).not.toBe(key);
+  });
+
+  it("is the same for every spelling that reaches the same inbox", async () => {
+    const key = await reminderAddressKey("para@firm.example", SECRET);
+    for (const same of ["para+news@firm.example", "Para+a+b@FIRM.example", " para+@firm.example "]) {
+      expect(await reminderAddressKey(same, SECRET), same).toBe(key);
+    }
+    const gmail = await reminderAddressKey("para.legal@gmail.com", SECRET);
+    for (const same of ["paralegal@gmail.com", "P.a.r.a.L.e.g.a.l+promo@GoogleMail.com", "para.legal@googlemail.com"]) {
+      expect(await reminderAddressKey(same, SECRET), same).toBe(gmail);
+    }
+    // Dots count everywhere else.
+    expect(await reminderAddressKey("p.ara@firm.example", SECRET)).not.toBe(key);
   });
 
   it("needs the secret: another key gives another hash", async () => {
