@@ -22,6 +22,10 @@ export interface DecidedRecord {
   ad1: string | null;
   paper2: string | null;
   ad2: string | null;
+  /** DOL's "is the newspaper a Sunday edition" (RECR_INFO_IS_NEWSPAPER_SUNDAY): "Y", "N" or null. */
+  sundayEdition?: string | null;
+  /** The second ad's kind (RECR_INFO_RECRUIT_AD_TYPE): "Newspaper of General Circulation" or "Professional Journal". */
+  secondAdType?: string | null;
   /** DOL's additional steps as stored: JSON of step id -> [from, to]. */
   recrSteps: string | null;
   pwd: {
@@ -109,8 +113,21 @@ export function decidedTimeline(r: DecidedRecord): DecidedTimeline {
   if (jobFrom) add({ key: "job-order", date: jobFrom, until: iso(r.jobOrderEnd) ?? undefined, label: "Job order", tone: "recruitment" });
   const ad1 = iso(r.ad1);
   const ad2 = iso(r.ad2);
-  if (ad1) add({ key: "ad1", date: ad1, label: ad2 ? "First Sunday ad" : "Sunday ad", detail: r.paper1 ?? undefined, tone: "recruitment" });
-  if (ad2) add({ key: "ad2", date: ad2, label: "Second Sunday ad", detail: r.paper2 ?? r.paper1 ?? undefined, tone: "recruitment" });
+  // Each ad named by what DOL's file says it was: a Sunday edition unless the file says the paper isn't one (an
+  // area with no Sunday paper uses its widest-read edition), and the second ad a professional journal when the file
+  // says so. A file that doesn't say keeps the usual Sunday ad.
+  const notSunday = (r.sundayEdition ?? "").trim().toUpperCase() === "N";
+  const journal = /journal/i.test(r.secondAdType ?? "");
+  const paperAd = notSunday ? "newspaper ad" : "Sunday ad";
+  if (ad1) add({ key: "ad1", date: ad1, label: ad2 ? `First ${paperAd}` : paperAd.charAt(0).toUpperCase() + paperAd.slice(1), detail: r.paper1 ?? undefined, tone: "recruitment" });
+  if (ad2)
+    add({
+      key: "ad2",
+      date: ad2,
+      label: journal ? "Professional journal ad" : `Second ${paperAd}`,
+      detail: r.paper2 ?? (journal ? undefined : r.paper1) ?? undefined,
+      tone: "recruitment",
+    });
   const extra = stepsOf(r.recrSteps);
   for (const [id, from, to] of extra) {
     add({ key: `step-${id}`, date: from, until: to ?? undefined, label: STEP_LABEL[id] ?? id.replace(/_/g, " "), tone: "recruitment" });

@@ -1409,6 +1409,7 @@ function PermJobRecord({ detail, state }: { detail: PermCaseDetail; state: strin
         ]
       : []),
     ...(detail.layoff !== null ? [{ label: "Layoffs in the occupation", value: detail.layoff ? "The employer reported some in the six months before filing" : "None reported" }] : []),
+    ...(detail.supervised !== null ? [{ label: "Supervised recruitment", value: detail.supervised ? "DOL required it" : "Not required" }] : []),
   ];
   return rows.length ? <RecordList className="mt-6" rows={rows} /> : null;
 }
