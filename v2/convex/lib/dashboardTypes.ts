@@ -71,6 +71,8 @@ export interface CaseDataForDeadlines {
   caseStatus: CaseStatus;
   progressStatus: ProgressStatus;
   deletedAt?: number;
+  /** The account's sample case: its passed deadlines are left out (dashboardHelpers.extractDeadlines). */
+  isSample?: boolean;
 
   // PWD dates. The determination date tells whether recruitment began inside
   // the PWD's validity, which decides whether its expiry still binds.

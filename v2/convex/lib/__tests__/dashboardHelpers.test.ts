@@ -123,6 +123,22 @@ describe("sortByUrgency", () => {
 // extractDeadlines Tests
 
 describe("extractDeadlines", () => {
+  // The sample case's dates are made up when the account is made (offered Oct 20 2026, built Nov 20).
+  it("leaves a sample case's passed deadlines out and keeps its coming ones", () => {
+    const fields = {
+      pwdFilingDate: "2024-10-01",
+      pwdDeterminationDate: "2024-12-01",
+      pwdExpirationDate: "2025-06-30",
+      rfiEntries: [{ id: "rfi-1", receivedDate: "2024-12-01", responseDueDate: "2024-12-31", createdAt: 0 }],
+    };
+    const real = extractDeadlines(createMinimalCase(fields), TODAY_ISO);
+    const sample = extractDeadlines(createMinimalCase({ ...fields, isSample: true }), TODAY_ISO);
+    expect(real.some((d) => d.daysUntil < 0)).toBe(true);
+    expect(sample.length).toBeGreaterThan(0);
+    expect(sample.every((d) => d.daysUntil >= 0)).toBe(true);
+    expect(sample).toEqual(real.filter((d) => d.daysUntil >= 0));
+  });
+
   // ------------------------------------------
   // Basic extraction
   // ------------------------------------------

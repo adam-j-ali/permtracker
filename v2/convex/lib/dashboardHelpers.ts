@@ -172,7 +172,10 @@ export function extractDeadlines(
   // the dashboard's Overdue column listed it on every such case.
   // buildDeadlineInput derives the filing and recruitment windows from the raw
   // dates, falling back to the stored ones only when they cannot be derived.
-  const deadlines = centralExtractActiveDeadlines(buildDeadlineInput(toPermCaseData(caseData)), todayISO);
+  const all = centralExtractActiveDeadlines(buildDeadlineInput(toPermCaseData(caseData)), todayISO);
+  // The sample case's dates are made up when the account is made, so its deadlines pass on their own and would sit
+  // under Overdue for a case nobody is working. Its coming ones still show, so the dashboard has something to teach.
+  const deadlines = caseData.isSample === true ? all.filter((d) => d.daysUntil >= 0) : all;
   return deadlines.map((d) => ({
     // The dashboard's older name for the filing window closing; the
     // notification and enforcement tables still read it.
