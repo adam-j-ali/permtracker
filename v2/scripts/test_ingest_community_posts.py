@@ -142,6 +142,24 @@ def main() -> int:
         _, counts = icp.prepare_telegram(folder2, specs, Path(d, "c2.jsonl"), ask=True, runner=down)
         check("failure" in counts and counts["asked"] == 0, f"a model that fails is reported, never taken as empty: {counts}")
 
+    # Reddit through the same path: a subreddit's posts keyed by Reddit's own id, the posts read by hand kept as they
+    # are and never read or asked about again.
+    sub = {"kind": "mixed"}
+    rposts = [msg(41, "My I-485 was approved today! Filed 2026-03-06, EB-3", date="2026-11-03T15:00:00+00:00"),
+              msg(42, "Green card approved today, I-485 filed 2026-02-02", date="2026-11-04T15:00:00+00:00")]
+    rrecs = icp.telegram_records("USCIS_EB3", rposts, sub, source="reddit")[0]
+    check(rrecs and all(r["source"] == "reddit" and r["key"] in ("41", "42") for r in rrecs),
+          f"a Reddit post's key is its own id: {rrecs}")
+    with tempfile.TemporaryDirectory() as tmp:
+        folder = Path(tmp)
+        (folder / "USCIS_EB3.jsonl").write_text("\n".join(json.dumps(m) for m in rposts))
+        hand = [{"source": "reddit", "key": "41", "as_of": "2026-11-03", "office": "SFV", "i485_decided": "2026-11-03",
+                 "i485_decision": "approved"}]
+        got, counts = icp.prepare_telegram(folder, {"USCIS_EB3": sub}, source="reddit", extra=hand)
+        keys = sorted(r["key"] for r in got)
+        check(keys == ["41", "42"] and next(r for r in got if r["key"] == "41").get("office") == "SFV"
+              and counts["by_hand"] == 1, f"a post read by hand stays as read, the rest are read: {keys} {counts}")
+
     print(f"{failures} failed")
     return 1 if failures else 0
 

@@ -96,8 +96,17 @@ def _rows(path: Path) -> list[dict]:
     return out
 
 
-def _record(chat: str, row: dict, posted: dt.date, spec: dict, fields: dict) -> dict:
-    rec = {"source": "telegram", "key": f"{chat}:{row['id']}", "as_of": posted.isoformat(), **fields}
+# The places posts are read from, each by its own reader on the owner's Mac. A Reddit item's id is already unique
+# across Reddit, and is the key the posts read by hand on Nov 19 2026 use, so one post is never in the list twice.
+POST_SOURCES = ("telegram", "reddit")
+
+
+def post_key(source: str, chat: str, row_id) -> str:
+    return str(row_id) if source == "reddit" else f"{chat}:{row_id}"
+
+
+def _record(chat: str, row: dict, posted: dt.date, spec: dict, fields: dict, source: str = "telegram") -> dict:
+    rec = {"source": source, "key": post_key(source, chat, row["id"]), "as_of": posted.isoformat(), **fields}
     if row.get("sender"):
         rec["person"] = str(row["sender"])
     if spec.get("office"):
@@ -107,8 +116,9 @@ def _record(chat: str, row: dict, posted: dt.date, spec: dict, fields: dict) -> 
 
 
 def telegram_records(chat: str, rows: list[dict], spec: dict | None,
-                     model_reads: dict[str, dict | None] | None = None) -> tuple[list[dict], list[dict]]:
-    """One chat's posts as merge records, and the posts still worth asking the model about.
+                     model_reads: dict[str, dict | None] | None = None,
+                     source: str = "telegram") -> tuple[list[dict], list[dict]]:
+    """One chat's (or subreddit's) posts as merge records, and the posts still worth asking the model about.
 
     The parser reads first (lib_post_dates). A post it can't read but that writes a date and names a step takes the
     model's saved answer when there is one (lib_post_model, checked there against the dates the post writes); without
@@ -125,17 +135,17 @@ def telegram_records(chat: str, rows: list[dict], spec: dict | None,
         posted = dt.datetime.fromisoformat(r["date"]).astimezone(eastern).date()
         fields = post_dates.read_post(text, posted, spec["kind"], order)
         if fields:
-            out.append(_record(chat, r, posted, spec, fields))
+            out.append(_record(chat, r, posted, spec, fields, source))
             continue
         if not post_model.worth_asking(text):
             continue
-        key = f"{chat}:{r['id']}"
+        key = post_key(source, chat, r["id"])
         asked = {"id": key, "posted": posted.isoformat(), "kind": spec["kind"], "text": text}
         if key in model_reads:
             # Saved answers pass today's checks again, so a check added later reaches them too.
             fields = post_model.recheck(model_reads[key], asked)
             if fields:
-                out.append(_record(chat, r, posted, spec, fields))
+                out.append(_record(chat, r, posted, spec, fields, source))
         else:
             to_ask.append(asked)
     return out, to_ask
@@ -154,7 +164,8 @@ def load_model_reads(path: Path) -> dict[str, dict | None]:
 
 
 def prepare_telegram(folder: Path, specs: dict[str, dict], model_cache: Path | None = None, ask: bool = False,
-                     runner=post_model.claude_runner) -> tuple[list[dict], dict]:
+                     runner=post_model.claude_runner, source: str = "telegram",
+                     extra: list[dict] | None = None) -> tuple[list[dict], dict]:
     """Every listed chat's records. With model_cache, saved model answers fill in what the parser can't read; with
     ask, the posts not yet asked are asked now and their answers saved as each batch comes back."""
     reads = load_model_reads(model_cache) if model_cache else {}
@@ -165,7 +176,10 @@ def prepare_telegram(folder: Path, specs: dict[str, dict], model_cache: Path | N
             counts["skipped_chats"].append(path.stem)
             continue
         chats.append((path.stem, _rows(path)))
-    pending = [p for chat, rows in chats for p in telegram_records(chat, rows, specs[chat], reads)[1]]
+    # Posts already read by hand (`extra`) are never read again or asked about.
+    done = {r["key"] for r in extra or []}
+    pending = [p for chat, rows in chats for p in telegram_records(chat, rows, specs[chat], reads, source)[1]
+               if p["id"] not in done]
     counts["to_ask"] = len(pending)
     failure = None
     if ask and model_cache and pending:
@@ -183,12 +197,13 @@ def prepare_telegram(folder: Path, specs: dict[str, dict], model_cache: Path | N
             failure = str(e)
         reads = load_model_reads(model_cache)
         counts["asked"] = sum(1 for p in pending if p["id"] in reads)
-    records = []
+    records = list(extra or [])
     for chat, rows in chats:
-        records += telegram_records(chat, rows, specs[chat], reads)[0]
+        records += [r for r in telegram_records(chat, rows, specs[chat], reads, source)[0] if r["key"] not in done]
         counts["chats"] += 1
         counts["messages"] += len(rows)
     counts["records"] = len(records)
+    counts["by_hand"] = len(extra or [])
     counts["model_records"] = sum(1 for r in records if reads.get(r["key"]))
     if failure:
         counts["failure"] = failure
@@ -252,6 +267,10 @@ def main() -> int:
     src = p.add_mutually_exclusive_group(required=True)
     src.add_argument("--reddit", help="the Reddit reader's rows (JSON with a 'rows' list)")
     src.add_argument("--telegram", help="the Telegram reader's messages/ folder, one <chat>.jsonl per chat")
+    src.add_argument("--posts", help="a post reader's messages/ folder (with --source), one <chat or subreddit>.jsonl each")
+    p.add_argument("--source", choices=POST_SOURCES, default="telegram", help="with --posts: where the posts were read")
+    p.add_argument("--with", dest="extra", help="with --posts: records already made for this source (the posts read by "
+                   "hand), kept as they are and never read again")
     p.add_argument("--chats", help="with --telegram: the private chats.json saying what each chat is about")
     p.add_argument("--model-reads", help="with --telegram: the saved model answers (a private JSONL file)")
     p.add_argument("--ask", action="store_true", help="with --model-reads: ask the model about posts not yet asked")
@@ -260,17 +279,23 @@ def main() -> int:
     l_.add_argument("records")
     l_.add_argument("--force", action="store_true")
     a = ap.parse_args()
-    if a.cmd == "prepare" and a.telegram:
+    if a.cmd == "prepare" and (a.telegram or a.posts):
         if not a.chats:
-            ap.error("--telegram needs --chats")
+            ap.error("--telegram and --posts need --chats")
         if a.ask and not a.model_reads:
             ap.error("--ask needs --model-reads")
-        rows, counts = prepare_telegram(Path(a.telegram), read_chat_specs(Path(a.chats)),
-                                        Path(a.model_reads) if a.model_reads else None, ask=a.ask)
+        source = "telegram" if a.telegram else a.source
+        extra = json.load(open(a.extra, encoding="utf-8")) if a.extra else None
+        if extra and any(r.get("source") != source for r in extra):
+            ap.error(f"--with holds records from another source than {source}")
+        rows, counts = prepare_telegram(Path(a.telegram or a.posts), read_chat_specs(Path(a.chats)),
+                                        Path(a.model_reads) if a.model_reads else None, ask=a.ask,
+                                        source=source, extra=extra)
         Path(a.out).write_text(json.dumps(rows))
         os.chmod(a.out, 0o600)
         print(f"{counts['records']:,} records ({counts['model_records']:,} read by the model) from "
-              f"{counts['messages']:,} messages in {counts['chats']} chats in {a.out}; "
+              f"{counts['messages']:,} messages in {counts['chats']} chats"
+              + (f" and {counts['by_hand']:,} read by hand" if counts.get("by_hand") else "") + f" in {a.out}; "
               f"{counts['to_ask']:,} posts were waiting for the model, {counts['asked']:,} asked now"
               + (f"; not read (not listed): {', '.join(counts['skipped_chats'])}" if counts["skipped_chats"] else ""))
         if counts.get("failure"):
@@ -295,13 +320,13 @@ def main() -> int:
         n = load(db, records, force=a.force)
         sources = sorted({r["source"] for r in records})
         for s in sources:
-            # Telegram loads every hour from the owner's Mac, so a day without one means that job stopped; Reddit is
-            # loaded by hand.
+            # Both load from the owner's Mac: Telegram every hour, so a day without one means that job stopped, and
+            # Reddit once a day, so two days without one does.
             hourly = s == "telegram"
             stamp_freshness(db, f"community-posts-{s}",
                             source={"reddit": "https://arctic-shift.photon-reddit.com", "telegram": "https://t.me"}.get(s, s),
-                            cadence="hourly, from the owner's Mac" if hourly else "by hand",
-                            note=f"{sum(r['source'] == s for r in records):,} reports", max_age_days=1 if hourly else 60)
+                            cadence="hourly, from the owner's Mac" if hourly else "daily, from the owner's Mac",
+                            note=f"{sum(r['source'] == s for r in records):,} reports", max_age_days=1 if hourly else 2)
         record_run(db, "ingest_community_posts.py", status="ok", rows_written=n,
                    note=f"{n:,} reports from {', '.join(sources)}", started_at=started)
         print(f"{n:,} reports loaded")
