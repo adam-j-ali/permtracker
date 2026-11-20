@@ -11,6 +11,7 @@ import {
   declineUrl,
   inviteCaseLine,
   inviterName,
+  looksLikeALink,
   normaliseRecipientEmail,
   reminderAddressKey,
   reminderConfirmPurpose,
@@ -110,6 +111,99 @@ describe("what the invitation calls the case", () => {
     for (const employer of ["ACME Robotics, Inc.", "St. Jude Medical", "U.S. Steel", "J.P. Morgan Chase & Co."]) {
       expect(inviteCaseLine("Sr. Engineer", employer), employer).toBe(caseLine("Sr. Engineer", employer));
     }
+  });
+
+  it("is \"a PERM case\" when a look-alike dot stands in for the full stop", () => {
+    for (const employer of [
+      "irs-refund。com", // 。 ideographic full stop
+      "irs-refund．com", // ． fullwidth full stop
+      "irs-refund｡com", // ｡ halfwidth ideographic full stop
+      "irs-refund․com", // ․ one dot leader
+      "irs-refund﹒com", // ﹒ small full stop
+    ]) {
+      expect(inviteCaseLine("Robotics Engineer", employer), employer).toBe(A_PERM_CASE);
+    }
+  });
+
+  it("is \"a PERM case\" when the domain is typed in fullwidth letters", () => {
+    expect(inviteCaseLine("Robotics Engineer", "irs.ｃｏｍ")).toBe(A_PERM_CASE); // irs.ｃｏｍ
+    expect(inviteCaseLine("Robotics Engineer", "ｗｗｗ.evil")).toBe(A_PERM_CASE); // ｗｗｗ.evil
+  });
+
+  it("is \"a PERM case\" when invisible characters sit between the letters", () => {
+    for (const employer of [
+      "irs.c​om", // zero-width space
+      "irs.c‍o‌m", // zero-width joiner and non-joiner
+      "irs⁠.com", // word joiner
+      "w﻿ww.evil", // zero-width no-break space
+      "irs.c­om", // soft hyphen
+    ]) {
+      expect(inviteCaseLine("Robotics Engineer", employer), JSON.stringify(employer)).toBe(A_PERM_CASE);
+    }
+  });
+
+  it("is \"a PERM case\" when a letter outside plain ASCII sits next to a dot", () => {
+    for (const employer of [
+      "irs.сom", // Cyrillic с
+      "irs.gоv", // Cyrillic о inside the domain
+      "пример.рф", // пример.рф
+      "banké.x",
+    ]) {
+      expect(inviteCaseLine("Robotics Engineer", employer), employer).toBe(A_PERM_CASE);
+    }
+  });
+
+  it("is \"a PERM case\" when the words hold a phone number", () => {
+    for (const employer of [
+      "Call (800) 555-0199",
+      "ACME +1 800.555.0199",
+      "ACME 800 555 0199",
+      "ACME 8005550199",
+      "ACME ８００５５５０１９９", // fullwidth digits
+      "ACME 800–555–0199", // en dashes
+    ]) {
+      expect(inviteCaseLine("Robotics Engineer", employer), employer).toBe(A_PERM_CASE);
+    }
+    expect(inviteCaseLine("Call 800-555-0199 today", "ACME Robotics")).toBe(A_PERM_CASE);
+  });
+
+  it("keeps ordinary names with accents, a few digits or a year", () => {
+    for (const employer of [
+      "Société Générale S.A.",
+      "Nestlé USA, Inc.",
+      "3M Company",
+      "7-Eleven, Inc.",
+      "ACME 2024 Holdings",
+      "123 Main Street Partners",
+    ]) {
+      expect(inviteCaseLine("Software Engineer II", employer), employer).toBe(caseLine("Software Engineer II", employer));
+    }
+  });
+});
+
+describe("the link test itself", () => {
+  it("says the same of a name and of its every look-alike", () => {
+    expect(looksLikeALink("St. Jude Medical")).toBe(false);
+    expect(looksLikeALink("U.S. Steel")).toBe(false);
+    expect(looksLikeALink("J.P. Morgan Chase & Co.")).toBe(false);
+    expect(looksLikeALink("irs-refund。com")).toBe(true);
+    expect(looksLikeALink("support＠bank")).toBe(true); // ＠ fullwidth at sign
+  });
+
+  it("hides an inviter whose name holds a phone number or a look-alike link", () => {
+    expect(inviterName("Call 800-555-0199", undefined)).toBe(SOMEONE);
+    expect(inviterName("irs。gov", undefined)).toBe(SOMEONE);
+    expect(inviterName("Jordan Lee", undefined)).toBe("Jordan Lee");
+  });
+
+  it("stays fast on a very long input", () => {
+    const started = Date.now();
+    looksLikeALink(`${"1 ".repeat(3)}a`.repeat(200_000));
+    looksLikeALink(".".repeat(1_000_000));
+    // A long run of letters with no "://" after it: a scheme pattern that starts at every letter is quadratic here.
+    looksLikeALink("a".repeat(200_000));
+    looksLikeALink("a.".repeat(100_000));
+    expect(Date.now() - started).toBeLessThan(1500);
   });
 });
 
