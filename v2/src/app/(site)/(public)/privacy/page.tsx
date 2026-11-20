@@ -183,6 +183,32 @@ export default function PrivacyPage() {
               </li>
             </ul>{" "}
 
+            <h3 id="reminder-recipients" className="font-heading text-lg font-bold mt-6 mb-3">
+              A Second Person for a Case&apos;s Deadline Reminders
+            </h3>{" "}
+            <ul className="list-disc list-inside text-soft space-y-2 ml-4">
+              <li>
+                If you add a second address to a case&apos;s deadline reminders, such as a paralegal&apos;s or the
+                employer&apos;s HR contact&apos;s, we email it once to ask it to confirm. That email names you by the
+                name on your account, or calls you a PERM Tracker user when there isn&apos;t one, and names the case
+                by its employer and job title
+              </li>{" "}
+              <li>
+                Only after it confirms do we send it that case&apos;s deadline reminders, which name the employer,
+                the job title and the deadlines. They follow your own deadline switches in Settings, and nothing
+                else from the case or your account is included
+              </li>{" "}
+              <li>
+                Each reminder has a link that stops them with one click. When they&apos;re stopped, we delete the
+                address, and the case shows you that they were stopped
+              </li>{" "}
+              <li>
+                We keep the address until it stops the reminders, you remove it, or you delete the case or your
+                account. An invitation that isn&apos;t confirmed is deleted, with its address, after 30 days, and
+                nothing else is sent to it
+              </li>
+            </ul>{" "}
+
             <h3 id="shared-recruitment-records" className="font-heading text-lg font-bold mt-6 mb-3">
               Recruitment Records You Share by Link
             </h3>{" "}
@@ -1567,6 +1593,10 @@ export default function PrivacyPage() {
               <li>
                 <strong>Email alert sign-ups</strong> you never confirm are
                 deleted after 30 days
+              </li>{" "}
+              <li>
+                <strong>An invitation to a case&apos;s deadline reminders</strong> that isn&apos;t confirmed is
+                deleted, with its address, after 30 days
               </li>{" "}
               <li>
                 <strong>AI conversation data</strong> is automatically deleted

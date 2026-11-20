@@ -14,6 +14,7 @@ import { CaseEstimateSection } from "./CaseEstimateSection";
 import { QuickStatsPanel } from "./QuickStatsPanel";
 import { VerticalTimeline } from "./VerticalTimeline";
 import { RecruitmentResultsCard } from "./RecruitmentResultsCard";
+import { ReminderRecipientCard } from "./ReminderRecipientCard";
 import { JobDescriptionCard, type JobDescEditProps } from "./JobDescriptionCard";
 import { isRecruitmentComplete } from "@/lib/perm";
 import { cn } from "@/lib/utils";
@@ -238,6 +239,11 @@ export function OverviewTab({
           <InlineCaseTimeline caseData={caseData} />
         </div>
       </div>
+
+      {/* The case's deadline reminders for a second person; the sample case sends none. */}
+      {caseData.isSample !== true && (
+        <ReminderRecipientCard caseId={caseId} closed={caseData.caseStatus === "closed"} />
+      )}
 
       {/* DOL decision card, at the foot of the Overview (the owner's call, Oct 30 2026). */}
       <CaseEstimateSection caseData={caseData} />
