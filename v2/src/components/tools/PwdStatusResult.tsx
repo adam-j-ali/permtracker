@@ -3,6 +3,7 @@ import { SocCodeLink } from "@/components/soc/SocCodeLink";
 import { PwdLikelySection } from "@/components/tools/PwdLikelySection";
 import { getPwdDetail, type PwdDetail } from "@/lib/db/pwdDetail";
 import { getPwdLikely } from "@/lib/db/pwdLikely";
+import { naicsTitle } from "@/lib/naicsTitles";
 import { estimatePwdDay, estimatePwdQueue, monthInDolTable } from "@/lib/perm";
 import { formatAsOf, formatMonth } from "@/lib/dolFormat";
 import { getPwdEstimatorData } from "@/lib/db/estimate";
@@ -87,6 +88,9 @@ function Determination({ d, perms = [], detail = null }: { d: PwdDisclosedRow; p
     [edu && edu.toLowerCase() !== "none" ? edu : null, months ? `${months} months of experience` : null].filter(Boolean).join(", ") || null;
   const required = detail ? need(detail.education, detail.experienceMonths) : null;
   const alternative = detail ? need(detail.altEducation, detail.altExperienceMonths) : null;
+  // Either read fills a field the other lacks.
+  const city = d.worksiteCity ?? detail?.worksiteCity ?? null;
+  const industry = naicsTitle(d.naics ?? detail?.naics);
   return (
     <PageSection title="DOL's determination" lede="From DOL's quarterly disclosure file: the part the live record never says.">
       {issued && wage ? (
@@ -116,9 +120,10 @@ function Determination({ d, perms = [], detail = null }: { d: PwdDisclosedRow; p
           ...(detail?.level ? [{ label: "Wage level DOL set", value: `Level ${detail.level}` }] : []),
           ...(required ? [{ label: "What the job requires", value: required }] : []),
           ...(alternative ? [{ label: "Or, as the alternative", value: alternative }] : []),
-          ...(d.worksiteState || detail?.worksiteCity
-            ? [{ label: "Worksite", value: [detail?.worksiteCity, d.worksiteState].filter(Boolean).join(", ") }]
+          ...(d.worksiteState || city
+            ? [{ label: "Worksite", value: [city, d.worksiteState].filter(Boolean).join(", ") }]
             : []),
+          ...(industry ? [{ label: "Industry", value: `${industry.title} (NAICS ${industry.code})` }] : []),
           ...(detail?.acwia ? [{ label: "Priced as", value: "A university or research employer (ACWIA), on its own survey" }] : []),
           ...(d.attorneyName
             ? [
