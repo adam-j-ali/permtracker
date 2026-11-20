@@ -42,6 +42,7 @@ import { RecruitmentTab } from "@/components/cases/detail/RecruitmentTab";
 import { ETA9089Tab } from "@/components/cases/detail/ETA9089Tab";
 import { I140Tab } from "@/components/cases/detail/I140Tab";
 import { DocumentsTab } from "@/components/cases/detail/DocumentsTab";
+import { CaseEmployerLine, useEmployerPage } from "@/components/cases/detail/CaseEmployerLine";
 import { NotesTab } from "@/components/cases/detail/NotesTab";
 import { NotLegalAdviceNotice } from "@/components/legal/NotLegalAdviceNotice";
 import { cn } from "@/lib/utils";
@@ -286,6 +287,9 @@ function CaseDetail({ caseId, caseData }: CaseDetailProps) {
     }
   }, [updateMutation, caseId]);
 
+  // The employer's public page and record, when DOL's files hold an employer by exactly this name.
+  const employerPage = useEmployerPage(caseData.employerName);
+
   // Document mutations
   const generateUploadUrlMutation = useMutation(api.documents.generateUploadUrl);
   const saveDocumentMutation = useMutation(api.documents.saveDocument);
@@ -516,7 +520,8 @@ function CaseDetail({ caseId, caseData }: CaseDetailProps) {
             </h1>{" "}
             <p className="mt-1 text-base text-muted-foreground [overflow-wrap:anywhere]">
               {[caseData.positionTitle, caseData.beneficiaryIdentifier].filter(Boolean).join(", ")}
-            </p>
+            </p>{" "}
+            <CaseEmployerLine employer={employerPage} />
           </div>
 
           <div className="flex items-center gap-1">
