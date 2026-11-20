@@ -1095,6 +1095,17 @@ def check_lookup_demand(db) -> int:
     return 0
 
 
+def sheet_datasets(root: pathlib.Path) -> set[str]:
+    """The community sheets' datasets, whose sentences datasetCoverage.ts builds from scripts/data/community_sheets.json
+    (one per sheet, never typed), so the text scan above can't see them."""
+    path = root / "scripts" / "data" / "community_sheets.json"
+    try:
+        sheets = json.loads(path.read_text(encoding="utf8")).get("sheets", [])
+    except (OSError, ValueError):
+        return set()
+    return {f"community-sheet-{s['key']}" for s in sheets if isinstance(s, dict) and s.get("key")}
+
+
 def check_coverage_stated(db) -> int:
     """Every registered dataset says what it CONTAINS, not just how often it arrives.
 
@@ -1112,7 +1123,7 @@ def check_coverage_stated(db) -> int:
     text = src.read_text(encoding="utf8", errors="ignore")
     stated = set(re.findall(r'^\s*"?([a-z0-9-]+)"?:\s*$|^\s*"?([a-z0-9-]+)"?:\s*"',
                             text, re.M))
-    have = {a or b for a, b in stated if (a or b)}
+    have = {a or b for a, b in stated if (a or b)} | sheet_datasets(src.parent.parent.parent)
     registered = {str(r[0]) for r in query_rows(db, "SELECT dataset FROM data_freshness")}
     missing = sorted(registered - have)
     if missing:
