@@ -65,7 +65,8 @@ describe("SupportSection", () => {
     renderWithProviders(<SupportSection profile={defaultProfile} />);
     expect(screen.getByText("Help and support")).toBeInTheDocument();
     expect(screen.getByText("Get help, report issues, or suggest new features")).toBeInTheDocument();
-    expect(screen.getAllByRole("link").length).toBe(3);
+    // The three support links; the public-figures switch's "How it's handled" goes to the Privacy Policy.
+    expect(screen.getAllByRole("link").filter((l) => !l.getAttribute("href")?.startsWith("/privacy")).length).toBe(3);
   });
 
   /**

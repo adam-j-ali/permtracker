@@ -35,6 +35,7 @@ import type * as bulletinPushAlerts from "../bulletinPushAlerts.js";
 import type * as bulletinPushAlertsSweep from "../bulletinPushAlertsSweep.js";
 import type * as calendar from "../calendar.js";
 import type * as caseAlerts from "../caseAlerts.js";
+import type * as caseFigures from "../caseFigures.js";
 import type * as caseMilestones from "../caseMilestones.js";
 import type * as casePushAlerts from "../casePushAlerts.js";
 import type * as casePushAlertsSweep from "../casePushAlertsSweep.js";
@@ -313,6 +314,7 @@ declare const fullApi: ApiFromModules<{
   bulletinPushAlertsSweep: typeof bulletinPushAlertsSweep;
   calendar: typeof calendar;
   caseAlerts: typeof caseAlerts;
+  caseFigures: typeof caseFigures;
   caseMilestones: typeof caseMilestones;
   casePushAlerts: typeof casePushAlerts;
   casePushAlertsSweep: typeof casePushAlertsSweep;

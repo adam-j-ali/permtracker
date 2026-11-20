@@ -100,6 +100,33 @@ export const setAnalyticsOff = mutation({
 });
 
 /**
+ * Count this account's cases in the public figures, or stop: Settings' switch (CountCasesToggle). Off unless switched
+ * on; the hourly merge reads it through caseFigures.exportForMerge, so a change reaches the figures within the hour.
+ */
+export const setCountCaseDates = mutation({
+  args: { on: v.boolean() },
+  returns: v.null(),
+  handler: async (ctx, { on }) => {
+    const userId = await getCurrentUserId(ctx);
+    const profile = await ctx.db
+      .query("userProfiles")
+      .withIndex("by_user_id", (q) => q.eq("userId", userId))
+      .unique();
+    const patch = { countCaseDates: on, countCaseDatesAt: Date.now() };
+    if (profile) {
+      await ctx.db.patch(profile._id, patch);
+      return null;
+    }
+    const user = await ctx.db.get(userId);
+    await ctx.db.insert("userProfiles", {
+      ...buildDefaultProfile(userId, { fullName: user?.name, profilePhotoUrl: user?.image }),
+      ...patch,
+    });
+    return null;
+  },
+});
+
+/**
  * Get the current user's profile
  * Returns null if not authenticated or if profile doesn't exist
  */

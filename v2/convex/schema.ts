@@ -189,6 +189,10 @@ export default defineSchema({
     // Usage analytics switched off in Settings: the account's browsers send
     // PostHog nothing (users.isPostHogExcluded, src/lib/analytics.ts).
     analyticsOff: v.optional(v.boolean()),
+    // Counted in the public figures (Settings, off unless switched on): each hour the dates on this account's cases
+    // count toward the waits the public pages show, never listed or shown (convex/caseFigures.ts). When it was set.
+    countCaseDates: v.optional(v.boolean()),
+    countCaseDatesAt: v.optional(v.number()),
 
     // Chatbot action mode
     /**
@@ -300,7 +304,8 @@ export default defineSchema({
     suspendedUntil: v.optional(v.number()),
   })
     .index("by_user_id", ["userId"])
-    .index("by_deleted_at", ["deletedAt"]),
+    .index("by_deleted_at", ["deletedAt"])
+    .index("by_count_case_dates", ["countCaseDates"]),
 
   // PERM case tracking
   cases: defineTable({

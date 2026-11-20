@@ -47,6 +47,7 @@ import { handleOperationError } from "@/lib/errors";
 import { useOnboarding } from "@/components/onboarding/OnboardingProvider";
 import DeleteNowDialog from "./DeleteNowDialog";
 import AnalyticsToggle from "./AnalyticsToggle";
+import CountCasesToggle from "./CountCasesToggle";
 import {
   BUG_REPORT_URL,
   FEATURE_REQUEST_URL,
@@ -269,6 +270,8 @@ export default function SupportSection({ profile }: SupportSectionProps) {
       </SettingsCard>
 
       <AnalyticsToggle />
+
+      <CountCasesToggle />
 
       <SettingsCard
         title="Delete account"
