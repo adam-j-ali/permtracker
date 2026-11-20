@@ -34,7 +34,6 @@ import type { Metadata } from "next";
 import { getPermLine } from "@/lib/db/permLine";
 import { withSocialCard } from "@/lib/socialCard";
 import Link from "next/link";
-import { queryStatic } from "@/lib/convexStatic";
 import { ArrowRightIcon, ArrowSquareOutIcon, CalendarBlankIcon, CurrencyDollarIcon, HourglassMediumIcon, MagnifyingGlassIcon } from "@phosphor-icons/react/ssr";
 import { averageTrend, queueMoveTrend } from "@/lib/dolTrends";
 
@@ -65,8 +64,10 @@ import { getPermWaitTrend, getPwdLine } from "@/lib/db/pwdDayQueue";
 import { WaitTrendChart } from "@/components/numbers/WaitTrendChart";
 import { speedVerdict, yearOnYear } from "@/lib/pwdNow";
 import { longDate, monthYear } from "@convex/lib/months";
-import { StageMedians } from "@/components/community/TimelineBoard";
-import { api } from "@convex/_generated/api";
+import { formatInt } from "@/lib/format";
+import { StepsByStage } from "@/components/community/StepFigures";
+import { getReportedSummary } from "@/lib/db/reportedSummary";
+import type { ReportedSummary } from "@/lib/reportedSummary";
 import { getEstimatorData } from "@/lib/db/estimate";
 
 import { DataProvenance } from "@/components/data/DataProvenance";
@@ -151,7 +152,7 @@ const FAQ = [
 ];
 
 export default async function PermProcessingTimesPage() {
-  const [snapshot, history, disclosure, estimator, board, permBoard, pwdLine, waitTrend, permLine, backlog] = await Promise.all([
+  const [snapshot, history, disclosure, estimator, summary, permBoard, pwdLine, waitTrend, permLine, backlog] = await Promise.all([
     getProcessingTimes(),
     getProcessingTimesHistory(24),
     // The quarterly files, for the decisions-per-month series. A separate
@@ -161,9 +162,8 @@ export default async function PermProcessingTimesPage() {
     // where the queue STOOD in each past month, which DOL publishes for today
     // only and then overwrites.
     getEstimatorData(),
-    // After PERM: the community timelines' stage medians (PERM dates checked
-    // against DOL, the rest self-reported). Null leaves the section out.
-    queryStatic(api.communityTimelines.board, {}, revalidate).catch(softFail("perm-processing-times/page.queryStatic", null)),
+    // Each step as people report it, from every source (the hourly build's summary). Null leaves the section out.
+    getReportedSummary().catch(softFail<ReportedSummary | null>("perm-processing-times/page.getReportedSummary", null)),
     // What the cases DOL decided on its last working day had waited: the live answer to "how long".
     getPermBoard().catch(softFail("perm-processing-times/page.getPermBoard", null)),
     // Where DOL really is in the wage-request line, by our own daily check: its table trails it by weeks.
@@ -176,7 +176,7 @@ export default async function PermProcessingTimesPage() {
     getLiveBacklog().catch(softFail("perm-processing-times/page.getLiveBacklog", [] as CohortMonth[])),
   ]);
   const howLong = howLongSentence(permBoard, snapshot, permLine);
-  const afterPerm = board?.metrics.filter((m) => m.median !== null) ?? [];
+  const afterPerm = summary?.steps.filter((m) => m.median !== null) ?? [];
 
   const decisionsByMonth = disclosure?.clearanceByMonth ?? [];
   const disclosureWindow = disclosure?.sourceFiles?.length
@@ -817,17 +817,16 @@ export default async function PermProcessingTimesPage() {
       {/* AFTER PERM, as the people waiting report it. DOL publishes nothing
           per case once the PERM is certified, so this is the only way to show
           the I-140, I-485 and card steps; it says which half is checked. */}
-      {board ? (
+      {summary ? (
         <section aria-labelledby="after-perm-h" className="mt-10 border-2 shadow-hard p-6 sm:p-8 bg-card border-border">
-          <h3 id="after-perm-h" className="font-heading text-2xl font-bold">After PERM, as people report it</h3>{" "}
+          <h3 id="after-perm-h" className="font-heading text-2xl font-bold">Each step, as people report it</h3>{" "}
           {afterPerm.length > 0 ? (
             <>
               <p className="mt-2 max-w-2xl text-base text-muted-foreground">
-                From {board.total.toLocaleString("en-US")} shared timelines: the PERM dates are checked against
-                DOL&apos;s record, and everything after is self-reported.
+                {`From ${formatInt(summary.headline.cases)} cases people reported in Telegram groups, community sheets, Reddit, VisaStats and on this site, each person once. Each step counts the cases that finished it in the last 6 months, or 12 when 6 hold too few. Self-reported: DOL's own figures for PERM are the ones above.`}
               </p>
               <div className="mt-5">
-                <StageMedians metrics={board.metrics} />
+                <StepsByStage steps={summary.steps} headingLevel={4} />
               </div>
             </>
           ) : (

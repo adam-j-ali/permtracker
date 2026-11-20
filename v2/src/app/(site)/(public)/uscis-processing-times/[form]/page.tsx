@@ -26,7 +26,18 @@ import { PageSection } from "@/components/data/PageSection";
 import { ColumnChart, type Column } from "@/components/numbers/ColumnChart";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { breadcrumbSchema } from "@/lib/breadcrumbs";
-import { getReportedI140Cases } from "@/lib/db/communityReports";
+import { getReportedSummary } from "@/lib/db/reportedSummary";
+import { StepFigures } from "@/components/community/StepFigures";
+import type { ReportedSummary } from "@/lib/reportedSummary";
+
+/** The steps people report for each form, from the hourly build's summary (scripts/lib_reported_summary.py). */
+const FORM_STEPS: Readonly<Record<string, readonly string[]>> = {
+  "I-140": ["cert-to-i140", "i140-premium", "i140-regular", "i140-rfe"],
+  "I-485": ["i485-bio", "i485-ead", "i485-ap", "i485-office", "i485-interview", "i485-gc", "interview-gc", "gc-card"],
+  "I-765": ["i485-ead"],
+  "I-131": ["i485-ap"],
+  "I-129": ["lca-h1b", "h1b"],
+};
 import { getPostedHistory, getUscisPosted } from "@/lib/db/uscisPosted";
 import { getUscisMonthly } from "@/lib/db/uscisMonthly";
 import { decisionTrend, deniedShare, everyMonth, leadLine, recentMonths } from "@/lib/uscisMonthly";
@@ -172,18 +183,19 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
   const page = formPage((await params).form);
   if (!page) notFound();
   const path = `/uscis-processing-times/${page.slug}`;
-  const [rows, history, posted, monthly, reportedI140] = await Promise.all([
+  const [rows, history, posted, monthly, summary] = await Promise.all([
     getUscisFormRows(page.form),
     getHistoricalMedians().catch(softFail("uscis-processing-times/[form]/page.getHistoricalMedians", null)),
     // Throws on a failed read, like the rows: the page keeps its last good render for the week.
     getUscisPosted(),
     // USCIS's monthly report to Congress, for the six forms it covers. A failed read loses only its section.
     getUscisMonthly().catch(softFail("uscis-processing-times/[form]/page.getUscisMonthly", null)),
-    // People's own reports, on the I-140's page only. A failed read loses only its section.
-    page.form === "I-140"
-      ? getReportedI140Cases().catch(softFail("uscis-processing-times/[form]/page.reportedI140", []))
-      : Promise.resolve([]),
+    // People's own reports, every source, for the forms they report. A failed read loses only its section.
+    FORM_STEPS[page.form]
+      ? getReportedSummary().catch(softFail<ReportedSummary | null>("uscis-processing-times/[form]/page.summary", null))
+      : Promise.resolve(null),
   ]);
+  const reportedSteps = (FORM_STEPS[page.form] ?? []).flatMap((id) => summary?.steps.find((st) => st.id === id) ?? []);
   const month = leadLine(monthly, page.form);
   const monthRows = month && monthly ? recentMonths(monthly, month, 12) : [];
   const monthNow = monthRows[0]?.point ?? null;
@@ -352,7 +364,17 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
               </p>
             </PageSection>
           ) : null}{" "}
-          <ReportedI140 cases={reportedI140} />{" "}
+          {page.form === "I-140" && summary ? (
+            <ReportedI140 figures={summary.i140} steps={reportedSteps} />
+          ) : reportedSteps.some((st) => st.median !== null) ? (
+            <PageSection
+              id="reported"
+              title={`What people reported about their own ${page.form}s`}
+              lede={`From ${formatInt(summary!.headline.cases)} cases people reported in Telegram groups, community sheets, Reddit, VisaStats and on this site, each person once, over the cases that finished each step in the last 6 months (12 when 6 hold too few). Self-reported, beside USCIS's own figures, never in place of them.`}
+            >
+              <StepFigures steps={reportedSteps} allHref="/green-card-timelines" />
+            </PageSection>
+          ) : null}{" "}
           <PageSection
             id="median"
             title="Median months, quarter by quarter"

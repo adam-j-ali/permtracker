@@ -50,6 +50,10 @@ import {
 import { USCIS_OFFICES, isCenter, officeBySlug, officePlace, type UscisOffice } from "@/lib/uscisOffices";
 import { SITE_URL } from "@/lib/constants/site";
 import { formatInt } from "@/lib/format";
+import { StepsByStage } from "@/components/community/StepFigures";
+import { WhoIsWaiting } from "@/components/community/TimelineBoard";
+import { getOfficeSummary } from "@/lib/db/reportedSummary";
+import type { PlaceSummary } from "@/lib/reportedSummary";
 
 const INDEX = "/i485-by-field-office";
 const USCIS_DATA_PAGE = "https://www.uscis.gov/tools/reports-and-studies/immigration-and-citizenship-data";
@@ -123,7 +127,7 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
   const office = officeBySlug((await params).office);
   if (!office) notFound();
 
-  const [quarters, posted, shared, ownPosted, reported, reportedAt] = await Promise.all([
+  const [quarters, posted, shared, ownPosted, reported, reportedAt, summary] = await Promise.all([
     getI485OfficeQuarters(),
     getUscisPosted(),
     // People's own timelines from this office. A failed read is named on the page, never drawn as "nobody has shared".
@@ -135,6 +139,8 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
     // The cases a community sheet keeps for this office. A failed read is named on the page (null), never "none".
     getOfficeReportedCases(office.code).catch(softFail<ReportedCase[] | null>("i485-by-field-office/[office].reported", null)),
     getReportedCasesBuiltAt().catch(softFail<number | null>("i485-by-field-office/[office].reportedAt", null)),
+    // How long each step took here, over every case people reported at this office (the hourly build's summary).
+    getOfficeSummary(office.code).catch(softFail<PlaceSummary | null>("i485-by-field-office/[office].summary", null)),
   ]);
   const year = officeYear(quarters, office.code);
   const newest = quarters[quarters.length - 1];
@@ -456,6 +462,36 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
           </section>
         </>
       )}
+
+      {summary && summary.steps.some((st) => st.median !== null) ? (
+        <section id="reported-figures" className="mt-12 scroll-mt-24" aria-labelledby="reported-figures-h">
+          <h2 id="reported-figures-h" className="font-heading text-2xl font-bold">
+            How long each step took here, as people report it
+          </h2>{" "}
+          <p className="mt-2 max-w-2xl text-base text-muted-foreground">
+            {`From the ${formatInt(summary.cases)} cases people reported at ${theOffice(office)} in Telegram groups, community sheets, Reddit and on this site, each person once. Each step counts the cases that finished it in the last 6 months, or 12 when 6 hold too few. Self-reported, beside USCIS's own figures above, never in place of them.`}
+          </p>
+          <div className="mt-5">
+            <StepsByStage steps={summary.steps} stages={[{ groups: ["i485"], title: "Each step of the I-485" }]} />
+          </div>{" "}
+          {summary.waiting?.open ? (
+            <div className="mt-8">
+              <h3 className="font-heading text-xl font-bold">Who&apos;s waiting here</h3>{" "}
+              <p className="mt-1 max-w-2xl text-base text-muted-foreground">
+                {`The ${formatInt(summary.waiting.heard)} people heard from in the last year, at the furthest step each reported.`}
+              </p>
+              <div className="mt-3">
+                <WhoIsWaiting waiting={summary.waiting} total={summary.waiting.heard} noun={["person", "people"]} />
+              </div>
+            </div>
+          ) : null}{" "}
+          <p className="mt-5 text-base">
+            <Link href="/green-card-timelines" className="link font-bold">
+              Every step, from every office and source
+            </Link>
+          </p>
+        </section>
+      ) : null}
 
       <OfficeTimelines office={office} view={shared} />
 

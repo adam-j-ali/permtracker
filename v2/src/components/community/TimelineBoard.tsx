@@ -10,7 +10,6 @@ import {
   RECENT_MIN,
   SIDE_METRIC_IDS,
   ROUTES,
-  WAITING_STAGES,
   type BoardRow,
   type MetricResult,
   type UpdatesSummary,
@@ -219,7 +218,12 @@ const dayName = (iso: string) =>
  * The approvals people reported this week, so a day like a wave of work permits shows as a count. Each step prints
  * once RECENT_MIN people report it in the week; below that it reads "fewer than" the floor, never one person's date.
  */
-export function RecentApprovals({ recent }: { recent: RecentApprovals }) {
+/** The week's approvals: the shared timelines' (Convex) or every reported case's (the summary), one shape. */
+export function RecentApprovals({
+  recent,
+}: {
+  recent: Pick<RecentApprovals, "from" | "through"> & { steps: readonly { id: string; label: string; count: number | null }[] };
+}) {
   const counted = recent.steps.filter((s) => s.count !== null);
   return (
     <section className="mt-8 max-w-3xl" aria-labelledby="recent-h">
@@ -522,17 +526,33 @@ export function RfeBars({ rfe }: { rfe: RfeSummary }) {
  * table of category and country lines. A cell under the minimum reads "under
  * 5" rather than a count, and a line too small to show is counted in words.
  */
-export function WhoIsWaiting({ waiting, total }: { waiting: WaitingView; total: number }) {
+/** The shape both counts share: the shared timelines' (Convex) and every reported case's (the summary). */
+type WaitingCounts = Pick<WaitingView, "unlisted"> & {
+  byStage: readonly { id: string; label: string; count: number }[];
+  lines: readonly { category: string; country: string; counts: readonly (number | null)[]; total: number }[];
+};
+
+export function WhoIsWaiting({
+  waiting,
+  total,
+  noun = ["timeline", "timelines"],
+}: {
+  waiting: WaitingCounts;
+  total: number;
+  /** What one count is: a shared timeline, or a person who reported a case. */
+  noun?: readonly [string, string];
+}) {
+  const [one, many] = noun;
   const most = Math.max(...waiting.byStage.map((s) => s.count), 1);
   return (
     <div className="grid grid-cols-1 gap-6 [&>*]:min-w-0">
-      <ChartTips label="Timelines by the step they've reached">
+      <ChartTips label={`${many[0]!.toUpperCase()}${many.slice(1)} by the step they've reached`}>
         <ul className="grid grid-cols-1 gap-2">
           {waiting.byStage.map((s) => (
             <Fragment key={s.id}>
               {" "}
               <li
-                data-tip={`${s.label}\n${s.count.toLocaleString("en-US")} of ${total.toLocaleString("en-US")} timelines`}
+                data-tip={`${s.label}\n${s.count.toLocaleString("en-US")} of ${total.toLocaleString("en-US")} ${many}`}
                 className="grid grid-cols-[minmax(0,15rem)_1fr_auto] items-center gap-3 text-sm"
               >
                 <span className="font-bold">{s.label}</span>{" "}
@@ -546,15 +566,15 @@ export function WhoIsWaiting({ waiting, total }: { waiting: WaitingView; total: 
         </ul>
       </ChartTips>{" "}
       {waiting.lines.length ? (
-        <ScrollBox label="Timelines by category, country and step" className="border-t-2 border-[var(--object-border)]">
+        <ScrollBox label={`${many[0]!.toUpperCase()}${many.slice(1)} by category, country and step`} className="border-t-2 border-[var(--object-border)]">
           <table className="w-full min-w-[720px] border-collapse text-sm">
-            <caption className="sr-only">Timelines by category, country and step</caption>
+            <caption className="sr-only">{`${many[0]!.toUpperCase()}${many.slice(1)} by category, country and step`}</caption>
             <thead>
               <tr className="border-b-2 border-border bg-sage text-left">
                 <th scope="col" className="p-2 font-bold">
                   Category and country{" "}
                 </th>
-                {WAITING_STAGES.map((s) => (
+                {waiting.byStage.map((s) => (
                   <th key={s.id} scope="col" className="p-2 text-right font-bold">
                     {`${s.label} `}
                   </th>
@@ -568,7 +588,7 @@ export function WhoIsWaiting({ waiting, total }: { waiting: WaitingView; total: 
                     {`${l.category}, ${l.country} `}
                   </th>
                   {l.counts.map((c, i) => (
-                    <td key={WAITING_STAGES[i]!.id} className="p-2 text-right tabular-nums">
+                    <td key={waiting.byStage[i]?.id ?? i} className="p-2 text-right tabular-nums">
                       {c === null ? "under 5 " : `${c.toLocaleString("en-US")} `}
                     </td>
                   ))}
@@ -580,9 +600,7 @@ export function WhoIsWaiting({ waiting, total }: { waiting: WaitingView; total: 
       ) : null}{" "}
       {waiting.unlisted ? (
         <p className="text-sm text-muted-foreground">
-          {waiting.unlisted.toLocaleString("en-US")} more {waiting.unlisted === 1 ? "timeline sits" : "timelines sit"} on a
-          category and country with fewer than 5 timelines, or gave neither, so {waiting.unlisted === 1 ? "it isn't" : "they aren't"}{" "}
-          listed by line.
+          {`${waiting.unlisted.toLocaleString("en-US")} more ${waiting.unlisted === 1 ? `${one} sits` : `${many} sit`} on a category and country with fewer than 5 ${many}, or gave neither, so ${waiting.unlisted === 1 ? "it isn't" : "they aren't"} listed by line.`}
         </p>
       ) : null}
     </div>

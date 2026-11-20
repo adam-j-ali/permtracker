@@ -31,6 +31,9 @@ import { embassyVisasUrl, shortExcerpt } from "@/lib/consular/embassies";
 import { getConsularIndex, getEmbassyNotices, getPostDetail, type EmbassyNotices, type PostDetail } from "@/lib/db/consularPosts";
 import { EMPLOYMENT_CATEGORIES, monthName } from "@/lib/db/visaIssuances";
 import { formatInt } from "@/lib/format";
+import { StepFigures } from "@/components/community/StepFigures";
+import { getPostSummary } from "@/lib/db/reportedSummary";
+import type { PlaceSummary } from "@/lib/reportedSummary";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { longDate, monthTick, shiftMonth, shortDate } from "@convex/lib/months";
@@ -128,10 +131,12 @@ export default async function ConsularPostPage({ params }: { params: Promise<{ p
   const [post, index] = await Promise.all([getPostDetail(slug), getConsularIndex()]);
   if (!post) notFound();
   // Visitors' own reports (convex/consularReports.ts): a page that can't read them still renders State's figures.
-  const [embassy, reports, everyPost] = await Promise.all([
+  const [embassy, reports, everyPost, summary] = await Promise.all([
     getEmbassyNotices(post.key),
     queryStatic(api.consularReports.forPost, { post: post.slug }, revalidate).catch(softFail("consular-posts/post.reports", null)),
     queryStatic(api.consularReports.overview, {}, revalidate).catch(softFail("consular-posts/post.overview", null)),
+    // The steps here from every case people reported at this consulate (community sheets and reports, merged hourly).
+    getPostSummary(post.slug).catch(softFail<PlaceSummary | null>("consular-posts/post.summary", null)),
   ]);
   const path = `/consular-posts/${post.slug}`;
   const asOf = index.asOf;
@@ -267,6 +272,18 @@ export default async function ConsularPostPage({ params }: { params: Promise<{ p
         {asOf ? `, update of ${longDate(asOf)}` : ""}, and its monthly immigrant visa issuances by post
         {index.issuedTo ? ` through ${monthName(index.issuedTo)}` : ""}.
       </p>
+
+      {summary && summary.steps.some((st) => st.median !== null) ? (
+        <section className="mt-12 border-t-2 border-border pt-10" aria-labelledby="reported-steps-h">
+          <h2 id="reported-steps-h" className="font-heading text-2xl font-bold sm:text-3xl">
+            How long each step took here, as people report it
+          </h2>{" "}
+          <p className="mt-2 max-w-2xl text-base text-muted-foreground">
+            {`From the ${formatInt(summary.cases)} cases people reported at ${post.name} in community sheets and on this site, each person once, over the cases that finished each step in the last 6 months (12 when 6 hold too few). Self-reported and unchecked.`}
+          </p>
+          <StepFigures steps={summary.steps} allHref="/green-card-timelines" className="mt-5" />
+        </section>
+      ) : null}
 
       <ConsularReports
         name={post.name}

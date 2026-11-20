@@ -24,8 +24,8 @@ vi.mock("@/lib/db/uscisPosted", () => ({ getUscisPosted, getPostedHistory }));
 vi.mock("@/components/data/DataProvenance", () => ({ DataProvenance: () => null }));
 const getUscisMonthly = vi.fn(async () => null as unknown);
 vi.mock("@/lib/db/uscisMonthly", () => ({ getUscisMonthly }));
-const getReportedI140Cases = vi.fn(async () => [] as unknown[]);
-vi.mock("@/lib/db/communityReports", () => ({ getReportedI140Cases }));
+const getReportedSummary = vi.fn(async () => null as unknown);
+vi.mock("@/lib/db/reportedSummary", () => ({ getReportedSummary }));
 
 const { default: UscisFormPage } = await import("../page");
 
@@ -50,8 +50,8 @@ const page = async (form: string) => {
 };
 
 beforeEach(() => {
-  getReportedI140Cases.mockReset();
-  getReportedI140Cases.mockResolvedValue([]);
+  getReportedSummary.mockReset();
+  getReportedSummary.mockResolvedValue(null);
   getUscisMonthly.mockReset();
   getUscisMonthly.mockResolvedValue(null);
   getUscisPosted.mockReset();
@@ -161,37 +161,57 @@ describe("USCIS's monthly report to Congress, on a form it covers", () => {
   });
 });
 
-describe("the I-140s people reported, on the I-140's page", () => {
-  const niw = (n: number, premium: string | null = "with filing") => ({
-    category: "EB-2 NIW", premium, filed: "2026-01-01", decision: n === 5 ? "denied" : "approved",
-    decided: `2026-02-${String(n + 9).padStart(2, "0")}`, rfe: n === 1 ? "rfe" : "none",
+describe("what people reported, on the pages of the forms they report", () => {
+  const months = Array.from({ length: 12 }, (_, i) => ({ month: `2026-${String(i + 1).padStart(2, "0")}`, n: 0, median: null }));
+  const step = (id: string, label: string, group: string, median: number) => ({
+    id, label, group, verified: false, n: 40, windowDays: 183, median, p25: median - 10, p75: median + 10,
+    before: { median: median + 20, n: 30 }, allTime: 300, months,
   });
+  const SUMMARY = {
+    today: "2026-11-19",
+    headline: { cases: 11220, heard: 2146, heardDays: 365, greenCards30: 34, i140s30: 20, perm30: 25 },
+    steps: [step("i140-premium", "I-140 filed to decided, premium", "i140", 63), step("i485-gc", "I-485 filed to green card", "i485", 155)],
+    waiting: { open: false, heardDays: 365, heard: 0, byStage: [], lines: [], unlisted: 0 },
+    i140: [{ category: "EB-2 NIW", premium: "with filing", reported: 5, decidedAllTime: 9, windowDays: 183, decided: 5,
+             approvedShare: 0.8, medianDays: 42, rfeShare: 0.2 }],
+  };
 
   const quarter = { fy: 2026, quarter: 3, quarterEnd: "2026-06-30", title: "Immigrant Petition for Alien Workers",
     received: 30000, approved: 25000, denied: 2000, completed: 27000, pending: 80000, medianMonths: 4.1 };
   beforeEach(() => getUscisFormRows.mockResolvedValue([quarter] as never));
   afterEach(() => getUscisFormRows.mockResolvedValue([]));
 
-  it("shows the median days by category and premium, credited, and says nothing in it is checked", async () => {
-    getReportedI140Cases.mockResolvedValue([1, 2, 3, 4, 5].map((n) => niw(n)));
+  it("shows the I-140's recent figures by category and premium, its steps, and says nothing in it is checked", async () => {
+    getReportedSummary.mockResolvedValue(SUMMARY);
     const text = await page("i-140");
-    expect(getReportedI140Cases).toHaveBeenCalled();
+    expect(getReportedSummary).toHaveBeenCalled();
     expect(text).toContain("What people reported about their own I-140s");
-    expect(text).toContain("5 I-140s people reported themselves, 5 of them decided");
+    expect(text).toContain("5 I-140s people reported themselves, 5 of them decided in the last 6 months");
     expect(text).toContain("Nothing here is checked");
     expect(text).toContain("EB-2 NIW, premium from filing");
     expect(text).toContain("42 days");
     expect(text).toContain("80% approved, 20% got an RFE or a NOID");
+    expect(text).toContain("I-140 filed to decided, premium");
+    expect(text).toContain("20 days faster than the 6 months before");
+    expect(text).not.toContain("I-485 filed to green card");
   });
 
-  it("reads nothing and shows nothing on another form's page", async () => {
+  it("shows the I-485's own steps on its page", async () => {
+    getReportedSummary.mockResolvedValue(SUMMARY);
     const text = await page("i-485");
-    expect(getReportedI140Cases).not.toHaveBeenCalled();
-    expect(text).not.toContain("What people reported about their own I-140s");
+    expect(text).toContain("What people reported about their own I-485s");
+    expect(text).toContain("I-485 filed to green card");
+    expect(text).toContain("Median 155 days");
+    expect(text).not.toContain("I-140 filed to decided, premium");
+  });
+
+  it("reads nothing on the page of a form nobody reports", async () => {
+    await page("i-130");
+    expect(getReportedSummary).not.toHaveBeenCalled();
   });
 
   it("loses only its own section when the read fails", async () => {
-    getReportedI140Cases.mockRejectedValue(new Error("connection reset"));
+    getReportedSummary.mockRejectedValue(new Error("connection reset"));
     const text = await page("i-140");
     expect(text).not.toContain("What people reported about their own I-140s");
     expect(text).toContain("Median months, quarter by quarter");
