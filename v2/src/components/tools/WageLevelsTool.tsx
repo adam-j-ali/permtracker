@@ -17,6 +17,8 @@ import { WageAcrossAreas } from "@/components/tools/WageAcrossAreas";
 import { SocCodeText } from "@/components/data/SocCodeText";
 import { SocPicker } from "@/components/soc/SocPicker";
 import { AreaLoadFailure, areaPlaceholder, useWageAreas } from "@/components/tools/WageAreas";
+import { LevelEstimator } from "@/components/tools/LevelEstimator";
+import { cn } from "@/lib/utils";
 import { WageProposalTable, type WageRuleStage } from "@/components/tools/WageProposalTable";
 
 /**
@@ -65,7 +67,7 @@ const GHOST_WIDTHS = [52, 66, 82, 100];
  * against Level IV. Before a lookup it is drawn hatched, so the frame shows
  * what the tool answers rather than an empty form.
  */
-function WageLadder({ levels }: { levels: WageLevel[] | null }) {
+function WageLadder({ levels, mark }: { levels: WageLevel[] | null; mark?: WageLevel["level"] | null }) {
   const top = levels ? Math.max(...levels.map((l) => l.yearly)) : 0;
   const rows = levels ?? (["I", "II", "III", "IV"] as const).map((level) => ({ level, hourly: 0, yearly: 0 }));
   return (
@@ -73,17 +75,20 @@ function WageLadder({ levels }: { levels: WageLevel[] | null }) {
       {rows.map((l, i) => (
         <li
           key={l.level}
-          className={
+          aria-current={mark === l.level ? "true" : undefined}
+          className={cn(
+            mark === l.level ? "outline outline-2 outline-offset-4 outline-foreground" : "",
             levels
               ? // Under 768px: the level's name on the left, its figure on the right, the bar under both. Beside the
                 // bar, the figure had no room on a phone and ran out of the box (30px past it at 320).
                 "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 md:grid-cols-[6.5rem_minmax(0,1fr)] md:gap-3 [&>*]:min-w-0"
-              : "grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-3 [&>*]:min-w-0"
-          }
+              : "grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-3 [&>*]:min-w-0",
+          )}
         >
           <span className="leading-tight">
             <span className="block font-heading text-base font-bold">Level {l.level}</span>{" "}
-            <span className="block text-sm text-muted-foreground">{LEVEL_WORDS[l.level]}</span>
+            <span className="block text-sm text-muted-foreground">{LEVEL_WORDS[l.level]}</span>{" "}
+            {mark === l.level ? <span className="mt-1 inline-block bg-primary px-1.5 text-sm font-bold text-primary-foreground">{"Likely for this job"}</span> : null}
           </span>{" "}
           {levels ? (
             <span className="contents md:flex md:items-center md:gap-3">
@@ -168,6 +173,8 @@ export function WageLevelsTool({
   const [area, setArea] = useState("");
   const [soc, setSoc] = useState(initialSoc);
   const [result, setResult] = useState<Result>({ kind: "idle" });
+  // The level the estimate under the ladder gives this job, marked on the ladder; null until it has one.
+  const [estimated, setEstimated] = useState<WageLevel["level"] | null>(null);
   const [history, setHistory] = useState<History | null>(null);
   // The year-by-year table reads separately from the four levels, so it says when it's still reading and when
   // it couldn't be read (it had stayed blank either way). Only the newest lookup's answer is kept.
@@ -322,7 +329,7 @@ export function WageLevelsTool({
               : `SOC ${result.soc}, ${result.areaLabel}, the July ${result.seriesYear} to June ${result.seriesYear + 1} series. DOL's figures, read just now.`}
           </p>{" "}
           <div className="mt-4">
-            <WageLadder levels={result.levels} />
+            <WageLadder levels={result.levels} mark={estimated} />
           </div>{" "}
           <p className="mt-3 text-sm text-muted-foreground">
             Source:{" "}
@@ -331,7 +338,8 @@ export function WageLevelsTool({
             </a>
             , all-industries OEWS. The level a case is set at depends on the job&apos;s requirements, which DOL decides on the ETA-9141.
           </p>{" "}
-          <WageProposalTable levels={result.levels} stage={ruleStage} />
+          <WageProposalTable levels={result.levels} stage={ruleStage} />{" "}
+          <LevelEstimator soc={result.soc} onLevel={setEstimated} />
         </div>
       ) : null}
 
