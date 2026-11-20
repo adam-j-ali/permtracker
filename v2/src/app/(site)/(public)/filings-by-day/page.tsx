@@ -36,6 +36,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { getDatasetSchema } from "@/lib/structuredData";
 import { longDate, weekdayName } from "@convex/lib/months";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 const TITLE = "PERM Cases Filed Today and Each Day";
 const DESCRIPTION =
@@ -201,6 +202,7 @@ export default async function FilingsByDayPage() {
           ; days before then come from the files alone.
         </p>
       </FinePrint>{" "}
+      <StepBothSources here="/filings-by-day" groups={["perm"]} />{" "}
       <DataProvenance datasets={["perm-case-status", "pwd-status", "lca-status", "seasonal-status", "perm-cases", "pw-disclosure", "lca-disclosure"]} />
     </div>
   );

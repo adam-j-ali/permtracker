@@ -31,6 +31,7 @@ import { withSocialCard } from "@/lib/socialCard";
 import { formatPercent } from "@/lib/format";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { AlertMark } from "@/components/ui/note";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 const TITLE = "H-1B Lottery Odds by Year";
 const DESCRIPTION =
@@ -276,6 +277,7 @@ export default function H1bLotteryOddsPage() {
         </ul>
       </details>
 
+      <StepBothSources here="/h1b-lottery-odds" groups={["h1b"]} />{" "}
       <section className="mt-12">
         <h2 className="font-heading text-2xl font-bold">FAQs</h2>{" "}
         <FaqList items={FAQS} />

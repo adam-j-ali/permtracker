@@ -16,6 +16,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { LEAD_BANDS, NOTICE_METHODS, RECRUITMENT_STEPS } from "@/lib/recruitmentRecord";
 import { withSocialCard } from "@/lib/socialCard";
 import { stateName } from "@/lib/usStateNames";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 /**
  * Where and when PERM employers recruit, nationally: DOL's Form 9089 Section H
@@ -313,6 +314,7 @@ export default async function PermRecruitmentPage() {
         </>
       )}
 
+      <StepBothSources here="/perm-recruitment" groups={["pwd", "perm"]} />{" "}
       <DataProvenance datasets={["perm-cases"]} />
     </div>
   );

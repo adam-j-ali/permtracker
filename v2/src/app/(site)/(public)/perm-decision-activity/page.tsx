@@ -56,6 +56,7 @@ import { formatInt } from "@/lib/format";
 import { MS_PER_DAY } from "@/lib/time";
 import { SITE_URL } from "@/lib/constants/site";
 import { softFail } from "@/lib/softRead";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 const TITLE = "PERM Decision Activity";
 const DESCRIPTION =
@@ -550,6 +551,7 @@ export default async function DecisionActivityPage() {
         </div>
       </section>
 
+      <StepBothSources here="/perm-decision-activity" groups={["perm"]} />{" "}
       <PageBasics page="perm-decision-activity" />{" "}
       <DataProvenance datasets={["daily-decisions", "perm-case-status"]} />
     </div>

@@ -27,6 +27,7 @@ import { getNvcWaitingList } from "@/lib/db/nvcWaitingList";
 import { MONTH_ABBR } from "@convex/lib/months";
 import { AlertMark } from "@/components/ui/note";
 import { softFail } from "@/lib/softRead";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 export const revalidate = 86400;
 
@@ -250,6 +251,7 @@ export default async function NvcWaitingListPage() {
         </>
       )}
 
+      <StepBothSources here="/nvc-waiting-list" groups={["consular"]} />{" "}
       <DataProvenance datasets={["nvc-waiting-list"]} />
 
       <ToolPageFooter

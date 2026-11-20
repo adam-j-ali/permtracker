@@ -15,6 +15,7 @@ import { quarterLabel } from "@/lib/uscisQuarterlyShape";
 import { i140Lead } from "@/lib/processing-times/i140ProcessingTimes";
 import { withSocialCard } from "@/lib/socialCard";
 import { buttonVariants } from "@/components/ui/button";
+import { StepBothSources } from "@/components/community/StepBothSources";
 /**
  * I-140 queue calculator.
  *
@@ -172,6 +173,7 @@ export default async function I140CalculatorPage() {
         </p>
       </section>
 
+      <StepBothSources here="/tools/i140-calculator" groups={["i140"]} />{" "}
       <section className="mt-12">
         <h2 className="font-heading text-2xl font-bold">FAQs</h2>
         <FaqList items={FAQS} />

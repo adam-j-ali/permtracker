@@ -6,6 +6,7 @@ import { DailyUpdateView } from "@/components/updates/DailyUpdateView";
 import { loadDailyUpdate } from "@/components/updates/loadDailyUpdate";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 /**
  * What DOL did with PERM cases on its last working day: the counts, the filing dates it certified, a line to
@@ -39,6 +40,7 @@ export default async function PermUpdatesPage() {
     <>
       <DailyUpdateView {...load.props} />
       <div className="mx-auto max-w-[1200px] px-4 pb-12 sm:px-6">
+        <StepBothSources here="/perm-updates" groups={["perm"]} />{" "}
         <DataProvenance datasets={["perm-case-status", "pwd-status"]} />
       </div>
     </>

@@ -29,6 +29,7 @@ import { formatAsOf } from "@/lib/dolFormat";
 import { getRfeMonths, getRfeSummary } from "@/lib/db/uscisRfe";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
+import { StepBothSources } from "@/components/community/StepBothSources";
 import {
   fiscalYears,
   monthLabel,
@@ -427,6 +428,7 @@ export default async function UscisRfeRatesPage() {
         </ul>
       </section>
 
+      <StepBothSources here="/uscis-rfe-rates" groups={["i140"]} />{" "}
       <PageBasics page="uscis-rfe-rates" title="FAQs" figures={figures} />{" "}
       <DataProvenance datasets={["uscis-rfe"]} />
     </div>

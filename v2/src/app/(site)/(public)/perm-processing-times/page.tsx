@@ -81,6 +81,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { cn } from "@/lib/utils";
 import { softFail } from "@/lib/softRead";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 const DOL_SOURCE = "https://flag.dol.gov/processingtimes";
 // Same expression as layout.tsx, sitemap.ts, feed.xml and seo.ts. A bare
@@ -813,6 +814,8 @@ export default async function PermProcessingTimesPage() {
           <ArrowRightIcon className="h-4 w-4" aria-hidden="true" />
         </Link>
       </section>
+
+      <StepBothSources here="/perm-processing-times" groups={["i140", "i485", "consular"]} reported={false} />{" "}
 
       {/* AFTER PERM, as the people waiting report it. DOL publishes nothing
           per case once the PERM is certified, so this is the only way to show

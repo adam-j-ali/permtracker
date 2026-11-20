@@ -49,6 +49,7 @@ import {
 import { SITE_URL } from "@/lib/constants/site";
 import { formatInt } from "@/lib/format";
 import { ScrollBox } from "@/components/ui/scroll-box";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 const TITLE = "Approved I-140s Waiting for a Visa Number";
 const DESCRIPTION =
@@ -387,6 +388,7 @@ export default async function I140AwaitingVisaPage() {
         </ul>
       </section>
 
+      <StepBothSources here="/i140-awaiting-visa" groups={["i140"]} />{" "}
       <PageBasics title="More questions"
         page="i140-awaiting-visa"
         figures={{

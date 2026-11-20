@@ -37,6 +37,7 @@ import {
   type IssuanceGroup,
 } from "@/lib/db/visaIssuances";
 import { shiftMonth } from "@convex/lib/months";
+import { StepBothSources } from "@/components/community/StepBothSources";
 
 export const revalidate = 86400;
 
@@ -392,6 +393,7 @@ export default async function VisaIssuancesPage() {
           { href: "/i140-awaiting-visa", label: "Approved I-140s awaiting a visa", note: "the employment queue USCIS counts" },
         ]}
       />
+      <StepBothSources here="/visa-issuances" groups={["consular"]} />{" "}
       <DataProvenance datasets={["visa-issuances"]} />
     </div>
   );
