@@ -75,20 +75,26 @@ const withSerwist = withSerwistInit({
 /**
  * The site's Content-Security-Policy, with the one directive that differs
  * between ordinary pages ('none': never framed) and /embed/* ('*': framed by
- * any site that pastes the snippet). Kept as one function so the two policies
+ * any site that pastes the snippet). Kept as one function so the policies
  * cannot drift apart on anything else.
+ *
+ * `ahrefs: false` leaves out Ahrefs' analytics host, for a page whose address
+ * is itself a key (a recruitment record shared by link, /share/*): the root
+ * layout loads Ahrefs' script on every page, and it sends the address it was
+ * loaded on. Without its host the browser never fetches the script.
  */
-function contentSecurityPolicy(frameAncestors: "'none'" | "*"): string {
+function contentSecurityPolicy(frameAncestors: "'none'" | "*", { ahrefs = true }: { ahrefs?: boolean } = {}): string {
+  const analytics = ahrefs ? " https://analytics.ahrefs.com" : "";
   return [
     "default-src 'self'",
     // 'unsafe-eval' only in development, where hot reloading evaluates code.
     // The live site runs nothing that needs it, so an injected string cannot
     // be turned into running code.
-    `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"} https://browser.sentry-cdn.com https://challenges.cloudflare.com https://analytics.ahrefs.com`,
+    `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"} https://browser.sentry-cdn.com https://challenges.cloudflare.com${analytics}`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: blob: https:",
     "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' https://*.convex.cloud https://*.convex.site wss://*.convex.cloud https://*.sentry.io https://browser.sentry-cdn.com https://fonts.googleapis.com https://fonts.gstatic.com https://us.i.posthog.com https://us-assets.i.posthog.com https://challenges.cloudflare.com https://analytics.ahrefs.com",
+    `connect-src 'self' https://*.convex.cloud https://*.convex.site wss://*.convex.cloud https://*.sentry.io https://browser.sentry-cdn.com https://fonts.googleapis.com https://fonts.gstatic.com https://us.i.posthog.com https://us-assets.i.posthog.com https://challenges.cloudflare.com${analytics}`,
     "media-src 'self' blob: data:",
     "frame-src 'self' https://*.convex.cloud https://challenges.cloudflare.com",
     "worker-src 'self' blob:",
@@ -426,6 +432,20 @@ const nextConfig: NextConfig = {
         headers: [
           { key: "Content-Security-Policy", value: contentSecurityPolicy("*") },
           { key: "X-Robots-Tag", value: "noindex, follow" },
+        ],
+      },
+      {
+        // A recruitment record shared by link (src/app/share): the address is
+        // the key. Browsers pass no referrer from it, search engines never
+        // index or follow it, and Ahrefs' script, which sends the address it
+        // was loaded on, isn't allowed to load. The page is rendered per
+        // request, so Next sends it private and no-store. After the rules
+        // above, so these keys override theirs.
+        source: "/share/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: contentSecurityPolicy("'none'", { ahrefs: false }) },
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
         ],
       },
     ];

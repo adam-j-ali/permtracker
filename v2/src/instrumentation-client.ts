@@ -30,7 +30,7 @@ import {
   fromInjectedPageScript,
   fromServiceWorkerRegister,
 } from "@/lib/exceptionNoise";
-import { isFieldFocusClick, redactEventAddresses, scrubClickEvent } from "@/lib/analyticsRedact";
+import { isFieldFocusClick, isPrivatePageEvent, isPrivatePath, redactEventAddresses, scrubClickEvent } from "@/lib/analyticsRedact";
 import { droppedForAllowance } from "@/lib/analyticsSample";
 import { guardDomAgainstTranslators } from "@/lib/translateSafeDom";
 import { guardStorage } from "@/lib/storageGuard";
@@ -129,6 +129,8 @@ function startPostHog(key: string, country: string | null): void {
         // once.
         if (gpcEnabled || isAnalyticsOff()) return null;
         if (ownFrame && event.event === "$pageview") return null;
+        // A recruitment record shared by link: its address is the key, and it shows a client's applicants.
+        if (isPrivatePageEvent(event)) return null;
 
         // Case numbers never leave for a third party, on ANY event.
         //
@@ -273,7 +275,12 @@ const onLocalHost =
   isLocalDevHost(window.location.hostname) &&
   process.env.NEXT_PUBLIC_POSTHOG_LOCAL !== "1";
 
-if (posthogKey && !onLocalHost) {
+// A recruitment record shared by link (src/app/share): its address is the link's key, so PostHog never starts on
+// one, not even for its flags request, which sends the page's address and passes no before_send. This file runs
+// once per full page load, and the page links out with plain links, so the next page starts PostHog afresh.
+const onPrivatePage = typeof window !== "undefined" && isPrivatePath(window.location.pathname);
+
+if (posthogKey && !onLocalHost && !onPrivatePage) {
   // Calls the app makes before PostHog is up are held, then replayed.
   holdUntilStarted();
   // Held with the rest until PostHog is up, then sent: how often a browser

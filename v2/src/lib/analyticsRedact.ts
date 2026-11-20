@@ -43,11 +43,37 @@ const IDENTIFIERS: readonly RegExp[] = [
 
 const REDACTED = "[redacted]";
 
+/**
+ * The key in a recruitment record's share link (convex/lib/shareToken.ts), in a path or, encoded, inside another
+ * parameter. The path before it stays, so a pasted link still reads as one.
+ */
+const SHARE_KEY = /((?:\/|%2F)share(?:\/|%2F)recruitment(?:\/|%2F))[A-Za-z0-9_-]+/gi;
+
 /** A string with every identifier replaced. */
 export function redactIdentifiers(s: string): string {
-  let out = s;
+  let out = s.replace(SHARE_KEY, "$1redacted");
   for (const re of IDENTIFIERS) out = out.replace(re, REDACTED);
   return out;
+}
+
+/**
+ * Pages whose address is itself a key: a recruitment record shared by link (src/app/share). Nothing from them goes
+ * to PostHog, not even a page view: the address would carry the key, and the page shows a client's applicants.
+ * instrumentation-client.ts never starts PostHog on one (its flags request carries the address and passes no
+ * before_send), and before_send drops any event that names one anyway.
+ */
+const PRIVATE_PAGE = /^\/share(?:\/|$)/i;
+
+/** Whether a page's path is one of those pages. */
+export function isPrivatePath(path: string): boolean {
+  return PRIVATE_PAGE.test(path);
+}
+
+/** Whether an event came from one of those pages, by any field that names the page. */
+export function isPrivatePageEvent(event: { properties?: Record<string, unknown> } | null | undefined): boolean {
+  const props = event?.properties;
+  if (!props) return false;
+  return isPrivatePath(pathOf(props)) || (typeof props.url === "string" && isPrivatePath(pathOf({ $current_url: props.url })));
 }
 
 /** The event fields that hold a page address. */

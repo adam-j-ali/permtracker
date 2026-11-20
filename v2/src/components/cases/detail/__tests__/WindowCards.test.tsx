@@ -11,12 +11,17 @@
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-// The recruitment tab reads the applicant log; these tests are about its windows, so the log is empty.
-vi.mock("convex/react", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("convex/react")>()),
-  useQuery: () => [],
-  useMutation: () => vi.fn(),
-}));
+// The recruitment tab reads the applicant log and its share link; these tests are about its windows, so the log
+// is empty and the case has no link.
+vi.mock("convex/react", async (importOriginal) => {
+  const { getFunctionName } = await import("convex/server");
+  return {
+    ...(await importOriginal<typeof import("convex/react")>()),
+    useQuery: (ref: Parameters<typeof getFunctionName>[0]) => (getFunctionName(ref).startsWith("recruitmentShares:") ? null : []),
+    useMutation: () => vi.fn(),
+    useAction: () => vi.fn(),
+  };
+});
 import { screen } from "@testing-library/react";
 import { renderWithProviders } from "../../../../../test-utils/render-utils";
 import { ETA9089Tab } from "../ETA9089Tab";

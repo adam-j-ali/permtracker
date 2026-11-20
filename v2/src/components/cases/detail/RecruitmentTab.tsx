@@ -8,6 +8,7 @@ import { caseRecruitmentSteps } from "@convex/lib/perm/recruitment/steps";
 import { ApplicantLog } from "./recruitment/ApplicantLog";
 import { RecruitmentProof } from "./recruitment/RecruitmentProof";
 import { RecruitmentReportCard } from "./recruitment/RecruitmentReportCard";
+import { ShareWithClient } from "./recruitment/ShareWithClient";
 import { format, parseISO, differenceInDays, addDays } from "date-fns";
 import { ChartBarIcon, CheckIcon, ClockIcon, FileTextIcon, FlagIcon, InfoIcon, NewspaperIcon, UsersIcon } from "@phosphor-icons/react";
 import Link from "next/link";
@@ -464,6 +465,7 @@ export function RecruitmentTab({ caseData, onUpload }: RecruitmentTabProps) {
         position={caseData.positionTitle ?? null}
         caseNumber={caseData.caseNumber ?? null}
       />
+      <ShareWithClient caseId={caseData._id} />
     </div>
   );
 }
