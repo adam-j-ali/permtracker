@@ -76,6 +76,21 @@ describe("a decided case's own dates", () => {
     expect(t.filedAfterQuiet).toBeNull();
   });
 
+  it("names each ad by what DOL's file says it was", () => {
+    const label = (r: DecidedRecord, key: string) => decidedTimeline(r).steps.find((s) => s.key === key)?.label;
+    // The file says nothing: the usual two Sunday ads.
+    expect(label(BASE, "ad2")).toBe("Second Sunday ad");
+    // The second ad in a professional journal, as the rule allows for a professional job.
+    const journal = { ...BASE, sundayEdition: "Y", secondAdType: "Professional Journal" };
+    expect(label(journal, "ad1")).toBe("First Sunday ad");
+    expect(label(journal, "ad2")).toBe("Professional journal ad");
+    // A paper with no Sunday edition is never called a Sunday ad.
+    const weekday = { ...BASE, sundayEdition: "N", secondAdType: "Newspaper of General Circulation" };
+    expect(label(weekday, "ad1")).toBe("First newspaper ad");
+    expect(label(weekday, "ad2")).toBe("Second newspaper ad");
+    expect(label({ ...weekday, ad2: null }, "ad1")).toBe("Newspaper ad");
+  });
+
   it("one Sunday ad is called that", () => {
     expect(decidedTimeline({ ...BASE, ad2: null }).steps.find((s) => s.key === "ad1")?.label).toBe("Sunday ad");
   });

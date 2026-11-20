@@ -35,7 +35,7 @@ function employerFacts(payroll: unknown, year: unknown): DecidedTimelineRead["em
 export async function getDecidedTimeline(caseNumber: string): Promise<DecidedTimelineRead | null> {
   const r = await one<Record<string, unknown>>(
     `SELECT p.received_date, p.decision_date, p.status, p.job_order_start, p.job_order_end,
-            p.paper1, p.ad1, p.paper2, p.ad2, p.recr_steps, p.pwd_number, p.emp_payroll, p.emp_year,
+            p.paper1, p.ad1, p.paper2, p.ad2, p.sunday_edition, p.ad_type, p.recr_steps, p.pwd_number, p.emp_payroll, p.emp_year,
             w.case_number AS pwd_case, w.received_date AS pwd_filed, w.determined_on, w.decision_date AS pwd_decided,
             w.wage_level, w.wage AS pwd_wage, w.wage_unit AS pwd_unit, w.pw_expires
        FROM perm_cases p LEFT JOIN pwd_cases w ON w.case_number = p.pwd_number
@@ -55,6 +55,8 @@ export async function getDecidedTimeline(caseNumber: string): Promise<DecidedTim
       ad1: str(r.ad1),
       paper2: str(r.paper2),
       ad2: str(r.ad2),
+      sundayEdition: str(r.sunday_edition),
+      secondAdType: str(r.ad_type),
       recrSteps: str(r.recr_steps),
       pwd: pwdCase
         ? {
