@@ -131,6 +131,7 @@ const ISOLATED_UNIT_FILES = [
   "src/lib/auth/__tests__/proxyStart.test.ts",
   "src/lib/__tests__/flagCasesApi.test.ts",
   "src/lib/db/__tests__/boardDoc.test.ts",
+  "src/lib/db/__tests__/checkTimesRead.test.ts",
   "src/lib/ai/__tests__/summarize.test.ts",
   "src/lib/db/__tests__/osha.test.ts",
   "src/lib/db/__tests__/whd.test.ts",
