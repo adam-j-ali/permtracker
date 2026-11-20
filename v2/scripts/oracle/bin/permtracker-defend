@@ -85,7 +85,9 @@ SOURCE_WINDOW = 300        # look for the source over the last 5 minutes
 SOURCE_SHARE = 0.30
 SOURCE_MIN = 300
 ESCALATE_AFTER = 600       # Under Attack Mode if still in trouble 10 minutes after the rule
-CALM_FOR = 1800            # all off after 30 calm minutes
+CALM_FOR = 1800            # all off after 30 calm minutes,
+CALM_FOR_REPEAT = 7200     # or two calm hours when the same source came back within
+REPEAT_WINDOW = 900        # 15 minutes of its rule coming off (Nov 19 2026: off at 5:30 PM, back at 5:33)
 ATTACK_MAX = 3600          # Under Attack Mode at most an hour at a time,
 ATTACK_COOLDOWN = 10800    # then not again for three hours
 EMAILS_PER_DAY = 8
@@ -311,6 +313,15 @@ def describe(source: dict | None) -> str:
     return f"{what} ({source['requests']} page requests in 5 minutes, {int(source['share'] * 100)}%)"
 
 
+def _same_source(a: dict | None, b: dict | None) -> bool:
+    """One network, browser label or part of the site, whatever its counts this time."""
+    return bool(a and b and a.get("kind") == b.get("kind") and a.get("value") == b.get("value"))
+
+
+def calm_words(state: dict) -> str:
+    return "two calm hours" if float(state.get("calmNeeded") or CALM_FOR) >= CALM_FOR_REPEAT else "30 calm minutes"
+
+
 def decide(state: dict, trouble: bool, source: dict | None, now: float) -> list[tuple[str, dict]]:
     """The actions this minute calls for, given the saved state. Pure."""
     acts: list[tuple[str, dict]] = []
@@ -319,6 +330,10 @@ def decide(state: dict, trouble: bool, source: dict | None, now: float) -> list[
         state["calmSince"] = None
         if mode == "off":
             if source:
+                last = state.get("lastOff") or {}
+                again = (_same_source(last.get("source"), source)
+                         and now - float(last.get("at") or 0) <= REPEAT_WINDOW)
+                state["calmNeeded"] = CALM_FOR_REPEAT if again else None
                 acts.append(("rule_on", {"source": source}))
             elif now >= float(state.get("attackCooldownUntil") or 0):
                 acts.append(("attack_on", {"reason": "no single source"}))
@@ -330,8 +345,9 @@ def decide(state: dict, trouble: bool, source: dict | None, now: float) -> list[
     elif mode != "off":
         calm = state.get("calmSince") or now
         state["calmSince"] = calm
-        if now - float(calm) >= CALM_FOR:
+        if now - float(calm) >= float(state.get("calmNeeded") or CALM_FOR):
             acts.append(("all_off", {}))
+            state["lastOff"] = {"source": state.get("source"), "at": now}
             # The three-hour wait follows EVERY Under Attack episode, not only
             # one that hit the hour cap. On Oct 2 2026 five episodes each ended
             # calmly after 31 to 41 minutes and came straight back, about three
@@ -581,7 +597,9 @@ def main() -> int:
                       f"{lead(people, filled)}\n\nCloudflare now asks {describe(info['source'])} "
                       f"to pass a browser check."
                       + (" Every other page stays open." if info["source"]["kind"] == "section" else "")
-                      + f" It turns itself off after 30 calm minutes, and moves to "
+                      + (" The same source came back within 15 minutes of the last rule coming off."
+                         if state.get("calmNeeded") else "")
+                      + f" It turns itself off after {calm_words(state)}, and moves to "
                       f"Under Attack Mode if trouble continues for 10.\n\nCounts: {why}.\n\n{UNDO}")
             elif act == "attack_on":
                 if state.get("mode") != "attack":
@@ -614,12 +632,12 @@ def main() -> int:
                     cf.set_security_level(state.get("restoreLevel") or "low")
                 lasted = int((now - float(state.get("since", now))) / 60)
                 waits = state.get("mode") == "attack"
-                note(f"all off after 30 calm minutes (was {state.get('mode')} for {lasted} min)"
+                note(f"all off after {calm_words(state)} (was {state.get('mode')} for {lasted} min)"
                      + ("; Under Attack Mode not again for 3 hours" if waits else ""))
                 email(state, cfg, "PERM Tracker: automatic defense off",
-                      f"Thirty calm minutes, so the automatic rule is removed and the security level is back to "
+                      f"{calm_words(state)[0].upper() + calm_words(state)[1:]}, so the automatic rule is removed and the security level is back to "
                       f"{state.get('restoreLevel') or 'low'}. It was on for {lasted} minutes.")
-                state.update(mode="off", since=None, source=None, calmSince=None, restoreLevel=None)
+                state.update(mode="off", since=None, source=None, calmSince=None, restoreLevel=None, calmNeeded=None)
         except Exception as exc:  # noqa: BLE001 - one failed call must not wedge the state
             note(f"{act} failed: {exc}")
     state["checkedAt"] = int(now)
