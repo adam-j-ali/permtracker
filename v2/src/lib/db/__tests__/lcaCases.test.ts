@@ -35,6 +35,9 @@ describe("LCA numbers and finality", () => {
     expect(normaliseLcaCaseNumber("I-203-26239-199943")).toBe("I-203-26239-199943");
     expect(normaliseLcaCaseNumber("P-100-26240-200135")).toBeNull();
     expect(normaliseLcaCaseNumber("G-100-26240-200246")).toBeNull();
+    // DOL's FY2008 e-file numbers: the year and day, then a seven-digit serial.
+    expect(normaliseLcaCaseNumber(" i-07135-3458699 ")).toBe("I-07135-3458699");
+    expect(normaliseLcaCaseNumber("I-07135-345869")).toBeNull();
   });
 
   it("mirrors the Python ingest's final set byte for byte", () => {

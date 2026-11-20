@@ -40,6 +40,14 @@ import {
  * prevailing wage request (`P-400-`), plus CW-1 (the application `C-500-` and
  * the wage request `P-500-`), all on the same counter.
  */
+/**
+ * An LCA number: today's shape (I-200-26055-173457, the prefix naming the visa) and DOL's FY2008 e-file shape
+ * (I-07135-3458699: the year and day, then a seven-digit serial), which DOL's FY2008 file prints for every row.
+ */
+export const LCA_NUMBER_RE = /^I-(?:\d{3}-\d{5}-\d+|\d{5}-\d{7})$/;
+/** The FY2008 shape alone: DOL's live case service never knew these, so nothing asks it about one. */
+export const OLD_LCA_NUMBER_RE = /^I-\d{5}-\d{7}$/;
+
 export type FlagProgram = "perm" | "pwd" | "lca" | "seasonal";
 
 /** Every program, in a stable order, for exhaustive iteration in tests. */
@@ -58,7 +66,7 @@ const PROGRAM_PATTERNS: readonly { program: FlagProgram; re: RegExp }[] = [
   // PWD program and its ETA-9141 queue.
   { program: "pwd", re: /^P-(?:100|200|201|202|203)-\d{5}-\d+$/ },
   { program: "seasonal", re: /^(?:H-300|H-400|P-400|P-500|JO-A-300|C-500)-\d{5}-\d+$/ },
-  { program: "lca", re: /^I-\d{3}-\d{5}-\d+$/ },
+  { program: "lca", re: LCA_NUMBER_RE },
 ];
 
 /** Tidy a number the same way `normaliseCaseNumber` does, without judging it. */

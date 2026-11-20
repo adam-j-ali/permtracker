@@ -3,6 +3,7 @@ import { SocCodeLink } from "@/components/soc/SocCodeLink";
 import { DolUnanswered } from "@/components/tools/DolUnanswered";
 import { lookupLcaCaseOutcome, lookupLcaDisclosed, lookupLcaRecord, type LcaDisclosedRow, type LcaRecordDetail } from "@/lib/db/lcaCasesTypes";
 import { naicsTitle } from "@/lib/naicsTitles";
+import { OLD_LCA_NUMBER_RE } from "@/lib/flagCaseNumber";
 import { formatWage } from "@/lib/wageFormat";
 import { YearlyPayNote } from "@/components/data/YearlyPayNote";
 import { WatchThisNumber } from "@/components/tools/WatchThisNumber";
@@ -142,7 +143,10 @@ function Disclosed({ d, detail }: { d: LcaDisclosedRow; detail: LcaRecordDetail 
 export async function LcaLookup({ caseNumber }: { caseNumber: string }) {
   const [{ row, dolMiss }, disclosed, detail] = await Promise.all([
     // A failure to read our own table is also "could not settle it", never "no record".
-    lookupLcaCaseOutcome(caseNumber).catch(softFail("LcaStatusResult.lookupLcaCaseOutcome", { row: null, dolMiss: "records" as const })),
+    // An FY2008 number (I-07135-3458699) was never in DOL's live service: never spend a question on one.
+    lookupLcaCaseOutcome(caseNumber, { discover: !OLD_LCA_NUMBER_RE.test(caseNumber.trim().toUpperCase()) }).catch(
+      softFail("LcaStatusResult.lookupLcaCaseOutcome", { row: null, dolMiss: "records" as const }),
+    ),
     lookupLcaDisclosed(caseNumber).catch(softFail("LcaStatusResult.lookupLcaDisclosed", null)),
     // The record stands without these rows, so a failed read is recorded and the rows are left out.
     lookupLcaRecord(caseNumber).catch(softFail("LcaStatusResult.lookupLcaRecord", null)),
