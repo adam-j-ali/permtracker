@@ -112,16 +112,9 @@ export function SignupPageClient() {
     return null;
   }, [emailValidation.state, nameValidation.state, passwordValidation.state, turnstileToken]);
 
-  const submitLabel = useMemo(() => {
-    if (isLoading) return "Creating account...";
-    switch (firstMissing) {
-      case "email": return "Enter your email";
-      case "name": return "Fix your name";
-      case "password": return "Enter a password";
-      case "turnstile": return "Complete the security check";
-      default: return "Create account";
-    }
-  }, [isLoading, firstMissing]);
+  // The button keeps its label (the design system's rule): what's missing is said under the field it's missing
+  // from, once a press shows it. A label that read "Enter your email" looked like an instruction in a dead button.
+  const [checkPending, setCheckPending] = useState(false);
 
   const reportIfNewInvalid = useCallback(
     (field: string, reason: string | undefined) => {
@@ -173,8 +166,12 @@ export function SignupPageClient() {
       setNameTouched(true);
       setPasswordTouched(true);
       trackSubmitBlocked("signup", firstMissing);
+      // Every field now says what it needs; the first one that needs something gets the focus.
+      if (firstMissing === "turnstile") setCheckPending(true);
+      else document.getElementById(firstMissing)?.focus();
       return;
     }
+    setCheckPending(false);
 
     setIsLoading(true);
     setRefused(false);
@@ -531,6 +528,7 @@ export function SignupPageClient() {
               onVerify={(token) => {
                 setTurnstileToken(token);
                 setTurnstileError(false);
+                setCheckPending(false);
                 authBreadcrumb("signup_turnstile_token_received");
               }}
               onError={() => {
@@ -554,6 +552,11 @@ export function SignupPageClient() {
                 Verification check failed. Refresh the page and try again.
               </p>
             )}
+            {checkPending && !turnstileError && (
+              <p role="status" className="text-center text-sm text-muted-foreground">
+                The security check is still running. Press Create account again in a moment.
+              </p>
+            )}
           </div>
 
           <Button
@@ -561,9 +564,9 @@ export function SignupPageClient() {
             className="w-full"
             loading={isLoading}
             loadingText="Creating account..."
-            disabled={isGoogleLoading || firstMissing !== null}
+            disabled={isGoogleLoading}
           >
-            {submitLabel}
+            Create account
           </Button>
 
           {refused && (

@@ -133,7 +133,9 @@ describe("asking for a second code", () => {
     // Back from the code step, with the widget still working on its next token.
     widget.auto = false;
     fireEvent.click(await screen.findByRole("button", { name: /Back to signup/ }));
-    expect(await screen.findByRole("button", { name: "Complete the security check" })).toBeDisabled();
+    // A press before the fresh token is held, and says why; the spent token is never sent.
+    fireEvent.click(await screen.findByRole("button", { name: "Create account" }));
+    expect(await screen.findByText(/The security check is still running/)).toBeInTheDocument();
     expect(verifyCheck).toHaveBeenCalledTimes(1);
 
     // The widget finishes: the button comes back, and the second request carries the new token.
