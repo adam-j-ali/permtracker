@@ -41,6 +41,7 @@ DAILY_COUNTER_PREFIXES = (
     "discovery_budget_",
     "pwd_discovery_budget_",
     "lca_discovery_budget_",
+    "seasonal_discovery_budget_",
     "embed_live_",
     "uscis_budget_",
 )

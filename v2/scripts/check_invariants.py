@@ -77,6 +77,8 @@ def check_status_vocabulary(rows, today: datetime.date) -> tuple[bool, str]:
                             PROGRAMS["pwd"]["final"] | PROGRAMS["pwd"]["pending"]),
         "lca_case_status": (tuple(PROGRAMS["lca"]["prefixes"]),
                             PROGRAMS["lca"]["final"] | PROGRAMS["lca"]["pending"]),
+        "seasonal_case_status": (tuple(PROGRAMS["seasonal"]["prefixes"]),
+                                 PROGRAMS["seasonal"]["final"] | PROGRAMS["seasonal"]["pending"]),
     }
     seen = 0
     for table, (prefixes, known) in sets.items():
@@ -98,7 +100,8 @@ def check_filing_date_matches_code(rows, today: datetime.date) -> tuple[bool, st
     total = drift = 0
     for table, prefixes in (("perm_case_status", ("G-100-", "G-200-")),
                             ("pwd_case_status", ("P-100-",)),
-                            ("lca_case_status", ("I-200-",))):
+                            ("lca_case_status", ("I-200-",)),
+                            ("seasonal_case_status", ("H-300-", "H-400-"))):
         for cn, fd, _s, _t in _newest_sample(rows, table, prefixes, today):
             d = code_to_date(code_of(cn) or "")
             if not d or not fd:
