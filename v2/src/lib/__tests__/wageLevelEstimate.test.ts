@@ -89,6 +89,15 @@ describe("degreeOf", () => {
     expect(degreeOf("None")).toBe("none");
     expect(degreeOf("Postsecondary nondegree award")).toBe("high-school");
     expect(degreeOf("Something new")).toBeNull();
+  });
+
+  it("reads the requirement words in DOL's wage request file", () => {
+    expect(degreeOf("Bachelor's")).toBe("bachelor");
+    expect(degreeOf("Master's")).toBe("master");
+    expect(degreeOf("Associate's")).toBe("associate");
+    expect(degreeOf("High School/GED")).toBe("high-school");
+    expect(degreeOf("Doctorate (PhD)")).toBe("doctorate");
+    expect(degreeOf("Other degree (JD, MD, etc.)")).toBe("doctorate");
     expect(degreeOf(null)).toBeNull();
   });
 });

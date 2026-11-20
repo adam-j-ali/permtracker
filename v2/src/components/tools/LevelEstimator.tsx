@@ -42,16 +42,21 @@ const DEGREES = Object.keys(DEGREE_LABELS) as Degree[];
 export function LevelEstimator({
   soc,
   onLevel,
+  initialDegree = "bachelor",
+  initialMonths = 0,
 }: {
   soc: string;
-  /** The estimated level that governs, or null while there's none, so the ladder can mark it. */
-  onLevel: (level: (typeof LEVELS)[number] | null) => void;
+  /** Where the answers start: a case page starts them from the employer's last request for the same job. */
+  initialDegree?: Degree;
+  initialMonths?: number;
+  /** The estimated level that governs, or null while there's none, so a ladder can mark it. Optional on a page with no ladder. */
+  onLevel?: (level: (typeof LEVELS)[number] | null) => void;
 }) {
   const id = useId();
   const [basis, setBasis] = useState<Basis>({ kind: "loading" });
   const [onet, setOnet] = useState<string>("");
-  const [degree, setDegree] = useState<Degree>("bachelor");
-  const [experience, setExperience] = useState<string>("0");
+  const [degree, setDegree] = useState<Degree>(initialDegree);
+  const [experience, setExperience] = useState<string>(String(initialMonths));
   const [flags, setFlags] = useState({ foreignLanguage: false, license: false, otherSkills: false, supervises: false, travel: false });
 
   useEffect(() => {
@@ -90,7 +95,7 @@ export function LevelEstimator({
   }, [occupation, degree, months, flags]);
 
   useEffect(() => {
-    onLevel(estimate ? LEVELS[estimate.governing - 1]! : null);
+    onLevel?.(estimate ? LEVELS[estimate.governing - 1]! : null);
   }, [estimate, onLevel]);
 
   const usable = basis.kind === "ready" ? basis.rows.filter((r) => r.usable) : [];

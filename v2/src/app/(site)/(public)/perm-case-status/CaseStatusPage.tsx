@@ -31,6 +31,7 @@ import { getMonthBacklog } from "@/lib/db/backlog";
 import { getCaseWageContext, getCohortDuration } from "@/lib/db/caseContext";
 import { lookupCase } from "@/lib/db/caseLookup";
 import { getDecidedTimeline } from "@/lib/db/decidedTimeline";
+import { getPermCaseDetail } from "@/lib/db/permCaseDetail";
 import { getEmployerWageRequests } from "@/lib/db/employerWageRequests";
 import { normalisePwdCaseNumber } from "@/lib/db/pwdCases";
 import { normaliseLcaCaseNumber } from "@/lib/db/lcaCases";
@@ -420,7 +421,7 @@ async function Lookup({ caseNumber }: { caseNumber: string }) {
   }
 
   const isDecided = result.decided !== null;
-  const [monthBacklog, wage, duration, stageStats, sameDay, timeline, history, wageRequests] = await Promise.all([
+  const [monthBacklog, wage, duration, stageStats, sameDay, timeline, history, wageRequests, detail] = await Promise.all([
     month ? getMonthBacklog(month).catch(softFail("perm-case-status/getMonthBacklog", null)) : Promise.resolve(null),
     // Only for a decided case: a pending one has no wage in DOL's files, and
     // asking for one is a round trip that can only ever return null.
@@ -445,6 +446,8 @@ async function Lookup({ caseNumber }: { caseNumber: string }) {
     !isDecided && result.live
       ? getEmployerWageRequests(result.caseNumber, result.live.jobTitle, result.live.filingDate).catch(softFail("perm-case-status/getEmployerWageRequests", null))
       : Promise.resolve(null),
+    // The job's own fields from DOL's file and its wage request's level and requirements (decided cases only).
+    isDecided ? getPermCaseDetail(result.caseNumber) : Promise.resolve(null),
   ]);
 
   return (
@@ -471,6 +474,7 @@ async function Lookup({ caseNumber }: { caseNumber: string }) {
       stageDuration={stageDurationFor(stageStats, result.live?.status ?? "")}
       sameDay={sameDay}
       timeline={timeline}
+      detail={detail}
       history={history}
       wageRequests={wageRequests}
       today={today}

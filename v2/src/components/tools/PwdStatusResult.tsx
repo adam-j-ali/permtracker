@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { SocCodeLink } from "@/components/soc/SocCodeLink";
+import { PwdLikelySection } from "@/components/tools/PwdLikelySection";
+import { getPwdDetail, type PwdDetail } from "@/lib/db/pwdDetail";
+import { getPwdLikely } from "@/lib/db/pwdLikely";
 import { estimatePwdDay, estimatePwdQueue, monthInDolTable } from "@/lib/perm";
 import { formatAsOf, formatMonth } from "@/lib/dolFormat";
 import { getPwdEstimatorData } from "@/lib/db/estimate";
@@ -74,10 +77,16 @@ function validUntil(decisionDate: string | null): string | null {
 }
 
 /** DOL's own determination, from the quarterly disclosure file: the part the live endpoint never says. */
-function Determination({ d, perms = [] }: { d: PwdDisclosedRow; perms?: readonly PermNamingPwd[] }) {
+function Determination({ d, perms = [], detail = null }: { d: PwdDisclosedRow; perms?: readonly PermNamingPwd[]; detail?: PwdDetail | null }) {
   const issued = ISSUED.test(d.status.toUpperCase());
   const wage = formatWage(d.wage, d.wageUnit);
-  const until = issued ? validUntil(d.decisionDate) : null;
+  // The determination's own date by the central rule (June 30 of its wage year, or +90 days), from its determination
+  // day. Never the file's pw_expires: DOL's file prints a day early on 99.8% of rows (checked Nov 9 2026).
+  const until = issued ? validUntil(detail?.determinedOn ?? d.decisionDate) : null;
+  const need = (edu: string | null, months: number | null) =>
+    [edu && edu.toLowerCase() !== "none" ? edu : null, months ? `${months} months of experience` : null].filter(Boolean).join(", ") || null;
+  const required = detail ? need(detail.education, detail.experienceMonths) : null;
+  const alternative = detail ? need(detail.altEducation, detail.altExperienceMonths) : null;
   return (
     <PageSection title="DOL's determination" lede="From DOL's quarterly disclosure file: the part the live record never says.">
       {issued && wage ? (
@@ -104,9 +113,30 @@ function Determination({ d, perms = [] }: { d: PwdDisclosedRow; perms?: readonly
                 },
               ]
             : []),
-          ...(d.worksiteState ? [{ label: "Worksite state", value: d.worksiteState }] : []),
+          ...(detail?.level ? [{ label: "Wage level DOL set", value: `Level ${detail.level}` }] : []),
+          ...(required ? [{ label: "What the job requires", value: required }] : []),
+          ...(alternative ? [{ label: "Or, as the alternative", value: alternative }] : []),
+          ...(d.worksiteState || detail?.worksiteCity
+            ? [{ label: "Worksite", value: [detail?.worksiteCity, d.worksiteState].filter(Boolean).join(", ") }]
+            : []),
+          ...(detail?.acwia ? [{ label: "Priced as", value: "A university or research employer (ACWIA), on its own survey" }] : []),
+          ...(d.attorneyName
+            ? [
+                {
+                  label: "Law firm",
+                  raw: true,
+                  value: d.attorneySlug ? (
+                    <Link href={`/perm-attorneys/${d.attorneySlug}`} className="link">
+                      {d.attorneyName}
+                    </Link>
+                  ) : (
+                    d.attorneyName
+                  ),
+                },
+              ]
+            : []),
           { label: "Received by DOL", value: formatDay(d.receivedDate) ?? "Unknown" },
-          { label: issued ? "Determination date" : "Decided", value: formatDay(d.decisionDate) ?? "Unknown" },
+          { label: issued ? "Determination date" : "Decided", value: formatDay(detail?.determinedOn ?? d.decisionDate) ?? "Unknown" },
           ...(until ? [{ label: "Valid until", value: formatDay(until) }] : []),
         ]}
       />{" "}
@@ -143,7 +173,7 @@ function Determination({ d, perms = [] }: { d: PwdDisclosedRow; perms?: readonly
 }
 
 export async function PwdLookup({ caseNumber }: { caseNumber: string }) {
-  const [{ row, dolMiss }, disclosed, est, dayData, perms, line] = await Promise.all([
+  const [{ row, dolMiss }, disclosed, est, dayData, perms, line, detail] = await Promise.all([
     // A failure to read our own table is also "could not settle it", never "no record".
     lookupPwdCaseOutcome(caseNumber).catch(softFail("PwdStatusResult.lookupPwdCaseOutcome", { row: null, dolMiss: "records" as const })),
     lookupPwdDetermination(caseNumber).catch(softFail("PwdStatusResult.lookupPwdDetermination", null)),
@@ -153,7 +183,16 @@ export async function PwdLookup({ caseNumber }: { caseNumber: string }) {
     getPermsNamingPwd(caseNumber).catch(softFail<PermNamingPwd[]>("PwdStatusResult.getPermsNamingPwd", [])),
     // Where DOL really is in the line, by our own daily check; DOL's table trails it by weeks.
     getPwdLine(),
+    // The determination's level, requirements and DOL's own expiration, which the shared row leaves out.
+    getPwdDetail(caseNumber),
   ]);
+  // Not decided yet: what DOL will likely set, from what it decided before for the same employer and title.
+  const likely =
+    row && !disclosed
+      ? await getPwdLikely(row.employerSlug ?? null, row.jobTitle ?? null, row.filingDate ?? null).catch(
+          softFail("PwdStatusResult.getPwdLikely", null),
+        )
+      : null;
   // No decided PERM names it yet: the employer's PERM cases for the same job, filed after it (one is very
   // likely the one it supports). A failure only drops the section.
   const likelyPerms =
@@ -198,7 +237,7 @@ export async function PwdLookup({ caseNumber }: { caseNumber: string }) {
           </b>
           . Its live case system didn&apos;t return the number, so the record below is from the quarterly file.
         </AnswerPanel>
-        <Determination d={disclosed} perms={perms} />
+        <Determination d={disclosed} perms={perms} detail={detail} />
         {likelyPermsSection}
         <PageSection title="The record">
           <RecordList
@@ -345,7 +384,8 @@ export async function PwdLookup({ caseNumber }: { caseNumber: string }) {
         </p>
       ) : null}
 
-      {disclosed ? <Determination d={disclosed} perms={perms} /> : null}
+      {disclosed ? <Determination d={disclosed} perms={perms} detail={detail} /> : null}
+      {likely ? <PwdLikelySection likely={likely} jobTitle={row.jobTitle ?? null} state={null} /> : null}
       {likelyPermsSection}
 
       {pending && !notPerm ? (

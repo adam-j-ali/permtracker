@@ -46,6 +46,8 @@ const sharedConfig = {
 // module registry (the cause of historical CI-only flakiness under shuffle).
 // They run in the "unit-isolated" project; the "unit" project excludes them.
 const ISOLATED_UNIT_FILES = [
+  "src/lib/db/__tests__/pwdLikely.test.ts",
+  "src/lib/db/__tests__/officialHeadlines.test.ts",
   // Added 2026-10-10: each mocks the database client (or Convex and Convex
   // Auth, for the sign-in gate) per test.
   "src/lib/db/__tests__/warnForSlug.test.ts",
