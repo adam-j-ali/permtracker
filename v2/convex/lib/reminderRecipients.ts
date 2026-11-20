@@ -37,8 +37,17 @@ export function normaliseRecipientEmail(raw: string): string | null {
   return isPlausibleEmail(email) ? email : null;
 }
 
-/** Anything a reader might follow: a scheme, a www., an address or a bare domain. */
-const LOOKS_LIKE_A_LINK = /(?:[a-z][a-z0-9+.-]*:\/\/|www\.|@|\.[a-z]{2,}(?:[/\s]|$))/i;
+/**
+ * Anything a reader might follow: a scheme, a www., an address (an @) or a bare domain, a dot then two letters or more
+ * that end the word ("irs-refund.example/claim", "irs.gov.", "IRS.GOV") or a punycode one. A dot before a space or a
+ * single letter ("St. Jude", "U.S. Steel") is no domain. A false alarm only hides a name, so the rule leans wide.
+ */
+const LOOKS_LIKE_A_LINK = /(?:[a-z][a-z0-9+.-]*:\/\/|www\.|@|\.(?:[a-z]{2,}|xn--[a-z0-9-]+)(?![a-z0-9-]))/i;
+
+/** Whether text typed by an account reads like a link or an address (LOOKS_LIKE_A_LINK). */
+export function looksLikeALink(text: string): boolean {
+  return LOOKS_LIKE_A_LINK.test(text);
+}
 
 /**
  * Who the invitation says asked: the account's display name (Settings' full name, else the sign-in name), or "a PERM
@@ -49,7 +58,7 @@ export function inviterName(fullName: string | undefined, accountName: string | 
   for (const raw of [fullName, accountName]) {
     const name = (raw ?? "").replace(/\s+/g, " ").trim();
     if (!name) continue;
-    if (LOOKS_LIKE_A_LINK.test(name)) return SOMEONE;
+    if (looksLikeALink(name)) return SOMEONE;
     return name.length > NAME_MAX ? `${name.slice(0, NAME_MAX - 1).trimEnd()}…` : name;
   }
   return SOMEONE;
@@ -117,6 +126,19 @@ function clip(s: string, max: number): string {
 /** The case as the emails name it: the job title at the employer. */
 export function caseLine(jobTitle: string, employerName: string): string {
   return `${clip(jobTitle, 55)} at ${clip(employerName, 55)}`;
+}
+
+/** What the invitation calls the case when it can't name it. */
+export const A_PERM_CASE = "a PERM case";
+
+/**
+ * The case as the invitation and its Confirm page name it, to an address that hasn't said yes: the case line, or "a
+ * PERM case" when the job title or the employer, as typed, reads like a link or an address (the rule inviterName
+ * uses). Both are checked whole, before any clipping, so nobody can put a link in an email to a stranger under our
+ * name. The reminders a confirmed person gets keep the case line.
+ */
+export function inviteCaseLine(jobTitle: string, employerName: string): string {
+  return looksLikeALink(jobTitle) || looksLikeALink(employerName) ? A_PERM_CASE : caseLine(jobTitle, employerName);
 }
 
 /** The second person's subject: the owner's digest subject, then the case it's about. */
