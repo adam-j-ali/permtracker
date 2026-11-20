@@ -858,6 +858,117 @@ describe("mail waiting in the retry queue goes when the person does", () => {
   });
 });
 
+describe("a retry for a second person, checked again as the retry worker picks it up", () => {
+  /**
+   * A retry for the row, due now: what a send in flight leaves behind when the row changed after it was admitted (a
+   * Stop or a Remove drops what's queued, but not a send that failed and queued itself a moment later).
+   */
+  const queueRetry = (t: T, recipientId: string, kind: "reminder-copy" | "reminder-invite", to = "para@firm.example") =>
+    t.run((ctx) =>
+      ctx.db.insert("emailRetries", {
+        kind,
+        to,
+        payload: JSON.stringify({ from: "x@permtracker.app", to, subject: "s", text: "t" }),
+        queuedAt: Date.now(),
+        nextAttemptAt: 0,
+        attempts: 0,
+        lastError: "internal_server_error: outage",
+        refs: [`reminder:${recipientId}`],
+      }),
+    );
+  const claim = (t: T) => t.mutation(internal.emailLedger.claimRetries, { limit: 10 });
+  const waiting = (t: T) => t.run((ctx) => ctx.db.query("emailRetries").collect());
+
+  async function invited() {
+    const s = await setup();
+    await s.owner.mutation(api.reminderRecipients.invite, { caseId: s.caseId, email: "para@firm.example" });
+    await finishScheduledNow(s.t);
+    const [row] = await rows(s.t);
+    return { ...s, id: row!._id };
+  }
+  async function confirmed() {
+    const s = await invited();
+    await s.t.mutation(internal.reminderRecipients.confirmByToken, {
+      token: await confirmToken(s.id, "para@firm.example"),
+      recipientId: s.id,
+    });
+    return s;
+  }
+
+  it("hands out a confirmed person's reminder and a waiting person's invitation", async () => {
+    const copy = await confirmed();
+    const r1 = await queueRetry(copy.t, copy.id, "reminder-copy");
+    expect((await claim(copy.t)).map((c) => c.id)).toEqual([r1]);
+    const invite = await invited();
+    const r2 = await queueRetry(invite.t, invite.id, "reminder-invite");
+    expect((await claim(invite.t)).map((c) => c.id)).toEqual([r2]);
+  });
+
+  it("drops a reminder whose person clicked Stop while it was in flight", async () => {
+    const { t, id } = await confirmed();
+    await t.mutation(internal.reminderRecipients.stopByToken, { token: await stopToken(id, "para@firm.example"), recipientId: id });
+    await queueRetry(t, id, "reminder-copy");
+    expect(await claim(t)).toEqual([]);
+    expect(await waiting(t)).toEqual([]);
+  });
+
+  it("drops one for a row that's gone", async () => {
+    const { t, owner, caseId, id } = await confirmed();
+    await owner.mutation(api.reminderRecipients.remove, { caseId });
+    await queueRetry(t, id, "reminder-copy");
+    expect(await claim(t)).toEqual([]);
+    expect(await waiting(t)).toEqual([]);
+  });
+
+  it("drops one addressed to anyone but the row's address", async () => {
+    const { t, id } = await confirmed();
+    await queueRetry(t, id, "reminder-copy", "someone.else@firm.example");
+    expect(await claim(t)).toEqual([]);
+    expect(await waiting(t)).toEqual([]);
+  });
+
+  it("drops an invitation once the person confirmed, and a reminder to one who hasn't", async () => {
+    const yes = await confirmed();
+    await queueRetry(yes.t, yes.id, "reminder-invite");
+    expect(await claim(yes.t)).toEqual([]);
+    expect(await waiting(yes.t)).toEqual([]);
+    const notYet = await invited();
+    await queueRetry(notYet.t, notYet.id, "reminder-copy");
+    expect(await claim(notYet.t)).toEqual([]);
+    expect(await waiting(notYet.t)).toEqual([]);
+  });
+
+  it("drops one whose case was deleted, or whose account was", async () => {
+    const one = await confirmed();
+    await one.t.run((ctx) => ctx.db.patch(one.caseId, { deletedAt: Date.now() }));
+    await queueRetry(one.t, one.id, "reminder-copy");
+    expect(await claim(one.t)).toEqual([]);
+    expect(await waiting(one.t)).toEqual([]);
+    const two = await confirmed();
+    await two.t.run((ctx) => ctx.db.patch(two.owner.userId, { deletedAt: Date.now() }));
+    await queueRetry(two.t, two.id, "reminder-copy");
+    expect(await claim(two.t)).toEqual([]);
+    expect(await waiting(two.t)).toEqual([]);
+  });
+
+  it("leaves mail that isn't a second person's alone", async () => {
+    const { t } = await setup();
+    const other = await t.run((ctx) =>
+      ctx.db.insert("emailRetries", {
+        kind: "case-alert",
+        to: "watcher@firm.example",
+        payload: "{}",
+        queuedAt: Date.now(),
+        nextAttemptAt: 0,
+        attempts: 0,
+        lastError: "internal_server_error: outage",
+        refs: ["case:abc"],
+      }),
+    );
+    expect((await claim(t)).map((c) => c.id)).toEqual([other]);
+  });
+});
+
 describe("the second person's daily reminders", () => {
   async function confirmed() {
     const s = await setup();
