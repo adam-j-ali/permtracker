@@ -293,7 +293,7 @@ function CaseDetail({ caseId, caseData }: CaseDetailProps) {
 
   // Resolves to null when the file is saved, or to the reason it wasn't, which
   // the documents tab shows beside the file (and keeps the file to try again).
-  const handleUploadDocument = useCallback(async (file: File, category?: DocumentCategory): Promise<string | null> => {
+  const handleUploadDocument = useCallback(async (file: File, category?: DocumentCategory, step?: string): Promise<string | null> => {
     // Client-side validation
     const validation = await validateDocumentFile(file);
     if (!validation.valid) return validation.error;
@@ -332,6 +332,8 @@ function CaseDetail({ caseId, caseData }: CaseDetailProps) {
         contentType: file.type,
         fileSize: file.size,
         category,
+        // A file dropped into a recruitment step's slot proves that step.
+        ...(step ? { step } : {}),
       });
 
       // The server keeps the first 255 characters of a name; say so when it did.
@@ -650,7 +652,7 @@ function CaseDetail({ caseId, caseData }: CaseDetailProps) {
           />
         </TabPanel>
         <TabPanel id="recruitment" activeTab={activeTab}>
-          <RecruitmentTab caseData={caseData} />
+          <RecruitmentTab caseData={caseData} onUpload={handleUploadDocument} />
         </TabPanel>
         <TabPanel id="eta9089" activeTab={activeTab}>
           <ETA9089Tab caseData={caseData} filingWindowOpens={gatedFilingWindowOpens} filingWindowCloses={gatedFilingWindowCloses} />

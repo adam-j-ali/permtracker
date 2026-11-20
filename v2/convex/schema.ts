@@ -581,6 +581,8 @@ export default defineSchema({
             v.literal("general")
           )
         ),
+        /** The recruitment step this file proves: a key of convex/lib/perm/recruitment/steps.ts. */
+        step: v.optional(v.string()),
       })
     ),
 
@@ -631,6 +633,40 @@ export default defineSchema({
     .index("by_user_and_pwd_expiration", ["userId", "pwdExpirationDate"])
     .index("by_user_and_recruitment_end", ["userId", "recruitmentEndDate"])
     .index("by_user_and_recruitment_window", ["userId", "recruitmentWindowCloses"]),
+
+  /**
+   * A case's applicant log (20 CFR 656.17(g)): one row per U.S. applicant, with a reference the account chooses (the
+   * form asks for no name or contact details), the dates, how the applicant was contacted, and the job-related
+   * reason the account wrote. People write every reason; nothing here screens or ranks an applicant. Deleted with its
+   * case and with the account (cases.remove, lib/deletion.ts), as the Privacy Policy's Case Data list says.
+   */
+  recruitmentApplicants: defineTable({
+    userId: v.id("users"),
+    caseId: v.id("cases"),
+    ref: v.string(),
+    appliedOn: v.optional(v.string()),
+    /** The recruitment step the applicant answered: a key of convex/lib/perm/recruitment/steps.ts. */
+    source: v.optional(v.string()),
+    contactedOn: v.optional(v.string()),
+    contactMethod: v.optional(
+      v.union(v.literal("email"), v.literal("phone"), v.literal("letter"), v.literal("in_person"), v.literal("other")),
+    ),
+    outcome: v.union(
+      v.literal("pending"),
+      v.literal("not_qualified"),
+      v.literal("no_response"),
+      v.literal("declined"),
+      v.literal("not_available"),
+      v.literal("withdrew"),
+      v.literal("hired"),
+      v.literal("other"),
+    ),
+    reason: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_caseId", ["caseId"])
+    .index("by_userId", ["userId"]),
 
   // Notifications for deadline alerts and system messages
   notifications: defineTable({
