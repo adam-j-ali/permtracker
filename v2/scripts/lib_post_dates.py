@@ -35,7 +35,7 @@ DATE_RE = re.compile(
     r"(?P<iso>(?P<iy>20\d{2})-(?P<im>\d{1,2})-(?P<id>\d{1,2}))"
     r"|(?P<my>(?P<mym>\d{1,2})[/.-](?P<myy>20\d{2}))"
     r"|(?P<num>(?P<a>\d{1,2})[/.-](?P<b>\d{1,2})(?:[/.-](?P<y>\d{4}|\d{2}))?)"
-    rf"|(?P<mdy>(?P<mn>{MON})\s+(?P<md>\d{{1,2}})(?P<msuf>st|nd|rd|th)?(?!\d)(?:,?\s+(?P<mdyy>20\d{{2}}))?)"
+    rf"|(?P<mdy>(?P<mn>{MON}),?\s+(?P<md>\d{{1,2}})(?P<msuf>st|nd|rd|th)?(?!\d)(?:,?\s+(?P<mdyy>20\d{{2}}))?)"
     rf"|(?P<dmy>(?P<dd>\d{{1,2}})(?:st|nd|rd|th)?[\s-]+(?:of\s+)?(?P<dmn>{MON})(?:[,\s-]+(?P<dmyy>20\d{{2}}))?)"
     rf"|(?P<mony>(?P<monm>{MON})\s+(?P<monyy>20\d{{2}}))"
     r")(?![\w/])",
@@ -348,6 +348,79 @@ def _is_pd_label(t: str, matches: list, i: int) -> bool:
     return bool(labels) and labels[-1].lastgroup == "pd"
 
 
+DATE_KEYS = ("pwd_filed", "pwd_issued", "perm_filed", "perm_audit", "perm_decided", "priority_date", "i140_receipt",
+             "i140_rfe_issued", "i140_rfe_answered", "i140_decided", "i485_receipt", "biometrics", "ead", "ap", "transfer",
+             "interview", "i485_decided", "card")
+
+
+def sound(out: dict, posted: dt.date, own: bool) -> bool:
+    """The checks every reading of a post must pass, however it was read (this parser, or a model).
+
+    A date, and either a second date or a decision the poster gives as their own; no date before 2000 or after the post
+    (an appointment may be ahead); a lone decision day within two months of the post; the steps in order."""
+    dates = [f for f in DATE_KEYS if out.get(f)]
+    decisions = [f for f in out if f.endswith("_decision")]
+    if not dates or (len(dates) < 2 and not (decisions and own)):
+        return False
+    for f in dates:
+        v = out[f]
+        if v[:4] < "2000":
+            return False
+        if len(v) == 10:
+            if (dt.date.fromisoformat(v) - posted).days > AHEAD_OK.get(f, 1):
+                return False
+        elif v > posted.isoformat()[:7] and f not in AHEAD_OK:
+            return False
+    if len(dates) == 1 and dates[0].endswith("_decided") and len(out[dates[0]]) == 10 \
+            and (posted - dt.date.fromisoformat(out[dates[0]])).days > ANNOUNCED_WITHIN:
+        return False  # "Perm certified: 7/14/23" posted a year later is a filing day, written after the news
+    return all(_earlier(out[a], out[b]) for a, b in IN_ORDER if a in out and b in out)
+
+
+RELATIVE = {"today": 0, "this morning": 0, "tonight": 0, "yesterday": 1}
+
+
+def written_dates(text: str, posted: dt.date) -> set[str]:
+    """Every date a post writes, read every plausible way: a reading that returns a date outside this set made it up.
+
+    A day that reads both ways gives both; a day without a year gives the post's year and the years either side; a day
+    also gives its month; "today" and "yesterday" give the post's day and the day before."""
+    t = " ".join((text or "").split())
+    found: set[str] = set()
+    for m in DATE_RE.finditer(t):
+        if m.group("mdy") and not m.group("mdyy") and not m.group("msuf"):
+            # "March 19" is a day here as well as a possible month and year: a guard takes every reading.
+            month, day = _month(m.group("mn")), int(m.group("md"))
+            for year in (posted.year - 1, posted.year, posted.year + 1):
+                try:
+                    d = dt.date(year, month, day).isoformat()
+                    found.update({d, d[:7]})
+                except ValueError:
+                    pass
+        for order in ("mdy", "dmy"):
+            read = _from_match(m, order)
+            if read is None:
+                continue
+            value, has_year = read
+            values = [value] if has_year else []
+            if not has_year:
+                month, day = (int(x) for x in value.split("-"))
+                for year in (posted.year - 1, posted.year, posted.year + 1):
+                    try:
+                        values.append(dt.date(year, month, day).isoformat())
+                    except ValueError:
+                        pass
+            for v in values:
+                found.add(v)
+                found.add(v[:7])
+    low = t.lower()
+    for word, back in RELATIVE.items():
+        if re.search(rf"\b{word}\b", low):
+            d = posted - dt.timedelta(days=back)
+            found.update({d.isoformat(), d.isoformat()[:7]})
+    return found
+
+
 def read_post(text: str, posted: dt.date, kind: str, order: str) -> dict | None:
     """The merge's fields from one person's post about their own case, or None. kind: 'perm', 'i485' or 'mixed'."""
     t = " ".join((text or "").split())
@@ -424,17 +497,8 @@ def read_post(text: str, posted: dt.date, kind: str, order: str) -> dict | None:
                 out["perm_decision"] = decision
                 break
 
-    dates = [f for f in out if f.endswith(("_filed", "_decided", "_receipt", "_issued", "_answered", "_audit"))
-             or f in ("priority_date", "biometrics", "ead", "ap", "transfer", "interview", "card")]
-    decisions = [f for f in out if f.endswith("_decision")]
-    if not dates or (len(dates) < 2 and not (decisions and OWN.search(t) and not ASKING.search(t))):
+    if not sound(out, posted, own=bool(OWN.search(t)) and not ASKING.search(t)):
         return None
-    if len(dates) == 1 and dates[0].endswith("_decided") and len(out[dates[0]]) == 10 \
-            and (posted - dt.date.fromisoformat(out[dates[0]])).days > ANNOUNCED_WITHIN:
-        return None  # "Perm certified: 7/14/23" posted a year later is a filing day, written after the news
-    for a, b in IN_ORDER:
-        if a in out and b in out and not _earlier(out[a], out[b]):
-            return None
     category = _category(t)
     if category:
         out["category"] = category

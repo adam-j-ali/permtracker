@@ -7,6 +7,8 @@ from __future__ import annotations
 import json
 import os
 import sys
+import tempfile
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -76,21 +78,19 @@ def main() -> int:
              msg(2, "anyone approved today?", sender="s2"),
              msg(3, "Just heard from a friend, 9/16 approved today", sender="s3")]
     perm, sfv_spec = {"kind": "perm"}, {"kind": "i485", "office": "SFV"}
-    recs = icp.telegram_records("a-chat", posts, perm)
+    recs = icp.telegram_records("a-chat", posts, perm)[0]
     check(len(recs) == 1 and recs[0]["key"] == "a-chat:1" and recs[0]["source"] == "telegram", f"one readable post: {recs}")
     check(recs[0]["perm_filed"] == "2022-11-29" and recs[0]["perm_decided"] == "2023-10-24"
           and recs[0]["perm_decision"] == "approved", "its dates and decision")
     check(recs[0]["person"] == "s1" and recs[0]["as_of"] == "2023-10-24", "the reader's salted sender, the post's Eastern day")
-    late = icp.telegram_records("a-chat", [msg(9, "Perm certified today", date="2023-10-25T02:30:00+00:00")], perm)
+    late = icp.telegram_records("a-chat", [msg(9, "Perm certified today", date="2023-10-25T02:30:00+00:00")], perm)[0]
     check(late and late[0]["perm_decided"] == "2023-10-24", f"a post at 10:30 PM Eastern is that Eastern day: {late}")
     text = json.dumps(recs)
     check("certified!" not in text and "Filing" not in text, "no text kept")
-    check(icp.telegram_records("someone", posts, None) == [], "a chat that isn't listed is never read")
+    check(icp.telegram_records("someone", posts, None) == ([], []), "a chat that isn't listed is never read")
     sfv = icp.telegram_records("an-office", [msg(5, "I485 RD: 08/14/2025 GC approved 11/03/2026",
-                                                date="2026-11-04T15:00:00+00:00")], sfv_spec)
+                                                date="2026-11-04T15:00:00+00:00")], sfv_spec)[0]
     check(sfv and sfv[0]["office"] == "SFV" and sfv[0]["i485_decided"] == "2026-11-03", f"an office's own chat: {sfv}")
-    import tempfile
-    from pathlib import Path
     with tempfile.TemporaryDirectory() as d:
         good, bad = Path(d, "good.json"), Path(d, "bad.json")
         good.write_text(json.dumps({"chats": {"a": {"kind": "perm"}, "b": {"kind": "i485", "office": "SFV"}}}))
@@ -101,6 +101,46 @@ def main() -> int:
             check(False, "refuses a chat of an unknown kind")
         except ValueError:
             check(True, "refuses a chat of an unknown kind")
+
+    # The model fills in what the parser can't read, each post asked once.
+    free = msg(20, "Took 9 days. 140 filed on 12/4, approved on 12/12", sender="s9", date="2024-01-02T15:00:00+00:00")
+    chat_rows = [msg(1, "PERM certified! Filing date: 11/29/2022 Approval date: 10/24/2023"), free,
+                 msg(21, "thanks all", sender="s8")]
+    asked = []
+
+    def stand_in(prompt: str) -> dict:
+        batch = json.loads(prompt)
+        asked.extend(p["id"] for p in batch)
+        return {"posts": [{"id": p["id"], "own_case": p["id"] == "a-chat:20", "category": None,
+                           "steps": [{"step": "i140_filed", "date": "2023-12-04"},
+                                     {"step": "i140_approved", "date": "2023-12-12"}]} for p in batch]}
+
+    with tempfile.TemporaryDirectory() as d:
+        folder, cache = Path(d, "messages"), Path(d, "model-reads.jsonl")
+        folder.mkdir()
+        (folder / "a-chat.jsonl").write_text("\n".join(json.dumps(r) for r in chat_rows) + "\n{\"partial")
+        specs = {"a-chat": {"kind": "mixed"}}
+        recs, counts = icp.prepare_telegram(folder, specs, cache, ask=True, runner=stand_in)
+        check(sorted(asked) == ["a-chat:1", "a-chat:20"],
+              f"the posts the parser can't read that write a date and name a step are asked, nothing else: {asked}")
+        check(counts["records"] == 1 and counts["model_records"] == 1 and recs[0]["i140_decided"] == "2023-12-12",
+              f"an answer for the poster's own case becomes a record, one that isn't gives nothing: {counts}")
+        check(recs[0]["person"] == "s9" and recs[0]["key"] == "a-chat:20", "keyed and linked like any other post")
+        check(oct(cache.stat().st_mode)[-3:] == "600", "the saved answers are readable by this account only")
+        asked.clear()
+        icp.prepare_telegram(folder, specs, cache, ask=True, runner=stand_in)
+        check(asked == [], "a post already asked isn't asked again")
+        recs2, _ = icp.prepare_telegram(folder, specs, cache, ask=False)
+        check(len(recs2) == 1, "the saved answers are used without asking")
+
+        def down(prompt: str) -> dict:
+            raise RuntimeError("model unavailable")
+
+        folder2 = Path(d, "m2")
+        folder2.mkdir()
+        (folder2 / "a-chat.jsonl").write_text(json.dumps(msg(30, free["text"])) + "\n")
+        _, counts = icp.prepare_telegram(folder2, specs, Path(d, "c2.jsonl"), ask=True, runner=down)
+        check("failure" in counts and counts["asked"] == 0, f"a model that fails is reported, never taken as empty: {counts}")
 
     print(f"{failures} failed")
     return 1 if failures else 0

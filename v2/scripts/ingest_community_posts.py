@@ -27,6 +27,7 @@ import time
 from pathlib import Path
 
 import lib_post_dates as post_dates
+import lib_post_model as post_model
 import lib_reported_cases as rc
 
 TABLE = "community_post_reports"
@@ -84,42 +85,110 @@ def read_chat_specs(path: Path) -> dict[str, dict]:
     return specs
 
 
-def telegram_records(chat: str, rows: list[dict], spec: dict | None) -> list[dict]:
-    """One chat's posts as merge records: only the posts lib_post_dates can read without guessing."""
-    if spec is None:
-        return []
-    from zoneinfo import ZoneInfo
-    eastern = ZoneInfo("America/New_York")
-    order = post_dates.chat_order([r.get("text") or "" for r in rows])
+def _rows(path: Path) -> list[dict]:
+    """A chat's messages; a line the reader is still writing is skipped until next time."""
     out = []
-    for r in rows:
-        posted = dt.datetime.fromisoformat(r["date"]).astimezone(eastern).date()
-        fields = post_dates.read_post(r.get("text") or "", posted, spec["kind"], order)
-        if not fields:
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            out.append(json.loads(line))
+        except json.JSONDecodeError:
             continue
-        rec = {"source": "telegram", "key": f"{chat}:{r['id']}", "as_of": posted.isoformat(), **fields}
-        if r.get("sender"):
-            rec["person"] = str(r["sender"])
-        if spec.get("office"):
-            rec["office"] = spec["office"]
-        rc.check_record(rec)
-        out.append(rec)
     return out
 
 
-def prepare_telegram(folder: Path, specs: dict[str, dict]) -> tuple[list[dict], dict]:
-    records, counts = [], {"chats": 0, "messages": 0, "records": 0, "skipped_chats": []}
-    for path in sorted(folder.glob("*.jsonl")):
-        chat = path.stem
-        if chat not in specs:
-            counts["skipped_chats"].append(chat)
+def _record(chat: str, row: dict, posted: dt.date, spec: dict, fields: dict) -> dict:
+    rec = {"source": "telegram", "key": f"{chat}:{row['id']}", "as_of": posted.isoformat(), **fields}
+    if row.get("sender"):
+        rec["person"] = str(row["sender"])
+    if spec.get("office"):
+        rec["office"] = spec["office"]
+    rc.check_record(rec)
+    return rec
+
+
+def telegram_records(chat: str, rows: list[dict], spec: dict | None,
+                     model_reads: dict[str, dict | None] | None = None) -> tuple[list[dict], list[dict]]:
+    """One chat's posts as merge records, and the posts still worth asking the model about.
+
+    The parser reads first (lib_post_dates). A post it can't read but that writes a date and names a step takes the
+    model's saved answer when there is one (lib_post_model, checked there against the dates the post writes); without
+    one, it's handed back to be asked."""
+    if spec is None:
+        return [], []
+    from zoneinfo import ZoneInfo
+    eastern = ZoneInfo("America/New_York")
+    model_reads = model_reads or {}
+    order = post_dates.chat_order([r.get("text") or "" for r in rows])
+    out, to_ask = [], []
+    for r in rows:
+        text = r.get("text") or ""
+        posted = dt.datetime.fromisoformat(r["date"]).astimezone(eastern).date()
+        fields = post_dates.read_post(text, posted, spec["kind"], order)
+        if fields:
+            out.append(_record(chat, r, posted, spec, fields))
             continue
-        rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
-        mine = telegram_records(chat, rows, specs[chat])
-        records += mine
+        if not post_model.worth_asking(text):
+            continue
+        key = f"{chat}:{r['id']}"
+        if key in model_reads:
+            if model_reads[key]:
+                out.append(_record(chat, r, posted, spec, model_reads[key]))
+        else:
+            to_ask.append({"id": key, "posted": posted.isoformat(), "kind": spec["kind"], "text": text})
+    return out, to_ask
+
+
+def load_model_reads(path: Path) -> dict[str, dict | None]:
+    reads: dict[str, dict | None] = {}
+    if path.exists():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            reads[row["id"]] = row.get("fields")
+    return reads
+
+
+def prepare_telegram(folder: Path, specs: dict[str, dict], model_cache: Path | None = None, ask: bool = False,
+                     runner=post_model.claude_runner) -> tuple[list[dict], dict]:
+    """Every listed chat's records. With model_cache, saved model answers fill in what the parser can't read; with
+    ask, the posts not yet asked are asked now and their answers saved as each batch comes back."""
+    reads = load_model_reads(model_cache) if model_cache else {}
+    counts = {"chats": 0, "messages": 0, "records": 0, "skipped_chats": [], "asked": 0, "to_ask": 0}
+    chats = []
+    for path in sorted(folder.glob("*.jsonl")):
+        if path.stem not in specs:
+            counts["skipped_chats"].append(path.stem)
+            continue
+        chats.append((path.stem, _rows(path)))
+    pending = [p for chat, rows in chats for p in telegram_records(chat, rows, specs[chat], reads)[1]]
+    counts["to_ask"] = len(pending)
+    failure = None
+    if ask and model_cache and pending:
+        stamp = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+
+        def save(got: dict) -> None:
+            with model_cache.open("a", encoding="utf-8") as f:
+                for key, fields in got.items():
+                    f.write(json.dumps({"id": key, "fields": fields, "model": post_model.MODEL, "at": stamp}) + "\n")
+            os.chmod(model_cache, 0o600)
+
+        try:
+            post_model.read_posts(pending, runner=runner, workers=post_model.WORKERS, on_batch=save)
+        except post_model.ModelBatchesFailed as e:
+            failure = str(e)
+        reads = load_model_reads(model_cache)
+        counts["asked"] = sum(1 for p in pending if p["id"] in reads)
+    records = []
+    for chat, rows in chats:
+        records += telegram_records(chat, rows, specs[chat], reads)[0]
         counts["chats"] += 1
         counts["messages"] += len(rows)
     counts["records"] = len(records)
+    counts["model_records"] = sum(1 for r in records if r["key"] in reads and reads[r["key"]])
+    if failure:
+        counts["failure"] = failure
     return records, counts
 
 
@@ -181,6 +250,8 @@ def main() -> int:
     src.add_argument("--reddit", help="the Reddit reader's rows (JSON with a 'rows' list)")
     src.add_argument("--telegram", help="the Telegram reader's messages/ folder, one <chat>.jsonl per chat")
     p.add_argument("--chats", help="with --telegram: the private chats.json saying what each chat is about")
+    p.add_argument("--model-reads", help="with --telegram: the saved model answers (a private JSONL file)")
+    p.add_argument("--ask", action="store_true", help="with --model-reads: ask the model about posts not yet asked")
     p.add_argument("--out", required=True)
     l_ = sub.add_parser("load")
     l_.add_argument("records")
@@ -189,11 +260,19 @@ def main() -> int:
     if a.cmd == "prepare" and a.telegram:
         if not a.chats:
             ap.error("--telegram needs --chats")
-        rows, counts = prepare_telegram(Path(a.telegram), read_chat_specs(Path(a.chats)))
+        if a.ask and not a.model_reads:
+            ap.error("--ask needs --model-reads")
+        rows, counts = prepare_telegram(Path(a.telegram), read_chat_specs(Path(a.chats)),
+                                        Path(a.model_reads) if a.model_reads else None, ask=a.ask)
         Path(a.out).write_text(json.dumps(rows))
         os.chmod(a.out, 0o600)
-        print(f"{counts['records']:,} records from {counts['messages']:,} messages in {counts['chats']} chats in {a.out}"
+        print(f"{counts['records']:,} records ({counts['model_records']:,} read by the model) from "
+              f"{counts['messages']:,} messages in {counts['chats']} chats in {a.out}; "
+              f"{counts['to_ask']:,} posts were waiting for the model, {counts['asked']:,} asked now"
               + (f"; not read (not listed): {', '.join(counts['skipped_chats'])}" if counts["skipped_chats"] else ""))
+        if counts.get("failure"):
+            print(f"::error::{counts['failure']}", flush=True)
+            return 1
         return 0
     if a.cmd == "prepare":
         doc = json.load(open(a.reddit, encoding="utf-8"))
