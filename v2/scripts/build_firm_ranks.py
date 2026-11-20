@@ -11,7 +11,7 @@ individual attorney, and no person is named here.
 
 WHAT EACH PROGRAM COUNTS:
 
-* PERM (`perm_cases` from FY2024, `perm_cases_history` FY2016 to FY2023, each
+* PERM (`perm_cases` from FY2024, `perm_cases_history` FY2008 to FY2023, each
   fiscal year read from the one table that holds it): cases DOL decided that
   fiscal year, by outcome; the employers the firm filed for; and the median
   days from filing to a certification. The state is the worksite's, and the
@@ -73,7 +73,7 @@ NATION = "US"
 TOP = 100
 TOP_SHARE = 10
 MIN_DAYS = 10  # a median of fewer certifications is withheld
-PERM_HISTORY_LAST_FY = 2023  # perm_cases_history holds FY2016 to FY2023
+PERM_HISTORY_LAST_FY = 2023  # perm_cases_history holds FY2008 to FY2023
 WRITE_CHUNK = 300
 WRITE_PAUSE_S = 0.4
 

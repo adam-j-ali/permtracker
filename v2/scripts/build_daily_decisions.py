@@ -2,7 +2,7 @@
 tables, and H-2A, H-2B and CW-1 from `seasonal_cases`, one source each.
 
 DOL's decisions per day, counted by DOL's own decision date from the published
-disclosure files: `perm_cases` (FY2024 on) and `perm_cases_history` (FY2016 to
+disclosure files: `perm_cases` (FY2024 on) and `perm_cases_history` (FY2008 to
 FY2023). A case in both is counted once, on `perm_cases`' date, the newer file.
 
 It ran once, from `perm_cases` alone, on Aug 26 2026, so the series started

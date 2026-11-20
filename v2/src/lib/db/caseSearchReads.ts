@@ -492,7 +492,7 @@ export const HISTORY_TABLE: PermTable = "perm_cases_history";
 
 /**
  * The first fiscal year `perm_cases` holds. Everything decided before it is in
- * `perm_cases_history` (FY2016 on) or nowhere, so a date or fiscal-year filter
+ * `perm_cases_history` (FY2008 to FY2023) or nowhere, so a date or fiscal-year filter
  * that falls wholly on one side reads one table. Its first decision day, and
  * the history table's last, follow from it.
  */

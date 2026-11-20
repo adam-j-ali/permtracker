@@ -10,7 +10,7 @@ import { getPwdDetail, type PwdDetail } from "./pwdDetail";
  * wage request it names, with that determination's level and requirements (`pwd_cases`, through `pwd_number`).
  * Nothing about the worker as a person (citizenship, birth country, schooling) is read: those belong in aggregates.
  *
- * The current files' table first, then FY2020 to FY2023's (`perm_cases_history`), which carries the same job fields
+ * The current files' table first, then FY2008 to FY2023's (`perm_cases_history`), which carries the same job fields
  * but no wage request number, so an older case keeps what its file printed. Keyed reads by case number; a failed
  * read is null, so the page keeps its decision section.
  */

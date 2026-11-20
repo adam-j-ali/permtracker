@@ -160,7 +160,7 @@ export async function lookupCase(
 
   // 2. DOL's own disclosure record, which exists only once the case is
   //    decided and carries fields the mirror does not (wage, SOC, state).
-  //    Then the FY2020 to FY2023 decisions (`perm_cases_history`, loaded
+  //    Then the FY2008 to FY2023 decisions (`perm_cases_history`, loaded
   //    once by scripts/ingest_perm_history.py), same columns, so a case
   //    decided before the current corpus answers from DOL's record instead
   //    of spending a live question on a number DOL's live system no longer
