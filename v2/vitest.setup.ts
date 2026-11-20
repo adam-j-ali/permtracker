@@ -47,6 +47,11 @@ vi.mock("next/navigation", async (importOriginal) => ({
 }));
 
 // Mock next-themes (real one injects <script> that breaks container assertions)
+// The shared "both sources" section (StepBothSources) is an async server part that reads the database; page tests
+// render pages to static markup in one pass, which can't wait on it, so it renders nothing there. Its reader has its
+// own tests (src/lib/db/__tests__/officialHeadlines.test.ts) and the step pages test checks every page carries it.
+vi.mock("@/components/community/StepBothSources", () => ({ StepBothSources: () => null }));
+
 vi.mock("next-themes", () => ({
   ThemeProvider: ({ children, defaultTheme }: { children: React.ReactNode; defaultTheme?: string }) => {
     if (defaultTheme) mockTheme = defaultTheme;
