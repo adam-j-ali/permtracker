@@ -16,7 +16,7 @@ import {
   generateClosureTitle,
   type DeadlineViolation,
 } from "./deadlineEnforcementHelpers";
-import { DEFAULT_NOTIFICATION_PREFS } from "./userDefaults";
+import { DEFAULT_NOTIFICATION_PREFS, DEFAULT_URGENT_DAYS } from "./userDefaults";
 import { DEADLINE_LABELS } from "./perm/deadlines/types";
 
 /** The most unread notifications counted for one user; a badge past it shows the cap. */
@@ -112,6 +112,57 @@ export interface UserNotificationPrefs {
   quietHoursEnd?: string;
   /** User's timezone (IANA format) */
   timezone: string;
+  /** Settings' "Which deadlines to remind you about": each off only when switched off (DEADLINE_REMINDER_SWITCH). */
+  emailDeadlineReminderPwd?: boolean;
+  emailDeadlineReminderRecruitment?: boolean;
+  emailDeadlineReminderEta9089?: boolean;
+  emailDeadlineReminderI140?: boolean;
+  emailDeadlineReminderRfi?: boolean;
+  emailDeadlineReminderRfe?: boolean;
+  /** Settings' "Urgent deadline threshold": days before a deadline it's urgent, 1 to 30, 7 when unset. */
+  urgentDeadlineDays?: number;
+}
+
+export type DeadlineReminderSwitch =
+  | "emailDeadlineReminderPwd"
+  | "emailDeadlineReminderRecruitment"
+  | "emailDeadlineReminderEta9089"
+  | "emailDeadlineReminderI140"
+  | "emailDeadlineReminderRfi"
+  | "emailDeadlineReminderRfe";
+
+/**
+ * Which of Settings' six deadline switches covers each reminder, by the name the reminder is shown under
+ * (formatDeadlineType): the certification's expiry reads "ETA 9089 expiration", so it's the ETA 9089 switch's.
+ */
+export const DEADLINE_REMINDER_SWITCH: Record<DeadlineNotificationType, DeadlineReminderSwitch> = {
+  pwd_expiration: "emailDeadlineReminderPwd",
+  recruitment_window: "emailDeadlineReminderRecruitment",
+  recruitment_window_closes: "emailDeadlineReminderRecruitment",
+  job_order_start_deadline: "emailDeadlineReminderRecruitment",
+  notice_of_filing_start_deadline: "emailDeadlineReminderRecruitment",
+  first_sunday_ad_deadline: "emailDeadlineReminderRecruitment",
+  second_sunday_ad_deadline: "emailDeadlineReminderRecruitment",
+  filing_window_opens: "emailDeadlineReminderEta9089",
+  filing_window_closes: "emailDeadlineReminderEta9089",
+  eta9089_expiration: "emailDeadlineReminderEta9089",
+  denial_review_due: "emailDeadlineReminderEta9089",
+  balca_request_due: "emailDeadlineReminderEta9089",
+  i140_filing_deadline: "emailDeadlineReminderI140",
+  rfi_due: "emailDeadlineReminderRfi",
+  rfe_due: "emailDeadlineReminderRfe",
+};
+
+/** False only when the person switched off the deadline switch that covers this reminder. */
+export function remindsAbout(deadlineType: string, prefs: UserNotificationPrefs): boolean {
+  const covering = DEADLINE_REMINDER_SWITCH[deadlineType as DeadlineNotificationType];
+  return covering === undefined || prefs[covering] !== false;
+}
+
+/** The person's urgent threshold, kept to Settings' 1 to 30 days; 7 when unset or out of range. */
+export function urgentDays(prefs: Pick<UserNotificationPrefs, "urgentDeadlineDays"> | undefined): number {
+  const n = Number(prefs?.urgentDeadlineDays);
+  return Number.isInteger(n) && n >= 1 && n <= 30 ? n : DEFAULT_URGENT_DAYS;
 }
 
 /**
@@ -187,6 +238,14 @@ export function buildUserNotificationPrefs(
     quietHoursStart: userProfile?.quietHoursStart,
     quietHoursEnd: userProfile?.quietHoursEnd,
     timezone: userProfile?.timezone ?? DEFAULT_NOTIFICATION_PREFS.timezone,
+    // Plain copies, no fallbacks: absent means on, and an unset threshold reads 7 in urgentDays.
+    emailDeadlineReminderPwd: userProfile?.emailDeadlineReminderPwd,
+    emailDeadlineReminderRecruitment: userProfile?.emailDeadlineReminderRecruitment,
+    emailDeadlineReminderEta9089: userProfile?.emailDeadlineReminderEta9089,
+    emailDeadlineReminderI140: userProfile?.emailDeadlineReminderI140,
+    emailDeadlineReminderRfi: userProfile?.emailDeadlineReminderRfi,
+    emailDeadlineReminderRfe: userProfile?.emailDeadlineReminderRfe,
+    urgentDeadlineDays: userProfile?.urgentDeadlineDays,
   };
 }
 
@@ -377,8 +436,12 @@ export function generateNotificationMessage(
  * - low: 30+ days
  * - RFI/RFE alerts are always at least "high" priority
  *
+ * "Urgent" reaches as far as the person's own threshold (Settings, 1 to 30 days, 7 when unset): the push for an urgent
+ * deadline goes through quiet hours, as Settings says.
+ *
  * @param daysUntil - Days until deadline (negative = overdue)
  * @param type - Notification type
+ * @param urgentWithin - The person's urgent threshold in days (urgentDays(prefs))
  * @returns Priority level
  *
  * @example
@@ -388,7 +451,8 @@ export function generateNotificationMessage(
  */
 export function calculatePriority(
   daysUntil: number,
-  type: NotificationType
+  type: NotificationType,
+  urgentWithin: number = DEFAULT_URGENT_DAYS,
 ): PriorityLevel {
   // RFI/RFE alerts are always at least high priority
   const isRfiRfe = type === "rfi_alert" || type === "rfe_alert";
@@ -400,7 +464,7 @@ export function calculatePriority(
   if (daysUntil < 0) {
     // Overdue
     basePriority = "urgent";
-  } else if (daysUntil <= 7) {
+  } else if (daysUntil <= urgentWithin) {
     basePriority = "urgent";
   } else if (daysUntil <= 14) {
     basePriority = "high";
@@ -578,7 +642,9 @@ function isWithinQuietHours(
 
 /**
  * Whether an email goes for a notification: the master email switch, then the
- * switch for its kind.
+ * switch for its kind. A deadline reminder, RFI and RFE ones included, also
+ * needs "Deadline reminders" and the switch that covers its deadline
+ * (DEADLINE_REMINDER_SWITCH), when the caller passes the deadline's type.
  *
  * Quiet hours never hold an email. The reminder email goes once a day at a
  * fixed hour and each reminder fires on one day only, so an email held was an
@@ -588,6 +654,7 @@ export function shouldSendEmail(
   notificationType: NotificationType,
   _priority: PriorityLevel,
   userPrefs: UserNotificationPrefs,
+  deadlineType?: string,
 ): boolean {
   // Check master switch
   if (!userPrefs.emailNotificationsEnabled) {
@@ -598,6 +665,7 @@ export function shouldSendEmail(
   switch (notificationType) {
     case "deadline_reminder":
       if (!userPrefs.emailDeadlineReminders) return false;
+      if (deadlineType !== undefined && !remindsAbout(deadlineType, userPrefs)) return false;
       break;
 
     case "status_change":
@@ -605,12 +673,11 @@ export function shouldSendEmail(
       break;
 
     case "rfi_alert":
-      // RFI uses same pref as RFE (emailRfeAlerts covers both)
-      if (!userPrefs.emailRfeAlerts) return false;
-      break;
-
     case "rfe_alert":
-      if (!userPrefs.emailRfeAlerts) return false;
+      // The due-date reminders Settings lists under "Deadline reminders" ("RFI response", "RFE response").
+      // emailRfeAlerts has no control in Settings and stays read for anyone who set it another way.
+      if (!userPrefs.emailRfeAlerts || !userPrefs.emailDeadlineReminders) return false;
+      if (!remindsAbout(deadlineType ?? (notificationType === "rfi_alert" ? "rfi_due" : "rfe_due"), userPrefs)) return false;
       break;
 
     case "auto_closure":
