@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
+import { ArrowRightIcon } from "@phosphor-icons/react/ssr";
 
 import { DeadlineDocket } from "@/components/home/DeadlineDocket";
 import { JobCodeSection } from "@/components/home/JobCodeSection";
@@ -6,6 +8,7 @@ import { AppWindow } from "@/components/marketing/AppWindow";
 import { TOUR_SHOTS, type TourSurface } from "@/components/marketing/tourShots";
 import { TourStage } from "@/components/home/TourStage";
 import { BandFacts } from "@/components/scroll/BandFacts";
+import { buttonVariants } from "@/components/ui/button";
 import { STAGE_BAND_NO_SCRIPT_CSS, StageBand } from "@/components/scroll/StageBand";
 
 /**
@@ -198,7 +201,12 @@ function AssistantSection() {
               "Asks first before every change",
               "Says plainly that it isn't legal advice",
             ]}
-          />
+          />{" "}
+          {/* The tour's last band: the next step where a reader finishes it convinced, the first screen's own button. */}
+          <Link href="/signup" className={buttonVariants({ size: "lg", className: "mt-8" })}>
+            Start free
+            <ArrowRightIcon className="h-5 w-5" aria-hidden="true" />
+          </Link>
         </div>{" "}
         <div className="lg:col-span-7">
           <figure className="mx-auto max-w-sm">
