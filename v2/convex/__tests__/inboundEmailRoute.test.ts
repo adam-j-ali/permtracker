@@ -28,8 +28,9 @@ const post = (t: ReturnType<typeof createTestContext>, body: unknown, key?: stri
 describe("/inbound-email", () => {
   afterEach(() => vi.unstubAllEnvs());
 
-  // The first request in a file loads the whole HTTP router (about 6 s on this Mac, alone), so this test gets
-  // room for a loaded machine: under a load average near 26 it passed 15 s (Nov 4 2026).
+  // The first request in a file loads the whole HTTP router (about 6 s on this Mac, alone), so every test here gets
+  // room for a loaded machine: under a load average near 26 it passed 15 s (Nov 4 2026). Every one, because the suite
+  // runs in a shuffled order and whichever runs first pays (Nov 19 2026: the second test timed out twice in a row).
   it("is off without its secret, and shut to a wrong key", async () => {
     const t = createTestContext();
     expect((await post(t, message, KEY)).status).toBe(503);
@@ -54,12 +55,12 @@ describe("/inbound-email", () => {
       bodyText: "Hello",
       status: "forwarded",
     });
-  });
+  }, 60_000);
 
   it("refuses a body that isn't JSON", async () => {
     vi.stubEnv("INBOUND_EMAIL_SECRET", KEY);
     const t = createTestContext();
     const res = await t.fetch("/inbound-email", { method: "POST", headers: { "x-inbound-key": KEY }, body: "not json" });
     expect(res.status).toBe(400);
-  });
+  }, 60_000);
 });
