@@ -33,6 +33,7 @@ import {
   type NotificationType,
 } from "./lib/notificationHelpers";
 import { groupRemindersByUser, type DigestReminderInput } from "./lib/reminderDigest";
+import { copiesByCase } from "./lib/reminderRecipients";
 
 const log = loggers.scheduler;
 
@@ -163,6 +164,7 @@ export const runDeadlineReminders = internalAction({
 
     // Consolidate: ONE digest email per user.
     let emailsScheduled = 0;
+    let emailIndex = 0;
     if (emailWorthy.length > 0) {
       const uniqueUserIds = [...new Set(emailWorthy.map((e) => e.userId))] as Id<"users">[];
       const names = await ctx.runQuery(internal.deadlineDigest.getDisplayNames, {
@@ -182,7 +184,6 @@ export const runDeadlineReminders = internalAction({
       }));
 
       const digests = groupRemindersByUser(inputs);
-      let emailIndex = 0;
       for (const digest of digests) {
         // Stagger one digest per user, ~1/sec, to stay under Resend's rate limit.
         await ctx.scheduler.runAfter(
@@ -195,7 +196,36 @@ export const runDeadlineReminders = internalAction({
       }
     }
 
-    log.info("Deadline reminders processed", { processed, emailsScheduled });
+    // The second person a case's owner added (convex/reminderRecipients.ts): that case's reminders due today, by the
+    // owner's own switch for each kind of deadline, whatever the owner's own email settings are. One email a case,
+    // staggered after the owners' own.
+    let copiesScheduled = 0;
+    const copies = copiesByCase(
+      reminders.map((r) => ({
+        caseId: r.caseId,
+        deadlineType: r.deadlineType,
+        deadlineDate: r.deadlineDate,
+        daysUntilDeadline: r.daysUntilDeadline,
+        userPrefs: r.userPrefs,
+      })),
+    );
+    if (copies.size > 0) {
+      const targets = await ctx.runQuery(internal.reminderRecipients.copyTargets, {
+        caseIds: [...copies.keys()] as Id<"cases">[],
+      });
+      for (const target of targets) {
+        const items = copies.get(target.caseId);
+        if (!items || items.length === 0) continue;
+        await ctx.scheduler.runAfter(emailIndex * 1000, internal.reminderRecipients.sendCopy, {
+          recipientId: target.recipientId,
+          items,
+        });
+        emailIndex++;
+        copiesScheduled++;
+      }
+    }
+
+    log.info("Deadline reminders processed", { processed, emailsScheduled, copiesScheduled });
     return { processed, emailsScheduled };
   },
 });

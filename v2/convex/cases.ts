@@ -26,7 +26,7 @@ import { shouldSendEmail, formatCaseStatus, formatProgressStatus, buildUserNotif
 import { scheduleCalendarSync, scheduleCalendarSyncBulk } from "./lib/calendarSyncHelpers";
 import { loggers } from "./lib/logging";
 import { recordError } from "./lib/errorRecording";
-import { deleteCaseApplicants, deleteCaseShares } from "./lib/deletion";
+import { deleteCaseApplicants, deleteCaseReminderRecipients, deleteCaseShares } from "./lib/deletion";
 import { deleteCaseDocumentBlobs } from "./lib/caseDocumentBlobs";
 import { dolCaseNumberOnCreate, dolCaseNumberOnUpdate, dolNumberKey } from "./lib/dolCaseNumber";
 import { timelineSwitchForEdit, timelineSwitchForNewCase } from "./lib/timelineShow";
@@ -1318,6 +1318,13 @@ async function clearCaseReferences(
   } catch (err) {
     await failed("share links", "cleanupShares", err);
   }
+
+  // And the second person who got their deadline reminders (convex/reminderRecipients.ts).
+  try {
+    await deleteCaseReminderRecipients(ctx, caseIds);
+  } catch (err) {
+    await failed("reminder recipients", "cleanupReminderRecipients", err);
+  }
 }
 
 /**
@@ -2467,6 +2474,14 @@ export const importCases = mutation({
           } catch (cleanupError) {
             log.error('Failed to cleanup share links during import replace', { resourceId: existingCaseId, error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) });
             await recordError(ctx, "mutation", "cases.importCases.replaceCleanupShares", cleanupError, { userId, resourceId: existingCaseId.toString() });
+          }
+
+          // So does the second person who got its deadline reminders.
+          try {
+            await deleteCaseReminderRecipients(ctx, [existingCaseId]);
+          } catch (cleanupError) {
+            log.error('Failed to cleanup reminder recipients during import replace', { resourceId: existingCaseId, error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) });
+            await recordError(ctx, "mutation", "cases.importCases.replaceCleanupReminderRecipients", cleanupError, { userId, resourceId: existingCaseId.toString() });
           }
 
           // Hard delete the existing case

@@ -71,6 +71,17 @@ export const BUDGETS = {
    */
   policyNotice: { key: "policy_notice_global", limit: 20, label: "Policy change notices" },
   /**
+   * The one email asking a case's second person to confirm its deadline reminders (convex/reminderRecipients.ts).
+   * An account sets it off for an address it types, so each account also has its own daily cap
+   * (REMINDER_INVITES_PER_ACCOUNT below).
+   */
+  reminderInvite: { key: "reminder_invite_global", limit: 20, label: "Second-person reminder invitations" },
+  /**
+   * The daily deadline reminders a confirmed second person gets for one case (convex/reminderRecipients.ts), sent
+   * by the daily reminder run beside the owner's own digest. At most one a day per confirmed recipient.
+   */
+  reminderCopy: { key: "reminder_copy_global", limit: 40, label: "Second-person deadline reminders" },
+  /**
    * Sign-in and password-reset codes (convex/authMail.ts). Not list mail: these
    * are the emails whose absence locks someone out, so the pool sits above the
    * busiest measured day instead of inside the list ledger's remainder. See the
@@ -93,7 +104,15 @@ export const LIST_MAIL_POOLS = [
   "supportForward",
   "pipelineMatch",
   "policyNotice",
+  "reminderInvite",
+  "reminderCopy",
 ] as const satisfies readonly (keyof typeof BUDGETS)[];
+
+/**
+ * Invitations one account may send a day, for every case together: enough to set up a few cases, too few to use the
+ * form to mail strangers. The global pool above bounds the day whatever the accounts do.
+ */
+export const REMINDER_INVITES_PER_ACCOUNT = { limit: 5, windowMs: MS_PER_DAY };
 
 /** Codes to one address, whatever kind: enough for a few resends, not a flood. */
 export const AUTH_MAIL_ADDRESS_KEY = "auth_mail_address";
