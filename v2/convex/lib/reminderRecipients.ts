@@ -124,6 +124,14 @@ export function reminderCopySubject(total: number, overdue: number, jobTitle: st
   return `${deadlineDigestWords(total, overdue).subject}: ${caseLine(jobTitle, employerName)}`;
 }
 
+/**
+ * The ref every email to a recipient row carries into the retry queue (convex/lib/email.ts, sendOrQueue), so every
+ * path that ends the row drops what's still waiting for it (dropReminderRetries in convex/lib/alertOutboxStore.ts).
+ */
+export function reminderRef(recipientId: string): string {
+  return `reminder:${recipientId}`;
+}
+
 /** The confirm link's purpose: one recipient row, so a link for one invitation can't confirm another. */
 export function reminderConfirmPurpose(recipientId: string): TokenPurpose {
   return `reminder-confirm:${recipientId}`;

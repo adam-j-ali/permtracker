@@ -27,7 +27,9 @@
  *
  * THE END. Stopping erases the address and keeps the row as "stopped", so the owner sees what happened. The owner
  * removing it deletes the row. It goes with its case (cases.remove, through clearCaseReferences) and with the account
- * (lib/deletion.ts), as the Privacy Policy says.
+ * (lib/deletion.ts), as the Privacy Policy says. Both emails carry the row's ref (`reminder:<row id>`) into the retry
+ * queue, and every one of those paths, and the expiry of an invitation, drops what's still waiting there first
+ * (dropReminderRetries), so a person who's gone never gets a retry.
  *
  * @module
  */
@@ -45,6 +47,7 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 import { admitConfirmation } from "./confirmationQueue";
+import { dropReminderRetries, dropRetries } from "./lib/alertOutboxStore";
 import { BUDGETS, REMINDER_INVITES_PER_ACCOUNT, noteRefusal, windowFor } from "./lib/alertBudgets";
 import { getCurrentUserId, isEmailVerified } from "./lib/auth";
 import { formatDateForDisplay, formatRelativeDays } from "./lib/digestHelpers";
@@ -64,6 +67,7 @@ import {
   reminderConfirmPurpose,
   reminderCopySubject,
   reminderInviteSubject,
+  reminderRef,
   reminderStopPurpose,
   sentenceStart,
   stopUrl,
@@ -248,7 +252,10 @@ export const remove = mutation({
     const caseDoc = await ctx.db.get("cases", caseId);
     if (!caseDoc || caseDoc.userId !== userId) throw new ConvexError("That case isn't one of yours.");
     const rows = await rowsOf(ctx, caseId);
-    for (const r of rows) await ctx.db.delete("reminderRecipients", r._id);
+    for (const r of rows) {
+      await dropReminderRetries(ctx, r);
+      await ctx.db.delete("reminderRecipients", r._id);
+    }
     return { removed: rows.length > 0 };
   },
 });
@@ -314,7 +321,7 @@ export const sendInvite = internalAction({
           html,
           text: inviteText(details.inviter, details.caseLine, link),
         },
-        { priority: "public" },
+        { priority: "public", refs: [reminderRef(recipientId)] },
       );
       if (result.error) {
         await recordError(ctx, "action", "reminderRecipients.sendInvite", new Error(`Resend: ${result.error.name}: ${result.error.message}`));
@@ -389,6 +396,9 @@ export const stopByToken = internalMutation({
     if (args.token.length > TOKEN_MAX || args.recipientId.length > 64) return null;
     const email = await verifyUnsubscribeToken(args.token, secret(), reminderStopPurpose(args.recipientId));
     if (!email) return null;
+    // Whatever the row's state, nothing kept for this row in the retry queue goes to the address that asked to stop.
+    const ref = reminderRef(args.recipientId);
+    await dropRetries(ctx, email, (r) => (r.refs ?? []).includes(ref));
     const row = await rowById(ctx, args.recipientId);
     if (!row || row.status === "stopped") return "already" as const;
     if (row.email !== email) return null;
@@ -410,7 +420,10 @@ export const expireInvites = internalMutation({
       .query("reminderRecipients")
       .withIndex("by_status_and_invitedAt", (q) => q.eq("status", "waiting").lt("invitedAt", now - INVITE_MS))
       .take(EXPIRE_BATCH + 1);
-    for (const row of old.slice(0, EXPIRE_BATCH)) await ctx.db.delete("reminderRecipients", row._id);
+    for (const row of old.slice(0, EXPIRE_BATCH)) {
+      await dropReminderRetries(ctx, row);
+      await ctx.db.delete("reminderRecipients", row._id);
+    }
     // Guarded on progress: a run that deleted a full batch has more to do.
     if (old.length > EXPIRE_BATCH) await ctx.scheduler.runAfter(0, internal.reminderRecipients.expireInvites, { now });
     return { deleted: Math.min(old.length, EXPIRE_BATCH) };
@@ -492,17 +505,24 @@ export const sendCopy = internalAction({
       } catch (error) {
         await recordError(ctx, "action", "reminderRecipients.sendCopy.render", error);
       }
-      const result = await sendOrQueue(ctx, "reminder-copy", getResend(), {
-        from: FROM_EMAIL,
-        to: admitted.email,
-        subject: reminderCopySubject(items.length, overdue, admitted.jobTitle, admitted.employerName),
-        html,
-        text: copyText(admitted.inviter, admitted.caseLine, items, checkedAt, stop),
-        headers: {
-          "List-Unsubscribe": `<${stop}>`,
-          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      const result = await sendOrQueue(
+        ctx,
+        "reminder-copy",
+        getResend(),
+        {
+          from: FROM_EMAIL,
+          to: admitted.email,
+          subject: reminderCopySubject(items.length, overdue, admitted.jobTitle, admitted.employerName),
+          html,
+          text: copyText(admitted.inviter, admitted.caseLine, items, checkedAt, stop),
+          headers: {
+            "List-Unsubscribe": `<${stop}>`,
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+          },
         },
-      });
+        // A retry kept for this row is dropped when the row stops or goes (dropReminderRetries).
+        { refs: [reminderRef(recipientId)] },
+      );
       if (result.error) {
         await recordError(ctx, "action", "reminderRecipients.sendCopy", new Error(`Resend: ${result.error.name}: ${result.error.message}`));
       }

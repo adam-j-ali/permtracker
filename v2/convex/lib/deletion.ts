@@ -7,7 +7,7 @@
  * @module
  */
 
-import { dropRetries } from "./alertOutboxStore";
+import { dropReminderRetries, dropRetries } from "./alertOutboxStore";
 import { stopListMail, type ListMailStopped } from "./listMailOff";
 import type { MutationCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
@@ -87,8 +87,9 @@ export async function deleteCaseShares(ctx: MutationCtx, caseIds: readonly Id<"c
 }
 
 /**
- * Delete the second reminder recipients of the given cases (convex/reminderRecipients.ts): run when a case is
- * deleted, as the Privacy Policy says. A case holds one, so the read is small.
+ * Delete the second reminder recipients of the given cases (convex/reminderRecipients.ts), with any of their mail
+ * still waiting in the retry queue: run when a case is deleted, as the Privacy Policy says. A case holds one, so the
+ * read is small.
  */
 export async function deleteCaseReminderRecipients(ctx: MutationCtx, caseIds: readonly Id<"cases">[]): Promise<number> {
   let n = 0;
@@ -98,6 +99,7 @@ export async function deleteCaseReminderRecipients(ctx: MutationCtx, caseIds: re
       .withIndex("by_caseId", (q) => q.eq("caseId", caseId))
       .take(50);
     for (const r of rows) {
+      await dropReminderRetries(ctx, r);
       await ctx.db.delete("reminderRecipients", r._id);
       n += 1;
     }
@@ -154,8 +156,10 @@ export async function purgeAllUserData(
     await ctx.db.delete("recruitmentShares", share._id);
   }
 
-  // So does anyone else who got those cases' deadline reminders (convex/reminderRecipients.ts).
+  // So does anyone else who got those cases' deadline reminders (convex/reminderRecipients.ts), with their mail
+  // still waiting in the retry queue.
   for await (const r of ctx.db.query("reminderRecipients").withIndex("by_userId", (q) => q.eq("userId", userId))) {
+    await dropReminderRetries(ctx, r);
     await ctx.db.delete("reminderRecipients", r._id);
   }
 
