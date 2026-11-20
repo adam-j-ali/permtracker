@@ -19,6 +19,8 @@ export interface WhdProgramTotals {
   violations: number;
   backWages: number;
   workers: number;
+  /** Civil penalties assessed under the program (DOL prints none for H-2B). */
+  penalties: number;
 }
 
 export interface WhdCase {
@@ -33,7 +35,9 @@ export interface WhdCase {
   workersOwed: number;
   penalties: number;
   /** H-1B, H-2A and H-2B, where the case found anything under them. */
-  visa: Array<{ program: "H-1B" | "H-2A" | "H-2B"; violations: number; backWages: number; workers: number }>;
+  visa: Array<{ program: "H-1B" | "H-2A" | "H-2B"; violations: number; backWages: number; workers: number; penalties: number }>;
+  /** DOL's finding that the violations were repeated, willful or both (FLSA_REPEAT_VIOLATOR), or null. */
+  repeat: "repeated" | "willful" | "repeated and willful" | null;
 }
 
 export interface WhdSummary {
@@ -42,6 +46,8 @@ export interface WhdSummary {
   backWages: number;
   workersOwed: number;
   penalties: number;
+  /** Cases DOL marked as repeated or willful violations. */
+  repeatCases: number;
   h1b: WhdProgramTotals;
   h2a: WhdProgramTotals;
   h2b: WhdProgramTotals;
@@ -62,9 +68,20 @@ const PROGRAMS = [
   ["h2b", "H-2B"],
 ] as const;
 
+/** The programs DOL's file prints a civil penalty for: H-2B has no such column. */
+const WITH_PENALTIES = new Set(["h1b", "h2a"]);
+
 function program(row: Row, p: string): WhdProgramTotals {
-  return { cases: n(row[`${p}_cases`]), violations: n(row[`${p}_v`]), backWages: n(row[`${p}_bw`]), workers: n(row[`${p}_w`]) };
+  return {
+    cases: n(row[`${p}_cases`]),
+    violations: n(row[`${p}_v`]),
+    backWages: n(row[`${p}_bw`]),
+    workers: n(row[`${p}_w`]),
+    penalties: n(row[`${p}_pen`]),
+  };
 }
+
+const REPEAT: Record<string, WhdCase["repeat"]> = { R: "repeated", W: "willful", RW: "repeated and willful", WR: "repeated and willful" };
 
 function hydrate(r: Row): WhdCase {
   return {
@@ -83,14 +100,17 @@ function hydrate(r: Row): WhdCase {
       violations: n(r[`${p}_violations`]),
       backWages: n(r[`${p}_back_wages`]),
       workers: n(r[`${p}_workers`]),
-    })).filter((v) => v.violations > 0 || v.backWages > 0),
+      penalties: WITH_PENALTIES.has(p) ? n(r[`${p}_penalties`]) : 0,
+    })).filter((v) => v.violations > 0 || v.backWages > 0 || v.penalties > 0),
+    repeat: REPEAT[String(r.flsa_repeat ?? "").trim().toUpperCase()] ?? null,
   };
 }
 
 const programSums = PROGRAMS.map(
   ([p]) =>
     `SUM(CASE WHEN ${p}_violations > 0 OR ${p}_back_wages > 0 THEN 1 ELSE 0 END) AS ${p}_cases, ` +
-    `SUM(${p}_violations) AS ${p}_v, SUM(${p}_back_wages) AS ${p}_bw, SUM(${p}_workers) AS ${p}_w`,
+    `SUM(${p}_violations) AS ${p}_v, SUM(${p}_back_wages) AS ${p}_bw, SUM(${p}_workers) AS ${p}_w, ` +
+    (WITH_PENALTIES.has(p) ? `SUM(${p}_penalties) AS ${p}_pen` : `0 AS ${p}_pen`),
 ).join(", ");
 
 /**
@@ -103,7 +123,7 @@ export const whdForSlug = cache(async (slug: string, limit = 10): Promise<WhdSum
     const [totals, newest] = await Promise.all([
       rows<Row>(
         "SELECT COUNT(*) AS cases, SUM(CASE WHEN violations > 0 THEN 1 ELSE 0 END) AS with_v, SUM(back_wages) AS bw, " +
-          `SUM(workers_owed) AS w, SUM(penalties) AS pen, ${programSums}, MIN(findings_start) AS first_start, ` +
+          `SUM(workers_owed) AS w, SUM(penalties) AS pen, SUM(CASE WHEN flsa_repeat IN ('R', 'W', 'RW', 'WR') THEN 1 ELSE 0 END) AS rep, ${programSums}, MIN(findings_start) AS first_start, ` +
           "MAX(findings_end) AS last_end FROM whd_cases WHERE employer_slug = ?",
         [slug],
       ),
@@ -120,6 +140,7 @@ export const whdForSlug = cache(async (slug: string, limit = 10): Promise<WhdSum
       backWages: n(t.bw),
       workersOwed: n(t.w),
       penalties: n(t.pen),
+      repeatCases: n(t.rep),
       h1b: program(t, "h1b"),
       h2a: program(t, "h2a"),
       h2b: program(t, "h2b"),
@@ -154,6 +175,8 @@ export interface WhdBoardProgram {
   violations: number;
   backWages: number;
   workers: number;
+  /** Civil penalties assessed under the program; DOL prints none for H-2B. */
+  penalties: number;
   /** Cases by the federal fiscal year their findings period ended in (October to September). */
   byYear: Array<{ fy: number; cases: number; backWages: number }>;
   /** The cases with the most back wages under this program. */
@@ -175,10 +198,13 @@ export const getWhdVisaBoard = cache(async (): Promise<WhdBoard | null> => {
   try {
     const programs = await Promise.all(
       PROGRAMS.map(async ([p, label]) => {
-        const found = `(${p}_violations > 0 OR ${p}_back_wages > 0)`;
+        // A case counts under a program when it found violations, back wages or (H-1B, H-2A) a penalty under it.
+        const pen = WITH_PENALTIES.has(p);
+        const found = `(${p}_violations > 0 OR ${p}_back_wages > 0${pen ? ` OR ${p}_penalties > 0` : ""})`;
         const [totals, years, top] = await Promise.all([
           rows<Row>(
-            `SELECT COUNT(*) AS cases, SUM(${p}_violations) AS v, SUM(${p}_back_wages) AS bw, SUM(${p}_workers) AS w FROM whd_cases WHERE ${found}`,
+            `SELECT COUNT(*) AS cases, SUM(${p}_violations) AS v, SUM(${p}_back_wages) AS bw, SUM(${p}_workers) AS w, ` +
+              `${pen ? `SUM(${p}_penalties)` : "0"} AS pen FROM whd_cases WHERE ${found}`,
           ),
           rows<Row>(
             `SELECT ${FY_SQL} AS fy, COUNT(*) AS cases, SUM(${p}_back_wages) AS bw FROM whd_cases ` +
@@ -197,6 +223,7 @@ export const getWhdVisaBoard = cache(async (): Promise<WhdBoard | null> => {
           violations: n(t.v),
           backWages: n(t.bw),
           workers: n(t.w),
+          penalties: n(t.pen),
           byYear: years.map((y) => ({ fy: n(y.fy), cases: n(y.cases), backWages: n(y.bw) })),
           top: top.map((r) => ({
             caseId: String(r.case_id),

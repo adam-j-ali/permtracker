@@ -5,6 +5,7 @@ import { TradeAdjustment, isCertified, outcomeWords } from "@/components/entitie
 
 const p = (petition: string, code: string | null, decided: string, workers: number | null) => ({
   petition, name: "Oracle America Inc.", city: "Hillsboro", state: "OR", code, decided, workers, product: "Software",
+  petitionDate: null as string | null, impactDate: null as string | null, expirationDate: null as string | null,
 });
 
 describe("TradeAdjustment", () => {
@@ -16,6 +17,11 @@ describe("TradeAdjustment", () => {
     expect(text).toContain("DOL certified 2, covering an estimated 102 workers and denied 1.");
     expect(text).toContain("Certified: work moved abroad or bought from abroad");
     expect(text).toContain("stopped taking petitions on July 1 2022");
+  });
+
+  it("prints DOL's petition, impact and expiration dates under DOL's own names, leaving out a missing one", () => {
+    render(<TradeAdjustment rows={[{ ...p("9", "C1", "2020-05-01", 30), petitionDate: "2020-02-03", impactDate: "2019-02-03", expirationDate: null }]} pageName="Oracle America" />);
+    expect(document.body.textContent).toContain("DOL's dates: petition Feb 3, 2020; impact Feb 3, 2019.");
   });
 
   it("renders nothing for a page with none", () => {

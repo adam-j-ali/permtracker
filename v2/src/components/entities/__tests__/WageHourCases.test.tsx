@@ -6,16 +6,17 @@ import type { WhdSummary } from "@/lib/db/whd";
 
 /** The employer page's Wage and Hour section: DOL's sums first, the visa programs named, DOL's cautions kept. */
 
-const none = { cases: 0, violations: 0, backWages: 0, workers: 0 };
+const none = { cases: 0, violations: 0, backWages: 0, workers: 0, penalties: 0 };
 const summary: WhdSummary = {
-  cases: 3, withViolations: 2, backWages: 15500.5, workersOwed: 7, penalties: 1200,
-  h1b: { cases: 1, violations: 2, backWages: 12500, workers: 3 }, h2a: none, h2b: none,
+  cases: 3, withViolations: 2, backWages: 15500.5, workersOwed: 7, penalties: 1200, repeatCases: 1,
+  h1b: { cases: 1, violations: 2, backWages: 12500, workers: 3, penalties: 1200 }, h2a: none, h2b: none,
   firstStart: "2019-01-01", lastEnd: "2024-06-30",
   newest: [
     { caseId: "9", name: "Northwind Traders Inc.", city: "Austin", state: "TX", findingsStart: "2023-01-01", findingsEnd: "2024-06-30",
-      violations: 2, backWages: 12500, workersOwed: 3, penalties: 0, visa: [{ program: "H-1B", violations: 2, backWages: 12500, workers: 3 }] },
+      violations: 2, backWages: 12500, workersOwed: 3, penalties: 1200, repeat: "willful",
+      visa: [{ program: "H-1B", violations: 2, backWages: 12500, workers: 3, penalties: 1200 }] },
     { caseId: "4", name: "Northwind Traders Inc.", city: "Austin", state: "TX", findingsStart: "2019-01-01", findingsEnd: "2019-03-31",
-      violations: 0, backWages: 0, workersOwed: 0, penalties: 0, visa: [] },
+      violations: 0, backWages: 0, workersOwed: 0, penalties: 0, visa: [], repeat: null },
   ],
 };
 
@@ -25,7 +26,10 @@ describe("the employer page's Wage and Hour section", () => {
     expect(html).toContain("Wage and Hour cases at Northwind Traders Inc.");
     expect(html).toContain("$15,501");
     // A space between the visa label and its count, or the text reads "H-1B1 case".
-    expect(html).toMatch(/H-1B<\/span> 1 case, 2 violations, \$12,500 in back wages to 3 workers/);
+    expect(html).toMatch(/H-1B<\/span> 1 case, 2 violations, \$12,500 in back wages to 3 workers, \$1,200 in penalties/);
+    // DOL's repeat or willful finding, on the case and in the count.
+    expect(html).toContain("DOL found the violations willful.");
+    expect(html).toContain("1 case DOL found repeated or willful");
     expect(html).toContain("No violations found.");
     expect(html).toContain("agreed to pay, which can differ from what was paid");
   });

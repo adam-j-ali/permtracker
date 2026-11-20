@@ -19,6 +19,8 @@ export interface OshaInspection {
   state: string | null;
   /** OSHA's inspection type code (A to N). */
   type: string | null;
+  /** OSHA's SAFETY_HLTH: a safety inspection ("S") or a health one ("H"), as words, or null. */
+  scope: "safety" | "health" | null;
   openDate: string;
   closeDate: string | null;
   violations: number;
@@ -61,6 +63,7 @@ function hydrate(r: Row): OshaInspection {
     city: s(r.city),
     state: s(r.state),
     type: s(r.insp_type),
+    scope: r.safety_health === "S" ? "safety" : r.safety_health === "H" ? "health" : null,
     openDate: String(r.open_date),
     closeDate: s(r.close_date),
     violations: n(r.violations),
@@ -89,7 +92,7 @@ export const oshaForSlug = cache(async (slug: string, limit = 10): Promise<OshaS
         [slug],
       ),
       rows<Row>(
-        "SELECT activity_nr, estab_name, city, state, insp_type, open_date, close_date, violations, serious, willful, " +
+        "SELECT activity_nr, estab_name, city, state, insp_type, safety_health, open_date, close_date, violations, serious, willful, " +
           "repeat, current_penalty FROM osha_inspections WHERE employer_slug = ? ORDER BY open_date DESC, activity_nr DESC LIMIT ?",
         [slug, limit],
       ),

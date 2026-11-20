@@ -70,6 +70,17 @@ export function TradeAdjustment({ rows, pageName }: { rows: TaaPetition[]; pageN
                 {r.city || r.state ? `, ${[r.city, r.state].filter(Boolean).join(", ")}` : ""}
                 {r.workers ? `, about ${formatInt(r.workers)} workers` : ""}
                 {r.product ? `. ${r.product}` : ""}.{" "}
+                {r.petitionDate || r.impactDate || r.expirationDate ? (
+                  <span className="block text-muted-foreground">
+                    {`DOL's dates: ${[
+                      r.petitionDate ? `petition ${shortDate(r.petitionDate) ?? r.petitionDate}` : null,
+                      r.impactDate ? `impact ${shortDate(r.impactDate) ?? r.impactDate}` : null,
+                      r.expirationDate ? `expiration ${shortDate(r.expirationDate) ?? r.expirationDate}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join("; ")}.`}{" "}
+                  </span>
+                ) : null}
               </li>
             </Fragment>
           ))}
