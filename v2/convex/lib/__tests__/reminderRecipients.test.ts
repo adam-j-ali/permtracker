@@ -132,6 +132,33 @@ describe("which of the day's reminders the second person gets", () => {
     expect(out.get("c1")?.map((i) => i.deadlineType)).toEqual(["RFI response due"]);
   });
 
+  it("follows the owner's master email switch: off, the second person gets nothing", () => {
+    const off = prefs({ emailNotificationsEnabled: false });
+    const out = copiesByCase([
+      { ...base, caseId: "c1", deadlineType: "pwd_expiration", daysUntilDeadline: 7, userPrefs: off },
+      { ...base, caseId: "c1", deadlineType: "rfi_due", daysUntilDeadline: 3, userPrefs: off },
+    ]);
+    expect(out.size).toBe(0);
+  });
+
+  it("follows the owner's deadline reminders switch: off, the second person gets nothing", () => {
+    const off = prefs({ emailDeadlineReminders: false });
+    const out = copiesByCase([
+      { ...base, caseId: "c1", deadlineType: "filing_window_closes", daysUntilDeadline: 7, userPrefs: off },
+      { ...base, caseId: "c1", deadlineType: "rfe_due", daysUntilDeadline: 3, userPrefs: off },
+    ]);
+    expect(out.size).toBe(0);
+  });
+
+  it("gets exactly the reminders the owner's own email gets", () => {
+    // An RFI's due date is emailed by the RFI and RFE alerts switch too (shouldSendEmail).
+    const out = copiesByCase([
+      { ...base, caseId: "c1", deadlineType: "rfi_due", daysUntilDeadline: 3, userPrefs: prefs({ emailRfeAlerts: false }) },
+      { ...base, caseId: "c1", deadlineType: "pwd_expiration", daysUntilDeadline: 7, userPrefs: prefs({ emailRfeAlerts: false }) },
+    ]);
+    expect(out.get("c1")?.map((i) => i.deadlineType)).toEqual(["PWD expiration"]);
+  });
+
   it("leaves out a case whose every reminder is switched off", () => {
     const out = copiesByCase([
       { ...base, caseId: "c1", deadlineType: "i140_filing_deadline", daysUntilDeadline: 7, userPrefs: prefs({ emailDeadlineReminderI140: false }) },

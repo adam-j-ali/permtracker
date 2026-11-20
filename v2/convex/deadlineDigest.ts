@@ -27,10 +27,10 @@ import {
   generateNotificationTitle,
   generateNotificationMessage,
   calculatePriority,
+  reminderNotificationType,
   shouldSendEmail,
   urgentDays,
   shouldSendPush,
-  type NotificationType,
 } from "./lib/notificationHelpers";
 import { groupRemindersByUser, type DigestReminderInput } from "./lib/reminderDigest";
 import { copiesByCase } from "./lib/reminderRecipients";
@@ -100,9 +100,7 @@ export const runDeadlineReminders = internalAction({
     }> = [];
 
     for (const reminder of reminders) {
-      let notificationType: NotificationType = "deadline_reminder";
-      if (reminder.deadlineType === "rfi_due") notificationType = "rfi_alert";
-      else if (reminder.deadlineType === "rfe_due") notificationType = "rfe_alert";
+      const notificationType = reminderNotificationType(reminder.deadlineType);
 
       const caseLabel = `${reminder.beneficiaryIdentifier} at ${reminder.employerName}`;
       const title = generateNotificationTitle(notificationType, {
@@ -196,9 +194,9 @@ export const runDeadlineReminders = internalAction({
       }
     }
 
-    // The second person a case's owner added (convex/reminderRecipients.ts): that case's reminders due today, by the
-    // owner's own switch for each kind of deadline, whatever the owner's own email settings are. One email a case,
-    // staggered after the owners' own.
+    // The second person a case's owner added (convex/reminderRecipients.ts): that case's reminders due today that the
+    // owner's own email switches allow (the master switch, "Deadline reminders" and each kind's switch), so turning
+    // the owner's reminder email off turns theirs off too. One email a case, staggered after the owners' own.
     let copiesScheduled = 0;
     const copies = copiesByCase(
       reminders.map((r) => ({

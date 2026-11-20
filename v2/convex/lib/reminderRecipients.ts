@@ -9,7 +9,7 @@ import { getDeadlineUrgency, formatDeadlineType } from "./digestHelpers";
 import { deadlineDigestWords } from "./deadlineDigestWords";
 import { isPlausibleEmail } from "./emailShape";
 import { SITE_URL } from "./links";
-import { remindsAbout, type UserNotificationPrefs } from "./notificationHelpers";
+import { emailsDeadlineReminder, type UserNotificationPrefs } from "./notificationHelpers";
 import type { TokenPurpose } from "./unsubscribeToken";
 import { MS_PER_DAY } from "./time";
 
@@ -95,13 +95,14 @@ export interface CopyItem {
 }
 
 /**
- * The day's reminders the second people get, by case, most urgent first. Each follows the owner's own switch for
- * its kind of deadline (Settings, "Which deadlines to remind you about"); a case with none left is left out.
+ * The day's reminders the second people get, by case, most urgent first. Each follows the owner's own email switches
+ * as the owner's own email does (emailsDeadlineReminder): the master email switch, "Deadline reminders" and the switch
+ * for its kind of deadline. Owner's email off, the second person's off too; a case with none left is left out.
  */
 export function copiesByCase(reminders: readonly CopyInput[]): Map<string, CopyItem[]> {
   const out = new Map<string, CopyItem[]>();
   for (const r of reminders) {
-    if (!remindsAbout(r.deadlineType, r.userPrefs)) continue;
+    if (!emailsDeadlineReminder(r.deadlineType, r.userPrefs)) continue;
     const items = out.get(r.caseId) ?? [];
     items.push({
       deadlineType: formatDeadlineType(r.deadlineType),

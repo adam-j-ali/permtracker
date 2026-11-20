@@ -598,22 +598,24 @@ describe("the daily reminder run", () => {
     return d.toISOString().slice(0, 10);
   };
 
-  it("gives a confirmed second person their own case's reminders only, by the owner's switches", async () => {
+  /**
+   * A case with reminders due today, a confirmed second person, and the owner's notification switches as given (the
+   * rest on). Runs the day's reminders and returns the second person's scheduled sends, and the deadline types the
+   * run found due for the case, from the real deadline rules, never from memory.
+   */
+  async function runWith(switches: Record<string, boolean>) {
     const { t, owner, caseId } = await setup();
-    // The owner has switched off the PWD reminders and their own reminder emails altogether: the second person
-    // follows the per-deadline switch, and their own emails aren't the owner's to turn off.
     await t.run(async (ctx) => {
       const now = Date.now();
       await ctx.db.insert("userProfiles", {
         userId: owner.userId,
         userType: "individual",
-        emailNotificationsEnabled: false,
+        emailNotificationsEnabled: true,
         smsNotificationsEnabled: false,
         pushNotificationsEnabled: false,
         urgentDeadlineDays: 7,
         reminderDaysBefore: [7],
-        emailDeadlineReminders: false,
-        emailDeadlineReminderPwd: false,
+        emailDeadlineReminders: true,
         emailStatusUpdates: false,
         emailRfeAlerts: true,
         emailWeeklyDigest: false,
@@ -637,6 +639,7 @@ describe("the daily reminder run", () => {
         autoDeadlineEnforcementEnabled: false,
         createdAt: now,
         updatedAt: now,
+        ...switches,
       });
       await ctx.db.patch(caseId, {
         caseStatus: "eta9089" as const,
@@ -656,15 +659,10 @@ describe("the daily reminder run", () => {
       recipientId: row!._id,
     });
 
-    // The run's own reminders, so the expected rows come from the real deadline rules, never from memory.
     const due = await t.query(internal.scheduledJobs.getCasesNeedingReminders, {});
-    const mine = due.filter((r) => r.caseId === caseId).map((r) => r.deadlineType);
-    expect(mine).toContain("pwd_expiration");
     expect(due.some((r) => r.caseId === otherCase)).toBe(true);
-    const expected = due
-      .filter((r) => r.caseId === caseId && r.deadlineType !== "pwd_expiration")
-      .map((r) => r.deadlineType);
-    expect(expected.length).toBeGreaterThan(0);
+    const dueTypes = due.filter((r) => r.caseId === caseId).map((r) => r.deadlineType);
+    expect(dueTypes).toContain("pwd_expiration");
 
     vi.useFakeTimers();
     await t.action(internal.deadlineDigest.runDeadlineReminders, {});
@@ -674,11 +672,31 @@ describe("the daily reminder run", () => {
       ),
     );
     vi.useRealTimers();
-    expect(jobs).toHaveLength(1);
-    const args = jobs[0]!.args[0] as { recipientId: string; items: { deadlineType: string }[] };
-    expect(args.recipientId).toBe(row!._id);
-    expect(args.items.map((i) => i.deadlineType)).not.toContain("PWD expiration");
-    expect(args.items).toHaveLength(expected.length);
+    return {
+      rowId: row!._id,
+      dueTypes,
+      copies: jobs.map((j) => j.args[0] as { recipientId: string; items: { deadlineType: string }[] }),
+    };
+  }
+
+  it("gives a confirmed second person their own case's reminders only, by the owner's switch for each kind", async () => {
+    const { rowId, dueTypes, copies } = await runWith({ emailDeadlineReminderPwd: false });
+    const expected = dueTypes.filter((d) => d !== "pwd_expiration");
+    expect(expected.length).toBeGreaterThan(0);
+    expect(copies).toHaveLength(1);
+    expect(copies[0]!.recipientId).toBe(rowId);
+    expect(copies[0]!.items.map((i) => i.deadlineType)).not.toContain("PWD expiration");
+    expect(copies[0]!.items).toHaveLength(expected.length);
+  });
+
+  it("sends the second person nothing when the owner turns off deadline reminders", async () => {
+    const { copies } = await runWith({ emailDeadlineReminders: false });
+    expect(copies).toEqual([]);
+  });
+
+  it("sends the second person nothing when the owner turns off email altogether", async () => {
+    const { copies } = await runWith({ emailNotificationsEnabled: false });
+    expect(copies).toEqual([]);
   });
 });
 
