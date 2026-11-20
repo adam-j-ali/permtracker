@@ -118,18 +118,29 @@ describe("a window of PERM filings", () => {
 });
 
 describe("wage requests and the seasonal programs", () => {
-  it.each([
-    ["pwd", "pwd_case_status", "pwd_cases"],
-    ["seasonal", "seasonal_case_status", "seasonal_cases"],
-  ] as const)("%s reads its live table with its file beside it, then the file's own cases", async (program, liveTable, fileTable) => {
-    await getFiledInWindow(program, "2026-03-01", "2026-03-31", { ...NONE, titleWords: ["farmworker"] });
+  it("a wage request reads its live table with its own rows of DOL's prevailing wage file, never an H-2B or CW-1 request", async () => {
+    await getFiledInWindow("pwd", "2026-03-01", "2026-03-31", { ...NONE, titleWords: ["farmworker"] });
     const c = calls();
     expect(c).toHaveLength(2);
-    expect(c[0]!.sql).toContain(`FROM ${liveTable} s LEFT JOIN ${fileTable} p ON p.case_number = s.case_number`);
+    expect(c[0]!.sql).toContain("FROM pwd_case_status s LEFT JOIN pwd_cases f0 ON f0.case_number = s.case_number AND f0.case_number < 'P-400-'");
     expect(c[0]!.sql).toContain("s.filing_date BETWEEN ? AND ?");
-    expect(c[1]!.sql).toContain(`FROM ${fileTable} p WHERE p.received_date BETWEEN ? AND ?`);
-    expect(c[1]!.sql).toContain(`NOT EXISTS (SELECT 1 FROM ${liveTable} s WHERE s.case_number = p.case_number)`);
+    expect(c[1]!.sql).toContain("FROM pwd_cases p");
+    expect(c[1]!.sql).toContain("NOT EXISTS (SELECT 1 FROM pwd_case_status s WHERE s.case_number = p.case_number) AND p.case_number < 'P-400-'");
     expect(c[1]!.args).toEqual(["2026-03-01", "2026-03-31", "%farmworker%", WINDOW_READ_MAX]);
+  });
+
+  it("the seasonal programs read their applications, then their H-2B and CW-1 wage requests, each case once", async () => {
+    await getFiledInWindow("seasonal", "2026-03-01", "2026-03-31", { ...NONE, titleWords: ["farmworker"] });
+    const c = calls();
+    expect(c).toHaveLength(3);
+    // A live H-2B request's decided record is in the prevailing wage file: joined, and taken from whichever has it.
+    expect(c[0]!.sql).toContain(
+      "FROM seasonal_case_status s LEFT JOIN seasonal_cases f0 ON f0.case_number = s.case_number LEFT JOIN pwd_cases f1 ON f1.case_number = s.case_number AND f1.case_number >= 'P-400-'",
+    );
+    expect(c[0]!.sql).toContain("COALESCE(f0.decision_date, f1.decision_date) AS decided");
+    expect(c[1]!.sql).toContain("FROM seasonal_cases p");
+    expect(c[2]!.sql).toContain("FROM pwd_cases p");
+    expect(c[2]!.sql).toContain("AND p.case_number >= 'P-400-' AND NOT EXISTS (SELECT 1 FROM seasonal_cases x WHERE x.case_number = p.case_number)");
   });
 
   it("with a firm typed, reads the file alone", async () => {

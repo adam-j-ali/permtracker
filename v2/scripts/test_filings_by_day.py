@@ -70,4 +70,28 @@ check("a case in two files counts once, on the first file's day", by.get("2024-0
 check("a case only in the older file counts on its day", by.get("2020-05-01") == [1, 0, 1, 0], str(by))
 check("the live record's first day is reported", meta.get("liveFrom") == "2026-03-02", str(meta))
 
+
+# An H-2B and a CW-1 wage request sit in DOL's prevailing wage file; their live rows are under seasonal. They count
+# under seasonal and never under wage requests, so no case is filed twice (Nov 20 2026).
+db2 = Lite()
+db2.c.executescript("""
+CREATE TABLE pwd_case_status (case_number TEXT PRIMARY KEY, filing_date TEXT, is_final INTEGER);
+CREATE TABLE seasonal_case_status (case_number TEXT PRIMARY KEY, filing_date TEXT, is_final INTEGER);
+CREATE TABLE pwd_cases (case_number TEXT PRIMARY KEY, received_date TEXT);
+CREATE TABLE seasonal_cases (case_number TEXT PRIMARY KEY, received_date TEXT);
+INSERT INTO pwd_case_status VALUES ('P-100-26001-000001', '2026-01-02', 0);
+INSERT INTO seasonal_case_status VALUES ('P-400-26001-000002', '2026-01-02', 1), ('H-300-26001-000003', '2026-01-02', 0);
+INSERT INTO pwd_cases VALUES ('P-100-26001-000009', '2026-01-02'), ('P-400-26001-000002', '2026-01-02'),
+                             ('P-400-26001-000004', '2026-01-02'), ('P-500-26001-000005', '2026-01-02');
+INSERT INTO seasonal_cases VALUES ('H-400-26001-000006', '2026-01-02');
+""")
+pwd_days, _ = b.program_days(db2, b.PROGRAMS["pwd"], "2019-10-01", "2026-11-05")
+season_days, _ = b.program_days(db2, b.PROGRAMS["seasonal"], "2019-10-01", "2026-11-05")
+check("a wage request day counts only the ETA-9141 queue's own numbers", {r[0]: r[1:] for r in pwd_days}.get("2026-01-02") == [2, 1, 1, 0],
+      str(pwd_days))
+check("the H-2B and CW-1 wage requests count under seasonal, each once",
+      {r[0]: r[1:] for r in season_days}.get("2026-01-02") == [5, 1, 3, 0], str(season_days))
+check("the boundary is the site's", "SEASONAL_WAGE_REQUEST_FROM = \"P-400-\"" in (pathlib.Path(__file__).parent / "lib_flag_serials.py").read_text()
+      and 'SEASONAL_WAGE_REQUEST_FROM = "P-400-"' in (pathlib.Path(__file__).parent.parent / "src" / "lib" / "wageRequestRanges.ts").read_text())
+
 sys.exit(1 if failures else 0)

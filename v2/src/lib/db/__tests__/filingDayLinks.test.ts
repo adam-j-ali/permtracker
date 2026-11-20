@@ -118,3 +118,21 @@ describe("a day's LCAs", () => {
     expect(cases.find((c) => c.caseNumber === "I-200-26030-123457")?.wageRequest).toBeNull();
   });
 });
+
+describe("a day's H-2B and CW-1 wage requests", () => {
+  it("are listed under the seasonal programs, from DOL's prevailing wage file, and never under wage requests", async () => {
+    rows.mockResolvedValue([]);
+    await getFiledOnProgram("2026-01-30", "seasonal");
+    const seasonal = rows.mock.calls.map(([sql]) => String(sql).replace(/\s+/g, " "));
+    expect(seasonal).toHaveLength(3);
+    expect(seasonal[0]).toContain("LEFT JOIN pwd_cases f1 ON f1.case_number = s.case_number AND f1.case_number >= 'P-400-'");
+    expect(seasonal[2]).toContain("FROM pwd_cases p WHERE p.received_date = ? AND p.case_number >= 'P-400-'");
+    expect(seasonal[2]).toContain("NOT EXISTS (SELECT 1 FROM seasonal_cases x WHERE x.case_number = p.case_number)");
+
+    rows.mockReset();
+    rows.mockResolvedValue([]);
+    await getFiledOnProgram("2026-01-30", "pwd");
+    const pwd = rows.mock.calls.map(([sql]) => String(sql).replace(/\s+/g, " "));
+    expect(pwd[1]).toContain("FROM pwd_cases p WHERE p.received_date = ? AND p.case_number < 'P-400-'");
+  });
+});

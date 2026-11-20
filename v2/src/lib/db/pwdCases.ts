@@ -1,4 +1,5 @@
 import { PWD_VISA_CLASS } from "@/lib/changeProgram";
+import { pwdOwnSql } from "@/lib/wageRequestRanges";
 import "server-only";
 import { makeFlagProgram } from "./flagCases";
 
@@ -66,6 +67,8 @@ export const pwd = makeFlagProgram({
   disclosureTable: "pwd_cases",
   disclosureDocKey: "flag_disclosure_summary_pw",
   defaultVisaClass: PWD_VISA_CLASS,
+  // The file's H-2B and CW-1 wage requests are the seasonal programs', even when every visa is asked for.
+  disclosureOwn: pwdOwnSql,
 });
 
 export const normalisePwdCaseNumber = pwd.normalise;

@@ -1,4 +1,5 @@
 import "server-only";
+import { seasonalWageRequestSql } from "@/lib/wageRequestRanges";
 import { one } from "./client";
 import { makeFlagProgram, parseDisclosureSummaryDoc, type FlagDisclosureSummary } from "./flagCases";
 import { softFail } from "@/lib/softRead";
@@ -56,6 +57,8 @@ export const seasonal = makeFlagProgram({
   // row), loaded by scripts/ingest_flag_disclosure.py: the decided record with
   // the wage, the workers and the work period.
   disclosureTable: "seasonal_cases",
+  // The H-2B and CW-1 wage requests (P-400, P-500) are decided in DOL's prevailing wage file.
+  disclosureExtra: { table: "pwd_cases", own: seasonalWageRequestSql },
 });
 
 export const normaliseSeasonalCaseNumber = seasonal.normalise;

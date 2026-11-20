@@ -6,6 +6,7 @@ import type { DayCase, DayTally } from "@/lib/filingDay";
 import type { FilingProgram } from "@/lib/filingsByDay";
 import { wageRequestNumber } from "@/lib/caseLinks";
 import { softFail } from "@/lib/softRead";
+import { fileOnlyWhere, liveFileCol, liveFileJoins, PROGRAM_FILES } from "@/lib/wageRequestRanges";
 import { formatWage, looksYearly, LOOKS_YEARLY_SHORT } from "@/lib/wageFormat";
 
 import { shiftMonth } from "@convex/lib/months";
@@ -144,27 +145,41 @@ async function permDay(day: string): Promise<DayCase[]> {
   return [...live.map(fromLive(day)), ...files.map(fromFile), ...history.map(fromFile)];
 }
 
-/** Wage requests and the seasonal programs: one live table, one published file, both on the main database. */
-async function flagDay(day: string, live: string, file: string): Promise<DayCase[]> {
-  const [liveRows, fileRows] = await Promise.all([
+/**
+ * Wage requests and the seasonal programs: one live table and their published files, all on the main database. The
+ * wage request program's file is DOL's prevailing wage file less its H-2B and CW-1 requests, which belong to the
+ * seasonal programs with the H-2A, H-2B and CW-1 applications (src/lib/wageRequestRanges.ts): read any other way, a
+ * decided H-2B request listed under wage requests while its live row listed it under seasonal.
+ */
+async function flagDay(day: string, live: string, program: "pwd" | "seasonal"): Promise<DayCase[]> {
+  const files = PROGRAM_FILES[program];
+  // A live case's file columns from whichever of its program's files holds it.
+  const pick = (col: string) => liveFileCol(files, col);
+  const joins = liveFileJoins(files);
+  const [liveRows, ...fileReads] = await Promise.all([
     rows<LiveRow>(
       `SELECT s.case_number, s.current_status, s.employer_name, s.employer_slug, s.job_title, s.is_final,
-              p.received_date AS file_date, p.decision_date AS decided,
-              p.worksite_state AS state, p.wage AS wage, p.wage_unit AS wage_unit, p.pw_case AS wage_request
-         FROM ${live} s LEFT JOIN ${file} p ON p.case_number = s.case_number
+              ${pick("received_date")} AS file_date, ${pick("decision_date")} AS decided,
+              ${pick("worksite_state")} AS state, ${pick("wage")} AS wage, ${pick("wage_unit")} AS wage_unit,
+              ${pick("pw_case")} AS wage_request
+         FROM ${live} s ${joins}
         WHERE s.filing_date = ? ORDER BY s.employer_name, s.case_number LIMIT ?`,
       [day, DAY_MAX_ROWS],
     ),
-    rows<FileRow>(
-      `SELECT p.case_number, p.employer_name, p.employer_slug, p.job_title, p.received_date, p.decision_date AS decided,
-              ${FILE_COLS.flag}
-         FROM ${file} p
-        WHERE p.received_date = ? AND NOT EXISTS (SELECT 1 FROM ${live} s WHERE s.case_number = p.case_number) LIMIT ?`,
-      [day, DAY_MAX_ROWS],
+    // Each file's cases the live record doesn't hold, its program's own rows only, never one an earlier file named.
+    ...files.map((f, i) =>
+      rows<FileRow>(
+        `SELECT p.case_number, p.employer_name, p.employer_slug, p.job_title, p.received_date, p.decision_date AS decided,
+                ${FILE_COLS.flag}
+           FROM ${f.table} p
+          WHERE p.received_date = ?${fileOnlyWhere(files, i)}
+            AND NOT EXISTS (SELECT 1 FROM ${live} s WHERE s.case_number = p.case_number) LIMIT ?`,
+        [day, DAY_MAX_ROWS],
+      ),
     ),
   ]);
-  const cases = [...liveRows.map(fromLive(day)), ...fileRows.map(fromFile)];
-  if (file !== "pwd_cases") return cases;
+  const cases = [...liveRows.map(fromLive(day)), ...fileReads.flat().map(fromFile)];
+  if (program !== "pwd") return cases;
   // A wage request is named by the decided PERM cases filed on it. The day's list stands without the
   // counts, so a failed read of them is recorded and they're left out, never shown as none.
   const naming = await permsNaming(cases.map((c) => c.caseNumber)).catch(softFail("filingDay/permsNaming", null));
@@ -225,8 +240,8 @@ async function lcaDay(day: string): Promise<DayCase[]> {
 export const getFiledOnProgram = cache(async (day: string, program: FilingProgram): Promise<{ cases: DayCase[]; capped: boolean }> => {
   const all =
     program === "perm" ? await permDay(day)
-    : program === "pwd" ? await flagDay(day, "pwd_case_status", "pwd_cases")
-    : program === "seasonal" ? await flagDay(day, "seasonal_case_status", "seasonal_cases")
+    : program === "pwd" ? await flagDay(day, "pwd_case_status", "pwd")
+    : program === "seasonal" ? await flagDay(day, "seasonal_case_status", "seasonal")
     : await lcaDay(day);
   // Each read stops at DAY_MAX_ROWS; a list that long is said to be cut, never shown as the whole day.
   const capped = all.length >= DAY_MAX_ROWS;
