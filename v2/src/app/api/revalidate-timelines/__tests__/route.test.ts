@@ -13,7 +13,7 @@ const revalidatePath = vi.fn();
 vi.mock("next/cache", () => ({ revalidatePath }));
 
 const { POST } = await import("../route");
-const { TIMELINE_PAGES, MAX_OFFICES } = await import("../paths");
+const { FIXED_PAGES, LIST_PAGES, TIMELINE_PAGES, MAX_OFFICES } = await import("../paths");
 
 const SECRET = "test-secret-value";
 const post = (body: unknown, secret: string | null = SECRET) =>
@@ -41,7 +41,7 @@ describe("POST /api/revalidate-timelines", () => {
     const res = await POST(post({ offices: ["HAR", "HAR", "BOS"] }));
     expect(res.status).toBe(200);
     expect(revalidatePath.mock.calls.map((c) => c[0])).toEqual([
-      ...TIMELINE_PAGES,
+      ...FIXED_PAGES,
       "/i485-by-field-office/hartford-connecticut",
       "/i485-by-field-office/boston-massachusetts",
     ]);
@@ -50,14 +50,14 @@ describe("POST /api/revalidate-timelines", () => {
   it("refreshes the board alone when no office is named, or the body is empty", async () => {
     expect((await POST(post({}))).status).toBe(200);
     expect((await POST(post(""))).status).toBe(200);
-    expect(revalidatePath.mock.calls.map((c) => c[0])).toEqual([...TIMELINE_PAGES, ...TIMELINE_PAGES]);
+    expect(revalidatePath.mock.calls.map((c) => c[0])).toEqual([...FIXED_PAGES, ...FIXED_PAGES]);
   });
 
   it("skips a code the office list doesn't hold, names it, and can't be aimed at another page", async () => {
     const res = await POST(post({ offices: ["ZZZ", "../admin"] }));
     expect(res.status).toBe(200);
     expect(((await res.json()) as { unknown: string[] }).unknown).toEqual(["ZZZ", "../admin"]);
-    expect(revalidatePath.mock.calls.map((c) => c[0])).toEqual([...TIMELINE_PAGES]);
+    expect(revalidatePath.mock.calls.map((c) => c[0])).toEqual([...FIXED_PAGES]);
   });
 
   it.each([
@@ -72,6 +72,33 @@ describe("POST /api/revalidate-timelines", () => {
 });
 
 describe("the path list", () => {
+  it("refreshes the pages that read the merged list of reported cases too", async () => {
+    await POST(post({ offices: [] }));
+    const called = revalidatePath.mock.calls.map((c) => c[0]);
+    for (const page of [...LIST_PAGES, "/green-card-timelines"]) expect(called).toContain(page);
+  });
+
+  it("names every public page that reads the merged list, outside the office pages", () => {
+    const appDir = join(process.cwd(), "src/app");
+    const pages: string[] = [];
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const full = join(dir, name);
+        if (statSync(full).isDirectory()) walk(full);
+        else if (name === "page.tsx" && /getReported\w+|getOfficeReportedCases/.test(readFileSync(full, "utf8"))) pages.push(full);
+      }
+    };
+    walk(appDir);
+    const routes = pages
+      .map((f) => "/" + relative(appDir, f).replace(/\/?page\.tsx$/, "").split("/").filter((s) => !s.startsWith("(")).join("/"))
+      .filter((r) => !r.startsWith("/i485-by-field-office/"))
+      .map((r) => r.replace("/[form]", "/i-140"))
+      .sort();
+    expect(routes.length).toBeGreaterThan(0);
+    for (const route of routes) expect(FIXED_PAGES).toContain(route); // every page reading the list is refreshed
+    for (const page of LIST_PAGES) expect(routes).toContain(page); // and every listed page really reads it
+  });
+
   it("names every public page that reads the board", () => {
     const appDir = join(process.cwd(), "src/app");
     const pages: string[] = [];
