@@ -108,7 +108,12 @@ describe("dataset coverage", () => {
     // 2026: USCIS's monthly report to Congress (uscis-monthly-forms). 60 on Nov 19 2026: the community sheets
     // (community-sheet-sfv-filers) and VisaStats' tracker (community-visastats); 61 the same day: the merged list of
     // reported cases (reported-cases); 62 with the Reddit reports (community-posts-reddit).
-    expect(ids.length - warnStates.length - policy.length).toBeLessThanOrEqual(62);
+    // The community sheets' rows come from their own config (Nov 19 2026), so they're held to it exactly, like the
+    // WARN states to their readers; 63 with the Telegram reports (community-posts-telegram).
+    const sheetRows = ids.filter((d) => d.startsWith("community-sheet-"));
+    const sheetConfig = JSON.parse(readFileSync(join(ROOT, "scripts/data/community_sheets.json"), "utf8")) as { sheets: { key: string }[] };
+    expect([...sheetRows].sort()).toEqual(sheetConfig.sheets.map((s) => `community-sheet-${s.key}`).sort());
+    expect(ids.length - warnStates.length - policy.length - sheetRows.length).toBeLessThanOrEqual(63);
     const read = new Set<string>();
     for (const f of ["ingest_warn.py", "warn_states.py"]) {
       const src = readFileSync(join(ROOT, "scripts", f), "utf8");
