@@ -21,8 +21,10 @@
  *   Queue, bulletin and employer news still follow the rule above.
  *
  * - On a paid email plan (EMAIL_DAILY_LIMIT above 100), an employer's move
- *   goes now too (owner's call, Nov 18 2026). The free plan keeps it for
- *   the day's one email.
+ *   goes now too (owner's call, Nov 18 2026), and so do the queue reaching a
+ *   person's month and a visa bulletin's move (owner's call, Nov 20 2026: news
+ *   people wait months for, at most once a month each). The free plan keeps
+ *   them for the day's one email.
  *
  * A queued item counts as delivered for the producer's own change detector,
  * so the producer never re-queues it; the outbox owns retries from then on.
@@ -47,7 +49,7 @@ export type AlertRef = `${AlertKind}:${string}`;
 /** Kinds that never wait for a bundle. */
 export const IMMEDIATE_KINDS: ReadonlySet<AlertKind> = new Set<AlertKind>(["case"]);
 /** Kinds that never wait on a paid email plan, and wait on the free one. */
-export const IMMEDIATE_ON_PAID_PLAN: ReadonlySet<AlertKind> = new Set<AlertKind>(["employer"]);
+export const IMMEDIATE_ON_PAID_PLAN: ReadonlySet<AlertKind> = new Set<AlertKind>(["employer", "queue", "bulletin"]);
 
 /** True when an alert of this kind leaves now instead of waiting for the address's one email of the day. */
 export function sendsAtOnce(kind: AlertKind): boolean {

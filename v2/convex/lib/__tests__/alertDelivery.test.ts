@@ -4,8 +4,9 @@ import { sendsAtOnce } from "../alertDelivery";
 
 /**
  * Which alerts skip the day's one email. A case's own status change always goes at once. On a paid email plan
- * (EMAIL_DAILY_LIMIT above the free plan's 100) an employer's move goes at once too; the free plan holds it for the
- * address's one email of the day. Queue, bulletin and possible-PERM news wait on either plan.
+ * (EMAIL_DAILY_LIMIT above the free plan's 100) an employer's move, the queue reaching a person's month and a visa
+ * bulletin's move go at once too; the free plan holds them for the address's one email of the day. Possible-PERM news
+ * waits on either plan.
  */
 describe("which alerts go at once", () => {
   afterEach(() => {
@@ -34,12 +35,19 @@ describe("which alerts go at once", () => {
     expect(sendsAtOnce("employer")).toBe(true);
   });
 
-  it("still gathers queue, bulletin and possible-PERM news on a paid plan", () => {
+  it("sends the queue's month and the bulletin's move at once on a paid plan, and holds them on the free one", () => {
+    // Arrange, Act, Assert: the free plan first, then the paid one.
+    expect(sendsAtOnce("queue")).toBe(false);
+    expect(sendsAtOnce("bulletin")).toBe(false);
+    process.env.EMAIL_DAILY_LIMIT = "1600";
+    expect(sendsAtOnce("queue")).toBe(true);
+    expect(sendsAtOnce("bulletin")).toBe(true);
+  });
+
+  it("still gathers possible-PERM news on a paid plan", () => {
     // Arrange
     process.env.EMAIL_DAILY_LIMIT = "1600";
     // Act, Assert
-    expect(sendsAtOnce("queue")).toBe(false);
-    expect(sendsAtOnce("bulletin")).toBe(false);
     expect(sendsAtOnce("match")).toBe(false);
   });
 });
