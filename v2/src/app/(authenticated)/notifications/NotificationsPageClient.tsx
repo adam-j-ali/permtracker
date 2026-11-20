@@ -12,6 +12,7 @@ import {
   NOTIFICATION_PANEL_ID,
   type NotificationTabType,
 } from "@/components/notifications";
+import Link from "next/link";
 import { PageHeading } from "../components/PageHeading";
 
 export function NotificationsPageClient() {
@@ -42,7 +43,18 @@ export function NotificationsPageClient() {
     <div className="mx-auto w-full max-w-4xl">
       {/* Page Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <PageHeading title="Notifications" />
+        <PageHeading
+          title="Notifications"
+          lede={
+            <>
+              Choose what you&apos;re told about, and by email or browser push, in{" "}
+              <Link href="/settings?tab=notifications" className="link">
+                Settings
+              </Link>
+              .
+            </>
+          }
+        />
         <BulkActions />
       </div>
 
