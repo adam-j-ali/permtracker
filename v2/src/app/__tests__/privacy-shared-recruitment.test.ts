@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
  * the link goes with its case and the account. The Ahrefs line no longer says it loads on every page.
  */
 const SRC = join(process.cwd(), "src");
-const flat = (s: string) => s.replace(/\s+/g, " ");
+const flat = (s: string) => s.replace(/\s+/g, " ").replace(/&apos;/g, "'");
 const page = flat(readFileSync(join(SRC, "app/(site)/(public)/privacy/page.tsx"), "utf8"));
 const section = page.slice(page.indexOf('id="shared-recruitment-records"'), page.indexOf("User Preferences"));
 
@@ -34,6 +34,13 @@ describe("the privacy page and shared recruitment records", () => {
     expect(section).toMatch(/no analytics/);
     expect(section).toMatch(/search engines/);
     expect(section).toContain("the day the link was last opened");
+  });
+
+  it("says the server's request logs and the error reports blank the key", () => {
+    expect(section).toContain("Our server's request logs and our error reports blank the key in the page's address");
+    expect(page).toContain(
+      "The key in a recruitment record's share link is replaced in every error report, timing and log line, from your browser or our server, before it's sent",
+    );
   });
 
   it("says the link goes with its case and the account", () => {
