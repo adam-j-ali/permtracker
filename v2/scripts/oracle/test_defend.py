@@ -143,6 +143,25 @@ check("an hour of Under Attack Mode steps back down",
       d.decide({"mode": "attack", "since": NOW - 3600}, True, S, NOW)[0][0] == "attack_off")
 check("not back within three hours", d.decide({"mode": "rule", "since": NOW - 900, "attackCooldownUntil": NOW + 60}, True, S, NOW) == [])
 check("back after the three hours", d.decide({"mode": "rule", "since": NOW - 900, "attackCooldownUntil": NOW - 1}, True, S, NOW)[0][0] == "attack_on")
+# The same source back within minutes of its rule coming off (Nov 19 2026: a scraper walking the employer pages under
+# one browser label, off at 5:30 PM and back at 5:33): the rule then holds for two calm hours, not thirty minutes.
+st = {"mode": "rule", "since": NOW - 2400, "calmSince": NOW - 1800, "source": S}
+d.decide(st, False, None, NOW)
+check("all off remembers whose rule it was, and when", st.get("lastOff", {}).get("source") == S and st["lastOff"]["at"] == NOW)
+st = {"mode": "off", "lastOff": {"source": S, "at": NOW - 300}}
+check("the same source back within 15 minutes: the rule again", d.decide(st, True, S, NOW) == [("rule_on", {"source": S})])
+check("...holding for two calm hours this time", st.get("calmNeeded") == d.CALM_FOR_REPEAT == 7200)
+held = {"mode": "rule", "calmSince": NOW - 1800, "calmNeeded": d.CALM_FOR_REPEAT}
+check("...so thirty calm minutes leave it on", d.decide(held, False, None, NOW) == [])
+held = {"mode": "rule", "calmSince": NOW - 7200, "calmNeeded": d.CALM_FOR_REPEAT}
+check("...and two calm hours take it off", d.decide(held, False, None, NOW) == [("all_off", {})])
+st = {"mode": "off", "lastOff": {"source": S, "at": NOW - 3600}}
+d.decide(st, True, S, NOW)
+check("back an hour later counts as new trouble: thirty minutes again", st.get("calmNeeded") in (None, d.CALM_FOR))
+other = {"kind": "ua", "value": "Mozilla/5.0 other", "share": 0.5, "requests": 400}
+st = {"mode": "off", "lastOff": {"source": S, "at": NOW - 300}}
+d.decide(st, True, other, NOW)
+check("another source back soon is new trouble too", st.get("calmNeeded") in (None, d.CALM_FOR))
 st = {"mode": "attack", "since": NOW - 2400, "calmSince": NOW - 1800}
 check("an Under Attack episode that ends calmly still starts the three-hour wait",
       d.decide(st, False, None, NOW) == [("all_off", {})] and st.get("attackCooldownUntil") == NOW + d.ATTACK_COOLDOWN)
