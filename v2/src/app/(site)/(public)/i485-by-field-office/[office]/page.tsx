@@ -74,15 +74,23 @@ const theOffice = (o: UscisOffice) => (isCenter(o) ? `the ${o.name}` : `the ${o.
 
 /** The searched phrase first ("Hartford USCIS field office"), then what the page holds; short enough to keep the site's name. */
 function titleOf(o: UscisOffice): string {
+  // People search "<office> field office processing time", and a bare "Omaha field office" completes to the FBI, so
+  // USCIS sits beside the name (Search Console and search suggestions, Nov 20 2026). The first that fits 45 wins.
   if (isCenter(o)) return `${o.name} I-485 Numbers`;
-  const full = `${o.name} USCIS Field Office I-485 Numbers`;
-  return full.length <= 45 ? full : `${o.name} Field Office I-485 Numbers`;
+  const fits = [
+    `${o.name} USCIS Field Office I-485 Processing Times`,
+    `${o.name} USCIS Field Office Processing Times`,
+    `${o.name} USCIS I-485 Processing Times`,
+    `${o.name} USCIS Field Office I-485 Times`,
+    `${o.name} USCIS I-485 Times`,
+  ].find((t) => t.length <= 45);
+  return fits ?? `${o.name} I-485 Times`;
 }
 
 const descriptionOf = (o: UscisOffice) =>
   isCenter(o)
     ? `Employment-based I-485s received, approved, denied and pending at USCIS's ${o.name} each quarter, from USCIS's own data.`
-    : `Employment-based I-485s received, approved, denied and pending at the USCIS field office in ${officePlace(o)} each quarter, from USCIS's own data.`;
+    : `How long each I-485 step took at USCIS's ${officePlace(o)} field office, from cases people reported, beside USCIS's quarterly counts.`;
 
 export async function generateMetadata({ params }: { params: Promise<{ office: string }> }): Promise<Metadata> {
   const office = officeBySlug((await params).office);
@@ -485,10 +493,19 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
               </div>
             </div>
           ) : null}{" "}
-          <p className="mt-5 text-base">
+          <p className="mt-5 max-w-3xl text-base leading-relaxed">
             <Link href="/green-card-timelines" className="link font-bold">
               Every step, from every office and source
             </Link>
+            . What a{" "}
+            <Link href="/guides/i485-transferred-to-field-office" className="link">
+              transfer to a field office
+            </Link>{" "}
+            means, and{" "}
+            <Link href="/guides/i485-interview-to-green-card" className="link">
+              the wait after the interview
+            </Link>
+            .
           </p>
         </section>
       ) : null}

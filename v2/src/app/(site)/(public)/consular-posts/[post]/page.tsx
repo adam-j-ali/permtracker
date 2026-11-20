@@ -50,7 +50,11 @@ export async function generateStaticParams() {
   }
 }
 
-const titleOf = (name: string) => `${name}: Immigrant Visas and NVC Scheduling`;
+// People search a consulate's "immigrant visa interview wait times" (Search Console, Nov 2026).
+const titleOf = (name: string) =>
+  `${name} Immigrant Visa Interview Wait Times`.length <= 45
+    ? `${name} Immigrant Visa Interview Wait Times`
+    : `${name} Visa Interview Wait Times`;
 const descriptionOf = (name: string) =>
   `Where the US consulate in ${name} stands: the month NVC is scheduling for interviews, the immigrant visas it issued each month, and the interview pause.`;
 

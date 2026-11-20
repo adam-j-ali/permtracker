@@ -33,7 +33,7 @@ import type { ReportedSummary } from "@/lib/reportedSummary";
 /** The steps people report for each form, from the hourly build's summary (scripts/lib_reported_summary.py). */
 const FORM_STEPS: Readonly<Record<string, readonly string[]>> = {
   "I-140": ["cert-to-i140", "i140-premium", "i140-regular", "i140-rfe"],
-  "I-485": ["i485-bio", "i485-ead", "i485-ap", "i485-office", "i485-interview", "i485-gc", "interview-gc", "gc-card"],
+  "I-485": ["i485-bio", "i485-ead", "i485-ap", "i485-office", "i485-interview", "i485-gc", "office-gc", "interview-gc", "gc-card"],
   "I-765": ["i485-ead"],
   "I-131": ["i485-ap"],
   "I-129": ["lca-h1b", "h1b"],
@@ -77,9 +77,13 @@ export async function generateStaticParams() {
   return FORM_PAGES.map((p) => ({ form: p.slug }));
 }
 
-const titleOf = (p: FormPage) => `${p.form} Processing Time: USCIS's Median`;
+// A form people report their own dates for says so in its title: the page holds both USCIS's median and theirs.
+const titleOf = (p: FormPage) =>
+  FORM_STEPS[p.form] ? `${p.form} Processing Time: USCIS and Real Cases` : `${p.form} Processing Time: USCIS's Median`;
 const descriptionOf = (p: FormPage) =>
-  `How long USCIS took to decide the ${p.form} each quarter (its median), with forms received, decided and waiting, from USCIS's own quarterly data.`;
+  FORM_STEPS[p.form]
+    ? `How long the ${p.form} takes now: USCIS's quarterly median, and each step's days from thousands of cases people reported, updated hourly.`
+    : `How long USCIS took to decide the ${p.form} each quarter (its median), with forms received, decided and waiting, from USCIS's own quarterly data.`;
 
 export async function generateMetadata({ params }: { params: Promise<{ form: string }> }): Promise<Metadata> {
   const page = formPage((await params).form);
@@ -372,7 +376,31 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
               title={`What people reported about their own ${page.form}s`}
               lede={`From ${formatInt(summary!.headline.cases)} cases people reported in Telegram groups, community sheets, Reddit, VisaStats and on this site, each person once, over the cases that finished each step in the last 6 months (12 when 6 hold too few). Self-reported, beside USCIS's own figures, never in place of them.`}
             >
-              <StepFigures steps={reportedSteps} allHref="/green-card-timelines" />
+              <StepFigures steps={reportedSteps} allHref="/green-card-timelines" />{" "}
+              {page.form === "I-485" ? (
+                <p className="mt-2 max-w-3xl text-base leading-relaxed">
+                  Each step explained:{" "}
+                  <Link href="/guides/i485-timeline-each-step" className="link">
+                    the I-485 timeline
+                  </Link>
+                  ,{" "}
+                  <Link href="/guides/i485-transferred-to-field-office" className="link">
+                    a transfer to a field office
+                  </Link>{" "}
+                  and{" "}
+                  <Link href="/guides/i485-interview-to-green-card" className="link">
+                    the wait after the interview
+                  </Link>
+                  .
+                </p>
+              ) : page.form === "I-765" || page.form === "I-131" ? (
+                <p className="mt-2 max-w-3xl text-base leading-relaxed">
+                  <Link href="/guides/ead-and-advance-parole-timelines" className="link">
+                    The work permit and travel document while an I-485 is pending
+                  </Link>
+                  , from USCIS&apos;s figures and these.
+                </p>
+              ) : null}
             </PageSection>
           ) : null}{" "}
           <PageSection
