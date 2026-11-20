@@ -142,7 +142,11 @@ function Headline({ summary }: { summary: ReportedSummary }) {
           note={`median of ${formatInt(i140.n)} decided in ${windowText(i140.windowDays)}${i140.before ? ", against the 6 months before" : ""}`}
         />
       ) : null}
-      <Figure label="Green cards in the last 30 days" value={formatInt(summary.headline.greenCards30)} note="reported by the people who got them" />
+      <Figure
+        label="Green cards in the last 30 days"
+        value={formatInt(summary.headline.greenCards30)}
+        note={`reported by the people who got them, with ${formatInt(summary.headline.i140s30)} I-140 and ${formatInt(summary.headline.perm30)} PERM decisions`}
+      />
     </FigureRow>
   );
 }
@@ -185,11 +189,11 @@ export default async function GreenCardTimelinesPage() {
 
       {summary ? <Headline summary={summary} /> : null}
 
-      {board ? (
+      {board || summary ? (
         <>
           {/* Soft grounds by meaning (round 3, Oct 15 2026): the record in sage,
               what's shared in green, RFEs in the waiting yellow. */}
-          {summary ? null : (
+          {summary || !board ? null : (
           <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3 [&>*]:min-w-0" aria-label="The record so far">
             <div className="bg-sage p-5 border-2 shadow-hard border-border">
               <p className="text-sm text-muted-foreground">Timelines added</p>{" "}
@@ -209,7 +213,7 @@ export default async function GreenCardTimelinesPage() {
           {/* No week when the page fell back to the plain board. */}
           {summary?.week ? (
             <RecentApprovals recent={summary.week} />
-          ) : board.recent ? (
+          ) : board?.recent ? (
             <RecentApprovals recent={board.recent} />
           ) : null}{" "}
 
@@ -224,7 +228,7 @@ export default async function GreenCardTimelinesPage() {
             <ShareTimeline
               sharePath="/green-card-timelines"
               shareLabel="the green card timelines"
-              progress={shareProgress(board.shared, board.opensAt, "the board's list")}
+              progress={board ? shareProgress(board.shared, board.opensAt, "the board's list") : undefined}
               className="mt-3"
             />
           </section>
@@ -259,7 +263,7 @@ export default async function GreenCardTimelinesPage() {
                   .
                 </p>
               </>
-            ) : (
+            ) : board ? (
               <>
                 <p className="mt-2 max-w-2xl text-base text-muted-foreground">
                   The bar is the middle half of the reports and the amber tick is the median. Every timeline counts here,
@@ -270,7 +274,7 @@ export default async function GreenCardTimelinesPage() {
                   <StageMedians metrics={board.metrics} />
                 </div>
               </>
-            )}{" "}
+            ) : null}{" "}
             {papers && (papers.ead || papers.ap) ? (
               <p className="mt-5 max-w-2xl text-base leading-relaxed">
                 {`USCIS's own posted times, as of its ${formatAsOf(papers.published)} posting: ${[
@@ -298,18 +302,20 @@ export default async function GreenCardTimelinesPage() {
             <div className="mt-5">
               {summary?.waiting.open ? (
                 <WhoIsWaiting waiting={summary.waiting} total={summary.waiting.heard} noun={["person", "people"]} />
-              ) : /* Optional chaining: a backend older than this page sends no `waiting`. */ board.waiting?.open ? (
+              ) : /* Optional chaining: a backend older than this page sends no `waiting`. */ board?.waiting?.open ? (
                 <WhoIsWaiting waiting={board.waiting} total={board.total} />
-              ) : (
+              ) : board ? (
                 <p className="text-base text-muted-foreground">
                   Opens at {board.opensAt} timelines, like the board. {board.total.toLocaleString("en-US")} so far.
                 </p>
-              )}
+              ) : null}
             </div>
           </section>
 
           <ReportedOverview overview={reported} />{" "}
 
+          {board ? (
+          <>
           <section className="mt-12" aria-labelledby="board-h">
             <h2 id="board-h" className="font-heading text-2xl font-bold sm:text-3xl">
               Timelines shared here
@@ -411,6 +417,13 @@ export default async function GreenCardTimelinesPage() {
               </div>
             </section>
           ) : null}
+          </>
+          ) : (
+            <NoteBanner alert className="mt-12 max-w-2xl">
+              <p>The timelines shared on this site can&apos;t be read right now, so their list, RFE reasons and contacts
+                are missing. Every figure above still counts them. Try again in a few minutes.</p>
+            </NoteBanner>
+          )}
         </>
       ) : (
         <NoteBanner alert className="mt-8 max-w-2xl">
@@ -418,7 +431,7 @@ export default async function GreenCardTimelinesPage() {
         </NoteBanner>
       )}
 
-      {board ? null : (
+      {board || summary ? null : (
         <section className="mt-10 max-w-3xl" aria-labelledby="add-h">
           <h2 id="add-h" className="font-heading text-2xl font-bold sm:text-3xl">
             Add yours
