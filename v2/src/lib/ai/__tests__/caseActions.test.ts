@@ -302,6 +302,39 @@ describe('prepareAction for closing and calendars', () => {
   });
 });
 
+describe('deleting cases from the chat', () => {
+  it('says the case can be restored from Settings for 30 days, and that its documents and log are erased now', async () => {
+    fetchQuery.mockResolvedValue(caseDoc());
+    const plan = await prepareAction('deleteCase', { caseId: ID }, 't');
+    if (plan.kind !== 'plan') throw new Error('expected a plan');
+    const said = JSON.stringify(plan);
+    expect(said).toMatch(/restore it for 30 days from Recently deleted in Settings/);
+    expect(said).toMatch(/documents and recruitment log are erased now/);
+    expect(said).not.toMatch(/undone|for good/);
+
+    fetchMutation.mockResolvedValue(ID);
+    fetchQuery.mockReset();
+    fetchQuery.mockResolvedValueOnce(caseDoc()).mockResolvedValueOnce(null);
+    const out = await runAction('deleteCase', { id: ID }, 't');
+    expect(String(out.result.message)).toMatch(/^Deleted .*You can restore it for 30 days/);
+  });
+
+  it('says the same for a bulk delete, and nothing about restoring when none were deleted', async () => {
+    fetchQuery.mockResolvedValue({ cases: [{ _id: ID, employerName: 'A', caseStatus: 'pwd' }] });
+    const plan = await prepareAction('bulkDeleteCases', { caseIds: [ID] }, 't');
+    if (plan.kind !== 'plan') throw new Error('expected a plan');
+    expect(JSON.stringify(plan)).toMatch(/restore it for 30 days/);
+    expect(JSON.stringify(plan)).not.toMatch(/undone|for good/);
+
+    fetchMutation.mockResolvedValue({ successCount: 1, failedCount: 0 });
+    const out = await runAction('bulkDeleteCases', { ids: [ID] }, 't');
+    expect(String(out.result.message)).toMatch(/You can restore it for 30 days/);
+    fetchMutation.mockResolvedValue({ successCount: 0, failedCount: 1 });
+    const none = await runAction('bulkDeleteCases', { ids: [ID] }, 't');
+    expect(String(none.result.message)).not.toMatch(/restore/);
+  });
+});
+
 describe('small pieces', () => {
   it('hashes the same change the same, ignoring generated ids and times', () => {
     const a = { id: ID, notes: [{ id: 'note_1_abc', content: 'x', createdAt: 1, status: 'pending' }] };

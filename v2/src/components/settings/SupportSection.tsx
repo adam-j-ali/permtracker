@@ -18,6 +18,7 @@
  * - Report a Bug - GitHub Issues link with bug label
  * - Request a Feature - GitHub Issues link with enhancement label
  * - App Version - Display version from env or fallback
+ * - Recently deleted - Cases deleted in the last 30 days, each with Restore
  * - Delete Account - Soft delete with 30-day grace period
  */
 
@@ -48,6 +49,7 @@ import { useOnboarding } from "@/components/onboarding/OnboardingProvider";
 import DeleteNowDialog from "./DeleteNowDialog";
 import AnalyticsToggle from "./AnalyticsToggle";
 import CountCasesToggle from "./CountCasesToggle";
+import RecentlyDeletedCases from "./RecentlyDeletedCases";
 import {
   BUG_REPORT_URL,
   FEATURE_REQUEST_URL,
@@ -268,6 +270,8 @@ export default function SupportSection({ profile }: SupportSectionProps) {
           Download everything (.json)
         </Button>
       </SettingsCard>
+
+      <RecentlyDeletedCases />
 
       <AnalyticsToggle />
 

@@ -404,6 +404,7 @@ Settings Tabs:
 - Contact support form
 - Bug report submission
 - Feature request form
+- Recently deleted: the cases you deleted in the last 30 days, newest first, each with a Restore button. A restored case comes back with its dates, notes and stage; its documents, its recruitment log and an employer's FEIN were erased when it was deleted and don't come back. After 30 days the deleted case's copy is erased and it can't be restored
 - App version and changelog
 
 To navigate settings:
@@ -639,9 +640,9 @@ Available Bulk Actions:
 - Can be undone by reopening individual cases
 
 3. Delete Selected
-- Permanently delete selected cases
+- Delete selected cases
 - Strong confirmation required
-- Cannot be undone - use with caution
+- Each can be restored for 30 days from Settings > Support > Recently deleted, without its documents and recruitment log, which are erased at once
 
 4. Bulk Status Update (if available)
 - Change progress status for all selected
@@ -658,7 +659,7 @@ Performing Bulk Operations:
 Best Practices:
 - Double-check selection before destructive actions
 - Use filters to narrow cases before selecting all
-- Export before deleting as a backup
+- Export before deleting as a backup (documents and recruitment logs don't come back with a restore)
 
 Related: Import/Export, Cases List, Filtering`,
     metadata: {

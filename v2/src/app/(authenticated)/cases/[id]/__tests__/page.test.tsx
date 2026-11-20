@@ -643,8 +643,10 @@ describe("CaseDetailPage - Delete Confirmation", () => {
 
     // Dialog should appear
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
-    // One true sentence, the same in every delete box: nothing can bring the case back.
-    expect(screen.getByText(/The case, its notes and its documents are erased\. This can’t be undone\./)).toBeInTheDocument();
+    // The same true words in every delete box: restorable from Settings for 30 days, its files and log gone at once.
+    expect(
+      screen.getByText(/You can restore it for 30 days from Recently deleted in Settings, under Support\. Its documents and recruitment log are erased now and can’t be restored\./),
+    ).toBeInTheDocument();
   });
 
   it("shows case name in delete confirmation", async () => {

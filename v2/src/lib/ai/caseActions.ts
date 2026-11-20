@@ -28,6 +28,7 @@ import { api } from '@convex/_generated/api';
 import type { Doc, Id } from '@convex/_generated/dataModel';
 import { calculateRFIDueDate } from '@/lib/perm';
 import { captureError } from '@/lib/sentry';
+import { caseDeleteWarning, caseRestoreLine } from '@/lib/cases/deleteWarning';
 import { DATE_RANGE_METHODS } from '@convex/lib/perm/recruitment/methodCategories';
 import { formatCaseStatus, formatProgressStatus } from '@convex/lib/notificationHelpers';
 import type { PermissionLevel } from './tool-permissions';
@@ -916,9 +917,9 @@ async function prepareDeleteCase(params: DeleteCaseInput, token: string): Promis
     kind: 'plan',
     toolName: 'deleteCase',
     args: { id: c._id },
-    description: `Delete ${caseLabel(c)} for good`,
-    changes: ['The case, its dates, notes and documents are removed. This can\'t be undone.'],
-    warning: "This can't be undone. To keep the record, close the case instead.",
+    description: `Delete ${caseLabel(c)}`,
+    changes: [caseDeleteWarning(1)],
+    warning: 'To keep the case and its documents as they are, close it instead.',
     permissionType: 'destructive',
     caseId: c._id,
     caseUpdatedAt: c.updatedAt,
@@ -1069,9 +1070,9 @@ async function prepareBulkDelete(params: BulkDeleteCasesInput, token: string): P
     kind: 'plan',
     toolName: 'bulkDeleteCases',
     args: { ids: picked.map((c) => c._id) },
-    description: `Delete ${picked.length} case${picked.length === 1 ? '' : 's'} for good`,
+    description: `Delete ${picked.length} case${picked.length === 1 ? '' : 's'}`,
     changes: namesPreview(picked),
-    warning: "This can't be undone. Every record in these cases is removed. To keep them, close them instead.",
+    warning: `${caseDeleteWarning(picked.length)} To keep them as they are, close them instead.`,
     permissionType: 'destructive',
   };
 }
@@ -1332,7 +1333,7 @@ export async function runAction(toolName: string, args: Args, token: string): Pr
         return outcome(true, `The delete ran, ${NOT_CONFIRMED}`, { caseId: args.id, action: 'permanently_deleted' });
       }
       const gone = after === null;
-      return outcome(gone, gone ? `Deleted ${before ? caseLabel(before) : 'the case'} for good.` : "The case wasn't deleted.", {
+      return outcome(gone, gone ? `Deleted ${before ? caseLabel(before) : 'the case'}. ${caseRestoreLine(1)}` : "The case wasn't deleted.", {
         caseId: args.id,
         action: 'permanently_deleted',
       });
@@ -1373,7 +1374,8 @@ export async function runAction(toolName: string, args: Args, token: string): Pr
     case 'bulkDeleteCases': {
       const ids = args.ids as Id<'cases'>[];
       const r = await fetchMutation(api.cases.bulkRemove, { ids }, { token });
-      return outcome(r.failedCount === 0, `${bulkMessage('Deleted', r, ids.length)} This can't be undone.`, {
+      const restorable = r.successCount > 0 ? ` ${caseRestoreLine(r.successCount)}` : '';
+      return outcome(r.failedCount === 0, `${bulkMessage('Deleted', r, ids.length)}${restorable}`, {
         action: 'bulk_permanently_deleted',
         successCount: r.successCount,
         failedCount: r.failedCount,
