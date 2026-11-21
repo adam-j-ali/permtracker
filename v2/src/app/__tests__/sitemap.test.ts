@@ -103,6 +103,10 @@ vi.mock("@/lib/db/socTitles", () => ({
     ],
   })),
 }));
+// The job title letter pages are rendered below to check every title the sitemap lists is a link on one; their
+// provenance line reads the database and their pager is a client widget, neither of which decides what's listed.
+vi.mock("@/components/data/DataProvenance", () => ({ DataProvenance: () => null }));
+vi.mock("@/components/ui/list-pages", () => ({ ListPages: () => null }));
 vi.mock("@/lib/db/consularPosts", () => ({
   getConsularIndex: vi.fn(async () => ({
     asOf: "2026-10-07",
@@ -194,6 +198,8 @@ import {
   SITEMAP_CHUNK,
   urlsetXml,
 } from "@/lib/sitemap/build";
+import { render } from "@testing-library/react";
+import { TitleLetterBody } from "@/components/soc/TitleBrowse";
 import { revalidate } from "../sitemap.xml/route";
 import { GET as childSitemap } from "../sitemaps/[name]/route";
 
@@ -364,8 +370,44 @@ describe("sitemap.ts", () => {
     expect(paths).toEqual(expect.arrayContaining(["/soc-codes", "/soc-codes/software-engineer", "/soc-codes/data-scientist"]));
     vi.mocked(getSocTitlePages).mockRejectedValueOnce(new Error("deadline"));
     const after = (await sitemap()).map((e) => new URL(e.url).pathname);
-    expect(after.filter((p) => p.startsWith("/soc-codes/"))).toEqual([]);
+    // The A to Z's index is a page of its own and stays; the titles and their letters go with the read.
+    expect(after.filter((p) => p.startsWith("/soc-codes/") && p !== "/soc-codes/browse")).toEqual([]);
     expect(after).toContain("/soc-codes");
+  });
+
+  it("links every job title it lists from a letter page it also lists (the A to Z hub, from the same doc)", async () => {
+    // Ahrefs, Nov 21 2026: 3,713 of the 3,726 title pages had no link from any page it crawled. Titles shaped like
+    // the real ones: a digit first, a key that dropped "Senior" (slug "associate-..."), a lower-case first word.
+    vi.mocked(getAllPosts).mockReturnValue([mkPost("a", "blog", "2026-01-01")]);
+    const { getSocTitlePages } = await import("@/lib/db/socTitles");
+    const titles: Array<[string, string]> = [
+      ["software-engineer", "Software Engineer"],
+      ["associate-jc60-computer-systems-engineers-architects", "Senior Associate JC60 -Computer Systems Engineers/Architects"],
+      ["35-3023-00-fast-food-and-counter-workers", "35-3023.00 Fast Food & Counter Workers"],
+      ["statistician", "statistician"],
+      ["rn", "RN"],
+      ["yoga-instructor", "Yoga Instructor"],
+      ...Array.from({ length: 30 }, (_, i): [string, string] => [`analyst-${i}`, `Analyst ${i}`]),
+    ];
+    const pages = titles.map(([slug, title], i) => ({ slug, title, filings: 5000 - i, topSoc: "15-1252", topFilings: 100 }));
+    vi.mocked(getSocTitlePages).mockResolvedValue({ pageMin: 50, pages });
+    const paths = (await sitemap()).map((e) => new URL(e.url).pathname);
+    const listed = paths.filter((p) => p.startsWith("/soc-codes/") && p.split("/").length === 3 && p !== "/soc-codes/browse");
+    const letters = paths.filter((p) => p.startsWith("/soc-codes/browse/")).map((p) => p.slice("/soc-codes/browse/".length));
+    expect(listed).toHaveLength(titles.length);
+    expect(paths).toContain("/soc-codes/browse");
+    const linked = new Set<string>();
+    for (const letter of letters) {
+      const { container, unmount } = render(await TitleLetterBody({ letter }));
+      const here = [...container.querySelectorAll("#title-list a[href]")].map((a) => a.getAttribute("href") ?? "");
+      // A letter the sitemap lists is never an empty page.
+      expect(here.length, letter).toBeGreaterThan(0);
+      for (const h of here) linked.add(h);
+      unmount();
+    }
+    expect(listed.filter((p) => !linked.has(p))).toEqual([]);
+    expect(letters).toEqual(expect.arrayContaining(["s", "0-9", "a", "r", "y"]));
+    expect(letters).not.toContain("x");
   });
 
   it("lists NO live-only children when the nightly table cannot be read, and keeps the other families", async () => {
@@ -732,7 +774,8 @@ describe("sitemap.ts", () => {
     const urls = (await sitemap()).map((e) => e.url);
 
     expect(urls).toContain("https://permtracker.app/perm-employers");
-    expect(urls.some((u) => u.includes("/browse/"))).toBe(false);
+    // The job title letters come from their own read (the title pages doc), which didn't fail.
+    expect(urls.some((u) => u.includes("/browse/") && !u.includes("/soc-codes/browse/"))).toBe(false);
     const messages = vi
       .mocked(captureError)
       .mock.calls.map((c) => (c[0] as Error).message);

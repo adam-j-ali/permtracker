@@ -44,6 +44,7 @@ const SAMPLE = {
   "/perm-industries/[slug]": ["/perm-industries/541511"],
   "/perm-countries/[slug]": ["/perm-countries/india"],
   "/soc-codes/[title]": ["/soc-codes/software-engineer", "/soc-codes/data-scientist"],
+  "/soc-codes/browse/[letter]": ["/soc-codes/browse/s"],
 };
 
 function arg(name) {

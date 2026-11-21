@@ -42,6 +42,7 @@ const REACHED_FROM_PARENT: Record<string, string> = {
   "/perm-employers/browse": "the A to Z link on the employers list",
   "/perm-attorneys/browse": "the A to Z link on the law firms list",
   "/perm-wages/browse": "the A to Z link on the wages list",
+  "/soc-codes/browse": "the A to Z strip on the SOC code finder",
   "/visa-bulletin/family": "a tab on the visa bulletin page",
   "/visa-bulletin/categories": "a tab on the visa bulletin page",
   "/debarments/settlements": "the band on the debarments page, and every settled employer's page",

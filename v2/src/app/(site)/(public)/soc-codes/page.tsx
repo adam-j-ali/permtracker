@@ -5,7 +5,7 @@
  * prevailing wage, yet a worker knows the job's title, not its number. The answer here is
  * what employers actually did in DOL's files (and O*NET's own list of titles), so "data
  * scientist" shows the split it really has. Below the box: the most filed titles, each
- * with its own page, and every code by group.
+ * with its own page, every title page by letter (the A to Z), and every code by group.
  */
 
 import type { Metadata } from "next";
@@ -16,11 +16,12 @@ import { PageSection } from "@/components/data/PageSection";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { SocFinder } from "@/components/soc/SocFinder";
 import { SocSources } from "@/components/soc/SocSources";
+import { TitleLetterStrip } from "@/components/soc/TitleBrowse";
 import { FaqList } from "@/components/tools/FaqList";
 import { SearchParamsBoundary } from "@/hooks/useUrlSearchParams";
 import { getSocCodes, getSocTitlePages } from "@/lib/db/socTitles";
 import { openGraphBase } from "@/lib/openGraphBase";
-import { formatShareOf } from "@/lib/format";
+import { formatInt, formatShareOf } from "@/lib/format";
 import { codeHref, majorGroups } from "@/lib/socFinder";
 import { withSocialCard } from "@/lib/socialCard";
 
@@ -111,6 +112,15 @@ export default async function SocCodesPage() {
               </li>
             ))}
           </ul>
+        </PageSection>
+      ) : null}{" "}
+      {pages?.pages.length ? (
+        <PageSection
+          id="title-letters"
+          title="Every job title, A to Z"
+          lede={`All ${formatInt(pages.pages.length)} job titles with a page of their own, by first letter.`}
+        >
+          <TitleLetterStrip />
         </PageSection>
       ) : null}{" "}
       {groups.length ? (

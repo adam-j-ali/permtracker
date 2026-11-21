@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { consularDescription } from "@/lib/consular/describe";
 import { groupDescription, h1bCityDescription } from "@/lib/groupDescription";
+import { titleLetterDescription } from "@/lib/socTitleBrowse";
 import { socTitleDescription, type SocTitleFacts } from "@/lib/socTitleDescription";
 
 /**
@@ -84,6 +85,14 @@ describe("H-1B-only city descriptions", () => {
     inWindow(h1bCityDescription({ label: "Ada, OK", total: 21, certified: 20, fyFrom: 2024, fyTo: 2026 }));
     inWindow(h1bCityDescription({ label: "Ada, OK", total: 21, certified: 20, fyFrom: null, fyTo: null }));
     inWindow(h1bCityDescription({ label: "Winston-Salem, NC", total: 12_450, certified: 12_001, fyFrom: 2024, fyTo: 2026 }));
+  });
+});
+
+describe("job title A to Z letter descriptions", () => {
+  it("fits the window for an empty letter, a single title, the biggest letter and the digits", () => {
+    for (const [n, phrase] of [[0, "X"], [1, "Y"], [568, "S"], [2, "a number"], [12_345, "a number"]] as const) {
+      inWindow(titleLetterDescription(n, phrase));
+    }
   });
 });
 
