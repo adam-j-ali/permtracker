@@ -62,6 +62,7 @@ from collections import Counter, defaultdict
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from entity_identity import program_key, spacing_aliases, typo_aliases  # noqa: E402
+from lca_history_rollups import FIRMS as LCA_HISTORY_FIRMS  # noqa: E402
 from lib_db import SLUG_WINDOWS, Database, et_date, record_run, rows_of, slug_window  # noqa: E402
 
 MAP = "employer_page_map"
@@ -454,6 +455,20 @@ def read_firm_sources(db: Database) -> dict[str, Counter]:
             if slug and name:
                 spellings[str(slug)][str(name)] += int(n or 0)
         log(f"  {table}: {len(rows):,} firm slug and name pairs")
+    # FY2019's H-1B file names the firm too. Its spellings come from the counts its load made
+    # (lca_history_rollups.py, a small table in this database): the older table itself is never read nightly.
+    try:
+        rows = rows_of(db.execute(
+            f"SELECT attorney_slug, attorney_name, SUM(filings) FROM {LCA_HISTORY_FIRMS} "
+            "WHERE attorney_slug <> '' GROUP BY attorney_slug, attorney_name"))
+    except Exception as e:  # noqa: BLE001
+        if not missing_table(e):
+            raise
+        rows = []
+    for slug, name, n in rows:
+        if slug and name:
+            spellings[str(slug)][str(name)] += int(n or 0)
+    log(f"  {LCA_HISTORY_FIRMS}: {len(rows):,} firm slug and name pairs")
     return spellings
 
 

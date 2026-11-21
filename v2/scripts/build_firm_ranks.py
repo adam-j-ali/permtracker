@@ -16,8 +16,10 @@ WHAT EACH PROGRAM COUNTS:
   fiscal year, by outcome; the employers the firm filed for; and the median
   days from filing to a certification. The state is the worksite's, and the
   employer's where DOL's older files print no worksite.
-* H-1B LCAs (`lca_cases`, FY2020 on): certified H-1B LCAs (H-1B1 and E-3 left
-  out), the positions they cover, and the employers. The state is the
+* H-1B LCAs (`lca_cases` from FY2020; FY2019 from `firm_lca_history`, the
+  older files' counts their load builds, lca_history_rollups.py, since FY2019's
+  is the one older file that names the firm): certified H-1B LCAs (H-1B1 and
+  E-3 left out), the positions they cover, and the employers. The state is the
   worksite's. About a quarter of certified LCAs name no law firm (an employer
   filing for itself); they're counted in the doc's totals and ranked nowhere.
 
@@ -41,6 +43,7 @@ import time
 from collections import Counter, defaultdict
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from lca_history_rollups import FIRMS as LCA_HISTORY_FIRMS  # noqa: E402
 from lib_db import Database, record_run, rows_of, write_doc  # noqa: E402
 
 TABLE = "firm_ranks"
@@ -74,6 +77,7 @@ TOP = 100
 TOP_SHARE = 10
 MIN_DAYS = 10  # a median of fewer certifications is withheld
 PERM_HISTORY_LAST_FY = 2023  # perm_cases_history holds FY2008 to FY2023
+LCA_HISTORY_BEFORE = 2020  # lca_cases holds FY2020 on; an older year is read from LCA_HISTORY_FIRMS
 WRITE_CHUNK = 300
 WRITE_PAUSE_S = 0.4
 
@@ -167,13 +171,21 @@ def read_perm(db: Database, fy: int, page_of: dict[str, str]) -> tuple[dict, dic
 
 
 def read_lca(db: Database, fy: int, page_of: dict[str, str]) -> tuple[dict, dict]:
-    """One fiscal year of certified H-1B LCAs, folded onto firm pages and places."""
+    """One fiscal year of certified H-1B LCAs, folded onto firm pages and places.
+
+    An older year comes from the counts its file's load made (one row per firm, state and employer, the same grouping
+    as the statement below), so the older table is never read here."""
     agg: dict[tuple[str, str], dict] = defaultdict(blank)
     unnamed: Counter = Counter()
-    for slug, name, st, emp, n, pos in rows_of(db.execute(
-            "SELECT attorney_slug, MAX(attorney_name), worksite_state, employer_slug, COUNT(*), "
-            "SUM(COALESCE(workers, 1)) FROM lca_cases WHERE fiscal_year = ? AND case_status = 'CERTIFIED' "
-            "AND visa_class = 'H-1B' GROUP BY attorney_slug, worksite_state, employer_slug", [fy])):
+    sql = (
+        f"SELECT attorney_slug, attorney_name, worksite_state, employer_slug, h1b_certified, h1b_positions "
+        f"FROM {LCA_HISTORY_FIRMS} WHERE fy = ? AND h1b_certified > 0"
+        if fy < LCA_HISTORY_BEFORE else
+        "SELECT attorney_slug, MAX(attorney_name), worksite_state, employer_slug, COUNT(*), "
+        "SUM(COALESCE(workers, 1)) FROM lca_cases WHERE fiscal_year = ? AND case_status = 'CERTIFIED' "
+        "AND visa_class = 'H-1B' GROUP BY attorney_slug, worksite_state, employer_slug"
+    )
+    for slug, name, st, emp, n, pos in rows_of(db.execute(sql, [fy])):
         if not slug:
             for p in {NATION, place(st)} - {None}:
                 unnamed[p] += num(n)
@@ -251,9 +263,23 @@ def through(db: Database, program: str, fy: int) -> str | None:
     if program == "perm":
         table = "perm_cases_history" if fy <= PERM_HISTORY_LAST_FY else "perm_cases"
         got = rows_of(db.execute(f"SELECT MAX(decision_date) FROM {table} WHERE decision_date >= ? AND decision_date <= ?", span))
+    elif fy < LCA_HISTORY_BEFORE:
+        got = rows_of(db.execute(f"SELECT MAX(last_decided) FROM {LCA_HISTORY_FIRMS} WHERE fy = ?", [fy]))
     else:
         got = rows_of(db.execute("SELECT MAX(decision_date) FROM lca_cases WHERE decision_date >= ? AND decision_date <= ?", span))
     return str(got[0][0])[:10] if got and got[0][0] else None
+
+
+def lca_history_years(db: Database) -> list[int]:
+    """The older H-1B years whose file names a firm (lca_history_rollups.py writes no other), none before its first
+    build."""
+    try:
+        return [num(r[0]) for r in rows_of(db.execute(
+            f"SELECT DISTINCT fy FROM {LCA_HISTORY_FIRMS} WHERE attorney_slug <> ''"))]
+    except Exception as e:  # noqa: BLE001
+        if "no such table" not in str(e):
+            raise
+        return []
 
 
 def years(db: Database, program: str) -> list[int]:
@@ -265,6 +291,7 @@ def years(db: Database, program: str) -> list[int]:
     else:
         got = [num(r[0]) for r in rows_of(db.execute(
             "SELECT DISTINCT fiscal_year FROM lca_cases WHERE case_status = 'CERTIFIED'"))]
+        got += [fy for fy in lca_history_years(db) if fy < LCA_HISTORY_BEFORE]
     return sorted(y for y in set(got) if y > 2000)
 
 

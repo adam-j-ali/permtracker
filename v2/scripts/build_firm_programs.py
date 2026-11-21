@@ -12,6 +12,10 @@ groups up to each firm page through `firm_page_map` (every printed spelling
 that belongs to a firm with a PERM page, build_employer_map.py), and writes
 one row per firm page and program. The page reads its row.
 
+The H-1B line counts every LCA file that names the firm: `lca_cases` (FY2020 on)
+and FY2019's older file, through `firm_lca_history`, the counts that file's
+load made (lca_history_rollups.py), so the older table is never read nightly.
+
 The arithmetic is the page's own: CERTIFIED_SQL below is held to the
 TypeScript's by scripts/test_firm_programs.py, which also checks the rolled-up
 rows against the live query on a fixture.
@@ -30,6 +34,7 @@ import time
 from collections import defaultdict
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from lca_history_rollups import FIRMS as LCA_HISTORY_FIRMS  # noqa: E402
 from lib_db import Database, query_rows, record_run  # noqa: E402
 from lib_reference import sync_rows  # noqa: E402
 
@@ -76,6 +81,23 @@ def groups(db: Database, table: str) -> list[tuple]:
         f"MIN(decision_date), MAX(decision_date) FROM {table} "
         "WHERE attorney_slug IS NOT NULL AND attorney_slug <> '' GROUP BY attorney_slug, employer_slug",
     )
+
+
+def history_groups(db: Database) -> list[tuple]:
+    """The older H-1B files' firm and employer groups, in groups()' shape, from the counts their load made
+    (lca_history_rollups.py: FY2019's is the one older file that names the firm). The older table itself is never
+    read here, and before the first such load there are none."""
+    try:
+        return query_rows(
+            db,
+            "SELECT attorney_slug, NULLIF(employer_slug, ''), MAX(employer_name), SUM(filings), SUM(certified), "
+            f"MIN(first_decided), MAX(last_decided) FROM {LCA_HISTORY_FIRMS} WHERE attorney_slug <> '' "
+            "GROUP BY attorney_slug, employer_slug",
+        )
+    except Exception as e:  # noqa: BLE001
+        if "no such table" not in str(e):
+            raise
+        return []
 
 
 def roll_up(rows: list[tuple], page: dict[str, str], program: str, counts_certified: bool) -> list[list]:
@@ -127,6 +149,8 @@ def build(db: Database) -> list[list]:
     for table, program in PROGRAM.items():
         started = time.time()
         rows = groups(db, table)
+        if table == "lca_cases":
+            rows += history_groups(db)
         lines = roll_up(rows, page, program, CERTIFIED_SQL[table] != "NULL")
         log(f"{table}: {len(rows):,} firm and employer groups, {len(lines):,} firm pages ({time.time() - started:.0f}s)")
         want.extend(lines)

@@ -239,6 +239,26 @@ def main() -> int:
     # a key that is a page's key never moves to another page by the typo rules.
     check("firm: stats count what moved by a typo rule", (fstats.get("typo", 0) >= 2, fstats.get("no_page")), (True, 1))
 
+    # FY2019's H-1B file names the firm too; its spellings come from the counts its load made
+    # (lca_history_rollups.py), in the main database, never from the older table itself.
+    import lca_history_rollups as lhr
+    fdb = seed()
+    fdb.script(lhr.DDL)
+    marks = ",".join("?" * len(lhr.FIRM_COLS))
+    for row in ([2019, "fragomen-del-rey-bernsen-loewy-l-l-p", "CA", "acme", "FRAGOMEN DEL REY BERNSEN LOEWY L.L.P.",
+                 "ACME", 5, 5, 5, 5, "2019-01-01", "2019-02-01"],
+                [2019, "fragomen-del-rey-bernsen-loewy-l-l-p", "TX", "beta", "FRAGOMEN DEL REY BERNSEN LOEWY L.L.P.",
+                 "BETA", 2, 2, 2, 2, "2019-01-01", "2019-02-01"],
+                [2019, "", "CA", "", None, None, 9, 9, 9, 9, "2019-01-01", "2019-02-01"]):
+        fdb.execute(f"INSERT INTO {lhr.FIRMS} ({','.join(lhr.FIRM_COLS)}) VALUES ({marks})", row)
+    spellings = bem.read_firm_sources(fdb)
+    check("firm: FY2019's spellings come from the older file's counts",
+          dict(spellings.get("fragomen-del-rey-bernsen-loewy-l-l-p", {})), {"FRAGOMEN DEL REY BERNSEN LOEWY L.L.P.": 7})
+    check("firm: the LCAs naming no firm add no spelling", "" in spellings, False)
+    frows2, _ = bem.plan_firms(spellings, firm_pages)
+    check("firm: and that spelling reaches the firm's page",
+          {r[0]: r[1] for r in frows2}.get("fragomen-del-rey-bernsen-loewy-l-l-p"), "fragomen-del-rey-bernsen-loewy-llp")
+
     with tempfile.TemporaryDirectory() as tmp:
         path = os.path.join(tmp, "changed.json")
         pathlib.Path(path).write_text(json.dumps({"slugs": ["adobe-inc"]}))
