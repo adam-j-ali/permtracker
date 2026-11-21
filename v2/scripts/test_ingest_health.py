@@ -629,6 +629,7 @@ def main() -> int:
     check_browser_timer_heartbeats()
     check_main_combines_every_check()
     check_freshness_rows_read_plainly()
+    check_no_maximum_age_is_never_stale()
     check_wage_views_rules()
     check_lca_numbers_rules()
     check_lca_years_rules()
@@ -921,6 +922,53 @@ def check_freshness_rows_read_plainly() -> None:
     check("freshness: a run with only source waits is green", rc == 0, str(rc))
     check("freshness: a quarterly row 140 days old is within the quarterly file's budget, whatever it was stamped",
           "::warning::entities" not in out and "STALE" not in next((l for l in out.splitlines() if l.startswith("entities ")), ""), out)
+
+
+def check_no_maximum_age_is_never_stale() -> None:
+    """A source typed in by hand (Facebook groups' posts, Nov 20 2026) loads only when the owner shares posts, so its
+    row has no maximum age (NULL, lib_db.stamp_freshness): months without a load are no alarm. A NULL beside a date
+    that can't be read is still unreadable."""
+    import contextlib
+    import io
+
+    long_ago = (datetime.date.today() - datetime.timedelta(days=400)).isoformat()
+    a_year_ago_ms = str(int(NOW) - 365 * 86_400_000)
+
+    def say(rows) -> tuple[int, str]:
+        class Rows:
+            def execute(self, sql, args=None):
+                return {"response": {"result": {"rows": [[
+                    {"type": "text", "value": ds}, {"type": "text", "value": as_of},
+                    {"type": "null"} if budget is None else {"type": "integer", "value": str(budget)},
+                    {"type": "text", "value": "https://www.facebook.com/groups"},
+                    {"type": "text", "value": "by hand, when the owner shares posts"},
+                    {"type": "integer", "value": a_year_ago_ms}] for ds, as_of, budget in rows]}}}
+
+        saved = {name: getattr(health, name) for name in CHECKS + ("Database", "check_cap_streak",
+                                                                  "check_unclassified_statuses", "check_warn_states",
+                                                                  "check_hand_read_figures", "check_consular_facts")}
+        try:
+            health.Database = Rows
+            for name in ("check_cap_streak", "check_unclassified_statuses", "check_warn_states",
+                         "check_hand_read_figures", "check_consular_facts"):
+                setattr(health, name, lambda *a: 0)
+            for name in CHECKS:
+                setattr(health, name, lambda db: 0)
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                code = health.main()
+            return code, buf.getvalue()
+        finally:
+            for name, fn in saved.items():
+                setattr(health, name, fn)
+
+    code, out = say([("community-posts-facebook", long_ago, None)])
+    line = next((l for l in out.splitlines() if l.startswith("community-posts-facebook")), "")
+    check("no maximum age: a row loaded 400 days ago, last run a year ago, is green", code == 0, out)
+    check("no maximum age: the table says so, never STALE or UNREADABLE",
+          "no maximum age" in line and "STALE" not in out and "UNREADABLE" not in out, out)
+    code, out = say([("community-posts-facebook", "sometime", None)])
+    check("no maximum age: a date it can't read is still unreadable", code == 1 and "UNREADABLE" in out, out)
 
 
 def check_wage_views_rules() -> None:

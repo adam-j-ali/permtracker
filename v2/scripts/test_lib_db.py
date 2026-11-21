@@ -17,7 +17,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from lib_sqlite_shim import SqliteTurso  # noqa: E402
 from lib_db import (  # noqa: E402
     canon, canon_hash, case_update, cell, dicts_of, et_date, insert_rows, insert_stmts, lit, query_dicts, query_rows,
-    rows_of, run_stmts, stmt, typed_cell,
+    restamp_note, rows_of, run_stmts, stamp_freshness, stmt, typed_cell,
 )
 
 FAILURES: list[str] = []
@@ -96,6 +96,18 @@ def main() -> int:
     check("run_stmts returns each statement's affected rows, in order", counts, [2, 0])
     check("run_stmts draws from a generator",
           run_stmts(w, (stmt("SELECT 1") for _ in range(3)), per_request=2), [0, 0, 0])
+
+    # A source loaded by hand, only when there's something to load, has no maximum age: NULL, which no reader calls
+    # stale (check_ingest_health.py, src/lib/freshnessBudget.ts), and a later note keeps it NULL.
+    f = SqliteTurso()
+    stamp_freshness(f, "by-hand", as_of="2026-11-20", source="https://example.org", cadence="by hand", note="3 reports",
+                    max_age_days=None)
+    stamp_freshness(f, "daily", as_of="2026-11-20", source="https://example.org", cadence="daily", note="x", max_age_days=2)
+    check("no maximum age is stored as NULL",
+          query_rows(f, "SELECT dataset, max_age_days FROM data_freshness ORDER BY dataset"), [["by-hand", None], ["daily", "2"]])
+    check("a note on a row with no maximum age is written", restamp_note(f, "by-hand", "why"), True)
+    check("and keeps no maximum age",
+          query_rows(f, "SELECT max_age_days, note FROM data_freshness WHERE dataset = 'by-hand'"), [[None, "why"]])
 
     print(f"\n{len(FAILURES)} failure(s)")
     return 1 if FAILURES else 0
