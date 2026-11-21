@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import PAGE_DATES from "@/lib/sitemap/page-dates.json";
 import { changed } from "@/lib/pageDates";
 import type { PostSummary, ContentType } from "@/lib/content/types";
@@ -183,7 +183,7 @@ import { getBacklogCensus } from "@/lib/db/backlog";
 import { readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { BROWSE_BUCKETS, type BrowseBucket } from "@/lib/entityBrowse";
-import { AUDIT_BUDGET } from "@/lib/sitemap/audit";
+import { AUDIT_BUDGET, routeShape } from "@/lib/sitemap/audit";
 import {
   auditEntries,
   ChunkNotListed,
@@ -202,6 +202,8 @@ import { render } from "@testing-library/react";
 import { TitleLetterBody } from "@/components/soc/TitleBrowse";
 import { revalidate } from "../sitemap.xml/route";
 import { GET as childSitemap } from "../sitemaps/[name]/route";
+import { GET as auditSitemap, revalidate as auditRevalidate } from "../sitemap-audit.xml/route";
+import robots from "../robots";
 
 /** The whole sitemap as one flat list, which is what the old tests asserted. */
 async function sitemap() {
@@ -993,21 +995,39 @@ describe("entity lastmod tracks the corpus, not the daily figure", () => {
   });
 });
 
-describe("the Site Audit list (/sitemaps/audit.xml)", () => {
-  const MONDAY = Date.UTC(2026, 10, 9);
-  const WEEK = 7 * 86_400_000;
+describe("the Site Audit list (/sitemap-audit.xml)", () => {
+  const live = (n: number) => Array.from({ length: n }, (_, i) => ({ slug: `live-${i + 1}`, lastChanged: "2026-11-01" }));
+  const other = (n: number) => Array.from({ length: n }, (_, i) => ({ slug: `other-${i + 1}`, lastChanged: "2026-11-01" }));
   beforeEach(() => {
     vi.mocked(getAllPosts).mockReturnValue([mkPost("a", "blog", "2026-01-01"), mkPost("g", "guide", "2026-01-01")]);
     vi.mocked(browseCounts).mockResolvedValue(bucketCounts());
     arrangeEntities({ employer: 6000, attorney: 300, occupation: 200 });
-    vi.mocked(countLiveOnlyRanks).mockResolvedValue(0);
-    vi.mocked(getLiveOnlySlugWindow).mockResolvedValue([]);
-    vi.mocked(countOtherEmployerRanks).mockResolvedValue(0);
-    vi.mocked(getOtherEmployerSlugWindow).mockResolvedValue([]);
+    // Every family the index can list, the two nightly employer families included.
+    vi.mocked(countLiveOnlyRanks).mockResolvedValue(150);
+    vi.mocked(getLiveOnlySlugWindow).mockImplementation(async (chunk: number) => (chunk === 0 ? live(150) : []));
+    vi.mocked(countOtherEmployerRanks).mockResolvedValue(120);
+    vi.mocked(getOtherEmployerSlugWindow).mockImplementation(async (chunk: number) => (chunk === 0 ? other(120) : []));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
+  /** Every URL each child of the main sitemap lists, by family (`employer-2` is the employer family). */
+  async function mainSitemapFamilies(): Promise<Map<string, string[]>> {
+    const out = new Map<string, string[]>();
+    for (const name of await childNames()) {
+      const res = await childSitemap(new Request(`https://permtracker.app/sitemaps/${name}.xml`), {
+        params: Promise.resolve({ name: `${name}.xml` }),
+      });
+      const urls = [...(await res.text()).matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!);
+      const family = name.replace(/-\d+$/, "");
+      out.set(family, [...(out.get(family) ?? []), ...urls]);
+    }
+    return out;
+  }
+
   it("fits a weekly crawl inside the free credits, with the homepage and one page of each kind", async () => {
-    const urls = (await auditEntries(MONDAY)).map((e) => e.url);
+    const urls = (await auditEntries()).map((e) => e.url);
     expect(urls.length).toBeLessThanOrEqual(AUDIT_BUDGET);
     expect(new Set(urls).size).toBe(urls.length);
     const home = (await pagesEntries()).find((e) => /^https:\/\/permtracker\.app\/?$/.test(e.url))!;
@@ -1017,19 +1037,38 @@ describe("the Site Audit list (/sitemaps/audit.xml)", () => {
     expect(urls).toContain("https://permtracker.app/perm-wages/occupation-1");
   });
 
-  it("keeps each page's own lastmod", async () => {
-    const pages = new Map((await pagesEntries()).map((e) => [e.url, e.lastModified]));
-    for (const e of await auditEntries(MONDAY)) {
-      if (pages.has(e.url)) expect(e.lastModified).toBe(pages.get(e.url));
+  it("takes pages from every family the main sitemap lists, and every template in it", async () => {
+    const families = await mainSitemapFamilies();
+    // Control: the arranged sitemap holds the seven families, or this proves nothing.
+    expect([...families.keys()].sort()).toEqual(
+      ["attorney", "employer", "groups", "live-employer", "occupation", "other-employer", "pages"],
+    );
+    const audit = new Set((await auditEntries()).map((e) => e.url));
+    for (const [family, urls] of families) {
+      expect(urls.some((u) => audit.has(u)), `no page of the ${family} family`).toBe(true);
     }
+    const shape = (u: string) => routeShape(u.slice("https://permtracker.app".length) || "/");
+    const missing = [...new Set([...families.values()].flat().map(shape))].filter(
+      (s) => ![...audit].some((u) => shape(u) === s),
+    );
+    expect(missing).toEqual([]);
   });
 
-  it("crawls different employer pages next week", async () => {
-    const employers = async (now: number) =>
-      (await auditEntries(now)).map((e) => e.url).filter((u) => u.includes("/perm-employers/employer-") && !u.endsWith("employer-1"));
-    const thisWeek = await employers(MONDAY);
-    expect(thisWeek.length).toBeGreaterThan(0);
-    expect(await employers(MONDAY + WEEK)).not.toEqual(thisWeek);
+  it("is the same list on every run, whatever the week", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.UTC(2026, 10, 20, 12));
+    const first = (await auditEntries()).map((e) => e.url);
+    vi.setSystemTime(Date.UTC(2026, 11, 11, 12));
+    const later = (await auditEntries()).map((e) => e.url);
+    expect(first.length).toBeGreaterThan(100);
+    expect(later).toEqual(first);
+  });
+
+  it("keeps each page's own lastmod", async () => {
+    const pages = new Map((await pagesEntries()).map((e) => [e.url, e.lastModified]));
+    for (const e of await auditEntries()) {
+      if (pages.has(e.url)) expect(e.lastModified).toBe(pages.get(e.url));
+    }
   });
 
   it("still builds when one family can't be read, and reports it", async () => {
@@ -1038,26 +1077,34 @@ describe("the Site Audit list (/sitemaps/audit.xml)", () => {
       return [`${kind}-1`, ...Array.from({ length: 199 }, (_, i) => `${kind}-${i + 2}`)];
     });
     vi.mocked(captureError).mockClear();
-    const urls = (await auditEntries(MONDAY)).map((e) => e.url);
+    const urls = (await auditEntries()).map((e) => e.url);
     expect(urls).toContain("https://permtracker.app/perm-employers/employer-1");
     expect(urls.some((u) => u.includes("/perm-attorneys/attorney-"))).toBe(false);
     expect(captureError).toHaveBeenCalled();
   });
 
-  it("answers at /sitemaps/audit.xml as an ordinary urlset", async () => {
-    const res = await childSitemap(new Request("https://permtracker.app/sitemaps/audit.xml"), {
-      params: Promise.resolve({ name: "audit.xml" }),
-    });
+  it("answers at /sitemap-audit.xml as an ordinary urlset", async () => {
+    const res = await auditSitemap();
     expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("application/xml");
     const xml = await res.text();
     expect(xml).toContain("<urlset");
     const count = (xml.match(/<loc>/g) ?? []).length;
-    expect(count).toBeGreaterThan(0);
+    expect(count).toBeGreaterThan(100);
     expect(count).toBeLessThanOrEqual(AUDIT_BUDGET);
+    expect(auditRevalidate).toBe(86400);
   });
 
-  it("is never listed in the sitemap index, so search engines don't read it", async () => {
+  it("answers the same list at its first address, /sitemaps/audit.xml", async () => {
+    const old = await childSitemap(new Request("https://permtracker.app/sitemaps/audit.xml"), {
+      params: Promise.resolve({ name: "audit.xml" }),
+    });
+    expect(await old.text()).toBe(await (await auditSitemap()).text());
+  });
+
+  it("is listed in neither the sitemap index nor robots.txt, so search engines don't read it as the site's map", async () => {
     expect(await childNames()).not.toContain("audit");
     expect(parseChildName("audit")).toBeNull();
+    expect(robots().sitemap).toBe("https://permtracker.app/sitemap.xml");
   });
 });

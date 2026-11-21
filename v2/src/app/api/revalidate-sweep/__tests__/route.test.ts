@@ -12,6 +12,9 @@ vi.mock("next/cache", () => ({ revalidatePath, revalidateTag: vi.fn() }));
 const writeBoardDoc = vi.fn();
 vi.mock("@/lib/db/board", () => ({ writeBoardDoc: () => writeBoardDoc() }));
 
+// @ts-expect-error a plain .mjs script module with no type declarations
+const { alwaysNoindex, inFamily, pageFiles, routeOf } = await import("../../../../../scripts/lib_page_inputs.mjs");
+
 const { POST } = await import("../route");
 const { SWEEP_PAGES } = await import("../paths");
 
@@ -140,5 +143,22 @@ describe("the list covers every cached page that reads a sweep-written figure", 
     // Control: a walk that matched no reader would pass while proving nothing.
     expect(readers).toBeGreaterThan(4);
     expect(missing, `pages reading sweep figures but not expired by the sweep: ${missing.join(", ")}`).toEqual([]);
+  });
+});
+
+describe("every page the sweep expires may be indexed", () => {
+  // The server tells IndexNow about each page in the sweep's answer (scripts/indexnow_submit.py), and IndexNow is for
+  // pages a search engine may index: a noindex page here spends the site's crawl quota on an answer of "excluded".
+  it("renders from a page whose source never asks not to be indexed", () => {
+    const pages = (pageFiles() as string[]).map((file) => ({ file, route: routeOf(file) as string }));
+    expect(pages.length).toBeGreaterThan(30);
+    const problems: string[] = [];
+    for (const path of SWEEP_PAGES) {
+      const exact = pages.filter((p) => p.route === path);
+      const found = exact.length > 0 ? exact : pages.filter((p) => inFamily(path, p.route));
+      if (found.length === 0) problems.push(`${path}: no page renders it`);
+      for (const p of found) if (alwaysNoindex(readFileSync(p.file, "utf8"))) problems.push(`${path}: ${p.file} is noindex`);
+    }
+    expect(problems).toEqual([]);
   });
 });

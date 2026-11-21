@@ -33,14 +33,23 @@ expire(){  # expire <route> [json-file] [answer-file]: through nginx, which send
 # The sweep's pages: expire them, then drop Cloudflare's copies of exactly those pages (purge_edge.py, by the
 # pages' own tags), so readers get the new figures at once instead of up to 10 minutes later. A refused purge
 # ends the run red; the copies still age out on their own.
+# Then IndexNow hears about the same pages (tell_indexnow, below).
 expire_sweep(){
   local answer; answer="$(mktemp)"
   if expire revalidate-sweep "" "$answer"; then
     timeout 2m python3 scripts/purge_edge.py "$answer" || {
       fail purge_edge.py "Cloudflare refused the purge of the sweep's pages; they refresh at the edge within 10 minutes"
       failed+=("edge-purge"); }
+    tell_indexnow --answer "$answer"
   fi
   rm -f "$answer"
+}
+# tell_indexnow <--answer|--paths> <file>: Bing and the other IndexNow engines hear which public pages changed, once
+# the pages are expired. indexnow_submit.py never fails the pass: it records each outcome in ingest_runs, where the
+# morning health check reads it. Only a crash or a timeout of the step itself lands here, and is recorded the same way.
+tell_indexnow(){
+  timeout 3m python3 scripts/indexnow_submit.py "$1" "$2" \
+    || fail "indexnow_submit.py $1" "the IndexNow step stopped before it finished; the pages themselves are fine"
 }
 
 builders(){  # what every pass rebuilds from the tables: the live remainder, the employer map, the sponsor
@@ -93,8 +102,9 @@ case_status(){  # case_status <full|pending>
     if [ "$n" -gt 0 ]; then
       echo "expiring $n employer pages"; expire revalidate-live-employers changed-employer-slugs.json
       urls=$(mktemp)
-      python3 -c "import json;[print('/perm-employers/'+s) for s in json.load(open('changed-employer-slugs.json'))['slugs']]" > "$urls" \
-        && node scripts/indexnow.mjs --urls "$urls" || echo "warning: IndexNow refused the changed employer pages"
+      if python3 -c "import json;[print('/perm-employers/'+s) for s in json.load(open('changed-employer-slugs.json'))['slugs']]" > "$urls"; then
+        tell_indexnow --paths "$urls"
+      else echo "warning: the changed employer pages couldn't be listed for IndexNow"; fi
       rm -f "$urls"
     else echo "no employer pages changed"; fi
   fi
