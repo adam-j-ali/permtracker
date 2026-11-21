@@ -14,8 +14,8 @@ import {
 
 /**
  * One child sitemap: /sitemaps/pages.xml, /sitemaps/employer-1.xml, etc.
- * Plus /sitemaps/audit.xml, this week's Site Audit list (lib/sitemap/audit.ts),
- * which the index never lists.
+ * Plus /sitemaps/audit.xml, the Site Audit list (lib/sitemap/audit.ts), which
+ * the index never lists: its first address, kept beside /sitemap-audit.xml.
  *
  * Children must live in the same directory as the index or below it, which a
  * root index satisfies for anything on the site.
