@@ -314,6 +314,25 @@ def test_usage():
         assert ix.main(["--nope", "x"], post=IndexNow(), record=Recorder()) == 2
 
 
+def test_a_database_that_cant_be_reached_never_stops_the_sender():
+    # lib_db's settings reader ends the program (SystemExit) when DATABASE_URL isn't set; the bookkeeping must say
+    # so and carry on, never end the sender.
+    import lib_db
+    real = lib_db.Database
+
+    def unset(*_a, **_k):
+        raise SystemExit("DATABASE_URL is not set in the environment")
+
+    lib_db.Database = unset
+    out = io.StringIO()
+    try:
+        with redirect_stdout(out):
+            ix._record("indexnow_submit.py --answer", "ok", 1, "1 sent")
+    finally:
+        lib_db.Database = real
+    assert "couldn't record" in out.getvalue(), out.getvalue()
+
+
 def main() -> int:
     tests = [(n, f) for n, f in globals().items() if n.startswith("test_") and callable(f)]
     failed = 0
@@ -321,7 +340,7 @@ def main() -> int:
         try:
             fn()
             print(f"  PASS  {name}")
-        except Exception as exc:  # noqa: BLE001 - every test reports, then the run fails
+        except (Exception, SystemExit) as exc:  # noqa: BLE001 - every test reports, then the run fails
             failed += 1
             print(f"  FAIL  {name}: {type(exc).__name__}: {exc}")
     print(f"\n{len(tests) - failed} of {len(tests)} passed")
