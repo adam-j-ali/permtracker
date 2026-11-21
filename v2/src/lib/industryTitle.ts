@@ -11,8 +11,17 @@ export function industryName(label: string): string {
   return label.replace(/\s*\([^)]*\)/g, "").trim() || label;
 }
 
-/** "PERM in <industry>, NAICS <code>" when it fits Google's 60; the code first when it doesn't. */
+/**
+ * The two forms of an industry title around its name, for `fitTitle` (lib/pageTitle.ts): "PERM in <industry>,
+ * NAICS <code>", and the code first for a name too long for that. People search these pages by code ("naics code
+ * 238340"), so the code is the key term the fitter never cuts.
+ */
+export function industryFrames(code: string): Array<(name: string) => string> {
+  return [(n) => `PERM in ${n}, NAICS ${code}`, (n) => `NAICS ${code} PERM Filings: ${n}`];
+}
+
+/** The whole title, uncut, for a share card: "PERM in <industry>, NAICS <code>" when it fits 60; the code first when it doesn't. */
 export function industryTitle(label: string, code: string): string {
-  const plain = `PERM in ${industryName(label)}, NAICS ${code}`;
-  return plain.length <= 60 ? plain : `NAICS ${code} PERM Filings: ${industryName(label)}`;
+  const [plain, codeFirst] = industryFrames(code).map((f) => f(industryName(label)));
+  return plain!.length <= 60 ? plain! : codeFirst!;
 }

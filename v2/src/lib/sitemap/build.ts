@@ -47,6 +47,7 @@ import { USCIS_OFFICES } from "@/lib/uscisOffices";
 import { softFail } from "@/lib/softRead";
 import { getConsularIndex } from "@/lib/db/consularPosts";
 import { getSocTitlePages } from "@/lib/db/socTitles";
+import { SOC_TITLES_BASE, titleBucketCounts } from "@/lib/socTitleBrowse";
 
 /**
  * The sitemap, split into an index and per-kind children.
@@ -220,13 +221,19 @@ export async function pagesEntries(): Promise<Entry[]> {
   } catch {
     firmStates = [];
   }
-  // The job titles with a page of their own (soc_title_pages), busiest first. A failed read lists
-  // none of them and keeps the rest of the sitemap.
+  // The job titles with a page of their own (soc_title_pages), busiest first, and the A to Z letters
+  // that list them, from the same read the letter pages make. A failed read lists none of them and
+  // keeps the rest of the sitemap.
   let socTitleSlugs: string[] = [];
+  let socTitleLetters: BrowseBucket[] = [];
   try {
-    socTitleSlugs = (await getSocTitlePages())?.pages.map((p) => p.slug) ?? [];
+    const titlePages = (await getSocTitlePages())?.pages ?? [];
+    socTitleSlugs = titlePages.map((p) => p.slug);
+    const perLetter = titleBucketCounts(titlePages);
+    socTitleLetters = BROWSE_BUCKETS.filter((b) => perLetter[b] > 0);
   } catch {
     socTitleSlugs = [];
+    socTitleLetters = [];
   }
   // The cap-exempt employer page, dated by the newest day its figures cover.
   const capExemptDay = capExemptAsOf(await getCapExempt().catch(softFail("sitemap.getCapExempt", null)));
@@ -404,6 +411,12 @@ export async function pagesEntries(): Promise<Entry[]> {
     ...socTitleSlugs.map((slug) => ({
       url: `${base}/soc-codes/${slug}`,
       lastModified: at("/soc-codes/[title]"),
+    })),
+    // Their A to Z: the index, and each letter a title begins with (an empty letter is noindex).
+    { url: `${base}/soc-codes/browse`, lastModified: at("/soc-codes/browse") },
+    ...socTitleLetters.map((b) => ({
+      url: `${base}${browseHref(SOC_TITLES_BASE, b)}`,
+      lastModified: at("/soc-codes/browse/[letter]"),
     })),
     // No card of their own yet, so no image entry.
     { url: `${base}/tools/h1b-lottery-odds-calculator`, lastModified: at("/tools/h1b-lottery-odds-calculator") },
