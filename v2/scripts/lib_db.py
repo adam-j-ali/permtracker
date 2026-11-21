@@ -597,9 +597,12 @@ def stamp_freshness(
     source: str,
     cadence: str,
     note: str,
-    max_age_days: int,
+    max_age_days: int | None,
 ) -> None:
     """Record that `dataset` refreshed, so check_ingest_health.py can see it stop.
+
+    `max_age_days` None is no maximum age, stored as NULL: for a source loaded by hand, only when there's something
+    to load, which no check may call stale (check_ingest_health.py and src/lib/freshnessBudget.ts read NULL that way).
 
     The health checker reads every row in this table dynamically, so a NEW
     dataset name here is monitored automatically - no registry to update. Only
@@ -631,7 +634,7 @@ def restamp_note(db: "Database", dataset: str, note: str) -> bool:
             return False
         as_of, source, cadence, max_age = got[0]
         stamp_freshness(db, dataset, as_of=as_of, source=source, cadence=cadence, note=note[:500],
-                        max_age_days=int(max_age))
+                        max_age_days=None if max_age is None else int(max_age))
         return True
     except Exception:  # noqa: BLE001
         return False

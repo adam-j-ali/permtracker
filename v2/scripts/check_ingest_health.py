@@ -1235,6 +1235,11 @@ def main() -> int:
             print(f"{dataset:22s} read by hand; the hand-read check below dates it from its file")
             continue
         d = parse_as_of(str(as_of))
+        if d is not None and max_age is None:
+            # No maximum age (lib_db.stamp_freshness): a source typed in by hand loads only when the owner shares
+            # something, so no stretch without a load is an alarm. A NULL beside an unreadable date stays unreadable.
+            print(f"{dataset:22s} {str(as_of):12s} {(today - d).days:>5}d {'none':>7s}  ok (no maximum age: loaded by hand)")
+            continue
         if d is None or max_age is None:
             unparseable.append((dataset, as_of))
             print(f"{dataset:22s} {str(as_of):12s} {'?':>6s} {str(max_age):>7s}  UNREADABLE")
