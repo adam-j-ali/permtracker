@@ -28,7 +28,7 @@ from __future__ import annotations
 import time
 from collections import defaultdict
 
-from lib_db import rows_of
+from lib_db import day_slices, rows_of
 from lib_reference import sync_rows
 
 HISTORY = "lca_cases_history"
@@ -78,21 +78,6 @@ SLICE_SQL = (
 
 def log(msg: str) -> None:
     print(f"[lca-history-rollups] {msg}", flush=True)
-
-
-def next_month(m: str) -> str:
-    y, mo = int(m[:4]), int(m[5:7])
-    return f"{y + (mo == 12)}-{1 if mo == 12 else mo + 1:02d}"
-
-
-def slices(first: str, last: str) -> list[tuple[str, str]]:
-    """[start, end) day ranges of about ten days, each month in three, from `first`'s month to `last`'s."""
-    out, m, stop = [], first[:7], next_month(last[:7])
-    while m != stop:
-        nxt = next_month(m)
-        out += [(f"{m}-01", f"{m}-11"), (f"{m}-11", f"{m}-21"), (f"{m}-21", f"{nxt}-01")]
-        m = nxt
-    return out
 
 
 def num(v) -> int:
@@ -147,7 +132,7 @@ def build(db) -> dict[str, int]:
     firms: dict[tuple, list] = {}
     willful: dict[tuple[str, int], int] = defaultdict(int)
     if first and last:
-        for a, b in slices(str(first), str(last)):
+        for a, b in day_slices(str(first), str(last)):
             fold(rows_of(db.execute(SLICE_SQL, [a, b])), firms, willful)
             if a.endswith("-12-21"):
                 log(f"read through {b}: {len(firms):,} firm groups, {len(willful):,} willful employer-years "

@@ -78,8 +78,8 @@ import ingest_perm_disclosure as ipd  # noqa: E402
 from entity_identity import SpacedKeyMap, entity_key  # noqa: E402
 from lib_naics import normalize_naics  # noqa: E402
 from lib_db import (  # noqa: E402
-    Database, add_missing_columns, canon, canon_hash, case_update, insert_rows, insert_stmts,
-    record_run, rows_of, run_stmts, stmt, write_doc,
+    Database, add_missing_columns, canon, canon_hash, case_update, insert_rows, insert_stmts, month_thirds,
+    months_between, record_run, rows_of, run_stmts, stmt, write_doc,
 )
 from lib_gov_data import SPREADSHEET_NS, column_index, fetch, log, read_shared_strings  # noqa: E402
 from lib_slugs import slugify  # noqa: E402
@@ -629,26 +629,6 @@ def build_history_facets(db, occ_slug_by_code: dict[str, str]) -> int:
     return len(out)
 
 
-def next_month(m: str) -> str:
-    y, mo = int(m[:4]), int(m[5:7])
-    return f"{y + (mo == 12)}-{1 if mo == 12 else mo + 1:02d}"
-
-
-def thirds(m: str) -> list[tuple[str, str]]:
-    """A month ("2022-06") as three day ranges of about ten days, each [start, end): a busy month of the older table
-    read whole took 1.7 s on the live database, a ten-day slice 0.3 s (Nov 21 2026)."""
-    return [(f"{m}-01", f"{m}-11"), (f"{m}-11", f"{m}-21"), (f"{m}-21", f"{next_month(m)}-01")]
-
-
-def months_between(first: str, last: str) -> list[str]:
-    """Every month from the one `first` falls in to the one `last` does, as "YYYY-MM"."""
-    out, m, stop = [], first[:7], next_month(last[:7])
-    while m != stop:
-        out.append(m)
-        m = next_month(m)
-    return out
-
-
 def build_month_days(db) -> int:
     """perm_history_month_days: the older table's decision days by filing month.
 
@@ -663,7 +643,7 @@ def build_month_days(db) -> int:
     if first and last:
         for m in months_between(str(first), str(last)):
             days: dict[int, int] = defaultdict(int)
-            for a, b in thirds(m):
+            for a, b in month_thirds(m):
                 for r in rows_of(db.execute(
                         "SELECT days, COUNT(*) FROM perm_cases_history h "
                         "WHERE received_date >= ? AND received_date < ? AND days IS NOT NULL "
@@ -723,7 +703,7 @@ def fill_firm_slugs(db, att: dict[str, str] | None = None) -> int:
     moved_total = 0
     for m in months_between(str(first), str(last)):
         moved: list[tuple[str, str]] = []
-        for a, b in thirds(m):
+        for a, b in month_thirds(m):
             for case, name, slug in rows_of(db.execute(
                     "SELECT case_number, attorney_name, attorney_slug FROM perm_cases_history "
                     "WHERE decision_date >= ? AND decision_date < ? AND attorney_name IS NOT NULL "
