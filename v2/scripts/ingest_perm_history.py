@@ -88,6 +88,7 @@ FIRST_FY, LAST_FY = 2008, 2023
 ROWS_FROM_FY = 2008
 DOC_KEY = "perm_history"
 PAUSE_BETWEEN_FILES_S = 30
+FILL_PAUSE_S = 1.0  # idle after each month of --fill-firm-slugs' writes
 
 # The current parser's names, plus the old forms'. Copied, never mutated: the
 # quarterly parser's candidate list is its own contract.
@@ -690,7 +691,9 @@ def fill_firm_slugs(db, att: dict[str, str] | None = None) -> int:
     A row's slug was set when its year loaded, from that day's firm pages, so a firm with no page then has none and a
     page made or moved since is missed. Ten days of decisions at a time on idx_pch_dec (never the whole table), each
     named row's slug worked out again here and written only where it moves, 200 to an UPDATE keyed on the case
-    number. Rows naming no firm (every file before FY2015, and an employer filing for itself) are left as they are.
+    number, at a history load's gentle pace: a month's writes, then FILL_PAUSE_S idle, since back-to-back history
+    writes once kept the database compacting its log until its writes stalled for 38 minutes (Oct 3 2026). Rows
+    naming no firm (every file before FY2015, and an employer filing for itself) are left as they are.
     """
     if att is None:
         _, att = slug_maps(db)
@@ -713,6 +716,8 @@ def fill_firm_slugs(db, att: dict[str, str] | None = None) -> int:
                     moved.append((str(case), want))
         run_stmts(db, (case_update("perm_cases_history", "case_number", ["attorney_slug"], moved[i:i + 200])
                        for i in range(0, len(moved), 200)), 5)
+        if moved and FILL_PAUSE_S:
+            time.sleep(FILL_PAUSE_S)
         moved_total += len(moved)
         if m.endswith("-12"):
             log(f"  firm slugs through {m}: {moved_total:,} moved")
