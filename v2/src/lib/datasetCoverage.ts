@@ -180,6 +180,8 @@ export const DATASET_COVERAGE: Readonly<Record<string, string>> = {
     "People's own case dates from Reddit posts and comments, read every day: only the dates and categories, never a username, a quote or a link. Unchecked, and only as complete as what people posted.",
   "community-posts-telegram":
     "People's own case dates from public Telegram groups about PERM and green cards, read every hour: only the dates, categories and offices, never a name, a username or a message's words. Read by a parser and a small model, every date checked against what the post itself writes. Unchecked, and only as complete as what people posted.",
+  "community-posts-facebook":
+    "People's own case dates from public Facebook groups about H-1B visas and green cards, typed in by hand from posts shared with us: only the dates, categories, offices and country, never a name, a username, a link or a post's words. No script reads Facebook. Unchecked, and only as complete as the posts shared.",
   "warn-notices-ak": "Alaska WARN notices from the Department of Labor's list, since 2019.",
   "warn-notices-az":
     "Arizona WARN notices from the state's job-center search, since 2019. Counts come from each notice's own page, newest first: a run reads the new ones, and the state's weekly read fills the rest, so an older notice can wait up to a week for its count.",
@@ -374,6 +376,7 @@ export const DATASET_LABELS: Readonly<Record<string, string>> = {
   "reported-cases": "Cases people reported, merged",
   "community-posts-reddit": "Reddit posts and comments",
   "community-posts-telegram": "Telegram groups' posts",
+  "community-posts-facebook": "Facebook groups' posts, typed in by hand",
   "warn-notices-ak": "Alaska WARN notices",
   "warn-notices-az": "Arizona WARN notices",
   "warn-notices-co": "Colorado WARN notices",
