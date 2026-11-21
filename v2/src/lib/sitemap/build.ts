@@ -575,7 +575,18 @@ async function browseEntries(sources: DateSources): Promise<Entry[]> {
  * number) is a 404, not a failed read: on Oct 12 2026 a request for
  * employer-16.xml, one past the 15 listed, answered 500 and paged Sentry.
  */
-export class ChunkNotListed extends Error {}
+export class ChunkNotListed extends Error {
+  /**
+   * The first chunk past the end: the hour-cached index can still name it after the count drops (Nov 20 2026,
+   * live-employer-5.xml), so the route answers an empty urlset for it, never a 404.
+   */
+  readonly justPast: boolean;
+
+  constructor(message: string, justPast = false) {
+    super(message);
+    this.justPast = justPast;
+  }
+}
 
 /**
  * Whether `chunk` lies past the family's last listed chunk. Asked only after
@@ -583,10 +594,12 @@ export class ChunkNotListed extends Error {}
  * child per entity kind even at zero), and a count that can't be read
  * answers no, so a real read failure still reports as one.
  */
-async function pastLastChunk(chunk: number, count: () => Promise<number>): Promise<boolean> {
-  if (chunk === 0) return false;
+async function pastLastChunk(chunk: number, count: () => Promise<number>): Promise<{ past: boolean; justPast: boolean }> {
+  if (chunk === 0) return { past: false, justPast: false };
   const n = await count().catch(softFail("sitemap.chunkCount", null));
-  return n !== null && chunk >= Math.ceil(n / SITEMAP_CHUNK);
+  if (n === null) return { past: false, justPast: false };
+  const listed = Math.ceil(n / SITEMAP_CHUNK);
+  return { past: chunk >= listed, justPast: chunk === listed };
 }
 
 /**
@@ -611,8 +624,9 @@ export async function entityEntries(kind: EntityKind, chunk: number): Promise<En
   // kind is legitimately a remainder (occupations hold 1,410 rows in total).
   const floor = chunk === 0 ? MIN_ROWS_PER_KIND : 1;
   if (slugs.length < floor) {
-    if (await pastLastChunk(chunk, () => countEntityRanks(kind))) {
-      throw new ChunkNotListed(`${kind}-${chunk + 1}.xml is past the last listed chunk`);
+    const end = await pastLastChunk(chunk, () => countEntityRanks(kind));
+    if (end.past) {
+      throw new ChunkNotListed(`${kind}-${chunk + 1}.xml is past the last listed chunk`, end.justPast);
     }
     const detail =
       `Sitemap child ${kind} chunk ${chunk} built with only ${slugs.length} rows. ` +
@@ -656,8 +670,9 @@ export async function liveEmployerEntries(chunk: number): Promise<Entry[]> {
   const slugs = await getLiveOnlySlugWindow(chunk, SITEMAP_CHUNK);
   const floor = chunk === 0 ? MIN_ROWS_PER_KIND : 1;
   if (slugs.length < floor) {
-    if (await pastLastChunk(chunk, countLiveOnlyRanks)) {
-      throw new ChunkNotListed(`live-employer-${chunk + 1}.xml is past the last listed chunk`);
+    const end = await pastLastChunk(chunk, countLiveOnlyRanks);
+    if (end.past) {
+      throw new ChunkNotListed(`live-employer-${chunk + 1}.xml is past the last listed chunk`, end.justPast);
     }
     const detail =
       `Sitemap child live-employer chunk ${chunk} built with only ${slugs.length} rows. ` +
@@ -708,8 +723,9 @@ export async function otherEmployerEntries(chunk: number): Promise<Entry[]> {
   const slugs = await getOtherEmployerSlugWindow(chunk, SITEMAP_CHUNK);
   const floor = chunk === 0 ? MIN_ROWS_PER_KIND : 1;
   if (slugs.length < floor) {
-    if (await pastLastChunk(chunk, countOtherEmployerRanks)) {
-      throw new ChunkNotListed(`other-employer-${chunk + 1}.xml is past the last listed chunk`);
+    const end = await pastLastChunk(chunk, countOtherEmployerRanks);
+    if (end.past) {
+      throw new ChunkNotListed(`other-employer-${chunk + 1}.xml is past the last listed chunk`, end.justPast);
     }
     const detail =
       `Sitemap child other-employer chunk ${chunk} built with only ${slugs.length} rows. ` +

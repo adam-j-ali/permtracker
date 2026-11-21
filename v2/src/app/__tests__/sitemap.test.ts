@@ -884,6 +884,27 @@ describe("sitemap index and chunking", () => {
     vi.mocked(countLiveOnlyRanks).mockResolvedValue(22000);
     vi.mocked(getLiveOnlySlugWindow).mockResolvedValue([]);
     await expect(liveEmployerEntries(5)).rejects.toBeInstanceOf(ChunkNotListed);
+
+    // Nov 20 2026: the morning check read live-employer-5.xml from the hour-cached index after the live-only count
+    // had dropped to four chunks, and the child answered 404. The chunk just past the end, which a lagging index can
+    // still name, answers a valid empty urlset cached briefly; anything further is still a 404.
+    vi.mocked(countLiveOnlyRanks).mockResolvedValue(20000);
+    const justPast = await liveEmployerEntries(4).catch((e: unknown) => e);
+    expect(justPast).toBeInstanceOf(ChunkNotListed);
+    expect((justPast as ChunkNotListed).justPast).toBe(true);
+    const farther = await liveEmployerEntries(6).catch((e: unknown) => e);
+    expect((farther as ChunkNotListed).justPast).toBe(false);
+    const res = await childSitemap(new Request("https://permtracker.app/sitemaps/live-employer-5.xml"), {
+      params: Promise.resolve({ name: "live-employer-5.xml" }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.text()).toMatch(/<urlset[^>]*>\s*<\/urlset>|<urlset[^>]*\/>/);
+    expect(res.headers.get("Cache-Control")).toContain("s-maxage=3600");
+    await expect(
+      childSitemap(new Request("https://permtracker.app/sitemaps/live-employer-7.xml"), {
+        params: Promise.resolve({ name: "live-employer-7.xml" }),
+      }),
+    ).rejects.toThrow();
     vi.mocked(countOtherEmployerRanks).mockResolvedValue(200000);
     vi.mocked(getOtherEmployerSlugWindow).mockResolvedValue([]);
     await expect(otherEmployerEntries(40)).rejects.toBeInstanceOf(ChunkNotListed);
