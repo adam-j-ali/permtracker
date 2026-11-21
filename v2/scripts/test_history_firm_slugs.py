@@ -45,6 +45,7 @@ class Watched(SqliteTurso):
         return super().pipeline(reqs, **kw)
 
 
+iph.FILL_PAUSE_S = 0  # the pace has its own check below
 ATT = SpacedKeyMap({entity_key("Fragomen Del Rey Bernsen & Loewy LLP"): "fragomen-del-rey-bernsen-loewy-llp",
                     entity_key("Smith Law"): "smith-law"})
 PAGES = frozenset(dict.values(ATT))
@@ -127,6 +128,24 @@ check("each slice rides the decision-date index", "idx_pch_dec" in plan, plan)
 db.sqls.clear()
 again = iph.fill_firm_slugs(db)
 check("a second pass writes nothing", again == 0 and not any(s.startswith("UPDATE") for s in db.sqls), str(again))
+
+print("at a history load's pace")
+slept: list[float] = []
+
+
+class Clock:
+    @staticmethod
+    def sleep(s: float) -> None:
+        slept.append(s)
+
+
+real_time, iph.time, iph.FILL_PAUSE_S = iph.time, Clock, 0.25
+try:
+    iph.fill_firm_slugs(seed())
+finally:
+    iph.time, iph.FILL_PAUSE_S = real_time, 0
+check("it rests after each month it wrote, and only those (January 2016, March 2017, June 2018)",
+      slept == [0.25, 0.25, 0.25], str(slept))
 
 print("an empty table")
 bare = Watched()
