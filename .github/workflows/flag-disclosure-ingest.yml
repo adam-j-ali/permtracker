@@ -115,6 +115,9 @@ jobs:
     strategy:
       # One program failing must not cancel the other's load.
       fail-fast: false
+      # One program at a time. On Nov 21 2026 the five ran at once against one database, every job logged
+      # SQLITE_BUSY retries, and the LCA load died halfway on a locked database (run 44875305956).
+      max-parallel: 1
       matrix:
         # A scheduled run and an `all` dispatch load both programs; a
         # dispatch naming one program loads only that one. The expression is

@@ -237,15 +237,24 @@ def run_key(script) -> str:
     """'ingest_pwd_status_direct.py --full --program all' -> 'ingest_pwd_status_direct.py --full'.
 
     The filename plus the first mode flag, so the daily and the weekly pass
-    of one script are separate recovery questions. A bare filename (the old
-    failure-hook shape) keys on its own.
+    of one script are separate recovery questions. A first flag that names
+    what the run loads (`--program lca`, `--only oews`) keeps its value: one
+    program's clean load never clears another's failure (on Nov 21 2026 the
+    PW load hid the LCA one's). A bare filename (the old failure-hook shape)
+    keys on its own.
     """
     if not script:
         return "?"
     parts = str(script).split()
     if len(parts) > 1 and parts[1].startswith("--"):
+        if parts[1] in TARGET_FLAGS and len(parts) > 2 and not parts[2].startswith("--"):
+            return f"{parts[0]} {parts[1]} {parts[2]}"
         return f"{parts[0]} {parts[1]}"
     return parts[0]
+
+
+# Flags whose value says WHAT a run loads, so runs with different values are different ingests.
+TARGET_FLAGS = frozenset({"--program", "--only"})
 
 
 # Measured normal lag between a filing and the walk recording it: 0 to 2

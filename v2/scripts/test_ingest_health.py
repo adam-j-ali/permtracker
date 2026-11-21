@@ -246,6 +246,18 @@ def main() -> int:
           health.run_key("ingest_pwd_status_direct.py --full --program all"))
     check("run_key of a bare filename is the filename",
           health.run_key("ingest_case_status_direct.py") == "ingest_case_status_direct.py")
+    # A flag that names what the run loads keeps its value: on Nov 21 2026 the LCA load failed at 1:31 AM and the PW
+    # load, 48 seconds later, read as its recovery, so the 6 AM check called every ingest clean.
+    check("run_key keeps the value of a flag that names what the run loads",
+          health.run_key("ingest_flag_disclosure.py --program lca") == "ingest_flag_disclosure.py --program lca"
+          and health.run_key("ingest_bls.py --only oews") == "ingest_bls.py --only oews",
+          health.run_key("ingest_flag_disclosure.py --program lca"))
+    check("one program's clean load does NOT clear another program's failure (the Nov 21 LCA masking)",
+          run([("ingest_flag_disclosure.py --program lca", "failed", "SQLITE_BUSY", int(NOW - 5 * H)),
+               ("ingest_flag_disclosure.py --program pw", "ok", "y", int(NOW - 5 * H + 48_000))]) == 1)
+    check("the same program's later clean load still clears its failure",
+          run([("ingest_flag_disclosure.py --program lca", "failed", "SQLITE_BUSY", int(NOW - 5 * H)),
+               ("ingest_flag_disclosure.py --program lca", "ok", "y", int(NOW - 1 * H))]) == 0)
     check("a later success of the SAME mode clears its failure",
           run([("ingest_pwd_status_direct.py --backfill --from a", "failed", "x",
                 int(NOW - 5 * H)),
