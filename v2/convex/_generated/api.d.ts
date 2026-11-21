@@ -127,6 +127,7 @@ import type * as lib_emailAllowance from "../lib/emailAllowance.js";
 import type * as lib_emailBlocklist from "../lib/emailBlocklist.js";
 import type * as lib_emailLimits from "../lib/emailLimits.js";
 import type * as lib_emailShape from "../lib/emailShape.js";
+import type * as lib_entityKey from "../lib/entityKey.js";
 import type * as lib_errorRecording from "../lib/errorRecording.js";
 import type * as lib_expiringToken from "../lib/expiringToken.js";
 import type * as lib_firmClaimPages from "../lib/firmClaimPages.js";
@@ -420,6 +421,7 @@ declare const fullApi: ApiFromModules<{
   "lib/emailBlocklist": typeof lib_emailBlocklist;
   "lib/emailLimits": typeof lib_emailLimits;
   "lib/emailShape": typeof lib_emailShape;
+  "lib/entityKey": typeof lib_entityKey;
   "lib/errorRecording": typeof lib_errorRecording;
   "lib/expiringToken": typeof lib_expiringToken;
   "lib/firmClaimPages": typeof lib_firmClaimPages;
