@@ -142,6 +142,49 @@ describe("filters", () => {
   });
 });
 
+describe("the seasonal programs' wage requests (H-2B and CW-1, DOL's prevailing wage file)", () => {
+  it("reads the applications' file and the prevailing wage file's P-400 and P-500 rows, newest first", async () => {
+    DATA.seasonal_cases = [row("H-400-25001-000001", "2025-03-02"), row("H-300-25001-000002", "2025-02-27")];
+    DATA.pwd_cases = [row("P-400-24300-000003", "2025-03-01"), row("P-500-24300-000004", "2025-02-28")];
+    const f = await getDecidedFeed({ range: { from: "2025-02-01", to: "2025-03-05" }, programs: ["seasonal"] });
+    expect(f.cases.map((c) => c.caseNumber)).toEqual([
+      "H-400-25001-000001", "P-400-24300-000003", "P-500-24300-000004", "H-300-25001-000002",
+    ]);
+    expect(f.cases.every((c) => c.program === "seasonal")).toBe(true);
+    const pwd = asked.find((q) => q.includes("FROM pwd_cases"));
+    // The one boundary (src/lib/wageRequestRanges.ts), written as a literal so a partial index on it can serve it.
+    expect(pwd).toContain("case_number >= 'P-400-'");
+    expect(pwd).not.toMatch(/visa_class = \?/);
+  });
+
+  it("caps the seasonal programs across both files, not per file", async () => {
+    DATA.seasonal_cases = [row("H-400-1", "2025-03-04"), row("H-400-2", "2025-03-01")];
+    DATA.pwd_cases = [row("P-400-1", "2025-03-03"), row("P-400-2", "2025-03-02")];
+    const f = await getDecidedFeed({ range: { from: "2025-03-01", to: "2025-03-05" }, programs: ["seasonal"], cap: 3 });
+    expect(f.cases.map((c) => c.caseNumber)).toEqual(["H-400-1", "P-400-1", "P-400-2"]);
+    expect(f.capped).toBe(true);
+  });
+
+  it("counts a day's seasonal decisions in both files", async () => {
+    DATA.seasonal_cases = [row("H-400-1", "2025-03-01")];
+    DATA.pwd_cases = [row("P-400-1", "2025-03-01"), row("P-500-2", "2025-03-01")];
+    const f = await getDecidedFeed({ range: { from: "2025-03-01", to: "2025-03-01" }, programs: ["seasonal"] });
+    expect(f.totals?.seasonal).toBe(3);
+    const count = asked.find((q) => q.includes("FROM pwd_cases") && q.includes("COUNT"));
+    expect(count).toContain("case_number >= 'P-400-'");
+  });
+
+  it("keeps the wage request program to its own numbers", async () => {
+    await getDecidedFeed({ range: { from: "2025-03-01", to: "2025-03-01" }, programs: ["pwd"] });
+    const reads = asked.filter((q) => q.includes("FROM pwd_cases"));
+    expect(reads.length).toBeGreaterThan(0);
+    for (const q of reads) {
+      expect(q).toMatch(/visa_class = \?/);
+      expect(q).toContain("case_number < 'P-400-'");
+    }
+  });
+});
+
 describe("getCoverageWindows", () => {
   it("starts PERM at the history ingest's first stored year, from its record", async () => {
     DATA.perm_cases = [{ v: "2023-10-01" }];

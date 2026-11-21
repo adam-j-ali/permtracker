@@ -25,6 +25,13 @@ and writes two things, chosen for what they answer and what they cost:
                           national, FY2008 onward.
     perm_history_facets   each employer's and occupation's top values for the
                           worker's fields, from the history rows.
+    perm_history_decided_days  decision days by the month DOL decided, FY2015
+                          (the first file with a received date) to FY2023,
+                          for the PERM wait trend (build_decided_days).
+    perm_history_worksites, perm_history_wage_bands, and the salary
+                          explorer's older years in wage_views: one pass,
+                          ten days of decisions at a time, for the readers
+                          that otherwise stop at FY2024 (build_places_and_wages).
 
 `--current` fills FY2024 onward of `perm_employer_years` from `perm_cases`, so
 one table carries the whole series; the quarterly ingest runs it after each
@@ -56,6 +63,9 @@ Usage:
     python3 scripts/ingest_perm_history.py --local PERM_FY2010.xlsx --dry-run
     python3 scripts/ingest_perm_history.py --current       # FY2024 onward only
     python3 scripts/ingest_perm_history.py --fill-firm-slugs  # each row's firm on today's page or its own name
+    python3 scripts/ingest_perm_history.py --places-wages  # the worksites, wage bands and explorer years only
+    python3 scripts/ingest_perm_history.py --places-wages --dry-run  # the same reads; counts and sizes, no write
+    python3 scripts/ingest_perm_history.py --decided-days  # the wait trend's FY2015 to FY2023 months only
 """
 from __future__ import annotations
 
@@ -208,6 +218,33 @@ SCHEMA = [
          n        INTEGER NOT NULL,
          sum_days REAL NOT NULL,
          PRIMARY KEY (month, letter)
+       )""",
+    # Each employer's PERM worksites in the older table, state and city upper case ('' when the file left one
+    # blank): the enforcement loaders (lib_dol_records.load_sponsors, sponsor_cities) test a record's state and city
+    # against these and perm_cases' own. Rebuilt whole by build_places_and_wages.
+    """CREATE TABLE IF NOT EXISTS perm_history_worksites (
+         slug  TEXT NOT NULL,
+         state TEXT NOT NULL,
+         city  TEXT NOT NULL,
+         PRIMARY KEY (slug, state, city)
+       )""",
+    # Decision days by the month DOL decided, certified and denied only, from FY2015 to where perm_cases starts:
+    # the PERM wait trend (build_wait_trends.py) adds these months before perm_cases' own. Rebuilt whole by
+    # build_decided_days whenever history loads.
+    """CREATE TABLE IF NOT EXISTS perm_history_decided_days (
+         m    TEXT NOT NULL,
+         days INTEGER NOT NULL,
+         n    INTEGER NOT NULL,
+         PRIMARY KEY (m, days)
+       )""",
+    # Certified and denied cases with a yearly wage, by fiscal year and fine wage band (the lower edge, as
+    # src/lib/db/wages.ts bands perm_cases): the wage bands by year add these years to perm_cases' own.
+    """CREATE TABLE IF NOT EXISTS perm_history_wage_bands (
+         fy      TEXT NOT NULL,
+         band    INTEGER NOT NULL,
+         decided INTEGER NOT NULL,
+         denied  INTEGER NOT NULL,
+         PRIMARY KEY (fy, band)
        )""",
 ]
 
@@ -1096,6 +1133,164 @@ def write_entity_facets(db, scratch: sqlite3.Connection, totals: dict, pages: En
     return written
 
 
+# One slice of decision days, grouped inside the slice: what the wait trend needs from the older table.
+DECIDED_DAYS_SQL = ("SELECT days, COUNT(*) FROM perm_cases_history "
+                    "WHERE decision_date >= ? AND decision_date < ? AND days IS NOT NULL "
+                    "AND status IN ('certified', 'denied') GROUP BY days")
+
+
+def build_decided_days(db) -> int:
+    """perm_history_decided_days: the older table's decision days by the month DOL decided, for the PERM wait trend
+    (build_wait_trends.py), from its first older month (FY2015) to where perm_cases starts (October 2023).
+
+    Certified and denied only, as the trend counts perm_cases' own months. Three slices of about ten decision days a
+    month on idx_pch_dec, each grouped by days inside the slice, never one grouping of the table: a grouped ten-day
+    decision slice measured 0.65 s on the live database (Nov 21 2026). The table changes only when a history file
+    loads, so this runs then, or with --decided-days, never nightly.
+    """
+    import build_wait_trends as bwt  # the trend's own span, one rule
+    # A load run with --no-indexes has no idx_pch_dec, and each slice would then scan the whole table.
+    if not rows_of(db.execute("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = 'idx_pch_dec'")):
+        log("  idx_pch_dec isn't built: the wait trend's older months wait for --decided-days")
+        return 0
+    hi = rows_of(db.execute("SELECT MAX(decision_date) FROM perm_cases_history"))
+    last = str(hi[0][0])[:7] if hi and hi[0][0] else None
+    out: list[tuple] = []
+    if last:
+        m, end = bwt.HISTORY_FROM[:7], min(next_month(last), bwt.FROM_DAY[:7])
+        while m < end:
+            days: dict[int, int] = defaultdict(int)
+            for a, b in month_thirds(m):
+                for r in rows_of(db.execute(DECIDED_DAYS_SQL, [a, b])):
+                    days[int(r[0])] += int(r[1])
+            out.extend((m, d, n) for d, n in sorted(days.items()))
+            m = next_month(m)
+    db.execute(next(t for t in SCHEMA if "perm_history_decided_days" in t))
+    db.execute("DELETE FROM perm_history_decided_days")
+    insert_rows(db, "perm_history_decided_days", ["m", "days", "n"], out, per_request=STMTS_PER_REQUEST)
+    log(f"  history decided days: {len(out):,} rows")
+    return len(out)
+
+
+# The one pass's read: what the worksites, the wage bands and the explorer's views each need from a row.
+PLACES_WAGES_SQL = ("SELECT employer_slug, state, worksite_city, status, wage, substr(soc_code, 1, 7), fiscal_year "
+                    "FROM perm_cases_history WHERE decision_date >= ? AND decision_date < ?")
+
+
+def decision_slices(fy: int) -> list[tuple[str, str]]:
+    """A fiscal year's decision days, October to September, ten days at a time: a slice on idx_pch_dec measured
+    0.65 s on the live database (Nov 21 2026), where a busy month whole passes a second."""
+    out, m, stop = [], f"{fy - 1}-10", f"{fy}-10"
+    while m != stop:
+        out.extend(month_thirds(m))
+        m = next_month(m)
+    return out
+
+
+def held_years(db) -> list[int]:
+    """The fiscal years the older table holds, from its first and last decision day (one index seek each)."""
+    lo = rows_of(db.execute("SELECT MIN(decision_date) FROM perm_cases_history WHERE decision_date > ''"))
+    hi = rows_of(db.execute("SELECT MAX(decision_date) FROM perm_cases_history"))
+    first, last = (lo[0][0] if lo else None), (hi[0][0] if hi else None)
+    if not first or not last:
+        return []
+    return list(range(max(FIRST_FY, int(ipd.fiscal_year(str(first)))),
+                      min(LAST_FY, int(ipd.fiscal_year(str(last)))) + 1))
+
+
+def size_words(n: int) -> str:
+    """Bytes in words for a log line: "96.3 MB", "412 KB", "803 bytes"."""
+    return f"{n / 1e6:,.1f} MB" if n >= 1e6 else f"{n / 1e3:,.0f} KB" if n >= 1e3 else f"{n:,} bytes"
+
+
+def build_places_and_wages(db, *, dry_run: bool = False) -> int:
+    """One pass over the older table, a fiscal year at a time in ten-day decision slices, for three readers that
+    otherwise see FY2024 on only:
+
+    perm_history_worksites   each employer's worksite states and cities, which the Wage and Hour, OSHA, SAM, PPP
+                             and TAA joins test a record against (lib_dol_records);
+    perm_history_wage_bands  certified and denied cases by fiscal year and fine wage band (src/lib/db/wages.ts);
+    wage_views               every salary explorer selection of each older year that holds a case, under the
+                             reader's keys and build_wage_views.HISTORY_PROGRAM, with the years in its doc and the
+                             year picker's facets.
+
+    The table changes only when a history file loads, so this runs then, or with --places-wages, never nightly.
+    `dry_run` reads the same slices, counts what it would write and its size, and writes nothing.
+    """
+    import build_wage_bands as bwb
+    import build_wage_views as bwv
+    from build_lca_facets import min_for_median
+    # A load run with --no-indexes has no idx_pch_dec, and each slice would then scan the whole table.
+    if not rows_of(db.execute("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = 'idx_pch_dec'")):
+        log("  idx_pch_dec isn't built: the worksites, wage bands and explorer years wait for --places-wages")
+        return 0
+    floor = min_for_median()
+    places: set[tuple[str, str, str]] = set()
+    bands: dict[tuple[str, int], list[int]] = {}
+    built: list[str] = []
+    checked: str | None = None
+    views_written = 0
+    view_bytes = 0
+    strays = 0
+    # Each year's views are written as soon as that year is counted (about 300,000 in all, a few hundred bytes
+    # each), and before the first is written, one of them is recomputed through the site's own SQL.
+    stamp = 0 if dry_run else bwv.begin_views(db)
+    for fy in held_years(db):
+        wages: list[tuple] = []
+        for a, b in decision_slices(fy):
+            for slug, state, city, status, wage, soc, row_fy in rows_of(db.execute(PLACES_WAGES_SQL, [a, b])):
+                st, ct = str(state or "").strip().upper(), str(city or "").strip().upper()
+                if slug and (st or ct):
+                    places.add((str(slug), sys.intern(st), ct))
+                # The loader sets a row's fiscal year from its decision day, so a year's slices hold its rows only.
+                if str(row_fy) != str(fy):
+                    strays += 1
+                    continue
+                row = bwv.view_row("perm", wage, status, soc, state, row_fy)
+                if row is None:
+                    continue
+                wages.append(row)
+                if status in ("certified", "denied"):
+                    got = bands.setdefault((str(fy), bwb.band_floor(row[0])), [0, 0])
+                    got[0] += 1
+                    got[1] += status == "denied"
+        if not wages:
+            continue
+        wages.sort(key=lambda t: t[0])
+        views = bwv.build("perm", wages, floor, min_rows=1, fy_only=True)
+        if checked is None:
+            checked = bwv.verify_history(db, str(fy), views)
+        items = bwv.serialize(views)
+        view_bytes += sum(len(k) + len(j) for k, _, j in items)
+        if not dry_run:
+            bwv.put_views(db, bwv.HISTORY_PROGRAM, items, stamp)
+        views_written += len(views)
+        built.append(str(fy))
+        log(f"  FY{fy}: {len(wages):,} wages, {len(views):,} explorer views, {len(places):,} worksites so far")
+    if strays:
+        log(f"  {strays:,} rows whose fiscal year isn't their decision day's: worksites only")
+    if dry_run:
+        log(f"  dry run: would write {len(places):,} worksites, {len(bands):,} wage bands and {views_written:,} "
+            f"explorer views ({size_words(view_bytes)} of keys and JSON), FY{built[0] if built else '-'} to "
+            f"FY{built[-1] if built else '-'}; {checked or 'no view'} checked live; nothing written")
+        return len(places) + len(bands) + views_written
+    for ddl in SCHEMA:
+        if "perm_history_worksites" in ddl or "perm_history_wage_bands" in ddl:
+            db.execute(ddl)
+    db.execute("DELETE FROM perm_history_worksites")
+    insert_rows(db, "perm_history_worksites", ["slug", "state", "city"], sorted(places),
+                per_request=STMTS_PER_REQUEST)
+    db.execute("DELETE FROM perm_history_wage_bands")
+    insert_rows(db, "perm_history_wage_bands", ["fy", "band", "decided", "denied"],
+                [(fy, band, d, n) for (fy, band), (d, n) in sorted(bands.items())], per_request=STMTS_PER_REQUEST)
+    views_written = bwv.finish_views(db, bwv.HISTORY_PROGRAM, stamp, views_written)
+    write_doc(db, bwv.HISTORY_DOC, {"years": built, "views": views_written, "minCases": floor, "checked": checked})
+    bwb.refresh_history_years(db)
+    log(f"  history worksites {len(places):,}, wage bands {len(bands):,}, explorer views {views_written:,} "
+        f"(FY{built[0] if built else '-'} to FY{built[-1] if built else '-'}; {checked or 'no view'} checked live)")
+    return len(places) + len(bands) + views_written
+
+
 def occupation_slugs(db) -> dict[str, str]:
     return {str(r[0]): str(r[1]) for r in rows_of(db.execute(
         "SELECT code, slug FROM perm_entities WHERE kind = 'occupation' AND code IS NOT NULL"))}
@@ -1245,6 +1440,12 @@ def main() -> int:
                          "perm_docs['perm_history'], then stop")
     ap.add_argument("--fill-firm-slugs", action="store_true",
                     help="no workbooks: put every row's law firm on today's page or its own name's slug, then stop")
+    ap.add_argument("--places-wages", action="store_true",
+                    help="no workbooks: only rebuild perm_history_worksites, perm_history_wage_bands and the salary "
+                         "explorer's older years, then stop")
+    ap.add_argument("--decided-days", action="store_true",
+                    help="no workbooks: only rebuild perm_history_decided_days (the wait trend's FY2015 to FY2023 "
+                         "months), then stop")
     args = ap.parse_args()
 
     if args.entity_facets:
@@ -1262,6 +1463,15 @@ def main() -> int:
                    note="law-firm slugs: today's page, else the firm's own name")
         return 0
 
+    if args.decided_days:
+        db = Database()
+        db.script(SCHEMA)
+        n = build_decided_days(db)
+        record_run(db, "ingest_perm_history.py --decided-days", status="ok" if n else "partial", rows_written=n,
+                   note="decision days by decision month, FY2015 to FY2023, from perm_cases_history"
+                        if n else "idx_pch_dec missing or the table empty: nothing built")
+        return 0 if n else 1
+
     if args.month_days:
         db = Database()
         db.script(SCHEMA)
@@ -1269,6 +1479,18 @@ def main() -> int:
         record_run(db, "ingest_perm_history.py --month-days", status="ok", rows_written=n,
                    note="decision days by filing month and the alphabet chart's months from perm_cases_history")
         return 0
+
+    if args.places_wages:
+        db = Database()
+        if args.dry_run:
+            # The same reads, and counts and sizes in the log: nothing created, written or recorded.
+            return 0 if build_places_and_wages(db, dry_run=True) else 1
+        db.script(SCHEMA)
+        n = build_places_and_wages(db)
+        record_run(db, "ingest_perm_history.py --places-wages", status="ok" if n else "partial", rows_written=n,
+                   note="worksites, wage bands and the salary explorer's older years from perm_cases_history"
+                        if n else "idx_pch_dec missing or the table empty: nothing built")
+        return 0 if n else 1
 
     if args.fill_slugs:
         db = Database()
@@ -1285,10 +1507,11 @@ def main() -> int:
         if not args.no_indexes:
             build_search_indexes(db)
         n += build_history_facets(db, occupation_slugs(db))
-        n += build_month_days(db) + build_alphabet_history(db)
+        n += build_month_days(db) + build_alphabet_history(db) + build_decided_days(db) + build_places_and_wages(db)
         n += build_entity_facets(db)
         record_run(db, "ingest_perm_history.py --finish-only", status="ok", rows_written=n,
-                   note="current years, search indexes, history facets, month days and entity facets")
+                   note="current years, search indexes, history facets, month days, decided days, worksites, wages "
+                        "and entity facets")
         return 0
 
     if args.current:
@@ -1372,7 +1595,8 @@ def main() -> int:
         if not args.no_indexes:
             build_search_indexes(db)
         wrote_years += build_history_facets(db, occupation_slugs(db))
-        wrote_years += build_month_days(db) + build_alphabet_history(db)
+        wrote_years += (build_month_days(db) + build_alphabet_history(db) + build_decided_days(db)
+                        + build_places_and_wages(db))
         try:
             wrote_years += build_entity_facets(db)
         except Exception as exc:  # noqa: BLE001 - the loaded years stay loaded; the run ends partial

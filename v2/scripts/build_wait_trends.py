@@ -7,7 +7,8 @@ Two documents, one per queue:
 
 * perm_docs['perm_wait_trend']: DOL's published PERM files (`perm_cases`,
   certified and denied, its `days` from received to decision) for each month
-  with MIN_MONTH_CASES decisions or more; then, for the months after the files
+  with MIN_MONTH_CASES decisions or more, after the older files' months from
+  FY2015 (`perm_history_decided_days`, counted at the history load); then, for the months after the files
   end, our own sweep: each first decision it saw (to CERTIFIED or DENIED from
   a status still pending), dated by the day DOL worked (`observed_day`), from
   the case's filing day. The sweep's months start at LIVE_FROM: through Aug 29
@@ -48,6 +49,11 @@ ET = ZoneInfo("America/New_York")
 MIN_MONTH_CASES = 500
 # The first month of DOL's FY2024, where `perm_cases` and the wage-request files both start in full.
 FROM_DAY = "2023-10-01"
+# The PERM trend's older months, from DOL's older files: decisions from October 2014 (FY2015, the first file that
+# prints a received date, so the first with a wait to measure) to FROM_DAY, counted once at each history load into
+# this small table (ingest_perm_history.build_decided_days), never read from the older case table here.
+HISTORY_FROM = "2014-10-01"
+HISTORY_TABLE = "perm_history_decided_days"
 # The first month our own sweep's decisions are dated well enough to time.
 LIVE_FROM = "2026-09"
 
@@ -123,6 +129,30 @@ def live_months(decisions: list, bulk: set[int], today: str, after_month: str) -
     return out
 
 
+# Each older month's nearest ranks, read from the running total of its day counts, so the reply is a row a month
+# (write_decided_percentiles in ingest_case_status_direct.py reads its own table the same way). The positions are
+# PERCENTILE_SQL's: p25 at max(1, n/4), p50 at (n+1)/2, p75 at max(1, 3n/4).
+HISTORY_SQL = f"""
+    WITH r AS (SELECT m, days,
+                      SUM(n) OVER (PARTITION BY m ORDER BY days) AS run,
+                      SUM(n) OVER (PARTITION BY m)               AS total
+                 FROM {HISTORY_TABLE} WHERE m >= ? AND m < ?)
+    SELECT m, MAX(total) AS n,
+           MIN(CASE WHEN run >= MAX(1, total / 4)     THEN days END) AS p25,
+           MIN(CASE WHEN run >= (total + 1) / 2       THEN days END) AS p50,
+           MIN(CASE WHEN run >= MAX(1, total * 3 / 4) THEN days END) AS p75
+      FROM r GROUP BY m ORDER BY m"""
+
+
+def history_months(db: Database) -> list[dict]:
+    """The months before FROM_DAY from DOL's older files, by the same nearest-rank positions and floor as
+    perm_cases' own. None before the first history build made the table (said in the log)."""
+    if not query_rows(db, "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", [HISTORY_TABLE]):
+        print(f"[wait] {HISTORY_TABLE} isn't built yet: the PERM trend starts at {FROM_DAY[:7]}", flush=True)
+        return []
+    return months_from_rows(query_rows(db, HISTORY_SQL, [HISTORY_FROM[:7], FROM_DAY[:7]]), "files")
+
+
 def perm_trend(db: Database) -> dict | None:
     files = query_rows(db, f"""
         WITH f AS (SELECT substr(decision_date, 1, 7) AS m, days AS d
@@ -130,6 +160,8 @@ def perm_trend(db: Database) -> dict | None:
                     WHERE days IS NOT NULL AND decision_date >= ?
                       AND upper(status) NOT LIKE 'WITHDRAWN%'){PERCENTILE_SQL}""", [FROM_DAY])
     months = months_from_rows(files, "files")
+    if months:
+        months = history_months(db) + months
     through = query_rows(db, "SELECT MAX(decision_date) FROM perm_cases")[0][0]
     if not months or not through:
         return None

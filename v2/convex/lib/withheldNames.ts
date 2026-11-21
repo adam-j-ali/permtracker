@@ -982,13 +982,21 @@ export function makeMasker(entries: readonly WithheldEntry[]): Masker {
       }
       const copy: Record<string, unknown> = { ...r };
       for (const { col, hit, slugLike } of hits) copy[col] = slugLike ? neutralSlug(hit.entry) : shownLabel(hit.entry);
-      if (caseEntry) {
-        // The case is the withheld employer's, whatever spelling this file printed.
+      // The row is the withheld employer's own when its case number or its employer slug names it, whatever
+      // spelling this file printed: a later PERM file's, or a Wage and Hour, OSHA or SAM record joined to the page
+      // by its name and worksites, which prints its own (an older name, a plant's).
+      const ownEntry =
+        caseEntry ??
+        hits.find(
+          (h) => h.slugLike && h.hit.how === "slug" && h.hit.entry.kind === "employer" && roleOf(h.col).kind === "employer",
+        )?.hit.entry ??
+        null;
+      if (ownEntry) {
         for (const [col, v] of Object.entries(r)) {
           if (typeof v !== "string" || hits.some((h) => h.col === col)) continue;
           const role = roleOf(col);
           if (role.kind === "employer" || (role.kind === "generic" && kindsFor(role, rowKind) & EMPLOYER)) {
-            copy[col] = role.slugLike ? neutralSlug(caseEntry) : shownLabel(caseEntry);
+            copy[col] = role.slugLike ? neutralSlug(ownEntry) : shownLabel(ownEntry);
           }
         }
       }

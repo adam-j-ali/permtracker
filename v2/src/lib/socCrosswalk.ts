@@ -49,12 +49,11 @@ export function successorsOf(code: string): string[] {
 const joinAnd = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
 
 /**
- * One note under a year table that shows earlier codes: why they're there, and which other jobs each also covered,
- * so a reader doesn't take a 2010 code's wage as this job's alone. Null for a job that kept its code.
+ * Which other 2018 jobs each of these 2010 codes also covered, a sentence per set ("15-1132 and 15-1133 also covered
+ * 15-1253 (Software Quality Assurance Analysts and Testers)."), so a reader doesn't take a 2010 code's wage as one
+ * job's alone. Null when none of them covered another job.
  */
-export function predecessorNote(code: string): string | null {
-  const preds = predecessorsOf(code);
-  if (!preds.length) return null;
+export function alsoCoveredNote(preds: readonly Pick<SocPredecessor, "code" | "alsoTo">[]): string | null {
   const groups = new Map<string, { codes: string[]; alsoTo: SocPredecessor["alsoTo"] }>();
   for (const p of preds) {
     if (!p.alsoTo.length) continue;
@@ -63,9 +62,30 @@ export function predecessorNote(code: string): string | null {
     g.codes.push(p.code);
     groups.set(key, g);
   }
-  const lead = "Until June 2022 DOL filed this job under BLS's 2010 codes, so its earlier years show each of them.";
   const covered = [...groups.values()].map(
     (g) => `${joinAnd(g.codes)} also covered ${joinAnd(g.alsoTo.map((a) => `${a.code} (${a.title})`))}.`,
   );
-  return [lead, ...covered].join(" ");
+  return covered.length ? covered.join(" ") : null;
+}
+
+/**
+ * One note under a year table that shows earlier codes: why they're there, and which other jobs each also covered,
+ * so a reader doesn't take a 2010 code's wage as this job's alone. Null for a job that kept its code.
+ */
+export function predecessorNote(code: string): string | null {
+  const preds = predecessorsOf(code);
+  if (!preds.length) return null;
+  const lead = "Until June 2022 DOL filed this job under BLS's 2010 codes, so its earlier years show each of them.";
+  const covered = alsoCoveredNote(preds);
+  return covered ? `${lead} ${covered}` : lead;
+}
+
+/**
+ * A 2010 code that came before a 2018 job, and how many cases of one selection DOL's files hold under it. Read by
+ * the salary explorer for a year of the older files, where a renumbered job's cases carry its earlier codes.
+ */
+export interface EarlierSocCode {
+  code: string;
+  title: string;
+  n: number;
 }

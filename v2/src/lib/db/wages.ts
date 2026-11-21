@@ -31,6 +31,7 @@ import { toBands, type Ladder, type WageBandRate, type WageBandSeries } from "@/
 import { WAGE_BAND_EDGES_FINE } from "@/lib/wageLadder";
 
 import { rows } from "./client";
+import { beforeFirstLoad } from "./firstLoad";
 import { getWageCells, getWageMeta, type WageCell } from "./publicData";
 
 export { getWageMeta };
@@ -236,16 +237,31 @@ export async function getWageBandRates(): Promise<WageBandRate[]> {
  * been there.
  */
 export async function getWageBandRatesByYear(): Promise<WageBandSeries[]> {
-  const r = await rows<Record<string, unknown>>(
-    `SELECT fiscal_year AS fy, ${BAND_CASE} AS band, COUNT(*) AS decided,
-            SUM(CASE WHEN status = 'denied' THEN 1 ELSE 0 END) AS denied
-       FROM perm_cases
-      WHERE ${BAND_WHERE} AND fiscal_year IS NOT NULL AND fiscal_year <> ''
-      GROUP BY fy, band ORDER BY fy, band`,
-  );
-  const years = [...new Set(r.map((x) => String(x.fy)))].sort();
-  return years.map((fy) => ({
-    fiscalYear: fy,
-    bands: toBands(shape(r.filter((x) => String(x.fy) === fy))),
-  }));
+  const [r, older] = await Promise.all([
+    rows<Record<string, unknown>>(
+      `SELECT fiscal_year AS fy, ${BAND_CASE} AS band, COUNT(*) AS decided,
+              SUM(CASE WHEN status = 'denied' THEN 1 ELSE 0 END) AS denied
+         FROM perm_cases
+        WHERE ${BAND_WHERE} AND fiscal_year IS NOT NULL AND fiscal_year <> ''
+        GROUP BY fy, band ORDER BY fy, band`,
+    ),
+    // FY2008 to FY2023, from DOL's older files: counted once at the history load
+    // (build_places_and_wages in scripts/ingest_perm_history.py) by the same
+    // edges and the same decided and denied, so a page never reads the older
+    // case table. None before the first build.
+    rows<Record<string, unknown>>(
+      "SELECT fy, band, decided, denied FROM perm_history_wage_bands ORDER BY fy, band",
+    ).catch(beforeFirstLoad([] as Record<string, unknown>[])),
+  ]);
+  const series = (src: Record<string, unknown>[], history: boolean): WageBandSeries[] =>
+    [...new Set(src.map((x) => String(x.fy)))].map((fy) => ({
+      fiscalYear: fy,
+      bands: toBands(shape(src.filter((x) => String(x.fy) === fy))),
+      ...(history ? { history: true } : {}),
+    }));
+  const current = series(r, false);
+  // A year perm_cases holds is its own: the older table ends at FY2023.
+  const held = new Set(current.map((s) => s.fiscalYear));
+  const earlier = series(older.filter((x) => !held.has(String(x.fy))), true);
+  return [...earlier, ...current].sort((a, b) => a.fiscalYear.localeCompare(b.fiscalYear));
 }

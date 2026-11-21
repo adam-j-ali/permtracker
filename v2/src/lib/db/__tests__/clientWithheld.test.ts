@@ -146,6 +146,49 @@ describe("an older case of a withheld firm, on the case page (Nov 21 2026)", () 
   });
 });
 
+describe("rows() and a withheld employer's enforcement records", () => {
+  // Wage and Hour, OSHA and SAM print their own spelling of an employer, and the load joins a record to a sponsor's
+  // page by its name and its PERM worksites, older ones included (perm_history_worksites). A neutral page reads
+  // those records by the real slug, so a spelling the entry doesn't list (an older one, a plant's) would print.
+  const COMPANY = "acme-widgets-llc|Acme Widgets LLC|Employer||2|acme-widget-co|Acme Widget Co";
+
+  it("masks every name on a record joined to it, whatever spelling DOL's record printed", async () => {
+    process.env.WITHHELD_EMPLOYERS = `${EMPLOYERS};${COMPANY}`;
+    const { rows } = await import("../client");
+    const whd = ["case_id", "employer_slug", "legal_name", "trade_name", "city", "state"];
+    execute.mockResolvedValueOnce(
+      answer(whd, [["1234567", "acme-widgets-llc", "ACME WIDGET COMPANY OF OHIO", "Acme Dayton Plant", "Dayton", "OH"]]),
+    );
+    const got = await rows("SELECT * FROM whd_cases WHERE employer_slug = ?", ["employer-2"]);
+    expect(execute.mock.calls[0]![0].args).toEqual(["acme-widgets-llc"]);
+    expect(got).toEqual([
+      {
+        case_id: "1234567",
+        employer_slug: "employer-2",
+        legal_name: "Employer 2",
+        trade_name: "Employer 2",
+        city: "Dayton",
+        state: "OH",
+      },
+    ]);
+    const osha = ["activity_nr", "estab_name", "employer_slug", "city"];
+    execute.mockResolvedValueOnce(answer(osha, [["99", "A.W. CO - PLANT 2", "acme-widget-co", "Reno"]]));
+    expect(await rows("SELECT * FROM osha_inspections WHERE employer_slug IN (?)", ["employer-2"])).toEqual([
+      { activity_nr: "99", estab_name: "Employer 2", employer_slug: "employer-2", city: "Reno" },
+    ]);
+  });
+
+  it("leaves another employer's record as it is", async () => {
+    process.env.WITHHELD_EMPLOYERS = `${EMPLOYERS};${COMPANY}`;
+    const { rows } = await import("../client");
+    const whd = ["case_id", "employer_slug", "legal_name", "trade_name"];
+    execute.mockResolvedValueOnce(answer(whd, [["7", "beta-farms-llc", "BETA FARMS LLC", "Beta Farms"]]));
+    expect(await rows("SELECT * FROM whd_cases WHERE employer_slug = ?", ["beta-farms-llc"])).toEqual([
+      { case_id: "7", employer_slug: "beta-farms-llc", legal_name: "BETA FARMS LLC", trade_name: "Beta Farms" },
+    ]);
+  });
+});
+
 describe("the site's helpers", () => {
   it("know the real name from the neutral one, by kind", async () => {
     const w = await import("@/lib/privacy/withheld");

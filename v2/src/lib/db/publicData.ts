@@ -28,8 +28,10 @@ import {
 import { MS_PER_DAY } from "@/lib/time";
 
 import { one, rows } from "./client";
-import { wageView } from "./wageViews";
+import { permHistoryYear, permYearView, wageView, type PermYearView } from "./wageViews";
+import { OLDER_YEAR_REFUSAL } from "@/lib/wagePlaceFilters";
 import { socGroupClause } from "@/lib/socCode";
+import { alsoCoveredNote, predecessorsOf, type EarlierSocCode } from "@/lib/socCrosswalk";
 import { getLiveCensus, type CensusMatrixRow } from "./liveCensus";
 import { softFail } from "@/lib/softRead";
 import { budgetFor } from "@/lib/freshnessBudget";
@@ -1246,18 +1248,65 @@ export const STATE_PERCENTILE_SELECT = (
   .join(",\n            ");
 
 /**
- * The precomputed view for a selection (wageViews.ts), or null. A city or an
- * industry filter is never precomputed: both are narrowings the route only
- * accepts beside a state or an occupation, so the live query stays small.
+ * The precomputed view for a selection (wageViews.ts), and whether its year is
+ * one of DOL's older files' (FY2008 to FY2023). A city or an industry filter
+ * is never precomputed: both are narrowings the route only accepts beside a
+ * state or an occupation, so the live query stays small, and neither can
+ * narrow an older year, whose rows the live query doesn't read.
+ *
+ * For an older year every selection holding a case is precomputed, so the
+ * readers below answer a missing view there as none and never run the live
+ * query, which reads `perm_cases` (FY2024 on).
  */
-function permView(f: WageFilters) {
-  if (f.city || (f.sectorCodes && f.sectorCodes.length > 0)) return Promise.resolve(null);
-  return wageView("perm", f);
+async function permView(f: WageFilters): Promise<PermYearView> {
+  if (f.city || (f.sectorCodes && f.sectorCodes.length > 0)) {
+    if (f.fiscalYear && (await permHistoryYear(f.fiscalYear))) throw new Error(OLDER_YEAR_REFUSAL);
+    return { view: null, history: false, earlier: [] };
+  }
+  if (f.fiscalYear) return permYearView({ ...f, fiscalYear: f.fiscalYear });
+  return { view: await wageView("perm", f), history: false, earlier: [] };
+}
+
+/** An older year's selection with no cases, as the readers report one. */
+const NO_WAGES: WagePercentileRow = { n: 0, avg: null, p5: null, p25: null, p50: null, p75: null, p95: null };
+
+export interface WageSelection {
+  stats: WagePercentileRow;
+  /**
+   * In a year of DOL's older files, the selection's job under each 2010 code BLS maps to it, busiest first, each
+   * counted on its own (wageViews.ts, permYearView). Empty for any other selection.
+   */
+  earlierCodes: EarlierSocCode[];
+  /** Which other jobs those 2010 codes also covered, or null. */
+  earlierNote: string | null;
+}
+
+/**
+ * The explorer's figures for a selection, and for a year of the older files the job's 2010 codes that hold its
+ * cases there: one read of the precomputed views for both.
+ */
+export async function getWageSelection(f: WageFilters): Promise<WageSelection> {
+  const sel = await permView(f);
+  const stats = await wageStatsOf(f, sel);
+  if (!sel.earlier.length) return { stats, earlierCodes: [], earlierNote: null };
+  const preds = new Map(predecessorsOf(f.socCode ?? "").map((p) => [p.code, p]));
+  const earlierCodes = sel.earlier
+    .flatMap((e) => {
+      const p = preds.get(e.code);
+      return p ? [{ code: e.code, title: p.title, n: e.n }] : [];
+    })
+    .sort((a, b) => b.n - a.n || a.code.localeCompare(b.code));
+  const earlierNote = alsoCoveredNote(earlierCodes.flatMap((c) => preds.get(c.code) ?? []));
+  return { stats, earlierCodes, earlierNote };
 }
 
 export async function getWageStats(f: WageFilters): Promise<WagePercentileRow> {
-  const view = await permView(f);
+  return wageStatsOf(f, await permView(f));
+}
+
+async function wageStatsOf(f: WageFilters, { view, history }: PermYearView): Promise<WagePercentileRow> {
   if (view) return view.stats;
+  if (history) return NO_WAGES;
   const w = wageWhere(f);
   const r = await one<Record<string, unknown>>(
     `WITH f AS (SELECT wage FROM perm_cases WHERE ${w.sql}),
@@ -1285,11 +1334,13 @@ export async function getWageHistogram(
   width: number,
 ): Promise<{ from: number; count: number }[]> {
   // Bins are stored at the width the builder used; a different width means
-  // binWidth() changed since, so the live query answers.
-  const view = await permView(f);
+  // binWidth() changed since, so the live query answers. An older year has no
+  // live query, so it draws no bars until the history load is run again.
+  const { view, history } = await permView(f);
   if (view && view.binWidth === width) {
     return view.histogram.map(([from, count]) => ({ from, count }));
   }
+  if (history) return [];
   const w = wageWhere(f);
   // Width is a number this module computed, never caller text, but it is
   // still bound rather than interpolated so the shape of this query cannot
@@ -1313,8 +1364,10 @@ export async function getWageByState(
   f: WageFilters,
   minCases: number,
 ): Promise<WageStateRow[]> {
-  const view = await permView({ ...f, state: null });
+  const { view, history } = await permView({ ...f, state: null });
   if (view?.byState && view.minCases === minCases) return view.byState;
+  // An older year has no live query: a table built under another floor waits for the next history load.
+  if (history) return [];
   const w = wageWhere({ ...f, state: null });
   const r = await rows<Record<string, unknown>>(
     `WITH o AS (
@@ -1365,12 +1418,19 @@ export async function getWageFilterOptions(minCases: number): Promise<{
   occupations: { value: string; label: string; n: number }[];
   states: { value: string; label: string; n: number }[];
   fiscalYears: string[];
+  /**
+   * The years among `fiscalYears` that come from DOL's older files (FY2008 to
+   * FY2023), precomputed at the history load: outside the pooled choice, and
+   * never narrowed by a city or an industry.
+   */
+  historyYears: string[];
 }> {
   const pre = await doc<{
     minCases: number;
     occupations: { value: string; label: string; n: number }[];
     states: { value: string; label: string; n: number }[];
     fiscalYears: string[];
+    historyYears?: string[];
   }>("wage_filter_options");
   if (
     pre &&
@@ -1383,9 +1443,11 @@ export async function getWageFilterOptions(minCases: number): Promise<{
       occupations: pre.occupations,
       states: pre.states,
       fiscalYears: pre.fiscalYears,
+      historyYears: pre.historyYears || [],
     };
   }
-  return getWageFilterOptionsLive(minCases);
+  // The live fallback reads perm_cases alone, so it offers no older year.
+  return { ...(await getWageFilterOptionsLive(minCases)), historyYears: [] };
 }
 
 /**
