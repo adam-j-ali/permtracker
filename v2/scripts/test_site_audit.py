@@ -639,6 +639,16 @@ def test_the_sitemap_index_and_its_children_are_read_through_one_rule() -> None:
         raise AssertionError("an empty sitemap fails the night")
 
 
+def test_the_window_closes_at_the_next_stopping_time_in_real_seconds() -> None:
+    et = sa.ET
+    start = dt.datetime(2026, 11, 22, 21, 30, tzinfo=et)
+    assert sa.deadline_after(start, "00:45", 240) == 195 * 60
+    assert sa.deadline_after(start, "00:45", 60) == 60 * 60, "never longer than the cap"
+    # Across the fall-back hour (Nov 1 2026, 2 AM EDT is 1 AM EST), a stop at 3:00 is five real hours after 11 PM.
+    late = dt.datetime(2026, 10, 31, 23, 0, tzinfo=et)
+    assert sa.deadline_after(late, "03:00", 600) == 5 * 3600, sa.deadline_after(late, "03:00", 600)
+
+
 # ── a whole night, end to end ──────────────────────────────────────────────
 
 
