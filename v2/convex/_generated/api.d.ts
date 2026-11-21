@@ -222,6 +222,7 @@ import type * as lib_rag_permKnowledge from "../lib/rag/permKnowledge.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_redactEmails from "../lib/redactEmails.js";
 import type * as lib_reminderDigest from "../lib/reminderDigest.js";
+import type * as lib_reminderRecipientStore from "../lib/reminderRecipientStore.js";
 import type * as lib_reminderRecipients from "../lib/reminderRecipients.js";
 import type * as lib_replyName from "../lib/replyName.js";
 import type * as lib_resetOutcomes from "../lib/resetOutcomes.js";
@@ -513,6 +514,7 @@ declare const fullApi: ApiFromModules<{
   "lib/rateLimit": typeof lib_rateLimit;
   "lib/redactEmails": typeof lib_redactEmails;
   "lib/reminderDigest": typeof lib_reminderDigest;
+  "lib/reminderRecipientStore": typeof lib_reminderRecipientStore;
   "lib/reminderRecipients": typeof lib_reminderRecipients;
   "lib/replyName": typeof lib_replyName;
   "lib/resetOutcomes": typeof lib_resetOutcomes;
