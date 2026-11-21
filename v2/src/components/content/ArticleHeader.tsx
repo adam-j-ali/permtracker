@@ -12,8 +12,8 @@
  * fold animates in.
  */
 
-import { SiteImage } from "@/components/ui/site-image";
 
+import { SiteImage } from "@/components/ui/site-image";
 import { isWholeHero, WHOLE_HERO_GROUND } from "@/lib/content/wholeHeroes";
 import Link from "next/link";
 import { CalendarIcon, ClockIcon, UserIcon } from "@phosphor-icons/react/ssr";

@@ -1,6 +1,6 @@
 import { Fragment, type CSSProperties } from "react";
-import { SiteImage } from "@/components/ui/site-image";
 
+import { SiteImage } from "@/components/ui/site-image";
 import { isWholeHero, WHOLE_HERO_GROUND } from "@/lib/content/wholeHeroes";
 import Link from "next/link";
 import { ArrowRightIcon } from "@phosphor-icons/react/ssr";

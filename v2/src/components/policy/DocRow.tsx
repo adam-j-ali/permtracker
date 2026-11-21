@@ -1,7 +1,7 @@
 import { billNumber } from "@convex/lib/billNumber";
 import { CaretDownIcon } from "@phosphor-icons/react/ssr";
-import { SiteImage } from "@/components/ui/site-image";
 
+import { SiteImage } from "@/components/ui/site-image";
 import {
   ANNOUNCEMENT_TYPES,
   awaitsRegister,
