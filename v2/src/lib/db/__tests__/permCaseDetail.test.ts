@@ -11,6 +11,41 @@ const { getPermCaseDetail } = await import("../permCaseDetail");
 
 const JOB = { attorney_name: "Firm LLP", attorney_slug: "firm-llp", naics: "52399", worksite_city: "Merrimack", job_education: "Bachelor's", layoff: "N" };
 
+const OLDER_PWD = { pw_number: "P10014343361482", pw_wage: 65520, pw_level: "Level III", pw_determined: "2015-01-29", pw_expires: "2015-06-30" };
+
+describe("an older case's own wage request (sweep item 1)", () => {
+  beforeEach(() => {
+    rows.mockReset();
+    linkable.mockReset();
+    linkable.mockResolvedValue(new Set(["firm-llp"]));
+  });
+
+  it("carries its file's wage request: the number as printed, the prevailing wage a year, its level and dates", async () => {
+    rows.mockResolvedValueOnce([]).mockResolvedValueOnce([{ ...JOB }]).mockResolvedValueOnce([OLDER_PWD]);
+    const got = await getPermCaseDetail("A-15001-00001");
+    expect(rows.mock.calls[2]![0]).toContain("FROM perm_cases_history WHERE");
+    expect(rows.mock.calls[2]![0]).toContain("pw_number");
+    expect(got?.olderPwd).toEqual({ number: "P10014343361482", wage: 65520, level: "Level III", determined: "2015-01-29", expires: "2015-06-30" });
+    // The older number isn't a FLAG number, so nothing asks the wage request tables for it.
+    expect(got).toMatchObject({ pwdNumber: null, pwd: null });
+    expect(rows).toHaveBeenCalledTimes(3);
+  });
+
+  it("is null when the file printed none of it, or the read fails, and the rest of the case stays", async () => {
+    const blank = { pw_number: null, pw_wage: null, pw_level: "", pw_determined: null, pw_expires: null };
+    rows.mockResolvedValueOnce([]).mockResolvedValueOnce([{ ...JOB }]).mockResolvedValueOnce([blank]);
+    expect(await getPermCaseDetail("A-15001-00002")).toMatchObject({ attorneyName: "Firm LLP", olderPwd: null });
+    rows.mockResolvedValueOnce([]).mockResolvedValueOnce([{ ...JOB }]).mockRejectedValueOnce(new Error("no such column: pw_number"));
+    expect(await getPermCaseDetail("A-15001-00003")).toMatchObject({ attorneyName: "Firm LLP", olderPwd: null });
+  });
+
+  it("is never asked for a current case", async () => {
+    rows.mockResolvedValueOnce([{ ...JOB, pwd_number: null }]);
+    expect(await getPermCaseDetail("G-100-25318-409609")).toMatchObject({ olderPwd: null });
+    expect(rows).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("getPermCaseDetail", () => {
   beforeEach(() => {
     rows.mockReset();
