@@ -195,8 +195,8 @@ export default function PrivacyPage() {
                 employer&apos;s HR contact&apos;s, we email it once to ask it to confirm. That email names you by the
                 name on your account, cut short if it&apos;s long. It calls you a PERM Tracker user when your account
                 has no name, or when the name breaks the plain-text rule. Under that rule, a name may hold only Latin
-                letters (the common accented ones included), digits, spaces and a few punctuation marks: the
-                ampersand, comma, apostrophe, full stop, brackets, slash, hyphen and dash. Nothing in it may read
+                letters (the common accented ones included), digits, spaces and a few punctuation marks: hyphens and
+                dashes, round brackets, the ampersand, comma, apostrophe, full stop and slash. Nothing in it may read
                 like a web address, an email address or a phone number either. It names the case by its employer
                 and job title, or calls it a PERM case when either one breaks the same rule
               </li>{" "}

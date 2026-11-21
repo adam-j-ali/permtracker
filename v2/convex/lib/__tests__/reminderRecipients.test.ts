@@ -458,8 +458,15 @@ describe("the plain-text rule itself", () => {
     }
   });
 
-  it("takes the typographic apostrophe, the en dash and the slash, as names and titles use them", () => {
-    for (const s of ["Priya D’Souza", "O’Brien", "Macy’s, Inc.", "Software Engineer – Backend", "Software Developer/Engineer"]) {
+  it("takes the typographic apostrophe, the en dash, the em dash and the slash, as names and titles use them", () => {
+    for (const s of [
+      "Priya D’Souza",
+      "O’Brien",
+      "Macy’s, Inc.",
+      "Software Engineer – Backend",
+      "Software Engineer — Backend",
+      "Software Developer/Engineer",
+    ]) {
       expect(isPlainText(s), s).toBe(true);
       expect(safeCaseLine(s, "ACME Robotics"), s).toBe(`${s} at ACME Robotics`);
       expect(safeCaseLine("Analyst", s), s).toBe(`Analyst at ${s}`);
@@ -473,12 +480,21 @@ describe("the plain-text rule itself", () => {
       "ACME 800/555/0199",
       "8ØØ/5ØØ/Ø1ØØ", // the slash joins a run of look-alike digits
       "8ØØ–5ØØ–Ø1ØØ",
+      "ACME 800—555—0199", // em dashes
+      "8ØØ—5ØØ—Ø1ØØ",
+      "irs-refund—com.com",
       "8ØØ’5ØØ’Ø1ØØ",
       "irs-refund.com/claim",
       "irs-refund. com/claim",
       "5.9.12.34/claim",
       "https://evil",
     ]) {
+      expect(isPlainText(s), s).toBe(false);
+    }
+  });
+
+  it("still refuses square brackets", () => {
+    for (const s of ["Software Engineer [Backend]", "ACME [Robotics]", "[irs-refund]"]) {
       expect(isPlainText(s), s).toBe(false);
     }
   });

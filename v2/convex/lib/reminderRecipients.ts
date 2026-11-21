@@ -59,10 +59,11 @@ const LATIN_LETTERS = "A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u017F";
 
 /**
  * The punctuation NOT_PLAIN allows, as a character class's inside: & , ' . ( ) / and the hyphen, and the typographic
- * apostrophe (U+2019) and the en dash (U+2013) that names and job titles are often typed with ("O’Brien", "Software
- * Engineer – Backend"). NFKC leaves both as they are. The hyphen is last, so it's never read as a range.
+ * apostrophe (U+2019), the en dash (U+2013) and the em dash (U+2014) that names and job titles are often typed with
+ * ("O’Brien", "Software Engineer – Backend", "Software Engineer — Backend"). NFKC leaves all three as they are.
+ * Round brackets only: no square or curly ones. The hyphen is last, so it's never read as a range.
  */
-const PLAIN_PUNCTUATION = "&,'.()/\u2019\u2013-";
+const PLAIN_PUNCTUATION = "&,'.()/\u2019\u2013\u2014-";
 
 /**
  * The characters a name or a case's words may hold to be put in an email to someone who never asked for our mail:
