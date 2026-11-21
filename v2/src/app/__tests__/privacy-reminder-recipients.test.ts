@@ -7,9 +7,10 @@ import { INVITE_DAYS } from "@convex/lib/reminderRecipients";
 /**
  * The Privacy Policy says what adding a second person to a case's deadline reminders does
  * (convex/reminderRecipients.ts): one email to confirm, naming who asked and the case ("a PERM case" when its words
- * read like a link); reminders only after it confirms, naming the employer, the job title and the deadlines only,
- * by the owner's own email switches; a one-click stop, and a "don't invite me again" link, that delete the address
- * and put it on a refusal list kept as a keyed one-way hash; two invitations per account per address; the address
+ * break the plain-text rule, isPlainText); reminders only after it confirms, naming the employer, the job title and
+ * the deadlines only, by the owner's own email switches; a one-click stop that ends the account's reminders to the
+ * address on every case, and a "don't invite me again" link, each deleting the address and putting it on a refusal
+ * list kept as a keyed one-way hash; two invitations per account per address; the address
  * kept until it stops them, the owner removes it, or the case or account is deleted, with any email still waiting
  * to be resent; an unconfirmed invitation deleted after 30 days.
  */
@@ -28,11 +29,18 @@ describe("the privacy page and a case's second reminder recipient", () => {
     expect(section).toContain("we email it once to ask it to confirm");
     expect(section).toContain("That email names you by the name on your account, cut short if it's long");
     expect(section).toContain(
-      "It calls you a PERM Tracker user when your account has no name, or when the name reads like a web or email address or a phone number",
+      "It calls you a PERM Tracker user when your account has no name, or when the name breaks the plain-text rule",
     );
+    // The rule as isPlainText (convex/lib/reminderRecipients.ts) holds it: an allow-list of characters, then the
+    // shapes of a link, an address and a phone number.
     expect(section).toContain(
-      "by its employer and job title, or calls it a PERM case when either one reads like a web or email address or a phone number",
+      "Under that rule, a name may hold only Latin letters (the common accented ones included), digits, spaces and a few punctuation marks: the ampersand, comma, apostrophe, full stop, brackets, slash, hyphen and dash",
     );
+    expect(section).toContain("Nothing in it may read like a web address, an email address or a phone number either");
+    expect(section).toContain(
+      "It names the case by its employer and job title, or calls it a PERM case when either one breaks the same rule",
+    );
+    expect(section).not.toContain("reads like a web or email address or a phone number");
   });
 
   it("says the reminders go only after it confirms, and name the employer, the job title and the deadlines only", () => {

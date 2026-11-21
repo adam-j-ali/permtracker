@@ -398,6 +398,39 @@ describe("the plain-text rule itself", () => {
     }
   });
 
+  it("takes the typographic apostrophe, the en dash and the slash, as names and titles use them", () => {
+    for (const s of ["Priya D’Souza", "O’Brien", "Macy’s, Inc.", "Software Engineer – Backend", "Software Developer/Engineer"]) {
+      expect(isPlainText(s), s).toBe(true);
+      expect(safeCaseLine(s, "ACME Robotics"), s).toBe(`${s} at ACME Robotics`);
+      expect(safeCaseLine("Analyst", s), s).toBe(`Analyst at ${s}`);
+      expect(inviterName(s, undefined), s).toBe(s);
+    }
+  });
+
+  it("still fails a phone number, a numeric address or a domain that uses them", () => {
+    for (const s of [
+      "ACME 800–555–0199",
+      "ACME 800/555/0199",
+      "8ØØ/5ØØ/Ø1ØØ", // the slash joins a run of look-alike digits
+      "8ØØ–5ØØ–Ø1ØØ",
+      "8ØØ’5ØØ’Ø1ØØ",
+      "irs-refund.com/claim",
+      "irs-refund. com/claim",
+      "5.9.12.34/claim",
+      "https://evil",
+    ]) {
+      expect(isPlainText(s), s).toBe(false);
+    }
+  });
+
+  it("fails www before a dot, a slash or a space and a word; a slash between two words is no link", () => {
+    for (const s of ["www/irs", "www irs-refund", "WWW/ irs", "visit www. irs-refund"]) {
+      expect(isPlainText(s), s).toBe(false);
+    }
+    // No dot, so no mail app makes a link of it, and it reads no nearer a link than "irs-refund dot com" does.
+    expect(isPlainText("irs-refund/com")).toBe(true);
+  });
+
   it("hides an inviter whose name holds a phone number or a look-alike link", () => {
     expect(inviterName("Call 800-555-0199", undefined)).toBe(SOMEONE);
     expect(inviterName("irs。gov", undefined)).toBe(SOMEONE);

@@ -54,16 +54,23 @@ export function normaliseRecipientEmail(raw: string): string | null {
   return isPlausibleEmail(email) ? email : null;
 }
 
-/**
- * The characters a name or a case's words may hold to be put in an email to someone who never asked for our mail:
- * ASCII letters and digits, the space, & , ' . - ( ), and the Latin letters of Latin-1 and Latin Extended-A, named
- * as ranges (a script property would take in look-alikes such as U+A78F, a Latin letter that is a dot). This matches
- * any other character.
- */
-const NOT_PLAIN = /[^A-Za-z0-9 &,'.()\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u017F-]/;
-
 /** The letters NOT_PLAIN allows, as a character class's inside. */
 const LATIN_LETTERS = "A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u017F";
+
+/**
+ * The punctuation NOT_PLAIN allows, as a character class's inside: & , ' . ( ) / and the hyphen, and the typographic
+ * apostrophe (U+2019) and the en dash (U+2013) that names and job titles are often typed with ("O’Brien", "Software
+ * Engineer – Backend"). NFKC leaves both as they are. The hyphen is last, so it's never read as a range.
+ */
+const PLAIN_PUNCTUATION = "&,'.()/\u2019\u2013-";
+
+/**
+ * The characters a name or a case's words may hold to be put in an email to someone who never asked for our mail:
+ * ASCII letters and digits, the space, PLAIN_PUNCTUATION, and the Latin letters of Latin-1 and Latin Extended-A, named
+ * as ranges (a script property would take in look-alikes such as U+A78F, a Latin letter that is a dot). This matches
+ * any other character. No colon and no @, so a slash can't make a link's "://" or an address.
+ */
+const NOT_PLAIN = new RegExp(`[^${LATIN_LETTERS}0-9 ${PLAIN_PUNCTUATION}]`);
 
 /** A dot directly followed by two letters, the start of a domain ("irs-refund.com", ".NET"); "St. Jude" and "U.S." have none. */
 const DOT_THEN_LETTERS = new RegExp(`\\.[${LATIN_LETTERS}]{2}`);
@@ -85,6 +92,13 @@ const SPACED_DOMAIN = new RegExp(
  */
 const NUMERIC_ADDRESS = /[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/;
 
+/**
+ * "www" as a word, then a dot, a slash or a space and a word ("www/irs", "www irs-refund"): a web address however it's
+ * split. "irs-refund/com" has no dot, so no mail app makes a link of it, and it reads no nearer one than "irs-refund
+ * dot com" does: it shows. The separators can be matched one way only, so it's linear in the text.
+ */
+const WWW_THEN_WORD = new RegExp(`\\bwww[./ ]+[${LATIN_LETTERS}0-9]`, "i");
+
 /** Digits in one text that make a phone number, however they're spaced or split. */
 const PHONE_DIGITS = 7;
 
@@ -100,10 +114,10 @@ const DIGIT_LIKE_CHARS =
   "Il\u00CC-\u00CF\u00EC-\u00EF\u0128-\u0131\u0139-\u0142"; // Ì-Ï ì-ï Ĩ-ı Ĺ-ł
 
 /**
- * One run of what could be a phone number: those characters, joined by a space or the punctuation NOT_PLAIN allows
- * between words. One character class and a plus, so a match runs in time linear in the text.
+ * One run of what could be a phone number: those characters, joined by a space or any punctuation NOT_PLAIN allows.
+ * One character class and a plus, so a match runs in time linear in the text.
  */
-const NUMBER_RUN = new RegExp(`[${DIGIT_LIKE_CHARS} ().,'&-]+`, "g");
+const NUMBER_RUN = new RegExp(`[${DIGIT_LIKE_CHARS} ${PLAIN_PUNCTUATION}]+`, "g");
 const DIGIT_LIKE = new RegExp(`[${DIGIT_LIKE_CHARS}]`, "g");
 const REAL_DIGIT = /[0-9]/;
 
@@ -114,14 +128,16 @@ const REAL_DIGIT = /[0-9]/;
  * folding turns a hair space into a space and a fullwidth letter into a plain one, which the email would still show as
  * typed, and it splits a letter such as U+0140 into an l and a middle dot. Then, on the folded text: no dot directly
  * followed by two letters (DOT_THEN_LETTERS), no domain spelled apart after its dot (SPACED_DOMAIN), no numeric web
- * address (NUMERIC_ADDRESS), fewer than seven digits in all (PHONE_DIGITS), and fewer than seven digits and letters
- * that pass for digits in any run that holds a real digit (NUMBER_RUN: "8ØØ 555 Ø1ØØ" is a phone number, "Apollo 11
- * Labs" isn't). A false alarm only hides a name. Every step runs in time linear in the text.
+ * address (NUMERIC_ADDRESS), no "www" before a word (WWW_THEN_WORD), fewer than seven digits in all (PHONE_DIGITS), and
+ * fewer than seven digits and letters that pass for digits in any run that holds a real digit (NUMBER_RUN: "8ØØ 555
+ * Ø1ØØ" is a phone number, "Apollo 11 Labs" isn't). A false alarm only hides a name. Every step runs in time linear in
+ * the text.
  */
 export function isPlainText(text: string): boolean {
   const folded = text.normalize("NFKC");
   if (NOT_PLAIN.test(text.normalize("NFC")) || NOT_PLAIN.test(folded)) return false;
   if (DOT_THEN_LETTERS.test(folded) || SPACED_DOMAIN.test(folded) || NUMERIC_ADDRESS.test(folded)) return false;
+  if (WWW_THEN_WORD.test(folded)) return false;
   let digits = 0;
   for (let i = 0; i < folded.length; i++) {
     const c = folded.charCodeAt(i);

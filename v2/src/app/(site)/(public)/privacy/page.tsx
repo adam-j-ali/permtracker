@@ -194,9 +194,11 @@ export default function PrivacyPage() {
                 If you add a second address to a case&apos;s deadline reminders, such as a paralegal&apos;s or the
                 employer&apos;s HR contact&apos;s, we email it once to ask it to confirm. That email names you by the
                 name on your account, cut short if it&apos;s long. It calls you a PERM Tracker user when your account
-                has no name, or when the name reads like a web or email address or a phone number. It names the case
-                by its employer and job title, or calls it a PERM case when either one reads like a web or email
-                address or a phone number
+                has no name, or when the name breaks the plain-text rule. Under that rule, a name may hold only Latin
+                letters (the common accented ones included), digits, spaces and a few punctuation marks: the
+                ampersand, comma, apostrophe, full stop, brackets, slash, hyphen and dash. Nothing in it may read
+                like a web address, an email address or a phone number either. It names the case by its employer
+                and job title, or calls it a PERM case when either one breaks the same rule
               </li>{" "}
               <li>
                 Only after it confirms do we send it that case&apos;s deadline reminders. They name the employer,
