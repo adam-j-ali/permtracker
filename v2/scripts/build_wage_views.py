@@ -46,11 +46,22 @@ import time
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from build_lca_facets import bin_width, min_for_median  # noqa: E402
 from lib_wage import ANNUAL_WAGE_SQL, FLAG_BAND  # noqa: E402
-from lib_db import Database, cell, query_rows, record_run  # noqa: E402
+from lib_db import Database, cell, insert_stmts, query_rows, record_run, run_stmts  # noqa: E402
 
 # A selection at or above this many filings is precomputed. Below it the live
 # query touches at most an index slice and returns in well under a second.
 MIN_ROWS = 5_000
+
+# THE OLDER PERM YEARS (FY2008 to FY2023, perm_cases_history) HAVE NO LIVE QUERY. The explorer's live query reads
+# perm_cases, which holds FY2024 on, and a page never scans the older table. So the history load
+# (ingest_perm_history.build_places_and_wages) precomputes every selection of each older year that holds a case,
+# under the reader's own keys, and the reader answers a missing key in such a year as none. Its rows carry this
+# `program`, so this script's quarterly rewrite of the PERM views (which deletes by program) leaves them alone, and
+# the reader tells an older year by it (src/lib/db/wageViews.ts).
+HISTORY_PROGRAM = "perm_history"
+HISTORY_DOC = "perm_history_wage_views"
+# Views to a statement when written: a view without a state carries its by-state table, a few kilobytes.
+VIEWS_PER_STMT = 50
 
 PAGE = 25_000
 QUANTILES = ((0.05, "p5"), (0.25, "p25"), (0.5, "p50"), (0.75, "p75"), (0.95, "p95"))
@@ -121,6 +132,26 @@ def key(program: str, status: str, soc: str, state: str, fy: str) -> str:
     return f"{program}|{status}|{soc}|{state}|{fy}"
 
 
+def view_row(program: str, wage, raw_status, soc, state, fy) -> tuple | None:
+    """One row as the explorer sees it, (wage, statuses, soc, state, fy), or None when it can't see it: the reader's
+    own filters (a positive wage, the LCA band) and its spelling of each column."""
+    wage = None if wage is None else float(wage)
+    if wage is None or wage <= 0:
+        return None
+    raw_status = raw_status or ""
+    if program == "lca":
+        if not (LCA_MIN <= wage <= LCA_MAX):
+            return None
+        s = LCA_STATUS.get(raw_status)
+    else:
+        s = raw_status if raw_status in ("certified", "denied", "withdrawn") else None
+    statuses = ("all",) if s is None else (s, "all")
+    soc = soc or ""
+    state = (state or "").upper() if program == "lca" else (state or "")
+    fy = "" if fy is None else str(fy)
+    return (wage, statuses, soc, state, fy)
+
+
 def read_rows(db: Database, program: str) -> list[tuple]:
     """(wage, statuses, soc, state, fy) for every row the explorer can see."""
     sql = READS[program]
@@ -132,42 +163,37 @@ def read_rows(db: Database, program: str) -> list[tuple]:
             break
         for v in rows:
             last = int(v[0])
-            wage = None if v[1] is None else float(v[1])
-            if wage is None or wage <= 0:
-                continue
-            raw_status = v[2] or ""
-            if program == "lca":
-                if not (LCA_MIN <= wage <= LCA_MAX):
-                    continue
-                s = LCA_STATUS.get(raw_status)
-            else:
-                s = raw_status if raw_status in ("certified", "denied", "withdrawn") else None
-            statuses = ("all",) if s is None else (s, "all")
-            soc = v[3] or ""
-            state = (v[4] or "").upper() if program == "lca" else (v[4] or "")
-            fy = "" if v[5] is None else str(v[5])
-            out.append((wage, statuses, soc, state, fy))
+            row = view_row(program, *v[1:6])
+            if row is not None:
+                out.append(row)
         if len(rows) < PAGE:
             break
     out.sort(key=lambda t: t[0])
     return out
 
 
-def build(program: str, rows: list[tuple], min_cases: int) -> dict[str, dict]:
-    """Every precomputed view for one program, keyed as wageViews.ts keys them."""
+def build(program: str, rows: list[tuple], min_cases: int, *, min_rows: int | None = None,
+          fy_only: bool = False) -> dict[str, dict]:
+    """Every precomputed view for one program, keyed as wageViews.ts keys them.
+
+    `rows` ascending by wage. A view is built for each selection holding `min_rows` rows (MIN_ROWS unless given);
+    `fy_only` keeps to the selections that name a fiscal year (an older PERM year's, whose pooled selections are the
+    quarterly build's)."""
+    floor = MIN_ROWS if min_rows is None else min_rows
+    masks = [m for m in range(8) if m & FY or not fy_only]
     views: dict[str, dict] = {}
     for status in STATUSES:
         mine = [r for r in rows if status in r[1]]
         # Pass 1: counts for all eight subsets of (soc, state, fy).
         counts: dict[str, int] = {}
         for _, _, soc, state, fy in mine:
-            for mask in range(8):
+            for mask in masks:
                 if (mask & SOC and not soc) or (mask & STATE and not state) or (mask & FY and not fy):
                     continue
                 k = key(program, status, soc if mask & SOC else "",
                         state if mask & STATE else "", fy if mask & FY else "")
                 counts[k] = counts.get(k, 0) + 1
-        heavy = {k for k, c in counts.items() if c >= MIN_ROWS}
+        heavy = {k for k, c in counts.items() if c >= floor}
         if not heavy:
             continue
         # Pass 2: ascending wage lists for the heavy keys, plus each heavy
@@ -175,7 +201,7 @@ def build(program: str, rows: list[tuple], min_cases: int) -> dict[str, dict]:
         lists: dict[str, list[float]] = {k: [] for k in heavy}
         children: dict[str, dict[str, list[float]]] = {}
         for wage, _, soc, state, fy in mine:
-            for mask in range(8):
+            for mask in masks:
                 if (mask & SOC and not soc) or (mask & FY and not fy):
                     continue
                 s_soc = soc if mask & SOC else ""
@@ -214,30 +240,63 @@ def build(program: str, rows: list[tuple], min_cases: int) -> dict[str, dict]:
     return views
 
 
+def serialize(views: dict[str, dict]) -> list[tuple[str, int, str]]:
+    """(key, n, json) per view: the history build holds every older year's views this way, a fraction of the
+    memory the dicts take."""
+    return [(k, int(v["stats"]["n"]), json.dumps(v, separators=(",", ":"))) for k, v in views.items()]
+
+
 def write(db: Database, program: str, views: dict[str, dict]) -> int:
+    return write_serialized(db, program, serialize(views))
+
+
+def write_serialized(db: Database, program: str, items: list[tuple[str, int, str]]) -> int:
+    """Every view of one `program` value, replacing the ones it held before."""
     db.execute(
         """CREATE TABLE IF NOT EXISTS wage_views (
              key TEXT PRIMARY KEY, program TEXT NOT NULL, n INTEGER NOT NULL,
              json TEXT NOT NULL, built_at INTEGER NOT NULL)""", [])
     built = int(time.time() * 1000)
-    items = list(views.items())
-    for i in range(0, len(items), 40):
-        reqs = []
-        for k, v in items[i:i + 40]:
-            reqs.append({"type": "execute", "stmt": {
-                "sql": "INSERT OR REPLACE INTO wage_views (key, program, n, json, built_at) VALUES (?, ?, ?, ?, ?)",
-                "args": [{"type": "text", "value": k}, {"type": "text", "value": program},
-                         {"type": "integer", "value": str(v["stats"]["n"])},
-                         {"type": "text", "value": json.dumps(v, separators=(",", ":"))},
-                         {"type": "integer", "value": str(built)}]}})
-        db.pipeline(reqs + [{"type": "close"}])
+    run_stmts(db, insert_stmts("wage_views", ["key", "program", "n", "json", "built_at"],
+                               [(k, program, n, j, built) for k, n, j in items], VIEWS_PER_STMT), 4)
     # Keys that no longer clear the floor go, so a stale view can't outlive
     # the data it described. Only AFTER every new row is in.
     db.execute("DELETE FROM wage_views WHERE program = ? AND built_at < ?", [program, built])
     got = int(db.scalar("SELECT COUNT(*) FROM wage_views WHERE program = ?", [program]) or 0)
-    if got != len(views):
-        raise SystemExit(f"FATAL: wrote {len(views)} {program} views, read back {got}")
+    if got != len(items):
+        raise SystemExit(f"FATAL: wrote {len(items)} {program} views, read back {got}")
     return got
+
+
+def verify_history(db: Database, fy: str, views: dict[str, dict]) -> str | None:
+    """Recompute one small view of an older year through the site's own percentile SQL, and demand agreement.
+
+    The view read is one state's fiscal year with every outcome, on idx_pch_state_dec (state, decision_date): the
+    smallest such view at the median floor, so the control reads a few dozen rows. A fiscal year is its decision
+    days, October to September (ingest_perm_history.py sets it from the decision date). The key checked, or None
+    when the year has no such view."""
+    from build_lca_facets import percentile_select
+    floor = min_for_median()
+    picks = [k for k, v in views.items()
+             if k.split("|")[1] == "all" and not k.split("|")[2] and k.split("|")[3] and v["stats"]["n"] >= floor]
+    if not picks:
+        return None
+    k = min(picks, key=lambda x: (views[x]["stats"]["n"], x))
+    state = k.split("|")[3]
+    sql = ("WITH f AS (SELECT wage FROM perm_cases_history "
+           "WHERE state = ? AND decision_date >= ? AND decision_date < ? AND fiscal_year = ? "
+           "AND wage IS NOT NULL AND wage > 0), c AS (SELECT COUNT(*) AS n FROM f), "
+           "o AS (SELECT wage, ROW_NUMBER() OVER (ORDER BY wage) AS rn FROM f) "
+           f"SELECT (SELECT n FROM c) AS n, {percentile_select()}")
+    res = db.execute(sql, [state, f"{int(fy) - 1}-10-01", f"{fy}-10-01", fy])["response"]["result"]
+    live = dict(zip([c["name"] for c in res["cols"]], [cell(c) for c in res["rows"][0]]))
+    mine = views[k]["stats"]
+    if int(live["n"]) != mine["n"]:
+        raise SystemExit(f"FATAL: {k} n live {live['n']} != precomputed {mine['n']}")
+    for _, name in QUANTILES:
+        if abs(float(live[name]) - mine[name]) > 1:
+            raise SystemExit(f"FATAL: {k} {name} live {live[name]} != precomputed {mine[name]}")
+    return k
 
 
 def verify(db: Database, program: str, views: dict[str, dict]) -> None:
