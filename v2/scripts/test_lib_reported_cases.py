@@ -247,6 +247,22 @@ def main() -> int:
     except ValueError:
         check(True, "refuses two records with one key")
 
+    # 20. A Facebook post typed in by hand ranks with the posts, never as a community sheet: where two members hold one
+    # date a day apart, a sheet's and VisaStats' show over Facebook's, and Facebook's over Telegram's.
+    def shown_transfer(*members: dict) -> str | None:
+        cases = rc.merge(list(members))
+        return cases[0].get("transfer") if len(cases) == 1 else f"{len(cases)} cases"
+
+    base = dict(category="EB-2", i485_receipt="2026-01-05", biometrics="2026-02-02", i140_receipt="2025-06-02")
+    fb = rec("facebook", "f1", person="p1", as_of="2026-11-18", transfer="2026-04-02", **base)
+    check(shown_transfer(fb, rec("sfv-filers", "40", transfer="2026-04-01", **base)) == "2026-04-01",
+          "a sheet's date shows over Facebook's")
+    check(shown_transfer(fb, rec("visastats", "41", transfer="2026-04-03", **base)) == "2026-04-03",
+          "VisaStats' date shows over Facebook's")
+    check(shown_transfer(fb, rec("telegram", "c:42", transfer="2026-04-03", **base)) == "2026-04-02",
+          "Facebook's date shows over Telegram's")
+    check(rc.SHEET_RANK < rc.rank("facebook") and "facebook" in rc.SOURCE_RANK, "Facebook has its own rank, not a sheet's")
+
     print(f"{failures} failed")
     return 1 if failures else 0
 

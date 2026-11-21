@@ -118,9 +118,11 @@ case "$job" in
     convex_export_env
     timeout 5m python3 scripts/build_reported_cases.py --from-convex \
       || { rc=1; fail build_reported_cases.py "the reported-cases build after the VisaStats load failed"; } ;;
-  # People's own case reports from Reddit (and Telegram) posts, prepared on the owner's Mac by
-  # scripts/ingest_community_posts.py prepare (dates and categories only, the author link salted there), then merged.
+  # People's own case reports from Reddit, Telegram, WhatsApp and Facebook posts (Facebook's typed in by hand),
+  # prepared where they were read as records (dates and categories only, the author link salted there), then
+  # merged. Any source in the file loads; each replaces only its own rows.
   #   sudo -u permtracker permtracker-uscis community-posts /srv/permtracker/inbox/reddit-records.json
+  #   sudo -u permtracker permtracker-uscis community-posts /srv/permtracker/inbox/facebook-records.json
   community-posts)
     f="${2:-}"
     if [ -z "$f" ]; then echo "usage: permtracker-uscis community-posts <records.json>"; exit 2; fi

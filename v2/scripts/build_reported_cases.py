@@ -200,7 +200,7 @@ def consular_record(row: dict) -> dict:
 
 
 def post_record(row: dict) -> dict:
-    """A Reddit or Telegram report (community_post_reports) is stored in the merge's own shape."""
+    """A Reddit, Telegram or Facebook report (community_post_reports) is stored in the merge's own shape."""
     out = {k: v for k, v in row.items() if (k in rc.FIELDS or k in rc.META_FIELDS) and v is not None}
     for k in ("checked", "shows", "visa_available"):
         if k in out:
