@@ -235,6 +235,9 @@ cp /srv/permtracker/repo/v2/scripts/oracle/systemd/permtracker-site-audit.{servi
 systemctl daemon-reload
 systemctl enable --now permtracker-site-audit.timer
 systemctl list-timers permtracker-site-audit.timer
+# The hourly speed job leaves the audit's own requests out of its readings (since Nov 21 2026).
+cp /usr/local/sbin/permtracker-perf "/var/backups/permtracker-old-scripts/permtracker-perf.$(date +%F)"
+install -m 755 /srv/permtracker/repo/v2/scripts/oracle/bin/permtracker-perf /usr/local/sbin/permtracker-perf
 ```
 
 The service reads `/etc/permtracker/owner-mail.env` as the systemd credential `owner-mail`, so that file must exist
