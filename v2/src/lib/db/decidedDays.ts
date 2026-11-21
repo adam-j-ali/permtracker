@@ -125,6 +125,11 @@ export interface DecidedFeed {
   capped: boolean;
   /** Set when the range was refused for cost, with the reason in words. */
   refused: string | null;
+  /**
+   * Set when one part of the range was left out of an answer that still serves the rest, with what and why in
+   * words: the older LCA files under a filter they check a few days at a time, asked beside other programs.
+   */
+  partial: string | null;
 }
 
 /**
@@ -548,6 +553,7 @@ export async function getDecidedFeed(args: {
       totals: null,
       capped: false,
       refused: "That isn't a valid date range.",
+      partial: null,
     };
   }
 
@@ -562,6 +568,7 @@ export async function getDecidedFeed(args: {
         `A wage filter has to be checked on every case in the range, so it's ` +
         `limited to ${RANGE_MAX_DAYS_UNINDEXED} days. This range is ${span}. ` +
         `Narrow the dates, or drop the wage filter.`,
+      partial: null,
     };
   }
 
@@ -575,31 +582,41 @@ export async function getDecidedFeed(args: {
       totals: null,
       capped: false,
       refused: "That employer name is too short to search. Try two or more characters.",
+      partial: null,
     };
   }
 
   // The older LCA files answer a filter tested row by row a few days at a time (LCA_HISTORY_SCAN_DAYS). A wider
-  // range there is refused in words, like the wage bound above, rather than walked past a second or cut silently.
+  // range there is said in words, never walked past a second or cut silently: refused when only the LCAs are
+  // asked, and left out of an answer that serves the other programs, with a note saying so.
   const lcaHistory = programs.includes("lca") ? lcaHistoryPart(range) : null;
-  if (lcaHistory && walksLcaHistory(narrow) && daysInRange(lcaHistory) > LCA_HISTORY_SCAN_DAYS) {
+  const skipLcaHistory =
+    lcaHistory !== null && walksLcaHistory(narrow) && daysInRange(lcaHistory) > LCA_HISTORY_SCAN_DAYS;
+  const why =
+    `H-1B LCAs decided before October 2019 are in DOL's older files, where this filter is checked a few days at a ` +
+    `time, so a range reaching them can hold at most ${LCA_HISTORY_SCAN_DAYS} days of them with it. This one holds ` +
+    `${lcaHistory ? daysInRange(lcaHistory) : 0}.`;
+  if (skipLcaHistory && programs.every((p) => p === "lca")) {
     return {
       range,
       cases: [],
       totals: null,
       capped: false,
-      refused:
-        `H-1B LCAs decided before October 2019 are in DOL's older files, where this filter is checked a few days ` +
-        `at a time, so a range reaching them can hold at most ${LCA_HISTORY_SCAN_DAYS} days of them with it. ` +
-        `This one holds ${daysInRange(lcaHistory)}. Narrow the dates, start them in October 2019 or later, or ` +
-        `filter by state, occupation or law firm instead.`,
+      refused: `${why} Narrow the dates, start them in October 2019 or later, or filter by state, occupation or law firm instead.`,
+      partial: null,
     };
   }
+  const partial = skipLcaHistory
+    ? `H-1B LCAs decided before October 2019 aren't in this answer. ${why} Ask for the LCAs alone with a shorter range to see them.`
+    : null;
 
   // A failed read throws: an empty answer would read as a day DOL decided nothing.
   const fetched = await Promise.all(
     programs.map(async (p) => {
       const perTable = await Promise.all(
-        tablesFor(p, range).map(async (table) => {
+        tablesFor(p, range)
+          .filter((table) => !(skipLcaHistory && table === LCA_HISTORY))
+          .map(async (table) => {
           const cols = await tableColumns(table);
           // An older-files table not made yet holds nothing (PRAGMA names no columns for a missing table).
           if (table === LCA_HISTORY && cols.size === 0) return [] as Record<string, unknown>[];
@@ -655,6 +672,7 @@ export async function getDecidedFeed(args: {
     totals: span === 1 ? await countDay(range.from, programs, narrow) : null,
     capped,
     refused: null,
+    partial,
   };
 }
 

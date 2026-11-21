@@ -138,7 +138,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   if (isWithheldQuery("attorney", narrow.attorney) || isWithheldQuery("employer", narrow.employer)) {
     const none = Object.fromEntries(programs.map((pr) => [pr, 0])) as Record<ChangeProgram, number>;
     return NextResponse.json(
-      { feed: { range: { from, to }, cases: [], totals: none, capped: false, refused: null }, noMatch: true },
+      { feed: { range: { from, to }, cases: [], totals: none, capped: false, refused: null, partial: null }, noMatch: true },
       { headers: { "Cache-Control": "no-store" } },
     );
   }
