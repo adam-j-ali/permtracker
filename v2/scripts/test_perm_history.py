@@ -208,6 +208,13 @@ def main() -> int:
           and facets.get(("employer", "acme-inc", "visa_class", "H-1B")) == ("H-1B", 1))
     check("occupation facets map the SOC code to the occupation page",
           facets.get(("occupation", "software-developers", "education", "Master's")) == ("Master's", 1))
+    makeup = {(k, sl, f, key): (n, total) for k, sl, f, key, n, total in db.conn.execute(
+        "SELECT kind, slug, facet, key, n, total FROM perm_history_entity_facets")}
+    check(f"a load counts what the employer's older cases were made of (got {sorted(makeup)[:6]})",
+          # Five of its seven older cases name Washington; the two FY2009 ones name no state.
+          makeup.get(("employer", "acme-inc", "state", "WA")) == (5, 7))
+    check("and the state counts the case search adds to its own",
+          any(s.get("state") == "WA" for s in h.read_doc(db).get("byState", [])))
 
     doc = h.read_doc(db)
     check("each workbook that loaded is recorded, the broken one isn't",
