@@ -390,24 +390,31 @@ describe("sitemap.ts", () => {
       ...Array.from({ length: 30 }, (_, i): [string, string] => [`analyst-${i}`, `Analyst ${i}`]),
     ];
     const pages = titles.map(([slug, title], i) => ({ slug, title, filings: 5000 - i, topSoc: "15-1252", topFilings: 100 }));
+    // The letter pages read the doc again, so this stands for the whole test and is put back after it: CI shuffles
+    // the order, and a test after this one expects the module's own two titles.
+    const own = vi.mocked(getSocTitlePages).getMockImplementation();
     vi.mocked(getSocTitlePages).mockResolvedValue({ pageMin: 50, pages });
-    const paths = (await sitemap()).map((e) => new URL(e.url).pathname);
-    const listed = paths.filter((p) => p.startsWith("/soc-codes/") && p.split("/").length === 3 && p !== "/soc-codes/browse");
-    const letters = paths.filter((p) => p.startsWith("/soc-codes/browse/")).map((p) => p.slice("/soc-codes/browse/".length));
-    expect(listed).toHaveLength(titles.length);
-    expect(paths).toContain("/soc-codes/browse");
-    const linked = new Set<string>();
-    for (const letter of letters) {
-      const { container, unmount } = render(await TitleLetterBody({ letter }));
-      const here = [...container.querySelectorAll("#title-list a[href]")].map((a) => a.getAttribute("href") ?? "");
-      // A letter the sitemap lists is never an empty page.
-      expect(here.length, letter).toBeGreaterThan(0);
-      for (const h of here) linked.add(h);
-      unmount();
+    try {
+      const paths = (await sitemap()).map((e) => new URL(e.url).pathname);
+      const listed = paths.filter((p) => p.startsWith("/soc-codes/") && p.split("/").length === 3 && p !== "/soc-codes/browse");
+      const letters = paths.filter((p) => p.startsWith("/soc-codes/browse/")).map((p) => p.slice("/soc-codes/browse/".length));
+      expect(listed).toHaveLength(titles.length);
+      expect(paths).toContain("/soc-codes/browse");
+      const linked = new Set<string>();
+      for (const letter of letters) {
+        const { container, unmount } = render(await TitleLetterBody({ letter }));
+        const here = [...container.querySelectorAll("#title-list a[href]")].map((a) => a.getAttribute("href") ?? "");
+        // A letter the sitemap lists is never an empty page.
+        expect(here.length, letter).toBeGreaterThan(0);
+        for (const h of here) linked.add(h);
+        unmount();
+      }
+      expect(listed.filter((p) => !linked.has(p))).toEqual([]);
+      expect(letters).toEqual(expect.arrayContaining(["s", "0-9", "a", "r", "y"]));
+      expect(letters).not.toContain("x");
+    } finally {
+      if (own) vi.mocked(getSocTitlePages).mockImplementation(own);
     }
-    expect(listed.filter((p) => !linked.has(p))).toEqual([]);
-    expect(letters).toEqual(expect.arrayContaining(["s", "0-9", "a", "r", "y"]));
-    expect(letters).not.toContain("x");
   });
 
   it("lists NO live-only children when the nightly table cannot be read, and keeps the other families", async () => {
