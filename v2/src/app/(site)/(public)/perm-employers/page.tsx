@@ -30,13 +30,14 @@ import { PageBasics } from "@/components/data/PageBasics";
 import { IndexHeader, IndexSearch, type IndexFigure } from "@/components/data/IndexHeader";
 import { Chapter } from "@/components/entities/Chapter";
 import { ChapterNav, type ChapterItem } from "@/components/entities/Chapters";
+import { formatMonth } from "@/lib/dolFormat";
 import { formatInt } from "@/lib/format";
 import { SITE_URL } from "@/lib/constants/site";
 import { entityHref } from "@/lib/entityPayload";
 import { softFail } from "@/lib/softRead";
-const TITLE = "Every PERM Employer, Ranked";
+const TITLE = "PERM Filings by Company: Top Employers Ranked";
 const DESCRIPTION =
-  "Every company that filed a PERM case: volume, approval rate and median days per sponsor, searchable and sortable, from DOL's own disclosure files.";
+  "Which companies file the most PERM cases: every sponsor ranked by filings, with its approval rate and median days, from DOL's own disclosure files.";
 
 export const metadata: Metadata = withSocialCard({
   title: TITLE,
@@ -76,6 +77,8 @@ export default async function PermEmployersPage() {
       getFieldWait().catch(softFail("perm-employers/page.getFieldWait", null)),
     ]);
   const mirrorAsOf = freshness["perm-case-status"]?.asOf ?? null;
+  // The month DOL's newest disclosure file runs through, for the sentence a reader can quote with its date.
+  const throughMonth = formatMonth(freshness["perm-cases"]?.asOf?.slice(0, 7));
 
   const topTen = employers.slice(0, 10);
   const maxTotal = Math.max(1, ...topTen.map((e) => e.total));
@@ -112,6 +115,12 @@ export default async function PermEmployersPage() {
         title="Who sponsors the most"
         lede={
           <>
+            {busiest && throughMonth ? (
+              <>
+                {busiest.name} files the most PERM cases: {formatInt(busiest.total)} in DOL&apos;s published
+                files through {throughMonth}.{" "}
+              </>
+            ) : null}
             Every employer that filed a PERM case in DOL&apos;s current disclosure window, ranked, with what
             each has waiting today.
           </>
