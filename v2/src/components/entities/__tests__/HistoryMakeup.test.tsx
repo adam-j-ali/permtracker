@@ -68,6 +68,29 @@ describe("HistoryMakeup", () => {
     expect(screen.getByText("Texas")).toBeInTheDocument();
   });
 
+  it("shows an occupation's sponsors, firms and places, each share a share of its older cases", () => {
+    const job: Makeup = {
+      total: 900,
+      fyFrom: 2010,
+      fyTo: 2023,
+      facets: {
+        employer: [facet({ key: "acme-inc", label: "ACME INC", n: 300 }), facet({ key: null, label: "OLD WIDGETS LLC", n: 60 })],
+        attorney: [facet({ key: "law-firm-llp", label: "Law Firm LLP", n: 450 })],
+        state: [facet({ key: "WA", label: "WA", n: 500 })],
+        city: [facet({ key: "SEATTLE|WA", label: "Seattle, WA", n: 400 })],
+      },
+    };
+    render(<HistoryMakeup makeup={job} subject="occupation" />);
+    expect(screen.getByRole("heading", { name: "Who filed it, and where, FY2010 to FY2023" })).toBeInTheDocument();
+    expect(screen.getByText(/From its 900 cases DOL decided in FY2010 to FY2023/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "ACME INC" })).toHaveAttribute("href", "/perm-employers/acme-inc");
+    expect(screen.queryByRole("link", { name: "OLD WIDGETS LLC" })).toBeNull();
+    expect(screen.getByText("OLD WIDGETS LLC")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Law Firm LLP" })).toHaveAttribute("href", "/perm-attorneys/law-firm-llp");
+    expect(screen.getByText(/360 of 900 filings in FY2010 to FY2023/)).toBeInTheDocument();
+    expect(screen.getByText(/This state covers 500 of 900 filings in FY2010 to FY2023/)).toBeInTheDocument();
+  });
+
   it("renders nothing without older cases", () => {
     const { container } = render(<HistoryMakeup makeup={null} subject="employer" />);
     expect(container).toBeEmptyDOMElement();
