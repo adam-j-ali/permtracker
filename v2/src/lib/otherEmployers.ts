@@ -9,7 +9,7 @@
  */
 
 export interface OtherEmployerCounts {
-  /** PERM cases in DOL's older files (FY2016 to FY2023) under a spelling no PERM page answers to. */
+  /** PERM cases in DOL's older files (FY2008 to FY2023) under a spelling no PERM page answers to. */
   perm: number;
   lca: number;
   pwd: number;
