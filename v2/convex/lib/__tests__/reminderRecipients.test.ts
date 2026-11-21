@@ -306,6 +306,44 @@ describe("the plain-text rule itself", () => {
     expect(isPlainText("1-2-3-4-5-6-7")).toBe(false);
   });
 
+  it("counts letters that pass for 0 or 1 as digits in a run that holds a real one: seven fail", () => {
+    for (const s of [
+      "IRS Refund Dept, call 8ØØ 555 Ø1ØØ",
+      "call 8OO 555 O1OO",
+      "8oo 555 o1oo",
+      "8ØØ.555.Ø1ØØ",
+      "(8OO) 555-O1OO",
+      "8II 555 OlOO",
+      "8ØØ,555,Ø1ØØ", // commas join the run as a space does
+      "8ØØ'555'Ø1ØØ",
+      "8ØØ & 555 & Ø1ØØ",
+      "8ÖÖ 555 Ö1ÖÖ", // accented O
+      "8óò 555 ô1õö",
+      "8ŌŐ 555 ō1ŏő",
+      "8ÍÌ 555 Ï1ıł", // accented I, a dotless i, an l with a stroke
+    ]) {
+      expect(isPlainText(s), s).toBe(false);
+      expect(safeCaseLine("Robotics Engineer", s), s).toBe(A_PERM_CASE);
+      expect(inviterName(s, undefined), s).toBe(SOMEONE);
+    }
+  });
+
+  it("keeps names whose letters only look like digits, and short runs beside a few digits", () => {
+    for (const s of [
+      "Søren Bjørn Østergård",
+      "Apollo 11 Labs",
+      "Room 1010 Floor 10",
+      "Software Engineer II (Level 3)",
+      "Software Engineer III (Level 10)",
+      "OOO Lilly Pool",
+      "Polo 101 Ltd",
+      "Firma 2000 Sp. z o.o.",
+      "Asociación 2024 López",
+    ]) {
+      expect(isPlainText(s), s).toBe(true);
+    }
+  });
+
   it("hides an inviter whose name holds a phone number or a look-alike link", () => {
     expect(inviterName("Call 800-555-0199", undefined)).toBe(SOMEONE);
     expect(inviterName("irs。gov", undefined)).toBe(SOMEONE);
