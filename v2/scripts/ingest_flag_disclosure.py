@@ -14,6 +14,9 @@ it, and upserts one row per case into `pwd_cases` or `lca_cases`.
     # What column names does this file actually use?
     python3 scripts/ingest_flag_disclosure.py --program lca --dump-header --file x.xlsx
 
+    # The older H-1B files' share of the firm and sponsor figures (lca_history_rollups.py), no file read.
+    python3 scripts/ingest_flag_disclosure.py --program lca --history-rollups
+
 The rules it shares with `ingest_perm_disclosure.py`:
 
 * **The download URL is discovered, never constructed.** DOL keeps the
@@ -88,6 +91,7 @@ from ingest_perm_disclosure import (  # noqa: E402
     to_iso,
 )
 from lib_load_guard import Fingerprint, drift_findings, sanity_findings  # noqa: E402
+import lca_history_rollups  # noqa: E402
 import lca_numbers  # noqa: E402
 from lib_naics import normalize_naics  # noqa: E402
 from lib_gov_data import (  # noqa: E402
@@ -579,6 +583,23 @@ def index_ddl(table: str) -> list[str]:
 # titles (the older years filed 2010 SOC codes), the employer map and the searches' index plans. Readers that
 # want every year (a case by its number, the case search, an employer's years) read both.
 HISTORY_TABLES = {"lca": ("lca_cases_history", 2020)}
+
+
+def after_history_write(db: Database, table: str, script: str, started: float) -> None:
+    """After any write to `lca_cases_history`: count its share of the firm and sponsor figures again
+    (lca_history_rollups.py), the one time those builders' inputs from the older files change. A failure is recorded
+    and raised, so the run reads red rather than leaving last load's counts unremarked."""
+    if table != HISTORY_TABLES["lca"][0]:
+        return
+    try:
+        got = lca_history_rollups.build(db)
+    except BaseException as exc:  # noqa: BLE001 - the run row must name the failure
+        record_run(db, script, status="failed", rows_written=0,
+                   note=f"the older H-1B files' firm and willful counts failed: {str(exc)[:160]}",
+                   started_at=started)
+        raise
+    log(f"  {lca_history_rollups.FIRMS}: {got['firm_rows']:,} rows; "
+        f"{lca_history_rollups.WILLFUL}: {got['willful_rows']:,} rows")
 
 
 def table_for(program: str, name: str, default: str) -> str:
@@ -1377,6 +1398,10 @@ def main() -> int:
     ap.add_argument("--fy", type=int, metavar="YYYY",
                     help="Load that fiscal year's newest file instead of the newest overall "
                          "(history, one year per run).")
+    ap.add_argument("--history-rollups", action="store_true",
+                    help="LCA only, no file: count the older H-1B files' share of the firm rankings, a firm's "
+                         "H-1B line and a sponsor's willful-violator count (lca_history_rollups.py), then stop. "
+                         "Every load of an older file does this too.")
     args = ap.parse_args()
     if args.dump_rows and not args.dry_run:
         ap.error("--dump-rows only makes sense with --dry-run")
@@ -1392,6 +1417,15 @@ def main() -> int:
 
     script = f"ingest_flag_disclosure.py --program {args.program}" + (f" --fy {args.fy}" if args.fy else "")
     started = time.time()
+
+    if args.history_rollups:
+        if args.program != "lca":
+            ap.error("--history-rollups reads the older H-1B files: --program lca")
+        db = Database()
+        script += " --history-rollups"
+        after_history_write(db, HISTORY_TABLES["lca"][0], script, started)
+        record_run(db, script, status="ok", note="the older H-1B files' firm and willful counts", started_at=started)
+        return 0
 
     with tempfile.TemporaryDirectory() as tmp:
         newest_name: str | None = None
@@ -1547,6 +1581,8 @@ def main() -> int:
                 f"SELECT count(*) FROM {table} WHERE source_file = ? AND workers IS NOT NULL",
                 [name]) or 0)
             log(f"  {table}: {filled:,} of {n:,} rows from {name} now carry worker counts")
+            # The willful-violator answer is one of the columns written.
+            after_history_write(db, table, script, started)
             record_run(db, script, status="ok", rows_written=n,
                        note=f"LCA detail backfill from {name}: {filled:,}/{n:,} with counts",
                        started_at=started)
@@ -1627,6 +1663,7 @@ def main() -> int:
                 f"CREATE INDEX IF NOT EXISTS {table}_att_dec ON {table} (attorney_slug, decision_date)",
                 f"CREATE INDEX IF NOT EXISTS {table}_att_st_dec ON {table} (attorney_slug, case_status, decision_date)",
             ])
+            after_history_write(db, table, script, started)
             record_run(db, script, status="ok", rows_written=n,
                        note=f"attorney backfill from {name}: {filled:,}/{total:,} filled",
                        started_at=started)
@@ -1726,6 +1763,7 @@ def main() -> int:
             "loadedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }, latest=file_is_newest())
         write_summary_doc(db, args.program, table)
+        after_history_write(db, table, script, started)
         if not file_is_newest():
             # History is not "the latest data". Keyed on the FILE, not on which
             # flag selected it - see the note above `is_newest`.

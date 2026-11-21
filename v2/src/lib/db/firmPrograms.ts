@@ -22,7 +22,9 @@ import { tableColumns } from "./tableColumns";
  * scripts/build_firm_programs.py) and the page reads its firm's rows: read live
  * on the LCA database, the biggest firm's employers took 12.7 s and its count
  * 8.7 s (Oct 31 2026), near the read layer's 20-second deadline, on every
- * page build. The live reads below run only where that table doesn't exist yet.
+ * page build. The nightly H-1B line counts FY2019's older file too, through the
+ * counts its load made (`firm_lca_history`). The live reads below run only where
+ * that table doesn't exist yet, and read `lca_cases` (FY2020 on) alone.
  */
 
 export interface FirmEmployer {

@@ -257,7 +257,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/law-firm-rankings",
     label: "Top immigration law firms by year and state",
     blurb:
-      "The 100 busiest immigration law firms each fiscal year, nationally and in each state: PERM decisions from DOL's disclosure files (FY2016 on) with the certified share and median days to certify, and certified H-1B LCAs (FY2020 on) with positions, each counted where the job is. It ranks firms only and names no individual attorney. It shows volume and outcomes and gives no rating.",
+      "The 100 busiest immigration law firms in each fiscal year whose DOL files name the firm, nationally and in each state: PERM decisions with the certified share and median days to certify, and certified H-1B LCAs with positions, each counted where the job is. It ranks firms only and names no individual attorney. It shows volume and outcomes and gives no rating.",
   },
   {
     path: "/policy-changes",
