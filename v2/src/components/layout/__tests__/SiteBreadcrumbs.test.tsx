@@ -39,6 +39,15 @@ describe("SiteBreadcrumbs", () => {
     expect(html).toContain('"url":"https://permtracker.app/perm-processing-times"');
   });
 
+  it("leaves the page node to a page that writes its own, and still shows the day", () => {
+    // /about writes an AboutPage with the same #webpage @id; two full nodes with one @id read as two pages to a
+    // validator that doesn't merge them (structured-data-gate.test.ts).
+    const html = render("/about", { sources: {} });
+    expect(html).toMatch(/Updated <time dateTime="\d{4}-\d{2}-\d{2}">/);
+    expect(html).not.toContain('"@type":"WebPage"');
+    expect(html).toContain('"@type":"BreadcrumbList"');
+  });
+
   it("gives the home page its WebPage date, with no trail to show", () => {
     const html = render("/", { sources: { sweep: "2099-02-03" } });
     expect(html).not.toContain("Breadcrumb");

@@ -207,6 +207,13 @@ export const OWN_DATE: ReadonlySet<string> = new Set([
   "/perm-updates/[day]",
 ]);
 
+/**
+ * Routes whose pages write their own page node (`<url>#webpage`) with its `dateModified`: the breadcrumb bar still
+ * shows the day, and leaves the node to the page, so the page carries one node with that @id, never two. /about's is
+ * an AboutPage whose subject is the site's Organization.
+ */
+export const OWN_PAGE_NODE: ReadonlySet<string> = new Set(["/about"]);
+
 /** A route's date, from its code and its figures. */
 export function pageDate(route: string, sources: DateSources): string {
   const source = DATE_SOURCE[route];

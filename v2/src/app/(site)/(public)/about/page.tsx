@@ -21,7 +21,6 @@
 
 import type { Metadata } from "next";
 import { Fragment } from "react";
-import { SiteImage } from "@/components/ui/site-image";
 import Link from "next/link";
 
 import {
@@ -35,6 +34,7 @@ import {
   ScalesIcon,
 } from "@phosphor-icons/react/ssr";
 
+import { SiteImage } from "@/components/ui/site-image";
 import { SourcePages } from "@/components/about/SourcePages";
 import { RecordStrip } from "@/components/home/RecordStrip";
 import { AppWindow, type WindowShots } from "@/components/marketing/AppWindow";
@@ -43,6 +43,7 @@ import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { withSocialCard } from "@/lib/socialCard";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { SCHEMA_IDS } from "@/lib/structuredData";
+import { pageDate } from "@/lib/pageDates";
 import { getRecordCounts } from "@/lib/db/recordCounts";
 import {
   ABOUT_ONE_LINER,
@@ -208,7 +209,9 @@ export default async function AboutPage() {
   const record = await getRecordCounts();
   // AboutPage whose subject is the Organization node every page already
   // carries, by @id, so Google attaches these facts to the same entity rather
-  // than to a second, inline copy of it.
+  // than to a second, inline copy of it. It's this page's one page node: the
+  // breadcrumb bar leaves its WebPage to this one here (OWN_PAGE_NODE), so it
+  // carries the day the bar prints and the links the bar's node gives.
   const aboutSchema = {
     "@context": "https://schema.org",
     "@type": "AboutPage",
@@ -216,6 +219,10 @@ export default async function AboutPage() {
     url: `${baseUrl}/about`,
     name: TITLE,
     description: DESCRIPTION,
+    dateModified: pageDate("/about", {}),
+    inLanguage: "en-US",
+    isPartOf: { "@id": SCHEMA_IDS.website(baseUrl) },
+    publisher: { "@id": SCHEMA_IDS.organization(baseUrl) },
     mainEntity: { "@id": SCHEMA_IDS.organization(baseUrl) },
   };
 
