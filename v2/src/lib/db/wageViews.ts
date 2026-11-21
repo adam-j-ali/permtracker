@@ -5,6 +5,7 @@ import { cache } from "react";
 import { one, rows } from "./client";
 import { beforeFirstLoad } from "./firstLoad";
 import { socGroup } from "@/lib/socCode";
+import { predecessorsOf } from "@/lib/socCrosswalk";
 
 /**
  * Precomputed wage selections, one row per filter combination big enough to
@@ -95,7 +96,14 @@ export interface PermYearView {
   view: WageView | null;
   /** The year is one of the older files', whose every selection holding a case is precomputed. */
   history: boolean;
+  /**
+   * For a year of the older files and a job BLS renumbered in 2018: each 2010 code BLS maps to it that holds cases
+   * in the same selection (outcome and state), with how many. Empty otherwise.
+   */
+  earlier: { code: string; n: number }[];
 }
+
+type YearRow = { key: string; program: string; n: number | string; json: string };
 
 /**
  * A PERM selection that names a fiscal year, and whether that year is one of the older files'.
@@ -105,30 +113,49 @@ export interface PermYearView {
  * such a year a missing key is a selection with no cases. One statement reads the selection's key and its year's
  * root key (every outcome, every job, every state), whose `program` says which table the year comes from.
  *
+ * THE OLDER FILES CARRY THE 2010 JOB CODES. BLS renumbered jobs in 2018 (software developers were 15-1132 and
+ * 15-1133 before 15-1252), so a current job in an older year would read as none with its cases filed under its
+ * earlier codes. The same statement reads the same selection under each earlier code (`earlierKeys`, one key a
+ * line), a primary-key seek each. They're counted on their own and never added in: the map is many-to-many, and
+ * 15-1132 also became 15-1253.
+ *
  * A failed read throws: answered as none, an older year would read as one with no cases. Only a database with no
  * views table yet falls through to the live query, as the other selections do.
  */
-const readPermYear = cache(async (key: string, root: string): Promise<PermYearView> => {
-  const got = await rows<{ key: string; program: string; json: string }>(
-    "SELECT key, program, json FROM wage_views WHERE key IN (?, ?)",
-    [key, root],
-  ).catch(beforeFirstLoad([] as { key: string; program: string; json: string }[]));
+const readPermYear = cache(async (key: string, root: string, earlierKeys: string): Promise<PermYearView> => {
+  const more = earlierKeys ? earlierKeys.split("\n") : [];
+  const keys = [key, root, ...more];
+  const got = await rows<YearRow>(
+    `SELECT key, program, n, json FROM wage_views WHERE key IN (${keys.map(() => "?").join(", ")})`,
+    keys,
+  ).catch(beforeFirstLoad([] as YearRow[]));
   const hit = got.find((r) => r.key === key);
-  return {
-    view: hit ? (JSON.parse(hit.json) as WageView) : null,
-    history: got.some((r) => r.key === root && r.program === PERM_HISTORY_PROGRAM),
-  };
+  const history = got.some((r) => r.key === root && r.program === PERM_HISTORY_PROGRAM);
+  const earlier = history
+    ? more.flatMap((k) => {
+        const r = got.find((x) => x.key === k);
+        const n = r ? Number(r.n) : 0;
+        return n > 0 ? [{ code: k.split("|")[2] ?? "", n }] : [];
+      })
+    : [];
+  return { view: hit ? (JSON.parse(hit.json) as WageView) : null, history, earlier };
 });
 
 const yearRoot = (fy: string | number) => wageViewKey("perm", { status: "all", fiscalYear: fy });
 
-/** A PERM selection with a fiscal year: its view, and whether the year is one of the older files'. */
+/**
+ * A PERM selection with a fiscal year: its view, whether the year is one of the older files', and its job's 2010
+ * codes' counts there.
+ */
 export function permYearView(f: WageViewFilters & { fiscalYear: string | number }): Promise<PermYearView> {
-  return readPermYear(wageViewKey("perm", f), yearRoot(f.fiscalYear));
+  const own = socGroup(f.socCode);
+  const earlier = own ? predecessorsOf(own).map((p) => p.code).filter((c) => c !== own) : [];
+  const keys = earlier.map((code) => wageViewKey("perm", { ...f, socCode: code }));
+  return readPermYear(wageViewKey("perm", f), yearRoot(f.fiscalYear), keys.join("\n"));
 }
 
 /** Whether a fiscal year is one of DOL's older PERM files', answered from its precomputed views. */
 export async function permHistoryYear(fy: string | number): Promise<boolean> {
   const root = yearRoot(fy);
-  return (await readPermYear(root, root)).history;
+  return (await readPermYear(root, root, "")).history;
 }

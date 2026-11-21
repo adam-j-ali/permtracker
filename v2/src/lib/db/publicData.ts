@@ -31,6 +31,7 @@ import { one, rows } from "./client";
 import { permHistoryYear, permYearView, wageView, type PermYearView } from "./wageViews";
 import { OLDER_YEAR_REFUSAL } from "@/lib/wagePlaceFilters";
 import { socGroupClause } from "@/lib/socCode";
+import { alsoCoveredNote, predecessorsOf, type EarlierSocCode } from "@/lib/socCrosswalk";
 import { getLiveCensus, type CensusMatrixRow } from "./liveCensus";
 import { softFail } from "@/lib/softRead";
 import { budgetFor } from "@/lib/freshnessBudget";
@@ -1260,17 +1261,50 @@ export const STATE_PERCENTILE_SELECT = (
 async function permView(f: WageFilters): Promise<PermYearView> {
   if (f.city || (f.sectorCodes && f.sectorCodes.length > 0)) {
     if (f.fiscalYear && (await permHistoryYear(f.fiscalYear))) throw new Error(OLDER_YEAR_REFUSAL);
-    return { view: null, history: false };
+    return { view: null, history: false, earlier: [] };
   }
   if (f.fiscalYear) return permYearView({ ...f, fiscalYear: f.fiscalYear });
-  return { view: await wageView("perm", f), history: false };
+  return { view: await wageView("perm", f), history: false, earlier: [] };
 }
 
 /** An older year's selection with no cases, as the readers report one. */
 const NO_WAGES: WagePercentileRow = { n: 0, avg: null, p5: null, p25: null, p50: null, p75: null, p95: null };
 
+export interface WageSelection {
+  stats: WagePercentileRow;
+  /**
+   * In a year of DOL's older files, the selection's job under each 2010 code BLS maps to it, busiest first, each
+   * counted on its own (wageViews.ts, permYearView). Empty for any other selection.
+   */
+  earlierCodes: EarlierSocCode[];
+  /** Which other jobs those 2010 codes also covered, or null. */
+  earlierNote: string | null;
+}
+
+/**
+ * The explorer's figures for a selection, and for a year of the older files the job's 2010 codes that hold its
+ * cases there: one read of the precomputed views for both.
+ */
+export async function getWageSelection(f: WageFilters): Promise<WageSelection> {
+  const sel = await permView(f);
+  const stats = await wageStatsOf(f, sel);
+  if (!sel.earlier.length) return { stats, earlierCodes: [], earlierNote: null };
+  const preds = new Map(predecessorsOf(f.socCode ?? "").map((p) => [p.code, p]));
+  const earlierCodes = sel.earlier
+    .flatMap((e) => {
+      const p = preds.get(e.code);
+      return p ? [{ code: e.code, title: p.title, n: e.n }] : [];
+    })
+    .sort((a, b) => b.n - a.n || a.code.localeCompare(b.code));
+  const earlierNote = alsoCoveredNote(earlierCodes.flatMap((c) => preds.get(c.code) ?? []));
+  return { stats, earlierCodes, earlierNote };
+}
+
 export async function getWageStats(f: WageFilters): Promise<WagePercentileRow> {
-  const { view, history } = await permView(f);
+  return wageStatsOf(f, await permView(f));
+}
+
+async function wageStatsOf(f: WageFilters, { view, history }: PermYearView): Promise<WagePercentileRow> {
   if (view) return view.stats;
   if (history) return NO_WAGES;
   const w = wageWhere(f);
