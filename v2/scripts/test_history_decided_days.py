@@ -190,6 +190,27 @@ check("the months run oldest first", list(by) == sorted(by), str(list(by)))
 check("the older months come from the small table alone, never the older case table",
       not any("perm_cases_history" in s for s, _ in db.statements[-6:]))
 
+print("the running-total read gives the trend's own nearest ranks on any counts")
+for trial in range(40):
+    r = sqlite3.connect(":memory:")
+    r.execute(next(t for t in iph.SCHEMA if "perm_history_decided_days" in t))
+    want_rows, counts = [], {}
+    for mo in range(1, rng.randint(2, 6)):
+        m = f"2019-{mo:02d}"
+        days = {d: rng.randint(1, 40) for d in rng.sample(range(0, 900), rng.randint(1, 60))}
+        counts[m] = days
+        r.executemany("INSERT INTO perm_history_decided_days VALUES (?, ?, ?)", [(m, d, k) for d, k in days.items()])
+    got = [tuple(x) for x in r.execute(w.HISTORY_SQL, ["2014-10", "2023-10"]).fetchall()]
+    for m in sorted(counts):
+        vals = [d for d, k in counts[m].items() for _ in range(k)]
+        q = w.nearest_rank(vals)
+        want_rows.append((m, len(vals), q["p25"], q["p50"], q["p75"]))
+    if got != want_rows:
+        check(f"random counts {trial} match nearest_rank", False, f"{got} vs {want_rows}")
+        break
+else:
+    check("40 random sets of counts give nearest_rank's months exactly", True)
+
 bare = seed(random.Random(3))
 doc = w.perm_trend(bare)
 check("before the first history build the trend starts at October 2023 as before",
