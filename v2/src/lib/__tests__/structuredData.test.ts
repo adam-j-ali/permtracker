@@ -8,7 +8,8 @@ import {
   getOrganizationSchema,
   getWebSiteSchema,
   getFAQPageSchema,
-  getHomepageRatingPartialSchema,
+  getSiteGraph,
+  APP_RATING,
   GOOGLE_APP_CATEGORIES,
 } from "../structuredData";
 import { MEDIUM_PROFILE_URL } from "@/lib/constants/externalLinks";
@@ -31,24 +32,35 @@ describe("SCHEMA_IDS", () => {
 });
 
 describe("getSoftwareApplicationSchema", () => {
-  const schema = getSoftwareApplicationSchema(BASE);
+  const schema = getSoftwareApplicationSchema(BASE, APP_RATING);
 
-  it("has correct @context and @type", () => {
+  it("has correct @context, @type and the app's @id", () => {
     expect(schema["@context"]).toBe("https://schema.org");
     expect(schema["@type"]).toBe("SoftwareApplication");
+    expect(schema["@id"]).toBe(SCHEMA_IDS.software(BASE));
   });
 
   it("creator cross-references the Organization @id (not an inline duplicate)", () => {
     expect(schema.creator).toEqual({ "@id": SCHEMA_IDS.organization(BASE) });
   });
 
-  it("does NOT include aggregateRating in the root @graph schema", () => {
-    // aggregateRating must only ship on pages where the rating is visible
-    // (homepage, via getHomepageRatingPartialSchema). Shipping it in the root
-    // @graph would put a rating on every page (/blog, /privacy, etc.) without
-    // a visible widget — Google rich-results policy violation that can
-    // suppress all rich results for the domain.
-    expect(schema).not.toHaveProperty("aggregateRating");
+  it("carries the rating it's given inside the one node (Google's Software App feature requires a rating or review)", () => {
+    // Until Nov 20 2026 the rating sat in a second node with the same @id, which
+    // validators that don't merge by @id read as a rating-less app on every page.
+    expect(schema.aggregateRating).toEqual({
+      "@type": "AggregateRating",
+      ratingValue: APP_RATING.value,
+      ratingCount: APP_RATING.count,
+      bestRating: APP_RATING.best,
+      worstRating: APP_RATING.worst,
+    });
+    const other = getSoftwareApplicationSchema(BASE, { value: "4.8", count: "12", best: "5", worst: "1" });
+    expect(other.aggregateRating.ratingCount).toBe("12");
+  });
+
+  it("isn't in the graph every page carries", () => {
+    const graph = getSiteGraph(BASE)["@graph"].map((n) => n["@type"]);
+    expect(graph).toEqual(["Organization", "WebSite"]);
   });
 
   it("offers, contactPoint, and feature list intact", () => {
@@ -93,9 +105,11 @@ describe("getWebSiteSchema", () => {
 describe("getOrganizationSchema", () => {
   const schema = getOrganizationSchema(BASE);
 
-  it("points its trust properties at pages that exist", () => {
-    expect(schema.publishingPrinciples).toBe(`${BASE}/editorial-standards`);
-    expect(schema.verificationFactCheckingPolicy).toBe(`${BASE}/methodology`);
+  it("points its trust properties at pages that exist, using only properties schema.org has on Organization", () => {
+    // How the figures are checked (/methodology) is a publishing principle: verificationFactCheckingPolicy is a
+    // NewsMediaOrganization property, unknown on Organization (validator.schema.org, Nov 20 2026).
+    expect(schema.publishingPrinciples).toEqual([`${BASE}/editorial-standards`, `${BASE}/methodology`]);
+    expect(schema).not.toHaveProperty("verificationFactCheckingPolicy");
     expect(schema.correctionsPolicy).toBe(`${BASE}/changelog/corrections`);
     expect(schema.ownershipFundingInfo).toBe(`${BASE}/about`);
     expect(schema.actionableFeedbackPolicy).toBe(`${BASE}/contact`);
@@ -194,32 +208,17 @@ describe("getFAQPageSchema", () => {
   });
 });
 
-describe("getHomepageRatingPartialSchema", () => {
-  const partial = getHomepageRatingPartialSchema(BASE);
-
-  it("has @type SoftwareApplication and @id matching the root entity", () => {
-    expect(partial["@type"]).toBe("SoftwareApplication");
-    expect(partial["@id"]).toBe(SCHEMA_IDS.software(BASE));
-    // This @id-merge contract is how Google attaches the rating to the
-    // SoftwareApplication entity declared in the root @graph.
-  });
-
-  it("declares the same applicationCategory as the @graph node it shares an @id with", () => {
-    // Both nodes carry SCHEMA_IDS.software(), so they are ONE entity. When this
-    // partial still said 'BusinessApplication' and the graph node said
-    // 'WebApplication', that entity asserted two categories at once. Measured
-    // live on 2026-08-29 before the fix.
-    const graphNode = getSoftwareApplicationSchema(BASE);
-    expect(partial.applicationCategory).toBe(graphNode.applicationCategory);
-  });
+describe("the app's rating in its node", () => {
+  const partial = getSoftwareApplicationSchema(BASE, APP_RATING);
 
   it("uses a category Google accepts, on every app node", () => {
     // 'WebApplication' (until Oct 7 2026) is a schema.org type, not one of
-    // Google's 22 app types; the calculators page lists its tools too.
-    const cats = [getSoftwareApplicationSchema(BASE).applicationCategory, partial.applicationCategory];
+    // Google's 22 app types. The calculators page listed its tools as apps
+    // until Nov 20 2026; it lists them as plain entries now, so any category
+    // left in its source must still be one of Google's.
+    const cats: string[] = [partial.applicationCategory];
     const calc = readFileSync(join(__dirname, "..", "..", "app", "(site)", "(public)", "calculators", "page.tsx"), "utf8");
-    for (const m of calc.matchAll(/applicationCategory: "([A-Za-z]+)"/g)) cats.push(m[1] as never);
-    expect(cats.length).toBeGreaterThanOrEqual(3);
+    for (const m of calc.matchAll(/applicationCategory: "([A-Za-z]+)"/g)) cats.push(m[1]!);
     for (const c of cats) expect(GOOGLE_APP_CATEGORIES).toContain(c);
   });
 
