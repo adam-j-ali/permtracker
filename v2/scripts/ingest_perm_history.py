@@ -815,9 +815,10 @@ def build_entity_facets(db) -> int:
     """perm_history_entity_facets, and the older cases' counts by worksite state in perm_docs['perm_history'].
 
     One pass over perm_cases_history, about ten decision days at a time on its decision_date index (a ten-day slice
-    of decisions grouped took 0.65 s on the live database, Nov 21 2026), never one grouping of the whole table. A case perm_cases also holds (decided again after September 2023) is counted
-    there, never here, so the case search's state counts can add these to perm_cases' own. The table is built
-    aside and swapped in whole: a page never reads it half-written.
+    of decisions grouped took 0.65 s on the live database, Nov 21 2026), never one grouping of the whole table. A
+    case perm_cases also holds (decided again after September 2023) is counted there, never here, so the case
+    search's state counts can add these to perm_cases' own. The table is built aside and swapped in whole: a page
+    never reads it half-written.
     """
     require_index(db, DECISION_INDEX)
     pages = EntityPages(db)
