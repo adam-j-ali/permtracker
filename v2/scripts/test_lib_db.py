@@ -16,8 +16,9 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from lib_sqlite_shim import SqliteTurso  # noqa: E402
 from lib_db import (  # noqa: E402
-    canon, canon_hash, case_update, cell, dicts_of, et_date, insert_rows, insert_stmts, lit, query_dicts, query_rows,
-    restamp_note, rows_of, run_stmts, stamp_freshness, stmt, typed_cell,
+    canon, canon_hash, case_update, cell, counted_slices, day_slices, dicts_of, et_date, insert_rows, insert_stmts,
+    lit, month_thirds, months_between, next_month, query_dicts, query_rows, restamp_note, rows_of, run_stmts,
+    stamp_freshness, stmt, typed_cell,
 )
 
 FAILURES: list[str] = []
@@ -110,6 +111,57 @@ def main() -> int:
     check("a note on a row with no maximum age is written", restamp_note(f, by_hand, "why"), True)
     check("and keeps no maximum age",
           query_rows(f, "SELECT max_age_days, note FROM data_freshness WHERE dataset = ?", [by_hand]), [[None, "why"]])
+
+    # A big table's days, a slice at a time: each month in three [start, end) ranges, end to end.
+    check("December runs into January", next_month("2018-12"), "2019-01")
+    check("a month is three slices of about ten days", month_thirds("2019-02"),
+          [("2019-02-01", "2019-02-11"), ("2019-02-11", "2019-02-21"), ("2019-02-21", "2019-03-01")])
+    check("the months from one day's to another's", months_between("2018-11-30", "2019-02-01"),
+          ["2018-11", "2018-12", "2019-01", "2019-02"])
+    fy = day_slices("2018-10-01", "2019-09-30")
+    check("a fiscal year is 36 slices, October 1 to the next October 1, with no gap or overlap",
+          (len(fy), fy[0][0], fy[-1][1], all(a[1] == b[0] for a, b in zip(fy, fy[1:]))),
+          (36, "2018-10-01", "2019-10-01", True))
+
+    # A slice held to a number of rows, not of days: ten days of the older H-1B table grouped took 2.97 s on the live
+    # database (Nov 21 2026), and a cap-season day alone holds thousands of LCAs.
+    big = SqliteTurso()
+    big.conn.execute("CREATE TABLE h (case_number TEXT PRIMARY KEY, decision_date TEXT, v INTEGER)")
+    big.conn.execute("CREATE INDEX h_decided ON h (decision_date)")
+    days = {"2019-03-01": 7, "2019-03-02": 2, "2019-03-05": 26, "2019-03-06": 1, "2019-03-31": 3, "2019-04-02": 4}
+    n = 0
+    for day, count in days.items():
+        for _ in range(count):
+            n += 1
+            big.conn.execute("INSERT INTO h VALUES (?,?,?)", [f"c{n:05d}", day, n])
+    big.conn.execute("INSERT INTO h VALUES ('none', NULL, 0)")
+    big.conn.commit()
+    seen = []
+    slices = list(counted_slices(big, "h", "decision_date", "2019-03-01", "2019-04-30", budget=10))
+    for cond, args in slices:
+        seen.append([int(r[0]) for r in rows_of(big.execute(f"SELECT v FROM h WHERE {cond}", args))])
+    every = sorted(v for got in seen for v in got)
+    check("every dated row in the months is read once, none twice", every, list(range(1, n + 1)))
+    check("no slice holds more rows than the budget", max(len(got) for got in seen) <= 10, True)
+    check("quiet days share a slice", any(len(got) == 9 for got in seen), True)
+    check("a day over the budget is cut by row id, in budget-sized pieces",
+          sorted(len(got) for cond, got in zip((c for c, _ in slices), seen) if "rowid" in cond), [6, 10, 10])
+    plans = {cond: " ".join(str(x) for x in big.conn.execute(
+        f"EXPLAIN QUERY PLAN SELECT v, COUNT(*) FROM h WHERE {cond} GROUP BY v", args).fetchall())
+        for cond, args in slices}
+    check("each slice is a search of the date index, never a scan",
+          all("SEARCH" in p and "h_decided" in p and "SCAN h" not in p for p in plans.values()), True)
+    check("a cut day seeks its row ids on the index too",
+          all("rowid>" in p for c, p in plans.items() if "rowid" in c), True)
+    helpers = [("SELECT decision_date, COUNT(*) FROM h WHERE decision_date >= ? AND decision_date < ? "
+                "GROUP BY decision_date", ["2019-03-01", "2019-04-01"]),
+               ("SELECT rowid FROM h WHERE decision_date = ? ORDER BY rowid LIMIT 1 OFFSET ?", ["2019-03-05", 10])]
+    check("the day counts and the row-id bounds open no row: the index alone answers them",
+          [" ".join(str(x[3]) for x in big.conn.execute("EXPLAIN QUERY PLAN " + q, a).fetchall()) for q, a in helpers],
+          ["SEARCH h USING COVERING INDEX h_decided (decision_date>? AND decision_date<?)",
+           "SEARCH h USING COVERING INDEX h_decided (decision_date=?)"])
+    check("an empty range has no slices", list(counted_slices(big, "h", "decision_date", "2018-01-01", "2018-02-01",
+                                                               budget=10)), [])
 
     print(f"\n{len(FAILURES)} failure(s)")
     return 1 if FAILURES else 0

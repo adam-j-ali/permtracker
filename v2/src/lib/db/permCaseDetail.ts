@@ -2,6 +2,7 @@ import "server-only";
 
 import { softFail } from "@/lib/softRead";
 import { rows } from "./client";
+import { linkableSlugs } from "./entityLinks";
 import { getPwdDetail, type PwdDetail } from "./pwdDetail";
 
 /**
@@ -13,6 +14,10 @@ import { getPwdDetail, type PwdDetail } from "./pwdDetail";
  * The current files' table first, then FY2008 to FY2023's (`perm_cases_history`), which carries the same job fields
  * but no wage request number, so an older case keeps what its file printed. Keyed reads by case number; a failed
  * read is null, so the page keeps its decision section.
+ *
+ * A current case's firm slug is always its page's. An older case's is its page's when the firm has one, else the
+ * firm's own name (`firm_slug_for` in scripts/ingest_perm_history.py, so the rankings count the firm), and it links
+ * only once `linkableSlugs` finds the page; a check that fails keeps the link, as `keepLinkableSlugs` does.
  */
 export interface PermCaseDetail {
   attorneyName: string | null;
@@ -42,11 +47,16 @@ export async function getPermCaseDetail(caseNumber: string): Promise<PermCaseDet
       : null;
   const r = got?.[0] ?? older?.[0];
   if (!r) return null;
+  let attorneySlug = text(r.attorney_slug);
+  if (attorneySlug && !got?.length) {
+    const pages = await linkableSlugs("attorney", [attorneySlug]).catch(softFail("permCaseDetail.firmPage", null));
+    if (pages && !pages.has(attorneySlug)) attorneySlug = null;
+  }
   const pwdNumber = text(r.pwd_number);
   const layoff = text(r.layoff);
   return {
     attorneyName: text(r.attorney_name),
-    attorneySlug: text(r.attorney_slug),
+    attorneySlug,
     naics: text(r.naics),
     worksiteCity: text(r.worksite_city),
     jobEducation: text(r.job_education),

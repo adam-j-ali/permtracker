@@ -78,6 +78,10 @@ jobs:
           MODE_IN: ${{ inputs.mode }}
           CAP_IN: ${{ inputs.discover_cap }}
           FRONTIER_IN: ${{ inputs.frontier }}
+          # Names withheld at their owner's request (scripts/lib_withheld.py): the firm page map puts a withheld
+          # firm's older spellings on its page, which the site masks. Read, never printed.
+          WITHHELD_EMPLOYERS: ${{ secrets.WITHHELD_EMPLOYERS }}
+          WITHHELD_FIRMS: ${{ secrets.WITHHELD_FIRMS }}
         run: |
           MODE="${MODE_IN:-pending}"
           case "$MODE" in
