@@ -94,18 +94,41 @@ def maturity_cutoff() -> str:
     return f"{months // 12:04d}-{months % 12 + 1:02d}-01"
 
 
+# The older table's cases from SINCE_MONTH, by filing month and initial (ingest_perm_history.py builds it whenever
+# history loads). perm_cases holds decisions from October 2023 on, so without these a filing month from January to
+# September 2023 keeps only its slow cases (the Nov 20 2026 sweep, item 27).
+HISTORY_TABLE = "perm_history_alphabet"
+
+
+def history_rows(db: Database) -> list[dict]:
+    """The older table's (month, letter, n, sum_days) inside the chart's months, or none before it's built."""
+    if not query_dicts(db, "SELECT 1 AS ok FROM sqlite_master WHERE type = 'table' AND name = ?", [HISTORY_TABLE]):
+        log(f"  {HISTORY_TABLE} isn't built yet: January to September 2023 read perm_cases alone")
+        return []
+    return query_dicts(
+        db, f"SELECT month, letter, n, sum_days FROM {HISTORY_TABLE} WHERE month >= ? AND month < ?",
+        [SINCE_MONTH, maturity_cutoff()[:7]])
+
+
 def build(db: Database) -> dict:
     log("  reading pooled per-letter means...")
-    pooled = query_dicts(
+    older = history_rows(db)
+    counted: dict[str, list] = {}
+    for r in query_dicts(
         db,
         """SELECT UPPER(SUBSTR(TRIM(employer_name), 1, 1)) AS letter,
-                  COUNT(*) AS n, AVG(CAST(days AS REAL)) AS mean_days
+                  COUNT(*) AS n, SUM(CAST(days AS REAL)) AS sum_days
              FROM perm_cases
             WHERE days IS NOT NULL AND received_date >= ?
               AND received_date < ?
-            GROUP BY letter HAVING n >= ? ORDER BY letter""",
-        [SINCE_MONTH, maturity_cutoff(), MIN_CASES],
-    )
+            GROUP BY letter""",
+        [SINCE_MONTH, maturity_cutoff()],
+    ) + older:
+        got = counted.setdefault(str(r["letter"] or ""), [0, 0.0])
+        got[0] += int(r["n"])
+        got[1] += float(r["sum_days"] or 0)
+    pooled = [{"letter": k, "n": n, "mean_days": total / n}
+              for k, (n, total) in sorted(counted.items()) if n >= MIN_CASES]
     # Only A-Z. A name starting with a digit or a symbol has no position in an
     # alphabetical ordering, so a bucket for it would be a number nobody can
     # reason about.
@@ -146,6 +169,18 @@ def build(db: Database) -> dict:
         # drop today, and "happens to" is the part being removed.
         [SINCE_MONTH, maturity_cutoff()],
     )
+    # The older table's cases from the same months, as the same early and late ends.
+    by_month = {str(r["month"]): dict(r) for r in per_month}
+    for r in older:
+        letter = str(r["letter"] or "")
+        end = "early" if "A" <= letter <= "I" else "late" if "S" <= letter <= "Z" else None
+        if len(letter) != 1 or end is None:
+            continue
+        row = by_month.setdefault(str(r["month"]), {"month": str(r["month"]), "early_n": 0, "early_sum": 0.0,
+                                                    "late_n": 0, "late_sum": 0.0})
+        row[f"{end}_n"] = int(row[f"{end}_n"] or 0) + int(r["n"])
+        row[f"{end}_sum"] = float(row[f"{end}_sum"] or 0) + float(r["sum_days"] or 0)
+    per_month = [by_month[m] for m in sorted(by_month)]
     gaps = []
     for r in per_month:
         en, ln = int(r["early_n"] or 0), int(r["late_n"] or 0)

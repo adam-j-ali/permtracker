@@ -194,6 +194,15 @@ SCHEMA = [
          n    INTEGER NOT NULL,
          PRIMARY KEY (m, days)
        )""",
+    # The alphabet chart's filing months (build_alphabet.SINCE_MONTH on) from the older table, by employer initial:
+    # build_alphabet.py adds them to perm_cases' own, so January to September 2023 count their fast cases too.
+    """CREATE TABLE IF NOT EXISTS perm_history_alphabet (
+         month    TEXT NOT NULL,
+         letter   TEXT NOT NULL,
+         n        INTEGER NOT NULL,
+         sum_days REAL NOT NULL,
+         PRIMARY KEY (month, letter)
+       )""",
 ]
 
 # The master case search reads history under the same leads as perm_cases.
@@ -629,7 +638,7 @@ def build_month_days(db) -> int:
         while m != stop:
             nxt = next_month(m)
             days: dict[int, int] = defaultdict(int)
-            for a, b in ((f"{m}-01", f"{m}-11"), (f"{m}-11", f"{m}-21"), (f"{m}-21", f"{nxt}-01")):
+            for a, b in month_slices(m):
                 for r in rows_of(db.execute(
                         "SELECT days, COUNT(*) FROM perm_cases_history h "
                         "WHERE received_date >= ? AND received_date < ? AND days IS NOT NULL "
@@ -642,6 +651,42 @@ def build_month_days(db) -> int:
     db.execute("DELETE FROM perm_history_month_days")
     insert_rows(db, "perm_history_month_days", ["m", "days", "n"], out, per_request=STMTS_PER_REQUEST)
     log(f"  history month days: {len(out):,} rows")
+    return len(out)
+
+
+def month_slices(m: str) -> list[tuple[str, str]]:
+    """A month's filing days in three slices of about ten days: a busy month read whole took 1.7 s."""
+    nxt = next_month(m)
+    return [(f"{m}-01", f"{m}-11"), (f"{m}-11", f"{m}-21"), (f"{m}-21", f"{nxt}-01")]
+
+
+def build_alphabet_history(db) -> int:
+    """perm_history_alphabet: the older table's cases from the alphabet chart's first filing month, by month and
+    employer initial (as build_alphabet.py reads it), cases perm_cases also holds left out."""
+    import build_alphabet  # the chart's own first month, one rule
+    since = build_alphabet.SINCE_MONTH
+    hi = rows_of(db.execute("SELECT MAX(received_date) FROM perm_cases_history"))
+    last = str(hi[0][0])[:7] if hi and hi[0][0] else None
+    sums: dict[tuple[str, str], list] = {}
+    if last and last >= since:
+        m, stop = since, next_month(last)
+        while m != stop:
+            for a, b in month_slices(m):
+                for r in rows_of(db.execute(
+                        "SELECT UPPER(SUBSTR(TRIM(employer_name), 1, 1)) AS letter, COUNT(*), SUM(days) "
+                        "FROM perm_cases_history h WHERE received_date >= ? AND received_date < ? "
+                        "AND days IS NOT NULL "
+                        "AND NOT EXISTS (SELECT 1 FROM perm_cases p WHERE p.case_number = h.case_number) "
+                        "GROUP BY letter", [a, b])):
+                    got = sums.setdefault((m, str(r[0] or "")), [0, 0.0])
+                    got[0] += int(r[1])
+                    got[1] += float(r[2] or 0)
+            m = next_month(m)
+    out = [(m, letter, n, total) for (m, letter), (n, total) in sorted(sums.items())]
+    db.execute(next(t for t in SCHEMA if "perm_history_alphabet" in t))
+    db.execute("DELETE FROM perm_history_alphabet")
+    insert_rows(db, "perm_history_alphabet", ["month", "letter", "n", "sum_days"], out, per_request=STMTS_PER_REQUEST)
+    log(f"  history alphabet: {len(out):,} rows")
     return len(out)
 
 
@@ -737,15 +782,15 @@ def main() -> int:
     ap.add_argument("--finish-only", action="store_true",
                     help="no workbooks: current years, search indexes and facets only")
     ap.add_argument("--month-days", action="store_true",
-                    help="no workbooks: only rebuild perm_history_month_days, then stop")
+                    help="no workbooks: only rebuild perm_history_month_days and perm_history_alphabet, then stop")
     args = ap.parse_args()
 
     if args.month_days:
         db = Database()
         db.script(SCHEMA)
-        n = build_month_days(db)
+        n = build_month_days(db) + build_alphabet_history(db)
         record_run(db, "ingest_perm_history.py --month-days", status="ok", rows_written=n,
-                   note="decision days by filing month from perm_cases_history")
+                   note="decision days by filing month and the alphabet chart's months from perm_cases_history")
         return 0
 
     if args.fill_slugs:
@@ -763,7 +808,7 @@ def main() -> int:
         if not args.no_indexes:
             build_search_indexes(db)
         n += build_history_facets(db, occupation_slugs(db))
-        n += build_month_days(db)
+        n += build_month_days(db) + build_alphabet_history(db)
         record_run(db, "ingest_perm_history.py --finish-only", status="ok", rows_written=n,
                    note="current years, search indexes, history facets and month days")
         return 0
@@ -846,7 +891,7 @@ def main() -> int:
         if not args.no_indexes:
             build_search_indexes(db)
         wrote_years += build_history_facets(db, occupation_slugs(db))
-        wrote_years += build_month_days(db)
+        wrote_years += build_month_days(db) + build_alphabet_history(db)
         years = sorted({v["fy"] for v in loaded.values()})
         status = "ok" if not failures else "partial"
         note = (f"FY{years[0]} to FY{years[-1]} held; " if years else "") + (
