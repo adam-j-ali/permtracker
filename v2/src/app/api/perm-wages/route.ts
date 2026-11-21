@@ -8,7 +8,8 @@ import {
   type WageStatusFilter,
 } from "@/lib/db/publicData";
 import { binWidth, clampBins, MIN_FOR_MEDIAN } from "@/lib/wageStats";
-import { MAX_CITY, placeFilterRefusal, sectorCodes } from "@/lib/wagePlaceFilters";
+import { permHistoryYear } from "@/lib/db/wageViews";
+import { MAX_CITY, OLDER_YEAR_REFUSAL, placeFilterRefusal, sectorCodes } from "@/lib/wagePlaceFilters";
 
 /**
  * The salary explorer's data, for a page with no ConvexProvider.
@@ -74,6 +75,9 @@ export async function GET(request: Request) {
   // walks the whole table (lib/wagePlaceFilters.ts has the measurement).
   const refusal = placeFilterRefusal({ state, soc: socCode, city, sector });
   if (refusal) return bad(refusal);
+  // A year from DOL's older files is answered from its precomputed views,
+  // which hold no city or industry. One key read, asked only when one is set.
+  if ((city || codes) && fiscalYear && (await permHistoryYear(fiscalYear))) return bad(OLDER_YEAR_REFUSAL);
 
   const filters: WageFilters = {
     socCode: socCode || null,

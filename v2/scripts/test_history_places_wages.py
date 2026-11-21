@@ -289,6 +289,12 @@ check("each view equals the explorer's own percentile SQL over the older table",
 stateless = [v for k, v in hist.items() if k.split("|")[3] == ""]
 check("a view without a state carries its by-state table at the page's floor",
       stateless and all(isinstance(v["byState"], list) and v["minCases"] == floor for v in stateless))
+reader = (HERE.parent / "src" / "lib" / "db" / "wageViews.ts").read_text()
+check("the reader tells an older year by the same program value",
+      f'export const PERM_HISTORY_PROGRAM = "{bwv.HISTORY_PROGRAM}";' in reader)
+check("and finds each built year by its root key, which every built year has",
+      'wageViewKey("perm", { status: "all", fiscalYear: fy })' in reader
+      and all(f"perm|all|||{y}" in hist for y in ("2014", "2015", "2016")))
 doc = json.loads(db.conn.execute("SELECT json FROM perm_docs WHERE key = ?", [bwv.HISTORY_DOC]).fetchone()[0])
 check("its record lists the years it built", doc.get("years") == ["2014", "2015", "2016"], json.dumps(doc))
 

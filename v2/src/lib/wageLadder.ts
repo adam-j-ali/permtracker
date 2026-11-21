@@ -219,6 +219,19 @@ export interface WageBandSeries {
   history?: boolean;
 }
 
+/**
+ * "FY2024 to FY2026", or "FY2025" for one year, for the fiscal years a pooled
+ * figure covers; null for none. A pooled figure says which years it pools,
+ * because "all years" stops being true the day an older year is offered.
+ */
+export function fiscalYearSpan(years: readonly string[]): string | null {
+  const sorted = [...years].sort();
+  if (sorted.length === 0) return null;
+  const first = sorted[0]!;
+  const last = sorted[sorted.length - 1]!;
+  return first === last ? `FY${first}` : `FY${first} to FY${last}`;
+}
+
 export function bandLabel(from: number, to: number | null): string {
   const k = (n: number) => `$${Math.round(n / 1000)}k`;
   if (from === 0) return `Under ${k(to as number)}`;
