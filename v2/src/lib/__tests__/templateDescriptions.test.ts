@@ -86,6 +86,24 @@ describe("H-1B-only city descriptions", () => {
     inWindow(h1bCityDescription({ label: "Ada, OK", total: 21, certified: 20, fyFrom: null, fyTo: null }));
     inWindow(h1bCityDescription({ label: "Winston-Salem, NC", total: 12_450, certified: 12_001, fyFrom: 2024, fyTo: 2026 }));
   });
+
+  it("promises employers and jobs only when the page lists them", () => {
+    // A city whose LCAs are all in DOL's FY2008 to FY2019 files (or older than the newest three years) lists none.
+    const none = { employers: [], occupations: [] };
+    for (const c of [
+      { label: "Ada, OK", total: 21, certified: 20, fyFrom: 2010, fyTo: 2012, ...none },
+      { label: "Ada, OK", total: 21, certified: 20, fyFrom: null, fyTo: null, ...none },
+      { label: "Winston-Salem, NC", total: 12_450, certified: 12_001, fyFrom: 2008, fyTo: 2019, ...none },
+    ]) {
+      const text = h1bCityDescription(c);
+      inWindow(text);
+      expect(text).not.toMatch(/employers|jobs behind/);
+    }
+    const listed = { employers: [{ slug: null, name: "Acme", n: 3 }], occupations: [] };
+    expect(h1bCityDescription({ label: "Ada, OK", total: 21, certified: 20, fyFrom: 2024, fyTo: 2026, ...listed })).toMatch(
+      /with the employers and jobs behind them/,
+    );
+  });
 });
 
 describe("job title A to Z letter descriptions", () => {

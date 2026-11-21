@@ -7,9 +7,13 @@ state), so a city page joins its PERM record to its H-1B record by key. A
 city with 20 or more LCAs gets a row; one that clears that floor on H-1B
 alone, with too few PERM cases for a PERM page, gets a page of its own.
 
-Totals cover every LCA this site holds (DOL's files from FY2020). The top
-employers and occupations cover certified LCAs in the newest three fiscal
-years, and an employer links to its page through employer_page_map.
+Totals cover every LCA this site holds: DOL's files from FY2020 (`lca_cases`,
+read here each night) and its FY2008 to FY2019 files, whose table changes only
+when one of them loads, so they're counted then into `history_lca_cities`
+(lca_history_totals.py) and added here. The span (`fy_from`, `fy_to`) is the
+years those LCAs were filed in, so the page's "FY2008 to FY2026" is what it
+counted. The top employers and occupations cover certified LCAs in the newest
+three fiscal years, and an employer links to its page through employer_page_map.
 
 Usage:
     python3 scripts/build_lca_cities.py            # rebuild the table
@@ -30,6 +34,8 @@ from lib_slugs import slugify  # noqa: E402
 from lib_db import SLUG_WINDOWS, Database, record_run, rows_of, slug_window  # noqa: E402
 
 TABLE = "lca_cities"
+# The older files' LCAs by city, in the main database (lca_history_totals.py): never the older table itself.
+HISTORY_CITIES = "history_lca_cities"
 COLS = ["key", "slug", "label", "total", "certified", "fy_from", "fy_to", "detail"]
 DDL = [
     f"""CREATE TABLE IF NOT EXISTS {TABLE} (
@@ -75,14 +81,31 @@ def sliced(db: Database, select: str, where: str, group: str, args: list, *, no_
     return rows
 
 
+def history_cities(db: Database) -> list[list]:
+    """The FY2008 to FY2019 files' LCAs by city, counted at their load (city, state, LCAs, certified, first and
+    last fiscal year). Until its first build the table isn't there, and the totals are the newer files' alone."""
+    try:
+        got = rows_of(db.execute(
+            f"SELECT worksite_city, worksite_state, n, certified, fy_from, fy_to FROM {HISTORY_CITIES}"))
+    except Exception as e:  # noqa: BLE001
+        if "no such table" not in str(e):
+            raise
+        log(f"  {HISTORY_CITIES}: not built yet, so the totals are FY2020 on "
+            "(python3 scripts/ingest_flag_disclosure.py --program lca --history-totals)")
+        return []
+    log(f"  {HISTORY_CITIES}: {len(got):,} cities in the FY2008 to FY2019 files")
+    return got
+
+
 def read(db: Database) -> dict:
     totals: dict[str, list[int]] = {}
     votes: dict[str, Counter] = defaultdict(Counter)
     fy: dict[str, list[int]] = {}
-    for city, state, n, cert, lo, hi in sliced(
-            db, "SELECT worksite_city, worksite_state, COUNT(*), SUM(case_status = 'CERTIFIED'), MIN(fiscal_year), "
-            "MAX(fiscal_year)", "worksite_city IS NOT NULL AND worksite_state IS NOT NULL",
-            "worksite_city, worksite_state", [], no_slug=True):
+    newer = sliced(
+        db, "SELECT worksite_city, worksite_state, COUNT(*), SUM(case_status = 'CERTIFIED'), MIN(fiscal_year), "
+        "MAX(fiscal_year)", "worksite_city IS NOT NULL AND worksite_state IS NOT NULL",
+        "worksite_city, worksite_state", [], no_slug=True)
+    for city, state, n, cert, lo, hi in newer + history_cities(db):
         key = city_key(str(city), str(state))
         if not key:
             continue
