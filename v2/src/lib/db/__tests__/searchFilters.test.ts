@@ -112,8 +112,9 @@ describe("searchCases (published half)", () => {
     // so there are no statistics to tell the planner otherwise.
     await searchCases({ field: "employer", text: "amazon", status: "certified" });
     expect(rows.mock.calls[0]![0]).toMatch(/FROM perm_cases INDEXED BY idx_pc_emp_dec WHERE/);
+    rows.mockClear();
     await searchCases({ field: "attorney", text: "fragomen", status: "certified" });
-    expect(rows.mock.calls[1]![0]).toMatch(/FROM perm_cases INDEXED BY idx_pc_att_dec WHERE/);
+    expect(rows.mock.calls[0]![0]).toMatch(/FROM perm_cases INDEXED BY idx_pc_att_dec WHERE/);
   });
 });
 

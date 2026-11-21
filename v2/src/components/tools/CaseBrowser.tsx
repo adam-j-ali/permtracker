@@ -31,6 +31,7 @@ import { CaseStatusChip } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { fiscalYearSpan, ISO_MONTH_RE } from "@convex/lib/months";
 import { entityHref } from "@/lib/entityPayload";
+import { CURRENT_FIRST_FY } from "@/lib/permEras";
 import { compareNullsLast } from "@/lib/tableSort";
 import { SortMark } from "@/components/ui/sort-mark";
 
@@ -120,6 +121,11 @@ export interface CaseMeta {
     withdrawn: number;
   }[];
   computedAt: number;
+  /**
+   * Whether the counts above include DOL's FY2008 to FY2023 decisions, which the list reads too
+   * (src/lib/permCasesMeta.ts). False until their record is built.
+   */
+  olderYearsCounted?: boolean;
 }
 
 export interface OccupationOption {
@@ -136,6 +142,8 @@ type SortKey = "decisionDate" | "receivedDate" | "days" | "wage" | "employerName
  * here before the lists were paged alike, so it stays one.
  */
 const PAGE_SIZES = [10, LIST_PAGE_SIZE, 50, 100, 250, 500];
+/** A case from DOL's files before FY2015, which print no filing day. */
+const NO_FILING_DAY = "No filing day in DOL's file";
 const STATUS_LABEL: Record<Status, string> = {
   certified: "Certified",
   denied: "Denied",
@@ -439,8 +447,13 @@ export function CaseBrowser({
     if (!meta) return null;
     const pick = (row: { total: number; certified: number; denied: number; withdrawn: number } | undefined) =>
       row ? (status ? row[status] : row.total) : null;
+    // The list reads DOL's FY2008 to FY2023 decisions too. Until their record is built, a count reaching those
+    // years is the current files' alone, so none is given.
+    const reachesOlder = !fiscalYear || Number(fiscalYear) < CURRENT_FIRST_FY;
+    if (meta.olderYearsCounted === false && reachesOlder) return null;
     if (dimension === "state" && stateValue !== "") {
-      return pick(meta.byState.find((r) => r.state === stateValue));
+      // A state's count covers every year: with a year chosen beside it there's no count to give.
+      return fiscalYear ? null : pick(meta.byState.find((r) => r.state === stateValue));
     }
     if (dimension !== "all") return null;
     if (fiscalYear) return pick(meta.byFiscalYear.find((r) => r.fiscalYear === fiscalYear));
@@ -833,7 +846,8 @@ export function CaseBrowser({
                   <option value="">Pick a state</option>
                   {(meta?.byState ?? []).map((s) => (
                     <option key={s.state || "none"} value={s.state}>
-                      {s.state === "" ? "Not published" : s.state} ({formatInt(s.total)})
+                      {s.state === "" ? "Not published" : s.state}
+                      {meta?.olderYearsCounted === false ? "" : ` (${formatInt(s.total)})`}
                     </option>
                   ))}
                 </select>
@@ -886,7 +900,8 @@ export function CaseBrowser({
                 <option value="">Any outcome</option>
                 {(meta?.byStatus ?? []).map((s) => (
                   <option key={s.status} value={s.status}>
-                    {STATUS_LABEL[s.status]} ({formatInt(s.count)})
+                    {STATUS_LABEL[s.status]}
+                    {meta?.olderYearsCounted === false ? "" : ` (${formatInt(s.count)})`}
                   </option>
                 ))}
               </select>
@@ -1279,17 +1294,27 @@ function CaseTable({
             {" "}</td>
             {/* On a phone the filing day, the decision day and the wait share one line across the row. The separate
                 "Decided" and days cells are the wide table's. */}
+            {/* DOL's files before FY2015 print no filing day, so those cases have neither it nor a wait. */}
             <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-base tabular-nums max-sm:whitespace-normal max-sm:text-left max-sm:font-sans max-sm:text-sm max-sm:text-muted-foreground max-sm:[grid-area:dates]">
-              <span className="sm:hidden">Filed</span>{" "}
-              {r.receivedDate}
-              {/* Its comma follows the date with no space, so nothing separates the two. */}
-              <span className="sm:hidden">{`, decided ${r.decisionDate} (${formatInt(r.days)} ${r.days === 1 ? "day" : "days"})`}</span>
+              {r.receivedDate ? (
+                <>
+                  <span className="sm:hidden">Filed</span>{" "}
+                  {r.receivedDate}
+                  {/* Its comma follows the date with no space, so nothing separates the two. */}
+                  <span className="sm:hidden">{`, decided ${r.decisionDate} (${formatInt(r.days)} ${r.days === 1 ? "day" : "days"})`}</span>
+                </>
+              ) : (
+                <>
+                  <span className="max-sm:hidden">{NO_FILING_DAY}</span>
+                  <span className="sm:hidden">{`Decided ${r.decisionDate}; ${NO_FILING_DAY.toLowerCase()}`}</span>
+                </>
+              )}
             {" "}</td>
             <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-base tabular-nums max-sm:hidden">
               {r.decisionDate}
             {" "}</td>
             <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums max-sm:hidden">
-              {formatInt(r.days)}
+              {r.receivedDate ? formatInt(r.days) : "None"}
             {" "}</td>
           </tr>
         ))}
