@@ -185,6 +185,15 @@ SCHEMA = [
          n     INTEGER NOT NULL,
          PRIMARY KEY (kind, slug, facet, pos)
        )""",
+    # Decision days by filing month, cases perm_cases also holds left out: the month document adds these to
+    # perm_cases' own (ingest_case_status_direct.write_decided_percentiles), so a month filed before October 2023
+    # counts its fast cases too. Rebuilt whole whenever history loads.
+    """CREATE TABLE IF NOT EXISTS perm_history_month_days (
+         m    TEXT NOT NULL,
+         days INTEGER NOT NULL,
+         n    INTEGER NOT NULL,
+         PRIMARY KEY (m, days)
+       )""",
 ]
 
 # The master case search reads history under the same leads as perm_cases.
@@ -599,6 +608,40 @@ def build_history_facets(db, occ_slug_by_code: dict[str, str]) -> int:
     return len(out)
 
 
+def next_month(m: str) -> str:
+    y, mo = int(m[:4]), int(m[5:7])
+    return f"{y + (mo == 12)}-{1 if mo == 12 else mo + 1:02d}"
+
+
+def build_month_days(db) -> int:
+    """perm_history_month_days: the older table's decision days by filing month.
+
+    A month at a time on the received_date index (one month measured 0.5 s on the live database, Nov 21 2026),
+    never one grouping of the whole table. Each case perm_cases also holds is left out, so the month document,
+    which adds perm_cases' own counts, counts it once.
+    """
+    lo = rows_of(db.execute("SELECT MIN(received_date) FROM perm_cases_history WHERE received_date > ''"))
+    hi = rows_of(db.execute("SELECT MAX(received_date) FROM perm_cases_history"))
+    first, last = (lo[0][0] if lo else None), (hi[0][0] if hi else None)
+    out: list[tuple] = []
+    if first and last:
+        m, stop = str(first)[:7], next_month(str(last)[:7])
+        while m != stop:
+            nxt = next_month(m)
+            for r in rows_of(db.execute(
+                    "SELECT days, COUNT(*) FROM perm_cases_history h "
+                    "WHERE received_date >= ? AND received_date < ? AND days IS NOT NULL "
+                    "AND NOT EXISTS (SELECT 1 FROM perm_cases p WHERE p.case_number = h.case_number) "
+                    "GROUP BY days", [f"{m}-01", f"{nxt}-01"])):
+                out.append((m, int(r[0]), int(r[1])))
+            m = nxt
+    db.execute(next(t for t in SCHEMA if "perm_history_month_days" in t))
+    db.execute("DELETE FROM perm_history_month_days")
+    insert_rows(db, "perm_history_month_days", ["m", "days", "n"], out, per_request=STMTS_PER_REQUEST)
+    log(f"  history month days: {len(out):,} rows")
+    return len(out)
+
+
 def occupation_slugs(db) -> dict[str, str]:
     return {str(r[0]): str(r[1]) for r in rows_of(db.execute(
         "SELECT code, slug FROM perm_entities WHERE kind = 'occupation' AND code IS NOT NULL"))}
@@ -690,7 +733,17 @@ def main() -> int:
                     help="give every history row without an employer slug its name's slug, then stop")
     ap.add_argument("--finish-only", action="store_true",
                     help="no workbooks: current years, search indexes and facets only")
+    ap.add_argument("--month-days", action="store_true",
+                    help="no workbooks: only rebuild perm_history_month_days, then stop")
     args = ap.parse_args()
+
+    if args.month_days:
+        db = Database()
+        db.script(SCHEMA)
+        n = build_month_days(db)
+        record_run(db, "ingest_perm_history.py --month-days", status="ok", rows_written=n,
+                   note="decision days by filing month from perm_cases_history")
+        return 0
 
     if args.fill_slugs:
         db = Database()
@@ -707,8 +760,9 @@ def main() -> int:
         if not args.no_indexes:
             build_search_indexes(db)
         n += build_history_facets(db, occupation_slugs(db))
+        n += build_month_days(db)
         record_run(db, "ingest_perm_history.py --finish-only", status="ok", rows_written=n,
-                   note="current years, search indexes and history facets")
+                   note="current years, search indexes, history facets and month days")
         return 0
 
     if args.current:
@@ -789,6 +843,7 @@ def main() -> int:
         if not args.no_indexes:
             build_search_indexes(db)
         wrote_years += build_history_facets(db, occupation_slugs(db))
+        wrote_years += build_month_days(db)
         years = sorted({v["fy"] for v in loaded.values()})
         status = "ok" if not failures else "partial"
         note = (f"FY{years[0]} to FY{years[-1]} held; " if years else "") + (
