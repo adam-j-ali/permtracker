@@ -153,6 +153,60 @@ describe("DenialByWageBand", () => {
     render(<DenialByWageBand byYear={BY_YEAR} pooled={POOLED} />);
     expect(screen.getAllByText("112,411").length).toBeGreaterThan(0);
   });
+
+  describe("the years it covers", () => {
+    const older = (fy: string, denied: number): WageBandSeries => ({
+      fiscalYear: fy,
+      history: true,
+      bands: toBands([{ from: 0, decided: 20_000, denied }], WAGE_BAND_EDGES_FINE),
+    });
+    const RECENT: WageBandSeries[] = ["2024", "2025", "2026"].map((fiscalYear) => ({ fiscalYear, bands: FY2024 }));
+
+    it("names the pooled panel by the years it pools, never a count that can go stale", () => {
+      render(<DenialByWageBand byYear={RECENT} pooled={POOLED} />);
+      expect(screen.getByText("FY2024 to FY2026, pooled")).toBeTruthy();
+      expect(screen.queryByText(/All three years/i)).toBeNull();
+    });
+
+    it("names one pooled year as that year", () => {
+      render(<DenialByWageBand byYear={BY_YEAR} pooled={POOLED} />);
+      expect(screen.getByText("FY2024, pooled")).toBeTruthy();
+    });
+
+    it("puts the older files' years in their own block below, closed, on their own scale", () => {
+      const { container } = render(
+        <DenialByWageBand byYear={[older("2015", 6_000), older("2016", 3_000), ...RECENT]} pooled={POOLED} />,
+      );
+      const block = container.querySelector("details[data-earlier-years]");
+      expect(block).not.toBeNull();
+      expect(block!.hasAttribute("open")).toBe(false);
+      expect(within(block as HTMLElement).getByText(/FY2015 to FY2016/)).toBeTruthy();
+      expect(within(block as HTMLElement).getByText("FY2015")).toBeTruthy();
+      // The recent grid keeps the recent years and the pool only.
+      const grid = container.querySelector(".grid") as HTMLElement;
+      expect(within(grid).queryByText("FY2015")).toBeNull();
+      expect(within(grid).getByText("FY2026")).toBeTruthy();
+      // FY2015's 30% fills its block's scale; the recent panels' bars keep theirs.
+      const bar = (scope: Element, title: string) => {
+        const panel = [...scope.querySelectorAll("p")].find((p) => p.textContent === title)!.parentElement!;
+        return (panel.querySelector(".bg-chart-red") as HTMLElement).style.width;
+      };
+      expect(bar(block!, "FY2015")).toBe("100%");
+      expect(bar(block!, "FY2016")).toBe("50%");
+      expect(bar(grid, "FY2024")).not.toBe("100%");
+    });
+
+    it("says their wages are as offered then", () => {
+      const { container } = render(<DenialByWageBand byYear={[older("2015", 6_000), ...RECENT]} pooled={POOLED} />);
+      const block = container.querySelector("details[data-earlier-years]") as HTMLElement;
+      expect(block.textContent).toMatch(/no adjustment for inflation/i);
+    });
+
+    it("has no older block when there are no older years", () => {
+      const { container } = render(<DenialByWageBand byYear={RECENT} pooled={POOLED} />);
+      expect(container.querySelector("details[data-earlier-years]")).toBeNull();
+    });
+  });
 });
 
 const year = (fy: string, count: number, p50: number): Ladder => ({
