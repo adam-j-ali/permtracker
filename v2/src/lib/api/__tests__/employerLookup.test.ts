@@ -40,7 +40,8 @@ function db(answers: { perm?: string | null; mapIndexed?: boolean; mapped?: { pa
     if (sql.includes("FROM perm_entities")) return answers.perm ? { slug: answers.perm } : null;
     if (sql.includes("sqlite_master")) return { n: answers.mapIndexed ? 1 : 0 };
     if (sql.includes("FROM employer_page_map")) return answers.mapped ?? null;
-    if (sql.includes("FROM lca_cases")) return { n: 4321 };
+    if (sql.includes("FROM lca_cases_years")) return { n: 4321 };
+    if (sql.includes("FROM lca_cases")) return { n: 999_999 };
     if (sql.includes("FROM perm_live_recent")) return { newest: "2026-10-01T00:00:00", pending: 12 };
     if (sql.includes("FROM perm_live_only_index")) return { name: "Shore Crabs LLC", cases: 3 };
     return null;
@@ -90,6 +91,35 @@ describe("lookupEmployer", () => {
     expect(args).toContain("google");
   });
 
+  it("counts H-1B LCAs from FY2008 on, summed over the employer's spellings, and no other visa", async () => {
+    // It read lca_cases (FY2020 on) and counted the E-3 and H-1B1 LCAs filed on the same form as H-1B ones
+    // (the Nov 20 2026 sweep, item 18). lca_cases_years holds each spelling's H-1B LCAs by fiscal year, both tables.
+    db({ perm: "google-llc" });
+    getEntityBySlug.mockResolvedValue(google);
+    employerMatch.mockResolvedValue({ where: "employer_slug IN (?, ?)", args: ["google-llc", "google-inc"], basis: "map", spellings: 2 });
+    const r = await lookupEmployer("Google");
+    if (!r.ok) throw new Error("expected an answer");
+    expect(r.data.employer!.h1bLcas).toBe(4321);
+    const reads = one.mock.calls.filter(([s]) => /\blca_cases/.test(String(s)));
+    expect(reads).toHaveLength(1);
+    const [sql, args] = reads[0]!;
+    expect(sql).toBe("SELECT SUM(certified + denied + withdrawn) AS n FROM lca_cases_years WHERE employer_slug IN (?, ?)");
+    expect(args).toEqual(["google-llc", "google-inc"]);
+  });
+
+  it("says no figure, never zero, when the H-1B count can't be read", async () => {
+    db({ perm: "google-llc" });
+    getEntityBySlug.mockResolvedValue(google);
+    const answer = one.getMockImplementation()!;
+    one.mockImplementation(async (sql: string) => {
+      if (sql.includes("lca_cases_years")) throw new Error("SERVER_ERROR: database is locked");
+      return answer(sql);
+    });
+    const r = await lookupEmployer("Google");
+    if (!r.ok) throw new Error("expected an answer");
+    expect(r.data.employer!.h1bLcas).toBeNull();
+  });
+
   it("withholds the certified share under 30 decided cases", async () => {
     db({ perm: "meta-platforms-inc" });
     getEntityBySlug.mockResolvedValue(meta);
@@ -106,7 +136,8 @@ describe("lookupEmployer", () => {
     if (!r.ok) throw new Error("expected an answer");
     expect(r.data.match).toBe("exact");
     expect(r.data.employer!.page).toBe("other");
-    expect(r.data.employer!.h1bLcas).toBe(50);
+    // The same H-1B count as every other page, not the map's every-visa LCA count.
+    expect(r.data.employer!.h1bLcas).toBe(4321);
     expect(r.data.employer!.perm.certifiedShare).toBeNull();
 
     forgetLookupsForTests();

@@ -30,7 +30,7 @@ describe("the case page's employer line", () => {
     const link = await screen.findByRole("link", { name: "FMR LLC on PERM Tracker" });
     expect(link).toHaveAttribute("href", "/perm-employers/fmr-llc");
     expect(String(fetch.mock.calls[0]![0])).toBe("/v1/lookup/employer?name=FMR%20LLC");
-    expect(link.parentElement).toHaveTextContent("1,240 PERM cases DOL decided, 99% of them certified. 56 still waiting at DOL. 2,370 wage requests. 3,456 LCAs.");
+    expect(link.parentElement).toHaveTextContent("1,240 PERM cases DOL decided, 99% of them certified. 56 still waiting at DOL. 2,370 wage requests. 3,456 H-1B LCAs.");
   });
 
   it("shows nothing for a near match, which can be another company, or when the lookup fails", async () => {

@@ -47,7 +47,7 @@ export function employerLineParts(e: LookupEmployer): string[] {
   }
   if (p.pending) parts.push(`${formatInt(p.pending)} still waiting at DOL`);
   if (e.wageRequests) parts.push(`${formatInt(e.wageRequests)} wage request${e.wageRequests === 1 ? "" : "s"}`);
-  if (e.h1bLcas) parts.push(`${formatInt(e.h1bLcas)} LCA${e.h1bLcas === 1 ? "" : "s"}`);
+  if (e.h1bLcas) parts.push(`${formatInt(e.h1bLcas)} H-1B LCA${e.h1bLcas === 1 ? "" : "s"}`);
   return parts;
 }
 
