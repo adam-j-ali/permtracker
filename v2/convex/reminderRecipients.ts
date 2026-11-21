@@ -363,7 +363,7 @@ export const inviteDetails = internalQuery({
     return {
       email: row.email,
       inviter: await inviterFor(ctx, row.userId),
-      // A title or employer that reads like a link or a phone number is never put in front of this address.
+      // A title or employer that isn't plain text (isPlainText: a link, an address, a phone number) never reaches this address.
       caseLine: safeCaseLine(caseDoc.positionTitle, caseDoc.employerName),
     };
   },
