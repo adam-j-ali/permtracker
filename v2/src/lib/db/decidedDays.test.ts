@@ -134,9 +134,12 @@ describe("getDecidedFeed and DOL's FY2008 to FY2019 LCA files", () => {
     // An employer name, a wage, a city or an outcome on its own is tested on each row of the range.
     const wide = await getDecidedFeed({ range: { from: "2015-04-01", to: "2015-04-30" }, programs: ["lca"], narrow: { employer: "acme" } });
     expect(wide.refused).toMatch(/before October 2019/);
-    expect(wide.refused).toMatch(/3 days/);
+    expect(wide.refused).toMatch(/at most one day of them/);
     expect(asked.some((q) => q.includes("lca_cases_history"))).toBe(false);
-    const narrow = await getDecidedFeed({ range: { from: "2015-04-28", to: "2015-04-30" }, programs: ["lca"], narrow: { employer: "acme" } });
+    // Measured on the live database (Nov 21 2026): three busy days walked took 1.19 s, one day 0.69 s.
+    const two = await getDecidedFeed({ range: { from: "2015-04-29", to: "2015-04-30" }, programs: ["lca"], narrow: { employer: "acme" } });
+    expect(two.refused).toMatch(/This one holds 2\./);
+    const narrow = await getDecidedFeed({ range: { from: "2015-04-30", to: "2015-04-30" }, programs: ["lca"], narrow: { employer: "acme" } });
     expect(narrow.refused).toBeNull();
     const hist = asked.find((q) => q.includes("FROM lca_cases_history") && !q.includes("COUNT"));
     expect(hist).toContain("INDEXED BY lca_cases_history_decided");
