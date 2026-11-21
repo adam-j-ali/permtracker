@@ -111,8 +111,8 @@ export function looksLikeALink(text: string): boolean {
 
 /**
  * Who the invitation says asked: the account's display name (Settings' full name, else the sign-in name), or "a PERM
- * Tracker user". A name that reads like a link or an address is never shown, so nobody can put one in an email to a
- * stranger under our name.
+ * Tracker user". A name that reads like a link, an address or a phone number (looksLikeALink) is never shown, so
+ * nobody can put one in an email to a stranger under our name.
  */
 export function inviterName(fullName: string | undefined, accountName: string | undefined): string {
   for (const raw of [fullName, accountName]) {
