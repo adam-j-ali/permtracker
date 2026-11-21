@@ -582,12 +582,13 @@ def index_ddl(table: str) -> list[str]:
 HISTORY_TABLES = {"lca": ("lca_cases_history", 2020)}
 
 
-def build_history_totals(db: Database, program: str) -> dict:
-    """The older files' share of the employer map and the city pages (lca_history_totals.py), counted once here
-    because the older table changes only when one of its files loads. Raises when the program has no older table."""
+def build_history_totals(db: Database, program: str, page_rows: int | None = None) -> dict:
+    """The older files' share of the employer map, the city pages and the employer pages' ledger and LCA profile
+    (lca_history_totals.py), counted once here because the older table changes only when one of its files loads.
+    Raises when the program has no older table."""
     if HISTORY_TABLES.get(program, ("",))[0] != lca_history_totals.HISTORY:
         raise ValueError(f"{program} keeps no older files in a table of their own")
-    return lca_history_totals.build(db)
+    return lca_history_totals.build(db, page_rows)
 
 
 def table_for(program: str, name: str, default: str) -> str:
@@ -1390,6 +1391,9 @@ def main() -> int:
                     help="LCA only, no file: count the older files' spellings and cities once more into "
                          "history_lca_spellings and history_lca_cities (lca_history_totals.py), then stop. "
                          "Every older file's load does this itself.")
+    ap.add_argument("--history-page-rows", type=int, metavar="N",
+                    help=f"With --history-totals: rows each read of the older table opens (default "
+                         f"{lca_history_totals.PAGE_ROWS:,}; every read must stay under a second).")
     args = ap.parse_args()
     if args.dump_rows and not args.dry_run:
         ap.error("--dump-rows only makes sense with --dry-run")
@@ -1410,12 +1414,13 @@ def main() -> int:
         db = Database()
         script = f"ingest_flag_disclosure.py --program {args.program} --history-totals"
         try:
-            got = build_history_totals(db, args.program)
+            got = build_history_totals(db, args.program, args.history_page_rows)
         except BaseException as exc:  # noqa: BLE001 - the audit row must name the failure
             record_run(db, script, status="failed", rows_written=0, note=str(exc)[:200], started_at=started)
             raise
         record_run(db, script, status="ok", rows_written=got["writes"],
-                   note=f"FY{got['from']} to FY{got['to']}: {got['spellings']:,} spellings, {got['cities']:,} cities",
+                   note=(f"FY{got['from']} to FY{got['to']}: {got['spellings']:,} spellings, {got['cities']:,} "
+                         f"cities; {got['pages']:,} pages, slowest {got['slowest']}s"),
                    started_at=started)
         return 0
 
