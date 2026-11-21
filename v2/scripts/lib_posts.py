@@ -35,6 +35,20 @@ def known_posts() -> frozenset[str]:
     return frozenset(m.group(1) for m in re.finditer(r'^\s*"?([a-z][a-z-]+)"?:\s*"', text, re.M))
 
 
+@functools.lru_cache(maxsize=1)
+def known_countries() -> dict[str, str]:
+    """Each country a US immigrant visa post sits in, by every name the list gives it (lower case), as its first name.
+    A second name never takes a country's own name: "Hong Kong, China" leaves China as China."""
+    with open(POSTS_FILE, encoding="utf-8") as fh:
+        values = re.findall(r'^\s*"?[a-z][a-z-]+"?:\s*"([^"]+)"', fh.read(), re.M)
+    names = [[n.strip() for n in v.split(",") if n.strip()] for v in values]
+    out = {n[0].lower(): n[0] for n in names if n}
+    for n in names:
+        for other in n[1:]:
+            out.setdefault(other.lower(), n[0])
+    return out
+
+
 def post_key(text: str | None) -> str | None:
     """The site's key for a post as a person wrote it, or None."""
     if not text or not text.strip():

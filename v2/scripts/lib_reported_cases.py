@@ -119,6 +119,9 @@ def check_record(r: dict) -> None:
         raise ValueError(f"premium must be one of {PREMIUMS}, got {r['premium']!r}")
     if r.get("i140_rfe") is not None and r["i140_rfe"] not in I140_RFE:
         raise ValueError(f"i140_rfe must be one of {I140_RFE}, got {r['i140_rfe']!r}")
+    # The build stores it as 1 or 0, so anything else would stop the whole build, every source with it.
+    if r.get("visa_available") is not None and r["visa_available"] not in (True, False):
+        raise ValueError(f"visa_available must be true or false, got {r['visa_available']!r}")
 
 
 def _day(v: str) -> dt.date:
