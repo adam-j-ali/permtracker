@@ -43,6 +43,7 @@ const NAMES: Record<string, string> = {
   reddit: "Reddit",
   telegram: "Telegram",
   facebook: "Facebook",
+  whatsapp: "WhatsApp",
   visastats: "VisaStats",
   timeline: "a timeline shared here",
   "consular-report": "a consulate report shared here",

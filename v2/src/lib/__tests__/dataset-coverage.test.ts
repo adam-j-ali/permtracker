@@ -110,11 +110,12 @@ describe("dataset coverage", () => {
     // reported cases (reported-cases); 62 with the Reddit reports (community-posts-reddit).
     // The community sheets' rows come from their own config (Nov 19 2026), so they're held to it exactly, like the
     // WARN states to their readers; 63 with the Telegram reports (community-posts-telegram); 64 with the Facebook
-    // groups' posts typed in by hand (community-posts-facebook, Nov 20 2026).
+    // groups' posts typed in by hand (community-posts-facebook, Nov 20 2026); 65 with WhatsApp's exported group chats
+    // (community-posts-whatsapp, Nov 21 2026).
     const sheetRows = ids.filter((d) => d.startsWith("community-sheet-"));
     const sheetConfig = JSON.parse(readFileSync(join(ROOT, "scripts/data/community_sheets.json"), "utf8")) as { sheets: { key: string }[] };
     expect([...sheetRows].sort()).toEqual(sheetConfig.sheets.map((s) => `community-sheet-${s.key}`).sort());
-    expect(ids.length - warnStates.length - policy.length - sheetRows.length).toBeLessThanOrEqual(64);
+    expect(ids.length - warnStates.length - policy.length - sheetRows.length).toBeLessThanOrEqual(65);
     const read = new Set<string>();
     for (const f of ["ingest_warn.py", "warn_states.py"]) {
       const src = readFileSync(join(ROOT, "scripts", f), "utf8");

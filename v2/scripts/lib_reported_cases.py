@@ -78,9 +78,10 @@ def progress(field: str, v: str) -> int:
     return (CONSULAR_PROGRESS if field == "consular_outcome" else DECISION_PROGRESS).get(v, 2)
 # Our own reviewed sources first, then the sheets, then the trackers and chats. The first member founds a case's id.
 # Facebook groups' posts are typed in by hand from screenshots, so they rank after Reddit and before Telegram's parsed
-# posts; never as a sheet, which any name not listed here is.
+# posts; never as a sheet, which any name not listed here is. WhatsApp's exported chats are parsed like Telegram's,
+# and rank just after them.
 SOURCE_RANK = {"timeline": 0, "consular-report": 1, "app": 2, "visastats": 30, "reddit": 40, "facebook": 45,
-               "telegram": 50}
+               "telegram": 50, "whatsapp": 55}
 SHEET_RANK = 20  # any other source name is a community sheet's key
 # Countries with their own line in the Visa Bulletin: never "rest of world".
 OWN_LINE = {"india", "china", "mexico", "philippines", "el salvador", "guatemala", "honduras"}
