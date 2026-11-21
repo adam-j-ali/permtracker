@@ -2,7 +2,8 @@ import "server-only";
 
 import { cache } from "react";
 
-import { one } from "./client";
+import { one, rows } from "./client";
+import { beforeFirstLoad } from "./firstLoad";
 import { socGroup } from "@/lib/socCode";
 
 /**
@@ -82,4 +83,52 @@ const readView = cache(async (key: string): Promise<WageView | null> => {
 /** The precomputed view for this selection, or null to run the live query. */
 export function wageView(program: WageProgram, f: WageViewFilters): Promise<WageView | null> {
   return readView(wageViewKey(program, f));
+}
+
+/**
+ * The `program` of the views the history load writes for DOL's older PERM files (FY2008 to FY2023,
+ * `perm_cases_history`): HISTORY_PROGRAM in scripts/build_wage_views.py, which its test holds to this.
+ */
+export const PERM_HISTORY_PROGRAM = "perm_history";
+
+export interface PermYearView {
+  view: WageView | null;
+  /** The year is one of the older files', whose every selection holding a case is precomputed. */
+  history: boolean;
+}
+
+/**
+ * A PERM selection that names a fiscal year, and whether that year is one of the older files'.
+ *
+ * The live query reads `perm_cases`, which holds FY2024 on, and a page never scans the older table. So the history
+ * load precomputes every selection of an older year that holds a case (thin ones too), under these keys, and for
+ * such a year a missing key is a selection with no cases. One statement reads the selection's key and its year's
+ * root key (every outcome, every job, every state), whose `program` says which table the year comes from.
+ *
+ * A failed read throws: answered as none, an older year would read as one with no cases. Only a database with no
+ * views table yet falls through to the live query, as the other selections do.
+ */
+const readPermYear = cache(async (key: string, root: string): Promise<PermYearView> => {
+  const got = await rows<{ key: string; program: string; json: string }>(
+    "SELECT key, program, json FROM wage_views WHERE key IN (?, ?)",
+    [key, root],
+  ).catch(beforeFirstLoad([] as { key: string; program: string; json: string }[]));
+  const hit = got.find((r) => r.key === key);
+  return {
+    view: hit ? (JSON.parse(hit.json) as WageView) : null,
+    history: got.some((r) => r.key === root && r.program === PERM_HISTORY_PROGRAM),
+  };
+});
+
+const yearRoot = (fy: string | number) => wageViewKey("perm", { status: "all", fiscalYear: fy });
+
+/** A PERM selection with a fiscal year: its view, and whether the year is one of the older files'. */
+export function permYearView(f: WageViewFilters & { fiscalYear: string | number }): Promise<PermYearView> {
+  return readPermYear(wageViewKey("perm", f), yearRoot(f.fiscalYear));
+}
+
+/** Whether a fiscal year is one of DOL's older PERM files', answered from its precomputed views. */
+export async function permHistoryYear(fy: string | number): Promise<boolean> {
+  const root = yearRoot(fy);
+  return (await readPermYear(root, root)).history;
 }

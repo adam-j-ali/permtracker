@@ -63,6 +63,16 @@ export interface SalaryExplorerProps {
   nounPlural?: string;
   states: readonly WageOption[];
   fiscalYears: readonly string[];
+  /**
+   * The years among `fiscalYears` from DOL's older files, worked out ahead by
+   * occupation and state: a city or an industry can't narrow them.
+   */
+  historyYears?: readonly string[];
+  /**
+   * What the no-year choice pools, in words ("FY2024 to FY2026"). Without one
+   * it reads "All years", true where the picker holds every year it pools.
+   */
+  pooledLabel?: string;
   /** Rendered before any fetch, so the default view needs no JavaScript. */
   initial: ExplorerPayload;
   /**
@@ -92,6 +102,8 @@ const STATUSES = [
 const usd = (n: number | null) =>
   n === null ? "n/a" : formatDollars(n);
 
+const NO_YEARS: readonly string[] = [];
+
 const FIELD =
   "mt-2 block w-full min-w-0 min-h-[44px] border-2 border-input bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:text-muted-foreground";
 
@@ -104,11 +116,14 @@ function CityField({
   id,
   value,
   disabled,
+  reason,
   onCommit,
 }: {
   id: string;
   value: string;
   disabled: boolean;
+  /** Why it's disabled, when that isn't the missing state. */
+  reason?: string;
   onCommit: (v: string) => void;
 }) {
   const [text, setText] = useState(value);
@@ -124,7 +139,7 @@ function CityField({
       disabled={disabled}
       maxLength={MAX_CITY}
       autoComplete="off"
-      placeholder={disabled ? "Choose a state first" : "e.g. Seattle"}
+      placeholder={disabled ? reason || "Choose a state first" : "e.g. Seattle"}
       onChange={(e) => setText(e.target.value)}
       onBlur={commit}
       onKeyDown={(e) => {
@@ -146,6 +161,8 @@ export function SalaryExplorer({
   nounPlural = "cases",
   states,
   fiscalYears,
+  historyYears = NO_YEARS,
+  pooledLabel,
   initial,
   placeFilters = false,
 }: SalaryExplorerProps) {
@@ -163,10 +180,12 @@ export function SalaryExplorer({
   const state = params.get("state") ?? "";
   const fy = params.get("fy") ?? "";
   const status = params.get("status") ?? "certified";
+  // A year from DOL's older files: precomputed by occupation and state only.
+  const olderYear = historyYears.includes(fy);
   // Read only where the route accepts them, so a stray parameter on the LCA
   // page can't send a request its route would refuse.
-  const city = placeFilters && state ? params.get("city") ?? "" : "";
-  const sector = placeFilters && (state || soc) ? params.get("sector") ?? "" : "";
+  const city = placeFilters && state && !olderYear ? params.get("city") ?? "" : "";
+  const sector = placeFilters && (state || soc) && !olderYear ? params.get("sector") ?? "" : "";
   const isDefault = !soc && !state && !fy && status === "certified" && !city && !sector;
 
   const [data, setData] = useState<ExplorerPayload>(initial);
@@ -179,13 +198,18 @@ export function SalaryExplorer({
       if (value) next.set(key, value);
       else next.delete(key);
       // A narrowing outlives nothing it narrows: a city goes with its state,
-      // an industry with the last of state and occupation.
+      // an industry with the last of state and occupation, and both with a
+      // move to a year from DOL's older files.
       if (!next.get("state")) next.delete("city");
       if (!next.get("state") && !next.get("soc")) next.delete("sector");
+      if (historyYears.includes(next.get("fy") ?? "")) {
+        next.delete("city");
+        next.delete("sector");
+      }
       const qs = next.toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
-    [params, pathname, router],
+    [params, pathname, router, historyYears],
   );
 
   useEffect(() => {
@@ -227,12 +251,12 @@ export function SalaryExplorer({
   const report = useMemo(() => reportability(data.stats.n), [data.stats.n]);
   const subject = useMemo(() => {
     const occ = occupations.find((o) => o.value === soc)?.label;
-    const parts = [occ ?? "All occupations", state || "every state", fy ? `FY${fy}` : "all years"];
+    const parts = [occ ?? "All occupations", state || "every state", fy ? `FY${fy}` : pooledLabel || "all years"];
     if (city) parts.splice(2, 0, city);
     const sectorLabel = sectorGroup(sector)?.label;
     if (sectorLabel) parts.push(sectorLabel);
     return parts.join(" · ");
-  }, [occupations, soc, state, fy, city, sector]);
+  }, [occupations, soc, state, fy, city, sector, pooledLabel]);
 
   const maxBin = Math.max(1, ...data.bins.map((b) => b.count));
 
@@ -298,7 +322,7 @@ export function SalaryExplorer({
               onChange={(e) => setParam("fy", e.target.value)}
               className="mt-2 block w-full min-w-0 min-h-[44px] border-2 border-input bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
             >
-              <option value="">All years</option>
+              <option value="">{pooledLabel || "All years"}</option>
               {fiscalYears.map((y) => (
                 <option key={y} value={y}>
                   FY{y}
@@ -332,10 +356,11 @@ export function SalaryExplorer({
                   Worksite city
                 </Label>
                 <CityField
-                  key={`${state}|${city}`}
+                  key={`${state}|${city}|${fy}`}
                   id={ids.city}
                   value={city}
-                  disabled={!state}
+                  disabled={!state || olderYear}
+                  reason={olderYear ? `Not for FY${fy}` : undefined}
                   onCommit={(v) => setParam("city", v)}
                 />
               </div>
@@ -347,12 +372,16 @@ export function SalaryExplorer({
                 <select
                   id={ids.sector}
                   value={sector}
-                  disabled={!state && !soc}
+                  disabled={(!state && !soc) || olderYear}
                   onChange={(e) => setParam("sector", e.target.value)}
                   className={FIELD}
                 >
                   <option value="">
-                    {!state && !soc ? "Choose a state or an occupation first " : "Every industry "}
+                    {olderYear
+                      ? `Not for FY${fy} `
+                      : !state && !soc
+                        ? "Choose a state or an occupation first "
+                        : "Every industry "}
                   </option>
                   {SECTOR_GROUPS.map((x) => (
                     <option key={x.value} value={x.value}>
@@ -377,6 +406,13 @@ export function SalaryExplorer({
               industry
             </Link>{" "}
             pages.
+            {olderYear ? (
+              <>
+                {" "}
+                FY{fy} comes from DOL&apos;s older files. Those years are worked out ahead by occupation and
+                state, so a city or an industry can&apos;t narrow them.
+              </>
+            ) : null}
           </p>
         ) : null}
 

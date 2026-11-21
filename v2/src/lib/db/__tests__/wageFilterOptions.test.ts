@@ -77,6 +77,29 @@ describe("getWageFilterOptions", () => {
     expect(out.states).toEqual([{ value: "TX", label: "TX", n: 40 }]);
   });
 
+  it("passes on which years come from DOL's older files", async () => {
+    oneMock.mockResolvedValue({
+      json: JSON.stringify({ ...DOC, fiscalYears: ["2026", "2025", "2016", "2015"], historyYears: ["2016", "2015"] }),
+      computed_at: 1,
+    });
+    const { getWageFilterOptions } = await import("../publicData");
+    const out = await getWageFilterOptions(30);
+    expect(out.fiscalYears).toEqual(["2026", "2025", "2016", "2015"]);
+    expect(out.historyYears).toEqual(["2016", "2015"]);
+  });
+
+  it("names no older years on a doc without them, or from the live fallback", async () => {
+    oneMock.mockResolvedValue({ json: JSON.stringify(DOC), computed_at: 1 });
+    const { getWageFilterOptions } = await import("../publicData");
+    expect((await getWageFilterOptions(30)).historyYears).toEqual([]);
+    oneMock.mockResolvedValue(null);
+    rowsMock
+      .mockResolvedValueOnce([{ soc_code: "15-1252", soc_title: "Dev", n: 9 }])
+      .mockResolvedValueOnce([{ state: "NY", n: 7 }])
+      .mockResolvedValueOnce([{ fiscal_year: "2026" }]);
+    expect((await getWageFilterOptions(30)).historyYears).toEqual([]);
+  });
+
   it("ignores an empty doc rather than rendering empty dropdowns", async () => {
     oneMock.mockResolvedValue({
       json: JSON.stringify({ ...DOC, states: [] }),

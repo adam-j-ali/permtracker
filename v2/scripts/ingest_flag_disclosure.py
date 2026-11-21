@@ -88,6 +88,7 @@ from ingest_perm_disclosure import (  # noqa: E402
     to_iso,
 )
 from lib_load_guard import Fingerprint, drift_findings, sanity_findings  # noqa: E402
+from lib_flag_serials import SEASONAL_WAGE_REQUEST_FROM  # noqa: E402
 import lca_numbers  # noqa: E402
 from lib_naics import normalize_naics  # noqa: E402
 from lib_gov_data import (  # noqa: E402
@@ -570,6 +571,18 @@ def index_ddl(table: str) -> list[str]:
         # With all five columns in the index it opens none. Created on production by hand that day (7.0 s).
         f"CREATE INDEX IF NOT EXISTS {table}_emp_kind ON {table} "
         "(employer_slug, visa_class, received_date, case_number, soc_code)",
+        # The seasonal programs' wage requests (P-400 H-2B, P-500 CW-1: 94,546 of the file's rows on Nov 20 2026),
+        # for the decision activity feed (`ownRows` in src/lib/db/decidedDays.ts). Its reads keep to them by a
+        # literal `case_number >= 'P-400-'`, which no full index carries, so a job or state filter walked that
+        # filter's wage requests of every program in the range (every software developer's, to find no H-2B one).
+        # Partial, so each holds those rows only, and SQLite takes one whenever a read's WHERE has the boundary.
+        # Built at night with the watchdog stopped, like any index on a big table.
+        *(f"CREATE INDEX IF NOT EXISTS {table}_seasonal_{name} ON {table} ({cols}) "
+          f"WHERE case_number >= '{SEASONAL_WAGE_REQUEST_FROM}'"
+          for name, cols in (("dec", "decision_date"),
+                             ("state_dec", "worksite_state, decision_date"),
+                             ("soc_dec", "substr(soc_code, 1, 7), decision_date"),
+                             ("att_dec", "attorney_slug, decision_date"))),
     ] if table == "pwd_cases" else [])
 
 
