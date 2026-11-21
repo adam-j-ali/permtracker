@@ -41,7 +41,7 @@ import type { BulletinMonth } from "@/lib/perm";
 import { SITE_URL } from "@/lib/constants/site";
 import { bulletinMonthDate, employerOwnDate, pageDate, type DateSources } from "@/lib/pageDates";
 import { h1bAsOf as summaryAsOf } from "@/lib/h1bRanks";
-import { auditWeek, pickAuditPaths, splitPages, type AuditFamily } from "@/lib/sitemap/audit";
+import { pickAuditPaths, splitPages, type AuditFamily } from "@/lib/sitemap/audit";
 import { FORM_PAGES } from "@/lib/uscisForms";
 import { USCIS_OFFICES } from "@/lib/uscisOffices";
 import { softFail } from "@/lib/softRead";
@@ -713,13 +713,13 @@ export async function otherEmployerEntries(chunk: number): Promise<Entry[]> {
 }
 
 /**
- * This week's Site Audit list (`./audit` says what's in it and why): the
- * static pages and groups split by template, then the first window of each
- * entity family, the busiest pages first. Each entry keeps its own lastmod.
- * A family that can't be read is left out and reported; the static pages
- * failing fails the list, as it does the sitemap.
+ * The Site Audit list (`./audit` says what's in it and why): the static pages
+ * and groups split by template, then the first window of each entity family,
+ * the busiest pages first. The same data gives the same list. Each entry keeps
+ * its own lastmod. A family that can't be read is left out and reported; the
+ * static pages failing fails the list, as it does the sitemap.
  */
-export async function auditEntries(nowMs: number = Date.now()): Promise<Entry[]> {
+export async function auditEntries(): Promise<Entry[]> {
   const optional = (what: string, read: () => Promise<Entry[]>) =>
     read().catch((e: unknown) => {
       captureError(e instanceof Error ? e : new Error(`audit list: ${what} failed: ${String(e)}`));
@@ -742,12 +742,12 @@ export async function auditEntries(nowMs: number = Date.now()): Promise<Entry[]>
       byPath.set(path, e);
       return path;
     });
-  const { weekly, families } = splitPages(pathsOf([...pages, ...groups]));
+  const { fixed, families } = splitPages(pathsOf([...pages, ...groups]));
   const names = ["employer", "attorney", "occupation", "live-employer", "other-employer"];
   const entityFamilies: AuditFamily[] = entities
     .map((entries, i) => ({ name: names[i] ?? `family-${i}`, paths: pathsOf(entries) }))
     .filter((f) => f.paths.length > 0);
-  return pickAuditPaths(weekly, [...families, ...entityFamilies], auditWeek(nowMs)).flatMap((path) => {
+  return pickAuditPaths(fixed, [...families, ...entityFamilies]).flatMap((path) => {
     const entry = byPath.get(path);
     return entry ? [entry] : [];
   });
