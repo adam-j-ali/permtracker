@@ -20,6 +20,9 @@ import { MAX_CITY } from "@/lib/wagePlaceFilters";
 import { SECTOR_GROUPS, sectorGroup } from "@/lib/naicsSectors";
 import { formatDollars, formatInt } from "@/lib/format";
 import { ScrollBox } from "@/components/ui/scroll-box";
+import { choiceVariants } from "@/components/ui/choice";
+// A type only: BLS's crosswalk itself stays on the server.
+import type { EarlierSocCode } from "@/lib/socCrosswalk";
 
 /**
  * Offered wages in DOL's disclosure files, filtered.
@@ -90,6 +93,13 @@ export interface ExplorerPayload {
   below: number;
   above: number;
   byState: StateWageRow[];
+  /**
+   * A year of DOL's older files and a job BLS renumbered in 2018: the 2010 codes holding its cases there, each
+   * counted on its own (the PERM route only).
+   */
+  earlierCodes?: EarlierSocCode[];
+  /** Which other jobs those 2010 codes also covered. */
+  earlierNote?: string | null;
 }
 
 const STATUSES = [
@@ -170,10 +180,18 @@ export function SalaryExplorer({
   const pathname = usePathname();
   const params = useUrlSearchParams();
   const ids = { soc: useId(), state: useId(), fy: useId(), status: useId(), city: useId(), sector: useId() };
+  // A 2010 code picked from an older year's offer ("15-1132"), by its title: the
+  // occupation list holds the codes the current files use.
+  const [earlierPicked, setEarlierPicked] = useState<Record<string, string>>({});
   // A code typed ("15-1252") finds its title too.
   const occupationOptions = useMemo(
-    () => occupations.map((o) => ({ value: o.value, label: `${o.label} (${formatInt(o.n)})`, keywords: o.value })),
-    [occupations],
+    () => [
+      ...occupations.map((o) => ({ value: o.value, label: `${o.label} (${formatInt(o.n)})`, keywords: o.value })),
+      ...Object.entries(earlierPicked)
+        .filter(([code]) => !occupations.some((o) => o.value === code))
+        .map(([code, title]) => ({ value: code, label: `${title} (a 2010 code)`, keywords: code })),
+    ],
+    [occupations, earlierPicked],
   );
 
   const soc = params.get("soc") ?? "";
@@ -250,13 +268,21 @@ export function SalaryExplorer({
 
   const report = useMemo(() => reportability(data.stats.n), [data.stats.n]);
   const subject = useMemo(() => {
-    const occ = occupations.find((o) => o.value === soc)?.label;
+    // A code the list doesn't hold (a 2010 code, an old link) is named by itself, never as every occupation.
+    const occ = soc ? occupations.find((o) => o.value === soc)?.label ?? earlierPicked[soc] ?? soc : null;
     const parts = [occ ?? "All occupations", state || "every state", fy ? `FY${fy}` : pooledLabel || "all years"];
     if (city) parts.splice(2, 0, city);
     const sectorLabel = sectorGroup(sector)?.label;
     if (sectorLabel) parts.push(sectorLabel);
     return parts.join(" · ");
-  }, [occupations, soc, state, fy, city, sector, pooledLabel]);
+  }, [occupations, earlierPicked, soc, state, fy, city, sector, pooledLabel]);
+
+  // The job's 2010 codes, in a year of the older files (the route sends them only there).
+  const earlierCodes = olderYear && soc ? (data.earlierCodes ?? []) : [];
+  const pickEarlier = (c: EarlierSocCode) => {
+    setEarlierPicked((was) => ({ ...was, [c.code]: c.title }));
+    setParam("soc", c.code);
+  };
 
   const maxBin = Math.max(1, ...data.bins.map((b) => b.count));
 
@@ -451,6 +477,43 @@ export function SalaryExplorer({
           <WarningIcon className="mt-0.5 h-4 w-4 shrink-0 text-data-warn-ink" weight="fill" aria-hidden="true" />{" "}
           <span>{report.note}</span>
         </p>
+      ) : null}
+      {/* BLS renumbered jobs in 2018, and DOL's older files carry the 2010
+          codes. Each one that holds the year's cases is offered on its own,
+          never added in: 15-1132 also became 15-1253. */}
+      {earlierCodes.length > 0 ? (
+        <div className="border-b-2 border-border bg-data-info/10 px-6 py-4 text-base sm:px-8">
+          <p>
+            {data.stats.n === 0
+              ? `DOL's FY${fy} file lists this job under BLS's older 2010 codes. Pick one to see its wages.`
+              : `DOL's FY${fy} file also lists some of this job's cases under BLS's older 2010 codes, and the figures here leave them out. Pick one to see its wages.`}
+          </p>{" "}
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {earlierCodes.map((c) => (
+              <Fragment key={c.code}>
+                {" "}
+                <li className="min-w-0 max-w-full">
+                  <button
+                    type="button"
+                    onClick={() => pickEarlier(c)}
+                    className={cn(choiceVariants({ on: false }), "h-auto max-w-full flex-wrap justify-start py-2 text-left")}
+                  >
+                    <span className="font-bold tabular-nums">{c.code}</span>{" "}
+                    <span>{c.title}</span>{" "}
+                    <span className="text-muted-foreground">
+                      ({formatInt(c.n)} {c.n === 1 ? noun : nounPlural})
+                    </span>
+                  </button>
+                </li>
+              </Fragment>
+            ))}
+          </ul>{" "}
+          {data.earlierNote ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              {data.earlierNote} So each 2010 code&apos;s figures take in every job it became.
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       <div className={cn("p-6 sm:p-8", loading && "opacity-60")} aria-busy={loading}>
