@@ -505,6 +505,36 @@ describe("CaseStatusResult, decided case", () => {
     );
   }
 
+  it("places an older case's wage among its own year's peers, and says which year", () => {
+    const ladder = { n: 4_000, avg: 101_000, p5: 70_000, p25: 88_000, p50: 100_000, p75: 115_000, p95: 140_000 };
+    const { container } = render(
+      <CaseStatusResult
+        result={DECIDED}
+        backlog={BACKLOG}
+        cohortStatuses={[]}
+        wall={null}
+        neighbours={[]}
+        publishedFront="2025-09"
+        publishedAsOf="2026-08-20"
+        wage={{
+          socCode: "15-1132.00",
+          socTitle: "Software Developers, Applications",
+          state: "TN",
+          wage: 93_205,
+          occupation: ladder,
+          inState: null,
+          fiscalYear: "2016",
+        }}
+        duration={null}
+        today={TODAY}
+        estimator={null}
+      />,
+    );
+    expect(container.textContent).toMatch(/Software Developers, Applications, FY2016/);
+    expect(container.textContent).toMatch(/certified in FY2016/);
+    expect(container.textContent).toMatch(/4,000 certified cases decided in FY2016/);
+  });
+
   it("offers a certified case the next watch: the visa bulletin, with the case's priority date beside it", () => {
     const { container } = renderDecided(null);
     const answer = container.querySelector("section")!;
