@@ -33,9 +33,11 @@ describe("the privacy page and a case's second reminder recipient", () => {
     );
     // The rule as isPlainText (convex/lib/reminderRecipients.ts) holds it: an allow-list of characters, then the
     // shapes of a link, an address and a phone number.
+    // PLAIN_PUNCTUATION allows round brackets only, and the hyphen, the en dash and the em dash.
     expect(section).toContain(
-      "Under that rule, a name may hold only Latin letters (the common accented ones included), digits, spaces and a few punctuation marks: the ampersand, comma, apostrophe, full stop, brackets, slash, hyphen and dash",
+      "Under that rule, a name may hold only Latin letters (the common accented ones included), digits, spaces and a few punctuation marks: hyphens and dashes, round brackets, the ampersand, comma, apostrophe, full stop and slash",
     );
+    expect(section).not.toContain("full stop, brackets, slash");
     expect(section).toContain("Nothing in it may read like a web address, an email address or a phone number either");
     expect(section).toContain(
       "It names the case by its employer and job title, or calls it a PERM case when either one breaks the same rule",
