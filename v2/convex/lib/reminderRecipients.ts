@@ -77,13 +77,13 @@ const NOT_PLAIN = new RegExp(`[^${LATIN_LETTERS}0-9 ${PLAIN_PUNCTUATION}]`);
 const DOT_THEN_LETTERS = new RegExp(`\\.[${LATIN_LETTERS}]{2}`);
 
 /**
- * A domain spelled apart: a dot, then spaces and at most one of the marks PLAIN_PUNCTUATION allows ("irs-refund. com",
- * "irs-refund(.)com", "irs-refund’.’com", "irs-refund./com"), then a common top-level domain as a whole word. "co" is
- * left out, so "Smith Ltd. Co" shows, and a word that only starts like one ("Co. Comedy") isn't one. The mark is never
- * a space, so the spaces before it and after it can each be matched one way only, and it's linear in the text.
+ * A domain spelled apart: a dot, then spaces and up to two of the marks PLAIN_PUNCTUATION allows ("irs-refund. com",
+ * "irs-refund(.)com", "irs-refund’.’com", "irs-refund (.) (com)"), then a common top-level domain as a whole word. "co"
+ * is left out, so "Smith Ltd. Co" shows, and a word that only starts like one ("Co. Comedy") isn't one. A mark is never
+ * a space and there are at most two, so each place in the text is tried in bounded time.
  */
 const SPACED_DOMAIN = new RegExp(
-  `\\. *(?:[${PLAIN_PUNCTUATION}] *)?(?:com|net|org|gov|edu|io|info|biz|app|us)(?![${LATIN_LETTERS}])`,
+  `\\. *(?:[${PLAIN_PUNCTUATION}] *){0,2}(?:com|net|org|gov|edu|io|info|biz|app|us)(?![${LATIN_LETTERS}])`,
   "i",
 );
 
@@ -146,6 +146,29 @@ const VANITY_PHONE = new RegExp(
   "i",
 );
 
+/** An area code that may be typed with the letters that pass for digits ("8OO", "2l2"); its first digit is a real 2 to 9. */
+const AREA_CODE_LIKE = `[2-9][${DIGIT_LIKE_CHARS}]{2}`;
+/** A mark between keypad characters, with a space on either side or none. A plain space alone doesn't join them. */
+const MARK_BREAK = ` ?${PHONE_MARK} ?`;
+/** Seven keypad characters, letters or digits, joined directly or by a mark ("FLOWERS", "HELP-IRS", "555-HELP"). */
+const KEYPAD_SEVEN = `[A-Za-z0-9](?:(?:${MARK_BREAK})?[A-Za-z0-9]){6}`;
+
+/**
+ * The other ways a vanity number is written: an area code that's clearly one, then seven or more keypad characters
+ * split by marks anywhere, letters allowed after them ("1-800-HELP-IRS", "212-CALL-NOW", "1-800-CONTACTS",
+ * "(800)-555-HELP", "1800FLOWERS", "1-8OO-FLOWERS"). "Clearly one" means in brackets, followed by a mark, or led by a 1
+ * and a break; a 1 joined straight to the area code counts only with the keypad characters joined straight on too
+ * ("1800FLOWERS"), so "Since 1985 Company" isn't one. A plain space never joins keypad characters, so "360-Degree
+ * Solutions" isn't one either. Every part is bounded, so each place in the text is tried in constant time.
+ */
+const VANITY_PHONE_SPLIT = new RegExp(
+  `${NOT_WORD_BEFORE}(?:(?:1${PHONE_BREAK}?)?\\(${AREA_CODE_LIKE}\\)(?: ?${PHONE_MARK})? ?` +
+    `|(?:1${PHONE_BREAK})?${AREA_CODE_LIKE}${MARK_BREAK}` +
+    `|1${PHONE_BREAK}${AREA_CODE_LIKE} ` +
+    `|1${AREA_CODE_LIKE}(?=[A-Za-z]))${KEYPAD_SEVEN}`,
+  "i",
+);
+
 /**
  * Whether text an account typed may be shown, as it is, to someone who never asked for our mail: the one rule for the
  * inviter's name and the case's words (inviterName, safeCaseLine). It's an allow-list, so a character nobody thought
@@ -153,7 +176,8 @@ const VANITY_PHONE = new RegExp(
  * folding turns a hair space into a space and a fullwidth letter into a plain one, which the email would still show as
  * typed, and it splits a letter such as U+0140 into an l and a middle dot. Then, on the folded text: no dot directly
  * followed by two letters (DOT_THEN_LETTERS), no domain spelled apart after its dot (SPACED_DOMAIN), no numeric web
- * address (NUMERIC_ADDRESS), no "www" before a word (WWW_THEN_WORD), no phone number partly in letters (VANITY_PHONE),
+ * address (NUMERIC_ADDRESS), no "www" before a word (WWW_THEN_WORD), no phone number partly in letters (VANITY_PHONE
+ * and VANITY_PHONE_SPLIT),
  * fewer than seven digits in all (PHONE_DIGITS), and fewer than seven digits and letters that pass for digits in any
  * run that holds a real digit (NUMBER_RUN: "8ØØ 555 Ø1ØØ" is a phone number, "Apollo 11 Labs" isn't). A false alarm
  * only hides a name. Every step runs in time linear in the text.
@@ -165,7 +189,7 @@ export function isPlainText(text: string): boolean {
   const folded = text.normalize("NFKC");
   if (NOT_PLAIN.test(text.normalize("NFC")) || NOT_PLAIN.test(folded)) return false;
   if (DOT_THEN_LETTERS.test(folded) || SPACED_DOMAIN.test(folded) || NUMERIC_ADDRESS.test(folded)) return false;
-  if (WWW_THEN_WORD.test(folded) || VANITY_PHONE.test(folded)) return false;
+  if (WWW_THEN_WORD.test(folded) || VANITY_PHONE.test(folded) || VANITY_PHONE_SPLIT.test(folded)) return false;
   let digits = 0;
   for (let i = 0; i < folded.length; i++) {
     const c = folded.charCodeAt(i);
