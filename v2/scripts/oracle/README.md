@@ -27,6 +27,7 @@ GitHub Actions ─(ssh, deploy key)─▶ permtracker-deploy       (new releases
 | H-1B LCA database | `permtracker-db-lca.service` (127.0.0.1:8082, `/srv/permtracker/db-lca/`) | the `lca_cases` table in a file of its own since Oct 19 2026, so the main file fits the 6 GB RAM lock again: same sqld build, signing key, caps and drop-ins as `permtracker-db`. The clients route any statement naming `lca_cases` here (`DATABASE_LCA_URL`; `src/lib/db/lcaRoute.ts`, `scripts/lib_db.py`), and the main file keeps `lca_case_numbers` (number and received date) for the nightly reads that can't reach it. Built Oct 19 from the main file read-only (3,754,961 rows and eight indexes, 2.47 GB, 12 minutes; sqld rebuilt its log in 66 s on first start). GitHub reaches it as `db-lca.permtracker.app`; the deploy's build through a second tunnel port (the deploy key's `permitopen` allows 8080 and 8082) once the repository variable `ORACLE_DB_LCA` is `on`. The old copy leaves the main file in two steps: renamed to `lca_cases_retired` for a day, so a reader still pointed at the main file fails loudly, then dropped and compacted offline in a night window by `bin/permtracker-db-compact` (preconditions, a rollback copy of the file, before and after counts; sqld rebuilds its log and snapshots; `test_db_compact.py`), about 16 minutes with the database stopped, its integrity check after. Its busy check asks for services only (`--type=service`): every batch job has a timer that reads "active waiting" all day, and matching those made its Oct 20 2026 dry run refuse |
 | website | `permtracker-web@blue`, `@green`, `@blue2`, `@green2` | Next.js standalone build. Node builds a page on one CPU, so the live slot runs TWO copies, `@<slot>` and `@<slot>2`, the second from its own copy of the release (`<release>.w2`); nginx splits pages between them by a hash of the URL (`hash "$uri?$pt_args_no_rsc" consistent`, so a page and its click data land on the same copy and its cache). The other slot is the instant rollback. Added Oct 2 2026 after a scraper filled the one copy's 64 in-flight slots four times in an hour |
 | front door | `nginx/permtracker.conf` | loopback only; the rate limits Vercel's firewall used to enforce (nothing under `/_next/` counts, as on Vercel); verified crawlers exempt via the `x-pt-verified-bot` header Cloudflare sets, and the site's own audit scripts via `x-permtracker-audit` matching the key in `/etc/nginx/permtracker-audit-key.conf` (root, 600; never in this repo) |
+| the whole site, every week | `permtracker-site-audit.timer` (9:30 PM Eastern), `scripts/site_audit.py`, `perm_docs['site_audit']` | Since Nov 21 2026 (once installed): every page in the sitemap read through nginx on this machine, a seventh a night, so the whole site is read each week. Sunday night closes the week. See "The site audit" below |
 | page speed, every hour | `permtracker-perf` (`.timer` at :17), `perm_docs['server_perf']`, `health/perf.jsonl` | Since Oct 21 2026 the server takes four readings each hour and keeps them 30 days: page builds and cached answers by page type (the main log's timing fields), the pre-load share (the defense log), the database's costliest statements over the hour (the admin stats, against the last snapshot), and a 30-second CPU profile of the live first copy through its inspector, named from the build's source maps (library code with the file of ours that called it). The morning report's "Page speed" section judges it: a file of ours over 25% of the busy CPU, a copy busy over 85%, employer pages over 1.5 s typical or 5 s at the slow end, cached pages over 0.2 s, pre-loads over 40%, a statement averaging over a second, or twice the week's usual; and a report over 3 hours old means the job stopped. A reading that fails is recorded with its reason; the job fails (and the alarm emails) only when it can't write its report. It skips a deploy, refuses a second inspector and closes the one it opened, reconnecting to close it if the profiler didn't. `sudo permtracker-perf --dry-run` prints a run without writing (`test_perf.py`) |
 | build times and slow statements | the main log's `rt=`, `urt=`, `nc=` fields; `permtracker-db-stats` | Since Oct 21 2026 nginx's main log (`pt_main`) ends each line with its own time, the app's time and Next's cache answer (HIT, STALE or MISS), so a slow page build shows in the log. sqld's admin API on 127.0.0.1:9097 (key in `/etc/permtracker/db-admin.env`, root 600, read through `EnvironmentFile` so `ps` never shows it) keeps a count, total time and rows read per statement; `sudo permtracker-db-stats` prints the costliest (`--mean`, `--rows`). On Oct 21 it showed the database wasn't the slow part: statements took milliseconds while the web copies ran the CPU near 100%, 75% of it rereading and word-counting every article on every page build (fixed in `getAllPosts`, read once per process). Profile a live copy the same way: `kill -USR1 <pid>` opens its inspector on 127.0.0.1:9229, the DevTools protocol's Profiler takes a sample, and `process._debugEnd()` closes it again |
 | edge cache | Cloudflare Cache Rule "PERM Tracker edge cache" + nginx `$pt_cdn_cc` | Cloudflare keeps copies only of pages the site marks shareable (`s-maxage`); nginx hands it `Cloudflare-CDN-Cache-Control: max-age=600, stale-while-revalidate=3600`, so a refreshed page shows at the edge within ~10 min and visitors never wait on a refresh. Employer, law firm and job pages get a day of `stale-while-revalidate` (Oct 21 2026, HTML only; navigation data keeps the hour), because crawlers ask for the same ones day after day (17,243 of Googlebot's 30,309 on Oct 20 it had asked for on Oct 19). Smart Tiered Cache is on (free). Never `/api`, `/ingest`, or anyone with a `__convexAuth` cookie. Sep 28 from Florida: cached pages 0.11-0.17 s vs Vercel's 0.20-0.29 s; live lookups, API and signed-in requests measured uncached |
@@ -170,7 +171,7 @@ cd - && git worktree remove /tmp/convex-rollback
 | database tokens | `/srv/permtracker/secrets/db_ro.jwt`, `db_rw.jwt`; signing key in `/root/permtracker-jwt/` |
 | `CRON_SECRET`, `REVALIDATE_SECRET` | `/srv/permtracker/secrets/` (new values; GitHub's `REVALIDATE_SECRET` is updated on switch day) |
 | `GITHUB_DISPATCH_TOKEN` | `/srv/permtracker/secrets/github_dispatch_token` |
-| the mail Worker's owner key (`OWNER_MAIL_URL`, `OWNER_MAIL_KEY`), read by `permtracker-alarm` and `permtracker-defend` | `/etc/permtracker/owner-mail.env` (root 600); the same key on Convex and the owner's Mac (`~/.config/permtracker-mail/`). Unset or down, both scripts mail through Resend as before. See `workers/mail/README.md` |
+| the mail Worker's owner key (`OWNER_MAIL_URL`, `OWNER_MAIL_KEY`), read by `permtracker-alarm` and `permtracker-defend`, and handed to `permtracker-site-audit` as its systemd credential `owner-mail` | `/etc/permtracker/owner-mail.env` (root 600); the same key on Convex and the owner's Mac (`~/.config/permtracker-mail/`). Unset or down, both scripts mail through Resend as before. See `workers/mail/README.md` |
 | deploy key, host, known hosts, read-only DB token for builds | GitHub secrets `ORACLE_*` |
 | backup key, PRIVATE half (opens the sealed server and Convex copies) | only the owner's Mac, `~/.config/permtracker-backup/backup-key.pem` (600), plus the owner's own safe copy; never on this server, GitHub or R2. The public half is `conf/backup-recipient.pem` here and `/etc/permtracker/backup-recipient.pem` |
 
@@ -211,6 +212,48 @@ Layers, newest first: Oracle's own disk backups (3 days, whole machine), the
 nightly database dump (7 here), the sealed server and Convex copies (7 here),
 the same three in R2, and the weekly sealed dump of the tables DOL
 cannot give back (GitHub artifact, 90 days, `backup-observations.yml`; opened with the same key).
+
+## The site audit
+
+Every page in the sitemap, read once a week by the server itself (`scripts/site_audit.py`). Ahrefs' free audit stops
+at 5,000 pages, and this has no limit.
+
+- It reads from 9:30 PM to 12:45 AM Eastern, a seventh of the sitemap a night (each page's night comes from its
+  path). A night that runs out of time leaves the rest to the next nights, which read anything over a week old after
+  their own seventh.
+- It goes gently: two requests at a time and four a second at most, through nginx on 127.0.0.1:8081. It waits while
+  a deploy or a DOL sweep runs, or while the load is past 1.5 a CPU.
+- It checks the status and any redirect, the time, the HTML's size, the title and description lengths, the
+  canonical, noindex, JSON-LD that doesn't parse or names no `@type`, and every internal link, which gives the orphans.
+- The morning report's "Site audit" section shows the counts. The owner gets an email only when a weekly count grows
+  or a new kind of problem appears, through the mail Worker.
+
+Install it as root, once. A deploy doesn't install units.
+
+```bash
+cp /srv/permtracker/repo/v2/scripts/oracle/systemd/permtracker-site-audit.{service,timer} /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now permtracker-site-audit.timer
+systemctl list-timers permtracker-site-audit.timer
+```
+
+The service reads `/etc/permtracker/owner-mail.env` as the systemd credential `owner-mail`, so that file must exist
+(it does for the alarm). `PERMTRACKER_AUDIT_KEY` in `uscis.env` is optional: it lets the front door skip its
+per-address limits for this job, and without it four a second sits well under the 600 a minute nginx allows one
+address. Until the timer is installed, the morning report's server section lists it among the timers not enabled.
+
+To use it, run it as the `permtracker` user with the jobs' settings:
+
+```bash
+sudo -u permtracker bash -c 'set -a; . /srv/permtracker/app/env/uscis.env; cd /srv/permtracker/repo/v2 && python3 scripts/site_audit.py --report'
+sudo -u permtracker bash -c 'set -a; . /srv/permtracker/app/env/uscis.env; cd /srv/permtracker/repo/v2 && python3 scripts/site_audit.py --list orphan'
+sudo -u permtracker bash -c 'set -a; . /srv/permtracker/app/env/uscis.env; cd /srv/permtracker/repo/v2 && python3 scripts/site_audit.py --paths /soc-codes/x'
+```
+
+`--list` takes any family, such as `error`, `redirect`, `orphan`, `title_long`, `desc_short`, `slow`, `big`, `noindex`
+or `non_canonical` (`--help` lists them all). `--paths` reads pages again right after a fix and stores what it sees.
+To run a whole night by hand: `systemctl start permtracker-site-audit.service`. Its log:
+`journalctl -u permtracker-site-audit.service -n 80`.
 
 ## Switch day (only on the owner's go)
 
