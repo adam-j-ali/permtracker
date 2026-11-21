@@ -42,6 +42,7 @@ import math
 import pathlib
 import sys
 import time
+from itertools import islice
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from build_lca_facets import bin_width, min_for_median  # noqa: E402
@@ -62,6 +63,29 @@ HISTORY_PROGRAM = "perm_history"
 HISTORY_DOC = "perm_history_wage_views"
 # Views to a statement when written: a view without a state carries its by-state table, a few kilobytes.
 VIEWS_PER_STMT = 50
+# Statements to a write request.
+STMTS_PER_REQUEST = 4
+
+# THE WRITE IS BIG, SO IT'S PACED. The history load writes about 300,000 views (an estimate: every selection of
+# sixteen older years that holds a case), on the database the pages read while the sweep and sign-ups write. Each
+# request holds the write lock for its own rows only, and a pause after it lets anyone waiting have the lock.
+WRITE_PAUSE_S = 0.3
+# Stale views are deleted this many at a time, each its own short write, with the same pause between.
+DELETE_CHUNK = 2_000
+
+WAGE_VIEWS_DDL = (
+    """CREATE TABLE IF NOT EXISTS wage_views (
+         key TEXT PRIMARY KEY, program TEXT NOT NULL, n INTEGER NOT NULL,
+         json TEXT NOT NULL, built_at INTEGER NOT NULL)""",
+    # The writer deletes and counts by program. Without this both read every view, and with the older years' views
+    # the table is mostly those (made on a table of a few thousand rows: built at night with the history load).
+    "CREATE INDEX IF NOT EXISTS wage_views_program ON wage_views (program, built_at)",
+)
+
+
+def pause(seconds: float) -> None:
+    """The wait between two write requests (a test counts them)."""
+    time.sleep(seconds)
 
 PAGE = 25_000
 QUANTILES = ((0.05, "p5"), (0.25, "p25"), (0.5, "p50"), (0.75, "p75"), (0.95, "p95"))
@@ -252,19 +276,42 @@ def write(db: Database, program: str, views: dict[str, dict]) -> int:
 
 def write_serialized(db: Database, program: str, items: list[tuple[str, int, str]]) -> int:
     """Every view of one `program` value, replacing the ones it held before."""
-    db.execute(
-        """CREATE TABLE IF NOT EXISTS wage_views (
-             key TEXT PRIMARY KEY, program TEXT NOT NULL, n INTEGER NOT NULL,
-             json TEXT NOT NULL, built_at INTEGER NOT NULL)""", [])
-    built = int(time.time() * 1000)
-    run_stmts(db, insert_stmts("wage_views", ["key", "program", "n", "json", "built_at"],
-                               [(k, program, n, j, built) for k, n, j in items], VIEWS_PER_STMT), 4)
-    # Keys that no longer clear the floor go, so a stale view can't outlive
-    # the data it described. Only AFTER every new row is in.
-    db.execute("DELETE FROM wage_views WHERE program = ? AND built_at < ?", [program, built])
+    built = begin_views(db)
+    put_views(db, program, items, built)
+    return finish_views(db, program, built, len(items))
+
+
+def begin_views(db: Database) -> int:
+    """The table and its index, and the stamp this build's views carry."""
+    for ddl in WAGE_VIEWS_DDL:
+        db.execute(ddl, [])
+    return int(time.time() * 1000)
+
+
+def put_views(db: Database, program: str, items: list[tuple[str, int, str]], built: int) -> None:
+    """Insert or replace `items`, a request at a time with a pause after each."""
+    stmts = insert_stmts("wage_views", ["key", "program", "n", "json", "built_at"],
+                         [(k, program, n, j, built) for k, n, j in items], VIEWS_PER_STMT)
+    while chunk := list(islice(stmts, STMTS_PER_REQUEST)):
+        run_stmts(db, chunk, STMTS_PER_REQUEST)
+        pause(WRITE_PAUSE_S)
+
+
+def finish_views(db: Database, program: str, built: int, expected: int) -> int:
+    """Delete the views of `program` this build didn't write, then demand the count it did.
+
+    Keys that no longer clear the floor go, so a stale view can't outlive the data it described. Only AFTER every
+    new row is in, a chunk at a time on wage_views_program."""
+    while True:
+        res = db.execute("DELETE FROM wage_views WHERE key IN (SELECT key FROM wage_views "
+                         "WHERE program = ? AND built_at < ? LIMIT ?)", [program, built, DELETE_CHUNK])
+        gone = int(((res or {}).get("response") or {}).get("result", {}).get("affected_row_count") or 0)
+        if gone < DELETE_CHUNK:
+            break
+        pause(WRITE_PAUSE_S)
     got = int(db.scalar("SELECT COUNT(*) FROM wage_views WHERE program = ?", [program]) or 0)
-    if got != len(items):
-        raise SystemExit(f"FATAL: wrote {len(items)} {program} views, read back {got}")
+    if got != expected:
+        raise SystemExit(f"FATAL: wrote {expected} {program} views, read back {got}")
     return got
 
 
