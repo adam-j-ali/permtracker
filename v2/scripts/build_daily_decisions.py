@@ -6,8 +6,11 @@ disclosure files: `perm_cases` (FY2024 on) and `perm_cases_history` (FY2008 to
 FY2023). A case in both is counted once, on `perm_cases`' date, the newer file.
 
 It ran once, from `perm_cases` alone, on Aug 26 2026, so the series started
-2023-10-01 although the history table reaches 2015-10-01. Run after any load of
-either table (the quarterly and history workflows call it).
+2023-10-01 although the history table reaches FY2008 (decisions from October
+2007). It reads the whole history table, with no lower bound, so the series
+starts wherever that table does. Run after any load of either table (the
+quarterly and history workflows call it), never nightly: the read groups both
+tables whole.
 
 H-2A, H-2B and CW-1 (Oct 7 2026): `dol-disclosure-h2a`, `-h2b` and `-cw1`,
 counted the same way from DOL's own decision date in its seasonal files, so

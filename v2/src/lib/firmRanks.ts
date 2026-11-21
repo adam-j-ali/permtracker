@@ -48,6 +48,18 @@ export function shownYear(summary: FirmRanksSummary, program: FirmProgram): numb
   return (done ?? years[0]!).fy;
 }
 
+/**
+ * The first fiscal year a program ranks any firm in the country, or null. DOL's PERM files name no law firm before
+ * FY2015, so the older years the builder reads rank nobody, and a page saying where its rankings start reads it here.
+ */
+export function firstRankedYear(summary: FirmRanksSummary, program: FirmProgram): number | null {
+  const years = Object.entries(summary.programs[program]?.years ?? {})
+    .filter(([, y]) => (y.places?.[NATION]?.firms ?? 0) > 0)
+    .map(([fy]) => Number(fy))
+    .filter(Number.isFinite);
+  return years.length ? Math.min(...years) : null;
+}
+
 /** The places with a ranking in a program-year, the country first, then states by name order of their codes. */
 export function rankedPlaces(summary: FirmRanksSummary, program: FirmProgram, fy: number): string[] {
   const places = Object.keys(summary.programs[program]?.years?.[String(fy)]?.places ?? {});
