@@ -5,6 +5,7 @@ import {
   certifiedShare,
   filingSplit,
   firmRanksAsOf,
+  firstRankedYear,
   lastYearWords,
   ordinal,
   rankedPlaces,
@@ -45,6 +46,30 @@ describe("shownYear", () => {
     };
     expect(shownYear(s, "perm")).toBe(2026);
     expect(shownYear(s, "lca")).toBeNull();
+  });
+});
+
+describe("firstRankedYear", () => {
+  it("is the first fiscal year a program ranks any firm in, which the page's years label reads", () => {
+    expect(firstRankedYear(summary, "perm")).toBe(2024);
+    expect(firstRankedYear(summary, "lca")).toBe(2025);
+  });
+
+  it("skips a year whose file names no firm, so the label never claims it", () => {
+    const s: FirmRanksSummary = {
+      programs: {
+        perm: { years: { "2014": { through: "2014-09-30", places: {} }, "2015": { through: "2015-09-30", places: { US: t(4) } } } },
+        lca: { years: { "2019": { through: "2019-09-30", places: { US: t(2) } }, "2020": { through: "2020-09-30", places: { US: t(5) } } } },
+      },
+    };
+    expect(firstRankedYear(s, "perm")).toBe(2015);
+    expect(firstRankedYear(s, "lca")).toBe(2019);
+  });
+
+  it("is null for a program with nothing ranked", () => {
+    const s: FirmRanksSummary = { programs: { perm: { years: {} }, lca: { years: { "2008": { through: null, places: {} } } } } };
+    expect(firstRankedYear(s, "perm")).toBeNull();
+    expect(firstRankedYear(s, "lca")).toBeNull();
   });
 });
 
