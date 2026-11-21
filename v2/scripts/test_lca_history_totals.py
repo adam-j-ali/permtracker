@@ -16,6 +16,7 @@ import pathlib
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import build_employer_map as bem  # noqa: E402
 import ingest_flag_disclosure as ifd  # noqa: E402
 import lca_history_totals as lht  # noqa: E402
 from lib_db import request_sqls  # noqa: E402
@@ -166,6 +167,44 @@ def check_build() -> None:
     check("and leaves the counts it had", table(db, f"SELECT COUNT(*) FROM {lht.SPELLINGS}"), before)
 
 
+def check_employer_map() -> None:
+    print("the employer map folds the older spellings in")
+    db = seed()
+    db.script([
+        "CREATE TABLE perm_entities (kind TEXT, slug TEXT, name TEXT, merge_key TEXT, total INTEGER)",
+        "CREATE TABLE perm_entity_alias (kind TEXT, slug TEXT, target_slug TEXT)",
+        "CREATE TABLE lca_case_numbers (case_number TEXT PRIMARY KEY, received_date TEXT)",
+        "INSERT INTO perm_entities VALUES ('employer', 'intel-corporation', 'Intel Corporation', 'intel', 900)",
+    ])
+    db.execute("INSERT INTO lca_cases VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+               ["I-200-25001-000001", "CERTIFIED", "2024-10-01", "2024-10-08", "Acme Robotics LLC",
+                "acme-robotics-llc", "Boise", "ID", "H-1B", 2025, "15-1252.00", "Software Developers"])
+    before = bem.plan(bem.read_sources(db), bem.read_pages(db))
+    check("before the older counts are built, an employer with only older LCAs has no page",
+          "old-only-corp" in {r[0] for r in before[1]}, False)
+    check("and no table missing stops the nightly map", len(before[0]) > 0, True)
+
+    lht.build(db)
+    db.sent.clear()
+    rows, index_rows, _ = bem.plan(bem.read_sources(db), bem.read_pages(db))
+    page = {r[0]: (r[1], r[2]) for r in rows}
+    idx = {r[0]: dict(zip(bem.INDEX_COLS, r)) for r in index_rows}
+    check("an employer with only older LCAs gets a page", page.get("old-only-corp"), ("old-only-corp", "other"))
+    old = idx.get("old-only-corp", {})
+    check("its page counts every older LCA under each printing", (old.get("lca"), old.get("cases")), (5, 5))
+    check("its first filing and latest activity are the older files' days",
+          (old.get("first_filed"), old.get("last_changed")), ("2011-11-02", "2014-12-06"))
+    check("an older spelling of a PERM employer reaches the PERM page", page.get("intel-corp"),
+          ("intel-corporation", "perm"))
+    acme = idx.get("acme-robotics-llc", {})
+    check("an employer filing today adds its older LCAs, the shared case once", acme.get("lca"), 4)
+    check("and its first filing moves back to the older files", acme.get("first_filed"), "2017-11-11")
+    check("the nightly map never reads the older table itself",
+          [s for s in db.sent if "lca_cases_history" in s], [])
+    check("it reads the counts a slice of spellings at a time",
+          all("employer_slug >= ?" in s for s in db.sent if lht.SPELLINGS in s), True)
+
+
 def check_loader() -> None:
     print("the loader builds them after an older file, and alone by a flag")
     db = seed()
@@ -194,6 +233,7 @@ def check_loader() -> None:
 
 def main() -> int:
     check_build()
+    check_employer_map()
     check_loader()
     print(f"\n{len(FAILED)} failure(s)")
     return 1 if FAILED else 0

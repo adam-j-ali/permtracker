@@ -31,6 +31,12 @@ table, the ONE page its rows belong to, by `program_key` equality
 USCIS's H-1B approvals and the lottery FOIA rows map to pages too, but never
 make a page on their own: a page needs a filing we hold.
 
+DOL's FY2008 to FY2019 H-1B files are filings we hold too. Their table changes
+only when one of them loads, so their spellings are counted then, into
+`history_lca_spellings` (lca_history_totals.py), and read here as LCAs: an
+employer with only older LCAs gets a page, and an older spelling of any
+employer reaches its page.
+
 Counts in `employer_other_index` are published rows plus live rows DOL hasn't
 published yet, by program, decided by case-number prefix (a P-400 wage
 request is H-2B, not a PERM wage request). Both tables are written as diffs,
@@ -140,6 +146,10 @@ CASE_SOURCES = [
     ("lca_case_status", "employer_name", "filing_date", "fetched_at", "lca", ("lca_case_numbers",)),
     ("seasonal_case_status", "employer_name", "filing_date", "fetched_at", "h2a", ("seasonal_cases", "pwd_cases")),
 ]
+# DOL's FY2008 to FY2019 H-1B files (`lca_cases_history`) change only when one loads, so their spellings are counted
+# then, into this small table in the main database (lca_history_totals.py), and read here: never the older table
+# itself, every night. An employer with only older LCAs gets its page from them.
+HISTORY_SPELLINGS = "history_lca_spellings"
 # Aggregate tables: they map to a page, they never make one.
 NAME_SOURCES = [
     ("uscis_h1b_employers", "employer"),
@@ -239,6 +249,7 @@ def read_sources(db: Database) -> dict[str, dict]:
             fold(slugs, slug, name, n, program, day(first),
                  (et_date(last) or day(last)) if live else day(last))
         log(f"  {table}: {len(rows):,} slug and name pairs")
+    read_history_spellings(db, slugs)
     for table, name_col in NAME_SOURCES:
         try:
             rows = []
@@ -255,6 +266,29 @@ def read_sources(db: Database) -> dict[str, dict]:
             fold(slugs, slug, name, 0, None, None, None)
         log(f"  {table}: {len(rows):,} slug and name pairs")
     return slugs
+
+
+def read_history_spellings(db: Database, slugs: dict[str, dict]) -> None:
+    """Fold the older H-1B files' spellings in, as LCAs: their counts, first received day and last decided day.
+
+    Built at the older files' load, without the cases `lca_cases` also holds, so nothing here is counted twice.
+    Until its first build the table isn't there, and the map is what it was without it."""
+    try:
+        rows = []
+        for lo, hi in SLUG_WINDOWS:
+            where, args = slug_window("employer_slug", lo, hi)
+            rows += rows_of(db.execute(
+                "SELECT employer_slug, employer_name, n, first_received, last_decided "
+                f"FROM {HISTORY_SPELLINGS} WHERE {where}", args))
+    except Exception as e:  # noqa: BLE001 (the client raises RuntimeError, SQLite OperationalError)
+        if missing_table(e):
+            log(f"  {HISTORY_SPELLINGS}: not built yet, skipped "
+                "(python3 scripts/ingest_flag_disclosure.py --program lca --history-totals)")
+            return
+        raise
+    for slug, name, n, first, last in rows:
+        fold(slugs, slug, name, n, "lca", day(first), day(last))
+    log(f"  {HISTORY_SPELLINGS}: {len(rows):,} slug and name pairs (the FY2008 to FY2019 files)")
 
 
 def read_pages(db: Database) -> dict:
