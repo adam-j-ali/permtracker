@@ -69,13 +69,33 @@ const DOT_THEN_LETTERS = /\.[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u017F]{2}/;
 const PHONE_DIGITS = 7;
 
 /**
+ * The characters a phone number's digits can be typed as: 0 to 9, and the letters that pass for a 0 or a 1 (O o Ø ø
+ * and the accented Os of Latin-1 and Latin Extended-A, I l and their accented forms, the dotless i and the l with a
+ * stroke). NFKC leaves these letters as they are, so they're read on the folded text; the two it splits, Ŀ and ŀ, carry
+ * a middle dot that NOT_PLAIN refuses first.
+ */
+const DIGIT_LIKE_CHARS =
+  "0-9" +
+  "OoØø\u00D2-\u00D6\u00F2-\u00F6\u014C-\u0151" + // Ò-Ö ò-ö Ō-ő
+  "Il\u00CC-\u00CF\u00EC-\u00EF\u0128-\u0131\u0139-\u0142"; // Ì-Ï ì-ï Ĩ-ı Ĺ-ł
+
+/**
+ * One run of what could be a phone number: those characters, joined by a space or the punctuation NOT_PLAIN allows
+ * between words. One character class and a plus, so a match runs in time linear in the text.
+ */
+const NUMBER_RUN = new RegExp(`[${DIGIT_LIKE_CHARS} ().,'&-]+`, "g");
+const DIGIT_LIKE = new RegExp(`[${DIGIT_LIKE_CHARS}]`, "g");
+const REAL_DIGIT = /[0-9]/;
+
+/**
  * Whether text an account typed may be shown, as it is, to someone who never asked for our mail: the one rule for the
  * inviter's name and the case's words (inviterName, safeCaseLine). It's an allow-list, so a character nobody thought
  * of fails too. Every character must be one of NOT_PLAIN's, both as typed (accents composed, NFC) and folded (NFKC):
  * folding turns a hair space into a space and a fullwidth letter into a plain one, which the email would still show as
  * typed, and it splits a letter such as U+0140 into an l and a middle dot. Then, on the folded text: no dot directly
- * followed by two letters (DOT_THEN_LETTERS), and fewer than seven digits (PHONE_DIGITS). A false alarm only hides a
- * name. Every step runs in time linear in the text.
+ * followed by two letters (DOT_THEN_LETTERS), fewer than seven digits in all (PHONE_DIGITS), and fewer than seven
+ * digits and letters that pass for digits in any run that holds a real digit (NUMBER_RUN: "8ØØ 555 Ø1ØØ" is a phone
+ * number, "Apollo 11 Labs" isn't). A false alarm only hides a name. Every step runs in time linear in the text.
  */
 export function isPlainText(text: string): boolean {
   const folded = text.normalize("NFKC");
@@ -84,6 +104,9 @@ export function isPlainText(text: string): boolean {
   for (let i = 0; i < folded.length; i++) {
     const c = folded.charCodeAt(i);
     if (c >= 48 && c <= 57 && ++digits >= PHONE_DIGITS) return false;
+  }
+  for (const [run] of folded.matchAll(NUMBER_RUN)) {
+    if (REAL_DIGIT.test(run) && (run.match(DIGIT_LIKE)?.length ?? 0) >= PHONE_DIGITS) return false;
   }
   return true;
 }
