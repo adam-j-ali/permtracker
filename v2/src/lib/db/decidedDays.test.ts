@@ -29,6 +29,12 @@ const SCHEMA: Record<string, string[]> = {
     "job_title", "soc_code", "soc_title", "worksite_state", "wage", "wage_unit", "visa_class",
     "attorney_name", "attorney_slug",
   ],
+  // DOL's FY2008 to FY2019 LCA files: the same layout as lca_cases.
+  lca_cases_history: [
+    "case_number", "case_status", "decision_date", "received_date", "employer_name", "employer_slug",
+    "job_title", "soc_code", "soc_title", "worksite_state", "wage", "wage_unit", "visa_class",
+    "attorney_name", "attorney_slug",
+  ],
 };
 
 const DATA: Record<string, Record<string, unknown>[]> = {};
@@ -95,6 +101,54 @@ describe("getDecidedFeed across PERM's two tables", () => {
   });
 });
 
+describe("getDecidedFeed and DOL's FY2008 to FY2019 LCA files", () => {
+  it("reads lca_cases_history for a range before FY2020, on its decision-date index, and merges it newest first", async () => {
+    DATA.lca_cases = [row("I-200-19275-1", "2019-10-01")];
+    DATA.lca_cases_history = [row("I-200-19270-2", "2019-09-27"), row("I-200-19273-3", "2019-09-30")];
+    const f = await getDecidedFeed({ range: { from: "2019-09-25", to: "2019-10-02" }, programs: ["lca"] });
+    expect(f.cases.map((c) => c.caseNumber)).toEqual(["I-200-19275-1", "I-200-19273-3", "I-200-19270-2"]);
+    const hist = asked.find((q) => q.includes("FROM lca_cases_history") && !q.includes("COUNT"));
+    expect(hist).toContain("FROM lca_cases_history INDEXED BY lca_cases_history_decided");
+  });
+
+  it("never asks the older table for a range after FY2019", async () => {
+    await getDecidedFeed({ range: { from: "2019-10-01", to: "2025-03-01" }, programs: ["lca"] });
+    expect(asked.some((q) => q.includes("lca_cases_history"))).toBe(false);
+  });
+
+  it("counts one day of the older files exactly", async () => {
+    DATA.lca_cases_history = [row("I-200-15100-1", "2015-04-10"), row("I-200-15100-2", "2015-04-10")];
+    const f = await getDecidedFeed({ range: { from: "2015-04-10", to: "2015-04-10" }, programs: ["lca"] });
+    expect(f.totals?.lca).toBe(2);
+    expect(asked.some((q) => q.includes("COUNT(*)") && q.includes("FROM lca_cases_history"))).toBe(true);
+  });
+
+  it("reads a state, occupation or firm on the older table by its own index, unpinned", async () => {
+    await getDecidedFeed({ range: { from: "2012-01-01", to: "2014-12-31" }, programs: ["lca"], narrow: { state: "WA" } });
+    const hist = asked.find((q) => q.includes("FROM lca_cases_history") && !q.includes("COUNT"));
+    expect(hist).toMatch(/worksite_state = \?/);
+    expect(hist).not.toContain("INDEXED BY");
+  });
+
+  it("holds a filter the older table walks row by row to a few days, and says why", async () => {
+    // An employer name, a wage, a city or an outcome on its own is tested on each row of the range.
+    const wide = await getDecidedFeed({ range: { from: "2015-04-01", to: "2015-04-30" }, programs: ["lca"], narrow: { employer: "acme" } });
+    expect(wide.refused).toMatch(/before October 2019/);
+    expect(wide.refused).toMatch(/3 days/);
+    expect(asked.some((q) => q.includes("lca_cases_history"))).toBe(false);
+    const narrow = await getDecidedFeed({ range: { from: "2015-04-28", to: "2015-04-30" }, programs: ["lca"], narrow: { employer: "acme" } });
+    expect(narrow.refused).toBeNull();
+    const hist = asked.find((q) => q.includes("FROM lca_cases_history") && !q.includes("COUNT"));
+    expect(hist).toContain("INDEXED BY lca_cases_history_decided");
+    // The same month after FY2019 is not held: the current table answers it as before.
+    const current = await getDecidedFeed({ range: { from: "2021-04-01", to: "2021-04-30" }, programs: ["lca"], narrow: { employer: "acme" } });
+    expect(current.refused).toBeNull();
+    // A program that isn't the LCA's is never held for it.
+    const perm = await getDecidedFeed({ range: { from: "2015-04-01", to: "2015-04-30" }, programs: ["perm"], narrow: { employer: "acme" } });
+    expect(perm.refused).toBeNull();
+  });
+});
+
 describe("filters", () => {
   it("applies a law-firm filter to wage requests and LCAs instead of dropping it", async () => {
     await getDecidedFeed({ range: { from: "2025-03-01", to: "2025-03-01" }, narrow: { attorney: "fragomen" } });
@@ -148,5 +202,14 @@ describe("getCoverageWindows", () => {
     const w = await getCoverageWindows();
     expect(w.decidedByProgram?.perm?.from).toBe("2015-10-01");
     expect(w.decided?.from).toBe("2015-10-01");
+  });
+
+  it("starts the LCAs at the older table's first decision, one seek on its index", async () => {
+    DATA.lca_cases = [{ v: "2019-10-01" }];
+    DATA.lca_cases_history = [{ v: "2007-10-03" }];
+    const w = await getCoverageWindows();
+    expect(w.decidedByProgram?.lca?.from).toBe("2007-10-03");
+    expect(asked).toContain("SELECT MIN(decision_date) AS v FROM lca_cases_history");
+    expect(asked.some((q) => q.includes("MAX(decision_date)") && q.includes("lca_cases_history"))).toBe(false);
   });
 });
