@@ -2,6 +2,7 @@ import "server-only";
 
 import { slugify } from "@/lib/entitySlug";
 import { one } from "./client";
+import { beforeFirstLoad } from "./firstLoad";
 import { discoverCaseOutcome, type DiscoveryMiss } from "./caseDiscovery";
 import { getSweepCoverage, laterDate } from "./sweepCoverage";
 import {
@@ -62,7 +63,10 @@ export interface CaseLookupResult {
     /** Still-pending cases in this same month. */
     sameMonthPending: number;
   } | null;
-  /** The employer's own record in the decided corpus, when we can match it. */
+  /**
+   * The employer's own record in the decided corpus, when we can match it: its decided cases in every year DOL
+   * published (FY2008 on, `perm_employer_years`), and the median days from the current files only (FY2024 on).
+   */
   employer: {
     name: string;
     slug: string;
@@ -71,6 +75,9 @@ export interface CaseLookupResult {
     denied: number;
     approvalRate: number;
     medianDays: number | null;
+    /** The fiscal years the counts cover; null when they're the current files' alone (the yearly table had none). */
+    fyFrom: number | null;
+    fyTo: number | null;
   } | null;
   /** How this case's own status has historically resolved. */
   statusOutlook: {
@@ -167,19 +174,19 @@ export async function lookupCase(
   //    carries.
   const dec =
     (await one<Record<string, unknown>>(
-      `SELECT status, received_date, decision_date, days, employer_name,
+      `SELECT status, received_date, decision_date, days, employer_name, employer_slug,
               job_title, soc_code, soc_title, state, wage
          FROM perm_cases WHERE case_number = ?`,
       [caseNumber],
     )) ??
     (await one<Record<string, unknown>>(
-      `SELECT status, received_date, decision_date, days, employer_name,
+      `SELECT status, received_date, decision_date, days, employer_name, employer_slug,
               job_title, soc_code, soc_title, state, wage
          FROM perm_cases_history WHERE case_number = ?`,
       [caseNumber],
       // Only a missing table is "no record". Any other failure throws, and
       // the page says our records couldn't be read: caught as null, it spent
-      // a live DOL question on a FY2016 to FY2023 case and showed "none".
+      // a live DOL question on a FY2008 to FY2023 case and showed "none".
     ).catch((err: unknown) => {
       if (/no such table/i.test(err instanceof Error ? err.message : String(err))) return null;
       throw err;
@@ -260,28 +267,43 @@ export async function lookupCase(
   // 4. The employer's own record. The mirror and the disclosure files spell
   //    employers differently ("Psomagen, Inc." vs "Psomagen Inc"), so the
   //    join goes through the same slug the entity pages already use rather
-  //    than through the raw string, which matches almost nothing.
+  //    than through the raw string, which matches almost nothing. A decided
+  //    row carries the page's slug itself (the history load maps an older
+  //    spelling to today's page), so that comes first.
   let employer: CaseLookupResult["employer"] = null;
   const empName =
     (live?.employer_name as string) ?? (dec?.employer_name as string) ?? null;
-  if (empName) {
-    const slug = slugify(empName);
+  const rowSlug = typeof dec?.employer_slug === "string" && dec.employer_slug ? dec.employer_slug : null;
+  if (rowSlug || empName) {
+    const slug = rowSlug ?? slugify(empName!);
     const e = await one<Record<string, unknown>>(
       `SELECT name, slug, total, certified, denied, median_days
          FROM perm_entities WHERE kind = 'employer' AND slug = ?`,
       [slug],
     );
     if (e) {
-      const total = Number(e.total) || 0;
-      const certified = Number(e.certified) || 0;
+      // Every year DOL published, FY2008 on, from the yearly table the employer page charts (one index-only read
+      // of a small table). perm_entities counts the current files (FY2024 on) alone.
+      const years = await one<Record<string, unknown>>(
+        `SELECT MIN(fy) AS fy_from, MAX(fy) AS fy_to, SUM(certified) AS certified, SUM(denied) AS denied,
+                SUM(withdrawn) AS withdrawn
+           FROM perm_employer_years WHERE slug = ?`,
+        [String(e.slug)],
+      ).catch(beforeFirstLoad(null));
+      const counted = years && Number(years.fy_from) > 0;
+      const certified = counted ? Number(years.certified) || 0 : Number(e.certified) || 0;
+      const denied = counted ? Number(years.denied) || 0 : Number(e.denied) || 0;
+      const total = counted ? certified + denied + (Number(years.withdrawn) || 0) : Number(e.total) || 0;
       employer = {
         name: String(e.name),
         slug: String(e.slug),
         total,
         certified,
-        denied: Number(e.denied) || 0,
+        denied,
         approvalRate: total > 0 ? (certified / total) * 100 : 0,
         medianDays: e.median_days === null ? null : Number(e.median_days),
+        fyFrom: counted ? Number(years.fy_from) : null,
+        fyTo: counted ? Number(years.fy_to) : null,
       };
     }
   }
