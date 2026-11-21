@@ -34,6 +34,8 @@ import { formatInt } from "@/lib/format";
 import { formatDay } from "@/lib/dolFormat";
 import { prettyStatus } from "@/components/queue/stages";
 import { getPermsNamingPwd, type PermNamingPwd } from "@/lib/db/decidedTimeline";
+import { casesCitingPwd, type CaseCitingPwd } from "@/lib/db/caseLinks";
+import { CitingCases } from "@/components/tools/CitingCases";
 import { getEmployerPermsForWageRequest } from "@/lib/db/employerWageRequests";
 import { EmployerPermCasesForWage } from "@/components/tools/EmployerWageRequests";
 import { WAGE_ISSUED_RE } from "@/lib/employerWageRequests";
@@ -79,7 +81,7 @@ function validUntil(decisionDate: string | null): string | null {
 }
 
 /** DOL's own determination, from the quarterly disclosure file: the part the live endpoint never says. */
-function Determination({ d, perms = [], detail = null }: { d: PwdDisclosedRow; perms?: readonly PermNamingPwd[]; detail?: PwdDetail | null }) {
+function Determination({ d, perms = [], citing = [], detail = null }: { d: PwdDisclosedRow; perms?: readonly PermNamingPwd[]; citing?: readonly CaseCitingPwd[]; detail?: PwdDetail | null }) {
   const issued = ISSUED.test(d.status.toUpperCase());
   const wage = formatWage(d.wage, d.wageUnit);
   // The determination's own date by the central rule (June 30 of its wage year, or +90 days), from its determination
@@ -164,6 +166,7 @@ function Determination({ d, perms = [], detail = null }: { d: PwdDisclosedRow; p
           </ul>
         </div>
       ) : null}{" "}
+      <CitingCases citing={citing} />{" "}
       {until ? (
         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">
           The PERM must be filed, or recruitment started, before the determination expires. Every later date is
@@ -179,7 +182,7 @@ function Determination({ d, perms = [], detail = null }: { d: PwdDisclosedRow; p
 }
 
 export async function PwdLookup({ caseNumber }: { caseNumber: string }) {
-  const [{ row, dolMiss }, disclosed, est, dayData, perms, line, detail] = await Promise.all([
+  const [{ row, dolMiss }, disclosed, est, dayData, perms, line, detail, citing] = await Promise.all([
     // A failure to read our own table is also "could not settle it", never "no record".
     lookupPwdCaseOutcome(caseNumber).catch(softFail("PwdStatusResult.lookupPwdCaseOutcome", { row: null, dolMiss: "records" as const })),
     lookupPwdDetermination(caseNumber).catch(softFail("PwdStatusResult.lookupPwdDetermination", null)),
@@ -191,6 +194,8 @@ export async function PwdLookup({ caseNumber }: { caseNumber: string }) {
     getPwdLine(),
     // The determination's level, requirements and DOL's own expiration, which the shared row leaves out.
     getPwdDetail(caseNumber),
+    // The LCAs and seasonal job orders citing it, on their own partial indexes; a failure only drops the links.
+    casesCitingPwd(caseNumber).catch(softFail<CaseCitingPwd[]>("PwdStatusResult.casesCitingPwd", [])),
   ]);
   // Not decided yet: what DOL will likely set, from what it decided before for the same employer and title.
   const likely =
@@ -243,7 +248,7 @@ export async function PwdLookup({ caseNumber }: { caseNumber: string }) {
           </b>
           . Its live case system didn&apos;t return the number, so the record below is from the quarterly file.
         </AnswerPanel>
-        <Determination d={disclosed} perms={perms} detail={detail} />
+        <Determination d={disclosed} perms={perms} citing={citing} detail={detail} />
         {likelyPermsSection}
         <PageSection title="The record">
           <RecordList
@@ -404,7 +409,7 @@ export async function PwdLookup({ caseNumber }: { caseNumber: string }) {
         </p>
       ) : null}
 
-      {disclosed ? <Determination d={disclosed} perms={perms} detail={detail} /> : null}
+      {disclosed ? <Determination d={disclosed} perms={perms} citing={citing} detail={detail} /> : null}
       {likely ? <PwdLikelySection likely={likely} jobTitle={row.jobTitle ?? null} state={null} /> : null}
       {likelyPermsSection}
 
