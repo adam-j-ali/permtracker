@@ -1,0 +1,29 @@
+# The site's own full audit (scripts/site_audit.py): a seventh of the sitemap each night through nginx on this
+# machine, so every page is read once a week; Sunday night's run closes the week. It writes its tables and
+# perm_docs['site_audit'] (the morning report reads it) and emails the owner through the mail Worker only when a
+# weekly count grew. Started by permtracker-site-audit.timer at 9:30 PM Eastern; it stops reading at 12:45 AM, before
+# the night deploys, the backups and the 4:10 AM sweep, and waits on its own while a deploy or a sweep runs or the
+# load is high. Install: scripts/oracle/README.md, "The site audit".
+[Unit]
+Description=PERM Tracker site audit: a seventh of the sitemap a night, the whole site each week
+After=network-online.target permtracker-db.service nginx.service
+
+[Service]
+Type=oneshot
+User=permtracker
+WorkingDirectory=/srv/permtracker/repo/v2
+EnvironmentFile=/srv/permtracker/app/env/uscis.env
+# The mail Worker's owner key for this job alone: systemd reads the root-only file and hands the job a private copy
+# in $CREDENTIALS_DIRECTORY, so the file itself stays root 600.
+LoadCredential=owner-mail:/etc/permtracker/owner-mail.env
+ExecStart=/usr/bin/python3 scripts/site_audit.py --until 00:45 --workers 2 --rate 4
+# Past the window, so the script's own stop (which writes the night and the report) always comes first.
+TimeoutStartSec=3h45min
+# It yields to visitors and the database: low CPU and disk weight, and a memory ceiling (the sitemap, the reads and
+# the link targets held in memory come to about 150 MB).
+Nice=10
+CPUWeight=25
+IOWeight=25
+MemoryHigh=768M
+MemoryMax=1G
+OOMScoreAdjust=500
