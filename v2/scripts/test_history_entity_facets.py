@@ -13,9 +13,12 @@ Run:  python3 scripts/test_history_entity_facets.py
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
-from datetime import date
+import tempfile
+import tracemalloc
+from datetime import date, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -77,11 +80,14 @@ def seed() -> Watched:
         ("employer", "acme-inc", "ACME INC", entity_key("ACME INC"), None, 500),
         ("employer", "beta-corp", "Beta Corp", entity_key("Beta Corp"), None, 40),
         ("employer", "gamma-llc", "Gamma LLC", entity_key("Gamma LLC"), None, 30),
+        ("employer", "delta-co", "Delta Co", entity_key("Delta Co"), None, 20),
         ("attorney", "law-firm-llp", "Law Firm LLP", entity_key("Law Firm LLP"), None, 80),
         ("occupation", "software-developers", "Software Developers", None, "15-1252.00", 900),
     ])
     # A page merged into another: its older rows still carry the retired slug.
     db.conn.execute("INSERT INTO perm_entity_alias VALUES ('employer', 'acme-old', 'acme-inc')")
+    # A firm page merged into another: a row still carrying the retired slug, under a spelling of its own.
+    db.conn.execute("INSERT INTO perm_entity_alias VALUES ('attorney', 'law-firm-old', 'law-firm-llp')")
     hist = [
         # Acme, FY2015 to FY2019, in two decision months and more.
         row("A-1", "certified", "2015-03-02", 2015, "ACME INC", "acme-inc", att_name="Law Firm LLP",
@@ -108,6 +114,11 @@ def seed() -> Watched:
             att_name="Law Firm LLP", att_slug="law-firm-llp"),
         # No state: counted in its entity's total, never in the state list.
         row("N-2", "certified", "2020-04-02", 2020, "NOBODY LLC", "nobody-llc", state=None, city=None),
+        # Delta: three cases alike in every column on one day (one grouped row, counted three times), filed by the
+        # firm under an older name that reaches its page only through the retired slug.
+        *[row(f"D-{i}", "certified", "2017-09-05", 2017, "DELTA CO", "delta-co", state="OR", city="Portland",
+              soc="11-1021.00", soc_title="General and Operations Managers", att_name="LAW FIRM OF OLDEN DAYS",
+              att_slug="law-firm-old") for i in range(1, 4)],
     ]
     marks = ",".join("?" * len(iph.COLUMNS))
     db.conn.executemany(f"INSERT INTO perm_cases_history ({','.join(iph.COLUMNS)}) VALUES ({marks})", hist)
@@ -165,30 +176,48 @@ check("rows stored under a spelling with no page reach today's page by name",
 check("an employer under the floor gets no rows", ("employer", "beta-corp") not in got, str(sorted(got)))
 check("an employer with no page gets no rows", not any(k == ("employer", "nobody-llc") for k in got))
 firm = got.get(("attorney", "law-firm-llp"), {})
-check("the firm's total is every older case naming it", firm.get("total") == 4, json.dumps(firm.get("total")))
+check("the firm's total is every older case naming it, the retired slug's too", firm.get("total") == 7,
+      json.dumps(firm.get("total")))
 clients = {(c["key"], c["label"]): c["n"] for c in firm.get("facets", {}).get("employer", [])}
 check("its clients: pages under their names, and one with no page unlinked",
-      clients == {("acme-inc", "ACME INC"): 2, ("gamma-llc", "Gamma LLC"): 1, (None, "NOBODY LLC"): 1},
+      clients == {("acme-inc", "ACME INC"): 2, ("gamma-llc", "Gamma LLC"): 1, (None, "NOBODY LLC"): 1,
+                  ("delta-co", "Delta Co"): 3},
       json.dumps(sorted(map(str, clients.items()))))
-check("the firm's jobs and states too", {r["key"] for r in firm.get("facets", {}).get("state", [])} == {"WA", "TX"}
+check("the firm's jobs and states too",
+      {r["key"] for r in firm.get("facets", {}).get("state", [])} == {"WA", "TX", "OR"}
       and firm.get("facets", {}).get("occupation", [{}])[0].get("n") == 4, json.dumps(firm.get("facets")))
+delta = got.get(("employer", "delta-co"), {})
+check("three cases alike in every column count three times",
+      delta.get("total") == 3 and delta.get("facets", {}).get("state", [{}])[0].get("n") == 3
+      and delta.get("facets", {}).get("occupation", [{}])[0].get("certified") == 3, json.dumps(delta))
 check("the builder says how many rows it wrote",
       n == db.conn.execute("SELECT COUNT(*) FROM perm_history_entity_facets").fetchone()[0], str(n))
 
-print("read about ten decision days at a time, never the whole table at once")
+print("read five decision days at a time, grouped inside the slice, never the whole table at once")
 reads = [(q, a) for q, a in db.calls if "FROM perm_cases_history" in q and "MIN(" not in q and "MAX(" not in q]
-check("every row read is bounded by a decision-day range",
+check("every read of the older table is bounded by a decision-day range",
       reads and all("decision_date >= ?" in q and "decision_date < ?" in q for q, _ in reads),
       "\n".join(q for q, _ in reads))
+check("every read leaves out the cases perm_cases holds",
+      all("NOT EXISTS (SELECT 1 FROM perm_cases p WHERE p.case_number = h.case_number)" in q for q, _ in reads))
 spans = [(date.fromisoformat(a[1]) - date.fromisoformat(a[0])).days for _, a in reads]
-check("no read spans more than eleven days (a busy month whole took 1.7 s on the live database)",
-      spans and max(spans) <= 11, str(sorted(set(spans))))
+check("no read spans more than five days (a raw ten-day slice of 4,858 rows took 1.09 s on the live database)",
+      spans and max(spans) <= 5, str(sorted(set(spans))))
 covered = sorted((a[0], a[1]) for _, a in reads)
 check("the slices meet end to end, from the first decision month to the last",
       covered[0][0] == "2015-03-01" and covered[-1][1] == "2020-05-01"
       and all(x[1] == y[0] for x, y in zip(covered, covered[1:])), str(covered[:3]))
-check("no statement groups the older table", not any(re.search(r"FROM perm_cases_history[\s\S]*GROUP BY", s)
-                                                      for s in db.statements))
+check("each slice is grouped inside its own range, so a busy week comes back as its distinct combinations",
+      all(re.search(r"WHERE decision_date >= \? AND decision_date < \?[\s\S]*GROUP BY", q) for q, _ in reads),
+      reads[0][0] if reads else "")
+check("no statement groups the older table outside a decision-day range",
+      not any(re.search(r"FROM perm_cases_history[\s\S]*GROUP BY", s) and "decision_date >= ?" not in s
+              for s in db.statements))
+leading = {re.search(r"\((\w+)", ddl).group(1) for ddl in iph.SCHEMA + iph.SEARCH_INDEXES
+           if ddl.lstrip().startswith("CREATE INDEX") and "perm_cases_history" in ddl}
+first_group = (re.search(r"GROUP BY\s+(\w+)", reads[0][0]) or [None, ""])[1] if reads else ""
+check("the grouping leads with a column no index leads with, so no index can stand in for the day range",
+      bool(first_group) and first_group not in leading | {"case_number"}, f"{first_group} vs {sorted(leading)}")
 
 print("the case search's state counts")
 doc = json.loads(db.conn.execute("SELECT json FROM perm_docs WHERE key = 'perm_history'").fetchone()[0])
@@ -201,9 +230,102 @@ check("TX counts Gamma's three and the one with no page",
       by.get("TX", {}).get("total") == 4 and by.get("TX", {}).get("denied") == 1, json.dumps(by.get("TX")))
 check("a case perm_cases holds isn't counted here (no NY)", "NY" not in by, json.dumps(sorted(by)))
 check("a case with no state isn't a state", None not in by and "" not in by, json.dumps(sorted(map(str, by))))
+check("Delta's three in Oregon", by.get("OR", {}).get("total") == 3, json.dumps(by.get("OR")))
 check("busiest state first", [s["state"] for s in doc["byState"]][:1] == ["TX"], json.dumps(doc["byState"]))
 check("the doc says which fiscal years its state counts cover",
       doc.get("byStateYears") == {"from": 2015, "to": 2020}, json.dumps(doc.get("byStateYears")))
+
+print("an occupation's older cases: who filed it, which firms, where")
+job = got.get(("occupation", "software-developers"), {})
+check("its total and years: every older case under a code with a page", job.get("total") == 10
+      and job.get("years") == (2015, 2020), json.dumps([job.get("total"), job.get("years")]))
+sponsors = {(r["key"], r["label"]): r["n"] for r in job.get("facets", {}).get("employer", [])}
+check("its sponsors: pages under their names (an under-the-floor page too), one with no page unlinked",
+      sponsors == {("acme-inc", "ACME INC"): 3, ("gamma-llc", "Gamma LLC"): 3, ("beta-corp", "Beta Corp"): 2,
+                   (None, "NOBODY LLC"): 2}, json.dumps(sorted(map(str, sponsors.items()))))
+job_firms = {(r["key"], r["label"]): r["n"] for r in job.get("facets", {}).get("attorney", [])}
+check("its firms", job_firms == {("law-firm-llp", "Law Firm LLP"): 4}, json.dumps(sorted(map(str, job_firms.items()))))
+job_states = {r["key"]: r["n"] for r in job.get("facets", {}).get("state", [])}
+check("its states", job_states == {"TX": 4, "WA": 3, "NJ": 2}, json.dumps(job_states))
+job_cities = {r["label"]: r["n"] for r in job.get("facets", {}).get("city", [])}
+check("its cities", job_cities == {"Austin, TX": 4, "Seattle, WA": 2, "Newark, NJ": 2, "Redmond, WA": 1},
+      json.dumps(job_cities))
+check("a code with no page gets no occupation rows",
+      not any(k[0] == "occupation" and k[1] != "software-developers" for k in got), str(sorted(got)))
+
+print("a name withheld on the site: a spelling that reached a page is never written, only the page's own name")
+names = {(k, s_): n for k, s_, n in db.conn.execute("SELECT kind, slug, name FROM perm_entities")}
+linked = db.conn.execute(
+    "SELECT facet, key, label FROM perm_history_entity_facets WHERE facet IN ('attorney','employer') "
+    "AND key IS NOT NULL").fetchall()
+check("every linked firm or employer carries its page's slug and its page's name, which the masker knows",
+      bool(linked) and all(label == names.get((facet, key)) for facet, key, label in linked), str(linked))
+labels = {r[0] for r in db.conn.execute("SELECT label FROM perm_history_entity_facets")}
+older = {"LAW FIRM OF OLDEN DAYS", "Law Firm, LLP", "Acme Inc.", "GAMMA LLC", "DELTA CO"}
+check("no older spelling of a page is written: not the firm's name before its merge, nor a filing's own spelling",
+      not labels & older, str(sorted(labels & older)))
+delta_firm = got.get(("employer", "delta-co"), {}).get("facets", {}).get("attorney", [])
+check("Delta's firm, filed under its old name and slug, is the page", delta_firm[:1] == [
+    {"key": "law-firm-llp", "label": "Law Firm LLP", "code": None, "n": 3, "certified": 3, "denied": 0}],
+      json.dumps(delta_firm))
+
+print("its counts wait on disk, so memory doesn't grow with the pairs the older table holds")
+
+
+def corpus(n: int):
+    """The seed, plus n cases filed by the firm for n employers with no page, each in a town of its own: 25 a
+    day, so a slice holds as many however big n is, and only the pairs grow."""
+    big = seed()
+    start = date(2016, 1, 1)
+    rows = [row(f"Z-{i}", "certified", (start + timedelta(days=i // 25)).isoformat(), 2016,
+                f"CLIENT {i:05d} WIDGETS", f"client-{i:05d}-widgets", state="WA", city=f"Town {i:05d}",
+                att_name="Law Firm LLP", att_slug="law-firm-llp") for i in range(n)]
+    marks = ",".join("?" * len(iph.COLUMNS))
+    big.conn.executemany(f"INSERT INTO perm_cases_history ({','.join(iph.COLUMNS)}) VALUES ({marks})", rows)
+    big.conn.commit()
+    return big
+
+
+def peak(n: int):
+    big = corpus(n)
+    held = getattr(iph, "NAME_CACHE_MAX", None)
+    iph.NAME_CACHE_MAX = 200
+    tracemalloc.start()
+    try:
+        iph.build_entity_facets(big)
+        return tracemalloc.get_traced_memory()[1], big
+    finally:
+        tracemalloc.stop()
+        iph.NAME_CACHE_MAX = held
+
+
+small, _ = peak(2000)
+large, big = peak(10000)
+check("8,000 more employers and towns cost under 300 KB more at the peak", large - small < 300_000,
+      f"{small:,} -> {large:,} bytes")
+big_firm = facets(big).get(("attorney", "law-firm-llp"), {})
+check("and the counts are still exact", big_firm.get("total") == 10007
+      and {r["key"]: r["n"] for r in big_firm["facets"]["state"]}.get("WA") == 10002, json.dumps(big_firm.get("total")))
+
+opened: list[str] = []
+real_open = getattr(iph, "open_scratch", None)
+
+
+def watch_open(path):
+    opened.append(str(path))
+    return real_open(path)
+
+
+iph.open_scratch = watch_open
+with tempfile.TemporaryDirectory() as scratch:
+    try:
+        iph.build_entity_facets(seed(), scratch_dir=scratch)
+    except TypeError as exc:
+        check("the builder takes a scratch folder", False, str(exc))
+    check("the counts were kept in a file in the scratch folder",
+          len(opened) == 1 and opened[0].startswith(scratch), str(opened))
+    check("and the file is gone afterwards", os.listdir(scratch) == [], str(os.listdir(scratch)))
+iph.open_scratch = real_open
 
 print("a rebuild replaces the table, and pages never read it half-written")
 iph.build_entity_facets(db)
