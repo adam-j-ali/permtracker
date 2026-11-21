@@ -93,6 +93,18 @@ PAUSE_BETWEEN_FILES_S = 30
 CANDIDATES: dict[str, list[str]] = copy.deepcopy(ipd.COLUMN_CANDIDATES)
 CANDIDATES["attorney"] = CANDIDATES["attorney"] + ["AGENT_FIRM_NAME"]
 CANDIDATES["naics"] = CANDIDATES["naics"] + ["2007_NAICS_US_CODE", "2012_NAICS_US_CODE"]
+# The wage request each case was filed on, its own fields (sweep item 1). Names read from DOL's files on Nov 21 2026:
+# FY2016 and FY2019 (PERM_Disclosure_Data_FY16.xlsx, PERM_FY2019.xlsx) print the _9089 and short forms, FY2020 to FY2023
+# the long ones. A column maps to one field, so the offered wage no longer lists the PW_ columns as fallbacks:
+# parse_workbook falls back to the prevailing wage itself when a year has no offered-wage column, as it always did.
+CANDIDATES["wage"] = [n for n in CANDIDATES["wage"] if not n.startswith("PW_")]
+CANDIDATES["wage_unit"] = [n for n in CANDIDATES["wage_unit"] if not n.startswith("PW_")]
+CANDIDATES["pw_number"] = ["PW_TRACK_NUMBER", "PW_TRACK_NUM"]
+CANDIDATES["pw_wage"] = ["PW_WAGE", "PW_AMOUNT_9089", "PW_AMOUNT"]
+CANDIDATES["pw_unit"] = ["PW_UNIT_OF_PAY", "PW_UNIT_OF_PAY_9089"]
+CANDIDATES["pw_level"] = ["PW_SKILL_LEVEL", "PW_LEVEL_9089"]
+CANDIDATES["pw_determined"] = ["PW_DETERMINATION_DATE", "PW_DETERM_DATE"]
+CANDIDATES["pw_expires"] = ["PW_EXPIRATION_DATE", "PW_EXPIRE_DATE"]
 REQUIRED = ("case", "status", "decision", "employer")
 
 COLUMNS = [
@@ -104,6 +116,9 @@ COLUMNS = [
     "institution", "job_education",
     # DOL's Y or N to "a layoff in this occupation in the six months before filing" (Nov 3 2026).
     "layoff",
+    # The wage request: its number as DOL printed it (the older files' own form, P10019059473403, which no page of
+    # wage requests holds), the prevailing wage a year, its level and its two dates (sweep item 1, Nov 21 2026).
+    "pw_number", "pw_wage", "pw_level", "pw_determined", "pw_expires",
 ]
 # The first CORE columns decide whether a stored row is the same case record;
 # the rest (the worker's fields) can be filled into a row that is otherwise
@@ -151,7 +166,12 @@ SCHEMA = [
          major         TEXT,
          institution   TEXT,
          job_education TEXT,
-         layoff        TEXT
+         layoff        TEXT,
+         pw_number     TEXT,
+         pw_wage       REAL,
+         pw_level      TEXT,
+         pw_determined TEXT,
+         pw_expires    TEXT
        )""",
     # An employer page lists its own cases, newest first: one equality and
     # the ordering column last, so the index supplies the order.
@@ -381,6 +401,11 @@ def parse_workbook(path: str, seen: set[str]) -> dict:
         attorney = clean(rec.get("attorney"), 80)
         if attorney.lower() in ("n/a", "na", "none"):
             attorney = ""
+        pw_wage = ipd.annual_wage(rec.get("pw_wage") or "", rec.get("pw_unit") or "")
+        # A year with no offered-wage column took the prevailing wage as its wage before the PW_ columns had their
+        # own fields; it still does.
+        wage = (ipd.annual_wage(rec.get("wage") or "", rec.get("wage_unit") or "") if "wage" in rec
+                else pw_wage)
         rows.append({
             "caseNumber": case_no, "status": outcome, "receivedDate": received,
             "decisionDate": decided, "days": days, "fiscalYear": str(fy),
@@ -388,11 +413,15 @@ def parse_workbook(path: str, seen: set[str]) -> dict:
             "jobTitle": clean(rec.get("job_title"), 80) or None,
             "socCode": (rec.get("soc_code") or "").strip()[:10] or None,
             "socTitle": clean(rec.get("soc_title"), 80) or None,
-            "attorneyName": attorney, "wage": ipd.annual_wage(rec.get("wage") or "",
-                                                               rec.get("wage_unit") or ""),
+            "attorneyName": attorney, "wage": wage,
             "naics": normalize_naics(rec.get("naics")),
             "worksiteCity": clean(rec.get("worksite_city"), 60) or None,
             "layoff": ipd.yes_no(rec.get("layoff")),
+            "pwNumber": clean(rec.get("pw_number"), 40) or None,
+            "pwWage": float(pw_wage) if pw_wage is not None else None,
+            "pwLevel": clean(rec.get("pw_level"), 20) or None,
+            "pwDetermined": ipd.to_iso(rec.get("pw_determined") or "") or None,
+            "pwExpires": ipd.to_iso(rec.get("pw_expires") or "") or None,
             **worker,
         })
     return {"counts": counts, "countries": countries, "rows": rows,
@@ -484,7 +513,8 @@ def row_tuple(r: dict, emp: dict[str, str], att: dict[str, str]) -> tuple:
             r["state"], r["jobTitle"], r["socCode"], r["socTitle"], a or None,
             att.get(entity_key(a), "") if a else "", r["wage"], r["naics"], r["worksiteCity"],
             r.get("citizenship"), r.get("birthCountry"), r.get("visaClass"), r.get("education"),
-            r.get("major"), r.get("institution"), r.get("jobEducation"), r.get("layoff"))
+            r.get("major"), r.get("institution"), r.get("jobEducation"), r.get("layoff"),
+            r.get("pwNumber"), r.get("pwWage"), r.get("pwLevel"), r.get("pwDetermined"), r.get("pwExpires"))
 
 
 def fingerprint(t: tuple) -> str:
@@ -498,7 +528,7 @@ def extras_of(t: tuple) -> tuple[str, ...]:
 
 def ensure_columns(db) -> list[str]:
     """A table made before the worker's fields existed gains them in place."""
-    return add_missing_columns(db, "perm_cases_history", {c: "TEXT" for c in EXTRA})
+    return add_missing_columns(db, "perm_cases_history", {c: ("REAL" if c == "pw_wage" else "TEXT") for c in EXTRA})
 
 
 def stored_fingerprints(db, fy: int) -> dict[str, tuple[str, tuple[str, ...]]]:
