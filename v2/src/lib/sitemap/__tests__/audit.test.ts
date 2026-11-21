@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { AUDIT_BUDGET, pickAuditPaths, routeShape, splitPages } from "../audit";
+import knownRoutes from "../../../../scripts/known-routes.json";
+import { AUDIT_BUDGET, FIXED_ROUTES, pickAuditPaths, routeShape, splitPages } from "../audit";
 
 const range = (prefix: string, n: number) => Array.from({ length: n }, (_, i) => `${prefix}/${i + 1}`);
 
@@ -37,6 +38,24 @@ describe("splitPages", () => {
   it("treats a large shape outside the articles as a template", () => {
     expect(fixed).not.toContain("/soc-codes/1");
     expect(families).toEqual([{ name: "/soc-codes/:slug", paths: range("/soc-codes", 50) }]);
+  });
+
+  // A page with its own route can share its address's shape with a family: /soc-codes/browse with 3,888 job title
+  // pages, /visa-bulletin/family with the bulletin months. Measured Nov 21 2026: three of 251 fixed pages were left out
+  // of the live audit list that way. The route list says which are fixed, whatever the shape.
+  it("lists a page with its own route even when its address looks like a family's", () => {
+    const got = splitPages(["/soc-codes/browse", ...range("/soc-codes", 50), "/visa-bulletin/family", ...range("/visa-bulletin", 30)], new Set(["/soc-codes/browse", "/visa-bulletin/family"]));
+    expect(got.fixed).toEqual(expect.arrayContaining(["/soc-codes/browse", "/visa-bulletin/family"]));
+    expect(got.families.flatMap((f) => f.paths)).not.toContain("/soc-codes/browse");
+    expect(got.families.find((f) => f.name === "/soc-codes/:slug")?.paths).toEqual(range("/soc-codes", 50));
+  });
+
+  it("takes the fixed routes from the site's route list, the three missed ones included", () => {
+    expect(FIXED_ROUTES.size).toBe(knownRoutes.length);
+    for (const p of ["/soc-codes/browse", "/visa-bulletin/categories", "/visa-bulletin/family", "/about", "/"]) {
+      if ((knownRoutes as string[]).includes(p)) expect(FIXED_ROUTES.has(p)).toBe(true);
+    }
+    expect(FIXED_ROUTES.has("/soc-codes/browse")).toBe(true);
   });
 });
 

@@ -22,8 +22,18 @@
  * The file is listed in neither the sitemap index nor robots.txt, so search
  * engines never read it as part of the site's map.
  */
+import knownRoutes from "../../../scripts/known-routes.json";
+
 
 export const AUDIT_BUDGET = 1000;
+
+/**
+ * Every public page with its own route (scripts/known-routes.json, the list a new page must join). A page here is
+ * listed whole even when its address shares a family's shape: /soc-codes/browse beside 3,888 job title pages,
+ * /visa-bulletin/family beside the bulletin months. Read by shape alone, three such pages fell out of the list
+ * (Nov 21 2026).
+ */
+export const FIXED_ROUTES: ReadonlySet<string> = new Set(knownRoutes as string[]);
 
 /** Articles and tools are each their own page, never a template, however many there are. */
 const CONTENT_PREFIXES = ["/guides/", "/blog/", "/changelog/", "/tools/"];
@@ -49,15 +59,23 @@ export interface AuditFamily {
  * Split the static sitemap's paths into the pages listed whole and one
  * family per template.
  */
-export function splitPages(paths: readonly string[]): { fixed: string[]; families: AuditFamily[] } {
+export function splitPages(
+  paths: readonly string[],
+  fixedRoutes: ReadonlySet<string> = FIXED_ROUTES,
+): { fixed: string[]; families: AuditFamily[] } {
   const byShape = new Map<string, string[]>();
+  const own: string[] = [];
   for (const p of paths) {
+    if (fixedRoutes.has(p)) {
+      own.push(p);
+      continue;
+    }
     const shape = routeShape(p);
     const list = byShape.get(shape);
     if (list) list.push(p);
     else byShape.set(shape, [p]);
   }
-  const fixed: string[] = [];
+  const fixed: string[] = [...own];
   const families: AuditFamily[] = [];
   for (const [shape, list] of byShape) {
     const content = CONTENT_PREFIXES.some((prefix) => shape.startsWith(prefix));
