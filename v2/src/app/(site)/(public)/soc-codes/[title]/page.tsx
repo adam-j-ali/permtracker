@@ -22,7 +22,8 @@ import { CaseNextStep } from "@/components/tools/CaseNextStep";
 import { FaqList } from "@/components/tools/FaqList";
 import { breadcrumbSchema } from "@/lib/breadcrumbs";
 import { codeSummaries, marketPayNational, onetReference } from "@/lib/db/reference";
-import { getSocCodes, getSocTitle } from "@/lib/db/socTitles";
+import { PRERENDERED_ENTITY_HEAD } from "@/lib/db/entities";
+import { getSocCodes, getSocTitle, getSocTitlePages } from "@/lib/db/socTitles";
 import { formatDollars, formatInt, formatShareOf } from "@/lib/format";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { fitTitle, metadataTitle } from "@/lib/pageTitle";
@@ -36,9 +37,14 @@ import { socTitleDescription } from "@/lib/socTitleDescription";
 // The titles move with the quarterly loads.
 export const revalidate = 604800;
 
-/** Built on first request: 3,600 titles, each read once a week. */
+/**
+ * The busiest titles are built ahead, as the entity pages' head is (PRERENDERED_ENTITY_HEAD): the doc lists them
+ * busiest first, so the head is also the traffic, warm from the first request after a deploy. The other 3,700
+ * render on their first visit and keep a week. A build that can't read the list prerenders none and records why.
+ */
 export async function generateStaticParams() {
-  return [];
+  const doc = await getSocTitlePages().catch(softFail("soc-codes/[title].generateStaticParams", null));
+  return (doc?.pages ?? []).slice(0, PRERENDERED_ENTITY_HEAD).map((p) => ({ title: p.slug }));
 }
 
 /** Read once per render: the metadata and the page both ask. */
