@@ -150,6 +150,15 @@ DATE_SLACK_DAYS = 2
 SOCIAL_TAGS = ("og:title", "og:description", "og:image", "og:url", "twitter:card")
 
 
+# The page's own node: a WebPage or one of schema.org's WebPage kinds (https://schema.org/WebPage, "More specific
+# Types"), or an article. /about's is an AboutPage since Nov 21 2026.
+PAGE_NODE_TYPES = frozenset({
+    "WebPage", "AboutPage", "CheckoutPage", "CollectionPage", "ContactPage", "FAQPage", "ItemPage", "MedicalWebPage",
+    "ProfilePage", "QAPage", "RealEstateListing", "SearchResultsPage",
+    "Article", "BlogPosting", "TechArticle", "NewsArticle",
+})
+
+
 def page_dates(html: str) -> list[str]:
     """Every dateModified the page's JSON-LD gives for the page itself.
 
@@ -169,7 +178,7 @@ def page_dates(html: str) -> list[str]:
                 continue
             kind = node.get("@type")
             kinds = kind if isinstance(kind, list) else [kind]
-            if any(k in ("WebPage", "Article", "BlogPosting", "TechArticle", "NewsArticle") for k in kinds):
+            if any(k in PAGE_NODE_TYPES for k in kinds):
                 d = node.get("dateModified")
                 if isinstance(d, str):
                     found.append(d[:10])

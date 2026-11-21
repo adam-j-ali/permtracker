@@ -48,6 +48,13 @@ def main() -> int:
         "a page and a sitemap far apart are caught",
     )
     check(ap.check_dates("/guides/a", ARTICLE + ARTICLE_SHOWN, "2026-10-12") == [], "an article's own node counts")
+    # schema.org's WebPage kinds are WebPage too: /about's page node is an AboutPage (Nov 21 2026).
+    about = ld('{"@type":"AboutPage","@id":"https://permtracker.app/about#webpage","dateModified":"2026-11-12"}')
+    shown = '<time dateTime="2026-11-12">November 12, 2026</time>'
+    check(ap.check_dates("/about", about + shown, "2026-11-12") == [], "an AboutPage is the page's own node")
+    for kind in ("CollectionPage", "ProfilePage", "ContactPage", "FAQPage", "ItemPage", "QAPage", "SearchResultsPage"):
+        node = ld('{"@type":"%s","dateModified":"2026-11-12"}' % kind)
+        check(ap.page_dates(node) == ["2026-11-12"], f"a {kind} is a WebPage too")
     sm = "<urlset><url><loc>https://permtracker.app/a</loc><lastmod>2026-10-01</lastmod></url><url><loc>https://permtracker.app/</loc><lastmod>2026-10-02</lastmod></url></urlset>"
     check(ap.url_lastmods(sm) == {"/a": "2026-10-01", "/": "2026-10-02"}, "lastmods are read per URL path")
     print(f"\n{len(FAILS)} failed")
