@@ -158,7 +158,7 @@ export async function purgeAllUserData(
 
   // So does anyone else who got those cases' deadline reminders (convex/reminderRecipients.ts), with their mail
   // still waiting in the retry queue.
-  for await (const r of ctx.db.query("reminderRecipients").withIndex("by_userId", (q) => q.eq("userId", userId))) {
+  for await (const r of ctx.db.query("reminderRecipients").withIndex("by_userId_and_status", (q) => q.eq("userId", userId))) {
     await dropReminderRetries(ctx, r);
     await ctx.db.delete("reminderRecipients", r._id);
   }

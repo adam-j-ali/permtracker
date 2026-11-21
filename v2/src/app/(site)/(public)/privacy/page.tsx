@@ -209,9 +209,10 @@ export default function PrivacyPage() {
                 neither of you
               </li>{" "}
               <li>
-                Each reminder has a link that stops them with one click, and the invitation has a link that says
-                not to invite the address again. Either one deletes the address, and the case shows you that they
-                were stopped
+                Each reminder has a link that stops them with one click. It ends your account&apos;s reminders to
+                that address on every case and deletes the address from each one. The invitation has a link that
+                says not to invite the address again, and it deletes the address from that invitation. Each case
+                shows you that they were stopped
               </li>{" "}
               <li>
                 The invitation&apos;s link puts the address on a list that refuses every account&apos;s invitations

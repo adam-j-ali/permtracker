@@ -33,7 +33,8 @@
  * due that day that the owner's own email switches allow (the master switch, "Deadline reminders" and each kind's
  * switch: emailsDeadlineReminder), in one email a day (`sendCopy`). Each send charges BUDGETS.reminderCopy before it
  * goes and stamps the Eastern day, so a second run the same day sends nothing. Every email carries a one-click stop,
- * in its List-Unsubscribe header and as a link, signed for `reminder-stop:<row id>:<account id>`.
+ * in its List-Unsubscribe header and as a link, signed for `reminder-stop:<row id>:<account id>`. The Stop ends every
+ * row of that account for that inbox that's still waiting or confirmed, on every case (`stopByToken`).
  *
  * THE REFUSAL LIST. "Don't invite me again" puts the address on a list that refuses every account; a reminder's Stop
  * puts it there for the account that added it only, and that entry goes with the account. Both are kept only as an
@@ -41,11 +42,11 @@
  * read back as addresses, and can't be read by trying them: a refused address gets the same answer as a blocked or
  * twice-invited one, and each try spends one of the account's day.
  *
- * THE END. Stopping erases the address and keeps the row as "stopped", so the owner sees what happened. The owner
- * removing it deletes the row. It goes with its case (cases.remove, through clearCaseReferences) and with the account
- * (lib/deletion.ts), as the Privacy Policy says. Both emails carry the row's ref (`reminder:<row id>`) into the retry
- * queue, and every one of those paths, and the expiry of an invitation, drops what's still waiting there first
- * (dropReminderRetries), so a person who's gone never gets a retry.
+ * THE END. Stopping erases the address from each row it ends and keeps the row as "stopped", so the owner sees what
+ * happened. The owner removing it deletes the row. It goes with its case (cases.remove, through clearCaseReferences)
+ * and with the account (lib/deletion.ts), as the Privacy Policy says. Both emails carry the row's ref
+ * (`reminder:<row id>`) into the retry queue, and every one of those paths, and the expiry of an invitation, drops
+ * what's still waiting there first (dropReminderRetries), so a person who's gone never gets a retry.
  *
  * @module
  */
@@ -66,6 +67,7 @@ import { admitConfirmation, confirmationWouldWait } from "./confirmationQueue";
 import { dropReminderRetries, dropRetries } from "./lib/alertOutboxStore";
 import { BUDGETS, REMINDER_INVITES_PER_ACCOUNT, noteRefusal, windowFor } from "./lib/alertBudgets";
 import { getCurrentUserId, isEmailVerified } from "./lib/auth";
+import { canonicalAddress } from "./lib/canonicalAddress";
 import { formatDateForDisplay, formatRelativeDays } from "./lib/digestHelpers";
 import { deadlineDigestWords } from "./lib/deadlineDigestWords";
 import { FROM_EMAIL, getResend, sendOrQueue } from "./lib/email";
@@ -202,6 +204,28 @@ async function endByPerson(ctx: MutationCtx, row: Doc<"reminderRecipients">): Pr
   await dropReminderRetries(ctx, row);
   // Patching a field to undefined deletes it: the address goes, the row stays for the owner to see.
   await ctx.db.patch("reminderRecipients", row._id, { status: "stopped", stoppedAt: Date.now(), email: undefined });
+}
+
+/** The statuses of a row that can still send or invite: a stopped row sends nothing. */
+const LIVE_STATUSES = ["waiting", "confirmed"] as const;
+
+/**
+ * A Stop, for every case: end each of the account's rows that still invites or sends to the inbox `email` reaches,
+ * under any spelling (canonicalAddress), as endByPerson does. Reads the account's waiting and confirmed rows only,
+ * then ends the ones that match, so no row changes under the read. Returns how many it ended.
+ */
+async function endAccountRowsFor(ctx: MutationCtx, userId: Id<"users">, email: string): Promise<number> {
+  const inbox = canonicalAddress(email);
+  const matches: Doc<"reminderRecipients">[] = [];
+  for (const status of LIVE_STATUSES) {
+    for await (const row of ctx.db
+      .query("reminderRecipients")
+      .withIndex("by_userId_and_status", (q) => q.eq("userId", userId).eq("status", status))) {
+      if (row.email && canonicalAddress(row.email) === inbox) matches.push(row);
+    }
+  }
+  for (const row of matches) await endByPerson(ctx, row);
+  return matches.length;
 }
 
 /** Who the emails say asked: the account's display name in Settings, else its sign-in name, else nobody named. */
@@ -489,12 +513,14 @@ export const confirmByToken = internalMutation({
 // ============================================================================
 
 /**
- * The stop link (and the mail app's own Unsubscribe button). The address is erased and the row kept as "stopped",
- * and the account that added the address can't invite it again; other accounts still can ("Don't invite me again", in
- * an invitation, is what refuses them all). A valid link for a row that's already stopped or was removed answers
- * "already": nothing more will be sent either way. The link is signed for the account too, so once the owner has
- * removed the row it still refuses the address for that account, as the page says. An account that's gone has no
- * invitations left to refuse, so nothing is kept for it.
+ * The stop link (and the mail app's own Unsubscribe button). It stops every reminder the account that added the
+ * address sends that inbox, on every case: each of the account's rows for it that's waiting or confirmed, under any
+ * spelling, has its address erased and is kept as "stopped" (endAccountRowsFor). So a link from an older email still
+ * stops a row the owner added again after removing the first. The account can't invite the address again; other
+ * accounts still can ("Don't invite me again", in an invitation, is what refuses them all), and their rows are left
+ * alone. The link is signed for the row and the account, so it works the same once the owner has removed its row.
+ * It answers "stopped" when it ended a row and "already" when the account had nothing left that sends to the inbox.
+ * An account that's gone has no rows and no invitations left, so nothing is kept for it.
  */
 export const stopByToken = internalMutation({
   args: { token: v.string(), recipientId: v.string(), userId: v.string() },
@@ -507,18 +533,19 @@ export const stopByToken = internalMutation({
     const ref = reminderRef(args.recipientId);
     await dropRetries(ctx, email, (r) => (r.refs ?? []).includes(ref));
     const row = await rowById(ctx, args.recipientId);
-    if (!row) {
-      const userId = ctx.db.normalizeId("users", args.userId);
-      if (userId && (await ctx.db.get("users", userId))) await refuseAddress(ctx, email, userId);
-      return "already" as const;
+    let userId: Id<"users">;
+    if (row) {
+      if (row.userId !== args.userId) return null;
+      // A stopped row's address is erased; the link, signed for this row, says whose it was.
+      if (row.status !== "stopped" && row.email !== email) return null;
+      userId = row.userId;
+    } else {
+      const id = ctx.db.normalizeId("users", args.userId);
+      if (!id || !(await ctx.db.get("users", id))) return "already" as const;
+      userId = id;
     }
-    if (row.userId !== args.userId) return null;
-    // A stopped row's address is erased; the link, signed for this row, says whose it was.
-    if (row.status !== "stopped" && row.email !== email) return null;
-    await refuseAddress(ctx, email, row.userId);
-    if (row.status === "stopped") return "already" as const;
-    await endByPerson(ctx, row);
-    return "stopped" as const;
+    await refuseAddress(ctx, email, userId);
+    return (await endAccountRowsFor(ctx, userId, email)) > 0 ? ("stopped" as const) : ("already" as const);
   },
 });
 

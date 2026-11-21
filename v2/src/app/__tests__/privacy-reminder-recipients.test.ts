@@ -49,10 +49,13 @@ describe("the privacy page and a case's second reminder recipient", () => {
     expect(section).toContain("that reminder goes to neither of you");
   });
 
-  it("says one click stops them, and the invitation's link declines, and either deletes the address", () => {
-    expect(section).toContain("stops them with one click");
-    expect(section).toContain("the invitation has a link that says not to invite the address again");
-    expect(section).toContain("Either one deletes the address");
+  it("says one click stops them on every case the account added the address to, and the invitation's link declines, each deleting the address", () => {
+    expect(section).toContain("Each reminder has a link that stops them with one click");
+    expect(section).toContain("It ends your account's reminders to that address on every case and deletes the address from each one");
+    expect(section).toContain("The invitation has a link that says not to invite the address again, and it deletes the address from that invitation");
+    expect(section).toContain("Each case shows you that they were stopped");
+    // A Stop reaches past the one case in its email, so the line can't say it deletes "the address" from one case only.
+    expect(section).not.toContain("Either one deletes the address");
   });
 
   it("says the invitation's link refuses every account, and a reminder's Stop only yours, on a list kept as a keyed hash", () => {
