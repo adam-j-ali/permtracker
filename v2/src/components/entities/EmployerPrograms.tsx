@@ -3,7 +3,15 @@ import Link from "next/link";
 import { breakdownParts, holdSincePhrase, type EmployerStageRow } from "@/lib/employerStages";
 import { FinePrint } from "@/components/data/FinePrint";
 import { PROGRAM_TITLE } from "@/lib/changeProgram";
-import { WAGE_FLOOR, wageGap, wageGapSentence, type ProgramLine } from "@/lib/employerPrograms";
+import {
+  NEWER_FROM_FY,
+  OLDER_FROM_FY,
+  WAGE_FLOOR,
+  medianCaption,
+  wageGap,
+  wageGapSentence,
+  type ProgramLine,
+} from "@/lib/employerPrograms";
 import { formatDollars, formatInt, formatShare } from "@/lib/format";
 
 /**
@@ -51,6 +59,8 @@ export function EmployerPrograms({
 }) {
   const lines: ProgramLine[] = [...(perm ? [perm] : []), ...(pwd ? [pwd] : []), ...(lca ? [lca] : []), ...(seasonal ? [seasonal] : [])];
   const gap = wageGap(perm, lca);
+  // The years each line covers, said once under the ledger when any line reaches into DOL's older files.
+  const dated = lines.some((l) => l.medianFromFy);
   return (
     <section className={heading ? "mt-10" : undefined}>
       {heading ? (
@@ -97,19 +107,15 @@ export function EmployerPrograms({
                     <span className="text-sm text-muted-foreground">an hour, of {formatInt(l.wageN)}</span>
                   </>
                 ) : (
-                  <span className="text-sm text-muted-foreground">
-                    {l.wageN > 0 ? `${formatInt(l.wageN)} hourly wage${l.wageN === 1 ? "" : "s"}, too few` : "none published"}
-                  </span>
+                  <span className="text-sm text-muted-foreground">{medianCaption(l, "hourly wage")}</span>
                 )
               ) : l.medianAnnualWage !== null && l.wageN >= WAGE_FLOOR ? (
                 <>
                   <span className="font-heading text-lg font-bold">{formatDollars(l.medianAnnualWage)}</span>{" "}
-                  <span className="text-sm text-muted-foreground">of {formatInt(l.wageN)}</span>
+                  <span className="text-sm text-muted-foreground">{medianCaption(l)}</span>
                 </>
               ) : (
-                <span className="text-sm text-muted-foreground">
-                  {l.wageN > 0 ? `${formatInt(l.wageN)} wage${l.wageN === 1 ? "" : "s"}, too few` : "none published"}
-                </span>
+                <span className="text-sm text-muted-foreground">{medianCaption(l)}</span>
               )}
             </dd>
           </div>
@@ -143,6 +149,9 @@ export function EmployerPrograms({
           Medians are of the published rows with a usable wage, annualised from
           whatever unit the filing quoted, and withheld under {WAGE_FLOOR} wages
           (&ldquo;too few&rdquo;).
+          {dated
+            ? ` Published counts every year DOL's files hold, back to FY${OLDER_FROM_FY}: the PERM decisions from FY${OLDER_FROM_FY} to FY${NEWER_FROM_FY.perm - 1} and the LCAs from FY${OLDER_FROM_FY} to FY${NEWER_FROM_FY.lca - 1} come from DOL's older yearly files, counted when each one loads. The PERM and LCA medians read the newer files only, from the year each one names. The LCA line counts every LCA DOL publishes for the employer, the E-3 and H-1B1 LCAs filed on the same form among them.`
+            : ""}
           {" "}DOL publishes no employer number, so filings are matched by the employer&apos;s legal name
           {spellings && spellings > 1 ? `, read under the ${formatInt(spellings)} spellings DOL's files use for it` : ""}
           . Another employer with the same legal name would be counted here too.{" "}
