@@ -1,8 +1,10 @@
 import { Fragment } from "react";
+import { CaretRightIcon } from "@phosphor-icons/react/ssr";
 
 import {
   MIN_DECIDED_FOR_BAND_RATE,
   coarsenBands,
+  fiscalYearSpan,
   reversals,
   worstBand,
   type WageBandRate,
@@ -32,8 +34,14 @@ import { MoreText } from "@/components/data/MoreText";
  *   - the rate broadly falls as the wage rises, roughly 5% to roughly 1.4%
  *   - it does not fall smoothly, at any binning tried
  *   - the top is not the floor: over $160k is higher than $130k-$160k in
- *     EVERY fiscal year (1.63 vs 1.37, 0.91 vs 0.74, 2.38 vs 2.11), on tens of
- *     thousands of cases each, which a single "over $130k" band erases
+ *     each of FY2024 to FY2026 (1.63 vs 1.37, 0.91 vs 0.74, 2.38 vs 2.11), on
+ *     tens of thousands of cases each, which a single "over $130k" band erases
+ *
+ * THE OLDER FILES' YEARS (FY2008 to FY2023, `history` on the series) sit in a
+ * closed block of their own, on their own scale: their wages are as offered
+ * then, so a band holds a different part of each year's range, and their
+ * rates would otherwise set the scale the recent years are read on. The pooled
+ * panel pools the recent years only, and its title says which.
  *
  * NO CAUSE IS OFFERED, and the reason is the same one the site gives for
  * refusing a blended risk score: wage, occupation and employer are entangled,
@@ -139,13 +147,22 @@ function Panel({
   );
 }
 
+const yearSpan = (series: readonly WageBandSeries[]) => fiscalYearSpan(series.map((s) => s.fiscalYear));
+
+/** The bar scale for a block: its highest rate. */
+const scaleOf = (bands: readonly WageBandRate[]) => Math.max(1, ...bands.map((b) => b.deniedPct ?? 0));
+
 export function DenialByWageBand({
   byYear,
   pooled,
   className,
 }: DenialByWageBandProps) {
-  const every = [...byYear.flatMap((s) => s.bands), ...pooled];
-  const max = Math.max(1, ...every.map((b) => b.deniedPct ?? 0));
+  const recent = byYear.filter((s) => !s.history);
+  const earlier = byYear.filter((s) => s.history);
+  const max = scaleOf([...recent.flatMap((s) => s.bands), ...pooled]);
+  const earlierMax = scaleOf(earlier.flatMap((s) => s.bands));
+  const pooledYears = yearSpan(recent);
+  const earlierYears = yearSpan(earlier);
   // Summed from the fine bands rather than queried, so the summary and the
   // structure are the same numbers at two resolutions by construction.
   const coarse = coarsenBands(pooled);
@@ -196,7 +213,7 @@ export function DenialByWageBand({
         Eleven bands, by fiscal year and pooled
       </p>
       <div className="mt-3 grid [&>*]:min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {byYear.map((s) => (
+        {recent.map((s) => (
           <Fragment key={s.fiscalYear}>
             <Panel
               title={`FY${s.fiscalYear}`}
@@ -207,7 +224,7 @@ export function DenialByWageBand({
           </Fragment>
         ))}
         <Panel
-          title="All three years"
+          title={pooledYears ? `${pooledYears}, pooled` : "Pooled"}
           bands={pooled}
           max={max}
           note="The pooled window"
@@ -233,6 +250,36 @@ export function DenialByWageBand({
           />
         </div>
       </div>
+
+      {earlier.length > 0 ? (
+        <details data-earlier-years className="group mt-8">
+          <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-1.5 text-base font-bold transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
+            <CaretRightIcon
+              className="h-4 w-4 shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none"
+              weight="bold"
+              aria-hidden="true"
+            />{" "}
+            Earlier years, {earlierYears}, from DOL&apos;s older files
+          </summary>{" "}
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+            Wages are as offered in each year, with no adjustment for inflation. A band therefore holds a
+            different part of each year&apos;s range, so compare a year&apos;s bands with each other. These bars
+            have a scale of their own.
+          </p>{" "}
+          <div className="mt-3 grid [&>*]:min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {earlier.map((s) => (
+              <Fragment key={s.fiscalYear}>
+                <Panel
+                  title={`FY${s.fiscalYear}`}
+                  bands={s.bands}
+                  max={earlierMax}
+                  note="Denied, of decided"
+                />{" "}
+              </Fragment>
+            ))}
+          </div>
+        </details>
+      ) : null}
 
       {/* The denominator changes how every rate reads, so it stays visible.
           How the drawing works is provenance, and collapses. */}

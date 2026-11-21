@@ -85,3 +85,62 @@ describe("SalaryExplorer place filters", () => {
     expect(String(replace.mock.calls[0]?.[0])).toContain("city=Redmond");
   });
 });
+
+describe("SalaryExplorer years from DOL's older files", () => {
+  function renderYears(pooledLabel?: string) {
+    render(
+      <SalaryExplorer
+        occupations={[{ value: "15-1252", label: "Software Developers", n: 9 }]}
+        states={[{ value: "WA", label: "WA", n: 9 }]}
+        fiscalYears={["2026", "2025", "2024", "2015"]}
+        historyYears={["2015"]}
+        pooledLabel={pooledLabel}
+        initial={EMPTY}
+        placeFilters
+      />,
+    );
+  }
+
+  it("names the pooled choice by the years it pools", () => {
+    search = new URLSearchParams();
+    renderYears("FY2024 to FY2026");
+    const select = screen.getByLabelText("Fiscal year") as HTMLSelectElement;
+    expect(select.options[0]!.textContent).toBe("FY2024 to FY2026");
+    expect(screen.queryByText("All years")).toBeNull();
+    expect(screen.getByText(/All occupations · every state · FY2024 to FY2026/)).toBeInTheDocument();
+  });
+
+  it("keeps 'All years' where nothing names the pool (the LCA page)", () => {
+    search = new URLSearchParams();
+    renderYears();
+    expect((screen.getByLabelText("Fiscal year") as HTMLSelectElement).options[0]!.textContent).toBe("All years");
+  });
+
+  it("offers the older years, and no city or industry for them", () => {
+    search = new URLSearchParams("state=WA&fy=2015&city=Seattle&sector=51");
+    renderYears("FY2024 to FY2026");
+    expect(screen.getByRole("option", { name: "FY2015" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Worksite city")).toBeDisabled();
+    expect(screen.getByLabelText("Industry")).toBeDisabled();
+    const url = String(fetchMock.mock.calls[0]?.[0]);
+    expect(url).toContain("fy=2015");
+    expect(url).not.toContain("city=");
+    expect(url).not.toContain("sector=");
+  });
+
+  it("drops a city and an industry when an older year is picked", () => {
+    search = new URLSearchParams("state=WA&city=Seattle&sector=51");
+    renderYears("FY2024 to FY2026");
+    fireEvent.change(screen.getByLabelText("Fiscal year"), { target: { value: "2015" } });
+    const to = String(replace.mock.calls[0]?.[0]);
+    expect(to).toContain("fy=2015");
+    expect(to).not.toContain("city=");
+    expect(to).not.toContain("sector=");
+  });
+
+  it("says why, under the filters", () => {
+    search = new URLSearchParams("state=WA&fy=2015");
+    renderYears("FY2024 to FY2026");
+    expect(screen.getByText(/DOL's older files/)).toBeInTheDocument();
+  });
+});

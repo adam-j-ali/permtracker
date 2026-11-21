@@ -13,6 +13,8 @@ const getWageStats = vi.fn();
 const getWageHistogram = vi.fn();
 const getWageByState = vi.fn();
 vi.mock("@/lib/db/publicData", () => ({ getWageStats, getWageHistogram, getWageByState }));
+const permHistoryYear = vi.fn(async (fy: string) => Number(fy) < 2024);
+vi.mock("@/lib/db/wageViews", () => ({ permHistoryYear }));
 
 const { GET } = await import("../route");
 
@@ -58,5 +60,27 @@ describe("GET /api/perm-wages city and industry", () => {
     expect(getWageStats).toHaveBeenCalledWith(
       expect.objectContaining({ socCode: "15-1252", sectorCodes: ["31", "32", "33"] }),
     );
+  });
+});
+
+describe("GET /api/perm-wages for a year from DOL's older files", () => {
+  // Their selections are precomputed by occupation and state only, and the live query reads FY2024 on.
+  it("refuses a city or an industry, and reads no wages", async () => {
+    const city = await call("state=WA&city=Seattle&fy=2015");
+    expect(city.status).toBe(400);
+    expect((await city.json()).error).toMatch(/older files/);
+    expect((await call("soc=15-1132&sector=51&fy=2015")).status).toBe(400);
+    expect(getWageStats).not.toHaveBeenCalled();
+  });
+
+  it("passes a city in a current year", async () => {
+    expect((await call("state=WA&city=Seattle&fy=2025")).status).toBe(200);
+  });
+
+  it("asks whether the year is an older one only when a city or industry would narrow it", async () => {
+    permHistoryYear.mockClear();
+    await call("state=WA&fy=2015");
+    await call("state=WA&city=Seattle");
+    expect(permHistoryYear).not.toHaveBeenCalled();
   });
 });

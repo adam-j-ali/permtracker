@@ -14,6 +14,7 @@ import {
   getWageStats,
 } from "@/lib/db/publicData";
 import { getStateLadders, MIN_CASES_FOR_LADDER } from "@/lib/db/wages";
+import { fiscalYearSpan } from "@/lib/wageLadder";
 import { LadderCombViews } from "@/components/wages/LadderViews";
 import { SplitLadderNote } from "@/components/wages/SplitLadderNote";
 import { binWidth, clampBins, MIN_FOR_MEDIAN } from "@/lib/wageStats";
@@ -81,6 +82,10 @@ const FAQS = [
 
 export default async function SalaryExplorerPage() {
   const options = await getWageFilterOptions(MIN_FOR_MEDIAN);
+  // The no-year choice pools perm_cases (FY2024 on); the picker's older years
+  // stand alone, so the pooled choice names its own years.
+  const pooledLabel =
+    fiscalYearSpan(options.fiscalYears.filter((y) => !options.historyYears.includes(y))) ?? undefined;
 
   // The default view: certified, every occupation, every state, every year.
   const filters = { status: "certified" as const };
@@ -136,6 +141,8 @@ export default async function SalaryExplorerPage() {
             occupations={options.occupations}
             states={options.states}
             fiscalYears={options.fiscalYears}
+            historyYears={options.historyYears}
+            pooledLabel={pooledLabel}
             initial={{ stats, bins, binWidth: width, below, above, byState }}
             placeFilters
           />

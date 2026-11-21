@@ -90,6 +90,83 @@ describe("the PERM readers", () => {
   });
 });
 
+describe("a year from DOL's older PERM files (FY2008 to FY2023)", () => {
+  // The history load precomputes every selection of an older year that holds a case, under the reader's keys and
+  // the program value "perm_history" (scripts/build_wage_views.py, HISTORY_PROGRAM). The live query reads
+  // perm_cases, FY2024 on, so for those years a missing key is a selection with no cases, and nothing live runs.
+  const ROOT = "perm|all|||2015";
+  const older = (selection: Record<string, unknown> | null) =>
+    rowsMock.mockImplementation(async (sql: string, args: string[]) => {
+      if (!isViewRead(sql)) throw new Error(`a live read: ${sql}`);
+      const out: Record<string, unknown>[] = [{ key: ROOT, program: "perm_history", json: JSON.stringify(VIEW) }];
+      if (selection) out.push({ key: args[0], program: "perm_history", json: JSON.stringify(selection) });
+      return out.filter((r) => args.includes(String(r.key)));
+    });
+
+  it("serve its view, with its year's marker, in one read", async () => {
+    older(VIEW);
+    const { getWageStats } = await import("../publicData");
+    expect(await getWageStats({ socCode: "15-1132", state: "WA", fiscalYear: "2015" })).toEqual(STATS);
+    const [sql, args] = rowsMock.mock.calls[0]!;
+    expect(String(sql)).toMatch(/FROM wage_views WHERE key IN \(\?, \?\)/);
+    expect(args).toEqual(["perm|certified|15-1132|WA|2015", ROOT]);
+    expect(oneMock).not.toHaveBeenCalled();
+  });
+
+  it("answer a missing selection as none, with no live query", async () => {
+    older(null);
+    const { getWageStats, getWageHistogram, getWageByState } = await import("../publicData");
+    const f = { socCode: "15-1132", state: "WY", fiscalYear: "2015" };
+    expect((await getWageStats(f)).n).toBe(0);
+    expect(await getWageHistogram(f, 10_000)).toEqual([]);
+    expect(await getWageByState({ socCode: "15-1132", fiscalYear: "2015" }, 30)).toEqual([]);
+    expect(oneMock).not.toHaveBeenCalled();
+  });
+
+  it("never draw bins at another width, and never ask the live query for them", async () => {
+    older(VIEW);
+    const { getWageHistogram } = await import("../publicData");
+    expect(await getWageHistogram({ state: "WA", fiscalYear: "2015" }, 5_000)).toEqual([]);
+    for (const [sql] of rowsMock.mock.calls) expect(isViewRead(sql)).toBe(true);
+  });
+
+  it("run the live query for a year the older files don't hold", async () => {
+    rowsMock.mockImplementation(async (sql: string) => (isViewRead(sql) ? [] : []));
+    oneMock.mockResolvedValue({ n: 42, avg: 1, p5: 1, p25: 1, p50: 1, p75: 1, p95: 1 });
+    const { getWageStats } = await import("../publicData");
+    expect((await getWageStats({ socCode: "11-9041", fiscalYear: "2025" })).n).toBe(42);
+  });
+
+  it("throw when the read fails, rather than answer none or ask the live query", async () => {
+    rowsMock.mockRejectedValue(new Error("database query deadline (20000ms)"));
+    const { getWageStats } = await import("../publicData");
+    await expect(getWageStats({ state: "OR", fiscalYear: "2014" })).rejects.toThrow(/deadline/);
+    expect(oneMock).not.toHaveBeenCalled();
+  });
+
+  it("run the live query on a database with no views yet", async () => {
+    rowsMock.mockRejectedValue(new Error("SQLITE_ERROR: no such table: wage_views"));
+    oneMock.mockResolvedValue({ n: 5, avg: 1, p5: 1, p25: 1, p50: 1, p75: 1, p95: 1 });
+    const { getWageStats } = await import("../publicData");
+    expect((await getWageStats({ state: "WA", fiscalYear: "2025" })).n).toBe(5);
+  });
+
+  it("say whether a year is one of them", async () => {
+    older(null);
+    const { permHistoryYear } = await import("../wageViews");
+    expect(await permHistoryYear("2015")).toBe(true);
+    rowsMock.mockResolvedValue([]);
+    expect(await permHistoryYear("2026")).toBe(false);
+  });
+
+  it("refuse a city or industry narrowing of one, never answer it from perm_cases", async () => {
+    older(null);
+    const { getWageStats } = await import("../publicData");
+    await expect(getWageStats({ state: "WA", city: "Seattle", fiscalYear: "2015" })).rejects.toThrow(/older files/);
+    expect(oneMock).not.toHaveBeenCalled();
+  });
+});
+
 describe("the LCA readers", () => {
   it("serve a view before the older default-view doc and the live query", async () => {
     oneMock.mockImplementation(async (sql: string) =>

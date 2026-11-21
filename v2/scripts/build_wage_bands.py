@@ -38,7 +38,7 @@ import json
 import sys
 
 from build_lca_facets import min_for_median
-from lib_db import Database, query_dicts, write_doc
+from lib_db import Database, query_dicts, read_doc, write_doc
 
 DOC_KEY = "wage_denial_bands"
 FACET_KEY = "wage_filter_options"
@@ -63,6 +63,21 @@ FINE_BANDS = [
     (130_000, 160_000, "$130k to $160k"),
     (160_000, None, "$160k and above"),
 ]
+
+# The fine bands' inner edges: WAGE_BAND_EDGES_FINE in src/lib/wageLadder.ts, which the page's band CASE is built
+# from (src/lib/db/wages.ts); test_history_places_wages.py holds the two together.
+FINE_EDGES = tuple(hi for _lo, hi, _label in FINE_BANDS if hi is not None)
+
+
+def band_floor(wage: float) -> int:
+    """The lower edge of the fine band a yearly wage sits in: the page's `CASE WHEN wage < e ...` in Python."""
+    lo = 0
+    for e in FINE_EDGES:
+        if wage < e:
+            return lo
+        lo = e
+    return lo
+
 
 # The edges `ingest_perm_disclosure.py` uses, kept so the two can be
 # reconciled. Every coarse edge is also a fine edge, which is what makes the
@@ -147,7 +162,7 @@ def build_facets(db: Database, min_cases: int) -> dict:
         raise RuntimeError(
             f"refusing to write empty facets: {len(occ)} occupations, "
             f"{len(st)} states, {len(fy)} fiscal years")
-    return {
+    return with_history_years(db, {
         "minCases": min_cases,
         "occupations": [{"value": str(r["soc_code"]),
                          "label": str(r["soc_title"] or r["soc_code"]),
@@ -155,7 +170,33 @@ def build_facets(db: Database, min_cases: int) -> dict:
         "states": [{"value": str(r["state"]), "label": str(r["state"]),
                     "n": int(r["n"])} for r in st],
         "fiscalYears": [str(r["fiscal_year"]) for r in fy],
-    }
+    })
+
+
+def with_history_years(db: Database, facets: dict) -> dict:
+    """The facets with the older PERM years the history load precomputed (build_wage_views.HISTORY_DOC) added to the
+    year picker, newest first, and named in `historyYears`: the explorer answers those from their views alone, and
+    offers no city or industry filter for them. A database before the first history build adds none."""
+    from build_wage_views import HISTORY_DOC
+    older = [str(y) for y in ((read_doc(db, HISTORY_DOC) or {}).get("years") or [])]
+    # The stored facets may carry an earlier merge: their own years are the ones it didn't add.
+    before = set(facets.get("historyYears") or [])
+    own = [str(y) for y in facets.get("fiscalYears", []) if str(y) not in before]
+    out = {k: v for k, v in facets.items() if k != "historyYears"}
+    out["fiscalYears"] = sorted({*own, *older}, reverse=True)
+    if older:
+        out["historyYears"] = sorted(older, reverse=True)
+    return out
+
+
+def refresh_history_years(db: Database) -> bool:
+    """Add the older years to the year picker's stored facets now, without the quarterly build's whole-table reads.
+    False when there are no stored facets yet (the quarterly build adds the years when it writes them)."""
+    facets = read_doc(db, FACET_KEY)
+    if not facets or not facets.get("fiscalYears"):
+        return False
+    write_doc(db, FACET_KEY, with_history_years(db, facets))
+    return True
 
 
 def main() -> int:
