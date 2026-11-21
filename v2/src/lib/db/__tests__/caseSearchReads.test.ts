@@ -40,7 +40,7 @@ const {
   SLICE_CAP,
   flagLeadIndex,
   getCaseFieldOptions,
-  getPermHistoryYears,
+  getPermHistory,
   lookupUnifiedCase,
   permLeadIndex,
   programForCaseNumber,
@@ -52,6 +52,7 @@ const {
   readPermStage,
   readFlagEmployerStage,
   readFlagStage,
+  sumStateCounts,
   wageSourceCondition,
 } = await import("../caseSearchReads");
 
@@ -1052,19 +1053,21 @@ describe("lookupUnifiedCase and the history", () => {
   });
 });
 
-describe("getPermHistoryYears", () => {
-  const doc = (files: Record<string, unknown>) => [{ json: JSON.stringify({ files }) }];
+describe("getPermHistory", () => {
+  const doc = (body: Record<string, unknown>) => [{ json: JSON.stringify(body) }];
 
   it("sums the history load's case rows by fiscal year, newest first, from one point read", async () => {
     rows.mockResolvedValue(
       doc({
-        "PERM_FY2015.xlsx": { fy: 2015, caseRows: 0 },
-        "PERM_FY2019.xlsx": { fy: 2019, caseRows: 90_000 },
-        "PERM_FY2016.xlsx": { fy: 2016, caseRows: 120_000 },
-        "PERM_FY2019_v2.xlsx": { fy: 2019, caseRows: 10 },
+        files: {
+          "PERM_FY2015.xlsx": { fy: 2015, caseRows: 0 },
+          "PERM_FY2019.xlsx": { fy: 2019, caseRows: 90_000 },
+          "PERM_FY2016.xlsx": { fy: 2016, caseRows: 120_000 },
+          "PERM_FY2019_v2.xlsx": { fy: 2019, caseRows: 10 },
+        },
       }),
     );
-    expect(await getPermHistoryYears()).toEqual([
+    expect((await getPermHistory()).years).toEqual([
       { fiscalYear: "2019", total: 90_010 },
       { fiscalYear: "2016", total: 120_000 },
     ]);
@@ -1073,12 +1076,59 @@ describe("getPermHistoryYears", () => {
   });
 
   it("holds no year the current table owns, and reads a missing or broken doc as nothing loaded", async () => {
-    rows.mockResolvedValue(doc({ "PERM_FY2024.xlsx": { fy: 2024, caseRows: 5 } }));
-    expect(await getPermHistoryYears()).toEqual([]);
+    rows.mockResolvedValue(doc({ files: { "PERM_FY2024.xlsx": { fy: 2024, caseRows: 5 } } }));
+    expect(await getPermHistory()).toEqual({ years: [], byState: [] });
+    rows.mockResolvedValue([]);
+    expect(await getPermHistory()).toEqual({ years: [], byState: [] });
     rows.mockResolvedValue([{ json: "{not json" }]);
-    expect(await getPermHistoryYears()).toEqual([]);
+    expect(await getPermHistory()).toEqual({ years: [], byState: [] });
+  });
+
+  it("throws when the doc can't be read, so the page records the failure and names its fallback", async () => {
     rows.mockRejectedValue(new Error("down"));
-    expect(await getPermHistoryYears()).toEqual([]);
+    await expect(getPermHistory()).rejects.toThrow("down");
+  });
+
+  it("carries the older cases' state counts from the same read, dropping a malformed entry", async () => {
+    rows.mockResolvedValue(
+      doc({
+        files: {},
+        byState: [
+          { state: "CA", total: 300, certified: 280, denied: 10, withdrawn: 10 },
+          { state: "", total: 9, certified: 9, denied: 0, withdrawn: 0 },
+          { state: "TX", total: "many" },
+          { state: "WA", total: 20, certified: 19, denied: 1, withdrawn: 0 },
+        ],
+      }),
+    );
+    expect((await getPermHistory()).byState).toEqual([
+      { state: "CA", total: 300, certified: 280, denied: 10, withdrawn: 10 },
+      { state: "WA", total: 20, certified: 19, denied: 1, withdrawn: 0 },
+    ]);
+    expect(rows).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("sumStateCounts", () => {
+  it("adds the older cases' counts to the current table's, state by state, busiest first", () => {
+    const current = [
+      { state: "WA", total: 50, certified: 45, denied: 3, withdrawn: 2 },
+      { state: "NJ", total: 40, certified: 40, denied: 0, withdrawn: 0 },
+    ];
+    const history = [
+      { state: "WA", total: 20, certified: 19, denied: 1, withdrawn: 0 },
+      { state: "CA", total: 300, certified: 280, denied: 10, withdrawn: 10 },
+    ];
+    expect(sumStateCounts(current, history)).toEqual([
+      { state: "CA", total: 300, certified: 280, denied: 10, withdrawn: 10 },
+      { state: "WA", total: 70, certified: 64, denied: 4, withdrawn: 2 },
+      { state: "NJ", total: 40, certified: 40, denied: 0, withdrawn: 0 },
+    ]);
+  });
+
+  it("is the current counts alone before the history load", () => {
+    const current = [{ state: "WA", total: 50, certified: 45, denied: 3, withdrawn: 2 }];
+    expect(sumStateCounts(current, [])).toEqual(current);
   });
 });
 
