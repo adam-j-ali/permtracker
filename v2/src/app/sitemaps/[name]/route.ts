@@ -30,6 +30,7 @@ export async function GET(
   if (!name.endsWith(".xml")) notFound();
   const key = name.slice(0, -4);
 
+  let briefly = false;
   const entries =
     key === "pages" ? await pagesEntries() : key === "groups" ? await groupEntries() : key === "audit" ? await auditEntries() : await (async () => {
       const parsed = parseChildName(key);
@@ -41,7 +42,12 @@ export async function GET(
         if (parsed.kind === "other-employer") return await otherEmployerEntries(parsed.chunk);
         return await entityEntries(parsed.kind, parsed.chunk);
       } catch (e) {
-        // A chunk past the family's last one was never listed: a 404.
+        // A chunk past the family's last one: the first one past may still be named by the hour-cached index
+        // after the count drops, so it's an empty urlset, cached briefly; any further one was never listed: a 404.
+        if (e instanceof ChunkNotListed && e.justPast) {
+          briefly = true;
+          return [];
+        }
         if (e instanceof ChunkNotListed) notFound();
         throw e;
       }
@@ -50,7 +56,9 @@ export async function GET(
   return new Response(urlsetXml(entries), {
     headers: {
       "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=86400",
+      "Cache-Control": briefly
+        ? "public, s-maxage=3600, stale-while-revalidate=3600"
+        : "public, s-maxage=86400, stale-while-revalidate=86400",
     },
   });
 }
