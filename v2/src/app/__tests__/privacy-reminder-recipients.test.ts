@@ -26,14 +26,21 @@ describe("the privacy page and a case's second reminder recipient", () => {
 
   it("says the address is emailed once to confirm, naming who asked and the case, or not the case", () => {
     expect(section).toContain("we email it once to ask it to confirm");
-    expect(section).toContain("calls you a PERM Tracker user");
-    expect(section).toContain("by its employer and job title, or calls it a PERM case when either one reads like a web or email address");
+    expect(section).toContain("That email names you by the name on your account, cut short if it's long");
+    expect(section).toContain(
+      "It calls you a PERM Tracker user when your account has no name, or when the name reads like a web or email address or a phone number",
+    );
+    expect(section).toContain(
+      "by its employer and job title, or calls it a PERM case when either one reads like a web or email address or a phone number",
+    );
   });
 
   it("says the reminders go only after it confirms, and name the employer, the job title and the deadlines only", () => {
     expect(section).toContain("Only after it confirms do we send it that case's deadline reminders");
     expect(section).toContain("They name the employer, the job title and the deadlines only");
     expect(section).toContain("not even your name");
+    // The reminders hold the case's words back by the same rule as the invitation, on every send.
+    expect(section).toContain("They call the case a PERM case by the same rule, checked each time one is sent");
   });
 
   it("says the reminders follow the owner's master, deadline reminders and per-deadline switches", () => {
@@ -48,25 +55,38 @@ describe("the privacy page and a case's second reminder recipient", () => {
     expect(section).toContain("Either one deletes the address");
   });
 
-  it("says either link puts the address on a refusal list kept as a keyed one-way hash", () => {
-    expect(section).toContain("refuses every account's invitations to it from then on");
+  it("says the invitation's link refuses every account, and a reminder's Stop only yours, on a list kept as a keyed hash", () => {
+    expect(section).toContain("The invitation's link puts the address on a list that refuses every account's invitations to it from then on");
+    expect(section).toContain("A reminder's Stop link puts it on the list for your account only");
+    expect(section).not.toContain("Either link also puts the address on a list");
     expect(section).toContain("keyed one-way hash of each address");
     expect(section).toContain("can't be read back as addresses");
+    expect(section).toContain("A refusal of every account has no time limit. A refusal of your account is deleted with your account");
   });
 
-  it("says one account can invite one address twice in all, counted by the same hash", () => {
+  it("says a refused address gets one plain answer, and each try counts toward the day's invitations", () => {
+    expect(section).toContain(
+      "you get one plain answer that doesn't say which: an address that refused, one we can't email, and one you've invited twice all look the same",
+    );
+    expect(section).toContain(`Each try counts toward the {REMINDER_INVITES_PER_ACCOUNT.limit} invitations your account can send a day`);
+    expect(page).toContain('import { REMINDER_INVITES_PER_ACCOUNT } from "@convex/lib/alertBudgets"');
+  });
+
+  it("says one account can invite one address twice in all, and what's kept to count them", () => {
     expect(section).toContain("Your account can invite the same address twice in all, even if an invitation lapsed or you removed it");
-    expect(section).toContain("the same keyed hash of the address with your account, never the address");
+    expect(section).toContain("To count them, we keep the same keyed hash of the address with your account, never the address");
+    expect(section).toContain("We also keep the number of invitations and the date of the last one. It's all deleted with your account");
   });
 
   it("says any email still waiting to be resent goes with the address", () => {
     expect(section).toContain("When the address goes, so does any email to it still waiting to be resent");
   });
 
-  it("lists the refusal list in the retention schedule", () => {
+  it("lists the refusal list in the retention schedule, each kind for its own time", () => {
     expect(page).toContain(
-      "<strong>Addresses that asked not to get a case's deadline reminders</strong> are kept as a keyed one-way hash, with no time limit, so no account can invite them again",
+      "<strong>Addresses that asked not to get a case's deadline reminders</strong> are kept as a keyed one-way hash. One that said not to be invited again is kept with no time limit, so no account can invite it again. One that stopped an account's reminders is kept until that account is deleted, so that account can't invite it again",
     );
+    expect(page).not.toContain("with no time limit, so no account can invite them again");
   });
 
   it("says how long the address is kept, and that an unconfirmed invitation goes after its days", () => {

@@ -33,4 +33,10 @@ describe("the privacy page and deleted cases", () => {
     expect(page).toContain('import { DELETED_CASE_DAYS } from "@convex/lib/deletedCases"');
     expect(retention).not.toMatch(/\b30 days so you can restore/);
   });
+
+  it("says in both places that a record of who deleted the case and when stays until the account is deleted", () => {
+    for (const part of [caseData, retention]) {
+      expect(part).toMatch(/After the copy is erased, we keep a record that your account deleted the case and when, until you delete your account/);
+    }
+  });
 });
