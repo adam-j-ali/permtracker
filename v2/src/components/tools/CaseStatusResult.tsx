@@ -59,7 +59,7 @@ import {
   statusCheckAge,
   type Wall,
 } from "@/lib/casePosition";
-import { formatAsOf, formatMonth } from "@/lib/dolFormat";
+import { formatAsOf, formatDay, formatMonth } from "@/lib/dolFormat";
 import { PendingCensus } from "@/components/queue/PendingCensus";
 import { StageBar, StageLegend } from "@/components/queue/StageBar";
 import { groupByStage, prettyStatus } from "@/components/queue/stages";
@@ -1406,9 +1406,20 @@ export function WontSay({ isFinal }: { isFinal: boolean }) {
 
 
 /** The job as DOL's PERM file prints it, and the wage request it names with that determination's level and needs. */
-function PermJobRecord({ detail, state }: { detail: PermCaseDetail; state: string | null }) {
+export function PermJobRecord({ detail, state }: { detail: PermCaseDetail; state: string | null }) {
   const industry = naicsTitle(detail.naics);
   const pwd = detail.pwd;
+  // An older case's own wage request, as its file printed it. Its number is in DOL's older form, which the case
+  // lookup doesn't know, so it's shown, never linked.
+  const older = detail.olderPwd;
+  const olderLevel = older?.level ? (/^level\b/i.test(older.level) ? older.level : `Level ${older.level}`) : null;
+  const olderDates = older?.determined
+    ? [`Made ${formatDay(older.determined)}`, older.expires ? `valid until ${formatDay(older.expires)}` : null]
+        .filter(Boolean)
+        .join(", ")
+    : older?.expires
+      ? `Valid until ${formatDay(older.expires)}`
+      : null;
   const need = pwd
     ? [pwd.education && pwd.education.toLowerCase() !== "none" ? pwd.education : null, pwd.experienceMonths ? `${pwd.experienceMonths} months of experience` : null]
         .filter(Boolean)
@@ -1428,6 +1439,10 @@ function PermJobRecord({ detail, state }: { detail: PermCaseDetail; state: strin
           },
         ]
       : []),
+    ...(older?.number ? [{ label: "Its wage request", raw: true, value: <span className="font-mono">{older.number}</span> }] : []),
+    ...(older?.wage ? [{ label: "Prevailing wage DOL set", value: `$${formatInt(Math.round(older.wage))} a year` }] : []),
+    ...(olderLevel ? [{ label: "Wage level DOL set", value: olderLevel }] : []),
+    ...(olderDates ? [{ label: "Wage determination", value: olderDates }] : []),
     ...(pwd?.level ? [{ label: "Wage level DOL set", value: `Level ${pwd.level}` }] : []),
     ...(need ? [{ label: "What the job requires", value: need }] : []),
     ...(detail.jobEducation && !need ? [{ label: "Education the job requires", value: detail.jobEducation }] : []),
