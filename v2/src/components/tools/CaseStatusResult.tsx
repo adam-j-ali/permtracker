@@ -987,9 +987,11 @@ function TheDecision({
  */
 function WageLadder({ wage }: { wage: CaseWageContext }) {
   const row = wage.inState ?? wage.occupation;
+  // An older case's peers are its own fiscal year's: the label says so wherever it names them.
+  const year = wage.fiscalYear ? `, FY${wage.fiscalYear}` : "";
   const scope = wage.inState
-    ? `${wage.socTitle ?? wage.socCode} in ${wage.state}`
-    : (wage.socTitle ?? wage.socCode);
+    ? `${wage.socTitle ?? wage.socCode} in ${wage.state}${year}`
+    : `${wage.socTitle ?? wage.socCode}${year}`;
 
   const { p5, p25, p50, p75, p95 } = row;
   // The rail needs both ends and a middle. Without them there is no axis to
@@ -1019,9 +1021,20 @@ function WageLadder({ wage }: { wage: CaseWageContext }) {
           . Certified cases only: a denied application&apos;s offered wage was
           never agreed to by anybody, so putting it in the ladder would price
           the job at a figure no employer had to pay.
+          {wage.fiscalYear ? (
+            <>
+              {" "}
+              The cases are the ones DOL certified in FY{wage.fiscalYear}, the year it decided this one, so their pay and
+              their occupation codes are that year&apos;s.
+            </>
+          ) : null}
         </>
       }
-      source={`DOL quarterly disclosure files · ${formatInt(row.n)} certified cases`}
+      source={
+        wage.fiscalYear
+          ? `DOL's FY${wage.fiscalYear} disclosure file · ${formatInt(row.n)} certified cases decided in FY${wage.fiscalYear}`
+          : `DOL quarterly disclosure files · ${formatInt(row.n)} certified cases`
+      }
     >
       <ChartTips label={`Where this wage sits among certified ${scope} wages`} className="pb-9 pt-9">
         {/* The subject rides above the rail so a wage at either end is never
