@@ -78,8 +78,12 @@ export interface SocTitlePage {
   topFilings: number;
 }
 
-/** Every title with a page of its own, busiest first. */
-export async function getSocTitlePages(): Promise<{ pageMin: number; pages: SocTitlePage[] } | null> {
+export interface SocTitlePagesDoc {
+  pageMin: number;
+  pages: SocTitlePage[];
+}
+
+async function loadTitlePages(): Promise<SocTitlePagesDoc | null> {
   const d = await doc<{ pageMin: number; pages: [string, string, number, string | null, number][] }>("soc_title_pages");
   if (!d) return null;
   return {
@@ -92,6 +96,30 @@ export async function getSocTitlePages(): Promise<{ pageMin: number; pages: SocT
       topFilings: Number(topFilings) || 0,
     })),
   };
+}
+
+let pagesCache: { at: number; value: Promise<SocTitlePagesDoc | null> } | null = null;
+
+/**
+ * Every title with a page of its own, busiest first: the sitemap lists them, the A to Z directory and the finder
+ * link them, and every occupation page links its own. The doc is 265 KB (3,726 titles, Nov 2026), so it's held in
+ * each web process for the codes doc's window rather than read on every occupation page build. A failed read
+ * throws, and is dropped so the next caller reads again.
+ */
+export function getSocTitlePages(): Promise<SocTitlePagesDoc | null> {
+  if (pagesCache && Date.now() - pagesCache.at < TTL_MS) return pagesCache.value;
+  const value = loadTitlePages();
+  pagesCache = { at: Date.now(), value };
+  value.catch(() => {
+    if (pagesCache?.value === value) pagesCache = null;
+  });
+  return value;
+}
+
+/** The title pages whose main code is `soc`, busiest first: an occupation page links each one. */
+export async function titlePagesForCode(soc: string): Promise<SocTitlePage[]> {
+  const d = await getSocTitlePages();
+  return (d?.pages ?? []).filter((p) => p.topSoc === soc);
 }
 
 interface KeyRow {
@@ -234,6 +262,7 @@ let codeIndexCache: { codes: Map<string, SocCode>; index: FuzzyIndex<SocCode> } 
  */
 export function resetSocCaches(): void {
   codesCache = null;
+  pagesCache = null;
   keysCache = null;
   codeIndexCache = null;
 }

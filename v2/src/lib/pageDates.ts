@@ -88,6 +88,8 @@ export const TEMPLATE_DAY: Readonly<Record<string, string>> = {
   "/perm-wages/browse/[letter]": "2026-10-15",
   // Oct 29 2026: the job title pages are new.
   "/soc-codes/[title]": "2026-10-29",
+  // Nov 20 2026: the job title A to Z is new.
+  "/soc-codes/browse/[letter]": "2026-11-20",
   // Oct 28 2026: the form pages are new.
   "/uscis-processing-times/[form]": "2026-10-28",
   "/visa-bulletin/[month]": "2026-10-17",

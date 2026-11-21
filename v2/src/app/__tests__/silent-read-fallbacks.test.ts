@@ -43,7 +43,7 @@ const DB_REMAINING: Record<string, number> = {
   "src/lib/db/entities.ts": 1,
   "src/lib/db/entityBrowse.ts": 1,
   "src/lib/db/nameSuggest.ts": 1,
-  "src/lib/db/socTitles.ts": 2,
+  "src/lib/db/socTitles.ts": 3,
 };
 
 /**

@@ -321,6 +321,7 @@ const OTHER_PAGES: readonly SitePage[] = [
   { href: "/perm-employers/browse", name: "Browse A to Z" },
   { href: "/perm-attorneys/browse", name: "Browse A to Z" },
   { href: "/perm-wages/browse", name: "Browse A to Z" },
+  { href: "/soc-codes/browse", name: "Browse A to Z" },
 ];
 
 /** Every page's one name, by path. */
