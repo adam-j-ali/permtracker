@@ -344,6 +344,18 @@ describe("the plain-text rule itself", () => {
     }
   });
 
+  it("fails a numeric web address, four numbers joined by dots", () => {
+    for (const s of ["verify at 5.9.12.34", "1.1.1.1", "Refund 203.0.113.250 today", "１.１.１.１"]) {
+      expect(isPlainText(s), s).toBe(false);
+      expect(safeCaseLine("Robotics Engineer", s), s).toBe(A_PERM_CASE);
+      expect(inviterName(s, undefined), s).toBe(SOMEONE);
+    }
+    // Three numbers, or four with a space after a dot, aren't an address.
+    for (const s of ["Release 2.0.1", "Level 3, Suite 400", "Version 1. 2. 3. 4"]) {
+      expect(isPlainText(s), s).toBe(true);
+    }
+  });
+
   it("hides an inviter whose name holds a phone number or a look-alike link", () => {
     expect(inviterName("Call 800-555-0199", undefined)).toBe(SOMEONE);
     expect(inviterName("irs。gov", undefined)).toBe(SOMEONE);
