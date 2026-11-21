@@ -10,7 +10,7 @@ import { UnifiedCaseSearch } from "@/components/tools/UnifiedCaseSearch";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { SECTOR_GROUPS, sectorRange } from "@/lib/naicsSectors";
 import { getMeta } from "@/lib/db/cases";
-import { SLICE_CAP, getCaseFieldOptions, getPermHistoryYears } from "@/lib/db/caseSearchReads";
+import { SLICE_CAP, getCaseFieldOptions, getPermHistory, sumStateCounts } from "@/lib/db/caseSearchReads";
 import { formatInt } from "@/lib/format";
 import { getLiveRemainderSummary } from "@/lib/db/liveCases";
 import { getPwdSummary, getPwdDisclosureSummary } from "@/lib/db/pwdCases";
@@ -57,7 +57,7 @@ export const metadata: Metadata = withSocialCard({
 export const revalidate = 86400;
 
 export default async function CaseSearchPage() {
-  const [permMeta, permLive, pwd, pwdFile, lca, lcaFile, seasonal, seasonalFiles, historyYears, fieldOptions] = await Promise.all([
+  const [permMeta, permLive, pwd, pwdFile, lca, lcaFile, seasonal, seasonalFiles, history, fieldOptions] = await Promise.all([
     getMeta().catch(softFail("case-search/page.getMeta", null)),
     getLiveRemainderSummary().catch(softFail("case-search/page.getLiveRemainderSummary", null)),
     getPwdSummary().catch(softFail("case-search/page.getPwdSummary", null)),
@@ -66,10 +66,11 @@ export default async function CaseSearchPage() {
     getLcaDisclosureSummary().catch(softFail("case-search/page.getLcaDisclosureSummary", null)),
     getSeasonalSummary().catch(softFail("case-search/page.getSeasonalSummary", null)),
     getSeasonalPublishedSummary().catch(softFail("case-search/page.getSeasonalPublishedSummary", [])),
-    getPermHistoryYears(),
+    getPermHistory().catch(softFail("case-search/page.getPermHistory", { years: [], byState: [] })),
     getCaseFieldOptions(),
   ]);
-  // DOL's FY2016 to FY2023 files, held in their own table; empty until loaded.
+  // DOL's FY2008 to FY2023 files, held in their own table; empty until loaded.
+  const historyYears = history.years;
   const historyTotal = historyYears.reduce((n, y) => n + y.total, 0);
   const firstYear = historyYears.at(-1)?.fiscalYear ?? null;
 
@@ -124,11 +125,14 @@ export default async function CaseSearchPage() {
 
   // Sorted the way a reader scans them: the states by volume, because the
   // first thing anyone looks for is their own and the big ones are where most
-  // people are; the years newest first.
-  const stateOptions = (permMeta?.byState ?? [])
+  // people are; the years newest first. A state search reads both PERM tables,
+  // so its count is both: the history load counts the older table's states
+  // once (a case the current table also holds is counted there), and the two
+  // add here with no read of either table. Without the current counts there's
+  // no list, as before: the older half alone would undercount every state.
+  const stateOptions = (permMeta ? sumStateCounts(permMeta.byState, history.byState) : [])
     .filter((s) => s.state)
-    .map((s) => ({ code: s.state, total: s.total }))
-    .sort((a, b) => b.total - a.total);
+    .map((s) => ({ code: s.state, total: s.total }));
   // The current file's years and the history table's, one list: a year is in
   // exactly one table, and the route reads whichever holds it.
   const currentYears = (permMeta?.byFiscalYear ?? [])
