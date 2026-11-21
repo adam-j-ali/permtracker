@@ -215,6 +215,8 @@ export interface WageBandSeries {
   /** A fiscal year, or "all" for the pooled window. */
   fiscalYear: string;
   bands: WageBandRate[];
+  /** A year from DOL's older files (FY2008 to FY2023), outside the pooled window. */
+  history?: boolean;
 }
 
 export function bandLabel(from: number, to: number | null): string {
