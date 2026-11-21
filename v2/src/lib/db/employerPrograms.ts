@@ -3,9 +3,10 @@ import { seasonalApplicationSql } from "@/lib/wageRequestRanges";
 
 import { cache } from "react";
 
-import { medianOffset, type ProgramLine } from "../employerPrograms";
+import { NEWER_FROM_FY, medianOffset, type ProgramLine } from "../employerPrograms";
 import { one } from "./client";
 import { employerMatch, type EmployerMatch } from "./employerSlugs";
+import { employerOlderFiles } from "./olderFiles";
 import { ANNUAL_WAGE_SQL, YEARLY_BAND } from "@/lib/wageFormat";
 import { PWD_VISA_CLASS } from "@/lib/changeProgram";
 import { softFail } from "@/lib/softRead";
@@ -17,8 +18,12 @@ import { softFail } from "@/lib/softRead";
  * from the nightly `employer_page_map`) on the table's employer index (`pwd_cases_emp`, `lca_cases_emp`, `pwd_case_status_emp`,
  * `lca_case_status_emp`), so the cost is the employer's rows and nothing
  * else: for the largest H-1B filer that is a few thousand LCA rows sorted
- * once for the median, on a page that regenerates monthly. The PERM line is
- * not read here; the employer page already holds it from `perm_entities`.
+ * once for the median, on a page that regenerates monthly.
+ *
+ * The published tables start at FY2024 (PERM) and FY2020 (LCAs); DOL's older
+ * yearly files reach back to FY2008, beside the page's charts from FY2008. Their
+ * share comes from two small tables counted when those files load
+ * (`employerOlderFiles`, one read), never from the older tables themselves.
  */
 
 const [MIN_ANNUAL, MAX_ANNUAL] = YEARLY_BAND.flag;
@@ -147,15 +152,34 @@ export interface EmployerPrograms {
   match: Pick<EmployerMatch, "basis" | "spellings">;
 }
 
+/**
+ * A PERM or LCA line with DOL's older yearly files added to its published count. Its median reads the newer files
+ * only, so the line says from which fiscal year. Before the older counts are built (`older` null) nothing is added and
+ * `olderPublished` stays unset, so the ledger claims no older years.
+ */
+function withOlder(line: ProgramLine, older: number | null, fromFy: number): ProgramLine {
+  if (older === null) return { ...line, medianFromFy: fromFy };
+  return { ...line, published: line.published + older, olderPublished: older, medianFromFy: fromFy };
+}
+
 /** Every program for one employer, over its spellings. */
 export const getEmployerPrograms = cache(async (slug: string): Promise<EmployerPrograms | null> => {
   const match = await employerMatch(slug);
   if (!match) return null;
-  const [perm, pwd, lca, seasonal] = await Promise.all([
+  const [perm, pwd, lca, seasonal, older] = await Promise.all([
     programLine("perm", match),
     programLine("pwd", match),
     programLine("lca", match),
     seasonalLine(match).catch(softFail("employerPrograms.seasonalLine", null)),
+    // PERM FY2008 to FY2023 and LCAs FY2008 to FY2019, counted when DOL's older files load: one read, shared with
+    // the LCA panel. No catch: a ledger without them would print the newer files alone as every year.
+    employerOlderFiles(slug),
   ]);
-  return { perm, pwd, lca, seasonal, match: { basis: match.basis, spellings: match.spellings } };
+  return {
+    perm: withOlder(perm, older ? older.perm : null, NEWER_FROM_FY.perm),
+    pwd,
+    lca: withOlder(lca, older ? older.lca : null, NEWER_FROM_FY.lca),
+    seasonal,
+    match: { basis: match.basis, spellings: match.spellings },
+  };
 });

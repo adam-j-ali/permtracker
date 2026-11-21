@@ -181,6 +181,8 @@ const ISOLATED_UNIT_FILES = [
   "src/lib/db/__tests__/clientRoute.test.ts",
   // Same again, and it sets the withheld-name settings before each import.
   "src/lib/db/__tests__/clientWithheld.test.ts",
+  // Added 2026-11-21, the same way: a withheld employer's older spellings, through rows().
+  "src/lib/db/__tests__/olderSpellingsWithheld.test.ts",
   // Same again, and it stubs NODE_ENV before each import.
   "src/lib/db/__tests__/clientDevTag.test.ts",
   // Added 2026-09-27. Each mocks ./client (and caseLookupHistory also mocks
@@ -210,6 +212,9 @@ const ISOLATED_UNIT_FILES = [
   // Added 2026-10-03. Both mock ../client and set per-test answers.
   "src/lib/db/__tests__/seasonalCases.test.ts",
   "src/lib/db/__tests__/employerProgramsSeasonal.test.ts",
+  // Added 2026-11-21. Mock ../client with ../employerSlugs or ../olderFiles, and set per-test answers.
+  "src/lib/db/__tests__/employerProgramsOlder.test.ts",
+  "src/lib/db/__tests__/olderFiles.test.ts",
   "src/lib/db/__tests__/employerSlugs.test.ts",
   "src/lib/db/__tests__/otherEmployers.test.ts",
   "src/lib/db/__tests__/firmPrograms.test.ts",

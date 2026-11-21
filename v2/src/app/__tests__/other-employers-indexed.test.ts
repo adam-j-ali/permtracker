@@ -69,6 +69,16 @@ describe("pages for employers with no PERM record", () => {
     expect(calls.filter((c) => !/\bmatch\b/.test(c))).toEqual([]);
   });
 
+  it("show an LCA filer its H-1B LCAs year by year, FY2008 on, so one with only older LCAs has its history", () => {
+    // The nightly map folds DOL's FY2008 to FY2019 spellings in (history_lca_spellings), so an employer whose LCAs
+    // are all in the older files has a page; its years come from the same small table the PERM page's chart reads.
+    const page = source("app/(site)/(public)/perm-employers/[slug]/page.tsx");
+    const body = page.slice(page.indexOf("async function OtherEmployerPage("), page.indexOf("export async function generateStaticParams("));
+    expect(body).toMatch(/record\.lca \? lcaYears\(slug\)\.catch\(softFail\("perm-employers\/\[slug\]\/page\.lcaYears", \[\]\)\) : \[\]/);
+    expect(body).toMatch(/<LcaYears years=\{lcaYearRows\} className="mt-8" \/>/);
+    expect(source("../scripts/build_employer_map.py")).toContain('HISTORY_SPELLINGS = "history_lca_spellings"');
+  });
+
   it("carry a social card resolved in the page's own order, so no listed page advertises a 404 image", () => {
     const og = source("app/(site)/(public)/perm-employers/[slug]/opengraph-image.tsx");
     const order = ["resolveEntity(", "liveEmployerRecord(", "otherEmployerRecord("].map((s) => og.indexOf(s));

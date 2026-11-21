@@ -31,6 +31,12 @@ table, the ONE page its rows belong to, by `program_key` equality
 USCIS's H-1B approvals and the lottery FOIA rows map to pages too, but never
 make a page on their own: a page needs a filing we hold.
 
+DOL's FY2008 to FY2019 H-1B files are filings we hold too. Their table changes
+only when one of them loads, so their spellings are counted then, into
+`history_lca_spellings` (lca_history_totals.py), and read here as LCAs: an
+employer with only older LCAs gets a page, and an older spelling of any
+employer reaches its page.
+
 Counts in `employer_other_index` are published rows plus live rows DOL hasn't
 published yet, by program, decided by case-number prefix (a P-400 wage
 request is H-2B, not a PERM wage request). Both tables are written as diffs,
@@ -48,7 +54,8 @@ page get one; a spelling that lands on no page maps to nothing.
 
 Usage:
     python3 scripts/build_employer_map.py            # rebuild all three tables
-    python3 scripts/build_employer_map.py --dry-run  # read and report only
+    python3 scripts/build_employer_map.py --dry-run  # read, and report what a run would write and how long
+    python3 scripts/build_employer_map.py --max-writes 100000  # write part; the next run writes the rest
 """
 from __future__ import annotations
 
@@ -140,6 +147,10 @@ CASE_SOURCES = [
     ("lca_case_status", "employer_name", "filing_date", "fetched_at", "lca", ("lca_case_numbers",)),
     ("seasonal_case_status", "employer_name", "filing_date", "fetched_at", "h2a", ("seasonal_cases", "pwd_cases")),
 ]
+# DOL's FY2008 to FY2019 H-1B files (`lca_cases_history`) change only when one loads, so their spellings are counted
+# then, into this small table in the main database (lca_history_totals.py), and read here: never the older table
+# itself, every night. An employer with only older LCAs gets its page from them.
+HISTORY_SPELLINGS = "history_lca_spellings"
 # Aggregate tables: they map to a page, they never make one.
 NAME_SOURCES = [
     ("uscis_h1b_employers", "employer"),
@@ -239,6 +250,7 @@ def read_sources(db: Database) -> dict[str, dict]:
             fold(slugs, slug, name, n, program, day(first),
                  (et_date(last) or day(last)) if live else day(last))
         log(f"  {table}: {len(rows):,} slug and name pairs")
+    read_history_spellings(db, slugs)
     for table, name_col in NAME_SOURCES:
         try:
             rows = []
@@ -255,6 +267,29 @@ def read_sources(db: Database) -> dict[str, dict]:
             fold(slugs, slug, name, 0, None, None, None)
         log(f"  {table}: {len(rows):,} slug and name pairs")
     return slugs
+
+
+def read_history_spellings(db: Database, slugs: dict[str, dict]) -> None:
+    """Fold the older H-1B files' spellings in, as LCAs: their counts, first received day and last decided day.
+
+    Built at the older files' load, without the cases `lca_cases` also holds, so nothing here is counted twice.
+    Until its first build the table isn't there, and the map is what it was without it."""
+    try:
+        rows = []
+        for lo, hi in SLUG_WINDOWS:
+            where, args = slug_window("employer_slug", lo, hi)
+            rows += rows_of(db.execute(
+                "SELECT employer_slug, employer_name, n, first_received, last_decided "
+                f"FROM {HISTORY_SPELLINGS} WHERE {where}", args))
+    except Exception as e:  # noqa: BLE001 (the client raises RuntimeError, SQLite OperationalError)
+        if missing_table(e):
+            log(f"  {HISTORY_SPELLINGS}: not built yet, skipped "
+                "(python3 scripts/ingest_flag_disclosure.py --program lca --history-totals)")
+            return
+        raise
+    for slug, name, n, first, last in rows:
+        fold(slugs, slug, name, n, "lca", day(first), day(last))
+    log(f"  {HISTORY_SPELLINGS}: {len(rows):,} slug and name pairs (the FY2008 to FY2019 files)")
 
 
 def read_pages(db: Database) -> dict:
@@ -501,16 +536,53 @@ def norm(row: list, cols: list[str]) -> tuple:
     return tuple(int(v or 0) if c in ints else (None if v is None else str(v)) for c, v in zip(cols, row))
 
 
-def write_diff(db: Database, table: str, cols: list[str], want: list[list]) -> tuple[int, int, list[str]]:
+DELETE_CHUNK = 500
+# About how long one write request takes on the server, for the dry run's estimate (a guess until a run measures it).
+WRITE_REQUEST_S = 0.25
+
+
+def diff(db: Database, table: str, cols: list[str], want: list[list]) -> tuple[list[list], list[str]]:
+    """(rows to write, keys to remove): what differs between `want` and what the table holds. A table not made yet
+    holds nothing."""
     stored = {}
-    for r in rows_of(db.execute(f"SELECT {','.join(cols)} FROM {table}")):
+    try:
+        got = rows_of(db.execute(f"SELECT {','.join(cols)} FROM {table}"))
+    except Exception as e:  # noqa: BLE001 (the client raises RuntimeError, SQLite OperationalError)
+        if not missing_table(e):
+            raise
+        got = []
+    for r in got:
         n = norm(list(r), cols)
         stored[n[0]] = n
     changed = [w for w in want if stored.get(w[0]) != norm(w, cols)]
     wanted = {w[0] for w in want}
     gone = [k for k in stored if k not in wanted]
-    for i in range(0, len(gone), 500):
-        chunk = gone[i:i + 500]
+    return changed, gone
+
+
+def diff_counts(db: Database, table: str, cols: list[str], want: list[list]) -> tuple[int, int]:
+    """How many rows a run would write and remove, writing nothing: the dry run's count."""
+    changed, gone = diff(db, table, cols, want)
+    return len(changed), len(gone)
+
+
+def write_plan(counts: dict[str, tuple[int, int]], pause: float) -> dict:
+    """The dry run's estimate for {table: (rows to write, rows to remove)}: rows, write requests and minutes."""
+    requests = sum(-(-gone // DELETE_CHUNK) + -(-changed // WRITE_CHUNK) for changed, gone in counts.values())
+    rows = sum(changed + gone for changed, gone in counts.values())
+    return {"rows": rows, "requests": requests, "minutes": round(requests * (pause + WRITE_REQUEST_S) / 60, 1)}
+
+
+def write_diff(db: Database, table: str, cols: list[str], want: list[list],
+               limit: int | None = None) -> tuple[int, int, list[str]]:
+    """Bring the table to `want`: removals first, then changed rows, each request small. `limit` caps the rows this
+    run writes and removes; the next run writes what's left, since it writes only what still differs."""
+    changed, gone = diff(db, table, cols, want)
+    if limit is not None:
+        gone = gone[:max(0, limit)]
+        changed = changed[:max(0, limit - len(gone))]
+    for i in range(0, len(gone), DELETE_CHUNK):
+        chunk = gone[i:i + DELETE_CHUNK]
         db.execute(f"DELETE FROM {table} WHERE {cols[0]} IN ({','.join('?' for _ in chunk)})", chunk)
         time.sleep(WRITE_PAUSE_S)
     marks = "(" + ",".join("?" * len(cols)) + ")"
@@ -550,6 +622,9 @@ def main() -> int:
                     help="with --dry-run: the N pages that gather the most spellings")
     ap.add_argument("--pause", type=float, default=WRITE_PAUSE_S, metavar="SECONDS",
                     help="pause between write requests; the first full build writes about 515,000 rows")
+    ap.add_argument("--max-writes", type=int, metavar="ROWS",
+                    help="write and remove at most this many rows across the three tables, then stop; the next run "
+                         "writes what's left. For a first build bigger than the sweep's time (the dry run says).")
     args = ap.parse_args()
     WRITE_PAUSE_S = max(0.0, args.pause)
     started = time.time()
@@ -574,12 +649,29 @@ def main() -> int:
         for page, members in sorted(by_page.items(), key=lambda kv: -len(kv[1]))[:args.biggest]:
             log(f"  {len(members):>4} spellings -> {members[0][2]} {page!r}: "
                 + ", ".join(m[0] for m in members[:6]))
+        # What a real run would write, so a first build after a big change (DOL's older H-1B files joining the map)
+        # can be checked against the sweep's time before it runs, and run in parts with --max-writes if it won't fit.
+        counts = {MAP: diff_counts(db, MAP, MAP_COLS, rows), FIRM_MAP: diff_counts(db, FIRM_MAP, FIRM_MAP_COLS, firm_rows),
+                  INDEX: diff_counts(db, INDEX, INDEX_COLS, index_rows)}
+        plan_ = write_plan(counts, WRITE_PAUSE_S)
+        log("  would write: " + "; ".join(f"{t} {c:,} rows, remove {g:,}" for t, (c, g) in counts.items())
+            + f"; {plan_['rows']:,} rows in {plan_['requests']:,} requests, about {plan_['minutes']} minutes of writing "
+            f"at --pause {WRITE_PAUSE_S} (plus the reads above, {time.time() - started:.0f}s)")
         return 0
     for ddl in DDL:
         db.execute(ddl)
-    m_changed, m_gone, _ = write_diff(db, MAP, MAP_COLS, rows)
-    f_changed, f_gone, _ = write_diff(db, FIRM_MAP, FIRM_MAP_COLS, firm_rows)
-    i_changed, i_gone, page_slugs = write_diff(db, INDEX, INDEX_COLS, index_rows)
+    budget = args.max_writes
+    m_changed, m_gone, _ = write_diff(db, MAP, MAP_COLS, rows, budget)
+    if budget is not None:
+        budget = max(0, budget - m_changed - m_gone)
+    f_changed, f_gone, _ = write_diff(db, FIRM_MAP, FIRM_MAP_COLS, firm_rows, budget)
+    if budget is not None:
+        budget = max(0, budget - f_changed - f_gone)
+    i_changed, i_gone, page_slugs = write_diff(db, INDEX, INDEX_COLS, index_rows, budget)
+    left = None
+    if args.max_writes is not None:
+        left = sum(sum(diff_counts(db, t, c, w)) for t, c, w in
+                   ((MAP, MAP_COLS, rows), (FIRM_MAP, FIRM_MAP_COLS, firm_rows), (INDEX, INDEX_COLS, index_rows)))
     got_map = int(rows_of(db.execute(f"SELECT count(*) FROM {MAP}"))[0][0] or 0)
     got_index = int(rows_of(db.execute(f"SELECT count(*) FROM {INDEX}"))[0][0] or 0)
     top = int(rows_of(db.execute(f"SELECT max(rank) FROM {INDEX}"))[0][0] or 0)
@@ -587,6 +679,14 @@ def main() -> int:
     want_top = max((r[INDEX_COLS.index("rank")] for r in index_rows), default=0)
     ok = (got_map == len(rows) and got_index == len(index_rows) and top == want_top
           and got_firms == len(firm_rows))
+    if left:
+        # Stopped on its own cap: the tables are part way, by design, and the next run writes the rest.
+        add_changed_slugs(page_slugs)
+        log(f"  stopped at --max-writes {args.max_writes:,}: {left:,} rows left for the next run")
+        record_run(db, "build_employer_map.py", status="ok", rows_written=m_changed + i_changed + f_changed,
+                   note=f"partial, --max-writes {args.max_writes:,}: {left:,} rows left for the next run",
+                   started_at=started)
+        return 0
     expired = add_changed_slugs(page_slugs)
     log(f"  {'ok ' if ok else 'MISMATCH'} {MAP} {got_map:,} of {len(rows):,} ({m_changed:,} written, {m_gone:,} removed); "
         f"{INDEX} {got_index:,} of {len(index_rows):,} ({i_changed:,} written, {i_gone:,} removed, max rank {top:,}); "

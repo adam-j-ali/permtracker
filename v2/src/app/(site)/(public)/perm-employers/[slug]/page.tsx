@@ -306,7 +306,7 @@ async function loadLiveOnly(slug: string) {
 async function OtherEmployerPage({ slug, record }: { slug: string; record: OtherEmployerRecord }) {
   const match = await employerMatch(slug);
   const empty = { cases: [], more: false };
-  const [programs, fresh, wageLive, lcaLive, wageDets, lcaDets, seasonal, lcaProfile, uscisH1b, lottery, debarments, warn, whd, starts] =
+  const [programs, fresh, wageLive, lcaLive, wageDets, lcaDets, seasonal, lcaProfile, uscisH1b, lottery, debarments, warn, whd, starts, lcaYearRows] =
     await Promise.all([
       getEmployerPrograms(slug).catch(softFail("perm-employers/[slug]/page.getEmployerPrograms", null)),
       getFreshness(),
@@ -327,6 +327,9 @@ async function OtherEmployerPage({ slug, record }: { slug: string; record: Other
       whdForSlug(slug),
       // Its wage requests by year, beside the PERM applications it never filed. A failure only drops the table.
       record.pwd ? getEmployerStarts(slug).catch(softFail("perm-employers/[slug]/page.getEmployerStarts", null)) : null,
+      // Its H-1B LCAs by fiscal year, FY2008 on: an employer whose LCAs are all in DOL's older files has only these
+      // and its newest filings to show. A failure only drops the chart.
+      record.lca ? lcaYears(slug).catch(softFail("perm-employers/[slug]/page.lcaYears", [])) : [],
     ]);
   const lines = programs ? [programs.pwd, programs.lca, programs.seasonal] : [];
   const open = lines.filter((l) => l && l.pending !== null);
@@ -385,7 +388,8 @@ async function OtherEmployerPage({ slug, record }: { slug: string; record: Other
               starts={starts}
               spellings={programs?.match.basis === "map" ? programs.match.spellings : null}
               className="mt-8"
-            />
+            />{" "}
+            <LcaYears years={lcaYearRows} className="mt-8" />
           </>
         }
         seasonalCases={seasonal.cases}

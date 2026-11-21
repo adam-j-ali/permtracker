@@ -189,6 +189,44 @@ def main() -> int:
     i2 = bem.write_diff(db, bem.INDEX, bem.INDEX_COLS, index2)
     check("an unchanged rebuild writes nothing", (m2[0], m2[1], i2[0], i2[1]), (0, 0, 0, 0))
 
+    # The first build after DOL's older H-1B files join the map can write hundreds of thousands of rows (Nov 21
+    # 2026): the dry run says how many before anything is written, and a capped run writes part and the next run
+    # the rest, since each run writes only what still differs.
+    fresh = seed()
+    for ddl in bem.DDL:
+        fresh.execute(ddl)
+    check("the dry run's count is every row a first build would write, and it writes none",
+          (bem.diff_counts(fresh, bem.MAP, bem.MAP_COLS, rows),
+           fresh.main.conn.execute(f"SELECT COUNT(*) FROM {bem.MAP}").fetchone()[0]), ((len(rows), 0), 0))
+    check("the dry run counts a table not made yet as empty",
+          bem.diff_counts(SplitSqlite(), bem.MAP, bem.MAP_COLS, rows), (len(rows), 0))
+    part = bem.write_diff(fresh, bem.MAP, bem.MAP_COLS, rows, limit=3)
+    check("a capped run writes no more than its cap", (part[0], part[1]), (3, 0))
+    check("and says what's left", bem.diff_counts(fresh, bem.MAP, bem.MAP_COLS, rows), (len(rows) - 3, 0))
+    rest = bem.write_diff(fresh, bem.MAP, bem.MAP_COLS, rows)
+    check("the next run writes the rest", rest[0], len(rows) - 3)
+    check("and the one after nothing", bem.diff_counts(fresh, bem.MAP, bem.MAP_COLS, rows), (0, 0))
+    capped = seed()
+    real_db, real_argv = bem.Database, sys.argv
+    bem.Database = lambda *a, **k: capped  # noqa: E731
+    try:
+        sys.argv = ["build_employer_map.py", "--max-writes", "2", "--pause", "0"]
+        code = bem.main()
+        runs = capped.main.conn.execute("SELECT status, note FROM ingest_runs").fetchall()
+        held = capped.main.conn.execute(f"SELECT COUNT(*) FROM {bem.MAP}").fetchone()[0]
+        sys.argv = ["build_employer_map.py", "--pause", "0"]
+        again = bem.main()
+        whole = capped.main.conn.execute(f"SELECT COUNT(*) FROM {bem.MAP}").fetchone()[0]
+    finally:
+        bem.Database, sys.argv = real_db, real_argv
+        bem.WRITE_PAUSE_S = 0.3
+    check("a capped run stops at its cap and records ok, naming what's left",
+          (code, held, runs[0][0], "left for the next run" in runs[0][1]), (0, 2, "ok", True))
+    check("and the next run finishes the map", (again, whole), (0, len(rows)))
+    check("the plan for the dry run counts requests and minutes",
+          bem.write_plan({bem.MAP: (1000, 600), bem.INDEX: (800, 0)}, pause=0.3),
+          {"rows": 2400, "requests": 3 + 2 + 2, "minutes": round(7 * (0.3 + bem.WRITE_REQUEST_S) / 60, 1)})
+
     # A newcomer with an OLD first filing goes after the last rank and moves
     # nobody: ranks are addresses in the sitemap's windows.
     before = {r[0]: r[bem.INDEX_COLS.index("rank")] for r in index2}
