@@ -762,10 +762,13 @@ def build_places_and_wages(db) -> int:
     floor = min_for_median()
     places: set[tuple[str, str, str]] = set()
     bands: dict[tuple[str, int], list[int]] = {}
-    items: list[tuple[str, int, str]] = []
     built: list[str] = []
-    last: tuple[str, dict] | None = None
+    checked: str | None = None
+    views_written = 0
     strays = 0
+    # Each year's views are written as soon as that year is counted (about 300,000 in all, a few hundred bytes
+    # each), and before the first is written, one of them is recomputed through the site's own SQL.
+    stamp = bwv.begin_views(db)
     for fy in held_years(db):
         wages: list[tuple] = []
         for a, b in decision_slices(fy):
@@ -789,13 +792,14 @@ def build_places_and_wages(db) -> int:
             continue
         wages.sort(key=lambda t: t[0])
         views = bwv.build("perm", wages, floor, min_rows=1, fy_only=True)
-        items.extend(bwv.serialize(views))
+        if checked is None:
+            checked = bwv.verify_history(db, str(fy), views)
+        bwv.put_views(db, bwv.HISTORY_PROGRAM, bwv.serialize(views), stamp)
+        views_written += len(views)
         built.append(str(fy))
-        last = (str(fy), views)
         log(f"  FY{fy}: {len(wages):,} wages, {len(views):,} explorer views, {len(places):,} worksites so far")
     if strays:
         log(f"  {strays:,} rows whose fiscal year isn't their decision day's: worksites only")
-    checked = bwv.verify_history(db, *last) if last else None
     for ddl in SCHEMA:
         if "perm_history_worksites" in ddl or "perm_history_wage_bands" in ddl:
             db.execute(ddl)
@@ -805,7 +809,7 @@ def build_places_and_wages(db) -> int:
     db.execute("DELETE FROM perm_history_wage_bands")
     insert_rows(db, "perm_history_wage_bands", ["fy", "band", "decided", "denied"],
                 [(fy, band, d, n) for (fy, band), (d, n) in sorted(bands.items())], per_request=STMTS_PER_REQUEST)
-    views_written = bwv.write_serialized(db, bwv.HISTORY_PROGRAM, items)
+    views_written = bwv.finish_views(db, bwv.HISTORY_PROGRAM, stamp, views_written)
     write_doc(db, bwv.HISTORY_DOC, {"years": built, "views": views_written, "minCases": floor, "checked": checked})
     bwb.refresh_history_years(db)
     log(f"  history worksites {len(places):,}, wage bands {len(bands):,}, explorer views {views_written:,} "

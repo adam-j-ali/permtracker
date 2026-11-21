@@ -329,5 +329,53 @@ iph.build_places_and_wages(db)
 after = {t: db.conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0] for t in before}
 check("the same rows after a second build", before == after, f"{before} vs {after}")
 
+print("the views' write: about 300,000 rows on the live database, so indexed, paced and a year at a time")
+idx = db.conn.execute("SELECT sql FROM sqlite_master WHERE type = 'index' AND tbl_name = 'wage_views' "
+                      "AND sql IS NOT NULL").fetchall()
+check("wage_views gets an index on (program, built_at), made by the writer itself",
+      any(re.search(r"\(\s*program\s*,\s*built_at\s*\)", s or "") for (s,) in idx), str(idx))
+
+
+def plan_of(sql: str, args: list) -> str:
+    return " | ".join(r[3] for r in db.conn.execute("EXPLAIN QUERY PLAN " + sql, args).fetchall())
+
+
+prune_sql = next((s for s, _ in db.statements if s.startswith("DELETE FROM wage_views")), "")
+count_sql = next((s for s, _ in db.statements if s.startswith("SELECT COUNT(*) FROM wage_views")), "")
+got_plan = plan_of(prune_sql, [bwv.HISTORY_PROGRAM, 10**15, bwv.DELETE_CHUNK]) if prune_sql else ""
+check("the stale views' DELETE finds them on that index, never by reading every view",
+      "wage_views_program" in got_plan and "SCAN wage_views" not in got_plan.replace("USING", "|"), got_plan)
+got_plan = plan_of(count_sql, [bwv.HISTORY_PROGRAM]) if count_sql else ""
+check("and the count read back after it too", "wage_views_program" in got_plan, got_plan)
+
+paced = seed(random.Random(3))
+pauses: list[float] = []
+real_pause = bwv.pause
+bwv.pause = pauses.append
+saved_chunk = bwv.DELETE_CHUNK
+try:
+    paced.conn.executemany("INSERT INTO wage_views VALUES (?, ?, 1, '{}', 1)",
+                           [(f"perm|certified|99-{i:04d}||2014", bwv.HISTORY_PROGRAM) for i in range(5)])
+    paced.conn.commit()
+    bwv.DELETE_CHUNK = 2
+    iph.build_places_and_wages(paced)
+finally:
+    bwv.pause = real_pause
+    bwv.DELETE_CHUNK = saved_chunk
+inserts = [i for i, (s, _) in enumerate(paced.statements) if s.startswith("INSERT OR REPLACE INTO wage_views")]
+requests = -(-len(inserts) // bwv.STMTS_PER_REQUEST)
+check("a pause between every two write requests", len(pauses) >= requests - 1 and all(p > 0 for p in pauses),
+      f"{len(pauses)} pauses for {requests} requests")
+last_read = max(i for i, (s, _) in enumerate(paced.statements) if "FROM perm_cases_history" in s
+                and not s.startswith("WITH f AS"))
+check("each year's views are written as that year is counted, so the whole set never sits in memory",
+      inserts and inserts[0] < last_read, f"first write {inserts[:1]}, last read {last_read}")
+stale = paced.conn.execute("SELECT COUNT(*) FROM wage_views WHERE key LIKE 'perm|certified|99-%'").fetchone()[0]
+deletes = [s for s, _ in paced.statements if s.startswith("DELETE FROM wage_views")]
+check("a view the new build didn't write goes, a few at a time", stale == 0 and len(deletes) >= 3,
+      f"{stale} left, {len(deletes)} deletes")
+check("the quarterly build's views still stand",
+      paced.conn.execute("SELECT COUNT(*) FROM wage_views WHERE program = 'perm'").fetchone()[0] == 2)
+
 print(f"\n{len(FAILURES)} failed")
 raise SystemExit(1 if FAILURES else 0)
