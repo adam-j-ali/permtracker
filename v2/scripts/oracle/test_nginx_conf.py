@@ -133,6 +133,8 @@ def run(conf_text: str) -> None:
     locs = locations(server)
     # The case lookup's location (an exact match again since the site went English only, Oct 31 2026).
     LOOKUP = "= /perm-case-status"
+    # A shared recruitment record's pages (Nov 20 2026).
+    SHARE = "^~ /share/recruitment/"
 
     # Every zone a location uses is declared, and every declared zone is used.
     declared_req = set(re.findall(r"limit_req_zone\s+\S+\s+zone=(\w+):", head))
@@ -561,6 +563,30 @@ def run(conf_text: str) -> None:
 
     check("lookup: an exact-match location", LOOKUP in locs, str([s for s in locs if "perm-case-status" in s]))
 
+    # A recruitment record shared by link opens to anyone holding the key in its path (/share/recruitment/<key>), and
+    # nginx's error log writes the request line with every error-level message: a limit's refusal, an upstream that
+    # failed (Nov 20 2026). The share pages get a location of their own that logs only crit and up, and is otherwise
+    # location / line for line: the same limits in the same order, the same app, and no headers of its own, so it
+    # inherits the server's headers exactly as / does.
+    share = locs.get(SHARE, "")
+    root = locs.get("/", "")
+    directives = lambda body: [line.strip() for line in body.splitlines() if line.strip()]
+    of = lambda body, *names: [d for d in directives(body) if d.split(None, 1)[0] in names]
+    share_rest = [d for d in directives(share) if not d.startswith("error_log ")]
+    check("share pages: a location of their own, a prefix that no regex location overrides", bool(share))
+    check("share pages: errors logged at crit only, so no error-level line carries a key",
+          of(share, "error_log") == ["error_log /var/log/nginx/error.log crit;"], str(of(share, "error_log")))
+    check("share pages: the same limits as /, in the same order",
+          bool(of(root, "limit_conn", "limit_req"))
+          and of(share, "limit_conn", "limit_req") == of(root, "limit_conn", "limit_req"),
+          str(of(share, "limit_conn", "limit_req")))
+    check("share pages: the same app as /", bool(of(root, "proxy_pass")) and of(share, "proxy_pass") == of(root, "proxy_pass"))
+    headers = ("add_header", "proxy_set_header", "proxy_hide_header", "proxy_pass_request_headers", "more_set_headers")
+    check("share pages: the same headers as / (none of their own)", of(share, *headers) == of(root, *headers),
+          str(of(share, *headers)))
+    check("share pages: nothing else differs from /", share_rest == directives(root),
+          str(sorted(set(share_rest) ^ set(directives(root)))))
+
 
 def probe() -> None:
     """The checks must fail on the drifts they exist for."""
@@ -585,6 +611,19 @@ def probe() -> None:
         "defense log records share keys again": good.replace('"$pt_log_uri" "$http_user_agent"', '"$request_uri" "$http_user_agent"', 1),
         "share-key map misses a capitalised path": good.replace('"~*^(?<pt_lr_head>', '"~^(?<pt_lr_head>', 1),
         "share-key map drops the query string": good.replace('"$pt_lu_head/redacted$pt_lu_tail"', '"$pt_lu_head/redacted"', 1),
+        "share pages log errors at error level again": good.replace(
+            "        error_log /var/log/nginx/error.log crit;\n", "        error_log /var/log/nginx/error.log error;\n", 1),
+        "share pages lose their own error log": good.replace("        error_log /var/log/nginx/error.log crit;\n", "", 1),
+        "share pages back under location /": good.replace("    location ^~ /share/recruitment/ {", "    location ^~ /share-off/recruitment/ {", 1),
+        "share pages drop a crawler limit": re.sub(
+            r"(location \^~ /share/recruitment/ \{[^}]*?)\n\s*limit_req zone=pt_bots burst=90 nodelay;", r"\1", good, count=1),
+        "share pages drop the whole-app cap": re.sub(
+            r"(location \^~ /share/recruitment/ \{[^}]*?)\n\s*limit_conn pt_app 64;", r"\1", good, count=1),
+        "share pages proxied somewhere else": re.sub(
+            r"(location \^~ /share/recruitment/ \{[^}]*?)proxy_pass http://permtracker_app;", r"\1proxy_pass http://permtracker_w1;", good, count=1),
+        "share pages set a header of their own": re.sub(
+            r"(location \^~ /share/recruitment/ \{[^}]*?)(\n\s*proxy_pass http://permtracker_app;)",
+            r'\1\n        add_header X-Robots-Tag "noindex" always;\2', good, count=1),
         "forms relay the decoded path": good.replace("proxy_pass https://$pt_convex_site$pt_c_path$is_args$args;", "proxy_pass https://$pt_convex_site$uri$is_args$args;", 1),
         "forms pass an unmatched path through": good.replace("default /__pt_refused; }", "default $uri; }", 1),
         "forms path allows a line break": good.replace('"~^/c(/[A-Za-z0-9/_.~-]*)(\\?|$)" $1;', '"~^/c(/.*)" $1;', 1),
