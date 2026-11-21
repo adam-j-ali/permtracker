@@ -1,9 +1,9 @@
 "use client";
 
-import { SiteImage } from "@/components/ui/site-image";
 import Link from "next/link";
 import { useCallback, useRef, type CSSProperties, type FocusEvent } from "react";
 
+import { SiteImage } from "@/components/ui/site-image";
 import { goToStep, useScrollStage, type StagePlace } from "@/components/scroll/useScrollStage";
 import { HOME_WIDTH } from "./homeWidth";
 

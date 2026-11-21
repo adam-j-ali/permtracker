@@ -13,10 +13,10 @@
  */
 
 import type { Metadata } from "next";
-import { SiteImage } from "@/components/ui/site-image";
 import { Fragment } from "react";
 import Link from "next/link";
 
+import { SiteImage } from "@/components/ui/site-image";
 import { TrackerMatrix, MARK_WORD, MarkIcon } from "@/components/compare/TrackerMatrix";
 import { BarRows, type BarRow } from "@/components/data/BarRows";
 import { CaseLookupForm } from "@/components/tools/CaseLookupForm";

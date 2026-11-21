@@ -9,10 +9,10 @@
  */
 
 import type { Metadata } from "next";
-import { SiteImage } from "@/components/ui/site-image";
 import Link from "next/link";
 import { BuildingsIcon, EnvelopeSimpleIcon, FileCsvIcon, GlobeHemisphereWestIcon, IdentificationCardIcon } from "@phosphor-icons/react/ssr";
 
+import { SiteImage } from "@/components/ui/site-image";
 import { CopyButton } from "@/components/badges/BadgeCatalogue";
 import { BarRows, type BarRow } from "@/components/data/BarRows";
 import { PRESS_EMAIL } from "@/lib/constants/about";

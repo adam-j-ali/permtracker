@@ -7,8 +7,8 @@
 
 import type { MDXComponents } from "mdx/types";
 import dynamic from "next/dynamic";
-import { SiteImage } from "@/components/ui/site-image";
 import Link from "next/link";
+import { SiteImage } from "@/components/ui/site-image";
 import { cn } from "@/lib/utils";
 import { citationRuns } from "@/lib/content/citationRuns";
 import { buttonVariants } from "@/components/ui/button";
