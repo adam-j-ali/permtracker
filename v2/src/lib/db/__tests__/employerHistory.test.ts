@@ -4,7 +4,7 @@ vi.mock("server-only", () => ({}));
 const rows = vi.fn<(sql: string, args?: unknown[]) => Promise<unknown[]>>();
 vi.mock("../client", () => ({ rows, one: vi.fn(), exec: vi.fn() }));
 
-const { employerHistoryCases, employerYears, workerFacets } = await import("../employerHistory");
+const { employerHistoryCases, employerYears, historyMakeup, workerFacets } = await import("../employerHistory");
 
 /**
  * An employer's older record: its yearly counts, its FY2020 to FY2023 cases and the worker's side of them. A table
@@ -20,6 +20,7 @@ describe("the employer history reads", () => {
     ["employerYears", () => employerYears("acme"), []],
     ["employerHistoryCases", () => employerHistoryCases("acme", 5), []],
     ["workerFacets", () => workerFacets("employer", "acme"), {}],
+    ["historyMakeup", () => historyMakeup("employer", "acme"), null],
   ];
 
   it.each(READS)("%s holds nothing when its table isn't made yet", async (_name, read, empty) => {
@@ -64,5 +65,32 @@ describe("the employer history reads", () => {
       education: [{ key: "masters", label: "Master's", n: 33 }],
     });
     expect(rows.mock.calls[0]![1]).toEqual(["occupation", "15-1252"]);
+  });
+
+  it("reads what the older cases were made of in one statement, with their own total and years", async () => {
+    rows.mockResolvedValue([
+      { facet: "occupation", key: "software-developers", label: "Software Developers", code: "15-1252.00", n: "30", certified: "28", denied: "1", total: "50", fy_from: "2012", fy_to: "2023" },
+      { facet: "occupation", key: null, label: "SOFTWARE DEVELOPERS", code: "15-1252", n: "5", certified: "5", denied: "0", total: "50", fy_from: "2012", fy_to: "2023" },
+      { facet: "state", key: "WA", label: "WA", code: null, n: "40", certified: "38", denied: "1", total: "50", fy_from: "2012", fy_to: "2023" },
+      { facet: "attorney", key: null, label: "Old Firm PC", code: null, n: "9", certified: "9", denied: "0", total: "50", fy_from: "2012", fy_to: "2023" },
+    ]);
+    const got = await historyMakeup("attorney", "law-firm-llp");
+    expect(rows).toHaveBeenCalledTimes(1);
+    expect(String(rows.mock.calls[0]![0])).toMatch(/FROM perm_history_entity_facets WHERE kind = \? AND slug = \?/);
+    expect(rows.mock.calls[0]![1]).toEqual(["attorney", "law-firm-llp"]);
+    expect(got?.total).toBe(50);
+    expect(got?.fyFrom).toBe(2012);
+    expect(got?.fyTo).toBe(2023);
+    // One job printed under both code spellings is one row, as on the current figures.
+    expect(got?.facets.occupation).toEqual([
+      { key: "software-developers", label: "Software Developers", code: "15-1252.00", n: 35, certified: 33, denied: 1 },
+    ]);
+    expect(got?.facets.state).toEqual([{ key: "WA", label: "WA", code: null, n: 40, certified: 38, denied: 1 }]);
+    expect(got?.facets.attorney?.[0]).toEqual({ key: null, label: "Old Firm PC", code: null, n: 9, certified: 9, denied: 0 });
+  });
+
+  it("is nothing for an entity with too few older cases", async () => {
+    rows.mockResolvedValue([]);
+    expect(await historyMakeup("employer", "tiny")).toBeNull();
   });
 });
