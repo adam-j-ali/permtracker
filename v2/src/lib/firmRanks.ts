@@ -50,11 +50,12 @@ export function shownYear(summary: FirmRanksSummary, program: FirmProgram): numb
 
 /**
  * The first fiscal year a program ranks any firm in, or null. What the page says its rankings reach back to: a year
- * whose file names no firm (PERM's before FY2015, the H-1B files' before FY2019) ranks nobody and isn't claimed.
+ * whose file names no firm (PERM's before FY2015, the H-1B files' before FY2019) ranks nobody and isn't claimed,
+ * even when the builder wrote it a place with its unnamed filings and no firms.
  */
 export function firstRankedYear(summary: FirmRanksSummary, program: FirmProgram): number | null {
   const years = Object.entries(summary.programs[program]?.years ?? {})
-    .filter(([, y]) => Object.keys(y.places ?? {}).length > 0)
+    .filter(([, y]) => Object.values(y.places ?? {}).some((p) => (p?.firms ?? 0) > 0))
     .map(([fy]) => Number(fy))
     .filter((fy) => Number.isFinite(fy));
   return years.length ? Math.min(...years) : null;
