@@ -199,6 +199,23 @@ def main() -> int:
     check(pd.chat_order(["03/25/2023"] * 5 + ["25/03/2023"] * 5) == "unknown", "a chat split both ways")
     check(pd.chat_order(["03/04/2023"] * 50) == "unknown", "a chat with no day over 12 says nothing")
 
+    # The work permit and travel document by their form numbers (a Telegram timeline, Nov 21 2026): "I-765: Approval
+    # document appeared on 11/17" is the work permit's approval and "I-131: Approval Notice on 11/21" the travel
+    # document's. A bare RD in a chat about several forms still names no form, and a year typed as 27 stays unread.
+    nov21 = dt.date(2026, 11, 21)
+    r = read("Timeline: PD 03/13/2024 RD 12/18/2025 Bio: 01/16/2026 silence, and some silent updates still "
+             "I485J Approval: 10/26/27 I485: Interview Scheduled to 12/2/27 I-765: Approval document appeared on 11/17, "
+             "card was produced appeared on 11/19 I-131: Approval Notice on 11/21 so seem to be two standalone "
+             "approvals not one common, but not quite sure", kind="mixed", posted=nov21)
+    check(r == {"priority_date": "2024-03-13", "biometrics": "2026-01-16", "ead": "2026-11-17", "ap": "2026-11-21"},
+          f"the I-765 and I-131 by number: {r}")
+    r = read("My I-765 approved on 11/17 and I-131 approved 11/19", kind="mixed", posted=nov21)
+    check(r == {"ead": "2026-11-17", "ap": "2026-11-19"}, f"the form numbers with a plain approved: {r}")
+    r = read("My I-765 received 10/01/2026, still waiting", kind="mixed", posted=nov21)
+    check(r is None or "ead" not in r, f"an I-765 receipt is never its approval: {r}")
+    r = read("My I-485 approved on 11/17/2026!", kind="mixed", posted=nov21)
+    check(r == {"i485_decided": "2026-11-17", "i485_decision": "approved"}, f"the I-485 still reads as before: {r}")
+
     print(f"{failures} failed")
     return 1 if failures else 0
 

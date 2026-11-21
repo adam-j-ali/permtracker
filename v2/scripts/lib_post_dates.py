@@ -52,6 +52,9 @@ LABELS = (
     ("i140_decided", r"(?:i[- ]?)?140\s*(?:approv\w*|appr)(?:\s*(?:notice|received))?(?:\s*(?:date|on))?"),
     ("i485_receipt", r"(?:(?:i[- ]?)?485|aos)\s*(?:filed|filing|receipt|received|rd|submitted|rcvd)(?:\s*(?:date|on))?"),
     ("i485_decided", r"(?:(?:i[- ]?)?485|aos|gc|green\s*card)\s*approv\w*(?:\s*(?:notice|received))?(?:\s*(?:date|on))?"),
+    # The work permit (I-765) and travel document (I-131) approved, by form number ("I-765: Approval document appeared on").
+    ("ead765", r"(?:i[- ]?)?765\s*:?\s*approv\w*(?:\s*(?:notice|document|doc))?(?:\s*(?:appeared\s*on|appeared|date|on))?"),
+    ("ap131", r"(?:i[- ]?)?131\s*:?\s*approv\w*(?:\s*(?:notice|document|doc))?(?:\s*(?:appeared\s*on|appeared|date|on))?"),
     ("ead_ap", r"ead\s*(?:/|\+|&|and)\s*ap(?:\s*combo)?(?:\s*card)?(?:\s*(?:approv\w*|received))?(?:\s*(?:date|on))?"),
     ("ead", r"ead(?:\s*card)?(?:\s*(?:approv\w*|received))?(?:\s*(?:date|on))?"),
     ("ap", r"(?:ap|advance\s*parole)\s*(?:approv\w*|received)(?:\s*(?:date|on))?"),
@@ -227,6 +230,8 @@ def _targets(label: str, kind: str) -> list[tuple[str, str | None, str | None]]:
         return [("i485_decided", "i485_decision", "approved")]
     if label == "ead_ap":
         return [("ead", None, None), ("ap", None, None)]
+    if label in ("ead765", "ap131"):
+        return [("ead" if label == "ead765" else "ap", None, None)]
     return [(label, None, None)]
 
 
