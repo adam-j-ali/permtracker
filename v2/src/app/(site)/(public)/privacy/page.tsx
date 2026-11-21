@@ -15,6 +15,8 @@ import { LEGAL_DBA, LEGAL_FORM, LEGAL_NAME, POSTAL_ADDRESS, TRADE_NAME } from "@
 import { BOARD_OPENS_AT, METRIC_MIN_N, MIN_CASE_REPORTERS, OFFICE_LIST_OPENS_AT } from "@/lib/communityTimeline";
 // How long a deleted case can be restored, the same constant the restore and the retention run read.
 import { DELETED_CASE_DAYS } from "@convex/lib/deletedCases";
+// The invitations an account can send a day, the same constant the invitation's cap reads.
+import { REMINDER_INVITES_PER_ACCOUNT } from "@convex/lib/alertBudgets";
 import { openGraphBase } from "@/lib/openGraphBase";
 import Link from "next/link";
 
@@ -150,8 +152,9 @@ export default function PrivacyPage() {
               <li>
                 When you delete a case, or replace it by importing a file, we keep a copy of it for{" "}
                 {DELETED_CASE_DAYS} days so you can restore it from Settings. Then it&apos;s erased, along with our
-                record of the changes made to the case. Its documents and recruitment log are deleted when you delete
-                the case or replace it, so a restored case comes back without them. It also comes back without the employer&apos;s FEIN, which the copy never holds
+                record of the changes made to the case. After the copy is erased, we keep a record that your account
+                deleted the case and when, until you delete your account. Its documents and recruitment log are deleted
+                when you delete the case or replace it, so a restored case comes back without them. It also comes back without the employer&apos;s FEIN, which the copy never holds
               </li>{" "}
               <li>RFI/RFE information and response dates</li>
             </ul>{" "}
@@ -190,14 +193,15 @@ export default function PrivacyPage() {
               <li>
                 If you add a second address to a case&apos;s deadline reminders, such as a paralegal&apos;s or the
                 employer&apos;s HR contact&apos;s, we email it once to ask it to confirm. That email names you by the
-                name on your account, or calls you a PERM Tracker user when there isn&apos;t one. It names the case
+                name on your account, cut short if it&apos;s long. It calls you a PERM Tracker user when your account
+                has no name, or when the name reads like a web or email address or a phone number. It names the case
                 by its employer and job title, or calls it a PERM case when either one reads like a web or email
-                address
+                address or a phone number
               </li>{" "}
               <li>
                 Only after it confirms do we send it that case&apos;s deadline reminders. They name the employer,
-                the job title and the deadlines only. Nothing else from the case or your account is included, not
-                even your name
+                the job title and the deadlines only. They call the case a PERM case by the same rule, checked each
+                time one is sent. Nothing else from the case or your account is included, not even your name
               </li>{" "}
               <li>
                 They follow your own email switches in Settings. When &quot;Email notifications&quot;,
@@ -210,14 +214,23 @@ export default function PrivacyPage() {
                 were stopped
               </li>{" "}
               <li>
-                Either link also puts the address on a list that refuses every account&apos;s invitations to it
-                from then on. We keep the list as a keyed one-way hash of each address. It can tell us an address
-                is on it, but it can&apos;t be read back as addresses. It has no time limit
+                The invitation&apos;s link puts the address on a list that refuses every account&apos;s invitations
+                to it from then on. A reminder&apos;s Stop link puts it on the list for your account only, so other
+                accounts can still invite it. We keep the list as a keyed one-way hash of each address. It can tell
+                us an address is on it, but it can&apos;t be read back as addresses. A refusal of every account has
+                no time limit. A refusal of your account is deleted with your account
+              </li>{" "}
+              <li>
+                If you try to invite an address we won&apos;t invite, you get one plain answer that doesn&apos;t say
+                which: an address that refused, one we can&apos;t email, and one you&apos;ve invited twice all look
+                the same. Each try counts toward the {REMINDER_INVITES_PER_ACCOUNT.limit} invitations your account
+                can send a day
               </li>{" "}
               <li>
                 Your account can invite the same address twice in all, even if an invitation lapsed or you removed
-                it. To count them, we keep the same keyed hash of the address with your account, never the address,
-                and delete it with your account
+                it. To count them, we keep the same keyed hash of the address with your account, never the address.
+                We also keep the number of invitations and the date of the last one. It&apos;s all deleted with
+                your account
               </li>{" "}
               <li>
                 We keep the address until it stops the reminders, you remove it, or you delete the case or your
@@ -1610,8 +1623,9 @@ export default function PrivacyPage() {
               <li>
                 <strong>Deleted cases:</strong> when you delete a case, or replace it by importing a file, we keep a
                 copy of it for {DELETED_CASE_DAYS} days so you can restore it from Settings. Then it&apos;s erased,
-                along with our record of the changes made to it. Its documents and recruitment log are deleted when
-                you delete the case or replace it
+                along with our record of the changes made to it. After the copy is erased, we keep a record that your
+                account deleted the case and when, until you delete your account. Its documents and recruitment log
+                are deleted when you delete the case or replace it
               </li>{" "}
               <li>
                 <strong>Email alert sign-ups</strong> you never confirm are
@@ -1623,7 +1637,9 @@ export default function PrivacyPage() {
               </li>{" "}
               <li>
                 <strong>Addresses that asked not to get a case&apos;s deadline reminders</strong> are kept as a keyed
-                one-way hash, with no time limit, so no account can invite them again
+                one-way hash. One that said not to be invited again is kept with no time limit, so no account can
+                invite it again. One that stopped an account&apos;s reminders is kept until that account is deleted,
+                so that account can&apos;t invite it again
               </li>{" "}
               <li>
                 <strong>AI conversation data</strong> is automatically deleted
