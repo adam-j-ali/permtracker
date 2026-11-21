@@ -13,6 +13,9 @@ git, flock, timeout, nice, systemctl, date), each writing what it was asked to o
   4. Its unit's time limit stays under that give-way figure.
   5. A step that fails turns the run red and the pages are not expired on top of a half-built set.
   6. The deploy starts it only after the new release is live, in the background, and can't fail over it.
+  7. IndexNow hears about the pages a pass refreshed only once they're expired (and the sweep's own pages only
+     once Cloudflare's copies are dropped), through scripts/indexnow_submit.py, and a refusal there never turns
+     the pass red: the script records it in ingest_runs, and a crash of the step itself is recorded here.
 
 Run: python3 scripts/oracle/test_sweep_runner.py
 """
@@ -34,10 +37,12 @@ failures: list[str] = []
 RECORD = r"""#!/bin/bash
 echo "$(basename "$0") $*" >> "$SWEEP_LOG"
 """
+# With $SWEEP_SLUGS set, the employer-page builder names that many changed pages, as build_entity_detail.py does.
 FAKE_PYTHON = r"""#!/bin/bash
 echo "python3 $*" >> "$SWEEP_LOG"
 case "$*" in *"$SWEEP_FAIL"*) [ -n "$SWEEP_FAIL" ] && exit 1 ;; esac
-case "$*" in *resume-check*) echo "nothing to resume" ;; *"-c "*) echo 0 ;; esac
+case "$*" in *build_entity_detail.py*) [ -n "$SWEEP_SLUGS" ] && echo '{"slugs":["a"]}' > changed-employer-slugs.json ;; esac
+case "$*" in *resume-check*) echo "nothing to resume" ;; *"-c "*) echo "${SWEEP_SLUGS:-0}" ;; esac
 exit 0
 """
 # timeout <limit> cmd... and nice -n 10 cmd... run the command; the limit itself is logged, to be read back.
@@ -66,7 +71,8 @@ def check(name: str, ok: bool, detail: str = "") -> None:
         failures.append(name)
 
 
-def run(job: str, *, next_sweep_min: int | None = 600, fail: str = "", weekday: int = 2) -> tuple[int, list[str], str]:
+def run(job: str, *, next_sweep_min: int | None = 600, fail: str = "", weekday: int = 2,
+        slugs: int = 0) -> tuple[int, list[str], str]:
     """The script's exit code, the calls it made, and what it printed."""
     with tempfile.TemporaryDirectory() as tmp:
         t = pathlib.Path(tmp)
@@ -90,6 +96,7 @@ def run(job: str, *, next_sweep_min: int | None = 600, fail: str = "", weekday: 
             "PATH": f"{t / 'bin'}:/usr/bin:/bin",
             "PT_REPO": str(t / "repo"), "PT_ENV_DIR": str(t / "env"),
             "SWEEP_LOG": str(log), "SWEEP_FAIL": fail, "SWEEP_WEEKDAY": str(weekday),
+            "SWEEP_SLUGS": str(slugs) if slugs else "",
             # The stand-in date reads "@<epoch>"; the real one reads systemd's own wording.
             "SWEEP_NEXT": "" if next_sweep_min is None else f"@{now + next_sweep_min * 60}",
             "REAL_PYTHON": sys.executable, "HOME": tmp,
@@ -103,7 +110,7 @@ def scripts_run(calls: list[str]) -> list[str]:
     out = []
     for c in calls:
         m = re.match(r"python3 scripts/(\S+\.py)((?: --[a-z-]+(?: \d+)?)*)", c)
-        if m and m.group(1) not in ("record_ingest_failure.py", "purge_edge.py"):
+        if m and m.group(1) not in ("record_ingest_failure.py", "purge_edge.py", "indexnow_submit.py"):
             out.append((m.group(1) + m.group(2)).strip())
     return out
 
@@ -124,7 +131,37 @@ def purged(calls: list[str]) -> bool:
     return len(at) == 1 and bool(exp) and exp[0] < at[0]
 
 
+def told(calls: list[str], mode: str) -> list[int]:
+    """Where indexnow_submit.py was called with `--<mode>`."""
+    return [i for i, c in enumerate(calls) if c.startswith("python3 scripts/indexnow_submit.py --" + mode)]
+
+
 def main() -> int:
+    # 7. IndexNow, after the pages are expired and the edge's copies dropped; never a red run over it.
+    code, calls, out = run("case-status-active", next_sweep_min=600)
+    at, purge = told(calls, "answer"), [i for i, c in enumerate(calls) if "scripts/purge_edge.py" in c]
+    check("a pass tells IndexNow about the sweep's pages once, after Cloudflare's copies are dropped",
+          code == 0 and len(at) == 1 and purge and purge[0] < at[0], str(calls[-4:]))
+    code, calls, out = run("case-status-pending", fail="indexnow_submit.py")
+    check("a crashed IndexNow step is recorded and leaves the run green",
+          code == 0 and "every step finished clean" in out and told(calls, "answer")
+          and any("record_ingest_failure.py" in c and "indexnow_submit.py --answer" in c for c in calls),
+          f"{code} {out[-300:]}")
+    code, calls, out = run("case-status-pending", fail="build_filings_by_day.py")
+    check("no IndexNow when the pages weren't expired", not told(calls, "answer"), str(calls[-5:]))
+    code, calls, out = run("case-status-pending", slugs=3)
+    expired_at = [i for i, c in enumerate(calls) if "/api/revalidate-live-employers" in c]
+    check("the employer pages whose live rows moved are told through the same sender, after they're expired",
+          code == 0 and len(told(calls, "paths")) == 1 and expired_at and expired_at[0] < told(calls, "paths")[0],
+          str([c for c in calls if "employer" in c or "indexnow" in c]))
+    check("the runner no longer starts node for IndexNow", not any(c.startswith("node ") for c in calls),
+          str([c for c in calls if c.startswith("node")]))
+    code, calls, out = run("case-status-pending", slugs=3, fail="indexnow_submit.py --paths")
+    check("and a crash of that step is recorded and leaves the run green too",
+          code == 0 and any("record_ingest_failure.py" in c and "indexnow_submit.py --paths" in c for c in calls),
+          f"{code} {out[-300:]}")
+
+
     # 0. After the sweep's pages are expired, Cloudflare's copies of them are dropped (purge_edge.py), and a refused
     # purge ends the run red while every step before it still ran.
     code, calls, out = run("case-status-active", next_sweep_min=600)
