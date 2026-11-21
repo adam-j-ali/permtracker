@@ -721,6 +721,7 @@ def main() -> int:
     audit_findings_are_sorted()
     busy_replies_are_tried_again()
     ai_assistant_visits_are_counted()
+    site_audit_says_what_grew()
 
     # The API and the assistants: keyed calls by account, keyless ones by bucket.
     rows = [("2026-10-07", "acct_a", "k1", 30), ("2026-10-07", "acct_b", "k2", 5), ("2026-10-07", "anonymous", "mcp", 12),
@@ -796,6 +797,50 @@ def main() -> int:
 
     print(f"\n{len(FAILS)} failure(s)")
     return 1 if FAILS else 0
+
+
+def site_audit_says_what_grew() -> None:
+    """The weekly site audit (scripts/site_audit.py writes perm_docs['site_audit'] each night): a week that grew
+    or read too little of the sitemap warns, a job that stopped fails, and an ordinary week is OK with its counts."""
+    now = 1_800_000_000_000
+    hour = 3_600_000
+    night = {"day": "2026-11-22", "slice": 6, "finishedAt": now - 8 * hour, "read": 26104, "planned": 26104,
+             "stragglers": 0, "left": 0, "stoppedBy": "done", "refused": 0}
+    week = {"week": "2026-11-22", "complete": True, "sitemap": 182729, "read": 182700, "unread": 29,
+            "coverage": 182700 / 182729, "counts": {"orphan": 3713, "title_long": 24},
+            "examples": {"orphan": [{"path": "/soc-codes/a"}, {"path": "/soc-codes/b"}],
+                         "title_long": [{"path": "/perm-industries/x", "detail": "67 characters"}]},
+            "rises": [], "comparedWith": "2026-11-15", "before": {"orphan": 3713, "title_long": 24}}
+    calm = {"night": night, "latestWeek": week, "mail": {}}
+    v = dm.site_audit_verdict(calm, now)
+    check(v["status"] == "ok" and "182,700" in v["summary"], "site audit: a full week with nothing grown is OK", str(v))
+    check(any("3,713" in ln and "/soc-codes/a" in ln for ln in says(v)), "site audit: each count is said with examples",
+          str(says(v)))
+    grew = dict(calm, latestWeek=dict(week, counts={"orphan": 3720, "title_long": 24, "big": 1},
+                                      rises=[{"family": "orphan", "before": 3713, "now": 3720, "new": False},
+                                             {"family": "big", "before": 0, "now": 1, "new": True}]))
+    v = dm.site_audit_verdict(grew, now)
+    check(v["status"] == "warn" and "2 problems grew" in v["summary"], "site audit: a week that grew warns", str(v))
+    check(any("up from 3,713" in ln for ln in says(v)) and any("new this week" in ln for ln in says(v)),
+          "site audit: what grew says by how much", str(says(v)))
+    short = dict(calm, latestWeek=dict(week, complete=False, read=150000, unread=32729, coverage=150000 / 182729))
+    v = dm.site_audit_verdict(short, now)
+    check(v["status"] == "warn" and "82%" in v["summary"], "site audit: a week that read too little warns", str(v))
+    stopped = dict(calm, night=dict(night, finishedAt=now - 60 * hour))
+    v = dm.site_audit_verdict(stopped, now)
+    check(v["status"] == "fail" and "permtracker-site-audit" in v["summary"], "site audit: a job that stopped fails",
+          str(v))
+    cut = dict(calm, night=dict(night, stoppedBy="the front door didn't answer 20 pages in a row", left=900))
+    check(any("stopped early because the front door didn't answer" in ln for ln in says(dm.site_audit_verdict(cut, now))),
+          "site audit: a night cut short says why")
+    check(dm.site_audit_verdict(None, now)["status"] == "warn", "site audit: no run yet is a warning")
+    first = {"night": night, "mail": {}}
+    v = dm.site_audit_verdict(first, now)
+    check(v["status"] == "ok" and "first" in v["summary"], "site audit: the first week still running is OK", str(v))
+    unsent = dict(calm, mail={"pending": {"week": "2026-11-22", "subject": "s", "text": "t"}, "lastError": "HTTP 502"})
+    v = dm.site_audit_verdict(unsent, now)
+    check(v["status"] == "warn" and "email" in v["summary"], "site audit: an alert email that wasn't sent warns", str(v))
+    check("site_audit_section" in dm.build.__code__.co_names, "site audit: the morning report runs the section")
 
 
 def data_section_reads_the_scorecard_alarms() -> None:

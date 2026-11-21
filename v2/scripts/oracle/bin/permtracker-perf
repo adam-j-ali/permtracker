@@ -106,9 +106,14 @@ REGRESSION = 2.0          # twice the week's typical hour
 ENTITY_FAMILIES = ("/perm-employers/*", "/perm-attorneys/*", "/perm-wages/*")
 
 LOG_LINE = re.compile(
-    r'\[(?P<t>[^\]]+)\] "(?P<m>\S+) (?P<p>\S+)[^"]*" (?P<s>\d{3}) \d+ "[^"]*" "[^"]*" '
+    r'\[(?P<t>[^\]]+)\] "(?P<m>\S+) (?P<p>\S+)[^"]*" (?P<s>\d{3}) \d+ "[^"]*" "(?P<ua>[^"]*)" '
     r"rt=(?P<rt>[\d.]+) urt=(?P<urt>[\d.,: -]+?) nc=(?P<nc>\S*)$"
 )
+# The site's own weekly audit (scripts/site_audit.py, permtracker-site-audit) reads a seventh of the sitemap from
+# 9:30 PM to 12:45 AM Eastern, mostly long-tail pages built cold. Its requests aren't visitors', so they're counted
+# apart, and a copy it keeps busy isn't called short of CPU; visitors' builds in that window still count.
+SITE_AUDIT_UA = "permtracker-site-audit/"
+SITE_AUDIT_UNIT = "permtracker-site-audit.service"
 MONTHS = {m: i for i, m in enumerate("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(), 1)}
 
 
@@ -206,7 +211,7 @@ def defend_log_time(line: str) -> float | None:
 
 def page_costs(lines: list[str], since: float) -> dict:
     groups: dict[tuple[str, str, str], list[float]] = defaultdict(list)
-    seen = 0
+    seen = audit = 0
     for line in lines:
         m = LOG_LINE.search(line.rstrip("\n"))
         if not m:
@@ -216,6 +221,9 @@ def page_costs(lines: list[str], since: float) -> dict:
             continue
         u = upstream_seconds(m.group("urt"))
         if u is None:
+            continue
+        if m.group("ua").startswith(SITE_AUDIT_UA):
+            audit += 1
             continue
         seen += 1
         kind = "data" if "_rsc=" in m.group("p") else "page"
@@ -233,6 +241,7 @@ def page_costs(lines: list[str], since: float) -> dict:
 
     return {
         "requests": seen,
+        "siteAudit": audit,
         "appSeconds": round(sum(sum(v) for v in groups.values()), 1),
         "builds": pool(lambda f, k, a: k == "page" and a == "MISS"),
         "entityBuilds": pool(lambda f, k, a: k == "page" and a == "MISS" and f in ENTITY_FAMILIES),
@@ -563,6 +572,20 @@ def secs(x: float | None) -> str:
     return "n/a" if x is None else (f"{x * 1000:.0f} ms" if x < 1 else f"{x:.1f} s")
 
 
+def _unit_state() -> str:
+    return subprocess.run(["systemctl", "is-active", SITE_AUDIT_UNIT], capture_output=True, text=True,
+                          timeout=10).stdout
+
+
+def site_audit_running(state=_unit_state) -> bool:
+    """Whether the site audit is reading pages now (a oneshot unit reads "activating" while it runs). A state that
+    can't be read counts as not running, so the busy warning is never lost to it."""
+    try:
+        return state().strip() in ("active", "activating")
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def judge(pages: dict | None, pre: dict | None, db: list[dict] | None, prof: dict | None,
           history: list[dict]) -> list[str]:
     w: list[str] = []
@@ -591,7 +614,7 @@ def judge(pages: dict | None, pre: dict | None, db: list[dict] | None, prof: dic
         if s["runs"] >= 5 and s["meanMs"] > SLOW_STATEMENT_MS and not bulk_read(s["sql"]):
             w.append(f"A database statement averages {s['meanMs'] / 1000:.1f} s over {s['runs']} runs: {s['sql'][:90]}")
     if prof and not prof.get("error"):
-        if prof.get("busyShare") is not None and prof["busyShare"] > BUSY_COPY:
+        if prof.get("busyShare") is not None and prof["busyShare"] > BUSY_COPY and not prof.get("siteAuditRunning"):
             w.append(f"The live copy was busy {prof['busyShare']:.0%} of the profile.")
         for o in prof.get("ours", []):
             if o["share"] > HOT_OWN_FILE:
@@ -673,6 +696,7 @@ def main() -> int:
             prof = take_profile()
             if prof.get("error"):
                 errors["profile"] = prof["error"]
+            prof["siteAuditRunning"] = site_audit_running()
         except Exception as e:  # noqa: BLE001
             errors["profile"] = f"{type(e).__name__}: {e}"
 
