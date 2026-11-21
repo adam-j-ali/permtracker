@@ -35,8 +35,9 @@ from collections import defaultdict
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from lca_history_rollups import FIRMS as LCA_HISTORY_FIRMS  # noqa: E402
-from lib_db import Database, query_rows, record_run  # noqa: E402
+from lib_db import Database, dicts_of, query_rows, record_run  # noqa: E402
 from lib_reference import sync_rows  # noqa: E402
+from lib_withheld import Matcher, matcher_for  # noqa: E402
 
 SCRIPT = "build_firm_programs.py"
 TABLE = "firm_programs"
@@ -100,8 +101,12 @@ def history_groups(db: Database) -> list[tuple]:
         return []
 
 
-def roll_up(rows: list[tuple], page: dict[str, str], program: str, counts_certified: bool) -> list[list]:
-    """One row per firm page: totals, dates, and its busiest employers, the page's own query rolled up."""
+def roll_up(rows: list[tuple], page: dict[str, str], program: str, counts_certified: bool,
+            withheld: Matcher | None = None) -> list[list]:
+    """One row per firm page: totals, dates, and its busiest employers, the page's own query rolled up.
+
+    A spelling lib_withheld.Matcher knows as a withheld firm's (a slug its entry carries, an alias, its entity key)
+    counts on that firm's page, whatever the page map says, so its line is whole and masked with the page."""
     total: dict[str, int] = defaultdict(int)
     certified: dict[str, int] = defaultdict(int)
     first: dict[str, str] = {}
@@ -109,6 +114,8 @@ def roll_up(rows: list[tuple], page: dict[str, str], program: str, counts_certif
     by_employer: dict[str, dict[str | None, list]] = defaultdict(dict)
     for att, emp, name, n, cert, lo, hi in rows:
         p = page.get(str(att))
+        if withheld:
+            p = withheld.page_for(slug=att) or (withheld.page_for(slug=p) if p else None) or p
         if p is None:
             continue
         n = int(n or 0)
@@ -145,13 +152,14 @@ def build(db: Database) -> list[list]:
     page = page_of(db)
     if not page:
         raise RuntimeError(f"{MAP} is empty: build_employer_map.py hasn't run, and a firm page would read nothing")
+    withheld = matcher_for(lambda sql, args: dicts_of(db.execute(sql, args)), "firm", log=log)
     want: list[list] = []
     for table, program in PROGRAM.items():
         started = time.time()
         rows = groups(db, table)
         if table == "lca_cases":
             rows += history_groups(db)
-        lines = roll_up(rows, page, program, CERTIFIED_SQL[table] != "NULL")
+        lines = roll_up(rows, page, program, CERTIFIED_SQL[table] != "NULL", withheld)
         log(f"{table}: {len(rows):,} firm and employer groups, {len(lines):,} firm pages ({time.time() - started:.0f}s)")
         want.extend(lines)
     return want

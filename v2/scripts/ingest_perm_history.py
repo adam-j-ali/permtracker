@@ -78,11 +78,12 @@ import ingest_perm_disclosure as ipd  # noqa: E402
 from entity_identity import SpacedKeyMap, entity_key  # noqa: E402
 from lib_naics import normalize_naics  # noqa: E402
 from lib_db import (  # noqa: E402
-    Database, add_missing_columns, canon, canon_hash, case_update, insert_rows, insert_stmts, month_thirds,
-    months_between, record_run, rows_of, run_stmts, stmt, write_doc,
+    Database, add_missing_columns, canon, canon_hash, case_update, counted_slices, dicts_of, insert_rows,
+    insert_stmts, month_thirds, months_between, record_run, rows_of, run_stmts, stmt, write_doc,
 )
 from lib_gov_data import SPREADSHEET_NS, column_index, fetch, log, read_shared_strings  # noqa: E402
 from lib_slugs import slugify  # noqa: E402
+from lib_withheld import Matcher, matcher_for  # noqa: E402
 
 FIRST_FY, LAST_FY = 2008, 2023
 ROWS_FROM_FY = 2008
@@ -479,7 +480,8 @@ def employer_slug_for(name: str | None, emp: dict[str, str]) -> str:
     return emp.get(entity_key(name)) or slugify(name)
 
 
-def firm_slug_for(name: str | None, att: dict[str, str], pages: frozenset[str] | set[str]) -> str:
+def firm_slug_for(name: str | None, att: dict[str, str], pages: frozenset[str] | set[str],
+                  withheld: Matcher | None = None) -> str:
     """The law firm's page slug when it has one, else its own name slugified, unless that is another firm's page.
 
     A firm with no page today got no slug until Nov 21 2026, so build_firm_ranks.py counted its older cases as naming
@@ -487,9 +489,17 @@ def firm_slug_for(name: str | None, att: dict[str, str], pages: frozenset[str] |
     employer's rule (employer_slug_for). It isn't a page: the case page and the lists check a slug before they link it
     (src/lib/db/entityLinks.ts), and the rankings print an unlinked firm by name. `pages` is every firm page's slug, so
     a name that slugifies onto a page it doesn't belong to (a truncated long name, a "-2" page) never counts there.
+
+    A spelling `withheld` knows (lib_withheld.Matcher: a name or slug the withheld entry carries, or its entity key)
+    takes the withheld firm's page before anything else, so it's never ranked or linked under its own printed name
+    and the site masks it with the page (convex/lib/withheldNames.ts).
     """
     if not name:
         return ""
+    if withheld:
+        held = withheld.page_for(name=name, slug=slugify(name))
+        if held:
+            return held
     page = att.get(entity_key(name))
     if page:
         return page
@@ -497,12 +507,13 @@ def firm_slug_for(name: str | None, att: dict[str, str], pages: frozenset[str] |
     return "" if own in pages else own
 
 
-def row_tuple(r: dict, emp: dict[str, str], att: dict[str, str], pages: frozenset[str] | None = None) -> tuple:
+def row_tuple(r: dict, emp: dict[str, str], att: dict[str, str], pages: frozenset[str] | None = None,
+              withheld: Matcher | None = None) -> tuple:
     e, a = r["employerName"], r["attorneyName"]
     return (r["caseNumber"], r["status"], r["receivedDate"], r["decisionDate"], r["days"],
             r["fiscalYear"], e or None, employer_slug_for(e, emp),
             r["state"], r["jobTitle"], r["socCode"], r["socTitle"], a or None,
-            firm_slug_for(a, att, frozenset(dict.values(att)) if pages is None else pages),
+            firm_slug_for(a, att, frozenset(dict.values(att)) if pages is None else pages, withheld),
             r["wage"], r["naics"], r["worksiteCity"],
             r.get("citizenship"), r.get("birthCountry"), r.get("visaClass"), r.get("education"),
             r.get("major"), r.get("institution"), r.get("jobEducation"), r.get("layoff"))
@@ -538,13 +549,13 @@ def stored_fingerprints(db, fy: int) -> dict[str, tuple[str, tuple[str, ...]]]:
         after = str(rs[-1][0])
 
 
-def write_cases(db, rows: list[dict], emp, att) -> int:
+def write_cases(db, rows: list[dict], emp, att, withheld: Matcher | None = None) -> int:
     """New or changed rows whole; rows whose only change is the worker's fields
     by a narrow UPDATE."""
     by_fy: dict[int, list[tuple]] = defaultdict(list)
     pages = frozenset(dict.values(att))
     for r in rows:
-        by_fy[int(r["fiscalYear"])].append(row_tuple(r, emp, att, pages))
+        by_fy[int(r["fiscalYear"])].append(row_tuple(r, emp, att, pages, withheld))
     written = 0
     for fy, tuples in by_fy.items():
         have = stored_fingerprints(db, fy)
@@ -722,18 +733,22 @@ def fill_slugs(db) -> int:
     return n
 
 
-def fill_firm_slugs(db, att: dict[str, str] | None = None) -> int:
-    """Every stored row's law firm on firm_slug_for's rule: today's page, else the firm's own name's slug.
+def fill_firm_slugs(db, att: dict[str, str] | None = None, withheld: Matcher | None = None) -> int:
+    """Every stored row's law firm on firm_slug_for's rule: a withheld firm's page for its spellings, else today's
+    page, else the firm's own name's slug.
 
     A row's slug was set when its year loaded, from that day's firm pages, so a firm with no page then has none and a
-    page made or moved since is missed. Ten days of decisions at a time on idx_pch_dec (never the whole table), each
-    named row's slug worked out again here and written only where it moves, 200 to an UPDATE keyed on the case
-    number, at a history load's gentle pace: a month's writes, then FILL_PAUSE_S idle, since back-to-back history
-    writes once kept the database compacting its log until its writes stalled for 38 minutes (Oct 3 2026). Rows
-    naming no firm (every file before FY2015, and an employer filing for itself) are left as they are.
+    page made or moved since is missed. A few thousand decisions at a time on idx_pch_dec (lib_db.counted_slices,
+    never the whole table: ten days of raw rows took 1.09 s on the live database, Nov 21 2026), each named row's slug
+    worked out again here and written only where it moves, 200 to an UPDATE keyed on the case number, at a history
+    load's gentle pace: a month's writes, then FILL_PAUSE_S idle, since back-to-back history writes once kept the
+    database compacting its log until its writes stalled for 38 minutes (Oct 3 2026). Rows naming no firm (every file
+    before FY2015, and an employer filing for itself) are left as they are.
     """
     if att is None:
         _, att = slug_maps(db)
+    if withheld is None:
+        withheld = withheld_firms(db)
     pages = frozenset(dict.values(att))
     lo = rows_of(db.execute("SELECT MIN(decision_date) FROM perm_cases_history WHERE decision_date > ''"))
     hi = rows_of(db.execute("SELECT MAX(decision_date) FROM perm_cases_history"))
@@ -743,12 +758,11 @@ def fill_firm_slugs(db, att: dict[str, str] | None = None) -> int:
     moved_total = 0
     for m in months_between(str(first), str(last)):
         moved: list[tuple[str, str]] = []
-        for a, b in month_thirds(m):
+        for where, args in counted_slices(db, "perm_cases_history", "decision_date", f"{m}-01", f"{m}-01"):
             for case, name, slug in rows_of(db.execute(
-                    "SELECT case_number, attorney_name, attorney_slug FROM perm_cases_history "
-                    "WHERE decision_date >= ? AND decision_date < ? AND attorney_name IS NOT NULL "
-                    "AND attorney_name <> ''", [a, b])):
-                want = firm_slug_for(str(name), att, pages)
+                    f"SELECT case_number, attorney_name, attorney_slug FROM perm_cases_history WHERE {where} "
+                    "AND attorney_name IS NOT NULL AND attorney_name <> ''", args)):
+                want = firm_slug_for(str(name), att, pages, withheld)
                 if want and want != (slug or ""):
                     moved.append((str(case), want))
         run_stmts(db, (case_update("perm_cases_history", "case_number", ["attorney_slug"], moved[i:i + 200])
@@ -759,6 +773,11 @@ def fill_firm_slugs(db, att: dict[str, str] | None = None) -> int:
         if m.endswith("-12"):
             log(f"  firm slugs through {m}: {moved_total:,} moved")
     return moved_total
+
+
+def withheld_firms(db) -> Matcher:
+    """The withheld firms, with the aliases and page-map spellings pointing at them (lib_withheld.matcher_for)."""
+    return matcher_for(lambda sql, args: dicts_of(db.execute(sql, args)), "firm", log=log)
 
 
 def build_search_indexes(db) -> None:
@@ -834,7 +853,7 @@ def main() -> int:
 
     if args.fill_firm_slugs:
         db = Database()
-        n = fill_firm_slugs(db)
+        n = fill_firm_slugs(db, withheld=withheld_firms(db))
         record_run(db, "ingest_perm_history.py --fill-firm-slugs", status="ok", rows_written=n,
                    note="law-firm slugs: today's page, else the firm's own name")
         return 0
@@ -893,6 +912,7 @@ def main() -> int:
     doc = read_doc(db) if db else {}
     loaded = doc.setdefault("files", {})
     emp, att = slug_maps(db) if db else ({}, {})
+    withheld = withheld_firms(db) if db else Matcher(None, "firm")
     seen: set[str] = set()
     failures: list[str] = []
     wrote_years = wrote_cases = 0
@@ -934,7 +954,7 @@ def main() -> int:
         wrote_years += write_years(db, folded, sorted(by_fy))
         wrote_years += write_country_years(db, got["countries"],
                                            sorted({y for (_, y) in got["countries"]}))
-        wrote_cases += write_cases(db, got["rows"], emp, att)
+        wrote_cases += write_cases(db, got["rows"], emp, att, withheld)
         loaded[name] = {"fy": fy, "cases": got["kept"], "caseRows": len(got["rows"]),
                         "matchedShare": match["matchedShare"], "resolved": got["resolved"],
                         "loadedAt": date.today().isoformat()}
@@ -942,7 +962,7 @@ def main() -> int:
 
     if db:
         # The years this run didn't load take today's firm pages too, so no year keeps a firm out of its rankings.
-        wrote_cases += fill_firm_slugs(db, att)
+        wrote_cases += fill_firm_slugs(db, att, withheld)
         wrote_years += write_current_years(db)
         if not args.no_indexes:
             build_search_indexes(db)

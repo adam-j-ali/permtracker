@@ -111,7 +111,7 @@ def main() -> int:
     check("the small table's reads go to the main database",
           all(statement_home(s) == "main" for s in db.sqls if lhr.FIRMS in s) and any(lhr.FIRMS in s for s in db.sqls))
 
-    # The older PERM table is read ten days of decisions at a time on idx_pch_dec, never a whole fiscal year at once
+    # The older PERM table is read a few thousand decisions at a time on idx_pch_dec, never a whole fiscal year at once
     # (it has no fiscal-year index, so `fiscal_year = ?` read every row, twice a year, for 16 years). A history row's
     # fiscal year is its decision day's, so the slices give the year's own figures.
     import random

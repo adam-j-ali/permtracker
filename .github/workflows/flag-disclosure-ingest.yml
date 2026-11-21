@@ -246,6 +246,11 @@ jobs:
         # A file before FY2020 goes to lca_cases_history, which none of these read but the rankings (below).
         if: success() && matrix.program == 'lca' && steps.load.outputs.history != 'true' && inputs.backfill_lca_detail != true && inputs.backfill_place != true && inputs.dry_run != true && inputs.dump_header != true && inputs.list_only != true
         working-directory: v2
+        env:
+          # Names withheld at their owner's request (scripts/lib_withheld.py): the firm rankings put a withheld
+          # firm's older spellings on its page, which the site masks. Read, never printed.
+          WITHHELD_EMPLOYERS: ${{ secrets.WITHHELD_EMPLOYERS }}
+          WITHHELD_FIRMS: ${{ secrets.WITHHELD_FIRMS }}
         run: |
           timeout 30m python3 scripts/build_lca_facets.py
           # Every LCA selection of 5,000+ filings (src/lib/db/wageViews.ts).
@@ -287,6 +292,11 @@ jobs:
       - name: Rebuild the H-1B rankings after an older file
         if: success() && matrix.program == 'lca' && steps.load.outputs.history == 'true' && inputs.dry_run != true && inputs.dump_header != true && inputs.list_only != true
         working-directory: v2
+        env:
+          # Names withheld at their owner's request (scripts/lib_withheld.py): the firm rankings put a withheld
+          # firm's older spellings on its page, which the site masks. Read, never printed.
+          WITHHELD_EMPLOYERS: ${{ secrets.WITHHELD_EMPLOYERS }}
+          WITHHELD_FIRMS: ${{ secrets.WITHHELD_FIRMS }}
         run: |
           timeout 40m python3 scripts/build_h1b_ranks.py || {
             python3 scripts/record_ingest_failure.py --script build_h1b_ranks.py \
