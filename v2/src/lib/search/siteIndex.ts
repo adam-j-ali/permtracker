@@ -93,6 +93,7 @@ export const PAGE_KEYWORDS: Readonly<Record<string, string>> = {
   "/perm-employers/browse": "browse alphabetical index employers companies sponsors",
   "/perm-attorneys/browse": "browse alphabetical index attorneys law firms counsel",
   "/perm-wages/browse": "browse alphabetical index occupations job titles soc wages",
+  "/soc-codes/browse": "browse alphabetical index job titles soc codes occupation codes a to z",
 };
 
 /** Pages reached by name that no menu group holds. */
@@ -112,6 +113,7 @@ const OTHER_GO_TO = [
   "/perm-employers/browse",
   "/perm-attorneys/browse",
   "/perm-wages/browse",
+  "/soc-codes/browse",
 ];
 
 /** The browse hubs share one page name; search needs to tell them apart. */
@@ -119,6 +121,7 @@ const SEARCH_LABELS: Readonly<Record<string, string>> = {
   "/perm-employers/browse": "Browse employers A to Z",
   "/perm-attorneys/browse": "Browse law firms A to Z",
   "/perm-wages/browse": "Browse occupations A to Z",
+  "/soc-codes/browse": "Browse job titles A to Z",
 };
 
 export function staticIndex(): SiteIndexEntry[] {

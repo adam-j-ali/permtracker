@@ -111,3 +111,50 @@ describe("the job code finder's reads", () => {
     expect(got).toEqual({ query: "", code: null, titles: [], codes: [] });
   });
 });
+
+describe("the title pages doc", () => {
+  const PAGES_DOC = {
+    pageMin: 50,
+    pages: [
+      ["software-engineer", "Software Engineer", 211337, "15-1252", "190000"],
+      ["data-scientist", "Data Scientist", 24660, null, 0],
+    ],
+  };
+
+  beforeEach(() => {
+    reads.resetSocCaches();
+    doc.mockReset();
+  });
+
+  it("reads the doc once for every caller in its window: the directory, the finder and each occupation page", async () => {
+    doc.mockResolvedValue(PAGES_DOC);
+    const [a, b] = await Promise.all([reads.getSocTitlePages(), reads.getSocTitlePages()]);
+    await reads.getSocTitlePages();
+    expect(doc).toHaveBeenCalledTimes(1);
+    expect(doc).toHaveBeenCalledWith("soc_title_pages");
+    expect(a).toBe(b);
+    expect(a?.pages[0]).toEqual({ slug: "software-engineer", title: "Software Engineer", filings: 211337, topSoc: "15-1252", topFilings: 190000 });
+    expect(a?.pages[1]).toMatchObject({ topSoc: null, topFilings: 0 });
+  });
+
+  it("drops a failed read, so the next caller reads again rather than failing for hours", async () => {
+    doc.mockRejectedValueOnce(new Error("database down"));
+    await expect(reads.getSocTitlePages()).rejects.toThrow("database down");
+    doc.mockResolvedValue(PAGES_DOC);
+    expect((await reads.getSocTitlePages())?.pages).toHaveLength(2);
+    expect(doc).toHaveBeenCalledTimes(2);
+  });
+
+  it("lists the title pages whose main code is the one asked, busiest first", async () => {
+    doc.mockResolvedValue({
+      pageMin: 50,
+      pages: [
+        ["software-engineer", "Software Engineer", 211337, "15-1252", 190000],
+        ["data-scientist", "Data Scientist", 24660, "15-2051", 21247],
+        ["software-developer", "Software Developer", 90000, "15-1252", 85000],
+      ],
+    });
+    expect((await reads.titlePagesForCode("15-1252")).map((p) => p.slug)).toEqual(["software-engineer", "software-developer"]);
+    expect(await reads.titlePagesForCode("99-9999")).toEqual([]);
+  });
+});

@@ -426,7 +426,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
   {
     path: "/soc-codes",
     label: "SOC code lookup",
-    blurb: "Type a job title to get the SOC occupation codes employers filed it under in DOL's PERM, prevailing wage and LCA files, with each code's share of the filings. Type a code to get its title, and for a 2010 code the 2018 codes it became. Each common title has its own page.",
+    blurb: "Type a job title to get the SOC occupation codes employers filed it under in DOL's PERM, prevailing wage and LCA files, with each code's share of the filings. Type a code to get its title, and for a 2010 code the 2018 codes it became. Each common title has its own page, every one listed A to Z at /soc-codes/browse.",
   },
   {
     path: "/tools/green-card-fees",

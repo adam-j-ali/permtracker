@@ -7,7 +7,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Fragment } from "react";
+import { cache, Fragment } from "react";
 import { ChartPieSliceIcon, CurrencyDollarIcon, HashIcon, StairsIcon } from "@phosphor-icons/react/ssr";
 
 import { BarRows, type BarRow } from "@/components/data/BarRows";
@@ -21,32 +21,40 @@ import { SocSources } from "@/components/soc/SocSources";
 import { CaseNextStep } from "@/components/tools/CaseNextStep";
 import { FaqList } from "@/components/tools/FaqList";
 import { breadcrumbSchema } from "@/lib/breadcrumbs";
-import { firstThatFits } from "@/lib/describe";
 import { codeSummaries, marketPayNational, onetReference } from "@/lib/db/reference";
-import { getSocCodes, getSocTitle } from "@/lib/db/socTitles";
+import { PRERENDERED_ENTITY_HEAD } from "@/lib/db/entities";
+import { getSocCodes, getSocTitle, getSocTitlePages } from "@/lib/db/socTitles";
 import { formatDollars, formatInt, formatShareOf } from "@/lib/format";
 import { openGraphBase } from "@/lib/openGraphBase";
+import { fitTitle, metadataTitle } from "@/lib/pageTitle";
 import { codeHref, zoneLabelOf, type TitleAnswer, type TitleCode } from "@/lib/socFinder";
 import { keyOfSlug } from "@/lib/socTitleKey";
 import { finderHref, DEFAULT_FILTERS } from "@/lib/sponsorFinder";
 import { withSocialCard } from "@/lib/socialCard";
 import { softFail } from "@/lib/softRead";
+import { socTitleDescription } from "@/lib/socTitleDescription";
 
 // The titles move with the quarterly loads.
 export const revalidate = 604800;
 
-/** Built on first request: 3,600 titles, each read once a week. */
+/**
+ * The busiest titles are built ahead, as the entity pages' head is (PRERENDERED_ENTITY_HEAD): the doc lists them
+ * busiest first, so the head is also the traffic, warm from the first request after a deploy. The other 3,700
+ * render on their first visit and keep a week. A build that can't read the list prerenders none and records why.
+ */
 export async function generateStaticParams() {
-  return [];
+  const doc = await getSocTitlePages().catch(softFail("soc-codes/[title].generateStaticParams", null));
+  return (doc?.pages ?? []).slice(0, PRERENDERED_ENTITY_HEAD).map((p) => ({ title: p.slug }));
 }
 
-async function answerFor(slug: string): Promise<TitleAnswer | null> {
+/** Read once per render: the metadata and the page both ask. */
+const answerFor = cache(async (slug: string): Promise<TitleAnswer | null> => {
   const key = keyOfSlug(slug);
   if (!key) return null;
   const a = await getSocTitle(key);
   // Only a title with its own page answers here; the rest are found through the finder.
   return a?.slug === slug ? a : null;
-}
+});
 
 const filedCodes = (a: TitleAnswer) => a.codes.filter((c) => c.filings > 0);
 
@@ -68,16 +76,15 @@ export async function generateMetadata({ params }: { params: Promise<{ title: st
   if (!a) notFound();
   const path = `/soc-codes/${slug}`;
   const title = `SOC Code for ${a.title}`;
-  const top = filedCodes(a)[0];
-  const description = firstThatFits([
-    describe(a),
-    top ? `${a.title} is filed under ${top.soc} ${top.codeTitle} in ${formatShareOf(top.filings, a.total)} of DOL's filings. Every code employers used, with its share.` : "",
-    top ? `${a.title}: SOC code ${top.soc} in ${formatShareOf(top.filings, a.total)} of DOL's filings.` : describe(a),
-  ].filter(Boolean));
+  const filed = filedCodes(a);
+  const top = filed[0];
+  // The same cached read the page makes, so the pay is printed in the description only when the page shows it.
+  const market = top ? await marketPayNational(top.soc).catch(softFail("soc-codes/[title]/metadata.marketPayNational", null)) : null;
+  const description = socTitleDescription({ title: a.title, total: a.total, codes: filed, pay: market ? market.median : null });
   return withSocialCard(
     {
-      // The title is the searched phrase: past 60 characters with the brand, the brand gives way.
-      title: title.length + " | PERM Tracker".length > 60 ? { absolute: title } : title,
+      // The title is the searched phrase: the brand gives way first, then the name is cut at a word.
+      title: metadataTitle(fitTitle(a.title, [(n) => `SOC Code for ${n}`])),
       description,
       alternates: { canonical: path },
       openGraph: { ...openGraphBase, title: `${title} | PERM Tracker`, description, url: path },
