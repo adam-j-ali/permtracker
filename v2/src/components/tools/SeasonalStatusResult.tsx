@@ -1,4 +1,6 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
+import { SocCodeLink } from "@/components/soc/SocCodeLink";
 import { DolUnanswered } from "@/components/tools/DolUnanswered";
 import { WatchThisNumber } from "@/components/tools/WatchThisNumber";
 import { AnswerPanel } from "@/components/tools/Insight";
@@ -30,6 +32,11 @@ import { SeasonalTimingPanel } from "@/components/tools/SeasonalTimingPanel";
 import { formatDay } from "@/lib/dolFormat";
 import { prettyStatus } from "@/components/queue/stages";
 import { softFail } from "@/lib/softRead";
+import { caseHref } from "@/lib/caseLinks";
+import { entityHref } from "@/lib/entityPayload";
+import { naicsTitle } from "@/lib/naicsTitles";
+import { getPwdDetail, type PwdDetail } from "@/lib/db/pwdDetail";
+import { linkTargets, linkableSlugs } from "@/lib/db/entityLinks";
 
 /**
  * An H-2A application (`H-300-`), an H-2B application (`H-400-`) or an H-2B
@@ -84,12 +91,30 @@ function periodPhrase(begin: string | null, end: string | null): string | null {
  * accepted it (SeasonalJobs), the two places the wage, the workers, the work
  * period and the worksite live; the live status carries none of them.
  */
+/** A case number as a link to its own page, in the mono face. */
+function caseLink(n: string | null | undefined): ReactNode {
+  return n ? (
+    <Link href={caseHref(n)} className="link inline-flex min-h-11 items-center font-mono">
+      {n}
+    </Link>
+  ) : null;
+}
+
+/** What a job requires, in the words the wage request page uses: education, then the months of experience. */
+function needPhrase(education: string | null, months: number | null): string | null {
+  return [education && education.toLowerCase() !== "none" ? education : null, months ? `${months} months of experience` : null]
+    .filter(Boolean)
+    .join(", ") || null;
+}
+
 function SeasonalDetails({
   record,
   posting,
   pending,
   caseNumber,
   ruleShownElsewhere = false,
+  firmLinked = false,
+  detail = null,
 }: {
   record: SeasonalRecord | null;
   posting: SeasonalPosting | null;
@@ -97,10 +122,80 @@ function SeasonalDetails({
   caseNumber: string;
   /** The timing panel already states the 30-day rule for this case. */
   ruleShownElsewhere?: boolean;
+  /** The law firm has a page to link to. */
+  firmLinked?: boolean;
+  /** An H-2B or CW-1 wage request's level and requirements, from DOL's prevailing wage file. */
+  detail?: PwdDetail | null;
 }) {
   if (!record && !posting) return null;
   const firstDay = record?.beginDate ?? posting?.beginDate ?? null;
   const decideBy = pending && !ruleShownElsewhere && /^H-300-/.test(caseNumber) ? h2aDecideBy(firstDay) : null;
+  const industry = naicsTitle(record?.naics ?? detail?.naics);
+  const required = detail ? needPhrase(detail.education, detail.experienceMonths) : null;
+  const alternative = detail ? needPhrase(detail.altEducation, detail.altExperienceMonths) : null;
+  const firm = record?.attorneyName ?? null;
+  const rows: RecordRow[] = [
+    ...rowsOf([
+      ...(record
+        ? ([
+            ["Decision", publishedStatusLabel(record.status)],
+            ["Decided", formatDay(record.decisionDate)],
+          ] as const)
+        : []),
+      ["Wage offered", wagePhrase(record?.wage ?? posting?.wage ?? null, record?.wageUnit ?? posting?.wageUnit ?? null)],
+      ["Wage level DOL set", detail?.level ? `Level ${detail.level}` : null],
+      ["What the job requires", required],
+      ["Or, as the alternative", alternative],
+      ["Workers", workersPhrase(record?.workers ?? posting?.workersForeign ?? null, record?.workersCertified ?? null)],
+      ["Work period", periodPhrase(firstDay, record?.endDate ?? posting?.endDate ?? null)],
+      [
+        "Worksite",
+        worksitePhrase(
+          record?.worksiteCity ?? detail?.worksiteCity ?? posting?.worksiteCity ?? null,
+          record?.worksiteCounty ?? posting?.worksiteCounty ?? null,
+          record?.worksiteState ?? posting?.worksiteState ?? null,
+        ),
+      ],
+    ]),
+    ...(record?.socTitle || record?.socCode
+      ? [
+          {
+            label: "Occupation",
+            value: (
+              <>
+                {record.socTitle ?? "Not given"}
+                {record.socCode ? (
+                  <span className="font-mono text-sm font-normal text-muted-foreground">
+                    {" "}
+                    · <SocCodeLink code={record.socCode} />
+                  </span>
+                ) : null}
+              </>
+            ),
+          },
+        ]
+      : []),
+    ...(industry ? [{ label: "Industry", value: `${industry.title} (NAICS ${industry.code})` }] : []),
+    ...(firm
+      ? [
+          {
+            label: "Law firm or agent",
+            raw: true,
+            value:
+              firmLinked && record?.attorneySlug ? (
+                <Link href={entityHref("attorney", record.attorneySlug)} className="link">
+                  {firm}
+                </Link>
+              ) : (
+                firm
+              ),
+          },
+        ]
+      : []),
+    ...rowsOf(!record && posting ? ([["Accepted by DOL", formatDay(posting.acceptedDate)]] as const) : []),
+    ...(posting?.jobOrderNumber ? [{ label: "Job order", raw: true, value: caseLink(posting.jobOrderNumber) }] : []),
+    ...(posting?.pwdNumber ? [{ label: "Wage determination", raw: true, value: caseLink(posting.pwdNumber) }] : []),
+  ];
   return (
     <PageSection
       title={record ? "DOL's published record" : "The job, as DOL accepted it"}
@@ -110,32 +205,7 @@ function SeasonalDetails({
           : "From DOL's SeasonalJobs feed, which lists applications it has accepted. The decision comes later."
       }
     >
-      <RecordList
-        rows={rowsOf([
-          ...(record
-            ? ([
-                ["Decision", publishedStatusLabel(record.status)],
-                ["Decided", formatDay(record.decisionDate)],
-              ] as const)
-            : []),
-          ["Wage offered", wagePhrase(record?.wage ?? posting?.wage ?? null, record?.wageUnit ?? posting?.wageUnit ?? null)],
-          ["Workers", workersPhrase(record?.workers ?? posting?.workersForeign ?? null, record?.workersCertified ?? null)],
-          ["Work period", periodPhrase(firstDay, record?.endDate ?? posting?.endDate ?? null)],
-          [
-            "Worksite",
-            worksitePhrase(
-              record?.worksiteCity ?? posting?.worksiteCity ?? null,
-              record?.worksiteCounty ?? posting?.worksiteCounty ?? null,
-              record?.worksiteState ?? posting?.worksiteState ?? null,
-            ),
-          ],
-          ["Occupation", record?.socTitle ?? null],
-          ["Law firm or agent", record?.attorneyName ?? null],
-          ...(!record && posting ? ([["Accepted by DOL", formatDay(posting.acceptedDate)]] as const) : []),
-          ["Job order", posting?.jobOrderNumber ?? null],
-          ["Wage determination", posting?.pwdNumber ?? null],
-        ])}
-      />{" "}
+      <RecordList rows={rows} />{" "}
       {decideBy ? (
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-soft">
           By rule DOL decides an H-2A application no later than 30 days before the first day of work, so this one by{" "}
@@ -150,9 +220,41 @@ function SeasonalDetails({
   );
 }
 
+/**
+ * The employer's and the law firm's pages, when they have one: the employer by the page the nightly map gives its
+ * spelling, the firm by its own slug. A read that fails links nothing and the names print as text.
+ */
+async function pagesFor(employerSlugs: (string | null | undefined)[], firmSlug: string | null | undefined) {
+  const [employers, firms] = await Promise.all([
+    linkTargets("employer", employerSlugs).catch(softFail("SeasonalStatusResult.linkTargets", new Map<string, string>())),
+    firmSlug
+      ? linkableSlugs("attorney", [firmSlug]).catch(softFail("SeasonalStatusResult.linkableSlugs", new Set<string>()))
+      : Promise.resolve(new Set<string>()),
+  ]);
+  return {
+    employerPage: (slug: string | null | undefined) => (slug ? (employers.get(slug) ?? null) : null),
+    firmLinked: !!firmSlug && firms.has(firmSlug),
+  };
+}
+
+/** The employer's name, linked to its page when it has one. */
+function employerValue(name: string | null, page: string | null): ReactNode {
+  if (!name) return "Not given";
+  return page ? (
+    <Link href={entityHref("employer", page)} className="link">
+      {name}
+    </Link>
+  ) : (
+    name
+  );
+}
+
 export async function SeasonalLookup({ caseNumber }: { caseNumber: string }) {
   const isH2b = caseNumber.trim().toUpperCase().startsWith("H-400-");
-  const [outcome, record, posting, timing, checks, groupOf, groupTiming] = await Promise.all([
+  // An H-2B or CW-1 wage request is decided in DOL's prevailing wage file, which prints the level and the job's
+  // requirements the shared record leaves out.
+  const isWageRequest = /^P-(?:400|500)-/.test(caseNumber.trim().toUpperCase());
+  const [outcome, record, posting, timing, checks, groupOf, groupTiming, detail] = await Promise.all([
     lookupSeasonalCaseOutcome(caseNumber).catch(softFail("SeasonalStatusResult.lookupSeasonalCaseOutcome", { row: null, dolMiss: "records" as const })),
     lookupSeasonalRecord(caseNumber).catch(softFail("SeasonalStatusResult.lookupSeasonalRecord", null)),
     lookupSeasonalPosting(caseNumber).catch(softFail("SeasonalStatusResult.lookupSeasonalPosting", null)),
@@ -161,9 +263,11 @@ export async function SeasonalLookup({ caseNumber }: { caseNumber: string }) {
     // DOL's H-2B assignment group, for an application filed in a season's first days.
     isH2b ? h2bGroupOf(caseNumber).catch(softFail("SeasonalStatusResult.h2bGroupOf", null)) : Promise.resolve(null),
     isH2b ? getH2bGroupTiming().catch(softFail("SeasonalStatusResult.getH2bGroupTiming", null)) : Promise.resolve(null),
+    isWageRequest ? getPwdDetail(caseNumber.trim().toUpperCase()) : Promise.resolve(null),
   ]);
   const { row, dolMiss } = outcome;
   const form = formOf(caseNumber);
+  const pages = await pagesFor([record?.employerSlug, row?.employerSlug], record?.attorneySlug);
 
   if (!row && record) {
     // In DOL's published file but not in the live table: the file is the
@@ -185,11 +289,22 @@ export async function SeasonalLookup({ caseNumber }: { caseNumber: string }) {
           DOL decided this application: <b className="font-semibold">{publishedStatusLabel(record.status)}</b>
           {formatDay(record.decisionDate) ? `, ${formatDay(record.decisionDate)}` : ""}.
         </AnswerPanel>
-        <SeasonalDetails record={record} posting={posting} pending={false} caseNumber={record.caseNumber} />
+        <SeasonalDetails
+          record={record}
+          posting={posting}
+          pending={false}
+          caseNumber={record.caseNumber}
+          firmLinked={pages.firmLinked}
+          detail={detail}
+        />
         <PageSection title="The record">
           <RecordList
             rows={[
-              { label: "Employer", value: record.employerName ?? "Not given", raw: !!record.employerName },
+              {
+                label: "Employer",
+                value: employerValue(record.employerName, pages.employerPage(record.employerSlug)),
+                raw: !!record.employerName,
+              },
               { label: "Job title", value: record.jobTitle ?? "Not given", raw: !!record.jobTitle },
               ...rowsOf([["Received by DOL", formatDay(record.receivedDate)]]),
             ]}
@@ -305,12 +420,21 @@ export async function SeasonalLookup({ caseNumber }: { caseNumber: string }) {
         pending={!done}
         caseNumber={row.caseNumber}
         ruleShownElsewhere={view?.ruleDay != null}
+        firmLinked={pages.firmLinked}
+        detail={detail}
       />{" "}
 
       <PageSection title="The record" lede="As DOL holds it.">
         <RecordList
           rows={[
-            { label: "Employer", value: row.employerName ?? "Not given", raw: !!row.employerName },
+            {
+              label: "Employer",
+              value: employerValue(
+                row.employerName,
+                pages.employerPage(row.employerSlug) ?? pages.employerPage(record?.employerSlug),
+              ),
+              raw: !!row.employerName,
+            },
             { label: "Job title", value: row.jobTitle ?? "Not given", raw: !!row.jobTitle },
             { label: "Case number", value: row.caseNumber, raw: true, mono: true },
             { label: "Filed with DOL", value: filed ?? "Unknown" },
