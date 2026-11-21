@@ -91,7 +91,7 @@ export interface UnifiedNarrow {
    * `readFlagEmployerStage`; as a lead of its own it is `readPermStage` or
    * `readFlagStage`.
    */
-  stage?: { status: string; program: "perm" | "pwd" | "lca" };
+  stage?: { status: string; program: "perm" | "pwd" | "lca" | "seasonal" };
   /** Filing month, `YYYY-MM`, inclusive both ends. */
   from?: string;
   to?: string;

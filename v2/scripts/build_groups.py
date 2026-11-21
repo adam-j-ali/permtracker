@@ -7,7 +7,8 @@ occupations, states, cities, countries and education as JSON), so a page is
 one primary-key read. Built from BOTH case tables:
 
     perm_cases           FY2024 onward (current DOL files)
-    perm_cases_history   FY2016 to FY2023 (ingest_perm_history.py)
+    perm_cases_history   FY2008 to FY2023 (ingest_perm_history.py), read from
+                         FY2016 (GROUPS_FROM_DATE says why)
 
 so a city or an industry spans FY2016 to today. Citizenship and education
 exist only on DOL's old form, so a country's page covers FY2016 to
@@ -90,8 +91,22 @@ def log(msg: str) -> None:
 
 
 # The group pages (cities, industries, countries) describe decisions from
-# FY2016 on, and say so: the history table reaches FY2008 since Oct 3 2026, and
-# folding 2008 wages into "what they paid" would mislead.
+# FY2016 on, and say so (fy_from and fy_to are stored per group and printed).
+# The history table reaches FY2008 (decisions from October 2007; 61,363 rows in
+# FY2008, 88,556 in FY2015, counted Nov 21 2026), and those years are left out
+# on purpose, for the figures each page prints from this one window:
+#   - the median certified wage pools every year's wage as filed, never
+#     adjusted for pay since, so 2008 to 2015 wages would pull "what they paid"
+#     down by an amount that depends on how old each city's filings are;
+#   - a country page is citizenship, which DOL's files carry from FY2016 only
+#     (the worker's fields begin with the FY2016 layout), and its FY2008 onward
+#     counts come from perm_country_years instead;
+#   - the case search's pick lists, counted in this same pass, are the worker's
+#     fields, which begin with FY2016.
+# Widening the counts alone (keeping the median on this window) is the open
+# option; it needs the median's own years printed beside it on the city and
+# industry pages first. This build reads both tables whole and runs only after
+# a load (perm-disclosure-ingest.yml, perm-history-ingest.yml), never nightly.
 GROUPS_FROM_DATE = "2015-10-01"
 
 

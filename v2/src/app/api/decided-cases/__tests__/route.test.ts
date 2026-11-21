@@ -41,6 +41,7 @@ function feed(over: Record<string, unknown> = {}) {
     totals: { perm: 0, pwd: 0, lca: 0 },
     capped: false,
     refused: null,
+    partial: null,
     ...over,
   };
 }

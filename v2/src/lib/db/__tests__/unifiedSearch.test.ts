@@ -605,6 +605,19 @@ describe("a review stage in the search", () => {
     expect(readFlagEmployerStage).toHaveBeenCalledWith("lca", "acme", "IN PROCESS", expect.anything(), UNIFIED_MAX);
     expect(readPermEmployerStage).not.toHaveBeenCalled();
   });
+
+  it("an H-2A, H-2B or CW-1 stage reads the seasonal live table, alone or under an employer", async () => {
+    const nodLead: Lead = { kind: "stage", value: "NOD ISSUED", program: "seasonal" };
+    await unifiedSearch({ lead: nodLead, programs: ["perm", "pwd", "lca", "seasonal"] });
+    expect(readFlagStage).toHaveBeenCalledWith("seasonal", "NOD ISSUED", {}, UNIFIED_MAX);
+    expect(readFlagStage).toHaveBeenCalledTimes(1);
+    expect(readPermStage).not.toHaveBeenCalled();
+    expect(readFlagPublished).not.toHaveBeenCalled();
+    const stage = { status: "ACCEPTED - PENDING RECRUITMENT", program: "seasonal" as const };
+    await unifiedSearch({ lead: employerLead, narrow: { stage } });
+    expect(readFlagEmployerStage).toHaveBeenCalledWith("seasonal", "acme", stage.status, expect.anything(), UNIFIED_MAX);
+    expect(readFlagEmployerStage).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("filters only published PERM can answer", () => {

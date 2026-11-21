@@ -34,6 +34,27 @@ const summary: FirmRanksSummary = {
   },
 };
 
+describe("firstRankedYear", () => {
+  it("is the first fiscal year that ranks any firm in the country, never a year whose files name none", () => {
+    const withOld: FirmRanksSummary = {
+      programs: {
+        // DOL's PERM files name no law firm before FY2015, so those years rank nobody.
+        perm: {
+          years: {
+            "2008": { through: "2008-09-30", places: { US: { filings: 0, firms: 0, top10: 0, unnamed: 900 } } },
+            "2015": { through: "2015-09-30", places: { US: t(20) } },
+            ...summary.programs.perm.years,
+          },
+        },
+        lca: summary.programs.lca,
+      },
+    };
+    expect(firstRankedYear(withOld, "perm")).toBe(2015);
+    expect(firstRankedYear(withOld, "lca")).toBe(2025);
+    expect(firstRankedYear({ programs: { perm: { years: {} }, lca: { years: {} } } }, "perm")).toBeNull();
+  });
+});
+
 describe("shownYear", () => {
   it("shows the newest fiscal year whose decisions run to its last week, not one still loading", () => {
     expect(shownYear(summary, "perm")).toBe(2025);

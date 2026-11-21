@@ -40,6 +40,45 @@ describe("getSponsorRecord", () => {
     expect(call[1]).toEqual(["acme-corp", "2026-05-12"]);
   });
 
+  it("counts the employer's decided PERM filings in every year DOL published, FY2008 on", async () => {
+    employerMatch.mockResolvedValue(null);
+    one.mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM perm_entities")) return { total: 120, name: "Acme Corp" };
+      // The yearly table the employer page charts: FY2008 on, the current files' years included.
+      if (sql.includes("FROM perm_employer_years")) return { n: 2_480 };
+      return null;
+    });
+    const r = await getSponsorRecord("acme-corp", "2026-05-12");
+    expect(r.perm).toBe(2_480);
+    const call = one.mock.calls.find(([sql]) => String(sql).includes("perm_employer_years"))!;
+    expect(call[1]).toEqual(["acme-corp"]);
+  });
+
+  it("finds the newest filing in the older table when the current files and the live record hold none since", async () => {
+    employerMatch.mockResolvedValue(null);
+    one.mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM perm_entities")) return { total: 0, name: "Acme Corp" };
+      if (sql.includes("FROM perm_cases_history")) return { d: "2022-11-03" };
+      return null;
+    });
+    const r = await getSponsorRecord("acme-corp", "2026-05-12");
+    expect(r.lastPerm).toBe("2022-11-03");
+    const call = one.mock.calls.find(([sql]) => String(sql).includes("perm_cases_history"))!;
+    expect(call[0]).toContain("SELECT MAX(received_date) AS d FROM perm_cases_history WHERE employer_slug = ?");
+  });
+
+  it("never reads the older table when a newer filing is already in hand", async () => {
+    employerMatch.mockResolvedValue(null);
+    one.mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM perm_entities")) return { total: 10, name: "Acme Corp" };
+      if (sql.includes("FROM perm_cases WHERE")) return { d: "2025-03-01" };
+      return null;
+    });
+    const r = await getSponsorRecord("acme-corp", "2026-05-12");
+    expect(r.lastPerm).toBe("2025-03-01");
+    expect(one.mock.calls.some(([sql]) => String(sql).includes("perm_cases_history"))).toBe(false);
+  });
+
   it("throws on a failed read, so the page keeps its last good render", async () => {
     employerMatch.mockResolvedValue(null);
     one.mockRejectedValue(new Error("database is busy"));

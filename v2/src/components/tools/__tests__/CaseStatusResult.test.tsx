@@ -90,6 +90,8 @@ const PENDING: CaseLookupResult = {
     denied: 0,
     approvalRate: 100,
     medianDays: 507,
+    fyFrom: 2025,
+    fyTo: 2026,
   },
   statusOutlook: { status: "ANALYST REVIEW", nowInStatus: 94_435 },
 };
@@ -379,11 +381,39 @@ describe("CaseStatusResult, pending case", () => {
         denied: 60,
         approvalRate: 94,
         medianDays: 480,
+        fyFrom: 2024,
+        fyTo: 2026,
       },
     });
     expect(container.textContent).toMatch(/94\.0%/);
     expect(container.textContent).toMatch(/carries no claim about this one/);
     expect(container.textContent).not.toMatch(/too small a sample/);
+    expect(container.textContent).toMatch(/Across FY2024 to FY2026\. It describes/);
+  });
+
+  it("names the years the employer's counts cover, and the median's own when they differ", () => {
+    const { container } = renderPending({
+      employer: {
+        name: "Big Sponsor LLC",
+        slug: "big-sponsor-llc",
+        total: 9_000,
+        certified: 8_400,
+        denied: 300,
+        approvalRate: 93.3,
+        medianDays: 480,
+        fyFrom: 2009,
+        fyTo: 2026,
+      },
+    });
+    expect(container.textContent).toMatch(/Across FY2009 to FY2026, and the median days since FY2024\./);
+    expect(container.textContent).not.toMatch(/Across FY2024 to FY2026/);
+  });
+
+  it("says the counts are the current files' alone when the yearly table had none", () => {
+    const { container } = renderPending({
+      employer: { ...PENDING.employer!, fyFrom: null, fyTo: null },
+    });
+    expect(container.textContent).toMatch(/Since FY2024\. It describes/);
   });
 
   it("decodes the status with its regulation, not a paraphrase", () => {
@@ -474,6 +504,36 @@ describe("CaseStatusResult, decided case", () => {
     />,
     );
   }
+
+  it("places an older case's wage among its own year's peers, and says which year", () => {
+    const ladder = { n: 4_000, avg: 101_000, p5: 70_000, p25: 88_000, p50: 100_000, p75: 115_000, p95: 140_000 };
+    const { container } = render(
+      <CaseStatusResult
+        result={DECIDED}
+        backlog={BACKLOG}
+        cohortStatuses={[]}
+        wall={null}
+        neighbours={[]}
+        publishedFront="2025-09"
+        publishedAsOf="2026-08-20"
+        wage={{
+          socCode: "15-1132.00",
+          socTitle: "Software Developers, Applications",
+          state: "TN",
+          wage: 93_205,
+          occupation: ladder,
+          inState: null,
+          fiscalYear: "2016",
+        }}
+        duration={null}
+        today={TODAY}
+        estimator={null}
+      />,
+    );
+    expect(container.textContent).toMatch(/Software Developers, Applications, FY2016/);
+    expect(container.textContent).toMatch(/certified in FY2016/);
+    expect(container.textContent).toMatch(/4,000 certified cases decided in FY2016/);
+  });
 
   it("offers a certified case the next watch: the visa bulletin, with the case's priority date beside it", () => {
     const { container } = renderDecided(null);

@@ -3,9 +3,11 @@
  *
  * TWO SOURCES, BOTH OURS:
  *
- *   dol-disclosure  from 2015-10-01 through the last published quarter.
- *                   Derived from both case tables by DOL's decision date
- *                   (scripts/build_daily_decisions.py).
+ *   dol-disclosure  from the history table's first decision (FY2008, October
+ *                   2007) through the last published quarter. Derived from
+ *                   both case tables by DOL's decision date
+ *                   (scripts/build_daily_decisions.py); the page reads its
+ *                   span from the rows, never from this comment.
  *   sweep-observed  daily. Our own sweep's record of when each case's
  *                   status changed (perm_case_events).
  *

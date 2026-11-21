@@ -39,10 +39,23 @@ import { socGroupClause } from "@/lib/socCode";
 
 import { slugify } from "@/lib/entitySlug";
 
+import { CURRENT_FIRST_FY } from "@/lib/permEras";
+import type { OlderYears, OutcomeCounts } from "@/lib/permCasesMeta";
+
 import { getCasesMeta } from "./publicData";
 import { one, rows, rowsPaged } from "./client";
+import { beforeFirstLoad } from "./firstLoad";
 import { MONTH_OR_DAY_RE, boundEnd, boundStart } from "@convex/lib/months";
 import { LIKE_ESCAPE, likeContains } from "./like";
+
+/**
+ * DOL's FY2008 to FY2023 decisions (scripts/ingest_perm_history.py). Every decision `perm_cases` holds is October
+ * 2023 or later and every one here is before it, so in decision order one table follows the other.
+ */
+const HISTORY = "perm_cases_history";
+/** The first decision day `perm_cases` holds; the older table's last is the day before. */
+const CURRENT_FROM = `${CURRENT_FIRST_FY - 1}-10-01`;
+const HISTORY_LAST = `${CURRENT_FIRST_FY - 1}-09-30`;
 
 export type DisclosureOutcome = "certified" | "denied" | "withdrawn";
 
@@ -177,6 +190,38 @@ export interface CasesMeta {
 
 export function getMeta(): Promise<CasesMeta | null> {
   return getCasesMeta<CasesMeta>();
+}
+
+/**
+ * The older table's record: each fiscal year's and each worksite state's decisions by outcome, written by the history
+ * load (perm_docs['perm_history_years'], scripts/ingest_perm_history.py). One point read, never a count over the
+ * table. Null until it's built; a failed read throws, so the page keeps its last good render.
+ */
+export async function getOlderYears(): Promise<OlderYears | null> {
+  const r = await one<{ json: string }>("SELECT json FROM perm_docs WHERE key = 'perm_history_years'");
+  if (!r) return null;
+  let doc: { years?: unknown; byState?: unknown; from?: unknown };
+  try {
+    doc = JSON.parse(String(r.json)) as typeof doc;
+  } catch {
+    return null;
+  }
+  const counts = (e: Record<string, unknown>): OutcomeCounts | null => {
+    const [total, certified, denied, withdrawn] = [e.total, e.certified, e.denied, e.withdrawn].map(Number);
+    return [total, certified, denied, withdrawn].every((n) => Number.isInteger(n) && n! >= 0)
+      ? { total: total!, certified: certified!, denied: denied!, withdrawn: withdrawn! }
+      : null;
+  };
+  const list = (v: unknown) => (Array.isArray(v) ? (v as Record<string, unknown>[]) : []);
+  const years = list(doc.years).flatMap((e) => {
+    const c = counts(e);
+    return c && typeof e.fiscalYear === "string" && /^\d{4}$/.test(e.fiscalYear) ? [{ fiscalYear: e.fiscalYear, ...c }] : [];
+  });
+  const byState = list(doc.byState).flatMap((e) => {
+    const c = counts(e);
+    return c && typeof e.state === "string" ? [{ state: e.state, ...c }] : [];
+  });
+  return { years, byState, from: typeof doc.from === "string" ? doc.from : null };
 }
 
 // ---------------------------------------------------------------------------
@@ -325,22 +370,47 @@ export function clampPageItems(requested: number | undefined): number {
 }
 
 /**
- * A cursor is a row offset.
+ * How deep the list pages into the older table. A skip there walks the slice's index, and opens each row it passes
+ * once an outcome is asked with another filter (the older table has no index pairing them), so it stops where that
+ * would pass a second. The oldest decisions are still one choice away: the oldest-first order starts there.
+ */
+export const MAX_HISTORY_OFFSET = 10_000;
+
+/** The two tables the list reads, by the letter a cursor names them with. */
+type ListTable = "c" | "h";
+const LIST_TABLE: Record<ListTable, string> = { c: "perm_cases", h: HISTORY };
+
+/**
+ * A cursor is a table and a row offset in it: `c:150` (the current files) or `h:0` (the older ones).
  *
- * Convex handed out opaque cursors; this hands out a decimal offset, which is
- * still opaque to the browser (it only ever pushes what it was given onto a
- * stack). Anything unparseable is treated as the start rather than as an
- * error: a stale cursor from a previous ingest should reset the view, not
- * break the page.
+ * Convex handed out opaque cursors; this hands out a table letter and a decimal
+ * offset, which is still opaque to the browser (it only ever pushes what it was
+ * given onto a stack). A bare number is a cursor from before the older table
+ * joined the list, an offset in the current one. Anything unparseable is
+ * treated as the start rather than as an error: a stale cursor from a previous
+ * ingest should reset the view, not break the page.
  *
  * Stability: `ORDER BY decision_date` alone has many ties, but SQLite's
  * b-tree index keys are (decision_date, rowid), so a scan of one index is a
  * deterministic total order and LIMIT/OFFSET over it cannot repeat or skip a
  * row within one state of the database.
  */
-function parseCursor(cursor: string | null | undefined): number {
-  if (typeof cursor !== "string" || !/^\d{1,9}$/.test(cursor)) return 0;
-  return Math.min(MAX_OFFSET, Number(cursor));
+function parseCursor(cursor: string | null | undefined): { table: ListTable; offset: number } | null {
+  if (typeof cursor !== "string") return null;
+  const m = /^(?:(c|h):)?(\d{1,9})$/.exec(cursor);
+  if (!m) return null;
+  return { table: (m[1] as ListTable | undefined) ?? "c", offset: Math.min(MAX_OFFSET, Number(m[2])) };
+}
+
+/**
+ * The tables a decided range can match, in the order the list reads them: the current files first when the newest
+ * decisions come first, the older ones first otherwise. A range wholly on one side of October 2023 reads one table.
+ */
+function listTables(filter: CaseFilter, order: "newest" | "oldest"): ListTable[] {
+  const current = filter.to === undefined || filter.to >= CURRENT_FROM;
+  const history = filter.from === undefined || filter.from <= HISTORY_LAST;
+  const seq: ListTable[] = order === "oldest" ? ["h", "c"] : ["c", "h"];
+  return seq.filter((t) => (t === "c" ? current : history));
 }
 
 export interface ListCasesArgs {
@@ -369,23 +439,48 @@ export interface CasePage {
 export async function listCases(args: ListCasesArgs): Promise<CasePage> {
   const plan = planCaseSql(args.filter);
   const take = clampPageItems(args.numItems);
-  const offset = parseCursor(args.cursor);
-  const direction = args.order === "oldest" ? "ASC" : "DESC";
+  const order = args.order === "oldest" ? "oldest" : "newest";
+  const direction = order === "oldest" ? "ASC" : "DESC";
+  const tables = listTables(args.filter, order);
+  if (tables.length === 0) return { page: [], isDone: true, continueCursor: "c:0" };
+  const at = parseCursor(args.cursor);
+  let i = at ? tables.indexOf(at.table) : 0;
+  let offset = at && i >= 0 ? at.offset : 0;
+  if (i < 0) i = 0;
+  const here = tables[i]!;
+  if (here === "h" && offset >= MAX_HISTORY_OFFSET) return { page: [], isDone: true, continueCursor: `h:${offset}` };
 
   // Counted on the rows read, not the rows kept: a row withheld from the
   // answer (src/lib/privacy/withheld.ts) must neither end the paging early nor
-  // shift the next page back over rows already shown.
-  const found = await rowsPaged<CaseDbRow>(
-    `SELECT ${CASE_COLS} FROM perm_cases WHERE ${plan.where} ` +
-      `ORDER BY decision_date ${direction} LIMIT ? OFFSET ?`,
-    [...plan.args, take + 1, offset],
-    take,
-  );
+  // shift the next page back over rows already shown. The older table is read
+  // unpinned: its indexes may be dropped to save writes, and the slice's own
+  // equality leads its index there as it does here.
+  const read = (table: ListTable, n: number, from: number) => {
+    const q = rowsPaged<CaseDbRow>(
+      `SELECT ${CASE_COLS} FROM ${LIST_TABLE[table]} WHERE ${plan.where} ` +
+        `ORDER BY decision_date ${direction} LIMIT ? OFFSET ?`,
+      [...plan.args, n + 1, from],
+      n,
+    );
+    // An older table not made yet holds nothing; any other failure throws.
+    return table === "h" ? q.catch(beforeFirstLoad({ page: [] as CaseDbRow[], more: false, consumed: 0 })) : q;
+  };
 
+  const found = await read(here, take, offset);
+  const page = found.page.map(toCaseRow);
+  offset += found.consumed;
+  if (found.more) {
+    return { page, isDone: here === "h" && offset >= MAX_HISTORY_OFFSET, continueCursor: `${here}:${offset}` };
+  }
+  // This table is done: the rest of the page comes from the next one, from its start. With the page already full,
+  // the read asks for one row, only to say whether there's a next page.
+  const next = tables[i + 1];
+  if (!next) return { page, isDone: true, continueCursor: `${here}:${offset}` };
+  const rest = await read(next, take - page.length, 0);
   return {
-    page: found.page.map(toCaseRow),
-    isDone: !found.more,
-    continueCursor: String(offset + found.consumed),
+    page: [...page, ...rest.page.map(toCaseRow)],
+    isDone: !rest.more,
+    continueCursor: `${next}:${rest.consumed}`,
   };
 }
 
@@ -419,10 +514,12 @@ export function normalizeCaseNumber(raw: string): string {
 export async function lookupByCaseNumber(caseNumber: string): Promise<PermCaseRow | null> {
   const needle = normalizeCaseNumber(caseNumber);
   if (needle === "") return null;
-  const row = await one<CaseDbRow>(
-    `SELECT ${CASE_COLS} FROM perm_cases WHERE case_number = ?`,
-    [needle],
-  );
+  // The current files first, then DOL's FY2008 to FY2023 decisions: two primary-key reads at most.
+  const row =
+    (await one<CaseDbRow>(`SELECT ${CASE_COLS} FROM perm_cases WHERE case_number = ?`, [needle])) ??
+    (await one<CaseDbRow>(`SELECT ${CASE_COLS} FROM ${HISTORY} WHERE case_number = ?`, [needle]).catch(
+      beforeFirstLoad(null),
+    ));
   return row ? toCaseRow(row) : null;
 }
 
@@ -691,6 +788,46 @@ export async function searchCases(args: SearchCasesArgs): Promise<PermCaseRow[]>
     `SELECT ${CASE_COLS} FROM perm_cases INDEXED BY ${leadIndex} ` +
       `WHERE ${conds.join(" AND ")} ORDER BY decision_date DESC, case_number DESC LIMIT ?`,
     [...sqlArgs, take],
+  );
+  const current = found.map(toCaseRow);
+  // Every current decision is newer than every older one, so the older table can only add to a short answer.
+  if (current.length >= take) return current;
+  const seen = new Set(current.map((r) => r.caseNumber));
+  const older = await searchHistory(column, needle, upper, conds.slice(2), sqlArgs.slice(2), take);
+  return [...current, ...older.filter((r) => !seen.has(r.caseNumber))].slice(0, take);
+}
+
+/**
+ * How many of a name's newest older-table cases a filter is tested against: the same window, for the same reason,
+ * as the case search's (SLICE_CAP in caseSearchReads.ts, where a big sponsor's newest 2,000 read in 8 ms).
+ */
+const HISTORY_NAME_WINDOW = 5000;
+
+/**
+ * A name's newest decisions in the older table, in two passes, as the case search reads a name: the rows' ids off
+ * the (slug, decision day) index alone, newest first, then those rows by id with the other filters. One pass would
+ * open every row the name ever filed to sort them, which is what took an employer prefix to 137 s on the LCA table
+ * (readEmployerSlice in caseSearchReads.ts has the measurement). Unpinned: the older table's indexes may be dropped
+ * to save writes, and a missing table holds nothing.
+ */
+async function searchHistory(
+  column: "employer_slug" | "attorney_slug",
+  lo: string,
+  hi: string,
+  restConds: string[],
+  restArgs: (string | number)[],
+  take: number,
+): Promise<PermCaseRow[]> {
+  const ids = await rows<{ rowid: number }>(
+    `SELECT rowid FROM ${HISTORY} WHERE ${column} >= ? AND ${column} < ? ORDER BY decision_date DESC LIMIT ?`,
+    [lo, hi, restConds.length ? HISTORY_NAME_WINDOW : take],
+  ).catch(beforeFirstLoad([] as { rowid: number }[]));
+  if (ids.length === 0) return [];
+  const found = await rows<CaseDbRow>(
+    `SELECT ${CASE_COLS} FROM ${HISTORY} NOT INDEXED WHERE rowid IN (${ids.map(() => "?").join(", ")})` +
+      (restConds.length ? ` AND ${restConds.join(" AND ")}` : "") +
+      " ORDER BY decision_date DESC, case_number DESC LIMIT ?",
+    [...ids.map((r) => r.rowid), ...restArgs, take],
   );
   return found.map(toCaseRow);
 }

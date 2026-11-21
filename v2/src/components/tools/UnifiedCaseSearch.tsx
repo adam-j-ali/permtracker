@@ -1009,7 +1009,7 @@ export function UnifiedCaseSearch({
                   className={CONTROL + " min-w-0"}
                 >
                   <option value="">Any stage</option>
-                  {(["perm", "pwd", "lca"] as const).map((program) => (
+                  {(["perm", "pwd", "lca", "seasonal"] as const).map((program) => (
                     <optgroup key={program} label={STAGE_PROGRAM_LABEL[program]}>
                       {stageOptions
                         .filter((o) => o.program === program)

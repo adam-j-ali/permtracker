@@ -89,7 +89,10 @@ export interface SeasonalRecord {
   employerName: string | null;
   employerSlug: string | null;
   jobTitle: string | null;
+  socCode: string | null;
   socTitle: string | null;
+  /** The employer's industry, as DOL's file prints its NAICS code. */
+  naics: string | null;
   wage: number | null;
   wageUnit: string | null;
   workers: number | null;
@@ -100,6 +103,7 @@ export interface SeasonalRecord {
   worksiteCounty: string | null;
   worksiteState: string | null;
   attorneyName: string | null;
+  attorneySlug: string | null;
   visaClass: string | null;
   sourceFile: string | null;
 }
@@ -115,7 +119,8 @@ const num = (v: unknown): number | null => {
 
 const BASE_COLS =
   "case_number, case_status, received_date, decision_date, employer_name, employer_slug, job_title, " +
-  "soc_title, wage, wage_unit, worksite_city, worksite_state, attorney_name, visa_class, source_file";
+  "soc_code, soc_title, naics, wage, wage_unit, worksite_city, worksite_state, attorney_name, attorney_slug, " +
+  "visa_class, source_file";
 
 export async function lookupSeasonalRecord(caseNumber: string): Promise<SeasonalRecord | null> {
   const cn = normaliseSeasonalCaseNumber(caseNumber);
@@ -139,7 +144,9 @@ export async function lookupSeasonalRecord(caseNumber: string): Promise<Seasonal
     employerName: str(r.employer_name),
     employerSlug: str(r.employer_slug),
     jobTitle: str(r.job_title),
+    socCode: str(r.soc_code),
     socTitle: str(r.soc_title),
+    naics: str(r.naics),
     wage: num(r.wage),
     wageUnit: str(r.wage_unit),
     workers: num(r.workers),
@@ -150,6 +157,7 @@ export async function lookupSeasonalRecord(caseNumber: string): Promise<Seasonal
     worksiteCounty: str(r.worksite_county),
     worksiteState: str(r.worksite_state),
     attorneyName: str(r.attorney_name),
+    attorneySlug: str(r.attorney_slug),
     visaClass: str(r.visa_class),
     sourceFile: str(r.source_file),
   };

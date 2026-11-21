@@ -69,7 +69,7 @@ import { SEARCH_TEXT_MAX } from "@/lib/search/limits";
 /** Which field leads the search. Exactly one, and the index follows from it. */
 export type LeadKind = "case" | "employer" | "firm" | "state" | "occupation" | "stage";
 /** The program a review stage belongs to; mirrors `Program` in the search without importing it. */
-export type StageProgram = "perm" | "pwd" | "lca";
+export type StageProgram = "perm" | "pwd" | "lca" | "seasonal";
 
 export const LEAD_KINDS: readonly LeadKind[] = [
   "case",
