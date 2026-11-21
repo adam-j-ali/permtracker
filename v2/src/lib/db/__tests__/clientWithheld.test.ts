@@ -94,6 +94,40 @@ describe("rows() and a withheld firm", () => {
   });
 });
 
+describe("an older case of a withheld firm, on the case page (Nov 21 2026)", () => {
+  // An older row carries its firm's page slug, or its own name's, so the rankings count it; its name is whatever
+  // the older file printed, which the list may not hold.
+  const CASE_COLS = ["attorney_name", "attorney_slug", "naics", "worksite_city", "job_education", "layoff"];
+
+  async function caseWith(attorneyName: string, attorneySlug: string) {
+    execute.mockImplementation(async ({ sql, args }: { sql: string; args: unknown[] }) => {
+      if (sql.includes("FROM perm_cases WHERE")) return answer(CASE_COLS, []);
+      if (sql.includes("FROM perm_cases_history")) return answer(CASE_COLS, [[attorneyName, attorneySlug, null, null, null, null]]);
+      if (sql.includes("FROM perm_entities")) {
+        return answer(["slug"], (args as string[]).includes("example-law-group-pllc") ? [["example-law-group-pllc"]] : []);
+      }
+      return answer(["slug"], []);
+    });
+    const { getPermCaseDetail } = await import("../permCaseDetail");
+    return getPermCaseDetail("A-16001-00009");
+  }
+
+  it("masks a spelling the list doesn't hold when the row carries the firm's slug, and links the neutral page", async () => {
+    const got = await caseWith("Oldname Partners Immigration", "example-law-group-pllc");
+    expect(got).toMatchObject({ attorneyName: "Law firm 3", attorneySlug: "law-firm-3" });
+  });
+
+  it("masks a spelling with its own slug whose entity key is the firm's", async () => {
+    const got = await caseWith("The Example Law Group & Company", "the-example-law-group-company");
+    expect(got).toMatchObject({ attorneyName: "Law firm 3", attorneySlug: "law-firm-3" });
+  });
+
+  it("leaves another firm's older case as DOL printed it, unlinked when it has no page", async () => {
+    const got = await caseWith("Quiet Immigration Group, P.C.", "quiet-immigration-group-p-c");
+    expect(got).toMatchObject({ attorneyName: "Quiet Immigration Group, P.C.", attorneySlug: null });
+  });
+});
+
 describe("the site's helpers", () => {
   it("know the real name from the neutral one, by kind", async () => {
     const w = await import("@/lib/privacy/withheld");

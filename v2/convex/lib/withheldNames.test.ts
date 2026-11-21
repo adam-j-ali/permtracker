@@ -395,3 +395,57 @@ describe("the spellings and rows that slipped past the masker until Nov 9 2026",
     expect(more.mask([{ estab_name: "ACME CAFE", trade_name: "Acme Cafe" }], p.ctx)).toEqual([{ estab_name: "Employer 7", trade_name: "Employer 7" }]);
   });
 });
+
+describe("an older spelling of a withheld firm (Nov 21 2026)", () => {
+  // The older PERM and H-1B files print a firm under spellings the list may not hold, and an older row now carries
+  // its firm's page slug, or its own name's, so the rankings count it. The site joins a spelling to a page by its
+  // entity key (src/lib/entitySlug.ts, scripts/entity_identity.py), so the masker reads that key too, and a row whose
+  // firm slug is the withheld firm's prints no other name beside it.
+  const older = [
+    { case_number: "A-17001-00001", attorney_name: "The Example Law Group & Company", attorney_slug: "the-example-law-group-company" },
+    { case_number: "A-17001-00002", attorney_name: "ExampleLaw Group P.L.L.C.", attorney_slug: "examplelaw-group-p-l-l-c" },
+    { case_number: "I-200-19001-0000003", attorney_name: "EXAMPLE LAW GROUP &amp; CO.", attorney_slug: "example-law-group-amp-co" },
+  ];
+
+  it("masks a spelling whose name key differs but whose entity key is the firm's", () => {
+    for (const row of older) {
+      expect(nameKey(row.attorney_name)).not.toBe(nameKey(FIRM.name));
+      const { rows } = read("SELECT * FROM perm_cases_history WHERE case_number = ?", [row.case_number], [row]);
+      expect(rows).toEqual([{ case_number: row.case_number, attorney_name: "Law firm 3", attorney_slug: "law-firm-3" }]);
+    }
+  });
+
+  it("drops it when a search or an old address asks by it", () => {
+    expect(m.isWithheldQuery("firm", "The Example Law Group & Company")).toBe(true);
+    expect(m.isWithheldQuery("firm", "the-example-law-group-company")).toBe(true);
+    expect(read("SELECT * FROM perm_cases_history WHERE attorney_slug = ?", ["examplelaw-group-p-l-l-c"], [older[1]]).rows).toEqual([]);
+  });
+
+  it("masks every spelling printed beside the withheld firm's slug, whatever its key", () => {
+    const filled = { case_number: "A-16001-00009", attorney_name: "Oldname Partners Immigration", attorney_slug: "example-law-group-pllc", wage: 1 };
+    expect(read("SELECT * FROM perm_cases_history WHERE case_number = ?", [filled.case_number], [filled]).rows).toEqual([
+      { ...filled, attorney_name: "Law firm 3", attorney_slug: "law-firm-3" },
+    ]);
+    const ranked = { slug: "oldname-partners-immigration", name: "Exampel Law Group", rank: 7, linked: 0 };
+    expect(read("SELECT * FROM firm_ranks WHERE program = ? AND fy = ?", ["perm", 2019], [ranked]).rows).toEqual([
+      { slug: "law-firm-3", name: "Law firm 3", rank: 7, linked: 0 },
+    ]);
+  });
+
+  it("leaves another firm, and another kind's cells, as they were", () => {
+    const rows = [
+      { attorney_name: "Example Law Partners", attorney_slug: "example-law-partners" },
+      { attorney_name: "Exemplary Law Group", attorney_slug: "exemplary-law-group" },
+      { slug: "big-firm-llp", name: "Big Firm LLP" },
+    ];
+    for (const row of rows) expect(read("SELECT * FROM firm_ranks WHERE fy = ?", [2019], [row]).rows[0]).toBe(row);
+    const mixed = { employer_name: "Example Law Group & Company", employer_slug: "acme", attorney_slug: "example-law-group-pllc" };
+    expect(read("SELECT * FROM perm_cases WHERE state = ?", ["CA"], [mixed]).rows[0]).toEqual({ ...mixed, attorney_slug: "law-firm-3" });
+  });
+
+  it("does the same inside a stored summary", () => {
+    const doc = { firms: [{ slug: "example-law-group-pllc", name: "Oldname Partners Immigration", n: 4 }, { name: "The Example Law Group & Co", n: 2 }] };
+    const [out] = read("SELECT json FROM perm_docs WHERE key = ?", ["firms"], [{ json: JSON.stringify(doc) }]).rows as { json: string }[];
+    expect(JSON.parse(out!.json)).toEqual({ firms: [{ slug: "law-firm-3", name: "Law firm 3", n: 4 }, { name: "Law firm 3", n: 2 }] });
+  });
+});
