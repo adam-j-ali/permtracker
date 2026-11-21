@@ -55,26 +55,29 @@ def fiscal_year_of(day: str) -> int:
     return int(day[:4]) + (1 if int(day[5:7]) >= 10 else 0)
 
 
-# Each read is the first and last entry of an index: `lca_cases` has none on its fiscal year, and a
-# SELECT DISTINCT over it read all 3.7 million rows (audit, Nov 4 2026). A year in the span with no rows
-# rebuilds as empty, which is right.
+# Each read is the first or the last entry of an index: `lca_cases` has none on its fiscal year, and a
+# SELECT DISTINCT over it read all 3.7 million rows (audit, Nov 4 2026). Each end is its own statement: SQLite seeks
+# one end of an index only for a lone MIN or MAX, and the two in one statement walked the whole index. A year in the
+# span with no rows rebuilds as empty, which is right.
 SPANS = {
-    "lca_cases": "SELECT MIN(decision_date), MAX(decision_date) FROM lca_cases",
-    HISTORY_TABLE: f"SELECT MIN(fiscal_year), MAX(fiscal_year) FROM {HISTORY_TABLE}",
+    "lca_cases": ("SELECT MIN(decision_date) FROM lca_cases WHERE decision_date > ''",
+                  "SELECT MAX(decision_date) FROM lca_cases"),
+    HISTORY_TABLE: (f"SELECT MIN(fiscal_year) FROM {HISTORY_TABLE}",
+                    f"SELECT MAX(fiscal_year) FROM {HISTORY_TABLE}"),
 }
 
 
 def years_held(db) -> list[int]:
     """Every fiscal year either table spans. A history table not loaded yet adds none."""
     found: set[int] = set()
-    for table, sql in SPANS.items():
+    for table, (low_sql, high_sql) in SPANS.items():
         try:
-            rows = rows_of(db.execute(sql))
+            low, high = rows_of(db.execute(low_sql)), rows_of(db.execute(high_sql))
         except Exception as e:  # noqa: BLE001
             if "no such table" not in str(e):
                 raise
             continue
-        lo, hi = rows[0] if rows else (None, None)
+        lo, hi = (low[0][0] if low else None), (high[0][0] if high else None)
         if lo is None or hi is None:
             continue
         if table == "lca_cases":
