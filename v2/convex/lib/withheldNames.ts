@@ -294,6 +294,17 @@ function keyKind(key: string): KindMask | null {
 
 const CASE_NUMBER = /^[A-Z]{1,2}(-[A-Z])?-\d{3}-\d{5}-\d{6}$/i;
 
+/**
+ * The pair a slug or name column belongs to: `employer_slug` and `employer_name` are "employer", `attorneySlug`
+ * and `attorneyName` "attorney", a page's own `slug` and `name` "". Null for any other column. The two cells of a
+ * pair are one entity's, so when either names a withheld entity both are masked: DOL's older files print spellings
+ * an entry never gathered, and the history load maps them to today's page slug (Nov 21 2026).
+ */
+function pairOf(column: string): string | null {
+  const c = column.toLowerCase();
+  return /(^|_|[a-z])(slug|name)$/.test(c) ? c.replace(/_?(slug|name)$/, "") : null;
+}
+
 // ---------------------------------------------------------------------------
 // Reading a statement
 // ---------------------------------------------------------------------------
@@ -720,15 +731,25 @@ export function makeMasker(entries: readonly WithheldEntry[]): Masker {
       changed = true;
     }
     let caseEntry: WithheldEntry | null = null;
+    // The entity each slug-and-name pair names, when either cell of it matched (pairOf).
+    const pairs = new Map<string, WithheldEntry>();
     for (const [k, v] of Object.entries(o)) {
-      if (typeof v === "string" && roleOf(k).kind === "case") caseEntry ??= byCase.get(v.trim().toUpperCase()) ?? null;
+      if (typeof v !== "string") continue;
+      const role = roleOf(k);
+      if (role.kind === "case") caseEntry ??= byCase.get(v.trim().toUpperCase()) ?? null;
+      const pair = pairOf(k);
+      if (pair === null || role.kind === "case" || role.kind === "other" || pairs.has(pair)) continue;
+      const hit = match(v, kindsFor(role, objKind));
+      if (hit) pairs.set(pair, hit.entry);
     }
     for (const [k, v] of Object.entries(o)) {
       if (typeof v === "string") {
         const role = roleOf(k);
         if (role.kind === "case") continue;
         const kinds = kindsFor(role, objKind);
-        const hit = match(v, kinds, role.kind === "other");
+        const pair = pairOf(k);
+        const paired = pair !== null && role.kind !== "other" ? pairs.get(pair) : undefined;
+        const hit = match(v, kinds, role.kind === "other") ?? (paired ? { entry: paired, how: "name" as const } : null);
         if (hit) {
           o[k] = role.slugLike ? neutralSlug(hit.entry) : shownLabel(hit.entry);
           changed = true;
@@ -867,6 +888,17 @@ export function makeMasker(entries: readonly WithheldEntry[]): Masker {
         // Prose and stored summaries live in columns that aren't an entity's own:
         // an employer's long name that happens to contain a firm's is left alone.
         else if (role.kind === "other" && v.length >= PROSE_MIN) longCols.push(col);
+      }
+      // The other cell of a matched pair is the same entity, whatever it prints (pairOf).
+      for (const h of [...hits]) {
+        const pair = pairOf(h.col);
+        if (pair === null) continue;
+        for (const [col, v] of Object.entries(r)) {
+          if (typeof v !== "string" || !v || hits.some((x) => x.col === col) || pairOf(col) !== pair) continue;
+          const role = roleOf(col);
+          if (role.kind === "case" || role.kind === "other") continue;
+          hits.push({ col, hit: h.hit, slugLike: role.slugLike });
+        }
       }
       const scrubbed = new Map<string, string>();
       for (const col of longCols) {

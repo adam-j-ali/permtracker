@@ -232,6 +232,36 @@ describe("every other row that names it", () => {
     ]);
   });
 
+  it("masks an older file's spelling the list doesn't hold, by its row's slug, and the slug by its row's name", () => {
+    // DOL's FY2008 to FY2023 files print spellings the entry never gathered; the history load maps them to today's
+    // page slug. A name cell beside a slug cell of the same column pair is that slug's entity, whatever it prints.
+    const older = {
+      case_number: "A-16001-00001",
+      employer_name: "ACME X HOLDING COMPANY OF OHIO",
+      employer_slug: "acme-x-holdings",
+      attorney_name: "EXAMPELL AND PARTNERS",
+      attorney_slug: "exampel-law-group",
+    };
+    expect(read("SELECT * FROM perm_cases_history WHERE state = ?", ["OH"], [older]).rows).toEqual([
+      { ...older, employer_name: "Employer", employer_slug: null, attorney_name: "Law firm 3", attorney_slug: "law-firm-3" },
+    ]);
+    // A page's own slug and name, and a camel-cased pair in a stored summary, the same way.
+    const page = { slug: "exampel-law-group", name: "EXAMPELL AND PARTNERS LLP", total: 4 };
+    expect(read("SELECT slug, name, total FROM perm_entities WHERE kind = ? AND rank > ?", ["attorney", 0], [page]).rows).toEqual([
+      { slug: "law-firm-3", name: "Law firm 3", total: 4 },
+    ]);
+    const summary = JSON.stringify({ firms: [{ firmSlug: "exampel-law-group", firmName: "EXAMPELL AND PARTNERS", n: 2 }] });
+    const got = read("SELECT json FROM perm_docs WHERE key = ?", ["x"], [{ json: summary }]).rows[0]!.json;
+    expect(JSON.parse(got)).toEqual({ firms: [{ firmSlug: "law-firm-3", firmName: "Law firm 3", n: 2 }] });
+    // A different employer on the same row keeps its name: only the pair of the cell that matched is masked.
+    const mixed = { employer_name: "Big Co", employer_slug: "big-co", attorney_name: "Old Name LLP", attorney_slug: "exampel-law-group" };
+    expect(read("SELECT * FROM perm_cases_history WHERE state = ?", ["OH"], [mixed]).rows[0]).toMatchObject({
+      employer_name: "Big Co",
+      employer_slug: "big-co",
+      attorney_name: "Law firm 3",
+    });
+  });
+
   it("gives an entry without a number its plain label and no link", () => {
     const row = { employer_name: "ACME X HOLDINGS", employer_slug: "acme-x-holdings", n: 2 };
     expect(read("SELECT * FROM perm_cases WHERE state = ?", ["CA"], [row]).rows).toEqual([{ employer_name: "Employer", employer_slug: null, n: 2 }]);
