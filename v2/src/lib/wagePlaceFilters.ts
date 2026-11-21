@@ -25,6 +25,12 @@ import { sectorGroup } from "@/lib/naicsSectors";
 /** Longer than any city DOL prints; a cap before anything parses it. */
 export const MAX_CITY = 60;
 
+/**
+ * Why neither narrows a year from DOL's older PERM files (FY2008 to FY2023): those years are worked out ahead by
+ * occupation and state at the history load, and the live query that could narrow them reads FY2024 on.
+ */
+export const OLDER_YEAR_REFUSAL = "a city or industry filter can't narrow a year from DOL's older files";
+
 /** The two-digit codes a sector value stands for, or null for an unknown one. */
 export function sectorCodes(value: string): string[] | null {
   return sectorGroup(value)?.codes ?? null;

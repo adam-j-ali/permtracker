@@ -4,6 +4,7 @@ import { CaretRightIcon } from "@phosphor-icons/react/ssr";
 import {
   MIN_DECIDED_FOR_BAND_RATE,
   coarsenBands,
+  fiscalYearSpan,
   reversals,
   worstBand,
   type WageBandRate,
@@ -146,12 +147,7 @@ function Panel({
   );
 }
 
-/** "FY2024", or "FY2024 to FY2026", for the years given; null for none. */
-function yearSpan(series: readonly WageBandSeries[]): string | null {
-  const years = series.map((s) => s.fiscalYear).sort();
-  if (years.length === 0) return null;
-  return years.length === 1 ? `FY${years[0]}` : `FY${years[0]} to FY${years[years.length - 1]}`;
-}
+const yearSpan = (series: readonly WageBandSeries[]) => fiscalYearSpan(series.map((s) => s.fiscalYear));
 
 /** The bar scale for a block: its highest rate. */
 const scaleOf = (bands: readonly WageBandRate[]) => Math.max(1, ...bands.map((b) => b.deniedPct ?? 0));

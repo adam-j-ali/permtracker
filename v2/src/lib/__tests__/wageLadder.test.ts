@@ -7,6 +7,7 @@ import {
   coarsenBands,
   reversals,
   bandLabel,
+  fiscalYearSpan,
   isComplete,
   isMonotonicFalling,
   ladderExtent,
@@ -189,6 +190,14 @@ describe("money formatting", () => {
   it("abbreviates for an axis", () => {
     expect(moneyShort(139_027)).toBe("$139k");
     expect(moneyShort(1_250_000)).toBe("$1.3m");
+  });
+});
+
+describe("fiscalYearSpan", () => {
+  it("names the years a pooled figure covers, in order, whatever order they came in", () => {
+    expect(fiscalYearSpan(["2026", "2024", "2025"])).toBe("FY2024 to FY2026");
+    expect(fiscalYearSpan(["2025"])).toBe("FY2025");
+    expect(fiscalYearSpan([])).toBeNull();
   });
 });
 
