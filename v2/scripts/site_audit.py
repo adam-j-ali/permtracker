@@ -957,8 +957,10 @@ def deadline_after(now: dt.datetime, until: str, max_minutes: int) -> float:
     local = now.astimezone(ET)
     end = local.replace(hour=h, minute=m, second=0, microsecond=0)
     if end <= local:
-        end += dt.timedelta(days=1)
-    return min((end - local).total_seconds(), max_minutes * 60.0)
+        end = (local + dt.timedelta(days=1)).replace(hour=h, minute=m, second=0, microsecond=0)
+    # Subtracted in UTC: two datetimes in one zone subtract as wall-clock times, an hour off across a DST change.
+    real = end.astimezone(dt.timezone.utc) - local.astimezone(dt.timezone.utc)
+    return min(real.total_seconds(), max_minutes * 60.0)
 
 
 def run_night(db, up: Upstream, *, day: dt.date, seconds: float, workers: int = WORKERS, rate: float = RATE,
