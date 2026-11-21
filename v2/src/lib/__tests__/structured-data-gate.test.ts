@@ -29,6 +29,7 @@ import {
   generateVideoObjectSchema,
 } from "@/lib/content/seo";
 import type { PostMeta, PostSummary } from "@/lib/content/types";
+import { DATE_SOURCE, OWN_PAGE_NODE } from "@/lib/pageDates";
 import { allowedProperties, APP_TYPES, ARTICLE_TYPES, checkJsonLd } from "@/lib/seo/jsonLdCheck";
 import {
   APP_RATING,
@@ -312,6 +313,18 @@ describe("each page family's own nodes, read from the source", () => {
       .filter((l) => !l.open)
       .flatMap((l) => requiredKeys(l.type, l.keys).map((k) => `${l.file}:${l.line} ${l.type} has no ${k}`));
     expect(problems).toEqual([]);
+  });
+
+  it("a page that writes its own #webpage node is one the breadcrumb bar leaves it to, dated as the bar dates it", () => {
+    // The bar (SiteBreadcrumbs) writes `<url>#webpage` on every page; a page writing its own would be a second full
+    // node with that @id (/about's AboutPage was, until Nov 20 2026).
+    const pages = sourceFiles(join(SRC, "app"))
+      .filter((f) => f.endsWith("page.tsx") && /["']@id["']\s*:\s*`[^`]*#webpage`/.test(readFileSync(f, "utf8")))
+      .map((f) => relative(join(SRC, "app"), f).replace(/\/page\.tsx$/, "").replace(/\([^)]*\)\//g, ""))
+      .map((r) => `/${r}`);
+    expect(pages).toEqual([...OWN_PAGE_NODE]);
+    // The page dates its node from the code alone, so the bar's day must come from the code alone too.
+    for (const route of OWN_PAGE_NODE) expect(DATE_SOURCE[route]).toBeUndefined();
   });
 
   it("the app's full node is built in one place, and only the homepage calls it", () => {
