@@ -710,7 +710,7 @@ export default defineSchema({
     lastSentDay: v.optional(v.string()),
   })
     .index("by_caseId", ["caseId"])
-    .index("by_userId", ["userId"])
+    .index("by_userId_and_status", ["userId", "status"])
     .index("by_status_and_invitedAt", ["status", "invitedAt"]),
 
   /**

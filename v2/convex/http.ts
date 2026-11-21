@@ -769,7 +769,9 @@ http.route({
 });
 
 // The Stop pages' words hold in every case the button can meet: the reminders still coming, already stopped, removed
-// by the owner (the link still refuses the address for the account it's signed for), or the account gone.
+// by the owner (the link still refuses the address for the account it's signed for, and stops any row that account
+// added for the address since, on any case), or the account gone. A Stop ends every reminder that account sends the
+// address, so the words speak of the account and its cases.
 http.route({
   path: REMINDER_STOP_PATH,
   method: "GET",
@@ -778,7 +780,7 @@ http.route({
     if (!l) return reminderBadLink("This link is incomplete. Use the Stop link in your latest reminder email.");
     return messagePage(
       "Stop these deadline reminders?",
-      "You won't get this PERM case's deadline reminders again, and your address won't be kept with it. The account that added you can't invite this address again.",
+      "You won't get deadline reminders from the account that added you again, for this case or any other, and your address won't be kept with its cases. That account can't invite this address again.",
       { post: reminderAction(REMINDER_STOP_PATH, l), label: "Stop the reminders" },
     );
   }),
@@ -800,12 +802,12 @@ http.route({
     if (result === "already") {
       return messagePage(
         "These reminders are already off",
-        "Nothing more will be sent to you for this case, and your address isn't kept with it. The account that added you can't invite this address again.",
+        "We won't send you deadline reminders from the account that added you again, and your address isn't kept with its cases. That account can't invite this address again.",
       );
     }
     return messagePage(
       "The reminders are off",
-      "We won't send you this case's deadline reminders again, and we've deleted your address from it. The account that added you can't invite this address again.",
+      "We won't send you deadline reminders from the account that added you again, for this case or any other, and we've deleted your address from its cases. That account can't invite this address again.",
     );
   }),
 });

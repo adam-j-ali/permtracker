@@ -820,6 +820,186 @@ describe("an address that asked not to be added, and the cap on asking again", (
   });
 });
 
+describe("a Stop ends every reminder its account sends that inbox", () => {
+  const copyItems = [{ deadlineType: "PWD expiration", deadlineDate: "2026-12-01", daysUntil: 7, urgency: "urgent" as const }];
+  const refusals = (t: T) => t.run((ctx) => ctx.db.query("reminderRefusals").collect());
+  const waiting = (t: T) => t.run((ctx) => ctx.db.query("emailRetries").collect());
+  const claim = (t: T) => t.mutation(internal.emailLedger.claimRetries, { limit: 10 });
+  /** A retry for the row, due now: what a send in flight leaves behind. */
+  const queueRetry = (t: T, recipientId: string, to = "para@firm.example") =>
+    t.run((ctx) =>
+      ctx.db.insert("emailRetries", {
+        kind: "reminder-copy",
+        to,
+        payload: JSON.stringify({ from: "x@permtracker.app", to, subject: "s", text: "t" }),
+        queuedAt: Date.now(),
+        nextAttemptAt: 0,
+        attempts: 0,
+        lastError: "internal_server_error: outage",
+        refs: [`reminder:${recipientId}`],
+      }),
+    );
+  const verify = (t: T, userId: Id<"users">) =>
+    t.run(async (ctx) => {
+      const user = await ctx.db.get(userId);
+      await ctx.db.insert("authAccounts", {
+        userId,
+        provider: "password",
+        providerAccountId: user!.email!,
+        emailVerified: user!.email!,
+      });
+    });
+
+  /** `user` invites `email` on `caseId` and the person confirms; the row's id. */
+  async function addConfirmed(t: T, user: Awaited<ReturnType<typeof setup>>["owner"], caseId: Id<"cases">, email: string) {
+    expect(await user.mutation(api.reminderRecipients.invite, { caseId, email })).toEqual({ ok: true });
+    await finishScheduledNow(t);
+    const row = (await rows(t)).find((r) => r.caseId === caseId && r.status === "waiting")!;
+    expect(
+      await t.mutation(internal.reminderRecipients.confirmByToken, {
+        token: await confirmToken(row._id, row.email!),
+        recipientId: row._id,
+      }),
+    ).toMatchObject({ state: "confirmed" });
+    return row._id;
+  }
+
+  it("an old Stop link for a row the owner removed stops the row that replaced it, and nothing more goes to it", async () => {
+    const { t, owner, caseId } = await setup();
+    // Row A: invited, confirmed, then removed by the owner.
+    const a = await addConfirmed(t, owner, caseId, "para@firm.example");
+    await owner.mutation(api.reminderRecipients.remove, { caseId });
+    // Row B: the account's second (and last) invitation to the address, confirmed too.
+    const b = await addConfirmed(t, owner, caseId, "para@firm.example");
+    // A reminder to B already waits in the retry queue.
+    await queueRetry(t, b);
+
+    expect(
+      await t.mutation(internal.reminderRecipients.stopByToken, {
+        token: await stopToken(a, "para@firm.example", owner.userId),
+        recipientId: a,
+        userId: owner.userId,
+      }),
+    ).toBe("stopped");
+
+    const [row] = await rows(t);
+    expect(row!._id).toBe(b);
+    expect(row!.status).toBe("stopped");
+    expect("email" in row!).toBe(false);
+    const list = await refusals(t);
+    expect(list).toHaveLength(1);
+    expect(list[0]!.userId).toBe(owner.userId);
+    // What waited for B in the retry queue is gone.
+    expect(await waiting(t)).toEqual([]);
+
+    // No reminder goes to B: the day's send admits nothing, and a retry a send in flight leaves is never handed out.
+    sent = [];
+    await t.action(internal.reminderRecipients.sendCopy, { recipientId: b, items: copyItems });
+    expect(sent).toEqual([]);
+    await queueRetry(t, b);
+    expect(await claim(t)).toEqual([]);
+    expect(await waiting(t)).toEqual([]);
+    expect(await t.query(internal.reminderRecipients.copyTargets, { caseIds: [caseId] })).toEqual([]);
+  });
+
+  it("the old link's page says the reminders are off, from that account, for every case", async () => {
+    const { t, owner, caseId } = await setup();
+    const a = await addConfirmed(t, owner, caseId, "para@firm.example");
+    await owner.mutation(api.reminderRecipients.remove, { caseId });
+    await addConfirmed(t, owner, caseId, "para@firm.example");
+    const link = `/case-alert/reminders/stop?token=${encodeURIComponent(await stopToken(a, "para@firm.example", owner.userId))}&r=${a}&u=${owner.userId}`;
+    const html = await (await t.fetch(link, { method: "POST", body: "List-Unsubscribe=One-Click" })).text();
+    expect(html).toContain("The reminders are off");
+    expect(html).toContain("from the account that added you again, for this case or any other");
+    expect((await rows(t))[0]!.status).toBe("stopped");
+  });
+
+  it("a Stop from one case ends the account's reminders to that inbox on its other cases too, waiting or confirmed, any spelling", async () => {
+    const { t, owner, caseId } = await setup();
+    const second = await t.run((ctx) => ctx.db.insert("cases", caseRow(owner.userId, { employerName: "Second Co" })));
+    const third = await t.run((ctx) => ctx.db.insert("cases", caseRow(owner.userId, { employerName: "Third Co" })));
+    const one = await addConfirmed(t, owner, caseId, "para@firm.example");
+    // The same inbox under a +tag, on a second case.
+    const two = await addConfirmed(t, owner, second, "para+hr@firm.example");
+    // An invitation on a third case still waiting for its click (written directly: the account's two are spent).
+    const three = await t.run((ctx) =>
+      ctx.db.insert("reminderRecipients", {
+        userId: owner.userId,
+        caseId: third,
+        email: "para@firm.example",
+        status: "waiting",
+        invitedAt: Date.now(),
+      }),
+    );
+    // The account's other person, a different inbox, stays.
+    const fourth = await t.run((ctx) => ctx.db.insert("cases", caseRow(owner.userId, { employerName: "Fourth Co" })));
+    const keep = await t.run((ctx) =>
+      ctx.db.insert("reminderRecipients", {
+        userId: owner.userId,
+        caseId: fourth,
+        email: "hr@employer.example",
+        status: "confirmed",
+        invitedAt: Date.now(),
+        confirmedAt: Date.now(),
+      }),
+    );
+
+    expect(
+      await t.mutation(internal.reminderRecipients.stopByToken, {
+        token: await stopToken(one, "para@firm.example", owner.userId),
+        recipientId: one,
+        userId: owner.userId,
+      }),
+    ).toBe("stopped");
+
+    const byId = new Map((await rows(t)).map((r) => [r._id, r]));
+    for (const id of [one, two, three]) {
+      expect(byId.get(id)!.status, id).toBe("stopped");
+      expect("email" in byId.get(id)!, id).toBe(false);
+    }
+    expect(byId.get(keep)).toMatchObject({ status: "confirmed", email: "hr@employer.example" });
+    sent = [];
+    await t.action(internal.reminderRecipients.sendCopy, { recipientId: two, items: copyItems });
+    expect(sent).toEqual([]);
+  });
+
+  it("leaves another account's reminders to the same address alone", async () => {
+    const { t, owner, other, caseId } = await setup();
+    await verify(t, other.userId);
+    const theirCase = await t.run((ctx) => ctx.db.insert("cases", caseRow(other.userId)));
+    const mine = await addConfirmed(t, owner, caseId, "para@firm.example");
+    const theirs = await addConfirmed(t, other, theirCase, "para@firm.example");
+
+    expect(
+      await t.mutation(internal.reminderRecipients.stopByToken, {
+        token: await stopToken(mine, "para@firm.example", owner.userId),
+        recipientId: mine,
+        userId: owner.userId,
+      }),
+    ).toBe("stopped");
+
+    const byId = new Map((await rows(t)).map((r) => [r._id, r]));
+    expect(byId.get(mine)!.status).toBe("stopped");
+    expect(byId.get(theirs)).toMatchObject({ status: "confirmed", email: "para@firm.example" });
+    const list = await refusals(t);
+    expect(list).toHaveLength(1);
+    expect(list[0]!.userId).toBe(owner.userId);
+    sent = [];
+    await t.action(internal.reminderRecipients.sendCopy, { recipientId: theirs, items: copyItems });
+    expect(sent).toHaveLength(1);
+  });
+
+  it("answers \"already\" when the account has nothing left that sends to the inbox", async () => {
+    const { t, owner, caseId } = await setup();
+    const a = await addConfirmed(t, owner, caseId, "para@firm.example");
+    const stop = { token: await stopToken(a, "para@firm.example", owner.userId), recipientId: a, userId: owner.userId };
+    expect(await t.mutation(internal.reminderRecipients.stopByToken, stop)).toBe("stopped");
+    expect(await t.mutation(internal.reminderRecipients.stopByToken, stop)).toBe("already");
+    await owner.mutation(api.reminderRecipients.remove, { caseId });
+    expect(await t.mutation(internal.reminderRecipients.stopByToken, stop)).toBe("already");
+  });
+});
+
 describe("mail waiting in the retry queue goes when the person does", () => {
   /** Today's count at its ceiling, so every send waits in the retry queue (the admin already told today). */
   const fillToday = (t: T) =>
@@ -1313,15 +1493,17 @@ describe("the confirm and stop pages", () => {
     expect(pageHtml).toContain("Stop the reminders");
     // The button keeps the account in its own link.
     expect(pageHtml).toContain(`&amp;u=${owner.userId}`);
-    // Stop refuses the account that added the address, and only that one.
-    expect(pageHtml).toContain("The account that added you");
+    // Stop ends that account's reminders on every case and refuses that account, and only that one.
+    expect(pageHtml).toContain("from the account that added you again, for this case or any other");
+    expect(pageHtml).toContain("kept with its cases. That account can");
     expect(pageHtml).not.toContain("No one on PERM Tracker");
     expect((await rows(t))[0]!.status).toBe("confirmed");
     const done = await t.fetch(link, { method: "POST", body: "List-Unsubscribe=One-Click" });
     expect(done.status).toBe(200);
     const doneHtml = await done.text();
     expect(doneHtml).toContain("The reminders are off");
-    expect(doneHtml).toContain("The account that added you");
+    expect(doneHtml).toContain("from the account that added you again, for this case or any other");
+    expect(doneHtml).toContain("deleted your address from its cases. That account can");
     expect(doneHtml).not.toContain("No one on PERM Tracker");
     expect((await rows(t))[0]!.status).toBe("stopped");
   });
@@ -1335,7 +1517,8 @@ describe("the confirm and stop pages", () => {
     expect(done.status).toBe(200);
     const html = await done.text();
     expect(html).toContain("These reminders are already off");
-    expect(html).toContain("The account that added you can");
+    expect(html).toContain("from the account that added you again, and your address isn");
+    expect(html).toContain("kept with its cases. That account can");
     expect(await t.run((ctx) => ctx.db.query("reminderRefusals").take(5))).toHaveLength(1);
   });
 

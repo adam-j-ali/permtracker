@@ -510,6 +510,13 @@ describe("what the chat's guide says about refusals", () => {
     expect(guide).not.toContain("An address that stopped these reminders or chose");
   });
 
+  it("says a Stop ends the account's reminders to the address on every case", () => {
+    expect(guide).toContain(
+      "has a link that stops them with one click. That link ends your account's reminders to the address on every case and deletes the address from each one",
+    );
+    expect(guide).not.toContain("which deletes their address");
+  });
+
   it("says a refused address gets one plain answer, and each try counts toward the day's five", () => {
     expect(guide).toContain("We can't send an invitation to that address");
     expect(guide).toContain("Each try counts toward the 5 a day");
