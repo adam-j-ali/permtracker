@@ -1,6 +1,9 @@
 import "server-only";
 
+import { mergeSocSpellings } from "@/lib/facetClean";
+
 import { rows } from "./client";
+import type { EntityFacets, FacetKind } from "./entityDetail";
 import { beforeFirstLoad } from "./firstLoad";
 
 /**
@@ -102,4 +105,54 @@ export async function workerFacets(
     (out[f] ??= []).push({ key: r.key, label: r.label, n: Number(r.n) });
   }
   return out;
+}
+
+export interface HistoryMakeup {
+  /** The entity's older cases these rows were counted over: the denominator of every share. */
+  total: number;
+  /** Its first and last fiscal year among them, for the label. */
+  fyFrom: number;
+  fyTo: number;
+  facets: EntityFacets;
+}
+
+/**
+ * What an employer's or a law firm's older cases (FY2008 to FY2023, `perm_cases_history`) were made of: the jobs,
+ * states, firms, cities and industries, or a firm's clients, jobs and states, with the entity's own total and years.
+ * From `perm_history_entity_facets` (ingest_perm_history.py, rebuilt with each history load), written for entities
+ * with three or more older cases; null for the rest. The current figures (`entityFacets`) count FY2024 on, so the
+ * two never share a denominator. One read, keyed on the table's primary key.
+ */
+export async function historyMakeup(kind: "employer" | "attorney", slug: string): Promise<HistoryMakeup | null> {
+  const got = await rows<{
+    facet: string;
+    key: string | null;
+    label: string;
+    code: string | null;
+    n: number | string;
+    certified: number | string;
+    denied: number | string;
+    total: number | string;
+    fy_from: number | string;
+    fy_to: number | string;
+  }>(
+    "SELECT facet, key, label, code, n, certified, denied, total, fy_from, fy_to "
+      + "FROM perm_history_entity_facets WHERE kind = ? AND slug = ? ORDER BY facet, pos",
+    [kind, slug],
+  ).catch(beforeFirstLoad([]));
+  const first = got[0];
+  if (!first) return null;
+  const facets: EntityFacets = {};
+  for (const r of got) {
+    (facets[r.facet as FacetKind] ??= []).push({
+      key: r.key,
+      label: r.label,
+      code: r.code,
+      n: Number(r.n),
+      certified: Number(r.certified),
+      denied: Number(r.denied),
+    });
+  }
+  if (facets.occupation) facets.occupation = mergeSocSpellings(facets.occupation);
+  return { total: Number(first.total), fyFrom: Number(first.fy_from), fyTo: Number(first.fy_to), facets };
 }

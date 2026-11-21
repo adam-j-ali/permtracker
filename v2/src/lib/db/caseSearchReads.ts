@@ -35,6 +35,7 @@ import { isSeasonalWageRequest } from "@/lib/wageRequestRanges";
 import { boundEnd, boundStart, fiscalYearSpan } from "@convex/lib/months";
 import { LIKE_ESCAPE, likeContains } from "./like";
 import { softFail } from "@/lib/softRead";
+import { CURRENT_FIRST_FY } from "@/lib/permEras";
 
 /**
  * Every read the unified case search makes, and the index each one rides.
@@ -492,12 +493,11 @@ export type PermTable = "perm_cases" | "perm_cases_history";
 export const HISTORY_TABLE: PermTable = "perm_cases_history";
 
 /**
- * The first fiscal year `perm_cases` holds. Everything decided before it is in
+ * The first fiscal year `perm_cases` holds (`src/lib/permEras.ts`). Everything decided before it is in
  * `perm_cases_history` (FY2008 to FY2023) or nowhere, so a date or fiscal-year filter
  * that falls wholly on one side reads one table. Its first decision day, and
  * the history table's last, follow from it.
  */
-const CURRENT_FIRST_FY = 2024;
 export const CURRENT_DECIDED_FROM = `${fiscalYearSpan(CURRENT_FIRST_FY).from}-01`;
 export const HISTORY_DECIDED_LAST = `${fiscalYearSpan(CURRENT_FIRST_FY - 1).to}-30`;
 
@@ -1779,7 +1779,7 @@ export async function getPermHistory(): Promise<PermHistory> {
   for (const f of Object.values(doc.files ?? {})) {
     const fy = Number(f.fy);
     const n = Number(f.caseRows);
-    if (!Number.isInteger(fy) || fy >= 2024 || !(n > 0)) continue;
+    if (!Number.isInteger(fy) || fy >= CURRENT_FIRST_FY || !(n > 0)) continue;
     byYear.set(fy, (byYear.get(fy) ?? 0) + n);
   }
   const byState: StateCount[] = [];
