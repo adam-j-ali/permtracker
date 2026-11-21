@@ -64,12 +64,13 @@ import json
 import os
 import pathlib
 import re
+import sqlite3
 import sys
 import tempfile
 import time
 import zipfile
 from collections import Counter, defaultdict
-from datetime import date
+from datetime import date, timedelta
 from xml.etree.ElementTree import iterparse
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
@@ -686,26 +687,32 @@ def build_alphabet_history(db) -> int:
     return len(out)
 
 
-def day_slices(db, column: str) -> list[tuple[str, str]]:
-    """[first day, day after the last) for about ten days at a time (month_slices) across every month the column
-    spans, oldest first: two reads of the column's own index (its first and last value), never a grouping of the
-    table."""
+SLICE_DAYS = 5
+
+
+def day_ranges(db, column: str, days: int = SLICE_DAYS) -> list[tuple[str, str]]:
+    """[first day, day after the last) `days` days at a time, from the first day of the column's first month to the
+    first day of the month after its last value, oldest first: two reads of the column's own index (its first and
+    last value), never a grouping of the table."""
     lo = rows_of(db.execute(f"SELECT MIN({column}) FROM perm_cases_history WHERE {column} > ''"))
     hi = rows_of(db.execute(f"SELECT MAX({column}) FROM perm_cases_history"))
     first, last = (lo[0][0] if lo else None), (hi[0][0] if hi else None)
     out: list[tuple[str, str]] = []
     if first and last:
-        m, stop = str(first)[:7], next_month(str(last)[:7])
-        while m != stop:
-            out.extend(month_slices(m))
-            m = next_month(m)
+        day = date.fromisoformat(f"{str(first)[:7]}-01")
+        stop = date.fromisoformat(f"{next_month(str(last)[:7])}-01")
+        while day < stop:
+            nxt = min(day + timedelta(days=days), stop)
+            out.append((day.isoformat(), nxt.isoformat()))
+            day = nxt
     return out
 
 
-# What an employer's and a law firm's older cases were made of: the facets build_entity_detail.build_facets counts
-# over perm_cases (the jobs, states, firms, cities and industries; a firm's clients, jobs and states), counted here
-# over perm_cases_history. Each row carries its entity's own total and fiscal years, so a page shows the older
-# figures beside the current ones with their own denominator and their own year label, in one read.
+# What an employer's, a law firm's and an occupation's older cases were made of: the facets
+# build_entity_detail.build_facets counts over perm_cases (an employer's jobs, states, firms, cities and industries;
+# a firm's clients, jobs and states; an occupation's sponsors, firms, states and cities), counted here over
+# perm_cases_history. Each row carries its entity's own total and fiscal years, so a page shows the older figures
+# beside the current ones with their own denominator and their own year label, in one read.
 ENTITY_FACETS_TABLE = "perm_history_entity_facets"
 ENTITY_FACET_FLOOR = 3  # older cases an entity needs, as build_entity_detail.FACET_FLOOR
 ENTITY_FACET_TOP = 6
@@ -714,6 +721,29 @@ ENTITY_FACET_COLUMNS = ["kind", "slug", "facet", "pos", "key", "label", "code", 
 MAKEUP_COLUMNS = ["employer_name", "employer_slug", "attorney_name", "attorney_slug", "soc_code", "soc_title",
                   "state", "worksite_city", "naics", "status", "fiscal_year"]
 DECISION_INDEX = "idx_pch_dec"
+# Five decision days, grouped inside the slice: a raw ten-day slice returned 4,858 rows in 1.09 s on the live
+# database (Nov 21 2026), and a grouped ten-day one 0.77 s. The grouping leads with employer_name, which no index
+# leads with, so no index can be walked whole to save the sort: the day range on idx_pch_dec stays the plan.
+# A case perm_cases also holds (decided again after September 2023) is counted there, never here.
+MAKEUP_SLICE_SQL = (
+    f"SELECT {', '.join(MAKEUP_COLUMNS)}, COUNT(*) AS n FROM perm_cases_history h "
+    "WHERE decision_date >= ? AND decision_date < ? "
+    "AND NOT EXISTS (SELECT 1 FROM perm_cases p WHERE p.case_number = h.case_number) "
+    f"GROUP BY {', '.join(MAKEUP_COLUMNS)}"
+)
+# Names whose merge key and page are remembered between slices; the memory is emptied when it fills, so it stays
+# flat however many spellings the table holds.
+NAME_CACHE_MAX = 50_000
+# The counts wait in a file on disk, never in memory: one employer's or firm's (value, count) pairs over sixteen
+# years run to millions. /tmp on the server is memory, so /var/tmp.
+SCRATCH_DIR = os.environ.get("ENTITY_FACETS_WORKDIR") or ("/var/tmp" if os.path.isdir("/var/tmp") else None)
+SCRATCH_DDL = """
+    CREATE TABLE counts (kind TEXT, slug TEXT, facet TEXT, grp TEXT, n INTEGER, cert INTEGER, den INTEGER,
+                         PRIMARY KEY (kind, slug, facet, grp)) WITHOUT ROWID;
+    CREATE TABLE votes (side TEXT, grp TEXT, spelling TEXT, n INTEGER,
+                        PRIMARY KEY (side, grp, spelling)) WITHOUT ROWID;
+"""
+NO_FIRM = ("n/a", "na", "none")
 
 
 def entity_facets_ddl(name: str) -> str:
@@ -740,7 +770,9 @@ class EntityPages:
 
     A row keeps the slug its load gave it, so it is checked in this order: still a page; a page merged into
     another (perm_entity_alias); else its printed name, through today's merge keys (a spelling that had no page
-    when its year loaded may have one now).
+    when its year loaded may have one now). A row that reaches a page is shown under the page's own name and slug,
+    never its filing's spelling: the site masks a name withheld at its owner's request by the page's names and
+    slugs, so an older spelling of a withheld page is never printed.
     """
 
     def __init__(self, db) -> None:
@@ -772,6 +804,8 @@ class EntityPages:
         k = self._keys.get(name)
         if k is None:
             k = entity_key(name) if name else ""
+            if len(self._keys) >= NAME_CACHE_MAX:
+                self._keys.clear()
             self._keys[name] = k
         return k
 
@@ -788,6 +822,8 @@ class EntityPages:
         elif name:
             found = self.by_name[kind].get(self.key_of(name))
             hit = found if found in pages else None
+        if len(self._hits) >= NAME_CACHE_MAX:
+            self._hits.clear()
         self._hits[memo] = hit
         return hit
 
@@ -805,143 +841,234 @@ def live_only_slugs(db) -> set[str]:
 
 
 def require_index(db, name: str) -> None:
-    """The month-at-a-time reads lean on this index; without it each would scan the whole table."""
+    """The day-at-a-time reads lean on this index; without it each would scan the whole table."""
     if not rows_of(db.execute("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?", [name])):
-        raise RuntimeError(f"{name} is missing, so each month's read would scan the whole table; "
+        raise RuntimeError(f"{name} is missing, so each slice's read would scan the whole table; "
                            "build the search indexes first (run without --no-indexes)")
 
 
-def build_entity_facets(db) -> int:
+def open_scratch(path) -> sqlite3.Connection:
+    """The local file the counts wait in: no journal, no syncing, since it's thrown away after the build."""
+    con = sqlite3.connect(str(path))
+    con.execute("PRAGMA journal_mode = OFF")
+    con.execute("PRAGMA synchronous = OFF")
+    con.executescript(SCRATCH_DDL)
+    return con
+
+
+def flush_counts(scratch: sqlite3.Connection, counts: dict, votes: Counter) -> None:
+    """One slice's counts added to the file's."""
+    scratch.executemany(
+        "INSERT INTO counts VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (kind, slug, facet, grp) DO UPDATE SET "
+        "n = n + excluded.n, cert = cert + excluded.cert, den = den + excluded.den",
+        [(*k, *v) for k, v in counts.items()])
+    scratch.executemany(
+        "INSERT INTO votes VALUES (?, ?, ?, ?) ON CONFLICT (side, grp, spelling) DO UPDATE SET n = n + excluded.n",
+        [(*k, n) for k, n in votes.items()])
+    scratch.commit()
+
+
+class SliceCounts(dict):
+    """One slice's counts: (kind, slug, facet, value) -> [cases, certified, denied]."""
+
+    def add(self, kind: str, slug: str, facet: str, grp: str, n: int, cert: int, den: int) -> None:
+        got = self.get((kind, slug, facet, grp))
+        if got is None:
+            self[(kind, slug, facet, grp)] = [n, cert, den]
+        else:
+            got[0] += n
+            got[1] += cert
+            got[2] += den
+
+
+def party_group(pages: EntityPages, page: str | None, name: str) -> str | None:
+    """A firm or an employer as a facet value: "p:<its page>", else "n:<its merge key>" for one with no page."""
+    if page:
+        return f"p:{page}"
+    key = pages.key_of(name) if name else ""
+    return f"n:{key}" if key else None
+
+
+def build_entity_facets(db, scratch_dir: str | None = None) -> int:
     """perm_history_entity_facets, and the older cases' counts by worksite state in perm_docs['perm_history'].
 
-    One pass over perm_cases_history, about ten decision days at a time on its decision_date index (a ten-day slice
-    of decisions grouped took 0.65 s on the live database, Nov 21 2026), never one grouping of the whole table. A
-    case perm_cases also holds (decided again after September 2023) is counted there, never here, so the case
-    search's state counts can add these to perm_cases' own. The table is built aside and swapped in whole: a page
-    never reads it half-written.
+    One pass over perm_cases_history, five decision days at a time on its decision_date index, each slice grouped
+    to its distinct combinations (MAKEUP_SLICE_SQL), never one grouping of the whole table. The counts are added up
+    in a file on disk and ranked from there, so memory holds one slice and the pages' totals, whatever the table
+    holds. A case perm_cases also holds is counted there, never here, so the case search's state counts can add
+    these to perm_cases' own. The table is built aside and swapped in whole: a page never reads it half-written.
     """
     require_index(db, DECISION_INDEX)
     pages = EntityPages(db)
     occ_slug = occupation_slugs(db)
-    acc: dict[tuple[str, str, str], dict] = defaultdict(dict)
     totals: dict[tuple[str, str], list[int]] = {}
-    city_votes: dict[str, Counter] = defaultdict(Counter)
-    soc_votes: dict[str, Counter] = defaultdict(Counter)
-    party_votes: dict[tuple, Counter] = defaultdict(Counter)
     by_state: dict[str, list[int]] = defaultdict(lambda: [0, 0, 0, 0])
     fy_lo = fy_hi = None
     slot = {"certified": 1, "denied": 2, "withdrawn": 3}
-
-    def add(kind: str, slug: str, facet: str, group, cert: int, den: int) -> None:
-        cell_ = acc[(kind, slug, facet)].get(group)
-        if cell_ is None:
-            acc[(kind, slug, facet)][group] = [1, cert, den]
-        else:
-            cell_[0] += 1
-            cell_[1] += cert
-            cell_[2] += den
-
-    sql = (f"SELECT {', '.join(MAKEUP_COLUMNS)} FROM perm_cases_history h "
-           "WHERE decision_date >= ? AND decision_date < ? "
-           "AND NOT EXISTS (SELECT 1 FROM perm_cases p WHERE p.case_number = h.case_number)")
     read = 0
-    for lo, hi in day_slices(db, "decision_date"):
-        for emp_name, emp_slug, att_name, att_slug, soc, soc_title, state, city, naics, status, fy in rows_of(
-                db.execute(sql, [lo, hi])):
-            read += 1
-            st = str(status or "").lower()
-            cert, den = int(st == "certified"), int(st == "denied")
-            year = int(fy) if fy not in (None, "") else None
-            if year is not None:
-                fy_lo = year if fy_lo is None else min(fy_lo, year)
-                fy_hi = year if fy_hi is None else max(fy_hi, year)
-            state = str(state or "") or None
-            if state:
-                s = by_state[state]
-                s[0] += 1
-                if st in slot:
-                    s[slot[st]] += 1
-            emp_name, att_name = str(emp_name or ""), str(att_name or "")
-            if att_name.lower() in ("n/a", "na", "none"):
-                att_name = ""
-            e = pages.page("employer", str(emp_slug or "") or None, emp_name or None)
-            a = pages.page("attorney", str(att_slug or "") or None, att_name or None)
-            code = str(soc or "").strip() or None
-            if code and soc_title:
-                soc_votes[code][str(soc_title)] += 1
-            ck = city_key(str(city or "") or None, state)
-            if ck:
-                city_votes[ck][" ".join(str(city).split())] += 1
-            firm = ("p", a) if a else (("n", pages.key_of(att_name)) if att_name and pages.key_of(att_name) else None)
-            if firm and firm[0] == "n":
-                party_votes[firm][att_name] += 1
-            client = ("p", e) if e else (("n", pages.key_of(emp_name)) if emp_name and pages.key_of(emp_name) else None)
-            if client and client[0] == "n":
-                party_votes[client][emp_name] += 1
-            for kind, slug in (("employer", e), ("attorney", a)):
-                if not slug:
-                    continue
-                t = totals.get((kind, slug))
-                if t is None:
-                    totals[(kind, slug)] = [1, year or 0, year or 0]
-                else:
-                    t[0] += 1
+    with tempfile.TemporaryDirectory(dir=scratch_dir or SCRATCH_DIR, prefix="entity-facets-") as tmp:
+        scratch = open_scratch(os.path.join(tmp, "counts.sqlite"))
+        try:
+            for lo, hi in day_ranges(db, "decision_date"):
+                counts = SliceCounts()
+                add = counts.add
+                votes: Counter = Counter()
+                for (emp_name, emp_slug, att_name, att_slug, soc, soc_title, state, city, naics, status, fy,
+                     n) in rows_of(db.execute(MAKEUP_SLICE_SQL, [lo, hi])):
+                    n = int(n)
+                    read += n
+                    st = str(status or "").lower()
+                    cert, den = n * (st == "certified"), n * (st == "denied")
+                    year = int(fy) if fy not in (None, "") else None
                     if year is not None:
-                        t[1] = year if not t[1] else min(t[1], year)
-                        t[2] = max(t[2], year)
-                if code:
-                    add(kind, slug, "occupation", code, cert, den)
-                if state:
-                    add(kind, slug, "state", state, cert, den)
-            if e:
-                if firm:
-                    add("employer", e, "attorney", firm, cert, den)
-                if ck:
-                    add("employer", e, "city", ck, cert, den)
-                if naics:
-                    add("employer", e, "industry", str(naics), cert, den)
-            if a and client:
-                add("attorney", a, "employer", client, cert, den)
-
-    cities = city_labels(city_votes)
-    out: list[tuple] = []
-    for (kind, slug, facet), bucket in acc.items():
-        total, first, last = totals[(kind, slug)]
-        if total < ENTITY_FACET_FLOOR:
-            continue
-        ranked = sorted(bucket.items(), key=lambda kv: (-kv[1][0], str(kv[0])))[:ENTITY_FACET_TOP]
-        for pos, (group, (n, cert, den)) in enumerate(ranked):
-            key, code, label = group, None, group
-            if facet == "occupation":
-                key, code = occ_slug.get(group), group
-                votes = soc_votes.get(group)
-                label = votes.most_common(1)[0][0] if votes else group
-            elif facet == "city":
-                label = cities.get(group, group)
-            elif facet == "industry":
-                label = industry_label(group)
-            elif facet in ("attorney", "employer"):
-                party = "attorney" if facet == "attorney" else "employer"
-                if group[0] == "p":
-                    key, label = group[1], pages.label(party, group[1]) or group[1]
-                else:
-                    key, label = None, party_votes[group].most_common(1)[0][0]
-            out.append((kind, slug, facet, pos, key, label, code, n, cert, den, total, first, last))
-
-    staged = f"{ENTITY_FACETS_TABLE}_next"
-    db.execute(f"DROP TABLE IF EXISTS {staged}")
-    db.execute(entity_facets_ddl(staged))
-    insert_rows(db, staged, ENTITY_FACET_COLUMNS, out, per_request=STMTS_PER_REQUEST)
-    db.script(["BEGIN", f"DROP TABLE IF EXISTS {ENTITY_FACETS_TABLE}",
-               f"ALTER TABLE {staged} RENAME TO {ENTITY_FACETS_TABLE}", "COMMIT"])
+                        fy_lo = year if fy_lo is None else min(fy_lo, year)
+                        fy_hi = year if fy_hi is None else max(fy_hi, year)
+                    state = str(state or "") or None
+                    if state:
+                        s = by_state[state]
+                        s[0] += n
+                        if st in slot:
+                            s[slot[st]] += n
+                    emp_name, att_name = str(emp_name or ""), str(att_name or "")
+                    if att_name.lower() in NO_FIRM:
+                        att_name = ""
+                    e = pages.page("employer", str(emp_slug or "") or None, emp_name or None)
+                    a = pages.page("attorney", str(att_slug or "") or None, att_name or None)
+                    code = str(soc or "").strip() or None
+                    o = occ_slug.get(code) if code else None
+                    if code and soc_title:
+                        votes[("soc", code, str(soc_title))] += n
+                    ck = city_key(str(city or "") or None, state)
+                    if ck:
+                        votes[("city", ck, " ".join(str(city).split()))] += n
+                    firm = party_group(pages, a, att_name)
+                    if firm and not a:
+                        votes[("attorney", firm, att_name)] += n
+                    client = party_group(pages, e, emp_name)
+                    if client and not e:
+                        votes[("employer", client, emp_name)] += n
+                    for kind, slug in (("employer", e), ("attorney", a), ("occupation", o)):
+                        if not slug:
+                            continue
+                        t = totals.get((kind, slug))
+                        if t is None:
+                            totals[(kind, slug)] = [n, year or 0, year or 0]
+                        else:
+                            t[0] += n
+                            if year is not None:
+                                t[1] = year if not t[1] else min(t[1], year)
+                                t[2] = max(t[2], year)
+                        if state:
+                            add(kind, slug, "state", state, n, cert, den)
+                    for kind, slug in (("employer", e), ("attorney", a)):
+                        if slug and code:
+                            add(kind, slug, "occupation", code, n, cert, den)
+                    if e:
+                        if firm:
+                            add("employer", e, "attorney", firm, n, cert, den)
+                        if ck:
+                            add("employer", e, "city", ck, n, cert, den)
+                        if naics:
+                            add("employer", e, "industry", str(naics), n, cert, den)
+                    if a and client:
+                        add("attorney", a, "employer", client, n, cert, den)
+                    if o:
+                        if client:
+                            add("occupation", o, "employer", client, n, cert, den)
+                        if firm:
+                            add("occupation", o, "attorney", firm, n, cert, den)
+                        if ck:
+                            add("occupation", o, "city", ck, n, cert, den)
+                flush_counts(scratch, counts, votes)
+            written = write_entity_facets(db, scratch, totals, pages, occ_slug)
+        finally:
+            scratch.close()
 
     doc = read_doc(db)
     doc["byState"] = [{"state": s, "total": v[0], "certified": v[1], "denied": v[2], "withdrawn": v[3]}
                       for s, v in sorted(by_state.items(), key=lambda kv: (-kv[1][0], kv[0]))]
     doc["byStateYears"] = {"from": fy_lo, "to": fy_hi} if fy_lo is not None else None
     store_doc(db, doc)
-    log(f"  history entity facets: {read:,} cases read, {len(out):,} rows; {len(by_state)} states counted")
-    return len(out)
+    log(f"  history entity facets: {read:,} cases read, {written:,} rows; {len(by_state)} states counted")
+    return written
+
+
+
+
+ENTITY_FACET_WRITE_ROWS = 4000
+
+
+def top_values(scratch: sqlite3.Connection, totals: dict):
+    """(kind, slug, facet, pos, grp, n, cert, den) for each entity's top values, busiest first, at the floor or above.
+
+    An index on the file puts every facet's values in rank order, so one walk of it yields each facet's first few and
+    steps past the rest: nothing is held but the row in hand, though one big occupation's sponsors run to tens of
+    thousands. Ties go to the value, so a rebuild can't reshuffle a list without its counts changing.
+    """
+    scratch.execute("CREATE INDEX IF NOT EXISTS counts_rank ON counts (kind, slug, facet, n DESC, grp)")
+    here, pos = None, 0
+    for kind, slug, facet, grp, n, cert, den in scratch.execute(
+            "SELECT kind, slug, facet, grp, n, cert, den FROM counts INDEXED BY counts_rank "
+            "ORDER BY kind, slug, facet, n DESC, grp"):
+        if (kind, slug, facet) != here:
+            here, pos = (kind, slug, facet), 0
+        if pos < ENTITY_FACET_TOP and totals[(kind, slug)][0] >= ENTITY_FACET_FLOOR:
+            yield kind, slug, facet, pos, grp, int(n), int(cert), int(den)
+        pos += 1
+
+
+def write_entity_facets(db, scratch: sqlite3.Connection, totals: dict, pages: EntityPages,
+                        occ_slug: dict[str, str]) -> int:
+    """Each entity's top values per facet, from the counts on disk, written aside in batches and swapped in whole.
+
+    A firm or an employer with a page is written under the page's own slug and name; one with no page under the
+    spelling its filings used most, unlinked.
+    """
+    staged = f"{ENTITY_FACETS_TABLE}_next"
+    db.execute(f"DROP TABLE IF EXISTS {staged}")
+    db.execute(entity_facets_ddl(staged))
+    city_names: dict[str, str] = {}
+
+    def top_vote(side: str, grp: str) -> str | None:
+        r = scratch.execute("SELECT spelling FROM votes WHERE side = ? AND grp = ? ORDER BY n DESC, spelling LIMIT 1",
+                            [side, grp]).fetchone()
+        return r[0] if r else None
+
+    def city_name(ck: str) -> str:
+        if ck not in city_names:
+            if len(city_names) >= NAME_CACHE_MAX:
+                city_names.clear()
+            spellings = Counter({sp: int(n) for sp, n in scratch.execute(
+                "SELECT spelling, n FROM votes WHERE side = 'city' AND grp = ?", [ck])})
+            city_names[ck] = city_labels({ck: spellings}).get(ck, ck) if spellings else ck
+        return city_names[ck]
+
+    batch: list[tuple] = []
+    written = 0
+    for kind, slug, facet, pos, grp, n, cert, den in top_values(scratch, totals):
+        total, first, last = totals[(kind, slug)]
+        key, code, label = grp, None, grp
+        if facet == "occupation":
+            key, code, label = occ_slug.get(grp), grp, top_vote("soc", grp) or grp
+        elif facet == "city":
+            label = city_name(grp)
+        elif facet == "industry":
+            label = industry_label(grp)
+        elif facet in ("attorney", "employer"):
+            if grp.startswith("p:"):
+                key = grp[2:]
+                label = pages.label(facet, key) or key
+            else:
+                key, label = None, top_vote(facet, grp) or grp[2:]
+        batch.append((kind, slug, facet, pos, key, label, code, n, cert, den, total, first, last))
+        if len(batch) >= ENTITY_FACET_WRITE_ROWS:
+            written += insert_rows(db, staged, ENTITY_FACET_COLUMNS, batch, per_request=STMTS_PER_REQUEST)
+            batch = []
+    if batch:
+        written += insert_rows(db, staged, ENTITY_FACET_COLUMNS, batch, per_request=STMTS_PER_REQUEST)
+    db.script(["BEGIN", f"DROP TABLE IF EXISTS {ENTITY_FACETS_TABLE}",
+               f"ALTER TABLE {staged} RENAME TO {ENTITY_FACETS_TABLE}", "COMMIT"])
+    return written
 
 
 def occupation_slugs(db) -> dict[str, str]:
@@ -1051,7 +1178,7 @@ def main() -> int:
         db.script(SCHEMA)
         n = build_entity_facets(db)
         record_run(db, "ingest_perm_history.py --entity-facets", status="ok", rows_written=n,
-                   note="employer and firm makeup and state counts from perm_cases_history")
+                   note="employer, firm and occupation makeup and state counts from perm_cases_history")
         return 0
 
     if args.month_days:
