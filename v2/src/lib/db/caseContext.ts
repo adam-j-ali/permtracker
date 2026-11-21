@@ -2,9 +2,11 @@ import "server-only";
 
 import { cache } from "react";
 
+import { socGroup } from "@/lib/socCode";
 import { MS_PER_DAY } from "@/lib/time";
 
-import { one } from "./client";
+import { one, rows } from "./client";
+import { beforeFirstLoad } from "./firstLoad";
 import { getWageStats, type WagePercentileRow } from "./publicData";
 
 /**
@@ -32,10 +34,52 @@ export interface CaseWageContext {
   occupation: WagePercentileRow;
   /** Certified cases in the same occupation AND state, when there are enough. */
   inState: WagePercentileRow | null;
+  /**
+   * The fiscal year the peers were decided in, for a case from DOL's FY2008 to FY2023 files: its own year's
+   * certified cases, whose occupation codes and pay are that year's. Null for a case in the current files, whose
+   * peers are every certified case those files hold.
+   */
+  fiscalYear: string | null;
 }
 
 /** Below this, a percentile is arithmetic on a handful of rows, not a ladder. */
 const MIN_WAGE_SAMPLE = 30;
+
+/**
+ * An older case's peers: its fiscal year's certified cases in its occupation, nationally and in its state, from the
+ * cells the history load counts (perm_history_wage_cells, scripts/ingest_perm_history.py). One read of a small table
+ * on its primary key; the older table's rows are never grouped for a page.
+ */
+async function historyWageContext(row: Record<string, unknown>): Promise<CaseWageContext | null> {
+  const socCode = row.soc_code == null ? null : String(row.soc_code);
+  const wage = row.wage == null ? null : Number(row.wage);
+  const fy = Number(row.fiscal_year);
+  const group = socGroup(socCode);
+  if (!socCode || !group || wage === null || !Number.isFinite(wage) || wage <= 0 || !Number.isInteger(fy)) return null;
+  const state = row.state == null || row.state === "" ? null : String(row.state);
+  const cells = await rows<Record<string, unknown>>(
+    `SELECT state, n, avg, p5, p25, p50, p75, p95 FROM perm_history_wage_cells
+      WHERE fy = ? AND soc = ? AND state IN ('', ?)`,
+    [fy, group, state ?? ""],
+  ).catch(beforeFirstLoad([] as Record<string, unknown>[]));
+  const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
+  const ladder = (c: Record<string, unknown> | undefined): WagePercentileRow | null =>
+    c
+      ? { n: Number(c.n) || 0, avg: num(c.avg), p5: num(c.p5), p25: num(c.p25), p50: num(c.p50), p75: num(c.p75), p95: num(c.p95) }
+      : null;
+  const occupation = ladder(cells.find((c) => c.state === ""));
+  if (!occupation || occupation.n < MIN_WAGE_SAMPLE) return null;
+  const inState = state ? ladder(cells.find((c) => c.state === state)) : null;
+  return {
+    socCode,
+    socTitle: row.soc_title == null ? null : String(row.soc_title),
+    state,
+    wage,
+    occupation,
+    inState: inState && inState.n >= MIN_WAGE_SAMPLE ? inState : null,
+    fiscalYear: String(fy),
+  };
+}
 
 /**
  * Where one decided case's offered wage sits among its peers.
@@ -56,7 +100,15 @@ export async function getCaseWageContext(
        FROM perm_cases WHERE case_number = ?`,
     [caseNumber],
   );
-  if (!r) return null;
+  if (!r) {
+    // A case DOL decided before FY2024: its row in the older table, its peers from its own year's cells.
+    const older = await one<Record<string, unknown>>(
+      `SELECT soc_code, soc_title, state, wage, fiscal_year
+         FROM perm_cases_history WHERE case_number = ?`,
+      [caseNumber],
+    ).catch(beforeFirstLoad(null));
+    return older ? historyWageContext(older) : null;
+  }
   const socCode = r.soc_code === null ? null : String(r.soc_code);
   const wage = r.wage === null ? null : Number(r.wage);
   if (!socCode || wage === null || !Number.isFinite(wage) || wage <= 0) {
@@ -78,6 +130,7 @@ export async function getCaseWageContext(
     occupation,
     inState:
       stateRow && stateRow.n >= MIN_WAGE_SAMPLE ? stateRow : null,
+    fiscalYear: null,
   };
 }
 

@@ -183,6 +183,7 @@ const ISOLATED_UNIT_FILES = [
   "src/lib/db/__tests__/clientWithheld.test.ts",
   // Added 2026-11-21, the same way: a withheld employer's older spellings, through rows().
   "src/lib/db/__tests__/olderSpellingsWithheld.test.ts",
+  "src/lib/db/__tests__/historyWithheld.test.ts",
   // Same again, and it stubs NODE_ENV before each import.
   "src/lib/db/__tests__/clientDevTag.test.ts",
   // Added 2026-09-27. Each mocks ./client (and caseLookupHistory also mocks
@@ -205,6 +206,9 @@ const ISOLATED_UNIT_FILES = [
   "src/lib/db/__tests__/uscisQuarterly.test.ts",
   // Added 2026-11-10. Mocks ../client and sets per-test answers.
   "src/lib/db/__tests__/employerHistory.test.ts",
+  // Added 2026-11-21. Mocks ../client with an answer per table.
+  "src/lib/db/__tests__/permCasesHistory.test.ts",
+  "src/lib/db/__tests__/caseWageContext.test.ts",
   "src/lib/db/__tests__/smallReadsThrow.test.ts",
   "src/lib/db/__tests__/scorecard.test.ts",
   // Mocks ../client and ../employerSlugs, and imports a dozen readers at once.

@@ -75,6 +75,17 @@ describe("the published record and the accepted job", () => {
     expect(r).toMatchObject({ wage: 17.5, workers: 40, workersCertified: 35, worksiteCounty: "Madison", attorneyName: null });
   });
 
+  it("carries the occupation's code, the industry and the firm's slug, which the page links", async () => {
+    one.mockReset();
+    one.mockResolvedValueOnce({
+      case_number: "H-400-25301-000124", case_status: "DETERMINATION ISSUED - CERTIFICATION", employer_slug: "acme",
+      soc_code: "37-3011", naics: "561730", attorney_name: "Example Visa Group", attorney_slug: "example-visa-group",
+    });
+    const r = await lookupSeasonalRecord("H-400-25301-000124");
+    for (const col of ["soc_code", "naics", "attorney_slug"]) expect(one.mock.calls[0]?.[0]).toContain(col);
+    expect(r).toMatchObject({ socCode: "37-3011", naics: "561730", attorneySlug: "example-visa-group" });
+  });
+
   it("reads an H-2B or CW-1 wage request from the prevailing wage file, which has no workers", async () => {
     one.mockReset();
     one.mockResolvedValueOnce(null);

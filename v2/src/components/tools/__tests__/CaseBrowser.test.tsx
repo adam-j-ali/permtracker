@@ -197,4 +197,47 @@ describe("CaseBrowser links what has a page", () => {
     expect(screen.queryByRole("link", { name: "Software Developers" })).toBeNull();
     expect(screen.getByText("Software Developers")).toBeTruthy();
   });
+
+  it("says an older case's file printed no filing day, instead of a wait of zero days", () => {
+    // DOL's files before FY2015 print no received date, so those cases carry neither it nor a duration.
+    answer({ cases: [{ ...decided, caseNumber: "A-09001-00001", receivedDate: "", days: 0, decisionDate: "2009-03-02" }], live: [] });
+    const { container } = render(<CaseBrowser meta={null} occupations={[]} />);
+    expect(container.textContent).toMatch(/No filing day in DOL's file/);
+    expect(container.textContent).not.toMatch(/\(0 days\)/);
+  });
+});
+
+describe("CaseBrowser's counts with DOL's older files", () => {
+  const META = {
+    sourceFiles: [],
+    totalCases: 1100,
+    firstDecisionDate: "2007-10-01",
+    lastDecisionDate: "2026-06-30",
+    firstReceivedDate: "2021-01-04",
+    lastReceivedDate: "2026-06-29",
+    byStatus: [
+      { status: "certified" as const, count: 985 },
+      { status: "denied" as const, count: 69 },
+      { status: "withdrawn" as const, count: 46 },
+    ],
+    byFiscalYear: [
+      { fiscalYear: "2026", total: 600, certified: 540, denied: 36, withdrawn: 24 },
+      { fiscalYear: "2016", total: 80, certified: 70, denied: 6, withdrawn: 4 },
+    ],
+    byState: [{ state: "CA", total: 350, certified: 315, denied: 23, withdrawn: 12 }],
+    computedAt: 1,
+  };
+
+  it("offers the older years in the year list and counts every year in the total", () => {
+    const { container } = render(<CaseBrowser meta={{ ...META, olderYearsCounted: true }} occupations={[]} />);
+    expect(screen.getByRole("option", { name: "FY2016 (80)" })).toBeTruthy();
+    expect(container.textContent).toMatch(/1,100 cases match/);
+    expect(screen.getByRole("option", { name: "Certified (985)" })).toBeTruthy();
+  });
+
+  it("gives no total and no outcome counts while the older years' record isn't built", () => {
+    const { container } = render(<CaseBrowser meta={{ ...META, olderYearsCounted: false }} occupations={[]} />);
+    expect(container.textContent).not.toMatch(/cases match/);
+    expect(screen.getByRole("option", { name: "Certified" })).toBeTruthy();
+  });
 });

@@ -82,6 +82,7 @@ import { cn } from "@/lib/utils";
 import { DOL_CASE_STATUS_URL } from "@/components/queue/SourceNote";
 import { formatInt } from "@/lib/format";
 import { entityHref } from "@/lib/entityPayload";
+import { CURRENT_FIRST_FY } from "@/lib/permEras";
 import { planHref } from "@/components/tools/planner/planUrl";
 import { statusCasesHref } from "@/components/queue/statusLinks";
 
@@ -986,9 +987,11 @@ function TheDecision({
  */
 function WageLadder({ wage }: { wage: CaseWageContext }) {
   const row = wage.inState ?? wage.occupation;
+  // An older case's peers are its own fiscal year's: the label says so wherever it names them.
+  const year = wage.fiscalYear ? `, FY${wage.fiscalYear}` : "";
   const scope = wage.inState
-    ? `${wage.socTitle ?? wage.socCode} in ${wage.state}`
-    : (wage.socTitle ?? wage.socCode);
+    ? `${wage.socTitle ?? wage.socCode} in ${wage.state}${year}`
+    : `${wage.socTitle ?? wage.socCode}${year}`;
 
   const { p5, p25, p50, p75, p95 } = row;
   // The rail needs both ends and a middle. Without them there is no axis to
@@ -1018,9 +1021,20 @@ function WageLadder({ wage }: { wage: CaseWageContext }) {
           . Certified cases only: a denied application&apos;s offered wage was
           never agreed to by anybody, so putting it in the ladder would price
           the job at a figure no employer had to pay.
+          {wage.fiscalYear ? (
+            <>
+              {" "}
+              The cases are the ones DOL certified in FY{wage.fiscalYear}, the year it decided this one, so their pay and
+              their occupation codes are that year&apos;s.
+            </>
+          ) : null}
         </>
       }
-      source={`DOL quarterly disclosure files · ${formatInt(row.n)} certified cases`}
+      source={
+        wage.fiscalYear
+          ? `DOL's FY${wage.fiscalYear} disclosure file · ${formatInt(row.n)} certified cases decided in FY${wage.fiscalYear}`
+          : `DOL quarterly disclosure files · ${formatInt(row.n)} certified cases`
+      }
     >
       <ChartTips label={`Where this wage sits among certified ${scope} wages`} className="pb-9 pt-9">
         {/* The subject rides above the rail so a wage at either end is never
@@ -1244,6 +1258,21 @@ function Neighbours({ months, month }: { months: readonly CohortMonth[]; month: 
  * the numbers in it. Density 7 wants figures separated by hairlines, not
  * boxed one per card.
  */
+/**
+ * The years the employer's figures cover, said where they're printed: the counts reach back to FY2008 from the
+ * yearly table, while the median days come from the current files alone.
+ */
+export function employerYearsWords(employer: NonNullable<CaseLookupResult["employer"]>): string {
+  const counts =
+    employer.fyFrom !== null && employer.fyTo !== null
+      ? employer.fyFrom === employer.fyTo
+        ? `In FY${employer.fyFrom}`
+        : `Across FY${employer.fyFrom} to FY${employer.fyTo}`
+      : `Since FY${CURRENT_FIRST_FY}`;
+  const medianOwnYears = employer.medianDays !== null && (employer.fyFrom === null || employer.fyFrom < CURRENT_FIRST_FY);
+  return medianOwnYears && employer.fyFrom !== null ? `${counts}, and the median days since FY${CURRENT_FIRST_FY}.` : `${counts}.`;
+}
+
 function EmployerRecord({
   employer,
 }: {
@@ -1272,7 +1301,7 @@ function EmployerRecord({
   return (
     <div>
       <p className="max-w-2xl text-base leading-relaxed text-soft">
-        Across FY2024 to FY2026. It describes the employer&apos;s filings. It doesn&apos;t describe this case.
+        {employerYearsWords(employer)} It describes the employer&apos;s filings. It doesn&apos;t describe this case.
       </p>{" "}
       <div className="mt-5 border-2 shadow-hard p-5 sm:p-6 bg-card border-border">
         <dl className="flex flex-wrap items-baseline gap-x-8 gap-y-4">

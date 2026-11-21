@@ -38,7 +38,8 @@ export * from "@/lib/dateCoverage";
  * status and never says when it changed.
  *
  * But the published files carry an indexed `decision_date` on every decided
- * case, going back to 2023-10-01. So "what did DOL do on 12 March 2025" IS
+ * case, going back to October 2007 for PERM and the LCAs (their older files'
+ * tables) and 2023-10-01 for wage requests. So "what did DOL do on 12 March 2025" IS
  * answerable, in full detail, with the wage and the worksite and the
  * occupation attached.
  *
@@ -125,6 +126,11 @@ export interface DecidedFeed {
   capped: boolean;
   /** Set when the range was refused for cost, with the reason in words. */
   refused: string | null;
+  /**
+   * Set when one part of the range was left out of an answer that still serves the rest, with what and why in
+   * words: the older LCA files under a filter they check a day at a time, asked beside other programs.
+   */
+  partial: string | null;
 }
 
 /**
@@ -193,7 +199,8 @@ const PUBLISHED: Record<
     optional: ["city", "naics", "visaClass"],
   },
   lca: {
-    tables: ["lca_cases"],
+    // FY2020 on, then DOL's FY2008 to FY2019 files, which load into a table of their own on the LCA database.
+    tables: ["lca_cases", "lca_cases_history"],
     status: "case_status",
     state: "worksite_state",
     hasWageUnit: true,
@@ -224,10 +231,60 @@ function ownRows(program: ChangeProgram, table: string): string {
   return own ? ` AND ${own()}` : "";
 }
 
-/** The tables a program's range touches, newest first: a range wholly after the history table's last day never asks it. */
+
+/** DOL's FY2008 to FY2019 H-1B files (scripts/ingest_flag_disclosure.py, HISTORY_TABLES). */
+const LCA_HISTORY = "lca_cases_history";
+
+/** The older LCA files' last decision day: their newest file is FY2019's, which ends Sep 30 2019. */
+export const LCA_HISTORY_DECIDED_LAST = "2019-09-30";
+
+/**
+ * Days of the older LCA files a filter may span when it has to be tested row by row there.
+ *
+ * Those files sit in one big table read on its decision-date index, about 1,400 filings a day and 3,581 on the
+ * busiest. Timed on the server next to the live database (Nov 21 2026), a walk over three busy days (5,538 rows)
+ * took 1.19 s and one day 0.69 s, so a walk holds to one day. The filters an index serves there (a state, an
+ * occupation, a law firm) stop at the row cap and aren't held to this.
+ */
+export const LCA_HISTORY_SCAN_DAYS = 1;
+
+/** The last decision day each history table holds; a range starting after it never asks the table. */
+const HISTORY_LAST: Record<string, string> = {
+  perm_cases_history: HISTORY_DECIDED_LAST,
+  [LCA_HISTORY]: LCA_HISTORY_DECIDED_LAST,
+};
+
+/** The tables a program's range touches, newest first: a range wholly after a history table's last day never asks it. */
 function tablesFor(program: ChangeProgram, range: DateRange): string[] {
   const meta = PUBLISHED[program];
-  return meta.tables.filter((t) => t !== "perm_cases_history" || range.from <= HISTORY_DECIDED_LAST);
+  return meta.tables.filter((t) => !(t in HISTORY_LAST) || range.from <= HISTORY_LAST[t]!);
+}
+
+/**
+ * Whether a narrow is tested row by row on the older LCA table: an employer name (a prefix range, whose index
+ * would read every filing the employer ever made to sort a few), a filter no index leads with, or an outcome on
+ * its own. A state, an occupation or a law firm leads its own index there, outcome or not.
+ */
+function walksLcaHistory(n: DecidedNarrow): boolean {
+  if (n.employer || !narrowIsIndexed(n)) return true;
+  return !!n.status && !n.state && !n.socCode && !n.attorney;
+}
+
+/** The part of a range the older LCA table holds, or null. */
+function lcaHistoryPart(range: DateRange): DateRange | null {
+  if (range.from > LCA_HISTORY_DECIDED_LAST) return null;
+  return { from: range.from, to: range.to < LCA_HISTORY_DECIDED_LAST ? range.to : LCA_HISTORY_DECIDED_LAST };
+}
+
+/**
+ * The index the older LCA table is read on, or "" to let SQLite choose. A walk, and a read with no filter, ride the
+ * decision-date index, so the read stops at the row cap or at the few days `LCA_HISTORY_SCAN_DAYS` allows; a
+ * state, occupation or law firm has an index of its own there, which the planner takes on the equality.
+ */
+function historyPin(table: string, n: DecidedNarrow): string {
+  if (table !== LCA_HISTORY) return "";
+  const any = Object.values(n).some((v) => v !== undefined);
+  return walksLcaHistory(n) || !any ? `INDEXED BY ${LCA_HISTORY}_decided ` : "";
 }
 
 /**
@@ -256,7 +313,7 @@ function tablesFor(program: ChangeProgram, range: DateRange): string[] {
  * silently under-report coverage for months.
  */
 export async function getCoverageWindows(): Promise<CoverageWindows> {
-  const [decided, observed, historyFrom] = await Promise.all([
+  const [decided, observed, historyFrom, lcaHistoryFrom] = await Promise.all([
     Promise.all(
       CHANGE_PROGRAMS.map(async (p) => {
         const table = PUBLISHED[p].tables[0]!;
@@ -285,15 +342,21 @@ export async function getCoverageWindows(): Promise<CoverageWindows> {
       }),
     ),
     historyStart(),
+    // The older LCA files' first decision: a lone MIN on the decision-date index, one seek.
+    rows<{ v: string | null }>(`SELECT MIN(decision_date) AS v FROM ${LCA_HISTORY}`)
+      .then((r) => r[0]?.v ?? null)
+      .catch(beforeFirstLoad(null)),
   ]);
 
   // PERM's own window reaches into the history table. Its start comes from the
-  // ingest's record (one point read), not from MIN over ~870,000 rows.
+  // ingest's record (one point read), not from MIN over ~870,000 rows. The
+  // LCAs' reaches into their older files' table, from its index.
   const byProgram: Partial<Record<ChangeProgram, DateRange>> = {};
   CHANGE_PROGRAMS.forEach((p, i) => {
     const lo = decided[i]?.[0]?.lo ?? null;
     const hi = decided[i]?.[0]?.hi ?? null;
-    const from = p === "perm" && historyFrom && (!lo || historyFrom < lo) ? historyFrom : lo;
+    const older = p === "perm" ? historyFrom : p === "lca" ? lcaHistoryFrom : null;
+    const from = older && (!lo || older < lo) ? older : lo;
     if (from && hi) byProgram[p] = { from, to: hi };
   });
 
@@ -428,7 +491,7 @@ function narrowClause(
   return { sql: parts.length ? ` AND ${parts.join(" AND ")}` : "", args };
 }
 
-function selectFor(program: ChangeProgram, table: string, cols: Set<string>): string {
+function selectFor(program: ChangeProgram, table: string, cols: Set<string>, pin = ""): string {
   const meta = PUBLISHED[program];
   const has = (c: string) => (cols.has(c) ? c : `NULL AS ${c}`);
   const unit = meta.hasWageUnit ? "wage_unit" : "NULL AS wage_unit";
@@ -438,8 +501,14 @@ function selectFor(program: ChangeProgram, table: string, cols: Set<string>): st
   return `SELECT case_number, ${meta.status} AS status, decision_date,
                  received_date, employer_name, employer_slug, job_title,
                  soc_code, soc_title, ${meta.state} AS state, wage, ${unit}, ${optional}
-            FROM ${table}
+            FROM ${table} ${pin}
            WHERE decision_date >= ? AND decision_date <= ?`;
+}
+
+/** The days of `range` one table is read for: a history table's read stops at its own last day. */
+function rangeIn(table: string, range: DateRange): DateRange {
+  const last = HISTORY_LAST[table];
+  return last && range.to > last ? { from: range.from, to: last } : range;
 }
 
 function toCase(program: ChangeProgram, r: Record<string, unknown>): DecidedCase {
@@ -500,6 +569,7 @@ export async function getDecidedFeed(args: {
       totals: null,
       capped: false,
       refused: "That isn't a valid date range.",
+      partial: null,
     };
   }
 
@@ -514,6 +584,7 @@ export async function getDecidedFeed(args: {
         `A wage filter has to be checked on every case in the range, so it's ` +
         `limited to ${RANGE_MAX_DAYS_UNINDEXED} days. This range is ${span}. ` +
         `Narrow the dates, or drop the wage filter.`,
+      partial: null,
     };
   }
 
@@ -527,30 +598,61 @@ export async function getDecidedFeed(args: {
       totals: null,
       capped: false,
       refused: "That employer name is too short to search. Try two or more characters.",
+      partial: null,
     };
   }
+
+  // The older LCA files answer a filter tested row by row a day at a time (LCA_HISTORY_SCAN_DAYS). A wider
+  // range there is said in words, never walked past a second or cut silently: refused when only the LCAs are
+  // asked, and left out of an answer that serves the other programs, with a note saying so.
+  const lcaHistory = programs.includes("lca") ? lcaHistoryPart(range) : null;
+  const skipLcaHistory =
+    lcaHistory !== null && walksLcaHistory(narrow) && daysInRange(lcaHistory) > LCA_HISTORY_SCAN_DAYS;
+  const why =
+    `H-1B LCAs decided before October 2019 are in DOL's older files, where this filter is checked a day at a ` +
+    `time, so a range reaching them can hold at most ${LCA_HISTORY_SCAN_DAYS === 1 ? "one day" : `${LCA_HISTORY_SCAN_DAYS} days`} of them ` +
+    `with it. This one holds ` +
+    `${lcaHistory ? daysInRange(lcaHistory) : 0}.`;
+  if (skipLcaHistory && programs.every((p) => p === "lca")) {
+    return {
+      range,
+      cases: [],
+      totals: null,
+      capped: false,
+      refused: `${why} Narrow the dates, start them in October 2019 or later, or filter by state, occupation or law firm instead.`,
+      partial: null,
+    };
+  }
+  const partial = skipLcaHistory
+    ? `H-1B LCAs decided before October 2019 aren't in this answer. ${why} Ask for the LCAs alone with a shorter range to see them.`
+    : null;
 
   // A failed read throws: an empty answer would read as a day DOL decided nothing.
   const fetched = await Promise.all(
     programs.map(async (p) => {
       const perTable = await Promise.all(
-        tablesFor(p, range).map(async (table) => {
+        tablesFor(p, range)
+          .filter((table) => !(skipLcaHistory && table === LCA_HISTORY))
+          .map(async (table) => {
           const cols = await tableColumns(table);
+          // An older-files table not made yet holds nothing (PRAGMA names no columns for a missing table).
+          if (table === LCA_HISTORY && cols.size === 0) return [] as Record<string, unknown>[];
           const clause = narrowClause(p, narrow, cols);
           if (clause === "refuse" || clause === "skip") return [] as Record<string, unknown>[];
           const { sql, args: nArgs } = clause;
+          const days = rangeIn(table, range);
           // cap + 1 so a full page is distinguishable from an exactly-full one.
           return rows<Record<string, unknown>>(
-            `${selectFor(p, table, cols)}${ownRows(p, table)}${sql}
+            `${selectFor(p, table, cols, historyPin(table, narrow))}${ownRows(p, table)}${sql}
               ORDER BY decision_date DESC, case_number DESC
               LIMIT ?`,
-            [range.from, range.to, ...nArgs, cap + 1],
+            [days.from, days.to, ...nArgs, cap + 1],
           );
         }),
       );
-      // PERM's two tables, and the seasonal programs' two files, are merged
-      // newest first before the cap applies, so the cap cuts the oldest rows
-      // of the whole range, never each table's.
+      // A program's two tables (PERM's, the LCAs' current and older files, and the seasonal programs' two files)
+      // are merged newest first before the cap applies, so the cap cuts the oldest rows of the whole range,
+      // never each table's.
       const r = perTable
         .flat()
         .sort((a, b) =>
@@ -588,6 +690,7 @@ export async function getDecidedFeed(args: {
     totals: span === 1 ? await countDay(range.from, programs, narrow) : null,
     capped,
     refused: null,
+    partial,
   };
 }
 
@@ -610,11 +713,12 @@ async function countDay(
     programs.map(async (p) => {
       for (const table of tablesFor(p, { from: date, to: date })) {
         const cols = await tableColumns(table);
+        if (table === LCA_HISTORY && cols.size === 0) continue;
         const clause = narrowClause(p, narrow, cols);
         if (clause === "refuse" || clause === "skip") continue;
         const { sql, args } = clause;
         const r = await rows<{ n: number }>(
-          `SELECT COUNT(*) AS n FROM ${table}
+          `SELECT COUNT(*) AS n FROM ${table} ${historyPin(table, narrow)}
             WHERE decision_date >= ? AND decision_date <= ?${ownRows(p, table)}${sql}`,
           [date, date, ...args],
         );

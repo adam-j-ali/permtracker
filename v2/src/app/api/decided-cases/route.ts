@@ -21,7 +21,7 @@ import { isWithheldQuery } from "@/lib/privacy/withheld";
  * "what did we observe change on this day", which reaches back only to
  * 2026-08-26 and carries no wage, worksite or occupation because DOL does not
  * return those on a live case. This one answers "what did DOL decide", which
- * reaches back to 2023-10-01 and carries the whole published record. They are
+ * reaches back to October 2007 (PERM and the LCAs) and carries the whole published record. They are
  * different questions with different coverage, and folding them into one route
  * with a mode flag would put two answer shapes behind one URL and one cache
  * entry.
@@ -138,7 +138,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   if (isWithheldQuery("attorney", narrow.attorney) || isWithheldQuery("employer", narrow.employer)) {
     const none = Object.fromEntries(programs.map((pr) => [pr, 0])) as Record<ChangeProgram, number>;
     return NextResponse.json(
-      { feed: { range: { from, to }, cases: [], totals: none, capped: false, refused: null }, noMatch: true },
+      { feed: { range: { from, to }, cases: [], totals: none, capped: false, refused: null, partial: null }, noMatch: true },
       { headers: { "Cache-Control": "no-store" } },
     );
   }

@@ -144,7 +144,7 @@ const FAQS = [
   },
   {
     q: "My case isn't here. Is something wrong?",
-    a: "Almost certainly not. If we don't already hold your number, we ask DOL's case system for it and record what comes back, so a recent filing usually turns up. A wrong digit still makes a well-formed number, so check that first. DOL's published files reach back to fiscal year 2016. A case older than that, and no longer in DOL's live search, may not be found.",
+    a: "Almost certainly not. If we don't already hold your number, we ask DOL's case system for it and record what comes back, so a recent filing usually turns up. A wrong digit still makes a well-formed number, so check that first. DOL's published files reach back to fiscal year 2008. A case older than that, and no longer in DOL's live search, may not be found.",
   },
   {
     q: "What does my case number actually mean?",

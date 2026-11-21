@@ -20,7 +20,8 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { CaseBrowser, type OccupationOption } from "@/components/tools/CaseBrowser";
 import { LiveCaseBrowser } from "@/components/tools/LiveCaseBrowser";
 import { getLiveRemainderSummary } from "@/lib/db/liveCases";
-import { getMeta } from "@/lib/db/cases";
+import { getMeta, getOlderYears } from "@/lib/db/cases";
+import { mergeOlderYears } from "@/lib/permCasesMeta";
 import { getDailyDecisions } from "@/lib/db/publicData";
 import { DailyDecisionsChart } from "@/components/tools/DailyDecisionsChart";
 import { listByKind } from "@/lib/db/entities";
@@ -77,7 +78,7 @@ export default async function PermCasesPage() {
   // the first ingest writes a coverage document, and the page says so; a read
   // that FAILS is a different thing and throws, because an outage rendered as
   // an empty state is what let a disabled backend pass every status check.
-  const [meta, occupationRows, daily, liveSummary] = await Promise.all([
+  const [current, occupationRows, daily, liveSummary, older] = await Promise.all([
     getMeta(),
     listByKind("occupation", 60),
     getDailyDecisions(),
@@ -85,7 +86,15 @@ export default async function PermCasesPage() {
     // build writes the doc, or when it is more than eight days old; the
     // section below still renders and says less.
     getLiveRemainderSummary(),
+    // DOL's FY2008 to FY2023 decisions by year and state, counted at the history load: the list reads that table
+    // too, so every count beside it adds them (src/lib/permCasesMeta.ts). Null until the record is built.
+    getOlderYears(),
   ]);
+  const meta = current ? mergeOlderYears(current, older) : null;
+  const olderYears = meta?.olderYearsCounted ? (older?.years ?? []).map((y) => Number(y.fiscalYear)) : [];
+  const olderFiles = olderYears.length
+    ? `DOL's yearly PERM disclosure files, FY${Math.min(...olderYears)} to FY${Math.max(...olderYears)}`
+    : null;
 
   // The dropdown wants the busiest occupations, and `listByKind` already
   // returns them in rank order. `code` is optional on the entity row because
@@ -185,7 +194,8 @@ export default async function PermCasesPage() {
             >
               <FinePrint summary="Source files" className="-mt-2 mb-6">
                 <p>
-                  {meta.sourceFiles.join(", ") || "DOL PERM disclosure files"}. Counts cover every row in the files,
+                  {[meta.sourceFiles.join(", ") || "DOL PERM disclosure files", olderFiles].filter(Boolean).join(", and ")}
+                  . Counts cover every row in the files,
                   including the ones off screen. A filtered count covers only that filter.{" "}
                   <Link href="/methodology" className="link">
                     How every figure is built
