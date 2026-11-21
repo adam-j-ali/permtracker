@@ -126,6 +126,24 @@ describe("an older case of a withheld firm, on the case page (Nov 21 2026)", () 
     const got = await caseWith("Quiet Immigration Group, P.C.", "quiet-immigration-group-p-c");
     expect(got).toMatchObject({ attorneyName: "Quiet Immigration Group, P.C.", attorneySlug: null });
   });
+
+  it("masks an older spelling in the law firm rankings, by its slug or by its entity key", async () => {
+    const { getFirmRanks } = await import("../firmRanks");
+    const cols = ["slug", "linked", "name", "rank", "prev_rank", "filings", "certified", "denied", "withdrawn", "positions", "employers", "median_days"];
+    execute.mockResolvedValueOnce(
+      answer(cols, [
+        ["example-law-group-pllc", 1, "Oldname Partners Immigration", 4, null, 90, 88, 1, 1, 0, 30, 200],
+        ["examplelaw-group-p-l-l-c", 0, "ExampleLaw Group P.L.L.C.", 9, null, 40, 40, 0, 0, 0, 12, 210],
+        ["quiet-immigration-group", 0, "Quiet Immigration Group", 10, null, 39, 39, 0, 0, 0, 11, 190],
+      ]),
+    );
+    const got = await getFirmRanks("perm", 2019, "US");
+    expect(got.map((r) => [r.slug, r.name, r.filings])).toEqual([
+      ["law-firm-3", "Law firm 3", 90],
+      ["law-firm-3", "Law firm 3", 40],
+      ["quiet-immigration-group", "Quiet Immigration Group", 39],
+    ]);
+  });
 });
 
 describe("the site's helpers", () => {
