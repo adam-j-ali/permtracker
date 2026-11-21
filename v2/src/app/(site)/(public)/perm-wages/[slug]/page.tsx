@@ -19,7 +19,7 @@ import { FinePrint } from "@/components/data/FinePrint";
 import { hasOwnPage, MIN_DECIDED_FOR_RATE, ENTITY_BASE, entityHref } from "@/lib/entityPayload";
 import { notFound } from "next/navigation";
 import { firstThatFits, seeCandidates } from "@/lib/describe";
-import { formatDollars, formatInt } from "@/lib/format";
+import { formatDollars, formatInt, formatShareOf } from "@/lib/format";
 import { getLcaWageStats } from "@/lib/db/lcaWages";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { FieldPosition } from "@/components/tools/FieldPosition";
@@ -58,7 +58,9 @@ import { DataProvenance } from "@/components/data/DataProvenance";
 import { PartyMix, PlaceMix, RecruitmentMix } from "@/components/entities/FilingMakeup";
 import { FilingsSearch } from "@/components/entities/FilingsSearch";
 import { WorkerMix } from "@/components/entities/WorkerMix";
-import { workerFacets } from "@/lib/db/employerHistory";
+import { HistoryMakeup, historyYears } from "@/components/entities/HistoryMakeup";
+import { historyMakeup, workerFacets } from "@/lib/db/employerHistory";
+import { CURRENT_PERIOD } from "@/lib/permEras";
 import { aliasTarget, entityFacets } from "@/lib/db/entityDetail";
 import { comparables, fieldDistribution, getBySlug } from "@/lib/db/entities";
 import { OccupationReference } from "@/components/reference/OccupationReference";
@@ -237,7 +239,7 @@ export default async function OccupationPage({
   // no code on file simply has no ladder rather than a wrong one.
   const wageKey = row.code ?? "";
   const socKey = socGroup(row.code);
-  const [stats, dist, near, ladderYears, stateLadders, facets, freshness, workers, h1b, pwdLinks] = await Promise.all([
+  const [stats, dist, near, ladderYears, stateLadders, facets, freshness, workers, h1b, pwdLinks, makeup] = await Promise.all([
     getDisclosureSummary(),
     fieldDistribution(KIND, MIN_DECIDED_FOR_RATE),
     comparables({
@@ -263,6 +265,9 @@ export default async function OccupationPage({
     row.code ? getLcaWageStats({ socCode: row.code, status: "certified" }).catch(softFail("perm-wages/[slug]/page.getLcaWageStats", null)) : Promise.resolve(null),
     // Wage determination to PERM filing for the job, keyed by its SOC group (perm_pwd_stats).
     socKey ? getPwdLinks("occupation", socKey) : Promise.resolve(null),
+    // Who filed it in FY2008 to FY2023, and where, with their own total (perm_history_entity_facets, one PK read).
+    // No catch: a failed read keeps the last good page rather than saving one with no history.
+    historyMakeup("occupation", slug),
   ]);
 
   const baselineDenialPct = stats?.risk?.baseline.denialRate ?? FALLBACK_BASELINE_DENIAL_PCT;
@@ -288,7 +293,8 @@ export default async function OccupationPage({
   // crawled, and 721 words of every entity page were byte-identical.
   const topEmp = facets.employer?.[0];
   const topState = facets.state?.[0];
-  const shareOf = (n: number) => `${Math.round((n / Math.max(row.total, 1)) * 100)}% of its filings`;
+  // Shares of its filings since FY2024, the facets' own years; the older ones are under History.
+  const shareOf = (n: number) => `${formatShareOf(n, Math.max(row.total, 1))} of its filings ${CURRENT_PERIOD}`;
   const facts: ProfileFact[] = ([
     topEmp
       ? { label: "Biggest sponsor", value: topEmp.label, href: topEmp.key ? entityHref("employer", topEmp.key) : undefined, note: shareOf(topEmp.n) }
@@ -307,6 +313,7 @@ export default async function OccupationPage({
   const chapters: ChapterItem[] = [
     { id: "pay", label: "What it pays" },
     { id: "who", label: "Who files it" },
+    ...(makeup ? [{ id: "history", label: "History" }] : []),
     { id: "the-job", label: "The job" },
     { id: "compare", label: "Against other jobs" },
     ...(h1b && h1b.n > 0 && row.code ? [{ id: "h1b", label: "H-1B" }] : []),
@@ -459,6 +466,21 @@ export default async function OccupationPage({
       <Chapter
         id="who"
         title="Who files it"
+        dek={
+          <>
+            From its {formatInt(row.total)} {row.total === 1 ? "filing" : "filings"} decided {CURRENT_PERIOD}.
+            {makeup ? (
+              <>
+                {" "}
+                Its {historyYears(makeup)} filings are under{" "}
+                <a href="#history" className="link">
+                  History
+                </a>
+                .
+              </>
+            ) : null}
+          </>
+        }
       >
       <FilingsSearch
         subject={displayTitle(row)}
@@ -475,6 +497,7 @@ export default async function OccupationPage({
               <PartyMix
                 rows={facets.employer}
                 total={row.total}
+                period={CURRENT_PERIOD}
                 title="Sponsors filing it"
                 note="The employers with the most applications under this code."
                 hrefBase="/perm-employers"
@@ -485,6 +508,7 @@ export default async function OccupationPage({
               <PartyMix
                 rows={facets.attorney}
                 total={row.total}
+                period={CURRENT_PERIOD}
                 title="Firms filing it"
                 note="The law firms named on the most applications under this code."
                 hrefBase="/perm-attorneys"
@@ -492,7 +516,7 @@ export default async function OccupationPage({
               />
             ) : null}
             {facets.state || facets.city ? (
-              <PlaceMix states={facets.state ?? []} cities={facets.city ?? []} total={row.total} />
+              <PlaceMix states={facets.state ?? []} cities={facets.city ?? []} total={row.total} period={CURRENT_PERIOD} />
             ) : null}
             {/* Beside the places, so the row's two boxes end level. */}
             <PwdToPerm links={pwdLinks} who={displayTitle(row)} className="border-2 border-border bg-card p-5 shadow-hard-sm sm:p-6" />
@@ -524,6 +548,12 @@ export default async function OccupationPage({
       />{" "}
       <WorkerMix facets={workers} subject="occupation" />
       </Chapter>
+
+      {makeup ? (
+        <Chapter id="history" title="History">
+          <HistoryMakeup makeup={makeup} subject="occupation" className="mt-0" />
+        </Chapter>
+      ) : null}
 
       <Chapter id="the-job" title="The job itself" dek="What O*NET says the work is, what the market pays it by BLS's survey, its outlook, and DOL's wage levels year by year.">
       <CodeTitles code={row.code} className="mt-6" />{" "}

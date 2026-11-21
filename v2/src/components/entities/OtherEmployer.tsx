@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { formatInt } from "@/lib/format";
+import { HISTORY_SPAN } from "@/lib/permEras";
 import { hasSeasonal, otherEmployerDatasets, programsMix } from "@/lib/otherEmployers";
 import { publishedStatusLabel, wagePhrase, worksitePhrase } from "@/lib/seasonalDetails";
 import type { OtherEmployerRecord } from "@/lib/db/otherEmployers";
@@ -159,7 +160,7 @@ export function OtherEmployer({
         <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
           {mix} in DOL&apos;s records{first ? `, the first filed ${first}` : ""}.{" "}
           {record.perm > 0
-            ? `It also filed ${formatInt(record.perm)} PERM ${record.perm === 1 ? "case" : "cases"} in DOL's FY2016 to FY2023 files, and none since.`
+            ? `It also filed ${formatInt(record.perm)} PERM ${record.perm === 1 ? "case" : "cases"} in DOL's ${HISTORY_SPAN} files, and none since.`
             : "No PERM green-card case under this name is in DOL's files or its live record."}{" "}
           Name as DOL prints it on the forms.
         </p>

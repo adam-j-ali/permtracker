@@ -22,7 +22,7 @@ import { BIGGEST_CLIENT_MIN_CASES, hasOwnPage, MIN_DECIDED_FOR_RATE, ENTITY_BASE
 import { neutralPageEntry } from "@/lib/privacy/withheld";
 import { notFound, permanentRedirect } from "next/navigation";
 import { firstThatFits, seeCandidates } from "@/lib/describe";
-import { formatInt } from "@/lib/format";
+import { formatInt, formatShareOf } from "@/lib/format";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { US_STATE_NAMES } from "@/lib/usStateNames";
 import {
@@ -68,6 +68,9 @@ import { debarmentsForSlug, phase } from "@/lib/db/debarments";
 import { NameSpellings } from "@/components/entities/NameSpellings";
 import { SizeBandNote } from "@/components/entities/SizeBandNote";
 import { OccupationMix, PartyMix, RecruitmentMix, StateMix } from "@/components/entities/FilingMakeup";
+import { HistoryMakeup, historyYears } from "@/components/entities/HistoryMakeup";
+import { historyMakeup } from "@/lib/db/employerHistory";
+import { CURRENT_PERIOD } from "@/lib/permEras";
 import { FilingsSearch } from "@/components/entities/FilingsSearch";
 import {
   absorbedCount,
@@ -257,7 +260,7 @@ export default async function AttorneyPage({
   // memoises on them, so all 3,736 share one cohort read. The peer window is
   // wide because the state filter thins it hard: California holds 604 firms
   // and Wyoming a handful.
-  const [stats, dist, near, facets, variants, absorbed, freshness, debarments, programs, firmProfile, pwdLinks] = await Promise.all([
+  const [stats, dist, near, facets, variants, absorbed, freshness, debarments, programs, firmProfile, pwdLinks, makeup] = await Promise.all([
     getDisclosureSummary(),
     fieldDistribution(KIND, MIN_DECIDED_FOR_RATE),
     comparables({
@@ -287,6 +290,9 @@ export default async function AttorneyPage({
       : queryStatic(api.firmClaims.publishedProfile, { slug: canonicalSlug }, revalidate).catch(softFail("perm-attorneys/[slug]/page.queryStatic", null)),
     // Wage determination to PERM filing, from the two files joined (perm_pwd_stats).
     getPwdLinks("attorney", canonicalSlug),
+    // Who it filed for in FY2008 to FY2023, the jobs and the states, with their own total (perm_history_entity_facets,
+    // one PK read). No catch: a failed read keeps the last good page rather than saving one with no history.
+    historyMakeup("attorney", canonicalSlug),
   ]);
   const band = await sizeBand(KIND, row.rank);
 
@@ -323,7 +329,8 @@ export default async function AttorneyPage({
   const peersAreLocal = near.matched === "facet" && where != null;
 
   const today = new Date().toISOString().slice(0, 10);
-  const share = (n: number) => `${Math.round((n / Math.max(row.total, 1)) * 100)}% of its cases`;
+  // Shares of its cases since FY2024, the facets' own years; the older ones are under History.
+  const share = (n: number) => `${formatShareOf(n, Math.max(row.total, 1))} of its cases ${CURRENT_PERIOD}`;
   // The top of the client list is only "the biggest client" with enough cases behind it.
   const topClient = facets.employer?.[0];
   const facts: ProfileFact[] = ([
@@ -345,6 +352,7 @@ export default async function AttorneyPage({
   const chapters: ChapterItem[] = [
     ...(hasPractice ? [{ id: "practice", label: "The practice" }] : []),
     ...(hasPrograms ? [{ id: "programs", label: "Every program" }] : []),
+    ...(makeup ? [{ id: "history", label: "History" }] : []),
     { id: "compare", label: "Against others" },
     ...(neutral ? [] : [{ id: "firm", label: firmProfile ? "From the firm" : "For the firm" }]),
     { id: "notes", label: "Notes" },
@@ -405,7 +413,25 @@ export default async function AttorneyPage({
           benchmarking a competitor and a beneficiary checking their own firm
           both arrive with, and it is a fact rather than an opinion. */}
       {hasPractice ? (
-        <Chapter id="practice" title="The practice">
+        <Chapter
+          id="practice"
+          title="The practice"
+          dek={
+            <>
+              From its {formatInt(row.total)} {row.total === 1 ? "case" : "cases"} decided {CURRENT_PERIOD}.
+              {makeup ? (
+                <>
+                  {" "}
+                  Its {historyYears(makeup)} cases are under{" "}
+                  <a href="#history" className="link">
+                    History
+                  </a>
+                  .
+                </>
+              ) : null}
+            </>
+          }
+        >
           <FilingsSearch
             subject={`${row.name}'s`}
             fixed={{ firm: row.slug }}
@@ -419,6 +445,7 @@ export default async function AttorneyPage({
               <PartyMix
                 rows={facets.employer}
                 total={row.total}
+                period={CURRENT_PERIOD}
                 title="Who they file for"
                 note="The employers named on the most applications from this firm."
                 hrefBase="/perm-employers"
@@ -429,10 +456,13 @@ export default async function AttorneyPage({
               <OccupationMix
                 rows={facets.occupation}
                 total={row.total}
+                period={CURRENT_PERIOD}
                 filingsHref={(r) => (r.key ? caseSearchHref({ firm: row.slug, occupation: r.key }) : null)}
               />
             ) : null}
-            {facets.state ? <StateMix rows={facets.state} total={row.total} className="lg:col-span-2" /> : null}
+            {facets.state ? (
+              <StateMix rows={facets.state} total={row.total} period={CURRENT_PERIOD} className="lg:col-span-2" />
+            ) : null}
           </div>{" "}
           <RecruitmentMix
             papers={facets.newspaper}
@@ -447,6 +477,12 @@ export default async function AttorneyPage({
       {hasPrograms ? (
         <Chapter id="programs" title="Every program">
           <FirmPrograms name={row.name} data={programs} className="mt-0" />
+        </Chapter>
+      ) : null}
+
+      {makeup ? (
+        <Chapter id="history" title="History">
+          <HistoryMakeup makeup={makeup} subject="firm" className="mt-0" />
         </Chapter>
       ) : null}
 
