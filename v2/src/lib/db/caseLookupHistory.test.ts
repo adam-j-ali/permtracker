@@ -85,3 +85,42 @@ describe("lookupCase and the FY2020 to FY2023 history", () => {
     expect(discoverCase).toHaveBeenCalledOnce();
   });
 });
+
+describe("the employer's record on the case page", () => {
+  const ENTITY = { name: "Acme Inc", slug: "acme-inc", total: 300, certified: 280, denied: 5, median_days: 410 };
+
+  it("counts every year DOL published for the employer, FY2008 on, and says which years", async () => {
+    tables.perm_cases_history = { [OLD]: { ...DECIDED, employer_slug: "acme-inc" } };
+    tables.perm_entities = { "acme-inc": ENTITY };
+    tables.perm_employer_years = {
+      "acme-inc": { fy_from: 2009, fy_to: 2026, certified: 1900, denied: 40, withdrawn: 60 },
+    };
+    const r = await lookupCase(OLD);
+    expect(r?.employer).toEqual({
+      name: "Acme Inc",
+      slug: "acme-inc",
+      total: 2000,
+      certified: 1900,
+      denied: 40,
+      approvalRate: 95,
+      medianDays: 410,
+      fyFrom: 2009,
+      fyTo: 2026,
+    });
+  });
+
+  it("finds the page by the row's own slug when an older file spelled the name differently", async () => {
+    // The history load maps an older spelling to today's page; slugifying the spelling would miss it.
+    tables.perm_cases_history = { [OLD]: { ...DECIDED, employer_name: "ACME INCORPORATED OF WA", employer_slug: "acme-inc" } };
+    tables.perm_entities = { "acme-inc": ENTITY };
+    const r = await lookupCase(OLD);
+    expect(r?.employer?.slug).toBe("acme-inc");
+  });
+
+  it("keeps the page's own counts, labelled with their years, when the yearly table has nothing", async () => {
+    tables.perm_cases_history = { [OLD]: { ...DECIDED, employer_slug: "acme-inc" } };
+    tables.perm_entities = { "acme-inc": ENTITY };
+    const r = await lookupCase(OLD);
+    expect(r?.employer).toMatchObject({ total: 300, certified: 280, denied: 5, fyFrom: null, fyTo: null });
+  });
+});

@@ -82,6 +82,7 @@ import { cn } from "@/lib/utils";
 import { DOL_CASE_STATUS_URL } from "@/components/queue/SourceNote";
 import { formatInt } from "@/lib/format";
 import { entityHref } from "@/lib/entityPayload";
+import { CURRENT_FIRST_FY } from "@/lib/permEras";
 import { planHref } from "@/components/tools/planner/planUrl";
 import { statusCasesHref } from "@/components/queue/statusLinks";
 
@@ -1244,6 +1245,21 @@ function Neighbours({ months, month }: { months: readonly CohortMonth[]; month: 
  * the numbers in it. Density 7 wants figures separated by hairlines, not
  * boxed one per card.
  */
+/**
+ * The years the employer's figures cover, said where they're printed: the counts reach back to FY2008 from the
+ * yearly table, while the median days come from the current files alone.
+ */
+export function employerYearsWords(employer: NonNullable<CaseLookupResult["employer"]>): string {
+  const counts =
+    employer.fyFrom !== null && employer.fyTo !== null
+      ? employer.fyFrom === employer.fyTo
+        ? `In FY${employer.fyFrom}`
+        : `Across FY${employer.fyFrom} to FY${employer.fyTo}`
+      : `Since FY${CURRENT_FIRST_FY}`;
+  const medianOwnYears = employer.medianDays !== null && (employer.fyFrom === null || employer.fyFrom < CURRENT_FIRST_FY);
+  return medianOwnYears && employer.fyFrom !== null ? `${counts}, and the median days since FY${CURRENT_FIRST_FY}.` : `${counts}.`;
+}
+
 function EmployerRecord({
   employer,
 }: {
@@ -1272,7 +1288,7 @@ function EmployerRecord({
   return (
     <div>
       <p className="max-w-2xl text-base leading-relaxed text-soft">
-        Across FY2024 to FY2026. It describes the employer&apos;s filings. It doesn&apos;t describe this case.
+        {employerYearsWords(employer)} It describes the employer&apos;s filings. It doesn&apos;t describe this case.
       </p>{" "}
       <div className="mt-5 border-2 shadow-hard p-5 sm:p-6 bg-card border-border">
         <dl className="flex flex-wrap items-baseline gap-x-8 gap-y-4">
