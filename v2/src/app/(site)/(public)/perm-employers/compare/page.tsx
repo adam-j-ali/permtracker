@@ -149,7 +149,10 @@ export default async function CompareEmployersPage({
 
       {/* BEFORE A PAIR, THE PAIRS AND THE SHAPE OF THE ANSWER: three
           comparisons to open in one tap, then the rows a comparison fills in,
-          hatched, so the page says what it does before anything is picked. */}
+          hatched, so the page says what it does before anything is picked.
+          Plain links: robots.txt closes the pairs' addresses and this page is
+          noindex, and a nofollow on a link to our own page read as the site
+          not vouching for it (internal-nofollow.test.ts). */}
       {!both ? (
         <section aria-label="Start a comparison" className="mt-6">
           <div className="flex flex-wrap items-center gap-2">
@@ -158,7 +161,6 @@ export default async function CompareEmployersPage({
               <Fragment key={e.label}>
                 <Link
                   href={`/perm-employers/compare?a=${e.a}&b=${e.b}`}
-                  rel="nofollow"
                   className="inline-flex min-h-11 items-center border-2 border-dashed border-foreground/50 bg-background px-3 text-sm font-bold hover:border-solid hover:bg-sage"
                 >
                   {e.label}

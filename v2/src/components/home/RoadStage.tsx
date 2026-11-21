@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useRef, type CSSProperties, type FocusEvent } from "react";
 
+import { SiteImage } from "@/components/ui/site-image";
 import { goToStep, useScrollStage, type StagePlace } from "@/components/scroll/useScrollStage";
 import { HOME_WIDTH } from "./homeWidth";
 
@@ -129,7 +129,7 @@ export function RoadStage({ stops }: { stops: RoadStop[] }) {
                       <span
                         className={`block aspect-[5/4] overflow-hidden border-2 border-[var(--object-border)] bg-card transition-colors group-hover:border-primary-text`}
                       >
-                        <Image
+                        <SiteImage
                           src={s.img.src}
                           alt={s.img.alt}
                           width={s.img.w}

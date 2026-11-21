@@ -4,7 +4,7 @@
  * Centralizes the JSON-LD <script type="application/ld+json"> emission for
  * schema.org structured data. The site ships several of these (FAQPage on
  * homepage + /faq, BreadcrumbList + ItemList on listings, Article schemas on
- * detail pages, homepage aggregateRating partial) and they previously
+ * detail pages, the app with its rating on the homepage) and they previously
  * inlined the same dangerouslySetInnerHTML pattern at every call site.
  *
  * Schemas are ALWAYS built server-side from hardcoded constants (page

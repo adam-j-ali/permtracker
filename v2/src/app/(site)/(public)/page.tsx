@@ -37,7 +37,7 @@ import { RoadSection } from "@/components/home/RoadSection";
 import { JobLookupBand } from "@/components/home/JobLookupBand";
 import {
   getFAQPageSchema,
-  getHomepageRatingPartialSchema,
+  getSoftwareApplicationSchema,
   shouldAdvertiseRating,
 } from "@/lib/structuredData";
 import { openGraphBase } from "@/lib/openGraphBase";
@@ -208,25 +208,23 @@ export default async function HomePage() {
   const faqSchema = getFAQPageSchema(
     HOME_FAQS.map(({ question, answer }) => ({ question, answer })),
   );
-  // The aggregateRating ships ONLY here (homepage), where ReviewsLine shows
-  // the same rating. The partial below shares the root SoftwareApplication's @id so
-  // Google's @id-graph merge attaches the rating to that entity on this
-  // page only (not on /blog, /privacy, etc.).
-  // Gated on the review count: below the advertising floor the schema is
-  // not emitted at all, which also keeps Google's visible-rating rule
-  // trivially satisfied - no markup, nothing to render. One constant
-  // (MIN_REVIEWS_TO_ADVERTISE) brings both back when the count grows.
-  const ratingPartial = shouldAdvertiseRating(siteReviews.rating.count)
-    ? getHomepageRatingPartialSchema(baseUrl, siteReviews.rating)
+  // The app's one SoftwareApplication node ships ONLY here, whole, with the
+  // rating ReviewsLine shows inside it: Google's Software App feature requires a
+  // rating or review, and the rating is visible on this page alone. Gated on the
+  // review count: below the advertising floor no page emits the node, since one
+  // without a rating fails Google's check. One constant (MIN_REVIEWS_TO_ADVERTISE)
+  // brings the line and the node back together.
+  const appSchema = shouldAdvertiseRating(siteReviews.rating.count)
+    ? getSoftwareApplicationSchema(baseUrl, siteReviews.rating)
     : null;
 
   return (
     <>
       {/* The curtain panel is rendered by the root layout as the first
           child of <body>, so it paints before this page's header. */}
-      {/* FAQPage + homepage aggregateRating partial. Server-built schemas only. */}
+      {/* FAQPage + the app with its rating. Server-built schemas only. */}
       <JsonLdScript schema={faqSchema} />
-      {ratingPartial ? <JsonLdScript schema={ratingPartial} /> : null}
+      {appSchema ? <JsonLdScript schema={appSchema} /> : null}
       {/* In reading order: the board (where DOL is, what it decided, what
           is still waiting), the line and its pace, the road with each
           stage's real paperwork, the search shelf, then the two halves with

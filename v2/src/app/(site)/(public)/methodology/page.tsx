@@ -30,6 +30,11 @@ import { getDisclosureStats } from "@/lib/db/publicData";
 import { MoreText } from "@/components/data/MoreText";
 import { describeDisclosureFiles } from "@/lib/disclosureFiles";
 import { buttonVariants } from "@/components/ui/button";
+import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { SITE_URL } from "@/lib/constants/site";
+import { pageCardUrl } from "@/lib/pageCards";
+import { changed } from "@/lib/pageDates";
+import { getLongReadSchema } from "@/lib/structuredData";
 
 const TITLE = "How PERM Tracker's Estimates Work";
 const DESCRIPTION =
@@ -260,8 +265,19 @@ export default async function MethodologyPage() {
     : null;
 
 
+  // A long read, so a TechArticle (LONG_READS in src/lib/structuredData.ts). First published Aug 25 2026 (git).
+  const article = getLongReadSchema(SITE_URL, {
+    path: "/methodology",
+    headline: TITLE,
+    description: DESCRIPTION,
+    datePublished: "2026-08-25",
+    dateModified: changed("/methodology"),
+    image: `${SITE_URL}${pageCardUrl("methodology")}`,
+  });
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">
+      <JsonLdScript schema={article} />
       <header className="pt-10 sm:pt-12">
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">
           How these numbers are computed

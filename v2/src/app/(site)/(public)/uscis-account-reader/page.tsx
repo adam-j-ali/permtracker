@@ -8,7 +8,6 @@ import { PageBasics, type BasicsEntry } from "@/components/data/PageBasics";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { UscisAccountReader } from "@/components/tools/UscisAccountReader";
-import { SITE_URL } from "@/lib/constants/site";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { getFAQPageSchema } from "@/lib/structuredData";
@@ -63,21 +62,11 @@ const FAQS: { q: string; a: string }[] = [
 
 const ENTRIES: BasicsEntry[] = FAQS.map((f) => ({ q: f.q, a: f.a }));
 
-const tool = {
-  "@context": "https://schema.org",
-  "@type": "WebApplication" as const,
-  name: "USCIS account reader",
-  url: `${SITE_URL}/uscis-account-reader`,
-  description: DESCRIPTION,
-  applicationCategory: "UtilitiesApplication",
-  operatingSystem: "Any",
-  offers: { "@type": "Offer" as const, price: "0", priceCurrency: "USD" },
-};
-
+// No WebApplication node: Google's Software App check requires a rating or review on one, and a tool with neither
+// would be an invalid item (src/lib/__tests__/structured-data-gate.test.ts). The FAQ carries what the page answers.
 export default function UscisAccountReaderPage() {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">
-      <JsonLdScript schema={tool} />
       <JsonLdScript schema={getFAQPageSchema(FAQS.map((f) => ({ question: f.q, answer: f.a })))} />
       <IndexHeader
         title="Read your USCIS account updates"

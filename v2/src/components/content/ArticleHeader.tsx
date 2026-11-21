@@ -12,8 +12,8 @@
  * fold animates in.
  */
 
-import Image from "next/image";
 
+import { SiteImage } from "@/components/ui/site-image";
 import { isWholeHero, WHOLE_HERO_GROUND } from "@/lib/content/wholeHeroes";
 import Link from "next/link";
 import { CalendarIcon, ClockIcon, UserIcon } from "@phosphor-icons/react/ssr";
@@ -82,7 +82,7 @@ export default function ArticleHeader({ meta, type }: ArticleHeaderProps) {
                 (isWholeHero(meta.image) ? ` ${WHOLE_HERO_GROUND}` : " bg-muted")
               }
             >
-              <Image
+              <SiteImage
                 src={meta.image}
                 alt={meta.imageAlt ?? ""}
                 fill

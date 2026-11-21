@@ -5,7 +5,6 @@
  */
 
 import { heroCrops } from "@/lib/content/heroCrops";
-import { TRADE_NAME } from "@/lib/constants/about";
 import { KNOWN_PERSON_AUTHORS } from "@/lib/constants/externalLinks";
 import { SCHEMA_IDS } from "@/lib/structuredData";
 import type { PostMeta, ContentType, PostSummary } from "./types";
@@ -15,17 +14,13 @@ const BASE_URL = SITE_URL;
 
 /**
  * Emitted identically by Article and VideoObject; written once so it stays that way.
- * It is the site's own Organization node (`@id`); that node alone carries the company's `legalName`.
+ *
+ * A reference to the site's own Organization node, which the root layout puts on every page (its name, logo and
+ * the company's `legalName` live there). It was a second Organization with the same `@id`, a name and a logo:
+ * parsers that don't merge by `@id` read two organizations, one with no url (Nov 20 2026; the gate in
+ * src/lib/__tests__/structured-data-gate.test.ts fails two full nodes with one `@id`).
  */
-const PUBLISHER = {
-  "@type": "Organization" as const,
-  "@id": SCHEMA_IDS.organization(BASE_URL),
-  name: TRADE_NAME,
-  logo: {
-    "@type": "ImageObject" as const,
-    url: `${BASE_URL}/icon-512.png`,
-  },
-};
+const PUBLISHER = { "@id": SCHEMA_IDS.organization(BASE_URL) };
 
 /** Absolute image URL for a post, falling back to the generated OG image. */
 function imageUrl(meta: PostMeta): string {

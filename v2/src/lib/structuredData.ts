@@ -2,9 +2,9 @@
  * Structured Data (JSON-LD) generators for SEO
  *
  * Provides type-safe schema generators for:
- * - SoftwareApplication (main site schema)
- * - Organization (site publisher info)
- * - WebSite (site name for Google Search)
+ * - SoftwareApplication (the app, whole with its rating, on the homepage only)
+ * - Organization (site publisher info, on every page)
+ * - WebSite (site name for Google Search, on every page)
  * - FAQPage (kept for non-Google engines; Google dropped FAQ rich results
  *   in May 2026, so this is no longer a rich-result lever there)
  *
@@ -59,13 +59,24 @@ export const GOOGLE_APP_CATEGORIES = [
 const APP_CATEGORY: (typeof GOOGLE_APP_CATEGORIES)[number] = 'ReferenceApplication';
 
 /**
- * Generate SoftwareApplication schema for PERM Tracker
- * Used in root layout for site-wide structured data
+ * The app as one whole SoftwareApplication node, its rating inside it. The homepage alone emits it, and only when
+ * `shouldAdvertiseRating` allows (src/app/(site)/(public)/page.tsx).
+ *
+ * WHY ONLY THERE. Google's Software App feature requires `name`, `offers.price` and an `aggregateRating` or `review`
+ * ("You must include one of the following properties", developers.google.com/search/docs/appearance/
+ * structured-data/software-app), and its review guidelines want the rating visible on the page that carries it. The
+ * rating line shows on the homepage (ReviewsLine). Until Nov 20 2026 the root layout put a rating-less copy of this
+ * node on every page and the homepage added a second node with the same `@id` holding the rating; Google may merge
+ * the two, but validator.schema.org and Ahrefs read each node alone, so every page failed the rich-result check.
+ *
+ * WITHOUT ENOUGH REVIEWS no page emits the node at all: a SoftwareApplication without a rating is an item Google's
+ * check marks invalid, and nothing else on the site needs the node (other nodes may point at its `@id`).
  */
-export function getSoftwareApplicationSchema(baseUrl: string) {
+export function getSoftwareApplicationSchema(baseUrl: string, rating: RatingFields) {
   return {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication' as const,
+    '@id': SCHEMA_IDS.software(baseUrl),
     name: 'PERM Tracker',
     // The same other names as the Organization and the WebSite, so all three say they're one brand.
     alternateName: ALTERNATE_NAMES,
@@ -106,13 +117,16 @@ export function getSoftwareApplicationSchema(baseUrl: string) {
       'Email and push notifications',
       'Calendar view with deadlines',
     ],
-    // aggregateRating is intentionally omitted from this root schema because
-    // it lives in the root @graph that ships on every page. Google's
-    // rich-results policy requires the rating to be rendered on the same page
-    // as the structured data, and the rating line only renders on the homepage
-    // (and /reviews). The homepage emits a separate partial via
-    // getHomepageRatingPartialSchema() below; Google's @id-graph merge
-    // attaches the rating to this SoftwareApplication on that page only.
+    // The same rating the page shows (from getSiteReviews), so the markup and
+    // the visible line can't disagree.
+    aggregateRating: {
+      '@type': 'AggregateRating' as const,
+      ratingValue: rating.value,
+      // ratingCount, not reviewCount: a rating from an alert email counts, and it has no words (Oct 31 2026).
+      ratingCount: rating.count,
+      bestRating: rating.best,
+      worstRating: rating.worst,
+    },
   };
 }
 
@@ -166,9 +180,12 @@ export function getOrganizationSchema(baseUrl: string) {
     sameAs: [...ORGANIZATION_SAME_AS],
     // How the figures are made, how mistakes are fixed and who owns the site:
     // schema.org's trust properties on Organization (The Trust Project's),
-    // each pointing at a page that already says it.
-    publishingPrinciples: `${baseUrl}/editorial-standards`,
-    verificationFactCheckingPolicy: `${baseUrl}/methodology`,
+    // each pointing at a page that already says it. How the figures are
+    // checked (/methodology) is one of the publishing principles: schema.org
+    // has verificationFactCheckingPolicy on NewsMediaOrganization only, and on
+    // Organization it was an unknown property on every page (validator.schema.org,
+    // Nov 20 2026). scripts/data/schema_org_properties.json holds what each type allows.
+    publishingPrinciples: [`${baseUrl}/editorial-standards`, `${baseUrl}/methodology`],
     correctionsPolicy: `${baseUrl}/changelog/corrections`,
     ownershipFundingInfo: `${baseUrl}/about`,
     actionableFeedbackPolicy: `${baseUrl}/contact`,
@@ -220,6 +237,71 @@ export function getWebSiteSchema(baseUrl: string) {
     // Cross-reference Organization @id (set in src/app/layout.tsx @graph) so
     // Google understands WebSite is published by the Organization entity.
     publisher: { '@id': SCHEMA_IDS.organization(baseUrl) },
+  };
+}
+
+/**
+ * The graph the root layout puts on every page: the Organization and the WebSite, cross-linked by `@id`. The app's
+ * SoftwareApplication isn't here: it ships whole, with its rating, on the homepage alone (getSoftwareApplicationSchema).
+ */
+export function getSiteGraph(baseUrl: string) {
+  // Strip per-schema @context: the @graph wrapper provides it once.
+  const { '@context': _org, ...org } = getOrganizationSchema(baseUrl);
+  const { '@context': _site, ...website } = getWebSiteSchema(baseUrl);
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      { ...org, '@id': SCHEMA_IDS.organization(baseUrl) },
+      { ...website, '@id': SCHEMA_IDS.website(baseUrl) },
+    ],
+  };
+}
+
+/**
+ * The pages that are long reads, each with a TechArticle node (getLongReadSchema). Chosen by reading each page:
+ * a piece of prose a person reads top to bottom, never a tool, a list or a calculator, whatever a crawler's guess
+ * at page types says (Ahrefs listed tools and data pages as "missing Article schema", Nov 20 2026).
+ * - /methodology: how every figure is made, sections of explanation with the arithmetic behind each figure.
+ * Weighed and left out: /perm-case-statuses is a glossary, one definition a status with today's counts and a
+ * lookup box, and already carries the type for that (DefinedTermSet); /editorial-standards, /about and the legal
+ * pages are policies and facts about the site, which schema.org's WebPage kinds describe, not articles.
+ * Guides and blog posts get their Article from src/lib/content/seo.ts.
+ */
+export const LONG_READS = ['/methodology'] as const;
+
+export interface LongReadInput {
+  path: (typeof LONG_READS)[number];
+  headline: string;
+  description: string;
+  /** The day the page first went up (ISO). */
+  datePublished: string;
+  /** The day it last changed, the same day its WebPage node and its "Updated" line print. */
+  dateModified: string;
+  /** Its social card, absolute. */
+  image?: string;
+}
+
+/**
+ * A long read's TechArticle: an explanation of how something technical works. The author and publisher are the
+ * site's Organization by reference (the root layout's node carries its name and logo on every page), and the page
+ * it's the main entity of is the page's own WebPage node (SiteBreadcrumbs, `#webpage`), by reference too, so no
+ * second full node repeats an `@id`.
+ */
+export function getLongReadSchema(baseUrl: string, input: LongReadInput) {
+  const url = `${baseUrl}${input.path}`;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle' as const,
+    headline: input.headline,
+    description: input.description,
+    url,
+    mainEntityOfPage: { '@id': `${url}#webpage` },
+    datePublished: input.datePublished,
+    dateModified: input.dateModified,
+    author: { '@id': SCHEMA_IDS.organization(baseUrl) },
+    publisher: { '@id': SCHEMA_IDS.organization(baseUrl) },
+    inLanguage: 'en-US',
+    ...(input.image ? { image: input.image } : {}),
   };
 }
 
@@ -287,66 +369,6 @@ export const MIN_REVIEWS_TO_ADVERTISE = 2;
 export function shouldAdvertiseRating(count: string = APP_RATING.count): boolean {
   return Number(count) >= MIN_REVIEWS_TO_ADVERTISE;
 }
-
-/**
- * Homepage-only aggregateRating partial.
- *
- * Why this is its own helper (and not part of `getSoftwareApplicationSchema`):
- * Google's rich-results policy requires aggregate ratings to be rendered
- * visibly on the SAME page as the structured data. The rating is shown only on
- * the homepage (src/components/home/ReviewsLine.tsx), so it must only ship on `/`. The base SoftwareApplication schema
- * lives in the root layout's `@graph` and renders on every page; emitting
- * `aggregateRating` there would put a rating on /blog, /privacy, etc., where
- * no widget is visible, a policy violation that can suppress all rich
- * results for the domain.
- *
- * Pattern: emit a partial `SoftwareApplication` with the same `@id` as the
- * root entity. Google merges schemas sharing `@id` into the same entity, so
- * the rating attaches to the existing SoftwareApplication on the homepage
- * only.
- *
- * The page passes the same rating it shows (from `getSiteReviews`), so the
- * markup and the visible line can't disagree.
- */
-export function getHomepageRatingPartialSchema(baseUrl: string, rating: RatingFields = APP_RATING) {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication' as const,
-    '@id': SCHEMA_IDS.software(baseUrl),
-    // A COMPLETE node, not a rating-only fragment. A parser that merges by
-    // @id sees one entity either way; a parser that does NOT merge (and the
-    // Rich Results Test evaluates items individually) previously saw an
-    // orphan SoftwareApplication with a rating and no name, offers or
-    // category - an item failing required-field validation. Duplicating the
-    // identity fields costs bytes and removes the ambiguity entirely.
-    name: 'PERM Tracker',
-    alternateName: ALTERNATE_NAMES,
-    url: baseUrl,
-    // MUST match the @graph node's category. Both carry SCHEMA_IDS.software(),
-    // so they are one entity by @id - and this one still said
-    // 'BusinessApplication', left behind when the graph node deliberately moved
-    // to 'WebApplication' (see the note at the top of this file). A merging
-    // parser saw one entity asserting two different categories; a
-    // non-merging one saw two SoftwareApplications with the same identity.
-    // Neither is what the complete-node pattern below is trying to achieve.
-    applicationCategory: APP_CATEGORY,
-    operatingSystem: 'Web Browser',
-    offers: {
-      '@type': 'Offer' as const,
-      price: '0',
-      priceCurrency: 'USD',
-    },
-    aggregateRating: {
-      '@type': 'AggregateRating' as const,
-      ratingValue: rating.value,
-      // ratingCount, not reviewCount: a rating from an alert email counts, and it has no words (Oct 31 2026).
-      ratingCount: rating.count,
-      bestRating: rating.best,
-      worstRating: rating.worst,
-    },
-  };
-}
-
 
 // ---------------------------------------------------------------------------
 // Dataset
