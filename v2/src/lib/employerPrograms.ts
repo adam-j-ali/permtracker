@@ -10,10 +10,18 @@
  * sentence when either side is too thin to mean anything.
  */
 
-import { formatDollars } from "@/lib/format";
+import { formatDollars, formatInt } from "@/lib/format";
 import type { ChangeProgram } from "@/lib/changeProgram";
 
 export type EmployerProgramKey = ChangeProgram;
+
+/**
+ * The first fiscal year each program's newer table holds. PERM's `perm_cases` starts at FY2024 (the case search's
+ * CURRENT_FIRST_FY) and the LCA's `lca_cases` at FY2020 (scripts/ingest_flag_disclosure.py HISTORY_TABLES); the years
+ * before are in DOL's older yearly files, which reach back to FY2008 (`perm_cases_history`, `lca_cases_history`).
+ */
+export const NEWER_FROM_FY = { perm: 2024, lca: 2020 } as const;
+export const OLDER_FROM_FY = 2008;
 
 export interface ProgramLine {
   program: EmployerProgramKey;
@@ -33,6 +41,26 @@ export interface ProgramLine {
   medianHourlyWage?: number | null;
   /** Seasonal work only: workers DOL certified across the published rows. */
   workersCertified?: number | null;
+  /**
+   * PERM and LCA only: of `published`, the rows from DOL's older yearly files (PERM FY2008 to FY2023, LCAs FY2008
+   * to FY2019), counted when those files load. The median doesn't read them.
+   */
+  olderPublished?: number;
+  /** PERM and LCA only: the first fiscal year the median reads, so the ledger can say which years it covers. */
+  medianFromFy?: number;
+}
+
+/**
+ * What the ledger prints in a line's median cell beside the figure, or in its place: "of 40", "of 40, FY2024 on",
+ * "8 wages from FY2020 on, too few", "none from FY2020 on", "none published". A line whose median reads only the newer
+ * files names the years, so a median beside an every-year count is never read as every year's.
+ */
+export function medianCaption(l: ProgramLine, unit: "wage" | "hourly wage" = "wage"): string {
+  const since = l.medianFromFy ? `FY${l.medianFromFy} on` : null;
+  const n = formatInt(l.wageN);
+  if (l.wageN >= WAGE_FLOOR) return `of ${n}${since ? `, ${since}` : ""}`;
+  if (l.wageN > 0) return `${n} ${unit}${l.wageN === 1 ? "" : "s"}${since ? ` from ${since}` : ""}, too few`;
+  return since && l.published > 0 ? `none from ${since}` : "none published";
 }
 
 /** Below this many wages a median is one or two offers, not a figure. */

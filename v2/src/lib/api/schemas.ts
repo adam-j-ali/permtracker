@@ -305,7 +305,13 @@ export const EmployerLookupSchema = z
             filingsLast12Months: z.number().int().nullable().describe("PERM cases filed in the last 12 months."),
           })
           .describe("Its PERM record."),
-        h1bLcas: z.number().int().nullable().describe("H-1B labor condition applications in DOL's published files."),
+        h1bLcas: z
+          .number()
+          .int()
+          .nullable()
+          .describe(
+            "H-1B labor condition applications in DOL's published files, FY2008 on: certified, denied and withdrawn. The E-3 and H-1B1 LCAs filed on the same form aren't counted. Null when it couldn't be read.",
+          ),
         wageRequests: z.number().int().nullable().describe("Prevailing wage requests, published and live."),
       })
       .nullable()

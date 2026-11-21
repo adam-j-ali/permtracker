@@ -28,7 +28,8 @@
  * The figures are the ones the employer page itself prints: published PERM
  * decisions and the certified share (withheld under 30 decided, the site's
  * rule for printing a rate at all), cases DOL shows pending now, the newest
- * filing the live record holds, and H-1B LCAs in DOL's published files.
+ * filing the live record holds, and H-1B LCAs in DOL's published files from
+ * FY2008 on (the employer page's year chart's count, the H-1B visa only).
  */
 import "server-only";
 
@@ -78,7 +79,10 @@ export interface LookupEmployer {
     newestFiling: string | null;
     filingsLast12Months: number | null;
   };
-  /** H-1B labor condition applications in DOL's published files. */
+  /**
+   * H-1B labor condition applications in DOL's published files, FY2008 on: certified, denied and withdrawn. Not the
+   * E-3 and H-1B1 LCAs filed on the same form. Null when it couldn't be read.
+   */
   h1bLcas: number | null;
   /** Prevailing wage requests, published and live. */
   wageRequests: number | null;
@@ -140,12 +144,22 @@ async function exactMappedPage(name: string): Promise<{ slug: string; kind: Page
   return kind === "perm" || kind === "live" || kind === "other" ? { slug: String(r.page_slug), kind } : null;
 }
 
+/**
+ * An employer's H-1B LCAs, FY2008 on, summed over its spellings from `lca_cases_years` (scripts/build_lca_years.py,
+ * over DOL's newer files and its FY2008 to FY2019 ones): certified, denied and withdrawn H-1B LCAs only, as the
+ * employer page's year chart counts them. The E-3 and H-1B1 LCAs DOL publishes on the same form aren't H-1B ones.
+ */
+export function h1bLcaCountSql(where: string): string {
+  return `SELECT SUM(certified + denied + withdrawn) AS n FROM lca_cases_years WHERE ${where}`;
+}
+
 /** Counts over the employer's own spellings, from the tables' employer indexes. */
 async function spellingCounts(slug: string): Promise<{ lcas: number | null; newestFiling: string | null; livePending: number | null }> {
   const match = await employerMatch(slug).catch(softFail("api/employerLookup.employerMatch", null));
   if (!match) return { lcas: null, newestFiling: null, livePending: null };
   const [lca, live] = await Promise.all([
-    one<{ n: number }>(`SELECT COUNT(*) AS n FROM lca_cases INDEXED BY lca_cases_emp WHERE ${match.where}`, match.args).catch(
+    // A failed read is no figure (null), never zero.
+    one<{ n: number | string | null }>(h1bLcaCountSql(match.where), match.args).catch(
       softFail("api/employerLookup.lcaCount", null),
     ),
     one<{ newest: string | null; pending: number }>(
@@ -154,7 +168,8 @@ async function spellingCounts(slug: string): Promise<{ lcas: number | null; newe
       match.args,
     ).catch(softFail("api/employerLookup.livePending", null)),
   ]);
-  return { lcas: num(lca?.n), newestFiling: day(live?.newest), livePending: num(live?.pending) };
+  // A read that answered with no row of the employer's (SUM over nothing) is zero H-1B LCAs.
+  return { lcas: lca ? (num(lca.n) ?? 0) : null, newestFiling: day(live?.newest), livePending: num(live?.pending) };
 }
 
 async function describe(slug: string, kind: PageKind): Promise<LookupEmployer | null> {
@@ -224,7 +239,8 @@ async function describe(slug: string, kind: PageKind): Promise<LookupEmployer | 
       newestFiling: counts.newestFiling,
       filingsLast12Months: null,
     },
-    h1bLcas: o.lca,
+    // The same H-1B count as every other page: the map's `lca` counts the E-3 and H-1B1 LCAs too.
+    h1bLcas: counts.lcas,
     wageRequests: o.pwd,
   };
 }

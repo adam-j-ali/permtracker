@@ -107,7 +107,23 @@ export interface LcaProfileRow {
   visa_e3: number | string | null;
   visa_h1b1_chile: number | string | null;
   visa_h1b1_singapore: number | string | null;
+  /** The first fiscal year among the employer's LCAs. */
+  fy_from?: number | string | null;
 }
+
+/**
+ * The same figures over DOL's FY2008 to FY2019 files, counted at their load (scripts/lca_history_totals.py). Those
+ * files print the worker breakdown and the OES level in some years only, so the level comes with its own
+ * denominator: `level_rows`, the certified LCAs in the years that name a level at all. (`level_blank` is the newer
+ * files' own count, among the rows the detail backfill reached.)
+ */
+export type LcaOlderRow = Partial<Omit<LcaProfileRow, "level_blank">> & {
+  level_rows?: number | string | null;
+  certified?: number | string | null;
+};
+
+/** A figure both rows carry: every column but the newer files' own `level_blank`. */
+type SharedColumn = Exclude<keyof LcaProfileRow, "level_blank">;
 
 /** The newest filing that answered Section H, if any did. */
 export interface LcaNewestRow {
@@ -127,6 +143,12 @@ export interface LcaProfile {
   levels: { level: WageLevel; n: number }[];
   /** Certified LCAs with the breakdown but no OES level: the wage came from another source. */
   levelBlank: number;
+  /** Certified LCAs a level could be read on: the newer files' breakdown rows, the older files' rows in years that name a level. */
+  levelRows: number;
+  /** The first fiscal year the figures reach, or null when no read named one. */
+  fyFrom: number | null;
+  /** Of `filings`, the LCAs from DOL's FY2008 to FY2019 files. */
+  olderFilings: number;
   dependent: { yes: number; of: number };
   violator: { yes: number; of: number };
   /** The newest filing's two answers, or null when no filing answered. */
@@ -148,7 +170,7 @@ function flag(v: number | string | null | undefined): boolean | null {
   return n === 1 ? true : n === 0 ? false : null;
 }
 
-const KIND_COLUMN: Record<LcaKindKey, keyof LcaProfileRow> = {
+const KIND_COLUMN: Record<LcaKindKey, SharedColumn> = {
   newEmployment: "new_employment",
   changeEmployer: "change_employer",
   continuedEmployment: "continued_employment",
@@ -157,39 +179,60 @@ const KIND_COLUMN: Record<LcaKindKey, keyof LcaProfileRow> = {
   amendedPetition: "amended_petition",
 };
 
-const LEVEL_COLUMN: Record<WageLevel, keyof LcaProfileRow> = {
+const LEVEL_COLUMN: Record<WageLevel, SharedColumn> = {
   I: "level_1",
   II: "level_2",
   III: "level_3",
   IV: "level_4",
 };
 
-const VISA_COLUMN: Record<(typeof LCA_VISAS)[number]["key"], keyof LcaProfileRow> = {
+const VISA_COLUMN: Record<(typeof LCA_VISAS)[number]["key"], SharedColumn> = {
   h1b: "visa_h1b",
   e3: "visa_e3",
   h1b1Chile: "visa_h1b1_chile",
   h1b1Singapore: "visa_h1b1_singapore",
 };
 
-/** Turn the read layer's two rows into the panel's figures; null when the employer has no LCA at all. */
-export function shapeLcaProfile(row: LcaProfileRow | null, newest: LcaNewestRow | null): LcaProfile | null {
-  if (!row) return null;
-  const filings = num(row.filings);
+/** A fiscal year, or null for none. */
+function fy(v: number | string | null | undefined): number | null {
+  const n = num(v);
+  return n > 0 ? n : null;
+}
+
+/**
+ * Turn the read layer's rows into the panel's figures: the newer files' aggregate, the newest filing that answered
+ * Section H, and DOL's older files' aggregate when they hold any. Null when the employer has no LCA at all.
+ */
+export function shapeLcaProfile(
+  row: LcaProfileRow | null,
+  newest: LcaNewestRow | null,
+  older: LcaOlderRow | null = null,
+): LcaProfile | null {
+  const both = (col: SharedColumn) => num(row?.[col]) + num(older?.[col]);
+  const filings = both("filings");
   if (filings === 0) return null;
-  const visas = LCA_VISAS.map((v) => ({ key: v.key, label: v.label, n: num(row[VISA_COLUMN[v.key]]) }));
+  const visas = LCA_VISAS.map((v) => ({ key: v.key, label: v.label, n: both(VISA_COLUMN[v.key]) }));
   const named = visas.reduce((s, v) => s + v.n, 0);
   const n = newest
     ? { dependent: flag(newest.h1b_dependent), violator: flag(newest.willful_violator), filed: newest.filed ?? null }
     : null;
+  const levels = WAGE_LEVELS.map((level) => ({ level, n: both(LEVEL_COLUMN[level]) }));
+  // The older files' blank level: their certified LCAs in the years that name one, less the ones that did.
+  const olderLevelRows = num(older?.level_rows);
+  const olderNamed = WAGE_LEVELS.reduce((s, level) => s + num(older?.[LEVEL_COLUMN[level]]), 0);
+  const years = [fy(row?.fy_from), fy(older?.fy_from)].filter((y): y is number => y !== null);
   return {
     filings,
-    detailRows: num(row.detail_rows),
-    positions: num(row.positions),
-    kinds: LCA_KINDS.map((kind) => ({ kind, n: num(row[KIND_COLUMN[kind.key]]) })),
-    levels: WAGE_LEVELS.map((level) => ({ level, n: num(row[LEVEL_COLUMN[level]]) })),
-    levelBlank: num(row.level_blank),
-    dependent: { yes: num(row.dependent_yes), of: num(row.dependent_rows) },
-    violator: { yes: num(row.violator_yes), of: num(row.violator_rows) },
+    detailRows: both("detail_rows"),
+    positions: both("positions"),
+    kinds: LCA_KINDS.map((kind) => ({ kind, n: both(KIND_COLUMN[kind.key]) })),
+    levels,
+    levelBlank: num(row?.level_blank) + Math.max(0, olderLevelRows - olderNamed),
+    levelRows: num(row?.detail_rows) + olderLevelRows,
+    fyFrom: years.length ? Math.min(...years) : null,
+    olderFilings: num(older?.filings),
+    dependent: { yes: both("dependent_yes"), of: both("dependent_rows") },
+    violator: { yes: both("violator_yes"), of: both("violator_rows") },
     newest: n && (n.dependent !== null || n.violator !== null) ? n : null,
     visas,
     otherVisa: Math.max(0, filings - named),
@@ -200,7 +243,7 @@ export function shapeLcaProfile(row: LcaProfileRow | null, newest: LcaNewestRow 
 export function hasLcaDetail(p: LcaProfile | null): p is LcaProfile {
   if (!p) return false;
   const nonH1b = p.visas.some((v) => v.key !== "h1b" && v.n > 0) || p.otherVisa > 0;
-  return p.detailRows > 0 || p.dependent.of > 0 || p.violator.of > 0 || nonH1b;
+  return p.detailRows > 0 || p.levelRows > 0 || p.dependent.of > 0 || p.violator.of > 0 || nonH1b;
 }
 
 /** A whole-number percent, or null when there's nothing to divide by. Never rounds a nonzero share to 0. */
