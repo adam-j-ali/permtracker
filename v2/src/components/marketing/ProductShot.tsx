@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { SiteImage } from "@/components/ui/site-image";
 
 /**
  * A framed screenshot of the actual product.
@@ -63,7 +63,7 @@ export function ProductShot({
             : "overflow-hidden border-border bg-card border"
         }
       >
-        <Image
+        <SiteImage
           src={src}
           alt={alt}
           width={width}

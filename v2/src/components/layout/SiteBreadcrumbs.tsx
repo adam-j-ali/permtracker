@@ -10,7 +10,7 @@ import { breadcrumbSchema, breadcrumbTrail, trailEndsAtPage, trailNamesPage } fr
 import { isDataPath } from "@/lib/siteMap";
 import { SITE_URL } from "@/lib/constants/site";
 import { SCHEMA_IDS } from "@/lib/structuredData";
-import { OWN_DATE, pageDate, routeOf, type DateSources } from "@/lib/pageDates";
+import { OWN_DATE, OWN_PAGE_NODE, pageDate, routeOf, type DateSources } from "@/lib/pageDates";
 import { cn } from "@/lib/utils";
 import { longDate } from "@convex/lib/months";
 
@@ -57,7 +57,7 @@ export function SiteBreadcrumbs({
   const ownCopy = Boolean(pageName) || date !== undefined;
   if (!ownCopy && route && OWN_DATE.has(route)) return null;
   const updated = date ?? (route && sources && !pageName ? pageDate(route, sources) : null);
-  const page = updated ? <PageDateSchema path={pathname} date={updated} /> : null;
+  const page = updated && !(route && OWN_PAGE_NODE.has(route)) ? <PageDateSchema path={pathname} date={updated} /> : null;
   const base = breadcrumbTrail(pathname);
   const trail = pageName && base.length > 0 ? [...base, { name: pageName, href: pathname }] : base;
   // The home page has no trail; it still says when it changed, to search.

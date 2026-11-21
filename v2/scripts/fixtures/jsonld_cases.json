@@ -1,0 +1,89 @@
+{
+  "about": "The JSON-LD rules' cases, run by both sides so the two validators can't drift: src/lib/seo/jsonLdCheck.ts (src/lib/__tests__/structured-data-gate.test.ts) and scripts/audit_page_markup.py (scripts/test_audit_page_markup.py). `expect` lists a piece of each problem the case must raise; an empty list means none.",
+  "cases": [
+    {
+      "name": "the site's Organization, whole",
+      "blocks": [{"@context": "https://schema.org", "@graph": [
+        {"@type": "Organization", "@id": "https://permtracker.app/#organization", "name": "PERM Tracker", "url": "https://permtracker.app", "logo": "https://permtracker.app/icon-512.png", "publishingPrinciples": ["https://permtracker.app/editorial-standards", "https://permtracker.app/methodology"]},
+        {"@type": "WebSite", "@id": "https://permtracker.app/#website", "name": "PERM Tracker", "url": "https://permtracker.app", "publisher": {"@id": "https://permtracker.app/#organization"}}
+      ]}],
+      "expect": []
+    },
+    {
+      "name": "a property schema.org has on NewsMediaOrganization only",
+      "blocks": [{"@type": "Organization", "name": "PERM Tracker", "url": "https://permtracker.app", "verificationFactCheckingPolicy": "https://permtracker.app/methodology"}],
+      "expect": ["verificationFactCheckingPolicy isn't a schema.org property of Organization"]
+    },
+    {
+      "name": "an app with no rating",
+      "blocks": [{"@type": "SoftwareApplication", "@id": "https://permtracker.app/#software", "name": "PERM Tracker", "offers": {"@type": "Offer", "price": "0"}}],
+      "expect": ["no aggregateRating or review"]
+    },
+    {
+      "name": "a web app with no rating and no price",
+      "blocks": [{"@type": "WebApplication", "name": "Calculator", "offers": {"@type": "Offer", "priceCurrency": "USD"}}],
+      "expect": ["no offers.price", "no aggregateRating or review"]
+    },
+    {
+      "name": "the app whole, its rating nested",
+      "blocks": [{"@type": "SoftwareApplication", "@id": "https://permtracker.app/#software", "name": "PERM Tracker", "offers": {"@type": "Offer", "price": "0"}, "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.5", "ratingCount": "2"}}],
+      "expect": []
+    },
+    {
+      "name": "a rating with no count, standing alone",
+      "blocks": [{"@type": "AggregateRating", "ratingValue": "4.5"}],
+      "expect": ["no ratingCount or reviewCount", "no itemReviewed"]
+    },
+    {
+      "name": "two full nodes with one @id",
+      "blocks": [
+        {"@type": "SoftwareApplication", "@id": "https://permtracker.app/#software", "name": "PERM Tracker", "offers": {"@type": "Offer", "price": "0"}, "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.5", "ratingCount": "2"}},
+        {"@type": "SoftwareApplication", "@id": "https://permtracker.app/#software", "name": "PERM Tracker", "offers": {"@type": "Offer", "price": "0"}, "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.5", "ratingCount": "2"}}
+      ],
+      "expect": ["two full nodes share the @id https://permtracker.app/#software"]
+    },
+    {
+      "name": "a reference repeats freely",
+      "blocks": [
+        {"@type": "WebPage", "@id": "https://permtracker.app/x#webpage", "url": "https://permtracker.app/x", "publisher": {"@id": "https://permtracker.app/#organization"}},
+        {"@type": "TechArticle", "headline": "How", "datePublished": "2026-08-25", "author": {"@id": "https://permtracker.app/#organization"}, "mainEntityOfPage": {"@id": "https://permtracker.app/x#webpage"}}
+      ],
+      "expect": []
+    },
+    {
+      "name": "a type the vocabulary file doesn't hold",
+      "blocks": [{"@type": "Recipe", "name": "Soup"}],
+      "expect": ["Recipe isn't in scripts/data/schema_org_properties.json"]
+    },
+    {
+      "name": "a dataset Google would refuse",
+      "blocks": [{"@type": "Dataset", "name": "PERM", "description": "Too short."}],
+      "expect": ["description must be 50 to 5,000 characters"]
+    },
+    {
+      "name": "a breadcrumb trail with a hole",
+      "blocks": [{"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home"}, {"@type": "ListItem", "position": 2, "name": "Here"}]}],
+      "expect": ["breadcrumb 1 has no item"]
+    },
+    {
+      "name": "an article with no author or date",
+      "blocks": [{"@type": "Article", "headline": "PERM"}],
+      "expect": ["no datePublished", "no author with a name"]
+    },
+    {
+      "name": "a video missing its thumbnail",
+      "blocks": [{"@type": "VideoObject", "name": "How it works", "uploadDate": "2026-10-01"}],
+      "expect": ["no thumbnailUrl"]
+    },
+    {
+      "name": "an FAQ answer with no text",
+      "blocks": [{"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Q?", "acceptedAnswer": {"@type": "Answer"}}]}],
+      "expect": ["question 1 lacks its name or its answer's text"]
+    },
+    {
+      "name": "the site's Organization without its logo",
+      "blocks": [{"@type": "Organization", "@id": "https://permtracker.app/#organization", "name": "PERM Tracker", "url": "https://permtracker.app"}],
+      "expect": ["no logo"]
+    }
+  ]
+}

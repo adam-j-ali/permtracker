@@ -93,7 +93,7 @@ describe("the review rating", () => {
 
   it("the homepage gives the visible line and the structured data the same rating", () => {
     const page = readFileSync(join(__dirname, "..", "..", "..", "app", "(site)", "(public)", "page.tsx"), "utf8");
-    expect(page).toMatch(/getHomepageRatingPartialSchema\(baseUrl, siteReviews\.rating\)/);
+    expect(page).toMatch(/getSoftwareApplicationSchema\(baseUrl, siteReviews\.rating\)/);
     expect(page).toMatch(/shouldAdvertiseRating\(siteReviews\.rating\.count\)/);
     expect(page).toMatch(/rating=\{siteReviews\.rating\} reviews=\{siteReviews\.reviews\}/);
   });

@@ -2,12 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { SharedProviders } from "./shared-providers";
-import {
-  getSoftwareApplicationSchema,
-  getOrganizationSchema,
-  getWebSiteSchema,
-  SCHEMA_IDS,
-} from "@/lib/structuredData";
+import { getSiteGraph } from "@/lib/structuredData";
 import { openGraphBase, socialCardImage } from "@/lib/openGraphBase";
 
 const spaceGrotesk = Space_Grotesk({
@@ -154,18 +149,7 @@ export default async function RootLayout({
 }>) {
   // Generate structured data for SEO (static data, not user input - safe for JSON-LD)
   const baseUrl = SITE_URL;
-  // Strip per-schema @context — the @graph wrapper provides it once
-  const { '@context': _1, ...software } = getSoftwareApplicationSchema(baseUrl);
-  const { '@context': _2, ...org } = getOrganizationSchema(baseUrl);
-  const { '@context': _3, ...website } = getWebSiteSchema(baseUrl);
-  const structuredData = {
-    '@context': 'https://schema.org',
-    '@graph': [
-      { ...software, '@id': SCHEMA_IDS.software(baseUrl) },
-      { ...org, '@id': SCHEMA_IDS.organization(baseUrl) },
-      { ...website, '@id': SCHEMA_IDS.website(baseUrl) },
-    ],
-  };
+  const structuredData = getSiteGraph(baseUrl);
 
   return (
     // NO auth provider here, deliberately. ConvexAuthNextjsServerProvider

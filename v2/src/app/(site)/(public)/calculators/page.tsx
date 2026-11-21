@@ -97,16 +97,13 @@ export default function CalculatorsPage() {
     "@type": "ItemList" as const,
     name: "PERM calculators and tools",
     numberOfItems: CASE_TOOLS.length + EXPLORERS.length,
+    // Google's summary-page shape (position, url, name), as every list page has it. Each entry was a WebApplication
+    // with no rating, an item Google's Software App check marks invalid (it requires aggregateRating or review).
     itemListElement: [...CASE_TOOLS, ...EXPLORERS].map((t, i) => ({
       "@type": "ListItem" as const,
       position: i + 1,
-      item: {
-        "@type": "WebApplication" as const,
-        name: t.name,
-        url: `${SITE_URL}${t.href}`,
-        applicationCategory: "UtilitiesApplication",
-        offers: { "@type": "Offer" as const, price: "0", priceCurrency: "USD" },
-      },
+      url: `${SITE_URL}${t.href}`,
+      name: t.name,
     })),
   };
 

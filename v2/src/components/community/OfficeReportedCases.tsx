@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 
+import { OfficeCaseTable } from "@/components/community/OfficeCaseTable";
 import { PageSection } from "@/components/data/PageSection";
 import { PagedTable } from "@/components/ui/paged-table";
 import { sheetFor } from "@/lib/communitySheets";
@@ -87,10 +88,10 @@ export function OfficeReportedCases({
         ))}
       />{" "}
       <h3 className="mt-10 font-heading text-xl font-bold">Every case, newest move first</h3>{" "}
-      <PagedTable
-        className="mt-4"
+      <OfficeCaseTable
         label={`Every case people reported at ${officeName}, newest move first`}
         noun="cases"
+        cellClassName={TD}
         head={
           <thead>
             <tr className="border-b-2 border-border text-sm text-muted-foreground">
@@ -106,23 +107,26 @@ export function OfficeReportedCases({
             </tr>
           </thead>
         }
-        rows={cases.map((c) => (
-          <tr key={c.id} className="border-b border-border">
-            <td className={TD}>{c.category ?? "Not given"}{" "}</td>
-            <td className={TD}>{c.chargeability ?? "Not given"}{" "}</td>
-            <td className={TD}>{c.priorityDate ? day(c.priorityDate) : (c.priorityNote ?? "Not given")}{" "}</td>
-            <td className={TD}>{day(c.receiptDate)}{" "}</td>
-            <td className={TD}>{day(c.biometricsDate)}{" "}</td>
-            <td className={TD}>{day(c.transferDate)}{" "}</td>
-            <td className={TD}>{day(c.approvalDate, "Not yet")}{" "}</td>
-            <td className={TD}>{day(c.cardDate, "Not yet")}{" "}</td>
-            <td className={TD}>
-              {c.sources.map(shortSourceName).join(", ")}
-              {c.maybeRepeats > 0 ? " (may repeat another case)" : ""}{" "}
-            </td>
-          </tr>
-        ))}
+        rows={cases.map(caseCells)}
       />
     </PageSection>
   );
+}
+
+/**
+ * One case's cells, as the every-case table prints them, in its columns' order. Text only: the table draws the page
+ * on screen from these (OfficeCaseTable), so the browser gets each case once, as a short row of words.
+ */
+export function caseCells(c: ReportedCase): string[] {
+  return [
+    c.category ?? "Not given",
+    c.chargeability ?? "Not given",
+    c.priorityDate ? day(c.priorityDate) : (c.priorityNote ?? "Not given"),
+    day(c.receiptDate),
+    day(c.biometricsDate),
+    day(c.transferDate),
+    day(c.approvalDate, "Not yet"),
+    day(c.cardDate, "Not yet"),
+    `${c.sources.map(shortSourceName).join(", ")}${c.maybeRepeats > 0 ? " (may repeat another case)" : ""}`,
+  ];
 }
