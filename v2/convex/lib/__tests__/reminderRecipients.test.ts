@@ -373,6 +373,36 @@ describe("the plain-text rule itself", () => {
     }
   });
 
+  it("fails a vanity number split another way, longer than seven, joined to its 1, or with a look-alike area code", () => {
+    for (const s of [
+      "1-800-CALL-ATT",
+      "1-800-GO-FEDEX",
+      "IRS Refund Desk 1-800-HELP-IRS",
+      "212-CALL-NOW",
+      "1-800-CONTACTS",
+      "1-800-MATTRESS",
+      "1-800-IRSREFUND",
+      "212-555-HELPME",
+      "1800FLOWERS",
+      "1888IRSHELP",
+      "(800)-555-HELP",
+      "(800)-FLOWERS",
+      "1-8OO-FLOWERS",
+      "1-8ØØ-FLOWERS",
+      "8OO-FLOWERS",
+      "(8OO) FLOWERS",
+      "2l2-555-HELP",
+    ]) {
+      expect(isPlainText(s), s).toBe(false);
+      expect(safeCaseLine("Robotics Engineer", s), s).toBe(A_PERM_CASE);
+      expect(inviterName(s, undefined), s).toBe(SOMEONE);
+    }
+    // A number, a hyphen and a word, or a year and a word, is a name.
+    for (const s of ["360-Degree Solutions", "1999 Ventures LLC", "Since 1985 Company", "Route 66-Diner Holdings"]) {
+      expect(isPlainText(s), s).toBe(true);
+    }
+  });
+
   it("keeps ordinary names that hold a number beside words", () => {
     for (const s of [
       "St. Jude",
@@ -434,6 +464,11 @@ describe("the plain-text rule itself", () => {
       "evil. app",
       "evil. us",
       "irs-refund. com9tail",
+      // Two marks between the dot and the ending, or brackets on both.
+      "irs-refund (.) (com)",
+      "irs-refund.((com",
+      "irs-refund.’’com",
+      "irs-refund. ’ ( com",
       // Any one allowed mark, or none, may wrap the dot.
       "irs-refund’.’com",
       "irs-refund–.–com",
