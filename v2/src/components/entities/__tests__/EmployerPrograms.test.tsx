@@ -70,4 +70,20 @@ describe("EmployerPrograms", () => {
     expect(t).toContain("PERM decisions from FY2008 to FY2023 and the LCAs from FY2008 to FY2019");
     expect(t).toContain("E-3 and H-1B1");
   });
+
+  it("claims no older years when they weren't read, and still dates its medians", () => {
+    const { container } = render(
+      <EmployerPrograms
+        name="Acme"
+        perm={line("perm", { medianFromFy: 2024 })}
+        pwd={null}
+        lca={line("lca", { medianFromFy: 2020 })}
+        stages={null}
+      />,
+    );
+    const t = text(container);
+    expect(t).not.toContain("back to FY2008");
+    expect(t).toContain("of 40, FY2024 on");
+    expect(t).toContain("The PERM and LCA medians read the newer files only");
+  });
 });

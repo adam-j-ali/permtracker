@@ -70,7 +70,12 @@ export const employerOlderFiles = cache(async (slug: string): Promise<OlderFiles
   const match = await employerMatch(slug);
   if (!match) return null;
   const row = await one<Row>(olderFilesSql(match.where), [...match.args, NEWER_FROM_FY.perm, ...match.args]).catch(
-    beforeFirstLoad(undefined),
+    (e: unknown) => {
+      // A table built before the profile's columns is as good as not built for this read; the next history build
+      // adds them. Anything else throws (beforeFirstLoad).
+      if (/no such column/i.test(String((e as Error | undefined)?.message ?? e))) return undefined;
+      return beforeFirstLoad(undefined)(e);
+    },
   );
   if (row === undefined) return null;
   const lca = num(row?.filings);
