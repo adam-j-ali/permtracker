@@ -5,8 +5,8 @@ A history row took its firm's slug from the firm pages of the day its year loade
 build_firm_ranks.py counts a row with no slug as naming no firm, so such a firm dropped out of its own FY2015 to FY2023
 rankings, and its older cases never linked once it had a page (the Nov 20 2026 sweep, item 32). The rule is now the
 employer's: today's page when there is one, else the firm's own name slugified by the shared rule (lib_slugs.py and
-src/lib/entitySlug.ts), never another firm's page. `--fill-firm-slugs` puts every stored row on that rule, ten days of
-decisions at a time on idx_pch_dec, writing only the rows whose slug moves.
+src/lib/entitySlug.ts), never another firm's page. `--fill-firm-slugs` puts every stored row on that rule, a few thousand
+decisions at a time on idx_pch_dec (lib_db.counted_slices), writing only the rows whose slug moves.
 
 Run:  python3 scripts/test_history_firm_slugs.py
 """
@@ -119,9 +119,11 @@ updates = [s for s in db.sqls if s.startswith("UPDATE perm_cases_history")]
 check("only the moved rows are written, keyed on the case number",
       len(updates) >= 1 and all("WHERE case_number IN" in s for s in updates), str(updates))
 reads = [s for s in db.sqls if s.startswith("SELECT") and "FROM perm_cases_history" in s and "attorney_name" in s]
-check("it reads ten days of decisions at a time, never the whole table",
+check("it reads a slice of decision days at a time, never the whole table",
       bool(reads) and all("decision_date >= ?" in s and "decision_date < ?" in s for s in reads), str(reads[:2]))
-check("a month is three slices", len(reads) >= 3 * 12, str(len(reads)))
+counts = [s for s in db.sqls if "COUNT(*) FROM perm_cases_history" in s and "GROUP BY decision_date" in s]
+check("each month's day counts come first, so no slice holds more than lib_db.SLICE_ROWS rows",
+      len(counts) == len(iph.months_between("2012-05-01", "2019-02-12")), str(len(counts)))
 plan = " ".join(str(r) for r in db.conn.execute(
     "EXPLAIN QUERY PLAN " + reads[0].replace("?", "'2016-01-01'", 1).replace("?", "'2016-01-11'", 1)).fetchall())
 check("each slice rides the decision-date index", "idx_pch_dec" in plan, plan)

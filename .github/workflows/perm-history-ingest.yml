@@ -62,6 +62,10 @@ jobs:
           FORCE: ${{ github.event.inputs.force }}
           NO_INDEXES: ${{ github.event.inputs.no_indexes }}
           FINISH_ONLY: ${{ github.event.inputs.finish_only }}
+          # Names withheld at their owner's request (scripts/lib_withheld.py): an older case of a withheld firm
+          # takes its page's slug, which the site masks. Read, never printed.
+          WITHHELD_EMPLOYERS: ${{ secrets.WITHHELD_EMPLOYERS }}
+          WITHHELD_FIRMS: ${{ secrets.WITHHELD_FIRMS }}
         run: |
           for v in "$FROM_FY" "$TO_FY"; do
             case "$v" in ''|*[!0-9]*) echo "FATAL: fiscal years must be 4-digit" >&2; exit 1 ;; esac
@@ -80,6 +84,11 @@ jobs:
 
       - name: Rebuild the city, industry and country pages
         working-directory: v2
+        env:
+          # Names withheld at their owner's request (scripts/lib_withheld.py): the firm rankings put a withheld
+          # firm's older spellings on its page, which the site masks. Read, never printed.
+          WITHHELD_EMPLOYERS: ${{ secrets.WITHHELD_EMPLOYERS }}
+          WITHHELD_FIRMS: ${{ secrets.WITHHELD_FIRMS }}
         run: |
           python3 scripts/build_groups.py || {
             python3 scripts/record_ingest_failure.py --script build_groups.py \
