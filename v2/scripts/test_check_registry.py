@@ -86,6 +86,8 @@ def checks() -> list[str]:
         *V2.glob("scripts/check_*.py"),
         V2 / "scripts" / "phone_sweep.mjs",
         V2 / "scripts" / "page_checks.py",
+        # The whole site's weekly audit, a seventh of the sitemap a night on the server.
+        V2 / "scripts" / "site_audit.py",
         V2 / "scripts" / "every_test_file_runs.mjs",
         V2 / "run-e2e-tests.sh",
         *V2.glob("tests/e2e/*.spec.ts"),
