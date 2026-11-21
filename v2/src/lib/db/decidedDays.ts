@@ -127,7 +127,7 @@ export interface DecidedFeed {
   refused: string | null;
   /**
    * Set when one part of the range was left out of an answer that still serves the rest, with what and why in
-   * words: the older LCA files under a filter they check a few days at a time, asked beside other programs.
+   * words: the older LCA files under a filter they check a day at a time, asked beside other programs.
    */
   partial: string | null;
 }
@@ -226,11 +226,11 @@ export const LCA_HISTORY_DECIDED_LAST = "2019-09-30";
  * Days of the older LCA files a filter may span when it has to be tested row by row there.
  *
  * Those files sit in one big table read on its decision-date index, about 1,400 filings a day and 3,581 on the
- * busiest. A ten-day slice of it took 2.97 s on the live database (Nov 21 2026), so a walk stays near a second
- * only at about three days. The filters an index serves there (a state, an occupation, a law firm) stop at the
- * row cap and aren't held to this.
+ * busiest. Timed on the server next to the live database (Nov 21 2026), a walk over three busy days (5,538 rows)
+ * took 1.19 s and one day 0.69 s, so a walk holds to one day. The filters an index serves there (a state, an
+ * occupation, a law firm) stop at the row cap and aren't held to this.
  */
-export const LCA_HISTORY_SCAN_DAYS = 3;
+export const LCA_HISTORY_SCAN_DAYS = 1;
 
 /** The last decision day each history table holds; a range starting after it never asks the table. */
 const HISTORY_LAST: Record<string, string> = {
@@ -586,15 +586,16 @@ export async function getDecidedFeed(args: {
     };
   }
 
-  // The older LCA files answer a filter tested row by row a few days at a time (LCA_HISTORY_SCAN_DAYS). A wider
+  // The older LCA files answer a filter tested row by row a day at a time (LCA_HISTORY_SCAN_DAYS). A wider
   // range there is said in words, never walked past a second or cut silently: refused when only the LCAs are
   // asked, and left out of an answer that serves the other programs, with a note saying so.
   const lcaHistory = programs.includes("lca") ? lcaHistoryPart(range) : null;
   const skipLcaHistory =
     lcaHistory !== null && walksLcaHistory(narrow) && daysInRange(lcaHistory) > LCA_HISTORY_SCAN_DAYS;
   const why =
-    `H-1B LCAs decided before October 2019 are in DOL's older files, where this filter is checked a few days at a ` +
-    `time, so a range reaching them can hold at most ${LCA_HISTORY_SCAN_DAYS} days of them with it. This one holds ` +
+    `H-1B LCAs decided before October 2019 are in DOL's older files, where this filter is checked a day at a ` +
+    `time, so a range reaching them can hold at most ${LCA_HISTORY_SCAN_DAYS === 1 ? "one day" : `${LCA_HISTORY_SCAN_DAYS} days`} of them ` +
+    `with it. This one holds ` +
     `${lcaHistory ? daysInRange(lcaHistory) : 0}.`;
   if (skipLcaHistory && programs.every((p) => p === "lca")) {
     return {
