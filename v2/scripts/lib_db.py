@@ -355,6 +355,59 @@ def day_slices(first: str, last: str) -> list[tuple[str, str]]:
     return [s for m in months_between(first, last) for s in month_thirds(m)]
 
 
+# Rows a counted slice holds at most. A read's cost follows the rows it opens: ten days of the older H-1B table,
+# grouped, took 2.97 s on the live database and a ten-day raw slice of the older PERM table (4,858 rows) 1.09 s
+# (Nov 21 2026), so 2,500 rows is about half a second at the slower rate.
+SLICE_ROWS = 2500
+
+
+def counted_slices(db, table: str, col: str, first: str, last: str,
+                   budget: int = SLICE_ROWS) -> Iterator[tuple[str, list]]:
+    """Every row of `table` whose `col` (an indexed ISO day) falls in `first`'s month to `last`'s, as conditions that
+    each hold at most `budget` rows, for a read that must stay well under a second whatever the day.
+
+    Per month, one count of each day on the column's index (it opens no row), then days end to end while their rows
+    fit the budget: `col >= ? AND col < ?`. A day holding more is cut by row id, read from the same index (every
+    SQLite index carries the row id last): `col = ? AND rowid >= ? AND rowid < ?`. A slice ten days wide held a
+    cap-season week of H-1B decisions; this holds a number of rows instead. `table` and `col` are the caller's
+    constants, never input. Rows with no day are left out, as a range of days leaves them out.
+    """
+    for m in months_between(first, last):
+        lo, hi = f"{m}-01", f"{next_month(m)}-01"
+        # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query
+        days = sorted((str(r[0]), int(r[1])) for r in rows_of(db.execute(
+            f"SELECT {col}, COUNT(*) FROM {table} WHERE {col} >= ? AND {col} < ? GROUP BY {col}", [lo, hi])))
+        start, held = None, 0
+        for i, (day, n) in enumerate(days):
+            if n > budget:
+                if start is not None:
+                    yield f"{col} >= ? AND {col} < ?", [start, day]
+                    start, held = None, 0
+                yield from _cut_day(db, table, col, day, n, budget)
+                continue
+            if start is not None and held + n > budget:
+                yield f"{col} >= ? AND {col} < ?", [start, day]
+                start, held = None, 0
+            if start is None:
+                start = day
+            held += n
+        if start is not None:
+            yield f"{col} >= ? AND {col} < ?", [start, hi]
+
+
+def _cut_day(db, table: str, col: str, day: str, n: int, budget: int) -> Iterator[tuple[str, list]]:
+    """One crowded day as row-id ranges of `budget` rows, each bound read off the index at its offset."""
+    def rowid_at(offset: int) -> int:
+        # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query
+        got = rows_of(db.execute(
+            f"SELECT rowid FROM {table} WHERE {col} = ? ORDER BY rowid LIMIT 1 OFFSET ?", [day, offset]))
+        return int(got[0][0])
+
+    bounds = [rowid_at(k) for k in range(0, n, budget)] + [rowid_at(n - 1) + 1]
+    for a, b in zip(bounds, bounds[1:]):
+        yield f"{col} = ? AND rowid >= ? AND rowid < ?", [day, a, b]
+
+
 def rows_of(res: dict) -> list[list]:
     """An `execute()` response's rows, each cell decoded by `cell`."""
     return [[cell(c) for c in r] for r in res["response"]["result"]["rows"]]
