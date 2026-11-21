@@ -63,6 +63,7 @@ Usage:
     python3 scripts/ingest_perm_history.py --local PERM_FY2010.xlsx --dry-run
     python3 scripts/ingest_perm_history.py --current       # FY2024 onward only
     python3 scripts/ingest_perm_history.py --places-wages  # the worksites, wage bands and explorer years only
+    python3 scripts/ingest_perm_history.py --places-wages --dry-run  # the same reads; counts and sizes, no write
     python3 scripts/ingest_perm_history.py --decided-days  # the wait trend's FY2015 to FY2023 months only
 """
 from __future__ import annotations
@@ -791,7 +792,12 @@ def held_years(db) -> list[int]:
                       min(LAST_FY, int(ipd.fiscal_year(str(last)))) + 1))
 
 
-def build_places_and_wages(db) -> int:
+def size_words(n: int) -> str:
+    """Bytes in words for a log line: "96.3 MB", "412 KB", "803 bytes"."""
+    return f"{n / 1e6:,.1f} MB" if n >= 1e6 else f"{n / 1e3:,.0f} KB" if n >= 1e3 else f"{n:,} bytes"
+
+
+def build_places_and_wages(db, *, dry_run: bool = False) -> int:
     """One pass over the older table, a fiscal year at a time in ten-day decision slices, for three readers that
     otherwise see FY2024 on only:
 
@@ -803,6 +809,7 @@ def build_places_and_wages(db) -> int:
                              year picker's facets.
 
     The table changes only when a history file loads, so this runs then, or with --places-wages, never nightly.
+    `dry_run` reads the same slices, counts what it would write and its size, and writes nothing.
     """
     import build_wage_bands as bwb
     import build_wage_views as bwv
@@ -817,10 +824,11 @@ def build_places_and_wages(db) -> int:
     built: list[str] = []
     checked: str | None = None
     views_written = 0
+    view_bytes = 0
     strays = 0
     # Each year's views are written as soon as that year is counted (about 300,000 in all, a few hundred bytes
     # each), and before the first is written, one of them is recomputed through the site's own SQL.
-    stamp = bwv.begin_views(db)
+    stamp = 0 if dry_run else bwv.begin_views(db)
     for fy in held_years(db):
         wages: list[tuple] = []
         for a, b in decision_slices(fy):
@@ -846,12 +854,20 @@ def build_places_and_wages(db) -> int:
         views = bwv.build("perm", wages, floor, min_rows=1, fy_only=True)
         if checked is None:
             checked = bwv.verify_history(db, str(fy), views)
-        bwv.put_views(db, bwv.HISTORY_PROGRAM, bwv.serialize(views), stamp)
+        items = bwv.serialize(views)
+        view_bytes += sum(len(k) + len(j) for k, _, j in items)
+        if not dry_run:
+            bwv.put_views(db, bwv.HISTORY_PROGRAM, items, stamp)
         views_written += len(views)
         built.append(str(fy))
         log(f"  FY{fy}: {len(wages):,} wages, {len(views):,} explorer views, {len(places):,} worksites so far")
     if strays:
         log(f"  {strays:,} rows whose fiscal year isn't their decision day's: worksites only")
+    if dry_run:
+        log(f"  dry run: would write {len(places):,} worksites, {len(bands):,} wage bands and {views_written:,} "
+            f"explorer views ({size_words(view_bytes)} of keys and JSON), FY{built[0] if built else '-'} to "
+            f"FY{built[-1] if built else '-'}; {checked or 'no view'} checked live; nothing written")
+        return len(places) + len(bands) + views_written
     for ddl in SCHEMA:
         if "perm_history_worksites" in ddl or "perm_history_wage_bands" in ddl:
             db.execute(ddl)
@@ -989,6 +1005,9 @@ def main() -> int:
 
     if args.places_wages:
         db = Database()
+        if args.dry_run:
+            # The same reads, and counts and sizes in the log: nothing created, written or recorded.
+            return 0 if build_places_and_wages(db, dry_run=True) else 1
         db.script(SCHEMA)
         n = build_places_and_wages(db)
         record_run(db, "ingest_perm_history.py --places-wages", status="ok" if n else "partial", rows_written=n,
