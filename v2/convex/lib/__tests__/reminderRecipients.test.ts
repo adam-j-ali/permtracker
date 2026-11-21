@@ -434,6 +434,17 @@ describe("the plain-text rule itself", () => {
       "evil. app",
       "evil. us",
       "irs-refund. com9tail",
+      // Any one allowed mark, or none, may wrap the dot.
+      "irs-refund’.’com",
+      "irs-refund–.–com",
+      "irs-refund—.—com",
+      "irs-refund./com",
+      "irs-refund'.'com",
+      "irs-refund-.-com",
+      "irs-refund,.,com",
+      "irs-refund&.&com",
+      "irs-refund. / com",
+      "irs-refund ..com",
     ]) {
       expect(isPlainText(s), s).toBe(false);
       expect(safeCaseLine("Robotics Engineer", s), s).toBe(A_PERM_CASE);

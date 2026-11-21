@@ -77,13 +77,13 @@ const NOT_PLAIN = new RegExp(`[^${LATIN_LETTERS}0-9 ${PLAIN_PUNCTUATION}]`);
 const DOT_THEN_LETTERS = new RegExp(`\\.[${LATIN_LETTERS}]{2}`);
 
 /**
- * A domain spelled apart: a dot, then spaces or a bracket ("irs-refund. com", "irs-refund(.)com", "irs-refund.(com)"),
- * then a common top-level domain as a whole word. "co" is left out, so "Smith Ltd. Co" shows, and a word that only
- * starts like one ("Co. Comedy") isn't one. The spaces and the one bracket can each be matched one way only, so it's
- * linear in the text.
+ * A domain spelled apart: a dot, then spaces and at most one of the marks PLAIN_PUNCTUATION allows ("irs-refund. com",
+ * "irs-refund(.)com", "irs-refund’.’com", "irs-refund./com"), then a common top-level domain as a whole word. "co" is
+ * left out, so "Smith Ltd. Co" shows, and a word that only starts like one ("Co. Comedy") isn't one. The mark is never
+ * a space, so the spaces before it and after it can each be matched one way only, and it's linear in the text.
  */
 const SPACED_DOMAIN = new RegExp(
-  `\\. *(?:[()] *)?(?:com|net|org|gov|edu|io|info|biz|app|us)(?![${LATIN_LETTERS}])`,
+  `\\. *(?:[${PLAIN_PUNCTUATION}] *)?(?:com|net|org|gov|edu|io|info|biz|app|us)(?![${LATIN_LETTERS}])`,
   "i",
 );
 
