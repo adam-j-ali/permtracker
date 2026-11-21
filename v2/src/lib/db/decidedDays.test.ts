@@ -147,6 +147,22 @@ describe("getDecidedFeed and DOL's FY2008 to FY2019 LCA files", () => {
     const perm = await getDecidedFeed({ range: { from: "2015-04-01", to: "2015-04-30" }, programs: ["perm"], narrow: { employer: "acme" } });
     expect(perm.refused).toBeNull();
   });
+
+  it("answers the other programs when the LCAs are asked beside them, and names the part it left out", async () => {
+    DATA.perm_cases_history = [row("A-15100-00001", "2015-04-20")];
+    asked.length = 0;
+    const f = await getDecidedFeed({ range: { from: "2015-04-01", to: "2015-04-30" }, narrow: { employer: "acme" } });
+    expect(f.refused).toBeNull();
+    expect(f.cases.map((c) => c.caseNumber)).toEqual(["A-15100-00001"]);
+    expect(f.partial).toMatch(/H-1B LCAs decided before October 2019 aren't in this answer/);
+    expect(asked.some((q) => q.includes("lca_cases_history"))).toBe(false);
+    // The current LCA table still answers its own part of a range that crosses into it.
+    asked.length = 0;
+    await getDecidedFeed({ range: { from: "2019-09-01", to: "2019-10-31" }, narrow: { employer: "acme" } });
+    expect(asked.some((q) => q.includes("FROM lca_cases ") || q.includes("FROM lca_cases\n"))).toBe(true);
+    const ok = await getDecidedFeed({ range: { from: "2025-03-01", to: "2025-03-31" }, narrow: { employer: "acme" } });
+    expect(ok.partial).toBeNull();
+  });
 });
 
 describe("filters", () => {
