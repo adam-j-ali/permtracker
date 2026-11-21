@@ -40,7 +40,7 @@ from zoneinfo import ZoneInfo
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from lib_db import Database, et_today, query_rows, record_run, write_doc  # noqa: E402
 from ingest_case_status_direct import (  # noqa: E402
-    BULK_WRITE_ROWS, FINAL_STATUSES, SOURCE, observed_day, percentiles_from_counts,
+    BULK_WRITE_ROWS, FINAL_STATUSES, SOURCE, observed_day,
 )
 
 SCRIPT = "build_wait_trends.py"
@@ -129,17 +129,28 @@ def live_months(decisions: list, bulk: set[int], today: str, after_month: str) -
     return out
 
 
+# Each older month's nearest ranks, read from the running total of its day counts, so the reply is a row a month
+# (write_decided_percentiles in ingest_case_status_direct.py reads its own table the same way). The positions are
+# PERCENTILE_SQL's: p25 at max(1, n/4), p50 at (n+1)/2, p75 at max(1, 3n/4).
+HISTORY_SQL = f"""
+    WITH r AS (SELECT m, days,
+                      SUM(n) OVER (PARTITION BY m ORDER BY days) AS run,
+                      SUM(n) OVER (PARTITION BY m)               AS total
+                 FROM {HISTORY_TABLE} WHERE m >= ? AND m < ?)
+    SELECT m, MAX(total) AS n,
+           MIN(CASE WHEN run >= MAX(1, total / 4)     THEN days END) AS p25,
+           MIN(CASE WHEN run >= (total + 1) / 2       THEN days END) AS p50,
+           MIN(CASE WHEN run >= MAX(1, total * 3 / 4) THEN days END) AS p75
+      FROM r GROUP BY m ORDER BY m"""
+
+
 def history_months(db: Database) -> list[dict]:
     """The months before FROM_DAY from DOL's older files, by the same nearest-rank positions and floor as
     perm_cases' own. None before the first history build made the table (said in the log)."""
     if not query_rows(db, "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", [HISTORY_TABLE]):
         print(f"[wait] {HISTORY_TABLE} isn't built yet: the PERM trend starts at {FROM_DAY[:7]}", flush=True)
         return []
-    counts: dict[str, dict[int, int]] = {}
-    for m, d, n in query_rows(db, f"SELECT m, days, n FROM {HISTORY_TABLE} WHERE m >= ? AND m < ? ORDER BY m, days",
-                              [HISTORY_FROM[:7], FROM_DAY[:7]]):
-        counts.setdefault(str(m), {})[int(d)] = int(n)
-    return months_from_rows([(m, *percentiles_from_counts(c)) for m, c in sorted(counts.items())], "files")
+    return months_from_rows(query_rows(db, HISTORY_SQL, [HISTORY_FROM[:7], FROM_DAY[:7]]), "files")
 
 
 def perm_trend(db: Database) -> dict | None:
