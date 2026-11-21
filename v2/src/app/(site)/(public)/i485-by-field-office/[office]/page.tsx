@@ -23,7 +23,7 @@ import { DataProvenance } from "@/components/data/DataProvenance";
 import { OfficeReportedCases } from "@/components/community/OfficeReportedCases";
 import { OfficeTimelines, type OfficeTimelineView } from "@/components/community/OfficeTimelines";
 import { NoteBanner } from "@/components/ui/note";
-import type { ReportedCase } from "@/lib/reportedCases";
+import { REPORTED_COMMUNITY_PLACES, type ReportedCase } from "@/lib/reportedCases";
 import { getOfficeReportedCases, getReportedCasesBuiltAt } from "@/lib/db/communityReports";
 import { queryStatic } from "@/lib/convexStatic";
 import { softFail } from "@/lib/softRead";
@@ -477,7 +477,7 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
             How long each step took here, as people report it
           </h2>{" "}
           <p className="mt-2 max-w-2xl text-base text-muted-foreground">
-            {`From the ${formatInt(summary.cases)} cases people reported at ${theOffice(office)} in Telegram groups, community sheets, Reddit and on this site, each person once. Each step counts the cases that finished it in the last 6 months, or 12 when 6 hold too few. Self-reported, beside USCIS's own figures above, never in place of them.`}
+            {`From the ${formatInt(summary.cases)} cases people reported at ${theOffice(office)} in ${REPORTED_COMMUNITY_PLACES} and on this site, each person once. Each step counts the cases that finished it in the last 6 months, or 12 when 6 hold too few. Self-reported, beside USCIS's own figures above, never in place of them.`}
           </p>
           <div className="mt-5">
             <StepsByStage steps={summary.steps} stages={[{ groups: ["i485"], title: "Each step of the I-485" }]} />

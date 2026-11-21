@@ -2,6 +2,7 @@ import { BarRows, type BarRow } from "@/components/data/BarRows";
 import { PageSection } from "@/components/data/PageSection";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { formatInt, formatShare } from "@/lib/format";
+import { REPORTED_COMMUNITY_PLACES } from "@/lib/reportedCases";
 import { PREMIUM_LABELS } from "@/lib/reportedI140";
 import type { I140Summary, StepFigure } from "@/lib/reportedSummary";
 import { StepFigures } from "./StepFigures";
@@ -49,8 +50,7 @@ export function ReportedI140({ figures, steps }: { figures: readonly I140Summary
         <a href={VISASTATS} target="_blank" rel="noopener noreferrer" className="link">
           VisaStats&apos; community tracker
         </a>
-        , Telegram groups, community sheets, Reddit and the timelines shared here, each case counted once. Premium added
-        later is counted from the filing day too, so its bar includes the wait before premium was asked for.
+        {`, ${REPORTED_COMMUNITY_PLACES} and the timelines shared here, each case counted once. Premium added later is counted from the filing day too, so its bar includes the wait before premium was asked for.`}
       </p>{" "}
       {bars.length > 0 ? (
         <div className="object mt-4 p-4 sm:p-5">

@@ -3,6 +3,8 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { REPORTED_COMMUNITY_PLACES, REPORTED_PLACES } from "@/lib/reportedCases";
+
 /**
  * Every STATIC public page's meta description fits Google's snippet.
  *
@@ -26,6 +28,9 @@ const CAP = 155;
 
 /** An interpolation whose value is unknown statically; assume a realistic width. */
 const PLACEHOLDER = "05/29/26";
+/** Shared phrases a description interpolates, measured at their real width: as a placeholder, a 65-character list of
+ * places would read as 8 and a description 30 characters over would pass. */
+const KNOWN: Record<string, string> = { REPORTED_PLACES, REPORTED_COMMUNITY_PLACES };
 
 function staticPages(dir: string, route: string[] = []): Array<{ route: string; file: string }> {
   const out: Array<{ route: string; file: string }> = [];
@@ -50,7 +55,12 @@ function descriptionOf(src: string): string | null {
   ];
   for (const re of patterns) {
     const m = re.exec(src);
-    if (m?.[1]) return m[1].replace(/\$\{[^}]+\}/g, PLACEHOLDER).replace(/\\"/g, '"');
+    if (m?.[1]) {
+      return m[1]
+        .replace(/\$\{\s*(\w+)\s*\}/g, (all, name: string) => KNOWN[name] ?? all)
+        .replace(/\$\{[^}]+\}/g, PLACEHOLDER)
+        .replace(/\\"/g, '"');
+    }
   }
   return null;
 }
@@ -72,6 +82,11 @@ describe("static public page descriptions", () => {
       "visa bulletin cutoffs, and counts of the record. Three shapes, two backgrounds, " +
       "rebuilt daily.";
     expect(real.length).toBeGreaterThan(CAP);
+  });
+
+  it("measures a shared phrase at its real width (control)", () => {
+    const src = 'const DESCRIPTION =\n  `Days from cases people reported in ${REPORTED_PLACES} and here, on ${day}.`;';
+    expect(descriptionOf(src)).toBe(`Days from cases people reported in ${REPORTED_PLACES} and here, on ${PLACEHOLDER}.`);
   });
 
   it("keeps every one at or under the cap", () => {

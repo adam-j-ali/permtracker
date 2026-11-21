@@ -6,6 +6,7 @@ import { UsersThreeIcon } from "@phosphor-icons/react";
 import { differenceInCalendarDays, parseISO } from "date-fns";
 
 import { formatShare } from "@/lib/format";
+import { REPORTED_PLACES } from "@/lib/reportedPlaces";
 import { easternDay } from "@/lib/time";
 import type { Premium } from "@/lib/reportedI140";
 import { windowText, type I140Summary } from "@/lib/reportedSummary";
@@ -115,8 +116,7 @@ export function ReportedI140ForCase({
           <Rows rows={pickI140Rows(got.rows, category, premium)} cat={cat} days={days} decided={!!decidedOn} />
         )}{" "}
         <p className="text-sm text-muted-foreground">
-          From the I-140s people reported in public groups, community sheets, Reddit and on PERM Tracker, updated each
-          hour. USCIS posts its own processing times as well.{" "}
+          {`From the I-140s people reported in ${REPORTED_PLACES} and on PERM Tracker, updated each hour. USCIS posts its own processing times as well.`}{" "}
           <Link href="/uscis-processing-times/i-140" className="link">
             USCIS&apos;s posted times and every category
           </Link>
