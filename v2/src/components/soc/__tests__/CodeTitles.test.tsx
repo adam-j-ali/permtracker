@@ -2,8 +2,8 @@ import { render } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * An occupation page links every job title page whose main code is its own, not only the dozen busiest titles
- * filed under it: until Nov 2026 those twelve (and the finder's 24) were the only links most title pages had.
+ * An occupation page links every job title page whose main code is its own, beyond the dozen busiest titles filed
+ * under it: until Nov 2026 those twelve (and the finder's 24) were the only links most title pages had.
  */
 
 vi.mock("server-only", () => ({}));
