@@ -218,6 +218,18 @@ describe("adding a second person to a case's reminders", () => {
     expect(sent).toEqual([]);
   });
 
+  it("refuses another spelling of a blocked inbox with the one answer", async () => {
+    const { t, owner, caseId } = await setup();
+    vi.stubEnv("BLOCKED_EMAILS", "jane@gmail.com");
+    expect(await owner.mutation(api.reminderRecipients.invite, { caseId, email: "j.ane+x@googlemail.com" })).toEqual({
+      ok: false,
+      message: REFUSED,
+    });
+    expect(await rows(t)).toEqual([]);
+    await finishScheduledNow(t);
+    expect(sent).toEqual([]);
+  });
+
   it("keeps one per case: a second address waits until the first is removed", async () => {
     const { t, owner, caseId } = await setup();
     await owner.mutation(api.reminderRecipients.invite, { caseId, email: "a@firm.example" });

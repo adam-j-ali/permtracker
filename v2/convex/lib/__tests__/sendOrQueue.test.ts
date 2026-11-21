@@ -123,6 +123,20 @@ describe("sendOrQueue", () => {
     }
   });
 
+  it("never sends to or queues another spelling of a blocked inbox", async () => {
+    vi.stubEnv("BLOCKED_EMAILS", "jane@gmail.com");
+    try {
+      const { ctx, calls } = fakeCtx(10);
+      const { resend, send } = fakeResend(() => ({ data: { id: "e1" }, error: null }));
+      const out = await sendOrQueue(ctx, "alert", resend, { ...params, to: "j.ane+x@googlemail.com" });
+      expect(out.error?.name).toBe("EmailBlocked");
+      expect(send).not.toHaveBeenCalled();
+      expect(calls).toHaveLength(0);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("treats mail to the site's own test accounts as done: nothing sent, nothing counted, no error", async () => {
     const { ctx, calls } = fakeCtx(10);
     const { resend, send } = fakeResend(() => ({ data: { id: "e1" }, error: null }));
