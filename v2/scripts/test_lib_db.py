@@ -16,8 +16,9 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from lib_sqlite_shim import SqliteTurso  # noqa: E402
 from lib_db import (  # noqa: E402
-    canon, canon_hash, case_update, cell, dicts_of, et_date, insert_rows, insert_stmts, lit, query_dicts, query_rows,
-    restamp_note, rows_of, run_stmts, stamp_freshness, stmt, typed_cell,
+    canon, canon_hash, case_update, cell, day_slices, dicts_of, et_date, insert_rows, insert_stmts, lit,
+    month_thirds, months_between, next_month, query_dicts, query_rows, restamp_note, rows_of, run_stmts,
+    stamp_freshness, stmt, typed_cell,
 )
 
 FAILURES: list[str] = []
@@ -110,6 +111,17 @@ def main() -> int:
     check("a note on a row with no maximum age is written", restamp_note(f, by_hand, "why"), True)
     check("and keeps no maximum age",
           query_rows(f, "SELECT max_age_days, note FROM data_freshness WHERE dataset = ?", [by_hand]), [[None, "why"]])
+
+    # A big table's days, a slice at a time: each month in three [start, end) ranges, end to end.
+    check("December runs into January", next_month("2018-12"), "2019-01")
+    check("a month is three slices of about ten days", month_thirds("2019-02"),
+          [("2019-02-01", "2019-02-11"), ("2019-02-11", "2019-02-21"), ("2019-02-21", "2019-03-01")])
+    check("the months from one day's to another's", months_between("2018-11-30", "2019-02-01"),
+          ["2018-11", "2018-12", "2019-01", "2019-02"])
+    fy = day_slices("2018-10-01", "2019-09-30")
+    check("a fiscal year is 36 slices, October 1 to the next October 1, with no gap or overlap",
+          (len(fy), fy[0][0], fy[-1][1], all(a[1] == b[0] for a, b in zip(fy, fy[1:]))),
+          (36, "2018-10-01", "2019-10-01", True))
 
     print(f"\n{len(FAILURES)} failure(s)")
     return 1 if FAILURES else 0

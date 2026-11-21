@@ -44,7 +44,7 @@ from collections import Counter, defaultdict
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from lca_history_rollups import FIRMS as LCA_HISTORY_FIRMS  # noqa: E402
-from lib_db import Database, record_run, rows_of, write_doc  # noqa: E402
+from lib_db import Database, day_slices, record_run, rows_of, write_doc  # noqa: E402
 
 TABLE = "firm_ranks"
 DOC_KEY = "firm_ranks_summary"
@@ -140,12 +140,13 @@ def fold(agg: dict, page: str, st, add) -> None:
 
 def read_perm(db: Database, fy: int, page_of: dict[str, str]) -> tuple[dict, dict]:
     """One fiscal year of decided PERM cases, folded onto firm pages and places."""
-    table = "perm_cases_history" if fy <= PERM_HISTORY_LAST_FY else "perm_cases"
+    table, where, windows = perm_windows(fy)
     agg: dict[tuple[str, str], dict] = defaultdict(blank)
     unnamed: Counter = Counter()
-    for slug, name, st, status, emp, n in rows_of(db.execute(
-            "SELECT attorney_slug, MAX(attorney_name), state, status, employer_slug, COUNT(*) "
-            f"FROM {table} WHERE fiscal_year = ? GROUP BY attorney_slug, state, status, employer_slug", [fy])):
+    groups = [r for args in windows for r in rows_of(db.execute(
+        "SELECT attorney_slug, MAX(attorney_name), state, status, employer_slug, COUNT(*) "
+        f"FROM {table} WHERE {where} GROUP BY attorney_slug, state, status, employer_slug", args))]
+    for slug, name, st, status, emp, n in groups:
         if not slug:
             for p in {NATION, place(st)} - {None}:
                 unnamed[p] += num(n)
@@ -161,13 +162,26 @@ def read_perm(db: Database, fy: int, page_of: dict[str, str]) -> tuple[dict, dic
                 a["employers"].add(str(emp))
             a["spell"][str(name or "")] += n
         fold(agg, page, st, add)
-    for slug, st, days, n in rows_of(db.execute(
-            "SELECT attorney_slug, state, days, COUNT(*) FROM " + table +
-            " WHERE fiscal_year = ? AND status = 'certified' AND attorney_slug IS NOT NULL AND days IS NOT NULL "
-            "GROUP BY attorney_slug, state, days", [fy])):
+    days_rows = [r for args in windows for r in rows_of(db.execute(
+        "SELECT attorney_slug, state, days, COUNT(*) FROM " + table +
+        f" WHERE {where} AND status = 'certified' AND attorney_slug IS NOT NULL AND days IS NOT NULL "
+        "GROUP BY attorney_slug, state, days", args))]
+    for slug, st, days, n in days_rows:
         page = page_of.get(str(slug), str(slug))
         fold(agg, page, st, lambda a, d=num(days), n=num(n): a["days"].update({d: n}))
     return agg, unnamed
+
+
+def perm_windows(fy: int) -> tuple[str, str, list[list]]:
+    """The table a PERM year is in, the condition that picks it, and the arguments of each read.
+
+    perm_cases by its fiscal year. The older table ten days of decisions at a time on idx_pch_dec: it has no
+    fiscal-year index, so `fiscal_year = ?` read every row of it, twice for each of 16 years, and a history row's
+    fiscal year is its decision day's (ingest_perm_history.py), so the slices hold exactly that year."""
+    if fy <= PERM_HISTORY_LAST_FY:
+        return ("perm_cases_history", "decision_date >= ? AND decision_date < ?",
+                [list(s) for s in day_slices(f"{fy - 1}-10-01", f"{fy}-09-30")])
+    return "perm_cases", "fiscal_year = ?", [[fy]]
 
 
 def read_lca(db: Database, fy: int, page_of: dict[str, str]) -> tuple[dict, dict]:
@@ -270,6 +284,11 @@ def through(db: Database, program: str, fy: int) -> str | None:
     return str(got[0][0])[:10] if got and got[0][0] else None
 
 
+def fiscal_year_of(day: str) -> int:
+    """The fiscal year an ISO day falls in (October 1 starts the next one)."""
+    return int(day[:4]) + (1 if int(day[5:7]) >= 10 else 0)
+
+
 def lca_history_years(db: Database) -> list[int]:
     """The older H-1B years whose file names a firm (lca_history_rollups.py writes no other), none before its first
     build."""
@@ -284,8 +303,13 @@ def lca_history_years(db: Database) -> list[int]:
 
 def years(db: Database, program: str) -> list[int]:
     if program == "perm":
-        got = [num(r[0]) for r in rows_of(db.execute("SELECT DISTINCT fiscal_year FROM perm_cases_history"))
-               if num(r[0]) <= PERM_HISTORY_LAST_FY]
+        # The older table's span from the two ends of its decision-date index (a DISTINCT over its fiscal year read
+        # every row): a history row's fiscal year is its decision day's.
+        lo = rows_of(db.execute("SELECT MIN(decision_date) FROM perm_cases_history WHERE decision_date > ''"))
+        hi = rows_of(db.execute("SELECT MAX(decision_date) FROM perm_cases_history"))
+        first, last = (lo[0][0] if lo else None), (hi[0][0] if hi else None)
+        got = [fy for fy in range(fiscal_year_of(str(first)), fiscal_year_of(str(last)) + 1)
+               if fy <= PERM_HISTORY_LAST_FY] if first and last else []
         got += [num(r[0]) for r in rows_of(db.execute("SELECT DISTINCT fiscal_year FROM perm_cases"))
                 if num(r[0]) > PERM_HISTORY_LAST_FY]
     else:

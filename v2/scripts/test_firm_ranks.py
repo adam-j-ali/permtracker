@@ -111,6 +111,76 @@ def main() -> int:
     check("the small table's reads go to the main database",
           all(statement_home(s) == "main" for s in db.sqls if lhr.FIRMS in s) and any(lhr.FIRMS in s for s in db.sqls))
 
+    # The older PERM table is read ten days of decisions at a time on idx_pch_dec, never a whole fiscal year at once
+    # (it has no fiscal-year index, so `fiscal_year = ?` read every row, twice a year, for 16 years). A history row's
+    # fiscal year is its decision day's, so the slices give the year's own figures.
+    import random
+
+    import ingest_perm_history as iph
+    pdb = Watched()
+    pdb.sqls = []
+    pdb.script(iph.SCHEMA)
+    pdb.script(iph.SEARCH_INDEXES)
+    rng = random.Random(20261121)
+    rows = []
+    for i in range(400):
+        fy = rng.choice([2018, 2019])
+        m = rng.randint(1, 12)
+        day = f"{fy if m <= 9 else fy - 1}-{m:02d}-{rng.randint(1, 28):02d}"
+        firm = rng.choice(["fragomen", "quiet-group", "", None])
+        rows.append((f"A-{i:05d}", rng.choice(["certified", "denied", "withdrawn"]), day, rng.choice([None, *range(90, 99)]),
+                     str(fy), firm and firm.upper(), firm, rng.choice(["CA", "TX", None, "XX"]), rng.choice(["acme", "beta", None])))
+    pdb.conn.executemany("INSERT INTO perm_cases_history (case_number, status, decision_date, days, fiscal_year, "
+                         "attorney_name, attorney_slug, state, employer_slug) VALUES (?,?,?,?,?,?,?,?,?)", rows)
+    pdb.conn.execute("CREATE TABLE perm_cases (case_number TEXT, fiscal_year TEXT, decision_date TEXT)")
+    pdb.conn.commit()
+
+    def old_read(fy: int) -> tuple[dict, dict]:
+        """The statements read_perm sent before (a whole fiscal year each), on the same rows."""
+        agg: dict = defaultdict(b.blank)
+        unnamed: Counter = Counter()
+        for slug, name, st, status, emp, n in pdb.conn.execute(
+                "SELECT attorney_slug, MAX(attorney_name), state, status, employer_slug, COUNT(*) FROM perm_cases_history "
+                "WHERE fiscal_year = ? GROUP BY attorney_slug, state, status, employer_slug", [str(fy)]):
+            if not slug:
+                for p in {b.NATION, b.place(st)} - {None}:
+                    unnamed[p] += n
+                continue
+
+            def add(a, kind=status, n=n, emp=emp, name=name):
+                a["filings"] += n
+                a[kind] += n
+                if emp:
+                    a["employers"].add(emp)
+                a["spell"][name or ""] += n
+            b.fold(agg, slug, st, add)
+        for slug, st, days, n in pdb.conn.execute(
+                "SELECT attorney_slug, state, days, COUNT(*) FROM perm_cases_history WHERE fiscal_year = ? AND "
+                "status = 'certified' AND attorney_slug IS NOT NULL AND days IS NOT NULL GROUP BY attorney_slug, state, days",
+                [str(fy)]):
+            b.fold(agg, slug, st, lambda a, d=days, n=n: a["days"].update({d: n}))
+        return agg, unnamed
+
+    for fy in (2018, 2019):
+        want_agg, want_unnamed = old_read(fy)
+        got_agg, got_unnamed = b.read_perm(pdb, fy, {})
+        same = {k: v for k, v in got_agg.items() if v["filings"] or v["days"]} == \
+            {k: v for k, v in want_agg.items() if v["filings"] or v["days"]}
+        check(f"FY{fy} read in slices equals the whole-year statements", same and got_unnamed == want_unnamed,
+              f"{sorted(got_agg)} vs {sorted(want_agg)}")
+    hist_reads = [s for s in pdb.sqls if "FROM perm_cases_history" in s and "GROUP BY" in s]
+    check("each history read is a slice of decision days", bool(hist_reads)
+          and all("decision_date >= ?" in s and "decision_date < ?" in s and "fiscal_year" not in s for s in hist_reads),
+          str(hist_reads[:1]))
+    plan = " ".join(str(x) for x in pdb.conn.execute(
+        "EXPLAIN QUERY PLAN " + hist_reads[0].replace("?", "'2018-10-01'", 1).replace("?", "'2018-10-11'", 1)).fetchall())
+    check("on the decision-date index", "idx_pch_dec" in plan, plan)
+    pdb.sqls.clear()
+    check("the PERM years are the older table's span and perm_cases' own", b.years(pdb, "perm") == [2018, 2019],
+          str(b.years(pdb, "perm")))
+    check("found without a DISTINCT over the older table",
+          not any("DISTINCT" in s and "perm_cases_history" in s for s in pdb.sqls), str(pdb.sqls))
+
     planned = ["perm", 2025, "US", "alpha", 1, "Alpha LLP", 1, None, 40, 37, 3, 0, 0, 2, 120.0]
     stored = ["perm", "2025", "US", "alpha", "1", "Alpha LLP", "1", None, "40", "37", "3", "0", "0", "2", "120.0"]
     check("a stored row reads the same as the planned one, so an unchanged rebuild writes nothing",
