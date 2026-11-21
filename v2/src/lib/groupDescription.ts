@@ -50,12 +50,25 @@ export interface H1bCityFacts {
   certified: number;
   fyFrom: number | null;
   fyTo: number | null;
+  /** The page's top lists (certified LCAs in the newest three fiscal years); absent counts as listed. */
+  employers?: readonly unknown[];
+  occupations?: readonly unknown[];
 }
 
 export function h1bCityDescription(c: H1bCityFacts): string {
   const span = c.fyFrom && c.fyTo ? `, FY${c.fyFrom} to FY${c.fyTo}` : "";
   const lcas = `${formatInt(c.total)} H-1B LCAs${span}`;
   const certified = c.total > 0 ? `, ${formatShareOf(c.certified, c.total)} certified` : "";
+  // A city whose LCAs are all older than the newest three fiscal years (DOL's FY2008 to FY2019 files among them)
+  // lists no employers or jobs, so its description doesn't promise them.
+  const listed = (c.employers?.length ?? 1) > 0 || (c.occupations?.length ?? 1) > 0;
+  if (!listed) {
+    return firstThatFits([
+      `H-1B jobs in ${c.label}: ${lcas}${certified}, counted from DOL's own H-1B labor condition application files.`,
+      `H-1B jobs in ${c.label}: ${lcas}${certified}, from DOL's own LCA files.`,
+      `H-1B jobs in ${c.label}: ${lcas}.`,
+    ]);
+  }
   return firstThatFits([
     `H-1B jobs in ${c.label}: ${lcas}${certified}, with the employers and jobs behind them, from DOL's own LCA files.`,
     `H-1B jobs in ${c.label}: ${lcas}${certified}, with the employers and jobs behind them.`,
