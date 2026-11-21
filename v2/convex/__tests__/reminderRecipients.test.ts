@@ -1203,11 +1203,18 @@ describe("the confirm and stop pages", () => {
   });
 
   it("escapes the case's words on the page", async () => {
+    const { t, id } = await invited("O'Brien & Sons");
+    const link = path("/case-alert/reminders/confirm", await confirmToken(id, "para@firm.example"), id);
+    const html = await (await t.fetch(link, { method: "POST" })).text();
+    expect(html).toContain("Robotics Engineer at O&#39;Brien &amp; Sons");
+  });
+
+  it("never puts markup the owner typed on the page: the case is \"a PERM case\"", async () => {
     const { t, id } = await invited("<b>Bold</b> & Co");
     const link = path("/case-alert/reminders/confirm", await confirmToken(id, "para@firm.example"), id);
     const html = await (await t.fetch(link, { method: "POST" })).text();
-    expect(html).toContain("&lt;b&gt;Bold&lt;/b&gt; &amp; Co");
-    expect(html).not.toContain("<b>Bold</b>");
+    expect(html).toContain("the deadline reminders for a PERM case");
+    expect(html).not.toContain("Bold");
   });
 
   it("opening the stop link changes nothing; its button, or the mail app's one-click POST, stops", async () => {

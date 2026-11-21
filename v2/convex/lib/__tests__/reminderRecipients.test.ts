@@ -6,13 +6,12 @@ import {
   RECIPIENT_EMAIL_MAX,
   SOMEONE,
   canonicalAddress,
-  caseLine,
   REMINDER_INVITES_PER_ADDRESS,
   copiesByCase,
   declineUrl,
   safeCaseLine,
   inviterName,
-  looksLikeALink,
+  isPlainText,
   normaliseRecipientEmail,
   reminderAddressKey,
   reminderConfirmPurpose,
@@ -78,14 +77,34 @@ describe("who the email says asked", () => {
   it("keeps a long name to one line", () => {
     expect(inviterName("A".repeat(300), undefined).length).toBeLessThanOrEqual(60);
   });
+
+  it("is a PERM Tracker user when a domain ends right at the 60-character cut, where the ellipsis goes", () => {
+    // 59 characters show before the ellipsis: the domain ends exactly there.
+    expect(`${"A".repeat(45)}irs-refund.com`).toHaveLength(59);
+    expect(inviterName(`${"A".repeat(45)}irs-refund.com9tail`, undefined)).toBe(SOMEONE);
+  });
+
+  it("is a PERM Tracker user for a name in another script, or one dressed with invisible marks or look-alike dots", () => {
+    for (const name of [
+      "王伟",
+      "राहुल शर्मा",
+      "Иван Петров",
+      "Jordan͏ Lee", // combining grapheme joiner
+      "irs·gov", // middle dot
+      "irs. gov", // hair space after the dot
+      "Call 800/555/0199",
+    ]) {
+      expect(inviterName(name, undefined), JSON.stringify(name)).toBe(SOMEONE);
+    }
+  });
 });
 
 describe("what the invitation calls the case", () => {
   const SCAM = "Refund due: verify at irs-refund.example/claim";
+  const line = (title: string, employer: string) => `${title} at ${employer}`;
 
   it("is the job title at the employer, as the reminders name it", () => {
     expect(safeCaseLine("Robotics Engineer", "ACME Robotics")).toBe("Robotics Engineer at ACME Robotics");
-    expect(safeCaseLine("Robotics Engineer", "ACME Robotics")).toBe(caseLine("Robotics Engineer", "ACME Robotics"));
   });
 
   it("is \"a PERM case\" when the job title reads like a link, so a stranger's inbox never carries one under our name", () => {
@@ -104,6 +123,10 @@ describe("what the invitation calls the case", () => {
       "pay.example?x=1",
       "ACME (acme-refund.example)",
       "shop.xn--p1ai",
+      "irs-refund.com",
+      "irs-refund.com9tail",
+      ".NET Solutions",
+      "a.bc",
     ]) {
       expect(safeCaseLine("Robotics Engineer", employer), employer).toBe(A_PERM_CASE);
     }
@@ -111,7 +134,7 @@ describe("what the invitation calls the case", () => {
 
   it("keeps an ordinary name with a full stop in it", () => {
     for (const employer of ["ACME Robotics, Inc.", "St. Jude Medical", "U.S. Steel", "J.P. Morgan Chase & Co."]) {
-      expect(safeCaseLine("Sr. Engineer", employer), employer).toBe(caseLine("Sr. Engineer", employer));
+      expect(safeCaseLine("Sr. Engineer", employer), employer).toBe(line("Sr. Engineer", employer));
     }
   });
 
@@ -122,8 +145,22 @@ describe("what the invitation calls the case", () => {
       "irs-refund｡com", // ｡ halfwidth ideographic full stop
       "irs-refund․com", // ․ one dot leader
       "irs-refund﹒com", // ﹒ small full stop
+      "irs-refundꓸcom", // Lisu letter tone mya ti
+      "irs-refund٠com", // Arabic-Indic digit zero
+      "irs-refund۰com", // extended Arabic-Indic digit zero
+      "irs-refund܁com", // Syriac supralinear full stop
+      "irs-refund܂com", // Syriac sublinear full stop
+      "irs-refund꘎com", // Vai full stop
+      "irs-refund·com", // middle dot
+      "irs-refund·com", // Greek ano teleia
+      "irs-refund・com", // katakana middle dot
+      "irs-refund･com", // halfwidth katakana middle dot
+      "irs-refund∙com", // bullet operator
+      "irs-refund⋅com", // dot operator
+      "irs-refundŀcom", // an l with a middle dot, which NFKC splits into l and the dot
+      "irs-refundꞏcom", // Latin letter sinological dot, a Latin letter outside the ranges allowed
     ]) {
-      expect(safeCaseLine("Robotics Engineer", employer), employer).toBe(A_PERM_CASE);
+      expect(safeCaseLine("Robotics Engineer", employer), JSON.stringify(employer)).toBe(A_PERM_CASE);
     }
   });
 
@@ -139,23 +176,44 @@ describe("what the invitation calls the case", () => {
       "irs⁠.com", // word joiner
       "w﻿ww.evil", // zero-width no-break space
       "irs.c­om", // soft hyphen
+      "irs-refund.c͏om", // combining grapheme joiner
+      "irs-refund.c︀om", // variation selector 1
+      "irs-refund.co️m", // variation selector 16
+      "ACME͏ Robotics", // even with no dot near it
     ]) {
       expect(safeCaseLine("Robotics Engineer", employer), JSON.stringify(employer)).toBe(A_PERM_CASE);
     }
   });
 
-  it("is \"a PERM case\" when a letter outside plain ASCII sits next to a dot", () => {
+  it("is \"a PERM case\" when a space that hides itself follows the dot", () => {
+    for (const employer of [
+      "irs-refund. com", // hair space
+      "irs-refund. com", // thin space
+      "irs-refund. com", // narrow no-break space
+      "irs-refund. com", // no-break space
+    ]) {
+      expect(safeCaseLine("Robotics Engineer", employer), JSON.stringify(employer)).toBe(A_PERM_CASE);
+    }
+  });
+
+  it("is \"a PERM case\" when a letter from another alphabet makes up the domain", () => {
     for (const employer of [
       "irs.сom", // Cyrillic с
       "irs.gоv", // Cyrillic о inside the domain
       "пример.рф", // пример.рф
-      "banké.x",
     ]) {
       expect(safeCaseLine("Robotics Engineer", employer), employer).toBe(A_PERM_CASE);
     }
   });
 
-  it("is \"a PERM case\" when the words hold a phone number", () => {
+  it("is \"a PERM case\" for a name in another script", () => {
+    for (const employer of ["华为技术有限公司", "टाटा कंसल्टेंसी सर्विसेज", "Газпром", "ACME 株式会社"]) {
+      expect(safeCaseLine("Robotics Engineer", employer), employer).toBe(A_PERM_CASE);
+      expect(safeCaseLine(employer, "ACME Robotics"), employer).toBe(A_PERM_CASE);
+    }
+  });
+
+  it("is \"a PERM case\" when the words hold a phone number, however its digits are split", () => {
     for (const employer of [
       "Call (800) 555-0199",
       "ACME +1 800.555.0199",
@@ -163,33 +221,90 @@ describe("what the invitation calls the case", () => {
       "ACME 8005550199",
       "ACME ８００５５５０１９９", // fullwidth digits
       "ACME 800–555–0199", // en dashes
+      "ACME 800/555/0199",
+      "ACME 800_555_0199",
+      "ACME 800,555,0199",
+      "ACME 800•555•0199", // bullets
+      "ACME 800|555|0199",
+      "ACME 800 · 555 · 0199",
+      "ACME 1 2 3 4 5 6 7",
     ]) {
       expect(safeCaseLine("Robotics Engineer", employer), employer).toBe(A_PERM_CASE);
     }
     expect(safeCaseLine("Call 800-555-0199 today", "ACME Robotics")).toBe(A_PERM_CASE);
   });
 
-  it("keeps ordinary names with accents, a few digits or a year", () => {
-    for (const employer of [
+  it("keeps ordinary names with accents, a few digits, a year, a comma or brackets, as a title, an employer and a name", () => {
+    for (const name of [
+      "St. Jude",
+      "U.S. Steel",
+      "J.P. Morgan",
       "Société Générale S.A.",
       "Nestlé USA, Inc.",
+      "3M",
       "3M Company",
+      "7-Eleven",
       "7-Eleven, Inc.",
       "ACME 2024 Holdings",
       "123 Main Street Partners",
+      "Level 3, Suite 400",
+      "Software Engineer (Backend)",
+      "O'Brien & Sons",
     ]) {
-      expect(safeCaseLine("Software Engineer II", employer), employer).toBe(caseLine("Software Engineer II", employer));
+      expect(safeCaseLine("Software Engineer II", name), name).toBe(line("Software Engineer II", name));
+      expect(safeCaseLine(name, "ACME Robotics"), name).toBe(line(name, "ACME Robotics"));
+      expect(inviterName(name, undefined), name).toBe(name);
     }
+  });
+
+  it("shows an accent typed as a separate mark as the one letter it makes", () => {
+    expect(safeCaseLine("Analyst", "Société Générale S.A.")).toBe("Analyst at Société Générale S.A.");
+  });
+
+  it("puts a name typed over several lines on one", () => {
+    expect(safeCaseLine("Software\tEngineer", "ACME\n  Robotics ")).toBe("Software Engineer at ACME Robotics");
+  });
+
+  it("is \"a PERM case\" when a domain ends right at the 55-character cut, where the ellipsis goes", () => {
+    // 54 characters show before the ellipsis: the domain ends exactly there.
+    expect(`${"A".repeat(40)}irs-refund.com`).toHaveLength(54);
+    const long = `${"A".repeat(40)}irs-refund.com9tail`;
+    expect(safeCaseLine("Analyst", long)).toBe(A_PERM_CASE);
+    expect(safeCaseLine(long, "ACME Robotics")).toBe(A_PERM_CASE);
+  });
+
+  it("cuts a long ordinary name at 55 characters with an ellipsis", () => {
+    const long = `${"Robotics ".repeat(10)}Inc`;
+    expect(safeCaseLine("Analyst", long)).toBe(`Analyst at ${long.slice(0, 54).trimEnd()}…`);
   });
 });
 
-describe("the link test itself", () => {
-  it("says the same of a name and of its every look-alike", () => {
-    expect(looksLikeALink("St. Jude Medical")).toBe(false);
-    expect(looksLikeALink("U.S. Steel")).toBe(false);
-    expect(looksLikeALink("J.P. Morgan Chase & Co.")).toBe(false);
-    expect(looksLikeALink("irs-refund。com")).toBe(true);
-    expect(looksLikeALink("support＠bank")).toBe(true); // ＠ fullwidth at sign
+describe("the plain-text rule itself", () => {
+  it("passes a plain name and fails a link, an address or a look-alike", () => {
+    expect(isPlainText("St. Jude Medical")).toBe(true);
+    expect(isPlainText("U.S. Steel")).toBe(true);
+    expect(isPlainText("J.P. Morgan Chase & Co.")).toBe(true);
+    expect(isPlainText("Société Générale S.A.")).toBe(true);
+    expect(isPlainText("a.b")).toBe(true);
+    expect(isPlainText("irs-refund。com")).toBe(false);
+    expect(isPlainText("support＠bank")).toBe(false); // ＠ fullwidth at sign
+    expect(isPlainText(".NET")).toBe(false);
+    expect(isPlainText("a.bc")).toBe(false);
+    expect(isPlainText("irs-refund.com9tail")).toBe(false);
+  });
+
+  it("takes only the Latin letters it names, by their ranges", () => {
+    expect(isPlainText("ÀÖØöøÿĀſ")).toBe(true);
+    expect(isPlainText("×")).toBe(false); // the multiplication sign, between the ranges
+    expect(isPlainText("÷")).toBe(false); // the division sign
+    expect(isPlainText("ꞏ")).toBe(false); // a Latin letter that is a dot
+    expect(isPlainText("ƀ")).toBe(false); // Latin Extended-B
+  });
+
+  it("counts the digits in the whole text: six pass, seven fail", () => {
+    expect(isPlainText("123 456")).toBe(true);
+    expect(isPlainText("123 4567")).toBe(false);
+    expect(isPlainText("1-2-3-4-5-6-7")).toBe(false);
   });
 
   it("hides an inviter whose name holds a phone number or a look-alike link", () => {
@@ -198,13 +313,33 @@ describe("the link test itself", () => {
     expect(inviterName("Jordan Lee", undefined)).toBe("Jordan Lee");
   });
 
+  it("finishes a 50,000-character input fast, in time linear in its length", () => {
+    const inputs = [
+      "a".repeat(50_000),
+      "a.".repeat(25_000),
+      "1 ".repeat(25_000),
+      `${"A".repeat(49_999)} `,
+      "é".repeat(50_000),
+      "é".repeat(25_000),
+      "St. Jude ".repeat(5_555),
+      "́".repeat(50_000),
+      `${"a ".repeat(24_999)}️`,
+    ];
+    const started = performance.now();
+    for (const s of inputs) {
+      isPlainText(s);
+      safeCaseLine(s, s);
+      inviterName(s, s);
+    }
+    expect(performance.now() - started).toBeLessThan(500);
+  });
+
   it("stays fast on a very long input", () => {
     const started = Date.now();
-    looksLikeALink(`${"1 ".repeat(3)}a`.repeat(200_000));
-    looksLikeALink(".".repeat(1_000_000));
-    // A long run of letters with no "://" after it: a scheme pattern that starts at every letter is quadratic here.
-    looksLikeALink("a".repeat(200_000));
-    looksLikeALink("a.".repeat(100_000));
+    isPlainText(`${"1 ".repeat(3)}a`.repeat(200_000));
+    isPlainText(".".repeat(1_000_000));
+    isPlainText("a".repeat(200_000));
+    isPlainText("a.".repeat(100_000));
     expect(Date.now() - started).toBeLessThan(1500);
   });
 });
