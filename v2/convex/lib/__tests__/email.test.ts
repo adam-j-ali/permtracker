@@ -246,5 +246,18 @@ describe("sendEmailWithRetry", () => {
       expect(result.error?.name).toBe("EmailBlocked");
       expect(resend.emails.send).not.toHaveBeenCalled();
     });
+
+    it("blocks another spelling of a blocked inbox", async () => {
+      vi.stubEnv("BLOCKED_EMAILS", "jane@gmail.com");
+      const resend = createMockResend(async () => ({
+        data: { id: "should-not-be-reached" },
+        error: null,
+      }));
+
+      const result = await sendEmailWithRetry(resend, { ...baseParams, to: "j.ane+x@googlemail.com" });
+
+      expect(result.error?.name).toBe("EmailBlocked");
+      expect(resend.emails.send).not.toHaveBeenCalled();
+    });
   });
 });

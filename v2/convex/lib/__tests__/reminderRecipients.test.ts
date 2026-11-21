@@ -5,7 +5,6 @@ import {
   INVITE_DAYS,
   RECIPIENT_EMAIL_MAX,
   SOMEONE,
-  canonicalAddress,
   REMINDER_INVITES_PER_ADDRESS,
   copiesByCase,
   declineUrl,
@@ -452,24 +451,6 @@ describe("\"Don't invite me again\"", () => {
 
   it("opens its own page on the site with the row and the signed token", () => {
     expect(declineUrl("tok/en+", "row1")).toBe("https://permtracker.app/case-alert/reminders/decline?token=tok%2Fen%2B&r=row1");
-  });
-});
-
-describe("the address as one inbox", () => {
-  it("is lowercased, with a +tag dropped on every domain", () => {
-    expect(canonicalAddress(" Para+News@Firm.Example ")).toBe("para@firm.example");
-    expect(canonicalAddress("para+a+b@firm.example")).toBe("para@firm.example");
-    expect(canonicalAddress("p.ara@firm.example")).toBe("p.ara@firm.example");
-  });
-
-  it("drops a Gmail address's dots and reads googlemail.com as gmail.com", () => {
-    expect(canonicalAddress("Para.Legal+promo@googlemail.com")).toBe("paralegal@gmail.com");
-    expect(canonicalAddress("p.a.r.a@gmail.com")).toBe("para@gmail.com");
-  });
-
-  it("keeps a local part that would be left empty", () => {
-    expect(canonicalAddress("+tag@firm.example")).toBe("+tag@firm.example");
-    expect(canonicalAddress(".@gmail.com")).toBe(".@gmail.com");
   });
 });
 

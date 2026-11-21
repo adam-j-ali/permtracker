@@ -7,6 +7,7 @@
  */
 import { getDeadlineUrgency, formatDeadlineType } from "./digestHelpers";
 import { deadlineDigestWords } from "./deadlineDigestWords";
+import { canonicalAddress } from "./canonicalAddress";
 import { isPlausibleEmail } from "./emailShape";
 import { SITE_URL } from "./links";
 import { emailsDeadlineReminder, type UserNotificationPrefs } from "./notificationHelpers";
@@ -25,30 +26,6 @@ export const INVITE_MS = INVITE_DAYS * MS_PER_DAY;
  * used to keep mailing someone who never said yes.
  */
 export const REMINDER_INVITES_PER_ADDRESS = 2;
-
-/** Gmail's two domains, one inbox: googlemail.com is read as gmail.com. */
-const GMAIL_DOMAINS = new Set(["gmail.com", "googlemail.com"]);
-
-/**
- * The inbox an address reaches, so the refusal list and the invitation count can't be walked around by another
- * spelling of it: trimmed and lowercased, a "+tag" dropped from the local part on every domain, and on Gmail the
- * local part's dots dropped and googlemail.com read as gmail.com. A local part that would be left empty is kept as
- * it was. Only the keys use it: mail still goes to the address as typed.
- */
-export function canonicalAddress(email: string): string {
-  const lower = email.trim().toLowerCase();
-  const at = lower.lastIndexOf("@");
-  if (at < 0) return lower;
-  let local = lower.slice(0, at);
-  let domain = lower.slice(at + 1);
-  const plus = local.indexOf("+");
-  if (plus > 0) local = local.slice(0, plus);
-  if (GMAIL_DOMAINS.has(domain)) {
-    domain = "gmail.com";
-    local = local.replace(/\./g, "") || local;
-  }
-  return `${local}@${domain}`;
-}
 
 /**
  * The address as the refusal list (reminderRefusals) and the invitation count (reminderInviteCounts) keep it: an

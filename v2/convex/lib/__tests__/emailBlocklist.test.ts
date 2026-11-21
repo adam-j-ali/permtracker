@@ -64,6 +64,27 @@ describe("isEmailBlocked", () => {
   });
 });
 
+describe("every spelling of a blocked inbox", () => {
+  it("blocks a +tag, a Gmail address's dots and googlemail.com, which all reach the blocked inbox", () => {
+    vi.stubEnv("BLOCKED_EMAILS", "jane@gmail.com");
+    for (const spelling of ["j.ane+x@googlemail.com", "Jane+news@Gmail.com", "j.a.n.e@gmail.com", " JANE@googlemail.com "]) {
+      expect(isEmailBlocked(spelling), spelling).toBe(true);
+    }
+    expect(isEmailBlocked("jane@gmail.co")).toBe(false);
+    expect(isEmailBlocked("janet@gmail.com")).toBe(false);
+  });
+
+  it("reads the list's own entries the same way", () => {
+    vi.stubEnv("BLOCKED_EMAILS", "J.Ane+Old@GoogleMail.com");
+    expect(isEmailBlocked("jane@gmail.com")).toBe(true);
+  });
+
+  it("drops a +tag on any domain, and counts dots off Gmail", () => {
+    expect(isEmailBlocked("blocked+promo@example.com")).toBe(true);
+    expect(isEmailBlocked("b.locked@example.com")).toBe(false);
+  });
+});
+
 describe("blocklist configuration", () => {
   it("normalizes case and whitespace in the env value itself", () => {
     vi.stubEnv("BLOCKED_EMAILS", "  Foo@Example.COM , bar@example.com  ");

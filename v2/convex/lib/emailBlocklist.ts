@@ -14,7 +14,10 @@
  *     if somehow present, prevents re-adding
  *   - `convex/marketingEmail.ts:backfillMarketingEvents` — skips audit rows
  *
- * Lookup is case-insensitive and whitespace-trimmed to defeat trivial bypass.
+ * Lookup compares the inbox each address reaches (canonicalAddress, the rule
+ * the reminder refusal list uses), on both sides: case and spaces don't
+ * matter, a +tag is dropped, and on Gmail the dots and googlemail.com don't
+ * matter either, so another spelling of a blocked inbox is blocked too.
  *
  * The list lives in the `BLOCKED_EMAILS` Convex environment variable as a
  * comma-separated string, NOT in this file. These are real people's addresses,
@@ -31,6 +34,7 @@
  * @module convex/lib/emailBlocklist
  */
 
+import { canonicalAddress } from "./canonicalAddress";
 import { createLogger } from "./logging";
 
 const log = createLogger("emailBlocklist");
@@ -61,15 +65,22 @@ function loadBlocklist(): ReadonlySet<string> {
 }
 
 /**
- * Returns true if the address is on the blocklist (case-insensitive).
- * Safe for undefined/null/empty inputs — all return false.
+ * Returns true if the address reaches an inbox on the blocklist: both sides
+ * are compared by canonicalAddress, so "j.ane+x@googlemail.com" is blocked
+ * when "jane@gmail.com" is. Safe for undefined/null/empty inputs: all return
+ * false.
  *
  * Note: passed directly to `Array.prototype.filter` in `lib/email.ts`, so it
  * must stay tolerant of the extra (index, array) arguments filter supplies.
  */
 export function isEmailBlocked(email: string | undefined | null): boolean {
   const normalized = normalizeEmail(email);
-  return normalized.length > 0 && loadBlocklist().has(normalized);
+  if (normalized.length === 0) return false;
+  const inbox = canonicalAddress(normalized);
+  for (const entry of loadBlocklist()) {
+    if (canonicalAddress(entry) === inbox) return true;
+  }
+  return false;
 }
 
 /** Our own domain: its mailboxes are support and the site's test and demo accounts. */
