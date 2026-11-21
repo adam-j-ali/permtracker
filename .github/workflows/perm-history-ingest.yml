@@ -98,3 +98,9 @@ jobs:
               --note "run ${GITHUB_RUN_ID} failed; see the log" || true
             exit 1
           }
+          # The law firm rankings: their years before FY2024 read the history table's firm slugs, which a load sets.
+          python3 scripts/build_firm_ranks.py || {
+            python3 scripts/record_ingest_failure.py --script build_firm_ranks.py \
+              --note "run ${GITHUB_RUN_ID} failed; see the log" || true
+            exit 1
+          }

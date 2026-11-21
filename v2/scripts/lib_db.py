@@ -326,6 +326,35 @@ def slug_window(col: str, lo: str, hi: str | None) -> tuple[str, list[str]]:
     return f"{col} >= ? AND {col} < ?", [lo, hi]
 
 
+# A big table's days, a slice at a time on its date index, never grouped whole: a busy month of the older PERM table
+# read whole took 1.7 s on the live database and a ten-day slice 0.3 s (Nov 21 2026), and a batch of year-wide scans
+# stalled page reads for 22 seconds (Nov 10 2026). Days are ISO text, so each range is [start, end).
+
+def next_month(m: str) -> str:
+    """The month after "YYYY-MM"."""
+    y, mo = int(m[:4]), int(m[5:7])
+    return f"{y + (mo == 12)}-{1 if mo == 12 else mo + 1:02d}"
+
+
+def month_thirds(m: str) -> list[tuple[str, str]]:
+    """A month as three day ranges of about ten days, each [start, end)."""
+    return [(f"{m}-01", f"{m}-11"), (f"{m}-11", f"{m}-21"), (f"{m}-21", f"{next_month(m)}-01")]
+
+
+def months_between(first: str, last: str) -> list[str]:
+    """Every month from the one `first` falls in to the one `last` does, as "YYYY-MM"."""
+    out, m, stop = [], first[:7], next_month(last[:7])
+    while m != stop:
+        out.append(m)
+        m = next_month(m)
+    return out
+
+
+def day_slices(first: str, last: str) -> list[tuple[str, str]]:
+    """Every ten-day slice from `first`'s month to `last`'s, end to end."""
+    return [s for m in months_between(first, last) for s in month_thirds(m)]
+
+
 def rows_of(res: dict) -> list[list]:
     """An `execute()` response's rows, each cell decoded by `cell`."""
     return [[cell(c) for c in r] for r in res["response"]["result"]["rows"]]

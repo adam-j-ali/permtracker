@@ -95,6 +95,31 @@ check("an employer filed under both spellings is counted once, with all its fili
 check("a firm with nothing outside PERM gets no row", ("quiet-firm", "lca") not in built)
 check("an unmapped spelling and a blank firm are left out", all(r[0] in {"fragomen", "small-firm"} for r in built.values()))
 
+# FY2019's LCAs, the one older file that names the firm, from the counts its load made (lca_history_rollups.py):
+# one row per year, firm, state and employer, which the line rolls up like any other group.
+import lca_history_rollups as lhr  # noqa: E402
+
+for ddl in lhr.DDL:
+    con.execute(ddl)
+con.executemany(f"INSERT INTO {lhr.FIRMS} ({','.join(lhr.FIRM_COLS)}) VALUES ({','.join('?' * 12)})", [
+    (2019, "fragomen-llp", "CA", "apple-inc", "FRAGOMEN LLP", "APPLE INC.", 4, 3, 3, 5, "2018-10-02", "2019-01-10"),
+    (2019, "fragomen-llp", "NY", "apple-inc", "FRAGOMEN LLP", "Apple Inc.", 1, 1, 1, 1, "2019-02-01", "2019-02-01"),
+    (2019, "fragomen-loewyllp", "TX", "", "FRAGOMEN", None, 2, 0, 0, 0, "2019-05-01", "2019-06-01"),
+    (2019, "", "CA", "", None, None, 9, 9, 9, 9, "2018-10-01", "2019-09-30"),        # naming no firm
+    (2019, "not-mapped", "CA", "acme", "NOT MAPPED", "Acme", 6, 6, 6, 6, "2019-01-01", "2019-01-01"),
+])
+before = built[("fragomen", "lca")]
+after = {(row[0], row[1]): row for row in bfp.build(None)}
+f = after.get(("fragomen", "lca"))
+check("a firm's line adds its FY2019 LCAs from the older file", f is not None and f[2] == before[2] + 7 and
+      f[3] == before[3] + 4, f"{f} vs {before}")
+check("its first decision moves back to FY2019", f is not None and f[4] == "2018-10-02", str(f))
+apple = next(e for e in json.loads(f[6]) if e["slug"] == "apple-inc")
+check("an employer in both tables is one employer, counted across both", apple["n"] == 8 + 5, str(apple))
+check("an older group with no employer joins the line's no-employer group",
+      next((e["n"] for e in json.loads(f[6]) if e["slug"] is None), 0) == 2 + 2, f[6])
+check("the LCAs naming no firm, and an unmapped spelling, stay out", set(after) == set(built), str(sorted(after)))
+
 con.execute("DELETE FROM firm_page_map")
 try:
     bfp.build(None)
