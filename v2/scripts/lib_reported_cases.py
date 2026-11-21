@@ -1,7 +1,7 @@
 """One case per person, whichever sources reported it: the merge behind every reported-cases list on the site.
 
 People report their own green card dates in several places: our timeline form and consulate reports, community sheets,
-VisaStats' tracker, Reddit threads and Telegram chats. One person often appears in several, each holding some of the
+VisaStats' tracker, Reddit threads, Telegram chats and Facebook groups. One person often appears in several, each holding some of the
 dates. `merge` folds the records into cases, filling each case's gaps from every source that holds it, and keeps two
 records apart whenever they can't be shown to be the same person.
 
@@ -77,7 +77,10 @@ def progress(field: str, v: str) -> int:
     """How far along a decision is: a later one replaces an earlier one. Each field has its own words."""
     return (CONSULAR_PROGRESS if field == "consular_outcome" else DECISION_PROGRESS).get(v, 2)
 # Our own reviewed sources first, then the sheets, then the trackers and chats. The first member founds a case's id.
-SOURCE_RANK = {"timeline": 0, "consular-report": 1, "app": 2, "visastats": 30, "reddit": 40, "telegram": 50}
+# Facebook groups' posts are typed in by hand from screenshots, so they rank after Reddit and before Telegram's parsed
+# posts; never as a sheet, which any name not listed here is.
+SOURCE_RANK = {"timeline": 0, "consular-report": 1, "app": 2, "visastats": 30, "reddit": 40, "facebook": 45,
+               "telegram": 50}
 SHEET_RANK = 20  # any other source name is a community sheet's key
 # Countries with their own line in the Visa Bulletin: never "rest of world".
 OWN_LINE = {"india", "china", "mexico", "philippines", "el salvador", "guatemala", "honduras"}
