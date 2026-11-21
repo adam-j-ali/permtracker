@@ -8,7 +8,7 @@ import { ChartTips } from "@/components/data/ChartTips";
 import { IndexHeader, IndexSearch } from "@/components/data/IndexHeader";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { breadcrumbSchema } from "@/lib/breadcrumbs";
-import { firstThatFits } from "@/lib/describe";
+import { groupDescription, h1bCityDescription } from "@/lib/groupDescription";
 import { naicsSectorTitle } from "@/lib/naicsSectors";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { countryYears, getGroup, GROUP_PATH, listGroups, type GroupKind } from "@/lib/db/groups";
@@ -20,7 +20,8 @@ import { CityReference } from "@/components/reference/CityReference";
 import { CityH1b } from "./CityH1b";
 import { GroupIndexTable, type GroupIndexRow } from "./GroupIndexTable";
 import { GroupView } from "./GroupView";
-import { industryName, industryTitle } from "@/lib/industryTitle";
+import { industryFrames, industryName, industryTitle } from "@/lib/industryTitle";
+import { fitTitle, metadataTitle } from "@/lib/pageTitle";
 import { softFail } from "@/lib/softRead";
 
 /**
@@ -36,10 +37,8 @@ interface KindCopy {
   indexDescription: string;
   noun: string;
   facetLabel: string | null;
-  /** The search title. Never cut by us: a cut word read "(except Physi" in titles and descriptions until Oct 6 2026. */
+  /** The whole title, for the share card; the page's <title> is this fitted to 60 by `fitTitle`, cut only at a word. */
   detailTitle: (label: string, key: string) => string;
-  /** What the description is about, when it differs from the title. */
-  detailSubject?: (label: string, key: string) => string;
   detailH1: (label: string) => string;
   coverage: string;
 }
@@ -78,9 +77,8 @@ const COPY: Record<GroupKind, KindCopy> = {
     facetLabel: "Sector",
     // People search these pages by code ("naics code 238340"), so the code is in
     // the title. Census titles run to 126 characters; when the plain form doesn't
-    // fit Google's 60, the code leads and Google shortens the end.
+    // fit Google's 60, the code leads and the name is cut at a word (industryFrames).
     detailTitle: industryTitle,
-    detailSubject: (l, k) => `PERM in ${industryName(l)} (NAICS ${k})`,
     detailH1: (l) => `PERM in ${l}`,
     coverage:
       "The industry is the NAICS code the employer entered on the form. DOL publishes the code alone. The title is the Census Bureau's, and a code Census never defined takes its parent group's title.",
@@ -250,14 +248,9 @@ export async function groupDetailMetadata(kind: GroupKind, slug: string): Promis
     if (!city) notFound();
     const path = `${GROUP_PATH.city}/${slug}`;
     const title = `H-1B Jobs in ${city.label}`;
-    const lcas = `${formatInt(city.total)} H-1B LCAs`;
-    const description = firstThatFits([
-      `${title}: ${lcas}, with the employers and jobs behind them, from DOL's own LCA files.`,
-      `${title}: ${lcas}, from DOL's own files.`,
-      `${title}: ${lcas}.`,
-    ]);
+    const description = h1bCityDescription(city);
     return {
-      title: { absolute: title.length > 44 ? title : `${title} | PERM Tracker` },
+      title: metadataTitle(fitTitle(city.label, [(n) => `H-1B Jobs in ${n}`])),
       description,
       alternates: { canonical: path },
       openGraph: { ...openGraphBase, title, description, url: path },
@@ -266,23 +259,12 @@ export async function groupDetailMetadata(kind: GroupKind, slug: string): Promis
   const c = COPY[kind];
   const path = `${GROUP_PATH[kind]}/${slug}`;
   const title = c.detailTitle(g.label, g.key);
-  const subject = c.detailSubject ? c.detailSubject(g.label, g.key) : title;
-  // The page's own name leads: without it, two places with the same count
-  // would share one description word for word.
-  const fy = g.fyFrom && g.fyTo ? `, FY${g.fyFrom} to FY${g.fyTo}` : "";
-  const decisions = `${formatInt(g.total)} PERM decision${g.total === 1 ? "" : "s"}${fy}`;
-  const description = firstThatFits([
-    `${subject}: ${decisions}, with the approval rate, wages, top sponsors and jobs, from DOL's own files.`,
-    `${subject}: ${decisions}: approval rate, wages, sponsors and jobs.`,
-    `${subject}: ${decisions}.`,
-    // A Census title can run to 126 characters, so nothing above fits; lead
-    // with the figures rather than cutting the name mid-phrase.
-    kind === "industry"
-      ? `${decisions} under NAICS ${g.key}: approval rate, wages, sponsors and jobs.`
-      : `${decisions}: approval rate, wages, sponsors and jobs.`,
-  ]);
+  // The page's own name leads the description: without it, two places with the same count would share one word for word.
+  const description = groupDescription({ kind, label: g.label, key: g.key, total: g.total, fyFrom: g.fyFrom, fyTo: g.fyTo });
+  const fitted =
+    kind === "industry" ? fitTitle(industryName(g.label), industryFrames(g.key)) : fitTitle(g.label, [(n) => c.detailTitle(n, g.key)]);
   return {
-    title: { absolute: title.length > 44 ? title : `${title} | PERM Tracker` },
+    title: metadataTitle(fitted),
     description,
     alternates: { canonical: path },
     openGraph: { ...openGraphBase, title, description, url: path },
