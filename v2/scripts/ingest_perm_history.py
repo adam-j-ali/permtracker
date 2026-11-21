@@ -68,12 +68,13 @@ import sys
 import tempfile
 import time
 import zipfile
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import date
 from xml.etree.ElementTree import iterparse
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import ingest_perm_disclosure as ipd  # noqa: E402
+from build_entity_detail import city_key, city_labels, industry_label  # noqa: E402
 from entity_identity import SpacedKeyMap, entity_key  # noqa: E402
 from lib_naics import normalize_naics  # noqa: E402
 from lib_db import (  # noqa: E402
@@ -574,13 +575,8 @@ def display(facet: str, value: str) -> str:
 def employer_page_slugs(db) -> set[str]:
     """Every slug an employer page answers to: the published entities and the
     live-only employers. A history row's fallback slug is neither."""
-    out = {str(r[0]) for r in rows_of(db.execute(
-        "SELECT slug FROM perm_entities WHERE kind = 'employer'"))}
-    try:
-        out |= {str(r[0]) for r in rows_of(db.execute("SELECT slug FROM perm_live_only_index"))}
-    except Exception:  # noqa: BLE001 - a database without the live table
-        pass
-    return out
+    return {str(r[0]) for r in rows_of(db.execute(
+        "SELECT slug FROM perm_entities WHERE kind = 'employer'"))} | live_only_slugs(db)
 
 
 def build_history_facets(db, occ_slug_by_code: dict[str, str]) -> int:
@@ -690,6 +686,263 @@ def build_alphabet_history(db) -> int:
     return len(out)
 
 
+def day_slices(db, column: str) -> list[tuple[str, str]]:
+    """[first day, day after the last) for about ten days at a time (month_slices) across every month the column
+    spans, oldest first: two reads of the column's own index (its first and last value), never a grouping of the
+    table."""
+    lo = rows_of(db.execute(f"SELECT MIN({column}) FROM perm_cases_history WHERE {column} > ''"))
+    hi = rows_of(db.execute(f"SELECT MAX({column}) FROM perm_cases_history"))
+    first, last = (lo[0][0] if lo else None), (hi[0][0] if hi else None)
+    out: list[tuple[str, str]] = []
+    if first and last:
+        m, stop = str(first)[:7], next_month(str(last)[:7])
+        while m != stop:
+            out.extend(month_slices(m))
+            m = next_month(m)
+    return out
+
+
+# What an employer's and a law firm's older cases were made of: the facets build_entity_detail.build_facets counts
+# over perm_cases (the jobs, states, firms, cities and industries; a firm's clients, jobs and states), counted here
+# over perm_cases_history. Each row carries its entity's own total and fiscal years, so a page shows the older
+# figures beside the current ones with their own denominator and their own year label, in one read.
+ENTITY_FACETS_TABLE = "perm_history_entity_facets"
+ENTITY_FACET_FLOOR = 3  # older cases an entity needs, as build_entity_detail.FACET_FLOOR
+ENTITY_FACET_TOP = 6
+ENTITY_FACET_COLUMNS = ["kind", "slug", "facet", "pos", "key", "label", "code", "n", "certified", "denied",
+                        "total", "fy_from", "fy_to"]
+MAKEUP_COLUMNS = ["employer_name", "employer_slug", "attorney_name", "attorney_slug", "soc_code", "soc_title",
+                  "state", "worksite_city", "naics", "status", "fiscal_year"]
+DECISION_INDEX = "idx_pch_dec"
+
+
+def entity_facets_ddl(name: str) -> str:
+    return f"""CREATE TABLE IF NOT EXISTS {name} (
+         kind      TEXT NOT NULL,
+         slug      TEXT NOT NULL,
+         facet     TEXT NOT NULL,
+         pos       INTEGER NOT NULL,
+         key       TEXT,
+         label     TEXT NOT NULL,
+         code      TEXT,
+         n         INTEGER NOT NULL,
+         certified INTEGER NOT NULL,
+         denied    INTEGER NOT NULL,
+         total     INTEGER NOT NULL,
+         fy_from   INTEGER NOT NULL,
+         fy_to     INTEGER NOT NULL,
+         PRIMARY KEY (kind, slug, facet, pos)
+       )"""
+
+
+class EntityPages:
+    """Today's employer and firm pages, and the ways an older row reaches one.
+
+    A row keeps the slug its load gave it, so it is checked in this order: still a page; a page merged into
+    another (perm_entity_alias); else its printed name, through today's merge keys (a spelling that had no page
+    when its year loaded may have one now).
+    """
+
+    def __init__(self, db) -> None:
+        self.names: dict[tuple[str, str], str] = {}
+        keys: dict[str, dict[str, str]] = {"employer": {}, "attorney": {}}
+        for kind, slug, name, key in rows_of(db.execute(
+                "SELECT kind, slug, name, merge_key FROM perm_entities "
+                "WHERE kind IN ('employer','attorney') ORDER BY total DESC")):
+            self.names[(str(kind), str(slug))] = str(name or slug)
+            if key:
+                keys[str(kind)].setdefault(str(key), str(slug))
+        self.by_name = {k: SpacedKeyMap(v) for k, v in keys.items()}
+        self.pages = {
+            "employer": {s for (k, s) in self.names if k == "employer"} | live_only_slugs(db),
+            "attorney": {s for (k, s) in self.names if k == "attorney"},
+        }
+        self.alias: dict[tuple[str, str], str] = {}
+        try:
+            for kind, slug, target in rows_of(db.execute(
+                    "SELECT kind, slug, target_slug FROM perm_entity_alias WHERE kind IN ('employer','attorney')")):
+                self.alias[(str(kind), str(slug))] = str(target)
+        except Exception as exc:  # noqa: BLE001 - a database before the first merge
+            if "no such table" not in str(exc).lower():
+                raise
+        self._keys: dict[str, str] = {}
+        self._hits: dict[tuple[str, str, str], str | None] = {}
+
+    def key_of(self, name: str) -> str:
+        k = self._keys.get(name)
+        if k is None:
+            k = entity_key(name) if name else ""
+            self._keys[name] = k
+        return k
+
+    def page(self, kind: str, stored: str | None, name: str | None) -> str | None:
+        memo = (kind, stored or "", name or "")
+        if memo in self._hits:
+            return self._hits[memo]
+        pages = self.pages[kind]
+        hit: str | None = None
+        if stored and stored in pages:
+            hit = stored
+        elif stored and self.alias.get((kind, stored)) in pages:
+            hit = self.alias[(kind, stored)]
+        elif name:
+            found = self.by_name[kind].get(self.key_of(name))
+            hit = found if found in pages else None
+        self._hits[memo] = hit
+        return hit
+
+    def label(self, kind: str, slug: str) -> str | None:
+        return self.names.get((kind, slug))
+
+
+def live_only_slugs(db) -> set[str]:
+    try:
+        return {str(r[0]) for r in rows_of(db.execute("SELECT slug FROM perm_live_only_index"))}
+    except Exception as exc:  # noqa: BLE001 - a database without the live table
+        if "no such table" not in str(exc).lower():
+            raise
+        return set()
+
+
+def require_index(db, name: str) -> None:
+    """The month-at-a-time reads lean on this index; without it each would scan the whole table."""
+    if not rows_of(db.execute("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?", [name])):
+        raise RuntimeError(f"{name} is missing, so each month's read would scan the whole table; "
+                           "build the search indexes first (run without --no-indexes)")
+
+
+def build_entity_facets(db) -> int:
+    """perm_history_entity_facets, and the older cases' counts by worksite state in perm_docs['perm_history'].
+
+    One pass over perm_cases_history, about ten decision days at a time on its decision_date index (a ten-day slice
+    of decisions grouped took 0.65 s on the live database, Nov 21 2026), never one grouping of the whole table. A case perm_cases also holds (decided again after September 2023) is counted
+    there, never here, so the case search's state counts can add these to perm_cases' own. The table is built
+    aside and swapped in whole: a page never reads it half-written.
+    """
+    require_index(db, DECISION_INDEX)
+    pages = EntityPages(db)
+    occ_slug = occupation_slugs(db)
+    acc: dict[tuple[str, str, str], dict] = defaultdict(dict)
+    totals: dict[tuple[str, str], list[int]] = {}
+    city_votes: dict[str, Counter] = defaultdict(Counter)
+    soc_votes: dict[str, Counter] = defaultdict(Counter)
+    party_votes: dict[tuple, Counter] = defaultdict(Counter)
+    by_state: dict[str, list[int]] = defaultdict(lambda: [0, 0, 0, 0])
+    fy_lo = fy_hi = None
+    slot = {"certified": 1, "denied": 2, "withdrawn": 3}
+
+    def add(kind: str, slug: str, facet: str, group, cert: int, den: int) -> None:
+        cell_ = acc[(kind, slug, facet)].get(group)
+        if cell_ is None:
+            acc[(kind, slug, facet)][group] = [1, cert, den]
+        else:
+            cell_[0] += 1
+            cell_[1] += cert
+            cell_[2] += den
+
+    sql = (f"SELECT {', '.join(MAKEUP_COLUMNS)} FROM perm_cases_history h "
+           "WHERE decision_date >= ? AND decision_date < ? "
+           "AND NOT EXISTS (SELECT 1 FROM perm_cases p WHERE p.case_number = h.case_number)")
+    read = 0
+    for lo, hi in day_slices(db, "decision_date"):
+        for emp_name, emp_slug, att_name, att_slug, soc, soc_title, state, city, naics, status, fy in rows_of(
+                db.execute(sql, [lo, hi])):
+            read += 1
+            st = str(status or "").lower()
+            cert, den = int(st == "certified"), int(st == "denied")
+            year = int(fy) if fy not in (None, "") else None
+            if year is not None:
+                fy_lo = year if fy_lo is None else min(fy_lo, year)
+                fy_hi = year if fy_hi is None else max(fy_hi, year)
+            state = str(state or "") or None
+            if state:
+                s = by_state[state]
+                s[0] += 1
+                if st in slot:
+                    s[slot[st]] += 1
+            emp_name, att_name = str(emp_name or ""), str(att_name or "")
+            if att_name.lower() in ("n/a", "na", "none"):
+                att_name = ""
+            e = pages.page("employer", str(emp_slug or "") or None, emp_name or None)
+            a = pages.page("attorney", str(att_slug or "") or None, att_name or None)
+            code = str(soc or "").strip() or None
+            if code and soc_title:
+                soc_votes[code][str(soc_title)] += 1
+            ck = city_key(str(city or "") or None, state)
+            if ck:
+                city_votes[ck][" ".join(str(city).split())] += 1
+            firm = ("p", a) if a else (("n", pages.key_of(att_name)) if att_name and pages.key_of(att_name) else None)
+            if firm and firm[0] == "n":
+                party_votes[firm][att_name] += 1
+            client = ("p", e) if e else (("n", pages.key_of(emp_name)) if emp_name and pages.key_of(emp_name) else None)
+            if client and client[0] == "n":
+                party_votes[client][emp_name] += 1
+            for kind, slug in (("employer", e), ("attorney", a)):
+                if not slug:
+                    continue
+                t = totals.get((kind, slug))
+                if t is None:
+                    totals[(kind, slug)] = [1, year or 0, year or 0]
+                else:
+                    t[0] += 1
+                    if year is not None:
+                        t[1] = year if not t[1] else min(t[1], year)
+                        t[2] = max(t[2], year)
+                if code:
+                    add(kind, slug, "occupation", code, cert, den)
+                if state:
+                    add(kind, slug, "state", state, cert, den)
+            if e:
+                if firm:
+                    add("employer", e, "attorney", firm, cert, den)
+                if ck:
+                    add("employer", e, "city", ck, cert, den)
+                if naics:
+                    add("employer", e, "industry", str(naics), cert, den)
+            if a and client:
+                add("attorney", a, "employer", client, cert, den)
+
+    cities = city_labels(city_votes)
+    out: list[tuple] = []
+    for (kind, slug, facet), bucket in acc.items():
+        total, first, last = totals[(kind, slug)]
+        if total < ENTITY_FACET_FLOOR:
+            continue
+        ranked = sorted(bucket.items(), key=lambda kv: (-kv[1][0], str(kv[0])))[:ENTITY_FACET_TOP]
+        for pos, (group, (n, cert, den)) in enumerate(ranked):
+            key, code, label = group, None, group
+            if facet == "occupation":
+                key, code = occ_slug.get(group), group
+                votes = soc_votes.get(group)
+                label = votes.most_common(1)[0][0] if votes else group
+            elif facet == "city":
+                label = cities.get(group, group)
+            elif facet == "industry":
+                label = industry_label(group)
+            elif facet in ("attorney", "employer"):
+                party = "attorney" if facet == "attorney" else "employer"
+                if group[0] == "p":
+                    key, label = group[1], pages.label(party, group[1]) or group[1]
+                else:
+                    key, label = None, party_votes[group].most_common(1)[0][0]
+            out.append((kind, slug, facet, pos, key, label, code, n, cert, den, total, first, last))
+
+    staged = f"{ENTITY_FACETS_TABLE}_next"
+    db.execute(f"DROP TABLE IF EXISTS {staged}")
+    db.execute(entity_facets_ddl(staged))
+    insert_rows(db, staged, ENTITY_FACET_COLUMNS, out, per_request=STMTS_PER_REQUEST)
+    db.script(["BEGIN", f"DROP TABLE IF EXISTS {ENTITY_FACETS_TABLE}",
+               f"ALTER TABLE {staged} RENAME TO {ENTITY_FACETS_TABLE}", "COMMIT"])
+
+    doc = read_doc(db)
+    doc["byState"] = [{"state": s, "total": v[0], "certified": v[1], "denied": v[2], "withdrawn": v[3]}
+                      for s, v in sorted(by_state.items(), key=lambda kv: (-kv[1][0], kv[0]))]
+    doc["byStateYears"] = {"from": fy_lo, "to": fy_hi} if fy_lo is not None else None
+    store_doc(db, doc)
+    log(f"  history entity facets: {read:,} cases read, {len(out):,} rows; {len(by_state)} states counted")
+    return len(out)
+
+
 def occupation_slugs(db) -> dict[str, str]:
     return {str(r[0]): str(r[1]) for r in rows_of(db.execute(
         "SELECT code, slug FROM perm_entities WHERE kind = 'occupation' AND code IS NOT NULL"))}
@@ -724,11 +977,15 @@ def build_search_indexes(db) -> None:
 
 
 def read_doc(db) -> dict:
+    """perm_docs['perm_history'], or {} before the first load. A failed read throws: a doc read as empty and
+    written back would lose the record of which files are loaded."""
     try:
         raw = db.scalar("SELECT json FROM perm_docs WHERE key = ?", [DOC_KEY])
-        return json.loads(raw) if raw else {}
-    except Exception:  # noqa: BLE001 - a database without perm_docs yet
-        return {}
+    except Exception as exc:  # noqa: BLE001 - only a database without perm_docs yet means nothing loaded
+        if "no such table" not in str(exc).lower():
+            raise
+        raw = None
+    return json.loads(raw) if raw else {}
 
 
 def store_doc(db, doc: dict) -> None:
@@ -783,7 +1040,18 @@ def main() -> int:
                     help="no workbooks: current years, search indexes and facets only")
     ap.add_argument("--month-days", action="store_true",
                     help="no workbooks: only rebuild perm_history_month_days and perm_history_alphabet, then stop")
+    ap.add_argument("--entity-facets", action="store_true",
+                    help="no workbooks: only rebuild perm_history_entity_facets and the state counts in "
+                         "perm_docs['perm_history'], then stop")
     args = ap.parse_args()
+
+    if args.entity_facets:
+        db = Database()
+        db.script(SCHEMA)
+        n = build_entity_facets(db)
+        record_run(db, "ingest_perm_history.py --entity-facets", status="ok", rows_written=n,
+                   note="employer and firm makeup and state counts from perm_cases_history")
+        return 0
 
     if args.month_days:
         db = Database()
@@ -809,8 +1077,9 @@ def main() -> int:
             build_search_indexes(db)
         n += build_history_facets(db, occupation_slugs(db))
         n += build_month_days(db) + build_alphabet_history(db)
+        n += build_entity_facets(db)
         record_run(db, "ingest_perm_history.py --finish-only", status="ok", rows_written=n,
-                   note="current years, search indexes, history facets and month days")
+                   note="current years, search indexes, history facets, month days and entity facets")
         return 0
 
     if args.current:
@@ -892,6 +1161,11 @@ def main() -> int:
             build_search_indexes(db)
         wrote_years += build_history_facets(db, occupation_slugs(db))
         wrote_years += build_month_days(db) + build_alphabet_history(db)
+        try:
+            wrote_years += build_entity_facets(db)
+        except Exception as exc:  # noqa: BLE001 - the loaded years stay loaded; the run ends partial
+            log(f"  entity facets FAILED: {exc}")
+            failures.append(f"entity facets: {exc}")
         years = sorted({v["fy"] for v in loaded.values()})
         status = "ok" if not failures else "partial"
         note = (f"FY{years[0]} to FY{years[-1]} held; " if years else "") + (
