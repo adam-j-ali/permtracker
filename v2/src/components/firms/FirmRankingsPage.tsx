@@ -26,6 +26,7 @@ import {
   certifiedShare,
   filingSplit,
   firmRanksAsOf,
+  firstRankedYear,
   lastYearWords,
   ordinal,
   rankedStates,
@@ -333,15 +334,21 @@ export async function FirmRankingsPage({ state }: { state: string }) {
   const heading = state === NATION ? "The busiest immigration law firms" : `The busiest immigration law firms in ${name}`;
   const states = summary ? rankedStates(summary) : [];
   const updated = pageDate(state === NATION ? FIRM_RANKS_PATH : `${FIRM_RANKS_PATH}/[state]`, { firms: firmRanksAsOf(summary) });
+  // Where the rankings start, read from what the builder ranked: PERM from the first year DOL's files name a firm
+  // (FY2015), the LCAs from the first year of their table. Never typed, so a history load moves it.
+  const firstPerm = summary ? firstRankedYear(summary, "perm") : null;
+  const firstLca = summary ? firstRankedYear(summary, "lca") : null;
+  const since = (fy: number | null) => (fy === null ? "" : `, FY${fy} on`);
+  const firstYear = [firstPerm, firstLca].filter((y): y is number => y !== null).sort((a, b) => a - b)[0];
 
   const schemas: object[] = [
     getDatasetSchema(SITE_URL, {
       name: state === NATION ? "Top immigration law firms by fiscal year and state" : `Top immigration law firms in ${name}`,
       description:
-        "Law firms ranked by PERM decisions (DOL, FY2016 on) and by certified H-1B Labor Condition Applications (DOL, FY2020 on), with outcomes, employers and median days to certify.",
+        `Law firms ranked by PERM decisions (DOL${since(firstPerm)}) and by certified H-1B Labor Condition Applications (DOL${since(firstLca)}), with outcomes, employers and median days to certify.`,
       url: `${SITE_URL}${path}`,
       isBasedOn: "https://www.dol.gov/agencies/eta/foreign-labor/performance",
-      temporalCoverage: "2015-10-01/..",
+      ...(firstYear !== undefined ? { temporalCoverage: `${firstYear - 1}-10-01/..` } : {}),
       variableMeasured: ["PERM decisions", "Certified share", "Median days to certify", "Certified H-1B LCAs", "Positions"],
     }),
     {

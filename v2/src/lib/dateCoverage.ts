@@ -9,14 +9,16 @@
  *
  * The two records are not interchangeable and their windows do not meet:
  *
- *   decided   published files: PERM from FY2016 (the history table) and the
- *             quarterly files to the last published quarter
+ *   decided   published files: PERM from FY2008 (the history table), H-1B
+ *             LCAs from FY2008 (theirs), and the quarterly files to the last
+ *             published quarter
  *   observed  our own sweep's event log, 2026-08-26 -> today
  *
  * The decided window is the widest program's; `decidedByProgram` carries each
- * program's own, because PERM reaches back to 2015-10-01 while wage requests
- * start 2023-10-01, and a page that shows one span for all three would promise
- * wage requests nobody holds.
+ * program's own, because PERM and the LCAs reach back to October 2007 while
+ * wage requests start 2023-10-01, and a page that shows one span for all of
+ * them would promise wage requests nobody holds. Every window is measured
+ * (`getCoverageWindows`), never typed here.
  *
  * The gap between them is real, and `uncoveredDays` is what lets a page say
  * "we hold nothing for that day" instead of rendering an empty table, which a
