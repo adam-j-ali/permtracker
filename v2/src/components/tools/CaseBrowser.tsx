@@ -1305,7 +1305,7 @@ function CaseTable({
                 </>
               ) : (
                 <>
-                  <span className="max-sm:hidden">{NO_FILING_DAY}</span>
+                  <span className="max-sm:hidden">{NO_FILING_DAY}</span>{" "}
                   <span className="sm:hidden">{`Decided ${r.decisionDate}; ${NO_FILING_DAY.toLowerCase()}`}</span>
                 </>
               )}
