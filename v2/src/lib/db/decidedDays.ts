@@ -7,6 +7,7 @@ import { keepLinkableSlugs } from "./entityLinks";
 // differently depending on which page asked.
 import { slugRange } from "./flagCases";
 import { PWD_VISA_CLASS } from "@/lib/changeProgram";
+import { PROGRAM_FILES } from "@/lib/wageRequestRanges";
 import { socGroupClause } from "@/lib/socCode";
 import { ANNUAL_WAGE_SQL } from "@/lib/wageFormat";
 import { CHANGE_PROGRAMS, type ChangeProgram } from "@/lib/changeProgram";
@@ -184,7 +185,7 @@ const PUBLISHED: Record<
     optional: ["city", "naics", "citizenship", "visaClass", "education"],
   },
   pwd: {
-    tables: ["pwd_cases"],
+    tables: PROGRAM_FILES.pwd.map((f) => f.table),
     status: "case_status",
     state: "worksite_state",
     hasWageUnit: true,
@@ -198,9 +199,10 @@ const PUBLISHED: Record<
     hasWageUnit: true,
     optional: ["city", "naics", "visaClass"],
   },
-  // H-2A, H-2B and CW-1, one table with the visa on each row.
+  // H-2A, H-2B and CW-1 applications, one table with the visa on each row, then the H-2B and CW-1 wage requests
+  // (P-400, P-500), which DOL decides in its prevailing wage file.
   seasonal: {
-    tables: ["seasonal_cases"],
+    tables: PROGRAM_FILES.seasonal.map((f) => f.table),
     status: "case_status",
     state: "worksite_state",
     hasWageUnit: true,
@@ -208,6 +210,19 @@ const PUBLISHED: Record<
   },
 };
 
+
+/**
+ * The SQL keeping one table's read to the program's own rows, or "". DOL's prevailing wage file holds the wage
+ * request program's numbers (P-100 to P-203) and the seasonal programs' (P-400, P-500), split by one boundary
+ * (src/lib/wageRequestRanges.ts). It's a literal, so the partial indexes on the seasonal rows can serve it
+ * (`pwd_cases_seasonal_*`, scripts/ingest_flag_disclosure.py): without them, a job or state filter on the seasonal
+ * programs walks that filter's wage requests of every program in the range to find the seasonal ones.
+ */
+function ownRows(program: ChangeProgram, table: string): string {
+  const files = program === "pwd" || program === "seasonal" ? PROGRAM_FILES[program] : [];
+  const own = files.find((f) => f.table === table)?.own;
+  return own ? ` AND ${own()}` : "";
+}
 
 /** The tables a program's range touches, newest first: a range wholly after the history table's last day never asks it. */
 function tablesFor(program: ChangeProgram, range: DateRange): string[] {
@@ -526,15 +541,16 @@ export async function getDecidedFeed(args: {
           const { sql, args: nArgs } = clause;
           // cap + 1 so a full page is distinguishable from an exactly-full one.
           return rows<Record<string, unknown>>(
-            `${selectFor(p, table, cols)}${sql}
+            `${selectFor(p, table, cols)}${ownRows(p, table)}${sql}
               ORDER BY decision_date DESC, case_number DESC
               LIMIT ?`,
             [range.from, range.to, ...nArgs, cap + 1],
           );
         }),
       );
-      // Two tables for PERM are merged newest first before the cap applies,
-      // so the cap cuts the oldest rows of the whole range, not of each table.
+      // PERM's two tables, and the seasonal programs' two files, are merged
+      // newest first before the cap applies, so the cap cuts the oldest rows
+      // of the whole range, never each table's.
       const r = perTable
         .flat()
         .sort((a, b) =>
@@ -599,7 +615,7 @@ async function countDay(
         const { sql, args } = clause;
         const r = await rows<{ n: number }>(
           `SELECT COUNT(*) AS n FROM ${table}
-            WHERE decision_date >= ? AND decision_date <= ?${sql}`,
+            WHERE decision_date >= ? AND decision_date <= ?${ownRows(p, table)}${sql}`,
           [date, date, ...args],
         );
         out[p] += Number(r[0]?.n ?? 0);

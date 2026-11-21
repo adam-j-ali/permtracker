@@ -232,6 +232,21 @@ describe("every other row that names it", () => {
     ]);
   });
 
+  it("masks every employer name on a record its employer slug ties to the entity, whatever the record printed", () => {
+    // A Wage and Hour or OSHA record joined to the page prints DOL's own spelling: an older name, a plant's.
+    const whd = { case_id: "1", employer_slug: "jane-q-example", legal_name: "J Q EXAMPLE HOME", trade_name: "JQE", state: "NJ" };
+    expect(read("SELECT * FROM whd_cases WHERE state = ?", ["NJ"], [whd]).rows).toEqual([
+      { ...whd, employer_slug: "private-household-employer-1", legal_name: "Private household employer 1", trade_name: "Private household employer 1" },
+    ]);
+    const osha = { activity_nr: "9", estab_name: "EXAMPLE RESIDENCE", employer_slug: "jane-q-example", attorney_name: "Someone Else LLP" };
+    expect(read("SELECT * FROM osha_inspections WHERE state = ?", ["NJ"], [osha]).rows).toEqual([
+      { ...osha, estab_name: "Private household employer 1", employer_slug: "private-household-employer-1" },
+    ]);
+    // A firm's slug ties the row to the firm, never its employer's name to the firm's label.
+    const filed = { case_number: "G-100-24001-000002", employer_name: "Acme Corp", attorney_slug: "exampel-law-group" };
+    expect(read("SELECT * FROM perm_cases WHERE state = ?", ["CA"], [filed]).rows[0]).toMatchObject({ employer_name: "Acme Corp" });
+  });
+
   it("gives an entry without a number its plain label and no link", () => {
     const row = { employer_name: "ACME X HOLDINGS", employer_slug: "acme-x-holdings", n: 2 };
     expect(read("SELECT * FROM perm_cases WHERE state = ?", ["CA"], [row]).rows).toEqual([{ employer_name: "Employer", employer_slug: null, n: 2 }]);

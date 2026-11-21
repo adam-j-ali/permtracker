@@ -35,7 +35,7 @@ from typing import Callable, Sequence
 
 from entity_identity import program_key
 from ingest_warn import FORM_WORD, sponsor_matcher
-from lib_db import Database, canon_hash, query_rows
+from lib_db import SLUG_WINDOWS, Database, canon_hash, query_rows, slug_window
 from lib_gov_data import robots_allowed
 
 HEADERS = {"User-Agent": "PERMTracker/1.0 (+https://permtracker.app; support@permtracker.app)"}
@@ -73,19 +73,46 @@ def file_date(names: Sequence[str]) -> str | None:
     return None
 
 
+# A sponsor's worksites in DOL's older PERM files (FY2008 to FY2023), counted once at the history load
+# (ingest_perm_history.build_places_and_wages): perm_cases holds FY2024 on, and a state or a city a sponsor filed in
+# before then is one it works in too. Read beside perm_cases' own by both tests below.
+HISTORY_WORKSITES = "perm_history_worksites"
+
+
+def has_history_worksites(db: Database) -> bool:
+    """Whether the history load has built the older worksites' table. Said in the log when it hasn't, since the
+    joins are then narrower."""
+    if query_rows(db, "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", [HISTORY_WORKSITES]):
+        return True
+    print(f"[dol] {HISTORY_WORKSITES} isn't built yet: only the recent PERM worksites are matched", flush=True)
+    return False
+
+
 def load_sponsors(db: Database):
-    """(merge_key, slug, total) busiest first, and each sponsor's PERM worksite states."""
+    """(merge_key, slug, total) busiest first, and each sponsor's PERM worksite states, FY2008 on."""
     sponsors = query_rows(
         db, "SELECT merge_key, slug, total FROM perm_entities WHERE kind = 'employer' AND merge_key IS NOT NULL "
             "ORDER BY total DESC")
     states: dict[str, set[str]] = {}
+
+    def add(slug, state) -> None:
+        # A blank state isn't a state, and would count toward NATIONAL_STATES.
+        if slug and state is not None and str(state).strip():
+            states.setdefault(str(slug), set()).add(str(state).strip().upper())
+
     # One pass over the PERM file's (employer, worksite state) index.
     for slug, state in query_rows(
             db, "SELECT employer_slug, state FROM perm_cases WHERE employer_slug IS NOT NULL AND state IS NOT NULL "
                 "GROUP BY employer_slug, state"):
-        # A blank state isn't a state, and would count toward NATIONAL_STATES.
-        if str(state).strip():
-            states.setdefault(str(slug), set()).add(str(state).strip().upper())
+        add(slug, state)
+    # The older files' worksites, a slug window at a time on the table's primary key (slug, state, city).
+    if has_history_worksites(db):
+        for lo, hi in SLUG_WINDOWS:
+            where, args = slug_window("slug", lo, hi)
+            for slug, state in query_rows(
+                    db, f"SELECT slug, state FROM {HISTORY_WORKSITES} WHERE {where} AND state <> '' "
+                        "GROUP BY slug, state", args):
+                add(slug, state)
     if not sponsors:
         raise RuntimeError("the employer table read empty; a match against nothing would unlink every record")
     return sponsors, states
@@ -140,14 +167,20 @@ def same_city(cities: dict[str, set[str]], totals: dict[str, int]):
 
 
 def sponsor_cities(db: Database, slugs: set[str]) -> dict[str, set[str]]:
-    """Each candidate sponsor's PERM worksite cities, as city keys."""
+    """Each candidate sponsor's PERM worksite cities, FY2008 on, as city keys."""
     out: dict[str, set[str]] = {}
     items = sorted(slugs)
+    older = has_history_worksites(db) if items else False
     for i in range(0, len(items), 200):
         part = items[i:i + 200]
         marks = ",".join("?" for _ in part)
-        for slug, city in query_rows(db, f"SELECT employer_slug, worksite_city FROM perm_cases WHERE employer_slug IN ({marks}) "
-                                         "AND worksite_city IS NOT NULL GROUP BY 1, 2", part):
+        rows = query_rows(db, f"SELECT employer_slug, worksite_city FROM perm_cases WHERE employer_slug IN ({marks}) "
+                              "AND worksite_city IS NOT NULL GROUP BY 1, 2", part)
+        if older:
+            # The older files' cities: a primary-key seek per slug.
+            rows += query_rows(db, f"SELECT slug, city FROM {HISTORY_WORKSITES} WHERE slug IN ({marks}) "
+                                   "AND city <> '' GROUP BY 1, 2", part)
+        for slug, city in rows:
             if city_key(city):
                 out.setdefault(str(slug), set()).add(city_key(city))
     return out

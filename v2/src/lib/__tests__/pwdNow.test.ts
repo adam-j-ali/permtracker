@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { catchingUp, flowVerdict, monthSeries, outcomeMix, parsePwdQueueDoc, parseWaitTrend, speedVerdict, yearOnYear } from "../pwdNow";
+import { catchingUp, flowVerdict, monthSeries, outcomeMix, parsePwdQueueDoc, parseWaitTrend, speedVerdict, waitWindows, yearOnYear } from "../pwdNow";
 
 // Shaped like the PWD sweep's document of Oct 31 2026: the newest days, their
 // exits split by what DOL did, the filings each day, and the status mix.
@@ -117,6 +117,38 @@ describe("wait trends", () => {
   it("needs two months", () => {
     expect(parseWaitTrend(JSON.stringify({ asOf: "x", filesThrough: "y", months: [{ m: "2026-01", n: 1, p25: 1, p50: 1, p75: 1 }] }))).toBeNull();
   });
+  it("cuts a long trend into windows of three fiscal years, newest first, each short enough for a phone", () => {
+    // October 2014 (FY2015) to October 2026: 145 months, one column each, would run off a 375px screen.
+    const months = [];
+    for (let i = 0; i < 145; i++) {
+      const y = 2014 + Math.floor((9 + i) / 12);
+      const m = String(((9 + i) % 12) + 1).padStart(2, "0");
+      months.push({ m: `${y}-${m}`, n: 900, p25: 1, p50: 100 + i, p75: 1, from: "files" });
+    }
+    const t = parseWaitTrend(JSON.stringify({ asOf: "2026-11-21", filesThrough: "2026-06-30", months }))!;
+    const w = waitWindows(monthSeries(t));
+    expect(w.map((x) => x.label)).toEqual(["Since FY2024", "FY2021 to FY2023", "FY2018 to FY2020", "FY2015 to FY2017"]);
+    expect(w.map((x) => x.id)).toEqual(["fy2024", "fy2021", "fy2018", "fy2015"]);
+    // FY2027's one month joins the window before it, so the first view always holds over a year.
+    expect(w[0]!.months[0]!.m).toBe("2023-10");
+    expect(w[0]!.months.at(-1)!.m).toBe("2026-10");
+    expect(w[3]!.months.map((m) => m.m).slice(0, 1)).toEqual(["2014-10"]);
+    expect(w.reduce((s, x) => s + x.months.length, 0)).toBe(145);
+    for (const x of w) expect(x.months.length).toBeLessThanOrEqual(47);
+    expect(w.map((x) => x.newest)).toEqual([true, false, false, false]);
+  });
+
+  it("gives a newest window of a year or more its own tab", () => {
+    const months = ["2023-10", "2024-06", "2025-09", "2025-10", "2026-06", "2026-10"].map((m) => ({
+      m, n: 900, p25: 1, p50: 1, p75: 1, from: "files",
+    }));
+    const w = waitWindows(monthSeries(parseWaitTrend(JSON.stringify({ asOf: "x", filesThrough: "y", months }))!));
+    expect(w.map((x) => x.label)).toEqual(["Since FY2024"]);
+    const later = [...months, { m: "2027-10", n: 900, p25: 1, p50: 1, p75: 1, from: "files" }];
+    const w2 = waitWindows(monthSeries(parseWaitTrend(JSON.stringify({ asOf: "x", filesThrough: "y", months: later }))!));
+    expect(w2.map((x) => x.label)).toEqual(["Since FY2027", "FY2024 to FY2026"]);
+  });
+
   it("draws a month with no reading as a gap, never a zero", () => {
     const s = monthSeries(parseWaitTrend(TREND)!);
     expect(s.map((m) => m.m)).toEqual([

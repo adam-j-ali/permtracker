@@ -20,6 +20,9 @@ import { MAX_CITY } from "@/lib/wagePlaceFilters";
 import { SECTOR_GROUPS, sectorGroup } from "@/lib/naicsSectors";
 import { formatDollars, formatInt } from "@/lib/format";
 import { ScrollBox } from "@/components/ui/scroll-box";
+import { choiceVariants } from "@/components/ui/choice";
+// A type only: BLS's crosswalk itself stays on the server.
+import type { EarlierSocCode } from "@/lib/socCrosswalk";
 
 /**
  * Offered wages in DOL's disclosure files, filtered.
@@ -63,6 +66,16 @@ export interface SalaryExplorerProps {
   nounPlural?: string;
   states: readonly WageOption[];
   fiscalYears: readonly string[];
+  /**
+   * The years among `fiscalYears` from DOL's older files, worked out ahead by
+   * occupation and state: a city or an industry can't narrow them.
+   */
+  historyYears?: readonly string[];
+  /**
+   * What the no-year choice pools, in words ("FY2024 to FY2026"). Without one
+   * it reads "All years", true where the picker holds every year it pools.
+   */
+  pooledLabel?: string;
   /** Rendered before any fetch, so the default view needs no JavaScript. */
   initial: ExplorerPayload;
   /**
@@ -80,6 +93,13 @@ export interface ExplorerPayload {
   below: number;
   above: number;
   byState: StateWageRow[];
+  /**
+   * A year of DOL's older files and a job BLS renumbered in 2018: the 2010 codes holding its cases there, each
+   * counted on its own (the PERM route only).
+   */
+  earlierCodes?: EarlierSocCode[];
+  /** Which other jobs those 2010 codes also covered. */
+  earlierNote?: string | null;
 }
 
 const STATUSES = [
@@ -91,6 +111,8 @@ const STATUSES = [
 
 const usd = (n: number | null) =>
   n === null ? "n/a" : formatDollars(n);
+
+const NO_YEARS: readonly string[] = [];
 
 const FIELD =
   "mt-2 block w-full min-w-0 min-h-[44px] border-2 border-input bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:text-muted-foreground";
@@ -104,11 +126,14 @@ function CityField({
   id,
   value,
   disabled,
+  reason,
   onCommit,
 }: {
   id: string;
   value: string;
   disabled: boolean;
+  /** Why it's disabled, when that isn't the missing state. */
+  reason?: string;
   onCommit: (v: string) => void;
 }) {
   const [text, setText] = useState(value);
@@ -124,7 +149,7 @@ function CityField({
       disabled={disabled}
       maxLength={MAX_CITY}
       autoComplete="off"
-      placeholder={disabled ? "Choose a state first" : "e.g. Seattle"}
+      placeholder={disabled ? reason || "Choose a state first" : "e.g. Seattle"}
       onChange={(e) => setText(e.target.value)}
       onBlur={commit}
       onKeyDown={(e) => {
@@ -146,6 +171,8 @@ export function SalaryExplorer({
   nounPlural = "cases",
   states,
   fiscalYears,
+  historyYears = NO_YEARS,
+  pooledLabel,
   initial,
   placeFilters = false,
 }: SalaryExplorerProps) {
@@ -153,20 +180,30 @@ export function SalaryExplorer({
   const pathname = usePathname();
   const params = useUrlSearchParams();
   const ids = { soc: useId(), state: useId(), fy: useId(), status: useId(), city: useId(), sector: useId() };
+  // A 2010 code picked from an older year's offer ("15-1132"), by its title: the
+  // occupation list holds the codes the current files use.
+  const [earlierPicked, setEarlierPicked] = useState<Record<string, string>>({});
   // A code typed ("15-1252") finds its title too.
   const occupationOptions = useMemo(
-    () => occupations.map((o) => ({ value: o.value, label: `${o.label} (${formatInt(o.n)})`, keywords: o.value })),
-    [occupations],
+    () => [
+      ...occupations.map((o) => ({ value: o.value, label: `${o.label} (${formatInt(o.n)})`, keywords: o.value })),
+      ...Object.entries(earlierPicked)
+        .filter(([code]) => !occupations.some((o) => o.value === code))
+        .map(([code, title]) => ({ value: code, label: `${title} (a 2010 code)`, keywords: code })),
+    ],
+    [occupations, earlierPicked],
   );
 
   const soc = params.get("soc") ?? "";
   const state = params.get("state") ?? "";
   const fy = params.get("fy") ?? "";
   const status = params.get("status") ?? "certified";
+  // A year from DOL's older files: precomputed by occupation and state only.
+  const olderYear = historyYears.includes(fy);
   // Read only where the route accepts them, so a stray parameter on the LCA
   // page can't send a request its route would refuse.
-  const city = placeFilters && state ? params.get("city") ?? "" : "";
-  const sector = placeFilters && (state || soc) ? params.get("sector") ?? "" : "";
+  const city = placeFilters && state && !olderYear ? params.get("city") ?? "" : "";
+  const sector = placeFilters && (state || soc) && !olderYear ? params.get("sector") ?? "" : "";
   const isDefault = !soc && !state && !fy && status === "certified" && !city && !sector;
 
   const [data, setData] = useState<ExplorerPayload>(initial);
@@ -179,13 +216,18 @@ export function SalaryExplorer({
       if (value) next.set(key, value);
       else next.delete(key);
       // A narrowing outlives nothing it narrows: a city goes with its state,
-      // an industry with the last of state and occupation.
+      // an industry with the last of state and occupation, and both with a
+      // move to a year from DOL's older files.
       if (!next.get("state")) next.delete("city");
       if (!next.get("state") && !next.get("soc")) next.delete("sector");
+      if (historyYears.includes(next.get("fy") ?? "")) {
+        next.delete("city");
+        next.delete("sector");
+      }
       const qs = next.toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
-    [params, pathname, router],
+    [params, pathname, router, historyYears],
   );
 
   useEffect(() => {
@@ -226,13 +268,21 @@ export function SalaryExplorer({
 
   const report = useMemo(() => reportability(data.stats.n), [data.stats.n]);
   const subject = useMemo(() => {
-    const occ = occupations.find((o) => o.value === soc)?.label;
-    const parts = [occ ?? "All occupations", state || "every state", fy ? `FY${fy}` : "all years"];
+    // A code the list doesn't hold (a 2010 code, an old link) is named by itself, never as every occupation.
+    const occ = soc ? occupations.find((o) => o.value === soc)?.label ?? earlierPicked[soc] ?? soc : null;
+    const parts = [occ ?? "All occupations", state || "every state", fy ? `FY${fy}` : pooledLabel || "all years"];
     if (city) parts.splice(2, 0, city);
     const sectorLabel = sectorGroup(sector)?.label;
     if (sectorLabel) parts.push(sectorLabel);
     return parts.join(" · ");
-  }, [occupations, soc, state, fy, city, sector]);
+  }, [occupations, earlierPicked, soc, state, fy, city, sector, pooledLabel]);
+
+  // The job's 2010 codes, in a year of the older files (the route sends them only there).
+  const earlierCodes = olderYear && soc ? (data.earlierCodes ?? []) : [];
+  const pickEarlier = (c: EarlierSocCode) => {
+    setEarlierPicked((was) => ({ ...was, [c.code]: c.title }));
+    setParam("soc", c.code);
+  };
 
   const maxBin = Math.max(1, ...data.bins.map((b) => b.count));
 
@@ -298,7 +348,7 @@ export function SalaryExplorer({
               onChange={(e) => setParam("fy", e.target.value)}
               className="mt-2 block w-full min-w-0 min-h-[44px] border-2 border-input bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
             >
-              <option value="">All years</option>
+              <option value="">{pooledLabel || "All years"}</option>
               {fiscalYears.map((y) => (
                 <option key={y} value={y}>
                   FY{y}
@@ -332,10 +382,11 @@ export function SalaryExplorer({
                   Worksite city
                 </Label>
                 <CityField
-                  key={`${state}|${city}`}
+                  key={`${state}|${city}|${fy}`}
                   id={ids.city}
                   value={city}
-                  disabled={!state}
+                  disabled={!state || olderYear}
+                  reason={olderYear ? `Not for FY${fy}` : undefined}
                   onCommit={(v) => setParam("city", v)}
                 />
               </div>
@@ -347,12 +398,16 @@ export function SalaryExplorer({
                 <select
                   id={ids.sector}
                   value={sector}
-                  disabled={!state && !soc}
+                  disabled={(!state && !soc) || olderYear}
                   onChange={(e) => setParam("sector", e.target.value)}
                   className={FIELD}
                 >
                   <option value="">
-                    {!state && !soc ? "Choose a state or an occupation first " : "Every industry "}
+                    {olderYear
+                      ? `Not for FY${fy} `
+                      : !state && !soc
+                        ? "Choose a state or an occupation first "
+                        : "Every industry "}
                   </option>
                   {SECTOR_GROUPS.map((x) => (
                     <option key={x.value} value={x.value}>
@@ -377,6 +432,13 @@ export function SalaryExplorer({
               industry
             </Link>{" "}
             pages.
+            {olderYear ? (
+              <>
+                {" "}
+                FY{fy} comes from DOL&apos;s older files. Those years are worked out ahead by occupation and
+                state, so a city or an industry can&apos;t narrow them.
+              </>
+            ) : null}
           </p>
         ) : null}
 
@@ -415,6 +477,43 @@ export function SalaryExplorer({
           <WarningIcon className="mt-0.5 h-4 w-4 shrink-0 text-data-warn-ink" weight="fill" aria-hidden="true" />{" "}
           <span>{report.note}</span>
         </p>
+      ) : null}
+      {/* BLS renumbered jobs in 2018, and DOL's older files carry the 2010
+          codes. Each one that holds the year's cases is offered on its own,
+          never added in: 15-1132 also became 15-1253. */}
+      {earlierCodes.length > 0 ? (
+        <div className="border-b-2 border-border bg-data-info/10 px-6 py-4 text-base sm:px-8">
+          <p>
+            {data.stats.n === 0
+              ? `DOL's FY${fy} file lists this job under BLS's older 2010 codes. Pick one to see its wages.`
+              : `DOL's FY${fy} file also lists some of this job's cases under BLS's older 2010 codes, and the figures here leave them out. Pick one to see its wages.`}
+          </p>{" "}
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {earlierCodes.map((c) => (
+              <Fragment key={c.code}>
+                {" "}
+                <li className="min-w-0 max-w-full">
+                  <button
+                    type="button"
+                    onClick={() => pickEarlier(c)}
+                    className={cn(choiceVariants({ on: false }), "h-auto max-w-full flex-wrap justify-start py-2 text-left")}
+                  >
+                    <span className="font-bold tabular-nums">{c.code}</span>{" "}
+                    <span>{c.title}</span>{" "}
+                    <span className="text-muted-foreground">
+                      ({formatInt(c.n)} {c.n === 1 ? noun : nounPlural})
+                    </span>
+                  </button>
+                </li>
+              </Fragment>
+            ))}
+          </ul>{" "}
+          {data.earlierNote ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              {data.earlierNote} So each 2010 code&apos;s figures take in every job it became.
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       <div className={cn("p-6 sm:p-8", loading && "opacity-60")} aria-busy={loading}>

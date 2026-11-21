@@ -3,12 +3,13 @@ import { NextResponse } from "next/server";
 import {
   getWageByState,
   getWageHistogram,
-  getWageStats,
+  getWageSelection,
   type WageFilters,
   type WageStatusFilter,
 } from "@/lib/db/publicData";
 import { binWidth, clampBins, MIN_FOR_MEDIAN } from "@/lib/wageStats";
-import { MAX_CITY, placeFilterRefusal, sectorCodes } from "@/lib/wagePlaceFilters";
+import { permHistoryYear } from "@/lib/db/wageViews";
+import { MAX_CITY, OLDER_YEAR_REFUSAL, placeFilterRefusal, sectorCodes } from "@/lib/wagePlaceFilters";
 
 /**
  * The salary explorer's data, for a page with no ConvexProvider.
@@ -74,6 +75,9 @@ export async function GET(request: Request) {
   // walks the whole table (lib/wagePlaceFilters.ts has the measurement).
   const refusal = placeFilterRefusal({ state, soc: socCode, city, sector });
   if (refusal) return bad(refusal);
+  // A year from DOL's older files is answered from its precomputed views,
+  // which hold no city or industry. One key read, asked only when one is set.
+  if ((city || codes) && fiscalYear && (await permHistoryYear(fiscalYear))) return bad(OLDER_YEAR_REFUSAL);
 
   const filters: WageFilters = {
     socCode: socCode || null,
@@ -84,12 +88,19 @@ export async function GET(request: Request) {
     sectorCodes: codes,
   };
 
-  const stats = await getWageStats(filters);
+  // In a year of DOL's older files, a job BLS renumbered in 2018 also carries
+  // its 2010 codes' counts there, read in the same statement as the figures,
+  // so the explorer can offer each one (lib/db/wageViews.ts, permYearView).
+  const { stats, earlierCodes, earlierNote } = await getWageSelection(filters);
+  const earlier = { earlierCodes, earlierNote };
 
   // Below the floor there is nothing to draw and nothing to break down, and
   // the histogram query would still cost a full scan of the filtered set.
   if (stats.n < MIN_FOR_MEDIAN) {
-    return NextResponse.json({ stats, bins: [], binWidth: 0, below: 0, above: 0, byState: [] }, { headers: CACHE_HEADERS });
+    return NextResponse.json(
+      { stats, bins: [], binWidth: 0, below: 0, above: 0, byState: [], ...earlier },
+      { headers: CACHE_HEADERS },
+    );
   }
 
   // Width comes from the SELECTED subset's own middle. A ladder that suits the
@@ -107,5 +118,8 @@ export async function GET(request: Request) {
   const hi = stats.p95 !== null ? Math.floor(stats.p95 / width) * width : 0;
   const { bins, below, above } = clampBins(raw, lo, hi);
 
-  return NextResponse.json({ stats, bins, binWidth: width, below, above, byState }, { headers: CACHE_HEADERS });
+  return NextResponse.json(
+    { stats, bins, binWidth: width, below, above, byState, ...earlier },
+    { headers: CACHE_HEADERS },
+  );
 }
