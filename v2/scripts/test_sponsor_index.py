@@ -142,6 +142,23 @@ def main() -> int:
     check("a sponsor with too few new H-1B workers isn't ranked on it", "perm_per_h1b" in parts["beta"], False)
     check("dependent is the newest declaration, not any", by["alpha"]["dependent"], 0)
     check("willful violator is a fact, with its count", "willful" in facts["beta"], True)
+    check("the count is lca_cases' alone before the older files are counted", fact_of["beta"]["willful"]["lcas"], 1)
+
+    # The older files' answers, counted when the older files loaded (lca_history_rollups.py), join the count
+    # through the same map; the older table itself is never read here.
+    import lca_history_rollups as lhr
+    for ddl in lhr.DDL:
+        db.execute(ddl)
+    for slug, fy, n in [("beta", 2019, 2), ("alpha-com-inc", 2018, 2), ("gamma", 2016, 1), ("nobody", 2017, 4)]:
+        db.execute(f"INSERT INTO {lhr.WILLFUL} VALUES (?, ?, ?)", [slug, fy, n])
+    older = {r[0]: {f["id"]: f for f in json.loads(dict(zip(bsi.COLS, r))["facts"])}
+             for r in bsi.plan(bsi.read(db, TODAY), TODAY)}
+    check("a sponsor's older willful-violator LCAs add to its newer ones", older["beta"]["willful"]["lcas"], 3)
+    check("through its other spellings too", older["alpha"]["willful"]["lcas"], 1 + 2)
+    check("a sponsor whose only declarations are in the older files has the fact", older["gamma"]["willful"]["lcas"], 1)
+    check("a spelling on no sponsor's page counts nowhere", any(f.get("lcas") == 4 for v in older.values()
+                                                                   for f in v.values() if f["id"] == "willful"), False)
+    db.execute(f"DROP TABLE {lhr.WILLFUL}")  # the checks below read the newer table's figures alone
     check("WARN in the last two years only", by["beta"]["warn_2y"], 1)
     check("an expired debarment isn't a fact", "debarred" in facts["beta"], False)
     check("an active debarment is", ("debarred" in facts["gamma"], by["gamma"]["debarred"]), (True, 1))

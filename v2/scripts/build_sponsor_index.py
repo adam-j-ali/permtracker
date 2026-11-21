@@ -69,6 +69,7 @@ from typing import NamedTuple
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from build_entity_detail import RECENT_WINDOW_DAYS  # noqa: E402
 from ingest_perm_disclosure import percentile as value_at  # noqa: E402
+from lca_history_rollups import WILLFUL as LCA_HISTORY_WILLFUL  # noqa: E402
 from lib_db import Database, add_missing_columns, record_run, rows_of  # noqa: E402
 from lib_naics import sector_of  # noqa: E402
 
@@ -261,6 +262,17 @@ def read(db: Database, today: dt.date) -> dict:
         for k, v in (("dep_yes", dep_yes), ("dep_no", dep_no)):
             if v and (s[k] is None or str(v) > s[k]):
                 s[k] = str(v)
+    # The older H-1B files' willful-violator answers (in each file that asks it), counted when they loaded
+    # (lca_history_rollups.py), so the fact covers every file that asks; the older table is never read nightly.
+    try:
+        for slug, n in rows_of(db.execute(
+                f"SELECT employer_slug, SUM(lcas) FROM {LCA_HISTORY_WILLFUL} GROUP BY employer_slug")):
+            s = sponsors.get(page_of.get(str(slug), ""))
+            if s is not None:
+                s["willful"] += int(num(n))
+    except Exception as e:  # noqa: BLE001
+        if "no such table" not in str(e):
+            raise
 
     try:
         top = rows_of(db.execute("SELECT MAX(fy) FROM uscis_h1b_employers"))[0][0]
