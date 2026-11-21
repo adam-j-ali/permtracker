@@ -3,8 +3,8 @@
  * (scripts/build_reported_cases.py and scripts/lib_reported_cases.py, table `reported_cases`), and the figures drawn
  * from them.
  *
- * A case names every source that holds it: a community sheet, Reddit, Telegram, VisaStats' tracker, or a timeline
- * shared on this site. Two records become one case only when they agree on three dates and contradict on nothing; a
+ * A case names every source that holds it: a community sheet, Reddit, Telegram, Facebook (posts typed in by hand from
+ * screenshots shared with us), VisaStats' tracker, or a timeline shared on this site. Two records become one case only when they agree on three dates and contradict on nothing; a
  * case that only might repeat another says so (`maybeRepeats`), and one that adds nothing to its repeat never reaches
  * a page. Usernames, names and receipt numbers never reach this site. Everything but a reviewed timeline is unchecked,
  * so a page says where each case came from.
@@ -12,6 +12,9 @@
 import { sheetFor, SHEETS } from "./communitySheets";
 
 import { MS_PER_DAY } from "@/lib/time";
+
+/** The places reported cases come from, said once (./reportedPlaces.ts): "cases people reported in ${REPORTED_PLACES}". */
+export { REPORTED_COMMUNITY_PLACES, REPORTED_PLACES } from "./reportedPlaces";
 
 export interface ReportedCase {
   id: string;
@@ -39,6 +42,7 @@ export interface ReportedCase {
 const NAMES: Record<string, string> = {
   reddit: "Reddit",
   telegram: "Telegram",
+  facebook: "Facebook",
   visastats: "VisaStats",
   timeline: "a timeline shared here",
   "consular-report": "a consulate report shared here",

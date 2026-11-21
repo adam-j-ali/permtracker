@@ -46,6 +46,7 @@ import { MONTH_NAMES } from "@convex/lib/months";
 import { getHistoricalMedians, getUscisFormRows, type HistoricalMedians } from "@/lib/db/uscisQuarterly";
 import { formatAsOf } from "@/lib/dolFormat";
 import { formatInt, formatShare, formatShareOf } from "@/lib/format";
+import { REPORTED_PLACES } from "@/lib/reportedCases";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { getI140ProcessingTime, PROCESSING_TIMES_AS_OF, PROCESSING_TIMES_SOURCE_URL } from "@/lib/processing-times/i140ProcessingTimes";
 import { withSocialCard } from "@/lib/socialCard";
@@ -268,7 +269,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
         <PageSection
           id="reported"
           title={`What people reported about their own ${page.form}s`}
-          lede={`From ${formatInt(summary!.headline.cases)} cases people reported in Telegram groups, community sheets, Reddit, VisaStats and on this site, each person once, over the cases that finished each step in the last 6 months (12 when 6 hold too few). Self-reported, beside USCIS's own figures, never in place of them.`}
+          lede={`From ${formatInt(summary!.headline.cases)} cases people reported in ${REPORTED_PLACES} and on this site, each person once, over the cases that finished each step in the last 6 months (12 when 6 hold too few). Self-reported, beside USCIS's own figures, never in place of them.`}
         >
           <StepFigures steps={reportedSteps} allHref="/green-card-timelines" />{" "}
           {page.form === "I-485" ? (

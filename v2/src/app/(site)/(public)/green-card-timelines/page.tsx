@@ -34,6 +34,7 @@ import { Figure, FigureRow } from "@/components/data/FigureRow";
 import { StepsByStage } from "@/components/community/StepFigures";
 import { getReportedSummary } from "@/lib/db/reportedSummary";
 import { formatInt } from "@/lib/format";
+import { REPORTED_PLACES } from "@/lib/reportedCases";
 import { stepTrend, windowText, type ReportedSummary } from "@/lib/reportedSummary";
 import { StepBothSources } from "@/components/community/StepBothSources";
 
@@ -41,8 +42,8 @@ import { StepBothSources } from "@/components/community/StepBothSources";
  * Green card timelines, as the people waiting report them.
  *
  * Every figure counts every case people reported, from every source we read
- * (Telegram groups, community sheets, Reddit, VisaStats and the timelines
- * shared here), each person once: the hourly build works them out
+ * (REPORTED_PLACES in src/lib/reportedCases.ts, and the timelines shared
+ * here), each person once: the hourly build works them out
  * (scripts/lib_reported_summary.py) over the cases that finished each step in
  * the last 6 months, so past years never outvote this one. The timelines
  * shared here are the checked part, and keep their own board, RFE reasons,
@@ -61,7 +62,7 @@ import { StepBothSources } from "@/components/community/StepBothSources";
 // The searched phrase first (Search Console, Nov 2026: "green card timeline", "perm timeline tracker").
 const TITLE = "Green Card Timeline: How Long Each Step Takes";
 const DESCRIPTION =
-  "Each green card step's days, PERM to the card, from thousands of cases people reported in Telegram groups, sheets, Reddit and here. Updated hourly.";
+  `Each green card step's days, PERM to the card, from cases people reported in ${REPORTED_PLACES} and here.`;
 const PATH = "/green-card-timelines";
 
 export const metadata: Metadata = withSocialCard({
@@ -90,7 +91,7 @@ async function fetchBoard() {
 const FAQS = [
   {
     q: "Where do these figures come from?",
-    a: "From every place people report their own dates that we read: public Telegram groups about PERM and green cards, public community sheets, Reddit, VisaStats' tracker and the timelines shared on this site. Each person counts once: two reports join only when three of their dates match. Each step counts the cases that finished it in the last 6 months, or 12 when 6 hold too few, so older years don't outvote this one. No name, username or message is shown.",
+    a: "From every place people report their own dates that we read: public Telegram groups about PERM and green cards, public Facebook groups (typed in by hand from posts shared with us), public community sheets, Reddit, VisaStats' tracker and the timelines shared on this site. Each person counts once: two reports join only when three of their dates match. Each step counts the cases that finished it in the last 6 months, or 12 when 6 hold too few, so older years don't outvote this one. No name, username or message is shown.",
   },
   {
     q: "Are these USCIS's processing times?",
@@ -183,7 +184,7 @@ export default async function GreenCardTimelinesPage() {
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Green card timelines</h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           {summary
-            ? `How long each step took, from ${formatInt(summary.headline.cases)} cases people reported in Telegram groups, community sheets, Reddit, VisaStats and on this site, each person once. Self-reported, because USCIS doesn't publish it case by case.`
+            ? `How long each step took, from ${formatInt(summary.headline.cases)} cases people reported in ${REPORTED_PLACES} and on this site, each person once. Self-reported, because USCIS doesn't publish it case by case.`
             : "How long each step after PERM took, from the people who went through it. Self-reported, because USCIS doesn't publish it case by case."}
         </p>
       </header>

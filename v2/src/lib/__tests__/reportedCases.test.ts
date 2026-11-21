@@ -1,6 +1,19 @@
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
-import { fromRow, reportedIn, shortSourceName, sourceName, sourcesIn, transferCohorts, type ReportedCase } from "../reportedCases";
+import {
+  REPORTED_COMMUNITY_PLACES,
+  REPORTED_PLACES,
+  fromRow,
+  reportedIn,
+  shortSourceName,
+  sourceName,
+  sourcesIn,
+  transferCohorts,
+  type ReportedCase,
+} from "../reportedCases";
 
 const base: ReportedCase = {
   id: "sfv-filers:1",
@@ -60,14 +73,16 @@ describe("where a case was reported", () => {
     expect(sourceName("telegram")).toBe("Telegram");
     expect(sourceName("visastats")).toBe("VisaStats");
     expect(sourceName("timeline")).toBe("a timeline shared here");
+    expect(sourceName("facebook")).toBe("Facebook");
   });
 
   it("gives a table cell the short name", () => {
-    expect(["sfv-filers", "reddit", "timeline", "visastats"].map(shortSourceName)).toEqual([
+    expect(["sfv-filers", "reddit", "timeline", "visastats", "facebook"].map(shortSourceName)).toEqual([
       "San Fernando Filers",
       "Reddit",
       "Shared here",
       "VisaStats",
+      "Facebook",
     ]);
   });
 
@@ -121,5 +136,34 @@ describe("a stored row", () => {
 
   it("never reads a denial's day as an approval", () => {
     expect(fromRow({ ...row, i485_decision: "denied" }).approvalDate).toBeNull();
+  });
+});
+
+describe("the places reported cases come from, said once", () => {
+  it("names every place the merge reads, VisaStats' tracker last", () => {
+    expect(REPORTED_PLACES).toBe("Telegram and Facebook groups, community sheets, Reddit, VisaStats");
+    expect(REPORTED_COMMUNITY_PLACES).toBe("Telegram and Facebook groups, community sheets, Reddit");
+    expect(REPORTED_PLACES.startsWith(REPORTED_COMMUNITY_PLACES)).toBe(true);
+  });
+
+  it("is never typed out again in a page or a component", () => {
+    // Each copy drifted on its own: Facebook groups joined the merge on Nov 20 2026 and seven sentences named the old
+    // list. A page says the places through the constants, so one edit reaches every one of them.
+    const root = join(__dirname, "..", "..");
+    const copies: string[] = [];
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const full = join(dir, name);
+        if (statSync(full).isDirectory()) {
+          if (name !== "__tests__" && name !== "node_modules") walk(full);
+        } else if (/\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) && !full.endsWith(join("lib", "reportedPlaces.ts"))) {
+          if (/groups, (community )?sheets, Reddit/.test(readFileSync(full, "utf8"))) copies.push(full);
+        }
+      }
+    };
+    walk(join(root, "app"));
+    walk(join(root, "components"));
+    walk(join(root, "lib"));
+    expect(copies, "a typed copy of the reported places").toEqual([]);
   });
 });

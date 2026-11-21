@@ -3,6 +3,7 @@ import Link from "next/link";
 import { StepFigures } from "@/components/community/StepFigures";
 import { getOfficeSummary, getPostSummary, getReportedSummary } from "@/lib/db/reportedSummary";
 import { formatInt } from "@/lib/format";
+import { REPORTED_PLACES } from "@/lib/reportedCases";
 import { windowText, type StepFigure } from "@/lib/reportedSummary";
 import { softFail } from "@/lib/softRead";
 
@@ -48,7 +49,7 @@ export async function ReportedStepsNow({ steps, place }: { steps: string; place?
     <figure className="not-prose my-8">
       <StepFigures steps={chosen} />{" "}
       <figcaption className="mt-3 text-sm text-muted-foreground">
-        {`Self-reported, from ${formatInt(got.cases)} cases people shared in Telegram groups, community sheets, Reddit, VisaStats and on PERM Tracker, each person once. Each step counts the cases that finished it in its window, updated hourly.`}{" "}
+        {`Self-reported, from ${formatInt(got.cases)} cases people shared in ${REPORTED_PLACES} and on PERM Tracker, each person once. Each step counts the cases that finished it in its window, updated hourly.`}{" "}
         <Link href="/green-card-timelines" className="link">
           Every step, from every source
         </Link>

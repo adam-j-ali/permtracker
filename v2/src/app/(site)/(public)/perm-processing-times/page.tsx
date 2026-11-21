@@ -65,6 +65,7 @@ import { WaitTrendChart } from "@/components/numbers/WaitTrendChart";
 import { speedVerdict, yearOnYear } from "@/lib/pwdNow";
 import { longDate, monthYear } from "@convex/lib/months";
 import { formatInt } from "@/lib/format";
+import { REPORTED_PLACES } from "@/lib/reportedCases";
 import { StepsByStage } from "@/components/community/StepFigures";
 import { getReportedSummary } from "@/lib/db/reportedSummary";
 import type { ReportedSummary } from "@/lib/reportedSummary";
@@ -826,7 +827,7 @@ export default async function PermProcessingTimesPage() {
           {afterPerm.length > 0 ? (
             <>
               <p className="mt-2 max-w-2xl text-base text-muted-foreground">
-                {`From ${formatInt(summary.headline.cases)} cases people reported in Telegram groups, community sheets, Reddit, VisaStats and on this site, each person once. Each step counts the cases that finished it in the last 6 months, or 12 when 6 hold too few. Self-reported: DOL's own figures for PERM are the ones above.`}
+                {`From ${formatInt(summary.headline.cases)} cases people reported in ${REPORTED_PLACES} and on this site, each person once. Each step counts the cases that finished it in the last 6 months, or 12 when 6 hold too few. Self-reported: DOL's own figures for PERM are the ones above.`}
               </p>
               <div className="mt-5">
                 <StepsByStage steps={summary.steps} headingLevel={4} />
