@@ -60,4 +60,25 @@ describe("LcaProfile", () => {
     );
     expect(only.textContent).not.toContain("Visas these LCAs support");
   });
+
+  it("says from which fiscal year its counts reach, and takes the blank level over the years that name one", () => {
+    const older = {
+      filings: 40, detail_rows: 6, positions: 9, new_employment: 5, change_employer: 3,
+      level_1: 4, level_2: 2, level_3: 1, level_4: 0, level_rows: 20,
+      dependent_rows: 0, violator_rows: 0, visa_h1b: 40, fy_from: 2011,
+    };
+    const p = shapeLcaProfile(row({ fy_from: 2021 }), null, older);
+    const { container } = render(<LcaProfile name="Acme" profile={p} />);
+    const text = (container.textContent ?? "").replace(/\s+/g, " ");
+    expect(text).toContain("From DOL's LCA files, FY2011 on: 50 LCAs filed by Acme");
+    expect(text).toContain("16 of 28 used another source");
+    expect(text).toContain("print the worker breakdown and the wage level in some years only");
+  });
+
+  it("names no year it doesn't know, and no older-years note for the newer files alone", () => {
+    const { container } = render(<LcaProfile name="Acme" profile={shapeLcaProfile(row(), null)} />);
+    const text = (container.textContent ?? "").replace(/\s+/g, " ");
+    expect(text).toContain("From DOL's LCA files: 10 LCAs filed by Acme");
+    expect(text).not.toContain("in some years only");
+  });
 });

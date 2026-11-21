@@ -11,6 +11,9 @@ vi.mock("../employerSlugs", () => ({
     slug === "none" ? null : { where: W, args: ["acme", "acme-inc"], basis: "map", spellings: 2 },
   ),
 }));
+// DOL's older files, counted at their load (olderFiles.ts has its own test): none unless a test says so.
+const employerOlderFiles = vi.fn<(slug: string) => Promise<unknown>>(async () => null);
+vi.mock("../olderFiles", () => ({ employerOlderFiles }));
 
 const { getLcaProfile, lcaProfileSql, lcaNewestFlagsSql } = await import("../lcaProfile");
 const { shapeLcaProfile } = await import("../../lcaProfile");
@@ -90,11 +93,39 @@ describe("getLcaProfile", () => {
     const fixture = Object.fromEntries(aliases.map((a, i) => [a, i + 1]));
     const p = shapeLcaProfile(fixture as never, null)!;
     const landed = new Set<number>([
-      p.filings, p.detailRows, p.positions, p.levelBlank,
+      p.filings, p.detailRows, p.positions, p.levelBlank, p.fyFrom ?? 0,
       p.dependent.yes, p.dependent.of, p.violator.yes, p.violator.of,
       ...p.kinds.map((k) => k.n), ...p.levels.map((l) => l.n), ...p.visas.map((v) => v.n),
     ]);
     expect(aliases.filter((a) => !landed.has(fixture[a]!))).toEqual([]);
+  });
+
+  it("adds DOL's older files, read once with the ledger, and names the first fiscal year either reaches", async () => {
+    tableColumns.mockResolvedValue(new Set(["case_number", "workers"]));
+    one.mockImplementation(async (sql: string) =>
+      sql === lcaNewestFlagsSql(W) ? null : { filings: 2, detail_rows: 2, positions: 3, new_employment: 1, visa_h1b: 2, fy_from: 2021 },
+    );
+    employerOlderFiles.mockResolvedValueOnce({
+      perm: 0,
+      lca: 30,
+      lcaRow: { filings: 30, detail_rows: 4, positions: 5, new_employment: 2, level_2: 3, level_rows: 10, visa_h1b: 30, fy_from: 2009 },
+    });
+    const p = await getLcaProfile("acme");
+    expect(employerOlderFiles).toHaveBeenCalledWith("acme");
+    expect(p?.filings).toBe(32);
+    expect(p?.kinds.find((k) => k.kind.key === "newEmployment")?.n).toBe(3);
+    expect(p?.fyFrom).toBe(2009);
+    expect(p?.olderFilings).toBe(30);
+    // The current table's first fiscal year comes from the same aggregate, with no read of its own.
+    expect(lcaProfileSql(false, W)).toContain("MIN(fiscal_year) AS fy_from");
+    expect(one).toHaveBeenCalledTimes(2);
+  });
+
+  it("fails with the older files' read, so a page never prints the newer files alone as every year", async () => {
+    tableColumns.mockResolvedValue(new Set(["case_number"]));
+    one.mockResolvedValue({ filings: 2, visa_h1b: 2 });
+    employerOlderFiles.mockRejectedValueOnce(new Error("database is locked"));
+    await expect(getLcaProfile("acme")).rejects.toThrow("database is locked");
   });
 
   it("counts the breakdown over certified LCAs only, and the blank level only among rows the backfill reached", () => {
