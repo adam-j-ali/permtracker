@@ -269,6 +269,81 @@ def main() -> int:
               f"no more context asks a run than the cap, newest first, the rest counted: {capped}")
         check(wider_asked and wider_asked[0]["posted"] == max(p["posted"] for p in wider_asked), "the newest goes first")
 
+    # Posts typed in by hand from screenshots the owner shares (Facebook groups): each row keeps only the merge's own
+    # fields, so the group's name, the notes and anything else typed beside them never leave the Mac.
+    def hand(**f) -> dict:
+        base = {"source_id": "fb-1", "author_hash": "a1b2c3", "posted": "2026-11-18",
+                "group": "EB3 India green card friends", "notes": "so happy, thanks everyone", "screenshot": "IMG_2041.png",
+                "category": "eb3", "office": "Queens", "chargeability": "India", "priority_date": "2023-02-14",
+                "i485_receipt": "2025-10-01", "interview": "2026-11-10", "i485_decided": "2026-11-18",
+                "i485_decision": "approved"}
+        return {**base, **f}
+
+    def doc(*rows, source="facebook") -> dict:
+        return {"meta": {"source": source, "typed": "2026-11-20"}, "rows": list(rows)}
+
+    got, counts = icp.prepare_hand_read(doc(hand()), salt="s")
+    fb = got[0]
+    check(fb["source"] == "facebook" and fb["key"] == "fb-1" and fb["as_of"] == "2026-11-18",
+          f"a typed row is a Facebook record, keyed by its post, as of the day it was posted: {fb}")
+    check(fb["person"] == icp.person_link("a1b2c3", "s") and fb["person"] != "a1b2c3", "its author link is salted again")
+    check(fb["i485_receipt"] == "2025-10-01" and fb["interview"] == "2026-11-10" and fb["i485_decided"] == "2026-11-18"
+          and fb["i485_decision"] == "approved" and fb["priority_date"] == "2023-02-14" and fb["chargeability"] == "India",
+          "its dates, decision and country are kept")
+    check(fb["category"] == "EB-3", f"a category written as the map's key reads as the merge's: {fb.get('category')}")
+    check(fb["office"] == "QNS", f"an office written by name is its code (Queens is QNS): {fb.get('office')}")
+    check(set(fb) <= set(rc.FIELDS) | {"source", "key", "person", "as_of"}, f"only the merge's fields: {sorted(fb)}")
+    text = json.dumps(got)
+    for never in ("EB3 India green card friends", "so happy", "IMG_2041", "a1b2c3", "group", "notes", "screenshot"):
+        check(never not in text, f"never kept from a typed row: {never}")
+    check(counts["rows"] == 1 and counts["records"] == 1, f"counted: {counts}")
+    check(icp.prepare_hand_read(doc(hand(office="SFV")), salt="s")[0][0]["office"] == "SFV", "an office code stays")
+    check(icp.prepare_hand_read(doc(hand(category="EB-2 NIW")), salt="s")[0][0]["category"] == "EB-2 NIW",
+          "a category already in the merge's words stays")
+    check("office" not in icp.prepare_hand_read(doc(hand(office="")), salt="s")[0][0], "a blank office is no office")
+    h1b = {"source_id": "fb-2", "author_hash": "z9", "posted": "2026-04-02", "group": "H1B lottery 2026",
+           "h1b_filed": "2026-03-20", "h1b_decided": "2026-04-01", "h1b_decision": "approved", "chargeability": "India",
+           "nonimmigrant_status": "F-1 STEM OPT"}
+    only_h1b = icp.prepare_hand_read(doc(h1b), salt="s")[0]
+    check(only_h1b and only_h1b[0]["h1b_decided"] == "2026-04-01" and only_h1b[0]["nonimmigrant_status"] == "F-1 STEM OPT"
+          and "office" not in only_h1b[0] and "group" not in only_h1b[0], f"an H-1B-only row is a record: {only_h1b}")
+
+    def refused(what: str, d: dict, salt: str = "s") -> None:
+        try:
+            icp.prepare_hand_read(d, salt=salt)
+            check(False, f"refuses {what}")
+        except ValueError as e:
+            check(True, f"refuses {what} ({str(e)[:70]})")
+
+    refused("an office it can't name", doc(hand(office="Springfield")))
+    refused("a source not read by hand", doc(hand(), source="reddit"))
+    refused("a file that doesn't say its source", {"rows": [hand()]})
+    refused("a category it doesn't know", doc(hand(category="EB-9")))
+    refused("a repeated post", doc(hand(), hand(category="EB-2")))
+    refused("a row with no author link", doc(hand(author_hash="")))
+    refused("a row with no post id", doc(hand(source_id=None)))
+    refused("a posted day it can't read", doc(hand(posted="11/18/2026")))
+    refused("a date the merge can't read", doc(hand(interview="Nov 10")))
+    refused("an empty salt", doc(hand()), salt="")
+    check("facebook" in icp.HAND_SOURCES and "terms" in (icp.__doc__ or ""),
+          "Facebook is read by hand only, and the module says why no script reads it")
+
+    # A source loaded by hand loads only when the owner shares posts, so its freshness row has no maximum age and never
+    # raises a staleness alarm; the readers' sources keep theirs.
+    stamped: dict[str, dict] = {}
+
+    def stamp(_db, dataset, **kw):
+        stamped[dataset] = kw
+
+    icp.stamp_sources(None, [{"source": "facebook", "key": "1"}, {"source": "facebook", "key": "2"},
+                             {"source": "telegram", "key": "c:1"}, {"source": "reddit", "key": "3"}], stamp=stamp)
+    fbs = stamped.get("community-posts-facebook", {})
+    check(fbs.get("max_age_days", 0) is None and fbs.get("source") == "https://www.facebook.com/groups"
+          and fbs.get("cadence") == "by hand, when the owner shares posts" and "2 reports" in fbs.get("note", ""),
+          f"Facebook is stamped with no maximum age: {fbs}")
+    check(stamped["community-posts-telegram"]["max_age_days"] == 1 and stamped["community-posts-reddit"]["max_age_days"] == 2,
+          f"the readers keep their budgets: {stamped}")
+
     print(f"{failures} failed")
     return 1 if failures else 0
 

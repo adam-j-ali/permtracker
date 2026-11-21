@@ -1,16 +1,27 @@
-"""Load people's own case reports from Reddit and Telegram posts into `community_post_reports`, in the merge's shape.
+"""Load people's own case reports from Reddit, Telegram and Facebook posts into `community_post_reports`.
 
-Two steps, so nothing but dates and categories ever leaves the machine the posts were read on:
+Two steps, so nothing but each case's dates and the merge's own few fields (its category, office, country and
+status) ever leaves the machine the posts were read on:
 
     python3 scripts/ingest_community_posts.py prepare --reddit rows.json --out records.json      # on the owner's Mac
     python3 scripts/ingest_community_posts.py prepare --telegram messages/ --chats chats.json --out records.json
+    python3 scripts/ingest_community_posts.py prepare --hand-read hand-read.json --out records.json
     python3 scripts/ingest_community_posts.py load records.json                                 # on the server
 
-`prepare` reads the rows a reader collected (Reddit through Arctic Shift only; Telegram through the owner's own
-signed-in reader, one messages/<chat>.jsonl per chat), keeps each post's dates and category, and links one person's
-posts by a hash salted with COMMUNITY_SALT (or ~/.config/permtracker/community-salt), so no one can be traced back from
-it. Text, quotes, notes, links and chat names are dropped. Telegram posts are read by scripts/lib_post_dates.py, which
-takes a date only beside its label and never guesses one; the chat says what kind of post it is (--chats).
+Three sources. `prepare` reads the rows a reader collected (Reddit through Arctic Shift only; Telegram through the
+owner's own signed-in reader, one messages/<chat>.jsonl per chat), keeps each post's dates and category, and links one
+person's posts by a hash salted with COMMUNITY_SALT (or ~/.config/permtracker/community-salt), so no one can be traced
+back from it. Text, quotes, notes, links and chat names are dropped. Telegram posts are read by
+scripts/lib_post_dates.py, which takes a date only beside its label and never guesses one; the chat says what kind of
+post it is (--chats).
+
+Facebook groups are read by hand only. No script here or anywhere else reads Facebook: Meta's terms bar automated
+reading, so the owner shares screenshots of public group posts and each one is typed into a private file
+(--hand-read: {"meta": {"source": "facebook"}, "rows": [{"source_id", "author_hash", "posted", and the record's own
+fields, named as lib_reported_cases.FIELDS}]}). Each row keeps only those fields, salted like the rest; the group's
+name, the notes and anything else typed beside them are dropped. An office is written as its code or its name, and a
+name no office answers to refuses the file, as does a repeated post.
+
 `load` replaces that source's rows, refusing a file that lost more than half of them, and
 scripts/build_reported_cases.py merges them with every other source at its next run.
 """
@@ -31,6 +42,7 @@ import lib_post_context as post_context
 import lib_post_dates as post_dates
 import lib_post_model as post_model
 import lib_reported_cases as rc
+import lib_reported_summary as summary
 
 TABLE = "community_post_reports"
 KEEP_SHARE = 0.5
@@ -293,6 +305,99 @@ def prepare(rows: list[dict], salt: str) -> tuple[list[dict], dict]:
     return list(out.values()), {"rows": len(rows), "records": len(out), "repeated_ids": repeated}
 
 
+# The sources typed in by hand from screenshots the owner shares, never read by a script (the module's docstring says
+# why). Each loads only when there's something to load, so its freshness row has no maximum age (FRESHNESS below).
+HAND_SOURCES = ("facebook",)
+# The categories the figures read (lib_reported_summary.CATEGORY_LABELS): a typed category is one of these, or a key
+# of CATEGORIES, which says it the way the readers do ("eb3").
+KNOWN_CATEGORIES = frozenset(summary.CATEGORY_LABELS)
+
+
+def _hand_category(v: str, key: str) -> str:
+    if v in KNOWN_CATEGORIES:
+        return v
+    mapped = CATEGORIES.get(v.lower())
+    if mapped:
+        return mapped
+    raise ValueError(f"post {key!r}: category {v!r} is none the merge knows "
+                     f"({', '.join(sorted(KNOWN_CATEGORIES))}, or {', '.join(CATEGORIES)})")
+
+
+def _hand_office(v: str, key: str) -> str:
+    """A code stays, a name is its code (lib_offices), and a name no office answers to is refused, never guessed."""
+    code = offices.office_code(v)
+    if not code:
+        raise ValueError(f"post {key!r}: no office is called {v!r}; write its code (src/lib/uscisOffices.json)")
+    return code
+
+
+def hand_record(row: dict, source: str, salt: str) -> dict:
+    """One post typed in by hand as a merge record: its id, its author's salted link, the day it was posted, and the
+    record's own fields (lib_reported_cases.FIELDS). Every other key (the group's name, the notes, anything typed
+    beside them) is dropped here, so no text leaves the Mac."""
+    key = str(row.get("source_id") or "").strip()
+    if not key:
+        raise ValueError(f"a {source} row has no source_id")
+    if not str(row.get("author_hash") or "").strip():
+        raise ValueError(f"post {key!r} has no author link")
+    posted = row.get("posted")
+    if not (isinstance(posted, str) and DAY.match(posted)):
+        raise ValueError(f"post {key!r}: posted must be YYYY-MM-DD, got {posted!r}")
+    dt.date.fromisoformat(posted)  # a 31st of February raises
+    rec = {"source": source, "key": key, "person": person_link(str(row["author_hash"]).strip(), salt), "as_of": posted}
+    for f in rc.FIELDS:
+        v = row.get(f)
+        if isinstance(v, str):
+            v = v.strip()
+        if v is None or v == "":
+            continue
+        if f == "office":
+            v = _hand_office(v, key)
+        elif f == "category":
+            v = _hand_category(v, key)
+        rec[f] = v
+    try:
+        rc.check_record(rec)
+    except ValueError as e:
+        raise ValueError(f"post {key!r}: {e}") from None
+    return rec
+
+
+def prepare_hand_read(doc: dict, salt: str) -> tuple[list[dict], dict]:
+    """Every row of a file typed in by hand, as records; the whole file is refused on one row the merge can't read."""
+    source = (doc.get("meta") or {}).get("source") if isinstance(doc, dict) else None
+    if source not in HAND_SOURCES:
+        raise ValueError(f"meta.source must be one of {HAND_SOURCES} (sources typed in by hand), got {source!r}")
+    if not salt:
+        raise ValueError("no salt: set COMMUNITY_SALT or write one to ~/.config/permtracker/community-salt")
+    rows = doc.get("rows") or []
+    out: dict[str, dict] = {}
+    left_behind = 0
+    for r in rows:
+        rec = hand_record(r, source, salt)
+        if rec["key"] in out:
+            raise ValueError(f"post {rec['key']!r} is typed in twice")
+        out[rec["key"]] = rec
+        left_behind += sum(1 for k, v in r.items()
+                           if k not in rc.FIELDS and k not in ("source_id", "author_hash", "posted") and v not in (None, ""))
+    records = list(out.values())
+    return records, {"source": source, "rows": len(rows), "records": len(records), "left_behind": left_behind,
+                     "stages": stage_counts(records)}
+
+
+# The form each date belongs to, for the counts prepare prints: how many records carry a step of each.
+STAGES = (("H-1B", ("h1b_filed", "h1b_decided", "lca_certified")),
+          ("wage and PERM", ("pwd_filed", "pwd_issued", "perm_filed", "perm_audit", "perm_decided")),
+          ("I-140", ("i140_receipt", "i140_rfe_issued", "i140_rfe_answered", "i140_decided")),
+          ("I-485", ("i485_receipt", "biometrics", "ead", "ap", "i485_rfe_issued", "transfer", "interview",
+                     "i485_decided", "card")),
+          ("consulate", ("nvc_complete", "consular_scheduled", "consular_interview", "visa_issued")))
+
+
+def stage_counts(records: list[dict]) -> dict[str, int]:
+    return {name: sum(1 for r in records if any(r.get(f) for f in fields)) for name, fields in STAGES}
+
+
 def read_salt() -> str:
     salt = os.environ.get("COMMUNITY_SALT", "").strip()
     if not salt and SALT_FILE.exists():
@@ -326,6 +431,27 @@ def load(db, records: list[dict], force: bool = False) -> int:
     return len(records)
 
 
+# Each source's freshness row: where it's read, how often it loads, and the days after which a missing load is a stopped
+# job. Telegram loads from the owner's Mac every hour, so a day without one means that job stopped, and Reddit once a
+# day, so two days without one does. A source typed in by hand loads only when the owner shares posts, so it has no
+# maximum age and never raises a staleness alarm (lib_db.stamp_freshness).
+FRESHNESS = {
+    "telegram": ("https://t.me", "hourly, from the owner's Mac", 1),
+    "reddit": ("https://arctic-shift.photon-reddit.com", "daily, from the owner's Mac", 2),
+    "facebook": ("https://www.facebook.com/groups", "by hand, when the owner shares posts", None),
+}
+
+
+def stamp_sources(db, records: list[dict], stamp) -> list[str]:
+    """Stamp each loaded source's freshness row; the sources, sorted."""
+    sources = sorted({r["source"] for r in records})
+    for s in sources:
+        where, cadence, max_age = FRESHNESS.get(s, (s, "daily, from the owner's Mac", 2))
+        stamp(db, f"community-posts-{s}", source=where, cadence=cadence,
+              note=f"{sum(r['source'] == s for r in records):,} reports", max_age_days=max_age)
+    return sources
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -334,6 +460,8 @@ def main() -> int:
     src.add_argument("--reddit", help="the Reddit reader's rows (JSON with a 'rows' list)")
     src.add_argument("--telegram", help="the Telegram reader's messages/ folder, one <chat>.jsonl per chat")
     src.add_argument("--posts", help="a post reader's messages/ folder (with --source), one <chat or subreddit>.jsonl each")
+    src.add_argument("--hand-read", help="a private file of posts typed in by hand from shared screenshots (Facebook "
+                     "groups): {'meta': {'source': ...}, 'rows': [...]}")
     p.add_argument("--source", choices=POST_SOURCES, default="telegram", help="with --posts: where the posts were read")
     p.add_argument("--with", dest="extra", help="with --posts: records already made for this source (the posts read by "
                    "hand), kept as they are and never read again")
@@ -374,6 +502,19 @@ def main() -> int:
             print(f"::error::{counts['failure']}", flush=True)
             return 1
         return 0
+    if a.cmd == "prepare" and a.hand_read:
+        try:
+            rows, counts = prepare_hand_read(json.load(open(a.hand_read, encoding="utf-8")), read_salt())
+        except ValueError as e:
+            # The message names the post and the value the merge can't read, never the post's own words.
+            print(f"::error::{a.hand_read} refused: {e}", flush=True)
+            return 1
+        Path(a.out).write_text(json.dumps(rows))
+        os.chmod(a.out, 0o600)
+        stages = ", ".join(f"{name} {n:,}" for name, n in counts["stages"].items())
+        print(f"{counts['records']:,} {counts['source']} records from {counts['rows']:,} rows typed in by hand in {a.out}; "
+              f"records with each form's steps: {stages}; {counts['left_behind']:,} other values (group, notes) left behind")
+        return 0
     if a.cmd == "prepare":
         doc = json.load(open(a.reddit, encoding="utf-8"))
         rows, counts = prepare(doc["rows"] if isinstance(doc, dict) else doc, read_salt())
@@ -390,15 +531,7 @@ def main() -> int:
     try:
         ensure_table(db)
         n = load(db, records, force=a.force)
-        sources = sorted({r["source"] for r in records})
-        for s in sources:
-            # Both load from the owner's Mac: Telegram every hour, so a day without one means that job stopped, and
-            # Reddit once a day, so two days without one does.
-            hourly = s == "telegram"
-            stamp_freshness(db, f"community-posts-{s}",
-                            source={"reddit": "https://arctic-shift.photon-reddit.com", "telegram": "https://t.me"}.get(s, s),
-                            cadence="hourly, from the owner's Mac" if hourly else "daily, from the owner's Mac",
-                            note=f"{sum(r['source'] == s for r in records):,} reports", max_age_days=1 if hourly else 2)
+        sources = stamp_sources(db, records, stamp=stamp_freshness)
         record_run(db, "ingest_community_posts.py", status="ok", rows_written=n,
                    note=f"{n:,} reports from {', '.join(sources)}", started_at=started)
         print(f"{n:,} reports loaded")
