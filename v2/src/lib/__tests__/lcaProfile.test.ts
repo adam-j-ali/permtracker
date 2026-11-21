@@ -6,6 +6,7 @@ import {
   newVersusTransfer,
   percent,
   shapeLcaProfile,
+  type LcaOlderRow,
   type LcaProfileRow,
 } from "../lcaProfile";
 
@@ -77,6 +78,63 @@ describe("shapeLcaProfile", () => {
   it("counts filings under a visa class it doesn't name, so the visa line still adds up", () => {
     const p = shapeLcaProfile(row({ filings: 12, visa_h1b: 9, visa_e3: 1 }), null)!;
     expect(p.otherVisa).toBe(2);
+  });
+});
+
+/**
+ * DOL's FY2008 to FY2019 files, counted at their load (scripts/lca_history_totals.py), add to the newer files'
+ * figures. They print the worker breakdown and the wage level in some years only, so their level count comes with its
+ * own denominator (`level_rows`: certified LCAs in the years that name a level), never the breakdown's rows.
+ */
+describe("shapeLcaProfile with the older files", () => {
+  const older = (over: Partial<LcaOlderRow> = {}): LcaOlderRow => ({
+    filings: 40, certified: 30, detail_rows: 6, positions: 9,
+    new_employment: 5, change_employer: 3, continued_employment: 1,
+    change_previous_employment: 0, new_concurrent_employment: 0, amended_petition: 0,
+    level_1: 4, level_2: 2, level_3: 1, level_4: 0, level_rows: 20,
+    dependent_rows: 12, dependent_yes: 0, violator_rows: 12, violator_yes: 0,
+    visa_h1b: 38, visa_e3: 2, visa_h1b1_chile: 0, visa_h1b1_singapore: 0, fy_from: "2011",
+    ...over,
+  });
+
+  it("adds every figure to the newer files' own", () => {
+    const p = shapeLcaProfile(row({ fy_from: 2021 }), null, older())!;
+    expect(p.filings).toBe(50);
+    expect(p.detailRows).toBe(14);
+    expect(p.positions).toBe(21);
+    expect(p.kinds.find((k) => k.kind.key === "newEmployment")?.n).toBe(9);
+    expect(p.levels.map((l) => l.n)).toEqual([7, 4, 1, 0]);
+    expect(p.dependent).toEqual({ yes: 10, of: 22 });
+    expect(p.visas.find((v) => v.key === "e3")?.n).toBe(3);
+    expect(p.olderFilings).toBe(40);
+  });
+
+  it("takes the level's blank share over the years that name a level, never over the breakdown's rows", () => {
+    const p = shapeLcaProfile(row(), null, older())!;
+    // Newer: 3 blank of 8. Older: 20 certified in the years that name a level, 7 of them named.
+    expect(p.levelRows).toBe(28);
+    expect(p.levelBlank).toBe(16);
+  });
+
+  it("names the first fiscal year the figures reach", () => {
+    expect(shapeLcaProfile(row({ fy_from: "2021" }), null, older())!.fyFrom).toBe(2011);
+    expect(shapeLcaProfile(row({ fy_from: 2021 }), null, null)!.fyFrom).toBe(2021);
+    expect(shapeLcaProfile(row(), null, null)!.fyFrom).toBeNull();
+  });
+
+  it("draws for an employer whose LCAs are all in the older files", () => {
+    const p = shapeLcaProfile({ filings: 0 } as unknown as LcaProfileRow, null, older())!;
+    expect(p.filings).toBe(40);
+    expect(p.levelRows).toBe(20);
+    expect(hasLcaDetail(p)).toBe(true);
+    expect(shapeLcaProfile(null, null, older())?.filings).toBe(40);
+  });
+
+  it("keeps the newer files' own figures when the older files hold nothing for it", () => {
+    const p = shapeLcaProfile(row(), null, null)!;
+    expect(p.levelRows).toBe(8);
+    expect(p.levelBlank).toBe(3);
+    expect(p.olderFilings).toBe(0);
   });
 });
 
