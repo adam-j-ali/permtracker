@@ -2,6 +2,7 @@ import { Fragment } from "react";
 
 import { ChartTips } from "@/components/data/ChartTips";
 import { FinePrint } from "@/components/data/FinePrint";
+import { NEWER_FROM_FY } from "@/lib/employerPrograms";
 import { hasLcaDetail, newVersusTransfer, percent, type LcaProfile as Profile } from "@/lib/lcaProfile";
 import { cn } from "@/lib/utils";
 import { formatInt } from "@/lib/format";
@@ -90,13 +91,19 @@ export function LcaProfile({
     <section className={cn("mt-10 border-2 shadow-hard p-6 sm:p-8 bg-card border-border", className)}>
       <h2 className="font-heading text-xl font-bold">What its H-1B LCAs were for</h2>{" "}
       <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
-        From DOL&apos;s quarterly LCA files: {formatInt(p.filings)} {p.filings === 1 ? "LCA" : "LCAs"} filed by {name}
+        From DOL&apos;s LCA files{p.fyFrom ? `, FY${p.fyFrom} on` : ""}: {formatInt(p.filings)}{" "}
+        {p.filings === 1 ? "LCA" : "LCAs"} filed by {name}
         {p.detailRows > 0
           ? `, ${formatInt(p.detailRows)} of them certified with the worker breakdown on Form ETA-9035.`
           : "."}
+        {p.olderFilings > 0 && (p.detailRows > 0 || p.levelRows > 0)
+          ? ` DOL's files before FY${NEWER_FROM_FY.lca} print the worker breakdown and the wage level in some years only, so those figures count the years that print them.`
+          : ""}
       </p>{" "}
-      {p.detailRows > 0 ? (
+      {p.detailRows > 0 || p.levelRows > 0 ? (
         <div className="mt-6 grid grid-cols-1 gap-6 [&>*]:min-w-0 lg:grid-cols-2">
+          {/* An older year can print the wage level without the breakdown: each block draws on its own rows. */}
+          {p.detailRows > 0 ? (
           <div>
             <h3 className="font-heading text-lg font-bold">New hires and transfers</h3>{" "}
             {split ? (
@@ -148,7 +155,9 @@ export function LcaProfile({
                 tick several boxes.
               </p>
             </FinePrint>
-          </div>{" "}
+          </div>
+          ) : null}{" "}
+          {p.levelRows > 0 ? (
           <div>
             <h3 className="font-heading text-lg font-bold">Wage level it chose</h3>{" "}
             {leveled > 0 ? (
@@ -168,10 +177,11 @@ export function LcaProfile({
                 ? `Shares of the ${formatInt(leveled)} certified LCAs that named an OES level. `
                 : "None of its certified LCAs named an OES level. "}
               The form asks for the level only when the employer set the wage from the OES survey itself.{" "}
-              {formatInt(p.levelBlank)} of {formatInt(p.detailRows)} used another source, such as a DOL wage
+              {formatInt(p.levelBlank)} of {formatInt(p.levelRows)} used another source, such as a DOL wage
               determination or another survey. Level I is entry, Level IV fully competent.
             </p>
           </div>
+          ) : null}
         </div>
       ) : null}{" "}
 
