@@ -53,13 +53,13 @@ DDL = [
         fy_to INTEGER,
         PRIMARY KEY (worksite_city, worksite_state))""",
 ]
-# Every read of the older table names its index: with no ANALYZE on the server, a GROUP BY on the employer could
-# take the employer index and walk all twelve years for each one.
 NOT_CURRENT = f"NOT EXISTS (SELECT 1 FROM {CURRENT} c WHERE c.case_number = h.case_number)"
 # The span's two ends, one statement each: a lone MIN or MAX seeks the `_fy` index's end, while both in one
 # statement walk the whole index (SQLite's min/max shortcut takes a lone aggregate only).
 FIRST_YEAR_SQL = f"SELECT MIN(fiscal_year) FROM {HISTORY}"
 LAST_YEAR_SQL = f"SELECT MAX(fiscal_year) FROM {HISTORY}"
+# Each year's read names its index: with no ANALYZE on the server, a GROUP BY on the employer could take the
+# employer index instead and walk all twelve years for every one of them.
 YEAR_SPELLINGS_SQL = (
     "SELECT employer_slug, COALESCE(employer_name, ''), COUNT(*), MIN(received_date), MAX(decision_date) "
     f"FROM {HISTORY} AS h INDEXED BY {HISTORY_INDEX} "
