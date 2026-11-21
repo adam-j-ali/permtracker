@@ -1,6 +1,6 @@
 import { billNumber } from "@convex/lib/billNumber";
 import { CaretDownIcon } from "@phosphor-icons/react/ssr";
-import Image from "next/image";
+import { SiteImage } from "@/components/ui/site-image";
 
 import {
   ANNOUNCEMENT_TYPES,
@@ -246,7 +246,7 @@ export function DocRow({
         </p>{" "}
         {shot ? (
           <figure className="mt-5 max-w-xl bg-tint p-2 border-2 shadow-hard-sm border-border">
-            <Image
+            <SiteImage
               src={`/images/policy/${doc.documentNumber}.webp`}
               width={shot.w}
               height={shot.h}

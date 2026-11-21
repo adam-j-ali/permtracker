@@ -9,7 +9,7 @@
  */
 
 import type { Metadata } from "next";
-import Image from "next/image";
+import { SiteImage } from "@/components/ui/site-image";
 import Link from "next/link";
 import { BuildingsIcon, EnvelopeSimpleIcon, FileCsvIcon, GlobeHemisphereWestIcon, IdentificationCardIcon } from "@phosphor-icons/react/ssr";
 
@@ -135,7 +135,7 @@ export default async function PressPage() {
                 href={t.href}
                 className="group block h-full border-input bg-card transition-transform motion-reduce:transition-none motion-safe:hover:-translate-y-0.5 border"
               >
-                <Image
+                <SiteImage
                   src={pageCardUrl(t.slug)}
                   alt={PAGE_CARD_ALT[t.slug]}
                   width={1200}

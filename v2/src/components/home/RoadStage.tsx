@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { SiteImage } from "@/components/ui/site-image";
 import Link from "next/link";
 import { useCallback, useRef, type CSSProperties, type FocusEvent } from "react";
 
@@ -129,7 +129,7 @@ export function RoadStage({ stops }: { stops: RoadStop[] }) {
                       <span
                         className={`block aspect-[5/4] overflow-hidden border-2 border-[var(--object-border)] bg-card transition-colors group-hover:border-primary-text`}
                       >
-                        <Image
+                        <SiteImage
                           src={s.img.src}
                           alt={s.img.alt}
                           width={s.img.w}

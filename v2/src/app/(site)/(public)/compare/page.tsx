@@ -13,7 +13,7 @@
  */
 
 import type { Metadata } from "next";
-import Image from "next/image";
+import { SiteImage } from "@/components/ui/site-image";
 import { Fragment } from "react";
 import Link from "next/link";
 
@@ -238,7 +238,7 @@ export default async function ComparePage() {
                           aria-label={`${t.name}'s homepage (opens in a new tab)`}
                           className="block border-b-2 border-foreground md:border-b-0 md:border-r-2"
                         >
-                          <Image
+                          <SiteImage
                             src={shot.src}
                             width={shot.width}
                             height={shot.height}

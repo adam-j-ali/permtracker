@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { SiteImage } from "@/components/ui/site-image";
 import { useState } from "react";
 
 /**
@@ -51,7 +51,7 @@ export function FilmPlayer({
       aria-label={`Play the film: ${title}, ${time}`}
       className="block w-full transition-[filter] duration-150 hover:brightness-[1.04] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring"
     >
-      <Image src={poster} alt="" width={1280} height={720} unoptimized loading="lazy" className="block aspect-video h-auto w-full" />
+      <SiteImage src={poster} alt="" width={1280} height={720} unoptimized loading="lazy" className="block aspect-video h-auto w-full" />
     </button>
   );
 }

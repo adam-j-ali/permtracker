@@ -7,7 +7,7 @@
 
 import type { MDXComponents } from "mdx/types";
 import dynamic from "next/dynamic";
-import Image from "next/image";
+import { SiteImage } from "@/components/ui/site-image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { citationRuns } from "@/lib/content/citationRuns";
@@ -386,7 +386,7 @@ export const mdxComponents: MDXComponents = {
   img: ({ src, alt, ...props }) => (
     <figure className="my-6">
       <Lightbox src={src ?? ""} alt={alt ?? ""} caption={alt ?? undefined}>
-        <Image
+        <SiteImage
           src={src ?? ""}
           alt={alt ?? ""}
           width={800}

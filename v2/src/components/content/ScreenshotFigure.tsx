@@ -8,7 +8,7 @@
  * opens it full size.
  */
 
-import Image from "next/image";
+import { SiteImage } from "@/components/ui/site-image";
 import { Lightbox } from "@/components/ui/lightbox";
 
 interface ScreenshotFigureProps {
@@ -51,7 +51,7 @@ export default function ScreenshotFigure({
             </div>
           )}
 
-          <Image
+          <SiteImage
             src={src}
             alt={alt}
             width={maxWidth}

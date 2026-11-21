@@ -21,7 +21,7 @@
 
 import type { Metadata } from "next";
 import { Fragment } from "react";
-import Image from "next/image";
+import { SiteImage } from "@/components/ui/site-image";
 import Link from "next/link";
 
 import {
@@ -271,7 +271,7 @@ export default async function AboutPage() {
             credit (owner, Oct 27 2026: the boxed card read as an ID badge). */}
         <figure className="mx-auto w-full max-w-sm pb-10 pl-4 pr-3 sm:pr-4 md:max-w-none">
           <div className="relative">
-            <Image
+            <SiteImage
               src={SABRINA.image}
               alt={`${SABRINA.name}, ${SABRINA.jobTitle.toLowerCase()}`}
               width={SABRINA.imageSize[0]}
