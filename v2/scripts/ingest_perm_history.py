@@ -616,9 +616,9 @@ def next_month(m: str) -> str:
 def build_month_days(db) -> int:
     """perm_history_month_days: the older table's decision days by filing month.
 
-    A month at a time on the received_date index (one month measured 0.5 s on the live database, Nov 21 2026),
-    never one grouping of the whole table. Each case perm_cases also holds is left out, so the month document,
-    which adds perm_cases' own counts, counts it once.
+    Three slices of about ten days a month on the received_date index, never one grouping of the whole table: a
+    busy month whole took 1.7 s on the live database and a ten-day slice 0.3 s (Nov 21 2026). Each case perm_cases
+    also holds is left out, so the month document, which adds perm_cases' own counts, counts it once.
     """
     lo = rows_of(db.execute("SELECT MIN(received_date) FROM perm_cases_history WHERE received_date > ''"))
     hi = rows_of(db.execute("SELECT MAX(received_date) FROM perm_cases_history"))
@@ -628,12 +628,15 @@ def build_month_days(db) -> int:
         m, stop = str(first)[:7], next_month(str(last)[:7])
         while m != stop:
             nxt = next_month(m)
-            for r in rows_of(db.execute(
-                    "SELECT days, COUNT(*) FROM perm_cases_history h "
-                    "WHERE received_date >= ? AND received_date < ? AND days IS NOT NULL "
-                    "AND NOT EXISTS (SELECT 1 FROM perm_cases p WHERE p.case_number = h.case_number) "
-                    "GROUP BY days", [f"{m}-01", f"{nxt}-01"])):
-                out.append((m, int(r[0]), int(r[1])))
+            days: dict[int, int] = defaultdict(int)
+            for a, b in ((f"{m}-01", f"{m}-11"), (f"{m}-11", f"{m}-21"), (f"{m}-21", f"{nxt}-01")):
+                for r in rows_of(db.execute(
+                        "SELECT days, COUNT(*) FROM perm_cases_history h "
+                        "WHERE received_date >= ? AND received_date < ? AND days IS NOT NULL "
+                        "AND NOT EXISTS (SELECT 1 FROM perm_cases p WHERE p.case_number = h.case_number) "
+                        "GROUP BY days", [a, b])):
+                    days[int(r[0])] += int(r[1])
+            out.extend((m, d, n) for d, n in sorted(days.items()))
             m = nxt
     db.execute(next(t for t in SCHEMA if "perm_history_month_days" in t))
     db.execute("DELETE FROM perm_history_month_days")
