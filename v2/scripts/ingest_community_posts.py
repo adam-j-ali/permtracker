@@ -38,6 +38,7 @@ import time
 from pathlib import Path
 
 import lib_offices as offices
+import lib_posts as posts
 import lib_post_context as post_context
 import lib_post_dates as post_dates
 import lib_post_model as post_model
@@ -324,11 +325,44 @@ def _hand_category(v: str, key: str) -> str:
 
 
 def _hand_office(v: str, key: str) -> str:
-    """A code stays, a name is its code (lib_offices), and a name no office answers to is refused, never guessed."""
+    """A code stays, a name is its code (lib_offices), and a name no office answers to is refused, never guessed.
+    A journey ("NBC then San Jose") is refused too: lib_offices reads its last leg it knows, so a misspelt last leg
+    would quietly become the one before it."""
+    if len([leg for leg in offices.JOURNEY.split(v) if leg.strip()]) > 1:
+        raise ValueError(f"post {key!r}: {v!r} names more than one office; write the one the case is at")
     code = offices.office_code(v)
     if not code:
         raise ValueError(f"post {key!r}: no office is called {v!r}; write its code (src/lib/uscisOffices.json)")
     return code
+
+
+# A typed row reaches the merge only as dates and words from these closed lists, so nothing typed beside them (a
+# name, a firm, a phone number) can reach a page. The consulate steps are refused until the consulate pages name
+# Facebook groups among their sources (consular-posts and consular-posts/[post] say "community sheets").
+HAND_STATUSES = ("H-1B", "H-4", "L-1", "L-2", "F-1", "F-1 OPT", "F-1 STEM OPT", "J-1", "J-2", "O-1", "TN", "E-2",
+                 "E-3", "H-1B1", "B-2", "Parole", "TPS", "Asylum pending", "None")
+HAND_CENTERS = {"tsc": "TSC", "texas": "TSC", "texas service center": "TSC",
+                "nsc": "NSC", "nebraska": "NSC", "nebraska service center": "NSC"}
+HAND_REFUSED = ("priority_note", "post", "nvc_complete", "consular_scheduled", "consular_interview", "visa_issued",
+                "consular_outcome")
+
+
+def _hand_country(v: str, key: str) -> str:
+    """Rest of world and the four countries with their own line stay as the merge reads them; any other country with a
+    US visa post is its printed name (src/lib/consular/postCountries.ts); anything else is refused."""
+    if v.lower() in summary.COUNTRY_LABELS:
+        return v
+    name = posts.known_countries().get(v.lower())
+    if not name:
+        raise ValueError(f"post {key!r}: {v!r} isn't a country the site lists; write just the country")
+    return name
+
+
+def _hand_status(v: str, key: str) -> str:
+    for s in HAND_STATUSES:
+        if s.lower() == v.lower():
+            return s
+    raise ValueError(f"post {key!r}: status {v!r} isn't one of {HAND_STATUSES}")
 
 
 def hand_record(row: dict, source: str, salt: str) -> dict:
@@ -344,17 +378,31 @@ def hand_record(row: dict, source: str, salt: str) -> dict:
     if not (isinstance(posted, str) and DAY.match(posted)):
         raise ValueError(f"post {key!r}: posted must be YYYY-MM-DD, got {posted!r}")
     dt.date.fromisoformat(posted)  # a 31st of February raises
-    rec = {"source": source, "key": key, "person": person_link(str(row["author_hash"]).strip(), salt), "as_of": posted}
+    # The post's own id is salted like its author, so no page's HTML carries a way back to the post.
+    rec = {"source": source, "key": person_link(f"post:{key}", salt),
+           "person": person_link(str(row["author_hash"]).strip(), salt), "as_of": posted}
     for f in rc.FIELDS:
         v = row.get(f)
         if isinstance(v, str):
             v = v.strip()
         if v is None or v == "":
             continue
+        if f in HAND_REFUSED:
+            raise ValueError(f"post {key!r}: {f} isn't taken from a post typed in by hand")
         if f == "office":
             v = _hand_office(v, key)
         elif f == "category":
             v = _hand_category(v, key)
+        elif f == "chargeability":
+            v = _hand_country(v, key)
+        elif f == "nonimmigrant_status":
+            v = _hand_status(v, key)
+        elif f == "center":
+            if v.lower() not in HAND_CENTERS:
+                raise ValueError(f"post {key!r}: no I-140 service center is called {v!r}")
+            v = HAND_CENTERS[v.lower()]
+        elif f == "visa_available" and v not in (True, False):
+            raise ValueError(f"post {key!r}: visa_available must be true or false, got {v!r}")
         rec[f] = v
     try:
         rc.check_record(rec)
@@ -376,7 +424,7 @@ def prepare_hand_read(doc: dict, salt: str) -> tuple[list[dict], dict]:
     for r in rows:
         rec = hand_record(r, source, salt)
         if rec["key"] in out:
-            raise ValueError(f"post {rec['key']!r} is typed in twice")
+            raise ValueError(f"post {str(r.get('source_id')).strip()!r} is typed in twice")
         out[rec["key"]] = rec
         left_behind += sum(1 for k, v in r.items()
                            if k not in rc.FIELDS and k not in ("source_id", "author_hash", "posted") and v not in (None, ""))

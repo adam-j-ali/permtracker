@@ -284,8 +284,8 @@ def main() -> int:
 
     got, counts = icp.prepare_hand_read(doc(hand()), salt="s")
     fb = got[0]
-    check(fb["source"] == "facebook" and fb["key"] == "fb-1" and fb["as_of"] == "2026-11-18",
-          f"a typed row is a Facebook record, keyed by its post, as of the day it was posted: {fb}")
+    check(fb["source"] == "facebook" and fb["key"] == icp.person_link("post:fb-1", "s") and fb["as_of"] == "2026-11-18",
+          f"a typed row is a Facebook record, keyed by its post's salted id, as of the day it was posted: {fb}")
     check(fb["person"] == icp.person_link("a1b2c3", "s") and fb["person"] != "a1b2c3", "its author link is salted again")
     check(fb["i485_receipt"] == "2025-10-01" and fb["interview"] == "2026-11-10" and fb["i485_decided"] == "2026-11-18"
           and fb["i485_decision"] == "approved" and fb["priority_date"] == "2023-02-14" and fb["chargeability"] == "India",
@@ -294,7 +294,7 @@ def main() -> int:
     check(fb["office"] == "QNS", f"an office written by name is its code (Queens is QNS): {fb.get('office')}")
     check(set(fb) <= set(rc.FIELDS) | {"source", "key", "person", "as_of"}, f"only the merge's fields: {sorted(fb)}")
     text = json.dumps(got)
-    for never in ("EB3 India green card friends", "so happy", "IMG_2041", "a1b2c3", "group", "notes", "screenshot"):
+    for never in ("EB3 India green card friends", "so happy", "IMG_2041", "a1b2c3", "group", "notes", "screenshot", "fb-1"):
         check(never not in text, f"never kept from a typed row: {never}")
     check(counts["rows"] == 1 and counts["records"] == 1, f"counted: {counts}")
     check(icp.prepare_hand_read(doc(hand(office="SFV")), salt="s")[0][0]["office"] == "SFV", "an office code stays")
@@ -325,6 +325,31 @@ def main() -> int:
     refused("a posted day it can't read", doc(hand(posted="11/18/2026")))
     refused("a date the merge can't read", doc(hand(interview="Nov 10")))
     refused("an empty salt", doc(hand()), salt="")
+    # Only words from closed lists reach the merge from a typed row, so nothing typed beside a date (a name, a phone
+    # number, a firm) can reach a page; and a value the build can't read never gets as far as the build.
+    def one(**f) -> dict:
+        return icp.prepare_hand_read(doc(hand(**f)), salt="s")[0][0]
+
+    check(one(chargeability="Zimbabwe")["chargeability"] == "Zimbabwe", "a country with a US visa post is kept")
+    check(one(chargeability="zimbabwe")["chargeability"] == "Zimbabwe", "a country is stored in its printed form")
+    check(one(chargeability="ROW")["chargeability"] == "ROW", "rest of world stays as the merge reads it")
+    check(one(chargeability="Ivory Coast")["chargeability"] == "Côte d'Ivoire", "a second name is the first name")
+    check(one(chargeability="China")["chargeability"] == "China", "China is China, never Hong Kong")
+    check(one(nonimmigrant_status="J-2")["nonimmigrant_status"] == "J-2", "a status on the list is kept")
+    check(one(nonimmigrant_status="f-1 stem opt")["nonimmigrant_status"] == "F-1 STEM OPT",
+          "a status is stored in its printed form")
+    check(one(visa_available=True)["visa_available"] is True, "visa availability as true or false is kept")
+    check(one(center="Texas")["center"] == "TSC", "a service center written by name is its code")
+    refused("a free-text priority note", doc(hand(priority_note="PD Jan 2023, thanks Ravi at the firm")))
+    refused("a country with words beside it", doc(hand(chargeability="India (wife Priya from Kerala)")))
+    refused("a status with words beside it", doc(hand(nonimmigrant_status="H-1B with Acme, call me 555-0100")))
+    refused("a visa availability that isn't true or false", doc(hand(visa_available="yes")))
+    refused("a service center it can't name", doc(hand(center="Nebraska, my lawyer said")))
+    refused("a journey of offices", doc(hand(office="NBC then Springfeld")))
+    refused("a journey that ends somewhere it knows", doc(hand(office="Queens -> Springfield")))
+    refused("a consulate step, which the consulate pages don't credit to Facebook groups",
+            doc(hand(visa_issued="2026-10-01")))
+    refused("a consulate post", doc(hand(post="Mumbai, met Officer Smith")))
     check("facebook" in icp.HAND_SOURCES and "terms" in (icp.__doc__ or ""),
           "Facebook is read by hand only, and the module says why no script reads it")
 

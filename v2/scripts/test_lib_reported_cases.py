@@ -233,6 +233,7 @@ def main() -> int:
     # 15. Bad input is refused, never guessed.
     for bad, what in ((rec("reddit", "x", transfer="9/24/2026"), "a date not in ISO form"),
                       (rec("reddit", "x", nickname="z"), "a field the merge doesn't know"),
+                      (rec("facebook", "x", visa_available="yes"), "a visa availability that isn't true or false"),
                       ({"key": "x"}, "a record with no source"),
                       (rec("reddit", "x", transfer="2026-02-30"), "a day that doesn't exist")):
         try:
