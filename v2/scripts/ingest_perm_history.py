@@ -55,6 +55,7 @@ Usage:
     python3 scripts/ingest_perm_history.py --from-fy 2020 --to-fy 2021
     python3 scripts/ingest_perm_history.py --local PERM_FY2010.xlsx --dry-run
     python3 scripts/ingest_perm_history.py --current       # FY2024 onward only
+    python3 scripts/ingest_perm_history.py --fill-firm-slugs  # each row's firm on today's page or its own name
 """
 from __future__ import annotations
 
@@ -468,12 +469,31 @@ def employer_slug_for(name: str | None, emp: dict[str, str]) -> str:
     return emp.get(entity_key(name)) or slugify(name)
 
 
-def row_tuple(r: dict, emp: dict[str, str], att: dict[str, str]) -> tuple:
+def firm_slug_for(name: str | None, att: dict[str, str], pages: frozenset[str] | set[str]) -> str:
+    """The law firm's page slug when it has one, else its own name slugified, unless that is another firm's page.
+
+    A firm with no page today got no slug until Nov 21 2026, so build_firm_ranks.py counted its older cases as naming
+    no firm and it dropped out of its own rankings, and its cases never linked once it had a page. The fallback is the
+    employer's rule (employer_slug_for). It isn't a page: the case page and the lists check a slug before they link it
+    (src/lib/db/entityLinks.ts), and the rankings print an unlinked firm by name. `pages` is every firm page's slug, so
+    a name that slugifies onto a page it doesn't belong to (a truncated long name, a "-2" page) never counts there.
+    """
+    if not name:
+        return ""
+    page = att.get(entity_key(name))
+    if page:
+        return page
+    own = slugify(name)
+    return "" if own in pages else own
+
+
+def row_tuple(r: dict, emp: dict[str, str], att: dict[str, str], pages: frozenset[str] | None = None) -> tuple:
     e, a = r["employerName"], r["attorneyName"]
     return (r["caseNumber"], r["status"], r["receivedDate"], r["decisionDate"], r["days"],
             r["fiscalYear"], e or None, employer_slug_for(e, emp),
             r["state"], r["jobTitle"], r["socCode"], r["socTitle"], a or None,
-            att.get(entity_key(a), "") if a else "", r["wage"], r["naics"], r["worksiteCity"],
+            firm_slug_for(a, att, frozenset(dict.values(att)) if pages is None else pages),
+            r["wage"], r["naics"], r["worksiteCity"],
             r.get("citizenship"), r.get("birthCountry"), r.get("visaClass"), r.get("education"),
             r.get("major"), r.get("institution"), r.get("jobEducation"), r.get("layoff"))
 
@@ -512,8 +532,9 @@ def write_cases(db, rows: list[dict], emp, att) -> int:
     """New or changed rows whole; rows whose only change is the worker's fields
     by a narrow UPDATE."""
     by_fy: dict[int, list[tuple]] = defaultdict(list)
+    pages = frozenset(dict.values(att))
     for r in rows:
-        by_fy[int(r["fiscalYear"])].append(row_tuple(r, emp, att))
+        by_fy[int(r["fiscalYear"])].append(row_tuple(r, emp, att, pages))
     written = 0
     for fy, tuples in by_fy.items():
         have = stored_fingerprints(db, fy)
@@ -613,6 +634,21 @@ def next_month(m: str) -> str:
     return f"{y + (mo == 12)}-{1 if mo == 12 else mo + 1:02d}"
 
 
+def thirds(m: str) -> list[tuple[str, str]]:
+    """A month ("2022-06") as three day ranges of about ten days, each [start, end): a busy month of the older table
+    read whole took 1.7 s on the live database, a ten-day slice 0.3 s (Nov 21 2026)."""
+    return [(f"{m}-01", f"{m}-11"), (f"{m}-11", f"{m}-21"), (f"{m}-21", f"{next_month(m)}-01")]
+
+
+def months_between(first: str, last: str) -> list[str]:
+    """Every month from the one `first` falls in to the one `last` does, as "YYYY-MM"."""
+    out, m, stop = [], first[:7], next_month(last[:7])
+    while m != stop:
+        out.append(m)
+        m = next_month(m)
+    return out
+
+
 def build_month_days(db) -> int:
     """perm_history_month_days: the older table's decision days by filing month.
 
@@ -625,11 +661,9 @@ def build_month_days(db) -> int:
     first, last = (lo[0][0] if lo else None), (hi[0][0] if hi else None)
     out: list[tuple] = []
     if first and last:
-        m, stop = str(first)[:7], next_month(str(last)[:7])
-        while m != stop:
-            nxt = next_month(m)
+        for m in months_between(str(first), str(last)):
             days: dict[int, int] = defaultdict(int)
-            for a, b in ((f"{m}-01", f"{m}-11"), (f"{m}-11", f"{m}-21"), (f"{m}-21", f"{nxt}-01")):
+            for a, b in thirds(m):
                 for r in rows_of(db.execute(
                         "SELECT days, COUNT(*) FROM perm_cases_history h "
                         "WHERE received_date >= ? AND received_date < ? AND days IS NOT NULL "
@@ -637,7 +671,6 @@ def build_month_days(db) -> int:
                         "GROUP BY days", [a, b])):
                     days[int(r[0])] += int(r[1])
             out.extend((m, d, n) for d, n in sorted(days.items()))
-            m = nxt
     db.execute(next(t for t in SCHEMA if "perm_history_month_days" in t))
     db.execute("DELETE FROM perm_history_month_days")
     insert_rows(db, "perm_history_month_days", ["m", "days", "n"], out, per_request=STMTS_PER_REQUEST)
@@ -669,6 +702,41 @@ def fill_slugs(db) -> int:
         after = str(rs[-1][0])
         log(f"  slugs filled: {n:,}")
     return n
+
+
+def fill_firm_slugs(db, att: dict[str, str] | None = None) -> int:
+    """Every stored row's law firm on firm_slug_for's rule: today's page, else the firm's own name's slug.
+
+    A row's slug was set when its year loaded, from that day's firm pages, so a firm with no page then has none and a
+    page made or moved since is missed. Ten days of decisions at a time on idx_pch_dec (never the whole table), each
+    named row's slug worked out again here and written only where it moves, 200 to an UPDATE keyed on the case
+    number. Rows naming no firm (every file before FY2015, and an employer filing for itself) are left as they are.
+    """
+    if att is None:
+        _, att = slug_maps(db)
+    pages = frozenset(dict.values(att))
+    lo = rows_of(db.execute("SELECT MIN(decision_date) FROM perm_cases_history WHERE decision_date > ''"))
+    hi = rows_of(db.execute("SELECT MAX(decision_date) FROM perm_cases_history"))
+    first, last = (lo[0][0] if lo else None), (hi[0][0] if hi else None)
+    if not first or not last:
+        return 0
+    moved_total = 0
+    for m in months_between(str(first), str(last)):
+        moved: list[tuple[str, str]] = []
+        for a, b in thirds(m):
+            for case, name, slug in rows_of(db.execute(
+                    "SELECT case_number, attorney_name, attorney_slug FROM perm_cases_history "
+                    "WHERE decision_date >= ? AND decision_date < ? AND attorney_name IS NOT NULL "
+                    "AND attorney_name <> ''", [a, b])):
+                want = firm_slug_for(str(name), att, pages)
+                if want and want != (slug or ""):
+                    moved.append((str(case), want))
+        run_stmts(db, (case_update("perm_cases_history", "case_number", ["attorney_slug"], moved[i:i + 200])
+                       for i in range(0, len(moved), 200)), 5)
+        moved_total += len(moved)
+        if m.endswith("-12"):
+            log(f"  firm slugs through {m}: {moved_total:,} moved")
+    return moved_total
 
 
 def build_search_indexes(db) -> None:
@@ -738,7 +806,16 @@ def main() -> int:
                     help="no workbooks: current years, search indexes and facets only")
     ap.add_argument("--month-days", action="store_true",
                     help="no workbooks: only rebuild perm_history_month_days, then stop")
+    ap.add_argument("--fill-firm-slugs", action="store_true",
+                    help="no workbooks: put every row's law firm on today's page or its own name's slug, then stop")
     args = ap.parse_args()
+
+    if args.fill_firm_slugs:
+        db = Database()
+        n = fill_firm_slugs(db)
+        record_run(db, "ingest_perm_history.py --fill-firm-slugs", status="ok", rows_written=n,
+                   note="law-firm slugs: today's page, else the firm's own name")
+        return 0
 
     if args.month_days:
         db = Database()
@@ -842,6 +919,8 @@ def main() -> int:
         store_doc(db, doc)
 
     if db:
+        # The years this run didn't load take today's firm pages too, so no year keeps a firm out of its rankings.
+        wrote_cases += fill_firm_slugs(db, att)
         wrote_years += write_current_years(db)
         if not args.no_indexes:
             build_search_indexes(db)
