@@ -425,13 +425,17 @@ describe("the email's subject", () => {
 });
 
 describe("the one-click stop", () => {
-  it("is scoped to one recipient row, so a link for one case can't stop another", () => {
-    expect(reminderStopPurpose("abc123")).toBe("reminder-stop:abc123");
-    expect(reminderStopPurpose("abc123")).not.toBe(reminderStopPurpose("abc124"));
+  it("is scoped to one recipient row and the account that added it, so a link for one case can't stop another", () => {
+    expect(reminderStopPurpose("abc123", "user9")).toBe("reminder-stop:abc123:user9");
+    expect(reminderStopPurpose("abc123", "user9")).not.toBe(reminderStopPurpose("abc124", "user9"));
+    // The account is signed too, so the link can still refuse the address for it once the row is gone.
+    expect(reminderStopPurpose("abc123", "user9")).not.toBe(reminderStopPurpose("abc123", "user8"));
   });
 
-  it("opens the stop page on the site with the row and the signed token", () => {
-    expect(stopUrl("tok/en+", "row1")).toBe("https://permtracker.app/case-alert/reminders/stop?token=tok%2Fen%2B&r=row1");
+  it("opens the stop page on the site with the row, the account and the signed token", () => {
+    expect(stopUrl("tok/en+", "row1", "user9")).toBe(
+      "https://permtracker.app/case-alert/reminders/stop?token=tok%2Fen%2B&r=row1&u=user9",
+    );
   });
 
   it("gives an invitation thirty days", () => {
@@ -442,7 +446,7 @@ describe("the one-click stop", () => {
 describe("\"Don't invite me again\"", () => {
   it("has its own purpose, scoped to one invitation, so no other link declines and it confirms or stops nothing", () => {
     expect(reminderDeclinePurpose("abc123")).toBe("reminder-decline:abc123");
-    expect(reminderDeclinePurpose("abc123")).not.toBe(reminderStopPurpose("abc123"));
+    expect(reminderDeclinePurpose("abc123")).not.toBe(reminderStopPurpose("abc123", "user9"));
     expect(reminderDeclinePurpose("abc123")).not.toBe(reminderConfirmPurpose("abc123"));
   });
 
@@ -501,7 +505,7 @@ describe("the address as the refusal list and the invitation count keep it", () 
 
   it("is never the signature of a link we mail, so the table can't be used to make one", async () => {
     const key = await reminderAddressKey("para@firm.example", SECRET);
-    for (const purpose of [undefined, reminderStopPurpose("r1"), reminderDeclinePurpose("r1")] as const) {
+    for (const purpose of [undefined, reminderStopPurpose("r1", "u1"), reminderDeclinePurpose("r1")] as const) {
       const token = await makeUnsubscribeToken("para@firm.example", SECRET, purpose);
       expect(token.split(".")[1]).not.toBe(key);
     }

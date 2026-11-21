@@ -99,7 +99,7 @@ export type TokenPurpose =
   /**
    * A case's second reminder recipient (convex/reminderRecipients.ts): confirm the invitation, stop the reminders, or
    * "Don't invite me again" from the invitation. The recipient row's id is part of the purpose, so a link for one row
-   * never acts on another.
+   * never acts on another; a stop link's also names the account that added the row (`<row id>:<account id>`).
    */
   | `reminder-confirm:${string}`
   | `reminder-stop:${string}`

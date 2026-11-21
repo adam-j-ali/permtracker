@@ -33,7 +33,7 @@
  * due that day that the owner's own email switches allow (the master switch, "Deadline reminders" and each kind's
  * switch: emailsDeadlineReminder), in one email a day (`sendCopy`). Each send charges BUDGETS.reminderCopy before it
  * goes and stamps the Eastern day, so a second run the same day sends nothing. Every email carries a one-click stop,
- * in its List-Unsubscribe header and as a link, signed for `reminder-stop:<row id>`.
+ * in its List-Unsubscribe header and as a link, signed for `reminder-stop:<row id>:<account id>`.
  *
  * THE REFUSAL LIST. "Don't invite me again" puts the address on a list that refuses every account; a reminder's Stop
  * puts it there for the account that added it only, and that entry goes with the account. Both are kept only as an
@@ -492,20 +492,27 @@ export const confirmByToken = internalMutation({
  * The stop link (and the mail app's own Unsubscribe button). The address is erased and the row kept as "stopped",
  * and the account that added the address can't invite it again; other accounts still can ("Don't invite me again", in
  * an invitation, is what refuses them all). A valid link for a row that's already stopped or was removed answers
- * "already": nothing more will be sent either way. A removed row names no account, so nothing is refused for it.
+ * "already": nothing more will be sent either way. The link is signed for the account too, so once the owner has
+ * removed the row it still refuses the address for that account, as the page says. An account that's gone has no
+ * invitations left to refuse, so nothing is kept for it.
  */
 export const stopByToken = internalMutation({
-  args: { token: v.string(), recipientId: v.string() },
+  args: { token: v.string(), recipientId: v.string(), userId: v.string() },
   returns: v.union(v.null(), v.literal("stopped"), v.literal("already")),
   handler: async (ctx, args) => {
-    if (args.token.length > TOKEN_MAX || args.recipientId.length > 64) return null;
-    const email = await verifyUnsubscribeToken(args.token, secret(), reminderStopPurpose(args.recipientId));
+    if (args.token.length > TOKEN_MAX || args.recipientId.length > 64 || args.userId.length > 64) return null;
+    const email = await verifyUnsubscribeToken(args.token, secret(), reminderStopPurpose(args.recipientId, args.userId));
     if (!email) return null;
     // Whatever the row's state, nothing kept for this row in the retry queue goes to the address.
     const ref = reminderRef(args.recipientId);
     await dropRetries(ctx, email, (r) => (r.refs ?? []).includes(ref));
     const row = await rowById(ctx, args.recipientId);
-    if (!row) return "already" as const;
+    if (!row) {
+      const userId = ctx.db.normalizeId("users", args.userId);
+      if (userId && (await ctx.db.get("users", userId))) await refuseAddress(ctx, email, userId);
+      return "already" as const;
+    }
+    if (row.userId !== args.userId) return null;
     // A stopped row's address is erased; the link, signed for this row, says whose it was.
     if (row.status !== "stopped" && row.email !== email) return null;
     await refuseAddress(ctx, email, row.userId);
@@ -584,7 +591,16 @@ export const copyTargets = internalQuery({
  */
 export const admitCopy = internalMutation({
   args: { recipientId: v.id("reminderRecipients") },
-  returns: v.union(v.null(), v.object({ email: v.string(), caseLine: v.string(), jobTitle: v.string(), employerName: v.string() })),
+  returns: v.union(
+    v.null(),
+    v.object({
+      email: v.string(),
+      userId: v.id("users"),
+      caseLine: v.string(),
+      jobTitle: v.string(),
+      employerName: v.string(),
+    }),
+  ),
   handler: async (ctx, { recipientId }) => {
     const row = await ctx.db.get("reminderRecipients", recipientId);
     if (!row || row.status !== "confirmed" || !row.email) return null;
@@ -603,6 +619,7 @@ export const admitCopy = internalMutation({
     await ctx.db.patch("reminderRecipients", recipientId, { lastSentDay: today });
     return {
       email: row.email,
+      userId: row.userId,
       // Read on every send, so a case renamed after the person confirmed is filtered too.
       caseLine: safeCaseLine(caseDoc.positionTitle, caseDoc.employerName),
       jobTitle: caseDoc.positionTitle,
@@ -620,8 +637,8 @@ export const sendCopy = internalAction({
     const admitted = await ctx.runMutation(internal.reminderRecipients.admitCopy, { recipientId });
     if (!admitted) return null;
     try {
-      const token = await makeUnsubscribeToken(admitted.email, secret(), reminderStopPurpose(recipientId));
-      const stop = stopUrl(token, recipientId);
+      const token = await makeUnsubscribeToken(admitted.email, secret(), reminderStopPurpose(recipientId, admitted.userId));
+      const stop = stopUrl(token, recipientId, admitted.userId);
       const checkedAt = emailStamp(Date.now());
       const overdue = items.filter((i) => i.urgency === "overdue").length;
       let html: string | undefined;

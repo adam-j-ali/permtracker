@@ -103,8 +103,9 @@ const rows = (t: T) => t.run((ctx) => ctx.db.query("reminderRecipients").collect
 async function confirmToken(id: string, email: string) {
   return makeUnsubscribeToken(email, SECRET, reminderConfirmPurpose(id));
 }
-async function stopToken(id: string, email: string) {
-  return makeUnsubscribeToken(email, SECRET, reminderStopPurpose(id));
+/** A reminder's Stop link's token: signed for the row and the account that added it. */
+async function stopToken(id: string, email: string, userId: string) {
+  return makeUnsubscribeToken(email, SECRET, reminderStopPurpose(id, userId));
 }
 async function declineToken(id: string, email: string) {
   return makeUnsubscribeToken(email, SECRET, reminderDeclinePurpose(id));
@@ -310,9 +311,9 @@ describe("confirming the invitation", () => {
   });
 
   it("refuses a stop link, another row's link, a changed id and a forged token", async () => {
-    const { t, id } = await invited();
+    const { t, owner, id } = await invited();
     const tries = [
-      { token: await stopToken(id, "para@firm.example"), recipientId: id as string },
+      { token: await stopToken(id, "para@firm.example", owner.userId), recipientId: id as string },
       { token: await confirmToken("someone-else", "para@firm.example"), recipientId: id as string },
       { token: await confirmToken(id, "para@firm.example"), recipientId: "not-an-id" },
       { token: "x".repeat(5000), recipientId: id as string },
@@ -325,8 +326,12 @@ describe("confirming the invitation", () => {
   });
 
   it("never brings back reminders the person stopped, from a replayed link", async () => {
-    const { t, id } = await invited();
-    await t.mutation(internal.reminderRecipients.stopByToken, { token: await stopToken(id, "para@firm.example"), recipientId: id });
+    const { t, owner, id } = await invited();
+    await t.mutation(internal.reminderRecipients.stopByToken, {
+      token: await stopToken(id, "para@firm.example", owner.userId),
+      recipientId: id,
+      userId: owner.userId,
+    });
     const replay = await t.mutation(internal.reminderRecipients.confirmByToken, {
       token: await confirmToken(id, "para@firm.example"),
       recipientId: id,
@@ -361,20 +366,21 @@ describe("stopping, removing and the address's end", () => {
 
   it("stops with one click, erases the address, and says so again on a second click", async () => {
     const { t, owner, caseId, id } = await confirmed();
-    const token = await stopToken(id, "para@firm.example");
-    expect(await t.mutation(internal.reminderRecipients.stopByToken, { token, recipientId: id })).toBe("stopped");
+    const token = await stopToken(id, "para@firm.example", owner.userId);
+    const stop = { token, recipientId: id, userId: owner.userId };
+    expect(await t.mutation(internal.reminderRecipients.stopByToken, stop)).toBe("stopped");
     const [row] = await rows(t);
     expect(row!.status).toBe("stopped");
     expect(row!.stoppedAt).toEqual(expect.any(Number));
     expect("email" in row!).toBe(false);
-    expect(await t.mutation(internal.reminderRecipients.stopByToken, { token, recipientId: id })).toBe("already");
+    expect(await t.mutation(internal.reminderRecipients.stopByToken, stop)).toBe("already");
     expect(await owner.query(api.reminderRecipients.forCase, { caseId })).toMatchObject({ status: "stopped", email: null });
   });
 
   it("refuses a confirm link used as a stop link", async () => {
-    const { t, id } = await confirmed();
+    const { t, owner, id } = await confirmed();
     const token = await confirmToken(id, "para@firm.example");
-    expect(await t.mutation(internal.reminderRecipients.stopByToken, { token, recipientId: id })).toBeNull();
+    expect(await t.mutation(internal.reminderRecipients.stopByToken, { token, recipientId: id, userId: owner.userId })).toBeNull();
     expect((await rows(t))[0]!.status).toBe("confirmed");
   });
 
@@ -384,7 +390,11 @@ describe("stopping, removing and the address's end", () => {
     expect(await rows(t)).toEqual([]);
     // A stop link from an earlier reminder still answers kindly: nothing more will come.
     expect(
-      await t.mutation(internal.reminderRecipients.stopByToken, { token: await stopToken(id, "para@firm.example"), recipientId: id }),
+      await t.mutation(internal.reminderRecipients.stopByToken, {
+        token: await stopToken(id, "para@firm.example", owner.userId),
+        recipientId: id,
+        userId: owner.userId,
+      }),
     ).toBe("already");
     expect((await owner.mutation(api.reminderRecipients.invite, { caseId, email: "new@firm.example" })).ok).toBe(true);
   });
@@ -448,8 +458,9 @@ describe("an address that asked not to be added, and the cap on asking again", (
       recipientId: row!._id,
     });
     await s.t.mutation(internal.reminderRecipients.stopByToken, {
-      token: await stopToken(row!._id, "para@firm.example"),
+      token: await stopToken(row!._id, "para@firm.example", s.owner.userId),
       recipientId: row!._id,
+      userId: s.owner.userId,
     });
     return { ...s, id: row!._id };
   }
@@ -482,7 +493,11 @@ describe("an address that asked not to be added, and the cap on asking again", (
   it("keeps only a keyed one-way hash of the address with the account that added it, once", async () => {
     const { t, owner, id } = await stopped();
     // A second click on the same Stop link adds nothing.
-    await t.mutation(internal.reminderRecipients.stopByToken, { token: await stopToken(id, "para@firm.example"), recipientId: id });
+    await t.mutation(internal.reminderRecipients.stopByToken, {
+      token: await stopToken(id, "para@firm.example", owner.userId),
+      recipientId: id,
+      userId: owner.userId,
+    });
     const list = await refusals(t);
     expect(list).toHaveLength(1);
     expect(list[0]!.addressKey).toBe(await reminderAddressKey("para@firm.example", SECRET));
@@ -490,19 +505,67 @@ describe("an address that asked not to be added, and the cap on asking again", (
     expect(JSON.stringify(list)).not.toContain("para");
   });
 
-  it("a Stop link for a row the owner already removed records nothing: there's no account to refuse", async () => {
+  /** The owner invites para@ and the person confirms: the reminders they get carry a Stop link. */
+  async function confirmedPara() {
     const s = await setup();
     await s.owner.mutation(api.reminderRecipients.invite, { caseId: s.caseId, email: "para@firm.example" });
     await finishScheduledNow(s.t);
     const [row] = await rows(s.t);
-    await s.owner.mutation(api.reminderRecipients.remove, { caseId: s.caseId });
+    await s.t.mutation(internal.reminderRecipients.confirmByToken, {
+      token: await confirmToken(row!._id, "para@firm.example"),
+      recipientId: row!._id,
+    });
+    return { ...s, id: row!._id };
+  }
+
+  it("a Stop link pressed after the owner removed the person still refuses the address for that account", async () => {
+    const { t, owner, caseId, id } = await confirmedPara();
+    await owner.mutation(api.reminderRecipients.remove, { caseId });
     expect(
-      await s.t.mutation(internal.reminderRecipients.stopByToken, {
-        token: await stopToken(row!._id, "para@firm.example"),
-        recipientId: row!._id,
+      await t.mutation(internal.reminderRecipients.stopByToken, {
+        token: await stopToken(id, "para@firm.example", owner.userId),
+        recipientId: id,
+        userId: owner.userId,
       }),
     ).toBe("already");
-    expect(await refusals(s.t)).toEqual([]);
+    const list = await refusals(t);
+    expect(list).toHaveLength(1);
+    expect(list[0]!.userId).toBe(owner.userId);
+    // The owner has one of its two invitations to the address left, and the refusal answers it.
+    sent = [];
+    expect(await owner.mutation(api.reminderRecipients.invite, { caseId, email: "para@firm.example" })).toEqual({
+      ok: false,
+      message: REFUSED,
+    });
+    expect(await rows(t)).toEqual([]);
+    await finishScheduledNow(t);
+    expect(sent).toEqual([]);
+  });
+
+  it("a Stop link whose user id was changed fails its signature and refuses nothing", async () => {
+    const { t, owner, other, caseId, id } = await confirmedPara();
+    const token = await stopToken(id, "para@firm.example", owner.userId);
+    expect(await t.mutation(internal.reminderRecipients.stopByToken, { token, recipientId: id, userId: other.userId })).toBeNull();
+    expect((await rows(t))[0]!.status).toBe("confirmed");
+    // Nor once the row is gone: another account can't be put on the list by editing the link.
+    await owner.mutation(api.reminderRecipients.remove, { caseId });
+    expect(await t.mutation(internal.reminderRecipients.stopByToken, { token, recipientId: id, userId: other.userId })).toBeNull();
+    expect(await t.mutation(internal.reminderRecipients.stopByToken, { token, recipientId: id, userId: "not-an-id" })).toBeNull();
+    expect(await refusals(t)).toEqual([]);
+  });
+
+  it("a Stop link whose account is gone answers that the reminders are off, and keeps no refusal", async () => {
+    const { t, owner, id } = await confirmedPara();
+    await t.run((ctx) => purgeAllUserData(ctx, owner.userId));
+    expect(await rows(t)).toEqual([]);
+    expect(
+      await t.mutation(internal.reminderRecipients.stopByToken, {
+        token: await stopToken(id, "para@firm.example", owner.userId),
+        recipientId: id,
+        userId: owner.userId,
+      }),
+    ).toBe("already");
+    expect(await refusals(t)).toEqual([]);
   });
 
   it("\"Don't invite me again\" in the invitation ends it and refuses the address to every account from then on", async () => {
@@ -568,7 +631,7 @@ describe("an address that asked not to be added, and the cap on asking again", (
     const id = row!._id;
     for (const token of [
       await confirmToken(id, "para@firm.example"),
-      await stopToken(id, "para@firm.example"),
+      await stopToken(id, "para@firm.example", owner.userId),
       await declineToken("another-row", "para@firm.example"),
       await makeUnsubscribeToken("para@firm.example", "wrong-secret", reminderDeclinePurpose(id)),
       "x".repeat(5000),
@@ -577,7 +640,7 @@ describe("an address that asked not to be added, and the cap on asking again", (
     }
     const decline = await declineToken(id, "para@firm.example");
     expect(await t.mutation(internal.reminderRecipients.confirmByToken, { token: decline, recipientId: id })).toBeNull();
-    expect(await t.mutation(internal.reminderRecipients.stopByToken, { token: decline, recipientId: id })).toBeNull();
+    expect(await t.mutation(internal.reminderRecipients.stopByToken, { token: decline, recipientId: id, userId: owner.userId })).toBeNull();
     expect((await rows(t))[0]!.status).toBe("waiting");
     expect(await refusals(t)).toEqual([]);
   });
@@ -808,8 +871,12 @@ describe("mail waiting in the retry queue goes when the person does", () => {
   });
 
   it("the stop link drops it", async () => {
-    const { t, id } = await queuedCopy();
-    await t.mutation(internal.reminderRecipients.stopByToken, { token: await stopToken(id, "para@firm.example"), recipientId: id });
+    const { t, owner, id } = await queuedCopy();
+    await t.mutation(internal.reminderRecipients.stopByToken, {
+      token: await stopToken(id, "para@firm.example", owner.userId),
+      recipientId: id,
+      userId: owner.userId,
+    });
     expect(await waiting(t)).toEqual([]);
   });
 
@@ -905,8 +972,12 @@ describe("a retry for a second person, checked again as the retry worker picks i
   });
 
   it("drops a reminder whose person clicked Stop while it was in flight", async () => {
-    const { t, id } = await confirmed();
-    await t.mutation(internal.reminderRecipients.stopByToken, { token: await stopToken(id, "para@firm.example"), recipientId: id });
+    const { t, owner, id } = await confirmed();
+    await t.mutation(internal.reminderRecipients.stopByToken, {
+      token: await stopToken(id, "para@firm.example", owner.userId),
+      recipientId: id,
+      userId: owner.userId,
+    });
     await queueRetry(t, id, "reminder-copy");
     expect(await claim(t)).toEqual([]);
     expect(await waiting(t)).toEqual([]);
@@ -1004,7 +1075,7 @@ describe("the second person's daily reminders", () => {
   });
 
   it("sends that case's reminders with a one-click stop in the header and the email, once a day", async () => {
-    const { t, id } = await confirmed();
+    const { t, owner, id } = await confirmed();
     await t.action(internal.reminderRecipients.sendCopy, { recipientId: id, items });
     expect(sent).toHaveLength(1);
     const mail = sent[0]!;
@@ -1020,6 +1091,8 @@ describe("the second person's daily reminders", () => {
     const url = new URL(link!);
     expect(url.pathname).toBe("/case-alert/reminders/stop");
     expect(url.searchParams.get("r")).toBe(id);
+    // The account that added the address rides in the link, signed, so the Stop still refuses it once the row is gone.
+    expect(url.searchParams.get("u")).toBe(owner.userId);
     expect(mail.headers!["List-Unsubscribe"]).toBe(`<${link!}>`);
     expect(mail.headers!["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
     expect(mail.html).toContain(link!.replace(/&/g, "&amp;"));
@@ -1027,7 +1100,9 @@ describe("the second person's daily reminders", () => {
 
     // The stop link in the email works.
     const token = url.searchParams.get("token")!;
-    expect(await t.mutation(internal.reminderRecipients.stopByToken, { token, recipientId: id })).toBe("stopped");
+    expect(await t.mutation(internal.reminderRecipients.stopByToken, { token, recipientId: id, userId: owner.userId })).toBe(
+      "stopped",
+    );
 
     // A second run on the same day, or after the stop, sends nothing.
     await t.action(internal.reminderRecipients.sendCopy, { recipientId: id, items });
@@ -1183,8 +1258,8 @@ describe("the confirm and stop pages", () => {
     const [row] = await rows(s.t);
     return { ...s, id: row!._id };
   }
-  const path = (base: string, token: string, id: string) =>
-    `${base}?token=${encodeURIComponent(token)}&r=${encodeURIComponent(id)}`;
+  const path = (base: string, token: string, id: string, userId?: string) =>
+    `${base}?token=${encodeURIComponent(token)}&r=${encodeURIComponent(id)}${userId ? `&u=${encodeURIComponent(userId)}` : ""}`;
 
   it("opening the confirm link changes nothing; its button confirms", async () => {
     const { t, id } = await invited();
@@ -1218,12 +1293,14 @@ describe("the confirm and stop pages", () => {
   });
 
   it("opening the stop link changes nothing; its button, or the mail app's one-click POST, stops", async () => {
-    const { t, id } = await invited();
+    const { t, owner, id } = await invited();
     await t.mutation(internal.reminderRecipients.confirmByToken, { token: await confirmToken(id, "para@firm.example"), recipientId: id });
-    const link = path("/case-alert/reminders/stop", await stopToken(id, "para@firm.example"), id);
+    const link = path("/case-alert/reminders/stop", await stopToken(id, "para@firm.example", owner.userId), id, owner.userId);
     const page = await t.fetch(link, { method: "GET" });
     const pageHtml = await page.text();
     expect(pageHtml).toContain("Stop the reminders");
+    // The button keeps the account in its own link.
+    expect(pageHtml).toContain(`&amp;u=${owner.userId}`);
     // Stop refuses the account that added the address, and only that one.
     expect(pageHtml).toContain("The account that added you");
     expect(pageHtml).not.toContain("No one on PERM Tracker");
@@ -1235,6 +1312,19 @@ describe("the confirm and stop pages", () => {
     expect(doneHtml).toContain("The account that added you");
     expect(doneHtml).not.toContain("No one on PERM Tracker");
     expect((await rows(t))[0]!.status).toBe("stopped");
+  });
+
+  it("a Stop pressed after the owner removed the person says what's true: already off, and refused for that account", async () => {
+    const { t, owner, caseId, id } = await invited();
+    await t.mutation(internal.reminderRecipients.confirmByToken, { token: await confirmToken(id, "para@firm.example"), recipientId: id });
+    await owner.mutation(api.reminderRecipients.remove, { caseId });
+    const link = path("/case-alert/reminders/stop", await stopToken(id, "para@firm.example", owner.userId), id, owner.userId);
+    const done = await t.fetch(link, { method: "POST", body: "List-Unsubscribe=One-Click" });
+    expect(done.status).toBe(200);
+    const html = await done.text();
+    expect(html).toContain("These reminders are already off");
+    expect(html).toContain("The account that added you can");
+    expect(await t.run((ctx) => ctx.db.query("reminderRefusals").take(5))).toHaveLength(1);
   });
 
   it("opening the decline link changes nothing; its button, or the mail app's one-click POST, declines", async () => {
@@ -1253,12 +1343,14 @@ describe("the confirm and stop pages", () => {
   });
 
   it("answers a forged or incomplete link with a 400 and changes nothing", async () => {
-    const { t, id } = await invited();
+    const { t, owner, id } = await invited();
     for (const link of [
       path("/case-alert/reminders/confirm", "forged.token", id),
       `/case-alert/reminders/confirm?r=${id}`,
-      path("/case-alert/reminders/stop", "forged.token", id),
-      path("/case-alert/reminders/stop", "x".repeat(600), id),
+      path("/case-alert/reminders/stop", "forged.token", id, "user"),
+      path("/case-alert/reminders/stop", "x".repeat(600), id, "user"),
+      // A Stop link with the account cut out of it.
+      path("/case-alert/reminders/stop", await stopToken(id, "para@firm.example", owner.userId), id),
       path("/case-alert/reminders/decline", "forged.token", id),
       `/case-alert/reminders/decline?r=${id}`,
     ]) {

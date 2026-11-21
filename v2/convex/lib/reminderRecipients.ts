@@ -243,9 +243,12 @@ export function reminderConfirmPurpose(recipientId: string): TokenPurpose {
   return `reminder-confirm:${recipientId}`;
 }
 
-/** The stop link's purpose: one recipient row, so a link for one case can't stop another. */
-export function reminderStopPurpose(recipientId: string): TokenPurpose {
-  return `reminder-stop:${recipientId}`;
+/**
+ * The stop link's purpose: one recipient row, so a link for one case can't stop another, and the account that added
+ * it, so a link pressed after the owner removed the row still refuses the address for that account.
+ */
+export function reminderStopPurpose(recipientId: string, userId: string): TokenPurpose {
+  return `reminder-stop:${recipientId}:${userId}`;
 }
 
 /**
@@ -271,9 +274,9 @@ export function confirmUrl(token: string, recipientId: string): string {
   return linkFor(REMINDER_CONFIRM_PATH, token, recipientId);
 }
 
-/** The one-click stop link, in each reminder and its List-Unsubscribe header. */
-export function stopUrl(token: string, recipientId: string): string {
-  return linkFor(REMINDER_STOP_PATH, token, recipientId);
+/** The one-click stop link, in each reminder and its List-Unsubscribe header: the row and the account it's signed for. */
+export function stopUrl(token: string, recipientId: string, userId: string): string {
+  return `${linkFor(REMINDER_STOP_PATH, token, recipientId)}&u=${encodeURIComponent(userId)}`;
 }
 
 /** The invitation's "Don't invite me again" link, and its List-Unsubscribe header: a page with a button. */
