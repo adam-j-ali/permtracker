@@ -153,8 +153,8 @@ export default function PrivacyPage() {
                 When you delete a case, or replace it by importing a file, we keep a copy of it for{" "}
                 {DELETED_CASE_DAYS} days so you can restore it from Settings. Then it&apos;s erased, along with our
                 record of the changes made to the case. After the copy is erased, we keep a record that your account
-                deleted the case and when, until you delete your account. Its documents and recruitment log are deleted
-                when you delete the case or replace it, so a restored case comes back without them. It also comes back without the employer&apos;s FEIN, which the copy never holds
+                deleted the case and when and, if you restored it, when you did. We keep that record until you delete
+                your account. Its documents and recruitment log are deleted when you delete the case or replace it, so a restored case comes back without them. It also comes back without the employer&apos;s FEIN, which the copy never holds
               </li>{" "}
               <li>RFI/RFE information and response dates</li>
             </ul>{" "}
@@ -1624,8 +1624,9 @@ export default function PrivacyPage() {
                 <strong>Deleted cases:</strong> when you delete a case, or replace it by importing a file, we keep a
                 copy of it for {DELETED_CASE_DAYS} days so you can restore it from Settings. Then it&apos;s erased,
                 along with our record of the changes made to it. After the copy is erased, we keep a record that your
-                account deleted the case and when, until you delete your account. Its documents and recruitment log
-                are deleted when you delete the case or replace it
+                account deleted the case and when and, if you restored it, when you did. We keep that record until you
+                delete your account. Its documents and recruitment log are deleted when you delete the case or replace
+                it
               </li>{" "}
               <li>
                 <strong>Email alert sign-ups</strong> you never confirm are
