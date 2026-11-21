@@ -79,8 +79,8 @@ from build_entity_detail import city_key, city_labels, industry_label  # noqa: E
 from entity_identity import SpacedKeyMap, entity_key  # noqa: E402
 from lib_naics import normalize_naics  # noqa: E402
 from lib_db import (  # noqa: E402
-    Database, add_missing_columns, canon, canon_hash, case_update, insert_rows, insert_stmts,
-    record_run, rows_of, run_stmts, stmt, write_doc,
+    SLUG_WINDOWS, Database, add_missing_columns, canon, canon_hash, case_update, insert_rows, insert_stmts,
+    record_run, rows_of, run_stmts, slug_window, stmt, write_doc,
 )
 from lib_gov_data import SPREADSHEET_NS, column_index, fetch, log, read_shared_strings  # noqa: E402
 from lib_slugs import slugify  # noqa: E402
@@ -778,9 +778,16 @@ class EntityPages:
     def __init__(self, db) -> None:
         self.names: dict[tuple[str, str], str] = {}
         keys: dict[str, dict[str, str]] = {"employer": {}, "attorney": {}}
-        for kind, slug, name, key in rows_of(db.execute(
-                "SELECT kind, slug, name, merge_key FROM perm_entities "
-                "WHERE kind IN ('employer','attorney') ORDER BY total DESC")):
+        # A slug window at a time: the whole table in one sorted statement (86,354 pages) took 1.10 s on the
+        # server on Nov 21 2026. Busiest first afterwards, so the busiest page still wins a shared spelling.
+        found: list[list] = []
+        for lo, hi in SLUG_WINDOWS:
+            clause, args = slug_window("slug", lo, hi)
+            found.extend(rows_of(db.execute(
+                "SELECT kind, slug, name, merge_key, total FROM perm_entities "
+                f"WHERE kind IN ('employer','attorney') AND {clause}", args)))
+        found.sort(key=lambda r: -int(r[4] or 0))
+        for kind, slug, name, key, _total in found:
             self.names[(str(kind), str(slug))] = str(name or slug)
             if key:
                 keys[str(kind)].setdefault(str(key), str(slug))

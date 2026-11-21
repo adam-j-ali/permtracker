@@ -363,5 +363,24 @@ check("--entity-facets wrote the table and the state counts",
 check("--entity-facets read no workbook and touched no case row",
       not any(re.search(r"(INTO|UPDATE)\s+perm_cases_history", s) for s in flagged.statements))
 
+print("the pages are read a slug window at a time, busiest still winning a shared spelling")
+paged = seed()
+# A page whose slug sorts first shares a spelling's key with a busier page whose slug sorts after it.
+paged.conn.executemany("INSERT INTO perm_entities VALUES (?,?,?,?,?,?)", [
+    ("employer", "aaa-zeta", "ZETA INC", entity_key("ZETA INC"), None, 5),
+    ("employer", "zeta-inc", "Zeta, Inc.", entity_key("ZETA INC"), None, 900),
+])
+paged.conn.commit()
+paged.statements.clear()
+pages = iph.EntityPages(paged)
+reads = [q for q in paged.statements if "FROM perm_entities" in q]
+check("every read of the pages is bounded by a slug window, with no sort over the whole table (1.10 s live, Nov 21)",
+      bool(reads) and all("slug >= ?" in q and "ORDER BY" not in q for q in reads), "\n".join(reads[:3]))
+check("one read per slug window", len(reads) == len(iph.SLUG_WINDOWS), str(len(reads)))
+check("the busiest page wins a shared spelling, whatever its slug sorts like",
+      pages.by_name["employer"].get(entity_key("ZETA INC")) == "zeta-inc",
+      str(pages.by_name["employer"].get(entity_key("ZETA INC"))))
+check("every page is still known", ("employer", "aaa-zeta") in pages.names and ("attorney", "law-firm-llp") in pages.names)
+
 print(f"\n{len(FAILURES)} failed")
 raise SystemExit(1 if FAILURES else 0)
