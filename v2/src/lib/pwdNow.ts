@@ -249,10 +249,12 @@ export function speedVerdict(yoy: { now: WaitMonth; then: WaitMonth }): {
     : { tone: "bad", answer: `No: ${n} days slower than a year ago.`, short: `${n} days slower than a year ago` };
 }
 
+export type SeriesMonth = { m: string; gap: true } | (WaitMonth & { gap?: false });
+
 /** Every month from the first to the last, a month with no reading marked as a gap (never drawn as zero). */
-export function monthSeries(t: WaitTrend): ({ m: string; gap: true } | (WaitMonth & { gap?: false }))[] {
+export function monthSeries(t: WaitTrend): SeriesMonth[] {
   const by = new Map(t.months.map((m) => [m.m, m]));
-  const out: ({ m: string; gap: true } | (WaitMonth & { gap?: false }))[] = [];
+  const out: SeriesMonth[] = [];
   const first = t.months[0]!.m;
   const last = t.months[t.months.length - 1]!.m;
   let [y, mo] = first.split("-").map(Number) as [number, number];
@@ -268,4 +270,53 @@ export function monthSeries(t: WaitTrend): ({ m: string; gap: true } | (WaitMont
     }
   }
   return out;
+}
+
+export interface WaitWindow {
+  /** "fy2015", the window's first fiscal year: unique within a trend, for a tab's id. */
+  id: string;
+  /** "FY2015 to FY2017", or "Since FY2024" for the newest. */
+  label: string;
+  /** Its months, gaps included, oldest first. */
+  months: SeriesMonth[];
+  newest: boolean;
+}
+
+/** A month's federal fiscal year: October starts the next one. */
+const fiscalYearOf = (m: string) => Number(m.slice(0, 4)) + (Number(m.slice(5, 7)) >= 10 ? 1 : 0);
+
+// Three fiscal years a window, on fixed edges (FY2015 to FY2017, FY2018 to FY2020 and so on), so a window's years
+// never move as months are added.
+const WINDOW_YEARS = 3;
+const WINDOW_EDGE_FY = 2015;
+// A newest window under a year joins the one before it, so the first view always holds a year-earlier month.
+const MIN_NEWEST_MONTHS = 12;
+
+/**
+ * A long monthly series cut into windows of three fiscal years, newest first. One column a month with 3px gaps
+ * runs off a 375px phone past about a hundred months, and the PERM trend from FY2015 is about 145; a window holds
+ * 47 at most (a newest window under a year joins the one before it).
+ */
+export function waitWindows(series: readonly SeriesMonth[]): WaitWindow[] {
+  const groups = new Map<number, SeriesMonth[]>();
+  for (const m of series) {
+    const g = Math.floor((fiscalYearOf(m.m) - WINDOW_EDGE_FY) / WINDOW_YEARS);
+    const list = groups.get(g);
+    if (list) list.push(m);
+    else groups.set(g, [m]);
+  }
+  const ordered = [...groups.entries()].sort((a, b) => a[0] - b[0]).map(([, ms]) => ms);
+  if (ordered.length > 1 && ordered[ordered.length - 1]!.length < MIN_NEWEST_MONTHS) {
+    const last = ordered.pop()!;
+    ordered[ordered.length - 1]!.push(...last);
+  }
+  return ordered
+    .map((months, i) => {
+      const newest = i === ordered.length - 1;
+      const from = fiscalYearOf(months[0]!.m);
+      const to = fiscalYearOf(months[months.length - 1]!.m);
+      const label = newest ? `Since FY${from}` : from === to ? `FY${from}` : `FY${from} to FY${to}`;
+      return { id: `fy${from}`, label, months, newest };
+    })
+    .reverse();
 }

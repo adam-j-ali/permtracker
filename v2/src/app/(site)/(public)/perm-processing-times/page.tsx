@@ -603,7 +603,8 @@ export default async function PermProcessingTimesPage() {
                 label="Median days from filing to decision, by the month DOL decided"
               />{" "}
               <p className="mt-3 text-sm text-muted-foreground">
-                DOL&apos;s published PERM files through {longDate(waitTrend.filesThrough)}. From{" "}
+                DOL&apos;s published PERM files from {monthYear(waitTrend.months[0]?.m ?? null) ?? "October 2023"}{" "}
+                through {longDate(waitTrend.filesThrough)}. From{" "}
                 {monthYear(waitTrend.months.find((m) => m.from === "sweep")?.m ?? null) ?? "September 2026"}, every case our
                 daily check saw DOL decide, dated by the day DOL worked.
               </p>
