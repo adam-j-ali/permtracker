@@ -3,7 +3,7 @@
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { XIcon } from "@phosphor-icons/react";
-import Image from "next/image";
+import { SiteImage } from "@/components/ui/site-image";
 import { cn } from "@/lib/utils";
 
 // ============================================================================
@@ -39,7 +39,7 @@ interface LightboxProps {
  * ```tsx
  * // Image mode
  * <Lightbox src="/images/screenshot.png" alt="Dashboard">
- *   <Image src="/images/screenshot.png" width={400} height={300} alt="Dashboard" />
+ *   <SiteImage src="/images/screenshot.png" width={400} height={300} alt="Dashboard" />
  * </Lightbox>
  *
  * // Video mode
@@ -135,7 +135,7 @@ export function Lightbox({
               </video>
             ) : src ? (
               <div className="relative border border-white/20 overflow-hidden">
-                <Image
+                <SiteImage
                   src={src}
                   alt={alt}
                   width={1920}

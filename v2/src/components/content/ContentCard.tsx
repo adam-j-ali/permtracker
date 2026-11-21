@@ -7,7 +7,7 @@
  * the date. On hover the card lifts and a lime rule draws under the title.
  */
 
-import Image from "next/image";
+import { SiteImage } from "@/components/ui/site-image";
 import { CalendarIcon, CircleNotchIcon, ClockIcon } from "@phosphor-icons/react";
 import type { PostSummary } from "@/lib/content/types";
 import { CONTENT_TYPE_CONFIG } from "@/lib/content/types";
@@ -81,7 +81,7 @@ export default function ContentCard({
                 (isWholeHero(meta.image) ? ` ${WHOLE_HERO_GROUND}` : "")
               }
             >
-              <Image
+              <SiteImage
                 src={meta.image}
                 alt={meta.imageAlt ?? meta.title}
                 fill

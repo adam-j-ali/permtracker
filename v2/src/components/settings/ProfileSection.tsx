@@ -26,7 +26,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import Image from "next/image";
+import { SiteImage } from "@/components/ui/site-image";
 import { analytics } from "@/lib/analytics";
 import { useMutation } from "convex/react";
 import { EASTERN_TIMEZONE } from "@/lib/time";
@@ -202,7 +202,7 @@ export default function ProfileSection({
       <div className="flex items-center gap-4">
         <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden border border-input bg-tint text-foreground">
           {profile.profilePhotoUrl ? (
-            <Image
+            <SiteImage
               src={profile.profilePhotoUrl}
               alt={profile.fullName ?? "Profile"}
               width={64}

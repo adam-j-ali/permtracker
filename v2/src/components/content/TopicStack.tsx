@@ -1,5 +1,5 @@
 import { Fragment, type CSSProperties } from "react";
-import Image from "next/image";
+import { SiteImage } from "@/components/ui/site-image";
 
 import { isWholeHero, WHOLE_HERO_GROUND } from "@/lib/content/wholeHeroes";
 import Link from "next/link";
@@ -139,7 +139,7 @@ function Card({ data, index, type }: { data: TopicCardData; index: number; type:
               (isWholeHero(meta.image) ? ` ${WHOLE_HERO_GROUND}` : "")
             }
           >
-            <Image
+            <SiteImage
               src={meta.image}
               alt={meta.imageAlt ?? meta.title}
               fill
