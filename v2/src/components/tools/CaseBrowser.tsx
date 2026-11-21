@@ -852,7 +852,7 @@ export function CaseBrowser({
                   ))}
                 </select>
               </label>
-            ) : null}
+            ) : null}{" "}
 
             {dimension === "occupation" ? (
               // Hundreds of occupations: a box you can type a title or a code into, showing the pick whole.
@@ -870,7 +870,7 @@ export function CaseBrowser({
                   className={CONTROL}
                 />
               </div>
-            ) : null}
+            ) : null}{" "}
 
             {dimension === "employer" && employerSlug ? (
               <div className="flex min-h-[44px] items-center justify-between gap-2 border-2 border-input bg-tint px-3 shadow-hard-sm">
@@ -879,7 +879,7 @@ export function CaseBrowser({
                   Clear
                 </button>
               </div>
-            ) : null}
+            ) : null}{" "}
 
             {dimension === "attorney" && attorneySlug ? (
               <div className="flex min-h-[44px] items-center justify-between gap-2 border-2 border-input bg-tint px-3 shadow-hard-sm">
@@ -888,7 +888,7 @@ export function CaseBrowser({
                   Clear
                 </button>
               </div>
-            ) : null}
+            ) : null}{" "}
 
             <label className="block">
               <span className={LABEL}>Outcome</span>{" "}
@@ -905,7 +905,7 @@ export function CaseBrowser({
                   </option>
                 ))}
               </select>
-            </label>
+            </label>{" "}
 
             <label className="block">
               <span className={LABEL}>Fiscal year of decision</span>{" "}
@@ -947,7 +947,7 @@ export function CaseBrowser({
                   </option>
                 ))}
               </select>
-            </label>
+            </label>{" "}
             <div className="flex items-end">
               <button type="button" onClick={clearAll} className={BUTTON}>
                 Clear filters
