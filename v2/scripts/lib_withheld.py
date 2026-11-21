@@ -389,6 +389,7 @@ class Matcher:
         self._slug: dict[str, Entry] = {}
         self._name: dict[str, Entry] = {}
         self._key: dict[str, Entry] = {}
+        self._seen: dict[tuple, Entry | None] = {}
         for e in self.entries:
             for s in e.all_slugs():
                 self._slug.setdefault(s.lower(), e)
@@ -407,9 +408,16 @@ class Matcher:
         return bool(self.entries)
 
     def entry_for(self, name: str | None = None, slug: str | None = None) -> Entry | None:
-        """The entry the slug or the printed name is, or None."""
+        """The entry the slug or the printed name is, or None. Remembered: a builder asks about the same few
+        thousand spellings once per group, and each key costs a parse."""
         if not self.entries:
             return None
+        asked = (name, slug)
+        if asked not in self._seen:
+            self._seen[asked] = self._find(name, slug)
+        return self._seen[asked]
+
+    def _find(self, name: str | None, slug: str | None) -> Entry | None:
         if slug:
             e = self._slug.get(str(slug).strip().lower())
             if e is not None:
