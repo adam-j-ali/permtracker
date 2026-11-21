@@ -67,6 +67,9 @@ describe("employerOlderFiles", () => {
   it("is null before the tables are built, and throws on any other failure", async () => {
     one.mockRejectedValueOnce(new Error("SQLITE_ERROR: no such table: history_lca_spellings"));
     expect(await employerOlderFiles("acme")).toBeNull();
+    // A table built before the profile's columns: not built yet as far as this read goes.
+    one.mockRejectedValueOnce(new Error("SQLITE_ERROR: no such column: level_rows"));
+    expect(await employerOlderFiles("acme")).toBeNull();
     one.mockRejectedValueOnce(new Error("SERVER_ERROR: database is locked"));
     await expect(employerOlderFiles("acme")).rejects.toThrow("locked");
   });

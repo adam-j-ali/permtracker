@@ -59,7 +59,9 @@ export function EmployerPrograms({
 }) {
   const lines: ProgramLine[] = [...(perm ? [perm] : []), ...(pwd ? [pwd] : []), ...(lca ? [lca] : []), ...(seasonal ? [seasonal] : [])];
   const gap = wageGap(perm, lca);
-  // The years each line covers, said once under the ledger when any line reaches into DOL's older files.
+  // The years the counts and the medians cover, said once under the ledger: the counts reach back only when DOL's
+  // older files were read for them, and a median names its own first year whenever it has one.
+  const older = lines.some((l) => l.olderPublished !== undefined);
   const dated = lines.some((l) => l.medianFromFy);
   return (
     <section className={heading ? "mt-10" : undefined}>
@@ -149,9 +151,11 @@ export function EmployerPrograms({
           Medians are of the published rows with a usable wage, annualised from
           whatever unit the filing quoted, and withheld under {WAGE_FLOOR} wages
           (&ldquo;too few&rdquo;).
-          {dated
-            ? ` Published counts every year DOL's files hold, back to FY${OLDER_FROM_FY}: the PERM decisions from FY${OLDER_FROM_FY} to FY${NEWER_FROM_FY.perm - 1} and the LCAs from FY${OLDER_FROM_FY} to FY${NEWER_FROM_FY.lca - 1} come from DOL's older yearly files, counted when each one loads. The PERM and LCA medians read the newer files only, from the year each one names. The LCA line counts every LCA DOL publishes for the employer, the E-3 and H-1B1 LCAs filed on the same form among them.`
+          {older
+            ? ` Published counts every year DOL's files hold, back to FY${OLDER_FROM_FY}: the PERM decisions from FY${OLDER_FROM_FY} to FY${NEWER_FROM_FY.perm - 1} and the LCAs from FY${OLDER_FROM_FY} to FY${NEWER_FROM_FY.lca - 1} come from DOL's older yearly files, counted when each one loads.`
             : ""}
+          {dated ? " The PERM and LCA medians read the newer files only, from the year each one names." : ""}
+          {lca ? " The LCA line counts every LCA DOL publishes for the employer, the E-3 and H-1B1 LCAs filed on the same form among them." : ""}
           {" "}DOL publishes no employer number, so filings are matched by the employer&apos;s legal name
           {spellings && spellings > 1 ? `, read under the ${formatInt(spellings)} spellings DOL's files use for it` : ""}
           . Another employer with the same legal name would be counted here too.{" "}

@@ -154,9 +154,11 @@ export interface EmployerPrograms {
 
 /**
  * A PERM or LCA line with DOL's older yearly files added to its published count. Its median reads the newer files
- * only, so the line says from which fiscal year.
+ * only, so the line says from which fiscal year. Before the older counts are built (`older` null) nothing is added and
+ * `olderPublished` stays unset, so the ledger claims no older years.
  */
-function withOlder(line: ProgramLine, older: number, fromFy: number): ProgramLine {
+function withOlder(line: ProgramLine, older: number | null, fromFy: number): ProgramLine {
+  if (older === null) return { ...line, medianFromFy: fromFy };
   return { ...line, published: line.published + older, olderPublished: older, medianFromFy: fromFy };
 }
 
@@ -174,9 +176,9 @@ export const getEmployerPrograms = cache(async (slug: string): Promise<EmployerP
     employerOlderFiles(slug),
   ]);
   return {
-    perm: withOlder(perm, older?.perm ?? 0, NEWER_FROM_FY.perm),
+    perm: withOlder(perm, older ? older.perm : null, NEWER_FROM_FY.perm),
     pwd,
-    lca: withOlder(lca, older?.lca ?? 0, NEWER_FROM_FY.lca),
+    lca: withOlder(lca, older ? older.lca : null, NEWER_FROM_FY.lca),
     seasonal,
     match: { basis: match.basis, spellings: match.spellings },
   };

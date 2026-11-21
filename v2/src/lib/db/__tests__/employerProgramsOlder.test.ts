@@ -49,11 +49,14 @@ describe("the ledger's older years", () => {
     expect(out?.lca.medianAnnualWage).toBeNull();
   });
 
-  it("dates the medians before the older counts are built, and adds nothing", async () => {
+  it("dates the medians before the older counts are built, adds nothing, and doesn't claim it did", async () => {
     employerOlderFiles.mockResolvedValue(null);
     const out = await getEmployerPrograms("acme");
-    expect(out?.perm).toMatchObject({ published: 10, olderPublished: 0, medianFromFy: 2024 });
-    expect(out?.lca).toMatchObject({ published: 10, olderPublished: 0, medianFromFy: 2020 });
+    expect(out?.perm).toMatchObject({ published: 10, medianFromFy: 2024 });
+    expect(out?.lca).toMatchObject({ published: 10, medianFromFy: 2020 });
+    // No count of the older files was read, so the ledger mustn't say its counts reach back to FY2008.
+    expect(out?.perm.olderPublished).toBeUndefined();
+    expect(out?.lca.olderPublished).toBeUndefined();
   });
 
   it("fails with the older files' read rather than print the newer files alone as every year", async () => {
