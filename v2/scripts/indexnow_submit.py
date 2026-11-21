@@ -45,8 +45,9 @@ from purge_edge import paths_from_answer, read_env  # noqa: E402
 HOST = "permtracker.app"
 ENDPOINT = "https://api.indexnow.org/indexnow"
 BATCH = 10_000  # "You can submit up to 10,000 URLs per post" (indexnow.org/documentation)
-# A normal day sends about 3,500: up to 800 employer pages from each of four case passes, and the sweep's ~33 pages a
-# few times. The cap stops a runaway list (a bug naming every page) from spending the site's crawl quota.
+# The busiest day sends under 3,500: at most 800 employer pages from each of four case passes (MAX_CHANGED_SLUGS in
+# build_entity_detail.py), and the sweep's ~33 pages a few times. The cap stops a runaway list (a bug naming every page)
+# from spending the site's crawl quota.
 DAILY_CAP = 10_000
 MIN_GAP_S = 4 * 3600
 RETRY_PAUSE_S = 10.0
@@ -262,7 +263,8 @@ def _record(script: str, status: str, rows: int, note: str) -> None:
         from lib_db import Database, record_run
         if not record_run(Database(), script, status=status, rows_written=rows, note=note[:500]):
             print("indexnow: the run's row didn't reach ingest_runs")
-    except Exception as exc:  # noqa: BLE001 - bookkeeping never fails the pass
+    # SystemExit too: lib_db's settings reader ends the program when DATABASE_URL isn't set.
+    except (Exception, SystemExit) as exc:  # noqa: BLE001 - bookkeeping never fails the pass
         print(f"indexnow: couldn't record the run ({type(exc).__name__})")
 
 
