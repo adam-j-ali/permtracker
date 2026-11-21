@@ -61,7 +61,8 @@ class SqliteDb:
         cur = self.conn.execute(sql, args or [])
         rows = cur.fetchall()
         self.conn.commit()
-        return {"rows": [[cell(v) for v in r] for r in rows], "affected_row_count": cur.rowcount}
+        return {"cols": [{"name": d[0]} for d in (cur.description or [])],
+                "rows": [[cell(v) for v in r] for r in rows], "affected_row_count": cur.rowcount}
 
     def execute(self, sql, args=None):
         return {"response": {"result": self._run(sql, args)}}
