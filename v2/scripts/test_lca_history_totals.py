@@ -12,11 +12,13 @@ Run:  python3 scripts/test_lca_history_totals.py
 """
 from __future__ import annotations
 
+import json
 import pathlib
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import build_employer_map as bem  # noqa: E402
+import build_lca_cities as blc  # noqa: E402
 import ingest_flag_disclosure as ifd  # noqa: E402
 import lca_history_totals as lht  # noqa: E402
 from lib_db import request_sqls  # noqa: E402
@@ -205,6 +207,40 @@ def check_employer_map() -> None:
           all("employer_slug >= ?" in s for s in db.sent if lht.SPELLINGS in s), True)
 
 
+def check_cities() -> None:
+    print("the city pages' LCA totals cover the older files")
+    db = seed()
+    db.script([
+        "CREATE TABLE employer_page_map (source_slug TEXT PRIMARY KEY, page_slug TEXT, page_kind TEXT, key TEXT)",
+        "CREATE TABLE perm_entities (kind TEXT, slug TEXT, code TEXT)",
+        "CREATE TABLE perm_groups (kind TEXT, slug TEXT, key TEXT)",
+    ])
+    for i in range(22):
+        db.execute("INSERT INTO lca_cases VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                   [f"I-200-25001-{i:06d}", "CERTIFIED", "2024-10-01", "2024-10-08", "Acme Robotics LLC",
+                    "acme-robotics-llc", "Boise", "ID", "H-1B", 2025, "15-1252.00", "Software Developers"])
+    bare = {r[0]: dict(zip(blc.COLS, r)) for r in blc.plan(blc.read(db))}
+    check("before the older counts are built, Boise reads the newer files alone",
+          (bare["BOISE|ID"]["total"], bare["BOISE|ID"]["fy_from"]), (23, 2020))
+
+    lht.build(db)
+    db.sent.clear()
+    by = {r[0]: dict(zip(blc.COLS, r)) for r in blc.plan(blc.read(db))}
+    boise = by["BOISE|ID"]
+    check("a city's total adds the older files' LCAs", (boise["total"], boise["certified"]), (26, 23))
+    check("and its years say so", (boise["fy_from"], boise["fy_to"]), (2011, 2025))
+    ames = by.get("AMES|IA", {})
+    check("a city only the older files hold, with 20 or more, gets its row", (ames.get("total"), ames.get("slug")),
+          (25, "ames-ia"))
+    check("its label comes from the older files' spellings", ames.get("label"), "Ames, IA")
+    detail = json.loads(ames.get("detail") or "{}")
+    check("its top lists stay the newest three years, so they're empty, not old",
+          (detail.get("employers"), detail.get("occupations")), ([], []))
+    check("a city under 20 with the older files added still has no row", "HILLSBORO|OR" in by, False)
+    check("the nightly city build never reads the older table itself",
+          [s for s in db.sent if "lca_cases_history" in s], [])
+
+
 def check_loader() -> None:
     print("the loader builds them after an older file, and alone by a flag")
     db = seed()
@@ -234,6 +270,7 @@ def check_loader() -> None:
 def main() -> int:
     check_build()
     check_employer_map()
+    check_cities()
     check_loader()
     print(f"\n{len(FAILED)} failure(s)")
     return 1 if FAILED else 0
