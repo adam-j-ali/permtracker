@@ -38,7 +38,10 @@ describe("the privacy page and a case's second reminder recipient", () => {
       "Under that rule, a name may hold only Latin letters (the common accented ones included), digits, spaces and a few punctuation marks: hyphens and dashes, round brackets, the ampersand, comma, apostrophe, full stop and slash",
     );
     expect(section).not.toContain("full stop, brackets, slash");
-    expect(section).toContain("Nothing in it may read like a web address, an email address or a phone number either");
+    // isPlainText checks the shapes as they're written, so the sentence says "written as" and claims no more:
+    // an address retyped in words ("irs-refund dot com") is a known limit.
+    expect(section).toContain("Nothing in it may be written as a web address, an email address or a phone number either");
+    expect(section).not.toContain("may read like a web address");
     expect(section).toContain(
       "It names the case by its employer and job title, or calls it a PERM case when either one breaks the same rule",
     );

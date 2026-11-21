@@ -157,6 +157,9 @@ const VANITY_PHONE = new RegExp(
  * fewer than seven digits in all (PHONE_DIGITS), and fewer than seven digits and letters that pass for digits in any
  * run that holds a real digit (NUMBER_RUN: "8ØØ 555 Ø1ØØ" is a phone number, "Apollo 11 Labs" isn't). A false alarm
  * only hides a name. Every step runs in time linear in the text.
+ *
+ * It checks an address or a number as it's written. One retyped so the reader has to rebuild it ("irs-refund dot com",
+ * "name (at) mail", a letter standing in for a digit that DIGIT_LIKE_CHARS doesn't name) shows: a known, accepted limit.
  */
 export function isPlainText(text: string): boolean {
   const folded = text.normalize("NFKC");
