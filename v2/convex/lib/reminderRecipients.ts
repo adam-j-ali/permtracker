@@ -62,8 +62,22 @@ export function normaliseRecipientEmail(raw: string): string | null {
  */
 const NOT_PLAIN = /[^A-Za-z0-9 &,'.()\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u017F-]/;
 
+/** The letters NOT_PLAIN allows, as a character class's inside. */
+const LATIN_LETTERS = "A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u017F";
+
 /** A dot directly followed by two letters, the start of a domain ("irs-refund.com", ".NET"); "St. Jude" and "U.S." have none. */
-const DOT_THEN_LETTERS = /\.[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u017F]{2}/;
+const DOT_THEN_LETTERS = new RegExp(`\\.[${LATIN_LETTERS}]{2}`);
+
+/**
+ * A domain spelled apart: a dot, then spaces or a bracket ("irs-refund. com", "irs-refund(.)com", "irs-refund.(com)"),
+ * then a common top-level domain as a whole word. "co" is left out, so "Smith Ltd. Co" shows, and a word that only
+ * starts like one ("Co. Comedy") isn't one. The spaces and the one bracket can each be matched one way only, so it's
+ * linear in the text.
+ */
+const SPACED_DOMAIN = new RegExp(
+  `\\. *(?:[()] *)?(?:com|net|org|gov|edu|io|info|biz|app|us)(?![${LATIN_LETTERS}])`,
+  "i",
+);
 
 /**
  * A numeric web address (IPv4): four numbers of one to three digits joined by dots ("5.9.12.34"). Bounded
@@ -99,15 +113,15 @@ const REAL_DIGIT = /[0-9]/;
  * of fails too. Every character must be one of NOT_PLAIN's, both as typed (accents composed, NFC) and folded (NFKC):
  * folding turns a hair space into a space and a fullwidth letter into a plain one, which the email would still show as
  * typed, and it splits a letter such as U+0140 into an l and a middle dot. Then, on the folded text: no dot directly
- * followed by two letters (DOT_THEN_LETTERS), no numeric web address (NUMERIC_ADDRESS), fewer than seven digits in all
- * (PHONE_DIGITS), and fewer than seven digits and letters that pass for digits in any run that holds a real digit
- * (NUMBER_RUN: "8ØØ 555 Ø1ØØ" is a phone number, "Apollo 11 Labs" isn't). A false alarm only hides a name. Every step
- * runs in time linear in the text.
+ * followed by two letters (DOT_THEN_LETTERS), no domain spelled apart after its dot (SPACED_DOMAIN), no numeric web
+ * address (NUMERIC_ADDRESS), fewer than seven digits in all (PHONE_DIGITS), and fewer than seven digits and letters
+ * that pass for digits in any run that holds a real digit (NUMBER_RUN: "8ØØ 555 Ø1ØØ" is a phone number, "Apollo 11
+ * Labs" isn't). A false alarm only hides a name. Every step runs in time linear in the text.
  */
 export function isPlainText(text: string): boolean {
   const folded = text.normalize("NFKC");
   if (NOT_PLAIN.test(text.normalize("NFC")) || NOT_PLAIN.test(folded)) return false;
-  if (DOT_THEN_LETTERS.test(folded) || NUMERIC_ADDRESS.test(folded)) return false;
+  if (DOT_THEN_LETTERS.test(folded) || SPACED_DOMAIN.test(folded) || NUMERIC_ADDRESS.test(folded)) return false;
   let digits = 0;
   for (let i = 0; i < folded.length; i++) {
     const c = folded.charCodeAt(i);

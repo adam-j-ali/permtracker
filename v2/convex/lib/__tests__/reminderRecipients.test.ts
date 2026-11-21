@@ -356,6 +356,48 @@ describe("the plain-text rule itself", () => {
     }
   });
 
+  it("fails a domain spelled with a space or a bracket after its dot", () => {
+    for (const s of [
+      "irs-refund. com",
+      "irs-refund.  com",
+      "irs-refund(.)com",
+      "irs-refund (.) com",
+      "irs-refund.(com)",
+      "irs-refund. ( com )",
+      "Pay at irs. GOV",
+      "evil. net",
+      "evil. org",
+      "evil. edu",
+      "evil. io",
+      "evil. info",
+      "evil. biz",
+      "evil. app",
+      "evil. us",
+      "irs-refund. com9tail",
+    ]) {
+      expect(isPlainText(s), s).toBe(false);
+      expect(safeCaseLine("Robotics Engineer", s), s).toBe(A_PERM_CASE);
+      expect(inviterName(s, undefined), s).toBe(SOMEONE);
+    }
+  });
+
+  it("keeps a full stop before a word that only starts like a domain, and \"Co\"", () => {
+    for (const s of [
+      "St. Jude Medical",
+      "U.S. Steel",
+      "J.P. Morgan Chase & Co.",
+      "ACME Robotics, Inc.",
+      "XYZ Inc. dba ABC",
+      "Smith Ltd. Co",
+      "Smith & Co. Comedy Club",
+      "ACME Corp. Network Services",
+      "ACME Inc. Usual Suspects",
+      "ACME Inc. Comédie",
+    ]) {
+      expect(isPlainText(s), s).toBe(true);
+    }
+  });
+
   it("hides an inviter whose name holds a phone number or a look-alike link", () => {
     expect(inviterName("Call 800-555-0199", undefined)).toBe(SOMEONE);
     expect(inviterName("irs。gov", undefined)).toBe(SOMEONE);
@@ -389,6 +431,12 @@ describe("the plain-text rule itself", () => {
     isPlainText(".".repeat(1_000_000));
     isPlainText("a".repeat(200_000));
     isPlainText("a.".repeat(100_000));
+    // A dot then a long gap, a bracket among spaces, a long joined run, and dotted numbers.
+    isPlainText(`.${" ".repeat(1_000_000)}x`);
+    isPlainText(".( ".repeat(330_000));
+    isPlainText(`${" ".repeat(1_000_000)}1`);
+    isPlainText("o ".repeat(500_000));
+    isPlainText("1.".repeat(500_000));
     expect(Date.now() - started).toBeLessThan(1500);
   });
 });
