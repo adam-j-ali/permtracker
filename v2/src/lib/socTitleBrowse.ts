@@ -6,10 +6,11 @@
  * orphans on Nov 21). The directory links every one from a letter page, every letter page from /soc-codes, so
  * each title sits two links from its hub.
  *
- * The letters are the employer A to Z's (lib/entityBrowse.ts), digits together, but a title is filed by the title
- * a reader sees, not by its slug: the slug is the title's key, which drops a leading seniority word, so "Senior
- * Associate JC60 ..." has a slug starting "associate" and belongs under S. Pure, and read from the same doc the
- * sitemap lists the pages from (soc_title_pages), so the two can't disagree.
+ * The letters are the employer A to Z's (lib/entityBrowse.ts), digits together. A title is filed under the first
+ * letter of the title a reader sees. Its slug can start elsewhere: the slug is the title's key, which drops a
+ * leading seniority word, so "Senior Associate JC60 ..." has a slug starting "associate" and belongs under S (49
+ * titles, Nov 20 2026). Pure, and read from the same doc the sitemap lists the pages from (soc_title_pages), so
+ * the two can't disagree.
  */
 
 import { BROWSE_BUCKETS, BROWSE_OTHER, isBrowseBucket, type BrowseBucket } from "@/lib/entityBrowse";
