@@ -1,0 +1,12 @@
+[Unit]
+Description=Schedule for permtracker-site-audit
+# 9:30 PM Eastern, after the 8:10 PM evening sweep and the 8:30 PM newsworthy check, and ending by 12:45 AM, before the
+# 1 to 5 AM night deploys, backups and the 4:10 AM sweep. Not Persistent: a night the server missed is read in the
+# next nights' spare time (pages over a week old come after each night's own seventh), so a run never starts by day.
+[Timer]
+OnCalendar=*-*-* 21:30:00 America/New_York
+Persistent=false
+Unit=permtracker-site-audit.service
+
+[Install]
+WantedBy=timers.target

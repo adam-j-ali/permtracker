@@ -1764,6 +1764,79 @@ def chat_models_section(now_ms: int) -> dict:
     return chat_models_verdict(read_doc(Database(), "chat_models"), now_ms)
 
 
+# ── the site audit (scripts/site_audit.py, nightly on the server) ────────
+
+# The job starts at 9:30 PM Eastern and stops reading by 12:45 AM. A night missed is a line; two missed, it stopped.
+SITE_AUDIT_STALE_MS = 50 * HOUR_MS
+
+
+def site_audit_verdict(doc: dict | None, now_ms: int) -> dict:
+    """Judge perm_docs['site_audit']. A week that grew, or that read too little of the sitemap to compare, warns, and
+    so does an alert email that couldn't go; a job that stopped fails. Every count is a line with its examples."""
+    from site_audit import FAMILIES, examples_text  # noqa: PLC0415 - one list of families, the script's own
+
+    key, title = "siteaudit", "Site audit (every page, weekly)"
+    if not doc:
+        return section(key, title, "warn", "The site audit hasn't run yet: permtracker-site-audit.timer isn't "
+                       "installed on the server, or hasn't fired.")
+    night = doc.get("night") or {}
+    lines: list[str] = []
+    if night:
+        todo = int(night.get("planned") or 0) + int(night.get("behind") or 0)
+        ln = f"Last night ({night.get('weekday')}): read {int(night.get('read') or 0):,} of {todo:,} pages"
+        if night.get("stoppedBy") == "deadline" and night.get("left"):
+            ln += f", stopped at the window's end with {int(night['left']):,} left"
+        elif night.get("stoppedBy") not in (None, "done", "deadline"):
+            ln += f", stopped early because {night['stoppedBy']}"
+        if night.get("refused"):
+            ln += f", {int(night['refused']):,} refused by the front door"
+        if int(night.get("pausedSeconds") or 0) >= 60:
+            ln += f", waited {int(night['pausedSeconds']) // 60} minutes for a busy server"
+        lines.append(ln + ".")
+    age = now_ms - int(night.get("finishedAt") or 0)
+    if age > SITE_AUDIT_STALE_MS:
+        return section(key, title, "fail", f"The site audit last finished {age // HOUR_MS} hours ago: the nightly job "
+                       "has stopped (systemctl status permtracker-site-audit.timer on the server).", lines)
+    warns: list[str] = []
+    mail = doc.get("mail") or {}
+    if mail.get("pending"):
+        warns.append(f"The site audit's email to the owner wasn't sent ({mail.get('lastError') or 'no reason given'}); "
+                     "it's tried again each night.")
+    week = doc.get("latestWeek")
+    if not week:
+        cur = doc.get("current") or {}
+        summary = (f"The first week is still being read: {int(cur.get('read') or 0):,} of "
+                   f"{int(cur.get('sitemap') or 0):,} sitemap pages so far.")
+        return section(key, title, "warn" if warns else "ok", warns[0] if warns else summary, warns + lines)
+    when = dt.date.fromisoformat(week["week"]).strftime("%A, %b %-d")
+    counts = week.get("counts") or {}
+    before = week.get("before") or {}
+    grew = {r["family"]: r for r in week.get("rises") or []}
+    for fam, label in FAMILIES.items():
+        if fam not in counts:
+            continue
+        r = grew.get(fam)
+        change = (", new this week" if r["new"] else f", up from {r['before']:,}") if r else (
+            f" (last week {int(before.get(fam) or 0):,})" if before else "")
+        lines.append(f"{label}: {counts[fam]:,}{change}.{examples_text(fam, week)}")
+    if not week.get("complete"):
+        warns.insert(0, f"The week ending {when} read only {float(week.get('coverage') or 0):.0%} of the sitemap "
+                        f"({int(week.get('read') or 0):,} of {int(week.get('sitemap') or 0):,} pages), so it wasn't "
+                        "compared with the week before.")
+    if grew:
+        warns.insert(0, f"{len(grew)} problem{'s' if len(grew) != 1 else ''} grew in the week ending {when}: "
+                        + ", ".join(FAMILIES[f].lower() for f in grew) + ".")
+    summary = warns[0] if warns else (f"The week ending {when} read {int(week.get('read') or 0):,} of "
+                                      f"{int(week.get('sitemap') or 0):,} sitemap pages; nothing grew.")
+    return section(key, title, "warn" if warns else "ok", summary, warns + lines)
+
+
+def site_audit_section(now_ms: int) -> dict:
+    from lib_db import Database, read_doc  # noqa: PLC0415 - only needed here
+
+    return site_audit_verdict(read_doc(Database(), "site_audit"), now_ms)
+
+
 # ── the live pages, checked (scripts/page_checks.py) ──────────────────────
 
 # The browser flows are what a reader does (look a case up, run a calculator):
@@ -1847,6 +1920,7 @@ def build(now: dt.datetime) -> dict:
         guarded("speed", "How long things take (24 h)", speed_section, since),
         guarded("site", "The site", site_section),
         guarded("pagechecks", "The live pages, checked", page_checks_section, now_ms),
+        guarded("siteaudit", "Site audit (every page, weekly)", site_audit_section, now_ms),
         guarded("data", "The data", data_section, now_ms),
         guarded("traffic", "Traffic", traffic_section),
         guarded("api", "The API and assistants", api_section),

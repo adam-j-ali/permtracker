@@ -181,6 +181,31 @@ def test_profile() -> None:
     check("garbage collection is named", any(x["what"] == "garbage collection" for x in s["self"]))
 
 
+def test_site_audit_is_left_out() -> None:
+    """The site's own weekly audit (scripts/site_audit.py) reads long-tail pages cold from 9:30 PM to 12:45 AM
+    Eastern. Its requests aren't visitors', so they stay out of the page readings, and a copy it keeps busy isn't
+    called short of CPU; visitors' own builds in that window still count, so real harm still shows."""
+    print("the site audit's own requests")
+    audit_ua = "permtracker-site-audit/1.0 (+https://permtracker.app)"
+    lines = [
+        line(10, "/perm-employers/a", "0.40", "MISS"),
+        line(11, "/perm-employers/b", "9.00", "MISS").replace("Mozilla/5.0 (X11) Chrome/150", audit_ua),
+        line(12, "/perm-employers/c", "9.00", "MISS").replace("Mozilla/5.0 (X11) Chrome/150", audit_ua),
+    ]
+    got = perf.page_costs(lines, T0 + 5)
+    check("the audit's requests aren't counted as pages", got["requests"] == 1 and got["entityBuilds"]["n"] == 1,
+          str(got))
+    check("and are counted on their own", got.get("siteAudit") == 2, str(got.get("siteAudit")))
+    busy = {"busyShare": 0.95, "ours": [], "siteAuditRunning": True}
+    check("a copy busy while the audit reads isn't called busy",
+          not any("busy" in x for x in perf.judge(None, None, None, busy, [])))
+    check("a copy busy without it still is", any("busy 95%" in x for x in
+                                                 perf.judge(None, None, None, dict(busy, siteAuditRunning=False), [])))
+    check("the audit's unit is read as running while it starts or runs",
+          perf.site_audit_running(lambda: "activating\n") and perf.site_audit_running(lambda: "active")
+          and not perf.site_audit_running(lambda: "inactive") and not perf.site_audit_running(lambda: 1 / 0))
+
+
 def test_judge() -> None:
     print("what counts as a regression")
     fine = {"entityBuilds": {"n": 200, "p50": 0.34, "p90": 0.56}, "cached": {"n": 900, "p50": 0.016, "p90": 0.05}}
@@ -247,7 +272,8 @@ def test_rollup() -> None:
 
 
 if __name__ == "__main__":
-    for t in (test_logs, test_tail, test_db, test_source_maps, test_profile, test_judge, test_rollup):
+    for t in (test_logs, test_site_audit_is_left_out, test_tail, test_db, test_source_maps, test_profile, test_judge,
+              test_rollup):
         t()
     print(f"{len(failures)} failure(s)")
     sys.exit(1 if failures else 0)
