@@ -1,12 +1,13 @@
 import type { HistoryMakeup as Makeup } from "@/lib/db/employerHistory";
 import { cn } from "@/lib/utils";
 import { formatInt } from "@/lib/format";
+import { fySpan } from "@/lib/permEras";
 
 import { IndustryMix, OccupationMix, PartyMix, PlaceMix, StateMix } from "./FilingMakeup";
 
 /** "FY2012 to FY2023", or "FY2019" for one year. */
 export function historyYears(m: Pick<Makeup, "fyFrom" | "fyTo">): string {
-  return m.fyFrom === m.fyTo ? `FY${m.fyFrom}` : `FY${m.fyFrom} to FY${m.fyTo}`;
+  return fySpan(m.fyFrom, m.fyTo);
 }
 
 const GRID =

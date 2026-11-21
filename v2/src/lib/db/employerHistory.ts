@@ -8,7 +8,7 @@ import { beforeFirstLoad } from "./firstLoad";
 
 /**
  * An employer's PERM record year by year, FY2008 onward, and its decided
- * cases from FY2020 to FY2023.
+ * cases from DOL's older files (FY2008 to FY2023).
  *
  * Both tables are written by `scripts/ingest_perm_history.py`:
  * `perm_employer_years` from DOL's closed-year files (and FY2024 onward from
@@ -52,7 +52,7 @@ export async function employerYears(slug: string): Promise<EmployerYear[]> {
   }));
 }
 
-/** The newest decided cases from FY2020 to FY2023, off (employer_slug, decision_date). */
+/** The newest decided cases from DOL's older files (FY2008 to FY2023), off (employer_slug, decision_date). */
 export async function employerHistoryCases(slug: string, limit = 25): Promise<HistoryCase[]> {
   const got = await rows<{
     case_number: string;

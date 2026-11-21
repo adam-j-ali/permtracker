@@ -3,7 +3,8 @@ import { CaretRightIcon } from "@phosphor-icons/react/ssr";
 import type { EmployerYear, HistoryCase } from "@/lib/db/employerHistory";
 import { cn } from "@/lib/utils";
 import { formatInt } from "@/lib/format";
-import { shortDate } from "@convex/lib/months";
+import { CURRENT_FIRST_FY, HISTORY_SPAN, fySpan } from "@/lib/permEras";
+import { fiscalYearOf, shortDate } from "@convex/lib/months";
 import { CASE_STATUS_FILL, caseStatusTint } from "@/lib/statusTone";
 
 import { YearBars, fillYears } from "./YearBars";
@@ -11,7 +12,8 @@ import { ScrollBox } from "@/components/ui/scroll-box";
 
 /**
  * An employer's PERM record by fiscal year, FY2008 onward (the shared
- * YearBars chart), and its decided cases from FY2016 to FY2023.
+ * YearBars chart), and its newest cases from DOL's older files (FY2008 to
+ * FY2023), headed with the employer's own first and last older year.
  */
 
 export function EmployerYears({
@@ -38,9 +40,15 @@ export function EmployerYears({
   const totals = series.map((y) => y.certified + y.denied + y.withdrawn);
   const total = totals.reduce((a, b) => a + b, 0);
   const peak = series[totals.indexOf(Math.max(...totals))];
-  const historyTotal = series
-    .filter((y) => y.fy >= 2016 && y.fy <= 2023)
-    .reduce((a, y) => a + y.certified + y.denied + y.withdrawn, 0);
+  // The list reads the older table (FY2008 to FY2023): its "of N" and its years are that table's share of the
+  // record, and the years come from the cases themselves when the yearly table has none.
+  const older = series.filter((y) => y.fy < CURRENT_FIRST_FY && y.certified + y.denied + y.withdrawn > 0);
+  const historyTotal = older.reduce((a, y) => a + y.certified + y.denied + y.withdrawn, 0);
+  const olderYears = [
+    ...older.map((y) => y.fy),
+    ...cases.flatMap((c) => (c.decisionDate ? [fiscalYearOf(c.decisionDate)] : [])),
+  ];
+  const casesSpan = olderYears.length > 0 ? fySpan(Math.min(...olderYears), Math.max(...olderYears)) : HISTORY_SPAN;
 
   return (
     <section className={className}>
@@ -71,21 +79,21 @@ export function EmployerYears({
       {cases.length > 0 ? (
         <div className="mt-6 border-2 border-border bg-card p-5 shadow-hard-sm">
           <h3 className="font-heading text-lg font-bold">
-            Decided in FY2016 to FY2023
+            Decided in {casesSpan}
           </h3>{" "}
           <p className="mt-1 text-sm text-muted-foreground">
             {cases.length < historyTotal
               ? `The ${formatInt(cases.length)} most recent of ${formatInt(historyTotal)}.`
               : `All ${formatInt(cases.length)}.`}
           </p>
-          <CaseTable cases={cases.slice(0, SHOWN_CASES)} />{" "}
+          <CaseTable cases={cases.slice(0, SHOWN_CASES)} span={casesSpan} />{" "}
           {cases.length > SHOWN_CASES ? (
             <details className="group mt-3">
               <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm font-bold [&::-webkit-details-marker]:hidden">
                 <CaretRightIcon aria-hidden="true" className="size-4 shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none" />
                 The other {formatInt(cases.length - SHOWN_CASES)}{" "}
               </summary>
-              <CaseTable cases={cases.slice(SHOWN_CASES)} head={false} />
+              <CaseTable cases={cases.slice(SHOWN_CASES)} span={casesSpan} head={false} />
             </details>
           ) : null}
         </div>
@@ -97,9 +105,9 @@ export function EmployerYears({
 /** Rows shown before the fold: the newest decisions, then the rest on a click. */
 const SHOWN_CASES = 8;
 
-function CaseTable({ cases, head = true }: { cases: HistoryCase[]; head?: boolean }) {
+function CaseTable({ cases, span, head = true }: { cases: HistoryCase[]; span: string; head?: boolean }) {
   return (
-    <ScrollBox label={head ? "Cases decided in FY2016 to FY2023" : "The other cases decided in FY2016 to FY2023"} className="mt-4">
+    <ScrollBox label={head ? `Cases decided in ${span}` : `The other cases decided in ${span}`} className="mt-4">
       {/* Fixed columns, so the folded rows line up under the shown ones. */}
       <table className="w-full min-w-[44rem] table-fixed border-collapse text-left text-sm tabular-nums">
         <colgroup>

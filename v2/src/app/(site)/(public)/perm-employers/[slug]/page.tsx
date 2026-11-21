@@ -766,7 +766,7 @@ export default async function EmployerPage({
       getEmployerWait(canonicalSlug).catch(softFail("perm-employers/[slug]/page.getEmployerWait", { n: 0, p25: null, p50: null, p75: null })),
       getFieldWait().catch(softFail("perm-employers/[slug]/page.getFieldWait", null)),
       getFiledTodayEstimate().catch(softFail("perm-employers/[slug]/page.getFiledTodayEstimate", null)),
-      // FY2008 onward, and the FY2020 to FY2023 cases: one PK read and one
+      // FY2008 onward, and the newest FY2008 to FY2023 cases: one PK read and one
       // indexed read (scripts/ingest_perm_history.py writes both tables).
       employerYears(canonicalSlug),
       employerHistoryCases(canonicalSlug, 25),
