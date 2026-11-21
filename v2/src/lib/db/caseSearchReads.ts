@@ -26,6 +26,7 @@ import {
 import type { Lead, Outcome, WageSourceKey } from "@/lib/caseSearchPlan";
 import { PWD_VISA_CLASS, type ChangeProgram } from "@/lib/changeProgram";
 import { tableColumns } from "./tableColumns";
+import type { StateFacet } from "./cases";
 import { wageRequestNumber } from "@/lib/caseLinks";
 import { ANNUAL_WAGE_SQL } from "@/lib/wageFormat";
 import { socGroup, socGroupClause } from "@/lib/socCode";
@@ -34,6 +35,7 @@ import { isSeasonalWageRequest } from "@/lib/wageRequestRanges";
 import { boundEnd, boundStart, fiscalYearSpan } from "@convex/lib/months";
 import { LIKE_ESCAPE, likeContains } from "./like";
 import { softFail } from "@/lib/softRead";
+import { CURRENT_FIRST_FY } from "@/lib/permEras";
 
 /**
  * Every read the unified case search makes, and the index each one rides.
@@ -491,12 +493,11 @@ export type PermTable = "perm_cases" | "perm_cases_history";
 export const HISTORY_TABLE: PermTable = "perm_cases_history";
 
 /**
- * The first fiscal year `perm_cases` holds. Everything decided before it is in
+ * The first fiscal year `perm_cases` holds (`src/lib/permEras.ts`). Everything decided before it is in
  * `perm_cases_history` (FY2008 to FY2023) or nowhere, so a date or fiscal-year filter
  * that falls wholly on one side reads one table. Its first decision day, and
  * the history table's last, follow from it.
  */
-const CURRENT_FIRST_FY = 2024;
 export const CURRENT_DECIDED_FROM = `${fiscalYearSpan(CURRENT_FIRST_FY).from}-01`;
 export const HISTORY_DECIDED_LAST = `${fiscalYearSpan(CURRENT_FIRST_FY - 1).to}-30`;
 
@@ -1747,30 +1748,73 @@ export async function readFlagEmployerStage(
   return { rows: found.slice(0, limit).map(toFlagRow), windowed: found.length > limit };
 }
 
+/** One state's PERM cases by outcome: the shape the current table's coverage doc carries (`CasesMeta.byState`). */
+export type StateCount = StateFacet;
+
+export interface PermHistory {
+  /** The fiscal years the history table holds case rows for, newest first. */
+  years: { fiscalYear: string; total: number }[];
+  /** The older cases by worksite state, busiest first; a case `perm_cases` also holds is counted there, not here. */
+  byState: StateCount[];
+}
+
+const count = (v: unknown): number | null => (typeof v === "number" && Number.isInteger(v) && v >= 0 ? v : null);
+
 /**
- * The fiscal years the history table holds case rows for, with how many, from
- * the history ingest's own record (`perm_docs['perm_history']`): one point
- * read, never a count over the table. The record is per FILE, and DOL's yearly
- * file is that year's determinations, so its case-row count is the year's.
- * Years the current table owns (FY2024 on) are left to its own list.
+ * What the history table holds, from the history ingest's own record (`perm_docs['perm_history']`): one point read,
+ * never a count over the table. The years come from the record per FILE, and DOL's yearly file is that year's
+ * determinations, so its case-row count is the year's; years the current table owns (FY2024 on) are left to its own
+ * list. The state counts are written by `build_entity_facets` at each history load. A missing or broken doc is
+ * nothing loaded; a failed read throws, for the page to record and name its fallback (`softFail`).
  */
-export async function getPermHistoryYears(): Promise<{ fiscalYear: string; total: number }[]> {
+export async function getPermHistory(): Promise<PermHistory> {
+  const r = await rows<{ json: string }>("SELECT json FROM perm_docs WHERE key = 'perm_history'");
+  let doc: { files?: Record<string, { fy?: unknown; caseRows?: unknown }>; byState?: unknown };
   try {
-    const r = await rows<{ json: string }>("SELECT json FROM perm_docs WHERE key = 'perm_history'");
-    const doc = JSON.parse(r[0]?.json ?? "{}") as { files?: Record<string, { fy?: unknown; caseRows?: unknown }> };
-    const byYear = new Map<number, number>();
-    for (const f of Object.values(doc.files ?? {})) {
-      const fy = Number(f.fy);
-      const n = Number(f.caseRows);
-      if (!Number.isInteger(fy) || fy >= 2024 || !(n > 0)) continue;
-      byYear.set(fy, (byYear.get(fy) ?? 0) + n);
-    }
-    return [...byYear.entries()]
-      .sort((a, b) => b[0] - a[0])
-      .map(([fy, total]) => ({ fiscalYear: String(fy), total }));
+    doc = JSON.parse(r[0]?.json ?? "{}");
   } catch {
-    return [];
+    return { years: [], byState: [] };
   }
+  const byYear = new Map<number, number>();
+  for (const f of Object.values(doc.files ?? {})) {
+    const fy = Number(f.fy);
+    const n = Number(f.caseRows);
+    if (!Number.isInteger(fy) || fy >= CURRENT_FIRST_FY || !(n > 0)) continue;
+    byYear.set(fy, (byYear.get(fy) ?? 0) + n);
+  }
+  const byState: StateCount[] = [];
+  for (const e of Array.isArray(doc.byState) ? (doc.byState as Record<string, unknown>[]) : []) {
+    const [total, certified, denied, withdrawn] = [e?.total, e?.certified, e?.denied, e?.withdrawn].map(count);
+    if (typeof e?.state !== "string" || !e.state || total == null || certified == null || denied == null || withdrawn == null) continue;
+    byState.push({ state: e.state, total, certified, denied, withdrawn });
+  }
+  return {
+    years: [...byYear.entries()]
+      .sort((a, b) => b[0] - a[0])
+      .map(([fy, total]) => ({ fiscalYear: String(fy), total })),
+    byState,
+  };
+}
+
+/** The current table's state counts plus the history table's, state by state, busiest first. */
+export function sumStateCounts(current: readonly StateCount[], history: readonly StateCount[]): StateCount[] {
+  const by = new Map<string, StateCount>();
+  for (const s of [...current, ...history]) {
+    const into = by.get(s.state);
+    by.set(
+      s.state,
+      into
+        ? {
+            state: s.state,
+            total: into.total + s.total,
+            certified: into.certified + s.certified,
+            denied: into.denied + s.denied,
+            withdrawn: into.withdrawn + s.withdrawn,
+          }
+        : { ...s },
+    );
+  }
+  return [...by.values()].sort((a, b) => b.total - a.total || (a.state < b.state ? -1 : 1));
 }
 
 export interface FieldOption {

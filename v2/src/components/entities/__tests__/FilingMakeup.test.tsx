@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 
 import type { FacetRow } from "@/lib/db/entityDetail";
 
-import { groupIndustries, IndustryMix, OccupationMix, PartyMix, RecruitmentMix, StateMix } from "../FilingMakeup";
+import { groupIndustries, IndustryMix, OccupationMix, PartyMix, PlaceMix, RecruitmentMix, StateMix } from "../FilingMakeup";
 
 function facet(over: Partial<FacetRow> = {}): FacetRow {
   return {
@@ -177,3 +177,53 @@ describe("RecruitmentMix", () => {
     expect(screen.getByText("How long before filing it began").closest("div.grid")?.className).toMatch(/md:grid-cols-2/);
   });
 });
+
+/**
+ * The current figures count FY2024 on and the older ones FY2008 to FY2023, each over its own total, so every share
+ * says which years it's a share of (the Nov 20 2026 sweep, item 28).
+ */
+describe("a share says which years it covers", () => {
+  it("the lead job's share names its years", () => {
+    render(<OccupationMix rows={[facet()]} total={2490} period="since FY2024" />);
+    expect(screen.getByText(/30% of their filings since FY2024/)).toBeInTheDocument();
+    expect(screen.queryByText(/everything they file/)).toBeNull();
+    expect(screen.getByText(/the most filings since FY2024, 749 of 2,490 cases between them/)).toBeInTheDocument();
+  });
+
+  it("a party list's note names its years", () => {
+    render(
+      <PartyMix
+        rows={[facet({ key: "apple-inc", label: "APPLE INC.", code: null, n: 2800 })]}
+        total={4000}
+        title="Who they filed for"
+        note="The employers named on the most applications."
+        hrefBase="/perm-employers"
+        period="in FY2012 to FY2023"
+      />,
+    );
+    expect(screen.getByText(/2,800 of 4,000 filings in FY2012 to FY2023, 70% of the\s+total/)).toBeInTheDocument();
+  });
+
+  it("the places' note names its years", () => {
+    render(
+      <PlaceMix
+        states={[facet({ key: "WA", label: "WA", code: null, n: 30 }), facet({ key: "CA", label: "CA", code: null, n: 10 })]}
+        cities={[]}
+        total={50}
+        period="in FY2012 to FY2023"
+      />,
+    );
+    expect(screen.getByText(/These 2 states cover 40 of 50 filings in FY2012 to FY2023/)).toBeInTheDocument();
+  });
+
+  it("the state chips' note names its years", () => {
+    render(<StateMix rows={[facet({ key: "CA", label: "CA", code: null, n: 1520 })]} total={2490} period="since FY2024" />);
+    expect(screen.getByText(/This state covers 1,520 of 2,490 filings since FY2024/)).toBeInTheDocument();
+  });
+
+  it("without a period the wording is as before", () => {
+    render(<OccupationMix rows={[facet()]} total={2490} />);
+    expect(screen.getByText(/30% of everything they file/)).toBeInTheDocument();
+  });
+});
+
