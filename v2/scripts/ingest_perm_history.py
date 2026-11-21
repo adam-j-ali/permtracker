@@ -55,12 +55,20 @@ Usage:
     python3 scripts/ingest_perm_history.py --from-fy 2020 --to-fy 2021
     python3 scripts/ingest_perm_history.py --local PERM_FY2010.xlsx --dry-run
     python3 scripts/ingest_perm_history.py --current       # FY2024 onward only
+    python3 scripts/ingest_perm_history.py --years-wages   # the years and wage cells only
+
+The small records built from the case rows after every load (and alone by
+their own flag): perm_history_month_days and perm_history_alphabet
+(`--month-days`), perm_docs['perm_history_years'] and
+perm_history_wage_cells (`--years-wages`). Each reads the table a few days
+at a time, so no statement passes a second on the live database.
 """
 from __future__ import annotations
 
 import argparse
 import copy
 import json
+import math
 import os
 import pathlib
 import re
@@ -203,6 +211,24 @@ SCHEMA = [
          sum_days REAL NOT NULL,
          PRIMARY KEY (month, letter)
        )""",
+    # Each fiscal year's certified wages by occupation (the SOC detail group, `15-1252`), nationally (state '') and
+    # by worksite state, as the percentiles the case page's wage ladder draws: an older case is placed among its own
+    # year's peers (src/lib/db/caseContext.ts), since the page never reads this table's rows. A cell under
+    # WAGE_CELL_FLOOR cases isn't written. Rebuilt with the history (build_history_years_wages).
+    """CREATE TABLE IF NOT EXISTS perm_history_wage_cells (
+         fy       INTEGER NOT NULL,
+         soc      TEXT NOT NULL,
+         state    TEXT NOT NULL,
+         n        INTEGER NOT NULL,
+         avg      REAL,
+         p5       REAL,
+         p25      REAL,
+         p50      REAL,
+         p75      REAL,
+         p95      REAL,
+         built_at INTEGER NOT NULL,
+         PRIMARY KEY (fy, soc, state)
+       )""",
 ]
 
 # The master case search reads history under the same leads as perm_cases.
@@ -217,6 +243,9 @@ SEARCH_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_pch_cit_dec ON perm_cases_history(citizenship, decision_date)",
     # One received day, for the filed-on-day pages (built on production by hand Nov 5 2026).
     "CREATE INDEX IF NOT EXISTS idx_pch_recv ON perm_cases_history(received_date)",
+    # /perm-cases' list with an outcome and no other filter, newest or oldest first (src/lib/db/cases.ts): without
+    # it the read walks idx_pch_dec opening each row for its status, a hundred rows for one denial. Built at night.
+    "CREATE INDEX IF NOT EXISTS idx_pch_status_dec ON perm_cases_history(status, decision_date)",
 ]
 
 
@@ -690,6 +719,113 @@ def build_alphabet_history(db) -> int:
     return len(out)
 
 
+# One pass over the older table for two small records the site reads instead of it (sweep items 20 and 21, Nov 21
+# 2026): each fiscal year's cases by outcome (perm_docs[HISTORY_YEARS_DOC]: /perm-cases' total, its year list and
+# its outcome counts) and each year's certified wages by occupation and state (perm_history_wage_cells: the case
+# page's wage ladder for an older case). Read FIVE decision days a statement on idx_pch_dec: a ten-day slice of 11
+# columns returned 4,858 rows in 1.09 s on the live database (Nov 21 2026), past the one-second rule.
+HISTORY_YEARS_DOC = "perm_history_years"
+SLICE_DAYS = 5
+# Below this many certified cases a wage ladder is arithmetic on a handful (MIN_WAGE_SAMPLE in caseContext.ts).
+WAGE_CELL_FLOOR = 30
+QUANTILES = (0.05, 0.25, 0.5, 0.75, 0.95)
+OUTCOMES = ("certified", "denied", "withdrawn")
+SOC_GROUP = re.compile(r"^(\d{2}-\d{4})")
+
+
+def days_between(a: str, b: str) -> int:
+    return (date.fromisoformat(b) - date.fromisoformat(a)).days
+
+
+def decision_slices(first: str, last: str) -> list[tuple[str, str]]:
+    """Half-open slices of SLICE_DAYS decision days, [a, b), from `first` through `last`. Pure."""
+    out: list[tuple[str, str]] = []
+    day = date.fromisoformat(first[:10])
+    end = date.fromisoformat(last[:10])
+    while day <= end:
+        nxt = date.fromordinal(day.toordinal() + SLICE_DAYS)
+        out.append((day.isoformat(), nxt.isoformat()))
+        day = nxt
+    return out
+
+
+def sql_round(x: float) -> float:
+    """SQLite's ROUND(x): half away from zero (Python's round() goes to even)."""
+    return float(math.floor(x + 0.5)) if x >= 0 else -float(math.floor(-x + 0.5))
+
+
+def wage_percentiles(wages: list[float]) -> list[float]:
+    """p5, p25, p50, p75 and p95 of wages sorted ascending, exactly as PERCENTILE_SELECT in src/lib/db/publicData.ts
+    computes them: rank k = (n - 1) * p, interpolated between floor(k) and the next, rounded as SQLite rounds."""
+    n = len(wages)
+    out = []
+    for p in QUANTILES:
+        k = (n - 1) * p
+        lo = int(k)
+        hi = min(lo + 1, n - 1)
+        out.append(sql_round(wages[lo] + (wages[hi] - wages[lo]) * (k - lo)))
+    return out
+
+
+def build_history_years_wages(db, min_cells: int = WAGE_CELL_FLOOR) -> int:
+    """perm_docs[HISTORY_YEARS_DOC] and perm_history_wage_cells, from one pass over perm_cases_history.
+
+    Every row counts, a case DOL decided again after FY2023 (and so also in perm_cases) included: /perm-cases lists
+    each published decision, from both tables, and its totals count what it lists; and a decision in FY2019 is one
+    of FY2019's whatever happened to the case later. The wage cells count certified cases with a positive wage and a
+    SOC code, by the code's seven-character group as every reader keys a job. Returns the rows written (cells and
+    years).
+    """
+    lo = rows_of(db.execute("SELECT MIN(decision_date) FROM perm_cases_history"))
+    hi = rows_of(db.execute("SELECT MAX(decision_date) FROM perm_cases_history"))
+    first, last = (lo[0][0] if lo else None), (hi[0][0] if hi else None)
+    years: dict[int, list[int]] = defaultdict(lambda: [0, 0, 0])
+    states: dict[str, list[int]] = defaultdict(lambda: [0, 0, 0])
+    wages: dict[tuple[int, str, str], list[float]] = defaultdict(list)
+    for a, b in decision_slices(str(first), str(last)) if first and last else []:
+        for status, fy, soc, state, wage in rows_of(db.execute(
+                "SELECT status, fiscal_year, soc_code, state, wage FROM perm_cases_history "
+                "WHERE decision_date >= ? AND decision_date < ?", [a, b])):
+            if status not in OUTCOMES or not str(fy or "").isdigit():
+                continue
+            year = int(fy)
+            years[year][OUTCOMES.index(status)] += 1
+            # A row with no worksite state counts under "", as perm_cases' coverage doc counts it.
+            states[str(state or "")][OUTCOMES.index(status)] += 1
+            group = SOC_GROUP.match(str(soc or "").strip())
+            w = None if wage in (None, "") else float(wage)
+            if status != "certified" or not group or w is None or w <= 0:
+                continue
+            wages[(year, group.group(1), "")].append(w)
+            if state:
+                wages[(year, group.group(1), str(state))].append(w)
+    built = int(time.time() * 1000)
+    cells = []
+    for (year, soc, state), ws in wages.items():
+        if len(ws) < min_cells:
+            continue
+        ws.sort()
+        cells.append((year, soc, state, len(ws), sum(ws) / len(ws), *wage_percentiles(ws), built))
+    db.execute(next(t for t in SCHEMA if "perm_history_wage_cells" in t))
+    insert_rows(db, "perm_history_wage_cells",
+                ["fy", "soc", "state", "n", "avg", "p5", "p25", "p50", "p75", "p95", "built_at"],
+                cells, per_request=STMTS_PER_REQUEST)
+    # The cells a rebuild didn't write go only after every new one is in, so the page never reads an empty table.
+    db.execute("DELETE FROM perm_history_wage_cells WHERE built_at < ?", [built])
+    doc = {
+        "years": [{"fiscalYear": str(y), "total": sum(c), "certified": c[0], "denied": c[1], "withdrawn": c[2]}
+                  for y, c in sorted(years.items(), reverse=True)],
+        "byState": [{"state": s, "total": sum(c), "certified": c[0], "denied": c[1], "withdrawn": c[2]}
+                    for s, c in sorted(states.items(), key=lambda kv: (-sum(kv[1]), kv[0]))],
+        "from": str(first) if first else None,
+        "to": str(last) if last else None,
+    }
+    db.execute("CREATE TABLE IF NOT EXISTS perm_docs (key TEXT PRIMARY KEY, json TEXT NOT NULL, computed_at INTEGER)")
+    write_doc(db, HISTORY_YEARS_DOC, doc)
+    log(f"  history years: {len(doc['years'])}; wage cells: {len(cells):,}")
+    return len(cells) + len(doc["years"])
+
+
 def occupation_slugs(db) -> dict[str, str]:
     return {str(r[0]): str(r[1]) for r in rows_of(db.execute(
         "SELECT code, slug FROM perm_entities WHERE kind = 'occupation' AND code IS NOT NULL"))}
@@ -783,7 +919,18 @@ def main() -> int:
                     help="no workbooks: current years, search indexes and facets only")
     ap.add_argument("--month-days", action="store_true",
                     help="no workbooks: only rebuild perm_history_month_days and perm_history_alphabet, then stop")
+    ap.add_argument("--years-wages", action="store_true",
+                    help="no workbooks: only rebuild perm_docs['perm_history_years'] and perm_history_wage_cells "
+                         "(one pass, five decision days a statement), then stop")
     args = ap.parse_args()
+
+    if args.years_wages:
+        db = Database()
+        db.script(SCHEMA)
+        n = build_history_years_wages(db)
+        record_run(db, "ingest_perm_history.py --years-wages", status="ok", rows_written=n,
+                   note="the older table's years by outcome and its wage cells by year, occupation and state")
+        return 0
 
     if args.month_days:
         db = Database()
@@ -809,8 +956,9 @@ def main() -> int:
             build_search_indexes(db)
         n += build_history_facets(db, occupation_slugs(db))
         n += build_month_days(db) + build_alphabet_history(db)
+        n += build_history_years_wages(db)
         record_run(db, "ingest_perm_history.py --finish-only", status="ok", rows_written=n,
-                   note="current years, search indexes, history facets and month days")
+                   note="current years, search indexes, history facets, month days, years and wage cells")
         return 0
 
     if args.current:
@@ -892,6 +1040,7 @@ def main() -> int:
             build_search_indexes(db)
         wrote_years += build_history_facets(db, occupation_slugs(db))
         wrote_years += build_month_days(db) + build_alphabet_history(db)
+        wrote_years += build_history_years_wages(db)
         years = sorted({v["fy"] for v in loaded.values()})
         status = "ok" if not failures else "partial"
         note = (f"FY{years[0]} to FY{years[-1]} held; " if years else "") + (
