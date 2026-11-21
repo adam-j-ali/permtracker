@@ -181,6 +181,7 @@ const ISOLATED_UNIT_FILES = [
   "src/lib/db/__tests__/clientRoute.test.ts",
   // Same again, and it sets the withheld-name settings before each import.
   "src/lib/db/__tests__/clientWithheld.test.ts",
+  "src/lib/db/__tests__/historyWithheld.test.ts",
   // Same again, and it stubs NODE_ENV before each import.
   "src/lib/db/__tests__/clientDevTag.test.ts",
   // Added 2026-09-27. Each mocks ./client (and caseLookupHistory also mocks
