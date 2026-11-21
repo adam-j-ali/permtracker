@@ -16,10 +16,11 @@ counted here into two small tables in the MAIN database, beside the builders tha
     willful_lca_history  one row per employer spelling and fiscal year: the LCAs on which it declared itself a willful
                          violator. Read by build_sponsor_index.py, whose count otherwise starts with FY2020.
 
-The older table is read ten days of decisions at a time on its decision-date index, never grouped whole (a busy month
-of the older PERM table read whole took 1.7 s on the live database, a ten-day slice 0.3 s; Nov 21 2026). Each slice
-groups the rows naming a firm by firm, state and employer, the rest by state, and keeps an employer apart only where
-it answered willful, so a slice returns a few thousand groups, never a row per filing. Both tables are written as
+The older table is read a few thousand decisions at a time on its decision-date index, never grouped whole: ten days
+of it grouped took 2.97 s on the live database (13,050 groups, Nov 21 2026), so each slice is held to a number of rows
+(lib_db.counted_slices: quiet days together, a crowded cap-season day cut by row id). Each slice groups the rows
+naming a firm by firm, state and employer, the rest by state, and keeps an employer apart only where it answered
+willful, so a slice returns at most its rows' worth of groups, never the table's. Both tables are written as
 diffs (lib_reference.sync_rows): a rebuild of unchanged files writes nothing, and one that stops part way leaves the
 old rows, never an empty table.
 """
@@ -28,7 +29,7 @@ from __future__ import annotations
 import time
 from collections import defaultdict
 
-from lib_db import day_slices, rows_of
+from lib_db import SLICE_ROWS, counted_slices, rows_of
 from lib_reference import sync_rows
 
 HISTORY = "lca_cases_history"
@@ -71,7 +72,7 @@ SLICE_SQL = (
     "SUM(CASE WHEN case_status = 'CERTIFIED' AND visa_class = 'H-1B' THEN COALESCE(workers, 1) ELSE 0 END), "
     "MIN(decision_date), MAX(decision_date), "
     "SUM(CASE WHEN willful_violator = 1 THEN 1 ELSE 0 END) "
-    f"FROM {HISTORY} WHERE decision_date >= ? AND decision_date < ? "
+    f"FROM {HISTORY} WHERE {{where}} "
     "GROUP BY g_fy, g_att, g_st, g_emp"
 )
 
@@ -121,8 +122,9 @@ def plan(firms: dict, willful: dict) -> tuple[list[list], list[list]]:
     return firm_rows, willful_rows
 
 
-def build(db) -> dict[str, int]:
-    """Count the older table's share into both small tables; how many rows each holds after."""
+def build(db, budget: int = SLICE_ROWS) -> dict[str, int]:
+    """Count the older table's share into both small tables; how many rows each holds after. `budget` is the most
+    rows one read opens."""
     for ddl in DDL:
         db.execute(ddl)
     started = time.time()
@@ -132,10 +134,12 @@ def build(db) -> dict[str, int]:
     firms: dict[tuple, list] = {}
     willful: dict[tuple[str, int], int] = defaultdict(int)
     if first and last:
-        for a, b in day_slices(str(first), str(last)):
-            fold(rows_of(db.execute(SLICE_SQL, [a, b])), firms, willful)
-            if a.endswith("-12-21"):
-                log(f"read through {b}: {len(firms):,} firm groups, {len(willful):,} willful employer-years "
+        month = ""
+        for where, args in counted_slices(db, HISTORY, "decision_date", str(first), str(last), budget):
+            fold(rows_of(db.execute(SLICE_SQL.format(where=where), args)), firms, willful)
+            if str(args[0])[:7] != month and str(args[0])[5:7] == "12":
+                month = str(args[0])[:7]
+                log(f"read into {month}: {len(firms):,} firm groups, {len(willful):,} willful employer-years "
                     f"({time.time() - started:.0f}s)")
     firm_rows, willful_rows = plan(firms, willful)
     f = sync_rows(db, FIRMS, FIRM_COLS[:4], FIRM_COLS, firm_rows, pause_s=0.2)

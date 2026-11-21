@@ -4,7 +4,7 @@
 FY2019's LCA file names the law firm, and the older files that ask carry the employer's willful-violator answer, but the
 nightly builders read `lca_cases` alone (FY2020 on): the H-1B firm rankings, a firm's H-1B line and a sponsor's
 willful-violator count missed them (the Nov 20 2026 sweep, items 32 and 33). The older table changes only when one of
-its files loads, so its share is counted then into two small tables in the main database, ten days of decisions at a
+its files loads, so its share is counted then into two small tables in the main database, a few thousand decisions at a
 time on its decision-date index:
 
 * firm_lca_history: per fiscal year, firm, worksite state and employer, every LCA naming the firm, those certified,
@@ -40,13 +40,18 @@ class Watched(SplitSqlite):
     def __init__(self) -> None:
         super().__init__()
         self.sqls: list[str] = []
+        self.args: list[list] = []
 
     def execute(self, sql, args=None, **kw):
         self.sqls.append(sql)
+        self.args.append(list(args or []))
         return super().execute(sql, args, **kw)
 
     def pipeline(self, reqs, **kw):
-        self.sqls.extend(q["stmt"]["sql"] for q in reqs if q.get("type") == "execute")
+        for q in reqs:
+            if q.get("type") == "execute":
+                self.sqls.append(q["stmt"]["sql"])
+                self.args.append([])
         return super().pipeline(reqs, **kw)
 
 
@@ -105,12 +110,33 @@ check("each employer's willful-violator LCAs per year, named firm or not",
       willful == {("beta", 2019): 1, ("bad-co", 2019): 1, ("old-co", 2017): 3}, str(willful))
 check("the build says what it holds", got == {"firm_rows": len(firms), "willful_rows": 3}, str(got))
 
-reads = [s for s in db.sqls if "FROM lca_cases_history" in s and "GROUP BY" in s]
-check("it reads ten days of decisions at a time, never the whole table",
+reads = [s for s in db.sqls if "FROM lca_cases_history" in s and "GROUP BY g_fy" in s]
+check("it reads a few days of decisions at a time, never the whole table",
       bool(reads) and all("decision_date >= ?" in s and "decision_date < ?" in s for s in reads), str(reads[:1]))
 plan = " ".join(str(x) for x in db.lca.conn.execute(
     "EXPLAIN QUERY PLAN " + reads[0].replace("?", "'2019-01-01'", 1).replace("?", "'2019-01-11'", 1)).fetchall())
 check("each slice rides the decision-date index", "lca_cases_history_decided" in plan, plan)
+
+# Ten days grouped took 2.97 s on the live table (13,050 groups, Nov 21 2026): a slice is held to a number of rows,
+# and a crowded day is cut by row id, with the same totals.
+cut = seed()
+small = r.build(cut, budget=2)
+crowded = [(sql, args) for sql, args in zip(cut.sqls, cut.args) if "GROUP BY g_fy" in sql]
+check("with a small budget every slice holds at most that many rows",
+      all(cut.lca.conn.execute(f"SELECT COUNT(*) FROM lca_cases_history WHERE {sql.split('WHERE ', 1)[1].split(' GROUP BY')[0]}",
+                               args).fetchone()[0] <= 2 for sql, args in crowded), str(len(crowded)))
+check("a crowded day is cut by row id on the same index", any("rowid >= ?" in sql for sql, _ in crowded),
+      str([s for s, _ in crowded][:2]))
+row_plan = " ".join(str(x) for x in cut.lca.conn.execute(
+    "EXPLAIN QUERY PLAN " + next(sql for sql, _ in crowded if "rowid" in sql),
+    next(a for sql, a in crowded if "rowid" in sql)).fetchall())
+check("and that cut seeks the index by day and row id", "lca_cases_history_decided" in row_plan and "rowid>" in row_plan,
+      row_plan)
+check("cut small or not, the counts are the same",
+      ({tuple(x) for x in cut.main.conn.execute(f"SELECT {','.join(r.FIRM_COLS)} FROM {r.FIRMS}")},
+       {tuple(x) for x in cut.main.conn.execute(f"SELECT {','.join(r.WILLFUL_COLS)} FROM {r.WILLFUL}")}, small),
+      ({tuple(x) for x in db.main.conn.execute(f"SELECT {','.join(r.FIRM_COLS)} FROM {r.FIRMS}")},
+       {tuple(x) for x in db.main.conn.execute(f"SELECT {','.join(r.WILLFUL_COLS)} FROM {r.WILLFUL}")}, got))
 check("the older table's reads go to the LCA database",
       all(statement_home(s) == "lca" for s in db.sqls if "lca_cases_history" in s))
 check("the two small tables live in the main database, beside the builders that read them",
