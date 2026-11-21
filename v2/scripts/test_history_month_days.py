@@ -122,7 +122,10 @@ check("a case with no days or no filing day is left out", 50 not in jan and None
 check("December 2022 is its own month", ("2022-12", 130, 1) in rows, str(rows))
 check("the builder says how many rows it wrote", n == len(rows), f"{n} vs {len(rows)}")
 reads = [s for s in db.statements if "FROM perm_cases_history" in s and "received_date >=" in s]
-check("it reads a month at a time on the filing-day range", len(reads) >= 2, str(len(reads)))
+check("it reads the filing-day range in slices of about ten days (a busy month took 1.7 s whole)",
+      any("'" not in s for s in reads) and len(reads) >= 3 * 2, str(len(reads)))
+check("a month's slices add up to the month (January's six cases, split across slices)",
+      sum(jan.values()) == 6, str(jan))
 check("no read groups the whole older table at once",
       not any("GROUP BY substr(received_date" in s and "FROM perm_cases_history" in s for s in db.statements))
 iph.build_month_days(db)
