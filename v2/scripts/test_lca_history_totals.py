@@ -134,9 +134,11 @@ def check_build() -> None:
     check("the older table is read a fiscal year at a time (two reads a year, FY2010 to FY2019)", len(yearly), 20)
     check("every yearly read rides the fiscal-year index",
           all("INDEXED BY lca_cases_history_fy" in s for s in yearly), True)
-    check("its only other read is the span, the index's two ends",
+    # One MIN and one MAX each seek the index's end; both in one statement walk the whole index (SQLite's
+    # min/max shortcut takes a lone aggregate only).
+    check("its only other reads are the span's two ends, one statement each",
           [" ".join(s.split()) for s in reads if s not in yearly],
-          ["SELECT MIN(fiscal_year), MAX(fiscal_year) FROM lca_cases_history"])
+          ["SELECT MIN(fiscal_year) FROM lca_cases_history", "SELECT MAX(fiscal_year) FROM lca_cases_history"])
     check("nothing it writes names the older table",
           [s for s in db.sent if s.lstrip().upper().startswith(("INSERT", "DELETE", "UPDATE"))
            and "lca_cases" in s], [])
