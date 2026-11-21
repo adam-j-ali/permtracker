@@ -47,6 +47,16 @@ import { formatApprovalRate, formatInt, formatShareOf } from "@/lib/format";
  * so the count is always printed and the rate only sometimes.
  */
 
+/**
+ * Which years a box's counts cover, worded to follow "filings": "since FY2024" for the current figures, "in FY2012
+ * to FY2023" for the older ones. The two never share a total, so each share says which it's a share of. Left out,
+ * a box reads as it always did.
+ */
+type Period = { period?: string };
+
+/** " since FY2024", or nothing. */
+const tail = (period?: string) => (period ? ` ${period}` : "");
+
 /** " · 98.4% approved" for a row whose decided cases carry a rate, else nothing. */
 function approvedNote(row: FacetRow): string {
   const rate = shownApprovalRate(row);
@@ -110,7 +120,8 @@ export function OccupationMix({
   total,
   className,
   filingsHref,
-}: {
+  period,
+}: Period & {
   rows: FacetRow[];
   /** The entity's own filing count, so the lead's share has a denominator. */
   total: number;
@@ -131,7 +142,7 @@ export function OccupationMix({
       note={
         <>
           These are the {rows.length === 1 ? "occupation" : `${rows.length} occupations`} with
-          the most filings, {formatInt(shown)} of {formatInt(total)} cases between them.
+          the most filings{tail(period)}, {formatInt(shown)} of {formatInt(total)} cases between them.
           The occupation on a PERM is the SOC code on the form, which is the
           job as DOL classifies it. It can differ from the job title on the offer. DOL
           still accepts two SOC vintages, so one job can appear twice under
@@ -155,7 +166,9 @@ export function OccupationMix({
       <p className="mt-1.5 font-mono text-sm tabular-nums text-muted-foreground">
         {lead.code ? <>SOC {lead.code} &middot; </> : null}
         <Count row={lead} href={filingsHref} />
-        {leadShare >= 1 ? `, ${formatShareOf(lead.n, total)} of everything they file` : null}
+        {leadShare >= 1
+          ? `, ${formatShareOf(lead.n, total)} of ${period ? `their filings ${period}` : "everything they file"}`
+          : null}
         {approvedNote(lead)}
       </p>
 
@@ -199,7 +212,8 @@ export function StateMix({
   rows,
   total,
   className,
-}: {
+  period,
+}: Period & {
   rows: FacetRow[];
   total: number;
   className?: string;
@@ -222,8 +236,8 @@ export function StateMix({
           </IntentLink>
           .{" "}
           {rows.length === 1
-            ? `This state covers ${formatInt(shown)} of ${formatInt(total)} filings.`
-            : `These ${rows.length} states cover ${formatInt(shown)} of ${formatInt(total)} filings.`}
+            ? `This state covers ${formatInt(shown)} of ${formatInt(total)} filings${tail(period)}.`
+            : `These ${rows.length} states cover ${formatInt(shown)} of ${formatInt(total)} filings${tail(period)}.`}
         </>
       }
       className={className}
@@ -266,7 +280,8 @@ export function PartyMix({
   hrefBase,
   className,
   filingsHref,
-}: {
+  period,
+}: Period & {
   rows: FacetRow[];
   total: number;
   title: string;
@@ -284,8 +299,8 @@ export function PartyMix({
       title={title}
       note={
         <>
-          {note} {formatInt(shown)} of {formatInt(total)} filings, {total > 0 ? formatShareOf(shown, total) : "0%"} of the
-          total.
+          {note} {formatInt(shown)} of {formatInt(total)} filings{tail(period)},{" "}
+          {total > 0 ? formatShareOf(shown, total) : "0%"} of the total.
         </>
       }
       className={className}
@@ -331,7 +346,8 @@ export function PlaceMix({
   cities: givenCities,
   total,
   className,
-}: {
+  period,
+}: Period & {
   states: FacetRow[];
   cities: FacetRow[];
   total: number;
@@ -349,7 +365,7 @@ export function PlaceMix({
         <>
           The worksite on the application, which is where the job is and not where the company is headquartered.{" "}
           {states.length > 0
-            ? `${states.length === 1 ? "This state covers" : `These ${states.length} states cover`} ${formatInt(inStates)} of ${formatInt(total)} filings`
+            ? `${states.length === 1 ? "This state covers" : `These ${states.length} states cover`} ${formatInt(inStates)} of ${formatInt(total)} filings${tail(period)}`
             : ""}
           {states.length > 0 && cities.length > 0 ? "; " : ""}
           {cities.length > 0

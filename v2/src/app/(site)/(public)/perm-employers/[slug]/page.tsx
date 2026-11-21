@@ -24,7 +24,7 @@ import { realCities } from "@/lib/facetClean";
 import { notFound, permanentRedirect } from "next/navigation";
 import { firstThatFits, seeCandidates } from "@/lib/describe";
 import { pendingSentence, profileLine, whereTheyStand } from "@/lib/pendingSnippet";
-import { formatDollars, formatInt } from "@/lib/format";
+import { formatDollars, formatInt, formatShareOf } from "@/lib/format";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { breadcrumbSchema } from "@/lib/breadcrumbs";
 import {
@@ -53,7 +53,7 @@ import {
   entityMetadata,
   entityStaticParams,
 } from "@/lib/entityPage";
-import { employerHistoryCases, employerYears, workerFacets } from "@/lib/db/employerHistory";
+import { employerHistoryCases, employerYears, historyMakeup, workerFacets } from "@/lib/db/employerHistory";
 import { lcaYears } from "@/lib/db/lcaYears";
 import { getDisclosureSummary, getFreshness, liveOnlyLastChanged } from "@/lib/db/publicData";
 import { getDateSources } from "@/lib/db/dateSources";
@@ -75,6 +75,8 @@ import { SizeBandNote } from "@/components/entities/SizeBandNote";
 import { EmployerYears } from "@/components/entities/EmployerYears";
 import { LcaYears } from "@/components/entities/LcaYears";
 import { WorkerMix } from "@/components/entities/WorkerMix";
+import { HistoryMakeup, historyYears } from "@/components/entities/HistoryMakeup";
+import { CURRENT_PERIOD } from "@/lib/permEras";
 import { IndustryMix, OccupationMix, PartyMix, PlaceMix, RecruitmentMix } from "@/components/entities/FilingMakeup";
 import { FilingsSearch } from "@/components/entities/FilingsSearch";
 import {
@@ -613,7 +615,7 @@ export default async function EmployerPage({
     // No catch: an unreadable map must fail the render (the last good page
     // stays), not cache a month of an employer with no other programs.
     const liveMatch = await employerMatch(slug);
-    const [fresh, liveStages, liveWait, fieldWait, filedToday, liveSeasonal, wageLive, lcaLive, wageDets, lcaDets, lcaProfile, uscisH1b, lottery, liveDebarments, liveWarn, liveWhd, liveStarts] =
+    const [fresh, liveStages, liveWait, fieldWait, filedToday, liveSeasonal, wageLive, lcaLive, wageDets, lcaDets, lcaProfile, uscisH1b, lottery, liveDebarments, liveWarn, liveWhd, liveStarts, liveMakeup] =
       await Promise.all([
         getFreshness(),
         getEmployerStages().catch(softFail("perm-employers/[slug]/page.getEmployerStages", null)),
@@ -633,6 +635,8 @@ export default async function EmployerPage({
         whdForSlug(slug),
         // Its wage requests and PERM applications by year. A failure only drops the table.
         getEmployerStarts(slug).catch(softFail("perm-employers/[slug]/page.getEmployerStarts", null)),
+        // What its FY2008 to FY2023 decided cases were made of. No catch, as with the published page.
+        historyMakeup("employer", slug),
       ]);
     const updated = employerOwnDate(await liveOnlyLastChanged(slug), await getDateSources());
     return (
@@ -663,7 +667,8 @@ export default async function EmployerPage({
               <LcaProfile name={live.record.name} profile={lcaProfile} />{" "}
               <UscisH1bRecord record={uscisH1b} through={fresh["uscis-h1b-hub"]?.asOf ?? null} />{" "}
               <H1bLotteryHistory years={lottery} />{" "}
-              <SeasonalFilings name={live.record.name} rows={liveSeasonal} className="mt-8" />
+              <SeasonalFilings name={live.record.name} rows={liveSeasonal} className="mt-8" />{" "}
+              <HistoryMakeup makeup={liveMakeup} subject="employer" />
             </>
           }
           asOf={fresh["perm-case-status"]?.asOf ?? null}
@@ -724,7 +729,7 @@ export default async function EmployerPage({
   // the LCA panel and the lists below all read the same rows.
   // No catch, for the reason at the live-only branch's call.
   const match = await employerMatch(canonicalSlug);
-  const [stats, dist, near, pending, facets, variants, absorbed, freshness, recentLive, wageLive, lcaLive, wageDets, lcaDets, programs, stagesDoc, debarments, warn, empWait, fieldWait, filedToday, years, historyCases, workers, seasonalRows, lcaProfile, uscisH1b, lottery, sponsor, pwdLinks, size, acwia, whd, osha, samRows, taaRows, pppRows, layoffAnswer, lcaYearRows, starts] =
+  const [stats, dist, near, pending, facets, variants, absorbed, freshness, recentLive, wageLive, lcaLive, wageDets, lcaDets, programs, stagesDoc, debarments, warn, empWait, fieldWait, filedToday, years, historyCases, workers, seasonalRows, lcaProfile, uscisH1b, lottery, sponsor, pwdLinks, size, acwia, whd, osha, samRows, taaRows, pppRows, layoffAnswer, lcaYearRows, starts, makeup] =
     await Promise.all([
       getDisclosureSummary(),
       fieldDistribution(KIND, MIN_DECIDED_FOR_RATE),
@@ -800,6 +805,9 @@ export default async function EmployerPage({
       lcaYears(canonicalSlug),
       // Its wage requests beside its PERM applications, by the year it filed each. A failure only drops the table.
       getEmployerStarts(canonicalSlug).catch(softFail("perm-employers/[slug]/page.getEmployerStarts", null)),
+      // What its FY2008 to FY2023 cases were made of, with their own total (perm_history_entity_facets, one PK read).
+      // No catch, as with the years: a failed read keeps the last good page.
+      historyMakeup("employer", canonicalSlug),
     ]);
   const wageReqs = unifiedRows(wageLive, wageDets, 5);
   const lcas = unifiedRows(lcaLive, lcaDets, 5);
@@ -883,7 +891,8 @@ export default async function EmployerPage({
   // What the sponsor is, in three cells: the job it files for most, where, and its industry.
   const topCity = realCities(facets.city ?? [])[0];
   const topIndustry = facets.industry ? groupIndustries(facets.industry)[0] : undefined;
-  const share = (n: number) => `${Math.round((n / Math.max(row.total, 1)) * 100)}% of its filings`;
+  // Shares of its filings since FY2024, the facets' own years; the older ones are under History.
+  const share = (n: number) => `${formatShareOf(n, Math.max(row.total, 1))} of its filings ${CURRENT_PERIOD}`;
   const facts: ProfileFact[] = ([
     topOcc ? { label: "Main job", value: topOcc.label, href: topOcc.key ? entityHref("occupation", topOcc.key) : undefined, note: share(topOcc.n) } : null,
     topCity
@@ -903,7 +912,8 @@ export default async function EmployerPage({
     facets.occupation || facets.state || facets.attorney || facets.city || facets.industry || facets.newspaper || facets.recruit_lead,
   );
   const hasHistory =
-    years.length > 0 || historyCases.length > 0 || lcaYearRows.length > 1 || Object.values(workers).some((r) => (r?.length ?? 0) > 0);
+    years.length > 0 || historyCases.length > 0 || lcaYearRows.length > 1 || makeup !== null ||
+    Object.values(workers).some((r) => (r?.length ?? 0) > 0);
   // Other agencies' records (WHD, OSHA, SAM.gov, TAA, PPP): a chapter of their own, only when there's one to show.
   const hasRecords = Boolean(whd) || Boolean(osha) || samRows.length > 0 || taaRows.length > 0 || pppRows.length > 0;
   const chapters: ChapterItem[] = [
@@ -1145,6 +1155,21 @@ export default async function EmployerPage({
         <Chapter
           id="work"
           title="What they file, and where"
+          dek={
+            <>
+              From its {formatInt(row.total)} {row.total === 1 ? "filing" : "filings"} decided {CURRENT_PERIOD}.
+              {makeup ? (
+                <>
+                  {" "}
+                  Its {historyYears(makeup)} filings are under{" "}
+                  <a href="#history" className="link">
+                    History
+                  </a>
+                  .
+                </>
+              ) : null}
+            </>
+          }
         >
           {byName ? (
             <FilingsSearch
@@ -1163,18 +1188,20 @@ export default async function EmployerPage({
               <OccupationMix
                 rows={facets.occupation}
                 total={row.total}
+                period={CURRENT_PERIOD}
                 filingsHref={(r) => (r.key ? nameSearch(canonicalSlug, row.name, { occupation: r.key }) ?? null : null)}
               />
             ) : null}
             {/* The header already names one industry and one worksite; a box would only repeat it. */}
             {facets.industry && groupIndustries(facets.industry).length > 1 ? <IndustryMix rows={facets.industry} /> : null}
             {(facets.state?.length ?? 0) > 1 || realCities(facets.city ?? []).length > 1 ? (
-              <PlaceMix states={facets.state ?? []} cities={facets.city ?? []} total={row.total} />
+              <PlaceMix states={facets.state ?? []} cities={facets.city ?? []} total={row.total} period={CURRENT_PERIOD} />
             ) : null}
             {facets.attorney ? (
               <PartyMix
                 rows={facets.attorney}
                 total={row.total}
+                period={CURRENT_PERIOD}
                 title="Who files for them"
                 note="The law firm named on the application."
                 hrefBase="/perm-attorneys"
@@ -1214,6 +1241,7 @@ export default async function EmployerPage({
             lastYearPartial={throughMonth ? `DOL's newest file runs through ${throughMonth}` : undefined}
           />{" "}
           <LcaYears years={lcaYearRows} className="mt-8" />{" "}
+          <HistoryMakeup makeup={makeup} subject="employer" />{" "}
           <WorkerMix facets={workers} subject="employer" />
         </Chapter>
       ) : null}
