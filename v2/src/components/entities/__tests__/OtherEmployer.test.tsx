@@ -95,7 +95,7 @@ describe("OtherEmployer", () => {
 
   it("says when its PERM filings are only in DOL's older files", () => {
     page({ perm: 3 });
-    expect(screen.getByText(/It also filed 3 PERM cases in DOL's FY2016 to FY2023 files, and none since\./)).toBeInTheDocument();
+    expect(screen.getByText(/It also filed 3 PERM cases in DOL's FY2008 to FY2023 files, and none since\./)).toBeInTheDocument();
   });
 
   it("says the live count is unknown rather than zero when the live record couldn't be read", () => {
