@@ -69,7 +69,9 @@ from collections import Counter, defaultdict
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from entity_identity import program_key, spacing_aliases, typo_aliases  # noqa: E402
-from lib_db import SLUG_WINDOWS, Database, et_date, record_run, rows_of, slug_window  # noqa: E402
+from lca_history_rollups import FIRMS as LCA_HISTORY_FIRMS  # noqa: E402
+from lib_db import SLUG_WINDOWS, Database, dicts_of, et_date, record_run, rows_of, slug_window  # noqa: E402
+from lib_withheld import Matcher, matcher_for  # noqa: E402
 
 MAP = "employer_page_map"
 INDEX = "employer_other_index"
@@ -489,6 +491,20 @@ def read_firm_sources(db: Database) -> dict[str, Counter]:
             if slug and name:
                 spellings[str(slug)][str(name)] += int(n or 0)
         log(f"  {table}: {len(rows):,} firm slug and name pairs")
+    # FY2019's H-1B file names the firm too. Its spellings come from the counts its load made
+    # (lca_history_rollups.py, a small table in this database): the older table itself is never read nightly.
+    try:
+        rows = rows_of(db.execute(
+            f"SELECT attorney_slug, attorney_name, SUM(filings) FROM {LCA_HISTORY_FIRMS} "
+            "WHERE attorney_slug <> '' GROUP BY attorney_slug, attorney_name"))
+    except Exception as e:  # noqa: BLE001
+        if not missing_table(e):
+            raise
+        rows = []
+    for slug, name, n in rows:
+        if slug and name:
+            spellings[str(slug)][str(name)] += int(n or 0)
+    log(f"  {LCA_HISTORY_FIRMS}: {len(rows):,} firm slug and name pairs")
     return spellings
 
 
@@ -498,8 +514,13 @@ def read_firm_pages(db: Database) -> dict[str, tuple[str, str, int]]:
         "SELECT slug, name, merge_key, total FROM perm_entities WHERE kind = 'attorney'"))}
 
 
-def plan_firms(spellings: dict[str, Counter], pages: dict[str, tuple[str, str, int]]) -> tuple[list[list], dict]:
-    """(map rows, stats): each program spelling of a firm that has a page. Pure, for the test."""
+def plan_firms(spellings: dict[str, Counter], pages: dict[str, tuple[str, str, int]],
+               withheld: Matcher | None = None) -> tuple[list[list], dict]:
+    """(map rows, stats): each program spelling of a firm that has a page. Pure, for the test.
+
+    A spelling lib_withheld.Matcher knows as a withheld firm's (its slug, any name it printed, an alias, the entity
+    key of either) maps to that firm's page before any key rule, so the page's masking covers it on every page that
+    reads the map (convex/lib/withheldNames.ts). `stats["withheld"]` counts them, naming none."""
     page_of_key: dict[str, tuple[int, str]] = {}
     totals: Counter = Counter()
     for slug, (name, merge_key, total) in pages.items():
@@ -519,6 +540,11 @@ def plan_firms(spellings: dict[str, Counter], pages: dict[str, tuple[str, str, i
     rows: list[list] = []
     stats = Counter()
     for slug, key in sorted(key_of.items()):
+        held = withheld_page(slug, spellings[slug], withheld) if withheld else None
+        if held and held in pages:
+            rows.append([slug, held, key])
+            stats["withheld"] += 1
+            continue
         # A key that IS a page's key stays on that page: the typo rules only
         # place spellings that have no page of their own.
         own = page_of_key.get(key)
@@ -529,6 +555,12 @@ def plan_firms(spellings: dict[str, Counter], pages: dict[str, tuple[str, str, i
         rows.append([slug, page[1], key])
         stats["key" if own else "typo"] += 1
     return rows, dict(stats)
+
+
+def withheld_page(slug: str, names: Counter, withheld: Matcher) -> str | None:
+    """The withheld firm's page a spelling belongs to, by its slug or any name it printed, or None."""
+    return withheld.page_for(slug=slug) or next(
+        (p for p in (withheld.page_for(name=n) for n in sorted(names)) if p), None)
 
 
 def norm(row: list, cols: list[str]) -> tuple:
@@ -633,7 +665,8 @@ def main() -> int:
     pages = read_pages(db)
     rows, index_rows, stats = plan(slugs, pages)
     log(f"employer slugs {len(slugs):,}; map rows {len(rows):,}; {stats}")
-    firm_rows, firm_stats = plan_firms(read_firm_sources(db), read_firm_pages(db))
+    withheld = matcher_for(lambda sql, a: dicts_of(db.execute(sql, a)), "firm", log=log)
+    firm_rows, firm_stats = plan_firms(read_firm_sources(db), read_firm_pages(db), withheld)
     log(f"firm spellings mapped {len(firm_rows):,}; {firm_stats}")
     if args.dry_run:
         for row in index_rows[:5]:

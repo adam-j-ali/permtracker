@@ -116,6 +116,11 @@ jobs:
       # the database, so the two loads land first.
       - name: Load the public corpus
         working-directory: v2
+        env:
+          # Names withheld at their owner's request (scripts/lib_withheld.py): the firm rankings put a withheld
+          # firm's older spellings on its page, which the site masks. Read, never printed.
+          WITHHELD_EMPLOYERS: ${{ secrets.WITHHELD_EMPLOYERS }}
+          WITHHELD_FIRMS: ${{ secrets.WITHHELD_FIRMS }}
         run: |
           # A shell test rather than an `if:` expression: hashFiles() only sees
           # paths inside the workspace, and RUNNER_TEMP is outside it. A missing

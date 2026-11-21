@@ -52,7 +52,17 @@
  * NUMBERING IS SITE-WIDE (owner's decision, Nov 5 2026): each entry carries
  * its own number in its kind, so "Law firm 3" is the same firm on every page.
  * There is no per-page mode.
+ *
+ * OLDER SPELLINGS (Nov 21 2026). DOL's older files print a firm or an employer
+ * under spellings the list may not hold. A spelling is the withheld entity's
+ * when its entity key (./entityKey.ts, the key the site joins a spelling to its
+ * page by) is the key of one of the entry's names or slugs, with or without its
+ * spaces; and a row or a summary object whose slug names the entity masks the
+ * name printed beside it too, whatever that name is ("attorney_slug" with
+ * "attorney_name", "slug" with "name").
  */
+
+import { programKey } from "./entityKey";
 
 export type WithheldKind = "employer" | "firm";
 
@@ -264,6 +274,15 @@ export function roleOf(column: string): Role {
   const role = { kind, slugLike };
   if (roleCache.size < 2000) roleCache.set(column, role);
   return role;
+}
+
+/**
+ * The one entity a column is a part of: "attorney_slug" and "attorney_name" are one firm's slug and name,
+ * "slug" and "name" one row's, "employerSlug" and "employerName" one employer's. A slug that names a withheld
+ * entity masks its own name beside it, whatever spelling the file printed.
+ */
+function stemOf(column: string): string {
+  return column.toLowerCase().replace(/_?(slug|name|key|label)$/, "");
 }
 
 /** Words for things that are never a firm or an employer: an occupation, a place, a newspaper, a program. */
@@ -596,10 +615,38 @@ export function makeMasker(entries: readonly WithheldEntry[]): Masker {
     if (ns && !byNeutral.has(`${e.kind}:${ns}`)) byNeutral.set(`${e.kind}:${ns}`, e);
   }
 
+  // Every entry's entity keys (./entityKey.ts), whole and with the spaces taken out: the keys the site joins a
+  // printed spelling to its page by, so an older spelling the list doesn't hold is still the entity's.
+  const byEntity = new Map<string, WithheldEntry[]>();
+  const byTight = new Map<string, WithheldEntry[]>();
+  /** The first four letters of every such key, so most cells never pay for `programKey`. */
+  const tightStarts = new Set<string>();
+  const addEntityKey = (text: string, e: WithheldEntry) => {
+    const k = programKey(text);
+    const tight = k.replace(/ /g, "");
+    if (tight.length < MIN_KEY) return;
+    add(byEntity, k, e);
+    add(byTight, tight, e);
+    tightStarts.add(tight.slice(0, 4));
+  };
+  for (const e of entries) {
+    for (const s of e.slugs) addEntityKey(s.replace(/-/g, " "), e);
+    for (const n of e.names) addEntityKey(n, e);
+  }
+
   const pick = (list: WithheldEntry[] | undefined, kinds: KindMask): WithheldEntry | null => {
     if (!list) return null;
     for (const e of list) if (KIND_BIT[e.kind] & kinds) return e;
     return null;
+  };
+
+  /** The entry whose entity key a cell's text has, whole or spaceless. `lower` is the text squashed. */
+  const entityHit = (value: string, lower: string, kinds: KindMask): WithheldEntry | null => {
+    const flat = lower.replace(/[^a-z0-9]+/g, "");
+    // "The Example Law Group" keys without its "the".
+    if (!tightStarts.has(flat.slice(0, 4)) && !(flat.startsWith("the") && tightStarts.has(flat.slice(3, 7)))) return null;
+    const k = programKey(value);
+    return pick(byEntity.get(k), kinds) ?? pick(byTight.get(k.replace(/ /g, "")), kinds);
   };
 
   /**
@@ -618,16 +665,18 @@ export function makeMasker(entries: readonly WithheldEntry[]): Masker {
     const n = pick(byName.get(lower), kinds);
     if (n) return { entry: n, how: "name" };
     if (exactOnly) return null;
+    // A key from a hyphenated, spaceless value was a slug; anything else a name.
+    const how = /\s/.test(value.trim()) || !value.includes("-") ? "name" : "slug";
     // Accents off, as the keys have them ("Société" is "societe").
     const first = lower.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").split(/[^a-z0-9]+/).find(Boolean);
     if (!first) return null;
     // "The Example Law Group" starts with a word the keys drop, and "J. Q. Example" with an initial they merge.
-    if (!keyStarts.has(first) && first !== "the" && first.length > 1) return null;
-    const k = nameKey(value);
-    const e = pick(byKey.get(k), kinds);
-    if (!e) return null;
-    // A key from a hyphenated, spaceless value was a slug; anything else a name.
-    return { entry: e, how: /\s/.test(value.trim()) || !value.includes("-") ? "name" : "slug" };
+    if (keyStarts.has(first) || first === "the" || first.length === 1) {
+      const e = pick(byKey.get(nameKey(value)), kinds);
+      if (e) return { entry: e, how };
+    }
+    const e = entityHit(value, lower, kinds);
+    return e ? { entry: e, how } : null;
   };
 
   /** A whole slug or a whole name, nothing looser: for a summary's object keys. */
@@ -638,6 +687,29 @@ export function makeMasker(entries: readonly WithheldEntry[]): Masker {
     if (s) return { entry: s, how: "slug" };
     const n = pick(byName.get(lower), kinds);
     return n ? { entry: n, how: "name" } : null;
+  };
+
+  /**
+   * The entry a cell names through its pair (stemOf): the other half of a slug and a name, when that half named an
+   * entry by its own text. `named` is the row's or the object's cells that did; a cell of another role, or of a kind
+   * the entry isn't, is left alone.
+   */
+  const pairedEntry = (
+    col: string,
+    context: KindMask | null,
+    named: readonly { key: string; entry: WithheldEntry }[],
+  ): WithheldEntry | null => {
+    if (!named.length) return null;
+    const role = roleOf(col);
+    if (role.kind !== "firm" && role.kind !== "employer" && role.kind !== "generic") return null;
+    const stem = stemOf(col);
+    const kinds = kindsFor(role, context);
+    for (const n of named) {
+      if (n.key !== col && stemOf(n.key) === stem && roleOf(n.key).kind === role.kind && KIND_BIT[n.entry.kind] & kinds) {
+        return n.entry;
+      }
+    }
+    return null;
   };
 
   // Text and stored summaries: one loose test first, so a cell that can't hold
@@ -723,6 +795,8 @@ export function makeMasker(entries: readonly WithheldEntry[]): Masker {
     for (const [k, v] of Object.entries(o)) {
       if (typeof v === "string" && roleOf(k).kind === "case") caseEntry ??= byCase.get(v.trim().toUpperCase()) ?? null;
     }
+    const named: { key: string; entry: WithheldEntry }[] = [];
+    const masked = new Set<string>();
     for (const [k, v] of Object.entries(o)) {
       if (typeof v === "string") {
         const role = roleOf(k);
@@ -732,12 +806,15 @@ export function makeMasker(entries: readonly WithheldEntry[]): Masker {
         if (hit) {
           o[k] = role.slugLike ? neutralSlug(hit.entry) : shownLabel(hit.entry);
           changed = true;
+          masked.add(k);
+          if (role.kind !== "other") named.push({ key: k, entry: hit.entry });
         } else if (
           caseEntry &&
           (role.kind === "employer" || (role.kind === "generic" && kindsFor(role, objKind) & EMPLOYER))
         ) {
           o[k] = role.slugLike ? neutralSlug(caseEntry) : shownLabel(caseEntry);
           changed = true;
+          masked.add(k);
         } else if (role.kind === "other" && v.length >= PROSE_MIN) {
           const s = scrubText(v);
           if (s !== v) {
@@ -747,6 +824,14 @@ export function makeMasker(entries: readonly WithheldEntry[]): Masker {
         }
       } else if (v && typeof v === "object") {
         changed = walk(v, keyKind(k) ?? objKind) || changed;
+      }
+    }
+    for (const [k, v] of Object.entries(o)) {
+      if (typeof v !== "string" || masked.has(k)) continue;
+      const e = pairedEntry(k, objKind, named);
+      if (e) {
+        o[k] = roleOf(k).slugLike ? neutralSlug(e) : shownLabel(e);
+        changed = true;
       }
     }
     return changed;
@@ -867,6 +952,15 @@ export function makeMasker(entries: readonly WithheldEntry[]): Masker {
         // Prose and stored summaries live in columns that aren't an entity's own:
         // an employer's long name that happens to contain a firm's is left alone.
         else if (role.kind === "other" && v.length >= PROSE_MIN) longCols.push(col);
+      }
+      if (hits.length) {
+        // The other half of a slug and a name that named an entry: masked too, whatever spelling it printed.
+        const byText = hits.filter((h) => roleOf(h.col).kind !== "other").map((h) => ({ key: h.col, entry: h.hit.entry }));
+        for (const [col, v] of Object.entries(r)) {
+          if (typeof v !== "string" || !v || hits.some((h) => h.col === col)) continue;
+          const e = pairedEntry(col, rowKind, byText);
+          if (e) hits.push({ col, hit: { entry: e, how: "name" }, slugLike: roleOf(col).slugLike });
+        }
       }
       const scrubbed = new Map<string, string>();
       for (const col of longCols) {

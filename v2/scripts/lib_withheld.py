@@ -19,6 +19,8 @@ helpers on a public repository's runner, whose logs anyone can read.
 
 from __future__ import annotations
 
+import os
+import pathlib
 import re
 from dataclasses import dataclass, field, replace
 from typing import Callable, Iterable
@@ -329,6 +331,136 @@ def affected_paths(q: Query, e: Entry) -> list[str]:
         for o in _quiet(q, "SELECT slug FROM perm_entities WHERE kind = 'occupation' AND code LIKE ?", [g + "%"]):
             paths.add(f"/perm-wages/{o['slug']}")
     return sorted(paths)
+
+
+# ---------------------------------------------------------------------------
+# A builder's view: which withheld entry a printed spelling is
+# ---------------------------------------------------------------------------
+
+# Where the server keeps the settings (the web copies read it; the timers that run the builders don't load it).
+SERVER_ENV = "/srv/permtracker/app/env/production.env"
+# A key shorter than this (spaces out) matches nothing: "abc" would be any company's initials (MIN_KEY in
+# convex/lib/withheldNames.ts).
+MIN_KEY = 5
+
+
+def env_entries(env: dict | None = None, path: str = SERVER_ENV) -> list[Entry] | None:
+    """Both kinds' entries from the environment, else from the server's settings file; None when neither holds
+    either setting (a builder then can't tell, and says so). An empty setting is no setting: a workflow passes a
+    secret it can't read as an empty string. Reads nothing it prints."""
+    env = dict(os.environ) if env is None else env
+    if any(env.get(SETTINGS[k]) for k in SETTINGS):
+        return parse_env(env)
+    try:
+        lines = pathlib.Path(path).read_text().splitlines()
+    except OSError:
+        return None
+    found: dict[str, str] = {}
+    for line in lines:
+        name, eq, value = line.partition("=")
+        value = value.strip().strip('"').strip("'")
+        if eq and name.strip() in SETTINGS.values() and value:
+            found[name.strip()] = value
+    return parse_env(found) if found else None
+
+
+def _keys(text: str) -> set[str]:
+    """A spelling's entity keys, whole and spaceless (entity_identity.program_key, the key the builders join a
+    spelling to a page by), each long enough to identify someone."""
+    from entity_identity import program_key  # standard library only
+    k = program_key(text)
+    tight = k.replace(" ", "")
+    return {k, "~" + tight} if len(tight) >= MIN_KEY else set()
+
+
+class Matcher:
+    """Which withheld entry of one kind a printed name or a slug is.
+
+    By every slug and name the entry carries, by the alias and page-map slugs that point at one of them
+    (`aliases`, read from the database by `matcher_for`), and by entity key, whole or spaceless: the key the
+    builders join an older spelling to today's page by, so "The Example Law Group & Co." in a FY2016 file is
+    "Example Law Group, PLLC" whatever the list holds. A builder folds such a spelling onto the entry's page, so
+    the site's masker (convex/lib/withheldNames.ts) masks it by the page's slug and name; nothing here prints.
+    """
+
+    def __init__(self, entries: Iterable[Entry] | None, kind: str, aliases: dict[str, str] | None = None):
+        self.known = entries is not None
+        self.entries = [e for e in (entries or []) if e.kind == kind]
+        self._slug: dict[str, Entry] = {}
+        self._name: dict[str, Entry] = {}
+        self._key: dict[str, Entry] = {}
+        self._seen: dict[tuple, Entry | None] = {}
+        for e in self.entries:
+            for s in e.all_slugs():
+                self._slug.setdefault(s.lower(), e)
+                for k in _keys(s.replace("-", " ")):
+                    self._key.setdefault(k, e)
+            for n in e.all_names():
+                self._name.setdefault(_squash(n).lower(), e)
+                for k in _keys(n):
+                    self._key.setdefault(k, e)
+        for alias, target in (aliases or {}).items():
+            e = self._slug.get(str(target).lower())
+            if e is not None:
+                self._slug.setdefault(str(alias).lower(), e)
+
+    def __bool__(self) -> bool:
+        return bool(self.entries)
+
+    def entry_for(self, name: str | None = None, slug: str | None = None) -> Entry | None:
+        """The entry the slug or the printed name is, or None. Remembered: a builder asks about the same few
+        thousand spellings once per group, and each key costs a parse."""
+        if not self.entries:
+            return None
+        asked = (name, slug)
+        if asked not in self._seen:
+            self._seen[asked] = self._find(name, slug)
+        return self._seen[asked]
+
+    def _find(self, name: str | None, slug: str | None) -> Entry | None:
+        if slug:
+            e = self._slug.get(str(slug).strip().lower())
+            if e is not None:
+                return e
+        if name:
+            e = self._name.get(_squash(str(name)).lower())
+            if e is not None:
+                return e
+        for text in (name, str(slug).replace("-", " ") if slug else None):
+            if text:
+                for k in _keys(str(text)):
+                    e = self._key.get(k)
+                    if e is not None:
+                        return e
+        return None
+
+    def page_for(self, name: str | None = None, slug: str | None = None) -> str | None:
+        """The withheld entry's page slug for this spelling, or None."""
+        e = self.entry_for(name, slug)
+        return e.slug if e else None
+
+
+def matcher_for(q: Query | None, kind: str, env: dict | None = None, path: str = SERVER_ENV,
+                log: Callable[[str], None] | None = None) -> Matcher:
+    """The matcher a builder uses: the settings (env_entries) and, when `q` is given, the aliases and page-map
+    spellings that point at an entry's slugs. Without the settings it matches nothing and `log` hears one line
+    that names no one; the site still masks every spelling it knows (convex/lib/withheldNames.ts)."""
+    entries = env_entries(env, path)
+    if entries is None:
+        if log:
+            log("withheld: the lists aren't set here, so no older spelling is folded onto a withheld page")
+        return Matcher(None, kind)
+    mine = [e for e in entries if e.kind == kind]
+    aliases: dict[str, str] = {}
+    if q is not None and mine:
+        slugs = sorted({s for e in mine for s in e.all_slugs()})
+        marks = _marks(len(slugs))
+        for r in _quiet(q, f"SELECT slug, target_slug FROM perm_entity_alias WHERE kind = ? AND target_slug IN ({marks})",
+                        [ENTITY_KIND[kind], *slugs]):
+            aliases[str(r["slug"])] = str(r["target_slug"])
+        for r in _quiet(q, f"SELECT source_slug, page_slug FROM {PAGE_MAP[kind]} WHERE page_slug IN ({marks})", slugs):
+            aliases[str(r["source_slug"])] = str(r["page_slug"])
+    return Matcher(entries, kind, aliases)
 
 
 # ---------------------------------------------------------------------------

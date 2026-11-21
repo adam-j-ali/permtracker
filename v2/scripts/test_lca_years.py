@@ -75,7 +75,18 @@ def main() -> int:
     ly.build(db, 2017)
     check("and put back when the spelling returns", table(db), got)
     check("the years are read from the ends of an index, not every row",
-          all("DISTINCT" not in q for q in ly.SPANS.values()), True)
+          all("DISTINCT" not in q for pair in ly.SPANS.values() for q in pair), True)
+    # MIN and MAX in one statement walk the whole index (SQLite seeks one end only for a lone MIN or MAX): each end is
+    # its own statement, and each plan is a SEARCH, never a SCAN.
+    planned = SplitSqlite()
+    for t in ("lca_cases", "lca_cases_history"):
+        planned.script(fd.table_ddl(t))
+        planned.script(fd.index_ddl(t))
+    plans = {q: " ".join(str(x) for x in planned.lca.conn.execute("EXPLAIN QUERY PLAN " + q).fetchall())
+             for pair in ly.SPANS.values() for q in pair}
+    check("each end of each table's span is one seek of an index",
+          {q: ("SEARCH" in pl and "SCAN" not in pl and q.count("(") == 1) for q, pl in plans.items()},
+          {q: True for q in plans})
     check("a fiscal year starts on October 1", (ly.fiscal_year_of("2020-09-30"), ly.fiscal_year_of("2020-10-01")),
           (2020, 2021))
     db.execute("UPDATE lca_cases SET case_status = 'CERTIFIED' WHERE case_number = 'I-200-21001-2'")

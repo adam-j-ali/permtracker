@@ -26,6 +26,7 @@ import {
   certifiedShare,
   filingSplit,
   firmRanksAsOf,
+  firstRankedYear,
   lastYearWords,
   ordinal,
   rankedStates,
@@ -333,15 +334,19 @@ export async function FirmRankingsPage({ state }: { state: string }) {
   const heading = state === NATION ? "The busiest immigration law firms" : `The busiest immigration law firms in ${name}`;
   const states = summary ? rankedStates(summary) : [];
   const updated = pageDate(state === NATION ? FIRM_RANKS_PATH : `${FIRM_RANKS_PATH}/[state]`, { firms: firmRanksAsOf(summary) });
+  // The years the rankings hold, read from the builder's summary, so the label is never older or newer than the data.
+  const permFrom = summary ? firstRankedYear(summary, "perm") : null;
+  const lcaFrom = summary ? firstRankedYear(summary, "lca") : null;
+  const from = [permFrom, lcaFrom].filter((y): y is number => y !== null);
+  const since = (fy: number | null) => (fy === null ? "DOL" : `DOL, FY${fy} on`);
 
   const schemas: object[] = [
     getDatasetSchema(SITE_URL, {
       name: state === NATION ? "Top immigration law firms by fiscal year and state" : `Top immigration law firms in ${name}`,
-      description:
-        "Law firms ranked by PERM decisions (DOL, FY2016 on) and by certified H-1B Labor Condition Applications (DOL, FY2020 on), with outcomes, employers and median days to certify.",
+      description: `Law firms ranked by PERM decisions (${since(permFrom)}) and by certified H-1B Labor Condition Applications (${since(lcaFrom)}), with outcomes, employers and median days to certify.`,
       url: `${SITE_URL}${path}`,
       isBasedOn: "https://www.dol.gov/agencies/eta/foreign-labor/performance",
-      temporalCoverage: "2015-10-01/..",
+      ...(from.length ? { temporalCoverage: `${Math.min(...from) - 1}-10-01/..` } : {}),
       variableMeasured: ["PERM decisions", "Certified share", "Median days to certify", "Certified H-1B LCAs", "Positions"],
     }),
     {
