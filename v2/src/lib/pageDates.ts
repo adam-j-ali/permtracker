@@ -84,7 +84,8 @@ export const TEMPLATE_DAY: Readonly<Record<string, string>> = {
   // Nov 17 2026: every stage page gained how long its cases have waited, the cases that left and where they went.
   "/perm-rfi-audit/[stage]": "2026-11-17",
   // Oct 29 2026: every occupation page gained the job titles employers filed under its code.
-  "/perm-wages/[slug]": "2026-10-29",
+  // Nov 20 2026: and a link to every job title page whose main code is its own.
+  "/perm-wages/[slug]": "2026-11-20",
   "/perm-wages/browse/[letter]": "2026-10-15",
   // Oct 29 2026: the job title pages are new.
   "/soc-codes/[title]": "2026-10-29",
