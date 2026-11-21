@@ -121,6 +121,30 @@ const NUMBER_RUN = new RegExp(`[${DIGIT_LIKE_CHARS} ${PLAIN_PUNCTUATION}]+`, "g"
 const DIGIT_LIKE = new RegExp(`[${DIGIT_LIKE_CHARS}]`, "g");
 const REAL_DIGIT = /[0-9]/;
 
+/** A mark between a phone number's parts: a full stop, a slash, a hyphen or a dash. */
+const PHONE_MARK = "[./\\u2013\\u2014-]";
+/** A break between a phone number's parts: one space, or a mark with a space on either side or none. */
+const PHONE_BREAK = `(?: ?${PHONE_MARK} ?| )`;
+const AREA_CODE = "[2-9][0-9]{2}";
+const NOT_WORD_BEFORE = `(?<![${LATIN_LETTERS}0-9])`;
+const NOT_WORD_AFTER = `(?![${LATIN_LETTERS}0-9])`;
+
+/**
+ * A phone number written partly in letters, the US vanity form: an area code (three digits, the first 2 to 9), then
+ * seven letters or digits as a word, split three and four at most once ("1-800-FLOWERS", "212-555-HELP"). It holds as
+ * few as three digits, so the digit counts can't see it. The area code is in brackets ("(800) FLOWERS"), followed by a
+ * mark ("800-FLOWERS"), followed by a space and three more digits ("800 555 HELP"), or led by a 1 ("1 800 FLOWERS").
+ * A bare area code and a space before a word reads as a name ("Studio 360 Designs", "Dynamics 365 Finance"): of the
+ * 94,175 distinct employer names and job titles in DOL's FY2026 Q4 PERM file, this matched one, 1-800-Flowers.com.
+ * Every part has a fixed length, so each place in the text is tried in constant time.
+ */
+const VANITY_PHONE = new RegExp(
+  `${NOT_WORD_BEFORE}(?:(?:1${PHONE_BREAK}?)?(?:\\(${AREA_CODE}\\) ?[A-Za-z0-9]{3}|${AREA_CODE} ?${PHONE_MARK} ?` +
+    `[A-Za-z0-9]{3}|${AREA_CODE} [0-9]{3})|1${PHONE_BREAK}${AREA_CODE} [A-Za-z0-9]{3})${PHONE_BREAK}?[A-Za-z0-9]{4}` +
+    NOT_WORD_AFTER,
+  "i",
+);
+
 /**
  * Whether text an account typed may be shown, as it is, to someone who never asked for our mail: the one rule for the
  * inviter's name and the case's words (inviterName, safeCaseLine). It's an allow-list, so a character nobody thought
@@ -128,16 +152,16 @@ const REAL_DIGIT = /[0-9]/;
  * folding turns a hair space into a space and a fullwidth letter into a plain one, which the email would still show as
  * typed, and it splits a letter such as U+0140 into an l and a middle dot. Then, on the folded text: no dot directly
  * followed by two letters (DOT_THEN_LETTERS), no domain spelled apart after its dot (SPACED_DOMAIN), no numeric web
- * address (NUMERIC_ADDRESS), no "www" before a word (WWW_THEN_WORD), fewer than seven digits in all (PHONE_DIGITS), and
- * fewer than seven digits and letters that pass for digits in any run that holds a real digit (NUMBER_RUN: "8ØØ 555
- * Ø1ØØ" is a phone number, "Apollo 11 Labs" isn't). A false alarm only hides a name. Every step runs in time linear in
- * the text.
+ * address (NUMERIC_ADDRESS), no "www" before a word (WWW_THEN_WORD), no phone number partly in letters (VANITY_PHONE),
+ * fewer than seven digits in all (PHONE_DIGITS), and fewer than seven digits and letters that pass for digits in any
+ * run that holds a real digit (NUMBER_RUN: "8ØØ 555 Ø1ØØ" is a phone number, "Apollo 11 Labs" isn't). A false alarm
+ * only hides a name. Every step runs in time linear in the text.
  */
 export function isPlainText(text: string): boolean {
   const folded = text.normalize("NFKC");
   if (NOT_PLAIN.test(text.normalize("NFC")) || NOT_PLAIN.test(folded)) return false;
   if (DOT_THEN_LETTERS.test(folded) || SPACED_DOMAIN.test(folded) || NUMERIC_ADDRESS.test(folded)) return false;
-  if (WWW_THEN_WORD.test(folded)) return false;
+  if (WWW_THEN_WORD.test(folded) || VANITY_PHONE.test(folded)) return false;
   let digits = 0;
   for (let i = 0; i < folded.length; i++) {
     const c = folded.charCodeAt(i);

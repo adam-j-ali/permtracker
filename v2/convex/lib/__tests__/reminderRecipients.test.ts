@@ -344,6 +344,66 @@ describe("the plain-text rule itself", () => {
     }
   });
 
+  it("fails a phone number written partly in letters, the vanity form", () => {
+    for (const s of [
+      "Call 1-800-FLOWERS",
+      "1-800-IRS-HELP",
+      "IRS desk 800-555-HELP",
+      "212-555-HELP",
+      "IRS Refund Desk 1-800-REFUNDS",
+      "(800) FLOWERS",
+      "Call (800) 555-HELP",
+      "1 (800) FLOWERS",
+      "call 1-800-flowers", // lower case
+      "1.800.FLOWERS",
+      "1/800/FLOWERS",
+      "800–555–HELP", // en dashes
+      "ACME, 1-800-FLOWERS, Inc.",
+      "1 800 FLOWERS",
+      "1-800 FLOWERS",
+      "800 555 HELP",
+      "800 - FLOWERS",
+      "(800)FLOWERS",
+      "1 800 555 HELP",
+    ]) {
+      expect(isPlainText(s), s).toBe(false);
+      expect(safeCaseLine("Robotics Engineer", s), s).toBe(A_PERM_CASE);
+      expect(safeCaseLine(s, "ACME Robotics"), s).toBe(A_PERM_CASE);
+      expect(inviterName(s, undefined), s).toBe(SOMEONE);
+    }
+  });
+
+  it("keeps ordinary names that hold a number beside words", () => {
+    for (const s of [
+      "St. Jude",
+      "U.S. Steel",
+      "J.P. Morgan",
+      "3M",
+      "7-Eleven",
+      "ACME 2024 Holdings",
+      "Level 3, Suite 400",
+      "Software Engineer II (Level 3)",
+      "Room 1010 Floor 10",
+      "Apollo 11 Labs",
+      "Søren Bjørn Østergård",
+      "Priya D’Souza",
+      "Macy’s, Inc.",
+      "123 Main Street Partners",
+      "Firma 2000 Sp. z o.o.",
+      "Suite 400, 1 Main St",
+      // A number then a space and a word of seven letters, or of three and four, as real names and titles have it.
+      "Studio 360 Designs",
+      "Club 360 Fitness",
+      "Fortune 500 Company",
+      "Since 1985 Company",
+      "Dynamics 365 Finance & Operations Senior Developer",
+      "201 Kia Blvd LLC",
+    ]) {
+      expect(isPlainText(s), s).toBe(true);
+      expect(inviterName(s, undefined), s).toBe(s);
+    }
+  });
+
   it("fails a numeric web address, four numbers joined by dots", () => {
     for (const s of ["verify at 5.9.12.34", "1.1.1.1", "Refund 203.0.113.250 today", "１.１.１.１"]) {
       expect(isPlainText(s), s).toBe(false);
@@ -470,6 +530,13 @@ describe("the plain-text rule itself", () => {
     isPlainText(`${" ".repeat(1_000_000)}1`);
     isPlainText("o ".repeat(500_000));
     isPlainText("1.".repeat(500_000));
+    // Area codes over and over, each nearly the start of a phone number partly in letters.
+    isPlainText("1-800-".repeat(50_000));
+    isPlainText("(800) ".repeat(50_000));
+    isPlainText("800-FLO".repeat(50_000));
+    isPlainText("1 800 ".repeat(50_000));
+    isPlainText("800 555 ".repeat(50_000));
+    isPlainText("800 - ".repeat(50_000));
     expect(Date.now() - started).toBeLessThan(1500);
   });
 });
