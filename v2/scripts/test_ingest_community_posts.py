@@ -361,13 +361,17 @@ def main() -> int:
         stamped[dataset] = kw
 
     icp.stamp_sources(None, [{"source": "facebook", "key": "1"}, {"source": "facebook", "key": "2"},
-                             {"source": "telegram", "key": "c:1"}, {"source": "reddit", "key": "3"}], stamp=stamp)
+                             {"source": "telegram", "key": "c:1"}, {"source": "reddit", "key": "3"},
+                             {"source": "whatsapp", "key": "wa1:x"}], stamp=stamp)
     fbs = stamped.get("community-posts-facebook", {})
     check(fbs.get("max_age_days", 0) is None and fbs.get("source") == "https://www.facebook.com/groups"
           and fbs.get("cadence") == "by hand, when the owner shares posts" and "2 reports" in fbs.get("note", ""),
           f"Facebook is stamped with no maximum age: {fbs}")
     check(stamped["community-posts-telegram"]["max_age_days"] == 1 and stamped["community-posts-reddit"]["max_age_days"] == 2,
           f"the readers keep their budgets: {stamped}")
+    wa = stamped.get("community-posts-whatsapp", {})
+    check(wa.get("max_age_days", 0) is None and wa.get("source") == "https://www.whatsapp.com" and "whatsapp" in icp.POST_SOURCES,
+          f"WhatsApp's exported chats are a posts source, stamped with no maximum age: {wa}")
 
     print(f"{failures} failed")
     return 1 if failures else 0

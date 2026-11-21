@@ -115,9 +115,11 @@ def _rows(path: Path) -> list[dict]:
     return out
 
 
-# The places posts are read from, each by its own reader on the owner's Mac. A Reddit item's id is already unique
+# The places posts are read from, each by its own reader on the owner's Mac. WhatsApp has no reader that signs in:
+# the owner exports a group chat with WhatsApp's own Export Chat button, and a local reader turns the export into the
+# same messages/<chat>.jsonl shape (senders and the chat's name salted, phone numbers and names taken out of the words). A Reddit item's id is already unique
 # across Reddit, and is the key the posts read by hand on Nov 19 2026 use, so one post is never in the list twice.
-POST_SOURCES = ("telegram", "reddit")
+POST_SOURCES = ("telegram", "reddit", "whatsapp")
 
 
 def post_key(source: str, chat: str, row_id) -> str:
@@ -487,6 +489,7 @@ FRESHNESS = {
     "telegram": ("https://t.me", "hourly, from the owner's Mac", 1),
     "reddit": ("https://arctic-shift.photon-reddit.com", "daily, from the owner's Mac", 2),
     "facebook": ("https://www.facebook.com/groups", "by hand, when the owner shares posts", None),
+    "whatsapp": ("https://www.whatsapp.com", "by hand, when the owner exports a group chat", None),
 }
 
 
