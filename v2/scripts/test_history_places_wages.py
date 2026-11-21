@@ -329,6 +329,25 @@ iph.build_places_and_wages(db)
 after = {t: db.conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0] for t in before}
 check("the same rows after a second build", before == after, f"{before} vs {after}")
 
+print("a dry run measures the write and makes none")
+dry = seed(random.Random(20261121))  # the same rows as `db` above
+dry.statements.clear()
+logged: list[str] = []
+real_log = iph.log
+iph.log = logged.append
+try:
+    got = iph.build_places_and_wages(dry, dry_run=True)
+finally:
+    iph.log = real_log
+writes = [s for s, _ in dry.statements if s.split()[0].upper() in ("INSERT", "DELETE", "CREATE", "UPDATE", "REPLACE")]
+check("it writes nothing at all", not writes, str(writes[:2]))
+summary = next((line for line in logged if "would write" in line), "")
+views_n = len(hist)
+check("it says how many views it would write, and their size", f"{views_n:,} explorer views" in summary
+      and re.search(r"\d[\d,.]* (KB|MB|bytes)", summary) is not None, summary)
+check("and returns the rows it would write", got == views_n + len(places) + len(got_bands := db.conn.execute(
+    "SELECT 1 FROM perm_history_wage_bands").fetchall()), f"{got} vs {views_n}+{len(places)}+{len(got_bands)}")
+
 print("the views' write: about 300,000 rows on the live database, so indexed, paced and a year at a time")
 idx = db.conn.execute("SELECT sql FROM sqlite_master WHERE type = 'index' AND tbl_name = 'wage_views' "
                       "AND sql IS NOT NULL").fetchall()
