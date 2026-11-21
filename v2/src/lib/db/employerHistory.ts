@@ -1,6 +1,7 @@
 import "server-only";
 
 import { mergeSocSpellings } from "@/lib/facetClean";
+import { neutralPageEntry, shownLabel } from "@/lib/privacy/withheld";
 
 import { rows } from "./client";
 import type { EntityFacets, FacetKind } from "./entityDetail";
@@ -117,13 +118,20 @@ export interface HistoryMakeup {
 }
 
 /**
- * What an employer's or a law firm's older cases (FY2008 to FY2023, `perm_cases_history`) were made of: the jobs,
- * states, firms, cities and industries, or a firm's clients, jobs and states, with the entity's own total and years.
- * From `perm_history_entity_facets` (ingest_perm_history.py, rebuilt with each history load), written for entities
- * with three or more older cases; null for the rest. The current figures (`entityFacets`) count FY2024 on, so the
- * two never share a denominator. One read, keyed on the table's primary key.
+ * What an employer's, a law firm's or an occupation's older cases (FY2008 to FY2023, `perm_cases_history`) were made
+ * of: an employer's jobs, states, firms, cities and industries; a firm's clients, jobs and states; an occupation's
+ * sponsors, firms, states and cities; with the entity's own total and years. From `perm_history_entity_facets`
+ * (ingest_perm_history.py, rebuilt with each history load), written for entities with three or more older cases;
+ * null for the rest. The current figures (`entityFacets`) count FY2024 on, so the two never share a denominator.
+ * One read, keyed on the table's primary key.
+ *
+ * A firm or an employer withheld at its owner's request comes back from `rows()` with its neutral slug; its label is
+ * then the neutral one too, whatever spelling DOL's older file printed, so no name sits beside the neutral link.
  */
-export async function historyMakeup(kind: "employer" | "attorney", slug: string): Promise<HistoryMakeup | null> {
+export async function historyMakeup(
+  kind: "employer" | "attorney" | "occupation",
+  slug: string,
+): Promise<HistoryMakeup | null> {
   const got = await rows<{
     facet: string;
     key: string | null;
@@ -144,9 +152,10 @@ export async function historyMakeup(kind: "employer" | "attorney", slug: string)
   if (!first) return null;
   const facets: EntityFacets = {};
   for (const r of got) {
+    const withheld = (r.facet === "attorney" || r.facet === "employer") && r.key ? neutralPageEntry(r.facet, r.key) : null;
     (facets[r.facet as FacetKind] ??= []).push({
       key: r.key,
-      label: r.label,
+      label: withheld ? shownLabel(withheld) : r.label,
       code: r.code,
       n: Number(r.n),
       certified: Number(r.certified),

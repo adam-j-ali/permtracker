@@ -125,3 +125,53 @@ describe("the site's helpers", () => {
     expect(got).toEqual([expect.objectContaining({ slug: "law-firm-3", name: "Law firm 3", cases: 120 })]);
   });
 });
+
+/**
+ * What an entity's older cases (FY2008 to FY2023) were made of names firms and employers. A row whose slug is a
+ * withheld one shows the label whatever spelling the row carries: DOL's older files spell a name in ways the entry
+ * may not list, and a neutral link beside the real name would tie the two together.
+ */
+describe("the older cases' makeup and a withheld name", () => {
+  const FACET = ["facet", "key", "label", "code", "n", "certified", "denied", "total", "fy_from", "fy_to"];
+  const row = (facet: string, key: string | null, label: string, n: number) => [facet, key, label, null, n, n, 0, 60, 2012, 2019];
+
+  it("labels a withheld firm by its slug, even under an older spelling the entry doesn't list", async () => {
+    const { historyMakeup } = await import("../employerHistory");
+    execute.mockResolvedValueOnce(
+      answer(FACET, [
+        row("attorney", "example-law-group-pllc", "Exampel and Partners PC", 30),
+        row("attorney", null, "EXAMPLE LAW GROUP PLLC", 9),
+        row("attorney", "big-firm-llp", "Big Firm LLP", 5),
+        row("state", "TX", "TX", 40),
+      ]),
+    );
+    const got = await historyMakeup("employer", "acme-corp");
+    expect(got?.facets.attorney?.map((r) => [r.key, r.label])).toEqual([
+      ["law-firm-3", "Law firm 3"],
+      [null, "Law firm 3"],
+      ["big-firm-llp", "Big Firm LLP"],
+    ]);
+    expect(JSON.stringify(got)).not.toMatch(/exampe?l/i);
+  });
+
+  it("labels a withheld employer among a firm's or an occupation's clients", async () => {
+    const { historyMakeup } = await import("../employerHistory");
+    execute.mockResolvedValueOnce(
+      answer(FACET, [row("employer", "jane-q-example", "J Q EXAMPLE HOUSEHOLD", 3), row("employer", "acme-corp", "Acme Corp", 2)]),
+    );
+    const got = await historyMakeup("occupation", "nannies");
+    expect(got?.facets.employer?.map((r) => [r.key, r.label])).toEqual([
+      ["private-household-employer-1", "Private household employer 1"],
+      ["acme-corp", "Acme Corp"],
+    ]);
+    expect(JSON.stringify(got)).not.toMatch(/jane|example/i);
+  });
+
+  it("reads a withheld firm's own neutral page as the real record", async () => {
+    const { historyMakeup } = await import("../employerHistory");
+    execute.mockResolvedValueOnce(answer(FACET, [row("employer", "acme-corp", "Acme Corp", 40)]));
+    const got = await historyMakeup("attorney", "law-firm-3");
+    expect(execute.mock.calls[0]![0].args).toEqual(["attorney", "example-law-group-pllc"]);
+    expect(got?.total).toBe(60);
+  });
+});
