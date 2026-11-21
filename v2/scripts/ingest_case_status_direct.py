@@ -1525,27 +1525,63 @@ def write_live_census(db) -> None:
         f"{len(payload):,} bytes)")
 
 
+def percentiles_from_counts(counts: dict[int, int]) -> tuple[int, int | None, int | None, int | None]:
+    """(n, p25, p50, p75) of a month's decision days given {days: cases}, nearest-rank at the same positions as
+    the SQL below (p25 at max(1, n/4), p50 at (n+1)/2, p75 at max(1, 3n/4), integer division)."""
+    n = sum(counts.values())
+    if not n:
+        return 0, None, None, None
+    ordered = sorted(counts.items())
+
+    def at(rank: int) -> int | None:
+        seen = 0
+        for days, k in ordered:
+            seen += k
+            if seen >= rank:
+                return days
+        return None
+
+    return n, at(max(1, n // 4)), at((n + 1) // 2), at(max(1, n * 3 // 4))
+
+
+# The older table's decision days by filing month (ingest_perm_history.py builds it whenever history loads). A month
+# filed before October 2023 had its fast cases decided before then, so they're in perm_cases_history, and a month
+# read from perm_cases alone comes out slow (the Nov 20 2026 sweep, item 26).
+HISTORY_MONTH_DAYS = "perm_history_month_days"
+
+
 def write_decided_percentiles(db) -> None:
-    """Per received-month decision-day percentiles from the decided corpus.
+    """Per received-month decision-day percentiles from the decided corpus: perm_cases plus the older table's counts.
 
     Replaces a per-lookup window-function scan of perm_cases. The corpus only
     changes at disclosure loads, but recomputing it with each sweep is cheap
-    and means the doc can never lag a load.
+    and means the doc can never lag a load. One scan of perm_cases, as before:
+    its days are counted per month and day, the older table's counts added
+    (it already leaves out cases perm_cases holds), and each month's nearest
+    ranks read from the running total, so the reply is still a row a month.
     """
-    raw = query_rows(db, """
-        WITH f AS (SELECT substr(received_date, 1, 7) AS m, days
+    has_history = bool(query_rows(
+        db, "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", [HISTORY_MONTH_DAYS]))
+    if not has_history:
+        log(f"{HISTORY_MONTH_DAYS} isn't built yet: months filed before October 2023 read perm_cases alone")
+    older = f"UNION ALL SELECT m, days, n FROM {HISTORY_MONTH_DAYS}" if has_history else ""
+    raw = query_rows(db, f"""
+        WITH c AS (SELECT substr(received_date, 1, 7) AS m, days, COUNT(*) AS k
                      FROM perm_cases
                     WHERE days IS NOT NULL AND received_date IS NOT NULL
-                      AND received_date <> ''),
-             o AS (SELECT m, days,
-                          ROW_NUMBER() OVER (PARTITION BY m ORDER BY days) AS rn,
-                          COUNT(*)    OVER (PARTITION BY m)                AS n
-                     FROM f)
+                      AND received_date <> ''
+                    GROUP BY m, days
+                   {older}),
+             g AS (SELECT m, days, SUM(k) AS k FROM c GROUP BY m, days),
+             r AS (SELECT m, days,
+                          SUM(k) OVER (PARTITION BY m ORDER BY days) AS run,
+                          SUM(k) OVER (PARTITION BY m)               AS n
+                     FROM g)
         SELECT m, MAX(n) AS n,
-               MAX(CASE WHEN rn = MAX(1, n / 4)     THEN days END) AS p25,
-               MAX(CASE WHEN rn = (n + 1) / 2       THEN days END) AS p50,
-               MAX(CASE WHEN rn = MAX(1, n * 3 / 4) THEN days END) AS p75
-          FROM o GROUP BY m ORDER BY m""")
+               MIN(CASE WHEN run >= MAX(1, n / 4)     THEN days END) AS p25,
+               MIN(CASE WHEN run >= (n + 1) / 2       THEN days END) AS p50,
+               MIN(CASE WHEN run >= MAX(1, n * 3 / 4) THEN days END) AS p75
+          FROM r GROUP BY m ORDER BY m""")
     months = [{"m": str(m), "n": int(n), "p25": _int_or_none(p25),
                "p50": _int_or_none(p50), "p75": _int_or_none(p75)}
               for m, n, p25, p50, p75 in raw]
