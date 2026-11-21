@@ -89,6 +89,9 @@ INDEXES = (
     f"CREATE INDEX IF NOT EXISTS {TABLE}_emp ON {TABLE} (employer_slug, accepted_date)",
     f"CREATE INDEX IF NOT EXISTS {TABLE}_accepted ON {TABLE} (accepted_date)",
     f"CREATE INDEX IF NOT EXISTS {TABLE}_state ON {TABLE} (worksite_state, accepted_date)",
+    # A wage request's page lists the job orders citing it (src/lib/db/caseLinks.ts). Partial: rows citing none are
+    # NULL, so `pwd_number = ?` meets IS NOT NULL. Built on production Nov 21 2026 in 0.5 s.
+    f"CREATE INDEX IF NOT EXISTS idx_seasonal_postings_pwd ON {TABLE} (pwd_number) WHERE pwd_number IS NOT NULL",
 )
 
 
