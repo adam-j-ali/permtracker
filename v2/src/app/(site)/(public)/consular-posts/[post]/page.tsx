@@ -35,6 +35,8 @@ import { StepFigures } from "@/components/community/StepFigures";
 import { getPostSummary } from "@/lib/db/reportedSummary";
 import type { PlaceSummary } from "@/lib/reportedSummary";
 import { openGraphBase } from "@/lib/openGraphBase";
+import { consularDescription } from "@/lib/consular/describe";
+import { fitTitle, metadataTitle } from "@/lib/pageTitle";
 import { withSocialCard } from "@/lib/socialCard";
 import { longDate, monthTick, shiftMonth, shortDate } from "@convex/lib/months";
 
@@ -50,25 +52,27 @@ export async function generateStaticParams() {
   }
 }
 
-// People search a consulate's "immigrant visa interview wait times" (Search Console, Nov 2026).
-const titleOf = (name: string) =>
-  `${name} Immigrant Visa Interview Wait Times`.length <= 45
-    ? `${name} Immigrant Visa Interview Wait Times`
-    : `${name} Visa Interview Wait Times`;
-const descriptionOf = (name: string) =>
-  `Where the US consulate in ${name} stands: the month NVC is scheduling for interviews, the immigrant visas it issued each month, and the interview pause.`;
+// People search a consulate's "immigrant visa interview wait times" (Search Console, Nov 2026). The qualifier gives
+// way first, then the brand, and the post's name is never the part cut.
+const TITLE_FRAMES = [
+  (n: string) => `${n} Immigrant Visa Interview Wait Times`,
+  (n: string) => `${n} Visa Interview Wait Times`,
+  (n: string) => `${n} Visa Wait Times`,
+];
 
 export async function generateMetadata({ params }: { params: Promise<{ post: string }> }): Promise<Metadata> {
   const { post: slug } = await params;
   const post = (await getConsularIndex()).posts.find((p) => p.slug === slug);
   if (!post) notFound();
   const path = `/consular-posts/${post.slug}`;
+  const fitted = fitTitle(post.name, TITLE_FRAMES);
+  const description = consularDescription(post.name);
   return withSocialCard(
     {
-      title: titleOf(post.name),
-      description: descriptionOf(post.name),
+      title: metadataTitle(fitted),
+      description,
       alternates: { canonical: path },
-      openGraph: { ...openGraphBase, title: `${titleOf(post.name)} | PERM Tracker`, description: descriptionOf(post.name), url: path },
+      openGraph: { ...openGraphBase, title: `${fitted.title} | PERM Tracker`, description, url: path },
     },
     "consular-posts",
   );
