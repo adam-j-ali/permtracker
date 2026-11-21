@@ -112,7 +112,7 @@ export function ReminderCopy({ caseLine, items, checkedAt, stopUrl }: ReminderCo
 ReminderCopy.PreviewProps = {
   caseLine: "Robotics Engineer at ACME Robotics",
   checkedAt: "November 20, 2026, 9:00 AM ET",
-  stopUrl: "https://permtracker.app/case-alert/reminders/stop?token=preview&r=preview",
+  stopUrl: "https://permtracker.app/case-alert/reminders/stop?token=preview&r=preview&u=preview",
   items: [
     { deadlineType: "ETA 9089 filing window closes", deadlineDate: "2026-11-19", daysUntil: -1, urgency: "overdue" },
     { deadlineType: "PWD expiration", deadlineDate: "2026-11-27", daysUntil: 7, urgency: "urgent" },

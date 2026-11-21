@@ -13,7 +13,7 @@ import { ReminderInvite } from "../ReminderInvite";
 
 const CONFIRM = "https://permtracker.app/case-alert/reminders/confirm?token=T&r=R";
 const DECLINE = "https://permtracker.app/case-alert/reminders/decline?token=D&r=R";
-const STOP = "https://permtracker.app/case-alert/reminders/stop?token=S&r=R";
+const STOP = "https://permtracker.app/case-alert/reminders/stop?token=S&r=R&u=U";
 
 /** The rendered email as a document: parsed, never run. */
 const parse = (html: string) => new DOMParser().parseFromString(html, "text/html");

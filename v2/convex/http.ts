@@ -695,18 +695,31 @@ http.route({
 // button POSTs straight to the stop route (a reminder) or the decline route (the invitation). No route sends mail,
 // and each mutation behind them is internal.
 
-/** The token and recipient row from a reminder link, length-capped first; null when either is missing. */
-function reminderLink(req: Request): { token: string; r: string } | null {
+/** What a reminder link carries: its token, its recipient row and, on a Stop link only, the account it's signed for. */
+interface ReminderLink {
+  token: string;
+  r: string;
+  u: string;
+}
+
+/**
+ * The token and recipient row from a reminder link, and the account (`u`) when `needsAccount` (the Stop link), each
+ * length-capped first; null when one is missing.
+ */
+function reminderLink(req: Request, needsAccount = false): ReminderLink | null {
   const url = new URL(req.url);
   const token = url.searchParams.get("token") ?? "";
   const r = url.searchParams.get("r") ?? "";
-  if (!token || !r || token.length > 512 || r.length > 64) return null;
-  return { token, r };
+  const u = needsAccount ? (url.searchParams.get("u") ?? "") : "";
+  if (!token || !r || token.length > 512 || r.length > 64 || u.length > 64) return null;
+  if (needsAccount && !u) return null;
+  return { token, r, u };
 }
 
 /** The page's own form target, every part encoded and the whole escaped for the attribute. */
-function reminderAction(path: string, l: { token: string; r: string }): string {
-  return escapeHtml(`${path}?token=${encodeURIComponent(l.token)}&r=${encodeURIComponent(l.r)}`);
+function reminderAction(path: string, l: ReminderLink): string {
+  const account = l.u ? `&u=${encodeURIComponent(l.u)}` : "";
+  return escapeHtml(`${path}?token=${encodeURIComponent(l.token)}&r=${encodeURIComponent(l.r)}${account}`);
 }
 
 /** A reminder link that can't be used. No button: the preferences page holds nothing for this address. */
@@ -755,15 +768,17 @@ http.route({
   }),
 });
 
+// The Stop pages' words hold in every case the button can meet: the reminders still coming, already stopped, removed
+// by the owner (the link still refuses the address for the account it's signed for), or the account gone.
 http.route({
   path: REMINDER_STOP_PATH,
   method: "GET",
   handler: httpAction(async (_ctx, req) => {
-    const l = reminderLink(req);
+    const l = reminderLink(req, true);
     if (!l) return reminderBadLink("This link is incomplete. Use the Stop link in your latest reminder email.");
     return messagePage(
       "Stop these deadline reminders?",
-      "You'll stop getting this PERM case's deadline reminders, and we'll delete your address from it. The account that added you can't invite this address again.",
+      "You won't get this PERM case's deadline reminders again, and your address won't be kept with it. The account that added you can't invite this address again.",
       { post: reminderAction(REMINDER_STOP_PATH, l), label: "Stop the reminders" },
     );
   }),
@@ -774,12 +789,19 @@ http.route({
   path: REMINDER_STOP_PATH,
   method: "POST",
   handler: httpAction(async (ctx, req) => {
-    const l = reminderLink(req);
+    const l = reminderLink(req, true);
     if (!l) return reminderBadLink("This link is incomplete. Use the Stop link in your latest reminder email.");
-    const result = await ctx.runMutation(internal.reminderRecipients.stopByToken, { token: l.token, recipientId: l.r });
+    const result = await ctx.runMutation(internal.reminderRecipients.stopByToken, {
+      token: l.token,
+      recipientId: l.r,
+      userId: l.u,
+    });
     if (!result) return reminderBadLink("This link was changed or isn't one of ours. Use the Stop link in your latest reminder email.");
     if (result === "already") {
-      return messagePage("These reminders are already off", "Nothing more will be sent to you for this case.");
+      return messagePage(
+        "These reminders are already off",
+        "Nothing more will be sent to you for this case, and your address isn't kept with it. The account that added you can't invite this address again.",
+      );
     }
     return messagePage(
       "The reminders are off",
