@@ -300,6 +300,11 @@ case "$job" in
     python3 scripts/ingest_i140_trends.py || { rc=1; fail ingest_i140_trends.py "ingest exited non-zero"; } ;;
   # USCIS's quarterly performance workbooks, then the I-129 request-for-evidence
   # files USCIS posts with them (Oct 16 2026). Each records its own ok row.
+  # Since Nov 21 2026 the first reads every page of the listing and nine
+  # families (the I-765 by category and by days pending, the net backlog,
+  # premium processing and the N-400 by office among them), ten seconds apart
+  # as USCIS's robots.txt asks: about 15 minutes the first time, then the
+  # listing's 18 pages (about 3 minutes) plus each new file.
   quarterly) python3 scripts/ingest_uscis_quarterly.py || { rc=1; fail ingest_uscis_quarterly.py "ingest exited non-zero"; }
     python3 scripts/ingest_uscis_rfe.py || { rc=1; fail ingest_uscis_rfe.py "ingest exited non-zero"; } ;;
   # USCIS's H-1B Employer Data Hub (a Tableau export, 75 to 110 MB a year).
