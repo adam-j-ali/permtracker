@@ -21,14 +21,43 @@ data page, plus one static factsheet, none of which the site read before:
   for sixteen form/basis rows, the only history USCIS publishes for medians.
   Not linked from the data page; fetched at its own URL.
 
+Five more families from the same page (Nov 21 2026), each with its own table:
+
+* `i765_application_for_employment_fy<FY>_q<Q>` - the I-765 by eligibility
+  category ((c)(9) pending I-485, (c)(26) H-4, ...) and filing type (initial,
+  renewal, replacement, card not requested), received, approved, denied and
+  pending. Read from FY2025 Q1; the yearly files before it have no pending.
+* `i765_p_allcat_c08_fy<FY>[_]q<Q>` (xlsx or csv) - pending I-765s by days
+  waited, all categories and (c)(8) asylum, initial and renewal, as of the
+  quarter's last day. A different system (NPD) from the category file
+  (CLAIMS3 and ELIS), so the two never agree and are never compared.
+* `net_backlog_frontlog_fy<FY>_q<Q>` (and the FY2023 Q4 pair of csv files) -
+  USCIS's net backlog by form, rounded to hundreds, and the frontlog of
+  applications not yet opened.
+* `i907_premium_processing_fy<FY>_q<Q>` - premium processing requests by form,
+  filed with the petition or as an upgrade. No decisions, no times.
+* `n400_performance_data_fy<FY>_q<Q>` - the N-400 by field office, civilian
+  and military, laid out like the I-485 office file (whose older
+  `i485_performancedata_*` spelling is read too, for history).
+
 WHY THESE FILES ARE READ THE WAY THEY ARE, each a lesson from a sibling ingest:
 
 * EVERY LISTED QUARTER IS LOADED, oldest first, and a file is identified by
-  its FILENAME. USCIS carries the recent four quarters and no archive, so a
-  quarter a run misses is gone; and it re-issues a file under `_v2` when it
-  corrects one, which is a new name and therefore a reload that replaces the
-  quarter's rows. A quarter already recorded under the same name is skipped,
-  so a monthly poll costs one listing request on the months nothing changed.
+  its FILENAME. The listing's first page carries the newest three or four
+  quarters of each family and the older ones sit on later pages (back to
+  2012), so every page is read, following the page's own "Next" link until
+  there is none (at most LISTING_PAGE_CAP pages). USCIS re-issues a file
+  under `_v2` when it corrects one, which is a new name and therefore a
+  reload that replaces the quarter's rows. A quarter already recorded under
+  the same name is skipped, so a monthly poll costs the listing pages alone
+  on the months nothing changed.
+* TEN SECONDS BETWEEN REQUESTS. www.uscis.gov's robots.txt asks for
+  `Crawl-delay: 10` (read Nov 21 2026), so every request this ingest makes
+  there waits until ten seconds have passed since the one before.
+* ONE FILE'S REFUSAL IS THAT FILE'S. With every page read, a run walks some
+  eighty files; a refused one is named, left unrecorded so the next run tries
+  it again, and the run ends red, but the files after it still load. A newer
+  quarter must never wait behind an old file USCIS laid out differently.
 * DISCOVERED, NEVER CONSTRUCTED. FY2026 Q1 sits under `/document/reports/`
   while Q2 and Q3 sit under `/document/data/`, and FY2025 Q4's awaiting-visa
   file spells it `performance_data` where the later ones say
@@ -49,6 +78,16 @@ WHY THESE FILES ARE READ THE WAY THEY ARE, each a lesson from a sibling ingest:
   year, approvals by class against approved), and a parse that does not add
   up is refused before a row is written. A renamed column or a shifted block
   cannot pass that; a plausible-looking wrong number is worse than none.
+  Where two files count the same thing (the I-765 and N-400 totals in the
+  all-forms file), the newer families are checked against it too, whenever
+  that quarter's all-forms rows are held; `all_forms` sorts first, so they are.
+* COLUMNS AND SHEETS BY THEIR TEXT. The newer families find their sheet, their
+  header row and every column by the words USCIS prints there, never by
+  position or sheet name (one sheet is called `I765_FY5Q1`), and a heading
+  that isn't where the text says it should be is refused.
+* THE QUARTER COMES FROM THE FILENAME. The date the sheet prints is read only
+  to check its end date: the FY2026 Q3 N-400 file opens its range on
+  "April 1, 2025".
 
 www.uscis.gov serves residential addresses and 403s GitHub's datacenter
 runners, so the server's timer is the only runner
@@ -63,27 +102,31 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import csv
+import datetime as dt
+import http.client
 import io
 import os
 import pathlib
 import re
 import sys
 import time
+import urllib.parse
 import zipfile
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lib_gov_data import (  # noqa: E402
-    POLITE_PAUSE_S, fetch, iter_rows, log, quarter_end, read_shared_strings,
+    RobotsDisallowed, fetch, iter_rows, log, quarter_end, read_shared_strings,
 )
 from lib_db import (  # noqa: E402
-    Database, insert_rows, query_rows, read_doc, record_run, rows_of, stamp_freshness, write_doc,
+    Database, et_today, insert_rows, query_rows, read_doc, record_run, rows_of, stamp_freshness, write_doc,
 )
 
 # THE FULL LISTING, NOT THE LANDING PAGE. The bare page shows ten items and
 # the quarterly files push each other off it; `items_per_page=100` is the
-# page's own control and lists every file it carries.
+# page's own control, and its "Next" link leads to the older pages.
 DATA_PAGE = ("https://www.uscis.gov/tools/reports-and-studies/"
              "immigration-and-citizenship-data?items_per_page=100")
 HOST = "https://www.uscis.gov"
@@ -91,18 +134,43 @@ FACTSHEET_URL = ("https://www.uscis.gov/sites/default/files/document/fact-sheets
                  "historical_pt_factsheet_fy16_to_fy24.pdf")
 LOADS_DOC = "uscis_quarterly_loads"
 FACTSHEET_DOC = "uscis_historical_pt"
+# www.uscis.gov's robots.txt: `Crawl-delay: 10` (read Nov 21 2026). The shared
+# POLITE_PAUSE_S (1.5 s) is DOL's pace and too quick for this host.
+USCIS_CRAWL_DELAY_S = 10.0
+# The listing ran to 18 pages of 100 on Nov 21 2026 (page 17 the last). A run
+# that reaches this many stops reading pages, loads what it found, and says so.
+LISTING_PAGE_CAP = 25
 
 # Filename -> (kind, fiscal year, quarter). The version suffix is optional and
-# a re-issued `_v2` is a NEW name on purpose (see the module docstring).
-KINDS: dict[str, re.Pattern[str]] = {
-    "all_forms": re.compile(
-        r"^quarterly_all_forms_fy(\d{4})_q(\d)(?:_v[\d.]+)?\.xlsx$", re.I),
-    "i485_offices": re.compile(
-        r"^i485_performance_data_fy(\d{4})_q(\d)(?:_v[\d.]+)?\.xlsx$", re.I),
-    "eb_awaiting": re.compile(
-        r"^eb_i140_i360_i526_performance_?data_fy(\d{4})_q(\d)(?:_v[\d.]+)?\.xlsx$", re.I),
-    "i140_class_country": re.compile(
-        r"^i140_rec_by_class_country_fy(\d{4})_q(\d)(?:_v[\d.]+)?\.xlsx$", re.I),
+# a re-issued `_v2` is a NEW name on purpose (see the module docstring). A
+# two-digit year (`net_backlog_fy23_q4.csv`) is in this century.
+KINDS: dict[str, tuple[re.Pattern[str], ...]] = {
+    "all_forms": (re.compile(
+        r"^quarterly_all_forms_fy(?P<fy>\d{4})_q(?P<q>[1-4])(?:_v[\d.]+)?\.xlsx$", re.I),),
+    # `i485_performancedata_fy2024_q1.xlsx` is the same layout under the older
+    # spelling: seven quarters of history (FY2024 Q1 to FY2025 Q3).
+    "i485_offices": (re.compile(
+        r"^i485_performance_?data_fy(?P<fy>\d{4})_q(?P<q>[1-4])(?:_v[\d.]+)?\.xlsx$", re.I),),
+    "eb_awaiting": (re.compile(
+        r"^eb_i140_i360_i526_performance_?data_fy(?P<fy>\d{4})_q(?P<q>[1-4])(?:_v[\d.]+)?\.xlsx$", re.I),),
+    "i140_class_country": (re.compile(
+        r"^i140_rec_by_class_country_fy(?P<fy>\d{4})_q(?P<q>[1-4])(?:_v[\d.]+)?\.xlsx$", re.I),),
+    # Quarterly from FY2025 Q1. The yearly files (`..._fy24.xlsx`,
+    # `i-765_..._fy23.csv`) have no pending column and are not read.
+    "i765_categories": (re.compile(
+        r"^i765_application_for_employment_fy(?P<fy>\d{4})_q(?P<q>[1-4])(?:_v[\d.]+)?\.xlsx$", re.I),),
+    # `I765_P_AllCat_C08_FY2023Q1.csv`, `..._fy2023q3.csv`, `..._fy2024_q1.xlsx`, `..._fy2025_q4_v1.xlsx`.
+    "i765_pending_days": (re.compile(
+        r"^i765_p_allcat_c08_fy(?P<fy>\d{4})_?q(?P<q>[1-4])(?:_v[\d.]+)?\.(?:xlsx|csv)$", re.I),),
+    # One workbook a quarter from FY2024 Q1; FY2023 Q4 is two csv files.
+    "net_backlog": (
+        re.compile(r"^net_backlog_frontlog_fy(?P<fy>\d{4})_q(?P<q>[1-4])(?:_v[\d.]+)?\.xlsx$", re.I),
+        re.compile(r"^net_(?:backlog|frontlog)_fy(?P<fy>\d{2})_q(?P<q>[1-4])\.csv$", re.I),
+    ),
+    "i907_premium": (re.compile(
+        r"^i907_premium_processing_fy(?P<fy>\d{4})_q(?P<q>[1-4])(?:_v[\d.]+)?\.xlsx$", re.I),),
+    "n400_offices": (re.compile(
+        r"^n400_performance_?data_fy(?P<fy>\d{4})_q(?P<q>[1-4])(?:_v[\d.]+)?\.xlsx$", re.I),),
 }
 
 # What each kind stamps in data_freshness. The as-of is the quarter's last
@@ -120,8 +188,24 @@ FRESHNESS: dict[str, dict[str, str]] = {
                         source="USCIS approved employment-based petitions awaiting a visa (uscis.gov)"),
     "i140_class_country": dict(dataset="uscis-i140-class-country",
                                source="USCIS I-140 receipts by class and country of birth (uscis.gov)"),
+    "i765_categories": dict(dataset="uscis-i765-categories",
+                            source="USCIS quarterly I-765 by eligibility category (uscis.gov)"),
+    "i765_pending_days": dict(dataset="uscis-i765-pending-days",
+                              source="USCIS pending I-765s by days pending (uscis.gov)"),
+    "net_backlog": dict(dataset="uscis-net-backlog",
+                        source="USCIS net backlog and frontlog by form (uscis.gov)"),
+    "i907_premium": dict(dataset="uscis-i907-premium",
+                         source="USCIS I-907 premium processing requests by form (uscis.gov)"),
+    "n400_offices": dict(dataset="uscis-n400-offices",
+                         source="USCIS quarterly N-400 by field office (uscis.gov)"),
 }
 MAX_AGE_DAYS = 200
+
+# Kinds whose quarter-to-quarter loss of a key is refused until a person reads
+# the list (see drift_findings). The others lose and gain keys as USCIS splits
+# and adds rows (I-130 into two, I-526 into three, I-765 codes that come and
+# go), so their changes are logged and loaded.
+DRIFT_REFUSES = frozenset({"all_forms", "i485_offices", "n400_offices"})
 
 MONTHS = {m: i + 1 for i, m in enumerate(
     ["January", "February", "March", "April", "May", "June", "July",
@@ -160,6 +244,55 @@ AWAITING_COUNTRIES = {"TOTAL", "China", "India", "Mexico", "Philippines", "Rest 
 OFFICE_GROUPS = ("fam", "emp", "hum", "oth", "all")
 OFFICE_MEASURES = ("received", "approved", "denied", "pending")
 OFFICE_COLUMNS = [f"{g}_{m}" for g in OFFICE_GROUPS for m in OFFICE_MEASURES]
+# Each office file's column groups as printed (footnote stripped), in order.
+# The fifth I-485 group is the all-categories total and carries no heading.
+I485_GROUP_HEADINGS = (r"^Family", r"^Employment", r"^Humanitarian", r"^Other")
+# The N-400 sheet: civilian ("Naturalization"), military, and both.
+N400_GROUPS = ("civ", "mil", "all")
+N400_COLUMNS = [f"{g}_{m}" for g in N400_GROUPS for m in OFFICE_MEASURES]
+N400_GROUP_HEADINGS = (r"^Naturalization$", r"^Naturalization \(Military\)$", r"^Total$")
+# Each measure's heading under a group, footnote stripped.
+OFFICE_MEASURE_HEADINGS = (r"^Applications Received$", r"^Approved$", r"^Denied$", r"^Pending$")
+
+# The I-765 category sheet: four filing types and their total, four measures each.
+I765_FILINGS = ("initial", "renewal", "replacement", "not_requested", "all")
+I765_COLUMNS = [f"{f}_{m}" for f in I765_FILINGS for m in OFFICE_MEASURES]
+I765_FILING_HEADINGS = {"initial": r"EAD-Initial$", "renewal": r"EAD-Renewal$",
+                        "replacement": r"EAD-Replacement$", "not_requested": r"EAD-Not Requested$",
+                        "all": r"^TOTAL$"}
+I765_MEASURE_HEADINGS = {"received": r"^Receipt$", "approved": r"^Approval$",
+                         "denied": r"^Denial$", "pending": r"^Pending$"}
+# An eligibility code: a letter, two digits and at most one more letter or
+# digit (C03B, C09P, C031), or the sheet's own UNKNOWN.
+I765_CODE_RE = re.compile(r"^([AC]\d{2}[A-Z0-9]?|UNKNOWN)$")
+# The codes that really end in a digit. Any other four-character code ending
+# in one is a footnote marker the file's references don't explain, and is
+# refused rather than stored as a code that doesn't exist.
+I765_DIGIT_CODES = frozenset({"C011", "C031", "C032", "C033", "C091", "C171", "C172", "C173"})
+I765_MARKER_RE = re.compile(
+    r"^(\d+)\s+I-765 EAD Eligibility Category where .* is (mandatory|discretionary)\b", re.I)
+# The all-forms file's I-765 rows, by the words in their title, and the codes
+# each is the sum of. The four rows together are the category file's total.
+I765_ALL_FORMS_ROWS = (("(Asylum)", ("C08",)),
+                       ("(Adjustment Of Status)", ("C09", "C09P", "C091")),
+                       ("(DACA)", ("C33",)))
+# Between the codes and the printed Total: the codes add up to 1 to 4 less in
+# the pending columns (FY2026 Q3). Never more, and never more than this.
+I765_TOTAL_SLACK = 25
+
+# Two of USCIS's files counting the same thing may disagree by this much (the
+# larger of the two) where they aren't held exact; see compare_files.
+CROSS_FILE_FLOOR = 25
+CROSS_FILE_SHARE = 0.02
+
+# Net backlog: the total is the sum of rounded parts, so it's off by a few
+# hundred (500 of 7,736,000 in FY2026 Q3; 3,100 of 4,114,000 in FY2024 Q1).
+BACKLOG_TOTAL_SLACK = 0.005
+
+AS_OF_RE = re.compile(r"\bas of ([A-Z][a-z]+) (\d{1,2})(?:st|nd|rd|th)?,\s*(\d{4})\b", re.I)
+# A value USCIS withheld: D is "disclosure standards not met" (1 to 9), H the
+# cell that would let one work a D out (named in the I-765 sheet's key).
+WITHHELD = frozenset({"D", "H"})
 
 
 class Refusal(SystemExit):
@@ -279,9 +412,53 @@ def norm(s: object) -> str:
     return re.sub(r"\s+", " ", str(s or "")).strip()
 
 
-# ---------------------------------------------------------------------------
-# Workbooks
-# ---------------------------------------------------------------------------
+def strict_count(v: object, where: str, *, blank: bool = False) -> int | None:
+    """A count, None where USCIS withheld it (D, H) or printed N/A, and a refusal for anything else.
+
+    `cell_int` reads unparseable text as None, which suits the older kinds'
+    files; in the newer ones a word where a count belongs means a column moved,
+    and that must stop the load. A blank is refused too unless `blank`.
+    """
+    s = "" if v is None else str(v).strip()
+    if s in WITHHELD or s in ("N/A", "n/a"):
+        return None
+    if s == "":
+        if blank:
+            return None
+        raise Refusal(f"{where}: a blank where a count belongs")
+    n = cell_int(s)
+    if n is None or n < 0:
+        raise Refusal(f"{where}: {s!r} is not a count")
+    return n
+
+
+def withheld(v: object) -> bool:
+    return str(v or "").strip() in WITHHELD
+
+
+def as_of_date(text: str) -> str | None:
+    """`As of September 30th, 2023` or `... as of June 30, 2026` -> the ISO day."""
+    m = AS_OF_RE.search(norm(text))
+    if not m or m.group(1).capitalize() not in MONTHS:
+        return None
+    return f"{m.group(3)}-{MONTHS[m.group(1).capitalize()]:02d}-{int(m.group(2)):02d}"
+
+
+def check_quarter_end(name: str, printed: str | None, fy: int, quarter: int, *, snapshot: bool = False) -> None:
+    """The quarter is the filename's; the date the sheet prints must end that quarter.
+
+    A `snapshot` date ("As of ...") may also be the next morning: the FY2023 Q2
+    days-pending file says "As of April 1, 2023" for the quarter that ended March 31.
+    """
+    want = quarter_end(fy, quarter)
+    morning = (dt.date.fromisoformat(want) + dt.timedelta(days=1)).isoformat()
+    if printed != want and not (snapshot and printed == morning):
+        raise Refusal(f"{name}: the sheet's date ends {printed}, not {want} as its name says")
+
+
+def heading(v: object) -> str:
+    """A heading as printed, footnote marker and spare spaces removed."""
+    return strip_footnote(norm(v))
 
 def workbook_sheets(blob: bytes) -> list[tuple[str, list[dict[int, str]]]]:
     """Every sheet as (name, rows), rows being {column_index: text}."""
@@ -298,18 +475,47 @@ def workbook_sheets(blob: bytes) -> list[tuple[str, list[dict[int, str]]]]:
     return out
 
 
+def csv_rows(blob: bytes) -> list[dict[int, str]]:
+    """A csv file in the workbook's row shape: {column_index: text}, empty cells left out.
+
+    USCIS's csv files open with a byte-order mark, end lines with CRLF, quote
+    numbers that carry commas ("1,410,371") and write a zero as ` -   `.
+    """
+    text = blob.decode("utf-8-sig", errors="replace")
+    return [{i: v for i, v in enumerate(row) if v != ""}
+            for row in csv.reader(io.StringIO(text, newline=""))]
+
+
+def sheets_of(listed: Listed, blob: bytes) -> list[tuple[str, list[dict[int, str]]]]:
+    if listed.name.lower().endswith(".csv"):
+        return [(listed.name, csv_rows(blob))]
+    return workbook_sheets(blob)
+
+
+def find_sheet(sheets: list[tuple[str, list[dict[int, str]]]], name: str, what: str,
+               test) -> tuple[list[dict[int, str]], int]:
+    """The sheet holding a row `test` accepts, and that row's index. Refuses when no sheet does."""
+    for _, rows in sheets:
+        for i, r in enumerate(rows):
+            if test(r):
+                return rows, i
+    raise Refusal(f"{name}: no sheet holds {what}")
+
+
 def identify(name: str) -> tuple[str, int, int] | None:
-    for kind, rx in KINDS.items():
-        m = rx.match(name)
-        if m:
-            return kind, int(m.group(1)), int(m.group(2))
+    for kind, patterns in KINDS.items():
+        for rx in patterns:
+            m = rx.match(name)
+            if m:
+                fy = int(m.group("fy"))
+                return kind, (2000 + fy if fy < 100 else fy), int(m.group("q"))
     return None
 
 
 def discover(html: str) -> list[Listed]:
     """Every quarterly file the page lists, one per filename, oldest first."""
     seen: dict[str, Listed] = {}
-    for href in re.findall(r'href="([^"]+\.xlsx)"', html, re.I):
+    for href in re.findall(r'href="([^"]+\.(?:xlsx|csv))"', html, re.I):
         name = href.rsplit("/", 1)[-1]
         ident = identify(name)
         if not ident or name in seen:
@@ -317,7 +523,104 @@ def discover(html: str) -> list[Listed]:
         kind, fy, q = ident
         url = href if href.startswith("http") else HOST + href
         seen[name] = Listed(kind, fy, q, name, url)
-    return sorted(seen.values(), key=lambda x: (x.kind, x.fy, x.quarter, x.name))
+    return sort_listed(seen.values())
+
+
+# ---------------------------------------------------------------------------
+# The listing's pages, read at USCIS's pace
+# ---------------------------------------------------------------------------
+
+class Pacer:
+    """At least `gap` seconds between the starts of two requests to one host."""
+
+    def __init__(self, gap: float, clock=time.monotonic, sleep=time.sleep) -> None:
+        self.gap, self.clock, self.sleep = gap, clock, sleep
+        self.last: float | None = None
+
+    def wait(self) -> None:
+        if self.last is not None:
+            left = self.gap - (self.clock() - self.last)
+            if left > 0:
+                self.sleep(left)
+        self.last = self.clock()
+
+
+USCIS_PACE = Pacer(USCIS_CRAWL_DELAY_S)
+
+
+def fetch_uscis(url: str, referer: str | None = None) -> bytes:
+    """`fetch`, never sooner than USCIS's crawl delay after the previous request."""
+    USCIS_PACE.wait()
+    return fetch(url, referer=referer)
+
+
+# What a request to the agency can fail with: refused by robots.txt, an HTTP
+# error, a dropped or cut-off connection. A styled 404 page in place of a
+# workbook is a BadZipFile when it's opened.
+READ_ERRORS = (OSError, http.client.HTTPException, RobotsDisallowed, zipfile.BadZipFile)
+
+
+def page_number(url: str) -> int:
+    got = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query).get("page", ["0"])
+    return int(got[0]) if got[0].isdigit() else -1
+
+
+def next_page_link(html: str) -> str | None:
+    """The listing's own "Next" link (`<a ... rel="next">`), absolute, or None on the last page."""
+    for tag in re.findall(r"<a\b[^>]*>", html, re.I):
+        if re.search(r'\brel="next"', tag, re.I):
+            m = re.search(r'\bhref="([^"]+)"', tag)
+            if m:
+                href = m.group(1).replace("&amp;", "&")
+                return href if href.startswith("http") else HOST + href
+    return None
+
+
+@dataclass
+class Listing:
+    files: list[Listed]
+    pages: int
+    stopped: str = ""      # why the walk stopped before the last page, when it did
+    failed: str = ""       # a page that couldn't be read, which the run must end red on
+
+
+def read_listing(get, first: str = DATA_PAGE, cap: int | None = None) -> Listing:
+    """Every file the listing carries, following its "Next" link page by page.
+
+    The first page must read, or there's nothing to load and the run fails. A
+    later page that can't be read, or a "Next" link that doesn't lead to the
+    following page, ends the walk with what was found and `failed` saying why:
+    the newest files are on the first page, so they still load, and the run
+    ends red. Reaching `cap` pages (LISTING_PAGE_CAP) ends it with `stopped` saying so.
+    """
+    cap = LISTING_PAGE_CAP if cap is None else cap
+    seen: dict[str, Listed] = {}
+    url, pages = first, 0
+    while True:
+        try:
+            html = get(url).decode("utf8", "ignore")
+        except READ_ERRORS as exc:
+            if pages == 0:
+                raise
+            return Listing(sort_listed(seen.values()), pages, failed=f"listing page {page_number(url)} not read ({exc})")
+        pages += 1
+        for item in discover(html):
+            seen.setdefault(item.name, item)
+        nxt = next_page_link(html)
+        if nxt is None:
+            return Listing(sort_listed(seen.values()), pages)
+        if pages >= cap:
+            return Listing(sort_listed(seen.values()), pages,
+                           stopped=f"stopped at the cap of {cap} listing pages; page {page_number(nxt)} on not read")
+        if page_number(nxt) != page_number(url) + 1:
+            return Listing(sort_listed(seen.values()), pages,
+                           failed=f"page {page_number(url)}'s Next link leads to {nxt}, not the following page")
+        url = nxt
+
+
+def sort_listed(items) -> list[Listed]:
+    # `all_forms` sorts first, so the families checked against it find its quarter held.
+    return sorted(items, key=lambda x: (x.kind, x.fy, x.quarter, x.name))
 
 
 # ---------------------------------------------------------------------------
@@ -407,6 +710,29 @@ def reconcile_all_forms(p: Parsed) -> None:
 # ---------------------------------------------------------------------------
 
 def parse_i485_offices(rows: list[dict[int, str]], listed: Listed) -> Parsed:
+    p = parse_offices(rows, listed, I485_GROUP_HEADINGS, OFFICE_COLUMNS)
+    reconcile_offices(p)
+    return p
+
+
+def parse_n400_offices(rows: list[dict[int, str]], listed: Listed) -> Parsed:
+    """The N-400 by field office: the I-485 office file's layout, three groups of four.
+
+    Its date range opened on the wrong year in FY2026 Q3 ("April 1, 2025 -
+    June 30, 2026"), so only the end is checked, against the filename's
+    quarter. A second block, `Field Office by Territory`, holds Guam, the U.S.
+    Virgin Islands and Puerto Rico, each read like a state.
+    """
+    p = parse_offices(rows, listed, N400_GROUP_HEADINGS, N400_COLUMNS)
+    check_quarter_end(listed.name, p.quarter_end, listed.fy, listed.quarter)
+    reconcile_offices(p, N400_COLUMNS)
+    reconcile_n400(p)
+    return p
+
+
+def parse_offices(rows: list[dict[int, str]], listed: Listed, groups: tuple[str, ...],
+                  columns: list[str]) -> Parsed:
+    """One office file: a Total row, state (or territory) label rows, and an office per row with its code."""
     p = Parsed(listed.kind, listed.fy, listed.quarter, listed.name)
     header_at = None
     for i, r in enumerate(rows):
@@ -420,11 +746,16 @@ def parse_i485_offices(rows: list[dict[int, str]], listed: Listed) -> Parsed:
             break
     if header_at is None or not p.quarter_end:
         raise Refusal(f"{listed.name}: no header row or quarter range found")
-    groups = rows[header_at - 1]
-    labels = [norm(groups.get(c)) for c in (2, 6, 10, 14)]
-    for want, got in zip(("Family", "Employment", "Humanitarian", "Other"), labels):
-        if not got.startswith(want):
+    group_row, header = rows[header_at - 1], rows[header_at]
+    for k, want in enumerate(groups):
+        got = heading(group_row.get(2 + 4 * k))
+        if not re.search(want, got):
             raise Refusal(f"{listed.name}: column group {want!r} not where expected (got {got!r})")
+    for c in range(2, 2 + len(columns)):
+        want = OFFICE_MEASURE_HEADINGS[(c - 2) % 4]
+        got = heading(header.get(c))
+        if not re.search(want, got):
+            raise Refusal(f"{listed.name}: column {c} is headed {got!r}, not {want!r}")
     state = ""
     for r in rows[header_at + 1:]:
         first = norm(r.get(0))
@@ -433,26 +764,27 @@ def parse_i485_offices(rows: list[dict[int, str]], listed: Listed) -> Parsed:
         if first.startswith(("Table Key", "References", "Notes", "Source", "- Represents", "D ")):
             break
         code = norm(r.get(1))
-        values = [r.get(c) for c in range(2, 22)]
-        has_numbers = any(v not in (None, "") for v in values)
+        values = [r.get(c) for c in range(2, 2 + len(columns))]
+        # A state's own row prints a single space in each number cell (the N-400 file).
+        has_numbers = any(str(v or "").strip() for v in values)
         if not code and not has_numbers:
-            state = first
+            if not first.startswith("Field Office by"):   # the territories' block heading
+                state = first
             continue
-        if first == "Total" and not code:
+        if first.lower() == "total" and not code:
             row = {"state": "", "office": "Total", "code": "ALL"}
         else:
             if not code:
                 raise Refusal(f"{listed.name}: office {first!r} has no code")
             row = {"state": state, "office": first, "code": code}
-        row["suppressed"] = sum(1 for v in values if str(v or "").strip() == "D")
-        for col, v in zip(OFFICE_COLUMNS, values):
+        row["suppressed"] = sum(1 for v in values if withheld(v))
+        for col, v in zip(columns, values):
             row[col] = cell_int(v)
         p.rows.append(row)
-    reconcile_offices(p)
     return p
 
 
-def reconcile_offices(p: Parsed) -> None:
+def reconcile_offices(p: Parsed, columns: list[str] = OFFICE_COLUMNS) -> None:
     total = next((r for r in p.rows if r["code"] == "ALL"), None)
     if not total:
         raise Refusal(f"{p.name}: no Total row")
@@ -469,7 +801,7 @@ def reconcile_offices(p: Parsed) -> None:
     # cell the parts can only sum to LESS than the total (each D is 1 to 9),
     # so the check is exact when nothing is suppressed and a floor when
     # something is. Either way a shifted column or a dropped block fails.
-    for col in OFFICE_COLUMNS:
+    for col in columns:
         published = total[col]
         if published is None:
             continue
@@ -481,6 +813,20 @@ def reconcile_offices(p: Parsed) -> None:
         if missing and not (held <= published <= held + 9 * missing):
             raise Refusal(f"{p.name}: {col} sums to {held:,} with {missing} suppressed "
                           f"cells against a published {published:,}")
+
+
+def reconcile_n400(p: Parsed) -> None:
+    """Within each row, both categories make the total: civilian plus military, measure by measure.
+
+    Checked wherever all three cells are printed (164 D cells in FY2026 Q3 leave
+    the rest of each row to check). Held for every office in three quarters.
+    """
+    for r in p.rows:
+        for m in OFFICE_MEASURES:
+            civ, mil, both = r[f"civ_{m}"], r[f"mil_{m}"], r[f"all_{m}"]
+            if civ is not None and mil is not None and both is not None and civ + mil != both:
+                raise Refusal(f"{p.name}: {r['code']} {m}: civilian {civ:,} and military {mil:,} "
+                              f"against a total of {both:,}")
 
 
 # ---------------------------------------------------------------------------
@@ -685,6 +1031,506 @@ def reconcile_class_country(p: Parsed) -> None:
 
 
 # ---------------------------------------------------------------------------
+# i765_categories
+# ---------------------------------------------------------------------------
+
+def i765_markers(rows: list[dict[int, str]]) -> dict[str, str]:
+    """The footnote markers this file glues to its codes, from its own reference lines.
+
+    FY2026 Q3: `5 I-765 EAD Eligibility Category where the statutory or
+    regulatory basis is mandatory.` and 6 for discretionary. FY2025 Q1 has
+    none; the yearly FY24 file used 4 and 5. Read, never assumed.
+    """
+    out: dict[str, str] = {}
+    for r in rows:
+        m = I765_MARKER_RE.match(norm(r.get(0)))
+        if m:
+            out[m.group(1)] = m.group(2).lower()
+    return out
+
+
+def i765_code(raw: str, markers: dict[str, str], name: str) -> tuple[str, str | None]:
+    """`A025` -> ('A02', 'mandatory') when 5 marks mandatory; `C031`, `C09P` unchanged; junk refused.
+
+    A final digit is a marker only when the file names it as one and what's
+    left is a letter and two digits. Codes that really end in a digit (C011,
+    C031 to C033, C091, C171 to C173) are taken as they are.
+    """
+    s = norm(raw).upper()
+    if s in I765_DIGIT_CODES:
+        return s, None
+    for marker, discretion in markers.items():
+        if s.endswith(marker) and re.fullmatch(r"[AC]\d{2}", s[:-len(marker)]):
+            return s[:-len(marker)], discretion
+    if not I765_CODE_RE.match(s):
+        raise Refusal(f"{name}: {raw!r} is not an eligibility code")
+    if len(s) == 4 and s[-1].isdigit():
+        raise Refusal(f"{name}: {raw!r} ends in a digit no reference line explains (a footnote marker?)")
+    return s, None
+
+
+def heading_columns(groups: dict[int, str], header: dict[int, str], first: int, name: str,
+                    group_rx: dict[str, str], measure_rx: dict[str, str]) -> dict[str, int]:
+    """`{group}_{measure}` -> column, read from a two-row heading by its words.
+
+    A measure sits under the nearest group heading at or left of its column. A
+    heading that names no known group or measure, or a pair named twice, is
+    refused, so a moved or renamed column stops the load.
+    """
+    starts = sorted((c, heading(v)) for c, v in groups.items() if c >= first and heading(v))
+    out: dict[str, int] = {}
+    for c in sorted(k for k in header if k >= first):
+        label = heading(header[c])
+        if not label:
+            continue
+        measure = next((m for m, rx in measure_rx.items() if re.search(rx, label, re.I)), None)
+        over = next((g for gc, g in reversed(starts) if gc <= c), "")
+        group = next((g for g, rx in group_rx.items() if re.search(rx, over, re.I)), None)
+        if measure is None or group is None:
+            raise Refusal(f"{name}: column {c} is headed {over!r} / {label!r}, which this reader doesn't know")
+        key = f"{group}_{measure}"
+        if key in out:
+            raise Refusal(f"{name}: two columns are headed {over!r} / {label!r}")
+        out[key] = c
+    return out
+
+
+def parse_i765_categories(sheets: list[tuple[str, list[dict[int, str]]]], listed: Listed) -> Parsed:
+    p = Parsed(listed.kind, listed.fy, listed.quarter, listed.name)
+    rows, header_at = find_sheet(sheets, listed.name, "an 'EAD Eligibility Category' header",
+                                 lambda r: norm(r.get(0)) == "EAD Eligibility Category")
+    for r in rows[:header_at]:
+        qb = quarter_bounds(norm(r.get(0)))
+        if qb:
+            p.quarter_start, p.quarter_end = qb
+            break
+    check_quarter_end(listed.name, p.quarter_end, listed.fy, listed.quarter)
+    header = rows[header_at]
+    if heading(header.get(1)) != "EAD Category Description":
+        raise Refusal(f"{listed.name}: column 1 is headed {norm(header.get(1))!r}, not the category description")
+    cols = heading_columns(rows[header_at - 1], header, 2, listed.name,
+                           I765_FILING_HEADINGS, I765_MEASURE_HEADINGS)
+    if set(cols) != set(I765_COLUMNS):
+        raise Refusal(f"{listed.name}: columns {sorted(set(I765_COLUMNS) - set(cols))} are missing")
+    markers = i765_markers(rows[header_at + 1:])
+    if markers:
+        p.notes.append("footnote markers " + ", ".join(f"{k} {v}" for k, v in sorted(markers.items())))
+    for r in rows[header_at + 1:]:
+        first = norm(r.get(0))
+        if not first:
+            continue
+        if first.startswith(("Table Key", "Reference", "Note", "Source")):
+            break
+        if first.lower() == "total":
+            code, discretion, description = "ALL", None, "All eligibility categories"
+        else:
+            code, discretion = i765_code(first, markers, listed.name)
+            description = norm(r.get(1))
+            if not description:
+                raise Refusal(f"{listed.name}: code {first!r} has no description")
+        row: dict = {"code": code, "description": description, "discretion": discretion,
+                     "withheld": {k: str(r.get(c)).strip() for k, c in cols.items() if withheld(r.get(c))}}
+        row["suppressed"] = len(row["withheld"])
+        for k, c in cols.items():
+            row[k] = strict_count(r.get(c), f"{listed.name} {code} {k}")
+        p.rows.append(row)
+    reconcile_i765(p)
+    return p
+
+
+def reconcile_i765(p: Parsed) -> None:
+    codes = [r["code"] for r in p.rows]
+    dupes = sorted({c for c in codes if codes.count(c) > 1})
+    if dupes:
+        raise Refusal(f"{p.name}: codes {dupes} appear twice (a footnote marker read as part of a code?)")
+    by = {r["code"]: r for r in p.rows}
+    for must in ("ALL", "C08", "C09", "C26", "C33"):
+        if must not in by:
+            raise Refusal(f"{p.name}: no {must} row")
+    parts = [r for r in p.rows if r["code"] != "ALL"]
+    if len(parts) < 40:
+        raise Refusal(f"{p.name}: only {len(parts)} eligibility codes; expected 40 or more")
+    # Each row's TOTAL group is its four filing types added up, exactly.
+    for r in p.rows:
+        for m in OFFICE_MEASURES:
+            types = [r[f"{f}_{m}"] for f in I765_FILINGS[:-1]]
+            whole = r[f"all_{m}"]
+            if whole is None or any(v is None for v in types):
+                continue
+            if sum(types) != whole:
+                raise Refusal(f"{p.name}: {r['code']} {m}: the filing types add up to {sum(types):,} "
+                              f"against a total of {whole:,}")
+    # The codes against the printed Total row: never more, and at most a few
+    # less (1 to 4 in the pending columns in FY2026 Q3). Each D is 1 to 9 more
+    # room; an H hides a value of any size, so it leaves only the floor.
+    total = by["ALL"]
+    for col in I765_COLUMNS:
+        published = total[col]
+        if published is None:
+            continue
+        held = sum(r[col] for r in parts if r[col] is not None)
+        marks = [r["withheld"].get(col) for r in parts if r[col] is None]
+        gap = published - held
+        if gap < 0:
+            raise Refusal(f"{p.name}: {col}: the codes add up to {held:,}, more than the printed Total {published:,}")
+        room = I765_TOTAL_SLACK + 9 * sum(1 for m in marks if m == "D")
+        if "H" not in marks and gap > room:
+            raise Refusal(f"{p.name}: {col}: the codes add up to {held:,}, {gap:,} below the printed "
+                          f"Total {published:,} (at most {room} allowed)")
+        if gap:
+            p.notes.append(f"{col}: codes {gap:,} below the Total")
+
+
+def compare_files(p: Parsed, what: str, mine: int | None, theirs: int | None, found: list[str],
+                  *, exact: bool) -> None:
+    """One figure against the all-forms file's: equal, or (unless `exact`) within CROSS_FILE_ROOM, noted.
+
+    USCIS queries its files at different moments, and two of eighteen quarters
+    read Nov 21 2026 disagree: FY2025 Q2's I-765 total by 2 received and 5
+    pending, and FY2024 Q3's N-400 totals by up to 7,560 pending (1.6%), while
+    each file's own totals add up. A figure from the wrong column or another
+    quarter is further off than that; a disagreement inside it is put on the record.
+    """
+    if mine is None or theirs is None or mine == theirs:
+        return
+    room = 0 if exact else max(CROSS_FILE_FLOOR, round(CROSS_FILE_SHARE * theirs))
+    if abs(mine - theirs) > room:
+        raise Refusal(f"{p.name}: {what} is {mine:,}; the all-forms file says {theirs:,}"
+                      + (f" (more than {room:,} apart)" if room else ""))
+    found.append(f"{what} {mine:,}, the all-forms file {theirs:,}")
+
+
+def check_i765_against_all_forms(p: Parsed, forms: list[dict]) -> list[str]:
+    """The all-forms file's four I-765 rows, against the codes they count; the disagreements allowed.
+
+    Asylum is (c)(8), adjustment of status is (c)(9) with (c)(9)P (and (c)(9)1
+    when listed), DACA is (c)(33): exact on all four measures in every quarter
+    from FY2025 Q1 to FY2026 Q3, so held exact. The four rows together are the
+    Total, which FY2025 Q2's all-forms file put 2 and 5 higher.
+    """
+    rows = [f for f in forms if f["form"] == "I-765"]
+    by = {r["code"]: r for r in p.rows}
+    found: list[str] = []
+    for words, codes in I765_ALL_FORMS_ROWS:
+        row = next((f for f in rows if words.lower() in f["title"].lower()), None)
+        if row is None:
+            raise Refusal(f"{p.name}: the all-forms file has no I-765 {words} row to check against")
+        for m in OFFICE_MEASURES:
+            parts = [by[c][f"all_{m}"] for c in codes if c in by]
+            mine = None if any(v is None for v in parts) else sum(parts)
+            compare_files(p, f"{'+'.join(c for c in codes if c in by)} {m} ({words})", mine, row[m], found, exact=True)
+    for m in OFFICE_MEASURES:
+        values = [f[m] for f in rows]
+        theirs = None if any(v is None for v in values) else sum(values)
+        compare_files(p, f"Total {m}", by["ALL"][f"all_{m}"], theirs, found, exact=False)
+    return found
+
+
+# ---------------------------------------------------------------------------
+# i765_pending_days
+# ---------------------------------------------------------------------------
+
+def bucket_range(label: str, name: str) -> tuple[int, int | None]:
+    """`60 or fewer` -> (0, 60), `61 - 90 days` -> (61, 90), `180 to 540 days` -> (180, 540), `541 or more days` -> (541, None).
+
+    FY2023 Q1 and Q2 word them `60 Days or Fewer`, `Between 61 and 90 Days`
+    and `180 Days or More`.
+    """
+    s = re.sub(r"\s+", " ", re.sub(r"\bdays?\b", " ", norm(label), flags=re.I)).strip().lower()
+    m = re.fullmatch(r"(\d+) or fewer", s)
+    if m:
+        return 0, int(m.group(1))
+    m = re.fullmatch(r"(\d+) ?(?:-|to) ?(\d+)", s) or re.fullmatch(r"between (\d+) and (\d+)", s)
+    if m and int(m.group(1)) <= int(m.group(2)):
+        return int(m.group(1)), int(m.group(2))
+    m = re.fullmatch(r"(\d+) or more", s)
+    if m:
+        return int(m.group(1)), None
+    raise Refusal(f"{name}: {label!r} is not a range of days this reader knows")
+
+
+PENDING_SCOPES = {"c8": r"^\(c\)\(8\) Pending Asylum$", "all": r"^All Categories$"}
+PENDING_FILINGS = {"initial": r"^Initial Applications$", "renewal": r"^Renewal Applications$"}
+
+
+def parse_i765_pending_days(sheets: list[tuple[str, list[dict[int, str]]]], listed: Listed) -> Parsed:
+    """Pending I-765s by days waited, as of the quarter's last day.
+
+    Five ranges through FY2025 Q4 (60 or fewer, 61-90, 91-121, 121-179 or
+    122-179, 180 or more) and seven in FY2026 Q3 (30 or fewer up to 541 or
+    more). The ranges are stored as printed, with their bounds; USCIS's own
+    `91 - 121` and `121 - 179` share a day, which is allowed and nothing more.
+    """
+    p = Parsed(listed.kind, listed.fy, listed.quarter, listed.name)
+    rows, header_at = find_sheet(sheets, listed.name, "a 'Number of Days Pending' header",
+                                 lambda r: norm(r.get(0)) == "Number of Days Pending")
+    printed = next((d for d in (as_of_date(norm(r.get(0))) for r in rows[:header_at]) if d), None)
+    check_quarter_end(listed.name, printed, listed.fy, listed.quarter, snapshot=True)
+    p.as_of = quarter_end(listed.fy, listed.quarter)
+    cols = heading_columns(rows[header_at - 1], rows[header_at], 1, listed.name, PENDING_FILINGS, PENDING_SCOPES)
+    if len(cols) != 4:
+        raise Refusal(f"{listed.name}: columns {sorted(cols)}; expected initial and renewal, (c)(8) and all")
+    total: dict[str, int] | None = None
+    buckets: list[tuple[str, int, int | None, dict[str, int]]] = []
+    for r in rows[header_at + 1:]:
+        first = norm(r.get(0))
+        if not first:
+            continue
+        if first.startswith(("Note", "Source", "Table Key", "Reference")):
+            break
+        counts: dict[str, int] = {}
+        for k, c in cols.items():
+            n = strict_count(r.get(c), f"{listed.name} {first!r} {k}")
+            if n is None:
+                raise Refusal(f"{listed.name}: {first!r} {k} is withheld; this file never withholds")
+            counts[k] = n
+        if first.lower() == "grand total":
+            total = counts
+            continue
+        lo, hi = bucket_range(first, listed.name)
+        buckets.append((first, lo, hi, counts))
+    reconcile_pending_days(listed.name, total, buckets)
+    for label, lo, hi, counts in buckets:
+        for k, n in counts.items():
+            filing, scope = k.split("_", 1)
+            p.rows.append({"filing": filing, "scope": scope, "bucket": label,
+                           "days_min": lo, "days_max": hi, "count": n})
+    return p
+
+
+def reconcile_pending_days(name: str, total: dict[str, int] | None,
+                           buckets: list[tuple[str, int, int | None, dict[str, int]]]) -> None:
+    if total is None:
+        raise Refusal(f"{name}: no Grand Total row")
+    if len(buckets) < 3:
+        raise Refusal(f"{name}: only {len(buckets)} ranges of days")
+    if buckets[0][1] != 0:
+        raise Refusal(f"{name}: the first range starts at {buckets[0][1]} days, not 0")
+    for (label, lo, hi, _), (nlabel, nlo, _, _) in zip(buckets, buckets[1:]):
+        if hi is None:
+            raise Refusal(f"{name}: {label!r} is open-ended but {nlabel!r} follows it")
+        if nlo not in (hi, hi + 1):
+            raise Refusal(f"{name}: {label!r} then {nlabel!r} leaves a gap or an overlap")
+    if buckets[-1][2] is not None:
+        raise Refusal(f"{name}: the last range {buckets[-1][0]!r} has an end; nothing counts the longest waits")
+    for k, want in total.items():
+        got = sum(counts[k] for _, _, _, counts in buckets)
+        if got != want:
+            raise Refusal(f"{name}: {k}: the ranges add up to {got:,} against a Grand Total of {want:,}")
+
+
+# ---------------------------------------------------------------------------
+# net_backlog
+# ---------------------------------------------------------------------------
+
+def backlog_value(v: object, where: str) -> int | None:
+    """A net backlog figure: N/A is None, `-` is 0, and anything not a multiple of 100 is refused."""
+    n = strict_count(v, where)
+    if n is not None and n % 100:
+        raise Refusal(f"{where}: {n:,} isn't rounded to the hundred, as every figure here is")
+    return n
+
+
+def parse_net_backlog(sheets: list[tuple[str, list[dict[int, str]]]], listed: Listed) -> Parsed:
+    """The net backlog by form and the frontlog, from one workbook or (FY2023 Q4) one csv file each.
+
+    Net backlog: cases pending past USCIS's target time, less the delays the
+    applicant caused (evidence requests, intents to deny) and cases waiting on
+    a visa number. Frontlog: applications not yet opened at the quarter's end,
+    with no breakdown by form. Every backlog figure is rounded to the hundred;
+    the frontlog often isn't (77,291 in FY2024 Q2, 247,974 in FY2025 Q4).
+    """
+    p = Parsed(listed.kind, listed.fy, listed.quarter, listed.name, as_of=quarter_end(listed.fy, listed.quarter))
+    name = listed.name.lower()
+    if "backlog" in name:
+        p.rows += parse_backlog_sheet(sheets, listed)
+    if "frontlog" in name:
+        p.rows += parse_frontlog_sheet(sheets, listed)
+    reconcile_backlog(p)
+    return p
+
+
+def parse_backlog_sheet(sheets: list[tuple[str, list[dict[int, str]]]], listed: Listed) -> list[dict]:
+    rows, header_at = find_sheet(
+        sheets, listed.name, "a 'Category and Form Number' / 'Net Backlog' header",
+        lambda r: norm(r.get(0)) == "Category and Form Number" and heading(r.get(2)).startswith("Net Backlog"))
+    printed = next((d for d in (as_of_date(norm(r.get(0))) for r in rows[:header_at]) if d), None)
+    check_quarter_end(listed.name, printed, listed.fy, listed.quarter, snapshot=True)
+    if heading(rows[header_at].get(1)) != "Description":
+        raise Refusal(f"{listed.name}: column 1 is headed {norm(rows[header_at].get(1))!r}, not Description")
+    out: list[dict] = []
+    category = ""
+    for r in rows[header_at + 1:]:
+        first = norm(r.get(0))
+        if not first:
+            continue
+        if first.startswith(("Table Key", "References", "Notes", "Source")):
+            break
+        title, raw = norm(r.get(1)), norm(r.get(2))
+        if not title and not raw:
+            category = strip_footnote(first)
+            continue
+        if first == "TOTAL":
+            form, title, cat = "TOTAL", "All forms", ""
+        else:
+            form, cat = strip_footnote(first), category
+            if not title:
+                raise Refusal(f"{listed.name}: form {first!r} has no title")
+        out.append({"measure": "net_backlog", "form": form, "title": title, "category": cat,
+                    "value": backlog_value(r.get(2), f"{listed.name} {form} {title}")})
+    return out
+
+
+def parse_frontlog_sheet(sheets: list[tuple[str, list[dict[int, str]]]], listed: Listed) -> list[dict]:
+    rows, at = find_sheet(sheets, listed.name, "an 'All Forms Frontlog' row",
+                          lambda r: heading(r.get(0)) == "All Forms Frontlog")
+    # The workbook prints the date in its title ("Frontlog for All Forms as of
+    # June 30, 2026"); the csv on a line of its own ("As of September 30,2023").
+    printed = next((d for d in (as_of_date(norm(r.get(0))) for r in rows[:at]) if d), None)
+    check_quarter_end(listed.name, printed, listed.fy, listed.quarter, snapshot=True)
+    col = next((c for r in reversed(rows[:at]) for c, v in r.items() if norm(v) == "Total"), None)
+    if col is None:
+        raise Refusal(f"{listed.name}: no 'Total' heading over the frontlog")
+    # The one figure here USCIS doesn't always round: FY2024 Q2 printed 77,291
+    # under a note saying it rounds to the hundred, and four quarters since are
+    # unrounded too. It has no parts to add up, so it's taken as printed.
+    return [{"measure": "frontlog", "form": "ALL", "title": "All forms", "category": "",
+             "value": strict_count(rows[at].get(col), f"{listed.name} frontlog")}]
+
+
+def reconcile_backlog(p: Parsed) -> None:
+    keys = [(r["measure"], r["form"], r["title"]) for r in p.rows]
+    dupes = sorted({k for k in keys if keys.count(k) > 1})
+    if dupes:
+        raise Refusal(f"{p.name}: duplicate rows {dupes[:3]}")
+    backlog = [r for r in p.rows if r["measure"] == "net_backlog"]
+    if not backlog:
+        return
+    forms = {r["form"] for r in backlog}
+    for must in ("TOTAL", "I-140", "I-485", "I-765", "N-400"):
+        if must not in forms:
+            raise Refusal(f"{p.name}: {must} missing from the net backlog sheet")
+    if len(backlog) < 40:
+        raise Refusal(f"{p.name}: only {len(backlog)} net backlog rows; expected 40 or more")
+    total = next(r["value"] for r in backlog if r["form"] == "TOTAL")
+    held = sum(r["value"] or 0 for r in backlog if r["form"] != "TOTAL")
+    gap = total - held
+    # Rounding each form to the hundred leaves a total a few hundred off its
+    # parts; a dropped row or a shifted column is far more.
+    if abs(gap) > BACKLOG_TOTAL_SLACK * total:
+        raise Refusal(f"{p.name}: the forms add up to {held:,} against a total of {total:,} "
+                      f"({gap:+,}, over {BACKLOG_TOTAL_SLACK:.1%})")
+    if gap:
+        p.notes.append(f"the forms add up to {gap:+,} off the total of {total:,}")
+
+
+# ---------------------------------------------------------------------------
+# i907_premium
+# ---------------------------------------------------------------------------
+
+I907_COLUMNS = {"concurrent": "Concurrent", "upgrade": "Upgrade", "total": "Total"}
+
+
+def parse_i907_premium(sheets: list[tuple[str, list[dict[int, str]]]], listed: Listed) -> Parsed:
+    """Premium processing requests by form: with the petition ("concurrent") or added to a pending one ("upgrade")."""
+    p = Parsed(listed.kind, listed.fy, listed.quarter, listed.name)
+    rows, header_at = find_sheet(sheets, listed.name, "a 'Form Number' header",
+                                 lambda r: norm(r.get(0)) == "Form Number")
+    for r in rows[:header_at]:
+        qb = quarter_bounds(norm(r.get(0)))
+        if qb:
+            p.quarter_start, p.quarter_end = qb
+            break
+    check_quarter_end(listed.name, p.quarter_end, listed.fy, listed.quarter)
+    header = rows[header_at]
+    if heading(header.get(1)) != "Description":
+        raise Refusal(f"{listed.name}: column 1 is headed {norm(header.get(1))!r}, not Description")
+    cols = {k: c for k, label in I907_COLUMNS.items() for c, v in header.items() if heading(v) == label}
+    if set(cols) != set(I907_COLUMNS) or len(set(cols.values())) != 3:
+        raise Refusal(f"{listed.name}: headings {[norm(v) for v in header.values()]}; "
+                      "expected Concurrent, Upgrade and Total")
+    for r in rows[header_at + 1:]:
+        first = norm(r.get(0))
+        if not first:
+            continue
+        if first.startswith(("References", "Notes", "Source", "Table Key")):
+            break
+        if first.lower() == "grand total":
+            form, title = "ALL", "All forms"
+        else:
+            form, title = strip_footnote(first), norm(r.get(1))
+            if not FORM_RE.match(form) or not title:
+                raise Refusal(f"{listed.name}: {first!r} / {title!r} is not a form and its title")
+        row = {"form": form, "title": title}
+        for k, c in cols.items():
+            n = strict_count(r.get(c), f"{listed.name} {form} {k}")
+            if n is None:
+                raise Refusal(f"{listed.name}: {form} {k} is withheld; this file never withholds")
+            row[k] = n
+        p.rows.append(row)
+    reconcile_i907(p)
+    return p
+
+
+def reconcile_i907(p: Parsed) -> None:
+    forms = [r["form"] for r in p.rows]
+    if len(set(forms)) != len(forms):
+        raise Refusal(f"{p.name}: a form appears twice")
+    for must in ("ALL", "I-129", "I-140"):
+        if must not in forms:
+            raise Refusal(f"{p.name}: no {must} row")
+    for r in p.rows:
+        if r["concurrent"] + r["upgrade"] != r["total"]:
+            raise Refusal(f"{p.name}: {r['form']}: concurrent {r['concurrent']:,} and upgrade "
+                          f"{r['upgrade']:,} against a total of {r['total']:,}")
+    total = next(r for r in p.rows if r["form"] == "ALL")
+    for k in I907_COLUMNS:
+        held = sum(r[k] for r in p.rows if r["form"] != "ALL")
+        if held != total[k]:
+            raise Refusal(f"{p.name}: {k}: the forms add up to {held:,} against a Grand Total of {total[k]:,}")
+
+
+# ---------------------------------------------------------------------------
+# n400_offices against the all-forms file
+# ---------------------------------------------------------------------------
+
+def check_n400_against_all_forms(p: Parsed, forms: list[dict]) -> list[str]:
+    """The office file's Total row against the all-forms file's two N-400 rows, civilian and military.
+
+    Equal in ten of the eleven quarters from FY2024 Q1; FY2024 Q3's differ on
+    every measure, by up to 1.6%, while the office file's offices add up to its own Total.
+    """
+    total = next(r for r in p.rows if r["code"] == "ALL")
+    n400 = [f for f in forms if f["form"] == "N-400"]
+    mil = next((f for f in n400 if "(military)" in f["title"].lower()), None)
+    civ = next((f for f in n400 if "(military)" not in f["title"].lower()), None)
+    if civ is None or mil is None:
+        raise Refusal(f"{p.name}: the all-forms file lacks an N-400 civilian or military row to check against")
+    found: list[str] = []
+    for group, row in (("civ", civ), ("mil", mil)):
+        for m in OFFICE_MEASURES:
+            compare_files(p, f"Total {group}_{m}", total[f"{group}_{m}"], row[m], found, exact=False)
+    return found
+
+
+CROSS_CHECKS = {"i765_categories": check_i765_against_all_forms,
+                "n400_offices": check_n400_against_all_forms}
+
+
+def cross_check(p: Parsed, forms: list[dict] | None) -> str:
+    """Check a parse against the all-forms file's quarter where one is held; say what happened."""
+    check = CROSS_CHECKS.get(p.kind)
+    if check is None:
+        return ""
+    if forms is None:
+        return f"not checked against the all-forms file (its FY{p.fy} Q{p.quarter} rows aren't held)"
+    found = check(p, forms)
+    if not found:
+        return "matches the all-forms file"
+    return "DIFFERS from the all-forms file, within the room allowed: " + "; ".join(found)
+
+
+# ---------------------------------------------------------------------------
 # The historical factsheet (PDF)
 # ---------------------------------------------------------------------------
 
@@ -736,8 +1582,8 @@ def parse_factsheet_text(text: str) -> dict:
 
 
 def fetch_factsheet() -> dict:
-    import pdfplumber  # imported here: the four workbooks need no PDF library
-    blob = fetch(FACTSHEET_URL, referer=DATA_PAGE)
+    import pdfplumber  # imported here: the workbooks need no PDF library
+    blob = fetch_uscis(FACTSHEET_URL, referer=DATA_PAGE)
     with pdfplumber.open(io.BytesIO(blob)) as pdf:
         text = "\n".join(page.extract_text() or "" for page in pdf.pages)
     return parse_factsheet_text(text)
@@ -772,9 +1618,54 @@ DDL = [
         measure TEXT NOT NULL, fy INTEGER NOT NULL, count INTEGER NOT NULL,
         source_file TEXT NOT NULL,
         PRIMARY KEY (as_of, country, preference, measure, fy))""",
+    # One row per eligibility code per quarter, wide like the office table:
+    # `ALL` is the printed Total row; `discretion` is NULL where the file marks none.
+    """CREATE TABLE IF NOT EXISTS uscis_i765_categories (
+        fy INTEGER NOT NULL, quarter INTEGER NOT NULL, quarter_end TEXT NOT NULL,
+        code TEXT NOT NULL, description TEXT NOT NULL, discretion TEXT,
+        """ + ", ".join(f"{c} INTEGER" for c in I765_COLUMNS) + """,
+        suppressed INTEGER NOT NULL DEFAULT 0, source_file TEXT NOT NULL,
+        PRIMARY KEY (fy, quarter, code))""",
+    # `days_max` NULL is open-ended ("180 or more"); the bucket is the label as printed.
+    """CREATE TABLE IF NOT EXISTS uscis_i765_pending_days (
+        fy INTEGER NOT NULL, quarter INTEGER NOT NULL, as_of TEXT NOT NULL,
+        filing TEXT NOT NULL, scope TEXT NOT NULL, bucket TEXT NOT NULL,
+        days_min INTEGER NOT NULL, days_max INTEGER, count INTEGER NOT NULL, source_file TEXT NOT NULL,
+        PRIMARY KEY (fy, quarter, filing, scope, days_min))""",
+    # `measure` net_backlog (form TOTAL is the total row) or frontlog (one row, form ALL).
+    # `value` NULL where USCIS prints N/A (the backlog isn't tracked).
+    """CREATE TABLE IF NOT EXISTS uscis_net_backlog (
+        fy INTEGER NOT NULL, quarter INTEGER NOT NULL, as_of TEXT NOT NULL,
+        measure TEXT NOT NULL, form TEXT NOT NULL, title TEXT NOT NULL, category TEXT NOT NULL,
+        value INTEGER, source_file TEXT NOT NULL,
+        PRIMARY KEY (fy, quarter, measure, form, title))""",
+    """CREATE TABLE IF NOT EXISTS uscis_i907_premium (
+        fy INTEGER NOT NULL, quarter INTEGER NOT NULL, quarter_end TEXT NOT NULL,
+        form TEXT NOT NULL, title TEXT NOT NULL,
+        concurrent INTEGER NOT NULL, upgrade INTEGER NOT NULL, total INTEGER NOT NULL,
+        source_file TEXT NOT NULL,
+        PRIMARY KEY (fy, quarter, form))""",
+    """CREATE TABLE IF NOT EXISTS uscis_n400_offices (
+        fy INTEGER NOT NULL, quarter INTEGER NOT NULL, quarter_end TEXT NOT NULL,
+        state TEXT NOT NULL, office TEXT NOT NULL, code TEXT NOT NULL,
+        """ + ", ".join(f"{c} INTEGER" for c in N400_COLUMNS) + """,
+        suppressed INTEGER NOT NULL DEFAULT 0, source_file TEXT NOT NULL,
+        PRIMARY KEY (fy, quarter, code))""",
     """CREATE TABLE IF NOT EXISTS perm_docs (
         key TEXT PRIMARY KEY, json TEXT NOT NULL, computed_at INTEGER NOT NULL)""",
 ]
+
+# Each kind's table, the columns it writes (after fy and quarter), and how a
+# row of the parse fills them. One file replaces its own quarter's rows.
+TABLES: dict[str, tuple[str, list[str]]] = {
+    "i765_categories": ("uscis_i765_categories",
+                        ["quarter_end", "code", "description", "discretion", *I765_COLUMNS, "suppressed"]),
+    "i765_pending_days": ("uscis_i765_pending_days",
+                          ["as_of", "filing", "scope", "bucket", "days_min", "days_max", "count"]),
+    "net_backlog": ("uscis_net_backlog", ["as_of", "measure", "form", "title", "category", "value"]),
+    "i907_premium": ("uscis_i907_premium", ["quarter_end", "form", "title", "concurrent", "upgrade", "total"]),
+    "n400_offices": ("uscis_n400_offices", ["quarter_end", "state", "office", "code", *N400_COLUMNS, "suppressed"]),
+}
 
 
 def ensure_tables(db: Database) -> None:
@@ -798,11 +1689,11 @@ def offices_without_a_page(rows: list[dict], path: pathlib.Path | None = None) -
                   for r in rows if r["code"] != "ALL" and r["code"] not in held)
 
 
-def newest_office_rows(db: Database) -> list[dict]:
+def newest_office_rows(db: Database, table: str = "uscis_i485_offices") -> list[dict]:
     """The offices of the newest quarter held, whatever this run loaded."""
     return [{"code": str(r[0]), "office": str(r[1]), "state": str(r[2] or "")} for r in query_rows(
-        db, "SELECT code, office, state FROM uscis_i485_offices WHERE (fy, quarter) = "
-            "(SELECT fy, quarter FROM uscis_i485_offices ORDER BY fy DESC, quarter DESC LIMIT 1)", [])]
+        db, f"SELECT code, office, state FROM {table} WHERE (fy, quarter) = "
+            f"(SELECT fy, quarter FROM {table} ORDER BY fy DESC, quarter DESC LIMIT 1)", [])]
 
 
 def count_where(db: Database, table: str, where: str, args: list) -> int:
@@ -844,6 +1735,22 @@ def store(db: Database, p: Parsed) -> int:
             [p.as_of, r["country"], r["preference"], r["measure"], r["fy"], r["count"], p.name]
             for r in p.rows])
         n = count_where(db, "uscis_i140_class_country", "as_of = ?", [p.as_of])
+    elif p.kind in TABLES:
+        table, cols = TABLES[p.kind]
+        # The quarter's own day for every row: the filename's quarter, which
+        # the parse has checked against the date the sheet prints.
+        end = quarter_end(p.fy, p.quarter)
+        filled = [[p.fy, p.quarter, *[end if c in ("quarter_end", "as_of") else r[c] for c in cols], p.name]
+                  for r in p.rows]
+        where, args = "fy = ? AND quarter = ?", [p.fy, p.quarter]
+        if p.kind == "net_backlog":
+            # FY2023 Q4 came as two files, one per measure: each replaces only its own.
+            measures = sorted({r["measure"] for r in p.rows})
+            where += f" AND measure IN ({', '.join('?' for _ in measures)})"
+            args += measures
+        db.execute(f"DELETE FROM {table} WHERE {where}", args)
+        insert_rows(db, table, ["fy", "quarter", *cols, "source_file"], filled)
+        n = count_where(db, table, where, args)
     else:
         raise Refusal(f"unknown kind {p.kind}")
     if n != len(p.rows):
@@ -856,51 +1763,118 @@ def read_loads(db: Database) -> dict:
     return read_doc(db, LOADS_DOC) or {}
 
 
-def previous_keys(db: Database, p: Parsed) -> set[str] | None:
-    """The identifying keys of the newest quarter held BEFORE this one, for drift."""
+# Each kind's identifying key for drift, as SQL over its table and from a parsed row.
+DRIFT_KEYS: dict[str, tuple[str, str]] = {
+    "all_forms": ("uscis_form_quarters", "form || '|' || title"),
+    "i485_offices": ("uscis_i485_offices", "code"),
+    "n400_offices": ("uscis_n400_offices", "code"),
+    "i765_categories": ("uscis_i765_categories", "code"),
+    "i907_premium": ("uscis_i907_premium", "form"),
+    "net_backlog": ("uscis_net_backlog", "measure || '|' || form || '|' || title"),
+}
+
+
+def row_key(p: Parsed, r: dict) -> str:
     if p.kind == "all_forms":
-        table, expr = "uscis_form_quarters", "form || '|' || title"
-    elif p.kind == "i485_offices":
-        table, expr = "uscis_i485_offices", "code"
-    else:
+        return f"{r['form']}|{r['title']}"
+    if p.kind == "net_backlog":
+        return f"{r['measure']}|{r['form']}|{r['title']}"
+    if p.kind == "i907_premium":
+        return r["form"]
+    return r["code"]
+
+
+def neighbour_keys(db: Database, p: Parsed, *, later: bool = False) -> set[str] | None:
+    """The identifying keys of the nearest quarter held before this one (or, `later`, after it)."""
+    if p.kind not in DRIFT_KEYS:
         return None
-    prev = db.execute(
-        f"SELECT fy, quarter FROM {table} WHERE (fy < ?) OR (fy = ? AND quarter < ?) "
-        "ORDER BY fy DESC, quarter DESC LIMIT 1", [p.fy, p.fy, p.quarter])
-    rows = rows_of(prev)
+    table, expr = DRIFT_KEYS[p.kind]
+    if later:
+        where, order = "(fy > ?) OR (fy = ? AND quarter > ?)", "fy, quarter"
+    else:
+        where, order = "(fy < ?) OR (fy = ? AND quarter < ?)", "fy DESC, quarter DESC"
+    rows = rows_of(db.execute(f"SELECT fy, quarter FROM {table} WHERE {where} ORDER BY {order} LIMIT 1",
+                              [p.fy, p.fy, p.quarter]))
     if not rows:
         return None
     fy, q = int(rows[0][0]), int(rows[0][1])
-    return {str(r[0]) for r in query_rows(
+    keys = {str(r[0]) for r in query_rows(
         db, f"SELECT {expr} FROM {table} WHERE fy = ? AND quarter = ?", [fy, q])}
+    if p.kind == "net_backlog":
+        # A file holding one measure (the FY2023 Q4 csv pair) is compared on that measure alone.
+        measures = {r["measure"] for r in p.rows}
+        keys = {k for k in keys if k.split("|", 1)[0] in measures}
+    return keys
 
 
-def drift_findings(previous: set[str] | None, p: Parsed) -> list[str]:
-    """Keys the previous quarter carried and this one does not.
+def previous_keys(db: Database, p: Parsed) -> set[str] | None:
+    """The identifying keys of the newest quarter held BEFORE this one, for drift."""
+    return neighbour_keys(db, p)
+
+
+def later_keys(db: Database, p: Parsed) -> set[str] | None:
+    """The identifying keys of the oldest quarter held AFTER this one: None when this is the newest."""
+    return neighbour_keys(db, p, later=True)
+
+
+def drift_findings(previous: set[str] | None, p: Parsed, later: set[str] | None = None) -> list[str]:
+    """Keys the previous quarter carried and this one does not, for the kinds that refuse a loss.
 
     A form USCIS retires is legitimate (I-924 is decommissioned and still
     listed); a form that vanishes because its row was misread is not, and
     the parser cannot tell them apart. So a loss is refused unless a human
     passes --accept-drift after reading the list. No baseline, no findings.
+
+    An older quarter loaded after newer ones (the listing's history) has a
+    witness: a key the next quarter held doesn't carry either was retired
+    by then, as the I-924A was in FY2024 Q4 and the single I-130 row in
+    FY2025 Q1, and only a key that comes back later is a finding. The kinds
+    outside DRIFT_REFUSES report their changes through drift_notes.
     """
+    if previous is None or p.kind not in DRIFT_REFUSES:
+        return []
+    lost = previous - {row_key(p, r) for r in p.rows}
+    if later is not None:
+        lost &= later
+    lost_list = sorted(lost)
+    return [f"{p.kind}: keys held last quarter and not now: {lost_list}"] if lost_list else []
+
+
+def drift_notes(previous: set[str] | None, p: Parsed) -> list[str]:
+    """What this quarter dropped and added against the one before, for the log. Never refuses."""
     if previous is None:
         return []
-    if p.kind == "all_forms":
-        now = {f"{r['form']}|{r['title']}" for r in p.rows}
-    else:
-        now = {r["code"] for r in p.rows}
-    lost = sorted(previous - now)
-    return [f"{p.kind}: keys held last quarter and not now: {lost}"] if lost else []
+    now = {row_key(p, r) for r in p.rows}
+    out = []
+    if previous - now:
+        out.append(f"held last quarter and not now: {sorted(previous - now)}")
+    if now - previous:
+        out.append(f"new this quarter: {sorted(now - previous)}")
+    return out
 
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
+SHEET_PARSERS = {
+    "i765_categories": parse_i765_categories,
+    "i765_pending_days": parse_i765_pending_days,
+    "net_backlog": parse_net_backlog,
+    "i907_premium": parse_i907_premium,
+}
+
+
 def parse_blob(listed: Listed, blob: bytes) -> Parsed:
-    sheets = workbook_sheets(blob)
+    sheets = sheets_of(listed, blob)
     if not sheets:
         raise Refusal(f"{listed.name}: no worksheets")
+    if listed.kind in SHEET_PARSERS:
+        return SHEET_PARSERS[listed.kind](sheets, listed)
+    if listed.kind == "n400_offices":
+        rows, _ = find_sheet(sheets, listed.name, "a 'Field Office by State' header",
+                             lambda r: norm(r.get(0)).startswith("Field Office by State"))
+        return parse_n400_offices(rows, listed)
     if listed.kind == "all_forms":
         return parse_all_forms(sheets[0][1], listed)
     if listed.kind == "i485_offices":
@@ -917,7 +1891,27 @@ def local_listing(directory: pathlib.Path) -> list[Listed]:
         if ident:
             kind, fy, q = ident
             out.append(Listed(kind, fy, q, path.name, str(path)))
-    return sorted(out, key=lambda x: (x.kind, x.fy, x.quarter, x.name))
+    return sort_listed(out)
+
+
+def all_forms_rows(db: Database | None, cache: dict[tuple[int, int], list[dict]],
+                   fy: int, quarter: int) -> list[dict] | None:
+    """The all-forms file's rows for a quarter: parsed in this run, or held in the table; None when neither."""
+    if (fy, quarter) in cache:
+        return cache[(fy, quarter)]
+    if db is None:
+        return None
+    try:
+        got = query_rows(db, "SELECT form, title, received, approved, denied, pending "
+                             "FROM uscis_form_quarters WHERE fy = ? AND quarter = ?", [fy, quarter])
+    except Exception as exc:  # noqa: BLE001 - only "no such table" is an honest empty
+        if "no such table" in str(exc).lower():
+            return None
+        raise
+    if not got:
+        return None
+    return [{"form": str(r[0]), "title": str(r[1]),
+             **{m: (None if v is None else int(v)) for m, v in zip(OFFICE_MEASURES, r[2:])}} for r in got]
 
 
 def describe(p: Parsed) -> str:
@@ -935,6 +1929,31 @@ def describe(p: Parsed) -> str:
         total = next(r["count"] for r in p.rows if r["country"] == "TOTAL" and r["category"] == "TOTAL")
         india = next(r["count"] for r in p.rows if r["country"] == "India" and r["category"] == "TOTAL")
         return f"as of {p.as_of}: {total:,} awaiting a visa, India {india:,}"
+    if p.kind == "i765_categories":
+        c9 = next(r for r in p.rows if r["code"] == "C09")
+        return (f"{len(p.rows) - 1} codes; (c)(9) pending {c9['all_pending']:,} "
+                f"({c9['initial_pending']:,} initial); {sum(r['suppressed'] for r in p.rows)} withheld cells")
+    if p.kind == "i765_pending_days":
+        top = next(r for r in reversed(p.rows) if r["filing"] == "initial" and r["scope"] == "all")
+        return (f"as of {p.as_of}: {len({r['days_min'] for r in p.rows})} ranges; "
+                f"{top['count']:,} initial applications pending {top['bucket']}")
+    if p.kind == "net_backlog":
+        by = {(r["measure"], r["form"]): r["value"] for r in p.rows}
+        parts = []
+        if ("net_backlog", "TOTAL") in by:
+            forms = sum(1 for r in p.rows if r["measure"] == "net_backlog" and r["form"] != "TOTAL")
+            parts.append(f"net backlog {by[('net_backlog', 'TOTAL')]:,} across {forms} rows")
+        if ("frontlog", "ALL") in by:
+            parts.append(f"frontlog {by[('frontlog', 'ALL')]:,}")
+        return "; ".join(parts)
+    if p.kind == "i907_premium":
+        total = next(r for r in p.rows if r["form"] == "ALL")
+        i140 = next(r for r in p.rows if r["form"] == "I-140")
+        return f"{total['total']:,} premium requests, I-140 {i140['total']:,}"
+    if p.kind == "n400_offices":
+        total = next(r for r in p.rows if r["code"] == "ALL")
+        return (f"{len(p.rows) - 1} offices; civilian pending {total['civ_pending']:,}, all {total['all_pending']:,}; "
+                f"{sum(r['suppressed'] for r in p.rows)} suppressed cells")
     countries = sorted({r["country"] for r in p.rows})
     return f"{len(p.rows)} cells across {len(countries)} sheets ({', '.join(countries)})"
 
@@ -966,14 +1985,20 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     started = time.time()
 
+    listing_note, listing_failed = "", ""
     if args.local:
         listed = local_listing(pathlib.Path(args.local))
         read = lambda item: pathlib.Path(item.url).read_bytes()  # noqa: E731
     else:
-        log(f"Discovering the quarterly files from {DATA_PAGE}")
-        html = fetch(DATA_PAGE).decode("utf8", "ignore")
-        listed = discover(html)
-        read = lambda item: fetch(item.url, referer=DATA_PAGE)  # noqa: E731
+        log(f"Discovering the quarterly files from {DATA_PAGE} and the pages after it")
+        listing = read_listing(fetch_uscis)
+        listed = listing.files
+        listing_note, listing_failed = listing.stopped, listing.failed
+        log(f"  {listing.pages} listing page(s) read")
+        for line in (listing_note, listing_failed):
+            if line:
+                log(f"  {line}")
+        read = lambda item: fetch_uscis(item.url, referer=DATA_PAGE)  # noqa: E731
     if not listed:
         raise SystemExit("no quarterly file found on the USCIS data page")
     by_kind: dict[str, list[Listed]] = {}
@@ -986,13 +2011,16 @@ def main(argv: list[str] | None = None) -> int:
             log(f"  WARNING: no {kind} file listed")
 
     db = None if args.dry_run else Database()
-    loads = {} if db is None else read_loads(db)
     if db is not None:
         ensure_tables(db)
+    loads = {} if db is None else read_loads(db)
 
     written = 0
     loaded_names: list[str] = []
+    refused: list[str] = []
+    remarks: list[str] = []
     newest_as_of: dict[str, str] = {}
+    forms_cache: dict[tuple[int, int], list[dict]] = {}
     for item in listed:
         if not args.force and item.name in loads:
             log(f"  {item.name}: already loaded {loads[item.name].get('loadedOn', '')}; skipping")
@@ -1001,41 +2029,27 @@ def main(argv: list[str] | None = None) -> int:
                 newest_as_of[item.kind] = prior
             continue
         log(f"  {item.name}: fetching")
-        before = dict(ROUNDED)
-        p = parse_blob(item, read(item))
-        log(f"    parsed: {describe(p)}")
-        counts, medians = ROUNDED["counts"] - before["counts"], ROUNDED["medians"] - before["medians"]
-        if counts or medians:
-            log(f"    read as the sheet shows them: {counts} counts stored with a fraction, "
-                f"{medians} medians stored unrounded")
+        try:
+            n = load_one(db, item, read, forms_cache, remarks, accept_drift=args.accept_drift)
+        except (Refusal, *READ_ERRORS) as exc:
+            # This file's alone: it isn't recorded, so the next run tries it again, and this run ends red.
+            log(f"    REFUSED: {exc}")
+            refused.append(f"{item.name} ({str(exc)[:160]})")
+            continue
         # The freshness stamp is the quarter's last day for every kind. The
         # awaiting-visa sheet says "As of June 2026" and the class sheet names
         # a quarter, and neither is a date the health check can age.
         as_of = quarter_end(item.fy, item.quarter)
+        if as_of > newest_as_of.get(item.kind, ""):
+            newest_as_of[item.kind] = as_of
         if db is None:
-            if as_of > newest_as_of.get(item.kind, ""):
-                newest_as_of[item.kind] = as_of
             continue
-        findings = drift_findings(previous_keys(db, p), p)
-        if findings and not args.accept_drift:
-            for f in findings:
-                log(f"    DRIFT: {f}")
-            raise Refusal(f"REFUSING {item.name}: keys were lost against the previous quarter; "
-                          "read the list and re-run with --accept-drift if USCIS retired them")
-        for f in findings:
-            log(f"    drift accepted: {f}")
-        n = store(db, p)
         written += n
         loaded_names.append(item.name)
         loads[item.name] = {"kind": item.kind, "fy": item.fy, "quarter": item.quarter,
-                            "rows": n, "asOf": as_of,
-                            "loadedOn": time.strftime("%Y-%m-%d")}
+                            "rows": n, "asOf": as_of, "loadedOn": et_today()}
         write_doc(db, LOADS_DOC, loads)
-        if as_of > newest_as_of.get(item.kind, ""):
-            newest_as_of[item.kind] = as_of
         log(f"    stored {n:,} rows")
-        if not args.local:
-            time.sleep(POLITE_PAUSE_S)
 
     factsheet_note = ""
     if not args.skip_factsheet:
@@ -1054,9 +2068,15 @@ def main(argv: list[str] | None = None) -> int:
             factsheet_note = f"; factsheet NOT read ({exc})"
             log(f"  factsheet: not read ({exc})")
 
+    trouble = ""
+    if refused:
+        trouble += f"; REFUSED {len(refused)} file(s): {'; '.join(refused)}"
+    if listing_failed:
+        trouble += f"; LISTING NOT READ TO THE END: {listing_failed}"
     if db is None:
-        log(f"dry run: {len(listed)} file(s) parsed and reconciled, nothing written")
-        return 0
+        log(f"dry run: {len(listed) - len(refused)} of {len(listed)} file(s) parsed and reconciled, "
+            f"nothing written{trouble}")
+        return 1 if trouble else 0
 
     for kind, fresh in FRESHNESS.items():
         dataset, source = fresh["dataset"], fresh["source"]
@@ -1076,18 +2096,68 @@ def main(argv: list[str] | None = None) -> int:
                         max_age_days=MAX_AGE_DAYS)
     note = (f"loaded {', '.join(loaded_names)}" if loaded_names
             else f"nothing new among {len(listed)} listed file(s)") + factsheet_note
+    if listing_note:
+        note += f"; {listing_note}"
+    for remark in remarks:
+        note += f"; {remark}"
+    note += trouble
     # Checked on every run against what's held, so the run stays red until the list is fixed.
     unpaged = offices_without_a_page(newest_office_rows(db))
     if unpaged:
         note += f"; NO PAGE on the site for {len(unpaged)} office(s): {', '.join(unpaged)}"
-    record_run(db, "ingest_uscis_quarterly.py", status="ok", rows_written=written,
-               note=note, started_at=started)
+    # The N-400 offices share the I-485 offices' codes and pages. No page shows them yet, so one the
+    # list lacks is named here for the day one does, without turning the run red.
+    unpaged_n400 = offices_without_a_page(newest_office_rows(db, "uscis_n400_offices"))
+    if unpaged_n400:
+        note += f"; N-400 offices with no page on the site: {', '.join(unpaged_n400)}"
+    record_run(db, "ingest_uscis_quarterly.py", status="failed" if trouble else "ok",
+               rows_written=written, note=note, started_at=started)
     log(f"done: {note}")
     if unpaged:
         # The quarter is loaded and stamped. The run still ends red: an office with no page is work for a person.
         log("FAILED: add each office above to src/lib/uscisOffices.json (code, name, state, slug), then rerun")
-        return 1
-    return 0
+    if trouble:
+        log("FAILED: the files named above were not loaded; the next run tries them again")
+    return 1 if unpaged or trouble else 0
+
+
+def load_one(db: Database | None, item: Listed, read, forms_cache: dict[tuple[int, int], list[dict]],
+             remarks: list[str], *, accept_drift: bool) -> int:
+    """Read, parse, check and (unless a dry run) store one file. Returns the rows parsed or stored; raises Refusal.
+
+    A disagreement with the all-forms file inside the room allowed goes in `remarks`, for the run's note.
+    """
+    before = dict(ROUNDED)
+    p = parse_blob(item, read(item))
+    log(f"    parsed: {describe(p)}")
+    counts, medians = ROUNDED["counts"] - before["counts"], ROUNDED["medians"] - before["medians"]
+    if counts or medians:
+        log(f"    read as the sheet shows them: {counts} counts stored with a fraction, "
+            f"{medians} medians stored unrounded")
+    for note in p.notes:
+        log(f"    note: {note}")
+    if p.kind == "all_forms":
+        forms_cache[(p.fy, p.quarter)] = [
+            {"form": r["form"], "title": r["title"], **{m: r[m] for m in OFFICE_MEASURES}} for r in p.rows]
+    checked = cross_check(p, all_forms_rows(db, forms_cache, p.fy, p.quarter))
+    if checked:
+        log(f"    {checked}")
+    if checked.startswith("DIFFERS"):
+        remarks.append(f"{item.name}: {checked}")
+    if db is None:
+        return len(p.rows)
+    previous = previous_keys(db, p)
+    for line in drift_notes(previous, p):
+        log(f"    changed against the previous quarter: {line}")
+    findings = drift_findings(previous, p, later_keys(db, p))
+    if findings and not accept_drift:
+        for f in findings:
+            log(f"    DRIFT: {f}")
+        raise Refusal(f"REFUSING {item.name}: keys were lost against the previous quarter; "
+                      "read the list and re-run with --accept-drift if USCIS retired them")
+    for f in findings:
+        log(f"    drift accepted: {f}")
+    return store(db, p)
 
 
 if __name__ == "__main__":
