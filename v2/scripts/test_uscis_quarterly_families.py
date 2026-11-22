@@ -54,6 +54,8 @@ def refuses(name: str, fn, needle: str = "") -> None:
         check(name, False, "it was accepted")
     except q.Refusal as exc:
         check(name, needle in str(exc), str(exc)[:110])
+    except Exception as exc:  # noqa: BLE001 - a crash is not a refusal: main's per-file catch wouldn't hold it
+        check(name, False, f"crashed with {type(exc).__name__}: {exc}"[:110])
 
 
 def listed(name: str, fy: int | None = None, quarter: int | None = None) -> q.Listed:
@@ -604,6 +606,24 @@ def probe_net_backlog() -> None:
             lambda: parse("net_backlog_frontlog_fy2026_q3_v1.xlsx", only_backlog), "All Forms Frontlog")
     refuses("a workbook whose date isn't its named quarter's end is refused",
             lambda: parse("net_backlog_frontlog_fy2026_q3_v1.xlsx", fy=2026, quarter=2), "not 2026-03-31")
+    def total_na(rows):
+        row_of(rows, "TOTAL")[2] = "N/A"
+    refuses("a backlog TOTAL printed N/A is refused: there's nothing to check the forms against",
+            lambda: parse("net_backlog_fy23_q4.csv", edited("net_backlog_fy23_q4.csv", total_na)), "TOTAL row prints N/A")
+    # Through main: that file is refused alone, the file after it loads, and the run is recorded red.
+    csv = (REAL / "net_backlog_fy23_q4.csv").read_bytes()
+    printed = b'TOTAL,Total Net backlog,"4,279,000"'
+    check("control: the csv's TOTAL line is where the probe edits it", csv.count(printed) == 1)
+    with tempfile.TemporaryDirectory() as tmp:
+        pathlib.Path(tmp, "net_backlog_fy23_q4.csv").write_bytes(csv.replace(printed, b"TOTAL,Total Net backlog,N/A"))
+        shutil.copy(REAL / "net_backlog_frontlog_fy2026_q3_v1.xlsx", tmp)
+        db = FakeDb()
+        rc, log = run_main(tmp, db)
+        loads = q.read_loads(db)
+        status, note = last_run(db)
+        check("main: an N/A backlog TOTAL refuses that file alone; the next loads and the run is recorded red",
+              rc == 1 and set(loads) == {"net_backlog_frontlog_fy2026_q3_v1.xlsx"} and status == "failed"
+              and "net_backlog_fy23_q4.csv" in note, (log.strip().splitlines() or [""])[-1][:200])
     previous = {"net_backlog|I-130|Petition for Alien Relative", "net_backlog|TOTAL|All forms"}
     check("rows split and added (I-130 into two) are logged, never refused",
           q.drift_findings(previous, p) == [] and any("Immediate Relative" in n for n in q.drift_notes(previous, p)))
@@ -746,6 +766,44 @@ def probe_offices() -> None:
             "column 5")
 
 
+def probe_describe() -> None:
+    """The log line each parse gets never fails on a figure USCIS withheld or printed N/A."""
+    print("\nthe log line for each file, with a withheld figure")
+
+    def said(p: q.Parsed) -> str:
+        try:
+            return q.describe(p)
+        except Exception as exc:  # noqa: BLE001 - reported as the failure it is
+            return f"CRASHED: {type(exc).__name__}: {exc}"
+
+    def blank(p: q.Parsed, pick, *cols: str) -> q.Parsed:
+        p = clone(p)
+        r = next(r for r in p.rows if pick(r))
+        for c in cols:
+            r[c] = None
+        return p
+
+    cases = [
+        ("the N-400 Total's pending", blank(parse("n400_performance_data_fy2026_q3_v1.xlsx"),
+                                            lambda r: r["code"] == "ALL", "civ_pending", "all_pending")),
+        ("the I-765 (c)(9) pending", blank(parse("i765_application_for_employment_fy2026_q3_v1.xlsx"),
+                                           lambda r: r["code"] == "C09", "all_pending", "initial_pending")),
+        ("the backlog TOTAL", blank(parse("net_backlog_frontlog_fy2026_q3_v1.xlsx"),
+                                    lambda r: r["form"] == "TOTAL", "value")),
+        ("the frontlog", blank(parse("net_backlog_frontlog_fy2026_q3_v1.xlsx"), lambda r: r["measure"] == "frontlog", "value")),
+        ("the I-485 Total's employment pending", blank(parse("i485_performancedata_fy2024_q1.xlsx"),
+                                                       lambda r: r["code"] == "ALL", "emp_pending")),
+        ("the all-forms I-140 pending and median",
+         blank(q.parse_blob(q.Listed("all_forms", 2026, 3, ALL_FORMS.name, str(ALL_FORMS)), ALL_FORMS.read_bytes()),
+               lambda r: r["form"] == "I-140", "pending", "median_months")),
+    ]
+    for what, p in cases:
+        line = said(p)
+        check(f"describe: {what} withheld reads N/A", "N/A" in line and not line.startswith("CRASHED"), line[:120])
+    whole = said(parse("n400_performance_data_fy2026_q3_v1.xlsx"))
+    check("describe: a figure that's there is printed with its commas", "727,371" in whole, whole[:120])
+
+
 def _workbook_without_sheets() -> bytes:
     """A real workbook's bytes with its worksheet removed: the zip opens, no sheet holds the table."""
     import zipfile
@@ -881,8 +939,11 @@ def run_main(directory: pathlib.Path | str, db: FakeDb, *extra: str) -> tuple[in
 
 
 def last_run(db: FakeDb) -> tuple[str, str]:
+    """The newest recorded run's status and note; ("", "no run recorded") when none was."""
+    if not db.scalar("SELECT name FROM sqlite_master WHERE name = 'ingest_runs'"):
+        return "", "no run recorded"
     rows = db.execute("SELECT status, note FROM ingest_runs ORDER BY rowid DESC LIMIT 1")["response"]["result"]["rows"]
-    return (rows[0][0]["value"], rows[0][1]["value"]) if rows else ("", "")
+    return (rows[0][0]["value"], rows[0][1]["value"]) if rows else ("", "no run recorded")
 
 
 def probe_history_drift() -> None:
@@ -994,6 +1055,7 @@ def main() -> int:
     probe_net_backlog()
     probe_i907()
     probe_offices()
+    probe_describe()
     probe_store_and_run()
     probe_history_drift()
     probe_registry()

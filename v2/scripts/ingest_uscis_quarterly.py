@@ -1425,6 +1425,8 @@ def reconcile_backlog(p: Parsed) -> None:
     if len(backlog) < 40:
         raise Refusal(f"{p.name}: only {len(backlog)} net backlog rows; expected 40 or more")
     total = next(r["value"] for r in backlog if r["form"] == "TOTAL")
+    if total is None:
+        raise Refusal(f"{p.name}: the TOTAL row prints N/A, so the forms can't be checked against it")
     held = sum(r["value"] or 0 for r in backlog if r["form"] != "TOTAL")
     gap = total - held
     # Rounding each form to the hundred leaves a total a few hundred off its
@@ -1982,46 +1984,51 @@ def all_forms_rows(db: Database | None, cache: dict[tuple[int, int], list[dict]]
              **{m: (None if v is None else int(v)) for m, v in zip(OFFICE_MEASURES, r[2:])}} for r in got]
 
 
+def figure(v: int | float | None) -> str:
+    """A figure for the log: with its commas, or N/A where USCIS withheld it or printed N/A."""
+    return "N/A" if v is None else f"{v:,}"
+
+
 def describe(p: Parsed) -> str:
+    """One line on what a parse holds, for the log. Every figure goes through `figure`: any of them may be None."""
     if p.kind == "all_forms":
         i140 = next((r for r in p.rows if r["form"] == "I-140"), None)
-        med = i140["median_months"] if i140 else None
         return (f"{len(p.rows)} forms, {p.quarter_start}..{p.quarter_end}; "
-                f"I-140 median {med} months, pending {i140['pending']:,}" if i140 else
+                f"I-140 median {figure(i140['median_months'])} months, pending {figure(i140['pending'])}" if i140 else
                 f"{len(p.rows)} forms")
     if p.kind == "i485_offices":
         total = next(r for r in p.rows if r["code"] == "ALL")
-        return (f"{len(p.rows) - 1} offices; employment pending {total['emp_pending']:,}; "
+        return (f"{len(p.rows) - 1} offices; employment pending {figure(total['emp_pending'])}; "
                 f"{sum(r['suppressed'] for r in p.rows)} suppressed cells")
     if p.kind == "eb_awaiting":
         total = next(r["count"] for r in p.rows if r["country"] == "TOTAL" and r["category"] == "TOTAL")
         india = next(r["count"] for r in p.rows if r["country"] == "India" and r["category"] == "TOTAL")
-        return f"as of {p.as_of}: {total:,} awaiting a visa, India {india:,}"
+        return f"as of {p.as_of}: {figure(total)} awaiting a visa, India {figure(india)}"
     if p.kind == "i765_categories":
         c9 = next(r for r in p.rows if r["code"] == "C09")
-        return (f"{len(p.rows) - 1} codes; (c)(9) pending {c9['all_pending']:,} "
-                f"({c9['initial_pending']:,} initial); {sum(r['suppressed'] for r in p.rows)} withheld cells")
+        return (f"{len(p.rows) - 1} codes; (c)(9) pending {figure(c9['all_pending'])} "
+                f"({figure(c9['initial_pending'])} initial); {sum(r['suppressed'] for r in p.rows)} withheld cells")
     if p.kind == "i765_pending_days":
         top = next(r for r in reversed(p.rows) if r["filing"] == "initial" and r["scope"] == "all")
         return (f"as of {p.as_of}: {len({r['days_min'] for r in p.rows})} ranges; "
-                f"{top['count']:,} initial applications pending {top['bucket']}")
+                f"{figure(top['count'])} initial applications pending {top['bucket']}")
     if p.kind == "net_backlog":
         by = {(r["measure"], r["form"]): r["value"] for r in p.rows}
         parts = []
         if ("net_backlog", "TOTAL") in by:
             forms = sum(1 for r in p.rows if r["measure"] == "net_backlog" and r["form"] != "TOTAL")
-            parts.append(f"net backlog {by[('net_backlog', 'TOTAL')]:,} across {forms} rows")
+            parts.append(f"net backlog {figure(by[('net_backlog', 'TOTAL')])} across {forms} rows")
         if ("frontlog", "ALL") in by:
-            parts.append(f"frontlog {by[('frontlog', 'ALL')]:,}")
+            parts.append(f"frontlog {figure(by[('frontlog', 'ALL')])}")
         return "; ".join(parts)
     if p.kind == "i907_premium":
         total = next(r for r in p.rows if r["form"] == "ALL")
         i140 = next(r for r in p.rows if r["form"] == "I-140")
-        return f"{total['total']:,} premium requests, I-140 {i140['total']:,}"
+        return f"{figure(total['total'])} premium requests, I-140 {figure(i140['total'])}"
     if p.kind == "n400_offices":
         total = next(r for r in p.rows if r["code"] == "ALL")
-        return (f"{len(p.rows) - 1} offices; civilian pending {total['civ_pending']:,}, all {total['all_pending']:,}; "
-                f"{sum(r['suppressed'] for r in p.rows)} suppressed cells")
+        return (f"{len(p.rows) - 1} offices; civilian pending {figure(total['civ_pending'])}, "
+                f"all {figure(total['all_pending'])}; {sum(r['suppressed'] for r in p.rows)} suppressed cells")
     countries = sorted({r["country"] for r in p.rows})
     return f"{len(p.rows)} cells across {len(countries)} sheets ({', '.join(countries)})"
 
