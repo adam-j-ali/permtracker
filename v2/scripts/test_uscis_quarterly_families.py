@@ -886,6 +886,20 @@ def _workbook_without_sheets() -> bytes:
     return out.getvalue()
 
 
+def _half_cut(src: pathlib.Path) -> bytes:
+    """A real workbook's bytes with its first sheet's XML cut off halfway: a valid zip whose sheet won't parse."""
+    import zipfile
+    with zipfile.ZipFile(src) as z:
+        out = io.BytesIO()
+        with zipfile.ZipFile(out, "w") as w:
+            for info in z.infolist():
+                data = z.read(info.filename)
+                if info.filename == "xl/worksheets/sheet1.xml":
+                    data = data[:len(data) // 2]
+                w.writestr(info, data)
+    return out.getvalue()
+
+
 # ---------------------------------------------------------------------------
 # Storage, and the whole run
 # ---------------------------------------------------------------------------
@@ -1114,6 +1128,38 @@ def probe_history_drift() -> None:
         check("each refusal names the row and the quarter it's back in",
               len(re.findall(r"DRIFT: .*I-751", log)) == 2 and log.count("back in FY2025 Q4") == 2,
               "; ".join(l.strip() for l in log.splitlines() if "I-751" in l)[:300])
+
+    # A workbook cut off mid-sheet is still a valid zip, and its sheet fails as XML (a ParseError, no read
+    # error and no refusal). Read ahead before anything is stored, it's raised at its own turn: the files
+    # before it are stored, the ones after it still load, and the run is recorded red naming it.
+    cut = ["quarterly_all_forms_fy2024_q1.xlsx", "quarterly_all_forms_fy2024_q2.xlsx", "quarterly_all_forms_fy2024_q3.xlsx"]
+    with tempfile.TemporaryDirectory() as tmp:
+        for n in cut:
+            shutil.copy(ALL_FORMS_HISTORY / n, tmp)
+        pathlib.Path(tmp, cut[1]).write_bytes(_half_cut(ALL_FORMS_HISTORY / cut[1]))
+        db = FakeDb()
+        rc, log = run_main(tmp, db)
+        loads = q.read_loads(db)
+        status, note = last_run(db)
+        check("a half-cut workbook read ahead fails at its own turn, never before anything is stored",
+              rc == 1 and set(loads) == {cut[0], cut[2]}
+              and log.find(f"{cut[0]}: loading") < log.find("stored") < log.find(f"{cut[1]}: loading"),
+              f"rc {rc}; loaded {sorted(loads)}; " + "; ".join(l.strip() for l in log.splitlines() if "CRASH" in l)[:200])
+        check("the run is recorded failed, naming the cut file and what stopped it",
+              status == "failed" and re.search(rf"{re.escape(cut[1])} \(ParseError", note) is not None, note[-200:])
+
+    # The same file of a kind that isn't read ahead fails at its turn the same way.
+    i907 = "i907_premium_processing_fy2026_q3_v1.xlsx"
+    with tempfile.TemporaryDirectory() as tmp:
+        shutil.copy(REAL / i907, tmp)
+        pathlib.Path(tmp, "i907_premium_processing_fy2025_q1.xlsx").write_bytes(_half_cut(REAL / i907))
+        db = FakeDb()
+        rc, log = run_main(tmp, db)
+        status, note = last_run(db)
+        check("a half-cut workbook of a kind not read ahead is that file's failure alone; the next file loads",
+              rc == 1 and set(q.read_loads(db)) == {i907} and status == "failed"
+              and "i907_premium_processing_fy2025_q1.xlsx (ParseError" in note,
+              f"rc {rc}; " + "; ".join(l.strip() for l in log.splitlines() if "CRASH" in l)[:200])
 
     # The witnesses are every later quarter, read ahead in this run or held.
     db = FakeDb()

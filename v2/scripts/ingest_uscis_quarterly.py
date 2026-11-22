@@ -116,6 +116,7 @@ import pathlib
 import re
 import sys
 import time
+import traceback
 import urllib.parse
 import zipfile
 from dataclasses import dataclass, field
@@ -1951,14 +1952,16 @@ def parse_counted(listed: Listed, blob: bytes) -> Parsed:
 def read_ahead(items: list[Listed], read) -> Ahead:
     """Read and parse each file now, keeping its parse or what stopped it, for load_one to take in turn.
 
-    Each is read once: load_one uses the parse kept here rather than reading the file again.
+    Each is read once: load_one uses the parse kept here rather than reading the file again. Whatever
+    stops a file is kept, a refusal, a read error or anything else (a workbook cut off mid-sheet fails as
+    XML), and raised at that file's own turn, so the files listed before it are stored first.
     """
     out: Ahead = {}
     for item in items:
         log(f"  {item.name}: reading ahead")
         try:
             out[item.name] = parse_counted(item, read(item))
-        except (Refusal, *READ_ERRORS) as exc:
+        except Exception as exc:  # noqa: BLE001 - kept for the file's own turn, where main records it
             out[item.name] = exc
     return out
 
@@ -2143,6 +2146,12 @@ def main(argv: list[str] | None = None) -> int:
             log(f"    REFUSED: {exc}")
             refused.append(f"{item.name} ({str(exc)[:160]})")
             continue
+        except Exception as exc:  # noqa: BLE001 - anything else a file trips (a sheet cut off mid-XML) is its alone too
+            log(f"    FAILED: {type(exc).__name__}: {exc}")
+            for line in traceback.format_exc().rstrip().splitlines():
+                log(f"      {line}")
+            refused.append(f"{item.name} ({type(exc).__name__}: {str(exc)[:160]})")
+            continue
         # The freshness stamp is the quarter's last day for every kind. The
         # awaiting-visa sheet says "As of June 2026" and the class sheet names
         # a quarter, and neither is a date the health check can age.
@@ -2232,12 +2241,12 @@ def load_one(db: Database | None, item: Listed, read, forms_cache: dict[tuple[in
              remarks: list[str], *, accept_drift: bool, ahead: Ahead | None = None) -> int:
     """Read, parse, check and (unless a dry run) store one file. Returns the rows parsed or stored; raises Refusal.
 
-    A file read ahead (see read_ahead) is taken from `ahead`, its refusal or read error raised here as its own.
+    A file read ahead (see read_ahead) is taken from `ahead`, whatever stopped it raised here as its own.
     A disagreement with the all-forms file inside the room allowed goes in `remarks`, for the run's note,
     and so does each row judged retired (drift_witnesses), with the quarter it went in.
     """
     got = (ahead or {}).get(item.name)
-    if isinstance(got, BaseException):
+    if isinstance(got, Exception):
         raise got
     p = got if got is not None else parse_counted(item, read(item))
     log(f"    parsed: {describe(p)}")
