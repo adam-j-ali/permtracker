@@ -1044,6 +1044,21 @@ def probe_history_drift() -> None:
                     log) is not None,
           next((l.strip() for l in log.splitlines() if "I-924A" in l), "")[:200])
     check("the run is recorded ok", last_run(db)[0] == "ok", last_run(db)[1][-200:])
+    note = last_run(db)[1]
+    retired = [("FY2024 Q4", "I-924A|Annual Certification of Regional Center"),
+               ("FY2025 Q1", "I-130|Petition for Alien Relative"),
+               ("FY2025 Q1", "I-193|Application for Waiver of Passport and/or Visa"),
+               ("FY2026 Q1", "DS-230 (IV)|Immigrant Visas"),
+               ("FY2026 Q1", "I-131|Application for Travel Document"),
+               ("FY2026 Q1", "I-131|Application for Travel Document (Advance Parole)"),
+               ("FY2026 Q1", "I-131|Application for Travel Document (Humanitarian Parole)"),
+               ("FY2026 Q1", "I-131|Application for Travel Document (Parole-in-Place)")]
+    unnamed = [f"{quarter} {key}" for quarter, key in retired
+               if not re.search(rf"all_forms {quarter} retired[^;]*'{re.escape(key)}'", note)]
+    check("the recorded note names each retired row with the quarter it went in", not unnamed, f"missing: {unnamed}")
+    check("and names no other row retired", len(re.findall(r"retired[^;]*", note)) == 3
+          and sum(m.count("|") for m in re.findall(r"retired[^;]*", note)) == len(retired),
+          "; ".join(re.findall(r"retired[^;]*", note))[:300])
 
     # A key that vanishes for one quarter and comes back the next is a misread, and is still refused;
     # the quarter after it, which carries the key, loads against the last one held.

@@ -2233,7 +2233,8 @@ def load_one(db: Database | None, item: Listed, read, forms_cache: dict[tuple[in
     """Read, parse, check and (unless a dry run) store one file. Returns the rows parsed or stored; raises Refusal.
 
     A file read ahead (see read_ahead) is taken from `ahead`, its refusal or read error raised here as its own.
-    A disagreement with the all-forms file inside the room allowed goes in `remarks`, for the run's note.
+    A disagreement with the all-forms file inside the room allowed goes in `remarks`, for the run's note,
+    and so does each row judged retired (drift_witnesses), with the quarter it went in.
     """
     got = (ahead or {}).get(item.name)
     if isinstance(got, BaseException):
@@ -2262,8 +2263,8 @@ def load_one(db: Database | None, item: Listed, read, forms_cache: dict[tuple[in
     witnesses = drift_witnesses(db, p, ahead)
     later = set().union(*witnesses.values()) if witnesses else None
     lost = previous - {row_key(p, r) for r in p.rows} if witnesses and previous is not None else set()
+    retired = sorted(lost - later) if lost else []
     if lost:
-        retired = sorted(lost - later)
         if retired:
             log(f"    gone from every later quarter known too ({quarters_named(witnesses)}), "
                 f"so retired rather than misread: {retired}")
@@ -2280,7 +2281,11 @@ def load_one(db: Database | None, item: Listed, read, forms_cache: dict[tuple[in
                       "read the list and re-run with --accept-drift if USCIS retired them")
     for f in findings:
         log(f"    drift accepted: {f}")
-    return store(db, p)
+    n = store(db, p)
+    if retired:
+        # Named in the run's note too, each with the quarter it went in, once the quarter is stored.
+        remarks.append(f"{p.kind} FY{p.fy} Q{p.quarter} retired (gone from every later quarter known): {retired}")
+    return n
 
 
 if __name__ == "__main__":
