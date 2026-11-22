@@ -35,6 +35,10 @@ from test_uscis_quarterly import FakeDb  # noqa: E402
 HERE = pathlib.Path(__file__).resolve().parent
 REAL = HERE / "fixtures" / "uscis_real"
 ALL_FORMS = HERE / "fixtures" / "uscis" / "quarterly_all_forms_fy2026_q3_v2.xlsx"
+# USCIS's eleven all-forms workbooks, FY2024 Q1 to FY2026 Q3 (downloaded Nov 21 2026). The workbook,
+# its sheet and its shared strings are USCIS's bytes; the 5 MB stylesheet, the theme and the logo,
+# which the reader never opens, are left out, and each file parses exactly as the original does.
+ALL_FORMS_HISTORY = HERE / "fixtures" / "uscis_all_forms"
 FAILURES: list[str] = []
 
 
@@ -838,6 +842,98 @@ def probe_store_and_run() -> None:
         q.Database = real_db
 
 
+def run_main(directory: pathlib.Path | str, db: FakeDb, *extra: str) -> tuple[int, str]:
+    """`main --local` over a directory into `db`, with its log; a crash is the run's failure, never the probes'."""
+    real_db = q.Database
+    q.Database = lambda: db  # type: ignore[assignment]
+    out = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(out):
+            rc = q.main(["--local", str(directory), "--skip-factsheet", *extra])
+    except Exception as exc:  # noqa: BLE001 - a crash is reported as a failed check
+        return -1, out.getvalue() + f"\nCRASHED: {type(exc).__name__}: {exc}"
+    finally:
+        q.Database = real_db
+    return rc, out.getvalue()
+
+
+def last_run(db: FakeDb) -> tuple[str, str]:
+    rows = db.execute("SELECT status, note FROM ingest_runs ORDER BY rowid DESC LIMIT 1")["response"]["result"]["rows"]
+    return (rows[0][0]["value"], rows[0][1]["value"]) if rows else ("", "")
+
+
+def probe_history_drift() -> None:
+    print("\nthe all-forms history, oldest first, into an empty database")
+    names = sorted(f.name for f in ALL_FORMS_HISTORY.iterdir())
+    check("control: the eleven real all-forms quarters are there", len(names) == 11, str(names))
+    # USCIS retired rows in three of those quarters: I-924A in FY2024 Q4, the single I-130 row and the
+    # I-193 in FY2025 Q1, the DS-230 and four I-131 rows in FY2026 Q1. Each is gone from the next quarter too.
+    db = FakeDb()
+    parses: list[str] = []
+    real_parse = q.parse_blob
+
+    def counted(item, blob):
+        parses.append(item.name)
+        return real_parse(item, blob)
+    q.parse_blob = counted  # type: ignore[assignment]
+    try:
+        rc, log = run_main(ALL_FORMS_HISTORY, db)
+    finally:
+        q.parse_blob = real_parse  # type: ignore[assignment]
+    loads = q.read_loads(db)
+    check("every real all-forms quarter loads into an empty database with no refusal",
+          rc == 0 and sorted(loads) == names and "REFUSED" not in log,
+          f"rc {rc}; " + "; ".join(l.strip() for l in log.splitlines() if "REFUS" in l or "CRASH" in l)[:300])
+    check("eleven quarters held", db.scalar("SELECT count(DISTINCT fy * 10 + quarter) FROM uscis_form_quarters") == 11)
+    check("each file is read and parsed once, though the parse happens before any is stored",
+          sorted(parses) == names, str(parses))
+    check("the retired I-924A is named, with the quarter that witnessed it",
+          re.search(r"gone from FY2025 Q1 too.*I-924A", log) is not None,
+          next((l.strip() for l in log.splitlines() if "I-924A" in l), "")[:200])
+    check("the run is recorded ok", last_run(db)[0] == "ok", last_run(db)[1][-200:])
+
+    # A key that vanishes for one quarter and comes back the next is a misread, and is still refused;
+    # the quarter after it, which carries the key, loads against the last one held.
+    three = ["quarterly_all_forms_fy2024_q1.xlsx", "quarterly_all_forms_fy2024_q2.xlsx", "quarterly_all_forms_fy2024_q3.xlsx"]
+
+    def misread(item, blob):
+        p = real_parse(item, blob)
+        if item.name == three[1]:
+            p.rows = [r for r in p.rows if r["form"] != "I-129F"]
+        return p
+    with tempfile.TemporaryDirectory() as tmp:
+        for n in three:
+            shutil.copy(ALL_FORMS_HISTORY / n, tmp)
+        db = FakeDb()
+        q.parse_blob = misread  # type: ignore[assignment]
+        try:
+            rc, log = run_main(tmp, db)
+        finally:
+            q.parse_blob = real_parse  # type: ignore[assignment]
+        loads = q.read_loads(db)
+        status, note = last_run(db)
+        check("a row gone in FY2024 Q2 and back in Q3 refuses Q2, naming the row",
+              rc == 1 and three[1] not in loads and "keys were lost" in note
+              and re.search(r"DRIFT: .*I-129F", log) is not None, note[-200:])
+        check("the quarters either side of it load: the refusal doesn't cascade",
+              set(loads) == {three[0], three[2]} and status == "failed", str(sorted(loads)))
+
+    # The witness is the nearest later quarter, read ahead in this run or held.
+    db = FakeDb()
+    q.ensure_tables(db)
+    newest = q.parse_blob(q.Listed("all_forms", 2026, 3, names[-1], ""), (ALL_FORMS_HISTORY / names[-1]).read_bytes())
+    q.store(db, newest)
+    q4 = q.parse_blob(q.Listed("all_forms", 2024, 4, names[3], ""), (ALL_FORMS_HISTORY / names[3]).read_bytes())
+    q3 = q.Parsed("all_forms", 2024, 3, names[2])
+    got = q.drift_witness(db, q3, {q4.name: q4})
+    check("a quarter read ahead is the witness when it's nearer than the newest held",
+          got is not None and got[0] == (2024, 4) and "I-924A|Annual Certification of Regional Center" not in got[1],
+          str(got and got[0]))
+    got = q.drift_witness(db, q3, {q4.name: q.Refusal("unreadable")})
+    check("a file that couldn't be read ahead is no witness; the held quarter is", got is not None and got[0] == (2026, 3))
+    check("the newest quarter has no witness", q.drift_witness(db, newest, {}) is None)
+
+
 def probe_registry() -> None:
     print("\nfreshness and the site's dataset sentences")
     want = {"uscis-i765-categories", "uscis-i765-pending-days", "uscis-net-backlog", "uscis-i907-premium", "uscis-n400-offices"}
@@ -876,6 +972,7 @@ def main() -> int:
     probe_i907()
     probe_offices()
     probe_store_and_run()
+    probe_history_drift()
     probe_registry()
     return report()
 

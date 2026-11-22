@@ -58,6 +58,11 @@ WHY THESE FILES ARE READ THE WAY THEY ARE, each a lesson from a sibling ingest:
   eighty files; a refused one is named, left unrecorded so the next run tries
   it again, and the run ends red, but the files after it still load. A newer
   quarter must never wait behind an old file USCIS laid out differently.
+* A LOST ROW NEEDS A WITNESS. An all-forms or office file missing a row the
+  quarter before carried is refused, unless the next quarter lacks it too:
+  then USCIS retired it (I-924A in FY2024 Q4). Those kinds are parsed before
+  anything is stored, so even a load into an empty database has the next
+  quarter listed to ask. The newest quarter has none and waits for a person.
 * DISCOVERED, NEVER CONSTRUCTED. FY2026 Q1 sits under `/document/reports/`
   while Q2 and Q3 sit under `/document/data/`, and FY2025 Q4's awaiting-visa
   file spells it `performance_data` where the later ones say
@@ -323,6 +328,8 @@ class Parsed:
     as_of: str | None = None
     rows: list[dict] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    # Counts and medians this file stored with a fraction and was read as its sheet shows them (see ROUNDED).
+    rounded: tuple[int, int] = (0, 0)
 
 
 # ---------------------------------------------------------------------------
@@ -1784,8 +1791,8 @@ def row_key(p: Parsed, r: dict) -> str:
     return r["code"]
 
 
-def neighbour_keys(db: Database, p: Parsed, *, later: bool = False) -> set[str] | None:
-    """The identifying keys of the nearest quarter held before this one (or, `later`, after it)."""
+def neighbour(db: Database, p: Parsed, *, later: bool = False) -> tuple[tuple[int, int], set[str]] | None:
+    """The nearest quarter held before this one (or, `later`, after it) and its identifying keys."""
     if p.kind not in DRIFT_KEYS:
         return None
     table, expr = DRIFT_KEYS[p.kind]
@@ -1804,17 +1811,49 @@ def neighbour_keys(db: Database, p: Parsed, *, later: bool = False) -> set[str] 
         # A file holding one measure (the FY2023 Q4 csv pair) is compared on that measure alone.
         measures = {r["measure"] for r in p.rows}
         keys = {k for k in keys if k.split("|", 1)[0] in measures}
-    return keys
+    return (fy, q), keys
 
 
 def previous_keys(db: Database, p: Parsed) -> set[str] | None:
     """The identifying keys of the newest quarter held BEFORE this one, for drift."""
-    return neighbour_keys(db, p)
+    got = neighbour(db, p)
+    return got[1] if got else None
 
 
 def later_keys(db: Database, p: Parsed) -> set[str] | None:
     """The identifying keys of the oldest quarter held AFTER this one: None when this is the newest."""
-    return neighbour_keys(db, p, later=True)
+    got = neighbour(db, p, later=True)
+    return got[1] if got else None
+
+
+# A file read ahead (see read_ahead): its parse, or the refusal or read error that stopped it.
+Ahead = dict[str, "Parsed | BaseException"]
+
+
+def drift_witness(db: Database | None, p: Parsed, ahead: Ahead | None) -> tuple[tuple[int, int], set[str]] | None:
+    """The nearest quarter after this one, read ahead in this run or held, and its keys; None when there's none.
+
+    A history load into a database that holds no later quarter has nothing held
+    to witness a retirement, so the files of the kinds that refuse a loss are
+    all parsed before any is stored (read_ahead) and the next quarter listed
+    stands in. Where both exist the nearer quarter is the witness, and for the
+    same quarter the file this run is about to store. A file that couldn't be
+    read or parsed is no witness.
+    """
+    if p.kind not in DRIFT_REFUSES:
+        return None
+    found: list[tuple[tuple[int, int], int, set[str]]] = []
+    held = neighbour(db, p, later=True) if db is not None else None
+    if held:
+        found.append((held[0], 0, held[1]))
+    for i, o in enumerate((ahead or {}).values(), start=1):
+        if isinstance(o, Parsed) and o.kind == p.kind and (o.fy, o.quarter) > (p.fy, p.quarter):
+            # The last file listed for a quarter is the one its rows end up from (a `_v2` after its `_v1`).
+            found.append(((o.fy, o.quarter), -i, {row_key(o, r) for r in o.rows}))
+    if not found:
+        return None
+    quarter, _, keys = min(found, key=lambda f: (f[0], f[1]))
+    return quarter, keys
 
 
 def drift_findings(previous: set[str] | None, p: Parsed, later: set[str] | None = None) -> list[str]:
@@ -1825,10 +1864,11 @@ def drift_findings(previous: set[str] | None, p: Parsed, later: set[str] | None 
     the parser cannot tell them apart. So a loss is refused unless a human
     passes --accept-drift after reading the list. No baseline, no findings.
 
-    An older quarter loaded after newer ones (the listing's history) has a
-    witness: a key the next quarter held doesn't carry either was retired
+    A quarter with a later one held or read ahead has a witness
+    (drift_witness): a key the next quarter doesn't carry either was retired
     by then, as the I-924A was in FY2024 Q4 and the single I-130 row in
-    FY2025 Q1, and only a key that comes back later is a finding. The kinds
+    FY2025 Q1, and only a key that comes back later is a finding. The newest
+    quarter has no witness, so any loss there waits for a person. The kinds
     outside DRIFT_REFUSES report their changes through drift_notes.
     """
     if previous is None or p.kind not in DRIFT_REFUSES:
@@ -1863,6 +1903,29 @@ SHEET_PARSERS = {
     "net_backlog": parse_net_backlog,
     "i907_premium": parse_i907_premium,
 }
+
+
+def parse_counted(listed: Listed, blob: bytes) -> Parsed:
+    """`parse_blob`, with what this file stored with a fraction counted on the parse."""
+    before = dict(ROUNDED)
+    p = parse_blob(listed, blob)
+    p.rounded = (ROUNDED["counts"] - before["counts"], ROUNDED["medians"] - before["medians"])
+    return p
+
+
+def read_ahead(items: list[Listed], read) -> Ahead:
+    """Read and parse each file now, keeping its parse or what stopped it, for load_one to take in turn.
+
+    Each is read once: load_one uses the parse kept here rather than reading the file again.
+    """
+    out: Ahead = {}
+    for item in items:
+        log(f"  {item.name}: reading ahead")
+        try:
+            out[item.name] = parse_counted(item, read(item))
+        except (Refusal, *READ_ERRORS) as exc:
+            out[item.name] = exc
+    return out
 
 
 def parse_blob(listed: Listed, blob: bytes) -> Parsed:
@@ -2021,6 +2084,10 @@ def main(argv: list[str] | None = None) -> int:
     remarks: list[str] = []
     newest_as_of: dict[str, str] = {}
     forms_cache: dict[tuple[int, int], list[dict]] = {}
+    due = [item for item in listed if args.force or item.name not in loads]
+    # The kinds that refuse a lost row are parsed before anything is stored, so each quarter's next one
+    # can witness a retirement even in a database that holds no later quarter (drift_witness).
+    ahead = read_ahead([item for item in due if item.kind in DRIFT_REFUSES], read)
     for item in listed:
         if not args.force and item.name in loads:
             log(f"  {item.name}: already loaded {loads[item.name].get('loadedOn', '')}; skipping")
@@ -2028,9 +2095,9 @@ def main(argv: list[str] | None = None) -> int:
             if prior > newest_as_of.get(item.kind, ""):
                 newest_as_of[item.kind] = prior
             continue
-        log(f"  {item.name}: fetching")
+        log(f"  {item.name}: {'loading, read ahead above' if item.name in ahead else 'fetching'}")
         try:
-            n = load_one(db, item, read, forms_cache, remarks, accept_drift=args.accept_drift)
+            n = load_one(db, item, read, forms_cache, remarks, accept_drift=args.accept_drift, ahead=ahead)
         except (Refusal, *READ_ERRORS) as exc:
             # This file's alone: it isn't recorded, so the next run tries it again, and this run ends red.
             log(f"    REFUSED: {exc}")
@@ -2122,15 +2189,18 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def load_one(db: Database | None, item: Listed, read, forms_cache: dict[tuple[int, int], list[dict]],
-             remarks: list[str], *, accept_drift: bool) -> int:
+             remarks: list[str], *, accept_drift: bool, ahead: Ahead | None = None) -> int:
     """Read, parse, check and (unless a dry run) store one file. Returns the rows parsed or stored; raises Refusal.
 
+    A file read ahead (see read_ahead) is taken from `ahead`, its refusal or read error raised here as its own.
     A disagreement with the all-forms file inside the room allowed goes in `remarks`, for the run's note.
     """
-    before = dict(ROUNDED)
-    p = parse_blob(item, read(item))
+    got = (ahead or {}).get(item.name)
+    if isinstance(got, BaseException):
+        raise got
+    p = got if got is not None else parse_counted(item, read(item))
     log(f"    parsed: {describe(p)}")
-    counts, medians = ROUNDED["counts"] - before["counts"], ROUNDED["medians"] - before["medians"]
+    counts, medians = p.rounded
     if counts or medians:
         log(f"    read as the sheet shows them: {counts} counts stored with a fraction, "
             f"{medians} medians stored unrounded")
@@ -2149,7 +2219,14 @@ def load_one(db: Database | None, item: Listed, read, forms_cache: dict[tuple[in
     previous = previous_keys(db, p)
     for line in drift_notes(previous, p):
         log(f"    changed against the previous quarter: {line}")
-    findings = drift_findings(previous, p, later_keys(db, p))
+    witness = drift_witness(db, p, ahead)
+    later = witness[1] if witness else None
+    if witness and previous is not None:
+        retired = sorted(previous - {row_key(p, r) for r in p.rows} - later)
+        if retired:
+            fy, quarter = witness[0]
+            log(f"    gone from FY{fy} Q{quarter} too, so retired rather than misread: {retired}")
+    findings = drift_findings(previous, p, later)
     if findings and not accept_drift:
         for f in findings:
             log(f"    DRIFT: {f}")
