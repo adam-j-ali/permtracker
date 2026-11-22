@@ -523,10 +523,18 @@ def identify(name: str) -> tuple[str, int, int] | None:
 FILE_LINK_RE = re.compile(r'href="([^"]+\.(?:xlsx|csv))"', re.I)
 
 
-def discover(html: str, page: str = DATA_PAGE) -> list[Listed]:
-    """Every quarterly file the page lists, one per filename, oldest first.
+def on_uscis(url: str) -> bool:
+    """Whether an address is on https://www.uscis.gov itself. A `//host/` link, another host, a host behind
+    a user name (`www.uscis.gov@elsewhere`), plain http or another port is not, and nothing is fetched from it."""
+    parts = urllib.parse.urlsplit(url)
+    return parts.scheme == "https" and parts.netloc.lower() == "www.uscis.gov"
 
-    Each link is read against `page`, the address the HTML came from, as a browser reads it.
+
+def discover(html: str, page: str = DATA_PAGE) -> list[Listed]:
+    """Every quarterly file the page lists on www.uscis.gov, one per filename, oldest first.
+
+    Each link is read against `page`, the address the HTML came from, as a browser reads it. A link
+    that leads anywhere else (on_uscis) is left out and named in the log.
     """
     seen: dict[str, Listed] = {}
     for href in FILE_LINK_RE.findall(html):
@@ -534,8 +542,12 @@ def discover(html: str, page: str = DATA_PAGE) -> list[Listed]:
         ident = identify(name)
         if not ident or name in seen:
             continue
+        url = urllib.parse.urljoin(page, href.replace("&amp;", "&"))
+        if not on_uscis(url):
+            log(f"  ignored a file link not on {HOST}: {url}")
+            continue
         kind, fy, q = ident
-        seen[name] = Listed(kind, fy, q, name, urllib.parse.urljoin(page, href.replace("&amp;", "&")))
+        seen[name] = Listed(kind, fy, q, name, url)
     return sort_listed(seen.values())
 
 
@@ -636,6 +648,9 @@ def read_listing(get, first: str = DATA_PAGE, cap: int | None = None) -> Listing
         if pages >= cap:
             return Listing(sort_listed(seen.values()), pages,
                            stopped=f"stopped at the cap of {cap} listing pages; page {page_number(nxt)} on not read")
+        if not on_uscis(nxt):
+            return Listing(sort_listed(seen.values()), pages,
+                           failed=f"page {page_number(url)}'s Next link leads off {HOST}, to {nxt}; not followed")
         if page_number(nxt) != page_number(url) + 1:
             return Listing(sort_listed(seen.values()), pages,
                            failed=f"page {page_number(url)}'s Next link leads to {nxt}, not the following page")

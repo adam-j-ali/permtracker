@@ -260,6 +260,31 @@ def probe_pages() -> None:
           [f.url for f in q.discover('<a href="data/net_backlog_fy23_q4.csv">x</a>', "https://www.uscis.gov/a/b?page=3")]
           == ["https://www.uscis.gov/a/data/net_backlog_fy23_q4.csv"])
 
+    # A file is fetched only from www.uscis.gov. A `//host/` link is another host's, read against an https
+    # page; so is a host behind a user name. Each is left out and named in the log, and it never stands in
+    # for the same file listed on USCIS's own host.
+    data = "/sites/default/files/document/data/"
+    off = [f"//files.example.com{data}quarterly_all_forms_fy2026_q3_v1.xlsx",
+           f"https://example.com{data}i907_premium_processing_fy2026_q3_v1.xlsx",
+           f"https://www.uscis.gov@example.com{data}n400_performance_data_fy2026_q3_v1.xlsx",
+           f"http://www.uscis.gov{data}i765_application_for_employment_fy2026_q3_v1.xlsx",
+           f"https://www.uscis.gov:8443{data}net_backlog_frontlog_fy2026_q3_v1.xlsx"]
+    html = "".join(f'<a href="{h}">x</a>' for h in off) + f'<a href="{data}i907_premium_processing_fy2026_q3_v1.xlsx">y</a>'
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        got = q.discover(html, "https://www.uscis.gov/a/b?page=3")
+    check("a file link off www.uscis.gov is ignored: //host/, another host, a user name, plain http, another port",
+          [f.url for f in got] == ["https://www.uscis.gov" + data + "i907_premium_processing_fy2026_q3_v1.xlsx"],
+          str([f.url for f in got]))
+    check("each ignored link is named in the log", all(h.split("/")[-1] in out.getvalue() for h in off)
+          and out.getvalue().count("not on https://www.uscis.gov") == len(off), out.getvalue()[:200])
+    away = {0: page_html(0, ["i907_premium_processing_fy2026_q3_v1.xlsx"], False).replace(
+        'href="/tools/', 'href="//example.com/tools/')}
+    asked = []
+    left = q.read_listing(lambda url: asked.append(url) or away.get(q.page_number(url), "<html></html>").encode())
+    check("a Next link off www.uscis.gov ends the walk red and is never followed",
+          left.pages == 1 and len(asked) == 1 and "example.com" in left.failed, left.failed or "not red")
+
 
 def probe_pace() -> None:
     print("\nthe crawl delay")
