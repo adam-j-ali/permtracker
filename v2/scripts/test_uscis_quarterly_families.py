@@ -27,6 +27,7 @@ import re
 import shutil
 import sys
 import tempfile
+import urllib.parse
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ingest_uscis_quarterly as q  # noqa: E402
@@ -227,6 +228,37 @@ def probe_pages() -> None:
           q.next_page_link(PAGER_NEXT.format(next=4)) == q.HOST + "/tools/reports-and-studies/"
           "immigration-and-citizenship-data?items_per_page=100&page=4")
     check("the last page's disabled Next is no link", q.next_page_link(PAGER_LAST.format(prev=16)) is None)
+
+    # A Next link that's a query string alone belongs to the page it's on. Read against the host, it
+    # would be the homepage: no files and no Next, so the walk would end there and call itself done.
+    listing_path = urllib.parse.urlsplit(q.DATA_PAGE).path
+
+    def query_page(n: int, files: list[str], last: bool) -> str:
+        links = "".join(f'<a href="/sites/default/files/document/data/{f}">x</a>' for f in files)
+        nxt = "" if last else f'<a href="?items_per_page=100&amp;page={n + 1}" rel="next">Next</a>'
+        return f"<html><body>{links}{nxt}</body></html>"
+    by_query = {0: query_page(0, ["i907_premium_processing_fy2026_q3_v1.xlsx"], False),
+                1: query_page(1, ["i907_premium_processing_fy2025_q1.xlsx"], False),
+                2: query_page(2, ["n400_performancedata_fy2024_q1.xlsx"], True)}
+    asked = []
+
+    def site(url: str) -> bytes:
+        asked.append(url)
+        if urllib.parse.urlsplit(url).path != listing_path:
+            return b"<html><body><a href='/about-us'>About us</a></body></html>"   # the homepage
+        return by_query[q.page_number(url)].encode()
+    got = q.read_listing(site)
+    check("a query-only Next link is read against the listing page's own address, to the last page",
+          got.pages == 3 and not got.failed and len(got.files) == 3
+          and asked[1] == "https://www.uscis.gov" + listing_path + "?items_per_page=100&page=1", str(asked[1:]))
+    gone = {0: page_html(0, ["i907_premium_processing_fy2026_q3_v1.xlsx"], False),
+            1: "<html><body>We're updating this page.</body></html>"}
+    empty = q.read_listing(lambda url: gone[q.page_number(url)].encode())
+    check("a next page with no file links at all, after a page that had them, ends the walk red",
+          "no file links" in empty.failed and len(empty.files) == 1, empty.failed or "not red")
+    check("a file link without a leading slash is read against the page it's on",
+          [f.url for f in q.discover('<a href="data/net_backlog_fy23_q4.csv">x</a>', "https://www.uscis.gov/a/b?page=3")]
+          == ["https://www.uscis.gov/a/data/net_backlog_fy23_q4.csv"])
 
 
 def probe_pace() -> None:

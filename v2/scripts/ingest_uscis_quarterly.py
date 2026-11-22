@@ -519,17 +519,22 @@ def identify(name: str) -> tuple[str, int, int] | None:
     return None
 
 
-def discover(html: str) -> list[Listed]:
-    """Every quarterly file the page lists, one per filename, oldest first."""
+FILE_LINK_RE = re.compile(r'href="([^"]+\.(?:xlsx|csv))"', re.I)
+
+
+def discover(html: str, page: str = DATA_PAGE) -> list[Listed]:
+    """Every quarterly file the page lists, one per filename, oldest first.
+
+    Each link is read against `page`, the address the HTML came from, as a browser reads it.
+    """
     seen: dict[str, Listed] = {}
-    for href in re.findall(r'href="([^"]+\.(?:xlsx|csv))"', html, re.I):
+    for href in FILE_LINK_RE.findall(html):
         name = href.rsplit("/", 1)[-1]
         ident = identify(name)
         if not ident or name in seen:
             continue
         kind, fy, q = ident
-        url = href if href.startswith("http") else HOST + href
-        seen[name] = Listed(kind, fy, q, name, url)
+        seen[name] = Listed(kind, fy, q, name, urllib.parse.urljoin(page, href.replace("&amp;", "&")))
     return sort_listed(seen.values())
 
 
@@ -572,14 +577,17 @@ def page_number(url: str) -> int:
     return int(got[0]) if got[0].isdigit() else -1
 
 
-def next_page_link(html: str) -> str | None:
-    """The listing's own "Next" link (`<a ... rel="next">`), absolute, or None on the last page."""
+def next_page_link(html: str, page: str = DATA_PAGE) -> str | None:
+    """The listing's own "Next" link (`<a ... rel="next">`), made absolute against `page`, or None on the last page.
+
+    A query-only link (`?items_per_page=100&page=2`) belongs to the page it's on: joined to the
+    host instead, it would be the homepage, which lists nothing and has no Next.
+    """
     for tag in re.findall(r"<a\b[^>]*>", html, re.I):
         if re.search(r'\brel="next"', tag, re.I):
             m = re.search(r'\bhref="([^"]+)"', tag)
             if m:
-                href = m.group(1).replace("&amp;", "&")
-                return href if href.startswith("http") else HOST + href
+                return urllib.parse.urljoin(page, m.group(1).replace("&amp;", "&"))
     return None
 
 
@@ -595,14 +603,16 @@ def read_listing(get, first: str = DATA_PAGE, cap: int | None = None) -> Listing
     """Every file the listing carries, following its "Next" link page by page.
 
     The first page must read, or there's nothing to load and the run fails. A
-    later page that can't be read, or a "Next" link that doesn't lead to the
-    following page, ends the walk with what was found and `failed` saying why:
-    the newest files are on the first page, so they still load, and the run
-    ends red. Reaching `cap` pages (LISTING_PAGE_CAP) ends it with `stopped` saying so.
+    later page that can't be read, a "Next" link that doesn't lead to the
+    following page, or a following page with no file links at all (every real
+    one has dozens, the sidebar's among them) ends the walk with what was found
+    and `failed` saying why: the newest files are on the first page, so they
+    still load, and the run ends red. Reaching `cap` pages (LISTING_PAGE_CAP)
+    ends it with `stopped` saying so.
     """
     cap = LISTING_PAGE_CAP if cap is None else cap
     seen: dict[str, Listed] = {}
-    url, pages = first, 0
+    url, pages, had_links = first, 0, False
     while True:
         try:
             html = get(url).decode("utf8", "ignore")
@@ -610,10 +620,16 @@ def read_listing(get, first: str = DATA_PAGE, cap: int | None = None) -> Listing
             if pages == 0:
                 raise
             return Listing(sort_listed(seen.values()), pages, failed=f"listing page {page_number(url)} not read ({exc})")
+        links = bool(FILE_LINK_RE.search(html))
+        if pages and had_links and not links:
+            return Listing(sort_listed(seen.values()), pages,
+                           failed=f"listing page {page_number(url)} ({url}) holds no file links, "
+                                  "though the page before it did")
         pages += 1
-        for item in discover(html):
+        had_links = links
+        for item in discover(html, url):
             seen.setdefault(item.name, item)
-        nxt = next_page_link(html)
+        nxt = next_page_link(html, url)
         if nxt is None:
             return Listing(sort_listed(seen.values()), pages)
         if pages >= cap:
