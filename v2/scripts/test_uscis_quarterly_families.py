@@ -1115,6 +1115,37 @@ def probe_history_drift() -> None:
     check("a file that couldn't be read ahead is no witness; the held quarter is", sorted(got) == [(2026, 3)], str(sorted(got)))
     check("the newest quarter has no witness", q.drift_witnesses(db, newest, {}) == {})
 
+    # Which copy of a later quarter witnesses: the one whose rows end up held. Each case below has the
+    # copy that stands lack the I-129F and the other copy carry it, so either rule flipped (or both
+    # copies counted) would turn a retirement into a refusal.
+    gone = "I-129F|Petition for Alien Fiancé(e)"
+    check("control: FY2024 Q4 carries the I-129F row the witness cases drop", gone in {q.row_key(q4, r) for r in q4.rows})
+    q3_full = q.parse_blob(q.Listed("all_forms", 2024, 3, names[2], ""), (ALL_FORMS_HISTORY / names[2]).read_bytes())
+    previous = {q.row_key(q3_full, r) for r in q3_full.rows}
+    q3_lost = clone(q3_full)
+    q3_lost.rows = [r for r in q3_lost.rows if q.row_key(q3_lost, r) != gone]
+    q4_without = clone(q4)
+    q4_without.rows = [r for r in q4_without.rows if q.row_key(q4_without, r) != gone]
+
+    # (a) Two files for one later quarter, a `_v2` after its `_v1`: the last listed is the witness.
+    v1, v2 = clone(q4), clone(q4_without)
+    v1.name, v2.name = "quarterly_all_forms_fy2024_q4_v1.xlsx", "quarterly_all_forms_fy2024_q4_v2.xlsx"
+    got = q.drift_witnesses(None, q3_lost, {v1.name: v1, v2.name: v2})
+    check("a quarter listed twice: the last file listed (the _v2) witnesses, never the _v1 it replaces",
+          sorted(got) == [(2024, 4)] and gone not in got[(2024, 4)]
+          and q.drift_findings(previous, q3_lost, set().union(*got.values())) == [],
+          f"{sorted(got)}; I-129F in the witness: {gone in got.get((2024, 4), set())}")
+
+    # (b) A later quarter both held and parsed in this run: this run's copy, which replaces the held rows, witnesses.
+    db = FakeDb()
+    q.ensure_tables(db)
+    q.store(db, q4)
+    got = q.drift_witnesses(db, q3_lost, {q4_without.name: q4_without})
+    check("a quarter held and read again in this run: this run's copy witnesses, never the held rows it replaces",
+          sorted(got) == [(2024, 4)] and gone not in got[(2024, 4)]
+          and q.drift_findings(previous, q3_lost, set().union(*got.values())) == [],
+          f"{sorted(got)}; I-129F in the witness: {gone in got.get((2024, 4), set())}")
+
 
 def probe_registry() -> None:
     print("\nfreshness and the site's dataset sentences")
