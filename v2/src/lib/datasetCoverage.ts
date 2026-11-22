@@ -256,6 +256,16 @@ export const DATASET_COVERAGE: Readonly<Record<string, string>> = {
     "Approved I-140, I-360 and I-526 petitions whose beneficiary is still waiting for a visa number. They're counted by preference and country of birth, as of the month USCIS states. Primary beneficiaries only, with dependents excluded.",
   "uscis-i140-class-country":
     "I-140 petitions by the fiscal year USCIS received them and their current status, all countries and the top five, with approvals by class. Counted by filing year, so a recent year is mostly still pending.",
+  "uscis-i765-categories":
+    "Work permit applications (I-765) USCIS received, approved, denied and had pending in the quarter, by eligibility category, such as (c)(9) for people with a green card application pending and (c)(26) for H-4 spouses. First applications, renewals and replacements are counted apart, quarterly from October 2024.",
+  "uscis-i765-pending-days":
+    "Pending work permit applications (I-765) by how many days they had waited on the quarter's last day, for every category and for asylum applicants alone, first applications and renewals apart. USCIS counts these from a different system than the category figures, so the two totals never quite match.",
+  "uscis-net-backlog":
+    "USCIS's net backlog by form at the quarter's end: cases pending longer than USCIS's own target time, less those waiting on the applicant (an evidence request or a notice of intent to deny) or on a visa number. The backlog figures are rounded to the hundred, and the frontlog of applications not yet opened sits beside them.",
+  "uscis-i907-premium":
+    "Premium processing requests (I-907) USCIS received in the quarter, by the form they were for, filed with the petition or added to one already pending. These are requests only, with no decisions or processing times.",
+  "uscis-n400-offices":
+    "Naturalization applications (N-400) received, approved, denied and pending at each USCIS field office in the quarter, civilian and military apart. Cells USCIS withholds as too small are left blank.",
   "uscis-rfe":
     "I-129 petitions USCIS decided each month from FY2015, by visa, and how many of them had a request for evidence. It covers initial decisions only, and a petition with several RFEs is counted once. There are no figures for the I-140, the I-485 or any employer.",
   // --- ICE SEVIS by the Numbers -------------------------------------------------
@@ -427,6 +437,11 @@ export const DATASET_LABELS: Readonly<Record<string, string>> = {
   "uscis-i485-offices": "I-485 by field office",
   "uscis-eb-awaiting-visa": "Petitions awaiting a visa",
   "uscis-i140-class-country": "I-140 by class and country",
+  "uscis-i765-categories": "I-765 by eligibility category",
+  "uscis-i765-pending-days": "Pending I-765s by days waited",
+  "uscis-net-backlog": "USCIS net backlog",
+  "uscis-i907-premium": "Premium processing requests",
+  "uscis-n400-offices": "N-400 by field office",
   "uscis-rfe": "USCIS I-129 requests for evidence",
   "sevp-top-employers": "ICE top OPT and CPT employers",
   "uscis-h1b-hub": "USCIS H-1B Employer Data Hub",
