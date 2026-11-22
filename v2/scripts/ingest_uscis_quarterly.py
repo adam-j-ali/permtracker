@@ -730,7 +730,7 @@ def parse_n400_offices(rows: list[dict[int, str]], listed: Listed) -> Parsed:
     quarter. A second block, `Field Office by Territory`, holds Guam, the U.S.
     Virgin Islands and Puerto Rico, each read like a state.
     """
-    p = parse_offices(rows, listed, N400_GROUP_HEADINGS, N400_COLUMNS)
+    p = parse_offices(rows, listed, N400_GROUP_HEADINGS, N400_COLUMNS, strict=True)
     check_quarter_end(listed.name, p.quarter_end, listed.fy, listed.quarter)
     reconcile_offices(p, N400_COLUMNS)
     reconcile_n400(p)
@@ -738,8 +738,13 @@ def parse_n400_offices(rows: list[dict[int, str]], listed: Listed) -> Parsed:
 
 
 def parse_offices(rows: list[dict[int, str]], listed: Listed, groups: tuple[str, ...],
-                  columns: list[str]) -> Parsed:
-    """One office file: a Total row, state (or territory) label rows, and an office per row with its code."""
+                  columns: list[str], *, strict: bool = False) -> Parsed:
+    """One office file: a Total row, state (or territory) label rows, and an office per row with its code.
+
+    `strict` (the N-400) reads each cell with strict_count: a word or a blank where
+    a count belongs is refused. The office totals can't catch one in a cell whose
+    true value is 0 to 9, since a NULL there leaves the same room a D does.
+    """
     p = Parsed(listed.kind, listed.fy, listed.quarter, listed.name)
     header_at = None
     for i, r in enumerate(rows):
@@ -786,7 +791,7 @@ def parse_offices(rows: list[dict[int, str]], listed: Listed, groups: tuple[str,
             row = {"state": state, "office": first, "code": code}
         row["suppressed"] = sum(1 for v in values if withheld(v))
         for col, v in zip(columns, values):
-            row[col] = cell_int(v)
+            row[col] = strict_count(v, f"{listed.name} {row['code']} {col}") if strict else cell_int(v)
         p.rows.append(row)
     return p
 

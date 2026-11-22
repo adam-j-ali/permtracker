@@ -709,6 +709,29 @@ def probe_offices() -> None:
             lambda: q.parse_blob(listed("n400_performance_data_fy2026_q3_v1.xlsx"),
                                  _workbook_without_sheets()), "no sheet holds")
 
+    # A word or a blank where a count belongs means a column moved: the N-400 reads strictly, as the
+    # other new families do, and only USCIS's withheld marks (D, H) are NULL. Charleston WV's cells are
+    # all 0, so the office totals, which leave a NULL 1 to 9 of room, can't catch it there.
+    n400 = "n400_performance_data_fy2026_q3_v1.xlsx"
+
+    def office(rows, code):
+        return next(r for r in rows if q.norm(r.get(1)) == code)
+
+    def word(rows):
+        office(rows, "CHS")[2] = "Charleston"
+    refuses("a word where an N-400 count belongs is refused, never stored as NULL",
+            lambda: parse(n400, edited(n400, word)), "not a count")
+
+    def blank(rows):
+        del office(rows, "CHS")[5]
+    refuses("a blank where an N-400 count belongs is refused", lambda: parse(n400, edited(n400, blank)), "blank")
+
+    def held_h(rows):
+        office(rows, "CHS")[5] = "H"
+    chs = next(r for r in parse(n400, edited(n400, held_h)).rows if r["code"] == "CHS")
+    check("an H in an N-400 cell is withheld: NULL and counted suppressed",
+          chs["civ_pending"] is None and chs["suppressed"] == by["CHS"]["suppressed"] + 1)
+
     i485 = parse("i485_performancedata_fy2024_q1.xlsx")
     t = next(r for r in i485.rows if r["code"] == "ALL")
     check("the I-485's older spelling, FY2024 Q1: 99 offices, 243 D cells, employment pending 193,698",
