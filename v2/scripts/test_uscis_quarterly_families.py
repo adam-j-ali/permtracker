@@ -563,6 +563,18 @@ def probe_pending_days() -> None:
     refuses("a column heading named twice is refused",
             lambda: parse("i765_p_allcat_c08_fy2026_q3_v1.xlsx", edited("i765_p_allcat_c08_fy2026_q3_v1.xlsx", twice)),
             "two columns")
+    # A withheld mark in a file that never withholds is refused, even when the totals would still add up
+    # with it read as 0: the Grand Total here is lowered by the cell's own value, so only that rule stops it.
+    def withheld_as(mark: str):
+        def fn(rows):
+            cell, total = row_of(rows, "61 - 90 days"), row_of(rows, "Grand Total")
+            total[1] = str(int(total[1]) - int(cell[1]))
+            cell[1] = mark
+        return fn
+    for mark in ("D", "N/A"):
+        refuses(f"a {mark} in the days-pending file is refused, never stored as 0",
+                lambda: parse("i765_p_allcat_c08_fy2026_q3_v1.xlsx",
+                              edited("i765_p_allcat_c08_fy2026_q3_v1.xlsx", withheld_as(mark))), "never withholds")
     refuses("a file without the days-pending sheet is refused",
             lambda: parse("i765_p_allcat_c08_fy2026_q3_v1.xlsx", [("Sheet1", [{0: "Nothing here"}])]), "no sheet holds")
     refuses("a file whose as-of date isn't its named quarter's end is refused",
@@ -697,6 +709,30 @@ def probe_i907() -> None:
                           edited("i907_premium_processing_fy2026_q3_v1.xlsx", rename)), "expected Concurrent")
     refuses("a file whose range doesn't end its named quarter is refused",
             lambda: parse("i907_premium_processing_fy2026_q3_v1.xlsx", fy=2026, quarter=4), "not 2026-09-30")
+
+    # A D in a file that never withholds is refused, though with it read as 0 the I-539 row and the
+    # Grand Total (each lowered by the cell's value here) would still add up.
+    def withheld_d(rows):
+        cell, total = row_of(rows, "I-539"), row_of(rows, "Grand Total")
+        n = int(cell[3])
+        cell[4], total[3], total[4] = str(int(cell[4]) - n), str(int(total[3]) - n), str(int(total[4]) - n)
+        cell[3] = "D"
+    refuses("a D in the I-907 file is refused, never stored as 0",
+            lambda: parse("i907_premium_processing_fy2026_q3_v1.xlsx",
+                          edited("i907_premium_processing_fy2026_q3_v1.xlsx", withheld_d)), "never withholds")
+
+    # A range is the quarter's own: only an "As of" snapshot may print the morning after it.
+    def morning_after(rows):
+        rows[2][0] = "April 1, 2026 - July 1, 2026"
+    refuses("an I-907 range ending the morning after its quarter is refused",
+            lambda: parse("i907_premium_processing_fy2026_q3_v1.xlsx",
+                          edited("i907_premium_processing_fy2026_q3_v1.xlsx", morning_after)), "ends 2026-07-01")
+    refuses("check_quarter_end: the morning after is refused for a range",
+            lambda: q.check_quarter_end("t", "2026-07-01", 2026, 3), "not 2026-06-30")
+    q.check_quarter_end("t", "2026-07-01", 2026, 3, snapshot=True)
+    check("check_quarter_end: the morning after is accepted for an 'As of' snapshot", True)
+    refuses("check_quarter_end: two mornings after is refused even for a snapshot",
+            lambda: q.check_quarter_end("t", "2026-07-02", 2026, 3, snapshot=True), "not 2026-06-30")
     previous = {"ALL", "I-129", "I-140", "I-539"}
     check("a new form is logged, never refused",
           q.drift_findings(previous, p) == [] and any("I-765" in n for n in q.drift_notes(previous, p)))
