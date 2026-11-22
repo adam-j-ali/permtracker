@@ -734,7 +734,11 @@ def reconcile_all_forms(p: Parsed) -> None:
 # ---------------------------------------------------------------------------
 
 def parse_i485_offices(rows: list[dict[int, str]], listed: Listed) -> Parsed:
-    p = parse_offices(rows, listed, I485_GROUP_HEADINGS, OFFICE_COLUMNS)
+    """The I-485 by field office, read strictly (parse_offices).
+
+    USCIS's eleven files, FY2024 Q1 to FY2026 Q3, hold no word or blank in a count cell.
+    """
+    p = parse_offices(rows, listed, I485_GROUP_HEADINGS, OFFICE_COLUMNS, strict=True)
     reconcile_offices(p)
     return p
 
@@ -758,7 +762,7 @@ def parse_offices(rows: list[dict[int, str]], listed: Listed, groups: tuple[str,
                   columns: list[str], *, strict: bool = False) -> Parsed:
     """One office file: a Total row, state (or territory) label rows, and an office per row with its code.
 
-    `strict` (the N-400) reads each cell with strict_count: a word or a blank where
+    `strict` (the N-400 and the I-485) reads each cell with strict_count: a word or a blank where
     a count belongs is refused. The office totals can't catch one in a cell whose
     true value is 0 to 9, since a NULL there leaves the same room a D does.
     """

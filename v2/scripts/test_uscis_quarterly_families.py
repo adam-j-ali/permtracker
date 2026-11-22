@@ -833,6 +833,19 @@ def probe_offices() -> None:
             lambda: parse("i485_performancedata_fy2024_q1.xlsx", edited("i485_performancedata_fy2024_q1.xlsx", heading_moved)),
             "column 5")
 
+    # The I-485 reads strictly too (USCIS's eleven I-485 office files, FY2024 Q1 to FY2026 Q3, read the same
+    # strictly as leniently). Dover's family cells are all 0, so the totals can't catch a word or a blank there.
+    i485n = "i485_performancedata_fy2024_q1.xlsx"
+
+    def i485_word(rows):
+        office(rows, "DVD")[2] = "Dover"
+    refuses("a word where an I-485 count belongs is refused, never stored as NULL",
+            lambda: parse(i485n, edited(i485n, i485_word)), "not a count")
+
+    def i485_blank(rows):
+        del office(rows, "DVD")[5]
+    refuses("a blank where an I-485 count belongs is refused", lambda: parse(i485n, edited(i485n, i485_blank)), "blank")
+
 
 def probe_describe() -> None:
     """The log line each parse gets never fails on a figure USCIS withheld or printed N/A."""
