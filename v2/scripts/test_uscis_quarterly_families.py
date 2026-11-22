@@ -921,9 +921,9 @@ def probe_store_and_run() -> None:
     check("drift reads the previous quarter's keys for the new tables",
           q.previous_keys(db, q.Parsed("i907_premium", 2026, 4, "next.xlsx")) == {"ALL", "I-129", "I-140", "I-539", "I-765"})
     n400_codes = {r["code"] for r in parsed[4].rows}
-    check("drift reads the nearest LATER quarter for a history load, and none for the newest",
-          q.later_keys(db, q.Parsed("n400_offices", 2024, 1, "old.xlsx")) == n400_codes
-          and q.later_keys(db, parsed[4]) is None)
+    check("drift reads every LATER quarter held for a history load, and none for the newest",
+          q.held_after(db, q.Parsed("n400_offices", 2024, 1, "old.xlsx")) == {(2026, 3): n400_codes}
+          and q.held_after(db, parsed[4]) == {})
     # A history quarter that lost a key the next quarter held also lacks was retired by then; one that comes back is a misread.
     older = clone(parsed[4])
     older.rows = [r for r in older.rows if r["code"] != "NJC"]
@@ -1039,8 +1039,9 @@ def probe_history_drift() -> None:
     check("eleven quarters held", db.scalar("SELECT count(DISTINCT fy * 10 + quarter) FROM uscis_form_quarters") == 11)
     check("each file is read and parsed once, though the parse happens before any is stored",
           sorted(parses) == names, str(parses))
-    check("the retired I-924A is named, with the quarter that witnessed it",
-          re.search(r"gone from FY2025 Q1 too.*I-924A", log) is not None,
+    check("the retired I-924A is named, with the later quarters that witnessed it",
+          re.search(r"gone from every later quarter known too \(7 later quarters, FY2025 Q1 to FY2026 Q3\).*I-924A",
+                    log) is not None,
           next((l.strip() for l in log.splitlines() if "I-924A" in l), "")[:200])
     check("the run is recorded ok", last_run(db)[0] == "ok", last_run(db)[1][-200:])
 
@@ -1070,20 +1071,49 @@ def probe_history_drift() -> None:
         check("the quarters either side of it load: the refusal doesn't cascade",
               set(loads) == {three[0], three[2]} and status == "failed", str(sorted(loads)))
 
-    # The witness is the nearest later quarter, read ahead in this run or held.
+    # A row gone two quarters running and back in the third was misread in both: every later quarter
+    # known witnesses a loss, so the next quarter lacking it too is no proof it was retired.
+    # FY2025 Q1 to Q4 retire nothing, so the I-751 is the only row missing.
+    run4 = ["quarterly_all_forms_fy2025_q1.xlsx", "quarterly_all_forms_fy2025_q2.xlsx",
+            "quarterly_all_forms_fy2025_q3.xlsx", "quarterly_all_forms_fy2025_q4_v1.xlsx"]
+
+    def misread_twice(item, blob):
+        p = real_parse(item, blob)
+        if item.name in (run4[1], run4[2]):
+            p.rows = [r for r in p.rows if r["form"] != "I-751"]
+        return p
+    with tempfile.TemporaryDirectory() as tmp:
+        for n in run4:
+            shutil.copy(ALL_FORMS_HISTORY / n, tmp)
+        db = FakeDb()
+        q.parse_blob = misread_twice  # type: ignore[assignment]
+        try:
+            rc, log = run_main(tmp, db)
+        finally:
+            q.parse_blob = real_parse  # type: ignore[assignment]
+        loads = q.read_loads(db)
+        status, note = last_run(db)
+        check("a row gone in FY2025 Q2 and Q3 and back in Q4 refuses both quarters it's missing from",
+              rc == 1 and set(loads) == {run4[0], run4[3]} and status == "failed"
+              and run4[1] in note and run4[2] in note, f"rc {rc}; loaded {sorted(loads)}; {note[-160:]}")
+        check("each refusal names the row and the quarter it's back in",
+              len(re.findall(r"DRIFT: .*I-751", log)) == 2 and log.count("back in FY2025 Q4") == 2,
+              "; ".join(l.strip() for l in log.splitlines() if "I-751" in l)[:300])
+
+    # The witnesses are every later quarter, read ahead in this run or held.
     db = FakeDb()
     q.ensure_tables(db)
     newest = q.parse_blob(q.Listed("all_forms", 2026, 3, names[-1], ""), (ALL_FORMS_HISTORY / names[-1]).read_bytes())
     q.store(db, newest)
     q4 = q.parse_blob(q.Listed("all_forms", 2024, 4, names[3], ""), (ALL_FORMS_HISTORY / names[3]).read_bytes())
     q3 = q.Parsed("all_forms", 2024, 3, names[2])
-    got = q.drift_witness(db, q3, {q4.name: q4})
-    check("a quarter read ahead is the witness when it's nearer than the newest held",
-          got is not None and got[0] == (2024, 4) and "I-924A|Annual Certification of Regional Center" not in got[1],
-          str(got and got[0]))
-    got = q.drift_witness(db, q3, {q4.name: q.Refusal("unreadable")})
-    check("a file that couldn't be read ahead is no witness; the held quarter is", got is not None and got[0] == (2026, 3))
-    check("the newest quarter has no witness", q.drift_witness(db, newest, {}) is None)
+    got = q.drift_witnesses(db, q3, {q4.name: q4})
+    check("a quarter read ahead and every quarter held after it are all witnesses",
+          sorted(got) == [(2024, 4), (2026, 3)]
+          and "I-924A|Annual Certification of Regional Center" not in got[(2024, 4)], str(sorted(got)))
+    got = q.drift_witnesses(db, q3, {q4.name: q.Refusal("unreadable")})
+    check("a file that couldn't be read ahead is no witness; the held quarter is", sorted(got) == [(2026, 3)], str(sorted(got)))
+    check("the newest quarter has no witness", q.drift_witnesses(db, newest, {}) == {})
 
 
 def probe_registry() -> None:

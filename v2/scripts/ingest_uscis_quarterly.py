@@ -1814,27 +1814,28 @@ def row_key(p: Parsed, r: dict) -> str:
     return r["code"]
 
 
-def neighbour(db: Database, p: Parsed, *, later: bool = False) -> tuple[tuple[int, int], set[str]] | None:
-    """The nearest quarter held before this one (or, `later`, after it) and its identifying keys."""
+def keys_on_measures(p: Parsed, keys: set[str]) -> set[str]:
+    """`keys` as this parse can be compared on them: a net-backlog file holding one measure
+    (the FY2023 Q4 csv pair) is compared on that measure alone."""
+    if p.kind != "net_backlog":
+        return keys
+    measures = {r["measure"] for r in p.rows}
+    return {k for k in keys if k.split("|", 1)[0] in measures}
+
+
+def neighbour(db: Database, p: Parsed) -> tuple[tuple[int, int], set[str]] | None:
+    """The nearest quarter held before this one and its identifying keys."""
     if p.kind not in DRIFT_KEYS:
         return None
     table, expr = DRIFT_KEYS[p.kind]
-    if later:
-        where, order = "(fy > ?) OR (fy = ? AND quarter > ?)", "fy, quarter"
-    else:
-        where, order = "(fy < ?) OR (fy = ? AND quarter < ?)", "fy DESC, quarter DESC"
-    rows = rows_of(db.execute(f"SELECT fy, quarter FROM {table} WHERE {where} ORDER BY {order} LIMIT 1",
-                              [p.fy, p.fy, p.quarter]))
+    rows = rows_of(db.execute(f"SELECT fy, quarter FROM {table} WHERE (fy < ?) OR (fy = ? AND quarter < ?) "
+                              "ORDER BY fy DESC, quarter DESC LIMIT 1", [p.fy, p.fy, p.quarter]))
     if not rows:
         return None
     fy, q = int(rows[0][0]), int(rows[0][1])
     keys = {str(r[0]) for r in query_rows(
         db, f"SELECT {expr} FROM {table} WHERE fy = ? AND quarter = ?", [fy, q])}
-    if p.kind == "net_backlog":
-        # A file holding one measure (the FY2023 Q4 csv pair) is compared on that measure alone.
-        measures = {r["measure"] for r in p.rows}
-        keys = {k for k in keys if k.split("|", 1)[0] in measures}
-    return (fy, q), keys
+    return (fy, q), keys_on_measures(p, keys)
 
 
 def previous_keys(db: Database, p: Parsed) -> set[str] | None:
@@ -1843,40 +1844,50 @@ def previous_keys(db: Database, p: Parsed) -> set[str] | None:
     return got[1] if got else None
 
 
-def later_keys(db: Database, p: Parsed) -> set[str] | None:
-    """The identifying keys of the oldest quarter held AFTER this one: None when this is the newest."""
-    got = neighbour(db, p, later=True)
-    return got[1] if got else None
+def held_after(db: Database, p: Parsed) -> dict[tuple[int, int], set[str]]:
+    """Every quarter held AFTER this one, each with its identifying keys; empty when this is the newest."""
+    if p.kind not in DRIFT_KEYS:
+        return {}
+    table, expr = DRIFT_KEYS[p.kind]
+    out: dict[tuple[int, int], set[str]] = {}
+    for fy, q, key in query_rows(db, f"SELECT fy, quarter, {expr} FROM {table} "
+                                     "WHERE (fy > ?) OR (fy = ? AND quarter > ?)", [p.fy, p.fy, p.quarter]):
+        out.setdefault((int(fy), int(q)), set()).add(str(key))
+    return {quarter: keys_on_measures(p, keys) for quarter, keys in out.items()}
 
 
-# A file read ahead (see read_ahead): its parse, or the refusal or read error that stopped it.
-Ahead = dict[str, "Parsed | BaseException"]
+# A file read ahead (see read_ahead): its parse, or whatever stopped it, raised at the file's own turn.
+Ahead = dict[str, "Parsed | Exception"]
 
 
-def drift_witness(db: Database | None, p: Parsed, ahead: Ahead | None) -> tuple[tuple[int, int], set[str]] | None:
-    """The nearest quarter after this one, read ahead in this run or held, and its keys; None when there's none.
+def drift_witnesses(db: Database | None, p: Parsed, ahead: Ahead | None) -> dict[tuple[int, int], set[str]]:
+    """Every quarter after this one known to the run, read ahead or held, each with its keys; empty when none.
 
     A history load into a database that holds no later quarter has nothing held
     to witness a retirement, so the files of the kinds that refuse a loss are
-    all parsed before any is stored (read_ahead) and the next quarter listed
-    stands in. Where both exist the nearer quarter is the witness, and for the
-    same quarter the file this run is about to store. A file that couldn't be
-    read or parsed is no witness.
+    all parsed before any is stored (read_ahead) and the quarters listed after
+    this one stand in. Each later quarter counts, not only the next: a row
+    misread in two quarters running is missing from the next one too, and comes
+    back only in the one after. For a quarter read ahead and held, the file this
+    run is about to store stands over the held rows it replaces; for a quarter
+    listed twice, the last file listed (a `_v2` after its `_v1`), whose rows are
+    the ones that end up held. A file that couldn't be read or parsed is no witness.
     """
     if p.kind not in DRIFT_REFUSES:
-        return None
-    found: list[tuple[tuple[int, int], int, set[str]]] = []
-    held = neighbour(db, p, later=True) if db is not None else None
-    if held:
-        found.append((held[0], 0, held[1]))
-    for i, o in enumerate((ahead or {}).values(), start=1):
+        return {}
+    out = held_after(db, p) if db is not None else {}
+    for o in (ahead or {}).values():
         if isinstance(o, Parsed) and o.kind == p.kind and (o.fy, o.quarter) > (p.fy, p.quarter):
-            # The last file listed for a quarter is the one its rows end up from (a `_v2` after its `_v1`).
-            found.append(((o.fy, o.quarter), -i, {row_key(o, r) for r in o.rows}))
-    if not found:
-        return None
-    quarter, _, keys = min(found, key=lambda f: (f[0], f[1]))
-    return quarter, keys
+            out[(o.fy, o.quarter)] = {row_key(o, r) for r in o.rows}
+    return out
+
+
+def quarters_named(quarters) -> str:
+    """How many quarters and their span: `1 later quarter, FY2025 Q4`, `11 later quarters, FY2024 Q2 to FY2026 Q3`."""
+    got = sorted(quarters)
+    (f1, q1), (f2, q2) = got[0], got[-1]
+    span = f"FY{f1} Q{q1}" + (f" to FY{f2} Q{q2}" if (f1, q1) != (f2, q2) else "")
+    return f"{len(got)} later quarter{'s' if len(got) > 1 else ''}, {span}"
 
 
 def drift_findings(previous: set[str] | None, p: Parsed, later: set[str] | None = None) -> list[str]:
@@ -1887,12 +1898,13 @@ def drift_findings(previous: set[str] | None, p: Parsed, later: set[str] | None 
     the parser cannot tell them apart. So a loss is refused unless a human
     passes --accept-drift after reading the list. No baseline, no findings.
 
-    A quarter with a later one held or read ahead has a witness
-    (drift_witness): a key the next quarter doesn't carry either was retired
-    by then, as the I-924A was in FY2024 Q4 and the single I-130 row in
-    FY2025 Q1, and only a key that comes back later is a finding. The newest
-    quarter has no witness, so any loss there waits for a person. The kinds
-    outside DRIFT_REFUSES report their changes through drift_notes.
+    A quarter with later ones held or read ahead has witnesses
+    (drift_witnesses), and `later` is every key any of them carries: a key
+    none of them carries was retired by then, as the I-924A was in FY2024 Q4
+    and the single I-130 row in FY2025 Q1, and only a key that comes back in
+    any later quarter is a finding. The newest quarter has no witness, so any
+    loss there waits for a person. The kinds outside DRIFT_REFUSES report their
+    changes through drift_notes.
     """
     if previous is None or p.kind not in DRIFT_REFUSES:
         return []
@@ -2247,13 +2259,19 @@ def load_one(db: Database | None, item: Listed, read, forms_cache: dict[tuple[in
     previous = previous_keys(db, p)
     for line in drift_notes(previous, p):
         log(f"    changed against the previous quarter: {line}")
-    witness = drift_witness(db, p, ahead)
-    later = witness[1] if witness else None
-    if witness and previous is not None:
-        retired = sorted(previous - {row_key(p, r) for r in p.rows} - later)
+    witnesses = drift_witnesses(db, p, ahead)
+    later = set().union(*witnesses.values()) if witnesses else None
+    lost = previous - {row_key(p, r) for r in p.rows} if witnesses and previous is not None else set()
+    if lost:
+        retired = sorted(lost - later)
         if retired:
-            fy, quarter = witness[0]
-            log(f"    gone from FY{fy} Q{quarter} too, so retired rather than misread: {retired}")
+            log(f"    gone from every later quarter known too ({quarters_named(witnesses)}), "
+                f"so retired rather than misread: {retired}")
+        for key in sorted(lost & later):
+            back = sorted(quarter for quarter, keys in witnesses.items() if key in keys)
+            log(f"    {key!r} is back in FY{back[0][0]} Q{back[0][1]}"
+                + (f" and {len(back) - 1} quarter(s) after it" if len(back) > 1 else "")
+                + ", so its loss here isn't a retirement")
     findings = drift_findings(previous, p, later)
     if findings and not accept_drift:
         for f in findings:
