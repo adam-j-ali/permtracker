@@ -98,9 +98,11 @@ Each was decided once and holds until the owner changes it. The reasons are in t
 
 **Shipping and the server**
 - Push to `main` once `pnpm check` passes; the site ships only in the 1 to 5 AM ET night run, `-f when=now` for an urgent fix; Convex deploys once GitHub's suite is green (Oct 8, Oct 18).
+- Off-site backups keep the newest 8 copies and the first of each of the 2 newest months (Nov 23; 15 and 3 before).
 - The disk is 150 GB of Oracle's free 200 on purpose: the rest is room for a second free server (Sep 28). The server's Oracle identity holds `manage all-resources in tenancy` (Oct 13).
 - The server's alarms go by email and to the owner's phone, never by phone alone; the Mac's go to the phone (Oct 10; the phone added Nov 23). The database RAM lock is retired (Oct 29).
 - Limits are lax and broad, set from measurements: performance, experience and SEO first (Sep 29).
+- Search Console's page requests go with each release, the morning after it's live, never held to the end of a plan; a new sitemap family is still resubmitted the same day (Nov 23).
 - The automatic defense acts at 5 people shown the busy page in 10 minutes, and a full app 3 minutes running still acts with nobody refused (Oct 3, Oct 5).
 - Meta's AI crawler, Perplexity, ClaudeBot and Applebot read at 30 pages a minute; people's AI assistants have their own room at the front door (Oct 2 to Oct 22).
 - Sign-in has no Cloudflare check; sign-up and password reset keep one (Oct 23).
@@ -138,6 +140,8 @@ Each was decided once and holds until the owner changes it. The reasons are in t
 - Pictures before words; a short looping clip beats a still where something happens (Oct 26, Oct 27). Article pictures: a relevant photo first, then something colourful, a pale screenshot last (Nov 2).
 - First things first on every page: the search box, then the overview (the answer or the summary figures), then the list in short pages, then the rest (Nov 11).
 - Nothing a reader sees or uses is removed, hidden or unpinned to fix a flaw in it: the flaw is fixed and the thing stays. A repeat stays where it's relevant and important to that page. A real removal is the owner's call, asked with the picture (Nov 12).
+- Every search box, the site-wide one included, offers the visitor's recent searches, kept only in their browser (Nov 23).
+- Every employer page says near the top that its filings are past filings, and that sponsorship now depends on the job and the employer (Nov 23).
 - Pages, not endless lists (Oct 21): every list shows a short page sized for the screen (fewer rows on a phone), with a pager and a rows-per-page choice (Nov 11). Loading screens sweep (Oct 6). Summary cards say which way a figure moved and whether that's good (Nov 1).
 - A moving drawing sits beside the text with no box; the sideways scroll stage is the attorney page's alone (Oct 21). A new one no longer waits for the owner's yes: it's drawn with the anatomy skill, colour that answers the pointer where it fits, and the design rules (Nov 23).
 - `/press` and the firm's-site section stay as they were built (Oct 11). The homepage opens with the answer, and the header offers Sign in only (Oct 27). Its first screen holds the answer and the case box at every width; the steps after PERM are links under the box, never a switch, and the figures and the approval rate sit below (Nov 10).

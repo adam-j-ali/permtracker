@@ -209,6 +209,7 @@ import type * as lib_perm_validators_rfe from "../lib/perm/validators/rfe.js";
 import type * as lib_perm_validators_rfi from "../lib/perm/validators/rfi.js";
 import type * as lib_perm_validators_validateCase from "../lib/perm/validators/validateCase.js";
 import type * as lib_permLine from "../lib/permLine.js";
+import type * as lib_phonePush from "../lib/phonePush.js";
 import type * as lib_pipelineMatch from "../lib/pipelineMatch.js";
 import type * as lib_policyConsent from "../lib/policyConsent.js";
 import type * as lib_policyConsentStore from "../lib/policyConsentStore.js";
@@ -503,6 +504,7 @@ declare const fullApi: ApiFromModules<{
   "lib/perm/validators/rfi": typeof lib_perm_validators_rfi;
   "lib/perm/validators/validateCase": typeof lib_perm_validators_validateCase;
   "lib/permLine": typeof lib_permLine;
+  "lib/phonePush": typeof lib_phonePush;
   "lib/pipelineMatch": typeof lib_pipelineMatch;
   "lib/policyConsent": typeof lib_policyConsent;
   "lib/policyConsentStore": typeof lib_policyConsentStore;
