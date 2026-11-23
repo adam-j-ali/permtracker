@@ -99,7 +99,7 @@ Each was decided once and holds until the owner changes it. The reasons are in t
 **Shipping and the server**
 - Push to `main` once `pnpm check` passes; the site ships only in the 1 to 5 AM ET night run, `-f when=now` for an urgent fix; Convex deploys once GitHub's suite is green (Oct 8, Oct 18).
 - The disk is 150 GB of Oracle's free 200 on purpose: the rest is room for a second free server (Sep 28). The server's Oracle identity holds `manage all-resources in tenancy` (Oct 13).
-- Alarms are email only, never a phone push (Oct 10). The database RAM lock is retired (Oct 29).
+- The server's alarms go by email and to the owner's phone, never by phone alone; the Mac's go to the phone (Oct 10; the phone added Nov 23). The database RAM lock is retired (Oct 29).
 - Limits are lax and broad, set from measurements: performance, experience and SEO first (Sep 29).
 - The automatic defense acts at 5 people shown the busy page in 10 minutes, and a full app 3 minutes running still acts with nobody refused (Oct 3, Oct 5).
 - Meta's AI crawler, Perplexity, ClaudeBot and Applebot read at 30 pages a minute; people's AI assistants have their own room at the front door (Oct 2 to Oct 22).
@@ -125,11 +125,11 @@ Each was decided once and holds until the owner changes it. The reasons are in t
 **Email**
 - On Resend's paid plan since Nov 18 2026 (no daily cap): `EMAIL_DAILY_LIMIT` is 1600 on prod, so every saving is back (Oct 12) and each ceiling is the same share of it as the free plan's 70 and 85 of 100 (Oct 10, Oct 13).
 - One alert email per person per day, with a status change always sent at once (Sep 26, Oct 7), and on the paid plan an employer's move too, after each of the day's two checks (Nov 18).
-- The weekly case summary stays on Monday for every account and goes only in a week something changed; the sample case sends nothing (Oct 12).
+- The weekly case summary stays on Monday for every account: on the paid plan (`EMAIL_DAILY_LIMIT` above 100) it goes every week to everyone with an active case, on the free plan only in a week something changed; the sample case sends nothing (Oct 12).
 - A box opened in an alert email saves its rating at once (Oct 12, Oct 24). A congratulations note goes two business days after a good decision, read by a person, one per address, never twice (Oct 22, Oct 23).
 - Reviews are the site's own: the owner approves each, declining only spam and abuse; a review needs no name (Oct 23, Nov 2). Visitor reports on consulate pages post at once and are moderated after (Nov 5).
 - A shared green card timeline waits for the owner's review before it counts (Nov 12).
-- A saved case's dates count in the public figures only by its account's own switch in Settings, off by default: dates and the I-140's kind only, never listed (Nov 19, built Nov 20).
+- A saved case's dates count in the public figures only by its account's own switch in Settings, off by default: dates and the I-140's kind only, never listed (Nov 19, built Nov 20); the app's later dates (I-485, work permit, consulate) join under the same switch once their consent step ships (Nov 23).
 - A law firm's own words wait for the admin's review before they show (Oct 5).
 
 **Look and feel**
@@ -139,7 +139,7 @@ Each was decided once and holds until the owner changes it. The reasons are in t
 - First things first on every page: the search box, then the overview (the answer or the summary figures), then the list in short pages, then the rest (Nov 11).
 - Nothing a reader sees or uses is removed, hidden or unpinned to fix a flaw in it: the flaw is fixed and the thing stays. A repeat stays where it's relevant and important to that page. A real removal is the owner's call, asked with the picture (Nov 12).
 - Pages, not endless lists (Oct 21): every list shows a short page sized for the screen (fewer rows on a phone), with a pager and a rows-per-page choice (Nov 11). Loading screens sweep (Oct 6). Summary cards say which way a figure moved and whether that's good (Nov 1).
-- A moving drawing sits beside the text with no box, and each new one waits for the owner's yes; the sideways scroll stage is the attorney page's alone (Oct 21).
+- A moving drawing sits beside the text with no box; the sideways scroll stage is the attorney page's alone (Oct 21). A new one no longer waits for the owner's yes: it's drawn with the anatomy skill, colour that answers the pointer where it fits, and the design rules (Nov 23).
 - `/press` and the firm's-site section stay as they were built (Oct 11). The homepage opens with the answer, and the header offers Sign in only (Oct 27). Its first screen holds the answer and the case box at every width; the steps after PERM are links under the box, never a switch, and the figures and the approval rate sit below (Nov 10).
 - Sign-up is minimal: a heading, Google, email, an optional name, a password and one line of small print (Oct 26). Nobody is sent out of the app for their role (Oct 26).
 - Phones with a notch run edge to edge; Chrome on iPhone's light side strips stay (Oct 24).
