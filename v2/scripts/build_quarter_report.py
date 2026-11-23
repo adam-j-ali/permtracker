@@ -185,8 +185,26 @@ def first_decisions(db: Database, emp_page: dict) -> dict[str, str]:
     return first
 
 
+# DOL's wage and LCA files can land after its PERM file: a quarter they don't reach yet has no count, never 0. A week's
+# slack, so a quarter whose last days fell on a weekend (no decisions) still counts as read.
+FILE_SLACK_DAYS = 7
+
+
+def file_covers(newest: str | None, last_day: str) -> bool:
+    """Whether a table whose newest decision is `newest` holds a quarter ending `last_day`."""
+    if not newest:
+        return False
+    return dt.date.fromisoformat(str(newest)[:10]) >= dt.date.fromisoformat(last_day) - dt.timedelta(days=FILE_SLACK_DAYS)
+
+
 def program_figures(db: Database, table: str, lo: str, hi: str, certified_only: bool = False) -> dict:
-    """The wage requests determined, or the H-1B LCAs certified, in a quarter's days."""
+    """The wage requests determined, or the H-1B LCAs certified, in a quarter's days; {"n": None} when the table's
+    file doesn't reach the quarter's end yet."""
+    # The table name is one of this module's own constants, never input.
+    # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query
+    newest = rows_of(db.execute(f"SELECT MAX(decision_date) FROM {table}"))
+    if not file_covers(newest[0][0] if newest else None, hi):
+        return {"n": None}
     if certified_only:
         got = rows_of(db.execute(
             f"SELECT COUNT(*) FROM {table} WHERE decision_date >= ? AND decision_date <= ? "

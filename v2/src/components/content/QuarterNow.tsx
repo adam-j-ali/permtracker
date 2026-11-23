@@ -158,24 +158,30 @@ function NewEmployers({ r }: { r: QuarterReport }) {
   );
 }
 
+/** A program's count with its moves, or, when DOL's file for the quarter isn't read yet, says so: never a 0. */
+function programFigure(n: { this: number | null; prior: number | null; yearAgo: number | null }) {
+  if (n.this === null) return { value: "Not read yet", note: "DOL's file for these months isn't read yet" };
+  return {
+    trend: n.prior === null ? undefined : quarterCountMoved(n.this, n.prior),
+    value: formatInt(n.this),
+    note: n.yearAgo === null ? undefined : yearAgoNote(n.this, n.yearAgo),
+  };
+}
+
 function Programs({ r }: { r: QuarterReport }) {
-  const pw = (k: "this" | "prior" | "yearAgo") => r.programs[k].pw.n;
-  const lca = (k: "this" | "prior" | "yearAgo") => r.programs[k].lca.n;
+  const of = (kind: "pw" | "lca") =>
+    programFigure({ this: r.programs.this[kind].n, prior: r.programs.prior[kind].n, yearAgo: r.programs.yearAgo[kind].n });
   return (
     <FigureRow className="not-prose prose-reset my-8">
       <Figure
         label="Wage requests DOL determined"
         icon={<CurrencyDollarIcon weight="bold" className="text-primary-text" />}
-        trend={quarterCountMoved(pw("this"), pw("prior"))}
-        value={formatInt(pw("this"))}
-        note={yearAgoNote(pw("this"), pw("yearAgo"))}
+        {...of("pw")}
       />{" "}
       <Figure
         label="H-1B LCAs DOL certified"
         icon={<FilesIcon weight="bold" className="text-primary-text" />}
-        trend={quarterCountMoved(lca("this"), lca("prior"))}
-        value={formatInt(lca("this"))}
-        note={yearAgoNote(lca("this"), lca("yearAgo"))}
+        {...of("lca")}
       />
     </FigureRow>
   );

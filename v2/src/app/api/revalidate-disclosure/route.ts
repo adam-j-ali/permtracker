@@ -46,6 +46,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   for (const path of DISCLOSURE_PAGES) {
     revalidatePath(path);
   }
+  // Each quarter's post reads its quarter's report (build_quarter_report.py), which a load rebuilds; a post otherwise
+  // kept its old figures for up to its day-long window (Nov 23 2026: the July to September post would have shown
+  // its wage and LCA counts as 0 until the next day).
+  revalidatePath("/blog/[slug]", "page");
 
   return NextResponse.json({
     revalidated: DISCLOSURE_PAGES.length,

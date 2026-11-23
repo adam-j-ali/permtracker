@@ -38,7 +38,8 @@ export interface QuarterReport {
   prior: QuarterRef;
   yearAgo: QuarterRef;
   figures: { this: QuarterFigures; prior: QuarterFigures; yearAgo: QuarterFigures };
-  programs: Record<"this" | "prior" | "yearAgo", { pw: { n: number }; lca: { n: number } }>;
+  /** n is null when DOL's file for those months isn't read yet (an older report never has null). */
+  programs: Record<"this" | "prior" | "yearAgo", { pw: { n: number | null }; lca: { n: number | null } }>;
   employers: RankedEntry[];
   firms: RankedEntry[];
   jobs: RankedEntry[];

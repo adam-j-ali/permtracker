@@ -50,6 +50,11 @@ def main() -> int:
     check("a job carries its title", doc["jobs"][0]["name"] == "Software Developers")
     check("the percentile interpolates", b.percentile([1, 2, 3, 4], 0.5) == 2.5 and b.percentile([], 0.5) is None)
 
+    check("a wage or LCA file reaching the quarter's last day covers it", b.file_covers("2026-09-30", "2026-09-30"))
+    check("one ending on the quarter's last weekday still does", b.file_covers("2025-12-26", "2025-12-31"))
+    check("one ending a month short doesn't: the quarter gets no count, never 0",
+          not b.file_covers("2026-08-31", "2026-09-30") and not b.file_covers(None, "2026-09-30"))
+
     print(f"\n{FAILED} failed")
     return 1 if FAILED else 0
 

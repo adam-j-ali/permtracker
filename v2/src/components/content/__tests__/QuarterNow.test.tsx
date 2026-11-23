@@ -16,6 +16,7 @@ vi.mock("@/lib/content", () => ({
 }));
 
 const { QuarterNow } = await import("../QuarterNow");
+const { getQuarterReport } = await import("@/lib/db/quarterReport");
 
 /** The "newer" part, rendered: QuarterNow hands back its async child, which is awaited here as the server would. */
 async function newer(): Promise<ReactElement | null> {
@@ -40,5 +41,36 @@ describe("QuarterNow's newer-file note", () => {
     render(note!);
     // Assert
     expect(screen.getByRole("link", { name: "What the newest file says" })).toHaveAttribute("href", "/blog/dol-perm-file-fy2026-q4");
+  });
+});
+
+describe("QuarterNow's wage and LCA figures", () => {
+  const counts = (pw: number | null, lca: number | null) => ({ pw: { n: pw }, lca: { n: lca } });
+
+  it("says a file isn't read yet instead of printing 0", async () => {
+    // Arrange: DOL's PERM file is in, its wage and LCA files for the same months aren't read yet
+    vi.mocked(getQuarterReport).mockResolvedValueOnce({
+      quarter: { key: "2026q4" },
+      programs: { this: counts(null, null), prior: counts(48458, 212707), yearAgo: counts(68418, 101483) },
+    } as never);
+    // Act
+    render((await QuarterNow({ quarter: "2026q4", part: "programs" })) as ReactElement);
+    // Assert
+    expect(screen.getAllByText("Not read yet")).toHaveLength(2);
+    expect(screen.queryByText("0")).toBeNull();
+  });
+
+  it("prints the counts once the files are read", async () => {
+    // Arrange
+    vi.mocked(getQuarterReport).mockResolvedValueOnce({
+      quarter: { key: "2026q4" },
+      programs: { this: counts(59249, 103500), prior: counts(48458, 212707), yearAgo: counts(68418, 101483) },
+    } as never);
+    // Act
+    render((await QuarterNow({ quarter: "2026q4", part: "programs" })) as ReactElement);
+    // Assert
+    expect(screen.getByText("59,249")).toBeInTheDocument();
+    expect(screen.getByText("103,500")).toBeInTheDocument();
+    expect(screen.queryByText("Not read yet")).toBeNull();
   });
 });
