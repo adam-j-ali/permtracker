@@ -35,6 +35,7 @@ import { withSocialCard } from "@/lib/socialCard";
 import { formatInt } from "@/lib/format";
 import { MS_PER_DAY } from "@/lib/time";
 import { softFail } from "@/lib/softRead";
+import { DataProvenance } from "@/components/data/DataProvenance";
 
 /**
  * The estimate scorecard, in three layers, strongest evidence first.
@@ -514,7 +515,8 @@ export default async function EstimateScorecardPage() {
           still the one scored. Case numbers are public federal records. Nothing here identifies the person who watched a
           case.
         </p>
-      </FinePrint>
+      </FinePrint>{" "}
+      <DataProvenance datasets={["perm-case-status", "decisions-observed", "stage-cohorts", "seasonal-status"]} />
     </div>
   );
 }

@@ -20,8 +20,20 @@ export const LIST_PAGES: readonly string[] = [
   "/perm-processing-times",
 ];
 
+/**
+ * The articles that draw the reported cases' figures (`<ReportedStepsNow />`, `<ReportedMedianNow />`), whose caption says they update hourly:
+ * without this they kept a day-old render, an article's own window.
+ */
+export const ARTICLE_PAGES: readonly string[] = [
+  "/guides/ead-and-advance-parole-timelines",
+  "/guides/i485-interview-to-green-card",
+  "/guides/i485-timeline-each-step",
+  "/guides/i485-transferred-to-field-office",
+  "/guides/waiting-on-your-green-card",
+];
+
 /** Every fixed page a valid call refreshes. */
-export const FIXED_PAGES: readonly string[] = [...TIMELINE_PAGES, ...LIST_PAGES];
+export const FIXED_PAGES: readonly string[] = [...TIMELINE_PAGES, ...LIST_PAGES, ...ARTICLE_PAGES];
 
 /** The family each USCIS office's page lives under. */
 export const OFFICE_PAGES = "/i485-by-field-office";

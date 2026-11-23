@@ -53,6 +53,7 @@ import { cn } from "@/lib/utils";
 import { checkedPhrase } from "@/lib/checkTimes";
 import { monthDay, monthYear, shiftMonth, shortDate } from "@convex/lib/months";
 import { softFail } from "@/lib/softRead";
+import { DataProvenance } from "@/components/data/DataProvenance";
 
 /**
  * Where every step stands today: one page that gathers the answer each data
@@ -453,7 +454,10 @@ export default async function TodayPage() {
             </Fragment>
           ))}
         </ul>
-      </section>
+      </section>{" "}
+      <DataProvenance
+        datasets={["perm-case-status", "decisions-observed", "pwd-status", "processing-times", "visa-bulletin", "uscis-form-quarters"]}
+      />
     </div>
   );
 }

@@ -100,6 +100,17 @@ describe("the path list", () => {
     for (const page of LIST_PAGES) expect(routes).toContain(page); // and every listed page really reads it
   });
 
+  it("names every article that draws the reported cases' figures, so its \"updated hourly\" holds", () => {
+    const root = join(process.cwd(), "content");
+    const articles = ["guides", "blog"].flatMap((type) =>
+      readdirSync(join(root, type))
+        .filter((f) => f.endsWith(".mdx") && /<Reported(Steps|Median)Now\b/.test(readFileSync(join(root, type, f), "utf8")))
+        .map((f) => `/${type}/${f.replace(/\.mdx$/, "")}`),
+    );
+    expect(articles.length).toBeGreaterThan(0);
+    for (const path of articles) expect(FIXED_PAGES).toContain(path);
+  });
+
   it("names every public page that reads the board", () => {
     const appDir = join(process.cwd(), "src/app");
     const pages: string[] = [];

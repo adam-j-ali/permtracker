@@ -37,6 +37,7 @@ import { formatInt } from "@/lib/format";
 import { REPORTED_PLACES } from "@/lib/reportedCases";
 import { stepTrend, windowText, type ReportedSummary } from "@/lib/reportedSummary";
 import { StepBothSources } from "@/components/community/StepBothSources";
+import { DataProvenance } from "@/components/data/DataProvenance";
 
 /**
  * Green card timelines, as the people waiting report them.
@@ -474,7 +475,10 @@ export default async function GreenCardTimelinesPage() {
       <section className="mt-12 max-w-3xl">
         <h2 className="font-heading text-2xl font-bold sm:text-3xl">Questions about these timelines</h2>{" "}
         <FaqList items={FAQS} />
-      </section>
+      </section>{" "}
+      <DataProvenance
+        datasets={["reported-cases", "community-posts-telegram", "community-posts-reddit", "community-posts-facebook", "community-visastats", "uscis-posted-times"]}
+      />
     </div>
   );
 }
