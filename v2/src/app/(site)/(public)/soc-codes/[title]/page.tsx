@@ -8,13 +8,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache, Fragment } from "react";
-import { ChartPieSliceIcon, CurrencyDollarIcon, HashIcon, StairsIcon } from "@phosphor-icons/react/ssr";
+import { ChartPieSliceIcon, CurrencyDollarIcon, HashIcon } from "@phosphor-icons/react/ssr";
 
 import { BarRows, type BarRow } from "@/components/data/BarRows";
 import { Figure, FigureRow } from "@/components/data/FigureRow";
 import { SplitBar } from "@/components/data/FigureVisual";
 import { SocCodeText } from "@/components/data/SocCodeText";
 import { PageSection } from "@/components/data/PageSection";
+import { SplitColumns } from "@/components/data/SplitColumns";
+import { ChapterFold } from "@/components/entities/ChapterFold";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { CodeCards } from "@/components/soc/CodeCards";
 import { SocSources } from "@/components/soc/SocSources";
@@ -159,15 +161,56 @@ export default async function SocTitlePage({ params }: { params: Promise<{ title
     <div className="mx-auto w-full max-w-6xl px-4 pb-16 pt-10 sm:px-6 sm:pt-12">
       <JsonLdScript schema={breadcrumbSchema(path, a.title)} />{" "}
       <JsonLdScript schema={faqSchema} />
-      <header className="max-w-3xl">
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">SOC code for {a.title}</h1>{" "}
-        <p className="mt-4 text-lg leading-relaxed text-soft">
-          <SocCodeText text={describe(a)} />
-        </p>
-      </header>{" "}
+      {/* The answer and what to do with it side by side on a wide screen: the code, then its wage levels, its
+          sponsors and similar titles. On a phone the steps follow the answer, before the figures. */}
+      <SplitColumns
+        aside={
+          top ? (
+            <section aria-labelledby="next-title" className="border-2 border-border bg-card p-5 shadow-hard-sm sm:p-6">
+              <h2 id="next-title" className="font-heading text-xl font-bold">
+                With the code
+              </h2>{" "}
+              <ul className="mt-2 space-y-1 text-base">
+                <li>
+                  <Link href={`/tools/wage-levels?soc=${top.soc}`} className="link inline-flex min-h-11 items-center">
+                    DOL&apos;s four wage levels for {top.soc} in your area
+                  </Link>{" "}
+                </li>{" "}
+                {top.slug ? (
+                  <li>
+                    <Link href={finderHref({ ...DEFAULT_FILTERS, job: top.slug })} className="link inline-flex min-h-11 items-center">
+                      Every employer that sponsors it, with approval rates and wages
+                    </Link>{" "}
+                  </li>
+                ) : null}{" "}
+                <li>
+                  <Link href={`/soc-codes?q=${encodeURIComponent(a.title)}`} className="link inline-flex min-h-11 items-center">
+                    Similar titles in the finder
+                  </Link>{" "}
+                </li>
+              </ul>
+            </section>
+          ) : null
+        }
+      >
+        <header>
+          <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">SOC code for {a.title}</h1>{" "}
+          <p className="mt-4 text-lg leading-relaxed text-soft">
+            <SocCodeText text={describe(a)} />
+          </p>
+        </header>
+      </SplitColumns>{" "}
       {top ? (
+        // Three figures. The code is the answer, so it takes the dark card; lime stays on the action. Its O*NET Job
+        // Zone, a fourth figure before, is the answer's note.
         <FigureRow className="mt-8">
-          <Figure tone="lime" label="Filed most under" icon={<HashIcon weight="bold" />} value={top.soc} note={top.codeTitle} />{" "}
+          <Figure
+            tone="ink"
+            label="Filed most under"
+            icon={<HashIcon weight="bold" />}
+            value={top.soc}
+            note={top.zone ? `${top.codeTitle}. O*NET Job Zone ${zoneLabelOf(top.zone)} of 5.` : top.codeTitle}
+          />{" "}
           <Figure
             label="Of its filings"
             icon={<ChartPieSliceIcon weight="bold" className="text-primary-text" />}
@@ -189,23 +232,6 @@ export default async function SocTitlePage({ params }: { params: Promise<{ title
               icon={<CurrencyDollarIcon weight="bold" className="text-primary-text" />}
               value={formatDollars(payOf.get(top.soc)!)}
               note="a year, nationally"
-            />
-          ) : null}{" "}
-          {top.zone ? (
-            <Figure
-              label="O*NET Job Zone"
-              icon={<StairsIcon weight="bold" className="text-primary-text" />}
-              value={zoneLabelOf(top.zone) ?? ""}
-              visual={
-                <SplitBar
-                  parts={[
-                    { value: top.zone, tone: "info" },
-                    { value: 5 - top.zone, tone: "none" },
-                  ]}
-                  label={`Job Zone ${zoneLabelOf(top.zone)} of 5`}
-                />
-              }
-              note="of 5: how much preparation it takes"
             />
           ) : null}
         </FigureRow>
@@ -234,45 +260,23 @@ export default async function SocTitlePage({ params }: { params: Promise<{ title
       ) : null}{" "}
       <CodeCards title={a.title} codes={filed.slice(0, 12)} summaries={summaries} total={a.total} payOf={payOf} version={onet.version} />{" "}
       {spellings.length > 1 && top ? (
-        <PageSection id="spellings" title="How employers wrote it" lede={`The commonest spellings filed under ${top.soc}.`}>
-          <ul className="flex flex-wrap gap-2">
+        <ChapterFold summary="How employers wrote it" hint={`The commonest spellings filed under ${top.soc}`} className="mt-10">
+          <ul id="spellings" className="flex flex-wrap gap-2">
             {spellings.map(([s, n]) => (
               <li key={s} className="border-2 border-border bg-card px-3 py-1.5 text-base">
                 {s} <span className="font-mono text-sm text-soft tabular-nums">{formatInt(n)}</span>{" "}
               </li>
             ))}
           </ul>
-        </PageSection>
+        </ChapterFold>
       ) : null}{" "}
-      {top ? (
-        <PageSection id="next" title="With the code">
-          <ul className="space-y-1 text-base">
-            <li>
-              <Link href={`/tools/wage-levels?soc=${top.soc}`} className="link inline-flex min-h-11 items-center">
-                DOL&apos;s four wage levels for {top.soc} in your area
-              </Link>{" "}
-            </li>{" "}
-            {top.slug ? (
-              <li>
-                <Link href={finderHref({ ...DEFAULT_FILTERS, job: top.slug })} className="link inline-flex min-h-11 items-center">
-                  Every employer that sponsors it, with approval rates and wages
-                </Link>{" "}
-              </li>
-            ) : null}{" "}
-            <li>
-              <Link href={`/soc-codes?q=${encodeURIComponent(a.title)}`} className="link inline-flex min-h-11 items-center">
-                Similar titles in the finder
-              </Link>{" "}
-            </li>
-          </ul>
-        </PageSection>
-      ) : null}{" "}
-      <CaseNextStep question={`Waiting on a case for a ${a.title} job?`} source="soc-title" numberKind="DOL" className="mt-12" />{" "}
       <section className="mt-12 max-w-3xl">
         <h2 className="font-heading text-2xl font-bold">FAQs</h2>
         <FaqList items={faqs} />
       </section>{" "}
-      <SocSources codes={codes} />
+      <SocSources codes={codes} />{" "}
+      {/* The page ends on the reader's own next step. */}
+      <CaseNextStep question={`Waiting on a case for a ${a.title} job?`} source="soc-title" numberKind="DOL" className="mt-12 max-w-2xl" />
     </div>
   );
 }
