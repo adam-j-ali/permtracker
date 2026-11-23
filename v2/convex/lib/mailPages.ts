@@ -81,6 +81,9 @@ legend{font-weight:700}
 .check input{width:20px;height:20px;accent-color:#1D8229}
 .err{margin-top:6px;color:#B91C1C;font-weight:700;font-size:15px}
 .note{margin-top:16px;padding:12px 14px;border:2px solid #000;background:#f0fbf1}
+.empty{margin-top:24px;padding:16px 18px 20px;border:2px solid #000;background:#EDF2E9;box-shadow:3px 3px 0 #000}
+.empty .what{margin:0}
+.empty .actions{margin-top:16px}
 .firm{margin-top:32px;padding-top:8px;border-top:3px solid #000}
 `;
 
@@ -306,7 +309,8 @@ export function prefsPage(state: PrefsState, token: string, focus?: string | nul
       section("Digest and news", digests, token, focused) +
       section("Your account", account, token, focused, accountNote) +
       `<form method="POST" action="/prefs/update?token=${t}" class="actions"><input type="hidden" name="kind" value="all"/><button type="submit" class="btn stop">Stop everything</button></form>`
-    : `<p>Nothing is on for this address right now.</p>${accountNote}`;
+    : // Never a bare line: what will list here, and the one next step.
+      `<div class="empty"><p class="what">Nothing is on for this address right now</p><p class="detail">Alerts you turn on at PERM Tracker list here, each with its own Turn off button.</p><p class="actions"><a class="btn go" href="${PREFERENCES_URL}">See what you can get</a></p></div>${accountNote}`;
 
   return htmlPage(
     "Email preferences",

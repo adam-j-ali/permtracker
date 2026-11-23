@@ -142,7 +142,8 @@ export default function EmailPreferencesPage() {
             <Fragment key={rule.title}>
               {" "}
               <li className="flex gap-3 border-t-3 border-border pt-4">
-                <Glyph aria-hidden="true" className="size-7 shrink-0 text-primary" weight="bold" />{" "}
+                {/* Green ink, not lime: lime is the page's one action, the form's button. */}
+                <Glyph aria-hidden="true" className="size-7 shrink-0 text-primary-text" weight="bold" />{" "}
                 <div>
                   <p className="font-heading font-bold">{rule.title}</p>{" "}
                   <p className="mt-1 text-base text-soft">{rule.body}</p>
