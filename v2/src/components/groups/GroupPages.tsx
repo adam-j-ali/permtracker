@@ -5,8 +5,15 @@ import { notFound } from "next/navigation";
 
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { ChartTips } from "@/components/data/ChartTips";
+import { EmptyState } from "@/components/data/EmptyState";
 import { IndexHeader, IndexSearch } from "@/components/data/IndexHeader";
+import { ChapterFold } from "@/components/entities/ChapterFold";
+import { EntityStatCards } from "@/components/entities/EntityPageParts";
+import { ProfileHeader } from "@/components/entities/ProfileHeader";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { CaseNextStep } from "@/components/tools/CaseNextStep";
+import { fiscalYearOf } from "@convex/lib/months";
+import { getFreshness } from "@/lib/db/publicData";
 import { breadcrumbSchema } from "@/lib/breadcrumbs";
 import { groupDescription, h1bCityDescription } from "@/lib/groupDescription";
 import { naicsSectorTitle } from "@/lib/naicsSectors";
@@ -19,7 +26,7 @@ import { CityReference } from "@/components/reference/CityReference";
 
 import { CityH1b } from "./CityH1b";
 import { GroupIndexTable, type GroupIndexRow } from "./GroupIndexTable";
-import { GroupView } from "./GroupView";
+import { GroupView, groupAnswer, groupFigures } from "./GroupView";
 import { industryFrames, industryName, industryTitle } from "@/lib/industryTitle";
 import { fitTitle, metadataTitle } from "@/lib/pageTitle";
 import { softFail } from "@/lib/softRead";
@@ -155,13 +162,14 @@ export async function GroupIndexPage({ kind }: { kind: GroupKind }) {
         }
       />{" "}
       {rows.length === 0 ? (
-        <p className="mt-10 max-w-2xl text-base text-soft">
-          This breakdown hasn&apos;t been built yet. DOL&apos;s case files are on the{" "}
-          <Link href="/case-search" className="link">
-            case search
-          </Link>
-          .
-        </p>
+        <EmptyState
+          title={`The ${c.noun} will list here`}
+          spot="topic-data-notes"
+          action={{ href: "/case-search", label: "Search DOL's case files" }}
+          className="mt-10"
+        >
+          This breakdown hasn&apos;t been built from DOL&apos;s files yet. Every case is already in the case search.
+        </EmptyState>
       ) : (
         <>
           <section className="mt-10">
@@ -299,21 +307,35 @@ export async function GroupDetailPage({ kind, slug }: { kind: GroupKind; slug: s
     );
   }
   const c = COPY[kind];
-  const years = kind === "country" ? await countryYears(g.key) : undefined;
-  const h1b = kind === "city" ? await lcaCityByKey(g.key).catch(softFail("GroupPages.lcaCityByKey", null)) : null;
+  const [years, h1b, freshness] = await Promise.all([
+    kind === "country" ? countryYears(g.key) : Promise.resolve(undefined),
+    kind === "city" ? lcaCityByKey(g.key).catch(softFail("GroupPages.lcaCityByKey", null)) : Promise.resolve(null),
+    getFreshness().catch(softFail("GroupPages.getFreshness", null)),
+  ]);
+  // The newest fiscal year is partial until DOL's file for its fourth quarter is in, so the year-on-year move
+  // compares the two complete years before it. A country's series ends in FY2023, every year complete.
+  const disclosedThrough = freshness?.["perm-cases"]?.asOf?.slice(0, 10) ?? null;
+  const partialFy = kind !== "country" && disclosedThrough && !/-09-30$/.test(disclosedThrough) ? fiscalYearOf(disclosedThrough) : null;
+  const series = years && years.length > 0 ? years : g.detail.years;
   const breadcrumb = breadcrumbSchema(`${GROUP_PATH[kind]}/${slug}`, g.label);
+  const ask = CASE_QUESTION[kind](g.label);
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-12 sm:px-6 sm:pb-16">
-      <div className="pt-10 sm:pt-12" />
       <JsonLdScript schema={breadcrumb} />
-      <header>
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">{c.detailH1(g.label)}</h1>{" "}
-        {kind === "industry" ? (
-          <p className="mt-3 font-mono text-sm tabular-nums text-muted-foreground">NAICS {g.key}</p>
-        ) : null}
-      </header>
+      {/* The employer page's order: the name and its answer line, the case box (first on a phone, beside the name on
+          a wide header), then three figures. */}
+      <ProfileHeader
+        eyebrow={EYEBROW[kind](g.key)}
+        name={c.detailH1(g.label)}
+        answer={groupAnswer(kind, g)}
+        aside={<CaseNextStep question={ask} source={`${kind}-page`} />}
+        figures={
+          <section aria-label="Its record in three figures">
+            <EntityStatCards cards={groupFigures(g, series, partialFy)} />
+          </section>
+        }
+      />
       <GroupView kind={kind} group={g} yearsOverride={years} />
-      <CityH1b city={h1b} />
       {kind === "city" ? (
         <CityReference
           cityKey={g.key}
@@ -321,6 +343,11 @@ export async function GroupDetailPage({ kind, slug }: { kind: GroupKind; slug: s
           jobs={g.detail.occupations.map((o) => ({ code: o.code, title: o.title, slug: o.slug, n: o.n }))}
           jobsNoun="PERM decisions"
         />
+      ) : null}
+      {h1b ? (
+        <ChapterFold summary="Its H-1B record" hint="Labor condition applications that name a worksite here" className="mt-10">
+          <CityH1b city={h1b} className="" />
+        </ChapterFold>
       ) : null}
       <p className="mt-8 max-w-3xl text-sm leading-relaxed text-muted-foreground">{c.coverage}</p>
       <DataProvenance
@@ -330,9 +357,30 @@ export async function GroupDetailPage({ kind, slug }: { kind: GroupKind; slug: s
           ...(kind === "city" ? ["census-geo", "bls-oews", "oflc-wage-levels"] : []),
         ]}
       />
+      {/* The page ends on the reader's own next step, as the employer page does. */}
+      <CaseNextStep
+        question={`Still ${ask.charAt(0).toLowerCase()}${ask.slice(1)}`}
+        source={`${kind}-page-end`}
+        label="Check your case, at the end of the page"
+        className="mt-16 max-w-2xl"
+      />
     </div>
   );
 }
+
+/** The small line above the name: which list this page belongs to. */
+const EYEBROW: Record<GroupKind, (key: string) => string> = {
+  city: () => "PERM by worksite city",
+  industry: (key) => `PERM by industry, NAICS ${key}`,
+  country: () => "PERM by the worker's country of citizenship",
+};
+
+/** The case box's question, in the page's own terms. */
+const CASE_QUESTION: Record<GroupKind, (label: string) => string> = {
+  city: (l) => `Waiting on a case for a job in ${l}?`,
+  industry: () => "Waiting on a case in this industry?",
+  country: () => "Waiting on your own PERM case?",
+};
 
 /** The busiest groups, prerendered at build; the rest render on first visit. */
 export async function groupStaticParams(kind: GroupKind, n = 25): Promise<{ slug: string }[]> {

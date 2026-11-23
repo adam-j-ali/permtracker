@@ -4,6 +4,9 @@ import Link from "next/link";
 
 import { ChartTips } from "@/components/data/ChartTips";
 import { plainText } from "@/components/data/MoreText";
+import { Chapter } from "@/components/entities/Chapter";
+import { ChapterFold } from "@/components/entities/ChapterFold";
+import { yearTrend, type StatCard } from "@/components/entities/EntityPageParts";
 import { YearBars, type YearCount } from "@/components/entities/YearBars";
 import { GROUP_PATH, type GroupDetail, type GroupKind, type GroupSummary } from "@/lib/db/groups";
 import { stateName } from "@/lib/usStateNames";
@@ -11,18 +14,20 @@ import { formatInt } from "@/lib/format";
 import { entityHref } from "@/lib/entityPayload";
 
 /**
- * One city's, industry's or country's PERM record: the headline counts, the
- * decisions by year, and who and what sits inside it, every list a way into
- * another page. A link to another group is drawn only when that group is big
- * enough to have a page (the builder's floor), so no link here 404s.
+ * One city's, industry's or country's PERM record, in the order a reader needs it: who files here and for what
+ * (open, each list in a box), the decisions by year, then the rest of the record behind one line. The headline
+ * figures and the answer line sit in the page's header (GroupPages.tsx). Every list is a way into another page, and
+ * a link to another group is drawn only when that group is big enough to have a page (the builder's floor), so no
+ * link here 404s.
  */
 
 const FLOOR = 20;
 
+/** A ranked list in the house's box: a 2px ink edge and a hard offset, on the card. */
 function Box({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section >
-      <h2 className="font-heading text-lg font-bold">{title}</h2>{" "}
+    <section className="border-2 border-border bg-card p-5 shadow-hard-sm sm:p-6">
+      <h3 className="font-heading text-lg font-bold">{title}</h3>{" "}
       {children}
     </section>
   );
@@ -35,22 +40,38 @@ function Box({ title, children }: { title: string; children: ReactNode }) {
  */
 const RANKED_LINK = "link max-sm:-my-3 max-sm:py-3";
 
-function Ranked({
+/** How many names a ranked list shows before the rest wait behind "The other N". */
+const SHOWN = 10;
+
+interface RankedItem {
+  key: string;
+  label: ReactNode;
+  n: number;
+}
+
+function RankedRows({
   items,
+  from,
+  of,
+  top,
   label,
 }: {
-  items: { key: string; label: ReactNode; n: number }[];
-  /** What the list ranks, for the keyboard focus announcement. */
+  items: RankedItem[];
+  /** The rank of the first row, less one. */
+  from: number;
+  /** The whole list's length, for the readout. */
+  of: number;
+  /** The whole list's largest count, so both parts draw to one scale. */
+  top: number;
   label: string;
 }) {
-  const top = items[0]?.n ?? 0;
   return (
     <ChartTips label={label} className="mt-4">
     <ul className="space-y-2.5 max-sm:space-y-3">
       {items.map((it, i) => (
         <Fragment key={it.key}>
           {" "}
-          <li data-tip={`${plainText(it.label)}\n${formatInt(it.n)} ${it.n === 1 ? "case" : "cases"}\n#${i + 1} of ${items.length} shown`}>
+          <li data-tip={`${plainText(it.label)}\n${formatInt(it.n)} ${it.n === 1 ? "case" : "cases"}\n#${from + i + 1} of ${of} shown`}>
             <span className="flex items-baseline justify-between gap-3">
               {/* The name is one clipped line, link or plain text: the clip is on the child, so a link's tap box isn't cut. */}
               <span className="min-w-0 text-sm font-bold [&>*]:block [&>*]:truncate">
@@ -72,6 +93,36 @@ function Ranked({
   );
 }
 
+/**
+ * The busiest names, then the rest behind one line. Every name stays in the page (a native details), so search and
+ * find-in-page read them all; a list only two longer than the cut shows whole, since a fold for two names costs
+ * more than it saves.
+ */
+function Ranked({
+  items,
+  label,
+}: {
+  items: RankedItem[];
+  /** What the list ranks, for the keyboard focus announcement. */
+  label: string;
+}) {
+  const top = items[0]?.n ?? 0;
+  const cut = items.length > SHOWN + 2 ? SHOWN : items.length;
+  const rest = items.slice(cut);
+  return (
+    <>
+      <RankedRows items={items.slice(0, cut)} from={0} of={items.length} top={top} label={label} />{" "}
+      {rest.length > 0 ? (
+        <details className="group mt-4">
+          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center text-sm font-semibold underline underline-offset-4 decoration-1 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+            {`The other ${formatInt(rest.length)}`}
+          </summary>{" "}
+          <RankedRows items={rest} from={cut} of={items.length} top={top} label={`${label}, after the first ${cut}`} />
+        </details>
+      ) : null}
+    </>
+  );
+}
 
 /**
  * A title that repeats in one list carries its code. Agencies reuse a title
@@ -97,6 +148,56 @@ export const KIND_NOUN: Record<GroupKind, string> = {
   country: "country of citizenship",
 };
 
+/** "FY2016 to FY2025", or the one year. */
+function span(from: number | null, to: number | null): string | null {
+  if (from == null || to == null) return null;
+  return from === to ? `FY${from}` : `FY${from} to FY${to}`;
+}
+
+/**
+ * The header's three figures: how many decisions, how they were decided (the certified and denied counts are its
+ * note), and what the certified jobs paid. The span of years is the decisions' note, and the decisions carry their
+ * year-on-year move, the newest year left out while DOL's file for it is partial.
+ */
+export function groupFigures(group: GroupSummary, years: readonly YearCount[], partialFy: number | null): StatCard[] {
+  const decided = group.certified + group.denied;
+  const tally = `${formatInt(group.certified)} certified, ${formatInt(group.denied)} denied`;
+  return [
+    {
+      k: "Decisions",
+      v: formatInt(group.total),
+      sub: span(group.fyFrom, group.fyTo) ?? "",
+      icon: "filings",
+      trend: yearTrend(years, partialFy),
+    },
+    decided >= FLOOR
+      ? { k: "Approval", v: `${((group.certified / decided) * 100).toFixed(1)}%`, sub: tally, icon: "approval" }
+      : { k: "Approval", v: "Not shown", sub: `${tally}: too few to rate`, icon: "approval" },
+    {
+      k: "Median certified wage",
+      v: group.medianWage == null ? "n/a" : `$${formatInt(Math.round(group.medianWage))}`,
+      sub: group.medianWage == null ? "no wage on the decided cases" : "as filed, every year pooled",
+      icon: "wage",
+    },
+  ];
+}
+
+const ANSWER_SUBJECT: Record<GroupKind, (label: string) => string> = {
+  city: (l) => `name ${l} as the worksite`,
+  industry: () => "carry this industry's code",
+  country: (l) => `were for citizens of ${l}`,
+};
+
+/** The one line under the name: how many decisions, over which years, and who filed the most. */
+export function groupAnswer(kind: GroupKind, group: GroupSummary & { detail: GroupDetail }): string {
+  const years = span(group.fyFrom, group.fyTo);
+  const when = years ? (group.fyFrom === group.fyTo ? ` in ${years}` : ` from ${years}`) : "";
+  const noun = group.total === 1 ? "decision" : "decisions";
+  const lead = `${formatInt(group.total)} PERM ${noun}${when} ${ANSWER_SUBJECT[kind](group.label)}.`;
+  const top = group.detail.employers[0];
+  return top ? `${lead} ${top.name} filed the most.` : lead;
+}
+
 export function GroupView({
   kind,
   group,
@@ -108,13 +209,15 @@ export function GroupView({
   yearsOverride?: YearCount[];
 }) {
   const d = group.detail;
-  const decided = group.certified + group.denied;
-  const rate = decided >= FLOOR ? (group.certified / decided) * 100 : null;
   const years = yearsOverride && yearsOverride.length > 0 ? yearsOverride : d.years;
-  const boxes: ReactNode[] = [];
+  // Who files here and for what: the two lists most readers came for, open side by side.
+  const lead: ReactNode[] = [];
+  // Where the work is and who does it: the rest of the record, behind one line.
+  const more: ReactNode[] = [];
+  const moreNames: string[] = [];
 
   if (d.employers.length > 0) {
-    boxes.push(
+    lead.push(
       <Box key="emp" title="Top sponsors">
         <Ranked label="Top sponsors"
           items={d.employers.map((e) => ({
@@ -134,7 +237,7 @@ export function GroupView({
   }
   if (d.occupations.length > 0) {
     const occName = codedWhereRepeated(d.occupations, (o) => o.title, (o) => o.code, "SOC");
-    boxes.push(
+    lead.push(
       <Box key="occ" title="Top occupations">
         <Ranked label="Top occupations"
           items={d.occupations.map((o) => ({
@@ -153,14 +256,16 @@ export function GroupView({
     );
   }
   if (kind !== "city" && d.states.length > 0) {
-    boxes.push(
+    moreNames.push("states");
+    more.push(
       <Box key="st" title="Worksite states">
         <Ranked label="Worksite states" items={d.states.map((s) => ({ key: s.key, n: s.n, label: stateName(s.key) }))} />
       </Box>,
     );
   }
   if (d.cities.length > 0) {
-    boxes.push(
+    moreNames.push("cities");
+    more.push(
       <Box key="city" title="Worksite cities">
         <Ranked label="Worksite cities"
           items={d.cities.map((c) => ({
@@ -180,8 +285,9 @@ export function GroupView({
     );
   }
   if (d.industries.length > 0) {
+    moreNames.push("industries");
     const named = codedWhereRepeated(d.industries, (i) => i.title, (i) => i.code, "NAICS");
-    boxes.push(
+    more.push(
       <Box key="ind" title="Industries">
         <Ranked label="Industries"
           items={d.industries.map((i) => ({
@@ -201,7 +307,8 @@ export function GroupView({
     );
   }
   if (d.countries.length > 0) {
-    boxes.push(
+    moreNames.push("countries of citizenship");
+    more.push(
       <Box key="cty" title="Countries of citizenship">
         <Ranked label="Countries of citizenship"
           items={d.countries.map((c) => ({
@@ -221,57 +328,50 @@ export function GroupView({
     );
   }
   if (d.education.length > 0) {
-    boxes.push(
+    moreNames.push("education");
+    more.push(
       <Box key="edu" title="Worker's education">
         <Ranked label="Worker's education" items={d.education.map((e) => ({ key: e.key, n: e.n, label: e.key }))} />
       </Box>,
     );
   }
   if (d.visa.length > 0) {
-    boxes.push(
+    moreNames.push("visas");
+    more.push(
       <Box key="visa" title="Visa held when filed">
         <Ranked label="Visa held when filed" items={d.visa.map((v) => ({ key: v.key, n: v.n, label: v.key }))} />
       </Box>,
     );
   }
 
+  const last = moreNames[moreNames.length - 1];
+  const moreHint = moreNames.length > 1 ? `The ${moreNames.slice(0, -1).join(", ")} and ${last}` : last ? `The ${last}` : undefined;
+
   return (
     <>
-      <dl className="mt-8 grid grid-cols-2 gap-4 [&>*]:min-w-0 sm:grid-cols-4">
-        {[
-          ["Decisions", formatInt(group.total)],
-          ["Approved", rate == null ? "too few" : `${rate.toFixed(1)}%`],
-          ["Median certified wage", group.medianWage == null ? "n/a" : `$${formatInt(Math.round(group.medianWage))}`],
-          ["Years", group.fyFrom && group.fyTo ? `FY${group.fyFrom} to FY${group.fyTo}` : "n/a"],
-        ].map(([k, v]) => (
-          <Fragment key={k}>
-            {" "}
-            <div className="bg-sage p-4 border-2 border-border">
-              <dt className="text-sm font-bold text-muted-foreground">{k}</dt>{" "}
-              <dd className="mt-1 font-heading text-2xl font-bold tabular-nums">{v}</dd>
-            </div>
-          </Fragment>
-        ))}
-      </dl>
-
-      {years.length > 1 ? (
-        <section className="mt-10">
-          <h2 className="font-heading text-2xl font-bold">Year by year</h2>{" "}
-          <div className="mt-4">
-            <YearBars
-              years={years}
-              note={
-                kind === "country"
-                  ? "Fiscal years run October to September. DOL printed the worker's citizenship on its old form, so the series runs FY2008 to FY2023. The form in use since mid-2023 doesn't carry it."
-                  : "Fiscal years run October to September. FY2016 to FY2023 come from DOL's closed-year files, and FY2024 on from its current ones. The newest year is partial until DOL publishes its fourth quarter."
-              }
-            />
-          </div>
-        </section>
+      {lead.length > 0 ? (
+        <Chapter id="who" title="Who files here, and for what" dek="The sponsors and the jobs with the most decisions.">
+          <div className="grid grid-cols-1 gap-6 [&>*]:min-w-0 md:grid-cols-2">{lead}</div>
+        </Chapter>
       ) : null}
 
-      {boxes.length > 0 ? (
-        <div className="mt-10 grid grid-cols-1 gap-4 [&>*]:min-w-0 md:grid-cols-2">{boxes}</div>
+      {years.length > 1 ? (
+        <Chapter id="years" title="Year by year">
+          <YearBars
+            years={years}
+            note={
+              kind === "country"
+                ? "Fiscal years run October to September. DOL printed the worker's citizenship on its old form, so the series runs FY2008 to FY2023. The form in use since mid-2023 doesn't carry it."
+                : "Fiscal years run October to September. FY2016 to FY2023 come from DOL's closed-year files, and FY2024 on from its current ones. The newest year is partial until DOL publishes its fourth quarter."
+            }
+          />
+        </Chapter>
+      ) : null}
+
+      {more.length > 0 ? (
+        <ChapterFold summary="More of the record" hint={moreHint} className="mt-10">
+          <div className="grid grid-cols-1 gap-6 [&>*]:min-w-0 md:grid-cols-2">{more}</div>
+        </ChapterFold>
       ) : null}
     </>
   );
