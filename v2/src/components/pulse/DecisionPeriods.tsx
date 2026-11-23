@@ -10,7 +10,7 @@ import { choiceVariants } from "@/components/ui/choice";
 import { ChoiceRow } from "@/components/ui/choice-row";
 import { PagedTable } from "@/components/ui/paged-table";
 import type { WeekdayProfile } from "@/lib/activityStats";
-import type { DecisionViews, PeriodAgainst, PeriodCount, PeriodUnit } from "@/lib/decisionPeriods";
+import type { DecisionViews, PeriodAgainst, PeriodCount, PeriodUnit, WeekStanding } from "@/lib/decisionPeriods";
 import { formatInt } from "@/lib/format";
 import { federalHolidayName } from "@/lib/perm";
 import { SHUTDOWN_SOURCE_URL } from "@/lib/permShutdown2025";
@@ -182,6 +182,10 @@ export function DecisionPeriods({
         </button>
       </div>{" "}
 
+      {unit === "week" && views.weekStanding ? (
+        <p className="mt-5 max-w-3xl text-base leading-relaxed">{standingLine(views.weekStanding)}</p>
+      ) : null}{" "}
+
       <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-3 [&>*]:min-w-0">
         <figure className="m-0 flex flex-col bg-card p-5 lg:col-span-2 border-2 shadow-hard-sm border-border">
           <figcaption className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
@@ -229,6 +233,27 @@ function OutcomeKey() {
       ))}
     </ul>
   );
+}
+
+/**
+ * The newest whole week against the weeks before it, as people pass it around: "The week of Nov 16: 4,619 decided,
+ * the most since the week of Aug 31 (4,773)." When counting Monday to Friday alone gives a newer week, the line says
+ * the weekend made the difference, with both weekday counts.
+ */
+function standingLine(s: WeekStanding): string {
+  const year = s.week.start.slice(0, 4);
+  const week = (iso: string) => `the week of ${monthDay(iso) ?? iso}${iso.slice(0, 4) === year ? "" : `, ${iso.slice(0, 4)}`}`;
+  const word = s.kind === "most" ? "the most" : "the fewest";
+  const head = s.since
+    ? `${word} since ${week(s.since.start)} (${formatInt(s.since.total)})`
+    : `${word} of any week back to ${week(s.back)}, as far as our record runs without a gap`;
+  const line = `The week of ${monthDay(s.week.start) ?? s.week.start}: ${formatInt(s.week.total)} decided, ${head}.`;
+  const wd = s.weekdaysOnly;
+  if (!wd) return line;
+  const pair = `(${formatInt(wd.total)} against ${formatInt(wd.mine)})`;
+  return s.kind === "most" && s.week.weekend > 0
+    ? `${line} The weekend made the difference: DOL decided ${formatInt(s.week.weekend)} on Saturday and Sunday, and Monday to Friday alone ${week(wd.start)} had more ${pair}.`
+    : `${line} Weekend work made the difference: Monday to Friday alone, ${week(wd.start)} had ${s.kind === "most" ? "more" : "fewer"} ${pair}.`;
 }
 
 /** The tick under the first and last column: "Oct 18", "Week of May 25", "Dec 2025", "2008". */

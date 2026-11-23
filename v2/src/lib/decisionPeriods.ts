@@ -219,6 +219,99 @@ export function periodsAgainstLastYear(
   return out;
 }
 
+/** The fewest earlier weeks a week must beat in a row before the week view says it's the most (or fewest) since. */
+export const STANDING_MIN_WEEKS = 4;
+
+export interface WeekSpan {
+  /** The Monday and the Sunday. */
+  start: string;
+  end: string;
+  total: number;
+}
+
+/**
+ * The newest whole week against the weeks before it, as people say it: "the most since the week of Aug 31".
+ *
+ * `since` is the newest earlier week with as many (for "most") or as few (for "fewest"); null when no week back to
+ * `back` had, and `back` is then as far as the record runs unbroken. `weekdaysOnly` is set when counting Monday to
+ * Friday alone, on both sides, a newer week than `since` had as many (or as few): the weekend made the difference.
+ */
+export interface WeekStanding {
+  kind: "most" | "fewest";
+  week: WeekSpan & { weekend: number };
+  since: WeekSpan | null;
+  /** Earlier whole weeks it beat, in a row. */
+  weeks: number;
+  /** The oldest week it was set against. */
+  back: string;
+  weekdaysOnly: (WeekSpan & { mine: number }) | null;
+}
+
+/** One week's decisions, all of it and its Saturday and Sunday, or null when a working day in it is in neither record. */
+function weekTally(start: string, file: Rec | null, checks: Rec | null): { total: number; weekend: number; workdays: number } | null {
+  let total = 0;
+  let weekend = 0;
+  let workdays = 0;
+  let held = 0;
+  for (const day of eachDay(start, addDays(start, 6))) {
+    const rec = recFor(file, checks, day);
+    if (!rec) {
+      if (isWorkday(day)) return null;
+      continue;
+    }
+    held += 1;
+    const n = rec.byDay.get(day)?.total ?? 0;
+    total += n;
+    if (weekdayIndex(day) >= 5) weekend += n;
+    if (isWorkday(day)) workdays += 1;
+  }
+  // A week of the shutdown that neither record holds has no working day to miss, and still isn't a week of zeros.
+  return held > 0 ? { total, weekend, workdays } : null;
+}
+
+/**
+ * Whether the newest whole week is the most, or the fewest, since some earlier week, counted the way the week view
+ * counts (the file where it holds a day, else our check). Null when it beat fewer than STANDING_MIN_WEEKS weeks in a
+ * row either way. "Fewest" is said only of a week with all five working days: a holiday's week has fewer decisions
+ * and that isn't DOL slowing down.
+ */
+export function weekStanding(fileDays: readonly ActivityDay[], checkDays: readonly ActivityDay[], today: string): WeekStanding | null {
+  const file = record(fileDays, "file", today);
+  const checks = record(checkDays, "checks", today);
+  const yesterday = addDays(today, -1);
+  // The newest week that has ended: this week's Monday, less a week, unless yesterday was its Sunday.
+  const thisMonday = addDays(yesterday, -weekdayIndex(yesterday));
+  const start = weekdayIndex(yesterday) === 6 ? thisMonday : addDays(thisMonday, -7);
+  const mine = weekTally(start, file, checks);
+  if (!mine) return null;
+  const mineWeekdays = mine.total - mine.weekend;
+
+  const judge = (kind: WeekStanding["kind"]): WeekStanding | null => {
+    if (kind === "fewest" && mine.workdays < 5) return null;
+    // As many (or as few) as this week: the week it's "the most since".
+    const matches = (theirs: number, ours: number) => (kind === "most" ? theirs >= ours : theirs <= ours);
+    let weeks = 0;
+    let back = start;
+    let since: WeekSpan | null = null;
+    let weekdaysOnly: WeekStanding["weekdaysOnly"] = null;
+    for (let at = addDays(start, -7); ; at = addDays(at, -7)) {
+      const w = weekTally(at, file, checks);
+      if (!w) break;
+      const span = { start: at, end: addDays(at, 6), total: w.total };
+      if (matches(w.total, mine.total)) {
+        since = span;
+        break;
+      }
+      if (!weekdaysOnly && matches(w.total - w.weekend, mineWeekdays)) weekdaysOnly = { ...span, total: w.total - w.weekend, mine: mineWeekdays };
+      weeks += 1;
+      back = at;
+    }
+    if (weeks < STANDING_MIN_WEEKS) return null;
+    return { kind, week: { start, end: addDays(start, 6), total: mine.total, weekend: mine.weekend }, since, weeks, back, weekdaysOnly };
+  };
+  return judge("most") ?? judge("fewest");
+}
+
 export interface MonthShape {
   /** 1 = January. */
   month: number;
@@ -271,6 +364,8 @@ export interface DecisionViews {
   checksFrom: string | null;
   /** The last day DOL's file holds (ISO). */
   fileTo: string | null;
+  /** Over the week view: the newest whole week, when it's the most or the fewest in a while. */
+  weekStanding: WeekStanding | null;
 }
 
 /**
@@ -301,5 +396,6 @@ export function decisionViews(fileDays: readonly ActivityDay[], checkDays: reado
     year: typicalYear(file, today),
     checksFrom: checks[0]?.date ?? null,
     fileTo,
+    weekStanding: weekStanding(file, checks, today),
   };
 }

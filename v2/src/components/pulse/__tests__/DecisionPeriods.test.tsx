@@ -121,6 +121,44 @@ describe("the decisions chart", () => {
     expect(screen.getByRole("heading", { level: 3, name: "Each month against a year earlier" })).toBeTruthy();
   });
 
+  it("says over the week view when the newest week is the most since an earlier one, and when its weekend made the difference", () => {
+    // Arrange: the Nov 23 2026 check. Nov 16 to 22 held 4,619 (477 of them on the weekend), the most since the week of
+    // Aug 31 (4,773); Monday to Friday alone, the week of Sep 28 (4,233) had more than its 4,142.
+    const at = (date: string, total: number) => d(date, total);
+    const span = (from: string, to: string, weekday: number, weekend: number) => {
+      const out: ActivityDay[] = [];
+      for (let t = Date.parse(`${from}T00:00:00Z`); t <= Date.parse(`${to}T00:00:00Z`); t += 86_400_000) {
+        const dow = new Date(t).getUTCDay();
+        const n = dow === 0 || dow === 6 ? weekend : weekday;
+        if (n > 0) out.push(at(new Date(t).toISOString().slice(0, 10), n));
+      }
+      return out;
+    };
+    const checks = [
+      at("2026-08-31", 900), at("2026-09-01", 900), at("2026-09-02", 900), at("2026-09-03", 900), at("2026-09-04", 873),
+      at("2026-09-05", 200), at("2026-09-06", 100),
+      ...span("2026-09-08", "2026-09-25", 800, 0),
+      at("2026-09-28", 847), at("2026-09-29", 847), at("2026-09-30", 847), at("2026-10-01", 846), at("2026-10-02", 846),
+      ...span("2026-10-05", "2026-11-13", 800, 0).filter((x) => x.date !== "2026-10-12" && x.date !== "2026-11-11"),
+      at("2026-11-16", 829), at("2026-11-17", 829), at("2026-11-18", 828), at("2026-11-19", 828), at("2026-11-20", 828),
+      at("2026-11-21", 331), at("2026-11-22", 146),
+    ];
+    const record = decisionViews(span("2026-03-02", "2026-08-30", 800, 100), checks, "2026-11-23");
+
+    // Act
+    render(<DecisionPeriods views={record} />);
+    const before = document.body.textContent ?? "";
+    pick("Weeks");
+    const text = (document.body.textContent ?? "").replace(/\s+/g, " ");
+
+    // Assert: only the week view says it, in one line.
+    expect(before).not.toContain("the most since");
+    expect(text).toContain("The week of Nov 16: 4,619 decided, the most since the week of Aug 31 (4,773).");
+    expect(text).toContain(
+      "The weekend made the difference: DOL decided 477 on Saturday and Sunday, and Monday to Friday alone the week of Sep 28 had more (4,233 against 4,142).",
+    );
+  });
+
   it("draws the chart alone in a tile", () => {
     window.location.hash = "#by-month";
     render(<DecisionPeriods views={views} bare />);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { ActivityDay } from "@/lib/activityStats";
-import { PERIOD_SPANS, periodsAgainstLastYear, typicalYear } from "@/lib/decisionPeriods";
+import { PERIOD_SPANS, periodsAgainstLastYear, typicalYear, weekStanding } from "@/lib/decisionPeriods";
 
 /**
  * PERM decisions by day, week, month or year, each against a year earlier. One rule for all four: a period counts the
@@ -180,5 +180,98 @@ describe("a month against the same days a year earlier (the month list's rule si
 
   it("leaves out a month with no complete day yet", () => {
     expect(periodsAgainstLastYear(file, checks, "2026-11-01", "month", 2).map((r) => r.key)).toEqual(["2026-10", "2026-09"]);
+  });
+});
+
+describe("the newest whole week against the weeks before it (most since, fewest since)", () => {
+  /** Every day of a span at one count, weekends at their own; a zero is no row. */
+  const span = (from: string, to: string, weekday: number, weekend: number): ActivityDay[] => {
+    const out: ActivityDay[] = [];
+    for (let t = Date.parse(`${from}T00:00:00Z`); t <= Date.parse(`${to}T00:00:00Z`); t += 86_400_000) {
+      const dow = new Date(t).getUTCDay();
+      const n = dow === 0 || dow === 6 ? weekend : weekday;
+      if (n > 0) out.push(d(new Date(t).toISOString().slice(0, 10), n));
+    }
+    return out;
+  };
+  const without = (days: ActivityDay[], ...dates: string[]) => days.filter((x) => !dates.includes(x.date));
+
+  // The weeks behind the Nov 23 2026 check: DOL's file to Sunday Aug 30 with its weekends worked, our check from Aug 28.
+  // The week of Aug 31 holds 4,773 with its weekend, DOL stops working weekends on Sep 19, the week of Sep 28 holds
+  // 4,233 on weekdays alone, and Nov 16 to 22 holds 4,142 on weekdays and 477 on the weekend: 4,619.
+  const fileDays = span("2026-03-02", "2026-08-30", 800, 100);
+  const checkDays = [
+    ...span("2026-08-28", "2026-08-30", 800, 100),
+    d("2026-08-31", 900), d("2026-09-01", 900), d("2026-09-02", 900), d("2026-09-03", 900), d("2026-09-04", 873),
+    d("2026-09-05", 200), d("2026-09-06", 100),
+    // Labor Day is Monday Sep 7.
+    ...span("2026-09-08", "2026-09-18", 800, 100),
+    ...span("2026-09-21", "2026-09-25", 800, 0),
+    d("2026-09-28", 847), d("2026-09-29", 847), d("2026-09-30", 847), d("2026-10-01", 846), d("2026-10-02", 846),
+    // Columbus Day Oct 12 and Veterans Day Nov 11 are holidays.
+    ...without(span("2026-10-05", "2026-11-13", 800, 0), "2026-10-12", "2026-11-11"),
+    d("2026-11-14", 356),
+    d("2026-11-16", 829), d("2026-11-17", 829), d("2026-11-18", 828), d("2026-11-19", 828), d("2026-11-20", 828),
+    d("2026-11-21", 331), d("2026-11-22", 146),
+  ];
+
+  it("names the last week with as many or more, and how many weeks this one beat", () => {
+    // Act
+    const s = weekStanding(fileDays, checkDays, "2026-11-23");
+
+    // Assert
+    expect(s).toMatchObject({
+      kind: "most",
+      week: { start: "2026-11-16", end: "2026-11-22", total: 4619, weekend: 477 },
+      since: { start: "2026-08-31", end: "2026-09-06", total: 4773 },
+      // Sep 7 to Nov 9: ten weeks.
+      weeks: 10,
+    });
+  });
+
+  it("says when the weekend made the difference: Monday to Friday alone, a newer week had more", () => {
+    const s = weekStanding(fileDays, checkDays, "2026-11-23")!;
+    expect(s.weekdaysOnly).toEqual({ start: "2026-09-28", end: "2026-10-04", total: 4233, mine: 4142 });
+  });
+
+  it("says nothing of the weekend when the weekdays alone give the same answer", () => {
+    // The same week with its weekend's decisions on its Friday: the most since Aug 31 either way.
+    const flat = [...without(checkDays, "2026-11-20", "2026-11-21", "2026-11-22"), d("2026-11-20", 828 + 477)];
+    const s = weekStanding(fileDays, flat, "2026-11-23")!;
+    expect(s.since?.start).toBe("2026-08-31");
+    expect(s.weekdaysOnly).toBeNull();
+  });
+
+  it("judges the newest whole week, never one still running", () => {
+    // On Wednesday Nov 25 the week of Nov 23 holds two days: the line is still about Nov 16 to 22.
+    const more = [...checkDays, d("2026-11-23", 5000), d("2026-11-24", 5000)];
+    expect(weekStanding(fileDays, more, "2026-11-25")?.week.start).toBe("2026-11-16");
+  });
+
+  it("says nothing when the week beat only the three weeks just before it", () => {
+    // Sep 28 to Oct 4 (4,233) beat Sep 7, 14 and 21, and the week of Aug 31 held more.
+    expect(weekStanding(fileDays, checkDays, "2026-10-05")).toBeNull();
+  });
+
+  it("names the fewest since, and says how far back the record runs when no earlier week had as few", () => {
+    const quiet = [...span("2026-03-02", "2026-06-19", 800, 0), ...span("2026-06-22", "2026-06-28", 500, 0)];
+    const s = weekStanding(quiet, [], "2026-06-29");
+    expect(s).toMatchObject({ kind: "fewest", week: { start: "2026-06-22", total: 2500 }, since: null, back: "2026-03-02" });
+    // Mar 2 to Jun 15: sixteen whole weeks before it.
+    expect(s?.weeks).toBe(16);
+  });
+
+  it("never calls a week with a holiday the fewest: fewer working days isn't DOL slowing down", () => {
+    // The week of May 25 2026 holds Memorial Day.
+    const days = without(span("2026-03-02", "2026-05-31", 800, 0), "2026-05-25");
+    expect(weekStanding(days, [], "2026-06-01")).toBeNull();
+  });
+
+  it("stops at a stretch neither record holds, rather than reading it as a quiet week", () => {
+    // Our check from Sep 28 only: Aug 31 to Sep 27 is in neither record, so the walk back stops at Sep 28.
+    const later = checkDays.filter((x) => x.date >= "2026-09-28");
+    const s = weekStanding(fileDays, later, "2026-11-23")!;
+    expect(s).toMatchObject({ kind: "most", since: null, back: "2026-09-28", weeks: 7 });
+    expect(s.weekdaysOnly?.start).toBe("2026-09-28");
   });
 });
