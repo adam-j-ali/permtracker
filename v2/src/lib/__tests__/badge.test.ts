@@ -146,4 +146,17 @@ describe("badges", () => {
       expect(svg).not.toMatch(/\d{4}-\d{2}-\d{2}/);
     }
   });
+
+  it("keeps a figureless badge's own name and page, so an embedded copy still says what it is", () => {
+    // perm-audits and perm-recon have had no figure since DOL stopped printing them on Oct 31 2026.
+    for (const kind of ["perm-audits", "perm-recon"]) {
+      const def = BADGE_DEFS.find((d) => d.id === kind);
+      expect(def).toBeDefined();
+      const svg = renderUnavailable(kind, "card", "light");
+      expect(svg).toContain(def!.label);
+      expect(svg).toContain("no figure today");
+      expect(svg).not.toMatch(/>PERM Tracker\s*</);
+    }
+    expect(renderUnavailable("not-a-badge", "shield", "dark")).toContain("PERM Tracker");
+  });
 });

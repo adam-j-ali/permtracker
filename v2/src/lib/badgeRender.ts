@@ -1,4 +1,4 @@
-import type { BadgeSpec, BadgeStyle, BadgeTheme } from "@/lib/badge";
+import { badgeDef, type BadgeSpec, type BadgeStyle, type BadgeTheme } from "@/lib/badge";
 
 /**
  * The three shapes a badge can take, drawn as SVG with no external anything.
@@ -155,14 +155,17 @@ export function renderBadge(spec: BadgeSpec, style: BadgeStyle, theme: BadgeThem
  * watching is exactly where a stale number does its damage, and the whole
  * argument for these badges is that they are current.
  */
+/** A badge with no figure to show: it keeps its own name and page, so an embedded copy still says what it is. */
 export function renderUnavailable(kind: string, style: BadgeStyle, theme: BadgeTheme): string {
+  const def = badgeDef(kind);
+  const label = def ? def.label : "PERM Tracker";
   return renderBadge(
     {
       kind,
-      label: "PERM Tracker",
+      label,
       value: "no figure today",
-      href: "/",
-      alt: "PERM Tracker: no figure was published for this badge today",
+      href: def ? def.href : "/",
+      alt: `${label}: no figure was published for this badge today`,
       asOf: null,
       source: "no figure published",
     },
