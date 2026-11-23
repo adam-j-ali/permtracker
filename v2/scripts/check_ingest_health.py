@@ -1020,7 +1020,7 @@ def check_browser_timers(db) -> int:
             continue
         if not got:
             if first_due and today <= datetime.date.fromisoformat(first_due) + datetime.timedelta(days=days):
-                print(f"browser timer     : {name} hasn't run yet; first due {first_due}  ok")
+                print(f"browser timer     : {name} first runs {first_due}, so it hasn't checked in yet  ok")
                 continue
             print(f"browser timer     : {name} has never checked in  NEVER")
             print(f"::warning::The browser timer {name} ({label}) has never checked in. It runs in a browser, "

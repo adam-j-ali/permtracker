@@ -151,7 +151,7 @@ describe("systemErrors.record admin email", () => {
     expect(afterOther, "another operation's is its own first").toHaveLength(0);
     const mails = await scheduledEmails(t);
     expect(mails).toHaveLength(1);
-    expect(String((mails[0]?.args[0] as { body?: string })?.body)).toMatch(/second time within an hour/);
+    expect(String((mails[0]?.args[0] as { body?: string })?.body)).toMatch(/second database error within an hour/);
     expect(await t.run((ctx) => ctx.db.query("systemErrors").collect())).toHaveLength(3);
   });
 

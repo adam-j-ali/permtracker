@@ -86,7 +86,7 @@ export const record = internalMutation({
           `${deployment ? `\nDeployment: ${deployment}` : ""}\n\n${args.message}` +
           `${args.resourceId ? `\n\nResource: ${args.resourceId}` : ""}` +
           (transient
-            ? "\n\nThis database error is the operation's second time within an hour; one alone isn't emailed."
+            ? "\n\nThis is the operation's second database error within an hour. One alone isn't emailed."
             : ""),
       });
     }

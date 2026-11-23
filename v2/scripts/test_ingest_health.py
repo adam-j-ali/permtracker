@@ -761,7 +761,7 @@ def check_browser_timer_heartbeats() -> None:
         health.BROWSER_TIMERS["visastats-read"] = (label, days, today.isoformat())
         rc, out = say(others)
         check("browser timers: one not yet past its first due day and allowance reads ok, naming the day",
-              rc == 0 and "::warning" not in out and f"first due {today.isoformat()}" in out, out)
+              rc == 0 and "::warning" not in out and f"first runs {today.isoformat()}" in out, out)
         health.BROWSER_TIMERS["visastats-read"] = (label, days, (today - datetime.timedelta(days=days + 1)).isoformat())
         rc, out = say(others)
         check("browser timers: one past its first due day and allowance that never checked in warns",

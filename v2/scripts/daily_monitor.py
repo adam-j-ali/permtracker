@@ -1903,10 +1903,10 @@ CHAT_ROLES = {"summary": "the conversation summarizer"}
 
 
 def chat_role_words(role) -> str:
-    """'' for a chat model, ' (the conversation summarizer, not a chat model)' for the others."""
+    """'' for a chat model, ' (the conversation summarizer, outside the chat's chain)' for the others."""
     if role in (None, "chat"):
         return ""
-    return f" ({CHAT_ROLES.get(role, f'the {role} model')}, not a chat model)"
+    return f" ({CHAT_ROLES.get(role, f'the {role} model')}, outside the chat's chain)"
 
 
 def chat_models_verdict(doc: dict | None, now_ms: int) -> dict:
