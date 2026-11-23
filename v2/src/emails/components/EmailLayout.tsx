@@ -48,6 +48,12 @@ export interface EmailLayoutProps {
    * `List-Unsubscribe` header.
    */
   footerExtra?: React.ReactNode;
+  /**
+   * Narrower margins below 600px, for mail that is mostly lines of text (the
+   * daily operator report). The card's 20px and 32px padding left a 390px
+   * phone about 280px of text.
+   */
+  dense?: boolean;
 }
 
 /**
@@ -231,6 +237,9 @@ const RESPONSIVE_STYLES = [
    * tighter card to do that.
    */
   "@media only screen and (max-width: 600px) {",
+  // Opt-in (`dense`), after the 350px block so it wins on the tiniest screens too.
+  "  .em-dense-container { padding: 8px 6px !important; }",
+  "  .em-dense-content { padding: 20px 16px !important; }",
   "  .qa-stamp-value { white-space: normal !important; }",
   // Same pin, same release, same reason. The status block is pinned so a
   // sibling spacer cannot size it to its longest word; below 600px the widest
@@ -251,6 +260,7 @@ export function EmailLayout({
   footerText,
   hideSettingsLink = false,
   footerExtra,
+  dense = false,
 }: EmailLayoutProps) {
   return (
     <Html>
@@ -262,7 +272,10 @@ export function EmailLayout({
       </Head>
       <Preview>{previewText}</Preview>
       <Body className="em-body" style={styles.body}>
-        <Container className="em-container" style={styles.container}>
+        <Container
+          className={dense ? "em-container em-dense-container" : "em-container"}
+          style={styles.container}
+        >
           {/* Header */}
           <Section className="em-header" style={styles.header}>
             <Text style={styles.logo}>
@@ -272,7 +285,12 @@ export function EmailLayout({
           </Section>
 
           {/* Main content */}
-          <Section className="em-content" style={styles.content}>{children}</Section>
+          <Section
+            className={dense ? "em-content em-dense-content" : "em-content"}
+            style={styles.content}
+          >
+            {children}
+          </Section>
 
           {/* Footer */}
           <Section style={styles.footer}>

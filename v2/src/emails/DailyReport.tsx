@@ -4,9 +4,13 @@
  * Sections needing a person come first, each with its status as a word
  * (colour alone does not survive every mail client), then everything that is
  * fine, collapsed to one line each.
+ *
+ * It's read on a phone. Each detail line is its own paragraph in the body
+ * face: a typewriter face behind a ruled, padded margin left about 26
+ * characters a line. An OK section's detail stays in the text part (reportText)
+ * and on /admin#monitor, never in this HTML.
  */
 import { Section, Text } from "@react-email/components";
-import * as React from "react";
 
 import {
   type DailyReport as Report,
@@ -48,16 +52,13 @@ function SectionBlock({ s, full }: { s: ReportSection; full: boolean }) {
         {": "}
         <span style={styles.summary}>{s.summary}</span>
       </Text>
-      {full && s.lines.length > 0 ? (
-        <Text className="em-text-body" style={styles.lines}>
-          {s.lines.map((l, i) => (
-            <React.Fragment key={i}>
+      {full
+        ? s.lines.map((l, i) => (
+            <Text key={i} className="em-text-body" style={styles.line}>
               {l}
-              {i < s.lines.length - 1 ? <br /> : null}
-            </React.Fragment>
-          ))}
-        </Text>
-      ) : null}
+            </Text>
+          ))
+        : null}
     </Section>
   );
 }
@@ -79,6 +80,7 @@ export function DailyReport({ report }: DailyReportProps) {
       settingsUrl={`${SITE_URL}/admin#monitor`}
       settingsLabel="Open the admin page"
       footerText="The daily operator report. Sent to the admin address only."
+      dense
     >
       <EmailHeader
         title={`Daily report, ${dayLabel(report.day)}`}
@@ -89,23 +91,17 @@ export function DailyReport({ report }: DailyReportProps) {
         <SectionBlock key={s.key} s={s} full />
       ))}
       {rest.map((s) => (
-        <SectionBlock key={s.key} s={s} full={s.status === "ok"} />
+        <SectionBlock key={s.key} s={s} full={false} />
       ))}
     </EmailLayout>
   );
 }
 
 const styles = {
-  section: { padding: "0 24px", marginBottom: "14px" },
-  title: { fontSize: "15px", lineHeight: "22px", margin: "0 0 4px", fontWeight: 700 },
+  // No side padding: the layout's content box already pads the card.
+  section: { padding: 0, marginBottom: "18px" },
+  title: { fontSize: "15px", lineHeight: "22px", margin: "0 0 6px", fontWeight: 700 },
   badge: { fontSize: "14px", fontWeight: 700 },
   summary: { fontWeight: 400 },
-  lines: {
-    fontSize: "14px",
-    lineHeight: "21px",
-    margin: 0,
-    paddingLeft: "12px",
-    borderLeft: "3px solid #D9D9D9",
-    fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-  },
+  line: { fontSize: "15px", lineHeight: "21px", margin: "0 0 6px" },
 } as const;
