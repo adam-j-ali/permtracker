@@ -31,6 +31,7 @@ import { RfiJourneyNow } from "@/components/content/RfiJourneyNow";
 import { DolNow } from "@/components/content/DolNow";
 import { RecruitmentNow } from "@/components/content/RecruitmentNow";
 import { BulletinReleaseNow } from "@/components/content/BulletinReleaseNow";
+import { BulletinRowsNow } from "@/components/content/BulletinRowsNow";
 import { ComparisonTable } from "@/components/content/ComparisonTable";
 import { RuleCompare } from "@/components/policy/RuleCompare";
 import { RuleStatus } from "@/components/policy/RuleStatus";
@@ -193,6 +194,7 @@ export const mdxComponents: MDXComponents = {
   RecruitmentNow,
   // When the next bulletin usually comes out, from the archive's captures.
   BulletinReleaseNow,
+  BulletinRowsNow,
   // The filing window as a measuring bench: the reader moves the last recruitment step.
   FilingWindowFigure,
   // A wage determination's validity as a bench: the reader moves the first recruitment step.
