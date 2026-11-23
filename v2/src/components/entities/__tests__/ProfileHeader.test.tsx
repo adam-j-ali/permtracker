@@ -82,3 +82,15 @@ describe("ProfileHeader", () => {
     expect(screen.queryByText(/On record:/)).toBeNull();
   });
 });
+
+describe("the header's note", () => {
+  it("shows the note under the answer line, in the header", () => {
+    render(
+      <ProfileHeader eyebrow="PERM sponsor" name="MERIT LOGISTICS" answer="Nothing waiting at DOL now."
+        note="These are past filings." />,
+    );
+    const note = screen.getByText("These are past filings.");
+    expect(note.closest("header")).not.toBeNull();
+    expect(note.compareDocumentPosition(screen.getByText("Nothing waiting at DOL now.")) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+  });
+});

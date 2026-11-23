@@ -4,7 +4,7 @@ import type { EntityNeighbor } from "@/lib/db/entities";
 import { rows } from "@/lib/db/client";
 
 /**
- * Sponsors hiring for the same work as one employer.
+ * Sponsors filing for the same work as one employer.
  *
  * The employer's top occupations come from its own facet rows (already read
  * by the page); for each, `perm_entity_facets` holds that occupation's top

@@ -142,6 +142,7 @@ import { DataProvenance } from "@/components/data/DataProvenance";
 import { WageAndLcaFilings } from "@/components/entities/WageAndLcaFilings";
 import { FromDolLive } from "@/components/entities/FromDolLive";
 import { ProfileHeader, type ProfileFact, type ProfileTag } from "@/components/entities/ProfileHeader";
+import { PAST_FILINGS_NOTE } from "@/lib/pastFilingsNote";
 import { Chapter } from "@/components/entities/Chapter";
 import { ChapterNav, type ChapterItem } from "@/components/entities/Chapters";
 import { groupIndustries } from "@/components/entities/FilingMakeup";
@@ -1000,6 +1001,7 @@ export default async function EmployerPage({
         eyebrow="PERM sponsor"
         name={row.name}
         answer={profileLine(row.recent12m, newestOf(newestFiled(recentLive), starts?.newestPerm ?? null), pending, easternDay())}
+        note={PAST_FILINGS_NOTE}
         facts={facts}
         tags={tags}
         aside={
@@ -1279,7 +1281,7 @@ export default async function EmployerPage({
         />{" "}
         {/* The peers either side carry the rank's neighbours, so no separate ladder. */}
         {hasPeers ? (
-          <ChapterFold summary="Sponsors like this one" hint="Those filing at the same rate, and those hiring for the same work">
+          <ChapterFold summary="Sponsors like this one" hint="Those filing at the same rate, and those filing for the same work">
             <div className="grid grid-cols-1 gap-x-10 gap-y-8 [&>*]:min-w-0 lg:grid-cols-2">
               <PeerList
                 heading="Sponsors filing at the same rate"
@@ -1290,7 +1292,7 @@ export default async function EmployerPage({
               />{" "}
               {similar.occupation && similar.sponsors.length > 0 ? (
                 <PeerList
-                  heading="Sponsors hiring for the same work"
+                  heading="Sponsors filing for the same work"
                   note={
                     <>
                       The employers filing the most PERM cases for{" "}

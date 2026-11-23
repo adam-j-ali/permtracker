@@ -44,6 +44,7 @@ export function ProfileHeader({
   eyebrow,
   name,
   answer,
+  note,
   facts = [],
   tags = [],
   recordLead = "On record",
@@ -54,6 +55,8 @@ export function ProfileHeader({
   name: string;
   /** The one sentence that answers why most people came: what is waiting at DOL now. */
   answer?: ReactNode;
+  /** A plain line under the answer that says how to read the page (an employer page: these are past filings). */
+  note?: ReactNode;
   facts?: ProfileFact[];
   tags?: ProfileTag[];
   /** The words before the plain line of links: "On record", "Also on this page". */
@@ -81,7 +84,8 @@ export function ProfileHeader({
           >
             {name}
           </h1>{" "}
-          {answer ? <p className="mt-3 max-w-2xl text-base leading-relaxed text-foreground sm:text-[1.0625rem]">{answer}</p> : null}
+          {answer ? <p className="mt-3 max-w-2xl text-base leading-relaxed text-foreground sm:text-[1.0625rem]">{answer}</p> : null}{" "}
+          {note ? <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{note}</p> : null}
         </div>{" "}
         {aside ? <div className="@[52rem]:col-start-2 @[52rem]:row-span-2 @[52rem]:row-start-1">{aside}</div> : null}{" "}
         {below ? (
