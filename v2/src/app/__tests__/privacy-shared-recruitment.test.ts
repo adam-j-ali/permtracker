@@ -52,6 +52,6 @@ describe("the privacy page and shared recruitment records", () => {
   });
 
   it("is dated the day it changed", () => {
-    expect(page).toContain("Last Updated: November 20, 2026");
+    expect(page).toContain("Last Updated: November 23, 2026");
   });
 });

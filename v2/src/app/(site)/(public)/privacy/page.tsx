@@ -17,6 +17,8 @@ import { BOARD_OPENS_AT, METRIC_MIN_N, MIN_CASE_REPORTERS, OFFICE_LIST_OPENS_AT 
 import { DELETED_CASE_DAYS } from "@convex/lib/deletedCases";
 // The invitations an account can send a day, the same constant the invitation's cap reads.
 import { REMINDER_INVITES_PER_ACCOUNT } from "@convex/lib/alertBudgets";
+// How many recent searches the boxes keep, the same constant the list is cut to.
+import { RECENT_SEARCHES_KEPT } from "@/lib/search/recentSearches";
 import { openGraphBase } from "@/lib/openGraphBase";
 import Link from "next/link";
 
@@ -68,7 +70,7 @@ export default function PrivacyPage() {
       <div>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Privacy policy</h1>{" "}
         <p className="mb-8 mt-4 text-lg text-muted-foreground">
-          Effective Date: February 17, 2026 | Last Updated: November 20, 2026
+          Effective Date: February 17, 2026 | Last Updated: November 23, 2026
         </p>{" "}
 
         <SectionIndex sections={SECTIONS} />
@@ -623,6 +625,12 @@ export default function PrivacyPage() {
                 days you&apos;ve checked. They stay in your browser’s storage, and we
                 never receive them. Clearing this site&apos;s data in your browser
                 removes them
+              </li>{" "}
+              <li>
+                The search boxes keep your last {RECENT_SEARCHES_KEPT} searches on this device, so a box
+                can offer them again: the case numbers and names you searched for, never a USCIS receipt
+                number. They stay in your browser’s storage, and we never receive them. Clear under any
+                search box removes them, and so does signing out
               </li>
             </ul>{" "}
 
@@ -1419,7 +1427,7 @@ export default function PrivacyPage() {
                 during OAuth redirects, for one day the sealed review link from
                 our email (see Reviews above), your saved USCIS receipt numbers,
                 the day you asked for a case&apos;s email alert and the days you
-                looked that case up, and the keys that let you change a timeline
+                looked that case up, your recent searches, and the keys that let you change a timeline
                 or a consulate report you saved (see Section 2)
               </li>{" "}
               <li>
