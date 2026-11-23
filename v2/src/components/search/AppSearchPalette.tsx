@@ -112,7 +112,7 @@ export function AppSearchPalette({
               className="min-h-[52px] w-full bg-transparent text-base outline-none placeholder:text-muted-foreground"
             />
           </div>
-          <p role="status" aria-live="polite" className="sr-only">
+          <p aria-live="polite" aria-atomic="true" className="sr-only">
             {showRecents ? `${recentSearchCount(recents.length)}.` : recentsCleared ? RECENT_CLEARED : ""}
           </p>
           <Command.List className="max-h-[60vh] overflow-y-auto pb-2">

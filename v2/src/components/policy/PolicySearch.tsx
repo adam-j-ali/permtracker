@@ -5,6 +5,7 @@ import { useCallback, useEffect, useId, useMemo, useState, type ReactNode } from
 import { rankFuzzy } from "@/lib/fuzzy";
 import type { PolicyFacets, PolicyItem } from "@/lib/policySearch";
 import { shortDate } from "@convex/lib/months";
+import { RecentSearchesField } from "@/components/search/RecentSearches";
 
 export type { PolicyItem } from "@/lib/policySearch";
 
@@ -113,22 +114,34 @@ export function PolicySearch({
         onFocusCapture={want}
       >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
-          <label className="block lg:col-span-2" htmlFor={`${id}-q`}>
-            <span className={LABEL}>Search every document</span>{" "}
-            <input
-              id={`${id}-q`}
-              type="search"
-              value={q.text}
-              maxLength={120}
-              autoComplete="off"
-              placeholder="e.g. prevailing wage"
-              onChange={(e) => {
-                want();
-                setQ({ ...q, text: e.target.value });
-              }}
-              className={CONTROL}
-            />
-          </label>{" "}
+          {/* Around the label, so the list under the box is never read as part of the box's name. */}
+          <RecentSearchesField
+            record="filter"
+            value={q.text}
+            onRestore={(text) => {
+              want();
+              setQ((cur) => ({ ...cur, text }));
+            }}
+            restoreFromUrl
+            className="lg:col-span-2"
+          >
+            <label className="block" htmlFor={`${id}-q`}>
+              <span className={LABEL}>Search every document</span>{" "}
+              <input
+                id={`${id}-q`}
+                type="search"
+                value={q.text}
+                maxLength={120}
+                autoComplete="off"
+                placeholder="e.g. prevailing wage"
+                onChange={(e) => {
+                  want();
+                  setQ({ ...q, text: e.target.value });
+                }}
+                className={CONTROL}
+              />
+            </label>
+          </RecentSearchesField>{" "}
           <label className="block" htmlFor={`${id}-kind`}>
             <span className={LABEL}>Kind</span>{" "}
             <select id={`${id}-kind`} value={q.kind} onChange={(e) => setQ({ ...q, kind: e.target.value })} className={CONTROL}>

@@ -14,6 +14,7 @@ import { formatMonth } from "@/lib/dolFormat";
 // here would be a build error. A type import compiles to nothing.
 import type { LiveKind, LiveListPage, LiveRemainderSummary, LiveSort } from "@/lib/db/liveCases";
 import { RequestFailed } from "@/components/tools/RequestFailed";
+import { RecentSearchesField } from "@/components/search/RecentSearches";
 import { LIST_PAGE_SIZE, LIST_ROW, LIST_TABLE, NUMBER_CELL, PHONE_ROW, TITLE_ON_PHONE } from "@/components/tools/caseListRow";
 import { INITIAL_RE, OTHER_INITIAL } from "@/lib/employerInitial";
 import { cn } from "@/lib/utils";
@@ -240,18 +241,22 @@ export function LiveCaseBrowser({
               fixedMonth ? "" : "sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]",
             )}
           >
-            <label className="flex min-h-[44px] w-full items-center gap-2 border-2 border-input bg-card px-3 text-sm font-bold">
-              <span className="text-sm text-muted-foreground">Search</span>{" "}
-              <input
-                type="search"
-                autoComplete="off"
-                value={qInput}
-                onChange={(e) => setQInput(e.target.value)}
-                placeholder="Case number or employer"
-                aria-label="Search the live cases"
-                className="w-full min-w-0 bg-transparent py-2 text-base font-medium outline-none placeholder:text-muted-foreground"
-              />
-            </label>{" "}
+            {/* Around the label, so the list under the box is never read as part of the box's name. Its own field in
+                the address, `live`: the name search on the same page opens from `q`. */}
+            <RecentSearchesField record="filter" field="live" value={qInput} onRestore={setQInput} restoreFromUrl>
+              <label className="flex min-h-[44px] w-full items-center gap-2 border-2 border-input bg-card px-3 text-sm font-bold">
+                <span className="text-sm text-muted-foreground">Search</span>{" "}
+                <input
+                  type="search"
+                  autoComplete="off"
+                  value={qInput}
+                  onChange={(e) => setQInput(e.target.value)}
+                  placeholder="Case number or employer"
+                  aria-label="Search the live cases"
+                  className="w-full min-w-0 bg-transparent py-2 text-base font-medium outline-none placeholder:text-muted-foreground"
+                />
+              </label>
+            </RecentSearchesField>{" "}
             <label className={cn("flex min-h-[44px] w-full min-w-0 items-center gap-2 text-sm font-bold", fixedMonth && "hidden")}>
               <span className="shrink-0">Filed in</span>{" "}
               <select

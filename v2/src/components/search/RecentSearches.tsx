@@ -21,7 +21,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { ClockCounterClockwiseIcon } from "@phosphor-icons/react";
 
 import { cn } from "@/lib/utils";
@@ -127,22 +126,25 @@ export interface RecentSearchesFieldProps {
   /** The box's value, when the page holds it (a clear button can empty it with no typing). */
   value?: string;
   scope?: RecentScope;
+  /** Neither offers nor keeps a search: a box inside another site's page (the embed). */
+  off?: boolean;
 }
 
 export function RecentSearchesField({
   children,
   className,
-  record,
+  record: recordAs,
   field = "q",
   hrefFor,
   onRestore,
   restoreFromUrl = false,
   value,
   scope = "public",
+  off = false,
 }: RecentSearchesFieldProps) {
   const all = useRecentSearches(scope);
-  const searches = React.useMemo(() => all.slice(0, RECENT_SHOWN_IN_A_BOX), [all]);
-  const pathname = usePathname();
+  const searches = React.useMemo(() => (off ? [] : all.slice(0, RECENT_SHOWN_IN_A_BOX)), [all, off]);
+  const record = off ? undefined : recordAs;
   const rootRef = React.useRef<HTMLDivElement>(null);
   const headingId = React.useId();
   const [focused, setFocused] = React.useState(false);
@@ -152,6 +154,8 @@ export function RecentSearchesField({
 
   const empty = value !== undefined ? value.trim() === "" : typedEmpty;
   const open = focused && empty && !dismissed && searches.length > 0;
+  // The page the list is open on. Open only ever in the browser, after a focus.
+  const here = open ? window.location.pathname : "";
   const said = open ? `${recentSearchCount(searches.length)} below the box.` : cleared ? RECENT_CLEARED : "";
 
   const box = React.useCallback(() => rootRef.current?.querySelector("input") ?? null, []);
@@ -216,7 +220,11 @@ export function RecentSearchesField({
     if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
     const links = [...(rootRef.current?.querySelectorAll<HTMLAnchorElement>("a[data-recent-search]") ?? [])];
     const at = links.indexOf(e.target as HTMLAnchorElement);
-    const next = e.target === input ? (e.key === "ArrowDown" ? links[0] : undefined) : at < 0 ? undefined : e.key === "ArrowDown" ? links[at + 1] : at === 0 ? input : links[at - 1];
+    const down = e.key === "ArrowDown";
+    let next: HTMLElement | null | undefined;
+    // From the box, down goes to the first search. In the list, up from the first goes back to the box.
+    if (e.target === input) next = down ? links[0] : undefined;
+    else if (at >= 0) next = down ? links[at + 1] : at === 0 ? input : links[at - 1];
     if (!next) return;
     e.preventDefault();
     next.focus();
@@ -225,7 +233,9 @@ export function RecentSearchesField({
   return (
     <div
       ref={rootRef}
-      className={cn("relative", className)}
+      // A column, so the box inside is a block exactly its own height (an inline input leaves a gap under it and a
+      // button beside it grows to match).
+      className={cn("relative flex flex-col", className)}
       onFocus={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
           setFocused(true);
@@ -275,7 +285,7 @@ export function RecentSearchesField({
               // other page is a quick move. Never fetched ahead: the list opens on every focus.
               return (
                 <li key={s.href}>
-                  {pathOf(s.href) === pathname ? (
+                  {pathOf(s.href) === here ? (
                     <a href={s.href} data-recent-search="" onClick={(e) => pick(e, s)} className={ROW}>
                       {label}
                     </a>
@@ -290,7 +300,8 @@ export function RecentSearchesField({
           </ul>
         </div>
       ) : null}{" "}
-      <span role="status" aria-live="polite" className="sr-only">
+      {/* A live region without the status role: a page's own status line stays the one status there is. */}
+      <span aria-live="polite" aria-atomic="true" data-recent-status="" className="sr-only">
         {said}
       </span>
     </div>

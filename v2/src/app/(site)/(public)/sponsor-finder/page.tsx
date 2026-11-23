@@ -9,6 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { ChoiceRadios } from "@/components/ui/choice-radios";
 import { caseSearchHref } from "@/lib/caseSearchPlan";
 import { ROW_LINK } from "@/components/entities/caseRows";
+import { RecentSearchesField } from "@/components/search/RecentSearches";
 import { choiceVariants } from "@/components/ui/choice";
 import { findSponsors, resolveJob, type FinderRow, type JobPick } from "@/lib/db/sponsorFinder";
 import { MIN_DECIDED_FOR_MEDIAN, MIN_DECIDED_FOR_RATE, entityHref } from "@/lib/entityPayload";
@@ -257,17 +258,20 @@ export default async function SponsorFinderPage({
 
       <form method="get" action={`${PATH}#${ANSWER_ID}`} className="mt-8 object p-5 sm:p-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
-          <label className="block text-sm font-bold">
-            Job
-            <input
-              type="search"
-              name="job"
-              defaultValue={pick.kind === "job" ? pick.title : asked.job}
-              placeholder="Software developer, nurse..."
-              autoComplete="off"
-              className={`mt-1 ${FIELD}`}
-            />
-          </label>{" "}
+          {/* Around the label, so the list under the box is never read as part of the box's name. */}
+          <RecentSearchesField record="submit">
+            <label className="block text-sm font-bold">
+              Job
+              <input
+                type="search"
+                name="job"
+                defaultValue={pick.kind === "job" ? pick.title : asked.job}
+                placeholder="Software developer, nurse..."
+                autoComplete="off"
+                className={`mt-1 ${FIELD}`}
+              />
+            </label>
+          </RecentSearchesField>{" "}
           <label className="block text-sm font-bold">
             State
             <select name="state" defaultValue={f.state ?? ""} className={`mt-1 ${FIELD}`}>

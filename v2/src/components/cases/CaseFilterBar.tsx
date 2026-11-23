@@ -15,6 +15,7 @@ import { ArrowDownIcon, ArrowUpIcon, CaretDownIcon, FunnelSimpleIcon, Magnifying
 import { formatCaseStatus, formatProgressStatus } from "@convex/lib/notificationHelpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RecentSearchesField } from "@/components/search/RecentSearches";
 import { choiceVariants } from "@/components/ui/choice";
 import { ChoiceRow } from "@/components/ui/choice-row";
 import { cn } from "@/lib/utils";
@@ -303,16 +304,19 @@ export function CaseFilterBar({
       {/* First things first: the search, then which cases, then the list. */}
       <div className="flex flex-wrap items-center gap-2">
         <div data-testid="search-input-container" className="relative min-w-0 flex-1 basis-64">
-          <Input
-            type="search"
-            aria-label="Search cases"
-            autoComplete="off"
-            placeholder="Name, job or case number"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="h-11 pl-10 text-base"
-          />
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+          {/* Every recent search, the app's own included; the page opens a search from `search` in its address. */}
+          <RecentSearchesField record="filter" scope="app" field="search" value={searchInput} onRestore={setSearchInput}>
+            <Input
+              type="search"
+              aria-label="Search cases"
+              autoComplete="off"
+              placeholder="Name, job or case number"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="h-11 pl-10 text-base"
+            />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+          </RecentSearchesField>
         </div>
 
         {/* A panel that stays open while you choose: a menu closed on every pick, so setting a stage and a

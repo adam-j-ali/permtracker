@@ -5,6 +5,7 @@ import { Fragment, useId, useMemo, useRef, useState } from "react";
 // One line, deliberately: no-server-only-in-client.test.ts checks each import line on its own.
 import type { Debarment, DebarmentPhase, DebarmentProgram } from "@/lib/db/debarments";
 import { DidYouMean } from "@/components/search/DidYouMean";
+import { RecentSearchesField } from "@/components/search/RecentSearches";
 import { formatInt } from "@/lib/format";
 import { rankFuzzy } from "@/lib/fuzzy";
 import { shortDate } from "@convex/lib/months";
@@ -158,19 +159,28 @@ export function DebarmentBrowser({ rows, sections }: { rows: DebarmentView[]; se
   return (
     <>
       <div className="mt-8 grid grid-cols-1 gap-3 bg-tint p-4 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0 border-2 border-border">
-        <label className="block lg:col-span-2" htmlFor={`${id}-q`}>
-          <span className={LABEL}>Search the lists</span>{" "}
-          <input
-            id={`${id}-q`}
-            type="search"
-            value={q.text}
-            maxLength={120}
-            autoComplete="off"
-            placeholder="Name, place or violation"
-            onChange={(e) => setQ({ ...q, text: e.target.value })}
-            className={CONTROL}
-          />
-        </label>{" "}
+        {/* Around the label, so the list under the box is never read as part of the box's name. */}
+        <RecentSearchesField
+          record="filter"
+          value={q.text}
+          onRestore={(text) => setQ((cur) => ({ ...cur, text }))}
+          restoreFromUrl
+          className="lg:col-span-2"
+        >
+          <label className="block" htmlFor={`${id}-q`}>
+            <span className={LABEL}>Search the lists</span>{" "}
+            <input
+              id={`${id}-q`}
+              type="search"
+              value={q.text}
+              maxLength={120}
+              autoComplete="off"
+              placeholder="Name, place or violation"
+              onChange={(e) => setQ({ ...q, text: e.target.value })}
+              className={CONTROL}
+            />
+          </label>
+        </RecentSearchesField>{" "}
         {/* Four statuses and three orders, each one tap, the one in use lime. */}
         <ChoiceRow
           className="sm:col-span-2"

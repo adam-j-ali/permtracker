@@ -21,6 +21,13 @@ function seed(list: Array<{ label: string; href: string }>) {
 }
 
 const panel = () => screen.queryByRole("list", { name: "Recent searches" });
+/** What the box's polite live region says (no status role, so a page's own status line stays the only one). */
+const spoken = () => {
+  const region = document.querySelector("[data-recent-status]");
+  expect(region).toHaveAttribute("aria-live", "polite");
+  expect(region).not.toHaveAttribute("role");
+  return region;
+};
 
 describe("recent searches under a box", () => {
   beforeEach(() => {
@@ -51,7 +58,7 @@ describe("recent searches under a box", () => {
     expect(links.map((a) => a.textContent?.trim())).toEqual(["Acme Robotics", "G-100-26125-868956"]);
     expect(links[0]).toHaveAttribute("href", "/case-search?q=Acme+Robotics");
     expect(screen.getByRole("button", { name: "Clear recent searches" })).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("2 recent searches below the box.");
+    expect(spoken()).toHaveTextContent("2 recent searches below the box.");
   });
 
   it("hides them while something is typed, and offers them again once the box is empty", async () => {
@@ -81,7 +88,7 @@ describe("recent searches under a box", () => {
 
     await user.click(screen.getByRole("textbox", { name: "Search" }));
     expect(panel()).toBeNull();
-    expect(screen.getByRole("status")).toHaveTextContent("");
+    expect(spoken()).toHaveTextContent("");
   });
 
   it("clears them, says so, and leaves focus in the box", async () => {
@@ -101,7 +108,7 @@ describe("recent searches under a box", () => {
 
     expect(panel()).toBeNull();
     expect(window.localStorage.getItem(RECENT_SEARCHES_KEY)).toBeNull();
-    expect(screen.getByRole("status")).toHaveTextContent("Recent searches cleared.");
+    expect(spoken()).toHaveTextContent("Recent searches cleared.");
     expect(box).toHaveFocus();
   });
 

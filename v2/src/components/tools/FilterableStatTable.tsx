@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import type { ReactNode } from "react";
 
 import { DidYouMean, nameSuggestionChips, useNameSuggestions } from "@/components/search/DidYouMean";
+import { RecentSearchesField } from "@/components/search/RecentSearches";
 import { RequestFailed } from "@/components/tools/RequestFailed";
 import { failureFromError, type FetchFailure } from "@/lib/fetchFailure";
 import { rankFuzzy } from "@/lib/fuzzy";
@@ -395,24 +396,37 @@ export function FilterableStatTable<T>({
           Search across the top, three from 1280px. */}
       <div className="flex flex-col gap-3">
         <div className="grid grid-cols-1 items-center gap-3 sm:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
-          <label className="flex min-h-[44px] w-full items-center gap-2 border-2 border-input bg-card px-3 focus-within:ring-2 focus-within:ring-primary shadow-hard-sm sm:col-span-2 xl:col-span-1">
-            <span className="text-sm font-bold text-muted-foreground">
-              Search
-            </span>{" "}
-            <input
-              type="search"
-              autoComplete="off"
-              value={query}
-              onFocus={ensureAll}
-              onChange={(e) => {
-                ensureAll();
-                setQuery(e.target.value);
-                setPage(0);
-              }}
-              placeholder={searchPlaceholder}
-              className="min-h-11 w-full min-w-0 bg-transparent text-base outline-none placeholder:text-muted-foreground"
-            />
-          </label>
+          {/* Around the label, so the list under the box is never read as part of the box's name. A table that
+              opens from `?q=` does so itself (`queryFromUrl`); a search made on this page fills it in place. */}
+          <RecentSearchesField
+            record="filter"
+            value={query}
+            onRestore={(v) => {
+              ensureAll();
+              setQuery(v);
+              setPage(0);
+            }}
+            className="sm:col-span-2 xl:col-span-1"
+          >
+            <label className="flex min-h-[44px] w-full items-center gap-2 border-2 border-input bg-card px-3 focus-within:ring-2 focus-within:ring-primary shadow-hard-sm">
+              <span className="text-sm font-bold text-muted-foreground">
+                Search
+              </span>{" "}
+              <input
+                type="search"
+                autoComplete="off"
+                value={query}
+                onFocus={ensureAll}
+                onChange={(e) => {
+                  ensureAll();
+                  setQuery(e.target.value);
+                  setPage(0);
+                }}
+                placeholder={searchPlaceholder}
+                className="min-h-11 w-full min-w-0 bg-transparent text-base outline-none placeholder:text-muted-foreground"
+              />
+            </label>
+          </RecentSearchesField>
 
           {facets.map((f) => (
             <Fragment key={f.key}>{" "}

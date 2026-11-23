@@ -9,6 +9,7 @@ import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 import { formatShareOf } from "@/lib/format";
 import { codeHref, zoneLabelOf, type CodeAnswer, type TitleAnswer } from "@/lib/socFinder";
 import { formText } from "@/lib/forms/formText";
+import { RecentSearchesField } from "@/components/search/RecentSearches";
 
 /**
  * The job code finder: a job title or a code in, the codes employers filed it under out, each with
@@ -101,17 +102,30 @@ export function SocFinder({ examples }: { examples: { slug: string; title: strin
           A job title or a SOC code
         </label>{" "}
         <div className="mt-3 flex gap-2">
-          <input
-            id={inputId}
-            name="q"
-            type="search"
+          {/* It answers as you type, so a search is kept on Enter or on leaving the box; one made on this page
+              asks again in place. */}
+          <RecentSearchesField
+            record="filter"
             value={text}
-            onChange={(e) => onChange(e.target.value)}
-            maxLength={MAX}
-            autoComplete="off"
-            placeholder="Data scientist"
-            className="h-12 min-w-0 flex-1 border-2 border-input bg-card px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />{" "}
+            onRestore={(v) => {
+              setText(v);
+              asked.current = "";
+              void ask(v);
+            }}
+            className="min-w-0 flex-1"
+          >
+            <input
+              id={inputId}
+              name="q"
+              type="search"
+              value={text}
+              onChange={(e) => onChange(e.target.value)}
+              maxLength={MAX}
+              autoComplete="off"
+              placeholder="Data scientist"
+              className="h-12 w-full min-w-0 border-2 border-input bg-card px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </RecentSearchesField>{" "}
           <button type="submit" className={buttonVariants({ size: "lg" })}>
             Find
           </button>

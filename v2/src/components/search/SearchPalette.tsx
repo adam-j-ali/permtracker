@@ -394,7 +394,7 @@ export function SearchPalette({
             <span>Opening {navTarget}…</span>
           </p>
         ) : null}
-        <p role="status" aria-live="polite" className="sr-only">
+        <p aria-live="polite" aria-atomic="true" className="sr-only">
           {showRecents ? `${recentSearchCount(recents.length)}.` : recentsCleared ? RECENT_CLEARED : ""}
         </p>
         <Command.List className="max-h-[55vh] overflow-y-auto p-2">
