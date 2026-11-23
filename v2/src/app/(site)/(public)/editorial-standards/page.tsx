@@ -48,13 +48,19 @@ const STANDARDS = [
   {
     id: "sources",
     icon: BuildingsIcon,
-    title: "Every figure comes from a government record",
+    title: "Every figure names where it comes from",
     body: (
       <>
-        The figures come from the Department of Labor&apos;s case-status service, read every night, and from DOL&apos;s
-        quarterly disclosure files for decided cases and their wages. DOL&apos;s published processing times, the State
-        Department&apos;s visa bulletins and USCIS&apos;s reports are the other sources. Regulations are quoted as the eCFR prints them. Each figure carries the date it covers, and
-        the{" "}
+        Most figures come from government records. The Department of Labor&apos;s case-status service is read every
+        night for every pending case, and every 15 minutes through DOL&apos;s working day for the cases it&apos;s
+        deciding. DOL&apos;s quarterly disclosure files give decided cases and their wages. DOL&apos;s published processing
+        times, the State Department&apos;s visa bulletins and USCIS&apos;s reports are the other official sources. Some
+        figures come from what people report about their own cases, such as the{" "}
+        <Link href="/green-card-timelines" className="link">
+          green card timelines
+        </Link>
+        , and those pages say the figures are self-reported. Regulations are quoted as the eCFR prints them. Each figure
+        carries the date it covers, and the{" "}
         <Link href="/methodology" className="link">
           methodology
         </Link>{" "}

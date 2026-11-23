@@ -340,7 +340,7 @@ export default async function AboutPage() {
         <SectionHead
           id="sources"
           title="Where every figure comes from"
-          line="Three federal agencies, read several times a day, with DOL asked on the spot for a case we don’t hold yet. Each figure carries its source and its date."
+          line="Three federal agencies, read several times a day, with DOL asked on the spot for a case we don’t hold yet. The green card timelines add what people report about their own cases, marked self-reported. Each figure carries its source and its date."
         />{" "}
         <div className="mt-10">
           <SourcePages />
