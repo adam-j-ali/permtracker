@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 
 import { BarRows, type BarRow } from "@/components/data/BarRows";
 import { DataProvenance } from "@/components/data/DataProvenance";
+import { CaseNextStep } from "@/components/tools/CaseNextStep";
 import { FilingMonthBars } from "@/components/data/FilingMonthBars";
 import { buildSorterRun } from "@/components/figures/card-sorter/model";
 import { BulletinCalendar } from "@/components/numbers/BulletinCalendar";
@@ -550,7 +551,9 @@ export default async function PermByTheNumbersPage() {
       <DataProvenance
         datasets={["perm-case-status", "live-recent", "review-stages", "decisions-observed", "pwd-status", "processing-times", "visa-bulletin"]}
         className="mt-10 border-t-2 border-border pt-4"
-      />
+      />{" "}
+      {/* The page ends on the reader's own next step: these figures, for their own case. */}
+      <CaseNextStep question="Where do these figures leave your case?" source="by-the-numbers-end" className="mt-12 max-w-2xl" />
     </div>
   );
 }

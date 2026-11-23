@@ -7,6 +7,7 @@ import { getDatasetSchema } from "@/lib/structuredData";
 import Link from "next/link";
 
 import { DataProvenance } from "@/components/data/DataProvenance";
+import { CaseNextStep } from "@/components/tools/CaseNextStep";
 import { FinePrint } from "@/components/data/FinePrint";
 import { PageBasics } from "@/components/data/PageBasics";
 import { QueueDayPicker } from "@/components/queue/QueueDayPicker";
@@ -467,7 +468,9 @@ export default async function PermQueuePage() {
       <DataProvenance
         datasets={["perm-case-status", "processing-times", "perm-cases"]}
         className="mt-8 border-t-2 border-border pt-4"
-      />
+      />{" "}
+      {/* The page ends on the reader's own next step: where their case sits in this queue. */}
+      <CaseNextStep question="Where's your own case in this queue?" source="perm-queue-end" className="mt-12 max-w-2xl" />
     </div>
   );
 }
