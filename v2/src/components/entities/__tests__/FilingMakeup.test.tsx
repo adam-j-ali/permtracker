@@ -227,3 +227,41 @@ describe("a share says which years it covers", () => {
   });
 });
 
+describe("the state chips stay six however many states the facet holds", () => {
+  // The facet keeps every state now (the map draws them all); the chips stay the six busiest.
+  const CODES = ["TX", "OR", "CA", "WA", "NY", "NJ", "MA", "IL", "GA"];
+  const states = CODES.map((key, i) => facet({ key, label: key, code: null, n: 100 - i * 10 }));
+
+  it("PlaceMix shows six chips, says how many more there are, and points at the map when the page has one", () => {
+    const { container } = render(<PlaceMix states={states} cities={[]} total={900} mapHref="#where" />);
+    const chips = [...container.querySelectorAll("li")].filter((li) => /\d/.test(li.textContent ?? "") && !/more/.test(li.textContent ?? ""));
+    expect(chips.map((li) => li.textContent?.split(" ")[0])).toEqual(["Texas", "Oregon", "California", "Washington", "New", "New"]);
+    const more = screen.getByRole("link", { name: "3 more states on the map" });
+    expect(more.getAttribute("href")).toBe("#where");
+    // The note counts what the chips show.
+    expect(screen.getByText(/These 6 states cover 450 of 900 filings/)).toBeInTheDocument();
+  });
+
+  it("without a map on the page, the rest is a plain count, never a dead link", () => {
+    render(<PlaceMix states={states} cities={[]} total={900} />);
+    expect(screen.getByText("3 more states")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /more states/ })).toBeNull();
+  });
+
+  it("StateMix does the same", () => {
+    const { container } = render(<StateMix rows={states} total={900} mapHref="#where" />);
+    expect(container.querySelectorAll("li").length).toBe(7);
+    expect(screen.getByRole("link", { name: "3 more states on the map" }).getAttribute("href")).toBe("#where");
+  });
+
+  it("six or fewer states show no count of more", () => {
+    render(<PlaceMix states={states.slice(0, 6)} cities={[]} total={900} mapHref="#where" />);
+    expect(screen.queryByText(/more state/)).toBeNull();
+  });
+
+  it("PlaceMix takes a title, so it needn't repeat the heading of the part it sits in", () => {
+    render(<PlaceMix states={states} cities={[]} total={900} title="The busiest states and cities" />);
+    expect(screen.getByText("The busiest states and cities")).toBeInTheDocument();
+  });
+});
+

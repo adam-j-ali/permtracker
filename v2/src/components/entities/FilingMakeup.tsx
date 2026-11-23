@@ -207,18 +207,45 @@ export function OccupationMix({
   );
 }
 
+/** State chips shown before the rest are counted: the busiest six. */
+const STATE_CHIPS = 6;
+
+/**
+ * The states past the chips, as a count. A link to the page's state map when there is one, plain words when
+ * there isn't, so it never points at nothing.
+ */
+function MoreStates({ more, mapHref }: { more: number; mapHref?: string }) {
+  if (more <= 0) return null;
+  const words = `${formatInt(more)} more ${more === 1 ? "state" : "states"}`;
+  return (
+    <li className="flex items-center px-1 text-sm">
+      {mapHref ? (
+        <a href={mapHref} className="link inline-flex min-h-11 items-center">
+          {`${words} on the map`}
+        </a>
+      ) : (
+        <span className="text-muted-foreground">{words}</span>
+      )}
+    </li>
+  );
+}
+
 /** States as chips. Short codes, few of them, read at a glance. */
 export function StateMix({
-  rows,
+  rows: all,
   total,
   className,
   period,
+  mapHref,
 }: Period & {
   rows: FacetRow[];
   total: number;
   className?: string;
+  /** The page's state map, when it has one: the states past the chips are on it. */
+  mapHref?: string;
 }) {
-  if (rows.length === 0) return null;
+  if (all.length === 0) return null;
+  const rows = all.slice(0, STATE_CHIPS);
   const shown = rows.reduce((a, r) => a + r.n, 0);
   return (
     <Shell
@@ -257,7 +284,8 @@ export function StateMix({
               <span className="block font-mono text-sm font-bold tabular-nums">{formatInt(r.n)}</span>
             </li>
           </Fragment>
-        ))}
+        ))}{" "}
+        <MoreStates more={all.length - rows.length} mapHref={mapHref} />
       </ul>
     </Shell>
   );
@@ -342,25 +370,33 @@ export function PartyMix({
  * bars (the question is how concentrated).
  */
 export function PlaceMix({
-  states,
+  states: allStates,
   cities: givenCities,
   total,
   className,
   period,
+  mapHref,
+  title = "Where the jobs are",
 }: Period & {
   states: FacetRow[];
   cities: FacetRow[];
   total: number;
   className?: string;
+  /** The page's state map, when it has one: the states past the chips are on it. */
+  mapHref?: string;
+  /** The box's own title, where the part it sits in already says "where". */
+  title?: string;
 }) {
   const cities = realCities(givenCities);
+  // The facet holds every state the filings name (the map draws them all); the chips are the six busiest.
+  const states = allStates.slice(0, STATE_CHIPS);
   if (states.length === 0 && cities.length === 0) return null;
   const top = cities[0]?.n ?? 0;
   const inStates = states.reduce((a, r) => a + r.n, 0);
   const inCities = cities.reduce((a, r) => a + r.n, 0);
   return (
     <Shell
-      title="Where the jobs are"
+      title={title}
       note={
         <>
           The worksite on the application, which is where the job is and not where the company is headquartered.{" "}
@@ -390,7 +426,8 @@ export function PlaceMix({
                 <span className="ml-1 font-mono text-sm font-bold tabular-nums">{formatInt(r.n)}</span>
               </li>
             </Fragment>
-          ))}
+          ))}{" "}
+          <MoreStates more={allStates.length - states.length} mapHref={mapHref} />
         </ul>
       ) : null}{" "}
       {cities.length > 0 ? (
