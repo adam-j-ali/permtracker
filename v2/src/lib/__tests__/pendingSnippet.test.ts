@@ -58,6 +58,31 @@ describe("profileLine", () => {
     expect(profileLine(1, null, null)).toBe("Sponsors green cards: 1 PERM case filed in the last 12 months.");
     expect(profileLine(0, null, counts(3))).toBe("3 PERM cases waiting with DOL.");
     expect(profileLine(null, null, counts(1, 1))).toBe("1 PERM case waiting with DOL, on hold.");
-    expect(profileLine(0, "2026-10-02", null)).toBeNull();
+  });
+
+  it("answers for a sponsor with nothing recent: its newest filing's day, and nothing waiting", () => {
+    expect(profileLine(0, "2024-03-04", null, "2026-11-23")).toBe(
+      "No PERM filings in the last 12 months. The newest was filed on March 4, 2024, and nothing is waiting with DOL.",
+    );
+    // A pending row with nothing pending is the same answer.
+    expect(profileLine(0, "2024-03-04", counts(0), "2026-11-23")).toBe(
+      "No PERM filings in the last 12 months. The newest was filed on March 4, 2024, and nothing is waiting with DOL.",
+    );
+  });
+
+  it("never says no filings in 12 months when the count is unknown or the newest filing is inside the year", () => {
+    // The 12-month column not refreshed yet: the newest day alone.
+    expect(profileLine(null, "2024-03-04", null, "2026-11-23")).toBe(
+      "The newest PERM filing on record was on March 4, 2024, and nothing is waiting with DOL.",
+    );
+    // Two sources that disagree: the newest filing is inside the last 12 months, so the "none" half is dropped.
+    expect(profileLine(0, "2026-10-02", null, "2026-11-23")).toBe(
+      "The newest PERM filing on record was on October 2, 2026, and nothing is waiting with DOL.",
+    );
+  });
+
+  it("says nothing when there's no filing day to give", () => {
+    expect(profileLine(0, null, null, "2026-11-23")).toBeNull();
+    expect(profileLine(null, null, counts(0), "2026-11-23")).toBeNull();
   });
 });
