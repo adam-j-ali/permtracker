@@ -12,12 +12,14 @@ import { internal } from "./_generated/api";
 // Single-sourced from lib/errorRecording (a dependency-light helper) so schema +
 // mutation + the ErrorSource TS type all share one closed-set definition without
 // importing a Convex function module into broad consumers.
-import { errorSourceValidator } from "./lib/errorRecording";
-import { MS_PER_DAY, MS_PER_HOUR } from "./lib/time";
+import { errorSourceValidator, isTransientDbError } from "./lib/errorRecording";
+import { MS_PER_DAY, MS_PER_HOUR, emailStamp } from "./lib/time";
 import { checkAndRecordRateLimit } from "./lib/rateLimit";
 
 /** Admin emails about unresolved errors, at most, per rolling hour. */
 const ERROR_EMAILS_PER_HOUR = 5;
+/** The last hour's newest errors read to find the same operation's earlier transient failure. */
+const REPEAT_SCAN = 100;
 
 /**
  * Record a system error (server-side only).
@@ -33,17 +35,18 @@ export const record = internalMutation({
     extra: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const now = Date.now();
     const errorId = await ctx.db.insert("systemErrors", {
       ...args,
       resolved: false,
-      createdAt: Date.now(),
+      createdAt: now,
     });
 
     // Send admin notification for unresolved errors, at most
     // ERROR_EMAILS_PER_HOUR an hour. The compound-index range on
     // (resolved, createdAt) reads one past that, so the read set stays small
     // and OCC storms can't start under a high error rate.
-    const oneHourAgo = Date.now() - MS_PER_HOUR;
+    const oneHourAgo = now - MS_PER_HOUR;
     const recentErrors = await ctx.db
       .query("systemErrors")
       .withIndex("by_resolved", (q) =>
@@ -57,10 +60,34 @@ export const record = internalMutation({
     // live site failing. The row is still recorded either way, and
     // every email now names the deployment it came from.
     const deployment = (process.env.CONVEX_CLOUD_URL ?? "").replace(/^https?:\/\//, "").replace(/\.convex\.cloud.*$/, "");
-    if (recentErrors.length <= ERROR_EMAILS_PER_HOUR && process.env.ADMIN_ERROR_EMAILS !== "off") {
+    // A transient database error (isTransientDbError) mails only when the same operation already failed that way
+    // within the hour; one alone is in the table and the morning report's recorded errors.
+    const transient = isTransientDbError(args.message);
+    let repeated = false;
+    if (transient) {
+      const lastHour = await ctx.db
+        .query("systemErrors")
+        .withIndex("by_resolved", (q) => q.eq("resolved", false).gte("createdAt", oneHourAgo))
+        .order("desc")
+        .take(REPEAT_SCAN);
+      repeated = lastHour.some(
+        (e) => e._id !== errorId && e.operation === args.operation && isTransientDbError(e.message),
+      );
+    }
+    if (
+      recentErrors.length <= ERROR_EMAILS_PER_HOUR &&
+      process.env.ADMIN_ERROR_EMAILS !== "off" &&
+      (!transient || repeated)
+    ) {
       await ctx.scheduler.runAfter(0, internal.notificationActions.sendAdminNotificationEmail, {
         subject: `[System Error] ${args.operation}`,
-        body: `Source: ${args.source}\nOperation: ${args.operation}${deployment ? `\nDeployment: ${deployment}` : ""}\n\n${args.message}${args.resourceId ? `\n\nResource: ${args.resourceId}` : ""}`,
+        body:
+          `At: ${emailStamp(now)}\nSource: ${args.source}\nOperation: ${args.operation}` +
+          `${deployment ? `\nDeployment: ${deployment}` : ""}\n\n${args.message}` +
+          `${args.resourceId ? `\n\nResource: ${args.resourceId}` : ""}` +
+          (transient
+            ? "\n\nThis database error is the operation's second time within an hour; one alone isn't emailed."
+            : ""),
       });
     }
 

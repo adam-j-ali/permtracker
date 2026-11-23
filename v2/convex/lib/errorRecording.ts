@@ -40,6 +40,18 @@ export const errorSourceValidator = v.union(
   v.literal("webhook"),
 );
 
+/**
+ * A database error that usually clears by itself: the database answering 5xx (libsql's HTTP error, the client's
+ * SERVER_ERROR), the query deadline, or a timeout. systemErrors.record mails one only when the same operation fails
+ * twice within an hour (Nov 2026: a blip on the server mailed errors the next run never saw).
+ */
+const TRANSIENT_DB_ERROR =
+  /\blibsql HTTP 5\d\d\b|SERVER_ERROR: Server returned HTTP status 5\d\d|\bturso query deadline\b|aborted due to timeout|\bTimeoutError\b|\bETIMEDOUT\b|\btimed out\b/i;
+
+export function isTransientDbError(message: string): boolean {
+  return TRANSIENT_DB_ERROR.test(message.slice(0, 2000));
+}
+
 // FilterApi generic can't fully resolve internal.systemErrors at the type level.
 // The reference is verified correct — see convex/systemErrors.ts (internalMutation).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
