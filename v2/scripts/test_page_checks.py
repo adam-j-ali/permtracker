@@ -33,6 +33,15 @@ def main() -> int:
     rc = pc.run({**phone, "cmd": [sys.executable, "-c", script_c]})
     if any("covered=0" in ln for ln in rc["tail"]) or not any("/hid" in ln for ln in rc["tail"]):
         failures.append(f"a clean line that counts covered text is left out of the report (got {rc['tail']})")
+    # Nov 23 2026: each line also counts what runs past the edge and the names split across lines; a clean line
+    # with past=0 and split=0 is still clean, and a line with either is kept with its finding under it.
+    full = [f"390 /page-{i}  overflow=0px  past=0  small=0  taps=0  covered=0  split=0  (2.{i} s)" for i in range(4)]
+    full += ["390 /chip  overflow=0px  past=1  small=0  taps=0  covered=0  split=0  (2.9 s)", '    past: li. right=560 "Software"']
+    full += ["320 /form  overflow=0px  past=0  small=0  taps=0  covered=0  split=1  (2.8 s)", "    split: 320: CW-1 in p.mt-1"]
+    script_f = "import sys\n" + "".join(f"print({ln!r})\n" for ln in full) + "sys.exit(1)\n"
+    rf = pc.run({**phone, "cmd": [sys.executable, "-c", script_f]})
+    if any("/page-" in ln for ln in rf["tail"]) or not all(any(k in ln for ln in rf["tail"]) for k in ("/chip", "past: li", "/form", "split: 320")):
+        failures.append(f"a line that counts past and split is clean at 0 and kept with its finding otherwise (got {rf['tail']})")
     # Nov 3 2026: a sweep that runs out of time says how far it got and its slowest loads.
     slow = [f"390 /page-{i}  overflow=0px  small=0  taps=0  covered=0  ({i}.5 s)" for i in range(8)]
     script_s = "import sys, time\n" + "".join(f"print({ln!r}, flush=True)\n" for ln in slow) + "time.sleep(30)\n"

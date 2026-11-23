@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
- * Measure pages at phone widths: does the page scroll sideways, and if so which
- * element does it; text under 14px; standalone tap targets under 43px; and text a
- * highlight covers (lib_covered_text.mjs), at the phone widths and, resized in
- * place, at tablet and desktop widths too.
+ * Measure pages at phone widths: does anything run past the screen's edge, and which
+ * element; text under 14px; standalone tap targets under 43px; text a highlight
+ * covers (lib_covered_text.mjs); and a program name split across two lines ("CW-"
+ * then "1", lib_phone_checks.mjs), at the phone widths and, resized in place, at
+ * tablet and desktop widths too (covered text and split names).
  *
  * One headless Chrome, pages loaded one after another, closed in `finally`
  * (never run two headless browsers at once on this Mac). For when the site's
@@ -16,21 +17,31 @@
  * Read the first run as mostly a test of this script (it was, Oct 5 2026):
  * - The phone menu drawer sits off-screen on purpose; anything inside a fixed
  *   nav is skipped.
- * - A link inside a truncated (overflow: hidden) row reaches past the edge and
- *   is clipped, not overflowing: only the page's own scroll width is a verdict.
- * - When the page does overflow, `culprit` hides each section of <main> in
- *   turn and names the ones whose removal ends it, then the innermost
- *   elements past the edge.
+ * - body has overflow-x: clip (globals.css, since Oct 17 2026), which keeps a wide part from moving the
+ *   page and kept it out of the page's scroll width too: from then until Nov 23 2026 this sweep read
+ *   overflow=0 whatever spilled out of a card. `overflow` is now read with body's clip lifted for the
+ *   measurement, and `past` names each element in <main> past the edge that no box scrolls or clips.
+ * - A link inside a truncated (overflow: hidden) row, or a table in its scroller, reaches past the edge
+ *   and is held, not overflowing: anything inside a box whose overflow-x is auto, scroll, hidden or clip
+ *   is skipped, and so is anything hidden from readers.
+ * - When the page does overflow, `culprit` hides each section of <main> in turn and names the ones
+ *   whose removal ends it.
  * - An inline link inside a sentence is exempt from the tap size (WCAG 2.5.8), a checkbox counts by
  *   its label, and a button out of the tab order inside a full-size field is a shortcut, not a target.
- * - The sentence rule has a probe: serve scripts/fixtures/phone_sweep_probe.html as /index.html and
- *   sweep it. It prints taps=5 at each width: the four links alone on a line and the name over a
- *   count, never the link in a sentence, the link through a <b>, the source line or the link that
- *   is a cell's whole content. A change to the rule that prints any other count changed the rule.
+ * - A split name is fixed where it's written: KeepWhole (src/components/ui/keep-whole.tsx) around the
+ *   copy; the articles' MDX does it on its own.
+ * - Each rule has a probe: serve scripts/fixtures/phone_sweep_probe.html as /index.html and sweep it.
+ *   At 390 and at 320 it prints overflow above 0px, past=1 (the chip with a 60-character label, its li
+ *   named), taps=5 (the four links alone on a line and the name over a count, never the link in a
+ *   sentence, the link through a <b>, the source line or the link that is a cell's whole content, and
+ *   never the 44px chip), and split=1 at 320 and split=4 at 390, whose line counts the three wide widths
+ *   too (the CW-1 in the narrow box, never the one in a no-wrap span); the sweep exits 1. A change to a
+ *   rule that prints any other count changed the rule.
  */
 import { chromium } from "playwright-core";
 
 import { coveredText } from "./lib_covered_text.mjs";
+import { PROGRAM_NAME_SOURCE, pastTheEdge, splitNames } from "./lib_phone_checks.mjs";
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const [base, ...paths] = process.argv.slice(2);
@@ -42,26 +53,29 @@ const WIDTHS = [390, 320];
 // Covered text depends on where lines break, so it's checked wider too: the 390 page is resized in place.
 const WIDE = [768, 1024, 1440];
 
-function measure(w) {
+function measure() {
   const doc = document.documentElement;
-  const overflow = doc.scrollWidth - doc.clientWidth;
   const label = (el) => `${el.tagName.toLowerCase()}.${String(el.className).slice(0, 60)}`;
-  let culprit = [];
-  if (overflow > 0) {
-    const sections = [...document.querySelectorAll("main > *, main > * > *, main > * > * > *")];
-    for (const s of sections) {
-      const prev = s.style.display;
-      s.style.display = "none";
-      const gone = doc.scrollWidth - doc.clientWidth <= 0;
-      s.style.display = prev;
-      if (gone) culprit.push(label(s));
+  // body's overflow-x: clip keeps a spill out of the page's scroll width, so it's lifted while the width is
+  // read, then put back. A clip makes no box of its own, so lifting it moves nothing on the page.
+  const clip = document.body.style.overflowX;
+  document.body.style.overflowX = "visible";
+  let overflow = 0;
+  const culprit = [];
+  try {
+    overflow = doc.scrollWidth - doc.clientWidth;
+    if (overflow > 0) {
+      const sections = [...document.querySelectorAll("main > *, main > * > *, main > * > * > *")];
+      for (const s of sections) {
+        const prev = s.style.display;
+        s.style.display = "none";
+        const gone = doc.scrollWidth - doc.clientWidth <= 0;
+        s.style.display = prev;
+        if (gone) culprit.push(label(s));
+      }
     }
-    const innermost = [...document.querySelectorAll("main *")].filter((el) => {
-      if (el.closest("nav.fixed")) return false;
-      const b = el.getBoundingClientRect();
-      return b.width > 0 && b.right > w + 1 && ![...el.children].some((c) => c.getBoundingClientRect().right > w + 1);
-    });
-    culprit = [...culprit.slice(-3), ...innermost.slice(0, 4).map((el) => `${label(el)} right=${Math.round(el.getBoundingClientRect().right)} "${(el.textContent || "").trim().slice(0, 40)}"`)];
+  } finally {
+    document.body.style.overflowX = clip;
   }
   const small = [];
   for (const el of document.querySelectorAll("main p, main li, main td, main th, main dd, main dt, main span, main a, main button, main label, main summary")) {
@@ -169,21 +183,28 @@ try {
       }
       await page.waitForLoadState("networkidle", { timeout: 8000 }).catch(() => {});
       const secs = ((Date.now() - t0) / 1000).toFixed(1);
-      const r = await page.evaluate(measure, width);
+      const r = await page.evaluate(measure);
+      const past = await page.evaluate(pastTheEdge, width);
       const covered = (await page.evaluate(coveredText)).map((c) => `${width}: ${c}`);
+      const split = (await page.evaluate(splitNames, PROGRAM_NAME_SOURCE)).map((s) => `${width}: ${s}`);
       if (width === WIDTHS[0]) {
         for (const wide of WIDE) {
           await page.setViewportSize({ width: wide, height: 900 });
           covered.push(...(await page.evaluate(coveredText)).map((c) => `${wide}: ${c}`));
+          split.push(...(await page.evaluate(splitNames, PROGRAM_NAME_SOURCE)).map((s) => `${wide}: ${s}`));
         }
         await page.setViewportSize({ width, height: 844 });
       }
-      if (r.overflow > 0 || r.smallN || r.tapsN || covered.length) bad++;
-      console.log(`${width} ${p}  overflow=${r.overflow}px  small=${r.smallN}  taps=${r.tapsN}  covered=${covered.length}  (${secs} s)`);
-      for (const c of r.culprit) console.log(`    wide: ${c}`);
+      if (r.overflow > 0 || past.length || r.smallN || r.tapsN || covered.length || split.length) bad++;
+      console.log(
+        `${width} ${p}  overflow=${r.overflow}px  past=${past.length}  small=${r.smallN}  taps=${r.tapsN}  covered=${covered.length}  split=${split.length}  (${secs} s)`,
+      );
+      for (const c of r.culprit.slice(-3)) console.log(`    wide: ${c}`);
+      for (const e of past.slice(0, 4)) console.log(`    past: ${e}`);
       for (const s of r.small) console.log(`    small: ${s}`);
       for (const t of r.taps) console.log(`    tap: ${t}`);
       for (const c of covered.slice(0, 6)) console.log(`    covered: ${c}`);
+      for (const s of split.slice(0, 6)) console.log(`    split: ${s}`);
       if (process.env.SHOTS && width === 390) await page.screenshot({ path: `${process.env.SHOTS}/${p.replace(/\W+/g, "_") || "home"}-${width}.png` });
     }
     await ctx.close();

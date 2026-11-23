@@ -1,5 +1,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Sweep probe</title>
-<style>body{font:16px/1.5 sans-serif;margin:16px} .block{display:block} td{padding:12px} .grid{display:grid}</style></head>
+<style>body{font:16px/1.5 sans-serif;margin:16px;overflow-x:clip} .block{display:block} td{padding:12px} .grid{display:grid}
+.chips{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0} .chip{display:inline-flex;max-width:100%;min-height:44px;align-items:center;gap:8px;padding:0 12px;border:2px solid}
+.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .narrow{width:1ch;word-break:break-all} .whole{white-space:nowrap}</style></head>
 <body><main>
 <h1>Probe</h1>
 <p>A sentence with <a id="in-sentence" href="#a">a link inside it</a>, which is exempt.</p>
@@ -12,4 +14,9 @@
 <div><a id="two-links-a" href="#f">One link</a> <a id="two-links-b" href="#g">Another link</a></div>
 <div><a id="words-in-a-block-under-it" href="#h">A name with a count on the next line</a><span class="block">1,234 approvals</span></div>
 <div>Read from <b><a id="inside-an-inline" href="#i">DOL's file</a></b> each morning.</div>
+<!-- The Nov 23 2026 defect: body clips sideways, and a chip whose li grows to its label runs past the edge. -->
+<ul class="chips"><li><a id="long-chip" class="chip" href="#j"><span class="truncate">Software Developers, Applications and Systems Software Workers</span><span>1,234</span></a></li></ul>
+<!-- A name split across lines (break-all, so every engine breaks it the same way), then the same name kept whole. -->
+<p id="split-name" class="narrow">Form CW-1 here</p>
+<p id="kept-whole" class="narrow"><span class="whole">CW-1</span> kept</p>
 </main></body></html>
