@@ -1258,6 +1258,31 @@ IDLE_MARGIN = 25.0
 SERVER_STALE_MIN = 45
 BACKUP_WARN_H, BACKUP_FAIL_H = 30, 54
 R2_WARN_GB, R2_FAIL_GB = 8.0, 9.5
+R2_FREE_BYTES = 10e9
+
+
+def r2_pace(history: list[dict]) -> tuple[float, dt.date | None] | None:
+    """(bytes a day, the day the bucket passes the free 10 GB at that pace) over the last 7 days of its size, or
+    None with under three readings across two days. The day is None when the bucket isn't growing. `history` is
+    permtracker-health's bucketHistory: [{"day": "YYYY-MM-DD", "bytes": n}, ...]."""
+    pts = []
+    for r in history or []:
+        try:
+            pts.append((dt.date.fromisoformat(str(r["day"])), int(r["bytes"])))
+        except (KeyError, TypeError, ValueError):
+            continue
+    pts.sort()
+    if not pts:
+        return None
+    pts = [p for p in pts if (pts[-1][0] - p[0]).days <= 6]
+    span = (pts[-1][0] - pts[0][0]).days
+    if len(pts) < 3 or span < 2:
+        return None
+    rate = (pts[-1][1] - pts[0][1]) / span
+    if rate <= 0:
+        return rate, None
+    days = max(0, -(-(R2_FREE_BYTES - pts[-1][1]) // rate))
+    return rate, pts[-1][0] + dt.timedelta(days=int(days))
 DISK_COPY_FREE = 5  # Oracle's Always Free allowance of volume backups
 RESTORE_WARN_D = 40  # the restore test runs monthly; a missed month shows in about ten days
 MUST_RUN = ["permtracker-db", "nginx", "cloudflared"]
@@ -1491,6 +1516,11 @@ def estimate_lines(priv: dict) -> list[str]:
             line("visa bulletin release days", ours("bulletin").get("all") or {})]
     return [x for x in out if x]
 
+def pct_word(x) -> str:
+    """'85% ' for a share, '' when it's unknown."""
+    return "" if x is None else f"{x:.0f}% "
+
+
 def server_verdict(doc: dict | None, now_ms: int, switches: list[int] | None = None) -> dict:
     """Judge perm_docs['server_health'], which the server writes every 10 minutes."""
     title = "The server (Oracle)"
@@ -1565,13 +1595,26 @@ def server_verdict(doc: dict | None, now_ms: int, switches: list[int] | None = N
         used = (b.get("offsiteOk") or {}).get("bucketBytes")
         if used is not None:
             gb = used / 1e9
+            # When the bucket passes the free 10 GB at the last week's pace (permtracker-health keeps its size by
+            # day): one reading a day can't show a slope, and "8.4 GB" alone doesn't say whether that's days or
+            # months away (Nov 23 2026: about Nov 29).
+            pace = r2_pace((b.get("offsiteOk") or {}).get("bucketHistory") or [])
+            when = ""
+            if pace and pace[1]:
+                when = f", on course to pass 10 GB around {pace[1].strftime('%a %b %-d')}"
             # R2's free tier is 10 GB-month. Old copies go only after a newer one
             # lands (oracle/bin/permtracker-r2-prune: newest 15 + 3 monthly).
             if gb > R2_FAIL_GB:
-                fails.append(f"R2 holds {gb:.1f} GB, about to pass the free 10 GB")
+                fails.append(f"R2 holds {gb:.1f} GB, about to pass the free 10 GB{when}")
             elif gb > R2_WARN_GB:
-                warns.append(f"R2 holds {gb:.1f} GB of the free 10 GB")
-            lines.append(f"R2 bucket: {gb:.1f} GB used of the free 10 GB")
+                warns.append(f"R2 holds {gb:.1f} GB of the free 10 GB{when}")
+            if pace is None:
+                lines.append(f"R2 bucket: {gb:.1f} GB used of the free 10 GB")
+            elif pace[1] is None:
+                lines.append(f"R2 bucket: {gb:.1f} GB used of the free 10 GB, not growing over the last week")
+            else:
+                lines.append(f"R2 bucket: {gb:.1f} GB used of the free 10 GB, growing about {pace[0] / 1e9:.2f} GB "
+                             f"a day{when}")
     rest = b.get("restoreOk") or {}
     if not rest.get("at"):
         warns.append("the off-site backup has never been restore-tested")
@@ -1682,8 +1725,15 @@ def server_verdict(doc: dict | None, now_ms: int, switches: list[int] | None = N
         fails.append(f"the disk will be full in about {hours:.0f} hours at the last six hours' rate")
     elif isinstance(hours, (int, float)) and hours < DISK_FULL_WARN_H:
         warns.append(f"the disk will be full in about {hours:.0f} hours at the last six hours' rate")
+    # The disk is 150 GB of Oracle's free 200 on purpose, and the page-cache cap keeps DISK_FREE_AT_CAP_GB free, so
+    # the warning is the cap's line, not a share: 80% full is 30 GB free, which is fine (Nov 23 2026). A report
+    # without the free figure keeps the share.
     if disk is not None and disk > 90:
         fails.append(f"disk {disk:.0f}% full")
+    elif isinstance(free, (int, float)):
+        if free < DISK_FREE_AT_CAP_GB:
+            warns.append(f"disk {pct_word(disk)}full, {free:.0f} GB free: under the {DISK_FREE_AT_CAP_GB} GB the "
+                         "page-cache cap keeps")
     elif disk is not None and disk > 80:
         warns.append(f"disk {disk:.0f}% full")
 

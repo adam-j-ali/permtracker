@@ -28,6 +28,9 @@ APP = pathlib.Path("/srv/permtracker")
 HERE = APP / "health"
 SAMPLES = HERE / "samples.jsonl"
 STATE = HERE / "counters.json"
+# The R2 bucket's size, one reading a day, so the morning report can say when it passes the free 10 GB.
+BUCKET_SIZES = HERE / "offsite_sizes.json"
+BUCKET_DAYS = 14
 WEEK_S = 7 * 86_400
 NIC_MBPS = 2_000  # A1.Flex gets 1 Gbps per OCPU; this shape has 2
 SERVICES = ["permtracker-db", "permtracker-web@blue",
@@ -226,6 +229,28 @@ def stopped_after_error(show: str) -> list[str]:
     return sorted(out)
 
 
+def bucket_history(path: pathlib.Path, day: str, size) -> list:
+    """The R2 bucket's size by day, the newest reading of each day, the last BUCKET_DAYS days, kept in `path`.
+
+    One reading a day can't show a slope (the bucket grew about 0.27 GB a day in Nov 2026 with nothing saying when
+    it would pass the free 10 GB), so the report reads this. An unreadable file starts again; no size, no record.
+    """
+    if size is None:
+        return []
+    try:
+        rows = [r for r in json.loads(path.read_text()) if isinstance(r, dict) and r.get("day") != day]
+    except (OSError, ValueError, TypeError):
+        rows = []
+    rows = sorted([*rows, {"day": day, "bytes": int(size)}], key=lambda r: str(r.get("day")))[-BUCKET_DAYS:]
+    try:
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(rows))
+        tmp.replace(path)
+    except OSError:
+        pass
+    return rows
+
+
 def p95(xs):
     if not xs:
         return None
@@ -295,7 +320,9 @@ def main():
         pass
     try:
         count, size = (APP / "backups" / "OFFSITE_SIZE").read_text().split()
-        offsite_ok = {**(offsite_ok or {}), "bucketObjects": int(count), "bucketBytes": int(size)}
+        offsite_ok = {**(offsite_ok or {}), "bucketObjects": int(count), "bucketBytes": int(size),
+                      "bucketHistory": bucket_history(BUCKET_SIZES, time.strftime("%Y-%m-%d", time.gmtime(now)),
+                                                      int(size))}
     except (OSError, ValueError):
         pass
     try:

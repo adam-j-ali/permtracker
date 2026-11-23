@@ -495,7 +495,28 @@ def main() -> int:
             now_ms)["status"] == "warn", "an R2 bucket past 8 GB warns")
     check(v(doc(backup={"offsiteOk": {"at": "2026-09-28T07:18:00Z", "bucketBytes": 9_700_000_000}}),
             now_ms)["status"] == "fail", "an R2 bucket about to pass the free 10 GB fails")
-    check(v(doc(now={"diskPct": 85.0}), now_ms)["status"] == "warn", "disk over 80% warns")
+    check(v(doc(now={"diskPct": 85.0}), now_ms)["status"] == "warn", "disk over 80% warns when free space is unknown")
+    # Nov 23 2026: the disk is 150 GB of Oracle's free 200 on purpose, and the page-cache cap keeps 25 GB free, so
+    # 80% full (30 GB free) is no warning; under the cap's 25 GB is.
+    check(v(doc(now={"diskPct": 82.0, "diskFreeGB": 27.0}), now_ms)["status"] == "ok",
+          "a disk 82% full with 27 GB free is inside the cap's line")
+    low = v(doc(now={"diskPct": 85.0, "diskFreeGB": 22.0}), now_ms)
+    check(low["status"] == "warn" and "22 GB free" in low["summary"],
+          "under the cap's 25 GB free warns and says how much is free", str(low["summary"]))
+    check(v(doc(now={"diskPct": 93.0, "diskFreeGB": 10.0}), now_ms)["status"] == "fail", "over 90% full still fails")
+    # The R2 line says when the bucket is on course to pass the free 10 GB, from the last 7 days of its size.
+    hist = [{"day": f"2026-09-{d:02d}", "bytes": int(6_500_000_000 + (d - 21) * 270_000_000)} for d in range(19, 29)]
+    r2 = v(doc(backup={"offsiteOk": {"at": "2026-09-28T07:18:00Z", "bucketBytes": hist[-1]["bytes"],
+                                     "bucketHistory": hist}}), now_ms)
+    line = next((ln for ln in r2["lines"] if ln.startswith("R2 bucket:")), "")
+    check("0.27 GB a day" in line and "on course to pass 10 GB around Sun Oct 4" in line,
+          "the R2 line names the day it passes 10 GB at the last week's pace", line)
+    flat = [{"day": f"2026-09-{d:02d}", "bytes": 6_000_000_000} for d in range(22, 29)]
+    line = next((ln for ln in v(doc(backup={"offsiteOk": {"at": "2026-09-28T07:18:00Z", "bucketBytes": 6_000_000_000,
+                                                         "bucketHistory": flat}}), now_ms)["lines"]
+                 if ln.startswith("R2 bucket:")), "")
+    check(line == "R2 bucket: 6.0 GB used of the free 10 GB, not growing over the last week", line)
+    check(dm.r2_pace(hist[-2:]) is None, "two days aren't a pace")
     check("GB" in " ".join(v(doc(), now_ms)["lines"]) and "BB" not in " ".join(v(doc(), now_ms)["lines"]),
           "database size reads in GB")
     check("server" in inspect.getsource(dm.build), "build() includes the server section")
