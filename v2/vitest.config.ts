@@ -50,6 +50,8 @@ const ISOLATED_UNIT_FILES = [
   "src/lib/db/__tests__/permCaseDetail.test.ts",
   // Added 2026-11-21: the wage bands by year mock ../client.
   "src/lib/db/__tests__/wageBandsByYear.test.ts",
+  // Added 2026-11-23: the state facet's coverage marker mocks next/cache and ../client.
+  "src/lib/db/__tests__/stateFacetCoverage.test.ts",
   "src/lib/db/__tests__/pwdLikely.test.ts",
   "src/lib/db/__tests__/officialHeadlines.test.ts",
   // Added 2026-10-10: each mocks the database client (or Convex and Convex
