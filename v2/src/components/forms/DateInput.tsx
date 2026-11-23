@@ -350,6 +350,11 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
             // every date box on the site. Alone it's 44 by 44; beside the clear button the two split the last 64px,
             // 32 each and 44 tall, which is all a narrow date box has before the date itself is covered.
             "date-picker-btn absolute top-0 inline-flex h-11 items-center justify-center text-muted-foreground transition-colors",
+            // A TOUCH SCREEN'S TAP GOES THROUGH TO THE BOX. An iPhone opens its date wheel only for a tap on the date
+            // box itself; showPicker() and focus() from this button did nothing there (227 rage clicks in 30 days to
+            // Nov 23 2026, 215 on iOS). Under a coarse pointer the button is only the icon, and the box beneath takes
+            // the tap. A mouse still gets the button, for the browsers that hide their own picker icon.
+            "pointer-coarse:pointer-events-none",
             "hover:text-foreground",
             "disabled:text-muted-foreground disabled:pointer-events-none",
             hasValue && onClear ? "right-8 w-8" : "right-0 w-11"

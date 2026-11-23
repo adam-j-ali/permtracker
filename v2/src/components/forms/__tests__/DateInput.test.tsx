@@ -126,6 +126,23 @@ describe("DateInput", () => {
       expect(() => fireEvent.click(screen.getByRole("button", { name: "Open date picker" }))).not.toThrow();
       expect(document.activeElement).toBe(input);
     });
+
+    it("lets a tap on a touch screen go through to the date box, whose own tap opens the phone's picker", () => {
+      // An iPhone opens its date wheel only for a tap on the box itself: a script's showPicker() or focus() from the
+      // button did nothing there (227 rage clicks on the button in 30 days to Nov 23 2026, 215 of them on iOS). Under
+      // a coarse pointer the button lets the tap through to the box beneath it; a mouse still gets the button.
+      renderWithProviders(<DateInput value="" onChange={() => {}} />);
+      const cal = screen.getByRole("button", { name: "Open date picker" });
+      expect(cal.className.split(/\s+/)).toContain("pointer-coarse:pointer-events-none");
+      // The icon stays where the eye looks for it, inside the box's own right edge.
+      expect(cal.className).toContain("absolute");
+    });
+
+    it("keeps the clear button a button on a touch screen", () => {
+      renderWithProviders(<DateInput value="2026-11-11" onChange={() => {}} onClear={() => {}} />);
+      const clear = screen.getByRole("button", { name: "Clear date" });
+      expect(clear.className).not.toContain("pointer-events-none");
+    });
   });
 
   describe("disabled state", () => {
