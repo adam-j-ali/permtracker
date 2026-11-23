@@ -68,6 +68,7 @@ describe("the middle ground", () => {
       tok("(?:[\\w-]+:)*(?:hover|active|group-hover|focus|focus-visible|peer-hover):-?(?:translate-[xy]|scale|rotate)-[\\w./\\[\\]-]+"),
     );
     expect(moves.length).toBeGreaterThan(0);
+    // eslint-disable-next-line security/detect-unsafe-regex -- reads our own class names, one short line at a time
     expect(moves.filter((h) => !/:\s*(?:[\w-]+:)*motion-safe:/.test(h) && !h.split(": ")[1]!.includes("motion-safe:"))).toEqual([]);
   });
   it("writes labels in sentence case: no all-caps class outside a typed field", () => {

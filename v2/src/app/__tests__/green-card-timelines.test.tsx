@@ -1,6 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// The source line reads the freshness registry (an async server part); its own tests cover it.
+vi.mock("@/components/data/DataProvenance", () => ({ DataProvenance: () => null }));
 vi.mock("@/lib/convexStatic", () => ({ queryStatic: vi.fn() }));
 vi.mock("@/lib/db/uscisPosted", () => ({ getUscisPosted: vi.fn(async () => null) }));
 
