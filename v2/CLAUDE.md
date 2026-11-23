@@ -110,6 +110,7 @@ One line each. The reasons, and the incident behind each, are in the notes file 
 
 **Words**
 - Other trackers are named only on `/compare`; everywhere else they're "a third party" ([business](docs/notes/business.md)).
+- No possessive on a name DOL prints ("cases at", "the page for", never `${name}'s`; `no-possessive-on-names.test.ts`). A program name in hand-typed copy goes through `<KeepWhole>` (`src/lib/programNames.ts`); the phone sweep's `split=` names a missed one.
 - No comment names the owner or quotes a chat; a comment states the rule.
 
 ## The notes: where the history lives, and where a lesson goes
