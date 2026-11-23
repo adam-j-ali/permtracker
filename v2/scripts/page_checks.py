@@ -61,7 +61,9 @@ def checks(base: str, extra: list[str] | None = None) -> list[dict]:
         {"key": "pages", "title": "Titles, descriptions, canonicals, dates", "cmd": [py, "scripts/audit_all_pages.py", "--base", base], "limit": 900},
         # Every JSON-LD node against schema.org and Google's required properties, each page's HTML under 1.5 MB (the
         # heaviest page of each family included), and no address with more than three query parameters.
-        {"key": "markup", "title": "Structured data, page weight, address parameters", "cmd": [py, "scripts/audit_page_markup.py", "--base", base, *(["--pages", *pages] if extra else [])], "limit": 900},
+        {"key": "markup", "title": "Structured data, page weight, address parameters", "cmd": [py, "scripts/audit_page_markup.py", "--base", base, *(["--pages", *pages] if extra else [])], "limit": 900,
+         # Its findings are the indented "/path: ..." lines; its last line is only the count.
+         "keep": r"^\s+/\S*: "},
         {"key": "links", "title": "Internal links", "cmd": [py, "scripts/audit_internal_links.py", "--base", base, "--pages", "40"], "limit": 900},
         # Who made each page, when it changed, its sources and how to report a mistake (E-E-A-T).
         {"key": "trust", "title": "Authorship, dates, sources and corrections", "cmd": [py, "scripts/audit_trust.py", "--base", base, *(["--pages", *pages] if extra else [])], "limit": 900},

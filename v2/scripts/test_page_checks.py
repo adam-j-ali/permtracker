@@ -61,6 +61,17 @@ def main() -> int:
         failures.append(f"a failing flow's report names the test and its error (got {found})")
     if any("passed" in f for f in found):
         failures.append("a failing flow's findings leave out the passing count")
+    # Nov 23 2026: four pages over the size budget reached the report as the markup check's last lines, the page
+    # count, never the pages. Its findings are the indented "/path: ..." lines.
+    markup = next(c for c in pc.checks("https://example.test") if c["key"] == "markup")
+    out = ["pages: 40 (36 from the sample, the rest the heaviest of their families)",
+           "  /perm-employers: 1.91 MB of HTML, over the 1.5 MB budget (Googlebot reads 2 MB)",
+           "  /h1b-employers/x: 1.62 MB of HTML, over the 1.5 MB budget (Googlebot reads 2 MB)",
+           "40 pages read, 2 findings"]
+    script = "import sys\n" + "".join(f"print({ln!r})\n" for ln in out) + "sys.exit(1)\n"
+    found = pc.run({**markup, "cmd": [sys.executable, "-c", script]}).get("findings") or []
+    if [f.split(":")[0] for f in found] != ["/perm-employers", "/h1b-employers/x"]:
+        failures.append(f"a failing markup check's report names each page it found (got {found})")
     passing = pc.run({**flows, "cmd": [sys.executable, "-c", "print('  1) [chromium] x')"], "env": {}})
     if "findings" in passing:
         failures.append("a check that passed carries no findings")
