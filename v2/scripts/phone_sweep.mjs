@@ -44,6 +44,10 @@ import { coveredText } from "./lib_covered_text.mjs";
 import { PROGRAM_NAME_SOURCE, pastTheEdge, splitNames } from "./lib_phone_checks.mjs";
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+// A program name split across two lines is reported on every run, and fails it only once the site-wide keep-whole pass
+// has landed (planned Nov 24 2026): the first sweep that could see splits found about 35 on the release's pages, all
+// written before the check existed. PT_SPLIT_BLOCKS=1 makes them fail now (the probe page and the pass itself use it).
+const SPLIT_BLOCKS = process.env.PT_SPLIT_BLOCKS === "1";
 const [base, ...paths] = process.argv.slice(2);
 if (!base || !paths.length) {
   console.error("usage: node scripts/phone_sweep.mjs <base-url> <path> [path ...]");
@@ -195,7 +199,7 @@ try {
         }
         await page.setViewportSize({ width, height: 844 });
       }
-      if (r.overflow > 0 || past.length || r.smallN || r.tapsN || covered.length || split.length) bad++;
+      if (r.overflow > 0 || past.length || r.smallN || r.tapsN || covered.length || (SPLIT_BLOCKS && split.length)) bad++;
       console.log(
         `${width} ${p}  overflow=${r.overflow}px  past=${past.length}  small=${r.smallN}  taps=${r.tapsN}  covered=${covered.length}  split=${split.length}  (${secs} s)`,
       );

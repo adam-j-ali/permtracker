@@ -86,7 +86,7 @@ describe("splitNames", () => {
   it("names a program name drawn across two lines, and where it sits", () => {
     document.body.innerHTML = '<main><p class="mt-1">Case by case, in every program: H-1B, H-2A, H-2B and CW-1.</p></main>';
     lay({ "CW-1": 2 });
-    expect(splitNames(PROGRAM_NAME_SOURCE)).toEqual(["CW-1 in p.mt-1"]);
+    expect(splitNames(PROGRAM_NAME_SOURCE)).toEqual(['CW-1 in p.mt-1 "program: H-1B, H-2A, H-2B and CW-1."']);
   });
 
   it("passes names each drawn on one line, and two rects on the same line are one line", () => {
@@ -111,7 +111,7 @@ describe("splitNames", () => {
       "<details><summary>About CW-1</summary><p>I-485 inside</p></details></main>",
     ].join("");
     lay({ "H-1B": 2, "H-2B": 2, "CW-1": 2, "I-485": 2 });
-    expect(splitNames(PROGRAM_NAME_SOURCE)).toEqual(["CW-1 in summary."]);
+    expect(splitNames(PROGRAM_NAME_SOURCE)).toEqual(['CW-1 in summary. "About CW-1"']);
   });
 
   it("reads nothing outside <main>", () => {

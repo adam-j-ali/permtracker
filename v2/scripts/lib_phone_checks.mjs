@@ -73,7 +73,9 @@ export function splitNames(source) {
       range.setStart(n, m.index);
       range.setEnd(n, m.index + m[0].length);
       const rects = [...range.getClientRects()].filter((r) => r.width > 0 && r.height > 0);
-      if (lines(rects) > 1) found.push(`${m[0]} in ${label(el)}`);
+      // The words around it, so a split can be found in the source by its text, not only its element's classes.
+      const around = text.slice(Math.max(0, m.index - 30), m.index + m[0].length + 30).replace(/\s+/g, " ").trim();
+      if (lines(rects) > 1) found.push(`${m[0]} in ${label(el)} "${around}"`);
     }
   }
   return [...new Set(found)];
