@@ -42,13 +42,13 @@ describe("the articles' program-name plugin", () => {
 
   it("runs in the articles' own MDX options, after the heading ids are made", async () => {
     const { content } = await compileMDX({
-      source: "## The H-1B lottery\n\nThe CW-1 and `H-2A` programs, in ETA 9089 and I-140.\n",
+      source: "## The H-1B lottery\n\nThe CW-1 and `H-2A` programs, in ETA-9089 and I-140.\n",
       options: MDX_OPTIONS,
     });
     const html = renderToStaticMarkup(content);
     expect(html).toContain('id="the-h-1b-lottery"');
     expect(html).toContain('<span class="whitespace-nowrap">H-1B</span>');
     expect(html).toContain('The <span class="whitespace-nowrap">CW-1</span> and <code>H-2A</code> programs');
-    expect(html).toContain('<span class="whitespace-nowrap">ETA 9089</span> and <span class="whitespace-nowrap">I-140</span>.');
+    expect(html).toContain('<span class="whitespace-nowrap">ETA-9089</span> and <span class="whitespace-nowrap">I-140</span>.');
   });
 });
