@@ -26,8 +26,12 @@ import { canonicalStatus } from "@/lib/caseStatusVocabulary";
 import { isProgramApproval } from "@/lib/flagCaseNumber";
 import { getStatusMeaning } from "@/lib/permStatus";
 import { formatInt } from "@/lib/format";
-import type { ActivityDay } from "@/lib/activityStats";
+import { type ActivityDay, nextDay, weekStart, weekdayIndex } from "@/lib/activityStats";
+import { dolDayOf } from "@/lib/dolDay";
+import { BULK_WRITE_ROWS } from "@/lib/employerCaseMoves";
 import { isDolWorkday } from "@/lib/pulseStats";
+import { WAGE_CHECKS, clockLabel } from "@/lib/sweepSchedule";
+import { weekdayName } from "@convex/lib/months";
 import type { DayCase } from "@/lib/filingDay";
 import type { FigureTrend } from "@/components/data/FigureRow";
 
@@ -165,6 +169,77 @@ export function shareLine(u: DailyUpdate, { final }: { final: boolean }): string
   else if (f && f.oldest === f.newest) filed = `, filed ${fullDay(f.oldest)}.`;
   else if (f) filed = `, filed between ${daySpan(f.oldest, f.newest)}.`;
   return [`${lead}${filed}`, also ? `${also[0]!.toUpperCase()}${also.slice(1)}.` : null, link].filter(Boolean).join(" ");
+}
+
+/* ------------------------------------------------------------------ the wage determinations beside the day */
+
+/** One sweep stamp's moves into one status, from `pwd_case_events` (src/lib/db/wageDeterminations.ts). */
+export interface WageStampRow {
+  /** When the read wrote it, epoch ms. */
+  t: number;
+  status: string;
+  /** Every move under this stamp into this status. */
+  n: number;
+  /** Those of the wage request program's own numbers, P-100 and P-200 to P-203 (never an H-2B or CW-1 request). */
+  own: number;
+}
+
+/** Wage determinations DOL issued on one DOL day, and in its week from Monday through that day. */
+export interface WageDeterminations {
+  day: string;
+  onDay: number;
+  /** The Monday of the day's week. */
+  weekFrom: string;
+  /** Monday through the day, the day included. */
+  week: number;
+}
+
+/**
+ * The day's and the week's issued wages, counted as the day's list counts them: a move into a status that ends a
+ * wage request well (`isProgramApproval`), dated by DOL's day (7 AM to 7 AM, src/lib/dolDay.ts), with a stamp of more
+ * than BULK_WRITE_ROWS rows left out whole as a catch-up rather than a day's work.
+ */
+export function countWageDeterminations(rows: readonly WageStampRow[], day: string): WageDeterminations {
+  const stampSize = new Map<number, number>();
+  for (const r of rows) stampSize.set(r.t, (stampSize.get(r.t) ?? 0) + r.n);
+  const weekFrom = weekStart(day);
+  let onDay = 0;
+  let week = 0;
+  for (const r of rows) {
+    if ((stampSize.get(r.t) ?? 0) > BULK_WRITE_ROWS || !isProgramApproval("pwd", r.status)) continue;
+    const worked = dolDayOf(r.t);
+    if (worked < weekFrom || worked > day) continue;
+    week += r.own;
+    if (worked === day) onDay += r.own;
+  }
+  return { day, onDay, weekFrom, week };
+}
+
+/**
+ * The line under the day's PERM figures: "DOL also issued 185 wage determinations on Sunday, and 4,196 in the week
+ * from Monday, November 16." Until the next morning's read the count can rise, and on a weekend that read is the
+ * only one (`WAGE_CHECKS`), so a weekend day's count is never printed as a 0 before it arrives.
+ */
+export function wageLine(w: WageDeterminations, whole: boolean): string {
+  const weekday = weekdayName(w.day) ?? w.day;
+  const next = weekdayName(nextDay(w.day)) ?? "the next day";
+  const n = formatInt(w.onDay);
+  const noun = w.onDay === 1 ? "wage determination" : "wage determinations";
+  const inWeek = w.weekFrom < w.day ? `${formatInt(w.week)} in the week from Monday, ${monthDay(w.weekFrom)}` : null;
+  const read = clockLabel(WAGE_CHECKS[0]!.at);
+  if (whole) {
+    const head = w.onDay > 0 ? `DOL also issued ${n} ${noun} on ${weekday}` : `DOL issued no wage determinations on ${weekday}`;
+    return `${head}${inWeek ? `, and ${inWeek}` : ""}.`;
+  }
+  const head =
+    w.onDay > 0
+      ? `DOL has issued ${n} ${noun} so far on ${weekday}${inWeek ? `, and ${inWeek}` : ""}.`
+      : `${weekday}'s wage determinations aren't in yet${inWeek ? `, and ${formatInt(w.week)} were issued in the week from Monday, ${monthDay(w.weekFrom)}` : ""}.`;
+  const weekend = weekdayIndex(w.day) >= 5;
+  const note = weekend
+    ? `On a weekend our check reads wage requests only at ${read}, so ${weekday}'s arrive with ${next}'s read.`
+    : `${weekday}'s count is whole after our ${read} read on ${next}.`;
+  return `${head} ${note}`;
 }
 
 /* ------------------------------------------------------------------ the page's other parts */

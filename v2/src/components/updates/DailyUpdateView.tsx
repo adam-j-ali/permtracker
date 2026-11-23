@@ -8,7 +8,17 @@ import { CaseLookupForm } from "@/components/tools/CaseLookupForm";
 import { ShareLine } from "@/components/updates/ShareLine";
 import { SearchParamsBoundary } from "@/hooks/useUrlSearchParams";
 import type { ActivityDay } from "@/lib/activityStats";
-import { UPDATES_PATH, daySpan, monthsToDraw, shareLabel, shareLine, trendAgainst, type DailyUpdate } from "@/lib/dailyUpdate";
+import {
+  UPDATES_PATH,
+  daySpan,
+  monthsToDraw,
+  shareLabel,
+  shareLine,
+  trendAgainst,
+  wageLine,
+  type DailyUpdate,
+  type WageDeterminations,
+} from "@/lib/dailyUpdate";
 import type { DayCase } from "@/lib/filingDay";
 import { formatInt } from "@/lib/format";
 import { federalHolidayName } from "@/lib/perm";
@@ -38,6 +48,10 @@ export interface DailyUpdateViewProps {
   day: string;
   perm: DailyUpdate;
   wage: DailyUpdate;
+  /** The wage determinations issued that day and in its week so far; null when they couldn't be read. */
+  wageCount?: WageDeterminations | null;
+  /** The next morning's wage read has landed, so the day's wage count can't rise. */
+  wageWhole?: boolean;
   /** Every PERM move that day, for the list. */
   cases: DayCase[];
   /** False while DOL's day is still open: the counts can rise. */
@@ -106,7 +120,22 @@ function FiledMonths({ months, total }: { months: DailyUpdate["certifiedByMonth"
   );
 }
 
-export function DailyUpdateView({ day, perm, wage, cases, final, checkedAt, now, usual, earlier, nextDay, closedAfter = [], capped }: DailyUpdateViewProps) {
+export function DailyUpdateView({
+  day,
+  perm,
+  wage,
+  wageCount = null,
+  wageWhole = false,
+  cases,
+  final,
+  checkedAt,
+  now,
+  usual,
+  earlier,
+  nextDay,
+  closedAfter = [],
+  capped,
+}: DailyUpdateViewProps) {
   const weekday = weekdayName(day) ?? "";
   const dayLabel = longDate(day) ?? day;
   const holiday = federalHolidayName(day);
@@ -192,6 +221,8 @@ export function DailyUpdateView({ day, perm, wage, cases, final, checkedAt, now,
           </>
         )}
       </p>{" "}
+      {/* The wage requests DOL decided the same day and week: the step before PERM, read by its own sweep. */}
+      {wageCount ? <p className="mt-2 max-w-3xl text-base leading-relaxed">{wageLine(wageCount, wageWhole)}</p> : null}{" "}
       {perm.certified > 0 ? (
         <PageSection
           id="filed"

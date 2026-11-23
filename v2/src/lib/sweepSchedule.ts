@@ -84,6 +84,34 @@ export function nextCheckLabel(from: number): string | null {
 }
 
 /**
+ * When the server reads the wage requests (permtracker-sweep@pwd-pending.timer, then pwd-active.timer): the pending
+ * ones at 5:40 AM every day, the likeliest to move at 3:10 PM on weekdays. The weekly read of every one (Sundays 6:40
+ * AM) is left out: Saturday's work has already arrived at 5:40. sweepSchedule.test.ts holds this to the timer files.
+ */
+export const WAGE_CHECKS: readonly CaseCheck[] = [
+  { at: "05:40", weekdays: false },
+  { at: "15:10", weekdays: true },
+];
+
+/** About how long after a read starts the pages show what it found. */
+const READ_SHOWS_MS = 30 * 60_000;
+
+/**
+ * The read that makes a DOL day's wage count whole: 5:40 AM the next morning, before DOL's day turns at 7 AM, so what
+ * it finds is dated to the day before (src/lib/dolDay.ts). On a weekend it's the only read, so a Sunday's count
+ * arrives with Monday's.
+ */
+export function wageDayWholeAt(day: string): number | null {
+  return easternInstant(nextDay(day), WAGE_CHECKS[0]!.at);
+}
+
+/** Whether the pages already show a DOL day's whole wage count at `now`. */
+export function wageDayWhole(day: string, now: number): boolean {
+  const at = wageDayWholeAt(day);
+  return at !== null && now >= at + READ_SHOWS_MS;
+}
+
+/**
  * The daytime pass (permtracker-sweep@case-status-active.timer, since Nov 19 2026): every 15 minutes on weekdays from
  * 7 AM to 7:45 PM Eastern, it reads the pending cases DOL is deciding now, so the day's counts rise through the day
  * between the full reads above. sweepSchedule.test.ts holds this to the timer file.

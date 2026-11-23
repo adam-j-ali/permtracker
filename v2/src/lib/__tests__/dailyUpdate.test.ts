@@ -3,7 +3,20 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { EXPIRY, PERM_BUCKETS, dayCases, daysBefore, monthsToDraw, shareLabel, shareLine, summariseDay, trendAgainst } from "@/lib/dailyUpdate";
+import {
+  EXPIRY,
+  PERM_BUCKETS,
+  countWageDeterminations,
+  dayCases,
+  daysBefore,
+  monthsToDraw,
+  shareLabel,
+  shareLine,
+  summariseDay,
+  trendAgainst,
+  wageLine,
+  type WageStampRow,
+} from "@/lib/dailyUpdate";
 import { usualFor } from "@/lib/pulseStats";
 import type { ActivityDay } from "@/lib/activityStats";
 import type { CaseChange } from "@/lib/db/changes";
@@ -337,5 +350,77 @@ describe("shareLabel", () => {
     expect(shareLabel(2, 766)).toBe("under 1%");
     expect(shareLabel(419, 766)).toBe("55%");
     expect(shareLabel(0, 766)).toBe("0%");
+  });
+});
+
+describe("the wage determinations beside a PERM day", () => {
+  /** An Eastern wall-clock time in November 2026 (UTC-5) as epoch ms. */
+  const est = (day: string, hhmm: string) => Date.parse(`${day}T${hhmm}:00-05:00`);
+  const row = (t: number, status: string, n: number, own = n): WageStampRow => ({ t, status, n, own });
+
+  // The week of Monday Nov 16 2026, as the wage reads stamp it: each read dates what it found by DOL's day, so the
+  // 5:40 AM read belongs to the day before.
+  const week: WageStampRow[] = [
+    // Sunday Nov 15's day: before the week.
+    row(est("2026-11-16", "05:40"), "DETERMINATION ISSUED", 90),
+    // Monday's day: the 3:10 PM read and the next morning's.
+    row(est("2026-11-16", "15:10"), "DETERMINATION ISSUED", 400),
+    row(est("2026-11-17", "05:40"), "DETERMINATION ISSUED", 300),
+    row(est("2026-11-17", "05:40"), "IN PROCESS", 40),
+    row(est("2026-11-17", "05:40"), "WITHDRAWN", 6),
+    // Tuesday to Friday's days.
+    row(est("2026-11-18", "05:40"), "DETERMINATION ISSUED", 800),
+    row(est("2026-11-19", "05:40"), "DETERMINATION ISSUED", 820),
+    row(est("2026-11-20", "05:40"), "DETERMINATION ISSUED", 810),
+    // Friday's: two of them are H-2B wage requests, the seasonal programs' own, never counted here.
+    row(est("2026-11-21", "05:40"), "DETERMINATION ISSUED", 798, 796),
+    // Saturday's day: Sunday's 5:40 AM read, and the weekly full read at 6:40, a catch-up of 6,000 rows.
+    row(est("2026-11-22", "05:40"), "DETERMINATION ISSUED", 120),
+    row(est("2026-11-22", "06:40"), "DETERMINATION ISSUED", 6000),
+    // Sunday's day: Monday's 5:40 AM read. A redetermination affirmed is an issued wage too.
+    row(est("2026-11-23", "05:40"), "DETERMINATION ISSUED", 183),
+    row(est("2026-11-23", "05:40"), "REDETERMINATION AFFIRMED", 2),
+  ];
+
+  it("counts the day's issued wages, and the week's from Monday through the day, by DOL's day", () => {
+    // Act
+    const w = countWageDeterminations(week, "2026-11-22");
+
+    // Assert: 700 + 800 + 820 + 810 + 796 + 120 + 185.
+    expect(w).toEqual({ day: "2026-11-22", onDay: 185, weekFrom: "2026-11-16", week: 4231 });
+  });
+
+  it("leaves out a catch-up read's whole stamp, as the day's list does", () => {
+    // The 6:40 AM read wrote 6,000 rows under one stamp: a catch-up, not Saturday's work.
+    expect(countWageDeterminations(week, "2026-11-21").onDay).toBe(120);
+  });
+
+  it("counts a weekday's week from its Monday", () => {
+    expect(countWageDeterminations(week, "2026-11-17")).toEqual({ day: "2026-11-17", onDay: 800, weekFrom: "2026-11-16", week: 1500 });
+  });
+
+  it("says the day and the week once the day's count is whole", () => {
+    const w = countWageDeterminations(week, "2026-11-22");
+    expect(wageLine(w, true)).toBe("DOL also issued 185 wage determinations on Sunday, and 4,231 in the week from Monday, November 16.");
+    expect(wageLine({ ...w, onDay: 1 }, true)).toContain("DOL also issued 1 wage determination on Sunday");
+    expect(wageLine({ ...w, onDay: 0 }, true)).toBe("DOL issued no wage determinations on Sunday, and 4,231 in the week from Monday, November 16.");
+  });
+
+  it("leaves the week off a Monday, whose week is the day", () => {
+    expect(wageLine({ day: "2026-11-16", onDay: 700, weekFrom: "2026-11-16", week: 700 }, true)).toBe("DOL also issued 700 wage determinations on Monday.");
+  });
+
+  it("says a weekend day's count arrives with the next 5:40 AM read, and never prints its 0 as an answer", () => {
+    const line = wageLine({ day: "2026-11-22", onDay: 0, weekFrom: "2026-11-16", week: 4046 }, false);
+    expect(line).toBe(
+      "Sunday's wage determinations aren't in yet, and 4,046 were issued in the week from Monday, November 16. On a weekend our check reads wage requests only at 5:40 AM, so Sunday's arrive with Monday's read.",
+    );
+    expect(line).not.toMatch(/\b0\b/);
+  });
+
+  it("says a weekday's count so far, and when it's whole", () => {
+    expect(wageLine({ day: "2026-11-17", onDay: 400, weekFrom: "2026-11-16", week: 1100 }, false)).toBe(
+      "DOL has issued 400 wage determinations so far on Tuesday, and 1,100 in the week from Monday, November 16. Tuesday's count is whole after our 5:40 AM read on Wednesday.",
+    );
   });
 });

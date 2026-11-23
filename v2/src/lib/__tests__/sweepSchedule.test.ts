@@ -3,7 +3,17 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { CASE_CHECKS, DAYTIME_CHECKS, clockLabel, daytimeChecksRunning, nextCheckAfter, nextCheckLabel } from "@/lib/sweepSchedule";
+import {
+  CASE_CHECKS,
+  DAYTIME_CHECKS,
+  WAGE_CHECKS,
+  clockLabel,
+  daytimeChecksRunning,
+  nextCheckAfter,
+  nextCheckLabel,
+  wageDayWhole,
+  wageDayWholeAt,
+} from "@/lib/sweepSchedule";
 
 /** An Eastern wall-clock time in November 2026 (UTC-5) as epoch ms. */
 const est = (day: string, hhmm: string) => Date.parse(`${day}T${hhmm}:00-05:00`);
@@ -62,6 +72,28 @@ describe("the case checks' clock", () => {
     expect(clockLabel("00:30")).toBe("12:30 AM");
     expect(nextCheckLabel(est("2026-11-11", "14:00"))).toBe("3:40 PM");
     expect(nextCheckLabel(est("2026-11-11", "21:00"))).toBe("4:10 AM tomorrow");
+  });
+});
+
+describe("the wage requests' reads", () => {
+  it("are the server's own timers: 5:40 AM every day and 3:10 PM on weekdays", () => {
+    const dir = resolve(process.cwd(), "scripts/oracle/systemd");
+    const onServer = ["permtracker-sweep@pwd-pending.timer", "permtracker-sweep@pwd-active.timer"].map((f) => {
+      const m = readFileSync(resolve(dir, f), "utf8").match(/^OnCalendar=(Mon\.\.Fri )?\*-\*-\* (\d{2}:\d{2}):00 America\/New_York$/m);
+      if (!m) throw new Error(`${f}: its OnCalendar line isn't one this test can read`);
+      return { at: m[2]!, weekdays: Boolean(m[1]) };
+    });
+    expect(onServer).toEqual([...WAGE_CHECKS]);
+  });
+
+  it("make a DOL day's count whole with the next morning's 5:40 AM read, before DOL's day turns at 7", () => {
+    // Sunday Nov 22 2026: Monday's 5:40 AM read dates its finds to Sunday.
+    expect(wageDayWholeAt("2026-11-22")).toBe(est("2026-11-23", "05:40"));
+    // The pages show a read about half an hour after it starts.
+    expect(wageDayWhole("2026-11-22", est("2026-11-23", "05:45"))).toBe(false);
+    expect(wageDayWhole("2026-11-22", est("2026-11-23", "06:10"))).toBe(true);
+    // Sunday afternoon: no read runs on a weekend afternoon, so Sunday's count isn't in.
+    expect(wageDayWhole("2026-11-22", est("2026-11-22", "16:00"))).toBe(false);
   });
 });
 

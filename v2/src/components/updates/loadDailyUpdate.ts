@@ -5,10 +5,12 @@ import { dayCases, daysBefore, summariseDay } from "@/lib/dailyUpdate";
 import { getActivitySeries } from "@/lib/db/activity";
 import { getChangeCalendar, getChangeDay } from "@/lib/db/changes";
 import { getCheckTimes } from "@/lib/db/sweepCoverage";
+import { getWageDeterminations } from "@/lib/db/wageDeterminations";
 import { dolDayOf } from "@/lib/dolDay";
 import { federalHolidayName } from "@/lib/perm";
 import { isDolWorkday, usualFor } from "@/lib/pulseStats";
 import { softFail } from "@/lib/softRead";
+import { wageDayWhole } from "@/lib/sweepSchedule";
 
 /**
  * Everything the daily page shows for one DOL day, read once on the server.
@@ -19,8 +21,8 @@ import { softFail } from "@/lib/softRead";
  * certified nothing".
  *
  * WHAT A FAILED READ DOES. The calendar and the day's list throw, so the page keeps its last good render. The
- * daily series and the check's stamp are read softly: without them the page loses the comparison with a usual
- * day, the earlier days and the "last check" line, and says nothing false.
+ * daily series, the check's stamp and the wage determinations are read softly: without them the page loses the
+ * comparison with a usual day, the earlier days, the "last check" line or the wage line, and says nothing false.
  */
 
 export type DailyLoad =
@@ -61,7 +63,11 @@ export async function loadDailyUpdate(asked: string | null): Promise<DailyLoad |
     day = asked;
   }
 
-  const feed = await getChangeDay(day);
+  const [feed, wageCount] = await Promise.all([
+    getChangeDay(day),
+    // The line under the figures. A failed read leaves the line off; it never reads as no wage determinations.
+    getWageDeterminations(day).catch(softFail("perm-updates.wageDeterminations", null)),
+  ]);
   const changes = feed?.changes ?? [];
   const perm = summariseDay(day, changes, "perm");
   const wage = summariseDay(day, changes, "pwd");
@@ -75,6 +81,8 @@ export async function loadDailyUpdate(asked: string | null): Promise<DailyLoad |
       day,
       perm,
       wage,
+      wageCount,
+      wageWhole: wageDayWhole(day, now),
       cases: dayCases(changes, "perm"),
       final,
       checkedAt: checks?.newest ?? null,

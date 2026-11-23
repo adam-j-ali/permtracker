@@ -39,7 +39,7 @@ export function weekStart(iso: string): string {
 }
 
 /** The next day, as "YYYY-MM-DD". */
-function nextDay(iso: string): string {
+export function nextDay(iso: string): string {
   const d = new Date(`${iso}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + 1);
   return d.toISOString().slice(0, 10);
