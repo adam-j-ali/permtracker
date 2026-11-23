@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import { ShareTimeline } from "../ShareTimeline";
 
@@ -51,6 +52,14 @@ describe("ShareTimeline", () => {
     vi.stubEnv("NEXT_PUBLIC_CONVEX_URL", "");
     const { container } = render(el());
     await waitFor(() => expect(container.innerHTML).toBe(""));
+    expect(renderToStaticMarkup(el())).toBe("");
+  });
+
+  it("is drawn by the server, so it doesn't push the page down when the scripts start", () => {
+    // On the timelines page it sits under the lede, above the figures.
+    const html = renderToStaticMarkup(el());
+    expect(html).toContain('id="share"');
+    expect(html).toContain("Add your dates");
   });
 
   it("opens with the office picked, the I-485's four dates, a category and a country, and the rest behind a fold", async () => {

@@ -84,7 +84,9 @@ export function ShareTimeline({
   const [copied, setCopied] = useState<"link" | "code" | null>(null);
   const [code, setCode] = useState("");
   const [codeNote, setCodeNote] = useState("");
-  const [usable, setUsable] = useState(false);
+  // Known at build time on both sides (NEXT_PUBLIC_CONVEX_URL), so the server draws the form too: on the timelines
+  // page it sits under the lede, and a form that appeared only after the scripts ran pushed the figures down.
+  const [usable] = useState(canShare);
 
   const adopt = async (k: string, fromCode: boolean) => {
     setLoading(true);
@@ -109,7 +111,6 @@ export function ShareTimeline({
   };
 
   useEffect(() => {
-    setUsable(canShare());
     if (window.location.hash === "#share") setOpen(true);
     const k = ownKey();
     if (k) void adopt(k, false);

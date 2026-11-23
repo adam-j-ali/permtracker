@@ -14,6 +14,7 @@ import {
   RfeBars,
   StageMedians,
   ThirdFta0Line,
+  ThirtyDayLine,
   WhoIsWaiting,
 } from "@/components/community/TimelineBoard";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
@@ -112,15 +113,19 @@ const FAQS = [
   },
 ];
 
-/** The headline: how many cases, and the two steps people ask about most, each against the 6 months before. */
+/**
+ * The headline: the three steps people ask about most, each against the 6 months before. The count of cases is the
+ * lede's and the last 30 days' green cards sit with the week's approvals (Nov 23 2026: five cells here buried the
+ * durations, and the lede already gave the count on the same screen).
+ */
 function Headline({ summary }: { summary: ReportedSummary }) {
   const step = (id: string) => summary.steps.find((s) => s.id === id && s.median !== null);
   const gc = step("i485-gc");
   const perm = step("perm");
   const i140 = step("i140-premium");
+  if (!gc && !perm && !i140) return null;
   return (
     <FigureRow className="mt-8">
-      <Figure label="Cases people reported" value={formatInt(summary.headline.cases)} note="every source, each person once" />
       {gc ? (
         <Figure
           label="I-485 filed to green card"
@@ -145,11 +150,6 @@ function Headline({ summary }: { summary: ReportedSummary }) {
           note={`median of ${formatInt(i140.n)} decided in ${windowText(i140.windowDays)}${i140.before ? ", against the 6 months before" : ""}`}
         />
       ) : null}
-      <Figure
-        label="Green cards in the last 30 days"
-        value={formatInt(summary.headline.greenCards30)}
-        note={`reported by the people who got them, with ${formatInt(summary.headline.i140s30)} I-140 and ${formatInt(summary.headline.perm30)} PERM decisions`}
-      />
     </FigureRow>
   );
 }
@@ -165,6 +165,9 @@ export default async function GreenCardTimelinesPage() {
     getReportedSummary().catch(softFail<ReportedSummary | null>("green-card-timelines/page.getReportedSummary", null)),
   ]);
   const papers = waitPapers(posted);
+  const month = summary
+    ? { greenCards: summary.headline.greenCards30, i140s: summary.headline.i140s30, perm: summary.headline.perm30 }
+    : null;
   // Optional chaining: a backend older than Nov 11 2026 sends no `offices`.
   const offices = (board?.offices ?? []).flatMap((o) => {
     const office = officeByCode(o.code);
@@ -183,12 +186,32 @@ export default async function GreenCardTimelinesPage() {
       <div className="pt-10 sm:pt-12" />
       <header>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Green card timelines</h1>{" "}
+        {/* Two lines on a wide screen. The places the cases come from are "Where they were reported", further down. */}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           {summary
-            ? `How long each step took, from ${formatInt(summary.headline.cases)} cases people reported in ${REPORTED_PLACES} and on this site, each person once. Self-reported, because USCIS doesn't publish it case by case.`
+            ? `How long each step took, from ${formatInt(summary.headline.cases)} cases people reported, each person once. Self-reported, because USCIS doesn't publish it case by case.`
             : "How long each step after PERM took, from the people who went through it. Self-reported, because USCIS doesn't publish it case by case."}
         </p>
       </header>
+
+      {/* The page's action right under the lede, before the figures: on a phone it sat 1,700px down (Nov 23 2026). */}
+      {board || summary ? (
+        <section className="mt-5 max-w-3xl" aria-labelledby="add-h">
+          <h2 id="add-h" className="sr-only">
+            Add yours
+          </h2>{" "}
+          <p className="text-base leading-relaxed text-soft">
+            Waiting on an I-140 or an I-485? Add your dates. It takes a minute, with no account and no case number, and
+            we check each timeline before it counts.
+          </p>{" "}
+          <ShareTimeline
+            sharePath="/green-card-timelines"
+            shareLabel="the green card timelines"
+            progress={board ? shareProgress(board.shared, board.opensAt, "the board's list") : undefined}
+            className="mt-3"
+          />
+        </section>
+      ) : null}
 
       {summary ? <Headline summary={summary} /> : null}
 
@@ -213,28 +236,14 @@ export default async function GreenCardTimelinesPage() {
           </section>
           )}
 
-          {/* No week when the page fell back to the plain board. */}
+          {/* No week when the page fell back to the plain board. The last 30 days sit under the week's. */}
           {summary?.week ? (
-            <RecentApprovals recent={summary.week} />
+            <RecentApprovals recent={summary.week} month={month} />
           ) : board?.recent ? (
-            <RecentApprovals recent={board.recent} />
+            <RecentApprovals recent={board.recent} month={month} />
+          ) : month ? (
+            <ThirtyDayLine month={month} className="mt-8 max-w-3xl" />
           ) : null}{" "}
-
-          <section className="mt-8 max-w-3xl" aria-labelledby="add-h">
-            <h2 id="add-h" className="sr-only">
-              Add yours
-            </h2>{" "}
-            <p className="text-base leading-relaxed text-soft">
-              Waiting on an I-140 or an I-485? Add your dates. It takes a minute, with no account and no case number, and
-              we check each timeline before it counts.
-            </p>{" "}
-            <ShareTimeline
-              sharePath="/green-card-timelines"
-              shareLabel="the green card timelines"
-              progress={board ? shareProgress(board.shared, board.opensAt, "the board's list") : undefined}
-              className="mt-3"
-            />
-          </section>
 
           <section className="mt-10" aria-labelledby="stages-h">
             <h2 id="stages-h" className="font-heading text-2xl font-bold sm:text-3xl">

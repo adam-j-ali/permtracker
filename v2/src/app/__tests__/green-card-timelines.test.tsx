@@ -1,13 +1,17 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The source line reads the freshness registry (an async server part); its own tests cover it.
 vi.mock("@/components/data/DataProvenance", () => ({ DataProvenance: () => null }));
 vi.mock("@/lib/convexStatic", () => ({ queryStatic: vi.fn() }));
 vi.mock("@/lib/db/uscisPosted", () => ({ getUscisPosted: vi.fn(async () => null) }));
+vi.mock("@/lib/db/reportedSummary", () => ({ getReportedSummary: vi.fn(async () => null) }));
+vi.mock("@/lib/db/communityReports", () => ({ getReportedOverview: vi.fn(async () => null) }));
 
 import { queryStatic } from "@/lib/convexStatic";
+import { getReportedSummary } from "@/lib/db/reportedSummary";
 import { getUscisPosted } from "@/lib/db/uscisPosted";
+import type { ReportedSummary, StepFigure } from "@/lib/reportedSummary";
 import { BOARD_OPENS_AT, OFFICE_LIST_OPENS_AT, computeMetrics, summarizeRfes, toBoardRow, whoIsWaiting, type TimelineRecord } from "@/lib/communityTimeline";
 import Page from "../(site)/(public)/green-card-timelines/page";
 
@@ -56,6 +60,8 @@ async function html() {
 
 beforeEach(() => {
   vi.mocked(queryStatic).mockReset();
+  // The shared timelines alone, unless a test gives every source's figures.
+  vi.mocked(getReportedSummary).mockReset().mockResolvedValue(null);
 });
 
 describe("/green-card-timelines", () => {
@@ -147,6 +153,67 @@ describe("/green-card-timelines", () => {
     expect(out).toContain("Are these USCIS&#x27;s processing times?");
     expect(out).toContain(`only once ${BOARD_OPENS_AT} people have shared (${OFFICE_LIST_OPENS_AT} for one office&#x27;s list)`);
     expect(out).toContain("It needs no account and no case number.");
+  });
+
+  describe("the first screen, with every source's figures", () => {
+    const step = (id: string, label: string, group: StepFigure["group"], median: number): StepFigure => ({
+      id, label, group, verified: false, n: 120, windowDays: 183, median, p25: median - 30, p75: median + 30,
+      before: { median: median - 8, n: 100 }, allTime: 400, months: [],
+    });
+    const summary: ReportedSummary = {
+      today: "2026-11-23",
+      headline: { cases: 23717, heard: 5200, heardDays: 365, greenCards30: 412, i140s30: 1203, perm30: 3100 },
+      week: { from: "2026-11-17", through: "2026-11-23", steps: [{ id: "gc", label: "Green cards", count: 61 }] },
+      steps: [
+        step("i485-gc", "I-485 filed to green card", "i485", 290),
+        step("perm", "PERM filed to decided", "perm", 480),
+        step("i140-premium", "I-140 with premium processing", "i140", 12),
+      ],
+      waiting: { open: false, heardDays: 365, heard: 0, byStage: [], lines: [], unlisted: 0 },
+      i140: [],
+    };
+
+    beforeEach(() => {
+      vi.stubEnv("NEXT_PUBLIC_CONVEX_URL", "https://example.convex.cloud");
+      vi.mocked(getReportedSummary).mockResolvedValue(summary);
+      vi.mocked(queryStatic).mockResolvedValue(boardOf(Array.from({ length: 6 }, (_, i) => rec(i))) as never);
+    });
+    afterEach(() => vi.unstubAllEnvs());
+
+    it("keeps the count of cases in a two-line lede and out of the figures, which are the three step durations", async () => {
+      const out = (await html()).replace(/\s+/g, " ");
+      expect(out).toContain(
+        "How long each step took, from 23,717 cases people reported, each person once. Self-reported, because USCIS doesn&#x27;t publish it case by case.",
+      );
+      expect(out).not.toContain("Cases people reported");
+      for (const label of ["I-485 filed to green card", "PERM filed to decided", "I-140 with premium processing"]) {
+        expect(out).toContain(label);
+      }
+    });
+
+    it("puts the way to add your dates right under the lede, before the figures", async () => {
+      const out = await html();
+      const lede = out.indexOf("How long each step took");
+      // The form's own fold, drawn by the server so it doesn't push the figures down when the scripts start.
+      const form = out.indexOf('id="share"');
+      // The fold's own words, after the sentence above it that says them too.
+      const add = out.indexOf("Add your dates", form);
+      const figures = out.indexOf("I-485 filed to green card");
+      expect(lede).toBeGreaterThan(-1);
+      expect(form).toBeGreaterThan(lede);
+      expect(add).toBeGreaterThan(form);
+      expect(add).toBeLessThan(figures);
+    });
+
+    it("gives the last 30 days' green cards in the week's approvals, not as a fourth figure", async () => {
+      // The words as read, without the tags around the figure.
+      const out = (await html()).replace(/<[^>]+>/g, "").replace(/\s+/g, " ");
+      const week = out.indexOf("Approvals reported this week");
+      const month = out.indexOf("In the last 30 days:");
+      expect(week).toBeGreaterThan(-1);
+      expect(month).toBeGreaterThan(week);
+      expect(out).toContain("In the last 30 days: 412 green cards, with 1,203 I-140 and 3,100 PERM decisions, reported by the people who got them.");
+    });
   });
 
   it("lists RFE reasons, and renders a sentence when Convex can't be reached", async () => {

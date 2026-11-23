@@ -221,8 +221,11 @@ const dayName = (iso: string) =>
 /** The week's approvals: the shared timelines' (Convex) or every reported case's (the summary), one shape. */
 export function RecentApprovals({
   recent,
+  month,
 }: {
   recent: Pick<RecentApprovals, "from" | "through"> & { steps: readonly { id: string; label: string; count: number | null }[] };
+  /** The last 30 days' decisions from every source, said under the week's (the summary's headline). */
+  month?: ThirtyDays | null;
 }) {
   const counted = recent.steps.filter((s) => s.count !== null);
   return (
@@ -243,10 +246,33 @@ export function RecentApprovals({
           </li>
         ))}
       </ul>{" "}
+      {month ? <ThirtyDayLine month={month} className="mt-3" /> : null}{" "}
       {counted.length === 0 ? (
         <p className="mt-3 text-base text-soft">Got a work permit, a travel document or a green card this week? Adding the date is how a wave shows here.</p>
       ) : null}
     </section>
+  );
+}
+
+/** The last 30 days' green cards, I-140 and PERM decisions, as people reported them (`headline` of the summary). */
+export interface ThirtyDays {
+  greenCards: number;
+  i140s: number;
+  perm: number;
+}
+
+/**
+ * The last 30 days in one line under the week's approvals: a wave this week reads against the month around it. It was
+ * a fifth figure in the page's top row (Nov 23 2026), where it crowded out the step durations.
+ */
+export function ThirtyDayLine({ month, className }: { month: ThirtyDays; className?: string }) {
+  const f = (n: number) => n.toLocaleString("en-US");
+  return (
+    <p className={cn("text-base leading-relaxed", className)}>
+      In the last 30 days: <b className="font-heading text-xl font-bold tabular-nums">{f(month.greenCards)}</b>{" "}
+      {month.greenCards === 1 ? "green card" : "green cards"}, with {f(month.i140s)} I-140 and {f(month.perm)} PERM decisions,
+      reported by the people who got them.
+    </p>
   );
 }
 
