@@ -13,7 +13,10 @@ only what the kernel and systemd report, and it emails through Resend's API
 directly. It runs as root (systemd: permtracker-alarm.timer).
 
 CHECKS. Each is one alarm: emailed when it starts, again every 6 hours while it
-lasts, and once when it clears. At most 12 alarm emails an Eastern day (the
+lasts (a timed job's only when a newer run has failed again: one failed daily run
+sent 5 emails on Nov 22 2026), and once when it clears. A unit's email carries
+the job's own failure lines from its journal and what to do; disk and memory
+are printed only for their own alarms. At most 12 alarm emails an Eastern day (the
 Worker's mail is free, but Resend, the fallback, shares its 100 a day with every
 subscriber's mail); over the cap, what's due waits for the first run after
 midnight Eastern and the journal says "not sent".
@@ -69,6 +72,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -300,18 +304,26 @@ def uncounted_releases(report: dict) -> list[str]:
     return out
 
 
-def plan(on: dict[str, str], state: dict, now: float) -> tuple[list[tuple[str, str, str]], dict]:
-    """Which emails to send: (key, kind, reason), kind start | still | clear."""
+def plan(on: dict[str, str], state: dict, now: float,
+         runs: dict[str, str | None] | None = None) -> tuple[list[tuple[str, str, str]], dict]:
+    """Which emails to send: (key, kind, reason), kind start | still | clear.
+
+    `runs`: for a timed job's alarm, the failed run it's on (its start, from job_runs). Its reminder goes only once a
+    newer run has failed again, and still no sooner than REMIND_S: a daily job that failed once sent a start, three
+    6-hour reminders and a clear (Nov 22 2026), when nothing had changed between them.
+    """
+    runs = runs or {}
     alarms = dict(state.get("alarms", {}))
     out: list[tuple[str, str, str]] = []
     for key, reason in on.items():
         a = alarms.get(key)
+        run = {"run": runs[key]} if key in runs else {}
         if a is None:
             out.append((key, "start", reason))
-            alarms[key] = {"since": now, "mailed": now, "reason": reason}
-        elif now - a.get("mailed", 0) >= REMIND_S:
+            alarms[key] = {"since": now, "mailed": now, "reason": reason, **run}
+        elif now - a.get("mailed", 0) >= REMIND_S and (key not in runs or runs[key] != a.get("run")):
             out.append((key, "still", reason))
-            alarms[key] = {**a, "mailed": now, "reason": reason}
+            alarms[key] = {**a, "mailed": now, "reason": reason, **run}
         else:
             alarms[key] = {**a, "reason": reason}
     for key in list(alarms):
@@ -378,6 +390,22 @@ def push_level(key: str, info: dict[str, dict], runs: dict[str, dict]) -> str | 
         return "high" if (runs.get(unit) or {}).get("fails", 0) >= JOB_FAILS_TO_PUSH else None
     # A service systemd has given up restarting (or one whose type it can't tell): a run that can't restart itself.
     return "urgent"
+
+
+# A journal line that says why a job failed: its own verdict words, or a Python error's last line.
+FAILURE_WORDS = re.compile(r"\bFAIL|BROKEN|\bfailed\b|\b\w*Error\b")
+# systemd's own lines about the unit ("x.service: Failed with result 'exit-code'.") say only that it failed.
+SYSTEMD_LINE = re.compile(r"^(\S+\.(service|timer): |Failed to start |Starting |Started |Finished |Stopped )")
+WHY_LINES = 4
+TAIL_LINES = 3
+
+
+def failure_lines(journal: str) -> list[str]:
+    """Why a unit failed, from `journalctl -u <unit> -n 40 -o cat`: its last few FAIL, BROKEN, failed or error lines,
+    or its last few lines when none says so. systemd's own lines are left out. Pure, for the test."""
+    own = [ln.strip()[:240] for ln in journal.splitlines() if ln.strip() and not SYSTEMD_LINE.match(ln.strip())]
+    hits = [ln for ln in own if FAILURE_WORDS.search(ln)]
+    return hits[-WHY_LINES:] if hits else own[-TAIL_LINES:]
 
 
 def todo_of(key: str) -> str:
@@ -676,8 +704,14 @@ def send(subject: str, text: str) -> bool:
         return False
 
 
+DISK_KEYS = ("disk", "disk-crit")
+
+
 def compose(mail: list[tuple[str, str, str]], snap: dict, rate: float | None,
-            actions: list[str], now: float, push_failing: dict | None = None) -> tuple[str, str]:
+            actions: list[str], now: float, push_failing: dict | None = None,
+            why: dict[str, list[str]] | None = None) -> tuple[str, str]:
+    """The email. `why`: a unit alarm's key to the failure lines from its journal (failure_lines)."""
+    why = why or {}
     stamp = datetime.fromtimestamp(now, ET).strftime("%A %b %-d, %-I:%M %p %Z")
     starts = [m for m in mail if m[1] != "clear"]
     if starts:
@@ -691,8 +725,12 @@ def compose(mail: list[tuple[str, str, str]], snap: dict, rate: float | None,
         else:
             word = {"start": "NEW", "still": "STILL"}[kind]
             lines.append(f"{word}: {title_of(key)}. {reason}.")
+            if why.get(key):
+                lines += ["Why, from its log:"] + [f"  {ln}" for ln in why[key]]
+            lines.append(f"To do: {todo_of(key)}")
     if actions:
         lines += ["", "Done automatically:"] + [f"- {a}." for a in actions]
+    keys = {k for k, _, _ in mail}
     # rate is GB an hour the disk is LOSING; say it in that direction.
     if rate is None:
         trend = ""
@@ -700,10 +738,16 @@ def compose(mail: list[tuple[str, str, str]], snap: dict, rate: float | None,
         trend = f", falling {rate:.1f} GB an hour"
     else:
         trend = f", rising {-rate:.1f} GB an hour"
-    lines += ["", f"Disk: {snap['disk_free_gb']:.1f} GB free{trend}. "
-                  f"Memory: {snap['mem_available_mb']} MB available, {snap['swap_used_mb']} MB swap."]
+    # The disk and the memory only for their own alarms: on a failed job they were two lines of noise.
+    if keys & set(DISK_KEYS) or "memory" in keys:
+        lines.append("")
+    if keys & set(DISK_KEYS):
+        lines.append(f"Disk: {snap['disk_free_gb']:.1f} GB free{trend}.")
+    if "memory" in keys:
+        lines.append(f"Memory: {snap['mem_available_mb']} MB available, {snap['swap_used_mb']} MB swap.")
     headroom = snap.get("cache_headroom_gb")
-    if headroom is not None and rate is not None and rate > 0 and not snap.get("uncounted"):
+    if (keys & set(DISK_KEYS) and headroom is not None and rate is not None and rate > 0
+            and not snap.get("uncounted")):
         floor = snap["disk_free_gb"] - headroom
         lines.append(f"The page caches may grow {headroom:.1f} GB more before their cap stops them, "
                      f"which would leave about {floor:.0f} GB free.")
@@ -711,10 +755,19 @@ def compose(mail: list[tuple[str, str, str]], snap: dict, rate: float | None,
         lines.append(f"Pushes to your phone have failed since "
                      f"{datetime.fromtimestamp(push_failing['since'], ET).strftime('%A %b %-d, %-I:%M %p %Z')}"
                      f" ({push_failing.get('why', 'no reason given')}); each run tries again.")
-    lines += ["This alarm runs every 5 minutes on the server (permtracker-alarm); it emails again "
-              "every 6 hours while something lasts, and once when it clears. It pushes to your phone once "
-              "when something starts and once when it clears."]
+    lines += ["", "This alarm runs every 5 minutes on the server (permtracker-alarm); it emails again "
+              "every 6 hours while something lasts (a timed job's only once a newer run has failed again), and "
+              "once when it clears. It pushes to your phone once when something starts and once when it clears."]
     return subject, "\n".join(lines)
+
+
+def read_journal(unit: str) -> str:
+    """The unit's last 40 journal messages, or "" when they can't be read."""
+    try:
+        return subprocess.run(["journalctl", "-u", unit, "-n", "40", "-o", "cat", "--no-pager"],
+                              capture_output=True, text=True, timeout=20).stdout
+    except (OSError, subprocess.SubprocessError):
+        return ""
 
 
 def main() -> int:
@@ -742,12 +795,16 @@ def main() -> int:
     info = snap.get("unit_info") or {}
     state["job_runs"] = job_runs(state.get("job_runs"), info)
     levels = {k: push_level(k, info, state["job_runs"]) for k in on}
-    mail, planned = plan(on, state, now)
+    runs = {unit_key(u): r.get("start") for u, r in state["job_runs"].items()}
+    mail, planned = plan(on, state, now, runs)
+    # Why each failed unit failed, from its own log, for the email that names it.
+    why = {k: failure_lines(read_journal(k[5:] + ".service")) for k, kind, _ in mail
+           if k.startswith("unit:") and kind != "clear"}
     undelivered = capped = False
     if not mail:
         state = planned
     elif under_cap(state, now):
-        if send(*compose(mail, snap, rate, actions, now, state.get("push_failing"))):
+        if send(*compose(mail, snap, rate, actions, now, state.get("push_failing"), why)):
             state = count_email(planned, now)
         else:
             # Nothing is marked sent, so the next run (5 minutes) tries again,

@@ -389,4 +389,67 @@ _ok, _sent = _send_with(worker_fails=True)
 check("when the Worker fails, Resend carries the alarm",
       _ok and _sent == ["https://mail.example/owner", "https://api.resend.com/emails"], str(_sent))
 
+# Nov 23 2026: one failure of the daily ingest health check sent 5 emails (a start, three 6-hour reminders, a
+# clear), and none said why it failed. The email carries the job's own failure lines and what to do; a timed job's
+# reminder goes only when a newer run has failed again; and disk and memory are printed only for their own alarms.
+JOURNAL = "\n".join([
+    "Starting permtracker-cron@ingest-health.service - PERM Tracker job ingest-health...",
+    "datasets registered : 312",
+    "daily-decisions        2026-07-01    145d    135d  STALE",
+    "FAIL: perm_docs quarter_report is 50 hours old",
+    "RUNS BROKEN: 1",
+    "  ingest_case_status_direct.py: last run finished 'failed' - died in the tail",
+    "permtracker-cron@ingest-health.service: Main process exited, code=exited, status=1/FAILURE",
+    "permtracker-cron@ingest-health.service: Failed with result 'exit-code'.",
+    "Failed to start permtracker-cron@ingest-health.service - PERM Tracker job ingest-health.",
+])
+why = alarm.failure_lines(JOURNAL)
+check("the reason is the job's own FAIL, BROKEN and failed lines, never systemd's",
+      why == ["FAIL: perm_docs quarter_report is 50 hours old", "RUNS BROKEN: 1",
+              "ingest_case_status_direct.py: last run finished 'failed' - died in the tail"], str(why))
+check("a journal with no such line gives its last lines instead",
+      alarm.failure_lines("one\ntwo\nthree\nfour\nunit.service: Failed with result 'exit-code'.") == ["two", "three", "four"],
+      str(alarm.failure_lines("one\ntwo\nthree\nfour\nunit.service: Failed with result 'exit-code'.")))
+check("an empty journal gives nothing", alarm.failure_lines("") == [])
+
+UNIT = "unit:permtracker-cron@ingest-health"
+_, text = alarm.compose([(UNIT, "start", "permtracker-cron@ingest-health.service failed")], healthy(), 0.1, [], T0,
+                        why={UNIT: why})
+check("a unit's email says why, from its journal", "FAIL: perm_docs quarter_report is 50 hours old" in text, text)
+check("...and what to do", "journalctl -u permtracker-cron@ingest-health -n 50" in text, text)
+check("...and prints no disk or memory line", "Disk:" not in text and "Memory:" not in text, text)
+_, text = alarm.compose([("disk", "start", "20.0 GB free")], healthy(disk_free_gb=20.0), 3.5, [], T0)
+check("a disk alarm prints the disk and not the memory", "Disk: 20.0 GB free" in text and "Memory:" not in text, text)
+check("...and what to do", alarm.TODO["disk"] in text, text)
+_, text = alarm.compose([("memory", "start", "300 MB available")], healthy(mem_available_mb=300), None, [], T0)
+check("a memory alarm prints the memory and not the disk", "Memory: 300 MB available" in text and "Disk:" not in text,
+      text)
+
+on = {UNIT: "permtracker-cron@ingest-health.service failed"}
+mail, st = alarm.plan(on, {}, T0, runs={UNIT: "111"})
+check("a timed job's failure emails at once", [(k, kind) for k, kind, _ in mail] == [(UNIT, "start")], str(mail))
+mail, st = alarm.plan(on, st, T0 + alarm.REMIND_S, runs={UNIT: "111"})
+check("...and not again after six hours while no newer run has failed", mail == [], str(mail))
+mail, st = alarm.plan(on, st, T0 + 2 * alarm.REMIND_S, runs={UNIT: "222"})
+check("...but again once a newer run has failed", [(k, kind) for k, kind, _ in mail] == [(UNIT, "still")], str(mail))
+mail, st = alarm.plan(on, st, T0 + 2 * alarm.REMIND_S + 300, runs={UNIT: "333"})
+check("...and never sooner than six hours after the last", mail == [], str(mail))
+mail, st = alarm.plan({}, st, T0 + 3 * alarm.REMIND_S, runs={})
+check("...and once when it clears", [(k, kind) for k, kind, _ in mail] == [(UNIT, "clear")], str(mail))
+
+# In a run: the unit's journal is read for its email, and a run that reads it as a failed job passes its run along.
+_d3 = _tf.mkdtemp()
+alarm.RUN = pathlib.Path(_d3)
+alarm.STATE = alarm.RUN / "alarm.json"
+_mails: list[tuple[str, str]] = []
+alarm.send = lambda subject, text: _mails.append((subject, text)) or True
+_asked: list[str] = []
+alarm.read_journal = lambda unit: _asked.append(unit) or JOURNAL
+_job = "permtracker-cron@ingest-health.service"
+alarm.snapshot = lambda now: healthy(failed_units=[_job], stopped_units=[],
+                                     unit_info={_job: {"state": "failed", "type": "oneshot", "start": "111"}})
+alarm.main()
+check("a run reads the failed unit's journal and puts its reason in the email",
+      _asked == [_job] and len(_mails) == 1 and "RUNS BROKEN: 1" in _mails[0][1], str((_asked, _mails[-1:])))
+
 sys.exit(1 if failures else 0)
