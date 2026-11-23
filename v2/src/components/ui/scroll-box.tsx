@@ -22,7 +22,9 @@ export function ScrollBox({
   children: ReactNode;
 }) {
   return (
-    <div role="region" aria-label={label} tabIndex={0} className={cn("scroll-box overflow-x-auto", className)}>
+    // `relative` makes the box the anchor of anything absolutely placed inside it (a cell's sr-only label), so the box
+    // clips it: anchored outside, it stretched the page past a phone's edge though nobody saw it (Nov 23 2026).
+    <div role="region" aria-label={label} tabIndex={0} className={cn("scroll-box relative overflow-x-auto", className)}>
       {children}
     </div>
   );

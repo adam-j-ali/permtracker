@@ -195,7 +195,7 @@ export function ChartTips({
       {scroll === undefined ? (
         children
       ) : (
-        <div {...stop} ref={openAtEnd} className={cn("chart-tips-scroll overflow-x-auto", scroll)}>
+        <div {...stop} ref={openAtEnd} className={cn("chart-tips-scroll relative overflow-x-auto", scroll)}>
           {children}
         </div>
       )}

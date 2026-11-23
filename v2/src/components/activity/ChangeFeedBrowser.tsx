@@ -614,12 +614,12 @@ export function ChangeFeedBrowser({
             })}
           </select>
         </div>{" "}
-        {/* Five page sizes, one tap each. */}
+        {/* Five page sizes, one tap each; they wrap on the narrowest phones rather than run past the edge. */}
         <ChoiceRow
           label="Rows per page"
           labelClassName={LABEL}
           className="lg:shrink-0"
-          rowClassName="mt-1 flex-nowrap gap-1"
+          rowClassName="mt-1 flex-wrap gap-1"
           options={PAGE_SIZES.map((n) => ({ value: String(n), label: String(n), ariaLabel: `${n} rows per page` }))}
           value={String(pageSize)}
           disabled={!ready}

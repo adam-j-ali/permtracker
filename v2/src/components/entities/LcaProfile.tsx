@@ -7,6 +7,7 @@ import { hasLcaDetail, newVersusTransfer, percent, type LcaProfile as Profile } 
 import { cn } from "@/lib/utils";
 import { formatInt } from "@/lib/format";
 import { longDate } from "@convex/lib/months";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * What one employer's H-1B LCAs were for: new hires against transfers, the
@@ -94,7 +95,7 @@ export function LcaProfile({
         From DOL&apos;s LCA files{p.fyFrom ? `, FY${p.fyFrom} on` : ""}: {formatInt(p.filings)}{" "}
         {p.filings === 1 ? "LCA" : "LCAs"} filed by {name}
         {p.detailRows > 0
-          ? `, ${formatInt(p.detailRows)} of them certified with the worker breakdown on Form ETA-9035.`
+          ? <KeepWhole>{`, ${formatInt(p.detailRows)} of them certified with the worker breakdown on Form ETA-9035.`}</KeepWhole>
           : "."}
         {p.olderFilings > 0 && (p.detailRows > 0 || p.levelRows > 0)
           ? ` DOL's files before FY${NEWER_FROM_FY.lca} print the worker breakdown and the wage level in some years only, so those figures count the years that print them.`
@@ -240,11 +241,11 @@ export function LcaProfile({
           {visas.map((v, i) => (
             <Fragment key={v.key}>
               {i > 0 ? " · " : ""}
-              {v.label} {formatInt(v.n)}
+              <KeepWhole>{v.label}</KeepWhole> {formatInt(v.n)}
             </Fragment>
           ))}
           {p.otherVisa > 0 ? ` · other ${formatInt(p.otherVisa)}` : ""}
-          . E-3 and H-1B1 use the same LCA as the H-1B.
+          <KeepWhole>{". E-3 and H-1B1 use the same LCA as the H-1B."}</KeepWhole>
         </p>
       ) : null}
     </section>

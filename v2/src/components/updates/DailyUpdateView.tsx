@@ -81,9 +81,12 @@ function FiledMonths({ months, total }: { months: DailyUpdate["certifiedByMonth"
   const { rows, rest } = monthsToDraw(months, total);
   const max = Math.max(1, ...rows.map((m) => m.n));
   const bar = (n: number) => (
+    // The bar takes the room the count leaves, so the count always fits beside it (a 70% bar ran past a 320px screen).
     <span className="flex items-center gap-2">
-      <span aria-hidden="true" className="h-5 shrink-0 border-2 border-foreground bg-primary" style={{ width: `${Math.max(1.5, (n / max) * 70)}%` }} />{" "}
-      <span className="whitespace-nowrap font-mono text-sm tabular-nums">
+      <span className="min-w-0 flex-1">
+        <span aria-hidden="true" className="block h-5 border-2 border-foreground bg-primary" style={{ width: `${Math.max(2, (n / max) * 100)}%` }} />
+      </span>{" "}
+      <span className="shrink-0 whitespace-nowrap font-mono text-sm tabular-nums">
         {formatInt(n)}
         <span className="text-soft">{` (${shareLabel(n, total)})`}</span>
       </span>
