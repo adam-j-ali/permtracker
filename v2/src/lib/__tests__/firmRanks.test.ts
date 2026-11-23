@@ -4,6 +4,7 @@ import {
   NATION,
   certifiedShare,
   filingSplit,
+  firmRanksAnswer,
   firmRanksAsOf,
   firstRankedYear,
   lastYearWords,
@@ -139,5 +140,33 @@ describe("filingSplit", () => {
 
   it("gives a place with under ten firms nothing for every other firm", () => {
     expect(filingSplit({ filings: 7, firms: 2, top10: 7, unnamed: 0 })).toEqual({ top10: 7, others: 0, unnamed: 0, all: 7 });
+  });
+});
+
+describe("firmRanksAnswer", () => {
+  const firm = (name: string, filings: number) => ({ name, filings });
+
+  it("names the busiest firm for each program, once when one firm leads both", () => {
+    expect(
+      firmRanksAnswer("TX", { fy: 2025, top: firm("Fragomen", 1234) }, { fy: 2025, top: firm("Fragomen", 5678) }),
+    ).toBe("In FY2025, Fragomen filed the most PERM cases for jobs in Texas (1,234), and the most certified H-1B LCAs (5,678).");
+  });
+
+  it("names a different firm for H-1B when another leads it", () => {
+    expect(
+      firmRanksAnswer(NATION, { fy: 2025, top: firm("Fragomen", 9000) }, { fy: 2025, top: firm("Berry Appleman", 12000) }),
+    ).toBe(
+      "In FY2025, Fragomen filed the most PERM cases across the country (9,000). Berry Appleman filed the most certified H-1B LCAs (12,000).",
+    );
+  });
+
+  it("names each program's own year when they differ, and drops a program with no ranking", () => {
+    expect(firmRanksAnswer("OH", { fy: 2025, top: firm("A", 10) }, { fy: 2026, top: firm("B", 20) })).toBe(
+      "In FY2025, A filed the most PERM cases for jobs in Ohio (10). In FY2026, B filed the most certified H-1B LCAs (20).",
+    );
+    expect(firmRanksAnswer("OH", { fy: 2025, top: firm("A", 1) }, { fy: null, top: null })).toBe(
+      "In FY2025, A filed the most PERM cases for jobs in Ohio (1).",
+    );
+    expect(firmRanksAnswer("OH", { fy: null, top: null }, { fy: null, top: null })).toBeNull();
   });
 });
