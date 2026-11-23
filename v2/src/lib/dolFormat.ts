@@ -9,7 +9,7 @@
  */
 
 import { formatInt } from "../../convex/lib/format";
-import { DAYS_PER_MONTH_2DP, MS_PER_DAY } from "../../convex/lib/time";
+import { DAYS_PER_MONTH_2DP } from "../../convex/lib/time";
 import { MONTH_NAMES } from "../../convex/lib/months";
 
 /**
@@ -87,27 +87,6 @@ export function monthsMoved(from: string | null, to: string | null): number | nu
   const t = /^(\d{4})-(\d{2})$/.exec(to);
   if (!f || !t) return null;
   return (Number(t[1]) - Number(f[1])) * 12 + (Number(t[2]) - Number(f[2]));
-}
-
-/**
- * Days between two "YYYY-MM-DD" stamps, used to caption a velocity figure.
- *
- * Accepts null/undefined like its neighbours rather than bare `string`. It
- * previously did not, which meant a caller could pass a "YYYY-MM" month where a
- * "YYYY-MM-DD" date was wanted and it compiled: `Date.parse("2025-09T00:00:00Z")`
- * is NaN, so the function returned null and the velocity section silently
- * vanished from the page with nothing to debug.
- */
-export function daysBetween(
-  from: string | null | undefined,
-  to: string | null | undefined,
-): number | null {
-  if (!from || !to) return null;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return null;
-  const a = Date.parse(`${from}T00:00:00Z`);
-  const b = Date.parse(`${to}T00:00:00Z`);
-  if (Number.isNaN(a) || Number.isNaN(b)) return null;
-  return Math.round((b - a) / MS_PER_DAY);
 }
 
 /** 14386 to "14,386". Null in, null out, like every other formatter here. */

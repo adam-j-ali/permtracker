@@ -1,7 +1,7 @@
 import { addDays, format, parseISO } from 'date-fns';
 
 import { shortDate } from '../../months';
-import { DAYS_PER_MONTH_2DP, MS_PER_DAY } from '../../time';
+import { DAYS_PER_MONTH_2DP, daysBetween } from '../../time';
 import {
   ETA9089_EXPIRATION_DAYS,
   FILING_WINDOW_WAIT_DAYS,
@@ -375,7 +375,6 @@ export interface Plan {
 
 const iso = (d: Date) => format(d, 'yyyy-MM-dd');
 const plusDays = (day: string, n: number) => iso(addDays(parseISO(day), Math.round(n)));
-const daysFrom = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / MS_PER_DAY);
 const later = (a: string, b: string) => (a > b ? a : b);
 const earlier = (a: string, b: string) => (a < b ? a : b);
 const fixed = (day: string): DayRange => ({ low: day, mid: day, high: day });
@@ -480,8 +479,8 @@ function checkKnown(known: PlanInput['known']): string[] {
   }
   const cert = known.permCertified;
   const filed = known.i140Filed;
-  if (cert && filed && daysFrom(cert, filed) > I140_FILE_BY_DAYS) {
-    out.push(`The I-140 was filed ${daysFrom(cert, filed)} days after certification; it had to go in within 180 days.`);
+  if (cert && filed && daysBetween(cert, filed) > I140_FILE_BY_DAYS) {
+    out.push(`The I-140 was filed ${daysBetween(cert, filed)} days after certification; it had to go in within 180 days.`);
   }
   return out;
 }

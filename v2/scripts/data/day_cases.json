@@ -1,0 +1,30 @@
+{
+  "about": "Shared answers for the one day difference: whole calendar days from one YYYY-MM-DD day to the next, negative when the second is earlier. convex/lib/time.ts (daysBetweenOrNull) and scripts/lib_days.py (days_between) both test against this file. A null answer means either side isn't a real calendar day: blank, a month, a timestamp, February 30, a month 13.",
+  "cases": [
+    {"from": "2026-01-01", "to": "2026-01-01", "days": 0},
+    {"from": "2026-01-01", "to": "2026-01-10", "days": 9},
+    {"from": "2026-01-10", "to": "2026-01-01", "days": -9},
+    {"from": "2024-02-28", "to": "2024-03-01", "days": 2},
+    {"from": "2023-02-28", "to": "2023-03-01", "days": 1},
+    {"from": "2024-12-31", "to": "2025-01-01", "days": 1},
+    {"from": "2026-03-07", "to": "2026-03-09", "days": 2},
+    {"from": "2026-10-31", "to": "2026-11-02", "days": 2},
+    {"from": "2025-10-01", "to": "2025-11-13", "days": 43},
+    {"from": "2000-02-28", "to": "2000-03-01", "days": 2},
+    {"from": "1900-02-28", "to": "1900-03-01", "days": 1},
+    {"from": "2008-10-01", "to": "2026-11-23", "days": 6627},
+    {"from": "2026-11-23", "to": "2008-10-01", "days": -6627},
+    {"from": "2024-02-30", "to": "2024-03-01", "days": null},
+    {"from": "2023-02-29", "to": "2023-03-01", "days": null},
+    {"from": "2024-04-31", "to": "2024-05-01", "days": null},
+    {"from": "2026-13-01", "to": "2026-01-01", "days": null},
+    {"from": "2026-00-10", "to": "2026-01-01", "days": null},
+    {"from": "2026-09", "to": "2026-09-30", "days": null},
+    {"from": "2026-09-01T10:00:00Z", "to": "2026-09-30", "days": null},
+    {"from": "2026-9-1", "to": "2026-09-30", "days": null},
+    {"from": " 2026-09-01", "to": "2026-09-30", "days": null},
+    {"from": "", "to": "2026-09-30", "days": null},
+    {"from": "2026-09-01", "to": null, "days": null},
+    {"from": null, "to": null, "days": null}
+  ]
+}

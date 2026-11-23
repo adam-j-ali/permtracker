@@ -9,7 +9,7 @@
  */
 
 import type { CountryKey, Cutoff } from "@/lib/perm";
-import { MS_PER_DAY } from "@/lib/time";
+import { daysBetween } from "@/lib/time";
 import { fiscalYearOf } from "@convex/lib/months";
 
 // The names, slugs and order live in convex/lib so Convex's bulletin push names a line as its page does.
@@ -96,7 +96,7 @@ export function fiscalYearMoves(states: ReadonlyArray<{ month: string; cutoff: C
     }
     const movedDays =
       start.cutoff.kind === "date" && end.cutoff.kind === "date"
-        ? Math.round((Date.parse(end.cutoff.iso) - Date.parse(start.cutoff.iso)) / MS_PER_DAY)
+        ? daysBetween(start.cutoff.iso, end.cutoff.iso)
         : null;
     out.push({
       fy,

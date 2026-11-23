@@ -2,6 +2,7 @@ import { businessDayPace, type DailyTotal } from "@/lib/dolPace";
 import { evenTickIndices, tickAnchor } from "@/components/tools/chartTicks";
 import { ChartHoverLayer, type HoverPoint } from "@/components/tools/ChartHoverLayer";
 import { monthTick, monthYear, shortDate } from "@convex/lib/months";
+import { daysBetween } from "@convex/lib/time";
 
 /**
  * How much work DOL has actually been clearing, week by week.
@@ -62,8 +63,7 @@ export function DailyDecisionsChart({ points, className }: DailyDecisionsChartPr
   if (points.length === 0) return null;
 
   const sorted = [...points].sort((a, z) => a.date.localeCompare(z.date));
-  const spanDays =
-    (Date.parse(`${sorted[sorted.length - 1]!.date}T00:00:00Z`) - Date.parse(`${sorted[0]!.date}T00:00:00Z`)) / 86_400_000;
+  const spanDays = daysBetween(sorted[0]!.date, sorted[sorted.length - 1]!.date);
   const monthly = spanDays > MONTHLY_AFTER_DAYS;
   const unit = monthly ? "month" : "week";
   const byWeek = new Map<string, number>();

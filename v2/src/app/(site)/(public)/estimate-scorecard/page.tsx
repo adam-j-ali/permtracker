@@ -18,7 +18,7 @@ import { BarRows } from "@/components/data/BarRows";
 import { FinePrint } from "@/components/data/FinePrint";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { formatAsOf, formatDay } from "@/lib/dolFormat";
-import { easternDay } from "@convex/lib/time";
+import { daysBetween, easternDay } from "@convex/lib/time";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { daysToAnchor } from "@/lib/predictionLedger";
 import { HORIZONS, PWD_BEFORE_FIX, type Cell } from "@/lib/scorecard/score";
@@ -33,7 +33,6 @@ import { getScorecard } from "@/lib/db/scorecard";
 import { getSweepCoverage } from "@/lib/db/sweepCoverage";
 import { withSocialCard } from "@/lib/socialCard";
 import { formatInt } from "@/lib/format";
-import { MS_PER_DAY } from "@/lib/time";
 import { softFail } from "@/lib/softRead";
 import { DataProvenance } from "@/components/data/DataProvenance";
 
@@ -331,7 +330,7 @@ export default async function EstimateScorecardPage() {
                         <td className="py-2 pr-3 tabular-nums">{`${r.predicted} `}</td>
                         <td className="py-2 pr-3 tabular-nums">{`${r.decidedOn} `}</td>
                         <td className="py-2 text-right tabular-nums">
-                          {`${signed(Math.round((Date.parse(r.decidedOn) - Date.parse(r.predicted)) / MS_PER_DAY))} days `}
+                          {`${signed(daysBetween(r.predicted, r.decidedOn))} days `}
                         </td>
                       </tr>
                     ))}

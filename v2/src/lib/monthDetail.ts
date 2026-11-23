@@ -8,6 +8,8 @@
  * holds them; the server read lives in db/monthDetail.ts.
  */
 
+import { daysBetween } from "@/lib/time";
+
 export interface DayDecisions {
   date: string;
   certified: number;
@@ -87,8 +89,7 @@ const decided = (d: DayDecisions) => d.certified + d.denied + d.withdrawn;
  * series holds. Null until both weeks have at least one day.
  */
 export function weekOnWeek(days: readonly DayDecisions[], asOf: string): { thisWeek: number; weekBefore: number } | null {
-  const end = Date.parse(`${asOf}T00:00:00Z`);
-  const ago = (d: string) => Math.round((end - Date.parse(`${d}T00:00:00Z`)) / 86_400_000);
+  const ago = (d: string) => daysBetween(d, asOf);
   const a = days.filter((d) => ago(d.date) >= 0 && ago(d.date) < 7);
   const b = days.filter((d) => ago(d.date) >= 7 && ago(d.date) < 14);
   if (!a.length || !b.length) return null;

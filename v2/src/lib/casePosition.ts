@@ -17,7 +17,7 @@
  * queue overview two clicks away.
  */
 
-import { MS_PER_DAY } from "@/lib/time";
+import { daysBetweenOrNull } from "@/lib/time";
 import { findFront, monthsBetween, type CohortMonth } from "./liveQueue";
 import { inLine } from "./queueAhead";
 
@@ -205,24 +205,19 @@ export function neighbourMonths(
   return months.slice(Math.max(0, i - span), i + span + 1);
 }
 
-const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
-
 /**
- * Whole days between two ISO dates, or null for anything unparseable.
+ * Whole days between two ISO dates, or null for anything that isn't a real day
+ * (the one day difference, `daysBetweenOrNull` in convex/lib/time.ts).
  *
- * Null rather than NaN or zero on purpose: "0 days elapsed" is a claim, and
- * `Date.parse("2026-05T00:00:00Z")` is NaN, so a month passed where a date
- * was wanted would otherwise render "NaN days" or silently read as today.
+ * Null rather than NaN or zero on purpose: "0 days elapsed" is a claim. A
+ * month passed where a date was wanted ("2026-05") is refused, never read as
+ * the month's first day, which Date.parse alone would do.
  */
 export function daysElapsed(
   from: string | null | undefined,
   to: string,
 ): number | null {
-  if (!from || !ISO_DATE.test(from) || !ISO_DATE.test(to)) return null;
-  const a = Date.parse(`${from}T00:00:00Z`);
-  const b = Date.parse(`${to}T00:00:00Z`);
-  if (Number.isNaN(a) || Number.isNaN(b)) return null;
-  return Math.round((b - a) / MS_PER_DAY);
+  return daysBetweenOrNull(from, to);
 }
 
 export interface StatusCheck {

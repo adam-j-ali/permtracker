@@ -22,7 +22,8 @@ import { RecruitmentDeadlineIndicator } from "./recruitment-section.components";
 import { SubEntriesManager } from "./SubEntriesManager";
 import { getMethodDateConstraints } from "@/lib/forms/date-constraints";
 import type { SubEntry } from "@/lib/shared/types";
-import { parseISO, addDays, differenceInDays, format } from "date-fns";
+import { parseISO, addDays, format } from "date-fns";
+import { daysBetween } from "@/lib/time";
 import { CharLimit } from "@/components/ui/char-limit";
 
 // ============================================================================
@@ -54,11 +55,6 @@ function addDaysToDate(dateStr: string, days: number): string {
 /**
  * Calculate days between two date strings
  */
-function daysBetween(dateStr1: string, dateStr2: string): number {
-  const date1 = parseISO(dateStr1);
-  const date2 = parseISO(dateStr2);
-  return differenceInDays(date2, date1);
-}
 
 // Re-export for consumers of this module
 export type { AdditionalRecruitmentMethod } from "@/lib/shared/types";

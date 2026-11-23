@@ -10,7 +10,6 @@ import {
   COURT_TYPE,
   buildStrip,
   commentWindow,
-  daysBetween,
   effectiveState,
   feedLedger,
   foldCorrections,
@@ -127,12 +126,6 @@ describe("buildFeed", () => {
 });
 
 describe("dates", () => {
-  it("daysBetween counts whole days without a zone", () => {
-    expect(daysBetween("2026-09-16", "2026-11-10")).toBe(55);
-    expect(daysBetween("2026-09-16", "2026-09-16")).toBe(0);
-    expect(daysBetween("2026-09-16", "2026-09-15")).toBe(-1);
-  });
-
   it("a comment window is OPEN through its close date and closed the day after", () => {
     const d = n({ documentNumber: "p", publicationDate: "2026-08-25", type: "Proposed Rule", commentsCloseOn: "2026-09-16" });
     expect(commentWindow(d, "2026-09-16")).toEqual({ closesOn: "2026-09-16", state: "open", daysLeft: 0 });

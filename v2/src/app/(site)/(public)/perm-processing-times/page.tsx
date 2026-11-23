@@ -39,7 +39,8 @@ import { averageTrend, queueMoveTrend } from "@/lib/dolTrends";
 
 import { openGraphBase } from "@/lib/openGraphBase";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
-import { currentMonthUtc, daysAsApproxMonths, daysBetween, formatAsOf, formatMonth, monthsMoved } from "@/lib/dolFormat";
+import { currentMonthUtc, daysAsApproxMonths, formatAsOf, formatMonth, monthsMoved } from "@/lib/dolFormat";
+import { daysBetweenOrNull } from "@/lib/time";
 import {
   analystReviewQueue,
   analystReviewAverage,
@@ -262,7 +263,7 @@ export default async function PermProcessingTimesPage() {
     oldestAnalyst?.priorityDate ?? null,
     analyst?.priorityDate ?? null,
   );
-  const observedDays = daysBetween(oldest?.permAsOf, snapshot?.permAsOf);
+  const observedDays = daysBetweenOrNull(oldest?.permAsOf, snapshot?.permAsOf);
   // `movedMonths > 0` is doing real work. Two snapshots can differ (DOL
   // refreshes the backlog counts monthly) while the analyst priority date holds,
   // which rendered "the analyst review queue advanced 0 months", and a DOL

@@ -272,7 +272,7 @@ def write(db, rows: list[dict]) -> int:
 
 # --- main ---------------------------------------------------------------------
 
-def days_between(a: datetime.date, b: datetime.date, step: int) -> list[str]:
+def stepped_days(a: datetime.date, b: datetime.date, step: int) -> list[str]:
     out, d = [], b
     while d >= a:
         out.append(d.isoformat())
@@ -294,7 +294,7 @@ def main(argv: list[str] | None = None) -> int:
     if a.frm or a.to:
         lo = max(FIRST_DAY, datetime.date.fromisoformat(a.frm) if a.frm else FIRST_DAY)
         hi = datetime.date.fromisoformat(a.to) if a.to else today
-        days = days_between(lo, hi, a.step)
+        days = stepped_days(lo, hi, a.step)
     else:
         # Today's files appear after midnight Eastern; before they do, yesterday's are current.
         days = [today.isoformat(), (today - datetime.timedelta(days=1)).isoformat()]

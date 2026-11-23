@@ -24,7 +24,7 @@
  * Plain module, pure functions, so the unit project tests every rule.
  */
 
-import { daysBetween, EASTERN_TIMEZONE, easternDay } from "@/lib/time";
+import { EASTERN_TIMEZONE, dayNumber, daysBetween, easternDay } from "@/lib/time";
 
 /**
  * `watched` is the date a subscriber's own case page showed, recorded once per
@@ -323,7 +323,6 @@ export function caseKindOf(model: string): CaseKind {
 }
 
 /** Day number of an ISO date, for midpoint arithmetic. */
-const dayNumber = (iso: string) => Math.round(Date.parse(`${iso}T00:00:00Z`) / 86_400_000);
 
 /**
  * Who is closer on a case still waiting, if that is already decided.

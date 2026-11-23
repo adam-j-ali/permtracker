@@ -28,7 +28,7 @@ interface Rule {
   homes: readonly string[];
   /** Lines that compute the rule again. */
   copy: RegExp;
-  /** A line shaped like a copy that shipped, which the pattern must find. */
+  /** Code shaped like a copy that shipped, which the pattern must find once. */
   probe: string;
   /** A line that only looks similar, which the pattern must pass. */
   spare: string;
@@ -44,14 +44,27 @@ const RULES: readonly Rule[] = [
     probe: "  const half = (Z * Math.sqrt((p * (1 - p)) / n + (Z * Z) / (4 * n * n))) / denom;",
     spare: "  const share = certified / decided; // 1.96M rows read",
   },
+  {
+    name: "the day difference",
+    homes: ["convex/lib/time.ts", "scripts/lib_days.py"],
+    // Two parsed days subtracted (on one line or split over several), a parsed day divided by a day's milliseconds
+    // (a day number), or a helper named for either. Elapsed time from an instant (Date.now() less a stamp) is a
+    // different measure and isn't matched.
+    copy: /(?:Date\.parse|Date\.UTC)\([^;]*?\)\s*\)?\s*-\s*(?:Date\.parse|Date\.UTC)\(|Date\.parse\([^;()]*\)\s*\/\s*\(?(?:MS_PER_DAY|86_?400_?000|DAY_MS)\b|\b(?:function|const)\s+(?:daysBetween|daysFrom|dayNum|dayNumber|dayIndex)\b|\bdef\s+days_between\b/,
+    probe: `  const span = Math.round(
+    (Date.parse(\`\${to}T12:00:00Z\`) -
+      Date.parse(\`\${from}T12:00:00Z\`)) /
+      MS_PER_DAY,
+  );`,
+    spare: "  const age = Math.floor((Date.now() - row.computedAt) / MS_PER_DAY);",
+  },
 ];
 
-/** Each line of a file that computes a rule outside its homes, as file:line. */
+/** Where a file computes a rule outside its homes, as file:line (a copy may run over several lines). */
 function copiesOf(rule: Rule, path: string, source: string): string[] {
   if (rule.homes.includes(path) || path === THIS_FILE) return [];
-  return source
-    .split("\n")
-    .flatMap((line, i) => (rule.copy.test(line) ? [`${path}:${i + 1}`] : []));
+  const all = new RegExp(rule.copy.source, `${rule.copy.flags}g`);
+  return [...source.matchAll(all)].map((m) => `${path}:${source.slice(0, m.index).split("\n").length}`);
 }
 
 describe("one home per rule", () => {
@@ -63,7 +76,7 @@ describe("one home per rule", () => {
 
   describe.each(RULES)("$name", (rule) => {
     it("finds a copy shaped like one that shipped, and spares a line that only looks like one", () => {
-      expect(copiesOf(rule, "x.ts", rule.probe)).toEqual(["x.ts:1"]);
+      expect(copiesOf(rule, "x.ts", rule.probe)).toHaveLength(1);
       expect(copiesOf(rule, "x.ts", rule.spare)).toEqual([]);
     });
 

@@ -1,6 +1,7 @@
 import { differenceInCalendarMonths, parseISO } from 'date-fns';
 import { monthStart, monthsBetween } from '../dates/monthUtils';
 import { shiftMonth } from '../../months';
+import { dayFromNumber, dayNumber } from '../../time';
 import { addBusinessDays, subtractBusinessDays } from '../dates/businessDays';
 import { isBusinessDay } from '../dates/holidays';
 import { boundRange, COLLAPSE_FRACTION, type MeasuredRangeRow } from './decisionPace';
@@ -332,10 +333,8 @@ export type PwdDayEstimate =
 /** Past this many days the count and the pace are too old to date a request from. */
 export const PWD_DAY_MAX_AGE_DAYS = 3;
 
-const dayNum = (iso: string) => Math.floor(Date.parse(`${iso}T00:00:00Z`) / 86_400_000);
-const isoOf = (n: number) => new Date(n * 86_400_000).toISOString().slice(0, 10);
 /** The first day DOL works on or after `iso`. */
-const workdayFrom = (iso: string) => addBusinessDays(isoOf(dayNum(iso) - 1), 1);
+const workdayFrom = (iso: string) => addBusinessDays(dayFromNumber(dayNumber(iso) - 1), 1);
 
 /**
  * A wage request's likely determination day: the requests in process filed
@@ -346,8 +345,8 @@ const workdayFrom = (iso: string) => addBusinessDays(isoOf(dayNum(iso) - 1), 1);
  */
 export function estimatePwdDay(input: PwdDayInput): PwdDayEstimate {
   const { filingDate, queue } = input;
-  const today = dayNum(input.today);
-  const asOf = dayNum(queue.asOf);
+  const today = dayNumber(input.today);
+  const asOf = dayNumber(queue.asOf);
   if (today - asOf > PWD_DAY_MAX_AGE_DAYS) {
     return { kind: 'refused', reason: 'stale', detail: `Our last count of DOL's wage queue was ${today - asOf} days ago.` };
   }
@@ -358,7 +357,7 @@ export function estimatePwdDay(input: PwdDayInput): PwdDayEstimate {
   }
   const pace = queue.pace;
   // The count is the queue as DOL left it the day before the sweep.
-  const counted = isoOf(asOf - 1);
+  const counted = dayFromNumber(asOf - 1);
   const open = workdayFrom(input.today);
   const walk = (rate: number) => addBusinessDays(counted, Math.max(1, Math.round(ahead / rate)));
   const workdays = Math.max(1, Math.round(ahead / pace.perWorkday));
@@ -377,12 +376,12 @@ export function estimatePwdDay(input: PwdDayInput): PwdDayEstimate {
     late = walk(pace.slow);
   }
   if (early < open) early = open;
-  const [e, l] = boundRange(dayNum(date), dayNum(early), dayNum(late), today);
+  const [e, l] = boundRange(dayNumber(date), dayNumber(early), dayNumber(late), today);
   return {
     kind: 'estimate',
     date,
-    earliest: isoOf(e),
-    latest: isoOf(l),
+    earliest: dayFromNumber(e),
+    latest: dayFromNumber(l),
     requestsAhead: Math.round(ahead),
     workdays,
     pace: pace.perWorkday,

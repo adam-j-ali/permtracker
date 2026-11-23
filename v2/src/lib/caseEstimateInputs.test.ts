@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { monthEndDate, type BacklogRow } from "./caseEstimateInputs";
+import { dayNumber } from "./time";
 
 const row = (month: string, analystReview: number): BacklogRow => ({
   month, total: analystReview + 100, pending: analystReview + 20, decided: 80, decidedPct: 50, analystReview,
@@ -27,8 +28,7 @@ describe("monthEndDate", () => {
     const measured = monthEndDate({ ...base, rangeCoverage: { measured: [{ fromDays: 0, toDays: 30, earlyDays: -6, lateDays: 13 }] } as never });
     if (measured?.kind !== "estimate") throw new Error("expected a date");
     expect(measured.rangeFrom).toBe("measured");
-    const day = (d: string) => Date.parse(`${d}T00:00:00Z`) / 86_400_000;
-    expect([day(measured.date) - day(measured.early), day(measured.late) - day(measured.date)]).toEqual([6, 13]);
+    expect([dayNumber(measured.date) - dayNumber(measured.early), dayNumber(measured.late) - dayNumber(measured.date)]).toEqual([6, 13]);
     // Without the measurement, the pace rule's own range.
     const paced = monthEndDate(base);
     if (paced?.kind !== "estimate") throw new Error("expected a date");

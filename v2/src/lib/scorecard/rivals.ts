@@ -2,7 +2,7 @@ import "server-only";
 
 import type { NewPrediction, SampledCase } from "@/lib/db/predictions";
 import { rows } from "@/lib/db/client";
-import { MS_PER_DAY } from "@/lib/time";
+import { MS_PER_DAY, dayFromNumber, dayNumber, daysBetween } from "@/lib/time";
 import { RIVAL_PWD_MODEL } from "@/lib/scorecard/score";
 
 /**
@@ -151,11 +151,8 @@ export async function rivalPredictions(
 }
 
 /** The middle day of a range, rounded to the earlier day. */
-const middleOf = (from: string, to: string): string => {
-  const a = Date.parse(`${from}T00:00:00Z`);
-  const b = Date.parse(`${to}T00:00:00Z`);
-  return new Date(a + Math.floor((b - a) / MS_PER_DAY / 2) * MS_PER_DAY).toISOString().slice(0, 10);
-};
+const middleOf = (from: string, to: string): string =>
+  dayFromNumber(dayNumber(from) + Math.floor(daysBetween(from, to) / 2));
 
 /**
  * Rival D's wage-request estimate for one of the day's sampled wage requests: a filing date in, a range out

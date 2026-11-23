@@ -18,7 +18,7 @@
  * effort. These counts come from per-case status, mirrored with attribution.
  */
 
-import { DAYS_PER_MONTH_2DP, MS_PER_DAY } from "@/lib/time";
+import { DAYS_PER_MONTH_2DP, MS_PER_DAY, daysBetween } from "@/lib/time";
 import { MONTH_ABBR } from "@convex/lib/months";
 
 export interface MonthQueue {
@@ -239,12 +239,7 @@ export function aheadOfDay(
     // Answerable but not projectable: say what we counted and nothing more.
     return { total: pending, pending, projected: 0 };
   }
-  const days = Math.max(
-    0,
-    Math.round(
-      (Date.parse(`${filingDate}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / MS_PER_DAY,
-    ),
-  );
+  const days = Math.max(0, daysBetween(today, filingDate));
   const projected = Math.round(filingRate * days);
   return { total: pending + projected, pending, projected };
 }

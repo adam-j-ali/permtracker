@@ -7,13 +7,13 @@
  */
 import { addDaysUTC, calculateFilingWindow, calculatePWDExpiration, pwdBearing, pwdFilingLimit, type PwdBearing } from "@/lib/perm";
 import { monthDay, shortDate } from "@convex/lib/months";
-import { MS_PER_DAY } from "@/lib/time";
+import { daysBetween } from "@/lib/time";
 
 /** The example determination, issued in the 90-day season (April 2 to June 30). */
 export const DETERMINED = "2026-04-15";
 export const EXPIRES = calculatePWDExpiration(DETERMINED);
 /** Days from the determination to its expiry, both counted inside the validity period. */
-export const VALID_DAYS = Math.round((Date.parse(`${EXPIRES}T00:00:00Z`) - Date.parse(`${DETERMINED}T00:00:00Z`)) / MS_PER_DAY);
+export const VALID_DAYS = daysBetween(DETERMINED, EXPIRES);
 /** The first step's sweep, in days from the determination: from before it to after the expiry. */
 export const FIRST_MIN = -40;
 export const FIRST_MAX = VALID_DAYS + 30;
@@ -32,7 +32,7 @@ export interface PwdReading {
 }
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
-const dayOf = (isoDay: string) => Math.round((Date.parse(`${isoDay}T00:00:00Z`) - Date.parse(`${DETERMINED}T00:00:00Z`)) / MS_PER_DAY);
+const dayOf = (isoDay: string) => daysBetween(DETERMINED, isoDay);
 
 /** The reading for a first recruitment step `firstDay` days after the determination. */
 export function readPwdValidity(firstDay: number): PwdReading {

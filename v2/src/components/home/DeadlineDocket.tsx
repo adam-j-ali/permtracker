@@ -9,7 +9,7 @@ import {
   calculatePWDExpiration,
 } from "@/lib/perm";
 import { cn } from "@/lib/utils";
-import { MS_PER_DAY } from "@/lib/time";
+import { dayNumber } from "@/lib/time";
 
 /**
  * One example case's docket: the dates an attorney types, and every deadline
@@ -108,7 +108,6 @@ export function exampleDocket(): Docket {
   };
 }
 
-const dayNumber = (iso: string) => Date.parse(`${iso}T00:00:00Z`) / MS_PER_DAY;
 
 const KIND_MARK: Record<DocketKind, string> = {
   recruitment: "bg-stage-recruitment",

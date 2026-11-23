@@ -7,7 +7,7 @@ import { ChartHoverLayer, type HoverPoint } from "@/components/tools/ChartHoverL
 
 import { formatAsOf, formatMonthShort, formatMonth } from "@/lib/dolFormat";
 import { cn } from "@/lib/utils";
-import { MS_PER_DAY } from "@/lib/time";
+import { dayNumber } from "@/lib/time";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { DataView, ScopeSelect } from "./DataView";
 import { MONTH_ABBR, monthIndex } from "@convex/lib/months";
@@ -144,9 +144,6 @@ export const PAD = { top: 18, right: 16, bottom: 40, left: 76 };
 export const Y_LABEL_FONT_PX = 12;
 export const MONO_ADVANCE_EM = 0.6;
 
-function dayIndex(iso: string): number {
-  return Date.parse(`${iso}T00:00:00Z`) / MS_PER_DAY;
-}
 
 /**
  * The step drawing itself. Null when the slice cannot carry a chart.
@@ -167,15 +164,15 @@ function QueueHistorySvg({
 }) {
   if (sorted.length < 2) return null;
 
-  const x0 = dayIndex(sorted[0]!.asOf);
-  const x1 = dayIndex(sorted[sorted.length - 1]!.asOf);
+  const x0 = dayNumber(sorted[0]!.asOf);
+  const x1 = dayNumber(sorted[sorted.length - 1]!.asOf);
   const months = sorted.map((p) => monthIndex(p.frontierMonth));
   const yMin = Math.min(...months);
   const yMax = Math.max(...months);
   if (x1 === x0 || yMax === yMin) return null;
 
   const px = (iso: string) =>
-    PAD.left + ((dayIndex(iso) - x0) / (x1 - x0)) * (W - PAD.left - PAD.right);
+    PAD.left + ((dayNumber(iso) - x0) / (x1 - x0)) * (W - PAD.left - PAD.right);
   const py = (month: string) =>
     H - PAD.bottom -
     ((monthIndex(month) - yMin) / (yMax - yMin)) * (H - PAD.top - PAD.bottom);
@@ -494,7 +491,7 @@ export function QueueHistoryChart({ points, className, kind = "readings" }: Queu
     sorted.forEach((p, i) => {
       const prev = i > 0 ? sorted[i - 1] : undefined;
       m.set(p.asOf, prev ? monthIndex(p.frontierMonth) - monthIndex(prev.frontierMonth) : null);
-      g.set(p.asOf, prev ? Math.round(dayIndex(p.asOf) - dayIndex(prev.asOf)) : null);
+      g.set(p.asOf, prev ? Math.round(dayNumber(p.asOf) - dayNumber(prev.asOf)) : null);
     });
     return { moved: m, gapDays: g };
   }, [sorted]);

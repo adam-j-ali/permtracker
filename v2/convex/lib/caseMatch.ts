@@ -17,6 +17,8 @@
  * @module
  */
 
+import { daysBetween, daysBetweenOrNull } from "./time";
+
 export interface MatchRow {
   caseNumber: string;
   status: string;
@@ -65,18 +67,17 @@ export function employerLike(name: string): string | null {
   return `%${core}%`;
 }
 
-function daysBetween(a: string, b: string): number {
-  return Math.abs((Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 86_400_000);
-}
+/** Days between two filing dates, whichever comes first. */
+const daysApart = (a: string, b: string) => Math.abs(daysBetween(a, b));
 
 /** Rank the mirror rows by filing-date proximity and pick the lone close one. */
 export function rankCandidates(rows: readonly MatchRow[], filingDate: string): MatchResult {
-  const dated = rows.filter((r) => r.filingDate && !Number.isNaN(Date.parse(`${r.filingDate}T00:00:00Z`)));
+  const dated = rows.filter((r) => r.filingDate && daysBetweenOrNull(r.filingDate, filingDate) !== null);
   const byClose = [...dated].sort(
-    (a, b) => daysBetween(a.filingDate!, filingDate) - daysBetween(b.filingDate!, filingDate),
+    (a, b) => daysApart(a.filingDate!, filingDate) - daysApart(b.filingDate!, filingDate),
   );
   const candidates = byClose.slice(0, MAX_CANDIDATES);
-  const tight = byClose.filter((r) => daysBetween(r.filingDate!, filingDate) <= TIGHT_WINDOW_DAYS);
+  const tight = byClose.filter((r) => daysApart(r.filingDate!, filingDate) <= TIGHT_WINDOW_DAYS);
   const likely = tight.length === 1 ? tight[0]!.caseNumber : null;
   return { candidates, likely };
 }

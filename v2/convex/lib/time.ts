@@ -72,11 +72,49 @@ export function checkedLabel(ms: number): string {
   return `${CLOCK.format(ms)} ET, ${SHORT_DAY.format(ms)}`;
 }
 
+const DAY_SHAPE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * UTC midnight of a real calendar day, "YYYY-MM-DD", or NaN. Date.parse alone
+ * rolls February 30 into March and reads "2026-09" as September 1, so the shape
+ * is checked first and a day that comes back as a different day of the month
+ * isn't one.
+ */
+function dayStart(day: string): number {
+  if (!DAY_SHAPE.test(day)) return Number.NaN;
+  const ms = Date.parse(`${day}T00:00:00Z`);
+  return new Date(ms).getUTCDate() === Number(day.slice(8, 10)) ? ms : Number.NaN;
+}
+
 /**
  * Calendar days from `from` to `to`, both "YYYY-MM-DD", counted at UTC
  * midnight so daylight saving never shifts it. Negative when `to` is earlier;
- * NaN when either date doesn't parse.
+ * NaN when either isn't a real day (February 30, a month, a timestamp).
+ *
+ * The one day difference for the site and Convex: the data scripts' half is
+ * scripts/lib_days.py, and both are held to scripts/data/day_cases.json.
  */
 export function daysBetween(from: string, to: string): number {
-  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / MS_PER_DAY);
+  return Math.round((dayStart(to) - dayStart(from)) / MS_PER_DAY);
+}
+
+/**
+ * A day as a whole number of days since 1970-01-01, for placing days on an
+ * axis or carrying them through arithmetic: two days subtract to the days
+ * between them. NaN when it isn't a real "YYYY-MM-DD" day.
+ */
+export function dayNumber(day: string): number {
+  return Math.round(dayStart(day) / MS_PER_DAY);
+}
+
+/** The "YYYY-MM-DD" day a `dayNumber` names, rounded to the nearest whole day. Throws on NaN, as a bad Date does. */
+export function dayFromNumber(n: number): string {
+  return new Date(Math.round(n) * MS_PER_DAY).toISOString().slice(0, 10);
+}
+
+/** `daysBetween`, or null when either day is missing or isn't a real day: "we don't know" never reads as 0. */
+export function daysBetweenOrNull(from: string | null | undefined, to: string | null | undefined): number | null {
+  if (!from || !to) return null;
+  const days = daysBetween(from, to);
+  return Number.isNaN(days) ? null : days;
 }

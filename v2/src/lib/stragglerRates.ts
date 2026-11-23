@@ -8,7 +8,7 @@
  * project tests the rules and the browser could read the type.
  */
 
-import { MS_PER_DAY } from "@/lib/time";
+import { daysBetween } from "@/lib/time";
 
 export interface StragglerRates {
   /** Eastern date the measurement was taken. */
@@ -49,7 +49,7 @@ export function parseStragglerRates(json: string, today: string): StragglerRates
   ) {
     return null;
   }
-  const age = Math.floor((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${d.asOf}T00:00:00Z`)) / MS_PER_DAY);
+  const age = daysBetween(d.asOf, today);
   if (!Number.isFinite(age) || age > MAX_AGE_DAYS || age < 0) return null;
   if (d.decided < MIN_DECIDED || !(d.dailyRate > 0 && d.dailyRate < 1)) return null;
   if (!(d.medianDays >= 1 && d.p80Days >= d.medianDays)) return null;

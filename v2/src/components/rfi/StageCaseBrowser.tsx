@@ -9,7 +9,7 @@ import type { StageCase } from "@/lib/db/rfi";
 import { formatInt } from "@/lib/format";
 import { SITE_URL } from "@/lib/constants/site";
 import { entityHref } from "@/lib/entityPayload";
-import { daysBetween } from "@/lib/stageWait";
+import { daysBetween } from "@/lib/time";
 import { easternDay } from "@convex/lib/time";
 import { shortDate } from "@convex/lib/months";
 

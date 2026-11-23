@@ -20,6 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ingest_perm_history as iph  # noqa: E402
+from lib_days import days_between  # noqa: E402
 
 FAILURES: list[str] = []
 
@@ -159,7 +160,7 @@ check("it reads decision days in slices, never the whole table at once", len(rea
 check("no read groups or scans the whole older table",
       not any("FROM perm_cases_history" in s and "decision_date >=" not in s and "MIN(" not in s and "MAX(" not in s
               for s in db.statements), "\n".join(db.statements))
-check("each slice is five days or fewer", all(iph.days_between(a, b) <= 5 for a, b in iph.decision_slices(
+check("each slice is five days or fewer", all(days_between(a, b) <= 5 for a, b in iph.decision_slices(
     "2008-11-05", "2016-09-30")), "")
 check("the slices cover every day once, from the first decision to the last",
       iph.decision_slices("2016-01-30", "2016-02-02")[0][0] == "2016-01-30"

@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 
 import { PwdValidityWindow } from "../PwdValidityWindow";
 import { calculatePWDExpiration } from "@/lib/perm";
+import { daysBetween } from "@/lib/time";
 
 /**
  * The figures are derived from `calculatePWDExpiration` at render time on
@@ -30,12 +31,7 @@ describe("PwdValidityWindow", () => {
     // Derive what the copy must say from the same function the component uses.
     const june = "2026-06-30";
     const july = "2026-07-01";
-    const days = (from: string) =>
-      Math.round(
-        (Date.parse(`${calculatePWDExpiration(from)}T00:00:00Z`) -
-          Date.parse(`${from}T00:00:00Z`)) /
-          86_400_000,
-      );
+    const days = (from: string) => daysBetween(from, calculatePWDExpiration(from));
     const short = days(june);
     const long = days(july);
 

@@ -1,5 +1,5 @@
 import type { ParsedCaseNumber } from "@/lib/permCaseNumber";
-import { MS_PER_DAY } from "@/lib/time";
+import { daysBetween } from "@/lib/time";
 import { longDate } from "@convex/lib/months";
 
 /**
@@ -41,11 +41,7 @@ export function CaseNumberPlate({
   const [letter, office] = parsed.prefix.split("-");
   const yy = parsed.filingDate.slice(2, 4);
   const dayOfYear = String(
-    Math.round(
-      (Date.parse(`${parsed.filingDate}T00:00:00Z`) -
-        Date.parse(`${parsed.filingDate.slice(0, 4)}-01-01T00:00:00Z`)) /
-        MS_PER_DAY,
-    ) + 1,
+    daysBetween(`${parsed.filingDate.slice(0, 4)}-01-01`, parsed.filingDate) + 1,
   ).padStart(3, "0");
 
   const segments = [

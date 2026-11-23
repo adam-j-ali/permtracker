@@ -7,6 +7,7 @@
 import { programKey } from "@/lib/entitySlug";
 import type { DayCase } from "@/lib/filingDay";
 import { rankFuzzy } from "@/lib/fuzzy";
+import { daysBetween } from "@/lib/time";
 
 /** Letters or digits a name needs before it's matched: one letter matches half the day. */
 export const FINDER_MIN_LETTERS = 2;
@@ -85,7 +86,7 @@ export interface NearbyDay {
 export function nearbyDays(rows: readonly { filedOn: string | null }[], asked: string): NearbyDay[] {
   const tally = new Map<string, number>();
   for (const r of rows) if (r.filedOn && r.filedOn !== asked) tally.set(r.filedOn, (tally.get(r.filedOn) ?? 0) + 1);
-  const gap = (d: string) => Math.abs(Date.parse(`${d}T12:00:00Z`) - Date.parse(`${asked}T12:00:00Z`));
+  const gap = (d: string) => Math.abs(daysBetween(asked, d));
   return [...tally].map(([day, cases]) => ({ day, cases })).sort((a, b) => gap(a.day) - gap(b.day) || a.day.localeCompare(b.day));
 }
 
@@ -133,7 +134,7 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const realDay = (d: string) => DAY.test(d) && new Date(Date.parse(`${d}T12:00:00Z`)).toISOString().slice(0, 10) === d;
 const moved = (d: string, days: number) => new Date(Date.parse(`${d}T12:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
 /** Days from `from` to `to`, both counted. */
-export const windowDays = (from: string, to: string) => Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86_400_000) + 1;
+export const windowDays = (from: string, to: string) => daysBetween(from, to) + 1;
 
 /**
  * The filing days an ask names. Two dates are a window, in either order; one date is that one day. With no date

@@ -25,7 +25,7 @@
  * reader correctly reads as "DOL did nothing".
  */
 
-import { MS_PER_DAY } from "@/lib/time";
+import { daysBetweenOrNull } from "@/lib/time";
 
 /** A closed date range, inclusive at both ends. `from === to` is one day. */
 export interface DateRange {
@@ -66,10 +66,8 @@ export function isIsoDate(v: string): boolean {
 
 /** Inclusive day count. A single day is 1, not 0. */
 export function daysInRange(r: DateRange): number {
-  const lo = Date.parse(`${r.from}T00:00:00Z`);
-  const hi = Date.parse(`${r.to}T00:00:00Z`);
-  if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi < lo) return 0;
-  return Math.round((hi - lo) / MS_PER_DAY) + 1;
+  const days = daysBetweenOrNull(r.from, r.to);
+  return days === null || days < 0 ? 0 : days + 1;
 }
 
 /** The overlap of two closed ranges, or null when they do not touch. */

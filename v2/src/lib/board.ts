@@ -1,7 +1,7 @@
 import { classifyMove, cutoffLabel, moveLabel, type MoveKind } from "@/lib/bulletinNext";
 import { parseCutoff, type BulletinMonth, type CountryKey } from "@/lib/perm";
 import { shiftMonth } from "@convex/lib/months";
-import { DAYS_PER_MONTH } from "@convex/lib/time";
+import { DAYS_PER_MONTH, dayFromNumber, dayNumber } from "@convex/lib/time";
 
 /**
  * The board's arithmetic, kept out of the database layer so it can be tested:
@@ -132,8 +132,8 @@ export function bulletinMoves(
   }));
 }
 
-const DAY_MS = 86_400_000;
-const dayNum = (iso: string) => Date.parse(`${iso}T12:00:00Z`) / DAY_MS;
+/** A day's place on a ruler: its noon, as a day number, so a day's mark sits in the middle of the day. */
+const rulerDay = (iso: string) => dayNumber(iso) + 0.5;
 
 /**
  * Where a day's decisions fell, drawn as a ruler that ends on the day DOL
@@ -153,19 +153,19 @@ export interface Ruler {
 }
 
 export function rulerOf(span: DecidedSpan, decidedOn: string): Ruler | null {
-  const end = dayNum(decidedOn);
-  const from = dayNum(span.from);
-  const mid = dayNum(span.middle);
-  const to = dayNum(span.to);
+  const end = rulerDay(decidedOn);
+  const from = rulerDay(span.from);
+  const mid = rulerDay(span.middle);
+  const to = rulerDay(span.to);
   if (![end, from, mid, to].every(Number.isFinite) || !(mid <= end) || !(from <= to)) return null;
   const startDay = Math.round(from - Math.max(7, (end - from) * 0.15));
   const len = end - startDay;
   const pct = (d: number) => Math.min(100, Math.max(0, ((d - startDay) / len) * 100));
-  const start = new Date(startDay * DAY_MS).toISOString().slice(0, 10);
+  const start = dayFromNumber(startDay);
   const ticks: number[] = [];
   const d = new Date(`${start.slice(0, 7)}-01T12:00:00Z`);
-  for (d.setUTCMonth(d.getUTCMonth() + 1); dayNum(d.toISOString().slice(0, 10)) < end; d.setUTCMonth(d.getUTCMonth() + 1)) {
-    ticks.push(pct(dayNum(d.toISOString().slice(0, 10))));
+  for (d.setUTCMonth(d.getUTCMonth() + 1); rulerDay(d.toISOString().slice(0, 10)) < end; d.setUTCMonth(d.getUTCMonth() + 1)) {
+    ticks.push(pct(rulerDay(d.toISOString().slice(0, 10))));
   }
   return { start, middle: pct(mid), from: pct(from), to: pct(to), waitedDays: Math.round(end - mid), ticks };
 }
@@ -209,7 +209,7 @@ export interface Shift {
 
 /** How far the middle decision's filing day moved since an earlier reading. */
 export function positionShift(prevMiddle: string, middle: string, since: string): Shift | null {
-  const d = Math.round(dayNum(middle) - dayNum(prevMiddle));
+  const d = Math.round(rulerDay(middle) - rulerDay(prevMiddle));
   if (!Number.isFinite(d)) return null;
   if (d === 0) return { text: `No move since ${since}`, tone: "flat" };
   const n = Math.abs(d);
@@ -320,12 +320,12 @@ const PER_DAY_PLACES = 10;
 /** The step's pace and wait from two readings a month apart; nothing without the newest span. */
 export function paceReading(now: SpanReading, then: SpanReading | null): PaceReading | null {
   if (!now.span) return null;
-  const waitDays = Math.round(dayNum(now.day) - dayNum(now.span.middle));
+  const waitDays = Math.round(rulerDay(now.day) - rulerDay(now.span.middle));
   if (!Number.isFinite(waitDays)) return null;
   if (!then?.span) return { waitDays, perDay: null, waitChange: null, since: null };
-  const elapsed = dayNum(now.day) - dayNum(then.day);
-  const moved = dayNum(now.span.middle) - dayNum(then.span.middle);
-  const waitThen = Math.round(dayNum(then.day) - dayNum(then.span.middle));
+  const elapsed = rulerDay(now.day) - rulerDay(then.day);
+  const moved = rulerDay(now.span.middle) - rulerDay(then.span.middle);
+  const waitThen = Math.round(rulerDay(then.day) - rulerDay(then.span.middle));
   return {
     waitDays,
     perDay: elapsed > 0 ? Math.round((moved / elapsed) * PER_DAY_PLACES) / PER_DAY_PLACES : null,

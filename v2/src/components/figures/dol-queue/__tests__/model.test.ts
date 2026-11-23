@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { estimateByPace, type MeasuredPace } from "@/lib/perm";
 import { monthEndDate } from "@/lib/caseEstimateInputs";
+import { dayNumber } from "@/lib/time";
 import { buildQueueRun, queueReading, remainingAt } from "../model";
 
 // The line on Oct 21 2026 (analyst review by filing month, from the live census).
@@ -24,7 +25,7 @@ describe("the queue figure runs the estimate's own arithmetic", () => {
 
   it("reaches the picked month on the day estimateByPace gives for the cases ahead of it", () => {
     const ahead = 95 + 343 + 1613 + 9707 + 4872;
-    const est = estimateByPace({ today: Date.parse("2026-10-21T00:00:00Z") / 86_400_000, casesAhead: ahead, pace, status: "ANALYST REVIEW", monthsBehindFrontier: 3, sweepAgeDays: 0 });
+    const est = estimateByPace({ today: dayNumber("2026-10-21"), casesAhead: ahead, pace, status: "ANALYST REVIEW", monthsBehindFrontier: 3, sweepAgeDays: 0 });
     expect(est.kind).toBe("estimate");
     expect(run.reachDays).toBe(Math.round(ahead / 600));
     expect(run.reachDate).toBe(new Date((est as { day: number }).day * 86_400_000).toISOString().slice(0, 10));

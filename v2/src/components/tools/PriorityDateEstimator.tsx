@@ -40,7 +40,7 @@ import { Label } from "@/components/ui/label";
 import { ChoiceRow } from "@/components/ui/choice-row";
 import { CaveatBox } from "@/components/ui/note";
 import { cn } from "@/lib/utils";
-import { MS_PER_DAY } from "@/lib/time";
+import { MS_PER_DAY, daysBetween } from "@/lib/time";
 
 export interface PriorityDateEstimatorProps {
   bulletins: readonly BulletinMonth[];
@@ -372,7 +372,7 @@ export function PriorityDateEstimator({
     // "Earlier than" the cutoff, as State prints on every chart.
     const can = cutoff.kind === "current" || (cutoff.kind === "date" && priorityDate < cutoff.iso);
     const daysLate =
-      cutoff.kind === "date" && !can ? Math.round((Date.parse(priorityDate) - Date.parse(cutoff.iso)) / MS_PER_DAY) : null;
+      cutoff.kind === "date" && !can ? daysBetween(cutoff.iso, priorityDate) : null;
     return { month: currentBulletinMonth, chart: currentEmploymentChart, cutoff, can, daysLate };
   }, [pdUsable, currentBulletinMonth, currentEmploymentChart, bulletins, category, country, priorityDate]);
 
@@ -407,7 +407,7 @@ export function PriorityDateEstimator({
   // Positive means the priority date sits BEFORE that cutoff, so it was past it.
   const lastOpenDeltaDays =
     lastOpen && lastOpen.kind === "date" && pdUsable
-      ? Math.round((Date.parse(lastOpen.iso) - Date.parse(priorityDate)) / MS_PER_DAY)
+      ? daysBetween(priorityDate, lastOpen.iso)
       : null;
 
   // The series is drawn whether or not a priority date has been entered: the

@@ -11,7 +11,7 @@
  */
 import * as k from "@/components/iso/iso-kit";
 import type { Plan, Point3 } from "@/components/iso/iso-kit";
-import { MS_PER_DAY } from "@/lib/time";
+import { dayNumber } from "@/lib/time";
 import type { BulletinRun } from "./model";
 import { railAt } from "./model";
 
@@ -70,7 +70,6 @@ export interface Rail {
   along: [number, number];
 }
 
-const dayNumber = (iso: string) => Date.parse(`${iso}T00:00:00Z`) / MS_PER_DAY;
 
 export function buildRail(run: BulletinRun): Rail {
   const P = k.fitProjection(

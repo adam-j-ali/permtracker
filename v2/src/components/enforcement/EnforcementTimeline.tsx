@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { ChartTips } from "@/components/data/ChartTips";
 import { formatInt } from "@/lib/format";
 import { MONTH_ABBR, shortDate } from "@convex/lib/months";
+import { dayNumber } from "@convex/lib/time";
 import { settlementMoney, shortName, type EnforcementAction, type EnforcementProgram } from "@/lib/enforcement/actions";
 import { dodge, reach } from "@/lib/enforcement/dodge";
 
@@ -27,7 +28,6 @@ const monthsBetween = (a: string, b: string) => {
   const [by, bm] = b.split("-").map(Number) as [number, number];
   return (by - ay) * 12 + (bm - am);
 };
-const dayNumber = (iso: string) => Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)));
 
 const money = (n: number) => `$${formatInt(n)}`;
 

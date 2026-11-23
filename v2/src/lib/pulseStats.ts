@@ -22,7 +22,7 @@
  * before when it saw them before 7 AM Eastern).
  */
 import { federalHolidayName, isFederalHoliday } from "@/lib/perm";
-import { MS_PER_DAY } from "@/lib/time";
+import { daysBetween } from "@/lib/time";
 
 import {
   type ActivityDay,
@@ -138,16 +138,15 @@ export interface PulseSummary {
 export function pulseSummary(days: readonly ActivityDay[]): PulseSummary | null {
   if (days.length === 0) return null;
   const sorted = byDate(days);
-  const newest = Date.parse(`${sorted[sorted.length - 1]!.date}T00:00:00Z`);
-  const within = (n: number) => sorted.filter((d) => newest - Date.parse(`${d.date}T00:00:00Z`) < n * MS_PER_DAY);
+  const newest = sorted[sorted.length - 1]!.date;
+  const within = (n: number) => sorted.filter((d) => daysBetween(d.date, newest) < n);
   const sum = (rows: readonly ActivityDay[], key: "total" | "certified") => rows.reduce((a, r) => a + r[key], 0);
   const month = within(30);
   const weekdays = month.filter((d) => isDolWorkday(d.date));
   const last30 = sum(month, "total");
   const last7 = sum(within(7), "total");
   // The week before, only when the record covers its first day: a part week would read as a drop.
-  const oldest = Date.parse(`${sorted[0]!.date}T00:00:00Z`);
-  const prior7 = newest - oldest >= 13 * MS_PER_DAY ? sum(within(14), "total") - last7 : null;
+  const prior7 = daysBetween(sorted[0]!.date, newest) >= 13 ? sum(within(14), "total") - last7 : null;
   return {
     last7,
     prior7,

@@ -4,7 +4,6 @@ import {
   validateISODateFormat,
   parseISOToUTC,
   parseISOToUTCSafe,
-  daysBetween,
   addDaysToISO,
   addDaysToISOSafe,
   getMinDate,
@@ -56,17 +55,6 @@ describe('parseISOToUTCSafe', () => {
 
   it.each([null, undefined, '', 'bad'])('returns null for %s', (input) => {
     expect(parseISOToUTCSafe(input)).toBeNull();
-  });
-});
-
-describe('daysBetween', () => {
-  it.each([
-    ['2024-01-01', '2024-01-10', 9],
-    ['2024-01-10', '2024-01-01', -9],
-    ['2024-01-01', '2024-01-01', 0],
-    ['2024-01-01', '2024-02-01', 31],
-  ])('daysBetween(%s, %s) → %d', (from, to, expected) => {
-    expect(daysBetween(from, to)).toBe(expected);
   });
 });
 

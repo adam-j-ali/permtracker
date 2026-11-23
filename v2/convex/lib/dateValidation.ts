@@ -116,24 +116,7 @@ export function parseISOToUTCSafe(
 // DATE ARITHMETIC
 // ============================================================================
 
-/**
- * Calculate days between two ISO date strings.
- * Uses UTC to avoid timezone and DST issues.
- *
- * @param fromISO - Start date (YYYY-MM-DD)
- * @param toISO - End date (YYYY-MM-DD)
- * @returns Days difference (positive if toISO is after fromISO, negative otherwise)
- * @throws Error if either date is invalid
- *
- * @example
- * daysBetween("2024-01-01", "2024-01-10"); // 9
- * daysBetween("2024-01-10", "2024-01-01"); // -9
- */
-export function daysBetween(fromISO: string, toISO: string): number {
-  const fromUTC = parseISOToUTC(fromISO);
-  const toUTC = parseISOToUTC(toISO);
-  return Math.floor((toUTC - fromUTC) / MS_PER_DAY);
-}
+// Days between two ISO days: daysBetween in ./time, the one day difference.
 
 /**
  * Add days to an ISO date string.

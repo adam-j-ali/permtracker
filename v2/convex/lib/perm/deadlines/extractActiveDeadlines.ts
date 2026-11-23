@@ -22,7 +22,8 @@ import {
   getActiveRfeEntry,
 } from "./isDeadlineActive";
 import { loggers } from "../../logging";
-import { daysBetween, getTodayISO } from "../../dateValidation";
+import { getTodayISO } from "../../dateValidation";
+import { daysBetween, daysBetweenOrNull } from "../../time";
 import {
   DEADLINE_TIMEZONE_RULES,
   getTodayForDeadline,
@@ -35,7 +36,7 @@ import { calculateBalcaRequestDeadline, calculateDenialReviewDeadline } from "..
 
 const log = loggers.deadline;
 
-// Re-export date utilities for backwards compatibility
+// The one day difference (../../time) and today, re-exported for @/lib/perm's callers.
 export { daysBetween, getTodayISO };
 
 // ============================================================================
@@ -140,22 +141,19 @@ function extractSingleDeadline(
   if (!status.isActive) return null;
   if (!date) return null;
 
-  try {
-    return {
-      type,
-      label: DEADLINE_LABELS[type],
-      date,
-      daysUntil: daysBetween(todayISO, date),
-      timezoneRule: DEADLINE_TIMEZONE_RULES[type],
-      entryId,
-    };
-  } catch (error) {
-    log.error(`Failed to extract ${type}`, {
-      date,
-      error: error instanceof Error ? error.message : String(error),
-    });
+  const daysUntil = daysBetweenOrNull(todayISO, date);
+  if (daysUntil === null) {
+    log.error(`Failed to extract ${type}`, { date, error: "not a real YYYY-MM-DD day" });
     return null;
   }
+  return {
+    type,
+    label: DEADLINE_LABELS[type],
+    date,
+    daysUntil,
+    timezoneRule: DEADLINE_TIMEZONE_RULES[type],
+    entryId,
+  };
 }
 
 /**
@@ -200,12 +198,16 @@ function extractPerStepDeadlines(
         date = subtractBusinessDays(date, NOTICE_MIN_BUSINESS_DAYS);
       }
 
-      const today = resolveToday(type);
+      const daysUntil = daysBetweenOrNull(resolveToday(type), date);
+      if (daysUntil === null) {
+        log.error('Failed to extract per-step deadline', { type, error: "not a real YYYY-MM-DD day" });
+        continue;
+      }
       deadlines.push({
         type,
         label: DEADLINE_LABELS[type],
         date,
-        daysUntil: daysBetween(today, date),
+        daysUntil,
         timezoneRule: DEADLINE_TIMEZONE_RULES[type],
       });
     } catch (error) {

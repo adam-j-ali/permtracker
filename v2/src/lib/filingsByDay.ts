@@ -7,7 +7,7 @@
  */
 
 import { MONTH_ABBR, monthDay } from "@convex/lib/months";
-import { MS_PER_DAY } from "@convex/lib/time";
+import { MS_PER_DAY, daysBetween } from "@convex/lib/time";
 
 export const FILING_PROGRAMS = ["perm", "pwd", "lca", "seasonal"] as const;
 export type FilingProgram = (typeof FILING_PROGRAMS)[number];
@@ -179,7 +179,7 @@ export function weekStart(iso: string): string {
  * only days inside the period; one that reaches `today` is still filling.
  */
 export function buckets(days: readonly FilingDay[], from: string, to: string, today: string): { unit: "day" | "week" | "month"; rows: Bucket[] } {
-  const span = Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / MS_PER_DAY) + 1;
+  const span = daysBetween(from, to) + 1;
   const unit = span <= 62 ? "day" : span <= 730 ? "week" : "month";
   const keyOf = (d: string) => (unit === "day" ? d : unit === "week" ? weekStart(d) : d.slice(0, 7));
   const rows: Bucket[] = [];

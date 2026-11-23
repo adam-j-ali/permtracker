@@ -2,7 +2,8 @@ import { analystReviewAverage, analystReviewQueue } from "@convex/lib/dolProcess
 import { formatAsOf, formatMonth, formatMonthShort } from "@/lib/dolFormat";
 import type { ProcessingTimesSnapshot } from "@/lib/db/processingTimes";
 import { aboutMonths, rulerOf, type DecidedSpan } from "@/lib/board";
-import { longDate } from "@convex/lib/months";
+import { ISO_MONTH_RE, boundEnd, longDate } from "@convex/lib/months";
+import { DAYS_PER_MONTH_2DP, daysBetween, daysBetweenOrNull } from "@convex/lib/time";
 import type { PermLine } from "@/lib/permLine";
 
 /**
@@ -133,19 +134,15 @@ export interface DolPwdNow {
   otherFrontier: string | null;
 }
 
-const DAY_MS = 86_400_000;
-const MONTH_DAYS = 30.44;
-
 /** From the first and the last day of the filing month to DOL's date. */
 function waitPhrase(month: string | null | undefined, asOf: string | null | undefined): string | null {
-  const m = month ? /^(\d{4})-(\d{2})$/.exec(month) : null;
-  const d = asOf ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(asOf) : null;
-  if (!m || !d) return null;
-  const y = Number(m[1]);
-  const mo = Number(m[2]);
-  const end = Date.UTC(Number(d[1]), Number(d[2]) - 1, Number(d[3]));
-  const longest = Math.round((end - Date.UTC(y, mo - 1, 1)) / DAY_MS / MONTH_DAYS);
-  const shortest = Math.round((end - Date.UTC(y, mo, 0)) / DAY_MS / MONTH_DAYS);
+  if (!month || !ISO_MONTH_RE.test(month)) return null;
+  const sinceFirst = daysBetweenOrNull(`${month}-01`, asOf);
+  if (sinceFirst === null) return null;
+  // The month's last day is the day before the next month's first.
+  const sinceLast = daysBetween(boundEnd(month), asOf!) + 1;
+  const longest = Math.round(sinceFirst / DAYS_PER_MONTH_2DP);
+  const shortest = Math.round(sinceLast / DAYS_PER_MONTH_2DP);
   if (longest < 1) return null;
   if (shortest < 1 || shortest === longest) return `about ${longest} month${longest === 1 ? "" : "s"}`;
   return `${shortest} to ${longest} months`;

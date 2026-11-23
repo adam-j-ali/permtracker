@@ -11,7 +11,6 @@ import {
   OFFICE_LIST_OPENS_AT,
   OFFICE_METRIC_IDS,
   computeMetrics,
-  daysBetween,
   formHints,
   isListedCode,
   isPermCategory,
@@ -102,13 +101,6 @@ describe("validateTimeline", () => {
     expect(code({ i140FiledOn: "2026-03-01", rfeForm: "i140", rfeIssuedOn: "2026-04-01", rfeRespondedOn: "2026-03-20" })).toBe("rfe-order");
     expect(code({ i140FiledOn: "2026-03-01", rfeReason: "experience" })).toBe("rfe-form");
     expect(code({ route: "consular", i140FiledOn: "2026-01-01", eadOn: "2026-05-01" })).toBe("adjustment-only:eadOn");
-  });
-});
-
-describe("daysBetween", () => {
-  it("counts whole calendar days and returns null for a missing end", () => {
-    expect(daysBetween("2026-01-01", "2026-03-01")).toBe(59);
-    expect(daysBetween("2026-01-01", undefined)).toBeNull();
   });
 });
 
