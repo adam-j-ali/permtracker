@@ -894,6 +894,21 @@ def site_audit_says_what_grew() -> None:
     check(any("stopped early because the front door didn't answer" in ln for ln in says(dm.site_audit_verdict(cut, now))),
           "site audit: a night cut short says why")
     check(dm.site_audit_verdict(None, now)["status"] == "warn", "site audit: no run yet is a warning")
+    # Nov 23 2026: a sweep's timer read as a sweep running, so each night waited out its window and read 1 page.
+    held = dict(calm, night=dict(night, read=1, left=26103, stoppedBy="deadline", pausedSeconds=21000,
+                                 pauseReasons={"sweep": 1}))
+    v = dm.site_audit_verdict(held, now)
+    check(v["status"] == "fail" and "1 of 26,104" in v["summary"] and "a DOL sweep" in v["summary"],
+          "site audit: a night that read under 1% of its plan fails and says what held it up", str(v))
+    v = dm.site_audit_verdict(dict(calm, night=dict(night, read=3, left=26101, stoppedBy="deadline")), now)
+    check(v["status"] == "fail" and "no reason was recorded" in v["summary"],
+          "site audit: and says so when the night recorded no reason", str(v))
+    short_v = dm.site_audit_verdict(short, now)
+    check(not any(ln.startswith(("Sitemap pages no other page links to", "Sitemap pages not read"))
+                  for ln in short_v["lines"]),
+          "site audit: an incomplete week leaves out the orphan and unread counts", str(short_v["lines"]))
+    check(any(ln.startswith("Titles over 60 characters") for ln in short_v["lines"]),
+          "site audit: and keeps the counts that don't depend on reading every page", str(short_v["lines"]))
     first = {"night": night, "mail": {}}
     v = dm.site_audit_verdict(first, now)
     check(v["status"] == "ok" and "first" in v["summary"], "site audit: the first week still running is OK", str(v))

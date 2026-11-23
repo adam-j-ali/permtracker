@@ -474,13 +474,15 @@ class Pacer:
 
 
 def sweep_lines_active(text: str) -> bool:
-    """Whether `systemctl list-units --state=active` lists a DOL sweep."""
-    return any("permtracker-sweep@" in ln and " active " in f" {ln} " for ln in text.splitlines())
+    """Whether `systemctl list-units --state=active` lists a DOL sweep's service running. A sweep's timer is always
+    "active waiting", so a timer's line never counts (Nov 23 2026: with the timers listed, every night read as a
+    sweep running and the audit read 1 page of its plan)."""
+    return any("permtracker-sweep@" in ln and ".service" in ln and " active " in f" {ln} " for ln in text.splitlines())
 
 
 def _sweeping() -> bool:
-    out = subprocess.run(["systemctl", "list-units", "--state=active", "--plain", "--no-legend", "--no-pager",
-                          "permtracker-sweep@*"], capture_output=True, text=True, timeout=10)
+    out = subprocess.run(["systemctl", "list-units", "--type=service", "--state=active", "--plain", "--no-legend",
+                          "--no-pager", "permtracker-sweep@*"], capture_output=True, text=True, timeout=10)
     return sweep_lines_active(out.stdout)
 
 
@@ -1021,6 +1023,8 @@ def run_night(db, up: Upstream, *, day: dt.date, seconds: float, workers: int = 
              "crashes": stats["crashes"], "refused": tally["refused"], "errors": tally["error"],
              "noAnswer": tally["no_answer"], "slow": tally["slow"],
              "pauses": quiet.pauses if quiet else 0, "pausedSeconds": round(quiet.paused_s) if quiet else 0,
+             # What held the night up, by kind ("sweep", "deploy", "load"), so a night far short of its plan says why.
+             "pauseReasons": dict(quiet.reasons) if quiet else {},
              "perSecond": round(stats["read"] / max(1.0, (now_ms - started_ms) / 1000), 2)}
     doc = read_doc(db, DOC_KEY) or {}
     doc.update(version=1, updatedAt=now_ms, night=night, current=report,

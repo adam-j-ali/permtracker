@@ -1896,6 +1896,14 @@ def chat_models_section(now_ms: int) -> dict:
 SITE_AUDIT_STALE_MS = 50 * HOUR_MS
 
 
+# A night that read under this share of its plan didn't run: nothing compares, and the week can't complete.
+SITE_AUDIT_NIGHT_MIN = 0.01
+# What held a night up (site_audit.Quiet's reasons), in words.
+SITE_AUDIT_PAUSES = {"sweep": "a DOL sweep", "deploy": "a deploy", "load": "the server's load"}
+# Counts that need every page read: while the week is incomplete they count what wasn't read, not a defect.
+SITE_AUDIT_WHOLE_WEEK = ("orphan", "unread")
+
+
 def site_audit_verdict(doc: dict | None, now_ms: int) -> dict:
     """Judge perm_docs['site_audit']. A week that grew, or that read too little of the sitemap to compare, warns, and
     so does an alert email that couldn't go; a job that stopped fails. Every count is a line with its examples."""
@@ -1924,6 +1932,16 @@ def site_audit_verdict(doc: dict | None, now_ms: int) -> dict:
         return section(key, title, "fail", f"The site audit last finished {age // HOUR_MS} hours ago: the nightly job "
                        "has stopped (systemctl status permtracker-site-audit.timer on the server).", lines)
     warns: list[str] = []
+    fails: list[str] = []
+    if night:
+        todo = int(night.get("planned") or 0) + int(night.get("behind") or 0)
+        read = int(night.get("read") or 0)
+        if todo and read < todo * SITE_AUDIT_NIGHT_MIN:
+            held = [SITE_AUDIT_PAUSES.get(k, k) for k, n in (night.get("pauseReasons") or {}).items() if n]
+            why = (f"it waited on {' and '.join(held)}" if held else
+                   f"it stopped early because {night['stoppedBy']}"
+                   if night.get("stoppedBy") not in (None, "done", "deadline") else "no reason was recorded")
+            fails.append(f"Last night the site audit read {read:,} of {todo:,} pages, under 1% of its plan: {why}.")
     mail = doc.get("mail") or {}
     if mail.get("pending"):
         warns.append(f"The site audit's email to the owner wasn't sent ({mail.get('lastError') or 'no reason given'}); "
@@ -1933,13 +1951,15 @@ def site_audit_verdict(doc: dict | None, now_ms: int) -> dict:
         cur = doc.get("current") or {}
         summary = (f"The first week is still being read: {int(cur.get('read') or 0):,} of "
                    f"{int(cur.get('sitemap') or 0):,} sitemap pages so far.")
-        return section(key, title, "warn" if warns else "ok", warns[0] if warns else summary, warns + lines)
+        said = fails + warns
+        return section(key, title, "fail" if fails else "warn" if warns else "ok", said[0] if said else summary,
+                       said + lines)
     when = dt.date.fromisoformat(week["week"]).strftime("%A, %b %-d")
     counts = week.get("counts") or {}
     before = week.get("before") or {}
     grew = {r["family"]: r for r in week.get("rises") or []}
     for fam, label in FAMILIES.items():
-        if fam not in counts:
+        if fam not in counts or (fam in SITE_AUDIT_WHOLE_WEEK and not week.get("complete")):
             continue
         r = grew.get(fam)
         change = (", new this week" if r["new"] else f", up from {r['before']:,}") if r else (
@@ -1952,9 +1972,10 @@ def site_audit_verdict(doc: dict | None, now_ms: int) -> dict:
     if grew:
         warns.insert(0, f"{len(grew)} problem{'s' if len(grew) != 1 else ''} grew in the week ending {when}: "
                         + ", ".join(FAMILIES[f].lower() for f in grew) + ".")
-    summary = warns[0] if warns else (f"The week ending {when} read {int(week.get('read') or 0):,} of "
-                                      f"{int(week.get('sitemap') or 0):,} sitemap pages; nothing grew.")
-    return section(key, title, "warn" if warns else "ok", summary, warns + lines)
+    said = fails + warns
+    summary = said[0] if said else (f"The week ending {when} read {int(week.get('read') or 0):,} of "
+                                    f"{int(week.get('sitemap') or 0):,} sitemap pages; nothing grew.")
+    return section(key, title, "fail" if fails else "warn" if warns else "ok", summary, said + lines)
 
 
 def site_audit_section(now_ms: int) -> dict:

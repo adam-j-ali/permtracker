@@ -426,6 +426,16 @@ def test_the_load_check_reads_the_signs_the_server_gives() -> None:
     assert sa.Quiet(load=lambda: 0.1, cpus=2, sweeping=broken, deploying=lambda: False).busy() is None
     assert sa.sweep_lines_active("permtracker-sweep@case-status-full.service loaded active running x\n")
     assert not sa.sweep_lines_active("")
+    # Nov 23 2026: a sweep's timer is always "active waiting", and the list held the timers too, so every night read
+    # as a sweep running and the audit read 1 page of its plan. Only a running service is a sweep.
+    assert not sa.sweep_lines_active("permtracker-sweep@case-status-full.timer loaded active waiting Run x\n")
+
+
+def test_the_sweep_check_asks_systemd_for_services_only() -> None:
+    import inspect
+
+    src = inspect.getsource(sa._sweeping)
+    assert '"--type=service"' in src, "the timers are listed too without it"
 
 
 def test_the_wait_holds_until_the_server_is_quiet_or_the_deadline() -> None:
@@ -666,6 +676,7 @@ def test_a_night_reads_stores_reports_and_closes_the_week() -> None:
                              log=lambda *a: None)
         assert night["read"] == len(SITEMAP) and night["stoppedBy"] == "done", night
         assert night["planned"] + night["behind"] == len(SITEMAP), night
+        assert night["pauseReasons"] == {}, "a night with no pause names none"
         assert not [m for m in Fake.mail if m["path"] == "/owner"], "no email on a weekday"
         doc = read_doc(d, sa.DOC_KEY)
         assert doc["night"]["weekday"] == "Thursday" and "latestWeek" not in doc, doc.keys()
