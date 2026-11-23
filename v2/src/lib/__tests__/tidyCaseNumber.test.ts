@@ -81,6 +81,16 @@ describe("tidyCaseNumber", () => {
     }
   });
 
+  it("leaves a paste far longer than any case number to the shape rules, untidied and quick", () => {
+    // A `?case=` from a stranger can be any length: the length check comes before the patterns.
+    const long = `${".".repeat(50_000)}x`;
+    const started = performance.now();
+    expect(tidyCaseNumber(long)).toBe(long.toUpperCase());
+    expect(performance.now() - started).toBeLessThan(50);
+    // A real number with its sentence's punctuation is well inside the limit.
+    expect(tidyCaseNumber(`  “JO-A-300-26271-264525.”  `)).toBe("JO-A-300-26271-264525");
+  });
+
   it("only tidies: what isn't a case number stays not a case number", () => {
     // The shape rules judge; the tidy must not manufacture a shape out of text.
     expect(tidyCaseNumber("")).toBe("");

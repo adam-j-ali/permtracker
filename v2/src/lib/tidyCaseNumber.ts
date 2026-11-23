@@ -27,15 +27,27 @@ const INVISIBLE = /[­​-‍⁠﻿]/g;
 /** Quotes and brackets a number arrives inside, and the punctuation a sentence leaves after it. */
 const LEADING = /^["'(\[‘“]+/;
 const TRAILING = /["')\].,;:!?’”]+$/;
-/** Groups of letters and digits separated by spaces and nothing else: a number typed with spaces for its dashes. */
-const SPACED_GROUPS = /^[A-Z0-9]+(?:\s+[A-Z0-9]+)+$/;
+/**
+ * Anything but letters, digits and spaces. A trimmed string with none of these and a space in it is groups of letters
+ * and digits separated by spaces: a number typed with spaces for its dashes. Two flat tests, no nested quantifier.
+ */
+const NOT_GROUPS = /[^A-Z0-9\s]/;
 /** The current form with every dash lost. */
 const FOURTEEN = /^([A-Z])(\d{3})(\d{5})(\d{6})$/;
 
+/**
+ * The longest paste worth tidying. The longest number DOL issues is 21 characters (`JO-A-300-26271-264525`); a
+ * `?case=` from a stranger can be any length, and the length check goes before any pattern that could backtrack.
+ */
+const TIDY_MAX = 64;
+
 export function tidyCaseNumber(input: string): string {
+  // Too long to be a case number with its sentence around it: upper-cased only, for the shape rules to refuse.
+  if (input.length > TIDY_MAX) return input.toUpperCase();
   let s = input.toUpperCase().replace(INVISIBLE, "").replace(DASHES, "-").trim();
   s = s.replace(LEADING, "").replace(TRAILING, "").trim();
-  s = SPACED_GROUPS.test(s) ? s.replace(/\s+/g, "-") : s.replace(/\s+/g, "");
+  const spacedGroups = /\s/.test(s) && !NOT_GROUPS.test(s);
+  s = spacedGroups ? s.replace(/\s+/g, "-") : s.replace(/\s+/g, "");
   const bare = FOURTEEN.exec(s);
   if (bare) return `${bare[1]}-${bare[2]}-${bare[3]}-${bare[4]}`;
   // One letter glued to digits whose own dashes are there: the letter's dash goes back.
