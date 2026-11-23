@@ -966,6 +966,22 @@ def data_section_reads_the_scorecard_alarms() -> None:
     check("Scorecard, H-2A, H-2B and CW-1 dates: 30 recorded, 0 graded" in lines,
           "a seasonal record with no grade yet says so without a miss")
 
+    # A bulletin State hasn't published is a plain line, never an alarm (Nov 23 2026: it counted among the morning's
+    # things to look at, though nobody here can act on State being late).
+    et = dm.ET
+    read_at = int(dt.datetime(2026, 11, 22, 12, 25, tzinfo=et).timestamp() * 1000)
+    now_ms = int(dt.datetime(2026, 11, 23, 7, 30, tzinfo=et).timestamp() * 1000)
+    line = dm.bulletin_wait_line(("bulletin:2026-12", "2026-11-13"), read_at, now_ms)
+    check(line == "December 2026's visa bulletin is 10 days past our estimate (Fri Nov 13); State hadn't posted it "
+                  "when the bulletin read last checked, Sun Nov 22, 12:25 PM EST.", "a late bulletin is said plainly",
+          str(line))
+    check(dm.bulletin_wait_line(("bulletin:2026-12", "2026-11-25"), read_at, now_ms) is None,
+          "a bulletin not yet past our estimate says nothing")
+    check(dm.bulletin_wait_line(None, read_at, now_ms) is None, "no bulletin waiting says nothing")
+    check("never checked" in (dm.bulletin_wait_line(("bulletin:2026-12", "2026-11-13"), None, now_ms) or ""),
+          "a bulletin read that never checked in says so")
+    check("bulletin_wait_line" in dm.data_section.__code__.co_names, "the data section prints it")
+
 
 def long_lines_end_at_a_sentence() -> None:
     """Convex keeps LINE_MAX characters of a line and drops the rest wherever

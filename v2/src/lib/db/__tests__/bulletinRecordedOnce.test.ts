@@ -4,7 +4,7 @@ vi.mock("server-only", () => ({}));
 const one = vi.fn();
 vi.mock("../client", () => ({ rows: vi.fn(async () => []), one, exec: vi.fn() }));
 
-const { firstRecordingEach, predictBulletinRelease } = await import("../predictions");
+const { alarmRows, firstRecordingEach, predictBulletinRelease } = await import("../predictions");
 
 /**
  * A bulletin's release day is one prediction: before Nov 9 2026 it was written again every morning until the range
@@ -29,6 +29,23 @@ describe("a bulletin's release day counts once", () => {
       ["bulletin:2026-11", "2026-10-01"],
       ["bulletin:2026-12", "2026-11-02"],
     ]);
+  });
+
+  it("gives the alarms one row per bulletin, and every row of the other programs", () => {
+    // Arrange: December's release day written every morning from Oct 23 to Nov 9 before the record-once fix (18 rows).
+    const stored = (program: string, caseNumber: string, recordedOn: string) => ({
+      source: "ours", program, model: "m", recorded_on: recordedOn, predicted: "2026-11-13", band_early: null,
+      band_late: null, decided_on: null, outcome: null, case_number: caseNumber,
+    });
+    const december = Array.from({ length: 18 }, (_, i) =>
+      stored("bulletin", "bulletin:2026-12", `2026-10-${String(23 + i).padStart(2, "0")}`));
+    const perm = [stored("perm", "G-100-26001-000001", "2026-11-01"), stored("perm", "G-100-26001-000002", "2026-11-01")];
+    // Act
+    const out = alarmRows([...december, ...perm]);
+    // Assert
+    expect(out.filter((r) => r.program === "bulletin")).toHaveLength(1);
+    expect(out.find((r) => r.program === "bulletin")?.recordedOn).toBe("2026-10-23");
+    expect(out.filter((r) => r.program === "perm")).toHaveLength(2);
   });
 
   it("writes nothing for a bulletin already recorded", async () => {

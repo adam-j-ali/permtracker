@@ -740,6 +740,14 @@ export function firstRecordingEach<T extends { program: string; case_number: str
   return [...first.values()];
 }
 
+/**
+ * The rows the scorecard's alarms read: one per bulletin (its first recording) and every row of the other programs.
+ * Before the Nov 9 2026 record-once fix December's release day was written 18 times, and the alarm counted 18.
+ */
+export function alarmRows(all: readonly StoredRow[]): PredictionRow[] {
+  return [...all.filter((r) => r.program !== "bulletin"), ...firstRecordingEach(all, "bulletin")].map(toRow);
+}
+
 /** Recompute both docs from the table. Ours only in the public one. */
 export async function writeScorecardDocs(today: string): Promise<{ rows: number }> {
   const all = await rows<StoredRow>(
@@ -795,7 +803,7 @@ export async function writeScorecardDocs(today: string): Promise<{ rows: number 
     const r = ages.find((a) => a.key === key);
     return r ? Number(r.computed_at) : null;
   };
-  const alarms = scorecardAlarms(mapped, today, [
+  const alarms = scorecardAlarms(alarmRows(all), today, [
     { label: "The nightly PERM backtest", computedAt: ageOf("estimator_backtest"), everyDays: 1 },
     { label: "The weekly H-2A, H-2B and CW-1 backtest", computedAt: ageOf("seasonal_backtest") },
     { label: "The nightly wage-request backtest", computedAt: ageOf("pwd_backtest"), everyDays: 1 },

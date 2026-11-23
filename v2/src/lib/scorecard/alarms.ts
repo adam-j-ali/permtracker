@@ -12,7 +12,8 @@
  *                       RECORD_GAP_DAYS: the daily run is failing
  *   grades stopped      at least DUE_FLOOR predicted dates passed a week ago
  *                       or more, and no case was graded for GRADE_GAP_DAYS:
- *                       the grading or the sweep behind it has stopped
+ *                       the grading or the sweep behind it has stopped (not
+ *                       the visa bulletin: State being late is nobody's to fix)
  *   the miss worsened   the last RECENT_DAYS' typical miss, on at least
  *                       RECENT_FLOOR cases, is over twice the whole record's
  *                       and more than a week worse
@@ -83,19 +84,10 @@ export function scorecardAlarms(
     }
 
     const graded = mine.filter((r) => r.decidedOn && isGradedOutcome(r.outcome, r.program));
-    // A release day is graded when the bulletin appears, so one still ungraded a week past its day means the
-    // bulletin isn't out as far as this site has seen. Said as that, never as a stopped job: on Nov 20 2026 State
-    // still showed December's bulletin as "Coming Soon" while this read "the grading may have stopped".
-    if (program === "bulletin") {
-      const waiting = mine.filter((r) => !r.decidedOn && daysBetween(r.predicted, today) >= 7).length;
-      if (waiting > 0) {
-        out.push(
-          `${label}: ${waiting} prediction${waiting === 1 ? " is" : "s are"} a week or more past ${waiting === 1 ? "its day" : "their day"} with no bulletin to grade ${
-            waiting === 1 ? "it" : "them"
-          } by: State hasn't published the next bulletin as far as this site has seen. If it has, the bulletin read has stopped.`,
-        );
-      }
-    }
+    // A release day is graded when the bulletin appears, so one ungraded past its day is State being late, which
+    // nobody here can act on: no alarm. A stopped bulletin read is the browser timer's heartbeat alarm
+    // (check_ingest_health.py), and the morning report's data section says a late bulletin in a plain line (Nov 23
+    // 2026: "18 predictions past their day" counted each morning's copy and read as a thing to look at).
     const due = mine.filter((r) => daysBetween(r.predicted, today) >= 7).length;
     const lastGraded = latest(graded.map((r) => r.decidedOn));
     if (program !== "bulletin" && due >= DUE_FLOOR && (lastGraded === null || daysBetween(lastGraded, today) > GRADE_GAP_DAYS)) {

@@ -817,6 +817,33 @@ def site_section() -> dict:
 # ── the data: what moved ──────────────────────────────────────────────────
 
 
+def bulletin_wait_line(waiting: tuple | list | None, read_at_ms, now_ms: int) -> str | None:
+    """A visa bulletin past our estimate of its release day, as a plain line, or None while none is.
+
+    `waiting` is the oldest open release-day prediction, (case_number "bulletin:YYYY-MM", predicted "YYYY-MM-DD");
+    `read_at_ms` is when the bulletin read last checked State's page. Never an alarm: nobody here can act on State
+    being late, and a stopped read is the browser timer's own warning (Nov 23 2026)."""
+    if not waiting:
+        return None
+    try:
+        y, m = (int(x) for x in str(waiting[0]).split(":", 1)[1].split("-")[:2])
+        month = dt.date(y, m, 1).strftime("%B %Y")
+        predicted = dt.date.fromisoformat(str(waiting[1]))
+    except (IndexError, ValueError):
+        return None
+    today = dt.datetime.fromtimestamp(now_ms / 1000, ET).date()
+    late = (today - predicted).days
+    if late < 1:
+        return None
+    if read_at_ms:
+        read = dt.datetime.fromtimestamp(int(read_at_ms) / 1000, ET).strftime("%a %b %-d, %-I:%M %p %Z")
+        seen = f"State hadn't posted it when the bulletin read last checked, {read}."
+    else:
+        seen = "the bulletin read has never checked State's page."
+    return (f"{month}'s visa bulletin is {late} day{'s' if late != 1 else ''} past our estimate "
+            f"({predicted.strftime('%a %b %-d')}); {seen}")
+
+
 def data_section(now_ms: int) -> dict:
     from lib_db import Database, query_rows  # noqa: PLC0415 - only needed here
 
@@ -880,6 +907,17 @@ def data_section(now_ms: int) -> dict:
         for alarm in priv.get("alarms") or []:
             lines.append(f"Scorecard alarm: {alarm}")
             status = "warn"
+    # A bulletin State hasn't published past our estimate: a plain line, never amber. Read by idx_ep_open.
+    try:
+        waiting = one("SELECT case_number, MIN(predicted) FROM estimate_predictions WHERE outcome IS NULL "
+                      "AND program = 'bulletin' AND source = 'ours' GROUP BY case_number ORDER BY 2 LIMIT 1")
+        read = one("SELECT finished_at FROM ingest_runs WHERE script = 'browser-timer:bulletin-read' "
+                   "ORDER BY finished_at DESC LIMIT 1")
+        line = bulletin_wait_line(waiting, read[0] if read else None, now_ms)
+        if line:
+            lines.append(line)
+    except Exception as e:  # noqa: BLE001 - an unread line is said, never a crash of the section
+        lines.append(f"The visa bulletin's wait couldn't be read ({type(e).__name__})")
     if not moved or int(moved[0]) == 0:
         status = "warn"
         lines.append("No PERM status change recorded in 24 h: the sweep may not have written")
