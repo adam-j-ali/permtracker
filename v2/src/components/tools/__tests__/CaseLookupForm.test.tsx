@@ -198,6 +198,15 @@ describe("a case box with nothing typed", () => {
     expect(screen.queryByText(/A case number looks like/)).toBeNull();
   });
 
+  it("says what else the box takes after the example, and gives way to the shape warning", () => {
+    render(<CaseLookupForm also="Wage request numbers work too." />);
+    expect(screen.getByText(/It's on your ETA-9089 receipt\./).textContent).toMatch(
+      /A case number looks like G-100-26125-868956\. Wage request numbers work too\.$/,
+    );
+    fireEvent.change(box(), { target: { value: "hello 12" } });
+    expect(screen.queryByText(/Wage request numbers work too/)).toBeNull();
+  });
+
   it("is required, so the browser keeps an empty press in the box, with or without scripts", () => {
     render(<CaseLookupForm />);
     expect(box().required).toBe(true);

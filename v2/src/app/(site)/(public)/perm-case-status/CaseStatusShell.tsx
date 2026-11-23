@@ -68,15 +68,17 @@ export function CaseStatusHead({
         ) : (
           <h1 className={titleClass}>{title}</h1>
         )}{" "}
+        {/* Two lines on a wide screen: six on a phone melted the first screen into grey (Nov 23 2026). The other
+            programs are said under the box, where the number goes. */}
         {withBox ? (
           <p className="mt-3 max-w-2xl text-lg leading-relaxed text-soft">
-            Its status in plain English, where it sits in DOL&apos;s queue, an estimated decision date, and a free email the moment it changes. Wage request, LCA, H-2A, H-2B and CW-1 numbers work too. No account needed.
+            Its status in plain English, its place in DOL&apos;s queue and an estimated decision date, with a free email the moment it changes. No account needed.
           </p>
         ) : null}
       </header>{" "}
       {withBox ? (
         <div className="mt-8">
-          <CaseLookupForm defaultValue={typed} source="case-page" />
+          <CaseLookupForm defaultValue={typed} source="case-page" also="Wage request, LCA, H-2A, H-2B and CW-1 numbers work too." />
         </div>
       ) : null}
     </>

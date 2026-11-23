@@ -90,6 +90,8 @@ export interface CaseLookupFormProps {
   example?: string;
   /** The line under the box before anything is typed; null leaves it off. */
   help?: React.ReactNode | null;
+  /** What else the box takes, said after the example ("Wage request ... numbers work too."). */
+  also?: React.ReactNode;
   /** The button's word in another language; "Check" otherwise. */
   buttonLabel?: string;
   /** Fields the form carries along unseen (the embed's host site). */
@@ -134,6 +136,7 @@ export function CaseLookupForm({
   placeholder,
   example = EXAMPLE_NUMBER,
   help = "It's on your ETA-9089 receipt.",
+  also,
   buttonLabel = CHECK_LABEL,
   hiddenFields,
   names = false,
@@ -165,7 +168,7 @@ export function CaseLookupForm({
     // The example sits under the box. As the box's placeholder it read as a number already typed (about 600 empty
     // presses in 30 days), and with words there instead, a first-time visitor had no example to go by.
     <>
-      {help} A case number looks like <span translate="no">{example}</span>.
+      {help} A case number looks like <span translate="no">{example}</span>.{also ? <> {also}</> : null}
     </>
   );
 
