@@ -52,6 +52,14 @@ from lib_db import (  # noqa: E402
 FACET_FLOOR = 3
 LEAD_LABEL = {b["id"]: b["label"] for b in LEAD_BANDS}
 TOP_N = 6               # facet rows kept per entity per facet
+# Facets kept whole rather than at their top six. The state facet draws a page's state map, and a map with only
+# its six busiest states shows every other one as a zero: 56 is every state, DC and the five territories DOL's
+# files name. ingest_perm_history.py keeps the older cases' states by the same rule.
+FACET_ROWS = {"state": 56}
+# perm_docs[FACETS_DOC] says what this table holds: {"states": "all"} once a build has kept every state. The pages
+# draw a state map only when it says so, because until the first such build a facet holds six states at most.
+# Removed before the table is emptied and written back once the rows are checked. src/lib/db/entityDetail.ts reads it.
+FACETS_DOC = "entity_facets"
 CHUNK = 400
 
 
@@ -895,7 +903,7 @@ def build_facets(db: Database, maps, cache) -> list[list]:
     for (kind, slug, facet), bucket in acc.items():
         # Ties broken on the key so a rebuild cannot reshuffle a page's
         # "top occupations" list without the underlying counts changing.
-        ranked = sorted(bucket.items(), key=lambda kv: (-kv[1][0], kv[0]))[:TOP_N]
+        ranked = sorted(bucket.items(), key=lambda kv: (-kv[1][0], kv[0]))[:FACET_ROWS.get(facet, TOP_N)]
         for pos, (key, (cnt, cert, den, label)) in enumerate(ranked):
             if facet == "city":
                 label = labels.get(key, label)
@@ -1004,6 +1012,8 @@ def main() -> int:
 
     log("WRITE")
     db.script(DDL)
+    # The pages read the table as holding every state only while this doc says so: gone while it's rewritten.
+    db.execute("DELETE FROM perm_docs WHERE key = ?", [FACETS_DOC])
     db.execute("DELETE FROM perm_entity_pending")
     db.execute("DELETE FROM perm_entity_facets")
     write_rows(db, "perm_entity_pending",
@@ -1036,7 +1046,15 @@ def main() -> int:
             "ON e.kind = t.kind AND e.slug = t.slug WHERE e.slug IS NULL") or 0)
         ok &= orphan == 0
         log(f"  {'ok ' if orphan == 0 else 'FATAL'} {table:22s} {orphan} orphan rows")
+    if ok:
+        write_facets_doc(db)
     return 0 if ok else 1
+
+
+def write_facets_doc(db: Database) -> None:
+    """perm_docs[FACETS_DOC]: the facet table now holds every state, so a page may draw its state map."""
+    write_doc(db, FACETS_DOC, {"states": "all", "stateRows": FACET_ROWS["state"]})
+    log(f"  perm_docs['{FACETS_DOC}']: every state kept, up to {FACET_ROWS['state']} rows")
 
 
 

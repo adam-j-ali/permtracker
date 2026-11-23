@@ -94,7 +94,7 @@ from xml.etree.ElementTree import iterparse
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import ingest_perm_disclosure as ipd  # noqa: E402
-from build_entity_detail import city_key, city_labels, industry_label  # noqa: E402
+from build_entity_detail import FACET_ROWS, city_key, city_labels, industry_label  # noqa: E402
 from entity_identity import SpacedKeyMap, entity_key  # noqa: E402
 from lib_naics import normalize_naics  # noqa: E402
 from lib_db import (  # noqa: E402
@@ -829,7 +829,10 @@ def day_ranges(db, column: str, days: int = SLICE_DAYS) -> list[tuple[str, str]]
 # beside the current ones with their own denominator and their own year label, in one read.
 ENTITY_FACETS_TABLE = "perm_history_entity_facets"
 ENTITY_FACET_FLOOR = 3  # older cases an entity needs, as build_entity_detail.FACET_FLOOR
-ENTITY_FACET_TOP = 6
+ENTITY_FACET_TOP = 6  # rows per facet, but the state facet keeps every state (FACET_ROWS, the current builder's rule)
+# perm_docs[HISTORY_FACETS_DOC] says the table holds every state ({"states": "all"}): written after each swap, and read by
+# src/lib/db/entityDetail.ts before a page offers the older years on its state map.
+HISTORY_FACETS_DOC = "history_entity_facets"
 ENTITY_FACET_COLUMNS = ["kind", "slug", "facet", "pos", "key", "label", "code", "n", "certified", "denied",
                         "total", "fy_from", "fy_to"]
 MAKEUP_COLUMNS = ["employer_name", "employer_slug", "attorney_name", "attorney_slug", "soc_code", "soc_title",
@@ -1110,6 +1113,8 @@ def build_entity_facets(db, scratch_dir: str | None = None) -> int:
                       for s, v in sorted(by_state.items(), key=lambda kv: (-kv[1][0], kv[0]))]
     doc["byStateYears"] = {"from": fy_lo, "to": fy_hi} if fy_lo is not None else None
     store_doc(db, doc)
+    # The swapped-in table keeps every state: a page may offer these years on its state map.
+    write_doc(db, HISTORY_FACETS_DOC, {"states": "all", "stateRows": FACET_ROWS["state"]})
     log(f"  history entity facets: {read:,} cases read, {written:,} rows; {len(by_state)} states counted")
     return written
 
@@ -1133,7 +1138,7 @@ def top_values(scratch: sqlite3.Connection, totals: dict):
             "ORDER BY kind, slug, facet, n DESC, grp"):
         if (kind, slug, facet) != here:
             here, pos = (kind, slug, facet), 0
-        if pos < ENTITY_FACET_TOP and totals[(kind, slug)][0] >= ENTITY_FACET_FLOOR:
+        if pos < FACET_ROWS.get(facet, ENTITY_FACET_TOP) and totals[(kind, slug)][0] >= ENTITY_FACET_FLOOR:
             yield kind, slug, facet, pos, grp, int(n), int(cert), int(den)
         pos += 1
 

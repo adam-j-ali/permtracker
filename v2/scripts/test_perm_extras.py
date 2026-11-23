@@ -159,6 +159,42 @@ def facets_check() -> None:
     check("occupations get them too",
           ("occupation", "newspaper", "seattle times") in got2)
 
+    # Every state the filings name is kept, so a page's state map has no hole in it; every other facet stays at
+    # its top six. Eight states and eight cities, one case each, plus a ninth city with two.
+    spread = ["CA", "TX", "NY", "WA", "OR", "NJ", "MA", "PR"]
+    rows3 = [{"employer_name": "ACME INC", "status": "certified", "state": st, "soc_code": "15-1252.00",
+              "soc_title": "Software Developers", "worksite_city": f"Town {i}", "naics": "541511"}
+             for i, st in enumerate(spread)]
+    cache3 = pathlib.Path(tempfile.mkdtemp()) / "cases.ndjson"
+    cache3.write_text("".join(json.dumps(r) + "\n" for r in rows3))
+    out3 = build_facets(None, maps, str(cache3))
+    states3 = [r[4] for r in out3 if r[0] == "employer" and r[2] == "state"]
+    check(f"every state the filings name is a row, the territory too ({len(states3)} of 8)",
+          sorted(states3) == sorted(spread))
+    check("the occupation page keeps every state too",
+          len([r for r in out3 if r[0] == "occupation" and r[2] == "state"]) == 8)
+    cities3 = [r for r in out3 if r[0] == "employer" and r[2] == "city"]
+    check(f"the other facets stay at their top six ({len(cities3)} cities)", len(cities3) == 6)
+    from build_entity_detail import FACET_ROWS, FACETS_DOC, TOP_N, write_facets_doc
+    check("the state facet's ceiling holds the 50 states, DC and five territories, above the top six",
+          FACET_ROWS.get("state") == 56 and TOP_N == 6)
+
+    # The marker the pages check before drawing a state map: written by a build that kept every state, and absent
+    # while the table is emptied and refilled, so a page never draws a map from a half-written or six-state table.
+    db = SqliteTurso()
+    db.conn.execute("CREATE TABLE perm_docs (key TEXT PRIMARY KEY, json TEXT NOT NULL, computed_at INTEGER)")
+    write_facets_doc(db)
+    raw = db.conn.execute("SELECT json FROM perm_docs WHERE key = ?", [FACETS_DOC]).fetchone()
+    check(f"the marker says every state is kept (got {raw})",
+          FACETS_DOC == "entity_facets" and raw is not None and json.loads(raw[0]).get("states") == "all")
+    src = (HERE / "build_entity_detail.py").read_text()
+    body = src[src.index("    log(\"WRITE\")"):src.index("def write_facets_doc")]
+    check("the marker goes before the facets are emptied",
+          body.index('"DELETE FROM perm_docs WHERE key = ?", [FACETS_DOC]') < body.index('"DELETE FROM perm_entity_facets"'))
+    check("and comes back only after the rows are counted and every row has its page",
+          "    if ok:\n        write_facets_doc(db)" in body
+          and body.index("write_facets_doc(db)") > body.index("orphan rows"))
+
 
 def recruitment_check(db, incoming: list[dict]) -> None:
     """DOL's Section H record: parsed from the file's own columns, then loaded

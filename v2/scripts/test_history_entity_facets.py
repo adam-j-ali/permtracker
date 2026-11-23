@@ -269,6 +269,27 @@ check("Delta's firm, filed under its old name and slug, is the page", delta_firm
     {"key": "law-firm-llp", "label": "Law Firm LLP", "code": None, "n": 3, "certified": 3, "denied": 0}],
       json.dumps(delta_firm))
 
+print("every state is kept, so a page's state map has no hole in it; the other facets keep their top six")
+wide = seed()
+spread = ["TX", "NY", "OR", "NJ", "MA", "IL", "GA", "PR"]
+marks = ",".join("?" * len(iph.COLUMNS))
+wide.conn.executemany(f"INSERT INTO perm_cases_history ({','.join(iph.COLUMNS)}) VALUES ({marks})", [
+    row(f"W-{i}", "certified", "2018-03-0" + str(1 + i % 8), 2018, "ACME INC", "acme-inc", state=st, city=f"Town {i}")
+    for i, st in enumerate(spread)])
+wide.conn.commit()
+iph.build_entity_facets(wide)
+wide_acme = facets(wide).get(("employer", "acme-inc"), {}).get("facets", {})
+wide_states = sorted(r["key"] for r in wide_acme.get("state", []))
+check("all ten of Acme's states are rows, the territory too", wide_states == sorted(spread + ["WA", "CA"]),
+      json.dumps(wide_states))
+check("its cities stay at the top six", len(wide_acme.get("city", [])) == 6, str(len(wide_acme.get("city", []))))
+check("one rule for both tables: the state ceiling is the current builder's",
+      iph.FACET_ROWS is __import__("build_entity_detail").FACET_ROWS)
+marker = wide.conn.execute("SELECT json FROM perm_docs WHERE key = ?", [iph.HISTORY_FACETS_DOC]).fetchone()
+check("the marker the pages check says every state is kept",
+      iph.HISTORY_FACETS_DOC == "history_entity_facets" and marker is not None
+      and json.loads(marker[0]).get("states") == "all", str(marker))
+
 print("its counts wait on disk, so memory doesn't grow with the pairs the older table holds")
 
 
