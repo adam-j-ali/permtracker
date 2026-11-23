@@ -9,8 +9,11 @@
  * elsewhere, so it reads the health report the server writes every 10 minutes
  * (perm_docs['server_health'], scripts/oracle/bin/permtracker-health) and
  * emails when that report goes quiet, when the database stops answering, or
- * when the report says the disk is nearly full.
+ * when the report says the disk is nearly full. It pushes to the owner's phone
+ * too (convex/lib/phonePush.ts), once on start and once on recovery: urgent
+ * when the server can't be heard from at all, high for the disk.
  */
+import type { PushLevel } from "./phonePush";
 
 /** The sampler writes every 10 minutes; three missed writes is an alarm. */
 export const STALE_MS = 35 * 60 * 1000;
@@ -49,21 +52,35 @@ export interface WatchState {
   reason: string;
 }
 
-export type WatchMail = { kind: "start" | "still" | "clear"; reason: string } | null;
+/** since: when the trouble started (for a clear, the start of the trouble that ended). */
+export type WatchMail = { kind: "start" | "still" | "clear"; reason: string; since: number } | null;
+
+/** The push for this email, or null: a start or a clear pushes, a 6-hour reminder never does. */
+export function pushFor(mail: WatchMail): { level: PushLevel; title: string; todo: string } | null {
+  if (!mail || mail.kind === "still") return null;
+  if (mail.kind === "clear") return { level: "clear", title: "PERM Tracker server: reporting again", todo: "" };
+  const disk = mail.reason.startsWith("the server's disk");
+  return disk
+    ? { level: "high", title: "PERM Tracker server: disk nearly full", todo: "ssh permtracker and follow the runbook's disk steps." }
+    : { level: "urgent", title: "PERM Tracker server: can't be heard from", todo: "Open permtracker.app; if it's down, ssh permtracker and check its services." };
+}
 
 /** The next state, and the email this check should send (start, reminder, recovery, or none). */
 export function step(prev: WatchState | null, reason: string | null, now: number): { next: WatchState; mail: WatchMail } {
   if (reason) {
     if (!prev || !prev.down) {
-      return { next: { down: true, since: now, mailedAt: now, reason }, mail: { kind: "start", reason } };
+      return { next: { down: true, since: now, mailedAt: now, reason }, mail: { kind: "start", reason, since: now } };
     }
     if (now - prev.mailedAt >= REMIND_MS) {
-      return { next: { ...prev, mailedAt: now, reason }, mail: { kind: "still", reason } };
+      return { next: { ...prev, mailedAt: now, reason }, mail: { kind: "still", reason, since: prev.since } };
     }
     return { next: { ...prev, reason }, mail: null };
   }
   if (prev?.down) {
-    return { next: { down: false, since: now, mailedAt: now, reason: "" }, mail: { kind: "clear", reason: prev.reason } };
+    return {
+      next: { down: false, since: now, mailedAt: now, reason: "" },
+      mail: { kind: "clear", reason: prev.reason, since: prev.since },
+    };
   }
   return { next: { down: false, since: prev?.since ?? now, mailedAt: prev?.mailedAt ?? 0, reason: "" }, mail: null };
 }

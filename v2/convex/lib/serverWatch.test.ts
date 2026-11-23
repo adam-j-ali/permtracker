@@ -39,7 +39,7 @@ describe("step", () => {
     s = step(s.next, "quiet", NOW + REMIND_MS);
     expect(s.mail?.kind).toBe("still");
     s = step(s.next, null, NOW + REMIND_MS + 15 * 60 * 1000);
-    expect(s.mail).toEqual({ kind: "clear", reason: "quiet" });
+    expect(s.mail).toEqual({ kind: "clear", reason: "quiet", since: expect.any(Number) });
     expect(step(s.next, null, NOW + REMIND_MS + 30 * 60 * 1000).mail).toBeNull();
   });
 });

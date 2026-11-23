@@ -12,8 +12,9 @@ import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
 import { internalAction, internalMutation } from "./_generated/server";
+import { cleared, pushPhone, started } from "./lib/phonePush";
 import { one } from "./lib/publicMirror";
-import { type HealthRow, judge, step } from "./lib/serverWatch";
+import { type HealthRow, judge, pushFor, step } from "./lib/serverWatch";
 
 const KEY = "server";
 
@@ -44,6 +45,15 @@ export const check = internalAction({
         ? `As of ${when}, the server's health report is fresh again and its disk has room. It had been: ${mail.reason}.`
         : `As of ${when}, ${mail.reason}.\n\nThis check runs on Convex, outside the server, every 15 minutes, so it works when the server itself can't report. The server's own alarm (permtracker-alarm) covers the disk, memory and failed jobs from inside. It emails again every 6 hours while this lasts, and once when it clears.`;
       await ctx.scheduler.runAfter(0, internal.notificationActions.sendAdminNotificationEmail, { subject, body });
+      // The phone, after the email: a push that fails is logged, and the email has the same news.
+      const push = pushFor(mail);
+      if (push) {
+        const message = push.level === "clear"
+          ? cleared("The server is reporting again and its disk has room", mail.since)
+          : started(`${mail.reason.charAt(0).toUpperCase()}${mail.reason.slice(1)}.`, mail.since, push.todo);
+        const sent = await pushPhone(push.title, message, push.level, process.env.NTFY_TOPIC);
+        if (!sent.ok) console.error(`[serverWatch] push not sent: ${sent.why}`);
+      }
     }
     return null;
   },
@@ -53,7 +63,11 @@ export const record = internalMutation({
   args: { reason: v.union(v.string(), v.null()), now: v.number() },
   returns: v.union(
     v.null(),
-    v.object({ kind: v.union(v.literal("start"), v.literal("still"), v.literal("clear")), reason: v.string() }),
+    v.object({
+      kind: v.union(v.literal("start"), v.literal("still"), v.literal("clear")),
+      reason: v.string(),
+      since: v.number(),
+    }),
   ),
   handler: async (ctx, { reason, now }) => {
     const row = await ctx.db.query("serverWatch").withIndex("by_key", (q) => q.eq("key", KEY)).unique();

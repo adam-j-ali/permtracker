@@ -55,6 +55,13 @@ WHAT IT FIXES before it emails:
               takes seconds where the cap's page-by-page walk takes minutes;
               then starts the cap for the live copies
 
+PHONE. Each alarm also pushes to the owner's phone (ntfy, lib/phone_push.py), beside its email and never
+instead of it: once when it starts and once when it clears, never a 6-hour reminder. A service systemd has stopped
+restarting (the site's own: the web copies, nginx, the tunnel, the databases) pushes as urgent; every other alarm as
+high; a timed job pushes only once two of its runs in a row have failed, since one failure the next run fixes is
+nobody's business. At most 12 pushes an Eastern day, urgent ones excepted. A push that fails is tried again next
+run, never holds up the email, and the next email says how long pushes have been failing.
+
 `--dry-run` prints what it would send and do, and changes nothing.
 """
 from __future__ import annotations
@@ -70,6 +77,14 @@ import urllib.error
 import urllib.request
 from datetime import datetime
 from zoneinfo import ZoneInfo
+
+for _lib in ("/usr/local/lib/permtracker", str(pathlib.Path(__file__).resolve().parent.parent / "lib")):
+    if _lib not in sys.path:
+        sys.path.append(_lib)
+try:
+    import phone_push
+except ImportError:  # the email still goes; main() says the push couldn't
+    phone_push = None
 
 APP = pathlib.Path(os.environ.get("PT_APP_ROOT", "/srv/permtracker"))
 RUN = pathlib.Path(os.environ.get("PT_RUN_DIR", "/run/permtracker"))
@@ -126,6 +141,20 @@ UNIT_CLEAR_S = 45 * 60
 # Units that are ours (or that the site cannot run without). Anything else
 # systemd lists as failed (fwupd, PCP's loggers) is the OS's business.
 OUR_UNITS = ("permtracker", "nginx", "cloudflared", "sqld")
+PUSHES_PER_DAY = 12
+# A timed job pushes once this many of its runs in a row have failed.
+JOB_FAILS_TO_PUSH = 2
+# What to do, in each alarm's push (a unit's is built in todo_of).
+TODO = {
+    "disk": "The page-cache cap was started. If free space keeps falling, follow the runbook's disk steps.",
+    "disk-crit": "Old route caches were deleted and the cap started. If it stays under 10 GB, free space now.",
+    "memory": "If the site is slow, restart the busiest web copy (systemctl restart permtracker-web@<slot>).",
+    "sampler": "ssh permtracker, then systemctl status permtracker-health.",
+    "page-cache": "ssh permtracker, then systemctl status permtracker-prune.",
+    "page-cache-blind": "Read the email for the release, then raise the cap's budget or clear that release's pages.",
+    "backup": "ssh permtracker, then systemctl status permtracker-backup, and run it by hand once fixed.",
+    "journal": "journalctl --flush was run. If this lasts, check the disk.",
+}
 
 DRY_RUN = "--dry-run" in sys.argv
 
@@ -309,6 +338,118 @@ def count_email(state: dict, now: float) -> dict:
     return {**state, "emails": sent}
 
 
+def unit_info(show: str) -> dict[str, dict]:
+    """Each unit's state, result, type and last start, from `systemctl show` with
+    -p Id -p ActiveState -p Result -p Type -p ExecMainStartTimestampMonotonic."""
+    out = {}
+    for block in show.split("\n\n"):
+        f = dict(ln.split("=", 1) for ln in block.splitlines() if "=" in ln)
+        if f.get("Id"):
+            out[f["Id"]] = {"state": f.get("ActiveState"), "result": f.get("Result"),
+                            "type": f.get("Type"), "start": f.get("ExecMainStartTimestampMonotonic")}
+    return out
+
+
+def job_runs(prev: dict | None, info: dict[str, dict]) -> dict[str, dict]:
+    """How many runs in a row each failed timed job has failed. A run that ends well drops the job,
+    so a failure, a success and a failure count as one; a job running now keeps its count."""
+    out = {}
+    for unit, i in info.items():
+        if i.get("type") != "oneshot":
+            continue
+        before = (prev or {}).get(unit)
+        if i.get("state") == "failed":
+            if before and before.get("start") == i.get("start"):
+                out[unit] = before
+            else:
+                out[unit] = {"start": i.get("start"), "fails": (before or {}).get("fails", 0) + 1}
+        elif i.get("state") == "activating" and before:
+            out[unit] = before
+    return out
+
+
+def push_level(key: str, info: dict[str, dict], runs: dict[str, dict]) -> str | None:
+    """urgent, high, or None (no push) for one alarm that is on."""
+    if not key.startswith("unit:"):
+        return "high"
+    unit = key[5:] + ".service"
+    i = info.get(unit) or {}
+    if i.get("type") == "oneshot":
+        return "high" if (runs.get(unit) or {}).get("fails", 0) >= JOB_FAILS_TO_PUSH else None
+    # A service systemd has given up restarting (or one whose type it can't tell): a run that can't restart itself.
+    return "urgent"
+
+
+def todo_of(key: str) -> str:
+    if key.startswith("unit:"):
+        u = key[5:]
+        return f"ssh permtracker, then journalctl -u {u} -n 50 to see why; systemctl restart {u} once fixed."
+    return TODO.get(key, "Read the email.")
+
+
+def phone_plan(on: dict[str, str], alarms: dict, pushed: dict, levels: dict[str, str | None],
+               ) -> list[tuple[str, str, str]]:
+    """Which pushes are due: (key, kind, level), kind start | clear. An alarm pushes once, when it first has a level,
+    and clears only if it was pushed."""
+    due = [(k, "start", levels[k]) for k in on if levels.get(k) and k not in pushed]
+    due += [(k, "clear", "clear") for k in pushed if k not in on]
+    return due
+
+
+def push_words(key: str, kind: str, reason: str, since: float) -> tuple[str, str]:
+    """The push's title and message, from phone_push's one template."""
+    if kind == "clear":
+        return "PERM Tracker server: fine again", phone_push.cleared(cleared_of(key)[0].upper() + cleared_of(key)[1:],
+                                                                     since)
+    what = title_of(key)
+    return (f"PERM Tracker server: {what}",
+            phone_push.started(f"{what[0].upper() + what[1:]}: {reason}.", since, todo_of(key)))
+
+
+def pushes_left(state: dict, now: float) -> int:
+    return PUSHES_PER_DAY - state.get("pushes", {}).get(email_day(now), 0)
+
+
+def count_push(state: dict, now: float) -> dict:
+    day = email_day(now)
+    sent = {d: n for d, n in state.get("pushes", {}).items() if d >= day}
+    sent[day] = sent.get(day, 0) + 1
+    return {**state, "pushes": sent}
+
+
+def send_pushes(state: dict, on: dict[str, str], levels: dict[str, str | None], now: float,
+                pusher=None) -> tuple[dict, list[str]]:
+    """Push what's due and record it; a failed or capped push stays due for the next run. Returns the new state and
+    what was pushed, for the log line. `pusher` stands in for phone_push.push in tests."""
+    pusher = pusher or (phone_push.push if phone_push else None)
+    pushed = dict(state.get("phone", {}))
+    alarms = state.get("alarms", {})
+    done = []
+    for key, kind, level in phone_plan(on, alarms, pushed, levels):
+        if level != "urgent" and pushes_left(state, now) <= 0:
+            continue
+        since = (alarms.get(key) or pushed.get(key) or {}).get("since", now)
+        reason = on.get(key) or (alarms.get(key) or {}).get("reason", "")
+        if pusher is None:
+            ok, why = False, "lib/phone_push.py isn't installed"
+        elif DRY_RUN:
+            print("would push ({}): {} / {}".format(level, *push_words(key, kind, reason, since)))
+            ok, why = True, ""
+        else:
+            ok, why = pusher(*push_words(key, kind, reason, since), level)
+        if not ok:
+            state = {**state, "push_failing": state.get("push_failing") or {"since": now, "why": why}}
+            print(f"push not sent ({why}); next run tries again")
+            continue
+        state = count_push({**state, "push_failing": None}, now)
+        if kind == "clear":
+            pushed.pop(key, None)
+        else:
+            pushed[key] = {"since": since, "level": level}
+        done.append(f"{key} {kind}")
+    return {**state, "phone": pushed}, done
+
+
 # --------------------------------------------------------------------------
 # Reading the machine
 # --------------------------------------------------------------------------
@@ -346,9 +487,11 @@ def snapshot(now: float) -> dict:
     ours = subprocess.run(["systemctl", "list-units", "--type=service", "--all", "--no-legend", "--plain",
                            *(f"{u}*" for u in OUR_UNITS)], capture_output=True, text=True).stdout.splitlines()
     names = [ln.split()[0] for ln in ours if ln.strip()]
-    stopped = stopped_after_error(subprocess.run(
-        ["systemctl", "show", "-p", "Id", "-p", "ActiveState", "-p", "Result", "-p", "UnitFileState", *names],
-        capture_output=True, text=True).stdout) if names else []
+    show = subprocess.run(
+        ["systemctl", "show", "-p", "Id", "-p", "ActiveState", "-p", "Result", "-p", "UnitFileState",
+         "-p", "Type", "-p", "ExecMainStartTimestampMonotonic", *names],
+        capture_output=True, text=True).stdout if names else ""
+    stopped = stopped_after_error(show)
     prune_age = None
     uncounted: list[str] = []
     headroom = None
@@ -372,6 +515,7 @@ def snapshot(now: float) -> dict:
         "swap_used_mb": (mem.get("SwapTotal", 0) - mem.get("SwapFree", 0)) // 1024,
         "failed_units": [u for u in units if u.startswith(OUR_UNITS)],
         "stopped_units": [u for u in stopped if u.startswith(OUR_UNITS)],
+        "unit_info": {u: i for u, i in unit_info(show).items() if u.startswith(OUR_UNITS)},
         "sampler_age_s": age_of(APP / "health" / "samples.jsonl", now),
         "prune_age_s": prune_age,
         "uncounted": uncounted,
@@ -533,7 +677,7 @@ def send(subject: str, text: str) -> bool:
 
 
 def compose(mail: list[tuple[str, str, str]], snap: dict, rate: float | None,
-            actions: list[str], now: float) -> tuple[str, str]:
+            actions: list[str], now: float, push_failing: dict | None = None) -> tuple[str, str]:
     stamp = datetime.fromtimestamp(now, ET).strftime("%A %b %-d, %-I:%M %p %Z")
     starts = [m for m in mail if m[1] != "clear"]
     if starts:
@@ -563,8 +707,13 @@ def compose(mail: list[tuple[str, str, str]], snap: dict, rate: float | None,
         floor = snap["disk_free_gb"] - headroom
         lines.append(f"The page caches may grow {headroom:.1f} GB more before their cap stops them, "
                      f"which would leave about {floor:.0f} GB free.")
+    if push_failing:
+        lines.append(f"Pushes to your phone have failed since "
+                     f"{datetime.fromtimestamp(push_failing['since'], ET).strftime('%A %b %-d, %-I:%M %p %Z')}"
+                     f" ({push_failing.get('why', 'no reason given')}); each run tries again.")
     lines += ["This alarm runs every 5 minutes on the server (permtracker-alarm); it emails again "
-              "every 6 hours while something lasts, and once when it clears."]
+              "every 6 hours while something lasts, and once when it clears. It pushes to your phone once "
+              "when something starts and once when it clears."]
     return subject, "\n".join(lines)
 
 
@@ -590,12 +739,15 @@ def main() -> int:
         state["swap"] = [now, snap["swap_pages"]]
     on = evaluate(snap, rate, state.get("alarms", {}))
     actions = heal(on)
+    info = snap.get("unit_info") or {}
+    state["job_runs"] = job_runs(state.get("job_runs"), info)
+    levels = {k: push_level(k, info, state["job_runs"]) for k in on}
     mail, planned = plan(on, state, now)
     undelivered = capped = False
     if not mail:
         state = planned
     elif under_cap(state, now):
-        if send(*compose(mail, snap, rate, actions, now)):
+        if send(*compose(mail, snap, rate, actions, now, state.get("push_failing"))):
             state = count_email(planned, now)
         else:
             # Nothing is marked sent, so the next run (5 minutes) tries again,
@@ -607,6 +759,8 @@ def main() -> int:
         # Over the day's cap: nothing is marked sent, so what's due goes in the
         # first email after midnight Eastern if it still holds.
         capped = True
+    # The phone, after the email: a push never holds the email up.
+    state, pushed = send_pushes(state, on, levels, now)
     if not DRY_RUN:
         STATE.write_text(json.dumps(state))
     print(f"free {snap['disk_free_gb']:.1f} GB, rate "
@@ -614,7 +768,8 @@ def main() -> int:
           + (f", emailed {[(k, kind) for k, kind, _ in mail]}" if mail and not (undelivered or capped) else "")
           + (f", over today's {EMAILS_PER_DAY}-email cap, not sent: {[(k, kind) for k, kind, _ in mail]}"
              if capped else "")
-          + (", an email was due and could NOT be sent" if undelivered else ""))
+          + (", an email was due and could NOT be sent" if undelivered else "")
+          + (f", pushed {pushed}" if pushed else ""))
     return 1 if undelivered else 0
 
 

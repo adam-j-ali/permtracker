@@ -1,0 +1,22 @@
+{
+  "about": "What a push to the owner's phone may carry and how it reads, held by scripts/oracle/test_phone_push.py (the server's alarm and defense) and convex/lib/phonePush.test.ts (Convex's outside watch), so both say it one way. since is Unix seconds.",
+  "scrub": [
+    ["from 203.0.113.7 and 198.51.100.0/24", "from an address and an address"],
+    ["2001:db8::1, 2001:0db8:85a3:0000:0000:8a2e:0370:7334, fe80::1", "an address, an address, an address"],
+    ["to a.b+c@example.co.uk now", "to an email address now"],
+    ["IOE0912345678 EAC*2190012345", "a receipt number a receipt number"],
+    ["permtracker-web@1.service failed", "permtracker-web@1.service failed"],
+    ["permtracker-cron@flag-notice.service", "permtracker-cron@flag-notice.service"],
+    ["at 12:05:30 and 8:05 AM", "at 12:05:30 and 8:05 AM"],
+    ["25.3 GB free, AS13335", "25.3 GB free, AS13335"]
+  ],
+  "started": [
+    {"what": "The disk is filling: 20 GB free.", "since": 1796043600, "todo": "Do the runbook's disk steps.",
+     "out": "The disk is filling: 20 GB free. Since Mon Nov 30, 8:00 AM EST. Do the runbook's disk steps."},
+    {"what": "The server's database did not answer (fetch failed from 203.0.113.7).", "since": 1783870200, "todo": "ssh permtracker.",
+     "out": "The server's database did not answer (fetch failed from an address). Since Sun Jul 12, 11:30 AM EDT. ssh permtracker."}
+  ],
+  "cleared": [
+    {"what": "The disk has room again", "since": 1796043600, "out": "The disk has room again. It had started Mon Nov 30, 8:00 AM EST."}
+  ]
+}

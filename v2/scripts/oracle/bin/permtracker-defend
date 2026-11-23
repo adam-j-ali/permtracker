@@ -39,7 +39,8 @@ often enough that 30 calm minutes may never come, which would leave every real
 visitor behind the check for hours for nothing. So after an hour it steps back
 to the rule alone and may not return for three hours.
 
-Every change is emailed (at most 8 a day), written to health/repairs.log (the
+Every change is emailed (at most 8 a day), pushed to the owner's phone (at most 8 a day,
+lib/phone_push.py), written to health/repairs.log (the
 morning email shows it) and kept in health/defend.json. With no Cloudflare
 token (/etc/permtracker/defend.env) or with health/defend.off present it only
 WATCHES: it logs what it would do and changes nothing.
@@ -57,6 +58,14 @@ import urllib.request
 from collections import Counter
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
+
+for _lib in ("/usr/local/lib/permtracker", str(pathlib.Path(__file__).resolve().parent.parent / "lib")):
+    if _lib not in sys.path:
+        sys.path.append(_lib)
+try:
+    import phone_push
+except ImportError:  # the email still goes; the journal says the push couldn't
+    phone_push = None
 
 HEALTH = pathlib.Path(os.environ.get("PT_HEALTH_DIR", "/srv/permtracker/health"))
 STATE = HEALTH / "defend.json"
@@ -459,6 +468,27 @@ def email(state: dict, cfg: dict, subject: str, text: str) -> None:
         print(f"email failed: {exc}")
 
 
+PUSHES_PER_DAY = 8
+
+
+def phone(state: dict, title: str, message: str, level: str) -> None:
+    """Push to the owner's phone beside the email (phone_push's template), at most PUSHES_PER_DAY an Eastern day.
+    A push that fails is only logged: the email has the same news."""
+    day = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+    sent = state.setdefault("pushes", {})
+    if sent.get(day, 0) >= PUSHES_PER_DAY:
+        return
+    if phone_push is None:
+        print("push not sent: lib/phone_push.py isn't installed")
+        return
+    ok, why = phone_push.push(title, message, level)
+    if not ok:
+        print(f"push not sent: {why}")
+        return
+    sent[day] = sent.get(day, 0) + 1
+    state["pushes"] = {d: n for d, n in sent.items() if d >= day}
+
+
 UNDO = ("To undo by hand: Cloudflare, Security, WAF, custom rules: delete the rule whose description "
         "starts AUTO; Security, Settings: set the security level back. To stop this from acting: "
         "touch /srv/permtracker/health/defend.off on the server.")
@@ -593,6 +623,10 @@ def main() -> int:
                 cf.add_rule(info["source"])
                 state.update(mode="rule", since=now, source=info["source"])
                 note(f"challenge on for {describe(info['source'])}; {why}")
+                phone(state, "PERM Tracker: automatic defense on", phone_push.started(
+                    f"Cloudflare now asks {describe(info['source'])} to pass a browser check.", now,
+                    f"It turns itself off after {calm_words(state)}. The email says how to undo it.")
+                    if phone_push else "", "high")
                 email(state, cfg, "PERM Tracker: automatic defense on",
                       f"{lead(people, filled)}\n\nCloudflare now asks {describe(info['source'])} "
                       f"to pass a browser check."
@@ -609,6 +643,10 @@ def main() -> int:
                     cf.set_security_level("under_attack")
                     state.update(mode="attack", since=now)
                     note(f"Under Attack Mode on ({info['reason']}); {why}")
+                    phone(state, "PERM Tracker: Under Attack Mode on", phone_push.started(
+                        "Every visitor now passes Cloudflare's check first.", now,
+                        "It turns itself off after 30 calm minutes. The email says why and how to undo it.")
+                        if phone_push else "", "high")
                     email(state, cfg, "PERM Tracker: Under Attack Mode on",
                           f"{lead(people, filled)} "
                           + ("No single network, browser label or part of the site stood out, so a rule for "
@@ -622,6 +660,10 @@ def main() -> int:
                 cf.set_security_level(state.get("restoreLevel") or "low")
                 state.update(mode="rule", since=now, attackCooldownUntil=now + ATTACK_COOLDOWN)
                 note(f"Under Attack Mode off after an hour ({info['reason']}); not again for 3 hours; {why}")
+                phone(state, "PERM Tracker: Under Attack Mode off after an hour", phone_push.started(
+                    "An hour of Under Attack Mode didn't end the trouble, so it's off for 3 hours.",
+                    float(state.get("since") or now), "Whatever it is passes Cloudflare's check: read the email.")
+                    if phone_push else "", "high")
                 email(state, cfg, "PERM Tracker: Under Attack Mode off after an hour",
                       f"An hour of Under Attack Mode did not end the trouble ({why}), so it is off again and "
                       f"may not come back for three hours: whatever is causing it is passing Cloudflare's check. "
@@ -634,6 +676,9 @@ def main() -> int:
                 waits = state.get("mode") == "attack"
                 note(f"all off after {calm_words(state)} (was {state.get('mode')} for {lasted} min)"
                      + ("; Under Attack Mode not again for 3 hours" if waits else ""))
+                phone(state, "PERM Tracker: automatic defense off", phone_push.cleared(
+                    "The automatic defense is off and the security level is back",
+                    float(state.get("since") or now)) if phone_push else "", "clear")
                 email(state, cfg, "PERM Tracker: automatic defense off",
                       f"{calm_words(state)[0].upper() + calm_words(state)[1:]}, so the automatic rule is removed and the security level is back to "
                       f"{state.get('restoreLevel') or 'low'}. It was on for {lasted} minutes.")
