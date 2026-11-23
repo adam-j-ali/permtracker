@@ -30,9 +30,9 @@ export function queryShape(raw: string): QueryShape {
   if (q.length === 0) return "empty";
   if (ISO_MONTH_RE.test(q)) return "month";
   if (looksLikeReceipt(q)) return "receipt";
-  if (normaliseCaseNumber(q) !== null) return "case";
-  // The site's rule wants the dashes; counting these shows how often people
-  // leave them out.
+  // The box reads a number with or without its dashes (the paste tidy), but counting the ones typed without any
+  // shows how often people leave them out. A typographic dash or a minus sign counts as a dash typed.
+  if (normaliseCaseNumber(q) !== null) return /[-\u2010-\u2015\u2212]/.test(q) ? "case" : "case-undashed";
   if (UNDASHED.test(q.toUpperCase().replace(/[\s-]/g, ""))) return "case-undashed";
   return "name";
 }
