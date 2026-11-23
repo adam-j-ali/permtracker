@@ -167,6 +167,8 @@ def fmt(n: float) -> str:
 
 # ── GitHub Actions ────────────────────────────────────────────────────────
 
+FAILED_CONCLUSIONS = ("failure", "timed_out", "startup_failure")
+
 
 def summarize_runs(runs: list[dict], names: dict[str, str] | None = None) -> dict:
     """Per workflow: runs, failures, cancellations, re-runs, and when it last
@@ -197,14 +199,14 @@ def summarize_runs(runs: list[dict], names: dict[str, str] | None = None) -> dic
         branch = r.get("head_branch")
         if branch and branch != "main":
             w["branch_runs"] += 1
-            if r.get("status") == "completed" and c in ("failure", "timed_out", "startup_failure"):
+            if r.get("status") == "completed" and c in FAILED_CONCLUSIONS:
                 w["branch_failed"] += 1
             continue
         w["runs"] += 1
         at = str(r.get("updated_at") or r.get("created_at") or "")
         if r.get("status") != "completed":
             w["running"] += 1
-        elif c in ("failure", "timed_out", "startup_failure"):
+        elif c in FAILED_CONCLUSIONS:
             w["failed"] += 1
             w["last_fail"] = max(w["last_fail"], at)
         elif c == "cancelled":
@@ -248,48 +250,122 @@ def runs_since(since: dt.datetime) -> list[dict]:
     return _RUNS[created]
 
 
+def newest_decided(runs: list[dict], skip_id: str | None) -> dict | None:
+    """The newest run on main that passed or failed, whatever its age. Pure, for the test.
+
+    A cancelled run (a newer push replaced it) and a skipped one decide nothing, and the run building this report
+    (`skip_id`, GITHUB_RUN_ID) is never its own verdict.
+    """
+    for r in sorted(runs, key=lambda r: str(r.get("created_at") or ""), reverse=True):
+        if skip_id and str(r.get("id")) == skip_id:
+            continue
+        if r.get("status") != "completed" or (r.get("head_branch") or "main") != "main":
+            continue
+        if r.get("conclusion") == "success" or r.get("conclusion") in FAILED_CONCLUSIONS:
+            return r
+    return None
+
+
+def github_verdict(runs: list[dict], names: dict[str, str], newest: dict[str, dict | None],
+                   reasons: dict[str, str] | None = None) -> dict:
+    """The section from the last 24 hours' runs and each workflow's newest decided run on main. Pure, for the test.
+
+    A workflow is still failing when its newest decided run on main failed, whatever its age: the 24-hour window
+    began about 11 minutes after the previous morning's report started, so the report never saw its own red run
+    (Nov 2026: four red mornings read clean). The 24-hour runs are tallies only. A workflow missing from `newest`
+    couldn't be read, and the 24-hour rule judges it. `reasons`: workflow name to the step that failed.
+    """
+    reasons = reasons or {}
+    by = summarize_runs(runs, names)
+    failing_newest = {n for n, r in newest.items() if r and r.get("conclusion") in FAILED_CONCLUSIONS}
+    lines, statuses = [], []
+    still = 0
+    for name in sorted(set(by) | failing_newest):
+        w = by.get(name)
+        if name in newest:
+            failing = name in failing_newest
+        else:
+            failing = bool(w and w["failed"] and not recovered(w))
+        bits = []
+        if failing:
+            still += 1
+            r = newest.get(name)
+            at = et_time(r.get("updated_at") or r.get("created_at")) if r else None
+            lead = "newest run failed" + (f" at {at}" if at else ", still failing")
+            if reasons.get(name):
+                lead += f", at the step '{reasons[name]}'"
+            bits.append(lead)
+            statuses.append("fail" if name in DATA_WORKFLOWS else "warn")
+        if w:
+            bits.append(f"{w['runs']} run{'s' if w['runs'] != 1 else ''} in 24 h")
+            if w["failed"] and not failing:
+                passed = (newest.get(name) or {}).get("updated_at") or w["last_ok"]
+                bits.append(f"{w['failed']} failed, then passed at {et_time(passed) or passed}")
+            elif w["failed"]:
+                bits.append(f"{w['failed']} failed")
+            if w["reruns"]:
+                bits.append(f"{w['reruns']} re-run")
+            if w["cancelled"]:
+                bits.append(f"{w['cancelled']} cancelled")
+            if w["running"]:
+                bits.append(f"{w['running']} still running")
+            if w.get("branch_runs"):
+                bits.append(f"{w['branch_runs']} on other branches"
+                            + (f", {w['branch_failed']} of them failed" if w.get("branch_failed") else ""))
+        lines.append(f"{name}: {', '.join(bits)}")
+    failed = sum(w["failed"] for w in by.values())
+    if still:
+        tail = "1 workflow's newest run failed" if still == 1 else f"{still} workflows' newest runs failed"
+    elif failed:
+        tail = f"{failed} failed and every one has since passed"
+    else:
+        tail = "none failed"
+    summary = f"{len(runs)} runs in 24 h across {len(by)} workflows, {tail}"
+    return section("github", "GitHub Actions", worst(statuses), summary, lines)
+
+
+def failed_step(run: dict) -> str | None:
+    """The first failed step's name in a failed run, or None when its jobs couldn't be read."""
+    try:
+        d = http_json(str(run.get("jobs_url") or
+                          f"https://api.github.com/repos/{REPO}/actions/runs/{run.get('id')}/jobs"), gh_headers())
+    except Exception:  # noqa: BLE001 - the line still says the run failed, only without the step
+        return None
+    for job in d.get("jobs", []):
+        for st in job.get("steps", []):
+            if st.get("conclusion") in FAILED_CONCLUSIONS:
+                return str(st.get("name") or "") or None
+    return None
+
+
 def github_section(since: dt.datetime) -> dict:
     headers = gh_headers()
     runs = runs_since(since)
     try:
         listed = http_json(f"https://api.github.com/repos/{REPO}/actions/workflows?per_page=100", headers)
-        names = {w["path"]: w["name"] for w in listed.get("workflows", []) if w.get("path") and w.get("name")}
+        workflows = listed.get("workflows", [])
     except Exception:  # noqa: BLE001 - the run titles still group, as they did before
-        names = {}
-    by = summarize_runs(runs, names)
-    lines, statuses = [], []
-    still = 0
-    for name in sorted(by):
-        w = by[name]
-        bits = [f"{w['runs']} run{'s' if w['runs'] != 1 else ''}"]
-        if w["failed"]:
-            # A failure the workflow has since passed is history, not a task,
-            # so only the still-failing ones rank.
-            if recovered(w):
-                bits.append(f"{w['failed']} failed, then passed at {et_time(w['last_ok']) or w['last_ok']}")
-            else:
-                still += 1
-                bits.append(f"{w['failed']} failed, still failing")
-                statuses.append("fail" if name in DATA_WORKFLOWS else "warn")
-        if w["reruns"]:
-            bits.append(f"{w['reruns']} re-run")
-        if w["cancelled"]:
-            bits.append(f"{w['cancelled']} cancelled")
-        if w["running"]:
-            bits.append(f"{w['running']} still running")
-        if w.get("branch_runs"):
-            bits.append(f"{w['branch_runs']} on other branches"
-                        + (f", {w['branch_failed']} of them failed" if w.get("branch_failed") else ""))
-        lines.append(f"{name}: {', '.join(bits)}")
-    failed = sum(w["failed"] for w in by.values())
-    if not failed:
-        tail = "none failed"
-    elif not still:
-        tail = f"{failed} failed and every one has since passed"
-    else:
-        tail = f"{still} workflow{'s' if still != 1 else ''} still failing"
-    summary = f"{len(runs)} runs across {len(by)} workflows, {tail}"
-    return section("github", "GitHub Actions (24 h)", worst(statuses), summary, lines)
+        workflows = []
+    names = {w["path"]: w["name"] for w in workflows if w.get("path") and w.get("name")}
+    skip = os.environ.get("GITHUB_RUN_ID")
+    newest: dict[str, dict | None] = {}
+    reasons: dict[str, str] = {}
+    for w in workflows:
+        # A disabled workflow, and GitHub's own dynamic ones (Dependabot's updates), decide nothing about main.
+        if w.get("state") != "active" or not str(w.get("path") or "").startswith(".github/workflows/"):
+            continue
+        try:
+            d = http_json(f"https://api.github.com/repos/{REPO}/actions/workflows/{w['id']}/runs"
+                          "?branch=main&status=completed&per_page=20", headers)
+        except Exception:  # noqa: BLE001 - unread: the 24-hour tally judges this one
+            continue
+        r = newest_decided(d.get("workflow_runs", []), skip)
+        newest[w["name"]] = r
+        if r and r.get("conclusion") in FAILED_CONCLUSIONS:
+            step = failed_step(r)
+            if step:
+                reasons[w["name"]] = step
+    return github_verdict(runs, names, newest, reasons)
 
 
 # ── the repository's security alerts and update pull requests ─────────────
@@ -1914,7 +1990,7 @@ def build(now: dt.datetime) -> dict:
     sections = [
         guarded("newsworthy", "Newsworthy (24 h)", newsworthy_section, now_ms),
         guarded("health", "Ingests and data freshness", health_section),
-        guarded("github", "GitHub Actions (24 h)", github_section, since),
+        guarded("github", "GitHub Actions", github_section, since),
         guarded("security", "Security alerts and updates", security_section,
                 dt.datetime.now(dt.timezone.utc)),
         guarded("speed", "How long things take (24 h)", speed_section, since),

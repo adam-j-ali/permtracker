@@ -722,6 +722,7 @@ def main() -> int:
     busy_replies_are_tried_again()
     ai_assistant_visits_are_counted()
     site_audit_says_what_grew()
+    github_judges_each_workflow_by_its_newest_run()
 
     # The API and the assistants: keyed calls by account, keyless ones by bucket.
     rows = [("2026-10-07", "acct_a", "k1", 30), ("2026-10-07", "acct_b", "k2", 5), ("2026-10-07", "anonymous", "mcp", 12),
@@ -797,6 +798,44 @@ def main() -> int:
 
     print(f"\n{len(FAILS)} failure(s)")
     return 1 if FAILS else 0
+
+
+def github_judges_each_workflow_by_its_newest_run() -> None:
+    """A workflow is still failing when its newest run on main that passed or failed, whatever its age, failed.
+    The 24-hour window started about 11 minutes after the previous morning's report began, so the report never saw
+    its own red run (Nov 23 2026: four red mornings in a row read clean)."""
+    def run(rid, conclusion, at, branch="main", name="Daily monitor"):
+        return {"id": rid, "name": name, "path": ".github/workflows/x.yml", "head_branch": branch,
+                "status": "completed", "conclusion": conclusion, "created_at": at, "updated_at": at}
+    listed = [run(5, None, "2026-11-23T12:31:00Z") | {"status": "in_progress"},
+              run(4, "cancelled", "2026-11-23T01:00:00Z"),
+              run(3, "failure", "2026-11-22T22:00:00Z", branch="dependabot/x"),
+              run(2, "failure", "2026-11-22T12:31:00Z"),
+              run(1, "success", "2026-11-21T12:31:00Z")]
+    check(dm.newest_decided(listed, "5")["id"] == 2,
+          "the newest passed-or-failed run on main: not this run, a cancelled one or another branch's")
+    check(dm.newest_decided(listed[:2], None) is None, "a workflow with no decided run on main has none")
+    check(dm.newest_decided([run(9, "failure", "2026-11-23T12:00:00Z")], "9") is None,
+          "the run building the report is never its own verdict")
+
+    yesterday = run(2, "failure", "2026-11-22T12:31:00Z")
+    v = dm.github_verdict([], {}, {"Daily monitor": yesterday}, {"Daily monitor": "A failed page check turns the run red"})
+    check(v["status"] == "warn" and any(l.startswith("Daily monitor: newest run failed at Nov 22, 7:31 AM EST")
+                                        and "A failed page check turns the run red" in l for l in v["lines"]),
+          "a red run older than the window still reads failing, with its time and the step that failed", str(v))
+    check("1 workflow's newest run failed" in v["summary"], f"the summary counts it ({v['summary']})")
+
+    ingest = "Case status (direct from DOL)"
+    day = [run(11, "failure", "2026-11-23T03:00:00Z", name=ingest), run(12, "success", "2026-11-23T05:00:00Z", name=ingest)]
+    v = dm.github_verdict(day, {}, {ingest: day[1]})
+    check(v["status"] == "ok" and any("1 failed, then passed at" in l for l in v["lines"]),
+          "a failure the workflow has since passed is a tally, never a task", str(v))
+    v = dm.github_verdict(day[:1], {}, {ingest: day[0]})
+    check(v["status"] == "fail", "a data workflow whose newest run failed fails the section", str(v))
+    v = dm.github_verdict(day[:1], {}, {})
+    check(v["status"] == "fail" and any("still failing" in l for l in v["lines"]),
+          "a workflow whose newest run couldn't be read falls back on the 24-hour tally", str(v))
+    check("github_verdict" in dm.github_section.__code__.co_names, "the section uses the verdict")
 
 
 def site_audit_says_what_grew() -> None:
