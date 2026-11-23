@@ -11,6 +11,7 @@ import Link from "next/link";
 import { PlusIcon } from "@phosphor-icons/react/ssr";
 
 import { API_PLANS } from "@convex/lib/apiPlans";
+import { SplitColumns } from "@/components/data/SplitColumns";
 import { SectionIndex, type LegalSection } from "@/components/legal/SectionIndex";
 import { LEGAL_DBA, LEGAL_FORM, POSTAL_ADDRESS } from "@/lib/constants/about";
 import { openGraphBase } from "@/lib/openGraphBase";
@@ -70,16 +71,16 @@ function Section({ id, title, children }: { id: string; title: string; children:
 export default function ApiTermsPage() {
   const free = API_PLANS.free;
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-16 pt-10 sm:px-6 sm:pt-14">
+    <div className="mx-auto max-w-6xl px-4 pb-16 pt-10 sm:px-6 sm:pt-14">
       <div>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">API terms</h1>{" "}
         <p className="mb-8 mt-4 text-lg text-muted-foreground">
           Effective Date: November 5, 2026
         </p>{" "}
 
-        <SectionIndex sections={SECTIONS} />{" "}
-
-        <div className="mt-6">
+        {/* The contents beside the text on a wide page, held in view while it scrolls; above it on a phone. */}
+        <SplitColumns asideFirst sticky aside={<SectionIndex sections={SECTIONS} side />}>
+        <div className="mt-6 @[56rem]:mt-0">
 
         <Section id="agreement" title="1. Agreement">
           <p>
@@ -254,6 +255,7 @@ export default function ApiTermsPage() {
           <p>Mailing address: {POSTAL_ADDRESS}.</p>
         </Section>
         </div>
+        </SplitColumns>
       </div>
     </div>
   );

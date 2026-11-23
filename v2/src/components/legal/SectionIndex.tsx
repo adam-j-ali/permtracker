@@ -1,6 +1,8 @@
 import { Fragment } from "react";
 import Link from "next/link";
 
+import { cn } from "@/lib/utils";
+
 import { OpenOnHash } from "./OpenOnHash";
 
 /**
@@ -30,18 +32,30 @@ export interface LegalSection {
 export function SectionIndex({
   sections,
   label = "On this page",
+  side = false,
 }: {
   sections: readonly LegalSection[];
   label?: string;
+  /**
+   * Beside the text on a wide page (SplitColumns): one column of entries, and no taller than the window, so the
+   * whole list stays in reach while the text scrolls. On a phone it sits above the text as before.
+   */
+  side?: boolean;
 }) {
   if (sections.length === 0) return null;
   return (
-    <nav aria-label={label} className="mt-8 bg-tint p-5 border-2 shadow-hard border-border">
+    <nav
+      aria-label={label}
+      className={cn(
+        "bg-tint p-5 border-2 shadow-hard border-border",
+        side ? "@[56rem]:max-h-[calc(100dvh-8rem)] @[56rem]:overflow-y-auto" : "mt-8",
+      )}
+    >
       <OpenOnHash />
       <p className="text-sm font-bold text-muted-foreground">
         {label}
       </p>{" "}
-      <ol className="mt-3 grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2 [&>*]:min-w-0">
+      <ol className={cn("mt-3 grid grid-cols-1 gap-x-6 gap-y-1 [&>*]:min-w-0", side ? "sm:grid-cols-2 @[56rem]:grid-cols-1" : "sm:grid-cols-2")}>
         {sections.map((s) => (
           // A Fragment with a trailing space, not a bare <li>. React renders
           // array items with NOTHING between them, so 19 list items reached the
