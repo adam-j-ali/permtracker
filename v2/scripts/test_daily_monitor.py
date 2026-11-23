@@ -226,6 +226,10 @@ def main() -> int:
     v = dm.chat_models_verdict(fresh, pnow)
     check(v["status"] == "ok" and "2 of 2" in v["summary"], "chat: every model answering is OK", str(v))
     check(len(v["lines"]) == 3, "chat: every model gets its line, the summarizer's included", str(v["lines"]))
+    # Nov 23 2026: "2 of 2 chat models" sat over three lines, and nothing said which one wasn't a chat model.
+    check(v["lines"][2].startswith("gpt-oss-20b (the conversation summarizer, not a chat model): ok")
+          and "(" not in v["lines"][0], "chat: a model that isn't in the chat's chain says what it does instead",
+          str(v["lines"]))
     mixed = dict(fresh, models=fresh["models"] + [model("Mistral Small", "refused", reason="the account allows 0 requests a minute")])
     v = dm.chat_models_verdict(mixed, pnow)
     check(v["status"] == "warn" and "Mistral Small is refused" in v["summary"] and "0 requests" in v["summary"],

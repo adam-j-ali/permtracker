@@ -1859,6 +1859,18 @@ CHAT_MODELS_STALE_MS = 30 * HOUR_MS
 CHAT_BAD = ("gone", "refused", "unfit")
 
 
+# What a checked model does when it isn't one of the chat's own (check_chat_models.py's roles), said in its line: the
+# summary counted "2 of 2 chat models" over three lines, and nothing said which one wasn't in the chain.
+CHAT_ROLES = {"summary": "the conversation summarizer"}
+
+
+def chat_role_words(role) -> str:
+    """'' for a chat model, ' (the conversation summarizer, not a chat model)' for the others."""
+    if role in (None, "chat"):
+        return ""
+    return f" ({CHAT_ROLES.get(role, f'the {role} model')}, not a chat model)"
+
+
 def chat_models_verdict(doc: dict | None, now_ms: int) -> dict:
     """Judge perm_docs['chat_models']. A model gone or refused with others still
     answering is a warning: the chat works, the chain needs a swap. No chat model
@@ -1871,7 +1883,7 @@ def chat_models_verdict(doc: dict | None, now_ms: int) -> dict:
     chat = [m for m in models if m.get("role") == "chat"]
     ok = [m for m in chat if m.get("verdict") == "ok"]
     bad = [m for m in models if m.get("verdict") in CHAT_BAD]
-    lines = [f"{m.get('name')}: {m.get('verdict')}, {m.get('reason')}." for m in models]
+    lines = [f"{m.get('name')}{chat_role_words(m.get('role'))}: {m.get('verdict')}, {m.get('reason')}." for m in models]
     if age > CHAT_MODELS_STALE_MS:
         return section(key, title, "fail", f"The model check is {age // HOUR_MS} hours old: the daily job has "
                        "stopped (systemctl status permtracker-uscis@chat-models on the server).", lines)
