@@ -7,6 +7,7 @@ import { CASE_SEARCH_PATH, caseSearchHref } from "@/lib/caseSearchPlan";
 import { formatInt } from "@/lib/format";
 import { stateName } from "@/lib/usStateNames";
 import type { FacetRow } from "@/lib/db/entityDetail";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Search one employer's, one job's or one law firm's filings, case by case, from its own page.
@@ -52,11 +53,6 @@ const CHIPS = 6;
 const ASK_LABEL = { title: "Job title", q: "Employer" } as const;
 const ASK_HINT = { title: "e.g. Software engineer", q: "e.g. Amazon" } as const;
 
-/** A program's name on one line: a browser may break after any hyphen, and "CW-" alone ends a line. */
-function Whole({ children }: { children: string }) {
-  return <span className="whitespace-nowrap">{children}</span>;
-}
-
 export function FilingsSearch({ what, fixed, ask, jobs = [], employers = [], states = [], className }: FilingsSearchProps) {
   const pickJob = !fixed.occupation && jobs.some((j) => j.key);
   const chips = (pickJob ? jobs : employers)
@@ -86,8 +82,7 @@ export function FilingsSearch({ what, fixed, ask, jobs = [], employers = [], sta
         </h3>
       </div>{" "}
       <p className="mt-1 text-base text-soft">
-        Case by case, in every program: PERM, wage requests, <Whole>H-1B</Whole>, <Whole>H-2A</Whole>,{" "}
-        <Whole>H-2B</Whole> and <Whole>CW-1</Whole>.
+        <KeepWhole>Case by case, in every program: PERM, wage requests, H-1B, H-2A, H-2B and CW-1.</KeepWhole>
       </p>{" "}
       {chips.length ? (
         <div className="mt-4">

@@ -107,8 +107,8 @@ def main() -> int:
                           {"date": "2026-10-27", "name": "By the Sea", "to": "WITHDRAWN", "n": 19}]}
     e = [i["what"] for i in nw.newsworthy(nw.Inputs(employer_stages=stages), morning, now)]
     check("big employer moves today are news, small and old ones aren't", e == [
-        "DOL put 598 of Microsoft Corporation's PERM cases on hold on Oct 27, 2026.",
-        "DOL certified 61 of Upshift Work LLC's PERM cases in one day, Oct 27, 2026."], str(e))
+        "DOL put 598 PERM cases at Microsoft Corporation on hold on Oct 27, 2026.",
+        "DOL certified 61 PERM cases at Upshift Work LLC in one day, Oct 27, 2026."], str(e))
 
     # The day in the words is the day DOL worked. A batch the 4 AM pass recorded on a holiday morning is the
     # evening before's work: "certified ... Nov 11" on Veterans Day 2026 was wrong by a day.
@@ -119,9 +119,9 @@ def main() -> int:
             {"date": "2026-10-27", "worked": ["2026-10-26", "2026-10-27"], "name": "Two Day Co", "to": "DENIED", "n": 80}]}
     o = [i["what"] for i in nw.newsworthy(nw.Inputs(employer_stages=overnight), morning, now)]
     check("a move is worded with the day DOL worked, and a batch across two days says both", o == [
-        "DOL put 598 of Microsoft Corporation's PERM cases on hold on Oct 26, 2026.",
-        "DOL certified 61 of Upshift Work LLC's PERM cases in one day, Oct 26, 2026.",
-        "DOL denied 80 of Two Day Co's PERM cases over Oct 26, 2026 and Oct 27, 2026."], str(o))
+        "DOL put 598 PERM cases at Microsoft Corporation on hold on Oct 26, 2026.",
+        "DOL certified 61 PERM cases at Upshift Work LLC in one day, Oct 26, 2026.",
+        "DOL denied 80 PERM cases at Two Day Co over Oct 26, 2026 and Oct 27, 2026."], str(o))
 
     # A big filer's ordinary batch isn't news. One employer's 56 certified in a day was emailed on Nov 10 2026 and
     # was its third-biggest day of the 61 on record. A batch is news when it's the employer's biggest of that
@@ -139,7 +139,7 @@ def main() -> int:
     check("one that only ties its biggest isn't a record", r == [], str(r))
     r = said(batches(("2026-10-27", "BIG FILER, LLC", "big-filer", "CERTIFIED", 103), ("2026-10-26", *big, 76), ("2026-10-01", *big, 63)))
     check("its biggest batch is news, and says which one it passed", r == [
-        "DOL certified 103 of BIG FILER, LLC's PERM cases in one day, Oct 27, 2026. "
+        "DOL certified 103 PERM cases at BIG FILER, LLC in one day, Oct 27, 2026. "
         "That's its biggest batch in the last 60 days: the most before was 76, on Oct 26, 2026."], str(r))
     r = said(batches(("2026-10-27", *big, 60), ("2026-10-20", *big, 44)))
     check("an earlier batch under the email's own bar still counts as the one passed",
@@ -152,12 +152,12 @@ def main() -> int:
     r = said(batches(("2026-10-27", *big, 60), ("2026-10-20", "Big Filer LLC", "big-filer", "WITHDRAWN", 200),
                      ("2026-10-21", "Other Co", "other-co", "CERTIFIED", 300)))
     check("another outcome's batch, or another employer's, is no comparison", r == [
-        "DOL certified 60 of Big Filer LLC's PERM cases in one day, Oct 27, 2026."], str(r))
+        "DOL certified 60 PERM cases at Big Filer LLC in one day, Oct 27, 2026."], str(r))
     r = said(batches(("2026-10-27", "No Slug  Co", None, "CERTIFIED", 55), ("2026-10-20", "no slug co", None, "CERTIFIED", 90)))
     check("an employer with no page is matched by its name, whatever the case and spacing", r == [], str(r))
     r = said(batches(("2026-10-27", *big, 103), ("2026-10-26", *big, 76), ("2026-10-01", *big, 63)), ms(2026, 10, 26, 7, 0))
     check("two record days in one window are both news: a later, bigger day doesn't unmake the first",
-          [w.split(" of ")[0] for w in r] == ["DOL certified 103", "DOL certified 76"], str(r))
+          [w.split(" PERM cases")[0] for w in r] == ["DOL certified 103", "DOL certified 76"], str(r))
     import ingest_case_status_direct as ingest  # noqa: E402
     check("the 60 days in the words are the days the record keeps", nw.EMPLOYER_RECORD_DAYS == ingest.DECISION_MOVES_DAYS,
           f"{getattr(nw, 'EMPLOYER_RECORD_DAYS', None)} against {ingest.DECISION_MOVES_DAYS}")
@@ -179,17 +179,17 @@ def main() -> int:
     check("a batch no bigger than the employer's biggest day in DOL's file over the year isn't news", r == [], str(r))
     r = filed(jcg_sunday, {"jcg-foods-of-georgia-llc": {"date": "2026-07-18", "n": 40}})
     check("a batch bigger than that is, on its weekday, with the file's biggest day", r == [
-        "DOL certified 50 of JCG Foods of Georgia LLC's PERM cases in one day, Sunday, Nov 22, 2026. "
+        "DOL certified 50 PERM cases at JCG Foods of Georgia LLC in one day, Sunday, Nov 22, 2026. "
         "That's more than any day in DOL's own file over the last year: the most was 40, on Saturday, Jul 18, 2026."], str(r))
     r = filed(jcg_sunday, {"jcg-foods-of-georgia-llc": None})
     check("an employer with no decision in DOL's file over the year says so", r == [
-        "DOL certified 50 of JCG Foods of Georgia LLC's PERM cases in one day, Sunday, Nov 22, 2026. "
+        "DOL certified 50 PERM cases at JCG Foods of Georgia LLC in one day, Sunday, Nov 22, 2026. "
         "DOL's own file holds no decision for it over the last year."], str(r))
     thanksgiving = {"holdMoves": [{"date": "2026-11-26", "name": "Big Co", "dir": "on", "to": "APPLICATION ON HOLD",
                                    "n": 70}]}
     r = [i["what"] for i in nw.newsworthy(nw.Inputs(employer_stages=thanksgiving), ms(2026, 11, 26, 7), ms(2026, 11, 26, 21))]
     check("a federal holiday names its weekday too", r == [
-        "DOL put 70 of Big Co's PERM cases on hold on Thursday, Nov 26, 2026."], str(r))
+        "DOL put 70 PERM cases at Big Co on hold on Thursday, Nov 26, 2026."], str(r))
 
     asked: list[tuple] = []
 

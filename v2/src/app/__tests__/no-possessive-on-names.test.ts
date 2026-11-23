@@ -33,12 +33,9 @@ const NOT_A_NAME: Record<string, Record<string, string>> = {
   "src/lib/scorecard/verdict.ts": { "${name}": "a rival tracker's name, as it writes it" },
   "src/lib/wageLevelEstimate.ts": { "${o.jobZone}": "a Job Zone's number" },
   "convex/lib/bulletinPushWords.ts": { "${line}": "a visa bulletin line" },
+  "src/lib/dailyUpdate.ts": { "${weekday}": "a day of the week", "${next}": "a day of the week" },
   "convex/lib/ruleSteps.ts": { "${who}": "an agency" },
   "convex/lib/spamCheck.ts": { "${brand}": "a brand a spam message borrows" },
-  // The search card's heading: the change that renames FilingsSearch's `subject` prop to `what` rephrases these
-  // two lines on its own branch. Remove both entries once it has landed (the prop is gone then).
-  "src/app/(site)/(public)/perm-employers/[slug]/page.tsx": { "${row.name}": "the search card's subject, rephrased by the FilingsSearch change" },
-  "src/app/(site)/(public)/perm-attorneys/[slug]/page.tsx": { "${row.name}": "the search card's subject, rephrased by the FilingsSearch change" },
 };
 
 const FILES = [

@@ -44,11 +44,6 @@ function longDay(ms: number): string {
 export function FirmProfileBlock({
   profile,
 }: {
-  /**
-   * The firm's name as DOL prints it. Not drawn: a possessive on it read "SMITH LAW, P.C.'s", so the label
-   * says "the firm". Kept so the firm page's call stays as it is; drop it when that page next changes.
-   */
-  firmName: string;
   profile: PublishedFirmProfile | null;
 }) {
   if (!profile) return null;

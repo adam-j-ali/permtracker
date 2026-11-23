@@ -15,12 +15,12 @@ const PROFILE: PublishedFirmProfile = {
 
 describe("FirmProfileBlock", () => {
   it("renders nothing without a profile", () => {
-    const { container } = render(<FirmProfileBlock firmName="Smith Immigration PLLC" profile={null} />);
+    const { container } = render(<FirmProfileBlock profile={null} />);
     expect(container.innerHTML).toBe("");
   });
 
   it("says whose words these are and how the firm proved it", () => {
-    render(<FirmProfileBlock firmName="Smith Immigration PLLC" profile={PROFILE} />);
+    render(<FirmProfileBlock profile={PROFILE} />);
     expect(screen.getByRole("heading", { name: "From the firm" })).toBeTruthy();
     expect(screen.getByText("In the firm's own words")).toBeTruthy();
     expect(screen.getByText(/domain DOL's own filings list/)).toBeTruthy();
@@ -30,7 +30,7 @@ describe("FirmProfileBlock", () => {
   });
 
   it("marks the website as the firm's own link and opens it safely", () => {
-    render(<FirmProfileBlock firmName="Smith Immigration PLLC" profile={PROFILE} />);
+    render(<FirmProfileBlock profile={PROFILE} />);
     const link = screen.getByRole("link", { name: /smithlaw\.com/ });
     expect(link.getAttribute("href")).toBe("https://www.smithlaw.com/");
     const rel = link.getAttribute("rel") ?? "";
@@ -38,7 +38,7 @@ describe("FirmProfileBlock", () => {
   });
 
   it("says a person checked a hand-approved claim", () => {
-    render(<FirmProfileBlock firmName="Smith Immigration PLLC" profile={{ ...PROFILE, verifiedBy: "admin" }} />);
+    render(<FirmProfileBlock profile={{ ...PROFILE, verifiedBy: "admin" }} />);
     expect(screen.getByText(/checked by hand/)).toBeTruthy();
   });
 });

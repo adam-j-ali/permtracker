@@ -456,9 +456,9 @@ def _employer_items(inputs: Inputs, since_ms: int) -> list[dict]:
         if (m.get("date") or "") >= floor and int(m.get("n") or 0) >= NEWS_EMPLOYER_MIN:
             n = int(m["n"])
             when, _one = _worked_words(m)
-            what = (f"DOL put {n:,} of {m['name']}'s PERM cases on hold on {when}."
+            what = (f"DOL put {n:,} PERM cases at {m['name']} on hold on {when}."
                     if m.get("dir") == "on" else
-                    f"DOL took {n:,} of {m['name']}'s PERM cases off hold on {when}, to {m.get('to') or 'another status'}.")
+                    f"DOL took {n:,} PERM cases at {m['name']} off hold on {when}, to {m.get('to') or 'another status'}.")
             out.append({"kind": "employer", "when": m["date"], "what": what,
                         "source": "DOL's case-status search, read by this site's sweep"})
     batches = doc.get("decisionMoves") or []
@@ -479,8 +479,8 @@ def _employer_items(inputs: Inputs, since_ms: int) -> list[dict]:
             act = {"CERTIFIED": "DOL certified", "DENIED": "DOL denied",
                    "WITHDRAWN": "The employer withdrew"}.get(m.get("to") or "", f"DOL moved to {m.get('to')}")
             when, one = _worked_words(m)
-            what = (f"{act} {n:,} of {m['name']}'s PERM cases in one day, {when}." if one else
-                    f"{act} {n:,} of {m['name']}'s PERM cases over {when}.")
+            what = (f"{act} {n:,} PERM cases at {m['name']} in one day, {when}." if one else
+                    f"{act} {n:,} PERM cases at {m['name']} over {when}.")
             if in_file and file_day:
                 what += (f" That's more than any day in DOL's own file over the last year: the most was "
                          f"{int(file_day['n']):,}, on {work_day_label(file_day.get('date'))}.")
