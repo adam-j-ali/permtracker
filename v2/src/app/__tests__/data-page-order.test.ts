@@ -31,6 +31,22 @@ describe.each([
   });
 });
 
+describe("/visa-bulletin", () => {
+  const page = pageOf("src/app/(site)/(public)/visa-bulletin/page.tsx");
+
+  it("keeps what the bulletin did and when the next comes out open, and folds the year's limits", () => {
+    const did = page.indexOf("What the {monthLabel(last.bulletinMonth)} bulletin did");
+    const release = page.indexOf('id="bulletin-release"');
+    const fold = page.indexOf("<ChapterFold\n          summary={`The spillover for fiscal year ${spill.fiscalYear}`}");
+    for (const [name, at] of Object.entries({ did, release, fold })) expect(at, name).toBeGreaterThan(-1);
+    expect(did).toBeLessThan(release);
+    expect(release).toBeLessThan(fold);
+    // The spillover's table sits inside the fold.
+    expect(page.indexOf('label="The spillover by category"')).toBeGreaterThan(fold);
+    expect(page.indexOf('label="The spillover by category"')).toBeLessThan(page.indexOf("</ChapterFold>"));
+  });
+});
+
 describe("a consulate's page", () => {
   const src = read("src/app/(site)/(public)/consular-posts/[post]/page.tsx");
 
