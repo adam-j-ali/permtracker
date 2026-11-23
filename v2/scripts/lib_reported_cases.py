@@ -77,7 +77,7 @@ def progress(field: str, v: str) -> int:
     """How far along a decision is: a later one replaces an earlier one. Each field has its own words."""
     return (CONSULAR_PROGRESS if field == "consular_outcome" else DECISION_PROGRESS).get(v, 2)
 # Our own reviewed sources first, then the sheets, then the trackers and chats. The first member founds a case's id.
-# Facebook groups' posts are typed in by hand from screenshots, so they rank after Reddit and before Telegram's parsed
+# Facebook groups' posts are typed in by hand, so they rank after Reddit and before Telegram's parsed
 # posts; never as a sheet, which any name not listed here is. WhatsApp's exported chats are parsed like Telegram's,
 # and rank just after them.
 SOURCE_RANK = {"timeline": 0, "consular-report": 1, "app": 2, "visastats": 30, "reddit": 40, "facebook": 45,

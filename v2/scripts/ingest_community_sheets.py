@@ -3,7 +3,7 @@
 
 WHY: people waiting on an I-485 at one USCIS field office keep a shared Google Sheet of their own dates (receipt,
 biometrics, the move to the office, approval). The "San Fernando Filers" sheet held 131 cases on Nov 19 2026, against
-a handful of timelines shared with this site for every office together. The owner asked for all of it (Nov 19 2026).
+a handful of timelines shared with this site for every office together, so every such sheet is read.
 
 WHAT GOES IN, AND WHAT NEVER DOES. Every case's dates, category, country, current visa and the yes-or-no columns. The
 two columns that point to a person never leave the sheet: the Reddit username and the receipt-number prefix. Rows

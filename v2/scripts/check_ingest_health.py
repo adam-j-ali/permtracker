@@ -1003,8 +1003,8 @@ def check_browser_timers(db) -> int:
         if age > days:
             print(f"browser timer     : {name} last checked in {age:.1f} days ago  STOPPED")
             print(f"::warning::The browser timer {name} ({label}) last checked in {age:.0f} days ago, past its "
-                  f"{days}-day allowance: the Claude Code session that runs it has probably ended. Reopen it and "
-                  "recreate the timer from ~/.claude/timers/registry.py.")
+                  f"{days}-day allowance: the browser job that runs it has probably ended. Start it again where "
+                  "the browser jobs run.")
         elif note.startswith(BROWSER_FAILED):
             print(f"browser timer     : {name} ran but couldn't read its page  READ FAILED")
             print(f"::warning::The browser timer {name} ({label}) ran {age * 24:.0f} hours ago but couldn't read "
@@ -1245,8 +1245,8 @@ def main() -> int:
             continue
         d = parse_as_of(str(as_of))
         if d is not None and max_age is None:
-            # No maximum age (lib_db.stamp_freshness): a source typed in by hand loads only when the owner shares
-            # something, so no stretch without a load is an alarm. A NULL beside an unreadable date stays unreadable.
+            # No maximum age (lib_db.stamp_freshness): a source typed in by hand loads only when there's something
+            # to add, so no stretch without a load is an alarm. A NULL beside an unreadable date stays unreadable.
             print(f"{dataset:22s} {str(as_of):12s} {(today - d).days:>5}d {'none':>7s}  ok (no maximum age: loaded by hand)")
             continue
         if d is None or max_age is None:

@@ -181,7 +181,7 @@ export const DATASET_COVERAGE: Readonly<Record<string, string>> = {
   "community-posts-telegram":
     "People's own case dates from public Telegram groups about PERM and green cards, read every hour: only the dates, categories and offices, never a name, a username or a message's words. Read by a parser and a small model, every date checked against what the post itself writes. Unchecked, and only as complete as what people posted.",
   "community-posts-whatsapp":
-    "People's own case dates from WhatsApp groups about green cards, from chats exported by hand with WhatsApp's own Export Chat button and read on one computer: only the dates, categories and offices leave it, never a name, a phone number or a message's words. Read by the same parser and small model as the Telegram posts. Unchecked, and only as complete as the chats exported.",
+    "People's own case dates from WhatsApp groups about green cards, from chats exported with WhatsApp's own Export Chat button: only the dates, categories and offices are kept, never a name, a phone number or a message's words. Read by the same parser and small model as the Telegram posts. Unchecked, and only as complete as the chats exported.",
   "community-posts-facebook":
     "People's own case dates from public Facebook groups about H-1B visas and green cards, typed in by hand from posts shared with us: only the dates, categories, offices and country, never a name, a username, a link or a post's words. No script reads Facebook. Unchecked, and only as complete as the posts shared.",
   "warn-notices-ak": "Alaska WARN notices from the Department of Labor's list, since 2019.",

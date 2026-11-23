@@ -195,8 +195,8 @@ case "$job" in
       rc=1; fail "$s" "the $kind copy from a browser ($f) was refused"
     fi ;;
   # The U.S. embassies' Visas feeds copied out of a person's browser (Nov 4 2026): every usembassy.gov site
-  # answers scripts with CloudFront's 403, so the session timer embassy-read reads the 20 feeds in
-  # scripts/data/embassy_feeds.json in Chrome and hands them over as one JSON copy. The reader keeps the
+  # answers scripts with CloudFront's 403, so a browser reads the 20 feeds in scripts/data/embassy_feeds.json
+  # and hands them over as one JSON copy. The reader keeps the
   # consular notices, writes them to the policy feed and asks nginx to rebuild /policy-changes and the
   # consulate pages.
   #   sudo -u permtracker permtracker-uscis embassy-notices /tmp/embassies.json

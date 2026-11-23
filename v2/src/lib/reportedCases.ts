@@ -3,8 +3,8 @@
  * (scripts/build_reported_cases.py and scripts/lib_reported_cases.py, table `reported_cases`), and the figures drawn
  * from them.
  *
- * A case names every source that holds it: a community sheet, Reddit, Telegram, Facebook (posts typed in by hand from
- * screenshots shared with us), VisaStats' tracker, or a timeline shared on this site. Two records become one case only when they agree on three dates and contradict on nothing; a
+ * A case names every source that holds it: a community sheet, Reddit, Telegram, WhatsApp, Facebook (posts typed in by
+ * hand), VisaStats' tracker, or a timeline shared on this site. Two records become one case only when they agree on three dates and contradict on nothing; a
  * case that only might repeat another says so (`maybeRepeats`), and one that adds nothing to its repeat never reaches
  * a page. Usernames, names and receipt numbers never reach this site. Everything but a reviewed timeline is unchecked,
  * so a page says where each case came from.

@@ -2,10 +2,10 @@
 """Load VisaStats' community tracker (trackers.visastats.org): self-reported EB-2 NIW, EB-1A and O-1 I-140 cases, and
 its RFE officer lookup.
 
-WHY: the owner asked for every community record we can use (Nov 19 2026). The tracker's own policy says "All records
+WHY: every community record the site can use counts toward its figures. The tracker's own policy says "All records
 are public and may be copied or stored by others". Its robots.txt closes /api/, so nothing here asks the site for
-anything: the rows are read in a browser as a visitor sees them, page by page, and copied out as a bundle (the
-"visastats-read" session timer), and this script loads that bundle.
+anything: the rows are read in a browser as a visitor sees them, page by page, and copied out as a bundle, and this
+script loads that bundle.
 
 WHAT GOES IN. Every column but the author's alias, which the browser read leaves out. The free-text columns (the case
 basis, the notes, the RFE details, comments) are stored and never shown: free text can name a person.

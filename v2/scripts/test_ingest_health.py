@@ -937,7 +937,7 @@ def check_freshness_rows_read_plainly() -> None:
 
 
 def check_no_maximum_age_is_never_stale() -> None:
-    """A source typed in by hand (Facebook groups' posts, Nov 20 2026) loads only when the owner shares posts, so its
+    """A source typed in by hand (Facebook groups' posts, Nov 20 2026) loads only when there are posts to add, so its
     row has no maximum age (NULL, lib_db.stamp_freshness): months without a load are no alarm. A NULL beside a date
     that can't be read is still unreadable."""
     import contextlib
@@ -953,7 +953,7 @@ def check_no_maximum_age_is_never_stale() -> None:
                     {"type": "text", "value": ds}, {"type": "text", "value": as_of},
                     {"type": "null"} if budget is None else {"type": "integer", "value": str(budget)},
                     {"type": "text", "value": "https://www.facebook.com/groups"},
-                    {"type": "text", "value": "by hand, when the owner shares posts"},
+                    {"type": "text", "value": "by hand"},
                     {"type": "integer", "value": a_year_ago_ms}] for ds, as_of, budget in rows]}}}
 
         saved = {name: getattr(health, name) for name in CHECKS + ("Database", "check_cap_streak",

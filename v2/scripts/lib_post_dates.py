@@ -359,7 +359,7 @@ DATE_KEYS = ("pwd_filed", "pwd_issued", "perm_filed", "perm_audit", "perm_decide
 
 
 def sound(out: dict, posted: dt.date, own: bool) -> bool:
-    """The checks every reading of a post must pass, however it was read (this parser, or a model).
+    """The checks every reading of a post must pass, however it was read.
 
     A date, and either a second date or a decision the poster gives as their own; no date before 2000 or after the post
     (an appointment may be ahead); a lone decision day within two months of the post; the steps in order."""
