@@ -48,6 +48,10 @@ describe("DeadlineHeroWidget", () => {
       expect(screen.getByText(/^2 deadlines are late/)).toBeInTheDocument();
       expect(screen.getByText(/Next: .*in 2 days/)).toBeInTheDocument();
     });
+    it("flies a red strip across the top only while a deadline is late", () => {
+      const { container } = renderWithProviders(<DeadlineHeroWidget />);
+      expect(container.querySelector('[data-testid="deadlines-late-strip"]')).not.toBeNull();
+    });
   });
 
   describe("empty state", () => {
@@ -78,6 +82,27 @@ describe("DeadlineHeroWidget", () => {
       renderWithProviders(<DeadlineHeroWidget />);
       expect(screen.getByText(/^Nothing is due on your 44 open cases/)).toBeInTheDocument();
       expect(screen.queryByText(/add a case/i)).not.toBeInTheDocument();
+    });
+
+    it("keeps the four groups on the board when cases have nothing due, and no red strip", () => {
+      answer(summaryWith(44));
+      const { container } = renderWithProviders(<DeadlineHeroWidget />);
+      for (const group of ["Overdue", "This week", "This month", "Later"]) {
+        expect(screen.getByRole("heading", { level: 3, name: new RegExp(`^${group}`) })).toBeInTheDocument();
+      }
+      expect(container.querySelector('[data-testid="deadlines-late-strip"]')).toBeNull();
+    });
+
+    it("shows an account with no cases the four deadlines the app works out, and the way to add a case", () => {
+      answer(summaryWith(0));
+      renderWithProviders(<DeadlineHeroWidget />);
+      const kinds = screen.getByRole("list", { name: "Deadlines worked out for each case" });
+      expect(kinds.querySelectorAll("li")).toHaveLength(4);
+      expect(kinds).toHaveTextContent(/wage determination/i);
+      expect(kinds).toHaveTextContent(/recruitment/i);
+      expect(kinds).toHaveTextContent(/ETA-9089/);
+      expect(kinds).toHaveTextContent(/I-140/);
+      expect(screen.getByRole("link", { name: /add case/i })).toHaveAttribute("href", "/cases/new");
     });
 
     it("says nothing about cases while the summary loads", () => {

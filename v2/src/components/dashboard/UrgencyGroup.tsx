@@ -14,6 +14,8 @@ interface UrgencyGroupProps {
   urgency: UrgencyType;
   /** Maximum items to show before "Show N more" (default: 5) */
   maxItems?: number;
+  /** Keep an empty group on phones too: when no group has anything, the four zeros are the picture. */
+  keepWhenEmpty?: boolean;
 }
 
 /**
@@ -29,13 +31,13 @@ const URGENCY_STYLE: Record<UrgencyType, { band: string; wash: string; count: st
 };
 
 /** A group of deadlines (overdue, this week, this month, later) as one list. */
-export default function UrgencyGroup({ title, items, urgency, maxItems = 5 }: UrgencyGroupProps) {
+export default function UrgencyGroup({ title, items, urgency, maxItems = 5, keepWhenEmpty = false }: UrgencyGroupProps) {
   const [showAll, setShowAll] = useState(false);
   const shown = showAll ? items : items.slice(0, maxItems);
   const hidden = items.length - maxItems;
 
   return (
-    <section aria-label={title} className={cn("min-w-0", URGENCY_STYLE[urgency].wash, items.length === 0 && "max-md:hidden")}>
+    <section aria-label={title} className={cn("min-w-0", URGENCY_STYLE[urgency].wash, items.length === 0 && !keepWhenEmpty && "max-md:hidden")}>
       <div aria-hidden="true" className={cn("h-1.5", URGENCY_STYLE[urgency].band)} />
       <h3 className="flex items-baseline justify-between gap-2 px-3 pb-2 pt-3 font-heading text-base font-bold">
         {title}{" "}
