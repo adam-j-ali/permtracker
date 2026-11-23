@@ -17,7 +17,7 @@ import { Fragment } from "react";
 import { HourglassMediumIcon, SealCheckIcon, TrayIcon, UsersIcon } from "@phosphor-icons/react/ssr";
 
 import { ReportedI140 } from "@/components/community/ReportedI140";
-import { BarRows, type BarRow } from "@/components/data/BarRows";
+import { BarRows, QuarterlyEmpty, type BarRow } from "@/components/data/BarRows";
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { FinePrint } from "@/components/data/FinePrint";
 import { MonthlyDecisionBars } from "@/components/data/MonthlyDecisionBars";
@@ -336,15 +336,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
           </p>
         ) : null}
       </header>{" "}
-      {rows.length === 0 ? (
-        <p className="mt-8 max-w-2xl text-base text-soft">
-          USCIS&apos;s quarterly figures for the {page.form} aren&apos;t loaded yet. They come from{" "}
-          <a href="https://www.uscis.gov/tools/reports-and-studies/immigration-and-citizenship-data" target="_blank" rel="noopener noreferrer" className="link">
-            USCIS&apos;s data page
-          </a>
-          .
-        </p>
-      ) : null}{" "}
+      {rows.length === 0 ? <QuarterlyEmpty file="quarterly_all_forms" /> : null}{" "}
       {rows.length === 0 ? (
         reported
       ) : (
