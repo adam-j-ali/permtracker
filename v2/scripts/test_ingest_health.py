@@ -642,6 +642,7 @@ def main() -> int:
     check_main_combines_every_check()
     check_freshness_rows_read_plainly()
     check_no_maximum_age_is_never_stale()
+    check_layoff_lists_wait_on_employers()
     check_wage_views_rules()
     check_lca_numbers_rules()
     check_lca_years_rules()
@@ -747,6 +748,44 @@ def check_browser_timer_heartbeats() -> None:
     rc, out = say([("browser-timer:gsc-round", "checked", 50), ("browser-timer:gsc-round", "checked", 2)]
                   + [r for r in fresh if "gsc-round" not in r[0]])
     check("browser timers: the newest heartbeat decides", "::warning" not in out, out)
+
+    # A timer before its first run isn't missing (Nov 23 2026: visastats-read read "never checked in" the morning
+    # its first run was due, at 12:23 PM).
+    from zoneinfo import ZoneInfo
+    today = datetime.datetime.fromtimestamp(health.NOW_MS / 1000, ZoneInfo("America/New_York")).date()
+    check("browser timers: visastats-read is first due on Nov 23 2026",
+          health.BROWSER_TIMERS["visastats-read"][2] == "2026-11-23", str(health.BROWSER_TIMERS["visastats-read"]))
+    label, days, first_due = health.BROWSER_TIMERS["visastats-read"]
+    others = [r for r in fresh if "visastats-read" not in r[0]]
+    try:
+        health.BROWSER_TIMERS["visastats-read"] = (label, days, today.isoformat())
+        rc, out = say(others)
+        check("browser timers: one not yet past its first due day and allowance reads ok, naming the day",
+              rc == 0 and "::warning" not in out and f"first due {today.isoformat()}" in out, out)
+        health.BROWSER_TIMERS["visastats-read"] = (label, days, (today - datetime.timedelta(days=days + 1)).isoformat())
+        rc, out = say(others)
+        check("browser timers: one past its first due day and allowance that never checked in warns",
+              "The browser timer visastats-read" in out and "never checked in" in out, out)
+    finally:
+        health.BROWSER_TIMERS["visastats-read"] = (label, days, first_due)
+
+    # A round that holds itself on purpose says "held: <reason>": OK within its allowance, a warning after it.
+    gsc = [r for r in fresh if "gsc-round" not in r[0]]
+    rc, out = say([("browser-timer:gsc-round", "held: the owner paused the round", 3),
+                   ("browser-timer:gsc-round", "held: the owner paused the round", 30)] + gsc)
+    check("browser timers: a round held within its allowance reads ok and says why",
+          rc == 0 and "::warning" not in out and "the owner paused the round" in out, out)
+    rc, out = say([("browser-timer:gsc-round", "held: the owner paused the round", 3),
+                   ("browser-timer:gsc-round", "held: the owner paused the round", 30),
+                   ("browser-timer:gsc-round", "held: the owner paused the round", 60)] + gsc)
+    check("browser timers: a round held past its allowance warns, with the reason",
+          rc == 0 and "::warning::The browser timer gsc-round" in out and "held for" in out
+          and "the owner paused the round" in out, out)
+    rc, out = say([("browser-timer:gsc-round", "held: the owner paused the round", 3),
+                   ("browser-timer:gsc-round", "loaded 11 page requests", 30),
+                   ("browser-timer:gsc-round", "held: the owner paused the round", 60)] + gsc)
+    check("browser timers: a hold is counted from the heartbeat after the last round that ran",
+          "::warning" not in out, out)
     here = pathlib.Path(__file__).resolve().parent
     runner = (here / "oracle" / "bin" / "permtracker-uscis").read_text()
     for name in health.BROWSER_TIMERS:
@@ -934,6 +973,58 @@ def check_freshness_rows_read_plainly() -> None:
     check("freshness: a run with only source waits is green", rc == 0, str(rc))
     check("freshness: a quarterly row 140 days old is within the quarterly file's budget, whatever it was stamped",
           "::warning::entities" not in out and "STALE" not in next((l for l in out.splitlines() if l.startswith("entities ")), ""), out)
+
+
+def check_layoff_lists_wait_on_employers() -> None:
+    """A state's layoff-notice list is employers' notices, not an agency's publication: a month with no new notice
+    is ordinary, so it's one plain line in the table and never a warning, while the list is read on time (Nov 23
+    2026: these filled the report's WATCH block). A read that stopped still fails."""
+    import contextlib
+    import io
+
+    today = datetime.date.today()
+    quiet_since = (today - datetime.timedelta(days=60)).isoformat()
+    recent = str(int(NOW) - 86_400_000)
+    stopped = str(int(NOW) - 70 * 86_400_000)
+
+    def table(rows):
+        class Rows:
+            def execute(self, sql, args=None):
+                def row(ds, as_of, budget, fetched):
+                    return [{"type": "text", "value": ds}, {"type": "text", "value": as_of},
+                            {"type": "integer", "value": str(budget)}, {"type": "text", "value": "a state"},
+                            {"type": "text", "value": "Weekly"}, {"type": "integer", "value": fetched}]
+                return {"response": {"result": {"rows": [row(*r) for r in rows]}}}
+
+        saved = {name: getattr(health, name) for name in CHECKS + ("Database", "check_cap_streak",
+                                                                  "check_unclassified_statuses", "check_warn_states",
+                                                                  "check_hand_read_figures", "check_consular_facts")}
+        try:
+            health.Database = Rows
+            for name in ("check_cap_streak", "check_unclassified_statuses", "check_warn_states",
+                         "check_hand_read_figures", "check_consular_facts"):
+                setattr(health, name, lambda *a: 0)
+            for name in CHECKS:
+                setattr(health, name, lambda db: 0)
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                rc = health.main()
+        finally:
+            for name, fn in saved.items():
+                setattr(health, name, fn)
+        return rc, buf.getvalue()
+
+    rc, out = table([("warn-notices-al", quiet_since, 30, recent)])
+    line = next((l for l in out.splitlines() if l.startswith("warn-notices-al ")), "")
+    check("layoff lists: a quiet state's list says when its newest notice is from and when the list was read",
+          f"no new notice since {quiet_since}" in line and "list read" in line and line.endswith("ok"), out)
+    check("layoff lists: and it's never a warning or a source wait", "::warning::warn-notices" not in out
+          and dm.SOURCE_WAIT not in out and rc == 0, out)
+    kept = [l for l in dm.health_lines(out) if "warn-notices" in l]
+    check("layoff lists: the morning report keeps nothing of it", kept == [], str(kept))
+    rc, out = table([("warn-notices-tx", (today - datetime.timedelta(days=100)).isoformat(), 30, stopped)])
+    check("layoff lists: a list our reader stopped reading still fails", rc == 1 and "warn-notices-tx (has not RUN)" in out,
+          out)
 
 
 def check_no_maximum_age_is_never_stale() -> None:

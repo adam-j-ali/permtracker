@@ -290,6 +290,27 @@ def self_stamped(as_of: datetime.date, fetched_at_ms) -> bool:
     }
 
 
+# A state's layoff-notice list (ingest_warn.py: `warn-notices`, one `warn-notices-<st>` row a state) is dated by its
+# newest notice, which employers file when they lay people off: no agency republishes it, and a month without one is
+# ordinary. While the list is read on time it's one plain line in the table, never a warning (Nov 23 2026: these
+# filled the morning report's WATCH block); a read that stopped still fails as "has not RUN".
+LAYOFF_LISTS = "warn-notices"
+
+
+def is_layoff_list(dataset: str) -> bool:
+    return dataset == LAYOFF_LISTS or dataset.startswith(LAYOFF_LISTS + "-")
+
+
+def et_clock(ms) -> str:
+    """Epoch milliseconds as 'Nov 22, 3:10 PM EST', or '?' when unreadable."""
+    from zoneinfo import ZoneInfo  # noqa: PLC0415
+    try:
+        t = datetime.datetime.fromtimestamp(int(ms) / 1000, ZoneInfo("America/New_York"))
+    except (TypeError, ValueError, OverflowError, OSError):
+        return "?"
+    return t.strftime("%b %-d, %-I:%M %p %Z")
+
+
 def freshness_verdict(stale):
     """Split stale rows into (failing, watching).
 
@@ -962,34 +983,45 @@ def check_policy_sources(db) -> int:
 # loads when its source moved leaves no trace on a quiet day. So every firing records a heartbeat, due or not,
 # through `permtracker-uscis browser-check <name> <note>` (script `browser-timer:<name>`), and a job that
 # stopped shows here within days instead of when its dataset finally goes stale. Days allowed: the job's own
-# interval plus a day. Keep this in step with the browser jobs' own schedules.
-BROWSER_TIMERS = {
-    "bulletin-read": ("the visa bulletin read", 2),
-    "iv-tool-read": ("State's IV scheduling table", 2),
-    "state-pages-read": ("NVC timeframes and visa wait times", 2),
-    "uscis-times": ("USCIS's processing times", 8),
-    "gsc-round": ("the Search Console round", 2),
-    "embassy-read": ("the embassies' visa notices", 2),
-    "visastats-read": ("VisaStats' community tracker", 8),
+# interval plus a day. Keep this in step with the browser jobs' own schedules. The third value is the Eastern day a
+# new job first runs (None once it has): before that day plus its allowance, never having checked in is expected
+# (Nov 23 2026: visastats-read read "never checked in" the morning its first run was due).
+BROWSER_TIMERS: dict[str, tuple[str, int, str | None]] = {
+    "bulletin-read": ("the visa bulletin read", 2, None),
+    "iv-tool-read": ("State's IV scheduling table", 2, None),
+    "state-pages-read": ("NVC timeframes and visa wait times", 2, None),
+    "uscis-times": ("USCIS's processing times", 8, None),
+    "gsc-round": ("the Search Console round", 2, None),
+    "embassy-read": ("the embassies' visa notices", 2, None),
+    "visastats-read": ("VisaStats' community tracker", 8, "2026-11-23"),
 }
 # A heartbeat whose note starts this way ran but couldn't read its page (Chrome closed, a challenge it
 # couldn't clear by itself, the page moved).
 BROWSER_FAILED = "could not read"
+# A heartbeat whose note starts this way held itself on purpose ("held: <reason>"): OK while the hold is inside the
+# timer's allowance, a warning once it's held longer.
+BROWSER_HELD = "held:"
 
 
 def check_browser_timers(db) -> int:
-    """Warn when a browser timer hasn't checked in within its interval, or couldn't read its page.
+    """Warn when a browser timer hasn't checked in within its interval, couldn't read its page, or has held itself
+    for longer than its interval.
 
     Never a failure: a browser job stops whenever the computer running it sleeps, and nothing on the server is
     wrong when it does. The warning says what to do."""
-    for name, (label, days) in BROWSER_TIMERS.items():
+    from zoneinfo import ZoneInfo  # noqa: PLC0415
+    today = datetime.datetime.fromtimestamp(NOW_MS / 1000, ZoneInfo("America/New_York")).date()
+    for name, (label, days, first_due) in BROWSER_TIMERS.items():
         try:
             got = query_rows(db, "SELECT finished_at, note FROM ingest_runs WHERE script = ? "
-                             "ORDER BY finished_at DESC LIMIT 1", [f"browser-timer:{name}"])
+                             "ORDER BY finished_at DESC LIMIT 60", [f"browser-timer:{name}"])
         except RuntimeError as exc:
             print(f"browser timer     : {name} unreadable ({str(exc)[:100]})")
             continue
         if not got:
+            if first_due and today <= datetime.date.fromisoformat(first_due) + datetime.timedelta(days=days):
+                print(f"browser timer     : {name} hasn't run yet; first due {first_due}  ok")
+                continue
             print(f"browser timer     : {name} has never checked in  NEVER")
             print(f"::warning::The browser timer {name} ({label}) has never checked in. It runs in a browser, "
                   "off this server: start it where the browser jobs run.")
@@ -1009,6 +1041,24 @@ def check_browser_timers(db) -> int:
             print(f"browser timer     : {name} ran but couldn't read its page  READ FAILED")
             print(f"::warning::The browser timer {name} ({label}) ran {age * 24:.0f} hours ago but couldn't read "
                   f"its page: {note[:200]}")
+        elif note.startswith(BROWSER_HELD):
+            reason = note[len(BROWSER_HELD):].strip()[:200] or "no reason given"
+            # The hold runs from the oldest of the unbroken held heartbeats ending at the newest.
+            since = int(got[0][0])
+            for finished_at, n in got:
+                if not str(n or "").startswith(BROWSER_HELD):
+                    break
+                try:
+                    since = int(finished_at)
+                except (TypeError, ValueError):
+                    break
+            held = (NOW_MS - since) / 86_400_000
+            if held > days:
+                print(f"browser timer     : {name} held for {held:.1f} days  HELD TOO LONG")
+                print(f"::warning::The browser timer {name} ({label}) has held itself for {held:.0f} days, past its "
+                      f"{days}-day allowance: {reason}")
+            else:
+                print(f"browser timer     : {name} held {held * 24:.0f} hours, inside its allowance: {reason}  ok")
         else:
             print(f"browser timer     : {name} checked in {age * 24:.0f} hours ago  ok")
     return 0
@@ -1283,6 +1333,10 @@ def main() -> int:
         # A source that hasn't republished while our ingest reads it on time is the agency's wait, not a stale
         # ingest: freshness_verdict below decides it the same way, and its warning line says so.
         not_run = any(s[0] == dataset + " (has not RUN)" for s in stale)
+        if data_stale and not not_run and is_layoff_list(dataset):
+            stale.pop()
+            print(f"{dataset:22s} no new notice since {as_of} (list read {et_clock(fetched_at)})  ok")
+            continue
         waiting = data_stale and not not_run and not freshness_verdict([stale[-1]])[0]
         print(f"{dataset:22s} {str(as_of):12s} {age:>5}d {budget:>6}d  "
               f"{'waiting on the source' if waiting else 'STALE' if bad else 'ok'}")
