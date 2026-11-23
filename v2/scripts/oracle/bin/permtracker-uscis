@@ -1,5 +1,5 @@
 #!/bin/bash
-# permtracker-uscis <i485|i140|quarterly|h1b-hub|sevp|seasonal-jobs|reference|visa-issuances|backtests|h2b-groups|policy-watch|flag-notice|chat-models|firm-programs|whd|osha|posted-times|sam|taa|ppp|warn-archive|bulletin-tables <file> <YYYY-MM>|iv-tool <file|archive>|state-page <nvc|wait-times|news> <file>|state-page issuances <file> <YYYY-MM> <fsc|post>|state-page niv <file> <YYYY-MM>|state-page refusals <file> [<YYYY>]|niv-archive|embassy-notices <file>|uscis-sandbox|browser-check <name> [note]>: the USCIS fetches that ran on the
+# permtracker-uscis <i485|i140|quarterly|community-sheets|quarter-report|h1b-hub|sevp|seasonal-jobs|reference|visa-issuances|backtests|h2b-groups|policy-watch|flag-notice|chat-models|firm-programs|whd|osha|posted-times|sam|taa|ppp|warn-archive|bulletin-tables <file> <YYYY-MM>|iv-tool <file|archive>|state-page <nvc|wait-times|news> <file>|state-page issuances <file> <YYYY-MM> <fsc|post>|state-page niv <file> <YYYY-MM>|state-page refusals <file> [<YYYY>]|niv-archive|embassy-notices <file>|uscis-sandbox|browser-check <name> [note]>: the USCIS fetches that ran on the
 # owner's Mac until Sep 28 2026, moved here because www.uscis.gov answers this server.
 # Same scripts, same failure recording.
 set -uo pipefail
@@ -307,6 +307,23 @@ case "$job" in
   # listing's 18 pages (about 3 minutes) plus each new file.
   quarterly) python3 scripts/ingest_uscis_quarterly.py || { rc=1; fail ingest_uscis_quarterly.py "ingest exited non-zero"; }
     python3 scripts/ingest_uscis_rfe.py || { rc=1; fail ingest_uscis_rfe.py "ingest exited non-zero"; } ;;
+  # The public community sheets people keep their own green card cases in, hourly (moved here from GitHub's runners on
+  # Nov 23 2026, so their log stays on this server). Each sheet's parse settings are private, beside this job's other
+  # settings; the public list holds what the site shows. A refused sheet keeps its stored copy and is named.
+  community-sheets) site_refresh_env
+    timeout 16m python3 scripts/ingest_community_sheets.py --parse /srv/permtracker/app/env/community-sheets-parse.json \
+      || { rc=1; fail ingest_community_sheets.py "community sheets failed"; } ;;
+  # The newest quarter's report (scripts/build_quarter_report.py), rebuilt by hand when DOL's wage or LCA file lands
+  # after its PERM file, then the disclosure pages and the posts refreshed. Its employer scan reads a whole index, so
+  # it runs in the night window.
+  quarter-report) site_refresh_env
+    if timeout 30m nice -n 10 python3 scripts/build_quarter_report.py; then
+      [ -n "$REVALIDATE_SECRET" ] && curl -s -m 60 -o /dev/null -w "refresh %{http_code}\n" -X POST \
+        -H "Host: permtracker.app" -H "x-revalidate-secret: $REVALIDATE_SECRET" \
+        http://127.0.0.1:8081/api/revalidate-disclosure || true
+    else
+      rc=1; fail build_quarter_report.py "the quarter's report wasn't rebuilt"
+    fi ;;
   # USCIS's H-1B Employer Data Hub (a Tableau export, 75 to 110 MB a year).
   # The ingest records its own ok row, or its refusal with the reason; this adds the timer's row on any non-zero exit.
   # Then the busiest H-1B employers by year and state, which read the hub's rows.

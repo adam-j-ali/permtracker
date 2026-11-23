@@ -32,6 +32,11 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 CONFIG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "community_sheets.json")
+# Each sheet's parse settings (its tabs, header names, required fields, row floor and defaults) are private: the file
+# --parse or COMMUNITY_SHEETS_PARSE names ({"sheets": {key: {...}}}), on the server beside the job's other settings.
+# The public list above holds what the site shows: each sheet's name, office, link and where it was shared.
+PARSE_ENV = "COMMUNITY_SHEETS_PARSE"
+PARSE_FIELDS = ("gid", "tabs", "headers", "required", "min_rows", "category", "post")
 TABLE = "community_case_reports"
 SCRIPT = "ingest_community_sheets.py"
 # A stored copy is replaced only by a sheet holding at least this share of it: vandalism or a bad export never wins.
@@ -434,9 +439,22 @@ def list_tabs(sheet_id: str) -> list[tuple[str, str]]:
     return tabs_in(fetch(f"https://docs.google.com/spreadsheets/d/{sheet_id}/htmlview").decode("utf-8", "replace"))
 
 
-def load_config(path: str = CONFIG) -> list[dict]:
+def load_config(path: str = CONFIG, parse: str | None = None) -> list[dict]:
+    """The public list with each sheet's parse settings merged in, from the private file `parse` (or
+    COMMUNITY_SHEETS_PARSE). A sheet with no settings in either is refused by name: read with no row floor or
+    headers, a changed sheet would load as if nothing were wrong."""
     with open(path) as fh:
-        return json.load(fh)["sheets"]
+        sheets = json.load(fh)["sheets"]
+    parse = parse or os.environ.get(PARSE_ENV) or None
+    private: dict = {}
+    if parse:
+        with open(parse) as fh:
+            private = json.load(fh)["sheets"]
+    merged = [{**s, **{k: v for k, v in private.get(s["key"], {}).items() if k in PARSE_FIELDS}} for s in sheets]
+    missing = [s["key"] for s in merged if "min_rows" not in s]
+    if missing:
+        raise ValueError(f"no parse settings for {', '.join(missing)}: they're private (--parse or {PARSE_ENV})")
+    return merged
 
 
 def export_url(sheet: dict) -> str:
@@ -449,8 +467,9 @@ def main() -> int:
     ap.add_argument("--sheet", help="only this sheet's key")
     ap.add_argument("--from-file", help="parse this CSV instead of fetching; needs --sheet")
     ap.add_argument("--force", action="store_true", help="store a sheet that lost more than half its rows")
+    ap.add_argument("--parse", help=f"the private parse settings (default: ${PARSE_ENV})")
     a = ap.parse_args()
-    sheets = [s for s in load_config() if not a.sheet or s["key"] == a.sheet]
+    sheets = [s for s in load_config(parse=a.parse) if not a.sheet or s["key"] == a.sheet]
     if not sheets:
         ap.error(f"no sheet {a.sheet!r} in {CONFIG}")
     if a.from_file and len(sheets) != 1:

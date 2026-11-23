@@ -14,8 +14,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ingest_community_sheets as cs  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-# The live config's own entry, so the test reads the sheet the way the import does.
-SHEET = {**next(x for x in cs.load_config() if x["key"] == "sfv-filers"), "min_rows": 1}
+# A copy of one sheet's settings, kept with the test: the live parse settings are private, so CI can't read them.
+SHEET = {"key": "sfv-filers", "name": "San Fernando Filers", "office": "SFV", "sheet_id": "x", "gid": "0", "min_rows": 1,
+         "headers": {"category": ["Status"], "receipt_date": ["RD"], "approval_date": ["Approval"]},
+         "required": ["category", "receipt_date", "transfer_date", "approval_date"]}
 
 
 def main() -> int:
@@ -180,9 +182,33 @@ def main() -> int:
             'items.push({name: "Q\\"s &amp; A", pageUrl: "x", gid: "13"});')
     check(cs.tabs_in(page) == [("June '25", "11"), ("R&D / misc", "12"), ('Q"s & A', "13")],
           f"tab names read as written: {cs.tabs_in(page)}")
-    first = next(x for x in cs.load_config() if x["key"] == "i485-status-first")
+    first = {"key": "i485-status-first", "min_rows": 150,
+             "tabs": [{"match": "^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]* ?'?\\d{2}$"}]}
     check(cs.chosen_tabs(first, cs.tabs_in(page)) == [("June '25", "11", None)],
-          "the live config's month tabs match a name Google escaped")
+          "a month-tab pattern matches a name Google escaped")
+
+    # The public list and the private settings, merged by key; a sheet with no settings is refused by name.
+    import json as _json
+    import tempfile as _tf
+    with _tf.TemporaryDirectory() as d:
+        pub = os.path.join(d, "public.json")
+        priv = os.path.join(d, "parse.json")
+        with open(pub, "w") as fh:
+            _json.dump({"sheets": [{"key": "a", "name": "A", "sheet_id": "1"}, {"key": "b", "name": "B", "sheet_id": "2"}]}, fh)
+        with open(priv, "w") as fh:
+            _json.dump({"sheets": {"a": {"min_rows": 5, "gid": "3", "name": "not this"},
+                                   "b": {"min_rows": 9, "tabs": [{"match": "x"}]}}}, fh)
+        got = cs.load_config(pub, priv)
+        check(got[0]["min_rows"] == 5 and got[0]["gid"] == "3" and got[1]["tabs"] == [{"match": "x"}],
+              f"each sheet takes its own parse settings: {got}")
+        check(got[0]["name"] == "A", "a private file can't rename a sheet: only parse settings merge")
+        with open(priv, "w") as fh:
+            _json.dump({"sheets": {"a": {"min_rows": 5}}}, fh)
+        try:
+            cs.load_config(pub, priv)
+            check(False, "a sheet with no parse settings is refused")
+        except ValueError as e:
+            check("b" in str(e) and "a," not in str(e), f"a sheet with no parse settings is refused by name: {e}")
 
     print("ALL PASS" if not failures else f"{failures} FAILED")
     return 1 if failures else 0

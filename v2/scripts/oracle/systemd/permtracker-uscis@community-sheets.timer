@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule for permtracker-uscis@community-sheets
+# The public community sheets, hourly at 25 past (moved from GitHub's hourly ingest on Nov 23 2026). Not Persistent:
+# a missed hour is read by the next.
+[Timer]
+OnCalendar=*-*-* *:25:00
+Unit=permtracker-uscis@community-sheets.service
+
+[Install]
+WantedBy=timers.target
