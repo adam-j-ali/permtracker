@@ -403,6 +403,50 @@ describe("a law firm's page handing over its name", () => {
   });
 });
 
+describe("the buttons that carry a name, on a phone", () => {
+  // A button's base class keeps its label on one line at 44px tall; DOL's long firm and job names ran past
+  // the card at 375px. Each of these wraps instead: no nowrap, a height that grows, and the md:h-10 of the
+  // default size undone too (twMerge keeps md:h-10 apart from h-auto).
+  const wraps = (el: HTMLElement) => {
+    const cls = el.className.split(/\s+/);
+    expect(cls).toContain("whitespace-normal");
+    expect(cls).not.toContain("whitespace-nowrap");
+    expect(cls).toContain("h-auto");
+    expect(cls).not.toContain("h-11");
+    expect(cls).not.toContain("md:h-10");
+    expect(cls).toContain("min-h-11");
+    expect(cls).toContain("max-w-full");
+  };
+
+  it("wraps the other spellings of a firm and a job", () => {
+    const long = "LAW OFFICES OF A VERY LONG IMMIGRATION PRACTICE NAME AS DOL PRINTS IT, PLLC";
+    usePublicQuery.mockImplementation((url: string) =>
+      url === "skip"
+        ? { data: undefined, failed: false }
+        : {
+            data: answer({
+              resolved: {
+                firm: { name: "SMITH LAW", slug: "smith-law", total: 40, alternatives: [{ name: long, slug: "long-firm", total: 3 }] },
+                occupation: { name: "Software Developers", key: "15-1252", slug: "15-1252", total: 900, alternatives: [{ name: "Software Quality Assurance Analysts and Testers", slug: "15-1253", total: 12 }] },
+              },
+            }),
+            failed: false,
+          },
+    );
+    renderIt();
+    fireEvent.change(screen.getByLabelText("Employer or case number"), { target: { value: "acme" } });
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    wraps(screen.getByRole("button", { name: `${long} (3)` }));
+    wraps(screen.getByRole("button", { name: "Software Quality Assurance Analysts and Testers (12)" }));
+  });
+
+  it("wraps the link that checks a typed case number with DOL", () => {
+    renderIt();
+    fireEvent.change(screen.getByLabelText("Employer or case number"), { target: { value: "G-100-24001-000002" } });
+    wraps(screen.getByRole("link", { name: /Check G-100-24001-000002 with DOL/ }));
+  });
+});
+
 describe("the results on a phone", () => {
   it("lists each filing as its number, status, employer and dates", () => {
     const { container } = renderIt();

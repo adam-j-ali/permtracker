@@ -48,6 +48,13 @@ const buttonVariants = cva(
   }
 )
 
+/**
+ * Add to a button whose label is a name or a sentence, so a long one wraps on a phone instead of running past
+ * its card: the height grows from 44px, and md:h-auto undoes the default size's md:h-10, which twMerge keeps
+ * apart from h-auto. Use it as `cn(buttonVariants(...), BUTTON_WRAPS)`.
+ */
+export const BUTTON_WRAPS = "h-auto min-h-11 md:h-auto max-w-full whitespace-normal py-2 text-left"
+
 export interface ButtonProps
   extends React.ComponentProps<"button">,
     VariantProps<typeof buttonVariants> {

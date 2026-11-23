@@ -56,7 +56,8 @@ import { formText } from "@/lib/forms/formText";
 import { seasonalForm } from "@/lib/seasonalForms";
 import { choiceVariants } from "@/components/ui/choice";
 import { Pagination, useListSize } from "@/components/ui/pagination";
-import { buttonVariants } from "@/components/ui/button";
+import { BUTTON_WRAPS, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { CaseStatusChip } from "@/components/ui/badge";
 import { ISO_MONTH_RE } from "@convex/lib/months";
 import { ISO_DATE_REGEX } from "@convex/lib/dateValidation";
@@ -1481,7 +1482,7 @@ export function UnifiedCaseSearch({
           <p className="mt-3">
             <IntentLink
               href={`/perm-case-status?case=${encodeURIComponent(typedCaseNumber)}`}
-              className={buttonVariants({ variant: "outline" })}
+              className={cn(buttonVariants({ variant: "outline" }), BUTTON_WRAPS)}
             >
               <LinkPending />
               Check {typedCaseNumber} with DOL
@@ -1600,7 +1601,7 @@ export function UnifiedCaseSearch({
                     <button
                       type="button"
                       onClick={() => applyAlternative("firm", a)}
-                      className={buttonVariants({ variant: "outline", size: "default" })}
+                      className={cn(buttonVariants({ variant: "outline", size: "default" }), BUTTON_WRAPS)}
                     >
                       {a.name} ({formatInt(a.total)})
                     </button>{" "}
@@ -1628,7 +1629,7 @@ export function UnifiedCaseSearch({
                   <button
                     type="button"
                     onClick={() => applyAlternative("occupation", a)}
-                    className={buttonVariants({ variant: "outline", size: "default" })}
+                    className={cn(buttonVariants({ variant: "outline", size: "default" }), BUTTON_WRAPS)}
                   >
                     {a.name} ({formatInt(a.total)})
                   </button>{" "}
