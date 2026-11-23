@@ -118,7 +118,7 @@ export const MAIL_KINDS: Record<MailKindId, MailKind> = {
   digest: {
     name: "Weekly case summary",
     one: "Weekly case summary",
-    what: "Your whole caseload: what's overdue, what's due this week and what changed. Sent only in a week when something changed.",
+    what: "Your whole caseload: what's overdue, what's due this week and what changed.",
     when: "Mondays",
     start: SETTINGS,
   },

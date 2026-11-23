@@ -135,7 +135,7 @@ export default defineSchema({
     emailDeadlineReminderRfe: v.optional(v.boolean()),
     emailStatusUpdates: v.boolean(),
     emailRfeAlerts: v.boolean(),
-    emailWeeklyDigest: v.optional(v.boolean()), // Weekly case summary email (Mondays 9 AM Eastern): absent means on
+    emailWeeklyDigest: v.optional(v.boolean()), // Weekly case summary email (Mondays at 15:00 UTC: 10 AM EST, 11 AM EDT): absent means on
     // Global switch for the DOL live-status watch on saved cases
     // (convex/appCaseWatch.ts). Absent means on; false turns every saved
     // case's automatic watch off for this account.
