@@ -1231,7 +1231,7 @@ export default async function EmployerPage({
         {/* The newest filings in each program, five of each: the two that come BEFORE a PERM (the wage request and,
             for H-1B holders, the LCA) and the seasonal ones. Every number links to its live status. */}
         {hasNewest ? (
-          <ChapterFold summary="Its newest filings in each program" hint="Wage requests, H-1B LCAs, H-2A, H-2B and CW-1, five of each">
+          <ChapterFold summary="Its newest filings in each program" hint="Wage requests, LCAs and seasonal filings, five of each">
             <WageAndLcaFilings name={row.name} wageReqs={wageReqs} lcas={lcas} heading="Its newest wage requests and LCAs" className="" level={3} />{" "}
             <SeasonalFilings name={row.name} rows={seasonalRows} />
           </ChapterFold>
