@@ -22,7 +22,7 @@ describe("the map scale", () => {
   });
 
   it("is the scale both state maps fill and key with, and neither uses a lime tint", () => {
-    for (const file of ["src/components/tools/USStateMap.tsx"]) {
+    for (const file of ["src/components/tools/USStateMap.tsx", "src/components/entities/EntityStateMap.tsx"]) {
       const src = readFileSync(join(process.cwd(), file), "utf8");
       expect(src, file).toContain('from "@/lib/mapScale"');
       expect(src, file).not.toMatch(/var\(--primary\)\s+\$\{|color-mix\(in srgb, var\(--primary\)/);

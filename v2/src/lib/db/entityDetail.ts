@@ -295,6 +295,41 @@ export async function entityFacets(kind: EntityKind, slug: string): Promise<Enti
   return out;
 }
 
+/** Whether each facet table holds every state an entity's filings name, so a page may draw its state map. */
+export interface StateFacetCoverage {
+  /** `perm_entity_facets` (FY2024 on). */
+  current: boolean;
+  /** `perm_history_entity_facets` (FY2008 to FY2023). */
+  history: boolean;
+}
+
+/** The markers the two builders write (scripts/build_entity_detail.py FACETS_DOC, ingest_perm_history.py HISTORY_FACETS_DOC). */
+export const STATE_FACET_DOCS = { current: "entity_facets", history: "history_entity_facets" } as const;
+
+/**
+ * Whether the state facets hold every state, from the markers the builders write once they do. Until the first
+ * build that keeps every state, a facet holds the busiest six, and a map drawn from it would show every other state
+ * as a zero; so a missing or unreadable marker is "not yet". One point read of two keys. A failed read throws, for the
+ * page to name (`softFail`) and draw no map.
+ */
+export async function stateFacetCoverage(): Promise<StateFacetCoverage> {
+  const found = await rows<{ key: string; json: string }>(
+    "SELECT key, json FROM perm_docs WHERE key IN (?, ?)",
+    [STATE_FACET_DOCS.current, STATE_FACET_DOCS.history],
+  );
+  const all = (key: string): boolean => {
+    const raw = found.find((r) => r.key === key)?.json;
+    if (!raw) return false;
+    try {
+      const doc: unknown = JSON.parse(raw);
+      return typeof doc === "object" && doc !== null && (doc as { states?: unknown }).states === "all";
+    } catch {
+      return false;
+    }
+  };
+  return { current: all(STATE_FACET_DOCS.current), history: all(STATE_FACET_DOCS.history) };
+}
+
 // ---------------------------------------------------------------------------
 // The spellings the merge would not touch
 // ---------------------------------------------------------------------------
