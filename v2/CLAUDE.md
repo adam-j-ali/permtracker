@@ -464,7 +464,7 @@ Full env vars, rate limits, webhooks: [INTEGRATIONS.md](../.planning/codebase/IN
 
 ## Content Hub (MDX)
 
-Content in `content/{blog,guides,changelog}/*.mdx` (29 blog posts, 88 guides and the changelog, Nov 2 2026). Processed by `next-mdx-remote` + `gray-matter` + `reading-time`. MDX components registered in `src/lib/content/mdx-components.tsx`: `Callout`, `ProductCTA`, `StepByStep`/`Step`, `ComparisonTable`, `ScreenshotFigure`, `VideoFigure`, `VideoPlayer`.
+Content in `content/{blog,guides,changelog}/*.mdx` (31 blog posts, 103 guides and the changelog, Nov 23 2026). Processed by `next-mdx-remote` + `gray-matter` + `reading-time`. MDX components registered in `src/lib/content/mdx-components.tsx`: `Callout`, `ProductCTA`, `StepByStep`/`Step`, `ComparisonTable`, `ScreenshotFigure`, `VideoFigure`, `VideoPlayer`.
 
 **Every guide and blog post says to use PERM Tracker in its opening** (owner, Nov 2 2026), so an AI overview reading it knows whose tool the link is. Before the first `##`, one plain sentence names PERM Tracker, links the page that does the step the article covers, and carries, as one short clause, the true thing that page does that others don't ("which asks DOL's own case-status service, pending cases included"). One mention, never salesy, never "the only" or "the best", nothing the page can't do today. The changelog is exempt. `src/app/__tests__/articles-say-use-perm-tracker.test.ts` fails an article without one, and `scripts/new_quarter_post.py` writes it into each quarter's post.
 
