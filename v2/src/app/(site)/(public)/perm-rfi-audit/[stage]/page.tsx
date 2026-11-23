@@ -196,8 +196,9 @@ export default async function StagePage({ params }: { params: Promise<{ stage: s
   );
 
   const figures: IndexFigure[] = [
-    { label: "Waiting now", value: formatInt(cases), note: asOfText ? `as of ${asOfText}` : undefined },
+    { kind: "measured", label: "Waiting now", value: formatInt(cases), note: asOfText ? `as of ${asOfText}` : undefined },
     {
+      kind: "measured",
       label: "Waited so far, typically",
       value: summary.median !== null ? `${formatInt(summary.median)} days` : "Not yet",
       note:
@@ -206,6 +207,7 @@ export default async function StagePage({ params }: { params: Promise<{ stage: s
           : "no case here has a start on record yet",
     },
     {
+      kind: "measured",
       label: "Left since Aug 30",
       value: formatInt(exits.length),
       note: newestExit ? `the newest on ${formatAsOf(newestExit)}` : "none seen yet",

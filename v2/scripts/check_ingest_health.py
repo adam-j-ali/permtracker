@@ -1179,7 +1179,8 @@ def check_coverage_stated(db) -> int:
         print("coverage: datasetCoverage.ts not found; skipping")
         return 0
     text = src.read_text(encoding="utf8", errors="ignore")
-    stated = set(re.findall(r'^\s*"?([a-z0-9-]+)"?:\s*$|^\s*"?([a-z0-9-]+)"?:\s*"',
+    # A row's sentence may sit on its own line, or follow its key wrapped in its kind: official("...").
+    stated = set(re.findall(r'^\s*"?([a-z0-9-]+)"?:\s*$|^\s*"?([a-z0-9-]+)"?:\s*(?:(?:official|measured|community)\()?"',
                             text, re.M))
     have = {a or b for a, b in stated if (a or b)} | sheet_datasets(src.parent.parent.parent)
     registered = {str(r[0]) for r in query_rows(db, "SELECT dataset FROM data_freshness")}

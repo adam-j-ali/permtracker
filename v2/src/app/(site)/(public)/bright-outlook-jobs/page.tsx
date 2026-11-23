@@ -158,15 +158,15 @@ export default async function Page() {
         <>
           <section className="mt-10" aria-label="The list in figures">
             <FigureRow>
-              <Figure tone="lime" label="Bright Outlook jobs" icon={<SunIcon weight="bold" />} value={formatInt(totals.jobs)} note="By job code, O*NET's list" />{" "}
-              <Figure
+              <Figure kind="official" tone="lime" label="Bright Outlook jobs" icon={<SunIcon weight="bold" />} value={formatInt(totals.jobs)} note="By job code, O*NET's list" />{" "}
+              <Figure kind="measured"
                 label="With PERM cases"
                 icon={<ClipboardTextIcon weight="bold" className="text-primary-text" />}
                 value={formatInt(totals.withPerm)}
                 visual={<ShareOfJobs n={totals.withPerm} of={totals.jobs} what="have PERM cases" />}
                 note={`Decided ${span}`}
               />{" "}
-              <Figure
+              <Figure kind="measured"
                 label="With H-1B LCAs"
                 icon={<FilesIcon weight="bold" className="text-primary-text" />}
                 value={formatInt(totals.withLca)}
@@ -175,7 +175,7 @@ export default async function Page() {
               />{" "}
               {BRIGHT_CATEGORIES.map((c) => {
                 const CategoryIcon = CATEGORY_ICON[c];
-                return <Figure key={c} label={c} icon={<CategoryIcon weight="bold" className="text-primary-text" />} value={formatInt(totals.byCategory[c])} />;
+                return <Figure kind="official" key={c} label={c} icon={<CategoryIcon weight="bold" className="text-primary-text" />} value={formatInt(totals.byCategory[c])} />;
               })}
             </FigureRow>
           </section>{" "}

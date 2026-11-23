@@ -67,12 +67,12 @@ export default async function ForEmployersPage() {
   ]);
   const figures: IndexFigure[] = [
     ...(stages
-      ? [{ label: "PERM cases waiting at DOL", value: formatInt(stages.pendingTotal), note: `As of ${longDate(stages.asOf)}`, href: "/perm-processing-times" }]
+      ? [{ kind: "measured" as const, label: "PERM cases waiting at DOL", value: formatInt(stages.pendingTotal), note: `As of ${longDate(stages.asOf)}`, href: "/perm-processing-times" }]
       : []),
     ...(day
-      ? [{ label: "Decided on DOL's last working day", value: formatInt(day.total), note: `${weekdayName(day.date)}, ${longDate(day.date)}`, href: "/perm-decision-activity" }]
+      ? [{ kind: "measured" as const, label: "Decided on DOL's last working day", value: formatInt(day.total), note: `${weekdayName(day.date)}, ${longDate(day.date)}`, href: "/perm-decision-activity" }]
       : []),
-    { label: "Read from DOL's case system", value: `${CASE_CHECKS.length} times a day`, note: "Every waiting case, each weekday" },
+    { kind: "measured" as const, label: "Read from DOL's case system", value: `${CASE_CHECKS.length} times a day`, note: "Every waiting case, each weekday" },
   ];
   const faqSchema = {
     "@context": "https://schema.org",

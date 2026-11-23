@@ -142,21 +142,21 @@ export default async function VisaRefusalsPage() {
       </header>
 
       <FigureRow className="mt-8">
-        <Figure
+        <Figure kind="official"
           label={`Public charge, immigrant visas, ${fyLabel(newest)}`}
           icon={<IdentificationCardIcon weight="bold" className="text-primary-text" />}
           value={pcNow?.ivFound === null || !pcNow ? "N/A" : formatInt(pcNow.ivFound)}
           trend={against(pcNow?.ivFound, pcBefore?.ivFound)}
           note={pcNow?.ivOvercome !== null && pcNow ? `found ineligible, with ${formatInt(pcNow.ivOvercome)} findings overcome` : "found ineligible"}
         />{" "}
-        <Figure
+        <Figure kind="official"
           label={`Public charge, nonimmigrant visas, ${fyLabel(newest)}`}
           icon={<AirplaneTiltIcon weight="bold" className="text-primary-text" />}
           value={pcNow?.nivFound === null || !pcNow ? "N/A" : formatInt(pcNow.nivFound)}
           trend={against(pcNow?.nivFound, pcBefore?.nivFound)}
           note={pcNow?.nivOvercome !== null && pcNow ? `found ineligible, with ${formatInt(pcNow.nivOvercome)} overcome` : "found ineligible"}
         />{" "}
-        <Figure
+        <Figure kind="official"
           label={`214(b), ${fyLabel(newest)}`}
           icon={<HouseIcon weight="bold" className="text-primary-text" />}
           value={b214Now?.nivFound === null || !b214Now ? "N/A" : formatInt(b214Now.nivFound)}

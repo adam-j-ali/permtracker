@@ -228,21 +228,21 @@ export default async function VisaIssuancesPage() {
               {/* The chip says which way and how much; the note gives the two counts. With nothing a year
                   before there's no chip, and the note keeps the word ("new"). One figure a row on a phone:
                   side by side, each chip wrapped to three lines. */}
-              <Figure
+              <Figure kind="official"
                 label="Nationals of the 75 countries"
                 icon={<PauseCircleIcon weight="bold" className="text-primary-text" />}
                 value={formatInt(yoy.eb75.to)}
                 trend={changeTrend(yoy.eb75, monthName(yoy.yearBefore))}
                 note={`employment visas in ${monthName(yoy.newest)}, ${yoy.eb75.percent === null ? `${changeWords(yoy.eb75)}: ` : "against "}${formatInt(yoy.eb75.from)} in ${monthName(yoy.yearBefore)}`}
               />{" "}
-              <Figure
+              <Figure kind="official"
                 label="Everyone else"
                 icon={<GlobeIcon weight="bold" className="text-primary-text" />}
                 value={formatInt(yoy.ebOther.to)}
                 trend={changeTrend(yoy.ebOther, monthName(yoy.yearBefore))}
                 note={`employment visas in ${monthName(yoy.newest)}, ${yoy.ebOther.percent === null ? `${changeWords(yoy.ebOther)}: ` : "against "}${formatInt(yoy.ebOther.from)} in ${monthName(yoy.yearBefore)}`}
               />{" "}
-              <Figure
+              <Figure kind="official"
                 label="Every immigrant visa, the 75 countries"
                 icon={<StampIcon weight="bold" className="text-primary-text" />}
                 value={formatInt(yoy.all75.to)}

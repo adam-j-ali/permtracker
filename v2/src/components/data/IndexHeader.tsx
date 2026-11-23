@@ -7,6 +7,7 @@ import { CaseLookupForm } from "@/components/tools/CaseLookupForm";
 import { FinderDock, FinderDockPanel } from "@/components/tools/FinderDock";
 import { Figure, FigureRow, type FigureTrend } from "@/components/data/FigureRow";
 import { Spark, SplitBar, type SplitPart } from "@/components/data/FigureVisual";
+import type { FigureKind } from "@/lib/sourceKind";
 
 /**
  * The top of a list page: what the list is, its headline figures, and the
@@ -38,6 +39,8 @@ export function wholeCodes(text: string): ReactNode[] {
 export interface IndexFigure {
   label: string;
   value: string;
+  /** The kind of source the figure comes from (src/lib/sourceKind.ts). */
+  kind: FigureKind;
   href?: string;
   note?: string;
   /** How the figure moved, drawn as the cards' chip. */
@@ -77,6 +80,7 @@ export function IndexFigures({ figures, className }: { figures: IndexFigure[]; c
               <SplitBar parts={f.split.parts} label={f.split.label} />
             ) : undefined
           }
+          kind={f.kind}
           trend={f.trend}
           note={f.note}
         />

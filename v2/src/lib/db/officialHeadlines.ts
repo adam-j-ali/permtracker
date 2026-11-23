@@ -5,6 +5,7 @@ import { leadLine } from "@/lib/uscisMonthly";
 import { monthsBehind } from "@/lib/consular/scheduling";
 import { softFail } from "@/lib/softRead";
 import type { StepGroup } from "@/lib/reportedSummary";
+import type { SourceKind } from "@/lib/sourceKind";
 import { getConsularIndex } from "./consularPosts";
 import { getLcaSummary } from "./lcaCases";
 import { getPermLine } from "./permLine";
@@ -28,6 +29,8 @@ export interface OfficialHeadline {
   /** What it is and when it was true, as a reader's sentence. */
   note: string;
   href: string;
+  /** Our own check of DOL's case-status service is measured; a figure the agency prints is official. */
+  kind: SourceKind;
 }
 
 const fmt = (n: number) => n.toLocaleString("en-US");
@@ -49,6 +52,7 @@ async function pwd(): Promise<OfficialHeadline | null> {
       ? `DOL is issuing determinations on requests filed ${formatDay(line.day)}, about ${fmt(line.waitDays)} days after filing, by our check of ${checked}.`
       : `By our check of DOL's case-status service on ${checked}.`,
     href: "/pwd-cases",
+    kind: "measured",
   };
 }
 
@@ -68,6 +72,7 @@ async function perm(): Promise<OfficialHeadline | null> {
       ? `DOL is deciding cases filed in ${formatMonth(line.month)}, by our check of every case on ${checked}.`
       : `By our check of every case in DOL's case-status service on ${checked}.`,
     href: "/perm-queue",
+    kind: "measured",
   };
 }
 
@@ -81,6 +86,7 @@ async function uscisMedian(form: "I-140" | "I-129", href: string): Promise<Offic
     label: `USCIS's median for the ${form}`,
     note: `Half of the ${form}s USCIS decided in the quarter that ended ${through} took less time than this.`,
     href,
+    kind: "official",
   };
 }
 
@@ -96,6 +102,7 @@ async function i485(): Promise<OfficialHeadline | null> {
     label: "Employment-based I-485s pending at USCIS",
     note: `At the end of ${month}, from USCIS's monthly report to Congress.`,
     href: "/uscis-processing-times/i-485",
+    kind: "official",
   };
 }
 
@@ -112,6 +119,7 @@ async function consular(): Promise<OfficialHeadline | null> {
     label: "Consulates scheduling employment cases on time",
     note: `From State's immigrant visa scheduling tool, updated ${when}.`,
     href: "/consular-posts",
+    kind: "official",
   };
 }
 
@@ -128,6 +136,7 @@ async function h1b(): Promise<OfficialHeadline | null> {
     label: "LCAs waiting at DOL",
     note: `By our check of DOL's case-status service on ${checked}.`,
     href: "/lca-cases",
+    kind: "measured",
   };
 }
 

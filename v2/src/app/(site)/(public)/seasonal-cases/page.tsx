@@ -101,12 +101,14 @@ export default async function SeasonalCasesPage() {
   const figures: IndexFigure[] = summary
             ? [
                 {
+                  kind: "measured",
                   label: "Waiting at DOL now",
                   value: formatInt(summary.pending),
                   ...(longDate(summary.asOf) ? { note: `Checked ${longDate(summary.asOf)}` } : {}),
                   ...(waitingSplit(summary, "filings") ? { split: waitingSplit(summary, "filings") } : {}),
                 },
                 {
+                  kind: "measured",
                   label: "Decided",
                   value: formatInt(summary.decided),
                   ...(earliest && longDate(`${earliest}-01`) ? { note: `Filed since ${longDate(`${earliest}-01`)}` } : {}),

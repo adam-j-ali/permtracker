@@ -84,19 +84,19 @@ export function WorkVisasView({ data, name, className }: { data: PostNiv; name: 
         month State has posted.
       </p>
       <FigureRow className="mt-6">
-        <Figure
+        <Figure kind="official"
           label={`H-1B, ${monthName(newest)}`}
           icon={<BriefcaseIcon weight="bold" className="text-primary-text" />}
           value={formatInt(newestOf("H1B"))}
           note={`${formatInt(sumOf(data.byMonth, data.held, ["H1B"]))} in ${span} to ${monthName(newest)}`}
         />{" "}
-        <Figure
+        <Figure kind="official"
           label={`L-1, ${monthName(newest)}`}
           icon={<BuildingOfficeIcon weight="bold" className="text-primary-text" />}
           value={formatInt(newestOf("L1"))}
           note={`${formatInt(sumOf(data.byMonth, data.held, ["L1"]))} in ${span}`}
         />{" "}
-        <Figure
+        <Figure kind="official"
           label={`Every work visa, ${monthName(newest)}`}
           icon={<UsersThreeIcon weight="bold" className="text-primary-text" />}
           value={formatInt(workNewest)}

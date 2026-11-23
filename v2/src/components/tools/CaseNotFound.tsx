@@ -206,13 +206,13 @@ export function CaseNotFound({
             </p>
 
             <FigureRow className="mt-6">
-              <Figure
+              <Figure kind="measured"
                 label="Filed that month"
                 icon={<CalendarBlankIcon weight="bold" className="text-primary-text" />}
                 value={formatInt(cohort.total)}
                 note="cases checked against DOL"
               />
-              <Figure
+              <Figure kind="measured"
                 label="Still undecided"
                 icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />}
                 value={formatInt(cohort.pending)}
@@ -229,7 +229,7 @@ export function CaseNotFound({
                 }
               />
               {wall && !wall.isPastFront ? (
-                <Figure
+                <Figure kind="measured"
                   label="Filed before that month"
                   icon={<QueueIcon weight="bold" className="text-primary-text" />}
                   value={formatInt(wall.ahead)}
@@ -390,7 +390,7 @@ export function CaseStatusEmpty({
             <Fragment key={f.label}>
               {" "}
               {/* The month DOL is deciding is the answer, so it alone takes the dark card. */}
-              <Figure
+              <Figure kind={f.kind === "dol" ? "official" : "measured"}
                 label={f.label}
                 value={f.value}
                 note={f.note}

@@ -59,6 +59,7 @@ export async function StepBothSources({
               key={g}
               label={h.label}
               value={h.value}
+              kind={h.kind}
               note={
                 <>
                   {h.note}{" "}

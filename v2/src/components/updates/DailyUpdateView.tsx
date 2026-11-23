@@ -181,7 +181,7 @@ export function DailyUpdateView({
       ) : null}{" "}
       {/* #counts is where the page's social card is framed from (scripts/page-cards.json): the figures, masked. */}
       <FigureRow id="counts" className="mt-6 scroll-mt-24">
-        <Figure
+        <Figure kind="measured"
           label="Certified"
           tone="lime"
           icon={<CheckCircleIcon weight="bold" />}
@@ -189,21 +189,21 @@ export function DailyUpdateView({
           trend={final ? (trendAgainst(perm.certified, usual.certified, weekday, "good") ?? undefined) : undefined}
           note={final ? undefined : "so far"}
         />{" "}
-        <Figure
+        <Figure kind="measured"
           label="Denied"
           icon={<XCircleIcon weight="bold" />}
           value={formatInt(perm.denied)}
           trend={final ? (trendAgainst(perm.denied, usual.denied, weekday, "bad") ?? undefined) : undefined}
           note={final ? undefined : "so far"}
         />{" "}
-        <Figure
+        <Figure kind="measured"
           label="Withdrawn"
           icon={<HandPalmIcon weight="bold" />}
           value={formatInt(perm.withdrawn)}
           trend={final ? (trendAgainst(perm.withdrawn, usual.withdrawn, weekday, "info") ?? undefined) : undefined}
           note={final ? "by the employer" : "so far, by the employer"}
         />{" "}
-        <Figure label="Letters sent" icon={<EnvelopeSimpleIcon weight="bold" />} value={formatInt(perm.asked)} note="an RFI, an audit or a notice to the employer" />
+        <Figure kind="measured" label="Letters sent" icon={<EnvelopeSimpleIcon weight="bold" />} value={formatInt(perm.asked)} note="an RFI, an audit or a notice to the employer" />
       </FigureRow>{" "}
       <p className="mt-3 max-w-3xl text-sm leading-relaxed text-soft">
         {final ? (

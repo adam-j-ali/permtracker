@@ -125,12 +125,13 @@ export default async function PermWagesPage() {
         lede="What each employer committed to pay, on the federal filing itself."
         figures={[
           ...(ladder?.p50 != null
-            ? [{ label: "The median certified offer", value: formatDollars(ladder.p50), note: `of ${formatInt(ladder.count)} cases` }]
+            ? [{ kind: "measured" as const, label: "The median certified offer", value: formatDollars(ladder.p50), note: `of ${formatInt(ladder.count)} cases` }]
             : []),
-          { label: "Occupations", value: formatInt(occupationCount) },
+          { kind: "measured" as const, label: "Occupations", value: formatInt(occupationCount) },
           ...(overallMedian != null
             ? [
                 {
+                  kind: "measured" as const,
                   label: "The middle occupation",
                   value: formatDollars(overallMedian),
                   note: "Lower: most jobs are small, and the biggest pay best",

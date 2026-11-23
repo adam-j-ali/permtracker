@@ -85,10 +85,11 @@ export default async function PermAttorneysPage() {
         title="Who files the most PERM cases"
         lede="Every PERM filing names the firm that made it, so DOL's published files rank the whole field."
         figures={[
-          { label: "Firms in DOL's files", value: formatInt(firmCount) },
+          { kind: "measured" as const, label: "Firms in DOL's files", value: formatInt(firmCount) },
           ...(leader
             ? [
                 {
+                  kind: "measured" as const,
                   label: "Files the most",
                   value: leader.name,
                   ...(leader.slug ? { href: entityHref("attorney", leader.slug) } : {}),
@@ -97,7 +98,7 @@ export default async function PermAttorneysPage() {
               ]
             : []),
           ...(topTen.length === 10
-            ? [{ label: "The ten busiest, together", value: formatInt(topTenTotal), note: "filings" }]
+            ? [{ kind: "measured" as const, label: "The ten busiest, together", value: formatInt(topTenTotal), note: "filings" }]
             : []),
         ]}
         aside={

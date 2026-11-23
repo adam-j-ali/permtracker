@@ -106,7 +106,7 @@ export function EntityStatCards({ cards: given }: { cards: (StatCard | null)[] }
         return (
           <Fragment key={d.k}>
             {" "}
-            <Figure
+            <Figure kind="measured"
               label={d.k}
               value={d.v}
               note={d.sub || undefined}

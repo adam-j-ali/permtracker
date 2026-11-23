@@ -215,7 +215,7 @@ export default async function Page() {
           <>
             <section className="mt-10" aria-label="The employers in figures">
               <FigureRow>
-                <Figure
+                <Figure kind="measured"
                   tone="lime"
                   label="Employers"
                   icon={<BuildingsIcon weight="bold" />}
@@ -224,7 +224,7 @@ export default async function Page() {
                 />{" "}
                 {CAP_EXEMPT_KINDS.map((k) => {
                   const KindIcon = KIND_ICON[k];
-                  return <Figure key={k} label={KIND_WORDS[k].many} icon={<KindIcon weight="bold" className="text-primary-text" />} value={formatInt(doc.kinds[k].employers)} />;
+                  return <Figure kind="measured" key={k} label={KIND_WORDS[k].many} icon={<KindIcon weight="bold" className="text-primary-text" />} value={formatInt(doc.kinds[k].employers)} />;
                 })}
               </FigureRow>{" "}
             </section>{" "}

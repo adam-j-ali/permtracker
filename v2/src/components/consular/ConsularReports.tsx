@@ -156,13 +156,13 @@ export function ConsularReports({
       {view && w30 && w90 ? (
         <>
           <FigureRow className="mt-6">
-            <Figure
+            <Figure kind="community"
               icon={<ChatsCircleIcon weight="bold" />}
               label="Reports, last 30 days"
               value={formatInt(w30.total)}
               note={`${formatInt(w90.total)} in the last 90 days, every kind of visa. ${SELF_REPORTED}.`}
             />{" "}
-            <Figure
+            <Figure kind="community"
               icon={<HourglassMediumIcon weight="bold" />}
               label="Ended in 221(g)"
               value={share ?? "Not yet"}
@@ -172,7 +172,7 @@ export function ConsularReports({
                   : `${TOO_FEW}: it shows once ${MIN_REPORTS} people report a result. ${SELF_REPORTED}.`
               }
             />{" "}
-            <Figure
+            <Figure kind="community"
               icon={<ClockCountdownIcon weight="bold" />}
               label="NVC complete to interview"
               value={view.wait.median !== null ? `${formatInt(view.wait.median)} days` : "Not yet"}

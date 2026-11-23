@@ -87,6 +87,7 @@ export default async function PwdCasesPage() {
   // The overview, drawn between the search and the list.
   const figures: IndexFigure[] = [
           {
+            kind: "measured",
             label: "Waiting at DOL now",
             value: summary ? formatInt(summary.pending) : "—",
             trend: backlogTrend(pwdBoard?.flow),
@@ -94,6 +95,7 @@ export default async function PwdCasesPage() {
             ...(waitingSplit(summary, "wage requests") ? { split: waitingSplit(summary, "wage requests") } : {}),
           },
           {
+            kind: "measured",
             label: "Decided, with the wage set",
             value: disclosure ? formatInt(disclosure.rows) : "—",
             ...(longDate(disclosure?.latestDecision ?? null)
@@ -102,6 +104,7 @@ export default async function PwdCasesPage() {
           },
           line && lineDay
             ? {
+                kind: "measured",
                 label: "DOL is deciding requests filed on",
                 value: lineDay,
                 href: "/tools/pwd-calculator",
@@ -118,6 +121,7 @@ export default async function PwdCasesPage() {
                 }`,
               }
             : {
+                kind: "official",
                 label: "DOL is deciding requests filed in",
                 value: now.frontier ?? "—",
                 href: "/tools/pwd-calculator",

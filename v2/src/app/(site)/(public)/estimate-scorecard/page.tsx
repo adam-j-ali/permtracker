@@ -108,23 +108,23 @@ const HORIZON_LABEL: Record<(typeof HORIZONS)[number], string> = {
 function SampleCells({ cell, since }: { cell: Cell; since: string | null }) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 [&>*]:min-w-0">
-      <Figure
+      <Figure kind="measured"
         label="Recorded"
         icon={<NotePencilIcon weight="bold" className="text-primary-text" />}
         value={formatInt(cell.recorded)}
         note={since ? `predictions since ${long(since)}` : "predictions"}
       />
-      <Figure label="Graded" icon={<ChecksIcon weight="bold" className="text-primary-text" />} value={formatInt(cell.graded)} note="DOL has decided these (withdrawals left out)" />
-      <Figure label="Typical miss" icon={<TargetIcon weight="bold" className="text-primary-text" />} value={days(cell.typicalMissDays)} note="median distance, decided cases" />
+      <Figure kind="measured" label="Graded" icon={<ChecksIcon weight="bold" className="text-primary-text" />} value={formatInt(cell.graded)} note="DOL has decided these (withdrawals left out)" />
+      <Figure kind="measured" label="Typical miss" icon={<TargetIcon weight="bold" className="text-primary-text" />} value={days(cell.typicalMissDays)} note="median distance, decided cases" />
       {/* A case still waiting past its date is already that late, and only
           gets later, so this figure is a floor. Older summaries lack it. */}
-      <Figure
+      <Figure kind="measured"
         label="Counting the late ones"
         icon={<HourglassHighIcon weight="bold" className="text-primary-text" />}
         value={cell.missAtLeastDays == null ? "-" : `at least ${days(cell.missAtLeastDays)}`}
         note={`${formatInt(cell.overdue ?? 0)} still waiting past their date, counted at the days they're already late`}
       />
-      <Figure
+      <Figure kind="measured"
         label="Inside the range"
         icon={<ArrowsInLineHorizontalIcon weight="bold" className="text-primary-text" />}
         value={pct(cell.inBandShare)}
@@ -228,7 +228,7 @@ export default async function EstimateScorecardPage() {
             decided cases only. The daily sample below also counts the ones still waiting past their date.
           </p>{" "}
           <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
-            <Figure
+            <Figure kind="measured"
               label="Within a week"
               icon={<CalendarCheckIcon weight="bold" className="text-primary-text" />}
               value={pct(cur.within7Share)}
@@ -236,7 +236,7 @@ export default async function EstimateScorecardPage() {
               note="of those decisions"
             />
             {rangeCheck ? (
-              <Figure
+              <Figure kind="measured"
                 label="Inside the printed range"
                 icon={<ArrowsInLineHorizontalIcon weight="bold" className="text-primary-text" />}
                 value={pct(rangeCheck.share)}
@@ -248,14 +248,14 @@ export default async function EstimateScorecardPage() {
                 }
               />
             ) : null}
-            <Figure
+            <Figure kind="measured"
               label="Right about the window"
               icon={<CheckCircleIcon weight="bold" className="text-primary-text" />}
               value={pct(cur.decidedByEndRight)}
               visual={shareBar(cur.decidedByEndRight, "of the calls about the window were right")}
               note={`said "decided by ${long(backtest.end)}" or "not yet", and was right`}
             />
-            <Figure
+            <Figure kind="measured"
               label={"DOL\u2019s pace used"}
               icon={<GaugeIcon weight="bold" className="text-primary-text" />}
               value={`${formatInt(Math.round(backtest.pace))} a day`}

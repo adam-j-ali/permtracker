@@ -47,7 +47,7 @@ function Headline({ r }: { r: QuarterReport }) {
   const y = r.figures.yearAgo;
   return (
     <FigureRow className="not-prose prose-reset my-8">
-      <Figure
+      <Figure kind="measured"
         tone="lime"
         label="Decisions"
         icon={<StampIcon weight="bold" className="text-primary-text" />}
@@ -55,20 +55,20 @@ function Headline({ r }: { r: QuarterReport }) {
         value={formatInt(t.total)}
         note={yearAgoNote(t.total, y.total)}
       />{" "}
-      <Figure
+      <Figure kind="measured"
         label="Certified, of those decided"
         icon={<SealCheckIcon weight="bold" className="text-primary-text" />}
         trend={quarterShareMoved(t.certifiedShare, p.certifiedShare)}
         value={t.certifiedShare === null ? "None" : formatShare(t.certifiedShare)}
       />{" "}
-      <Figure
+      <Figure kind="measured"
         label="Days from filing to certification"
         icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />}
         trend={quarterDaysMoved(t.medianDays, p.medianDays)}
         value={t.medianDays === null ? "None" : formatInt(t.medianDays)}
         note={t.p90Days === null ? "the median" : `the median, and one in ten took ${formatInt(t.p90Days)} or more`}
       />{" "}
-      <Figure
+      <Figure kind="measured"
         label="Offered wage, certified cases"
         icon={<CurrencyDollarIcon weight="bold" className="text-primary-text" />}
         trend={t.medianWage !== null && p.medianWage !== null ? quarterCountMoved(t.medianWage, p.medianWage) : undefined}
@@ -173,12 +173,12 @@ function Programs({ r }: { r: QuarterReport }) {
     programFigure({ this: r.programs.this[kind].n, prior: r.programs.prior[kind].n, yearAgo: r.programs.yearAgo[kind].n });
   return (
     <FigureRow className="not-prose prose-reset my-8">
-      <Figure
+      <Figure kind="measured"
         label="Wage requests DOL determined"
         icon={<CurrencyDollarIcon weight="bold" className="text-primary-text" />}
         {...of("pw")}
       />{" "}
-      <Figure
+      <Figure kind="measured"
         label="H-1B LCAs DOL certified"
         icon={<FilesIcon weight="bold" className="text-primary-text" />}
         {...of("lca")}

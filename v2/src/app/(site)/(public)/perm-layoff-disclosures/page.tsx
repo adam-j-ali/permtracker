@@ -157,7 +157,7 @@ export default async function Page() {
               newest published file.
             </p>{" "}
             <FigureRow>
-              <Figure
+              <Figure kind="measured"
                 label="Said yes"
                 icon={<UserMinusIcon weight="bold" className="text-primary-text" />}
                 value={formatInt(y.yes)}
@@ -172,7 +172,7 @@ export default async function Page() {
                 }
                 note={`${formatShareOf(y.yes, y.answered)} of ${formatInt(y.answered)} decided applications`}
               />{" "}
-              <Figure
+              <Figure kind="measured"
                 label="Employers"
                 icon={<BuildingsIcon weight="bold" className="text-primary-text" />}
                 value={formatInt(doc.employersYes)}
@@ -187,7 +187,7 @@ export default async function Page() {
                 }
                 note={`said yes at least once, of ${formatInt(doc.employersAnswering)} that answered`}
               />{" "}
-              <Figure
+              <Figure kind="measured"
                 label="Certified after a yes"
                 icon={<SealCheckIcon weight="bold" className="text-primary-text" />}
                 value={formatShareOf(y.yesOutcomes.certified, outcomeTotal(y.yesOutcomes))}

@@ -37,7 +37,7 @@ export function waitingSplit(
 export function filedLastMonth(
   byMonth: readonly { month: string; total: number }[] | null | undefined,
   today: string,
-): { label: string; value: string; spark: number[]; trend?: FigureTrend } | undefined {
+): { label: string; value: string; kind: "measured"; spark: number[]; trend?: FigureTrend } | undefined {
   if (!byMonth) return undefined;
   const thisMonth = today.slice(0, 7);
   const done = byMonth
@@ -57,5 +57,6 @@ export function filedLastMonth(
         ? { text: `Level with ${prior}`, dir: "level", tone: "neutral" }
         : { text: `${Math.abs(pct)}% ${pct > 0 ? "more" : "fewer"} than ${prior}`, dir: pct > 0 ? "up" : "down", tone: "info" };
   }
-  return { label: `Filed in ${name}`, value: formatInt(last.total), spark: done.map((m) => m.total), ...(trend ? { trend } : {}) };
+  // Our own count of filings in DOL's case-status service, month by month.
+  return { label: `Filed in ${name}`, value: formatInt(last.total), kind: "measured", spark: done.map((m) => m.total), ...(trend ? { trend } : {}) };
 }

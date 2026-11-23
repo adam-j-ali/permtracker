@@ -351,7 +351,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
         <>
           <FigureRow className="mt-8">
             {lead && leadNow?.row?.medianMonths != null ? (
-              <Figure
+              <Figure kind="official"
                 tone="lime"
                 label={`Median, ${slotShort(leadNow.slot)}`}
                 icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />}
@@ -361,7 +361,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
               />
             ) : null}{" "}
             {newest?.pending != null ? (
-              <Figure
+              <Figure kind="official"
                 label="Waiting at the quarter's end"
                 icon={<UsersIcon weight="bold" className="text-primary-text" />}
                 trend={countMoved(totals, newest, "pending")}
@@ -370,7 +370,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
               />
             ) : null}{" "}
             {newest?.received != null ? (
-              <Figure
+              <Figure kind="official"
                 label="Received in the quarter"
                 icon={<TrayIcon weight="bold" className="text-primary-text" />}
                 trend={countMoved(totals, newest, "received")}
@@ -379,7 +379,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
               />
             ) : null}{" "}
             {share !== null && newest ? (
-              <Figure
+              <Figure kind="official"
                 label="Approved, of those decided"
                 icon={<SealCheckIcon weight="bold" className="text-primary-text" />}
                 trend={approvalMoved(totals, newest)}

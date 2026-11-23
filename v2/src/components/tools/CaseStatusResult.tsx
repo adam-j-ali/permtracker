@@ -800,14 +800,14 @@ function Position({
 
       <FigureRow className="mt-6">
         {/* The cases ahead of this one are the reader's own figure, so it takes the lime card. */}
-        <Figure
+        <Figure kind="measured"
           tone="lime"
           label="Filed in earlier months"
           icon={<QueueIcon weight="bold" />}
           value={formatInt(wall.ahead)}
           note="still waiting in DOL's normal queue"
         />
-        <Figure
+        <Figure kind="measured"
           label="Filed the same month"
           icon={<CalendarBlankIcon weight="bold" className="text-primary-text" />}
           value={formatInt(wall.sameMonth)}
@@ -818,7 +818,7 @@ function Position({
           }
           note="still waiting, this case among them"
         />
-        <Figure
+        <Figure kind="measured"
           label="Behind the work front"
           icon={<FlagPennantIcon weight="bold" className="text-primary-text" />}
           value={
@@ -908,14 +908,14 @@ function TheDecision({
       lede="From the quarterly disclosure file, which carries fields the live status page doesn't."
     >
       <FigureRow>
-        <Figure
+        <Figure kind="official"
           label="Outcome"
           icon={outcomeIcon(decided.status)}
           value={prettyStatus(decided.status)}
           note={decided.decisionDate ? formatAsOf(decided.decisionDate) ?? "" : ""}
         />
         {decided.days !== null ? (
-          <Figure
+          <Figure kind="official"
             label="Days taken"
             icon={<TimerIcon weight="bold" className="text-primary-text" />}
             value={formatInt(decided.days)}
@@ -923,7 +923,7 @@ function TheDecision({
           />
         ) : null}
         {decided.wage !== null ? (
-          <Figure
+          <Figure kind="official"
             label="Offered wage"
             icon={<CurrencyDollarIcon weight="bold" className="text-primary-text" />}
             value={money(decided.wage)}
@@ -940,7 +940,7 @@ function TheDecision({
           />
         ) : null}
         {decided.state ? (
-          <Figure label="Worksite state" icon={<MapPinIcon weight="bold" className="text-primary-text" />} value={decided.state} note="as filed" />
+          <Figure kind="official" label="Worksite state" icon={<MapPinIcon weight="bold" className="text-primary-text" />} value={decided.state} note="as filed" />
         ) : null}
       </FigureRow>
 

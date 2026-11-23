@@ -59,7 +59,8 @@ function StepCard({ s, pct }: { s: StepFigure; pct: (d: number) => string }) {
   const trend = stepTrend(s);
   const measured = s.median !== null && s.p25 !== null && s.p75 !== null;
   return (
-    <li className="min-w-0 bg-sage p-4 border-2 border-border">
+    // Every card here is a median of the cases people reported, so its kind is fixed: community.
+    <li data-source-kind="community" className="min-w-0 bg-sage p-4 border-2 border-border">
       <p className="font-heading text-base font-bold">{s.label}</p>{" "}
       <p className="mt-1 text-sm text-muted-foreground">
         {measured

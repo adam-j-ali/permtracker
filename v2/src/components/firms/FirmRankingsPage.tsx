@@ -236,26 +236,26 @@ async function Ranking({ program, state, summary }: { program: FirmProgram; stat
       lede={`October ${fy - 1} to September ${fy}, counted ${p.countedAt}.`}
     >
       <FigureRow>
-        <Figure
+        <Figure kind="measured"
           tone="lime"
           label="The busiest firm"
           icon={<TrophyIcon weight="bold" className="text-primary-text" />}
           value={formatInt(top.filings)}
           note={top.name}
         />{" "}
-        <Figure
+        <Figure kind="measured"
           label={`${p.noun[0]!.toUpperCase()}${p.noun.slice(1)} naming a firm`}
           icon={<FilesIcon weight="bold" className="text-primary-text" />}
           trend={yearOnYear(totals.filings, lastYear?.filings, fy - 1)}
           value={formatInt(totals.filings)}
         />{" "}
-        <Figure
+        <Figure kind="measured"
           label="Law firms that filed them"
           icon={<ScalesIcon weight="bold" className="text-primary-text" />}
           trend={yearOnYear(totals.firms, lastYear?.firms, fy - 1)}
           value={formatInt(totals.firms)}
         />{" "}
-        <Figure
+        <Figure kind="measured"
           label="Naming no law firm"
           icon={<BuildingsIcon weight="bold" className="text-primary-text" />}
           trend={yearOnYear(totals.unnamed, lastYear?.unnamed, fy - 1)}

@@ -4,6 +4,7 @@ import { EnvelopeSimpleIcon, HourglassMediumIcon, SealCheckIcon, TimerIcon } fro
 
 import { ChartTips } from "@/components/data/ChartTips";
 import { SplitBar } from "@/components/data/FigureVisual";
+import { kindsOf, type FigureKind } from "@/lib/sourceKind";
 import { formatAsOf } from "@/lib/dolFormat";
 import type { RfiClock } from "@/lib/perm";
 import { stageDurationFor, type StageStats } from "@/lib/db/stageStats";
@@ -47,18 +48,21 @@ function Figure({
   icon,
   label,
   value,
+  kind,
   visual,
   children,
 }: {
   icon: ReactNode;
   label: string;
   value: string;
+  /** The kind of source the figure comes from (src/lib/sourceKind.ts). */
+  kind: FigureKind;
   /** A small picture of the figure, drawn under the number. */
   visual?: ReactNode;
   children?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col border-2 border-border bg-card p-4 shadow-hard-sm sm:p-5">
+    <div data-source-kind={kindsOf(kind).join(" ")} className="flex flex-col border-2 border-border bg-card p-4 shadow-hard-sm sm:p-5">
       <p className="flex items-center gap-1.5 text-sm font-semibold">
         <span aria-hidden="true" className="inline-flex shrink-0 [&_svg]:size-4">
           {icon}
@@ -163,25 +167,25 @@ export function RfiJourney({
     <div>
       <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${narrow ? "" : "lg:grid-cols-4"} [&>*]:min-w-0`}>
         {path ? (
-          <Figure icon={<EnvelopeSimpleIcon weight="bold" className="text-primary-text" />} label="RFIs we watched DOL issue" value={int(path.entered)}>
+          <Figure kind="measured" icon={<EnvelopeSimpleIcon weight="bold" className="text-primary-text" />} label="RFIs we watched DOL issue" value={int(path.entered)}>
             {int(path.inRfi)} waiting on the reply, {int(path.repliedWaiting)} replied and back in review,{" "}
             {int(decided)} decided.
           </Figure>
         ) : null}{" "}
         {clock ? (
-          <Figure icon={<TimerIcon weight="bold" className="text-primary-text" />} label="Time to reply" value={`${clock.leaveDays.p50} days`}>
+          <Figure kind="measured" icon={<TimerIcon weight="bold" className="text-primary-text" />} label="Time to reply" value={`${clock.leaveDays.p50} days`}>
             Half of the RFIs left RFI status by day {clock.leaveDays.p50}. The letter sets the date, and DOL usually gives 30 days.
           </Figure>
         ) : null}{" "}
         {clock ? (
-          <Figure icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />} label="Once the reply is in" value={`${clock.afterLeaveDays.p50} days`}>
+          <Figure kind="measured" icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />} label="Once the reply is in" value={`${clock.afterLeaveDays.p50} days`}>
             Half were decided within {clock.afterLeaveDays.p50} days of going back to review
             {clock.afterLeaveDays.p75 !== null ? `, 3 in 4 within ${clock.afterLeaveDays.p75}` : ""}
             {clock.afterLeaveWatched ? `, over ${int(clock.afterLeaveWatched)} decided cases` : ""}.
           </Figure>
         ) : null}{" "}
         {path && afterReply > 0 ? (
-          <Figure
+          <Figure kind="measured"
             icon={<SealCheckIcon weight="bold" className="text-primary-text" />}
             label="Certified after a reply"
             value={pct(path.afterReply.certified / afterReply)}

@@ -128,11 +128,12 @@ export default async function PermCasesPage() {
 
   const figures: IndexFigure[] = [
     ...(meta
-      ? [{ label: "Decided, in DOL's published files", value: formatInt(meta.totalCases), note: `${monthYear(meta.firstDecisionDate)} to ${monthYear(meta.lastDecisionDate)}` }]
+      ? [{ kind: "measured" as const, label: "Decided, in DOL's published files", value: formatInt(meta.totalCases), note: `${monthYear(meta.firstDecisionDate)} to ${monthYear(meta.lastDecisionDate)}` }]
       : []),
     ...(liveSummary
       ? [
           {
+            kind: "measured" as const,
             label: "Newer, from DOL's live service",
             value: formatInt(liveSummary.total),
             href: "#live",

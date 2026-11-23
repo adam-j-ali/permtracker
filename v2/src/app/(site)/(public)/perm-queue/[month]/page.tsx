@@ -652,7 +652,7 @@ function MonthHeadline({
           key above them): what's still waiting, where DOL's line is (lime: the reader's own
           question), when the line reaches this month's end, and what's filed ahead of it. */}
       <FigureRow className="mt-6">
-        <Figure
+        <Figure kind="measured"
           label="Still waiting"
           icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />}
           trend={waitingMoved}
@@ -660,7 +660,7 @@ function MonthHeadline({
           note={`${formatInt(m.inLine)} in DOL's line, ${formatInt(m.outside)} outside it`}
         />{" "}
         {dolMonth ? (
-          <Figure
+          <Figure kind="official"
             tone="lime"
             label="DOL is working"
             icon={<CalendarCheckIcon weight="bold" className="text-primary-text" />}
@@ -670,7 +670,7 @@ function MonthHeadline({
           />
         ) : null}{" "}
         {end?.kind === "estimate" ? (
-          <Figure
+          <Figure kind="measured"
             label="The line reaches this month's end"
             icon={<FlagCheckeredIcon weight="bold" className="text-primary-text" />}
             value={shortDate(end.date) ?? end.date}
@@ -678,7 +678,7 @@ function MonthHeadline({
           />
         ) : null}{" "}
         {dolMonth && month > dolMonth && ahead > 0 ? (
-          <Figure
+          <Figure kind="measured"
             label="Filed earlier, still waiting"
             icon={<UsersIcon weight="bold" className="text-primary-text" />}
             value={formatInt(ahead)}

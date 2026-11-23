@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { MinusIcon, TrendDownIcon, TrendUpIcon } from "@phosphor-icons/react/ssr";
 
+import { kindsOf, type FigureKind } from "@/lib/sourceKind";
 import { cn } from "@/lib/utils";
 
 /**
@@ -68,6 +69,7 @@ const NUMBER = /^[$€£]?\d[\d,.]*\s?(?:%|[A-Za-z]{1,4})?$/;
 export function Figure({
   label,
   value,
+  kind,
   note,
   tone = "paper",
   icon,
@@ -76,6 +78,11 @@ export function Figure({
 }: {
   label: string;
   value: ReactNode;
+  /**
+   * The kind of source the figure comes from: official, measured or community, or the kinds it blends. Required, so
+   * no figure ships without one; it's written on the card as `data-source-kind` for the sources switch to read.
+   */
+  kind: FigureKind;
   note?: ReactNode;
   /** A small picture of what the figure measures (FigureVisual.tsx), drawn under the number. */
   visual?: ReactNode;
@@ -91,7 +98,10 @@ export function Figure({
   // below it: the row wraps a tile down instead. Words still wrap as before.
   const number = typeof value === "string" && NUMBER.test(value.trim());
   return (
-    <div className={cn("flex-1 basis-40 px-4 py-3.5 sm:px-5 sm:py-4", number ? "min-w-min" : "min-w-0", TONE[tone])}>
+    <div
+      data-source-kind={kindsOf(kind).join(" ")}
+      className={cn("flex-1 basis-40 px-4 py-3.5 sm:px-5 sm:py-4", number ? "min-w-min" : "min-w-0", TONE[tone])}
+    >
       <p className="flex items-center gap-1.5 text-sm font-bold">
         {icon ? <span aria-hidden="true" className="inline-flex shrink-0 [&_svg]:size-4">{icon}</span> : null}
         {label}
