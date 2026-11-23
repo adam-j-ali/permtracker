@@ -510,6 +510,16 @@
     "credit": "Chart from DOL's PERM disclosure file, permtracker.app",
     "alt": "PERM decisions in April to June 2026 against the quarter before and a year before, as bars"
   },
+  "blog/dol-perm-file-fy2026-q4": {
+    "capture": {
+      "url": "/blog/dol-perm-file-fy2026-q4",
+      "clip": "fromm:How many PERM cases did DOL decide?",
+      "maxHeight": 440,
+      "css": "aside.lg\\:block{display:none!important}"
+    },
+    "credit": "Chart from DOL's PERM disclosure file, permtracker.app",
+    "alt": "PERM decisions in July to September 2026 against the quarter before and a year before, as bars"
+  },
   "blog/eb2-vs-eb3-by-the-numbers": {
     "capture": {
       "url": "/visa-bulletin/categories"
@@ -1589,5 +1599,15 @@
     },
     "credit": "Screenshot of permtracker.app, November 20, 2026",
     "alt": "The wage level estimate for a software developer job in San Jose: 40 months of required experience gives Level III, each step shown with the points it adds"
+  },
+  "changelog/dol-files-back-to-2008": {
+    "capture": {
+      "url": "/perm-processing-times",
+      "clip": "fromm:Is PERM getting faster?",
+      "maxHeight": 760,
+      "css": "aside.lg\\:block{display:none!important}"
+    },
+    "credit": "Screenshot of permtracker.app, November 23, 2026",
+    "alt": "The PERM processing times page answering whether PERM is getting faster, with the median wait month by month"
   }
 }

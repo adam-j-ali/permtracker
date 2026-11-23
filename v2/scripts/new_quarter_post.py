@@ -105,7 +105,7 @@ The file holds decided cases only, so it says nothing about the cases still wait
 
 It counts each case on the day DOL decided it. A busy quarter here may be DOL working through an older filing month. The wait figures say how old the decided cases were.
 
-DOL doesn't publish why it denied a case, and a withdrawal is the employer's own choice. An employer that files under several names is counted on one page, the way its page counts it; a name DOL's file spells in a way this site can't tie to a page stays apart.
+DOL doesn't say why it denied a case. A withdrawal is the employer's own choice. An employer that files under several names is counted once, on its own page, and a spelling of a name that this site can't tie to any page is counted apart from it.
 
 ## Where the figures come from
 
