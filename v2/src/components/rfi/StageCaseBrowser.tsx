@@ -1,6 +1,7 @@
 "use client";
 
 import { IntentLink } from "@/components/ui/intent-link";
+import { PendingLink } from "@/components/ui/pending-link";
 import { useCallback, useMemo } from "react";
 
 import { FilterableStatTable, type CsvSpec, type Facet, type StatColumn } from "@/components/tools/FilterableStatTable";
@@ -65,9 +66,9 @@ const COLUMNS: StatColumn<StageCase>[] = [
     render: (r) => (
       // Whole: a number broken at its hyphen reads as two (it broke in the
       // table at every desktop width).
-      <IntentLink href={`/perm-case-status?case=${encodeURIComponent(r.caseNumber)}`} className="link whitespace-nowrap font-mono text-sm">
+      <PendingLink href={`/perm-case-status?case=${encodeURIComponent(r.caseNumber)}`} className="link whitespace-nowrap font-mono text-sm">
         {r.caseNumber}
-      </IntentLink>
+      </PendingLink>
     ),
   },
   {

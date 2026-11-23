@@ -4,6 +4,7 @@ import { useCallback, useMemo } from "react";
 
 import { FilterableStatTable, type CsvSpec, type Facet, type StatColumn } from "@/components/tools/FilterableStatTable";
 import { IntentLink } from "@/components/ui/intent-link";
+import { PendingLink } from "@/components/ui/pending-link";
 import { tableDay } from "@/components/rfi/StageCaseBrowser";
 import { SITE_URL } from "@/lib/constants/site";
 import { entityHref } from "@/lib/entityPayload";
@@ -39,9 +40,9 @@ const COLUMNS: StatColumn<StageExit>[] = [
     label: "Case number",
     sortValue: (r) => r.caseNumber,
     render: (r) => (
-      <IntentLink href={`/perm-case-status?case=${encodeURIComponent(r.caseNumber)}`} className="link whitespace-nowrap font-mono text-sm">
+      <PendingLink href={`/perm-case-status?case=${encodeURIComponent(r.caseNumber)}`} className="link whitespace-nowrap font-mono text-sm">
         {r.caseNumber}
-      </IntentLink>
+      </PendingLink>
     ),
   },
   {

@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { IntentLink } from "@/components/ui/intent-link";
+import { PendingLink } from "@/components/ui/pending-link";
 
 import { SortableHeader } from "@/components/tools/SortableHeader";
 import type { SortColumn, SortState } from "@/lib/tableSort";
@@ -124,12 +125,14 @@ export function DecidedTable({
               className="border-t-2 border-border/30 align-top"
             >
               <td className="whitespace-nowrap px-3 py-3 font-mono text-base">
-                <IntentLink
+                {/* PendingLink: the case page asks DOL live for a case it doesn't hold, seconds of a press that
+                    looked ignored. The dot holds its place, so the column never widens under the press. */}
+                <PendingLink
                   href={`/perm-case-status?case=${encodeURIComponent(c.caseNumber)}`}
                   className="link"
                 >
                   {c.caseNumber}
-                </IntentLink>{" "}
+                </PendingLink>{" "}
               </td>
               <td className="whitespace-nowrap px-3 py-3 font-mono text-sm text-soft">
                 {PROGRAM_LABEL[c.program]}{" "}

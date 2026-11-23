@@ -1,4 +1,5 @@
 import { IntentLink } from "@/components/ui/intent-link";
+import { LinkPending } from "@/components/ui/pending-link";
 import { Fragment } from "react";
 
 import { caseHref, namedByLabel } from "@/lib/caseLinks";
@@ -31,8 +32,10 @@ export function DayCaseRow({
 }) {
   return (
     <li className={cn("grid grid-cols-1 gap-x-4 gap-y-1 py-3 sm:grid-cols-[13rem_minmax(0,1fr)_auto] sm:items-center [&>*]:min-w-0", className)}>
+      {/* The case page asks DOL live for a case it doesn't hold: the spinner says the press was heard. */}
       <IntentLink href={caseHref(c.caseNumber)} className="link inline-flex min-h-11 items-center font-mono text-sm">
         {c.caseNumber}
+        <LinkPending className="ml-1.5" />
       </IntentLink>{" "}
       <span className="leading-snug">
         {c.employer && c.employerSlug ? (

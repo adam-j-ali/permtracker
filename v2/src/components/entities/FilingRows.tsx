@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 import { IntentLink } from "@/components/ui/intent-link";
+import { LinkPending } from "@/components/ui/pending-link";
 
 import { CASE_ROW_LINK } from "@/components/entities/caseRows";
 import { shortDate } from "@convex/lib/months";
@@ -13,8 +14,10 @@ import { cn } from "@/lib/utils";
  * From 640px every row shares one set of column widths, so the dates and the
  * chips line up down the list; on a phone a row is two lines, the case number
  * and its day, then the job and its status. Each case number links to its own
- * live status. A list rather than a <table>: the phone layout restacks the
- * cells, which a table can't do without a sideways scroll.
+ * live status, and shows a spinner beside it while that page loads: it asks
+ * DOL live for a case it doesn't hold, about 3.5 seconds of a press that
+ * otherwise looked ignored. A list rather than a <table>: the phone layout
+ * restacks the cells, which a table can't do without a sideways scroll.
  */
 
 export interface FilingRow {
@@ -70,6 +73,7 @@ export function FilingRows({
                   className={cn(CASE_ROW_LINK, "order-1 whitespace-nowrap")}
                 >
                   {r.caseNumber}
+                  <LinkPending className="ml-1.5" />
                 </IntentLink>{" "}
                 <span className="order-2 whitespace-nowrap text-right text-sm tabular-nums text-muted-foreground sm:order-4 sm:text-left">
                   {shortDate(r.date) ?? ""}
