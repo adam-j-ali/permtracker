@@ -6,23 +6,12 @@ import {
 import type { NextFetchEvent, NextRequest } from "next/server";
 import { refuseAuthPost } from "@/lib/auth/authGate";
 import { afterSignIn, loginHrefFor } from "@/lib/auth/returnTo";
+import { SIGNED_IN_SECTIONS } from "@/lib/auth/signedInSections";
 
 // Protected routes (auth required) — unknown routes fall through to Next.js (404 naturally)
 const isProtectedRoute = createRouteMatcher([
-  "/dashboard",
-  "/dashboard/(.*)",
-  "/cases",
-  "/cases/(.*)",
-  "/calendar",
-  "/calendar/(.*)",
-  "/timeline",
-  "/timeline/(.*)",
-  "/settings",
-  "/settings/(.*)",
-  "/notifications",
-  "/notifications/(.*)",
-  "/admin",
-  "/admin/(.*)",
+  // Each signed-in section and every page under it.
+  ...SIGNED_IN_SECTIONS.flatMap((section) => [section, `${section}/(.*)`]),
   // Protected API routes
   "/api/chat",
   "/api/chat/(.*)",
