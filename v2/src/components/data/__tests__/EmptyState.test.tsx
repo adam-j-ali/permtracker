@@ -56,14 +56,22 @@ describe("SplitColumns", () => {
 
   it("puts the aside first in the source when it's read first, so a phone and a screen reader agree", () => {
     const { container } = render(
-      <SplitColumns asideFirst aside={<p>Contents</p>} label="On this page">
+      <SplitColumns asideFirst aside={<nav aria-label="On this page">Contents</nav>}>
         {<p>Text</p>}
       </SplitColumns>,
     );
     expect(container.textContent!.indexOf("Contents")).toBeLessThan(container.textContent!.indexOf("Text"));
-    expect(screen.getByRole("complementary", { name: "On this page" })).toBeTruthy();
-    // On two columns the aside still sits on the right.
-    expect(screen.getByRole("complementary").className).toMatch(/@\[56rem\]:col-start-2/);
+    // The side part brings its own meaning; the split adds no landmark of its own.
+    expect(screen.getByRole("navigation", { name: "On this page" })).toBeTruthy();
+    expect(container.querySelector("aside")).toBeNull();
+    // On two columns the side part still sits on the right.
+    expect(container.querySelector("[data-split-side]")!.className).toMatch(/@\[56rem\]:col-start-2/);
+  });
+
+  it("leaves no empty aside behind when there's nothing to put beside the main part", () => {
+    const { container } = render(<SplitColumns aside={null}>{<p>Only</p>}</SplitColumns>);
+    expect(container.querySelector("aside")).toBeNull();
+    expect(container.textContent).toBe("Only");
   });
 
   it("splits by its own width, one column with shrinkable tracks below it", () => {
