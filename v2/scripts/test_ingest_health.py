@@ -753,8 +753,8 @@ def check_browser_timer_heartbeats() -> None:
     # its first run was due, at 12:23 PM).
     from zoneinfo import ZoneInfo
     today = datetime.datetime.fromtimestamp(health.NOW_MS / 1000, ZoneInfo("America/New_York")).date()
-    check("browser timers: visastats-read is first due on Nov 23 2026",
-          health.BROWSER_TIMERS["visastats-read"][2] == "2026-11-23", str(health.BROWSER_TIMERS["visastats-read"]))
+    check("browser timers: visastats-read reads daily (Nov 23 2026), so it's allowed two days and has run",
+          health.BROWSER_TIMERS["visastats-read"][1:] == (2, None), str(health.BROWSER_TIMERS["visastats-read"]))
     label, days, first_due = health.BROWSER_TIMERS["visastats-read"]
     others = [r for r in fresh if "visastats-read" not in r[0]]
     try:

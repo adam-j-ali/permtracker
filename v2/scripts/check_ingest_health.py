@@ -993,7 +993,7 @@ BROWSER_TIMERS: dict[str, tuple[str, int, str | None]] = {
     "uscis-times": ("USCIS's processing times", 8, None),
     "gsc-round": ("the Search Console round", 2, None),
     "embassy-read": ("the embassies' visa notices", 2, None),
-    "visastats-read": ("VisaStats' community tracker", 8, "2026-11-23"),
+    "visastats-read": ("VisaStats' community tracker", 2, None),  # daily since Nov 23 2026 (weekly before)
 }
 # A heartbeat whose note starts this way ran but couldn't read its page (Chrome closed, a challenge it
 # couldn't clear by itself, the page moved).
