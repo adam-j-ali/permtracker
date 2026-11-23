@@ -143,25 +143,37 @@ check("an hour of Under Attack Mode steps back down",
       d.decide({"mode": "attack", "since": NOW - 3600}, True, S, NOW)[0][0] == "attack_off")
 check("not back within three hours", d.decide({"mode": "rule", "since": NOW - 900, "attackCooldownUntil": NOW + 60}, True, S, NOW) == [])
 check("back after the three hours", d.decide({"mode": "rule", "since": NOW - 900, "attackCooldownUntil": NOW - 1}, True, S, NOW)[0][0] == "attack_on")
-# The same source back within minutes of its rule coming off (Nov 19 2026: a scraper walking the employer pages under
-# one browser label, off at 5:30 PM and back at 5:33): the rule then holds for two calm hours, not thirty minutes.
+# The same source back within 10 minutes of its rule coming off (Nov 19 2026: a scraper walking the employer pages
+# under one browser label, off at 5:30 PM and back at 5:33): each return holds the rule twice as long as the last,
+# 30, 60, then 120 calm minutes, and no longer.
 st = {"mode": "rule", "since": NOW - 2400, "calmSince": NOW - 1800, "source": S}
 d.decide(st, False, None, NOW)
-check("all off remembers whose rule it was, and when", st.get("lastOff", {}).get("source") == S and st["lastOff"]["at"] == NOW)
-st = {"mode": "off", "lastOff": {"source": S, "at": NOW - 300}}
-check("the same source back within 15 minutes: the rule again", d.decide(st, True, S, NOW) == [("rule_on", {"source": S})])
-check("...holding for two calm hours this time", st.get("calmNeeded") == d.CALM_FOR_REPEAT == 7200)
-held = {"mode": "rule", "calmSince": NOW - 1800, "calmNeeded": d.CALM_FOR_REPEAT}
-check("...so thirty calm minutes leave it on", d.decide(held, False, None, NOW) == [])
-held = {"mode": "rule", "calmSince": NOW - 7200, "calmNeeded": d.CALM_FOR_REPEAT}
-check("...and two calm hours take it off", d.decide(held, False, None, NOW) == [("all_off", {})])
-st = {"mode": "off", "lastOff": {"source": S, "at": NOW - 3600}}
+check("all off remembers whose rule it was, when, and how long it held",
+      st.get("lastOff", {}).get("source") == S and st["lastOff"]["at"] == NOW and st["lastOff"]["calm"] == d.CALM_FOR,
+      str(st.get("lastOff")))
+st = {"mode": "off", "lastOff": {"source": S, "at": NOW - 300, "calm": d.CALM_FOR}}
+check("the same source back within 10 minutes: the rule again", d.decide(st, True, S, NOW) == [("rule_on", {"source": S})])
+check("...held for 60 calm minutes this time", st.get("calmNeeded") == 3600 and d.calm_words(st) == "an hour of calm",
+      str(st.get("calmNeeded")))
+st = {"mode": "off", "lastOff": {"source": S, "at": NOW - 300, "calm": 3600}}
 d.decide(st, True, S, NOW)
-check("back an hour later counts as new trouble: thirty minutes again", st.get("calmNeeded") in (None, d.CALM_FOR))
+check("...back again: 120 calm minutes", st.get("calmNeeded") == 7200 and d.calm_words(st) == "two calm hours",
+      str(st.get("calmNeeded")))
+st = {"mode": "off", "lastOff": {"source": S, "at": NOW - 300, "calm": 7200}}
+d.decide(st, True, S, NOW)
+check("...and never longer than 120", st.get("calmNeeded") == d.CALM_FOR_MAX == 7200, str(st.get("calmNeeded")))
+held = {"mode": "rule", "calmSince": NOW - 1800, "calmNeeded": 3600}
+check("...so thirty calm minutes leave a doubled rule on", d.decide(held, False, None, NOW) == [])
+held = {"mode": "rule", "calmSince": NOW - 3600, "calmNeeded": 3600}
+check("...and its hour takes it off", d.decide(held, False, None, NOW) == [("all_off", {})])
+st = {"mode": "off", "lastOff": {"source": S, "at": NOW - 660, "calm": 3600}}
+d.decide(st, True, S, NOW)
+check("back 11 minutes later counts as new trouble: thirty minutes again", st.get("calmNeeded") in (None, d.CALM_FOR))
 other = {"kind": "ua", "value": "Mozilla/5.0 other", "share": 0.5, "requests": 400}
-st = {"mode": "off", "lastOff": {"source": S, "at": NOW - 300}}
+st = {"mode": "off", "lastOff": {"source": S, "at": NOW - 300, "calm": 3600}}
 d.decide(st, True, other, NOW)
 check("another source back soon is new trouble too", st.get("calmNeeded") in (None, d.CALM_FOR))
+check("thirty minutes are said as minutes", d.calm_words({}) == "30 calm minutes")
 st = {"mode": "attack", "since": NOW - 2400, "calmSince": NOW - 1800}
 check("an Under Attack episode that ends calmly still starts the three-hour wait",
       d.decide(st, False, None, NOW) == [("all_off", {})] and st.get("attackCooldownUntil") == NOW + d.ATTACK_COOLDOWN)
@@ -341,6 +353,85 @@ scrape = ([dl(NOW - i % 200, asn=7922, ua=SCRAPER) + " -" for i in range(400)]
           + [dl(NOW - i % 200, asn=7018) + " -" for i in range(300)])
 src = d.find_source(d.page_requests(scrape, NOW - 300), NOW, d.beacons_by_label(scrape, NOW - 300))
 check("a label that never runs them still is", src and src["kind"] == "ua" and src["value"] == SCRAPER, str(src))
+
+# The daily email cap counts Eastern days (Nov 23 2026: it counted UTC days, so an evening's emails after 7 PM EST
+# started a fresh count).
+late = 1793331000.0  # Thu Oct 29 2026, 11:30 PM EDT, already Oct 30 in UTC
+check("the defense's day is Eastern", d.et_day(late) == "2026-10-29" and d.et_day(late + 3600) == "2026-10-30",
+      d.et_day(late))
+_sent = []
+_real_open, _real_env = d.urllib.request.urlopen, d.read_env
+d.urllib.request.urlopen = lambda req, timeout=None: (_sent.append(req), _Resp())[1]
+d.read_env = lambda path: {"RESEND_API_KEY": "re_test"}
+try:
+    _state = {}
+    d.email(_state, {"ALERT_TO": "owner@example.com"}, "subject", "text", now=late)
+finally:
+    d.urllib.request.urlopen, d.read_env = _real_open, _real_env
+check("an email is counted on its Eastern day", _state.get("emails") == {"2026-10-29": 1}, str(_state.get("emails")))
+
+# One email an episode (Nov 2026: the defense sent 12 emails in one evening, switching on and off): the first action,
+# then one summary when it ends, with how many times it acted and the source. The phone gets the same two.
+with tempfile.TemporaryDirectory() as tmp:
+    t = pathlib.Path(tmp)
+    (t / "defend.env").write_text("CF_API_TOKEN=x\nCF_ZONE_ID=z\n")
+    saved = {k: getattr(d, k) for k in ("HEALTH", "STATE", "OFF", "REPAIRS", "CONFIG", "Cloudflare", "email", "phone",
+                                        "people_busy", "find_source", "tail_lines")}
+    d.HEALTH, d.STATE, d.OFF, d.REPAIRS, d.CONFIG = t, t / "defend.json", t / "defend.off", t / "repairs.log", t / "defend.env"
+
+    class FakeCF:
+        level = "low"
+
+        def __init__(self, *_a):
+            pass
+
+        def add_rule(self, source, calm="30 calm minutes"):
+            pass
+
+        def remove_rule(self):
+            pass
+
+        def security_level(self):
+            return FakeCF.level
+
+        def set_security_level(self, v):
+            FakeCF.level = v
+
+    mails: list[tuple[str, str]] = []
+    pushes: list[tuple[str, str]] = []
+    busy = {"n": 0}
+    d.Cloudflare = FakeCF
+    d.email = lambda state, cfg, subject, text, now=None: mails.append((subject, text))
+    d.phone = lambda state, title, message, level: pushes.append((title, level))
+    d.people_busy = lambda lines, now: busy["n"]
+    d.find_source = lambda reqs, now, beacons=None: S
+    d.tail_lines = lambda *a, **k: []
+    real_time = d.time.time
+    clock = {"t": NOW}
+    d.time.time = lambda: clock["t"]
+    try:
+        def minute(n_busy: int, at: float) -> None:
+            busy["n"], clock["t"] = n_busy, at
+            d.main()
+        minute(9, NOW)                       # trouble: the rule
+        minute(9, NOW + 600)                 # still trouble 10 minutes on: Under Attack Mode
+        for i in range(1, 32):               # then calm for 31 minutes: all off
+            minute(0, NOW + 600 + 60 * i)
+    finally:
+        d.time.time = real_time
+        for k, v in saved.items():
+            setattr(d, k, v)
+    check("an episode sends two emails: its first action and its end", [m[0] for m in mails] ==
+          ["PERM Tracker: automatic defense on", "PERM Tracker: automatic defense off"], str([m[0] for m in mails]))
+    summary = mails[-1][1] if mails else ""
+    check("the summary says how many times it acted and the source",
+          "acted 2 times" in summary and "AS132203" in summary and "Under Attack Mode" in summary, summary)
+    check("the phone gets the start and the end, nothing between",
+          [p[1] for p in pushes] == ["high", "clear"], str(pushes))
+    log = (t / "repairs.log").read_text()
+    check("every action is still in the repairs log", "challenge on" in log and "Under Attack Mode on" in log
+          and "all off" in log, log)
+    check("the episode is closed", json.loads((t / "defend.json").read_text()).get("episode") is None)
 
 print()
 print(f"{len(failures)} failure(s)")
