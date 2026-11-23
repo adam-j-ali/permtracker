@@ -27,7 +27,7 @@ export function ChapterFold({
     <details className={cn("group mt-6", className)}>
       <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 bg-tint px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
         <span className="min-w-0">
-          <span className="block font-heading text-lg font-bold underline-offset-4 group-hover:underline">{summary}</span>
+          <span className="block font-heading text-lg font-bold underline-offset-4 group-hover:underline">{summary}</span>{" "}
           {hint ? <span className="mt-0.5 block text-sm text-muted-foreground">{hint}</span> : null}
         </span>{" "}
         <CaretDownIcon
