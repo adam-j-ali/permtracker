@@ -6,8 +6,9 @@ rules that matter, each from the Oct 5 2026 question "if the server ever goes
 down, would the backups delete themselves?":
 
 * the copy just uploaded must be the newest one listed, or nothing goes;
-* the newest 15 always stay, and so does the first copy of each of the 3
-  newest months;
+* the newest 8 always stay, and so does the first copy of each of the 2
+  newest months (fewer since Nov 23 2026: the owner wanted the bucket well
+  under its free 10 GB);
 * nothing under 8 days old is a candidate (the bucket locks those for 7);
 * a name without a readable stamp is never deleted.
 
@@ -54,13 +55,13 @@ names = daily(90)
 newest = names[0]
 gone = r2_keep.to_delete(names, newest, NOW)
 kept = set(names) - set(gone)
-check("the newest 15 stay", set(names[:15]) <= kept)
+check("the newest 8 stay", set(names[:8]) <= kept)
 check("the copy just uploaded stays", newest in kept)
-check("the first copy of the 3 newest months stays",
-      {"db-20261201-0715.sql.zst", "db-20261101-0715.sql.zst", "db-20261001-0715.sql.zst"} <= kept)
-check("a fourth month's first copy goes", "db-20260922-0715.sql.zst" in gone)
-# Dec 6 to 20 are the newest 15; Dec 1, Nov 1 and Oct 1 are the monthly firsts.
-check("90 nightly copies keep 15 + 3 monthly firsts", len(kept) == 18, f"kept {len(kept)}: {sorted(kept)}")
+check("the first copy of the 2 newest months stays",
+      {"db-20261201-0715.sql.zst", "db-20261101-0715.sql.zst"} <= kept)
+check("a third month's first copy goes", "db-20261001-0715.sql.zst" in gone)
+# Dec 13 to 20 are the newest 8; Dec 1 and Nov 1 are the monthly firsts.
+check("90 nightly copies keep 8 + 2 monthly firsts", len(kept) == 10, f"kept {len(kept)}: {sorted(kept)}")
 
 # 2. The server died: the newest copy listed is NOT the one being reported.
 # (Nothing runs then, but a stale call must still delete nothing.)
@@ -80,8 +81,8 @@ burst_sorted = sorted(burst, reverse=True)
 check("24 copies from today: none deleted (all under 8 days)",
       r2_keep.to_delete(burst + daily(5, end=NOW - timedelta(days=1)), burst_sorted[0], NOW) == [])
 
-# 5. Fewer than 15 copies: nothing goes.
-check("10 copies: nothing goes", r2_keep.to_delete(daily(10), daily(10)[0], NOW) == [])
+# 5. Eight copies or fewer: nothing goes.
+check("8 copies: nothing goes", r2_keep.to_delete(daily(8), daily(8)[0], NOW) == [])
 
 # 6. Names without a stamp are never touched.
 odd = names + ["README.txt", "db-manual.sql.zst"]
@@ -91,14 +92,14 @@ check("unstamped names are kept", not ({"README.txt", "db-manual.sql.zst"} & set
 for prefix, ext in (("server", "tar.zst.cms"), ("convex", "zip.cms")):
     ns = daily(40, prefix=prefix, ext=ext)
     g = r2_keep.to_delete(ns, ns[0], NOW)
-    check(f"{prefix}: newest 15 stay and something older goes", set(ns[:15]).isdisjoint(g) and len(g) > 0)
+    check(f"{prefix}: newest 8 stay and something older goes", set(ns[:8]).isdisjoint(g) and len(g) > 0)
 
 # 8. The command line, as permtracker-r2-prune calls it: rclone lsjson on stdin.
 listing = json.dumps([{"Name": n, "Size": 1, "IsDir": False} for n in daily(30, end=datetime.now(timezone.utc))])
 p = subprocess.run([sys.executable, str(HERE / "lib" / "r2_keep.py"), daily(30, end=datetime.now(timezone.utc))[0]],
                    input=listing, capture_output=True, text=True)
 out = [l for l in p.stdout.splitlines() if l]
-check("the command prints only names older than the newest 15", p.returncode == 0 and 10 <= len(out) <= 15, f"rc {p.returncode}, {len(out)} lines, {p.stderr[:200]}")
+check("the command prints only names older than the newest 8", p.returncode == 0 and 19 <= len(out) <= 22, f"rc {p.returncode}, {len(out)} lines, {p.stderr[:200]}")
 p = subprocess.run([sys.executable, str(HERE / "lib" / "r2_keep.py"), "x"], input="not json", capture_output=True, text=True)
 check("unreadable input fails (the caller then deletes nothing)", p.returncode != 0 and not p.stdout.strip())
 

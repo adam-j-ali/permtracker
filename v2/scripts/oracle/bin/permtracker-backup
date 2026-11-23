@@ -7,8 +7,8 @@
 # permtracker-backups, Standard class, the free tier): a copy that survives
 # losing this server. The bucket locks each copy for 7 days, so even a stolen
 # key cannot erase the last week, and older copies are removed only after a new
-# one has landed and checked out (permtracker-r2-prune: the newest 15 and the
-# first of each of the 3 newest months stay), so a server that stops uploading
+# one has landed and checked out (permtracker-r2-prune: the newest 8 and the
+# first of each of the 2 newest months stay), so a server that stops uploading
 # never loses its last copies. Until Oct 5 2026 the bucket deleted every copy
 # after 15 days, which would have emptied it 15 days after losing this
 # server. The upload is

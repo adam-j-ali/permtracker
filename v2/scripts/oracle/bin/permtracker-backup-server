@@ -16,7 +16,7 @@
 #   openssl cms -decrypt -binary -inform DER -in server-...tar.zst.cms \
 #     -inkey backup-key.pem | tar --zstd -tvf -
 # Added Sep 29 2026. Newest 7 kept here. R2 locks each copy for 7 days and keeps
-# the newest 15 plus a copy a month for 3 months, removed only after a newer one
+# the newest 8 plus a copy a month for 2 months, removed only after a newer one
 # lands (permtracker-r2-prune).
 set -euo pipefail
 B=/srv/permtracker/backups; R=/etc/permtracker/backup-recipient.pem

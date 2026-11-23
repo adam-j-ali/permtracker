@@ -1,8 +1,8 @@
 #!/bin/bash
 # permtracker-r2-prune <db|lca|server|convex> <name just uploaded> [--dry-run]
 #
-# Removes the off-site copies lib/r2_keep.py lets go: the newest 15 and the
-# first copy of each of the 3 newest months stay, and nothing under 8 days old
+# Removes the off-site copies lib/r2_keep.py lets go: the newest 8 and the
+# first copy of each of the 2 newest months stay, and nothing under 8 days old
 # is touched. The three backup jobs run this right after a new copy's upload
 # and size check, never on a clock of its own, so a server that stops uploading
 # (dead, or its Oracle account gone) never deletes a copy. Added Oct 5 2026; the

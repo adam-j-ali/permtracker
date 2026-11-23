@@ -7,7 +7,7 @@ deleted themselves. Copies are now removed only by permtracker-r2-prune, which
 the three backup jobs run right after a new copy's upload and size check. No
 new copy, nothing deleted.
 
-Kept: the newest 15 copies, the first copy of each of the 3 newest months, and
+Kept: the newest 8 copies, the first copy of each of the 2 newest months, and
 anything under 8 days old (the bucket's 7-day lock refuses those deletes
 anyway). Nothing is deleted unless the copy just uploaded is the newest one
 listed, so a stale or partial listing deletes nothing.
@@ -24,8 +24,8 @@ import re
 import sys
 from datetime import datetime, timedelta, timezone
 
-KEEP_NEWEST = 15
-KEEP_MONTHS = 3
+KEEP_NEWEST = 8  # 15 until Nov 23 2026: the owner wanted fewer copies kept
+KEEP_MONTHS = 2  # 3 until Nov 23 2026
 MIN_AGE = timedelta(days=8)
 # db-20261005-0715.sql.zst, server-20261005-0735.tar.zst.cms, convex-...zip.cms
 STAMP = re.compile(r"-(\d{8})-(\d{4})\.")

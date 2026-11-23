@@ -315,8 +315,8 @@ daily report arrived" the next morning.
 
 **R2 keeps copies until a newer one lands.** Each copy is locked for 7 days.
 Older ones are removed only by `bin/permtracker-r2-prune`, which the three
-backup jobs run right after a new copy's upload and size check: the newest 15
-and the first copy of each of the 3 newest months stay, nothing under 8 days
+backup jobs run right after a new copy's upload and size check: the newest 8
+and the first copy of each of the 2 newest months stay, nothing under 8 days
 old is touched, and nothing goes unless the copy just uploaded is the newest
 listed (`lib/r2_keep.py`, `test_r2_keep.py`). The bucket's own "delete after
 15 days" rule was removed Oct 5 2026: a dead server uploads nothing, so it
