@@ -48,32 +48,57 @@ describe("normaliseReceipt", () => {
 });
 
 describe("decodeReceipt", () => {
-  it("names the office for every glossary prefix and labels the digit reading a convention", () => {
+  it("names the office for every glossary prefix", () => {
     const d = decodeReceipt("EAC2190123456");
     expect(d).not.toBeNull();
     expect(d!.prefix).toBe("EAC");
     expect(d!.office?.name).toBe("Vermont Service Center");
     expect(d!.office?.source).toBe("glossary");
     expect(d!.masked).toBe(false);
-    expect(d!.convention).toEqual({ fiscalYear: 2021, workday: 901, sequence: "23456" });
+  });
+
+  it("reads a paper-center number as year, day and sequence when the day can be one", () => {
+    expect(decodeReceipt("LIN2612345678")!.digits).toEqual({ series: "day", fiscalYear: 2026, day: 123, sequence: "45678" });
+    expect(decodeReceipt("SRC2636650001")!.digits).toEqual({ series: "day", fiscalYear: 2026, day: 366, sequence: "50001" });
+  });
+
+  it("reads a 9 after the year as the lockbox series, a counter for the year, never a day 9xx", () => {
+    // Nov 22 2026: the page printed "Day 901" for EAC2190123456; no fiscal year has a 901st day.
+    expect(decodeReceipt("EAC2190123456")!.digits).toEqual({ series: "lockbox", fiscalYear: 2021, counter: 123456 });
+    expect(decodeReceipt("MSC2690000001")!.digits).toEqual({ series: "lockbox", fiscalYear: 2026, counter: 1 });
+  });
+
+  it("gives an online (IOE) number no year or day: its digits are one running count", () => {
+    expect(decodeReceipt("IOE0939123456")!.digits).toEqual({ series: "online" });
+    expect(decodeReceipt("ioe 9812345678")!.digits).toEqual({ series: "online" });
+  });
+
+  it("guesses no year for digits that fit neither reading", () => {
+    expect(decodeReceipt("WAC2640012345")!.digits).toEqual({ series: "unread" });
+    expect(decodeReceipt("LIN2600012345")!.digits).toEqual({ series: "unread" });
   });
 
   it("keeps an unknown prefix rather than refusing it, because USCIS's regex accepts any three letters", () => {
     const d = decodeReceipt("ZZZ2190123456");
     expect(d).not.toBeNull();
     expect(d!.office).toBeNull();
+    expect(d!.digits.series).toBe("lockbox");
   });
 
-  it("gives a masked receipt no convention, because there is nothing to read", () => {
-    const d = decodeReceipt("SRC*190123456");
-    expect(d!.masked).toBe(true);
-    expect(d!.convention).toBeNull();
+  it("gives a masked receipt nothing to read, IOE included", () => {
+    expect(decodeReceipt("SRC*190123456")!.masked).toBe(true);
+    expect(decodeReceipt("SRC*190123456")!.digits).toEqual({ series: "masked" });
+    expect(decodeReceipt("IOE*093912345")!.digits).toEqual({ series: "masked" });
   });
 
   it("reads 90-99 as the 1990s and everything else as 2000s", () => {
-    expect(decodeReceipt("LIN9912345678")!.convention!.fiscalYear).toBe(1999);
-    expect(decodeReceipt("LIN0012345678")!.convention!.fiscalYear).toBe(2000);
-    expect(decodeReceipt("LIN2612345678")!.convention!.fiscalYear).toBe(2026);
+    const year = (r: string) => {
+      const d = decodeReceipt(r)!.digits;
+      return d.series === "day" || d.series === "lockbox" ? d.fiscalYear : null;
+    };
+    expect(year("LIN9912345678")).toBe(1999);
+    expect(year("LIN0012345678")).toBe(2000);
+    expect(year("LIN2612345678")).toBe(2026);
   });
 
   it("lists the seven prefixes USCIS's glossary names, sourced to the glossary", () => {

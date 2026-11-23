@@ -19,7 +19,9 @@ import {
   RECEIPT_SHAPE_MESSAGE,
   decodeReceipt,
   normaliseReceipt,
+  type ReceiptDigits,
 } from "@/lib/uscis/receipt";
+import { formatInt } from "@/lib/format";
 import { uscisPublic } from "@/lib/uscis/torchClient";
 import { MoreText } from "@/components/data/MoreText";
 import { buttonVariants } from "@/components/ui/button";
@@ -101,7 +103,7 @@ function faqsFor(enabled: boolean) {
     },
     {
       q: "What do the digits mean?",
-      a: "USCIS doesn't publish a reading of them. The convention practitioners use is that the first two digits are the federal fiscal year, the next three are the workday of that year on which the case was receipted, and the last five are a sequence number. This page shows that reading and labels it a convention, because USCIS hasn't confirmed it.",
+      a: "USCIS doesn't publish a reading of them. On a paper-filed number, practitioners read the digits in three parts: the federal fiscal year (two digits), the day of that year (three) and a sequence number (five). A 9 right after the year marks another series: a count for the year at a USCIS lockbox, the office that takes in paper filings, so there's no day to read. Online filing numbers (IOE) count up in one run and don't name a year or a day. This page shows each reading and labels it, because USCIS hasn't confirmed any of them.",
     },
     {
       q: "Do you store the receipt number I type in?",
@@ -234,30 +236,12 @@ export default async function UscisCaseStatusPage({
                 {decoded.office?.source === "notices" ? " (seen on notices, missing from USCIS's glossary list)" : ""}
               </dd>
             </div>{" "}
-            {decoded.convention ? (
-              <>
-                <div>
-                  <dt className="font-bold text-muted-foreground">Fiscal year, by convention</dt>{" "}
-                  <dd className="mt-1 text-base">FY{decoded.convention.fiscalYear}</dd>
-                </div>{" "}
-                <div>
-                  <dt className="font-bold text-muted-foreground">Workday and sequence, by convention</dt>{" "}
-                  <dd className="mt-1 text-base">
-                    Day {decoded.convention.workday}, number {decoded.convention.sequence}
-                  </dd>
-                </div>
-              </>
-            ) : (
-              <div className="sm:col-span-2">
-                <dt className="font-bold text-muted-foreground">Digits</dt>{" "}
-                <dd className="mt-1 text-base">Masked by USCIS, so there&apos;s nothing to read.</dd>
-              </div>
-            )}
+            <ReceiptDigitsRows digits={decoded.digits} />
           </dl>{" "}
           <p className="border-t-2 border-border bg-tint px-5 py-3 text-sm text-muted-foreground sm:px-6">
-            The reading of the digits is a practitioner convention. USCIS publishes what the
-            letters mean. It doesn&apos;t publish what the digits mean, so the year and day
-            are labelled as a convention.
+            USCIS publishes what the letters mean. It doesn&apos;t publish what the digits mean,
+            so each reading here is labelled with where it comes from: practitioners&apos;
+            guides, or the numbers on real notices.
           </p>
         </section>
       ) : null}
@@ -397,5 +381,46 @@ function CheckWithUscis() {
         ))}
       </ul>
     </section>
+  );
+}
+
+
+/** The digit rows of the decoded receipt: one reading per series (src/lib/uscis/receipt.ts), each labelled. */
+function ReceiptDigitsRows({ digits }: { digits: ReceiptDigits }) {
+  if (digits.series === "day" || digits.series === "lockbox") {
+    return (
+      <>
+        <div>
+          <dt className="font-bold text-muted-foreground">Fiscal year, by convention</dt>{" "}
+          <dd className="mt-1 text-base">FY{digits.fiscalYear}</dd>
+        </div>{" "}
+        {digits.series === "day" ? (
+          <div>
+            <dt className="font-bold text-muted-foreground">Day and number, by convention</dt>{" "}
+            <dd className="mt-1 text-base">
+              Day {digits.day} of the year, number {digits.sequence}
+            </dd>
+          </div>
+        ) : (
+          <div>
+            <dt className="font-bold text-muted-foreground">Lockbox count, read from real notices</dt>{" "}
+            <dd className="mt-1 text-base">
+              Number {formatInt(digits.counter)} of the year at a USCIS lockbox, the office that takes in paper filings
+            </dd>
+          </div>
+        )}
+      </>
+    );
+  }
+  const words = {
+    online: "Online filing numbers count up in one run, so they don't name a year or a day.",
+    masked: "Masked by USCIS, so there's nothing to read.",
+    unread: "These digits don't fit any known reading, so this page doesn't guess a year.",
+  }[digits.series];
+  return (
+    <div className="sm:col-span-2">
+      <dt className="font-bold text-muted-foreground">Digits</dt>{" "}
+      <dd className="mt-1 text-base">{words}</dd>
+    </div>
   );
 }

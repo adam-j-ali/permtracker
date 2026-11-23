@@ -19,12 +19,16 @@
  * the validation regex as `[a-zA-Z]{3}[0-9]{10}` and, for masked numbers,
  * `[a-zA-Z]{3}\*[0-9]{9}`, and answers 422 to anything else.
  *
- * What USCIS does NOT document anywhere we could find is the reading of the
- * ten digits as `YY` fiscal year + `DDD` computer workday + `NNNNN` sequence.
- * That reading is universal in practitioner guides and matches every notice
- * we have seen, but it is a convention, so `decodeReceipt` labels it as one
- * and the page says so in words. A wrong "filed in FY2021" is worse than no
- * year, which is the same rule the DOL parser applies to legacy numbers.
+ * What USCIS does NOT document anywhere we could find is what the ten digits
+ * mean. Three readings, from practitioners' guides and 873 numbers on real
+ * notices (Nov 22 2026), each labelled where it's shown:
+ * - the day series, `YY` fiscal year + `DDD` day of that year + `NNNNN`
+ *   sequence, the practitioners' convention;
+ * - the lockbox series, `YY` + `9` + a seven-digit counter for the year, our
+ *   reading of notices (no day of a year is 900 or more);
+ * - online (IOE) numbers, one running count that names no year or day.
+ * Digits that fit none of them get no reading: a wrong "filed in FY2021" is
+ * worse than no year, the same rule the DOL parser applies to legacy numbers.
  */
 
 /** The canonical 13-character shape, upper-cased, no separators. */
@@ -80,13 +84,39 @@ export interface DecodedReceipt {
   office: ReceiptPrefix | null;
   /** True for the masked `ABC*123456789` form, which carries no readable digits. */
   masked: boolean;
-  /**
-   * The conventional reading of the digits. Null when masked. `fiscalYear` is
-   * the four-digit federal fiscal year the two-digit field implies; `workday`
-   * is the 1-based computer workday within that year; `sequence` the last
-   * five digits. Labelled a convention everywhere it is shown.
-   */
-  convention: { fiscalYear: number; workday: number; sequence: string } | null;
+  /** How the digits read (see the top of this file). */
+  digits: ReceiptDigits;
+}
+
+/**
+ * The reading of the ten digits. `fiscalYear` is the four-digit federal fiscal
+ * year the first two digits imply.
+ */
+export type ReceiptDigits =
+  | { series: "day"; fiscalYear: number; day: number; sequence: string }
+  | { series: "lockbox"; fiscalYear: number; counter: number }
+  | { series: "online" }
+  | { series: "masked" }
+  | { series: "unread" };
+
+/** The days a fiscal year can have. */
+const DAYS_IN_YEAR_MAX = 366;
+/** The digit after the year that marks the lockbox series. */
+const LOCKBOX_MARK = "9";
+const ONLINE_PREFIX = "IOE";
+
+function readDigits(receipt: string): ReceiptDigits {
+  if (receipt.includes("*")) return { series: "masked" };
+  if (receipt.startsWith(ONLINE_PREFIX)) return { series: "online" };
+  const yy = Number(receipt.slice(3, 5));
+  // Two-digit fiscal years: USCIS issued receipts under this scheme well
+  // before 2000, so 90-99 are read as the 1990s and everything else as
+  // 2000s. A receipt from 1989 or earlier is not something anyone looks up.
+  const fiscalYear = yy >= 90 ? 1900 + yy : 2000 + yy;
+  if (receipt[5] === LOCKBOX_MARK) return { series: "lockbox", fiscalYear, counter: Number(receipt.slice(6)) };
+  const day = Number(receipt.slice(5, 8));
+  if (day >= 1 && day <= DAYS_IN_YEAR_MAX) return { series: "day", fiscalYear, day, sequence: receipt.slice(8) };
+  return { series: "unread" };
 }
 
 /**
@@ -97,18 +127,7 @@ export function decodeReceipt(input: string): DecodedReceipt | null {
   if (!receipt) return null;
   const prefix = receipt.slice(0, 3);
   const office = RECEIPT_PREFIXES[prefix] ?? null;
-  const masked = receipt.includes("*");
-  let convention: DecodedReceipt["convention"] = null;
-  if (!masked) {
-    const yy = Number(receipt.slice(3, 5));
-    const ddd = Number(receipt.slice(5, 8));
-    // Two-digit fiscal years: USCIS issued receipts under this scheme well
-    // before 2000, so 90-99 are read as the 1990s and everything else as
-    // 2000s. A receipt from 1989 or earlier is not something anyone looks up.
-    const fiscalYear = yy >= 90 ? 1900 + yy : 2000 + yy;
-    convention = { fiscalYear, workday: ddd, sequence: receipt.slice(8) };
-  }
-  return { receipt, prefix, office, masked, convention };
+  return { receipt, prefix, office, masked: receipt.includes("*"), digits: readDigits(receipt) };
 }
 
 /**
