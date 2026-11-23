@@ -7,7 +7,7 @@ import { DataProvenance } from "@/components/data/DataProvenance";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { approvalRate, entityHref } from "@/lib/entityPayload";
-import { wilsonInterval } from "@/lib/wageLadder";
+import { wilsonInterval } from "@convex/lib/wilson";
 import { stateName } from "@/lib/usStateNames";
 import { entityFacets, entityPending, resolveEntity, type EntityFacets, type EntityPending, type ResolvedEntity } from "@/lib/db/entityDetail";
 import { getSponsorProfile } from "@/lib/db/sponsorIndex";

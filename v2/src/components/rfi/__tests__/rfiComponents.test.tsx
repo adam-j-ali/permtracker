@@ -9,6 +9,8 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import { wilsonInterval } from "@convex/lib/wilson";
+
 import type { ReviewStage, StageCohort, StageRecord } from "@/lib/db/rfi";
 import { OccupationRates } from "../OccupationRates";
 import { RfiOutcomes } from "../RfiOutcomes";
@@ -293,17 +295,14 @@ describe("OccupationRates", () => {
   it("prints an interval, because 15-of-51 and 14-of-1848 are not equally solid", () => {
     const { container } = render(<OccupationRates cut={cut} />);
     const text = container.textContent ?? "";
-    // Wilson, reused from RateBars rather than reimplemented: the normal
-    // approximation returns negative lower bounds exactly where these rates
-    // live. Two intervals, one per row, and the small-n row must be wider.
+    // The one Wilson interval: the plain plus-or-minus goes below zero exactly
+    // where these rates live. Two intervals, one per row, and the small-n row must be wider.
     expect(text.match(/95% interval/g) ?? []).toHaveLength(2);
-    const wilson = (k: number, n: number) => {
-      const z = 1.96, p = k / n, d = 1 + (z * z) / n;
-      const c = (p + (z * z) / (2 * n)) / d;
-      const h = (z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n))) / d;
-      return (Math.min(1, c + h) - Math.max(0, c - h)) * 100;
+    const width = (k: number, n: number) => {
+      const ci = wilsonInterval(k, n)!;
+      return ci.hi - ci.lo;
     };
-    expect(wilson(15, 51)).toBeGreaterThan(wilson(14, 1848));
+    expect(width(15, 51)).toBeGreaterThan(width(14, 1848));
   });
 
   it("keeps a below-baseline row visible instead of collapsing it to nothing", () => {

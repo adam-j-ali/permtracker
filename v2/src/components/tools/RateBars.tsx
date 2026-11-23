@@ -21,6 +21,8 @@
 
 import { useMemo, useState } from "react";
 
+import { wilsonInterval } from "@convex/lib/wilson";
+
 import { ChartTips } from "@/components/data/ChartTips";
 import { formatInt } from "@/lib/format";
 
@@ -40,34 +42,6 @@ export interface RateRow {
   denied?: number;
   /** Optional grouping value, offered as a facet by `RankedRateViews`. */
   group?: string;
-}
-
-/**
- * Wilson score interval for a proportion, in percent.
- *
- * The normal approximation is wrong exactly where these rates live — small
- * counts and proportions near zero — and produces negative lower bounds, so a
- * "denial rate of 0.6% plus or minus 1.2%" would print a negative floor. The
- * Wilson interval stays inside 0 to 100 by construction and is the standard
- * answer for this shape of data.
- *
- * Returns null when there is nothing to bound.
- */
-export function wilsonInterval(
-  denied: number,
-  decided: number,
-  z = 1.96,
-): { lo: number; hi: number } | null {
-  if (!Number.isFinite(denied) || !Number.isFinite(decided) || decided <= 0) return null;
-  const p = denied / decided;
-  const denom = 1 + (z * z) / decided;
-  const centre = (p + (z * z) / (2 * decided)) / denom;
-  const half =
-    (z * Math.sqrt((p * (1 - p)) / decided + (z * z) / (4 * decided * decided))) / denom;
-  return {
-    lo: Math.max(0, (centre - half) * 100),
-    hi: Math.min(100, (centre + half) * 100),
-  };
 }
 
 /**

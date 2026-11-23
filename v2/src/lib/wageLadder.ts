@@ -11,6 +11,7 @@
  * with numpy's linear interpolation. Nothing in this file computes a
  * percentile; publicData.ts owns the one copy of that SQL.
  */
+import { wilsonInterval } from "@convex/lib/wilson";
 
 /** The seven rungs, low to high, as the table stores them. */
 export const RUNGS = ["p5", "p10", "p25", "p50", "p75", "p90", "p95"] as const;
@@ -150,50 +151,14 @@ export const WAGE_BAND_EDGES = [60_000, 80_000, 100_000, 130_000] as const;
 /**
  * The floor under a published denial rate. Must equal `DEFAULT_RATE_FLOOR`.
  *
- * DECLARED HERE RATHER THAN IMPORTED, AND THE REASON IS A SILENT FAILURE THAT
- * ACTUALLY SHIPPED FOR ONE ITERATION. `DEFAULT_RATE_FLOOR` and
- * `wilsonInterval` live in `components/tools/RateBars.tsx`, which begins with
- * `"use client"`. This module is reachable from `lib/db/wages.ts`, which is
- * `server-only`, so under React Server Components those imports resolve to
- * CLIENT REFERENCES rather than to the values. `32020 >= <client reference>`
- * is simply `false`, so every wage band rendered "withheld" over tens of
- * thousands of cases, with no error anywhere: the page returned 200 and the
- * numbers were gone. Vitest does not apply the RSC boundary, so all 28 unit
- * tests stayed green through it.
- *
- * `equivalence.test.ts` asserts this constant and `wilsonInterval` below agree
- * exactly with the RateBars originals, which is the anti-drift guarantee the
- * import was supposed to provide, obtained in the one place where importing
- * both is safe. The real fix is to move the shared maths out of a "use client"
- * file into `src/lib/`; that file belongs to another agent.
+ * Declared here rather than imported from `components/tools/RateBars.tsx`,
+ * which begins with `"use client"`: this module is reachable from
+ * `lib/db/wages.ts`, which is `server-only`, and under React Server Components
+ * an import from a client file is a client reference, not the value.
+ * `32020 >= <client reference>` is `false`, so every wage band once rendered
+ * "withheld" with no error. `equivalence.test.ts` holds the two equal.
  */
 export const MIN_DECIDED_FOR_BAND_RATE = 100;
-
-/**
- * Wilson score interval for a proportion, in percent.
- *
- * Character-for-character the arithmetic in `RateBars.wilsonInterval`, pinned
- * by a test that imports both and compares them across a grid of inputs. The
- * normal approximation is wrong exactly where these rates live, near zero with
- * small counts, and yields negative lower bounds; Wilson stays inside 0 to 100
- * by construction.
- */
-export function wilsonInterval(
-  denied: number,
-  decided: number,
-  z = 1.96,
-): { lo: number; hi: number } | null {
-  if (!Number.isFinite(denied) || !Number.isFinite(decided) || decided <= 0) return null;
-  const p = denied / decided;
-  const denom = 1 + (z * z) / decided;
-  const centre = (p + (z * z) / (2 * decided)) / denom;
-  const half =
-    (z * Math.sqrt((p * (1 - p)) / decided + (z * z) / (4 * decided * decided))) / denom;
-  return {
-    lo: Math.max(0, (centre - half) * 100),
-    hi: Math.min(100, (centre + half) * 100),
-  };
-}
 
 export interface WageBandRate {
   /** Printed label, e.g. "$60k to $80k". */

@@ -1,13 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 
-import {
-  RankedRateViews,
-  RateTable,
-  RateViews,
-  wilsonInterval,
-  type RateRow,
-} from "../RateBars";
+import { wilsonInterval } from "@convex/lib/wilson";
+
+import { RankedRateViews, RateTable, RateViews, type RateRow } from "../RateBars";
 
 /**
  * Three subjects, all about honesty rather than layout.
