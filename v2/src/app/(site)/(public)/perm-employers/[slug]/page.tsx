@@ -1177,7 +1177,7 @@ export default async function EmployerPage({
         >
           {byName ? (
             <FilingsSearch
-              subject={`${row.name}'s`}
+              what={`the filings of ${row.name}`}
               fixed={{ q: row.name }}
               ask="title"
               jobs={facets.occupation ?? []}

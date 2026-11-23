@@ -483,7 +483,7 @@ export default async function OccupationPage({
         }
       >
       <FilingsSearch
-        subject={displayTitle(row)}
+        what={`the filings for ${displayTitle(row)}`}
         fixed={{ occupation: row.slug }}
         ask="q"
         employers={facets.employer ?? []}

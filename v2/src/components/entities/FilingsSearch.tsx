@@ -5,6 +5,7 @@ import { MagnifyingGlassIcon } from "@phosphor-icons/react/ssr";
 import { buttonVariants } from "@/components/ui/button";
 import { CASE_SEARCH_PATH, caseSearchHref } from "@/lib/caseSearchPlan";
 import { formatInt } from "@/lib/format";
+import { stateName } from "@/lib/usStateNames";
 import type { FacetRow } from "@/lib/db/entityDetail";
 
 /**
@@ -18,13 +19,18 @@ import type { FacetRow } from "@/lib/db/entityDetail";
  *
  * The chips above the form are the subject's own busiest jobs or employers, each one tap from its
  * filings: "Software Developers, 3,420" on Microsoft's page opens Microsoft's Software Developers filings.
+ * A chip wraps its words inside the card (half of all job titles are longer than a phone's chip), and a
+ * program's name never breaks at its hyphen.
  */
 
 type Fixed = { q?: string; firm?: string; occupation?: string };
 
 export interface FilingsSearchProps {
-  /** Possessive, for the heading: "Microsoft Corporation's", "this job's", "Fragomen's". */
-  subject: string;
+  /**
+   * What is searched, after "Search": "the filings of Microsoft Corporation", "the filings for Software
+   * Developers". Never a possessive built on DOL's printed name, which reads "MERIT LOGISTICS's".
+   */
+  what: string;
   /** What the page itself is, sent along unchanged. */
   fixed: Fixed;
   /** The free-text box: a job title on an employer's or firm's page, an employer on a job's. */
@@ -46,7 +52,12 @@ const CHIPS = 6;
 const ASK_LABEL = { title: "Job title", q: "Employer" } as const;
 const ASK_HINT = { title: "e.g. Software engineer", q: "e.g. Amazon" } as const;
 
-export function FilingsSearch({ subject, fixed, ask, jobs = [], employers = [], states = [], className }: FilingsSearchProps) {
+/** A program's name on one line: a browser may break after any hyphen, and "CW-" alone ends a line. */
+function Whole({ children }: { children: string }) {
+  return <span className="whitespace-nowrap">{children}</span>;
+}
+
+export function FilingsSearch({ what, fixed, ask, jobs = [], employers = [], states = [], className }: FilingsSearchProps) {
   const pickJob = !fixed.occupation && jobs.some((j) => j.key);
   const chips = (pickJob ? jobs : employers)
     .filter((r) => r.key)
@@ -58,33 +69,40 @@ export function FilingsSearch({ subject, fixed, ask, jobs = [], employers = [], 
         ? caseSearchHref({ ...fixed, occupation: r.key ?? "" })
         : caseSearchHref({ ...fixed, q: r.label }),
     }));
-  const stateRows = states.filter((s) => s.key && /^[A-Z]{2}$/.test(s.key));
+  // Every state the filings name, by name, A to Z: the list can run to every state and territory.
+  const stateRows = states
+    .filter((s): s is FacetRow & { key: string } => !!s.key && /^[A-Z]{2}$/.test(s.key))
+    .map((s) => ({ key: s.key, name: stateName(s.key) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
   const columns = 1 + Number(pickJob) + Number(stateRows.length > 0);
+  const title = `Search ${what}`;
 
   return (
     <section aria-labelledby="filings-search" className={className}>
       <div className="flex items-center gap-2">
         <MagnifyingGlassIcon className="size-5 shrink-0 text-primary-text" aria-hidden="true" />
         <h3 id="filings-search" className="font-heading text-xl font-bold">
-          {`Search ${subject} filings`}
+          {title}
         </h3>
       </div>{" "}
       <p className="mt-1 text-base text-soft">
-        Case by case, in every program: PERM, wage requests, H-1B, H-2A, H-2B and CW-1.
+        Case by case, in every program: PERM, wage requests, <Whole>H-1B</Whole>, <Whole>H-2A</Whole>,{" "}
+        <Whole>H-2B</Whole> and <Whole>CW-1</Whole>.
       </p>{" "}
       {chips.length ? (
         <div className="mt-4">
           <p className="text-sm font-bold">{pickJob ? "Their most-filed jobs" : "Who files it most"}</p>{" "}
+          {/* The "Did you mean" chip's shape: the item may shrink to the list, and the words wrap inside the chip. */}
           <ul className="mt-2 flex flex-wrap gap-2">
             {chips.map((c) => (
               <Fragment key={c.href}>
                 {" "}
-                <li>
+                <li className="min-w-0 max-w-full">
                   <Link
                     href={c.href}
-                    className="inline-flex min-h-11 max-w-full items-center gap-2 border-2 border-border bg-tint px-3 text-sm font-semibold hover:border-foreground focus-visible:ring-2 focus-visible:ring-primary"
+                    className="inline-flex min-h-11 max-w-full flex-wrap items-baseline gap-x-2 gap-y-0.5 border-2 border-border bg-tint px-3 py-2 text-left text-sm font-semibold [overflow-wrap:anywhere] hover:border-foreground focus-visible:ring-2 focus-visible:ring-primary"
                   >
-                    <span className="truncate">{c.label}</span>{" "}
+                    <span className="min-w-0">{c.label}</span>{" "}
                     <span className="shrink-0 font-mono tabular-nums text-muted-foreground">{formatInt(c.n)}</span>
                   </Link>
                 </li>
@@ -97,7 +115,7 @@ export function FilingsSearch({ subject, fixed, ask, jobs = [], employers = [], 
         action={CASE_SEARCH_PATH}
         method="get"
         role="search"
-        aria-label={`Search ${subject} filings`}
+        aria-label={title}
         className={`mt-5 grid grid-cols-1 items-end gap-3 [&>*]:min-w-0 ${
           columns === 3 ? "md:grid-cols-[2fr_2fr_1fr_auto]" : columns === 2 ? "md:grid-cols-[2fr_1fr_auto]" : "md:grid-cols-[1fr_auto]"
         }`}
@@ -128,8 +146,8 @@ export function FilingsSearch({ subject, fixed, ask, jobs = [], employers = [], 
             <select name="state" defaultValue="" className={FIELD}>
               <option value="">Any state</option>
               {stateRows.map((s) => (
-                <option key={s.key} value={s.key ?? ""}>
-                  {s.label}
+                <option key={s.key} value={s.key}>
+                  {s.name}
                 </option>
               ))}
             </select>

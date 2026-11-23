@@ -433,7 +433,7 @@ export default async function AttorneyPage({
           }
         >
           <FilingsSearch
-            subject={`${row.name}'s`}
+            what={`the filings of ${row.name}`}
             fixed={{ firm: row.slug }}
             ask="q"
             jobs={facets.occupation ?? []}
