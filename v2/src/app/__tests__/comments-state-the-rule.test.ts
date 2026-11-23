@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * A comment states the rule. It never names the owner and never quotes a chat: this
+ * A comment states the rule. It never names the owner or anyone else on the team, and never quotes a chat: this
  * repository is public, and a decision reads the same without the words it was said in
  * ("the owner's call, Oct 21 2026").
  *
@@ -58,7 +58,9 @@ function commentLines(text: string): { n: number; line: string }[] {
 
 /** "owner, Oct 21 2026: “..." and "the owner: “...": a decision with the chat line it came in. */
 const QUOTED_CHAT = /\b(?:owner|owner[’']s call)\b[^"“\n]{0,24}(?:\d{4}|[A-Z][a-z]{2} \d{1,2})?[^"“\n]{0,6}:\s*["“]/;
-const NAMED = /\bAdam\b/;
+const NAMED = /\b(?:Adam|Sabrina)\b/;
+/** "Name, Nov 1 2026: “...": anyone's words, with the day they said them. */
+const QUOTED_PERSON = /\b[A-Z][a-z]+,\s+[A-Z][a-z]{2}\s+\d{1,2}\s+20\d\d:\s*["“]/;
 
 describe("comments state the rule", () => {
   const found: string[] = [];
@@ -66,7 +68,8 @@ describe("comments state the rule", () => {
     for (const path of files(folder)) {
       const lines = commentLines(readFileSync(join(ROOT, path), "utf8"));
       for (const { n, line } of lines) {
-        if (NAMED.test(line) && !NAME_ALLOWED.has(path)) found.push(`${path}:${n} names the owner`);
+        if (NAMED.test(line) && !NAME_ALLOWED.has(path)) found.push(`${path}:${n} names a person`);
+        if (QUOTED_PERSON.test(line) && !NAME_ALLOWED.has(path)) found.push(`${path}:${n} quotes a person`);
         if (QUOTED_CHAT.test(line) && !NAME_ALLOWED.has(path)) found.push(`${path}:${n} quotes a chat`);
       }
     }
@@ -85,6 +88,9 @@ describe("comments state the rule", () => {
       expect(QUOTED_CHAT.test(bad), bad).toBe(true);
     }
     expect(NAMED.test(" * Adam asked for one blended number")).toBe(true);
+    expect(NAMED.test("  // Each step's state (Sabrina, Oct 27 2026: the backlog marks).")).toBe(true);
+    expect(QUOTED_PERSON.test('    // For the worker (Merin, Nov 1 2026: "to frame previous employment')).toBe(true);
+    expect(QUOTED_PERSON.test("    // 8 CFR 204.5(g)(1), read on eCFR's Oct 19 2026 edition.")).toBe(false);
     for (const fine of [
       "// Fifty rows a page (the owner's call, Oct 21 2026).",
       ' * The owner\'s word on a sender, from the admin page: "allow" when a held message',

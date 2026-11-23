@@ -148,7 +148,7 @@ export const OVERVIEW = { key: "overview" as const, name: "Data", label: "Data",
 export const CALCULATORS = s("calculators", "Calculators", "Calculators", "/calculators");
 
 export const SECTIONS: DataNavSection[] = [
-  // Named for the phrase people search (Search Console, Oct 28 2026: "perm case status" found the homepage first).
+  // Named for the phrase people search: on Oct 28 2026 Search Console showed "perm case status" finding the homepage first.
   s("case-status", "Your case", "PERM case status", "/perm-case-status"),
   s("case-alerts", "Your case", "Email alerts", "/perm-case-alerts"),
   s("all-cases", "Your case", "Find a case", "/case-search"),
