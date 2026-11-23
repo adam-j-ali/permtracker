@@ -92,7 +92,7 @@ export function FirmProfileBlock({ firmName, profile }: { firmName: string; prof
         <h2 id="from-the-firm" className="font-heading text-xl font-bold">
           From the firm
         </h2>{" "}
-        <p className="text-sm font-bold text-muted-foreground">In {firmName}&apos;s own words</p>
+        <p className="text-sm font-bold text-muted-foreground">In the firm&apos;s own words</p>
       </div>{" "}
       {profile.description ? (
         <p className="mt-4 max-w-3xl whitespace-pre-line text-base leading-relaxed">{profile.description}</p>

@@ -206,14 +206,14 @@ describe("the news lead: moves grouped by day, and who is on hold now", () => {
       mv("2026-10-08", "Maplebear", 14, "off"),
     ]);
     expect(dayHoldSentence(day!)).toBe(
-      "DOL put PERM cases on hold at Microsoft (598), Capgemini (169) and Adobe (10). It took 14 of Maplebear's cases off hold, back to analyst review.",
+      "DOL put PERM cases on hold at Microsoft (598), Capgemini (169) and Adobe (10). It took 14 cases at Maplebear off hold, back to analyst review.",
     );
   });
 
   it("handles one employer, and a day of releases only", () => {
-    expect(dayHoldSentence(movesByDay([mv("2026-09-24", "Adobe", 215)])[0]!)).toBe("DOL put 215 of Adobe's PERM cases on hold.");
+    expect(dayHoldSentence(movesByDay([mv("2026-09-24", "Adobe", 215)])[0]!)).toBe("DOL put 215 PERM cases at Adobe on hold.");
     expect(dayHoldSentence(movesByDay([mv("2026-09-11", "Adobe", 201, "off"), mv("2026-09-11", "Maplebear", 14, "off")])[0]!)).toBe(
-      "DOL took 201 of Adobe's cases off hold, back to analyst review. It took 14 of Maplebear's cases off hold, back to analyst review.",
+      "DOL took 201 cases at Adobe off hold, back to analyst review. It took 14 cases at Maplebear off hold, back to analyst review.",
     );
   });
 

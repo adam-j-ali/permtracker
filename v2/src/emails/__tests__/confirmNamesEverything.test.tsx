@@ -155,6 +155,14 @@ describe("a confirmation for several", () => {
     expect(html.indexOf("Zeta Labs LLC")).toBeLessThan(html.indexOf("Follow this employer"));
   });
 
+  it.each(["group", "each"] as const)("names the employer as DOL prints it, with no possessive built on it (%s)", async (scope) => {
+    const html = await render(EmployerAlertConfirm({ employerName: "MERIT LOGISTICS", confirmUrl: CONFIRM, scope }));
+    const words = wordsOf(html);
+    expect(words).toContain("MERIT LOGISTICS");
+    expect(words).not.toMatch(/MERIT LOGISTICS['\u2019]s/);
+    expect(words).toContain("This address was entered to follow MERIT LOGISTICS on PERM Tracker.");
+  });
+
   it("says nothing about other employers when there are none", async () => {
     const html = await render(EmployerAlertConfirm({ employerName: "Adobe Inc.", confirmUrl: CONFIRM }));
     expect(html).not.toContain("The same click also confirms your follow");

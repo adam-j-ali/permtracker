@@ -26,6 +26,16 @@ describe("FirmClaimEmail", () => {
     expect(html.toLowerCase()).not.toContain("unsubscribe");
   });
 
+  it.each(["confirm", "approved", "published", "declined", "edit"] as const)(
+    "%s: says the page for the firm, with no possessive on the name DOL prints and no doubled full stop",
+    async (kind) => {
+      const html = await render(FirmClaimEmail({ kind, firmName: "SMITH LAW, P.C.", url: "https://x", validFor: "2 days" }));
+      expect(html).toContain("the page for SMITH LAW, P.C. on PERM Tracker");
+      expect(html).not.toMatch(/P\.C\.(?:'|\u2019|&#x27;|&#39;|&apos;|&rsquo;)s/);
+      expect(html).not.toContain("P.C..");
+    },
+  );
+
   it("tells a claimant whose domain DOL doesn't tie to the firm that a person checks it", async () => {
     const manual = await render(FirmClaimEmail({ kind: "confirm", firmName: "Smith Immigration PLLC", url: "https://x", validFor: "7 days" }));
     expect(manual).toContain("check the claim by hand");

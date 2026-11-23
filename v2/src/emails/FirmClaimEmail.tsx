@@ -37,7 +37,7 @@ const COPY: Record<
   { preview: (f: string) => string; body: (f: string, auto: boolean, reason?: string) => string; button: string }
 > = {
   confirm: {
-    preview: (f) => `Confirm your claim on ${f}'s PERM Tracker page.`,
+    preview: (f) => `Confirm your claim on the page for ${f} on PERM Tracker.`,
     body: (_f, auto) =>
       auto
         ? "Confirm, and we'll check your profile before it goes up on the firm's page. It sits next to DOL's figures, marked as the firm's own words, and we'll email you when it's up."
@@ -45,23 +45,23 @@ const COPY: Record<
     button: "Confirm the claim",
   },
   approved: {
-    preview: (f) => `Your claim on ${f}'s page is approved.`,
+    preview: (f) => `Your claim on the page for ${f} is approved.`,
     body: () => "We checked your claim and your profile is up on the firm's page, marked as the firm's own words. You can change it or take it down here.",
     button: "Edit the profile",
   },
   published: {
-    preview: (f) => `Your changes to ${f}'s page are up.`,
+    preview: (f) => `Your changes to the page for ${f} are up.`,
     body: () => "We read your changes and they're up on the firm's page, marked as the firm's own words. You can change them or take the profile down here.",
     button: "Edit the profile",
   },
   declined: {
-    preview: (f) => `Your changes to ${f}'s page need another look.`,
+    preview: (f) => `Your changes to the page for ${f} need another look.`,
     body: (_f, _auto, reason) =>
       `We didn't put your latest changes up${reason ? `: ${reason}` : "."} The firm's page shows what it showed before. Your changes are on the edit page to fix and send again.`,
     button: "Fix and send again",
   },
   edit: {
-    preview: (f) => `Edit ${f}'s profile on PERM Tracker.`,
+    preview: (f) => `Edit the profile for ${f} on PERM Tracker.`,
     body: () => "Here's your link to change the firm's profile or take it down.",
     button: "Edit the profile",
   },
@@ -73,7 +73,7 @@ export function FirmClaimEmail({ kind, firmName, url, validFor, domainVerified =
     <EmailLayout
       previewText={c.preview(firmName)}
       hideSettingsLink
-      footerText={`This address was entered to claim ${firmName}'s page on PERM Tracker.`}
+      footerText={`This address was entered to claim the page for ${firmName} on PERM Tracker.`}
     >
       <Section style={styles.stamp}>
         <Text className="em-text-secondary" style={styles.stampEyebrow}>Law firm</Text>

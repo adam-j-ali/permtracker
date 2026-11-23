@@ -38,7 +38,7 @@ describe('generateRecruitmentResultsText', () => {
     it('generates Notice of Filing line with business days', () => {
       const text = generateRecruitmentResultsText(createBaseCase());
       expect(text).toContain('1. Notice of Filing was posted');
-      expect(text).toContain("Acme Corporation's premises");
+      expect(text).toContain("the premises of Acme Corporation");
       expect(text).toContain('December 10, 2024');
       expect(text).toContain('December 24, 2024');
       expect(text).toMatch(/\d+ business days/);

@@ -51,11 +51,11 @@ export function EmployerAlertConfirm({
     <EmailLayout
       previewText={
         each
-          ? `Confirm and we’ll email you each time the status of one of ${employerName}’s PERM cases changes.`
-          : `Confirm and we’ll email you when DOL moves ${employerName}’s PERM cases as a group.`
+          ? `Confirm to follow ${employerName}, and we’ll email you each time the status of one of its PERM cases changes.`
+          : `Confirm to follow ${employerName}, and we’ll email you when DOL moves its PERM cases as a group.`
       }
       hideSettingsLink
-      footerText={`This address was entered to follow ${employerName}’s PERM cases on PERM Tracker. It isn’t confirmed yet, so nothing else will be sent.`}
+      footerText={`This address was entered to follow ${employerName} on PERM Tracker. It isn’t confirmed yet, so nothing else will be sent.`}
     >
       <Section style={styles.stamp}>
         <Text className="em-text-secondary" style={styles.stampEyebrow}>Employer to follow</Text>

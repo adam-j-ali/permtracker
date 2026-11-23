@@ -41,7 +41,7 @@ export function LayoffShareGrid({
     <div className={cn("grid grid-cols-1 items-center gap-8 md:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] [&>*]:min-w-0", className)}>
       <div
         role="img"
-        aria-label={`${top} of every 100 applications that reported a layoff in ${fyLabel} were ${topName}'s.`}
+        aria-label={`${topName} filed ${top} of every 100 applications that reported a layoff in ${fyLabel}.`}
         className="grid w-full max-w-[20rem] grid-cols-10 gap-[3px]"
       >
         {squares.map((isTop, i) => (
@@ -57,7 +57,7 @@ export function LayoffShareGrid({
           {top} <span className="text-2xl font-bold sm:text-3xl">of every 100</span>
         </p>{" "}
         <p className="mt-3 max-w-md text-lg leading-relaxed">
-          applications that reported a layoff in {fyLabel} were {name}&apos;s: {formatInt(topYes)} of{" "}
+          applications that reported a layoff in {fyLabel} were filed by {name}: {formatInt(topYes)} of{" "}
           {formatInt(totalYes)}.
         </p>{" "}
         <ul className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm">

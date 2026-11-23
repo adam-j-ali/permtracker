@@ -375,14 +375,14 @@ async function sendFirmEmail(
 ): Promise<boolean> {
   const subject =
     args.kind === "confirm"
-      ? `Confirm your claim on ${args.firmName}'s page`
+      ? `Confirm your claim on the page for ${args.firmName}`
       : args.kind === "approved"
-        ? `Your claim on ${args.firmName}'s page is approved`
+        ? `Your claim on the page for ${args.firmName} is approved`
         : args.kind === "published"
-          ? `Your changes to ${args.firmName}'s page are up`
+          ? `Your changes to the page for ${args.firmName} are up`
           : args.kind === "declined"
-            ? `Your changes to ${args.firmName}'s page need another look`
-            : `Edit ${args.firmName}'s profile on PERM Tracker`;
+            ? `Your changes to the page for ${args.firmName} need another look`
+            : `Edit the profile for ${args.firmName} on PERM Tracker`;
   let html: string | undefined;
   try {
     const { render } = await import("@react-email/render");

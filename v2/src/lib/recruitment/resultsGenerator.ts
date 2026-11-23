@@ -363,7 +363,7 @@ export function generateRecruitmentResultsText(
       data.noticeOfFilingEndDate
     );
     lines.push(
-      `${lineNumber}. Notice of Filing was posted at ${data.employerName}'s premises from ${formatDate(data.noticeOfFilingStartDate)} to ${formatDate(data.noticeOfFilingEndDate)} (${businessDays} business days).`
+      `${lineNumber}. Notice of Filing was posted at the premises of ${data.employerName} from ${formatDate(data.noticeOfFilingStartDate)} to ${formatDate(data.noticeOfFilingEndDate)} (${businessDays} business days).`
     );
     lineNumber++;
   }

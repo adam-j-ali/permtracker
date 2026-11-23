@@ -12,6 +12,8 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { possessivesIn } from "../../../test-utils/possessive-on-value";
+
 const ROOT = process.cwd();
 const EMAILS = join(ROOT, "src/emails");
 const files = [
@@ -59,6 +61,19 @@ describe("email voice", () => {
           : [],
       ),
     );
+    expect(hits).toEqual([]);
+  });
+
+  it("builds no possessive on a name it prints (\"Confirm your claim on SMITH LAW PLLC's page\" until Nov 23 2026)", () => {
+    // DOL prints employer and firm names in capitals and with their own endings, so the templates say "the PERM
+    // cases at", "the page for" and "the profile for" instead. Each value allowed here is never a printed name.
+    const notAName: Record<string, string[]> = {
+      "src/emails/CaseAlertConfirm.tsx": ["${nounWithArticle}"], // "this case" or "this wage request"
+    };
+    const hits = files
+      .flatMap((f) => possessivesIn(f.slice(ROOT.length + 1), readFileSync(f, "utf8")))
+      .filter((h) => !notAName[h.file]?.includes(h.value))
+      .map((h) => `${h.file}:${h.line}: ${h.value}`);
     expect(hits).toEqual([]);
   });
 

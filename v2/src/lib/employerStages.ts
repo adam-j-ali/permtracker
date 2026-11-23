@@ -419,14 +419,14 @@ export function dayHoldSentence(day: HoldDay): string {
   const off = day.moves.filter((m) => m.dir === "off");
   const out: string[] = [];
   if (on.length === 1) {
-    out.push(`DOL put ${formatInt(on[0]!.n)} of ${on[0]!.name}'s PERM cases on hold.`);
+    out.push(`DOL put ${formatInt(on[0]!.n)} PERM cases at ${on[0]!.name} on hold.`);
   } else if (on.length > 1) {
     out.push(`DOL put PERM cases on hold at ${listWords(on.map((m) => `${m.name} (${formatInt(m.n)})`))}.`);
   }
   off.forEach((m, i) => {
     const lead = i === 0 && on.length === 0 ? "DOL took" : "It took";
     const where = STATUS_WORDS[m.to] ?? m.to.toLowerCase();
-    out.push(`${lead} ${formatInt(m.n)} of ${m.name}'s cases off hold, ${where}.`);
+    out.push(`${lead} ${formatInt(m.n)} cases at ${m.name} off hold, ${where}.`);
   });
   return out.join(" ");
 }

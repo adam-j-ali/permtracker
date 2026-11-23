@@ -57,7 +57,7 @@ export function LayoffCheckCard({ employer, eta9089FilingDate }: { employer: Loo
       <div className="detail-card-body space-y-3">
         <p className="text-base">
           {read.state === "loading"
-            ? `Reading ${employer.name}'s WARN notices from ${span}.`
+            ? `Reading the WARN notices for ${employer.name} from ${span}.`
             : read.state === "failed"
               ? "The layoff notices couldn't be read just now. Reload the page to try again."
               : read.notices.length === 0

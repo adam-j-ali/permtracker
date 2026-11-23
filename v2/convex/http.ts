@@ -1492,14 +1492,15 @@ http.route({
     if (!token) return badLinkPage();
     const result = await ctx.runMutation(internal.employerAlerts.confirmByToken, { token });
     if (!result) return badLinkPage("This confirmation link is no longer valid.");
-    const names = (list: string[]) => escapeHtml(list.join(", "));
+    // A name never takes a possessive and never ends the sentence: DOL prints names in capitals and with their
+    // own endings ("ADOBE INC."), so "ADOBE INC.'s" and "INC.." are both out.
+    const at = (list: string[]) =>
+      escapeHtml(list.length === 1 ? list[0]! : `${list.slice(0, -1).join(", ")} or ${list[list.length - 1]}`);
     const byGroup = result.employers.filter((n) => !result.everyCase.includes(n));
     // One sentence per size, each naming its employers, so the page says exactly what was confirmed.
     const promise = [
-      result.everyCase.length > 0
-        ? `we'll write each time the status of one of ${names(result.everyCase)}'s PERM cases changes`
-        : "",
-      byGroup.length > 0 ? `we'll write when DOL moves ${names(byGroup)}'s PERM cases as a group` : "",
+      result.everyCase.length > 0 ? `we'll write each time the status of a PERM case at ${at(result.everyCase)} changes` : "",
+      byGroup.length > 0 ? `we'll write when DOL moves PERM cases at ${at(byGroup)} as a group` : "",
     ]
       .filter(Boolean)
       .join(", and ");
@@ -1693,7 +1694,9 @@ http.route({
     if (!result) return firmBadLinkPage("This confirmation link has expired or was already used.");
     const parts: string[] = [];
     if (result.published.length > 0) {
-      parts.push(`Your profile is up on ${escapeHtml(result.published.map((p) => p.firmName).join(", "))}'s page. It can take a few minutes to show.`);
+      const firms = escapeHtml(result.published.map((p) => p.firmName).join(", "));
+      const one = result.published.length === 1;
+      parts.push(`${one ? "The page" : "The pages"} for ${firms} now ${one ? "carries" : "carry"} your profile. It can take a few minutes to show.`);
     }
     if (result.submitted.length > 0) {
       parts.push(

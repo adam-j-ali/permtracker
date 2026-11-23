@@ -466,8 +466,8 @@ export const sendConfirmation = internalAction({
         html,
         text: [
           scope === "each"
-            ? `You asked to follow ${args.employerName}'s PERM cases, case by case.`
-            : `You asked to follow ${args.employerName}'s PERM cases.`,
+            ? `You asked to follow ${args.employerName} on PERM Tracker, case by case.`
+            : `You asked to follow ${args.employerName} on PERM Tracker.`,
           "",
           followPromise(scope),
           "",

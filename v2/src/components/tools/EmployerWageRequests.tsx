@@ -63,7 +63,7 @@ export function EmployerWageRequests({
       />{" "}
       <FinePrint summary="Why these" className="mt-3">
         <p>
-          These are {who}’s PERM wage requests for {job} on which DOL issued a wage by the day this case was filed,
+          These are the PERM wage requests {who} filed for {job} on which DOL issued a wage by the day this case was filed,
           from the {WAGE_REQUEST_LOOKBACK_MONTHS} months before it.
           {more ? ` There were more than ${WAGE_REQUESTS_SHOWN}, so these are the newest.` : ""}
         </p>{" "}
@@ -102,7 +102,7 @@ export function EmployerPermCasesForWage({
       <FilingRows rows={rows.map((r) => ({ caseNumber: r.caseNumber, job: jobTitle, date: r.filed, status: r.status }))} />{" "}
       <FinePrint summary="Why these" className="mt-3">
         <p>
-          These are {who}’s PERM cases for {job} filed in the {PERM_AFTER_WAGE_MONTHS} months after DOL issued this
+          These are the PERM cases {who} filed for {job} in the {PERM_AFTER_WAGE_MONTHS} months after DOL issued this
           wage.
           {more ? ` There were more than ${WAGE_REQUESTS_SHOWN}, so these are the newest.` : ""}
         </p>{" "}

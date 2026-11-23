@@ -22,7 +22,7 @@ describe("FirmProfileBlock", () => {
   it("says whose words these are and how the firm proved it", () => {
     render(<FirmProfileBlock firmName="Smith Immigration PLLC" profile={PROFILE} />);
     expect(screen.getByRole("heading", { name: "From the firm" })).toBeTruthy();
-    expect(screen.getByText("In Smith Immigration PLLC's own words")).toBeTruthy();
+    expect(screen.getByText("In the firm's own words")).toBeTruthy();
     expect(screen.getByText(/domain DOL's own filings list/)).toBeTruthy();
     expect(screen.getByText(/We don't check what it says/)).toBeTruthy();
     expect(screen.getByText("EB-2 NIW")).toBeTruthy();

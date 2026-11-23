@@ -255,6 +255,18 @@ describe("consent", () => {
     expect(await again.text()).toMatch(/You('|&#39;)re already following/);
   });
 
+  it("names the employer as DOL prints it, mid-sentence and with no possessive built on it", async () => {
+    // "ADOBE INC.'s PERM cases" until Nov 23 2026; a name ending a sentence would print "INC.." instead.
+    const t = createTestContext();
+    stub({});
+    await t.mutation(internal.employerAlerts.subscribe, { email: "k@example.com", slug: "adobe-inc", employerName: "ADOBE INC." });
+    const token = encodeURIComponent(await makeUnsubscribeToken("k@example.com", SECRET, "employer-confirm"));
+    const page = await (await t.fetch(`/employer-alert/confirm?token=${token}`, { method: "POST" })).text();
+    expect(page).toContain("when DOL moves PERM cases at ADOBE INC. as a group");
+    expect(page).not.toMatch(/INC\.(?:'|’|&#39;|&#x27;)s/);
+    expect(page).not.toContain("INC..");
+  });
+
   it("draws confirmations from the case confirmations' budget, and queues what it can't send", async () => {
     // Fake timers: the queued requests schedule a drain, which must not run
     // in the background and land its sends in the next test's fetch stub.
