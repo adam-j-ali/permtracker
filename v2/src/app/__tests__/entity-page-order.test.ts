@@ -3,8 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * The order of the employer, law firm and job pages (owner, Nov 23 2026: "ours has a lot but not super organized
- * easy to see, confusing overwhelming disorienting"). Nothing a reader used was removed: each part moved or folded.
+ * The order of the employer, law firm and job pages: what a reader needs first comes first, and the long parts fold
+ * (Nov 23 2026, after the pages read as crowded). Nothing a reader used was removed: each part moved or folded.
  * The pages are async server components over a dozen reads, so their order is held here in the source, the way the
  * warning-above-the-figures rule is (EntityContext.test.tsx).
  */
