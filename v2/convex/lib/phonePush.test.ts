@@ -38,7 +38,10 @@ describe("which watch emails push", () => {
   it("a start pushes urgent when the server can't be heard from, high for the disk; a reminder never pushes", () => {
     const quiet = step(null, "the server's health report is 40 minutes old (it writes one every 10)", NOW);
     expect(pushFor(quiet.mail)?.level).toBe("urgent");
-    expect(pushFor(step(null, "the server's database did not answer (fetch failed)", NOW).mail)?.level).toBe("urgent");
+    // The database not answering mails, and pushes, on its second check in a row (one miss is the morning report's).
+    const miss = "the server's database did not answer (fetch failed)";
+    expect(pushFor(step(null, miss, NOW).mail)).toBeNull();
+    expect(pushFor(step(step(null, miss, NOW).next, miss, NOW + 15 * 60_000).mail)?.level).toBe("urgent");
     expect(pushFor(step(null, "the server's disk is 93% full", NOW).mail)?.level).toBe("high");
     const still = step(quiet.next, "the server's health report is 400 minutes old", NOW + 7 * 3600_000);
     expect(still.mail?.kind).toBe("still");

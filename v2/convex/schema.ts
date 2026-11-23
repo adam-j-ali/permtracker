@@ -3096,6 +3096,11 @@ export default defineSchema({
     since: v.number(),
     mailedAt: v.number(),
     reason: v.string(),
+    // A database miss waiting for the next check before it mails (convex/lib/serverWatch.ts).
+    pendingSince: v.optional(v.number()),
+    pendingReason: v.optional(v.string()),
+    // Single database misses in the last day, for the morning report.
+    blips: v.optional(v.array(v.number())),
   }).index("by_key", ["key"]),
 
   /**

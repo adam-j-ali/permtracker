@@ -81,6 +81,25 @@ describe("the server watch", () => {
     expect(pushes, "no reminder push while it lasts").toHaveLength(1);
   });
 
+  it("mails a database that doesn't answer only on the second check in a row", async () => {
+    // Arrange
+    vi.stubEnv("SERVER_WATCH", "on");
+    const t = createTestContext();
+    global.fetch = (async () => {
+      throw new TypeError("fetch failed");
+    }) as unknown as typeof fetch;
+    // Act
+    await t.action(internal.serverWatch.check, {});
+    const afterOne = await scheduledEmails(t);
+    await t.action(internal.serverWatch.check, {});
+    // Assert
+    expect(afterOne, "one miss is the morning report's, not an email").toHaveLength(0);
+    expect(await scheduledEmails(t)).toHaveLength(1);
+    const [row] = await t.run(async (ctx) => ctx.db.query("serverWatch").collect());
+    expect(row?.down).toBe(true);
+    expect(row?.pendingSince, "the mailed miss is no longer pending").toBeUndefined();
+  });
+
   it("still emails when the push fails", async () => {
     vi.stubEnv("SERVER_WATCH", "on");
     vi.stubEnv("NTFY_TOPIC", "test_topic_123456");

@@ -42,4 +42,44 @@ describe("step", () => {
     expect(s.mail).toEqual({ kind: "clear", reason: "quiet", since: expect.any(Number) });
     expect(step(s.next, null, NOW + REMIND_MS + 30 * 60 * 1000).mail).toBeNull();
   });
+
+  /*
+   * Nov 2026: a 15-minute database blip sent a pair of emails (start, then clear) for something that fixed itself.
+   * The database not answering mails only after two checks in a row; one miss is a line in the morning report.
+   */
+  const MISS = "the server's database did not answer (fetch failed)";
+  const QUARTER = 15 * 60 * 1000;
+
+  it("one database miss sends nothing and is kept for the morning report", () => {
+    // Arrange
+    const first = step(null, MISS, NOW);
+    // Act
+    const next = step(first.next, null, NOW + QUARTER);
+    // Assert
+    expect(first.mail).toBeNull();
+    expect(first.next.down).toBe(false);
+    expect(next.mail).toBeNull();
+    expect(next.next.blips).toEqual([NOW]);
+    expect(next.next.pendingSince).toBeUndefined();
+  });
+
+  it("two database misses in a row mail once, dated from the first", () => {
+    const first = step(null, MISS, NOW);
+    const second = step(first.next, MISS, NOW + QUARTER);
+    expect(second.mail).toEqual({ kind: "start", reason: MISS, since: NOW });
+    expect(second.next.down).toBe(true);
+    expect(second.next.pendingSince).toBeUndefined();
+    expect(step(second.next, null, NOW + 2 * QUARTER).mail?.kind).toBe("clear");
+  });
+
+  it("a stale report or a full disk still mails at once", () => {
+    expect(step(null, "the server's health report is 40 minutes old (it writes one every 10)", NOW).mail?.kind).toBe("start");
+    expect(step(null, "the server's disk is 93% full", NOW).mail?.kind).toBe("start");
+  });
+
+  it("keeps a day of single misses, no more", () => {
+    const old = { down: false, since: NOW, mailedAt: 0, reason: "", blips: [NOW - 2 * 24 * 3600_000, NOW - 3600_000] };
+    const first = step(old, MISS, NOW);
+    expect(step(first.next, null, NOW + QUARTER).next.blips).toEqual([NOW - 3600_000, NOW]);
+  });
 });

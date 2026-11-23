@@ -1,8 +1,9 @@
 /**
  * Every 15 minutes, from outside the server: is it still reporting, does its
  * database answer, and is its disk nearly full? Emails the owner when the
- * answer changes (start, every 6 hours while it lasts, recovery). The rules
- * and the reason this lives off the server: convex/lib/serverWatch.ts.
+ * answer changes (start, every 6 hours while it lasts, recovery); the database
+ * not answering mails only on the second check in a row. The rules and the
+ * reason this lives off the server: convex/lib/serverWatch.ts.
  *
  * Runs only where SERVER_WATCH=on (production). The development deployment's
  * database is the retired Turso copy, whose health report is weeks old, so it
@@ -71,7 +72,10 @@ export const record = internalMutation({
   ),
   handler: async (ctx, { reason, now }) => {
     const row = await ctx.db.query("serverWatch").withIndex("by_key", (q) => q.eq("key", KEY)).unique();
-    const prev = row ? { down: row.down, since: row.since, mailedAt: row.mailedAt, reason: row.reason } : null;
+    const prev = row
+      ? { down: row.down, since: row.since, mailedAt: row.mailedAt, reason: row.reason, pendingSince: row.pendingSince,
+          pendingReason: row.pendingReason, blips: row.blips }
+      : null;
     const { next, mail } = step(prev, reason, now);
     if (row) await ctx.db.patch(row._id, next);
     else await ctx.db.insert("serverWatch", { key: KEY, ...next });

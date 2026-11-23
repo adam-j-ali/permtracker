@@ -164,6 +164,18 @@ describe("the Convex sections", () => {
     expect(errors!.status).toBe("fail");
     expect(errors!.lines).toEqual(["caseStatusDirect.sweep: 25"]);
   });
+
+  it("names a single database miss the outside watch saw, without raising the section", () => {
+    // Arrange: one 15-minute check found the database silent, and the next answered (convex/lib/serverWatch.ts)
+    const f = facts({ serverBlips: [NOW - 3_600_000] });
+    // Act
+    const [, , errors] = convexSections(f, { sent: 1, bounced: 0, complained: 0 }, NOW);
+    // Assert
+    expect(errors!.status).toBe("ok");
+    expect(errors!.lines.join(" ")).toMatch(
+      /^The server's database didn't answer the outside watch's check once \(\d{1,2}:\d{2} [AP]M ET, \w{3} \d{1,2}\); the next check answered, so nothing was emailed\.$/,
+    );
+  });
 });
 
 describe("law firms waiting for review", () => {

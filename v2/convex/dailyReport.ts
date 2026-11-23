@@ -176,6 +176,10 @@ export const facts = internalQuery({
       ratings: await ratingsSince(ctx, now - 7 * MS_PER_DAY),
       // How password resets ended, the last week: codes sent, completed, refused. Counts only.
       resets: await readResetCounts(ctx, now),
+      // Single database misses the outside watch held back from email (convex/lib/serverWatch.ts): times only.
+      serverBlips: (
+        (await ctx.db.query("serverWatch").withIndex("by_key", (q) => q.eq("key", "server")).unique())?.blips ?? []
+      ).filter((t) => t > since),
       // API keys by scope and webhook health: counts only, no account or address.
       developers: {
         keys: keyCounts(await ctx.db.query("apiKeys").take(TABLE_READ), now),

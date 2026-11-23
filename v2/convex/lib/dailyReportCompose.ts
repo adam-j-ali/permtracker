@@ -13,7 +13,7 @@ import type { KeyCounts } from "./apiKeyStats";
 import { audienceLine, type AudienceCounts } from "./audience";
 import { SITE_URL } from "./links";
 import { emailDailyLimit } from "./emailAllowance";
-import { MS_PER_DAY } from "./time";
+import { MS_PER_DAY, checkedLabel } from "./time";
 import { MONTH_ABBR } from "./months";
 import { resetVerdict, type ResetCounts } from "./resetOutcomes";
 
@@ -175,6 +175,8 @@ export interface Facts {
   };
   /** How password resets ended over the last week (convex/lib/authOutcomes.ts); absent in older reports. */
   resets?: ResetCounts;
+  /** Single database misses the outside watch saw in the last day, each followed by an answer (convex/lib/serverWatch.ts). */
+  serverBlips?: number[];
   /** Working API keys by scope (convex/lib/apiKeyStats.ts) and webhook health; absent in older reports. */
   developers?: {
     keys: KeyCounts;
@@ -308,6 +310,14 @@ export function convexSections(f: Facts, resend: ResendDay | string, now: number
     summary: f.errors.count === 0 ? "none in 24 h" : `${f.errors.count} in 24 h`,
     lines: f.errors.top.map(([op, n]) => `${op}: ${n}`),
   };
+  // A database blip the outside watch held back from email: a line, never a warning (one check, then an answer).
+  const blips = f.serverBlips ?? [];
+  if (blips.length) {
+    errors.lines.push(
+      `The server's database didn't answer the outside watch's check ${blips.length === 1 ? "once" : `${blips.length} times`} ` +
+        `(${blips.map(checkedLabel).join("; ")}); the next check answered, so nothing was emailed.`,
+    );
+  }
   // Errors stays third: callers read [app, email, errors] by position.
   sections.splice(2, 0, errors);
   return sections;
