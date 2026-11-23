@@ -11,9 +11,12 @@ name: Ingest health
 # GitHub's notification to the repo owner, so this needs no other alerting
 # service. Deliberately not continue-on-error: failing is the feature.
 #
-# Two clocks on purpose: the server's timer dispatches this at 10:00 UTC
-# through /api/cron/dispatch, and the GitHub schedule below is a second,
-# independent one, so a stopped server clock is itself reported.
+# Turned off on GitHub since Nov 7 2026 (disabled_manually): the check moved to
+# the server, and the server's timer is its only clock
+# (scripts/oracle/systemd/permtracker-sweep@ingest-health.timer, 6:00 AM
+# Eastern). The old dispatch timer is retired, so the schedule below runs only
+# if someone turns this workflow back on; a stopped server is the server
+# alarm's and the outside watch's to report.
 #
 # Manual run:
 #   cd v2 && python3 scripts/check_ingest_health.py

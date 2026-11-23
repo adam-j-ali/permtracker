@@ -32,6 +32,12 @@ jobs:
           languages: ${{ matrix.language }}
           # JavaScript and TypeScript are analysed from source; nothing to build.
           build-mode: none
+          # Tests never ship: a finding in one (alert #31, Nov 2026) is noise in the security list.
+          config: |
+            paths-ignore:
+              - "**/__tests__/**"
+              - "**/*.test.ts"
+              - "**/*.test.tsx"
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
