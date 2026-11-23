@@ -162,6 +162,86 @@ def main() -> int:
     check("the 60 days in the words are the days the record keeps", nw.EMPLOYER_RECORD_DAYS == ingest.DECISION_MOVES_DAYS,
           f"{getattr(nw, 'EMPLOYER_RECORD_DAYS', None)} against {ingest.DECISION_MOVES_DAYS}")
 
+    # --- DOL's own file, and the weekday (Nov 23 2026) -------------------------
+    # Nov 22 2026: "DOL certified 50 of JCG Foods of Georgia's cases in one day" went out as news, though its own
+    # file shows 50, 56 and 89 in a day in July: it files in bulk and DOL decides in filing order. A batch is news
+    # only when it beats the employer's biggest day in DOL's file over the last year, and a weekend or holiday
+    # names its weekday.
+    jcg = ("JCG Foods of Georgia LLC", "jcg-foods-of-georgia-llc", "CERTIFIED")
+    sunday_morning, sunday_night = ms(2026, 11, 22, 7, 0), ms(2026, 11, 22, 21, 0)
+
+    def filed(stages: dict, biggest: dict) -> list[str]:
+        got = nw.newsworthy(nw.Inputs(employer_stages=stages, file_biggest=biggest), sunday_morning, sunday_night)
+        return [i["what"] for i in got]
+
+    jcg_sunday = batches(("2026-11-22", *jcg, 50))
+    r = filed(jcg_sunday, {"jcg-foods-of-georgia-llc": {"date": "2026-07-18", "n": 89}})
+    check("a batch no bigger than the employer's biggest day in DOL's file over the year isn't news", r == [], str(r))
+    r = filed(jcg_sunday, {"jcg-foods-of-georgia-llc": {"date": "2026-07-18", "n": 40}})
+    check("a batch bigger than that is, on its weekday, with the file's biggest day", r == [
+        "DOL certified 50 of JCG Foods of Georgia LLC's PERM cases in one day, Sunday, Nov 22, 2026. "
+        "That's more than any day in DOL's own file over the last year: the most was 40, on Saturday, Jul 18, 2026."], str(r))
+    r = filed(jcg_sunday, {"jcg-foods-of-georgia-llc": None})
+    check("an employer with no decision in DOL's file over the year says so", r == [
+        "DOL certified 50 of JCG Foods of Georgia LLC's PERM cases in one day, Sunday, Nov 22, 2026. "
+        "DOL's own file holds no decision for it over the last year."], str(r))
+    thanksgiving = {"holdMoves": [{"date": "2026-11-26", "name": "Big Co", "dir": "on", "to": "APPLICATION ON HOLD",
+                                   "n": 70}]}
+    r = [i["what"] for i in nw.newsworthy(nw.Inputs(employer_stages=thanksgiving), ms(2026, 11, 26, 7), ms(2026, 11, 26, 21))]
+    check("a federal holiday names its weekday too", r == [
+        "DOL put 70 of Big Co's PERM cases on hold on Thursday, Nov 26, 2026."], str(r))
+
+    asked: list[tuple] = []
+
+    def query(sql: str, args: list) -> list[dict]:
+        asked.append((sql, tuple(args)))
+        return [{"decision_date": "2026-07-18", "n": 89}] if args[0] == "jcg-foods-of-georgia-llc" else []
+
+    moves = {"decisionMoves": [
+        {"date": "2026-11-22", "name": jcg[0], "slug": jcg[1], "to": "CERTIFIED", "n": 50},
+        {"date": "2026-11-22", "name": jcg[0], "slug": jcg[1], "to": "DENIED", "n": 60},
+        {"date": "2026-11-22", "name": "New Co", "slug": "new-co", "to": "CERTIFIED", "n": 51},
+        {"date": "2026-11-22", "name": "Small Co", "slug": "small-co", "to": "CERTIFIED", "n": 12},
+        {"date": "2026-11-01", "name": "Old Co", "slug": "old-co", "to": "CERTIFIED", "n": 300},
+        {"date": "2026-11-22", "name": "No Page Co", "slug": None, "to": "CERTIFIED", "n": 300}]}
+    got = nw.file_biggest_days(query, moves, "2026-11-22")
+    check("DOL's file is asked once for each employer with a page and a batch big enough to email",
+          got == {"jcg-foods-of-georgia-llc": {"date": "2026-07-18", "n": 89}, "new-co": None}
+          and [a[1] for a in asked] == [("jcg-foods-of-georgia-llc", "2025-11-22"), ("new-co", "2025-11-22")], str((got, asked)))
+    check("by the employer's decision-date index, the biggest day first",
+          all("employer_slug = ?" in a[0] and "decision_date >= ?" in a[0] and "ORDER BY n DESC LIMIT 1" in a[0]
+              for a in asked), str(asked[:1]))
+
+    # --- a working weekend after quiet ones (Nov 23 2026) ---------------------
+    # DOL worked every weekend from April to Sep 13, paused, and came back on Saturday Nov 14 with 356 decisions.
+    def weekend_days(start: str, end: str, total: int) -> list[dict]:
+        out, d = [], dt.date.fromisoformat(start)
+        while d <= dt.date.fromisoformat(end):
+            if d.weekday() >= 5:
+                out.append({"date": d.isoformat(), "total": total})
+            d += dt.timedelta(days=1)
+        return out
+
+    file_days = weekend_days("2026-08-01", "2026-09-13", 80)
+    quiet = weekend_days("2026-09-19", "2026-11-08", 3)
+    back = [{"date": "2026-11-14", "total": 356}, {"date": "2026-11-15", "total": 146}]
+    sat_morning, sun_night = ms(2026, 11, 14, 7, 0), ms(2026, 11, 15, 21, 0)
+    w = nw.newsworthy(nw.Inputs(decision_days=quiet + back, file_days=file_days), sat_morning, sun_night)
+    check("a working weekend after four quiet ones is news, once, with the last one worked", [i["what"] for i in w] == [
+        "DOL decided 356 PERM cases on Saturday, Nov 14, 2026, its first working weekend since Sunday, Sep 13, 2026."],
+          str(w))
+    busy = weekend_days("2026-08-01", "2026-11-08", 80) + back
+    check("a busy weekend in a season of working weekends isn't",
+          nw.newsworthy(nw.Inputs(decision_days=busy, file_days=[]), sat_morning, sun_night) == [])
+    gap = [d for d in quiet if d["date"] not in ("2026-10-31", "2026-11-01")]
+    check("a quiet weekend the record doesn't hold isn't known to be quiet",
+          nw.newsworthy(nw.Inputs(decision_days=gap + back, file_days=file_days), sat_morning, sun_night) == [])
+    check("under 100 decisions isn't a return", nw.newsworthy(nw.Inputs(
+        decision_days=quiet + [{"date": "2026-11-14", "total": 99}], file_days=file_days), sat_morning, sun_night) == [])
+    both = [{"date": "2026-09-13", "total": 2}]
+    w = nw.newsworthy(nw.Inputs(decision_days=both + quiet + back, file_days=file_days), sat_morning, sun_night)
+    check("DOL's file wins a day both records hold", "since Sunday, Sep 13, 2026" in " ".join(i["what"] for i in w), str(w))
+
     # --- a decision day ------------------------------------------------------
     days = weekdays("2026-10-27", 25, 700) + [{"date": "2026-10-27", "total": 1500}]
     d = [i["what"] for i in nw.newsworthy(nw.Inputs(decision_days=days), morning, now)]

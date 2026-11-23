@@ -15,8 +15,13 @@ feed it. Five kinds of move, each from a record this site already keeps:
      cases or more. A decision batch must also be that employer's biggest of
      that outcome in the days the record keeps: a big filer passes the count
      on ordinary days.
+     It must also beat the employer's biggest day in DOL's own file over the
+     last FILE_RECORD_DAYS (`perm_cases`): a bulk filer's ordinary batch is
+     no story (Nov 22 2026).
   5. Our sweep recorded a day of PERM decisions at DECISION_DAY_MULTIPLE
-     times a typical weekday or more (`daily_decisions`, sweep-observed).
+     times a typical weekday or more (`daily_decisions`, sweep-observed), or
+     DOL worked a weekend day after WEEKEND_QUIET_WEEKS quiet weekends
+     (sweep-observed, with DOL's file winning a day both hold).
   6. A document or announcement this site saw for the first time: a Register
      document (published, or filed for public inspection the day before), a
      presidential action the White House posted, or an announcement from OFLC,
@@ -38,6 +43,8 @@ import statistics
 from dataclasses import dataclass, field
 from zoneinfo import ZoneInfo
 
+from lib_holidays import is_dol_workday
+
 ET = ZoneInfo("America/New_York")
 
 # An employer-wide move worth an email: at least this many cases in one day.
@@ -46,8 +53,18 @@ NEWS_EMPLOYER_MIN = 50
 # ingest_case_status_direct.py; test_newsworthy.py holds the two together). A batch is news when it's the
 # employer's biggest in them.
 EMPLOYER_RECORD_DAYS = 60
+# A batch must also beat the employer's biggest day in DOL's own file over this many days (Nov 22 2026: a poultry
+# plant's 50 certified in a day went out as news; its file shows 50, 56 and 89 in a day in July).
+FILE_RECORD_DAYS = 365
 # A decision day worth an email: this many times the median of the weekdays before it.
 DECISION_DAY_MULTIPLE = 2.0
+# A weekend day worth an email: this many decisions or more, after each of the weekends before it stayed under the
+# quiet line every day. DOL worked every weekend from April to Sep 13 2026, paused, and came back on Nov 14.
+WEEKEND_RETURN_MIN = 100
+WEEKEND_QUIET_MAX = 25
+WEEKEND_QUIET_WEEKS = 4
+# The days of decisions read for the weekend rule's history.
+WEEKEND_HISTORY_DAYS = 180
 # The weekdays the typical day is measured over, and the fewest it needs.
 TYPICAL_WEEKDAYS = 20
 TYPICAL_MIN = 10
@@ -72,7 +89,11 @@ class Inputs:
     readings: list[dict] = field(default_factory=list)  # fetched_at, snapshot (dict), oldest first
     bulletins: list[dict] = field(default_factory=list)  # bulletin_month, first_seen_at
     employer_stages: dict | None = None
-    decision_days: list[dict] = field(default_factory=list)  # date, total; any order
+    decision_days: list[dict] = field(default_factory=list)  # date, total; any order (sweep-observed)
+    file_days: list[dict] = field(default_factory=list)  # date, total; any order (DOL's file, dol-disclosure)
+    # An employer's page slug -> its biggest day in DOL's file over FILE_RECORD_DAYS ({date, n}), or None when the
+    # file holds no decision for it then. An employer missing here wasn't read.
+    file_biggest: dict[str, dict | None] = field(default_factory=dict)
     # document_number, publication_date, type, title, agencies (list), source, status, pi_filed, action,
     # comments_close_on, effective_on, first_seen_at
     documents: list[dict] = field(default_factory=list)
@@ -92,6 +113,16 @@ def day_label(iso: str | None) -> str:
         return str(iso or "")
     y, m, d = iso.split("-")
     return f"{MONTHS_ABBR[int(m) - 1]} {int(d)}, {y}"
+
+
+def work_day_label(iso: str | None) -> str:
+    """day_label, with the weekday first when DOL doesn't normally work that day: "Sunday, Nov 22, 2026"."""
+    label = day_label(iso)
+    try:
+        d = dt.date.fromisoformat(str(iso))
+    except ValueError:
+        return label
+    return label if is_dol_workday(d) else f"{d.strftime('%A')}, {label}"
 
 
 def month_label(ym: str | None) -> str:
@@ -397,8 +428,8 @@ def _worked_words(m: dict) -> tuple[str, bool]:
     only its recorded day."""
     days = [d for d in (m.get("worked") or []) if d] or [m.get("date")]
     if len(days) == 1:
-        return day_label(days[0]), True
-    return f"{day_label(days[0])} and {day_label(days[-1])}", False
+        return work_day_label(days[0]), True
+    return f"{work_day_label(days[0])} and {work_day_label(days[-1])}", False
 
 
 def _same_employer(m: dict) -> str:
@@ -438,12 +469,24 @@ def _employer_items(inputs: Inputs, since_ms: int) -> list[dict]:
             passed = _biggest_before(m, batches)
             if passed and int(passed.get("n") or 0) >= n:
                 continue
+            # And only one bigger than its biggest day in DOL's own file over the last year: the sweep's record keeps
+            # 60 days, which made an employer that files in bulk read as setting a record.
+            slug = m.get("slug")
+            in_file = bool(slug) and slug in inputs.file_biggest
+            file_day = inputs.file_biggest.get(slug) if in_file else None
+            if file_day and int(file_day.get("n") or 0) >= n:
+                continue
             act = {"CERTIFIED": "DOL certified", "DENIED": "DOL denied",
                    "WITHDRAWN": "The employer withdrew"}.get(m.get("to") or "", f"DOL moved to {m.get('to')}")
             when, one = _worked_words(m)
             what = (f"{act} {n:,} of {m['name']}'s PERM cases in one day, {when}." if one else
                     f"{act} {n:,} of {m['name']}'s PERM cases over {when}.")
-            if passed:
+            if in_file and file_day:
+                what += (f" That's more than any day in DOL's own file over the last year: the most was "
+                         f"{int(file_day['n']):,}, on {work_day_label(file_day.get('date'))}.")
+            elif in_file:
+                what += " DOL's own file holds no decision for it over the last year."
+            elif passed:
                 then, then_one = _worked_words(passed)
                 what += (f" That's its biggest batch in the last {EMPLOYER_RECORD_DAYS} days: the most before was "
                          f"{int(passed['n']):,}, {'on' if then_one else 'over'} {then}.")
@@ -472,6 +515,37 @@ def _decision_items(inputs: Inputs, since_ms: int) -> list[dict]:
                         "what": (f"Our sweep recorded {total:,} PERM decisions on {day_label(d['date'])}, "
                                  f"{total / usual:.1f} times a typical weekday ({usual:,.0f})."),
                         "source": "DOL's case-status search, read by this site's sweep"})
+    return out
+
+
+def _weekend_items(inputs: Inputs, since_ms: int) -> list[dict]:
+    """A Saturday or Sunday with WEEKEND_RETURN_MIN decisions or more, after each of the WEEKEND_QUIET_WEEKS weekends
+    before it stayed under WEEKEND_QUIET_MAX a day, every day of them held by a record. DOL's file wins a day both
+    records hold. A Sunday after a Saturday that already came back isn't said again."""
+    floor = et_day(since_ms)
+    by_day = {d["date"]: (int(d["total"]), "sweep") for d in inputs.decision_days}
+    by_day.update({d["date"]: (int(d["total"]), "file") for d in inputs.file_days})
+    out = []
+    for day, (total, src) in sorted(by_day.items()):
+        d = dt.date.fromisoformat(day)
+        if day < floor or d.weekday() < 5 or total < WEEKEND_RETURN_MIN:
+            continue
+        saturday = d - dt.timedelta(days=d.weekday() - 5)
+        if d != saturday and (by_day.get(saturday.isoformat()) or (0, ""))[0] >= WEEKEND_RETURN_MIN:
+            continue
+        before = [(saturday - dt.timedelta(days=7 * w - k)).isoformat()
+                  for w in range(1, WEEKEND_QUIET_WEEKS + 1) for k in (0, 1)]
+        if any(b not in by_day or by_day[b][0] >= WEEKEND_QUIET_MAX for b in before):
+            continue
+        worked = max((x for x, (n, _s) in by_day.items()
+                      if x < before[-1] and dt.date.fromisoformat(x).weekday() >= 5 and n >= WEEKEND_QUIET_MAX),
+                     default=None)
+        tail = (f", its first working weekend since {work_day_label(worked)}." if worked else
+                f", after {WEEKEND_QUIET_WEEKS} weekends of fewer than {WEEKEND_QUIET_MAX} a day.")
+        out.append({"kind": "decisions", "when": day,
+                    "what": f"DOL decided {total:,} PERM cases on {work_day_label(day)}{tail}",
+                    "source": ("DOL's quarterly PERM file" if src == "file"
+                               else "DOL's case-status search, read by this site's sweep")})
     return out
 
 
@@ -631,7 +705,8 @@ def newsworthy(inputs: Inputs, since_ms: int, now_ms: int) -> list[dict]:
     """Every move since `since_ms`, newest first, rules first within a day."""
     items = (_rule_items(inputs, since_ms, now_ms) + _dol_items(inputs, since_ms)
              + _bulletin_items(inputs, since_ms) + _employer_items(inputs, since_ms)
-             + _decision_items(inputs, since_ms) + _document_items(inputs, since_ms, now_ms)
+             + _decision_items(inputs, since_ms) + _weekend_items(inputs, since_ms)
+             + _document_items(inputs, since_ms, now_ms)
              + _debarment_items(inputs, since_ms))
     order = {"rule": 0, "document": 1, "debarment": 2, "dol": 3, "bulletin": 4, "employer": 5, "decisions": 6}
     items.sort(key=lambda i: (i["when"] or "", -order[i["kind"]]), reverse=True)
@@ -646,6 +721,22 @@ def line(item: dict) -> str:
 # ---------------------------------------------------------------------------
 # The reads
 # ---------------------------------------------------------------------------
+
+def file_biggest_days(query, stages: dict | None, floor: str) -> dict[str, dict | None]:
+    """Each employer with a page and a decision batch big enough to email since `floor`: its biggest day in DOL's
+    file over the FILE_RECORD_DAYS before. One statement an employer, by idx_pc_emp_dec (employer_slug,
+    decision_date), so only a few a day. `query(sql, args)` returns dict rows."""
+    since = (dt.date.fromisoformat(floor) - dt.timedelta(days=FILE_RECORD_DAYS)).isoformat()
+    slugs = list(dict.fromkeys(
+        str(m["slug"]) for m in (stages or {}).get("decisionMoves") or []
+        if m.get("slug") and (m.get("date") or "") >= floor and int(m.get("n") or 0) >= NEWS_EMPLOYER_MIN))
+    out: dict[str, dict | None] = {}
+    for slug in slugs:
+        got = query("SELECT decision_date, COUNT(*) AS n FROM perm_cases WHERE employer_slug = ? "
+                    "AND decision_date >= ? GROUP BY decision_date ORDER BY n DESC LIMIT 1", [slug, since])
+        out[slug] = {"date": str(got[0]["decision_date"])[:10], "n": int(got[0]["n"])} if got else None
+    return out
+
 
 def read_inputs(db, since_ms: int) -> Inputs:
     """Out of the database, bounded by `since_ms`. A missing table reads as empty
@@ -676,7 +767,13 @@ def read_inputs(db, since_ms: int) -> Inputs:
     doc = safe("SELECT json FROM perm_docs WHERE key = 'employer_stages'", [])
     inputs.employer_stages = json.loads(doc[0]["json"]) if doc else None
     inputs.decision_days = [{"date": r["date"], "total": int(r["total"] or 0)} for r in safe(
-        "SELECT date, total FROM daily_decisions WHERE source = 'sweep-observed' ORDER BY date DESC LIMIT 45", [])]
+        "SELECT date, total FROM daily_decisions WHERE source = 'sweep-observed' ORDER BY date DESC LIMIT ?",
+        [WEEKEND_HISTORY_DAYS])]
+    history_from = (dt.date.fromisoformat(et_day(since_ms)) - dt.timedelta(days=WEEKEND_HISTORY_DAYS)).isoformat()
+    inputs.file_days = [{"date": r["date"], "total": int(r["total"] or 0)} for r in safe(
+        "SELECT date, total FROM daily_decisions WHERE source = 'dol-disclosure' AND date >= ? ORDER BY date",
+        [history_from])]
+    inputs.file_biggest = file_biggest_days(safe, inputs.employer_stages, et_day(since_ms))
     # A table without the Oct 27 2026 columns hasn't had the shared writer run
     # on it yet; that reads as no documents, like a missing table.
     try:
