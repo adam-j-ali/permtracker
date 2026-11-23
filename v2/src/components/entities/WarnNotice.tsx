@@ -17,13 +17,25 @@ import { warnDate, warnStateName } from "@/lib/warnStates";
 // New Jersey and Pennsylvania print a notice's month, not its day: "October 2026".
 const long = (iso: string) => warnDate(iso, "long");
 
-export function WarnNoticeBand({ rows, pageName }: { rows: Notice[]; pageName: string }) {
+export function WarnNoticeBand({
+  rows,
+  pageName,
+  level = 2,
+  className = "mt-8",
+}: {
+  rows: Notice[];
+  pageName: string;
+  /** 3 inside a page part that has its own heading. */
+  level?: 2 | 3;
+  className?: string;
+}) {
   if (rows.length === 0) return null;
+  const Heading = level === 3 ? "h3" : "h2";
   return (
-    <section id="layoffs" className="mt-8 border-2 shadow-hard p-5 sm:p-6 bg-card border-border" aria-labelledby="warn-heading">
-      <h2 id="warn-heading" className="font-heading text-xl font-bold">
+    <section id="layoffs" className={`${className} scroll-mt-14 border-2 shadow-hard p-5 sm:p-6 bg-card border-border`} aria-labelledby="warn-heading">
+      <Heading id="warn-heading" className="font-heading text-xl font-bold">
         Layoff notices filed by {pageName}
-      </h2>{" "}
+      </Heading>{" "}
       <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
         Notices of a mass layoff or closing filed with the state under the WARN Act, as the state printed them,
         matched to this sponsor by name.{" "}

@@ -12,6 +12,9 @@ export const HISTORY_FIRST_FY = 2008;
 /** The current table's years, worded to follow "filings": "62% of their filings since FY2024". */
 export const CURRENT_PERIOD = `since FY${CURRENT_FIRST_FY}`;
 
+/** The same years as a choice or a label of their own: "Since FY2024". */
+export const CURRENT_SINCE = `Since FY${CURRENT_FIRST_FY}`;
+
 /** "FY2012 to FY2023", or "FY2019" for one year. */
 export function fySpan(from: number, to: number): string {
   return from === to ? `FY${from}` : `FY${from} to FY${to}`;

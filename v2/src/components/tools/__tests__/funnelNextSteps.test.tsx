@@ -116,7 +116,16 @@ describe("entity pages put the next step before their figures", () => {
 
   it("gives the live-only and the other-employer pages one too", () => {
     const src = read("src/app/(site)/(public)/perm-employers/[slug]/page.tsx");
-    expect(src.match(/<CaseNextStep/g)).toHaveLength(3);
+    // The published page's two (beside its name, and at its foot), the live-only page's and the other employer's.
+    expect(src.match(/<CaseNextStep/g)).toHaveLength(4);
+  });
+
+  it("ends the published employer page with the case box, after its notes, under its own name", () => {
+    const src = read("src/app/(site)/(public)/perm-employers/[slug]/page.tsx");
+    const last = src.lastIndexOf("<CaseNextStep");
+    expect(last).toBeGreaterThan(src.indexOf('<Chapter id="notes"'));
+    expect(src.slice(last, last + 600)).toMatch(/source="employer-page-end"/);
+    expect(src.slice(last, last + 600)).toMatch(/label="Check your case, at the end of the page"/);
   });
 });
 

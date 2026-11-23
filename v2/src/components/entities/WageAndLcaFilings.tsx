@@ -24,13 +24,18 @@ export function WageAndLcaFilings({
   lcas,
   heading,
   className = "mt-10",
+  level = 2,
 }: {
   name: string;
   wageReqs: UnifiedFlagRow[];
   lcas: UnifiedFlagRow[];
   heading: string;
   className?: string;
+  /** 3 inside a page part that has its own heading; each list's own heading steps down with it. */
+  level?: 2 | 3;
 }) {
+  const Heading = level === 3 ? "h3" : "h2";
+  const ListHeading = level === 3 ? "h4" : "h3";
   if (wageReqs.length === 0 && lcas.length === 0) return null;
   const lists = [
     { label: "Wage requests", all: "All wage requests", rows: wageReqs, href: `/pwd-cases?q=${encodeURIComponent(name)}` },
@@ -38,13 +43,13 @@ export function WageAndLcaFilings({
   ];
   return (
     <section className={`${className}`}>
-      <h2 className="font-heading text-xl font-bold">{heading}</h2>{" "}
+      <Heading className="font-heading text-xl font-bold">{heading}</Heading>{" "}
       {lists.map((list) => (
         <Fragment key={list.label}>
           {" "}
           <div className="mt-5">
             <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-              <h3 className="text-base font-bold">{list.label}</h3>{" "}
+              <ListHeading className="text-base font-bold">{list.label}</ListHeading>{" "}
               <IntentLink href={list.href} className={`${ROW_LINK} text-sm font-semibold`}>
                 {list.all} by this employer
               </IntentLink>

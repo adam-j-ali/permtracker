@@ -40,10 +40,8 @@ import {
   FieldPositionPlate,
   yearTrend,
   approvalCard,
-  certifiedCard,
   entityStanding,
   medianDaysCard,
-  medianWageCard,
   volumeCard,
   wageIsTheJobLimit,
 } from "@/components/entities/EntityPageParts";
@@ -76,9 +74,11 @@ import { EmployerYears } from "@/components/entities/EmployerYears";
 import { LcaYears } from "@/components/entities/LcaYears";
 import { WorkerMix } from "@/components/entities/WorkerMix";
 import { HistoryMakeup, historyYears } from "@/components/entities/HistoryMakeup";
-import { CURRENT_PERIOD } from "@/lib/permEras";
+import { CURRENT_PERIOD, CURRENT_SINCE } from "@/lib/permEras";
 import { IndustryMix, OccupationMix, PartyMix, PlaceMix, RecruitmentMix } from "@/components/entities/FilingMakeup";
 import { FilingsSearch } from "@/components/entities/FilingsSearch";
+import { EntityStateMap } from "@/components/entities/EntityStateMap";
+import { ChapterFold } from "@/components/entities/ChapterFold";
 import {
   absorbedCount,
   entityFacets,
@@ -86,7 +86,13 @@ import {
   nameVariants,
   resolveEntity,
   sizeBand,
+  stateFacetCoverage,
+  type FacetRow,
+  type StateFacetCoverage,
 } from "@/lib/db/entityDetail";
+import { canDrawStateMap, mapStates, type MapEra } from "@/lib/stateMap";
+import { stateName } from "@/lib/usStateNames";
+import { easternDay } from "@convex/lib/time";
 import { recentLiveByEmployer } from "@/lib/db/cases";
 import { searchPwdCases, searchPwdDeterminations } from "@/lib/db/pwdCases";
 import { searchLcaCases, searchLcaDisclosed } from "@/lib/db/lcaCases";
@@ -596,6 +602,16 @@ function newestFiled(cases: readonly { filingDate: string | null }[]): string | 
   return cases.map((c) => c.filingDate).filter((d): d is string => !!d).sort().pop() ?? null;
 }
 
+/** The later of two filing days, either of which may be missing. */
+function newestOf(a: string | null, b: string | null): string | null {
+  if (!a) return b;
+  if (!b) return a;
+  return a > b ? a : b;
+}
+
+/** No state map until a marker can be read: a facet of the busiest six would draw every other state as a zero. */
+const NO_COVERAGE: StateFacetCoverage = { current: false, history: false };
+
 export default async function EmployerPage({
   params,
 }: {
@@ -733,7 +749,7 @@ export default async function EmployerPage({
   // the LCA panel and the lists below all read the same rows.
   // No catch, for the reason at the live-only branch's call.
   const match = await employerMatch(canonicalSlug);
-  const [stats, dist, near, pending, facets, variants, absorbed, freshness, recentLive, wageLive, lcaLive, wageDets, lcaDets, programs, stagesDoc, debarments, warn, empWait, fieldWait, filedToday, years, historyCases, workers, seasonalRows, lcaProfile, uscisH1b, lottery, sponsor, pwdLinks, size, acwia, whd, osha, samRows, taaRows, pppRows, layoffAnswer, lcaYearRows, starts, makeup] =
+  const [stats, dist, near, pending, facets, variants, absorbed, freshness, recentLive, wageLive, lcaLive, wageDets, lcaDets, programs, stagesDoc, debarments, warn, empWait, fieldWait, filedToday, years, historyCases, workers, seasonalRows, lcaProfile, uscisH1b, lottery, sponsor, pwdLinks, size, acwia, whd, osha, samRows, taaRows, pppRows, layoffAnswer, lcaYearRows, starts, makeup, coverage] =
     await Promise.all([
       getDisclosureSummary(),
       fieldDistribution(KIND, MIN_DECIDED_FOR_RATE),
@@ -812,6 +828,9 @@ export default async function EmployerPage({
       // What its FY2008 to FY2023 cases were made of, with their own total (perm_history_entity_facets, one PK read).
       // No catch, as with the years: a failed read keeps the last good page.
       historyMakeup("employer", canonicalSlug),
+      // Whether the state facets hold every state yet (the builders' markers, one point read). A failure only drops
+      // the map.
+      stateFacetCoverage().catch(softFail("perm-employers/[slug]/page.stateFacetCoverage", NO_COVERAGE)),
     ]);
   const wageReqs = unifiedRows(wageLive, wageDets, 5);
   const lcas = unifiedRows(lcaLive, lcaDets, 5);
@@ -854,8 +873,9 @@ export default async function EmployerPage({
     softFail("perm-employers/[slug]/page.similarSponsors", { occupation: null, sponsors: [] }),
   );
 
-  // What the header says before any chapter: the hold, an appeal, layoff and
-  // debarment notices, each a tag that jumps to where it is shown in full.
+  // What the header says before any chapter: the hold, an appeal and a
+  // debarment keep a box each; layoff notices, wage cases and inspections are
+  // one plain line, each a link to where it is shown in full.
   const stageRow = stagesDoc?.employers.find((e) => e.slug === canonicalSlug) ?? null;
   const today = new Date().toISOString().slice(0, 10);
   const tags: ProfileTag[] = [];
@@ -912,23 +932,57 @@ export default async function EmployerPage({
         : null,
   ] as (ProfileFact | null)[]).filter((f): f is ProfileFact => f !== null);
 
+  // Where the jobs are: the state map, once the nightly build says the facet holds every state, and the busiest
+  // states and cities beside it. Each era is drawn only with two or more states; the older one when its own build
+  // has kept every state too. A state's line leads into the case search for it, except on a withheld employer's
+  // neutral page, which searches by no name.
+  const stateEra = (id: string, label: string, choice: string, total: number, rows: FacetRow[]): MapEra => ({
+    id,
+    label,
+    choice,
+    total,
+    states: mapStates(rows).map((s) => ({
+      ...s,
+      ...(byName
+        ? { href: caseSearchHref({ q: row.name, state: s.state }), linkText: `Its ${stateName(s.state)} filings in the case search` }
+        : {}),
+    })),
+  });
+  const eras = [
+    coverage.current ? stateEra("current", CURRENT_PERIOD, CURRENT_SINCE, row.total, facets.state ?? []) : null,
+    coverage.history && makeup
+      ? stateEra("history", `in ${historyYears(makeup)}`, historyYears(makeup), makeup.total, makeup.facets.state ?? [])
+      : null,
+  ].filter((e): e is MapEra => e !== null && canDrawStateMap(e.states, true));
+  const showMap = eras.length > 0;
+  const showPlaces = (facets.state?.length ?? 0) > 1 || realCities(facets.city ?? []).length > 1;
+  const hasWhere = showMap || showPlaces;
+
+  // The work: the wage it offers, what it files for, who files for it, how it recruits, and the search of its filings.
+  const medianWage = programs?.perm.medianAnnualWage ?? row.medianAnnualWage;
   const hasWork = Boolean(
-    facets.occupation || facets.state || facets.attorney || facets.city || facets.industry || facets.newspaper || facets.recruit_lead,
+    byName || medianWage != null || facets.occupation || facets.attorney || facets.industry || facets.newspaper ||
+      facets.recruit_lead || facets.recruit_step || layoffAnswer,
   );
   const hasHistory =
     years.length > 0 || historyCases.length > 0 || lcaYearRows.length > 1 || makeup !== null ||
     Object.values(workers).some((r) => (r?.length ?? 0) > 0);
-  // Other agencies' records (WHD, OSHA, SAM.gov, TAA, PPP): a chapter of their own, only when there's one to show.
-  const hasRecords = Boolean(whd) || Boolean(osha) || samRows.length > 0 || taaRows.length > 0 || pppRows.length > 0;
+  // Layoff notices and other agencies' records (WHD, OSHA, SAM.gov, TAA, PPP): one part, only when there's one to show.
+  const hasRecords = warn.length > 0 || Boolean(whd) || Boolean(osha) || samRows.length > 0 || taaRows.length > 0 || pppRows.length > 0;
+  const hasNewest = wageReqs.length > 0 || lcas.length > 0 || seasonalRows.length > 0;
+  const hasPeers = near.peers.length > 0 || (similar.occupation != null && similar.sponsors.length > 0);
+  // The queue's line or plate: the tracker holds cases for this sponsor (LiveQueueBand draws nothing otherwise).
+  const queueShown = pending !== null && pending.tracked > 0;
+  // Eight parts at most in the bar; the notes are the page's last part, reached at its foot.
   const chapters: ChapterItem[] = [
     { id: "now", label: "Right now" },
+    ...(hasWhere ? [{ id: "where", label: "Where" }] : []),
     { id: "wait", label: "How long" },
+    ...(hasWork ? [{ id: "work", label: "The work" }] : []),
     { id: "programs", label: "Every program" },
     { id: "compare", label: "Against others" },
-    ...(hasWork ? [{ id: "work", label: "The work" }] : []),
-    ...(hasRecords ? [{ id: "records", label: "Federal records" }] : []),
+    ...(hasRecords ? [{ id: "records", label: "Records" }] : []),
     ...(hasHistory ? [{ id: "history", label: "History" }] : []),
-    { id: "notes", label: "Notes" },
   ];
 
   const updated = pageDate("/perm-employers/[slug]", await getDateSources());
@@ -939,11 +993,13 @@ export default async function EmployerPage({
       <JsonLdScript schema={schema} />
 
       {/* Most people who land here work for this sponsor and came for their
-          own case, so the way to it sits beside the name, before the figures. */}
+          own case, so the way to it comes straight after the name, before the
+          figures: right under the answer line on a phone, beside the name on a
+          wide screen. */}
       <ProfileHeader
         eyebrow="PERM sponsor"
         name={row.name}
-        answer={profileLine(row.recent12m, newestFiled(recentLive), pending)}
+        answer={profileLine(row.recent12m, newestOf(newestFiled(recentLive), starts?.newestPerm ?? null), pending, easternDay())}
         facts={facts}
         tags={tags}
         aside={
@@ -970,14 +1026,13 @@ export default async function EmployerPage({
               unit="filings"
               className="mb-6"
             />{" "}
-            <section aria-label="Its record in five figures">
+            {/* Three figures: how many, how they were decided, how long. The certified and denied counts are the
+                approval figure's note, and the median wage leads "The work". */}
+            <section aria-label="Its record in three figures">
             <EntityStatCards
               cards={[
                 { ...volumeCard("Filings", row, kindTotal), trend: yearTrend(years, partialFy) },
-                certifiedCard(row),
-                approvalCard(reliability, baselineDenialPct),
-                // The program table's own median (perm_cases), so the two figures can't disagree.
-                medianWageCard(programs?.perm.medianAnnualWage ?? row.medianAnnualWage),
+                approvalCard(reliability, baselineDenialPct, row),
                 medianDaysCard(row.medianDays, standing),
               ]}
             />
@@ -990,31 +1045,16 @@ export default async function EmployerPage({
 
       <Chapter id="now" title="Right now">
         {/* The live queue first: every figure in the header comes from decided
-            cases, and this is the only part that sees a case still waiting. */}
-        {/* One under the other at every width. Side by side they were stretched to one height, and the shorter
-            box (nearly always the waiting one, beside a follow box listing five or six moves) ended as a frame
-            round several hundred pixels of nothing. The follow box lays its own two halves side by side. */}
-        <div className="grid grid-cols-1 gap-6 [&>*]:min-w-0">
-          {pending ? <LiveQueueBand pending={pending} subject="sponsor" asOf={mirrorAsOf} /> : null}{" "}
-          <EmployerFollow
-            slug={canonicalSlug}
-            name={row.name}
-            row={stageRow}
-            moves={stagesDoc ? employerMoves(stagesDoc).filter((m) => m.slug === canonicalSlug) : []}
-            logFrom={stagesDoc?.logFrom ?? null}
-            asOf={stagesDoc?.asOf ?? null}
-            docMissing={!stagesDoc}
-            showPending={!pending}
-            className=""
-          />
-        </div>
-
+            cases, and this is the only part that sees a case still waiting.
+            With nothing waiting it is one line. Then the newest filings, live
+            from DOL, and the follow form. */}
+        {queueShown && pending ? <LiveQueueBand pending={pending} subject="sponsor" asOf={mirrorAsOf} compact /> : null}{" "}
         {/* The newest individual filings, live from DOL - visible here months
             before the disclosure files publish them. Firm and wage arrive
             with publication; until then the case number carries the reader
             to its own live status. */}
         {recentLive.length > 0 ? (
-          <section className={`mt-6 ${CARD}`} aria-labelledby="latest-live">
+          <section className={`${queueShown ? "mt-6" : ""} ${CARD}`} aria-labelledby="latest-live">
             <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
               <h3 id="latest-live" className="font-heading text-xl font-bold">
                 Its newest filings
@@ -1037,8 +1077,42 @@ export default async function EmployerPage({
             <FromDolLive />
           </section>
         ) : null}{" "}
-        <WarnNoticeBand rows={warn} pageName={row.name} />
+        <EmployerFollow
+          slug={canonicalSlug}
+          name={row.name}
+          row={stageRow}
+          moves={stagesDoc ? employerMoves(stagesDoc).filter((m) => m.slug === canonicalSlug) : []}
+          logFrom={stagesDoc?.logFrom ?? null}
+          asOf={stagesDoc?.asOf ?? null}
+          docMissing={!stagesDoc}
+          showPending={!pending}
+          className={queueShown || recentLive.length > 0 ? "mt-6" : "mt-0"}
+          level={3}
+        />
       </Chapter>
+
+      {hasWhere ? (
+        <Chapter
+          id="where"
+          title="Where the jobs are"
+          dek={`The worksite on each application ${CURRENT_PERIOD}: where the job is, which isn't always where the company is based.`}
+        >
+          {/* The map is the picture; the busiest states and cities sit beside it on a wide screen and under it on a phone. */}
+          <div className="grid grid-cols-1 gap-6 [&>*]:min-w-0 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start lg:[&>*:only-child]:col-span-2">
+            {showMap ? <EntityStateMap eras={eras} label="Filings by worksite state" /> : null}
+            {showPlaces ? (
+              <PlaceMix
+                states={facets.state ?? []}
+                cities={facets.city ?? []}
+                total={row.total}
+                period={CURRENT_PERIOD}
+                title="The busiest states and cities"
+                mapHref={showMap ? "#where" : undefined}
+              />
+            ) : null}
+          </div>
+        </Chapter>
+      ) : null}
 
       <Chapter id="wait" title="How long it takes">
         <div className="grid grid-cols-1 gap-6 [&>*]:min-w-0 lg:grid-cols-2">
@@ -1046,6 +1120,80 @@ export default async function EmployerPage({
           <PwdToPerm links={pwdLinks} who={row.name} className={CARD} />
         </div>
       </Chapter>
+
+      {hasWork ? (
+        <Chapter
+          id="work"
+          title="What they file"
+          dek={
+            <>
+              From its {formatInt(row.total)} {row.total === 1 ? "filing" : "filings"} decided {CURRENT_PERIOD}.
+              {makeup ? (
+                <>
+                  {" "}
+                  Its {historyYears(makeup)} filings are under{" "}
+                  <a href="#history" className="link">
+                    History
+                  </a>
+                  .
+                </>
+              ) : null}
+            </>
+          }
+        >
+          {/* The median wage moved here from the header's figures: it says what the work pays. */}
+          {medianWage != null ? (
+            <p className="mb-6 max-w-3xl text-base leading-relaxed">
+              <span className="font-heading text-2xl font-bold tabular-nums">{formatDollars(medianWage)}</span>{" "}
+              a year is the median wage offered on its PERM filings {CURRENT_PERIOD}.
+            </p>
+          ) : null}{" "}
+          {/* Two even columns: every box in a row is stretched to the row's height and keeps its note on one line,
+              and a box left alone on the last row takes the row whole. */}
+          <div className="grid grid-cols-1 gap-4 [&>*]:min-w-0 md:grid-cols-2 md:[&>*:last-child:nth-child(odd)]:col-span-2">
+            {facets.occupation ? (
+              <OccupationMix
+                rows={facets.occupation}
+                total={row.total}
+                period={CURRENT_PERIOD}
+                filingsHref={(r) => (r.key ? nameSearch(canonicalSlug, row.name, { occupation: r.key }) ?? null : null)}
+              />
+            ) : null}
+            {/* The header already names one industry and one worksite; a box would only repeat it. */}
+            {facets.industry && groupIndustries(facets.industry).length > 1 ? <IndustryMix rows={facets.industry} /> : null}
+            {facets.attorney ? (
+              <PartyMix
+                rows={facets.attorney}
+                total={row.total}
+                period={CURRENT_PERIOD}
+                title="Who files for them"
+                note="The law firm named on the application."
+                hrefBase="/perm-attorneys"
+                filingsHref={(r) => (r.key ? nameSearch(canonicalSlug, row.name, { firm: r.key }) ?? null : null)}
+              />
+            ) : null}
+          </div>{" "}
+          <RecruitmentMix
+            papers={facets.newspaper}
+            steps={facets.recruit_step}
+            lead={facets.recruit_lead}
+            className="mt-4"
+          />{" "}
+          {layoffAnswer ? <LayoffAnswerLine answer={layoffAnswer} name={row.name} className="mt-4" /> : null}{" "}
+          {byName ? (
+            <ChapterFold summary="Search their filings by job, state or program">
+              <FilingsSearch
+                what={`the filings of ${row.name}`}
+                fixed={{ q: row.name }}
+                ask="title"
+                jobs={facets.occupation ?? []}
+                states={facets.state ?? []}
+                className={CARD}
+              />
+            </ChapterFold>
+          ) : null}
+        </Chapter>
+      ) : null}
 
       <Chapter id="programs" title="Every program">
         <EmployerPrograms
@@ -1076,15 +1224,18 @@ export default async function EmployerPage({
           spellings={programs?.match.basis === "map" ? programs.match.spellings : null}
           className="mt-8"
         />{" "}
-        {/* The two filings that come BEFORE a PERM, from the same daily DOL
-            check: the wage request and, for H-1B holders, the LCA. Five each,
-            newest first; every number links to its live status. */}
-        <WageAndLcaFilings name={row.name} wageReqs={wageReqs} lcas={lcas} heading="Its newest wage requests and LCAs" />{" "}
         <CapExemptNote industry={facets.industry} acwia={acwia} />{" "}
         <LcaProfile name={row.name} profile={lcaProfile} />{" "}
         <UscisH1bRecord record={uscisH1b} through={freshness["uscis-h1b-hub"]?.asOf ?? null} />{" "}
         <H1bLotteryHistory years={lottery} />{" "}
-        <SeasonalFilings name={row.name} rows={seasonalRows} />
+        {/* The newest filings in each program, five of each: the two that come BEFORE a PERM (the wage request and,
+            for H-1B holders, the LCA) and the seasonal ones. Every number links to its live status. */}
+        {hasNewest ? (
+          <ChapterFold summary="Its newest filings in each program" hint="Wage requests, H-1B LCAs, H-2A, H-2B and CW-1, five of each">
+            <WageAndLcaFilings name={row.name} wageReqs={wageReqs} lcas={lcas} heading="Its newest wage requests and LCAs" className="" level={3} />{" "}
+            <SeasonalFilings name={row.name} rows={seasonalRows} />
+          </ChapterFold>
+        ) : null}
       </Chapter>
 
       <Chapter
@@ -1127,108 +1278,45 @@ export default async function EmployerPage({
           outOfCohortNote={`This sponsor has ${formatInt(reliability.decided)} decided cases, so its median days is marked but left unranked, and no approval rate is drawn at all.`}
         />{" "}
         {/* The peers either side carry the rank's neighbours, so no separate ladder. */}
-        <div className="mt-8 grid grid-cols-1 gap-x-10 gap-y-8 [&>*]:min-w-0 lg:grid-cols-2">
-          <PeerList
-            heading="Sponsors filing at the same rate"
-            note={<>Ranked either side of this one: they file about as many PERM cases.</>}
-            items={near.peers}
-            hrefBase={BASE}
-            unit="filings"
-          />{" "}
-          {similar.occupation && similar.sponsors.length > 0 ? (
-            <PeerList
-              heading="Sponsors hiring for the same work"
-              note={
-                <>
-                  The employers filing the most PERM cases for{" "}
-                  <Link href={entityHref("occupation", similar.occupation.slug)} className="link">
-                    {similar.occupation.label}
-                  </Link>
-                  , its main job.
-                </>
-              }
-              items={similar.sponsors}
-              hrefBase={BASE}
-              unit="filings"
-            />
-          ) : null}
-        </div>
-      </Chapter>
-
-      {hasWork ? (
-        <Chapter
-          id="work"
-          title="What they file, and where"
-          dek={
-            <>
-              From its {formatInt(row.total)} {row.total === 1 ? "filing" : "filings"} decided {CURRENT_PERIOD}.
-              {makeup ? (
-                <>
-                  {" "}
-                  Its {historyYears(makeup)} filings are under{" "}
-                  <a href="#history" className="link">
-                    History
-                  </a>
-                  .
-                </>
+        {hasPeers ? (
+          <ChapterFold summary="Sponsors like this one" hint="Those filing at the same rate, and those hiring for the same work">
+            <div className="grid grid-cols-1 gap-x-10 gap-y-8 [&>*]:min-w-0 lg:grid-cols-2">
+              <PeerList
+                heading="Sponsors filing at the same rate"
+                note={<>Ranked either side of this one: they file about as many PERM cases.</>}
+                items={near.peers}
+                hrefBase={BASE}
+                unit="filings"
+              />{" "}
+              {similar.occupation && similar.sponsors.length > 0 ? (
+                <PeerList
+                  heading="Sponsors hiring for the same work"
+                  note={
+                    <>
+                      The employers filing the most PERM cases for{" "}
+                      <Link href={entityHref("occupation", similar.occupation.slug)} className="link">
+                        {similar.occupation.label}
+                      </Link>
+                      , its main job.
+                    </>
+                  }
+                  items={similar.sponsors}
+                  hrefBase={BASE}
+                  unit="filings"
+                />
               ) : null}
-            </>
-          }
-        >
-          {byName ? (
-            <FilingsSearch
-              what={`the filings of ${row.name}`}
-              fixed={{ q: row.name }}
-              ask="title"
-              jobs={facets.occupation ?? []}
-              states={facets.state ?? []}
-              className={`mb-6 ${CARD}`}
-            />
-          ) : null}{" "}
-          {/* Two even columns: every box in a row is stretched to the row's height and keeps its note on one line,
-              and a box left alone on the last row takes the row whole. */}
-          <div className="grid grid-cols-1 gap-4 [&>*]:min-w-0 md:grid-cols-2 md:[&>*:last-child:nth-child(odd)]:col-span-2">
-            {facets.occupation ? (
-              <OccupationMix
-                rows={facets.occupation}
-                total={row.total}
-                period={CURRENT_PERIOD}
-                filingsHref={(r) => (r.key ? nameSearch(canonicalSlug, row.name, { occupation: r.key }) ?? null : null)}
-              />
-            ) : null}
-            {/* The header already names one industry and one worksite; a box would only repeat it. */}
-            {facets.industry && groupIndustries(facets.industry).length > 1 ? <IndustryMix rows={facets.industry} /> : null}
-            {(facets.state?.length ?? 0) > 1 || realCities(facets.city ?? []).length > 1 ? (
-              <PlaceMix states={facets.state ?? []} cities={facets.city ?? []} total={row.total} period={CURRENT_PERIOD} />
-            ) : null}
-            {facets.attorney ? (
-              <PartyMix
-                rows={facets.attorney}
-                total={row.total}
-                period={CURRENT_PERIOD}
-                title="Who files for them"
-                note="The law firm named on the application."
-                hrefBase="/perm-attorneys"
-                filingsHref={(r) => (r.key ? nameSearch(canonicalSlug, row.name, { firm: r.key }) ?? null : null)}
-              />
-            ) : null}
-          </div>{" "}
-          <RecruitmentMix
-            papers={facets.newspaper}
-            steps={facets.recruit_step}
-            lead={facets.recruit_lead}
-            className="mt-4"
-          />{" "}
-          {layoffAnswer ? <LayoffAnswerLine answer={layoffAnswer} name={row.name} className="mt-4" /> : null}
-        </Chapter>
-      ) : null}
+            </div>
+          </ChapterFold>
+        ) : null}
+      </Chapter>
 
       {hasRecords ? (
         <Chapter
           id="records"
-          title="Federal records"
-          dek="Matched by name, and by city where a name alone could be another company."
+          title="Records"
+          dek="Layoff notices filed with a state, and other agencies' records, matched by name and by city where a name alone could be another company."
         >
+          <WarnNoticeBand rows={warn} pageName={row.name} level={3} className="mt-0" />{" "}
           <WageHourCases summary={whd} pageName={row.name} level={3} />{" "}
           <SafetyInspections summary={osha} pageName={row.name} level={3} />{" "}
           <FederalExclusions rows={samRows} pageName={row.name} />{" "}
@@ -1239,14 +1327,24 @@ export default async function EmployerPage({
 
       {hasHistory ? (
         <Chapter id="history" title="History">
+          {/* The year chart stays open; the older cases, LCAs, makeup and workers wait behind one line. */}
           <EmployerYears
             years={years}
             cases={historyCases}
+            show="chart"
             lastYearPartial={throughMonth ? `DOL's newest file runs through ${throughMonth}` : undefined}
           />{" "}
-          <LcaYears years={lcaYearRows} className="mt-8" />{" "}
-          <HistoryMakeup makeup={makeup} subject="employer" />{" "}
-          <WorkerMix facets={workers} subject="employer" />
+          {historyCases.length > 0 || lcaYearRows.length > 1 || makeup !== null || Object.values(workers).some((r) => (r?.length ?? 0) > 0) ? (
+            <ChapterFold
+              summary="Its older cases, LCAs and workers"
+              hint={makeup ? `What it filed in ${historyYears(makeup)}, and who the workers were` : "Year by year, and who the workers were"}
+            >
+              <EmployerYears years={years} cases={historyCases} show="cases" />{" "}
+              <LcaYears years={lcaYearRows} className="mt-8" />{" "}
+              <HistoryMakeup makeup={makeup} subject="employer" />{" "}
+              <WorkerMix facets={workers} subject="employer" />
+            </ChapterFold>
+          ) : null}
         </Chapter>
       ) : null}
 
@@ -1316,6 +1414,19 @@ export default async function EmployerPage({
         <DisclosureNote sourceFiles={stats?.sourceFiles ?? []} uniqueCases={stats?.uniqueCases ?? null} className="mt-5" />{" "}
         <DataProvenance datasets={pending ? ["perm-cases", "entities", "perm-case-status"] : ["perm-cases", "entities"]} />
       </Chapter>
+
+      {/* The page ends where it began, with the reader's own case: the notes are the last thing read, and the one
+          next step after them is the case box. */}
+      <CaseNextStep
+        question={`Still waiting on a case with ${row.name}?`}
+        searchHref={byName}
+        searchLabel="Find it among their filings"
+        employerName={row.name}
+        extra={{ href: "#follow", label: "Follow this employer by email" }}
+        source="employer-page-end"
+        label="Check your case, at the end of the page"
+        className="mt-16 max-w-2xl"
+      />
     </div>
     </>
   );

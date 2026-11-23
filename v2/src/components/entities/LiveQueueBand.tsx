@@ -81,6 +81,7 @@ export function LiveQueueBand({
   subject,
   asOf,
   className,
+  compact = false,
 }: {
   pending: EntityPending;
   /** What the page is about: "sponsor", "firm". */
@@ -88,9 +89,18 @@ export function LiveQueueBand({
   /** As-of date of the live mirror, ISO. */
   asOf: string | null;
   className?: string;
+  /** With nothing waiting, one plain line instead of the plate: a plate around one sentence is a box of nothing. */
+  compact?: boolean;
 }) {
   const { tracked, pending: waiting, stages, oldest } = pending;
   if (tracked <= 0) return null;
+  if (compact && waiting <= 0) {
+    return (
+      <p className={cn("max-w-2xl text-base leading-relaxed text-soft", className)}>
+        {`Nothing for this ${subject} is waiting on a decision: every case of theirs in DOL's live record is decided${asOf ? `, as of ${longDate(asOf)}` : ""}.`}
+      </p>
+    );
+  }
 
   const biggest = stages[0]?.n ?? 0;
   const months = oldest ? monthsSince(oldest) : null;

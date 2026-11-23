@@ -21,19 +21,23 @@ export function EmployerYears({
   cases,
   lastYearPartial,
   className,
+  show = "both",
 }: {
   years: EmployerYear[];
   cases: HistoryCase[];
   /** e.g. "DOL's file runs through June 2026", for the newest bar. */
   lastYearPartial?: string;
   className?: string;
+  /** The year chart, the older cases' list, or both: a page can show the chart and fold the list. */
+  show?: "both" | "chart" | "cases";
 }) {
   if (years.length === 0 && cases.length === 0) return null;
   // One year of filings is a single bar, which says nothing the page's own
   // headline doesn't; the chart needs a span to show a track record.
   const showChart =
-    years.length > 0 && years[years.length - 1]!.fy > years[0]!.fy;
-  if (!showChart && cases.length === 0) return null;
+    show !== "cases" && years.length > 0 && years[years.length - 1]!.fy > years[0]!.fy;
+  const showCases = show !== "chart" && cases.length > 0;
+  if (!showChart && !showCases) return null;
   const first = years[0]?.fy ?? 0;
   const last = years[years.length - 1]?.fy ?? 0;
   const series: EmployerYear[] = fillYears(years);
@@ -76,8 +80,8 @@ export function EmployerYears({
         </>
       ) : null}
 
-      {cases.length > 0 ? (
-        <div className="mt-6 border-2 border-border bg-card p-5 shadow-hard-sm">
+      {showCases ? (
+        <div className={cn("border-2 border-border bg-card p-5 shadow-hard-sm", showChart && "mt-6")}>
           <h3 className="font-heading text-lg font-bold">
             Decided in {casesSpan}
           </h3>{" "}

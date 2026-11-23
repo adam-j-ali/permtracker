@@ -52,6 +52,7 @@ export function EmployerFollow({
   docMissing = false,
   showPending = true,
   className,
+  level = 2,
 }: {
   slug: string;
   name: string;
@@ -71,13 +72,16 @@ export function EmployerFollow({
   showPending?: boolean;
   /** Replaces the default top margin, as inside a grid where the row sets the spacing. */
   className?: string;
+  /** 3 inside a page part that has its own heading. */
+  level?: 2 | 3;
 }) {
+  const Heading = level === 3 ? "h3" : "h2";
   const parts = row ? ribbonParts(row) : null;
   const legend = parts ? ribbonLegend(parts) : [];
   const shown = moves.slice(0, RAIL_SHOWN);
   return (
     <section id="follow" className={cn("@container scroll-mt-28 border-2 border-border bg-card p-5 shadow-hard sm:p-6", className ?? "mt-10")}>
-      <h2 className="font-heading text-xl font-bold">Follow {name}</h2>{" "}
+      <Heading className="font-heading text-xl font-bold">Follow {name}</Heading>{" "}
       <p className="mt-2 max-w-2xl text-base leading-relaxed text-soft">
         An email when DOL moves its cases as a group: five or more on or off hold in a day, or a batch decided well above its usual pace.
       </p>{" "}

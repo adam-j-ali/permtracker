@@ -157,11 +157,25 @@ export function certifiedCard(row: { certified: number; denied: number }): StatC
   return { k: "Certified", v: formatInt(row.certified), sub: `${formatInt(row.denied)} denied`, icon: "certified" };
 }
 
-/** The approval rate, or the reason it's withheld, beside the field's. */
-export function approvalCard(reliability: RateReliability, baselineDenialPct: number): StatCard {
+/**
+ * The approval rate, or the reason it's withheld, beside the field's. Given the certified and denied counts, its
+ * note carries them ("1,859 certified, 4 denied"), so a page shows three figures where it showed a certified count
+ * beside the rate.
+ */
+export function approvalCard(
+  reliability: RateReliability,
+  baselineDenialPct: number,
+  counts?: { certified: number; denied: number },
+): StatCard {
   const field = 100 - baselineDenialPct;
+  const tally = counts ? `${formatInt(counts.certified)} certified, ${formatInt(counts.denied)} denied` : null;
   if (reliability.ratePct == null) {
-    return { k: "Approval", v: "Not shown", sub: `withheld: ${formatInt(reliability.decided)} decided`, icon: "approval" };
+    return {
+      k: "Approval",
+      v: "Not shown",
+      sub: tally ? `${tally}: too few to rate` : `withheld: ${formatInt(reliability.decided)} decided`,
+      icon: "approval",
+    };
   }
   // Against the field's rate: within half a point is level, above is good, below is bad.
   const gap = reliability.ratePct - field;
@@ -173,7 +187,7 @@ export function approvalCard(reliability: RateReliability, baselineDenialPct: nu
   return {
     k: "Approval",
     v: `${reliability.ratePct.toFixed(1)}%`,
-    sub: `of ${formatInt(reliability.decided)} decided`,
+    sub: tally ?? `of ${formatInt(reliability.decided)} decided`,
     icon: "approval",
     trend,
   };

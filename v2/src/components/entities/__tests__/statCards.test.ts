@@ -31,6 +31,18 @@ describe("approvalCard", () => {
   it("draws no chip when the rate is withheld", () => {
     expect(approvalCard(rateReliability(3, 0, 3.2), 3.2).trend).toBeUndefined();
   });
+
+  it("carries the certified and denied counts in its note, where the certified figure used to stand alone", () => {
+    const card = approvalCard(rateReliability(1859, 4, 3.2), 3.2, { certified: 1859, denied: 4 });
+    expect(card.v).toBe("99.8%");
+    expect(card.sub).toBe("1,859 certified, 4 denied");
+    // Withheld, the counts still show, and say why there's no rate.
+    expect(approvalCard(rateReliability(3, 0, 3.2), 3.2, { certified: 3, denied: 0 }).sub).toBe(
+      "3 certified, 0 denied: too few to rate",
+    );
+    // Without counts the note is as before.
+    expect(approvalCard(rateReliability(1859, 4, 3.2), 3.2).sub).toBe("of 1,863 decided");
+  });
 });
 
 describe("medianDaysCard", () => {

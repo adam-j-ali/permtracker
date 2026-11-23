@@ -75,6 +75,26 @@ describe("LiveQueueBand", () => {
     expect(screen.getByText(/Nothing for this firm is waiting/)).toBeInTheDocument();
   });
 
+  it("is one plain line, not a whole plate, when the page asks for it and the queue is clear", () => {
+    render(
+      <LiveQueueBand
+        pending={pending({ tracked: 42, pending: 0, stages: [], oldest: null })}
+        subject="sponsor"
+        asOf="2026-08-26"
+        compact
+      />,
+    );
+    const line = screen.getByText(/Nothing for this sponsor is waiting/);
+    expect(line.tagName).toBe("P");
+    expect(line.textContent).toContain("as of August 26, 2026");
+    expect(screen.queryByText("Waiting at DOL now")).toBeNull();
+  });
+
+  it("keeps its plate when cases are waiting, compact or not", () => {
+    render(<LiveQueueBand pending={pending()} subject="sponsor" asOf="2026-08-26" compact />);
+    expect(screen.getByText("Waiting at DOL now")).toBeInTheDocument();
+  });
+
   it("dates the oldest case still waiting and ages it", () => {
     render(<LiveQueueBand pending={pending()} subject="sponsor" asOf="2026-08-26" />);
     expect(screen.getByText(/December 17, 2025/)).toBeInTheDocument();

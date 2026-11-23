@@ -27,6 +27,8 @@ export interface CaseNextStepProps {
   source: string;
   /** "PERM" on PERM pages; "DOL" where the number may be a wage request or an LCA. */
   numberKind?: "PERM" | "DOL";
+  /** The box's name for a screen reader, where a page holds two of them. */
+  label?: string;
   className?: string;
 }
 
@@ -38,10 +40,11 @@ export function CaseNextStep({
   extra = null,
   source,
   numberKind = "PERM",
+  label = "Check your case",
   className,
 }: CaseNextStepProps) {
   return (
-    <section aria-label="Check your case" className={cn("object p-5 sm:p-6", className)}>
+    <section aria-label={label} className={cn("object p-5 sm:p-6", className)}>
       <h2 className="text-balance font-heading text-xl font-bold leading-tight">{question}</h2>{" "}
       <CasePromises className="mt-4" />{" "}
       <CaseLookupForm
