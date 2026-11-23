@@ -2,6 +2,7 @@
 
 import { Fragment, useMemo, useState } from "react";
 
+import { BLUE_STEPS, blueFill } from "@/lib/mapScale";
 import { US_MAP_VIEWBOX, US_STATES } from "@/lib/usStatesGeometry";
 import { stateName } from "@/lib/usStateNames";
 import { formatDollars, formatInt } from "@/lib/format";
@@ -22,9 +23,12 @@ import { FilterableStatTable, type CsvSpec, type StatColumn } from "./Filterable
  * The panel is in normal flow below the drawing, so nothing is drawn over the
  * map and nothing needs to reserve space.
  *
- * Fills are opaque color-mix tints of the brand lime over the card surface
- * (translucent fills over dark grounds burned us before), quantized into five
- * buckets by the metric on display.
+ * Fills are the site's one map scale (`src/lib/mapScale.ts`): four opaque
+ * steps of the information blue over the card surface (translucent fills over
+ * dark grounds burned us before; lime is the action and the pick, never a
+ * wash), quantized into quartiles of the metric on display. The drawing fits
+ * its column at every width, and its state labels step aside on a phone, where
+ * they'd be a few pixels tall: the panel names the state tapped.
  *
  * THE FLOOR APPLIES TO RATES AND MEDIANS, NEVER TO A COUNT. An approval rate
  * over seventeen decided cases is noise, and colouring a state by it puts the
@@ -42,7 +46,6 @@ export interface StateStat {
   medianAnnualWage: number | null;
 }
 
-const BUCKET_MIX = [8, 16, 28, 44, 62] as const;
 
 /** Too small to carry an inside label; they stack at the right edge. */
 const SMALL_STATES = new Set(["VT", "NH", "MA", "RI", "CT", "NJ", "DE", "MD", "DC"]);
@@ -187,14 +190,14 @@ export function USStateMap({
     return out;
   }, [states, spec, floor]);
 
-  // Quintile cuts over the values actually on the map, recomputed whenever the
-  // metric or the floor moves. Cutting on a fixed scale would leave four of
-  // five buckets empty the moment the metric changed.
+  // Quartile cuts over the values actually on the map, recomputed whenever the
+  // metric or the floor moves. Cutting on a fixed scale would leave three of
+  // four steps empty the moment the metric changed.
   const thresholds = useMemo(() => {
     const vals = [...metricValue.values()].sort((a, b) => a - b);
     if (vals.length === 0) return [];
     const q = (p: number) => vals[Math.min(vals.length - 1, Math.floor(p * vals.length))] ?? 0;
-    return [q(0.2), q(0.4), q(0.6), q(0.8)];
+    return [q(0.25), q(0.5), q(0.75)];
   }, [metricValue]);
 
   const range = useMemo(() => {
@@ -206,7 +209,7 @@ export function USStateMap({
   const bucketOf = (v: number): number => {
     let b = 0;
     for (const t of thresholds) if (v > t) b += 1;
-    return Math.min(b, BUCKET_MIX.length - 1);
+    return Math.min(b, BLUE_STEPS.length - 1);
   };
 
   // Rank in the metric on display, over the states that carry a value.
@@ -281,12 +284,12 @@ export function USStateMap({
         />
       </div>
 
-      <div className="-mx-1 overflow-x-auto px-1">
+      <div className="@container">
         <svg
           viewBox={`0 0 ${US_MAP_VIEWBOX.w + 60} ${US_MAP_VIEWBOX.h}`}
           role="group"
           aria-label={`PERM filings by worksite state, shaded by ${spec.label.toLowerCase()}`}
-          className="block h-auto w-full min-w-[560px]"
+          className="block h-auto w-full"
         >
           {US_STATES.map((shape) => {
             const stat = byAbbr.get(shape.abbr);
@@ -324,7 +327,7 @@ export function USStateMap({
                       ? stat
                         ? "color-mix(in srgb, var(--data-none) 22%, var(--card))"
                         : "var(--card)"
-                      : `color-mix(in srgb, var(--primary) ${BUCKET_MIX[bucketOf(v)]}%, var(--card))`,
+                      : blueFill(bucketOf(v)),
                   stroke: isActive ? "var(--foreground)" : "var(--border)",
                   strokeWidth: isActive ? 2.5 : 1,
                 }}
@@ -336,7 +339,7 @@ export function USStateMap({
               Northeast nine move to a leader-line stack at the right edge,
               which is why the viewBox is wider than the geometry. Labels
               never intercept the pointer - the shapes own the interaction. */}
-          <g aria-hidden="true" pointerEvents="none">
+          <g aria-hidden="true" pointerEvents="none" className="@max-[36rem]:hidden">
             {US_STATES.filter((sh) => !SMALL_STATES.has(sh.abbr)).map((sh) => (
               <text
                 key={sh.abbr}
@@ -403,7 +406,7 @@ export function USStateMap({
         </svg>
       </div>
 
-      {/* Legend: five buckets, and the range they actually span. A scale with
+      {/* Legend: four steps, and the range they actually span. A scale with
           no numbers on it is a decoration. */}
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
         <span className="text-sm font-bold text-muted-foreground">
@@ -412,12 +415,12 @@ export function USStateMap({
         <span className="text-sm text-muted-foreground">
           {range ? spec.format(range.lo) : "—"}
         </span>{" "}
-        {BUCKET_MIX.map((mix) => (
+        {BLUE_STEPS.map((pct, i) => (
           <span
-            key={mix}
+            key={pct}
             aria-hidden="true"
             className="inline-block h-3.5 w-6 border border-input"
-            style={{ background: `color-mix(in srgb, var(--primary) ${mix}%, var(--card))` }}
+            style={{ background: blueFill(i) }}
           />
         ))}{" "}
         <span className="text-sm text-muted-foreground">

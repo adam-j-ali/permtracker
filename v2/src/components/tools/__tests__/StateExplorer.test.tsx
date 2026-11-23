@@ -48,9 +48,10 @@ function fillOf(name: RegExp): string {
  * rather than on a literal is deliberate: the buckets are quantiles over the
  * states that carry a value, so which literal a state lands on depends on how
  * many states are in the fixture. The ordering is the claim the map makes.
+ * The tint is the information blue (src/lib/mapScale.ts), never the lime.
  */
 function mixOf(name: RegExp): number {
-  const m = /var\(--primary\)\s+([\d.]+)%/.exec(fillOf(name));
+  const m = /var\(--data-info\)\s+([\d.]+)%/.exec(fillOf(name));
   return m ? Number(m[1]) : Number.NaN;
 }
 

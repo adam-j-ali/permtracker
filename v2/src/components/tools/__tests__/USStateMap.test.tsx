@@ -90,3 +90,20 @@ describe("USStateMap", () => {
     expect(screen.getByRole("button", { name: /Wyoming: no data/ })).toBeInTheDocument();
   });
 });
+
+describe("USStateMap on a phone and in colour", () => {
+  it("fits its column at any width: no minimum width pushes the East Coast off a phone", () => {
+    const { container } = render(<USStateMap states={STATS} />);
+    const cls = container.querySelector("svg")?.getAttribute("class") ?? "";
+    expect(cls).not.toMatch(/min-w-/);
+    expect(cls).toMatch(/\bw-full\b/);
+  });
+
+  it("fills states with the blue scale, never a lime tint", () => {
+    const { container } = render(<USStateMap states={STATS} />);
+    // The style attribute as written: jsdom drops a color-mix() it can't parse from the style object.
+    const fills = [...container.querySelectorAll("path[style]")].map((p) => p.getAttribute("style") ?? "");
+    expect(fills.some((f) => f.includes("--data-info"))).toBe(true);
+    expect(fills.some((f) => f.includes("--primary"))).toBe(false);
+  });
+});
