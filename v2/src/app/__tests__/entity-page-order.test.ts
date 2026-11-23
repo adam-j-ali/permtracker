@@ -117,3 +117,52 @@ describe("the employer page", () => {
     expect(src).not.toMatch(/medianWageCard\(/);
   });
 });
+
+describe("the law firm page", () => {
+  const src = read("src/app/(site)/(public)/perm-attorneys/[slug]/page.tsx");
+
+  it("opens on the name and the case box, then three figures", () => {
+    expect(increasing(positions(src, ["<ProfileHeader", "<CaseNextStep", "<EntityStatCards"]))).toBe(true);
+    const figures = block(src, "<EntityStatCards", "/>\n            </section>");
+    expect(figures.match(/Card\(/g)).toHaveLength(3);
+    expect(figures).toMatch(/approvalCard\(reliability, baselineDenialPct, row\)/);
+    expect(src).toContain('aria-label="Its record in three figures"');
+    // The median wage leads The practice instead.
+    expect(block(src, 'id="practice"', "</Chapter>")).toMatch(/formatDollars\(row\.medianAnnualWage\)/);
+  });
+
+  it("draws its clients' worksites right after The practice, with its own state outlined and each state's ranking", () => {
+    expect(increasing(positions(src, ['id="practice"', 'id="where"', '<Chapter id="programs"']))).toBe(true);
+    const where = block(src, 'id="where"', "</Chapter>");
+    expect(where).toMatch(/<EntityStateMap eras=\{eras\}[^>]*office=\{office\}/);
+    expect(where).toContain("<StateMix");
+    expect(block(src, 'id="practice"', "</Chapter>")).not.toContain("<StateMix");
+    // A state leads to its law-firm ranking, and only where one exists (an unranked state's page is a 404).
+    expect(src).toMatch(/ranked\.has\(s\.state\)\s*\?\s*\{ href: `\/law-firm-rankings\/\$\{stateSlug\(s\.state\)\}`/);
+  });
+});
+
+describe("the job page", () => {
+  const src = read("src/app/(site)/(public)/perm-wages/[slug]/page.tsx");
+
+  it("opens on the name and the offer box, then three figures: what it pays, how many, how decided", () => {
+    expect(increasing(positions(src, ["<ProfileHeader", "Weighing an offer for this job?", "<EntityStatCards"]))).toBe(true);
+    const figures = block(src, "<EntityStatCards", "/>\n            </section>");
+    expect(figures).toContain('k: "Median wage"');
+    expect(figures).toMatch(/volumeCard\("Filings"/);
+    expect(figures).toMatch(/approvalCard\(reliability, baselineDenialPct, row\)/);
+    expect(src).toContain('aria-label="Its record in three figures"');
+    // Its median days is still drawn, among every occupation's, in What it pays.
+    expect(block(src, '<Chapter\n        id="pay"', "</Chapter>")).toMatch(/medianDays=\{row\.medianDays\}/);
+  });
+
+  it("draws where it's filed right after What it pays, with each state's median offer where a ladder exists", () => {
+    expect(increasing(positions(src, ['id="pay"', 'id="where"', 'id="who"']))).toBe(true);
+    const where = block(src, 'id="where"', "</Chapter>");
+    expect(where).toContain("<EntityStateMap eras={eras}");
+    expect(where).toContain("<PlaceMix");
+    expect(block(src, 'id="who"', "</Chapter>")).not.toContain("<PlaceMix");
+    expect(src).toMatch(/extra: `Median certified offer here: \$\{formatDollars\(median\)\} a year`/);
+    expect(src).toMatch(/href: caseSearchHref\(\{ occupation: row\.slug, state: s\.state \}\)/);
+  });
+});

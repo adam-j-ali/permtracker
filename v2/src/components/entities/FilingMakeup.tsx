@@ -237,19 +237,22 @@ export function StateMix({
   className,
   period,
   mapHref,
+  title = "Where the jobs are",
 }: Period & {
   rows: FacetRow[];
   total: number;
   className?: string;
   /** The page's state map, when it has one: the states past the chips are on it. */
   mapHref?: string;
+  /** The box's own title, where the part it sits in already says "where". */
+  title?: string;
 }) {
   if (all.length === 0) return null;
   const rows = all.slice(0, STATE_CHIPS);
   const shown = rows.reduce((a, r) => a + r.n, 0);
   return (
     <Shell
-      title="Where the jobs are"
+      title={title}
       note={
         <>
           The worksite state on the application, which is where the job is and

@@ -42,7 +42,6 @@ import {
   UnpublishedFilingsNote,
   approvalCard,
   entityStanding,
-  medianDaysCard,
   volumeCard,
 } from "@/components/entities/EntityPageParts";
 import {
@@ -60,8 +59,11 @@ import { FilingsSearch } from "@/components/entities/FilingsSearch";
 import { WorkerMix } from "@/components/entities/WorkerMix";
 import { HistoryMakeup, historyYears } from "@/components/entities/HistoryMakeup";
 import { historyMakeup, workerFacets } from "@/lib/db/employerHistory";
-import { CURRENT_PERIOD } from "@/lib/permEras";
-import { aliasTarget, entityFacets } from "@/lib/db/entityDetail";
+import { CURRENT_PERIOD, CURRENT_SINCE } from "@/lib/permEras";
+import { aliasTarget, entityFacets, stateFacetCoverage, type FacetRow, type StateFacetCoverage } from "@/lib/db/entityDetail";
+import { EntityStateMap } from "@/components/entities/EntityStateMap";
+import { canDrawStateMap, mapStates, type MapEra } from "@/lib/stateMap";
+import { stateName } from "@/lib/usStateNames";
 import { comparables, fieldDistribution, getBySlug } from "@/lib/db/entities";
 import { OccupationReference } from "@/components/reference/OccupationReference";
 import { CodeTitles } from "@/components/soc/CodeTitles";
@@ -85,6 +87,9 @@ import { softFail } from "@/lib/softRead";
  * on-demand revalidation, not to a timer.
  */
 export const revalidate = 2592000;
+
+/** No state map until a marker can be read: a facet of the busiest six would draw every other state as a zero. */
+const NO_COVERAGE: StateFacetCoverage = { current: false, history: false };
 
 const KIND = "occupation" as const;
 const BASE = ENTITY_BASE.occupation;
@@ -239,7 +244,7 @@ export default async function OccupationPage({
   // no code on file simply has no ladder rather than a wrong one.
   const wageKey = row.code ?? "";
   const socKey = socGroup(row.code);
-  const [stats, dist, near, ladderYears, stateLadders, facets, freshness, workers, h1b, pwdLinks, makeup] = await Promise.all([
+  const [stats, dist, near, ladderYears, stateLadders, facets, freshness, workers, h1b, pwdLinks, makeup, coverage] = await Promise.all([
     getDisclosureSummary(),
     fieldDistribution(KIND, MIN_DECIDED_FOR_RATE),
     comparables({
@@ -268,6 +273,8 @@ export default async function OccupationPage({
     // Who filed it in FY2008 to FY2023, and where, with their own total (perm_history_entity_facets, one PK read).
     // No catch: a failed read keeps the last good page rather than saving one with no history.
     historyMakeup("occupation", slug),
+    // Whether the state facets hold every state yet (the builders' markers). A failure only drops the map.
+    stateFacetCoverage().catch(softFail("perm-wages/[slug]/page.stateFacetCoverage", NO_COVERAGE)),
   ]);
 
   const baselineDenialPct = stats?.risk?.baseline.denialRate ?? FALLBACK_BASELINE_DENIAL_PCT;
@@ -310,8 +317,38 @@ export default async function OccupationPage({
 
   const tags: ProfileTag[] = [];
   if (h1b && h1b.n > 0 && row.code) tags.push({ text: `${formatInt(h1b.n)} H-1B LCAs`, href: "#h1b", tone: "ink" });
+
+  // Where it is filed: the state map once the nightly build says the facet holds every state, each era with two or
+  // more states. A state's line adds its median certified offer where the state files enough of this job for a
+  // ladder, and leads into the case search for this job there.
+  const stateMedian = new Map(stateLadders.map((l) => [l.key, l.p50]));
+  const jobEra = (id: string, label: string, choice: string, total: number, rows: FacetRow[], current: boolean): MapEra => ({
+    id,
+    label,
+    choice,
+    total,
+    states: mapStates(rows).map((s) => {
+      const median = current ? stateMedian.get(s.state) : undefined;
+      return {
+        ...s,
+        ...(median != null ? { extra: `Median certified offer here: ${formatDollars(median)} a year` } : {}),
+        href: caseSearchHref({ occupation: row.slug, state: s.state }),
+        linkText: `Its ${stateName(s.state)} filings in the case search`,
+      };
+    }),
+  });
+  const eras = [
+    coverage.current ? jobEra("current", CURRENT_PERIOD, CURRENT_SINCE, row.total, facets.state ?? [], true) : null,
+    coverage.history && makeup
+      ? jobEra("history", `in ${historyYears(makeup)}`, historyYears(makeup), makeup.total, makeup.facets.state ?? [], false)
+      : null,
+  ].filter((e): e is MapEra => e !== null && canDrawStateMap(e.states, true));
+  const showMap = eras.length > 0;
+  const hasWhere = showMap || Boolean(facets.state || facets.city);
+
   const chapters: ChapterItem[] = [
     { id: "pay", label: "What it pays" },
+    ...(hasWhere ? [{ id: "where", label: "Where" }] : []),
     { id: "who", label: "Who files it" },
     ...(makeup ? [{ id: "history", label: "History" }] : []),
     { id: "the-job", label: "The job" },
@@ -329,6 +366,7 @@ export default async function OccupationPage({
         name={name}
         facts={facts}
         tags={tags}
+        recordLead="Also on this page"
         aside={
           <div className="bg-tint p-5 sm:p-6 border-2 shadow-hard border-border">
             <p className="font-heading text-xl font-bold leading-tight">Weighing an offer for this job?</p>{" "}
@@ -373,7 +411,9 @@ export default async function OccupationPage({
               unit="filings"
               className="mb-6"
             />{" "}
-            <section aria-label="Its record in four figures">
+            {/* Three figures: what it pays, how many, how they were decided. The certified and denied counts are
+                the approval figure's note; its median days is drawn in "What it pays", among every occupation's. */}
+            <section aria-label="Its record in three figures">
         <EntityStatCards
           cards={[
             {
@@ -382,8 +422,7 @@ export default async function OccupationPage({
               sub: ladder?.p50 != null ? `all PERM ${formatDollars(ladder.p50)}` : "",
             },
             volumeCard("Filings", row, kindTotal),
-            approvalCard(reliability, baselineDenialPct),
-            medianDaysCard(row.medianDays, standing),
+            approvalCard(reliability, baselineDenialPct, row),
           ]}
         />
             </section>
@@ -460,6 +499,29 @@ export default async function OccupationPage({
 
       </Chapter>
 
+      {hasWhere ? (
+        <Chapter
+          id="where"
+          title="Where it's filed"
+          dek={`The worksite state on its filings ${CURRENT_PERIOD}, with the median certified offer in each state that files enough of it for one.`}
+        >
+          {/* The map is the picture; the busiest states and cities sit beside it on a wide screen and under it on a phone. */}
+          <div className="grid grid-cols-1 gap-6 [&>*]:min-w-0 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start lg:[&>*:only-child]:col-span-2">
+            {showMap ? <EntityStateMap eras={eras} label="Filings by worksite state" /> : null}
+            {facets.state || facets.city ? (
+              <PlaceMix
+                states={facets.state ?? []}
+                cities={facets.city ?? []}
+                total={row.total}
+                period={CURRENT_PERIOD}
+                title="The busiest states and cities"
+                mapHref={showMap ? "#where" : undefined}
+              />
+            ) : null}
+          </div>
+        </Chapter>
+      ) : null}
+
       {/* Who is on the other side of these wages. The ladders above answer
           what the job pays; a reader weighing an offer also wants to know
           who files it and where the work is. */}
@@ -490,9 +552,9 @@ export default async function OccupationPage({
         states={facets.state ?? []}
         className="mt-6 border-2 border-border bg-card p-5 shadow-hard-sm sm:p-6"
       />{" "}
-      {facets.employer || facets.attorney || facets.state || facets.city ? (
+      {facets.employer || facets.attorney ? (
         <section className="mt-6">
-          <div className="grid grid-cols-1 gap-4 [&>*]:min-w-0 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 [&>*]:min-w-0 lg:grid-cols-2 lg:[&>*:last-child:nth-child(odd)]:col-span-2">
             {facets.employer ? (
               <PartyMix
                 rows={facets.employer}
@@ -515,10 +577,7 @@ export default async function OccupationPage({
                 filingsHref={(r) => (r.key ? caseSearchHref({ firm: r.key, occupation: row.slug }) : null)}
               />
             ) : null}
-            {facets.state || facets.city ? (
-              <PlaceMix states={facets.state ?? []} cities={facets.city ?? []} total={row.total} period={CURRENT_PERIOD} />
-            ) : null}
-            {/* Beside the places, so the row's two boxes end level. */}
+            {/* The places moved to "Where it's filed"; this sits beside the firms, or takes the row alone. */}
             <PwdToPerm links={pwdLinks} who={displayTitle(row)} className="border-2 border-border bg-card p-5 shadow-hard-sm sm:p-6" />
           </div>
         </section>

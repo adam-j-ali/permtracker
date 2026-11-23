@@ -22,7 +22,7 @@ import { BIGGEST_CLIENT_MIN_CASES, hasOwnPage, MIN_DECIDED_FOR_RATE, ENTITY_BASE
 import { neutralPageEntry } from "@/lib/privacy/withheld";
 import { notFound, permanentRedirect } from "next/navigation";
 import { firstThatFits, seeCandidates } from "@/lib/describe";
-import { formatInt, formatShareOf } from "@/lib/format";
+import { formatDollars, formatInt, formatShareOf } from "@/lib/format";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { US_STATE_NAMES } from "@/lib/usStateNames";
 import {
@@ -39,10 +39,8 @@ import {
   FieldPositionPlate,
   UnpublishedFilingsNote,
   approvalCard,
-  certifiedCard,
   entityStanding,
   medianDaysCard,
-  medianWageCard,
   volumeCard,
   wageIsTheJobLimit,
 } from "@/components/entities/EntityPageParts";
@@ -70,15 +68,23 @@ import { SizeBandNote } from "@/components/entities/SizeBandNote";
 import { OccupationMix, PartyMix, RecruitmentMix, StateMix } from "@/components/entities/FilingMakeup";
 import { HistoryMakeup, historyYears } from "@/components/entities/HistoryMakeup";
 import { historyMakeup } from "@/lib/db/employerHistory";
-import { CURRENT_PERIOD } from "@/lib/permEras";
+import { CURRENT_PERIOD, CURRENT_SINCE } from "@/lib/permEras";
 import { FilingsSearch } from "@/components/entities/FilingsSearch";
+import { EntityStateMap } from "@/components/entities/EntityStateMap";
 import {
   absorbedCount,
   entityFacets,
   nameVariants,
   resolveEntity,
   sizeBand,
+  stateFacetCoverage,
+  type FacetRow,
+  type StateFacetCoverage,
 } from "@/lib/db/entityDetail";
+import { canDrawStateMap, mapStates, type MapEra } from "@/lib/stateMap";
+import { getFirmRanksSummary } from "@/lib/db/firmRanks";
+import { rankedStates } from "@/lib/firmRanks";
+import { stateSlug } from "@/lib/h1bRanks";
 import { comparables, fieldDistribution } from "@/lib/db/entities";
 import { caseSearchHref } from "@/lib/caseSearchPlan";
 import { getPwdLinks } from "@/lib/db/pwdLinks";
@@ -98,6 +104,9 @@ import { softFail } from "@/lib/softRead";
  * on-demand revalidation, not to a timer.
  */
 export const revalidate = 2592000;
+
+/** No state map until a marker can be read: a facet of the busiest six would draw every other state as a zero. */
+const NO_COVERAGE: StateFacetCoverage = { current: false, history: false };
 
 const KIND = "attorney" as const;
 const BASE = ENTITY_BASE.attorney;
@@ -260,7 +269,7 @@ export default async function AttorneyPage({
   // memoises on them, so all 3,736 share one cohort read. The peer window is
   // wide because the state filter thins it hard: California holds 604 firms
   // and Wyoming a handful.
-  const [stats, dist, near, facets, variants, absorbed, freshness, debarments, programs, firmProfile, pwdLinks, makeup] = await Promise.all([
+  const [stats, dist, near, facets, variants, absorbed, freshness, debarments, programs, firmProfile, pwdLinks, makeup, coverage, rankSummary] = await Promise.all([
     getDisclosureSummary(),
     fieldDistribution(KIND, MIN_DECIDED_FOR_RATE),
     comparables({
@@ -293,6 +302,10 @@ export default async function AttorneyPage({
     // Who it filed for in FY2008 to FY2023, the jobs and the states, with their own total (perm_history_entity_facets,
     // one PK read). No catch: a failed read keeps the last good page rather than saving one with no history.
     historyMakeup("attorney", canonicalSlug),
+    // Whether the state facets hold every state yet (the builders' markers). A failure only drops the map.
+    stateFacetCoverage().catch(softFail("perm-attorneys/[slug]/page.stateFacetCoverage", NO_COVERAGE)),
+    // Which states have a law-firm ranking, for the map's links. A failure only drops the links.
+    getFirmRanksSummary().catch(softFail("perm-attorneys/[slug]/page.getFirmRanksSummary", null)),
   ]);
   const band = await sizeBand(KIND, row.rank);
 
@@ -348,9 +361,35 @@ export default async function AttorneyPage({
   if (firmProfile) tags.push({ text: "In the firm's own words", href: "#firm", tone: "ink" });
 
   const hasPractice = Boolean(facets.employer || facets.occupation || facets.state || facets.newspaper || facets.recruit_lead);
+  // Where its clients' jobs are: the state map once the nightly build says the facet holds every state, each era
+  // with two or more states, and the firm's own filing address outlined. A state leads to that state's law-firm
+  // ranking, where it has one: the case search can't narrow a firm by state.
+  const ranked = new Set(rankSummary ? rankedStates(rankSummary) : []);
+  const firmEra = (id: string, label: string, choice: string, total: number, rows: FacetRow[]): MapEra => ({
+    id,
+    label,
+    choice,
+    total,
+    states: mapStates(rows).map((s) => ({
+      ...s,
+      ...(ranked.has(s.state)
+        ? { href: `/law-firm-rankings/${stateSlug(s.state)}`, linkText: `The law firms ranked in ${stateName(s.state) ?? s.state}` }
+        : {}),
+    })),
+  });
+  const eras = [
+    coverage.current ? firmEra("current", CURRENT_PERIOD, CURRENT_SINCE, row.total, facets.state ?? []) : null,
+    coverage.history && makeup
+      ? firmEra("history", `in ${historyYears(makeup)}`, historyYears(makeup), makeup.total, makeup.facets.state ?? [])
+      : null,
+  ].filter((e): e is MapEra => e !== null && canDrawStateMap(e.states, true));
+  const showMap = eras.length > 0;
+  const hasWhere = showMap || Boolean(facets.state);
+  const office = row.state && /^[A-Z]{2}$/.test(row.state) ? { state: row.state, label: "Where it files from" } : null;
   const hasPrograms = Boolean(programs && (programs.lca || programs.pwd || programs.seasonal));
   const chapters: ChapterItem[] = [
     ...(hasPractice ? [{ id: "practice", label: "The practice" }] : []),
+    ...(hasWhere ? [{ id: "where", label: "Where" }] : []),
     ...(hasPrograms ? [{ id: "programs", label: "Every program" }] : []),
     ...(makeup ? [{ id: "history", label: "History" }] : []),
     { id: "compare", label: "Against others" },
@@ -371,6 +410,7 @@ export default async function AttorneyPage({
         name={row.name}
         facts={facts}
         tags={tags}
+        recordLead="Also on this page"
         aside={
           <CaseNextStep
             question={`Is ${row.name} handling your case?`}
@@ -391,13 +431,13 @@ export default async function AttorneyPage({
               unit="cases"
               className="mb-6"
             />{" "}
-            <section aria-label="Its record in five figures">
+            {/* Three figures: how many, how they were decided, how long. The certified and denied counts are the
+                approval figure's note, and the median wage leads "The practice". */}
+            <section aria-label="Its record in three figures">
               <EntityStatCards
                 cards={[
                   volumeCard("Cases", row, kindTotal),
-                  certifiedCard(row),
-                  approvalCard(reliability, baselineDenialPct),
-                  medianWageCard(row.medianAnnualWage),
+                  approvalCard(reliability, baselineDenialPct, row),
                   medianDaysCard(row.medianDays, standing),
                 ]}
               />
@@ -432,6 +472,12 @@ export default async function AttorneyPage({
             </>
           }
         >
+          {row.medianAnnualWage != null ? (
+            <p className="mb-6 max-w-3xl text-base leading-relaxed">
+              <span className="font-heading text-2xl font-bold tabular-nums">{formatDollars(row.medianAnnualWage)}</span>{" "}
+              a year is the median wage offered on the applications it filed {CURRENT_PERIOD}.
+            </p>
+          ) : null}{" "}
           <FilingsSearch
             what={`the filings of ${row.name}`}
             fixed={{ firm: row.slug }}
@@ -460,9 +506,6 @@ export default async function AttorneyPage({
                 filingsHref={(r) => (r.key ? caseSearchHref({ firm: row.slug, occupation: r.key }) : null)}
               />
             ) : null}
-            {facets.state ? (
-              <StateMix rows={facets.state} total={row.total} period={CURRENT_PERIOD} className="lg:col-span-2" />
-            ) : null}
           </div>{" "}
           <RecruitmentMix
             papers={facets.newspaper}
@@ -471,6 +514,28 @@ export default async function AttorneyPage({
             className="mt-4"
           />{" "}
           <PwdToPerm links={pwdLinks} who={row.name} className="mt-8 max-w-2xl border-2 border-border bg-card p-5 shadow-hard-sm sm:p-6" />
+        </Chapter>
+      ) : null}
+
+      {hasWhere ? (
+        <Chapter
+          id="where"
+          title="Where the jobs are"
+          dek={`The worksite state on the applications it filed ${CURRENT_PERIOD}: where its clients' jobs are, which isn't where the firm is.`}
+        >
+          {/* The map is the picture; the busiest states sit beside it on a wide screen and under it on a phone. */}
+          <div className="grid grid-cols-1 gap-6 [&>*]:min-w-0 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start lg:[&>*:only-child]:col-span-2">
+            {showMap ? <EntityStateMap eras={eras} label="Cases by worksite state" noun="cases" office={office} /> : null}
+            {facets.state ? (
+              <StateMix
+                rows={facets.state}
+                total={row.total}
+                period={CURRENT_PERIOD}
+                title="The busiest states"
+                mapHref={showMap ? "#where" : undefined}
+              />
+            ) : null}
+          </div>
         </Chapter>
       ) : null}
 

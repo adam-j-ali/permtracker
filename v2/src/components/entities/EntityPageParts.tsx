@@ -9,7 +9,7 @@
 
 import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
-import { formatDollars, formatInt } from "@/lib/format";
+import { formatInt } from "@/lib/format";
 import type { FieldDistribution } from "@/lib/db/entities";
 import type { FacetRow } from "@/lib/db/entityDetail";
 import { FieldPosition } from "@/components/tools/FieldPosition";
@@ -153,10 +153,6 @@ export function volumeCard(
   };
 }
 
-export function certifiedCard(row: { certified: number; denied: number }): StatCard {
-  return { k: "Certified", v: formatInt(row.certified), sub: `${formatInt(row.denied)} denied`, icon: "certified" };
-}
-
 /**
  * The approval rate, or the reason it's withheld, beside the field's. Given the certified and denied counts, its
  * note carries them ("1,859 certified, 4 denied"), so a page shows three figures where it showed a certified count
@@ -190,17 +186,6 @@ export function approvalCard(
     sub: tally ?? `of ${formatInt(reliability.decided)} decided`,
     icon: "approval",
     trend,
-  };
-}
-
-/** The median offered wage, or no card at all: a tile reading "not on file" says nothing. */
-export function medianWageCard(medianAnnualWage: number | null): StatCard | null {
-  if (medianAnnualWage == null) return null;
-  return {
-    k: "Median wage",
-    v: formatDollars(medianAnnualWage),
-    sub: "offered, per year",
-    icon: "wage",
   };
 }
 
