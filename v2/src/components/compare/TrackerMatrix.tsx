@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import { CheckIcon, MinusIcon, QuestionIcon } from "@phosphor-icons/react/ssr";
 
 import { ChartTips } from "@/components/data/ChartTips";
+import { KeepWhole } from "@/components/ui/keep-whole";
 import { GROUPS, ROWS, type Cell, type Mark, type Tracker } from "@/lib/compare/trackers";
 import { cn } from "@/lib/utils";
 
@@ -129,7 +130,7 @@ export function TrackerMatrix({ trackers }: { trackers: readonly Tracker[] }) {
               <tr key={r.key} className="border-b border-border last:border-b-0">
                 <th scope="row" className="sticky left-0 z-10 bg-card p-2.5 text-sm font-semibold leading-snug sm:p-3">
                   {/* A form code never breaks at its hyphen ("H-" then "2B"). */}
-                  {r.label.replace(/-(?=\d)/g, "\u2011")}{" "}
+                  <KeepWhole>{r.label}</KeepWhole>{" "}
                 </th>
                 {trackers.map((t, i) => {
                   const c = t.cells[r.key];

@@ -1,0 +1,4 @@
+{
+  "about": "The program and form names a line must never split at their hyphen (H- then 1B). One pattern: src/lib/programNames.ts builds the site's from it (KeepWhole, the MDX plugin) and scripts/phone_sweep.mjs builds its split check from it. A name ends at a non-word character, never at a hyphen and a digit, so the start of a DOL case number (G-100-24001-000002) is never a form. A trailing lowercase s (H-1Bs) stays with the name.",
+  "source": "\\b(?:H-(?:1B1|1B|1C|2A|2B|3|4)|CW-[12]|EB-[1-5][A-C]?|E-[1-3]|F-1|J-1|K-1|L-1[AB]?|L-2|M-1|O-1[AB]?|O-2|P-1|R-1|I-\\d{1,4}[A-Z]{0,2}|ETA[- ]\\d{3,4}[A-C]?|DS-\\d{3,4}|N-\\d{3}|G-\\d{2,4}[A-Z]?|AR-11)s?(?!\\w|-\\d)"
+}

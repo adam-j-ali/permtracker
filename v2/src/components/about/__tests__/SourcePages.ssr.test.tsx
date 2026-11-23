@@ -19,14 +19,18 @@ describe("SourcePages on the server", () => {
       expect(html).toContain(`width="${d.width}"`);
       expect(html).toContain(`height="${d.height}"`);
       expect(html).toContain(`>${d.agency}</span>`);
-      expect(html).toContain(`>${d.page}</span>`);
+      if (!d.page.startsWith("Form")) expect(html).toContain(`>${d.page}</span>`);
     }
   });
 
-  it("keeps a form number in one piece on the label", () => {
+  it("keeps a form number in one piece on the label, with the plain hyphen a reader would type", () => {
     const forms = ABOUT_DOCS.filter((d) => d.page.startsWith("Form"));
     expect(forms.length).toBe(3);
-    for (const f of forms) expect(f.page).not.toContain("-");
+    for (const f of forms) {
+      expect(f.page).not.toContain("\u2011");
+      const number = f.page.replace(/^Form /, "");
+      expect(html).toContain(`>Form <span class="whitespace-nowrap">${number}</span></span>`);
+    }
   });
 
   it("says what the pages are, in one quiet line", () => {

@@ -1,5 +1,7 @@
 import { Fragment } from "react";
 
+import { KeepWhole } from "@/components/ui/keep-whole";
+
 import { ABOUT_DOCS } from "./aboutDocs";
 
 /** The six federal pages and forms as one even grid, each the same shape, with its agency and page named under it. */
@@ -26,7 +28,9 @@ export function SourcePages() {
               />{" "}
               <span className="block border-t-2 border-[var(--object-border)] px-2.5 py-1.5 text-sm leading-snug">
                 <span className="block text-muted-foreground">{d.agency}</span>{" "}
-                <span className="block font-semibold">{d.page}</span>
+                <span className="block font-semibold">
+                  <KeepWhole>{d.page}</KeepWhole>
+                </span>
               </span>
             </li>
           </Fragment>

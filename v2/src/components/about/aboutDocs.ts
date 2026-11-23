@@ -10,7 +10,7 @@ export interface AboutDoc {
   width: number;
   height: number;
   alt: string;
-  /** Who publishes it, and the page or form, on the label under it. Form numbers use a non-breaking hyphen. */
+  /** Who publishes it, and the page or form, on the label under it. A form number is kept whole by KeepWhole. */
   agency: string;
   page: string;
 }
@@ -46,7 +46,7 @@ export const ABOUT_DOCS: AboutDoc[] = [
     height: 449,
     alt: "The first page of Form ETA-9089, Application for Permanent Employment Certification.",
     agency: "DOL",
-    page: "Form ETA‑9089",
+    page: "Form ETA-9089",
   },
   {
     src: "/images/road/eta-9141.webp",
@@ -54,7 +54,7 @@ export const ABOUT_DOCS: AboutDoc[] = [
     height: 449,
     alt: "The first page of Form ETA-9141, Application for Prevailing Wage Determination.",
     agency: "DOL",
-    page: "Form ETA‑9141",
+    page: "Form ETA-9141",
   },
   {
     src: "/images/road/i-485.webp",
@@ -62,6 +62,6 @@ export const ABOUT_DOCS: AboutDoc[] = [
     height: 449,
     alt: "The first page of Form I-485, Application to Register Permanent Residence or Adjust Status.",
     agency: "USCIS",
-    page: "Form I‑485",
+    page: "Form I-485",
   },
 ];
