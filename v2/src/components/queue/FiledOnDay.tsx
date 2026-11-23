@@ -182,6 +182,7 @@ export function FiledOnDay({
               <input
                 type="search"
                 name="q"
+                autoComplete="off"
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
                 placeholder="Case, employer or job"

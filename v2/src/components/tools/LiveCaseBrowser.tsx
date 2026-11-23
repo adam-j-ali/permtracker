@@ -244,6 +244,7 @@ export function LiveCaseBrowser({
               <span className="text-sm text-muted-foreground">Search</span>{" "}
               <input
                 type="search"
+                autoComplete="off"
                 value={qInput}
                 onChange={(e) => setQInput(e.target.value)}
                 placeholder="Case number or employer"

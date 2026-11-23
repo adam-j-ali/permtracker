@@ -26,6 +26,7 @@ export default function ContentSearch({
       <input
         type="search"
         aria-label="Search articles"
+        autoComplete="off"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

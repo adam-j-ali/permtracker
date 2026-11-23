@@ -306,6 +306,7 @@ export function CaseFilterBar({
           <Input
             type="search"
             aria-label="Search cases"
+            autoComplete="off"
             placeholder="Name, job or case number"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}

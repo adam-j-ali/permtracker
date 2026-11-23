@@ -123,6 +123,7 @@ export function SubscriptionsPanel({ signals }: { signals: Signals }) {
           Search by address, case, employer or series
           <input
             type="search"
+            autoComplete="off"
             placeholder="An address, case number, employer or series…"
             value={q}
             onChange={(e) => setQ(e.target.value)}

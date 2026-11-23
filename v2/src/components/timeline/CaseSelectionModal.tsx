@@ -237,6 +237,7 @@ export function CaseSelectionModal({
           {/* Search */}
           <Input
             type="search"
+            autoComplete="off"
             placeholder="Search cases..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

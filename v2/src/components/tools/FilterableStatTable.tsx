@@ -401,6 +401,7 @@ export function FilterableStatTable<T>({
             </span>{" "}
             <input
               type="search"
+              autoComplete="off"
               value={query}
               onFocus={ensureAll}
               onChange={(e) => {
