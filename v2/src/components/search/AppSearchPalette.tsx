@@ -14,7 +14,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { Command } from "cmdk";
-import { MagnifyingGlassIcon } from "@phosphor-icons/react";
+import { ClockCounterClockwiseIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
 
 import { api } from "@convex/_generated/api";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -22,6 +22,8 @@ import { fuzzyScore } from "@/lib/fuzzy";
 import { normaliseCaseNumber } from "@/lib/caseNumberShape";
 import { formatProgressStatus } from "@convex/lib/notificationHelpers";
 import { caseSearchHref } from "@/lib/caseSearchPlan";
+import { recordSearch } from "@/lib/search/recentSearches";
+import { ClearRecentButton, RECENT_CLEARED, RECENT_HEADING, recentSearchCount, useRecentSearches } from "@/components/search/RecentSearches";
 
 /** Cases shown in the box; the cases page holds every match. */
 const CASES_SHOWN = 8;
@@ -42,6 +44,9 @@ const APP_PAGES = [
 const ROW = "flex min-h-11 cursor-pointer items-baseline justify-between gap-3 px-3 py-2.5 text-base data-[selected=true]:bg-accent";
 const GROUP =
   "[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-sm [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-muted-foreground";
+/** The recent searches' heading: a full 44px row, so Clear sits beside it at its own height. */
+const RECENT_GROUP =
+  "[&_[cmdk-group-heading]]:flex [&_[cmdk-group-heading]]:min-h-11 [&_[cmdk-group-heading]]:items-center [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:text-sm [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-muted-foreground";
 
 export function AppSearchPalette({
   open,
@@ -71,7 +76,18 @@ export function AppSearchPalette({
     : APP_PAGES;
   const caseNumber = normaliseCaseNumber(q);
 
-  function go(href: string) {
+  // Every recent search, the app's own pages included; signing out clears them (AuthContext.beginSignOut). A move
+  // made with nothing typed isn't a search, so `go` keeps one only when it's handed one.
+  const recents = useRecentSearches("app");
+  const showRecents = !q && recents.length > 0;
+  const [recentsCleared, setRecentsCleared] = React.useState(false);
+  React.useEffect(() => {
+    if (!open) setRecentsCleared(false);
+  }, [open]);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  function go(href: string, search?: string | null) {
+    if (search) recordSearch({ label: search, href });
     onOpenChange(false);
     setQuery("");
     router.push(href);
@@ -85,14 +101,45 @@ export function AppSearchPalette({
           <div className="flex items-center gap-2 border-b border-border px-4">
             <MagnifyingGlassIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             <Command.Input
+              ref={inputRef}
               autoFocus
               value={query}
-              onValueChange={setQuery}
+              onValueChange={(v) => {
+                setQuery(v);
+                setRecentsCleared(false);
+              }}
               placeholder="Case number or name"
               className="min-h-[52px] w-full bg-transparent text-base outline-none placeholder:text-muted-foreground"
             />
           </div>
+          <p role="status" aria-live="polite" className="sr-only">
+            {showRecents ? `${recentSearchCount(recents.length)}.` : recentsCleared ? RECENT_CLEARED : ""}
+          </p>
           <Command.List className="max-h-[60vh] overflow-y-auto pb-2">
+            {showRecents && (
+              // Clear sits outside the group, whose heading cmdk hides from screen readers.
+              <div className="relative">
+                <Command.Group heading={RECENT_HEADING} className={RECENT_GROUP}>
+                  {recents.map((r) => (
+                    <Command.Item key={r.href} value={`recent-${r.href}`} onSelect={() => go(r.href, r.label)} className={ROW}>
+                      <span className="flex min-w-0 items-center gap-2">
+                        <ClockCounterClockwiseIcon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />{" "}
+                        <span className="min-w-0 truncate" translate="no">
+                          {r.label}
+                        </span>
+                      </span>
+                    </Command.Item>
+                  ))}
+                </Command.Group>{" "}
+                <ClearRecentButton
+                  className="absolute right-0 top-0"
+                  onCleared={() => {
+                    setRecentsCleared(true);
+                    inputRef.current?.focus();
+                  }}
+                />
+              </div>
+            )}
             {searching && (
               <Command.Group heading="Your cases" className={GROUP}>
                 {result === undefined ? (
@@ -102,7 +149,7 @@ export function AppSearchPalette({
                 ) : (
                   <>
                     {result.cases.map((c) => (
-                      <Command.Item key={c._id} value={`case-${c._id}`} onSelect={() => go(`/cases/${c._id}`)} className={ROW}>
+                      <Command.Item key={c._id} value={`case-${c._id}`} onSelect={() => go(`/cases/${c._id}`, c.employerName)} className={ROW}>
                         <span className="min-w-0">
                           <span className="block truncate font-medium">{c.employerName}</span>{" "}
                           <span className="block truncate text-sm text-muted-foreground">
@@ -115,7 +162,7 @@ export function AppSearchPalette({
                     {result.pagination.totalCount > result.cases.length && (
                       <Command.Item
                         value="all-matching-cases"
-                        onSelect={() => go(`/cases?search=${encodeURIComponent(q)}`)}
+                        onSelect={() => go(`/cases?search=${encodeURIComponent(q)}`, q)}
                         className={ROW}
                       >
                         Every match on the cases page ({result.pagination.totalCount.toLocaleString()})
@@ -129,7 +176,7 @@ export function AppSearchPalette({
             {pages.length > 0 && (
               <Command.Group heading="Go to" className={GROUP}>
                 {pages.map((p) => (
-                  <Command.Item key={p.href} value={`page-${p.href}`} onSelect={() => go(p.href)} className={ROW}>
+                  <Command.Item key={p.href} value={`page-${p.href}`} onSelect={() => go(p.href, q ? p.name : null)} className={ROW}>
                     {p.name}
                   </Command.Item>
                 ))}
@@ -141,7 +188,7 @@ export function AppSearchPalette({
                 {caseNumber ? (
                   <Command.Item
                     value="dol-case-status"
-                    onSelect={() => go(`/perm-case-status?case=${encodeURIComponent(caseNumber)}`)}
+                    onSelect={() => go(`/perm-case-status?case=${encodeURIComponent(caseNumber)}`, caseNumber)}
                     className={ROW}
                   >
                     DOL&apos;s status for {caseNumber}
@@ -149,7 +196,7 @@ export function AppSearchPalette({
                 ) : (
                   <Command.Item
                     value="every-filing"
-                    onSelect={() => go(caseSearchHref({ q }))}
+                    onSelect={() => go(caseSearchHref({ q }), q)}
                     className={ROW}
                   >
                     Every public filing for &ldquo;{q}&rdquo;

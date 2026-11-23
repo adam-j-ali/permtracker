@@ -22,7 +22,7 @@
 import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Command } from "cmdk";
-import { CircleNotchIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
+import { CircleNotchIcon, ClockCounterClockwiseIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
 
 import { staticIndex } from "@/lib/search/siteIndex";
 import { useArticles } from "@/lib/search/articleList";
@@ -39,6 +39,8 @@ import { trackPaletteSelected } from "@/lib/funnelEvents";
 import { SEARCH_TEXT_MAX } from "@/lib/search/limits";
 import { caseSearchHref } from "@/lib/caseSearchPlan";
 import { entityHref } from "@/lib/entityPayload";
+import { recordSearch } from "@/lib/search/recentSearches";
+import { ClearRecentButton, RECENT_CLEARED, RECENT_HEADING, recentSearchCount, useRecentSearches } from "@/components/search/RecentSearches";
 
 export interface SearchArticle {
   title: string;
@@ -86,6 +88,9 @@ const ROW = "flex cursor-pointer items-baseline justify-between gap-3 px-3 py-2.
 /** A row that acts on what was typed (a case number, a month, every filing). */
 const ACTION_ROW = "cursor-pointer border-l-2 border-primary-text bg-tint px-3 py-3 text-base font-semibold data-[selected=true]:bg-accent";
 const GROUP_HEADING = "[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-sm [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-muted-foreground";
+/** The recent searches' heading: a full 44px row, so Clear sits beside it at its own height. */
+const RECENT_GROUP =
+  "[&_[cmdk-group-heading]]:flex [&_[cmdk-group-heading]]:min-h-11 [&_[cmdk-group-heading]]:items-center [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:text-sm [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-muted-foreground";
 /** The page groups, in the order the Data menu has them. */
 const PAGE_GROUPS = ["Go to", ...GROUPS, "Learn"] as const;
 
@@ -164,8 +169,19 @@ export function SearchPalette({
   const [navPending, startNav] = React.useTransition();
   const [navTarget, setNavTarget] = React.useState<string | null>(null);
 
+  // What this visitor searched for lately, offered while nothing is typed. A pick from the list made with nothing
+  // typed is a move, not a search, so `go` keeps a search only when it's handed one.
+  const recents = useRecentSearches("public");
+  const showRecents = query.trim() === "" && recents.length > 0;
+  const [recentsCleared, setRecentsCleared] = React.useState(false);
+  React.useEffect(() => {
+    if (!open) setRecentsCleared(false);
+  }, [open]);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
   const go = React.useCallback(
-    (href: string, label: string) => {
+    (href: string, label: string, search?: string | null) => {
+      if (search) recordSearch({ label: search, href });
       trackPaletteSelected(href);
       setNavTarget(label);
       startNav(() => {
@@ -340,9 +356,13 @@ export function SearchPalette({
             <MagnifyingGlassIcon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           )}
           <Command.Input
+            ref={inputRef}
             autoFocus
             value={query}
-            onValueChange={setQuery}
+            onValueChange={(v) => {
+              setQuery(v);
+              setRecentsCleared(false);
+            }}
             /* MEASURED, NOT ESTIMATED. The old string was 60 characters and
                487.8px of real Inter at 16px; this input's box is 226px wide on
                a 320px phone and 266px on a 360px one, so two thirds of it was
@@ -374,7 +394,40 @@ export function SearchPalette({
             <span>Opening {navTarget}…</span>
           </p>
         ) : null}
+        <p role="status" aria-live="polite" className="sr-only">
+          {showRecents ? `${recentSearchCount(recents.length)}.` : recentsCleared ? RECENT_CLEARED : ""}
+        </p>
         <Command.List className="max-h-[55vh] overflow-y-auto p-2">
+          {showRecents ? (
+            /* Before anything is typed: what this visitor searched for lately, first, with Clear beside the
+               heading. The button sits outside the group, whose heading cmdk hides from screen readers. */
+            <div className="relative">
+              <Command.Group heading={RECENT_HEADING} className={RECENT_GROUP}>
+                {recents.map((r) => (
+                  <Command.Item
+                    key={r.href}
+                    value={`recent ${r.href}`}
+                    onSelect={() => go(r.href, r.label, r.label)}
+                    className={ROW}
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <ClockCounterClockwiseIcon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />{" "}
+                      <span className="min-w-0 truncate" translate="no">
+                        {r.label}
+                      </span>
+                    </span>
+                  </Command.Item>
+                ))}
+              </Command.Group>{" "}
+              <ClearRecentButton
+                className="absolute right-0 top-0"
+                onCleared={() => {
+                  setRecentsCleared(true);
+                  inputRef.current?.focus();
+                }}
+              />
+            </div>
+          ) : null}
           {/* WHY THIS IS NOT INSIDE `Command.Empty`. It was, and `Command.Empty`
               renders only when NOTHING matches - but the static index almost
               always matches something, so the corpus lookup ran with no signal
@@ -401,10 +454,13 @@ export function SearchPalette({
               work.
             </p>
           ) : null}
+          {/* The two rows that act on exactly what was typed always show: the filter scores the text against the
+              row's words, and a number typed without its dashes scored too low to show its own lookup. */}
           {caseNumber ? (
             <Command.Item
+              forceMount
               value={`case ${caseNumber}`}
-              onSelect={() => go(`/perm-case-status?case=${encodeURIComponent(caseNumber)}`, `case ${caseNumber}`)}
+              onSelect={() => go(`/perm-case-status?case=${encodeURIComponent(caseNumber)}`, `case ${caseNumber}`, caseNumber)}
               className={ACTION_ROW}
             >
               Check case {caseNumber}: live status and estimate
@@ -412,11 +468,13 @@ export function SearchPalette({
           ) : null}
           {month ? (
             <Command.Item
+              forceMount
               value={`month ${month}`}
               onSelect={() =>
                 go(
                   `/tools/perm-timeline-calculator?month=${encodeURIComponent(month)}`,
                   `cases filed ${month}`,
+                  month,
                 )
               }
               className={ACTION_ROW}
@@ -449,7 +507,7 @@ export function SearchPalette({
                   forceMount
                   key={h.href}
                   value={`suggest ${h.name}`}
-                  onSelect={() => go(h.href, h.name)}
+                  onSelect={() => go(h.href, h.name, h.name)}
                   className={ROW}
                 >
                   <span className="min-w-0 truncate">{h.name}</span>{" "}
@@ -470,7 +528,7 @@ export function SearchPalette({
                 <Command.Item
                   key={h.href}
                   value={`${h.kindLabel} ${h.name}`}
-                  onSelect={() => go(h.href, h.name)}
+                  onSelect={() => go(h.href, h.name, h.more ? query : h.name)}
                   className={ROW}
                 >
                   <span className="min-w-0 truncate">{h.name}</span>{" "}
@@ -495,6 +553,7 @@ export function SearchPalette({
                 go(
                   caseSearchHref({ q: query }),
                   `every filing by "${query.trim()}"`,
+                  query,
                 )
               }
               className={ACTION_ROW}
@@ -516,7 +575,7 @@ export function SearchPalette({
                     <Command.Item
                       key={p.href}
                       value={`${p.label} ${p.keywords}`}
-                      onSelect={() => go(p.href, p.label)}
+                      onSelect={() => go(p.href, p.label, query.trim() ? p.label : null)}
                       className={ROW}
                     >
                       {p.label}
@@ -540,7 +599,7 @@ export function SearchPalette({
                 <Command.Item
                   key={a.href}
                   value={`${a.title} ${a.kind}`}
-                  onSelect={() => go(a.href, a.title)}
+                  onSelect={() => go(a.href, a.title, query.trim() ? a.title : null)}
                   className={ROW}
                 >
                   <span className="min-w-0 truncate">{a.title}</span>{" "}
