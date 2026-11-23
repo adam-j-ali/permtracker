@@ -28,7 +28,8 @@ function found(query: string, title: string, slug: string) {
   };
 }
 
-const live = () => document.querySelector("[aria-live=polite]") as HTMLElement;
+// The answer's region: the box's own, which says how many recent searches are listed, isn't it.
+const live = () => document.querySelector("[aria-live=polite]:not([data-recent-status])") as HTMLElement;
 
 describe("SocFinder", () => {
   beforeEach(() => {
