@@ -49,25 +49,47 @@ export function ChapterNav({ items, className }: { items: ChapterItem[]; classNa
     return () => ro.disconnect();
   }, []);
 
+  // The part on screen is the last one, in page order, whose top has passed a line a third of the way down the
+  // window; above the first part nothing is marked. It is read from where each part sits, once a frame while the
+  // page scrolls or resizes. An intersection observer kept whatever it last reported, and left "Notes" lit at the
+  // top of a page after a jump back up.
   useEffect(() => {
-    if (typeof IntersectionObserver === "undefined") return;
     const sections = items
       .map((i) => document.getElementById(i.id))
       .filter((el): el is HTMLElement => el !== null);
-    const visible = new Map<string, boolean>();
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) visible.set(e.target.id, e.isIntersecting);
-        // The first part, in page order, whose top band is on screen. Above
-        // the first part (scrolled back to the top) nothing is marked.
-        const first = items.find((i) => visible.get(i.id));
-        if (first) setActive(first.id);
-        else if (sections[0] && sections[0].getBoundingClientRect().top > window.innerHeight * 0.25) setActive(null);
-      },
-      { rootMargin: "-25% 0px -65% 0px" },
-    );
-    sections.forEach((s) => io.observe(s));
-    return () => io.disconnect();
+    if (sections.length === 0) return;
+    const pick = () => {
+      const line = window.innerHeight * 0.3;
+      let current: string | null = null;
+      for (const s of sections) {
+        if (s.getBoundingClientRect().top <= line) current = s.id;
+      }
+      // At the foot of the page a short last part may never reach the line: once the page can't scroll further,
+      // the last part whose top is on screen is the one being read.
+      const doc = document.documentElement;
+      if (window.innerHeight + window.scrollY >= doc.scrollHeight - 2) {
+        for (const s of sections) {
+          if (s.getBoundingClientRect().top < window.innerHeight) current = s.id;
+        }
+      }
+      setActive(current);
+    };
+    let frame = 0;
+    const onMove = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        pick();
+      });
+    };
+    pick();
+    window.addEventListener("scroll", onMove, { passive: true });
+    window.addEventListener("resize", onMove, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onMove);
+      window.removeEventListener("resize", onMove);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, [items]);
 
   // On a phone the bar scrolls sideways: keep the current part in view,
