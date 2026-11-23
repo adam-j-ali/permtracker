@@ -324,6 +324,14 @@ case "$job" in
     else
       rc=1; fail build_quarter_report.py "the quarter's report wasn't rebuilt"
     fi ;;
+  # Every state in each employer's, firm's and job's state facet, and the older years' facets, with the marker the
+  # state maps wait for (Nov 23 2026). The monthly federal ingest rebuilds these on the 20th; this runs them by hand,
+  # in the night window (both write many rows), the first time when the maps' code ships.
+  entity-facets)
+    timeout 45m nice -n 10 python3 scripts/build_entity_detail.py \
+      || { rc=1; fail build_entity_detail.py "the full entity build exited non-zero or ran past 45m"; }
+    timeout 45m nice -n 10 python3 scripts/ingest_perm_history.py --entity-facets \
+      || { rc=1; fail ingest_perm_history.py "the older years' facets weren't rebuilt"; } ;;
   # USCIS's H-1B Employer Data Hub (a Tableau export, 75 to 110 MB a year).
   # The ingest records its own ok row, or its refusal with the reason; this adds the timer's row on any non-zero exit.
   # Then the busiest H-1B employers by year and state, which read the hub's rows.
