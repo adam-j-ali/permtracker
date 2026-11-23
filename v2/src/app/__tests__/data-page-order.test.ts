@@ -31,6 +31,21 @@ describe.each([
   });
 });
 
+describe("a consulate's page", () => {
+  const src = read("src/app/(site)/(public)/consular-posts/[post]/page.tsx");
+
+  it("opens on three figures, one per immigrant visa category", () => {
+    expect(read("src/lib/consular/scheduling.ts")).toMatch(/IV_CATEGORIES: readonly IvCategory\[\] = \["employment", "family", "immediate"\]/);
+    expect(src).toMatch(/<FigureRow className="mt-8">\s*\{IV_CATEGORIES\.map/);
+  });
+
+  it("says what will show where State or the embassy has nothing, never a bare grey line", () => {
+    expect(src).toMatch(/\) : \(\s*<EmptyState\s+title="Its scheduling months will show here"/);
+    expect(src).toMatch(/\) : \(\s*<EmptyState title="Its notices will list here" heading="h3"/);
+    expect(src).not.toMatch(/<p className="mt-\d+[^"]*text-muted-foreground">\s*State&apos;s scheduling table doesn&apos;t list/);
+  });
+});
+
 describe("an empty USCIS quarterly page", () => {
   it("is the shared empty box, never a grey paragraph", () => {
     const src = read("src/components/data/BarRows.tsx");
