@@ -26,15 +26,17 @@
  * the worse failure here.
  */
 
+import { tidyCaseNumber } from "./tidyCaseNumber";
+
 /** The current four-segment form: `G-100-26125-868956`, or an H-2A job order's `JO-A-300-26271-264525`. */
 const CURRENT = /^(?:[A-Z]|JO-A)-\d{3}-\d{5}-\d+$/;
 
 /** The legacy three-segment form: `A-23043-00641`. Five digits, then five. */
 const LEGACY = /^[A-Z]-\d{5}-\d{5}$/;
 
-/** Upper-cased and space-stripped, or null when it is neither shape. */
+/** Tidied the way a paste needs (`tidyCaseNumber`), or null when it is neither shape. */
 export function normaliseCaseNumber(input: string): string | null {
-  const raw = input.trim().toUpperCase().replace(/\s+/g, "");
+  const raw = tidyCaseNumber(input);
   return CURRENT.test(raw) || LEGACY.test(raw) ? raw : null;
 }
 
@@ -47,5 +49,5 @@ export function normaliseCaseNumber(input: string): string | null {
  * block is, it is not reliably the filing date.
  */
 export function isLegacyCaseNumber(input: string): boolean {
-  return LEGACY.test(input.trim().toUpperCase().replace(/\s+/g, ""));
+  return LEGACY.test(tidyCaseNumber(input));
 }

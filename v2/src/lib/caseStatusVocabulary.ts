@@ -32,6 +32,9 @@
  * @module
  */
 
+// A relative import, so Convex's bundler (which knows no "@/") can load this module.
+import { tidyCaseNumber } from "./tidyCaseNumber";
+
 /** Canonicalise a status the same way the ingest does. */
 export function canonicalStatus(status: string): string {
   return status.trim().toUpperCase().split(/\s+/).join(" ");
@@ -52,10 +55,11 @@ export function canonicalStatus(status: string): string {
  *
  * This module is import-safe from Convex, the browser and Node alike. The
  * database one is not: it carries `server-only`, which is why it cannot simply be
- * imported here.
+ * imported here. Both read a paste through `tidyCaseNumber`, so a number pasted
+ * with an en dash is one key on both sides.
  */
 export function normaliseCaseNumber(input: string): string | null {
-  const raw = input.trim().toUpperCase().replace(/\s+/g, "");
+  const raw = tidyCaseNumber(input);
   // One letter and three digits for every form but the H-2A job order, whose
   // code is JO-A-300 (`JO-A-300-26271-264525`). Exactly that, nothing looser.
   return /^(?:[A-Z]|JO-A)-\d{3}-\d{5}-\d+$/.test(raw) ? raw : null;

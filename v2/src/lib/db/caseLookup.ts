@@ -1,6 +1,7 @@
 import "server-only";
 
 import { slugify } from "@/lib/entitySlug";
+import { tidyCaseNumber } from "@/lib/tidyCaseNumber";
 import { one } from "./client";
 import { beforeFirstLoad } from "./firstLoad";
 import { discoverCaseOutcome, type DiscoveryMiss } from "./caseDiscovery";
@@ -103,7 +104,7 @@ export interface CaseLookupResult {
 
 /** `G-100-24158-078964` and friends, normalised for a primary-key lookup. */
 export function normaliseCaseNumber(input: string): string | null {
-  const raw = input.trim().toUpperCase().replace(/\s+/g, "");
+  const raw = tidyCaseNumber(input);
   return /^(?:[A-Z]|JO-A)-\d{3}-\d{5}-\d+$/.test(raw) ? raw : null;
 }
 
@@ -125,7 +126,7 @@ export function normaliseCaseNumber(input: string): string | null {
  * would break if this widened underneath it.
  */
 export function normaliseLookupCaseNumber(input: string): string | null {
-  const raw = input.trim().toUpperCase().replace(/\s+/g, "");
+  const raw = tidyCaseNumber(input);
   if (/^(?:[A-Z]|JO-A)-\d{3}-\d{5}-\d+$/.test(raw)) return raw;
   return /^[A-Z]-\d{5}-\d{5}$/.test(raw) ? raw : null;
 }
@@ -142,7 +143,7 @@ export function normaliseLookupCaseNumber(input: string): string | null {
  * and the page has to say that rather than showing a month it guessed.
  */
 export function isLegacyCaseNumber(caseNumber: string): boolean {
-  return /^[A-Z]-\d{5}-\d{5}$/.test(caseNumber.trim().toUpperCase());
+  return /^[A-Z]-\d{5}-\d{5}$/.test(tidyCaseNumber(caseNumber));
 }
 
 /**

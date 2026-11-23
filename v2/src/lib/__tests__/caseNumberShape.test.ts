@@ -5,6 +5,13 @@ import { describe, expect, it } from "vitest";
 
 import { isLegacyCaseNumber, normaliseCaseNumber } from "../caseNumberShape";
 import { normaliseCaseNumber as narrowNormalise } from "../caseStatusVocabulary";
+import {
+  isLegacyCaseNumber as serverLegacy,
+  normaliseCaseNumber as serverNarrow,
+  normaliseLookupCaseNumber as serverLookup,
+} from "../db/caseLookup";
+import { normalisePwdCaseNumber } from "../db/pwdCases";
+import { normaliseFlagCaseNumber, programOf } from "../flagCaseNumber";
 import { parseCaseNumber } from "../permCaseNumber";
 
 /**
@@ -112,6 +119,65 @@ describe("isLegacyCaseNumber", () => {
 
   it.each(CURRENT)("does not claim %s is legacy", (n) => {
     expect(isLegacyCaseNumber(n)).toBe(false);
+  });
+});
+
+/**
+ * A number pasted from a PDF, an email or a chat. Every module that judges a case number reads it through the one
+ * tidy (`tidyCaseNumber`), so a number the lookup box accepts is one the server finds, the alert stores and the
+ * program table claims, whichever dash or space it arrived with.
+ */
+const PASTED: readonly [string, string][] = [
+  ["G–100–26125–868956", "G-100-26125-868956"],
+  ["G‑100‑26125‑868956", "G-100-26125-868956"],
+  ["G−100−26125−868956", "G-100-26125-868956"],
+  ["G 100 26125 868956", "G-100-26125-868956"],
+  ["G10026125868956", "G-100-26125-868956"],
+  ["G-100-26125-868956.", "G-100-26125-868956"],
+  ["(g-100-26125-868956),", "G-100-26125-868956"],
+];
+
+describe("a pasted number reads the same in every module", () => {
+  it.each(PASTED)("the lookup box reads %s as %s", (pasted, clean) => {
+    expect(normaliseCaseNumber(pasted)).toBe(clean);
+  });
+
+  it.each(PASTED)("the alert rule reads %s as %s", (pasted, clean) => {
+    expect(narrowNormalise(pasted)).toBe(clean);
+  });
+
+  it.each(PASTED)("the server's lookup reads %s as %s", (pasted, clean) => {
+    expect(serverLookup(pasted)).toBe(clean);
+    expect(serverNarrow(pasted)).toBe(clean);
+  });
+
+  it("a legacy number pasted with an en dash is still legacy, in both copies of that rule", () => {
+    expect(normaliseCaseNumber("A–23043–00641.")).toBe("A-23043-00641");
+    expect(serverLookup("A 23043 00641")).toBe("A-23043-00641");
+    expect(isLegacyCaseNumber("A–23043–00641")).toBe(true);
+    expect(serverLegacy("A–23043–00641")).toBe(true);
+  });
+
+  it("a pasted wage request is claimed by its own program, never read as a PERM case", () => {
+    // The PERM shape takes any leading letter, so a wage request that only the PERM rule could read would be looked
+    // up in the PERM table and never found. Each program's rule reads the same tidy.
+    const pasted = "P–100–26125–868956.";
+    expect(normalisePwdCaseNumber(pasted)).toBe("P-100-26125-868956");
+    expect(normaliseFlagCaseNumber(pasted)).toEqual({ caseNumber: "P-100-26125-868956", program: "pwd" });
+    expect(programOf("P 100 26125 868956")).toBe("pwd");
+  });
+
+  it.each([
+    "src/lib/caseNumberShape.ts",
+    "src/lib/caseStatusVocabulary.ts",
+    "src/lib/db/caseLookup.ts",
+    "src/lib/flagCaseNumber.ts",
+    "src/lib/db/flagCases.ts",
+  ])("%s reads through the one tidy and keeps no copy of its own", (file) => {
+    const src = readFileSync(join(process.cwd(), file), "utf8");
+    expect(src).toMatch(/import \{[^}]*\btidyCaseNumber\b[^}]*\} from "[^"]*tidyCaseNumber"/);
+    // The old inline tidy, which knew no dash but the plain one.
+    expect(src).not.toContain('.toUpperCase().replace(/\\s+/g, "")');
   });
 });
 

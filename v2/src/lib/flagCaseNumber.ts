@@ -33,6 +33,7 @@ import {
   isApproval,
   normaliseCaseNumber,
 } from "./caseStatusVocabulary";
+import { tidyCaseNumber } from "./tidyCaseNumber";
 
 /**
  * The FLAG programs this product tracks per case. `seasonal` is H-2A
@@ -69,11 +70,6 @@ const PROGRAM_PATTERNS: readonly { program: FlagProgram; re: RegExp }[] = [
   { program: "lca", re: LCA_NUMBER_RE },
 ];
 
-/** Tidy a number the same way `normaliseCaseNumber` does, without judging it. */
-function tidy(input: string): string {
-  return input.trim().toUpperCase().replace(/\s+/g, "");
-}
-
 /**
  * The program a case number belongs to.
  *
@@ -90,7 +86,8 @@ function tidy(input: string): string {
  * never "is this a case number".
  */
 export function programOf(caseNumber: string): FlagProgram {
-  const raw = tidy(caseNumber);
+  // The same tidy `normaliseCaseNumber` reads through, without judging the result.
+  const raw = tidyCaseNumber(caseNumber);
   for (const { program, re } of PROGRAM_PATTERNS) {
     if (re.test(raw)) return program;
   }

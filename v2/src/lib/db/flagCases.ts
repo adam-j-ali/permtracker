@@ -9,6 +9,7 @@ import { LIVE_SEARCH_MAX, narrowingClauses } from "./cases";
 import { askDol, logBudgetRefusal, underDailyBudget, type DiscoveryMiss } from "./caseDiscovery";
 import { laterDate } from "./sweepCoverage";
 import { SEARCH_TEXT_MAX } from "@/lib/search/limits";
+import { tidyCaseNumber } from "@/lib/tidyCaseNumber";
 
 /**
  * One read layer for every non-PERM program DOL's case-status endpoint
@@ -425,7 +426,7 @@ export function makeFlagProgram(config: FlagProgramConfig): FlagProgram {
   const { table } = config;
 
   const normalise = (input: string): string | null => {
-    const raw = input.trim().toUpperCase().replace(/\s+/g, "");
+    const raw = tidyCaseNumber(input);
     return config.numberRe.test(raw) ? raw : null;
   };
 
