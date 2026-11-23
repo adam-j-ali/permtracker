@@ -46,6 +46,14 @@ describe("wilsonInterval", () => {
     }
   });
 
+  it("always holds the share itself, even where rounding would leave it a hair outside", () => {
+    // 100 of 100 came out as 99.99999999999999 from the arithmetic alone.
+    for (const n of [1, 7, 12, 100, 2000, 140.2]) {
+      expect(wilsonInterval(n, n)!.hi).toBe(100);
+      expect(wilsonInterval(0, n)!.lo).toBe(0);
+    }
+  });
+
   it("never claims a spotless record is known to be spotless", () => {
     expect(wilsonInterval(0, 3)!.hi).toBeGreaterThan(50);
   });

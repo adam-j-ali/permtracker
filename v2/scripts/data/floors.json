@@ -1,0 +1,19 @@
+{
+  "about": "The one table of reporting floors for new figures (the USCIS receipt sample's, and any figure added after Nov 23 2026), and the one margin rule every measured share prints. src/lib/floors.ts and scripts/lib_floors.py both read it, and both are held to scripts/data/floor_cases.json. Floors that guard a figure readers already see keep their own values where they are: a raised floor would hide it.",
+  "floors": {
+    "share": {
+      "min": 100,
+      "why": "From 100 checked, a share's 95% margin is at most about 10 points (9.8 at an even split), so the figure says something; under it the margin can pass 10 points and a reader takes the share at face value.",
+      "words": "Not enough {unit} checked yet to give a share: {n} so far, and it takes {min}."
+    },
+    "median": {
+      "min": 30,
+      "why": "The floor the site's measured medians and rates already use (wage medians, straggler rates, an employer's approval rate): under 30, one more case moves the median.",
+      "words": "Not enough {unit} decided yet to give a typical time: {n} so far, and it takes {min}."
+    }
+  },
+  "margin": {
+    "why": "The wider side of the 95% Wilson interval from the share, in percentage points, rounded up to a tenth so it's never smaller than the truth. 1,000 of 2,000 is give or take 2.2 points.",
+    "words": "give or take {points} points"
+  }
+}

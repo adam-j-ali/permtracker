@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 /**
  * One home per rule: each rule below has its module in each language, and nothing else in src/, convex/ or scripts/
@@ -58,6 +58,15 @@ const RULES: readonly Rule[] = [
   );`,
     spare: "  const age = Math.floor((Date.now() - row.computedAt) / MS_PER_DAY);",
   },
+  {
+    name: "a new figure's floor words and margin words",
+    homes: ["src/lib/floors.ts", "scripts/lib_floors.py"],
+    // The words live in scripts/data/floors.json; a margin or a "not enough yet" sentence put together in code is a
+    // second copy of them.
+    copy: /give or take (?:\$\{|\{)|f"give or take|Not enough [^"`\n]*yet to give/,
+    probe: "  const said = `give or take ${margin.toFixed(1)} points`;",
+    spare: "# Filed within two weeks of the quiet period's end: as soon as the rules allow, give or take.",
+  },
 ];
 
 /** Where a file computes a rule outside its homes, as file:line (a copy may run over several lines). */
@@ -69,9 +78,15 @@ function copiesOf(rule: Rule, path: string, source: string): string[] {
 
 describe("one home per rule", () => {
   const all = ROOTS.flatMap(files);
+  // Read once for every rule: the tree is a few thousand files, and three reads of it ran past the default timeout.
+  let sources: readonly (readonly [string, string])[] = [];
+  beforeAll(() => {
+    sources = all.map((f) => [f, readFileSync(f, "utf8")] as const);
+  }, 60_000);
 
   it("reads the whole tree", () => {
     expect(all.length).toBeGreaterThan(2000);
+    expect(sources).toHaveLength(all.length);
   });
 
   describe.each(RULES)("$name", (rule) => {
@@ -85,8 +100,8 @@ describe("one home per rule", () => {
     });
 
     it("is computed nowhere else", () => {
-      const found = all.flatMap((f) => copiesOf(rule, f, readFileSync(f, "utf8")));
+      const found = sources.flatMap(([f, source]) => copiesOf(rule, f, source));
       expect(found).toEqual([]);
-    });
+    }, 30_000);
   });
 });

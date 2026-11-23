@@ -31,8 +31,9 @@ export function wilsonInterval(k: number, n: number): Interval | null {
   const denom = 1 + (z * z) / n;
   const centre = (p + (z * z) / (2 * n)) / denom;
   const half = (z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n))) / denom;
+  // Each bound is held to its side of the share: rounding alone left 100 of 100's upper bound at 99.99999999999999.
   return {
-    lo: Math.max(0, (centre - half) * 100),
-    hi: Math.min(100, (centre + half) * 100),
+    lo: Math.max(0, Math.min(p * 100, (centre - half) * 100)),
+    hi: Math.min(100, Math.max(p * 100, (centre + half) * 100)),
   };
 }

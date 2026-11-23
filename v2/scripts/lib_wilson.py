@@ -27,4 +27,5 @@ def wilson_interval(k: float, n: float) -> tuple[float, float] | None:
     denom = 1 + (z * z) / n
     centre = (p + (z * z) / (2 * n)) / denom
     half = (z * math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n))) / denom
-    return (max(0.0, (centre - half) * 100), min(100.0, (centre + half) * 100))
+    # Each bound is held to its side of the share: rounding alone left 100 of 100's upper bound at 99.99999999999999.
+    return (max(0.0, min(p * 100, (centre - half) * 100)), min(100.0, max(p * 100, (centre + half) * 100)))

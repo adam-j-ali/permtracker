@@ -1,0 +1,27 @@
+{
+  "about": "Shared answers for the floors and the margin rule in scripts/data/floors.json. src/lib/floors.ts and scripts/lib_floors.py both test against this file. A share case gives k of n and either the share and its margin in points, or the words a page shows instead.",
+  "shares": [
+    {"k": 1000, "n": 2000, "unit": "receipts", "pct": 50, "margin": 2.2},
+    {"k": 44, "n": 2000, "unit": "receipts", "pct": 2.2, "margin": 0.8},
+    {"k": 50, "n": 100, "unit": "receipts", "pct": 50, "margin": 9.7},
+    {"k": 30, "n": 100, "unit": "receipts", "pct": 30, "margin": 9.6},
+    {"k": 0, "n": 100, "unit": "receipts", "pct": 0, "margin": 3.7},
+    {"k": 100, "n": 100, "unit": "receipts", "pct": 100, "margin": 3.7},
+    {"k": 7, "n": 250, "unit": "receipts", "pct": 2.8, "margin": 2.9},
+    {"k": 33.5, "n": 140.2, "unit": "receipts", "pct": 23.894436519258203, "margin": 7.7},
+    {"k": 1, "n": 99, "unit": "receipts", "words": "Not enough receipts checked yet to give a share: 99 so far, and it takes 100."},
+    {"k": 0, "n": 0, "unit": "receipts", "words": "Not enough receipts checked yet to give a share: 0 so far, and it takes 100."},
+    {"k": 12, "n": 40.4, "unit": "I-140 receipts", "words": "Not enough I-140 receipts checked yet to give a share: 40 so far, and it takes 100."}
+  ],
+  "medians": [
+    {"n": 30, "unit": "receipts", "meets": true},
+    {"n": 2000, "unit": "receipts", "meets": true},
+    {"n": 29, "unit": "receipts", "meets": false, "words": "Not enough receipts decided yet to give a typical time: 29 so far, and it takes 30."},
+    {"n": 1, "unit": "I-485 receipts", "meets": false, "words": "Not enough I-485 receipts decided yet to give a typical time: 1 so far, and it takes 30."}
+  ],
+  "marginWords": [
+    {"points": 2.2, "words": "give or take 2.2 points"},
+    {"points": 0.8, "words": "give or take 0.8 points"},
+    {"points": 10, "words": "give or take 10 points"}
+  ]
+}
