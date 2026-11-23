@@ -135,6 +135,12 @@ describe("censusFrom", () => {
     ]);
   });
 
+  it("carries the day it was counted, so the page can date its figure", () => {
+    const months = foldBacklogRows([row("2025-11", "ANALYST REVIEW", 0, 10)]);
+    expect(censusFrom(months, "2026-11-23").asOf).toBe("2026-11-23");
+    expect(censusFrom(months).asOf).toBeNull();
+  });
+
   it("does not mutate the months it was handed", () => {
     const months = foldBacklogRows([row("2025-11", "ANALYST REVIEW", 0, 10)]);
     const before = months[0]?.statuses[0]?.count;

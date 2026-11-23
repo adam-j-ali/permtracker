@@ -248,7 +248,7 @@ export default async function PermQueuePage() {
             icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />}
             trend={backlogTrend(permBoard?.flow)}
             value={formatInt(census.pending)}
-            note={`PERM cases, across ${census.months.length} filing months`}
+            note={`PERM cases across ${census.months.length} filing months${census.asOf ? `, by our check on ${monthDay(census.asOf) ?? census.asOf}` : ""}`}
           />
           <Figure kind={["measured", "official"] as const}
             tone="lime"

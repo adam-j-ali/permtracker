@@ -36,6 +36,7 @@ import { rows } from "./client";
 import {
   adjacentFrom,
   aheadPendingFrom,
+  censusDayOf,
   getLiveCensus,
   monthRowsFrom,
 } from "./liveCensus";
@@ -177,6 +178,8 @@ export interface BacklogCensus {
   total: number;
   /** Filing months carrying at least one case, oldest first. */
   months: BacklogMonth[];
+  /** The day the count is as of (`censusDayOf`), or null for a census folded from rows that carry no day. */
+  asOf: string | null;
 }
 
 /**
@@ -187,7 +190,7 @@ export interface BacklogCensus {
  * an earlier draft, by four cases, because the two queries ran a second apart
  * while the mirror was being written to.
  */
-export function censusFrom(months: readonly BacklogMonth[]): BacklogCensus {
+export function censusFrom(months: readonly BacklogMonth[], asOf: string | null = null): BacklogCensus {
   const merged = new Map<string, BacklogStatusCount>();
   let pending = 0;
   let decided = 0;
@@ -206,12 +209,15 @@ export function censusFrom(months: readonly BacklogMonth[]): BacklogCensus {
     decided,
     total: pending + decided,
     months: [...months],
+    asOf,
   };
 }
 
 /** The matrix and its census in one call, for the board. */
 export async function getBacklogCensus(): Promise<BacklogCensus> {
-  return censusFrom(await getBacklogMatrix());
+  // getLiveCensus is cached per request, so the day costs no second read.
+  const [months, doc] = await Promise.all([getBacklogMatrix(), getLiveCensus()]);
+  return censusFrom(months, censusDayOf(doc));
 }
 
 /** The filing months either side of one that has a page. */
