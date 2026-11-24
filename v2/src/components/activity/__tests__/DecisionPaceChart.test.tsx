@@ -1,6 +1,6 @@
 import { act } from "react";
 import { hydrateRoot } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup, renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
@@ -252,7 +252,8 @@ describe("DecisionPaceChart hover columns", () => {
     // Arrange: the server's HTML in a page, as a browser receives it
     const chart = <DecisionPaceChart series={[{ label: "Disclosure", color: "var(--data-good-ink)", days: DISCLOSURE }]} />;
     const host = document.createElement("div");
-    host.innerHTML = renderToStaticMarkup(chart);
+    // renderToString, as a server render does: it marks the edges between text nodes, which hydration reads.
+    host.innerHTML = renderToString(chart);
     document.body.appendChild(host);
     const errors = vi.spyOn(console, "error").mockImplementation(() => {});
     const recoverable: unknown[] = [];
