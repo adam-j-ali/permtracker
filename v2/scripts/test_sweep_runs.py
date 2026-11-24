@@ -153,9 +153,17 @@ def main() -> int:
     check("it decodes the counts as integers",
           got and got["asked"] == 100 and got["answered"] == 98
           and got["changed"] == 4, str(got))
-    check("it carries the dates the RUN wrote, not the reader's clock",
-          got and got["started_on"] == time.strftime("%Y-%m-%d", time.localtime(now - 900))
-          and got["finished_on"] == time.strftime("%Y-%m-%d"), str(got))
+    check("it carries the dates the RUN wrote, as Eastern days, not the reader's clock",
+          got and got["started_on"] == lib_db.et_date((now - 900) * 1000)
+          and got["finished_on"] == lib_db.et_today(), str(got))
+    # The server's clock is UTC: a sweep started at 8:30 PM Eastern on Nov 23 is 01:30 UTC on Nov 24, and a UTC (or
+    # server-local) stamp printed "Updated November 24" on the pages that evening.
+    evening = SqliteTurso()
+    lib_db.record_sweep(
+        evening, script="s.py", program="pwd", mode="active", started_at=1795483800.0,  # 2026-11-24 01:30 UTC
+        asked=1, answered=1, missing=0, changed=0, requests=1, failed_batches=0, complete=True, status_counts=None)
+    late = lib_db.last_complete_sweep(evening, "pwd")
+    check("an evening sweep is dated its Eastern day", late and late["started_on"] == "2026-11-23", str(late))
     stored = db.scalar("SELECT status_counts FROM sweep_runs WHERE id = 1")
     check("the status breakdown round-trips as JSON",
           json.loads(stored) == {"ANALYST REVIEW": 98}, str(stored))
@@ -209,7 +217,7 @@ def main() -> int:
         requests=2, failed_batches=0, complete=True)
     csd.write_review_stages(db)
     doc = doc_of(db)
-    today = time.strftime("%Y-%m-%d")
+    today = lib_db.et_today()  # the run writes Eastern days
     check("the doc was written", doc is not None)
     seen = {(s["seenFrom"], s["seenTo"]) for s in (doc or {}).get("stages", [])}
     check("seenFrom/seenTo are the SWEEP's dates, not the mirror's",

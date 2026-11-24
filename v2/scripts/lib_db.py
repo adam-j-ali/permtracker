@@ -852,8 +852,10 @@ def record_sweep(
         "started_at": started_ms, "finished_at": now,
         # The date is written by the run, not derived by the reader from epoch
         # ms, so the reader's timezone never enters a published freshness claim.
-        "started_on": time.strftime("%Y-%m-%d", time.localtime(started_ms / 1000)),
-        "finished_on": time.strftime("%Y-%m-%d", time.localtime(now / 1000)),
+        # Eastern days: the server's clock is UTC, where after 7 or 8 PM Eastern
+        # it's already tomorrow ("Updated November 24" on the evening of the 23rd).
+        "started_on": et_date(started_ms),
+        "finished_on": et_date(now),
         "asked": int(asked), "answered": int(answered), "missing": int(missing),
         "changed": int(changed), "requests": requests,
         "failed_batches": failed_batches,
