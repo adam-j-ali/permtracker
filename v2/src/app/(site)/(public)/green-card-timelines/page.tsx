@@ -63,7 +63,7 @@ import { KeepWhole } from "@/components/ui/keep-whole";
  */
 
 // The searched phrase first (Search Console, Nov 2026: "green card timeline", "perm timeline tracker").
-const TITLE = "Green Card Timeline: How Long Each Step Takes";
+const TITLE = "Reported Green Card Timelines, Step by Step";
 const DESCRIPTION =
   `Each green card step's days, PERM to the card, from cases people reported in ${REPORTED_PLACES} and here.`;
 const PATH = "/green-card-timelines";
@@ -186,7 +186,7 @@ export default async function GreenCardTimelinesPage() {
       <JsonLdScript schema={faqSchema} />
       <div className="pt-10 sm:pt-12" />
       <header>
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Green card timelines</h1>{" "}
+        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Reported green card timelines</h1>{" "}
         {/* Two lines on a wide screen. The places the cases come from are "Where they were reported", further down. */}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           {summary

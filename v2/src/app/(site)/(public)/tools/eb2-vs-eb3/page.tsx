@@ -17,7 +17,7 @@ import { KeepWhole } from "@/components/ui/keep-whole";
  * be called shorter (`lib/greenCardLineCompare.ts`).
  */
 
-const TITLE = "EB-2 vs EB-3: People Ahead at Your Date";
+const TITLE = "EB-2 vs EB-3: Which Line Is Shorter for You";
 const DESCRIPTION =
   "EB-2 and EB-3 side by side for one country and priority date: this month's cutoffs and how many people stand ahead in each line, from USCIS and State.";
 const PATH = "/tools/eb2-vs-eb3";

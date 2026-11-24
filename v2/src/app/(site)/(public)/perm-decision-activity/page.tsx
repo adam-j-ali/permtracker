@@ -58,7 +58,7 @@ import { softFail } from "@/lib/softRead";
 import { StepBothSources } from "@/components/community/StepBothSources";
 import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
-const TITLE = "PERM Decision Activity";
+const TITLE = "PERM Decisions Over Time";
 const DESCRIPTION =
   "How many PERM decisions DOL issues each day and week, the shape of its working week, and what happened to the cases it decided.";
 
@@ -165,7 +165,7 @@ export default async function DecisionActivityPage() {
 
       <header className="max-w-2xl">
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">
-          How fast the queue is moving
+          PERM decisions over time
         </h1>{" "}
         <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
           Every PERM decision DOL makes, counted by day.

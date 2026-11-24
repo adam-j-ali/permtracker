@@ -135,7 +135,8 @@ export default async function PermTimelineCalculatorPage() {
           PERM timeline calculator
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          {queueLine(dolNow(times, permLine))} Enter your filing date below for an estimate of your own case.
+          Enter your filing date below for an estimate of when DOL will decide your case.{" "}
+          {queueLine(dolNow(times, permLine))}
         </p>
       </header>
 
