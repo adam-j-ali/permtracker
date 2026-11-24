@@ -19,7 +19,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
 }));
 
-const { FlagCaseBrowser, LCA_PROGRAM, PWD_PROGRAM } = await import("../FlagCaseBrowser");
+const { FlagCaseBrowser, LCA_PROGRAM, PWD_PROGRAM, SEASONAL_PROGRAM } = await import("../FlagCaseBrowser");
 
 function live(caseNumber: string, status: string): FlagCaseRow {
   return {
@@ -195,8 +195,26 @@ describe("FlagCaseBrowser is the page's one search box", () => {
   it("is headed by what it finds, with no second box asked for", () => {
     usePublicQuery.mockReturnValue({ data: undefined, failed: false, failure: null, retry: vi.fn() });
     render(<FlagCaseBrowser summary={null} program={LCA_PROGRAM} />);
-    expect(screen.getByRole("heading", { name: "Find an LCA" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Search LCAs by employer or case number" })).toBeTruthy();
     expect(screen.getAllByRole("textbox", { name: /Employer or case number/ })).toHaveLength(1);
+  });
+
+  it("never repeats its page's title: the box's heading says what the box does", () => {
+    // /seasonal-cases is titled "Find an H-2A, H-2B or CW-1 filing", and the box under it said the same words, so
+    // the page had two headings reading alike and the build's heading check held the release.
+    usePublicQuery.mockReturnValue({ data: undefined, failed: false, failure: null, retry: vi.fn() });
+    const titles = [
+      [PWD_PROGRAM, "Find a prevailing wage request"],
+      [LCA_PROGRAM, "Find an H-1B LCA"],
+      [SEASONAL_PROGRAM, "Find an H-2A, H-2B or CW-1 filing"],
+    ] as const;
+    for (const [program, title] of titles) {
+      const { unmount } = render(<FlagCaseBrowser summary={null} program={program} />);
+      const box = screen.getAllByRole("heading", { level: 2 })[0]!;
+      expect(box.textContent?.replace(/\s+/g, " ").trim()).toBe(`Search ${program.nouns} by employer or case number`);
+      expect(box.textContent).not.toBe(title);
+      unmount();
+    }
   });
 
   it("says under the box what a case number gets: DOL asked live, and an email when it moves", () => {

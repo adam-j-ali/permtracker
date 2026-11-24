@@ -199,7 +199,7 @@
  "guides/find-a-dol-case-number-by-employer/lca-search": {
   "capture": {
    "url": "/lca-cases?q=Google",
-   "clip": "h:Find an LCA by employer",
+   "clip": "h:Search LCAs by employer",
    "wait": 9000,
    "maxHeight": 1100
   },

@@ -77,8 +77,6 @@ export interface FlagBrowserProgram {
    * them on `visa=all`.
    */
   allVisasLabel?: string;
-  /** "a" or "an" before the singular noun; "a" when absent. */
-  article?: "a" | "an";
   /**
    * Add a Form column read off the case number's prefix. The H-2A and H-2B
    * program holds three forms under one table, and a row that doesn't say
@@ -105,7 +103,6 @@ export const LCA_PROGRAM: FlagBrowserProgram = {
   pendingLabel: "In process",
   decidedLabel: "Decided",
   wageLabel: "Wage offered",
-  article: "an",
 };
 
 export const SEASONAL_PROGRAM: FlagBrowserProgram = {
@@ -117,7 +114,6 @@ export const SEASONAL_PROGRAM: FlagBrowserProgram = {
   // DOL's quarterly H-2A, H-2B and CW-1 files (`seasonal_cases`): the wage the
   // employer offered, in the unit the file quotes (an hour, mostly).
   wageLabel: "Wage offered",
-  article: "an",
   showForm: true,
 };
 
@@ -687,7 +683,9 @@ export function FlagCaseBrowser({
     <div className="space-y-10">
       <section className="object p-5 sm:p-6">
         {/* The page's one way in: an employer's name searches the list, and a case number goes to its own page. */}
-        <h2 className="font-heading text-xl font-bold">Find {program.article ?? "a"} {keepWhole(program.noun)}</h2>{" "}
+        {/* Says what the box does, never the page's own title over it: "Find an H-2A, H-2B or CW-1 filing" twice
+            was two headings reading alike. */}
+        <h2 className="font-heading text-xl font-bold">Search {keepWhole(program.nouns)} by employer or case number</h2>{" "}
         <p className="mt-2 max-w-2xl text-base leading-relaxed text-soft">
           Type the start of the employer&apos;s name, or a case number. Add a word from the job
           title or a filing month if the employer files a lot.
