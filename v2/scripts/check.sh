@@ -1,19 +1,12 @@
 #!/bin/sh
-# The quick check before a push: what CI would refuse, in a few minutes rather
-# than the whole suite's twenty-odd on the old Mac.
+# The check before a push: what CI would refuse, in about two minutes on the new Mac.
 #
 #   pnpm check            # against origin/main
 #   pnpm check HEAD~3     # against any other commit
 #
-# It runs both typecheckers, the data scripts' lint and tests, the source audits,
-# eslint on the changed files, and the vitest
-# tests that import something changed since the base (vitest's --changed,
-# uncommitted and untracked files included), the tests that name a changed file,
-# and, when src/ or convex/ changed, every gate that walks the tree, and when an
-# article or its picture changed, every test that holds the articles. It's still
-# the first look, never the last word: CI runs the whole
-# suite on every push and the deploy waits for it to pass (test.yml,
-# oracle-deploy.yml). `pnpm test:run` is still the full local run.
+# It runs both typecheckers, the data scripts' lint and tests (in parallel), the source audits, eslint on the
+# files changed since the base, and the whole vitest suite, shuffled. CI runs the suite again on every push and the
+# deploy waits for it (test.yml, oracle-deploy.yml).
 set -eu
 cd "$(dirname "$0")/.."
 base=${1:-origin/main}
@@ -35,12 +28,17 @@ echo "== 2/6 pyflakes over the data scripts"
 took
 
 echo "== 3/6 data script tests"
-failed=0; n=0; log=$(mktemp)
-for t in scripts/test_*.py scripts/oracle/test_*.py; do
-  n=$((n + 1))
-  "$PY" "$t" > "$log" 2>&1 || { failed=$((failed + 1)); echo "FAILED $t"; tail -20 "$log"; }
-done
-rm -f "$log"
+# Fourteen at a time (Nov 24 2026: 17 s against 63 s one by one, the same results over three runs); each writes its own
+# log, and a failure prints the end of its log.
+logs=$(mktemp -d)
+n=$(ls scripts/test_*.py scripts/oracle/test_*.py | wc -l | tr -d ' ')
+ls scripts/test_*.py scripts/oracle/test_*.py | xargs -P "${CHECK_JOBS:-14}" -I{} sh -c \
+  '"$0" "$1" > "$2/$(echo "$1" | tr / _).log" 2>&1 || echo "$1" >> "$2/failed"' "$PY" {} "$logs"
+failed=0
+if [ -f "$logs/failed" ]; then
+  for t in $(sort "$logs/failed"); do failed=$((failed + 1)); echo "FAILED $t"; tail -20 "$logs/$(echo "$t" | tr / _).log"; done
+fi
+rm -rf "$logs"
 echo "$n script tests, $failed failed"
 [ "$failed" -eq 0 ]
 took
@@ -75,50 +73,12 @@ else
 fi
 took
 
-echo "== 6/6 vitest: tests affected since $base"
-# --changed follows imports, so a test that reads a changed file as text (a
-# parity test reading a Python ingest's status list, a gate scanning src/)
-# isn't picked up. Add every test file that names a changed file: by basename,
-# or by repo path for names many files share (page.tsx, route.ts, index.ts).
-extra=""
-for f in $( { git diff --name-only --relative "$base" 2>/dev/null; git ls-files --others --exclude-standard; } | sort -u); do
-  b=$(basename "$f")
-  case "$b" in page.tsx|layout.tsx|route.ts|index.ts|index.tsx|loading.tsx|types.ts|utils.ts) needle="$f" ;; *) needle="$b" ;; esac
-  extra="$extra $(grep -rlF --include='*.test.ts' --include='*.test.tsx' -- "$needle" src convex test-utils sdk extension 2>/dev/null | xargs -n1 basename 2>/dev/null | tr '\n' ' ')"
-done
-extra=$(printf '%s\n' $extra | sort -u | tr '\n' ' ')
-# Shuffled, as GitHub's run is (vitest.config.ts shuffles only when CI is set). Nov 10 2026: a test that passed
-# in its written order here failed there, because an earlier test had already used up what it waited for. A
-# failure prints its seed: rerun that file with --sequence.shuffle --sequence.seed=<seed> to see the same order.
-shuffle="--sequence.shuffle"
-pnpm exec vitest run $shuffle --changed "$base"
-# A second run, because vitest treats file arguments beside --changed as a
-# filter on the changed set, not an addition to it. Basenames, because the
-# arguments are regexes and a route-group path like (site) matches nothing.
-if [ -n "$(printf '%s' "$extra" | tr -d ' ')" ]; then
-  echo "   and the tests that read a changed file as text:"
-  # shellcheck disable=SC2086
-  pnpm exec vitest run $shuffle $extra
-fi
-# The gates that walk the whole tree (glued text, grid tracks, nothing pressable
-# in a summary, every page in the palette...) name no file, so neither run above
-# finds them, and three pushes went red on them (Oct 11, 16 and 23 2026). Any
-# change in a folder those gates read runs every test that reads a directory:
-# about 90 s. Until Nov 7 2026 only src/ and convex/ counted, and a docs-only
-# push went red on the legal-name gate, which also reads docs/ and scripts/.
-if { git diff --name-only --relative "$base" 2>/dev/null; git ls-files --others --exclude-standard; } | grep -qE '^(src|convex|scripts|docs|sdk|sdk-python|claude-plugin|extension|workers|test-utils)/'; then
-  walkers=$(grep -rlE "readdirSync|globSync|readdir\(|opendirSync" --include='*.test.ts' --include='*.test.tsx' src convex test-utils 2>/dev/null | xargs -n1 basename | sort -u | tr '\n' ' ')
-  echo "   and the gates that walk the whole tree:"
-  # shellcheck disable=SC2086
-  pnpm exec vitest run $shuffle $walkers
-fi
-# An article is read from disk by the tests that hold it (its picture, its title and description, its
-# links, the opening's mention), through helpers that neither --changed nor a search by name follows,
-# and content/ is none of the folders above. Nov 10 2026: a push that changed only two articles ran no
-# article test here. Any change to an article or its pictures runs them all: about three minutes.
-if { git diff --name-only --relative "$base" 2>/dev/null; git ls-files --others --exclude-standard; } | grep -qE '^(content|public/images/content)/'; then
-  echo "   and the tests that hold the articles:"
-  pnpm exec vitest run $shuffle src/app/__tests__ src/lib/content
-fi
+echo "== 6/6 vitest: the whole suite, shuffled"
+# The whole suite, every push (Nov 24 2026): on the new Mac it takes about a minute, less than the four targeted runs
+# it replaced (tests affected since the base, tests naming a changed file, the tree-walking gates, the article tests:
+# 77 s), and it can't miss a test that reads a file as text. Shuffled, as GitHub's run is (vitest.config.ts shuffles
+# only when CI is set): Nov 10 2026, a test that passed in its written order here failed there. A failure prints its
+# seed: rerun that file with --sequence.shuffle --sequence.seed=<seed> to see the same order.
+pnpm exec vitest run --sequence.shuffle
 took
 echo "== passed in $(( $(date +%s) - t0 ))s"
