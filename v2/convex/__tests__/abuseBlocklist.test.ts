@@ -75,10 +75,11 @@ describe("recordStrike — strike accumulation + auto-block", () => {
     expect(blocks[0]!.ip).toBe(IP);
     expect(blocks[0]!.reason).toBe("x_limit_tripped");
     expect(blocks[0]!.manualOverride).toBe(false);
-    // 24h window
+    // A 1h window. The mutation reads its own clock, and on a fast machine both reads can fall in the same
+    // millisecond with the test's a millisecond behind (Nov 24 2026: 3,600,001), so the upper bound allows 50 ms.
     const remaining = blocks[0]!.expiresAt - Date.now();
     expect(remaining).toBeGreaterThan(59 * 60 * 1000);
-    expect(remaining).toBeLessThanOrEqual(60 * 60 * 1000);
+    expect(remaining).toBeLessThanOrEqual(60 * 60 * 1000 + 50);
   });
 
   it("uses the first hop of an XFF chain as the keyed IP", async () => {

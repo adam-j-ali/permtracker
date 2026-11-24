@@ -22,6 +22,13 @@ import { MAX_CASES_PER_ADDRESS, WATCH_AFTER_DECISION_MS } from "../caseAlerts";
 import { BUDGETS, SUBSCRIBE_IP_LIMIT } from "../lib/alertBudgets";
 import { makeUnsubscribeToken } from "../lib/unsubscribeToken";
 
+/**
+ * How far past a time limit a test sets a row. The function under test reads its own clock, and on a fast machine
+ * that reading can fall a millisecond behind the test's (Nov 24 2026), so a row set 1 ms past a limit sometimes
+ * read as exactly on it. A second clears that without changing what's tested.
+ */
+const CLOCK_SLACK_MS = 1_000;
+
 const SECRET = "test-unsubscribe-secret";
 /** A PERM case. The default subject of every test that is not about programs. */
 const CASE = "G-100-26125-868956";
@@ -652,7 +659,7 @@ describe("the change detector", () => {
 
     const { ALERT_SEND_CLAIM_MS } = await import("../caseAlerts");
     await t.run(async (ctx) =>
-      ctx.db.patch(id, { sendingAt: Date.now() - ALERT_SEND_CLAIM_MS - 1, lastCheckedAt: 0 }),
+      ctx.db.patch(id, { sendingAt: Date.now() - ALERT_SEND_CLAIM_MS - CLOCK_SLACK_MS, lastCheckedAt: 0 }),
     );
     await t.action(internal.caseAlerts.sweepCaseChanges, {});
     expect(alerts(), "a claim older than the limit is a sweep that died").toHaveLength(1);
@@ -666,7 +673,7 @@ describe("the change detector", () => {
     const { alerts } = stubMirrorAndResend({ cases: { [CASE]: { status: "RFI ISSUED", isFinal: false } } });
     const id = await seededSubscription(t, "person@example.com", "ANALYST REVIEW");
     const { ALERT_SEND_CLAIM_MS } = await import("../caseAlerts");
-    const claimedAt = Date.now() - ALERT_SEND_CLAIM_MS - 1;
+    const claimedAt = Date.now() - ALERT_SEND_CLAIM_MS - CLOCK_SLACK_MS;
     await t.run(async (ctx) => {
       await ctx.db.patch(id, { sendingStatus: "RFI ISSUED", sendingAt: claimedAt });
       await ctx.db.insert("alertOutbox", {
@@ -693,7 +700,7 @@ describe("the change detector", () => {
     const { alerts } = stubMirrorAndResend({ cases: { [CASE]: { status: "RFI ISSUED", isFinal: false } } });
     const id = await seededSubscription(t, "person@example.com", "ANALYST REVIEW");
     const { ALERT_SEND_CLAIM_MS } = await import("../caseAlerts");
-    const claimedAt = Date.now() - ALERT_SEND_CLAIM_MS - 1;
+    const claimedAt = Date.now() - ALERT_SEND_CLAIM_MS - CLOCK_SLACK_MS;
     await t.run(async (ctx) => {
       await ctx.db.patch(id, { sendingStatus: "RFI ISSUED", sendingAt: claimedAt });
       await ctx.db.insert("alertOutbox", {
@@ -941,7 +948,7 @@ describe("failure handling", () => {
     expect(next.sent).toBe(0);
 
     // A year on with nothing moved, it retires and leaves the sweep.
-    await t.run(async (ctx) => ctx.db.patch(id, { decidedAt: Date.now() - WATCH_AFTER_DECISION_MS - 1 }));
+    await t.run(async (ctx) => ctx.db.patch(id, { decidedAt: Date.now() - WATCH_AFTER_DECISION_MS - CLOCK_SLACK_MS }));
     await t.action(internal.caseAlerts.sweepCaseChanges, {});
     expect((await t.run(async (ctx) => ctx.db.get(id)))!.caseClosedAt).toBeDefined();
     const after = await t.action(internal.caseAlerts.sweepCaseChanges, {});
