@@ -1,7 +1,7 @@
 import { PWD_VISA_CLASS } from "@/lib/changeProgram";
 import { pwdOwnSql } from "@/lib/wageRequestRanges";
 import "server-only";
-import { makeFlagProgram } from "./flagCases";
+import { makeFlagProgram, type FlagSummary } from "./flagCases";
 
 export type {
   FlagDisclosedRow as PwdDisclosedRow,
@@ -82,3 +82,22 @@ export const getPwdSummary = pwd.getSummary;
 export const lookupPwdDetermination = pwd.lookupDisclosed;
 export const searchPwdDeterminations = pwd.searchDisclosed;
 export const getPwdDisclosureSummary = pwd.getDisclosureSummary;
+
+/**
+ * The summary as PERM wage requests alone, when the doc carries its PERM block: the pages about PERM count these,
+ * and say how many H-1B, H-1B1 and E-3 requests wait apart. An older doc without the block is used whole.
+ */
+export function permScope(
+  s: FlagSummary | null,
+): (FlagSummary & { otherFormsPending: number | null }) | null {
+  if (!s) return null;
+  if (!s.perm) return { ...s, otherFormsPending: null };
+  return {
+    ...s,
+    total: s.perm.total,
+    pending: s.perm.pending,
+    decided: s.perm.decided,
+    byMonth: s.perm.byMonth,
+    otherFormsPending: Math.max(0, s.pending - s.perm.pending),
+  };
+}

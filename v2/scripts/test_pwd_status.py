@@ -155,10 +155,47 @@ def run_status_and_exit() -> None:
     check("a program swept for nothing turns the run red", m._tail_exit([], swept_nothing=True), 1)
 
 
+def perm_summary_block() -> None:
+    """The wage-request summary keeps a PERM-only block: the pages about PERM wage requests count P-100 PERM requests,
+    and each month's open ones by DOL's status, so "in process" never stands for RFI or redetermination too."""
+    import json
+    import ingest_pwd_status_direct as m
+    from lib_sqlite_shim import SqliteTurso
+
+    db = SqliteTurso()
+    db.script([
+        "CREATE TABLE pwd_case_status (case_number TEXT PRIMARY KEY, filing_date TEXT, current_status TEXT, "
+        "is_final INTEGER, employer_name TEXT, job_title TEXT, visa_type TEXT, first_seen_at TEXT)",
+        "CREATE TABLE perm_docs (key TEXT PRIMARY KEY, json TEXT, computed_at INTEGER)",
+    ])
+    db.conn.executemany("INSERT INTO pwd_case_status VALUES (?,?,?,?,?,?,?,?)", [
+        ("P-100-26200-000001", "2026-07-19", "IN PROCESS", 0, "A", "t", "PERM", "2026-07-20"),
+        ("P-100-26200-000002", "2026-07-19", "RFI ISSUED", 0, "B", "t", "PERM", "2026-07-20"),
+        ("P-100-26201-000003", "2026-07-20", "PENDING REDETERMINATION", 0, "C", "t", None, "2026-07-21"),
+        ("P-100-26201-000004", "2026-07-20", "DETERMINATION ISSUED", 1, "D", "t", "PERM", "2026-07-21"),
+        ("P-100-26232-000005", "2026-08-20", "IN PROCESS", 0, "E", "t", "PERM", "2026-08-21"),
+        ("P-200-26200-000006", "2026-07-19", "IN PROCESS", 0, "F", "t", "H-1B", "2026-07-20"),  # another form
+        ("P-100-26200-000007", "2026-07-19", "IN PROCESS", 0, "G", "t", "H-1B", "2026-07-20"),  # not a PERM wage
+    ])
+    db.conn.commit()
+    check("the summary is written", m.write_summary_doc(db, "pwd"), True)
+    doc = json.loads(db.conn.execute("SELECT json FROM perm_docs WHERE key = 'pwd_live_summary'").fetchone()[0])
+    perm = doc.get("perm") or {}
+    check("the PERM block counts P-100 PERM requests only", (perm.get("total"), perm.get("pending"), perm.get("decided")),
+          (5, 4, 1))
+    check("its months are PERM-only", perm.get("byMonth"),
+          [{"month": "2026-08", "total": 1, "decided": 0, "pending": 1},
+           {"month": "2026-07", "total": 4, "decided": 1, "pending": 3}])
+    check("each month's open requests by DOL's status", perm.get("openByMonth"),
+          {"2026-07": {"IN PROCESS": 1, "PENDING REDETERMINATION": 1, "RFI ISSUED": 1}, "2026-08": {"IN PROCESS": 1}})
+    check("the whole table's counts stay as they were", (doc["total"], doc["pending"]), (7, 6))
+
+
 def main() -> int:
     print("pwd status ingest")
     run_status_and_exit()
     active_pass_band()
+    perm_summary_block()
     # The day code is YYDDD from a real date, year boundary included.
     check("day code for 2026-08-28 is 26240", day_code(datetime.date(2026, 8, 28)), "26240")
     check("day code for 2026-01-01 is 26001", day_code(datetime.date(2026, 1, 1)), "26001")

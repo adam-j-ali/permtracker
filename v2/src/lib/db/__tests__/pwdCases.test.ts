@@ -151,6 +151,20 @@ describe("parsePwdSummaryDoc", () => {
     asOf: "2026-09-02T19:30:00Z",
   });
   const now = Date.UTC(2026, 8, 2, 20);
+  it("reads the PERM-only block with each month's open requests by status, and leaves it out when absent or bad", () => {
+    const perm = {
+      total: 16428, pending: 246, decided: 16182,
+      byMonth: [{ month: "2026-07", total: 16428, pending: 246, decided: 16182 }],
+      openByMonth: { "2026-07": { "IN PROCESS": 46, "RFI ISSUED": 135, "PENDING REDETERMINATION": 65 } },
+    };
+    const withPerm = JSON.stringify({ ...JSON.parse(good), perm });
+    expect(parsePwdSummaryDoc(withPerm, now - 1000, now)?.perm).toEqual(perm);
+    expect(parsePwdSummaryDoc(good, now - 1000, now)?.perm).toBeUndefined();
+    const bad = JSON.stringify({ ...JSON.parse(good), perm: { total: "x" } });
+    expect(parsePwdSummaryDoc(bad, now - 1000, now)?.perm).toBeUndefined();
+    expect(parsePwdSummaryDoc(bad, now - 1000, now)?.pending).toBe(498);
+  });
+
   it("reads a fresh doc and treats a stale one as absent", () => {
     expect(parsePwdSummaryDoc(good, now - 1000, now)?.pending).toBe(498);
     expect(parsePwdSummaryDoc(good, now - 9 * 86_400_000, now)).toBeNull();
@@ -271,5 +285,26 @@ describe("a row's two dates: when its status last changed, and when DOL was last
     const r = (await listPwdCases({ kind: "decided", numItems: 10 })).rows[0]!;
     expect(r.lastCheckedAt).toBe("2026-11-16T09:00:00Z");
     expect(r.statusSince).toBe("2026-11-16T09:00:00Z");
+  });
+});
+
+describe("permScope", () => {
+  it("counts PERM wage requests alone when the doc carries the PERM block, and says how many other forms wait", async () => {
+    const { permScope } = await import("../pwdCases");
+    const base = {
+      total: 571076, pending: 44241, decided: 526835, byStatus: {}, byVisaType: {}, byPrefix: {}, pendingByPrefix: {},
+      byMonth: [{ month: "2026-07", total: 16695, pending: 259, decided: 16436 }], asOf: null, computedAt: 1,
+    };
+    const perm = {
+      total: 560000, pending: 43900, decided: 516100,
+      byMonth: [{ month: "2026-07", total: 16428, pending: 246, decided: 16182 }],
+      openByMonth: { "2026-07": { "IN PROCESS": 46 } },
+    };
+    const scoped = permScope({ ...base, perm });
+    expect([scoped?.total, scoped?.pending, scoped?.decided]).toEqual([560000, 43900, 516100]);
+    expect(scoped?.byMonth).toEqual(perm.byMonth);
+    expect(scoped?.otherFormsPending).toBe(341);
+    expect(permScope(base)).toMatchObject({ pending: 44241, otherFormsPending: null });
+    expect(permScope(null)).toBeNull();
   });
 });

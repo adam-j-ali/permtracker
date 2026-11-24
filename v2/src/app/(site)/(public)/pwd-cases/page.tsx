@@ -14,7 +14,7 @@ import { formatInt } from "@/lib/format";
 import { waitingSplit } from "@/lib/figureVisuals";
 import { FlagCaseBrowser, PWD_PROGRAM } from "@/components/tools/FlagCaseBrowser";
 import { openGraphBase } from "@/lib/openGraphBase";
-import { getPwdSummary, getPwdDisclosureSummary } from "@/lib/db/pwdCases";
+import { getPwdSummary, getPwdDisclosureSummary, permScope } from "@/lib/db/pwdCases";
 import { SearchParamsBoundary } from "@/hooks/useUrlSearchParams";
 import { longDate } from "@convex/lib/months";
 import { getPwdBoard } from "@/lib/db/board";
@@ -59,7 +59,7 @@ export const metadata: Metadata = withSocialCard({
 export const revalidate = 86400;
 
 export default async function PwdCasesPage() {
-  const [summary, disclosure, times, line, dayData, nowDocs, pwdBoard] = await Promise.all([
+  const [allForms, disclosure, times, line, dayData, nowDocs, pwdBoard] = await Promise.all([
     getPwdSummary(),
     getPwdDisclosureSummary(),
     getProcessingTimes().catch(softFail("pwd-cases/page.getProcessingTimes", null)),
@@ -69,6 +69,8 @@ export default async function PwdCasesPage() {
     // The board's 30-day filed-against-decided count, for which way the line moved.
     getPwdBoard().catch(softFail("pwd-cases/page.getPwdBoard", null)),
   ]);
+  // The page is about PERM wage requests: it counts those alone, and says how many other forms' requests wait apart.
+  const summary = permScope(allForms);
   // DOL's own position in the PERM wage-request line: the month it is issuing
   // determinations on, from its processing-times page.
   const now = dolPwdNow(times);
@@ -91,8 +93,10 @@ export default async function PwdCasesPage() {
             label: "Waiting at DOL now",
             value: summary ? formatInt(summary.pending) : "—",
             trend: backlogTrend(pwdBoard?.flow),
-            note: "From DOL's case-status service",
-            ...(waitingSplit(summary, "wage requests") ? { split: waitingSplit(summary, "wage requests") } : {}),
+            note: summary?.otherFormsPending
+              ? `PERM wage requests, from DOL's case-status service. H-1B, H-1B1 and E-3 ones: ${formatInt(summary.otherFormsPending)} more, counted apart`
+              : "From DOL's case-status service",
+            ...(waitingSplit(summary, "PERM wage requests") ? { split: waitingSplit(summary, "PERM wage requests") } : {}),
           },
           {
             kind: "measured",

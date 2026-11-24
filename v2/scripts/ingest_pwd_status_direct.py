@@ -831,6 +831,35 @@ def write_pwd_day_queue(db: Database) -> bool:
     return True
 
 
+def perm_wage_block(db: Database, table: str) -> dict:
+    """The PERM wage requests alone (P-100, PERM or no visa recorded): the pages about PERM count these, with each
+    month's open requests by DOL's status, so "in process" never stands for RFI or redetermination too. H-1B, H-1B1
+    and E-3 requests are counted apart in pendingByPrefix."""
+    lo, hi = DAY_QUEUE_RANGE
+    where = f"case_number >= ? AND case_number < ? AND {PERM_WAGE}"
+    total, final = query_rows(db, f"SELECT COUNT(*), COALESCE(SUM(is_final), 0) FROM {table} WHERE {where}", [lo, hi])[0]
+    months = query_rows(
+        db, f"SELECT substr(filing_date, 1, 7) AS m, COUNT(*), SUM(is_final) FROM {table} "
+            f"WHERE filing_date IS NOT NULL AND {where} GROUP BY m ORDER BY m DESC", [lo, hi])
+    open_rows = query_rows(
+        db, f"SELECT substr(filing_date, 1, 7) AS m, current_status, COUNT(*) FROM {table} "
+            f"WHERE filing_date IS NOT NULL AND (is_final = 0 OR is_final = '0') AND {where} "
+            f"GROUP BY m, current_status", [lo, hi])
+    open_by_month: dict[str, dict[str, int]] = {}
+    for m, status, n in open_rows:
+        if m:
+            open_by_month.setdefault(m, {})[status or "UNKNOWN"] = int(n)
+    total, final = int(total or 0), int(final or 0)
+    return {
+        "total": total,
+        "pending": total - final,
+        "decided": final,
+        "byMonth": [{"month": m, "total": int(n), "decided": int(f or 0), "pending": int(n) - int(f or 0)}
+                    for m, n, f in months if m],
+        "openByMonth": open_by_month,
+    }
+
+
 def write_summary_doc(db: Database, program: str = "pwd") -> bool:
     """perm_docs[<program>_live_summary]: counts by status, program tag and
     filing month, so the pages never count the table per request. Reconciled
@@ -874,6 +903,8 @@ def write_summary_doc(db: Database, program: str = "pwd") -> bool:
         "sinceFirstSeen": earliest,
         "asOf": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
+    if program == "pwd":
+        doc["perm"] = perm_wage_block(db, table)
     payload = json.dumps(doc, separators=(",", ":"))
     write_doc(db, key, payload)
     got = query_rows(db, "SELECT length(json) FROM perm_docs WHERE key = ?", [key])

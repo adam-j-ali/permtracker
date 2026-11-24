@@ -358,8 +358,43 @@ export interface FlagSummary {
   /** Still-pending cases per number prefix; empty when the doc predates it. */
   pendingByPrefix: Record<string, number>;
   byMonth: FlagMonth[];
+  /**
+   * The wage-request summary's PERM requests alone (P-100, PERM or no visa recorded), with each month's open requests
+   * by DOL's status. The pages about PERM wage requests count these; absent on a doc written before the field.
+   */
+  perm?: FlagPermBlock;
   asOf: string | null;
   computedAt: number;
+}
+
+export interface FlagPermBlock {
+  total: number;
+  pending: number;
+  decided: number;
+  byMonth: FlagMonth[];
+  /** "2026-07" to {"IN PROCESS": 53, "RFI ISSUED": 111, ...}: open requests only. */
+  openByMonth: Record<string, Record<string, number>>;
+}
+
+/** The PERM block, or undefined when it's missing or any part of it is malformed. */
+function parsePermBlock(v: unknown): FlagPermBlock | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const o = v as Record<string, unknown>;
+  if (!isInt(o.total) || !isInt(o.pending) || !isInt(o.decided) || !Array.isArray(o.byMonth)) return undefined;
+  const byMonth: FlagMonth[] = [];
+  for (const m of o.byMonth) {
+    const r = m as Record<string, unknown>;
+    if (!r || typeof r.month !== "string" || !isInt(r.total) || !isInt(r.pending) || !isInt(r.decided)) return undefined;
+    byMonth.push({ month: r.month, total: r.total, pending: r.pending, decided: r.decided });
+  }
+  const open = o.openByMonth;
+  if (!open || typeof open !== "object") return undefined;
+  const openByMonth: Record<string, Record<string, number>> = {};
+  for (const [month, counts] of Object.entries(open as Record<string, unknown>)) {
+    if (!isCountMap(counts)) return undefined;
+    openByMonth[month] = counts;
+  }
+  return { total: o.total, pending: o.pending, decided: o.decided, byMonth, openByMonth };
 }
 
 /** A doc older than eight days is absent: a stale "live" count is the misleading case. */
@@ -397,6 +432,7 @@ export function parseFlagSummaryDoc(json: string, computedAt: number, now: numbe
     byPrefix: isCountMap(o.byPrefix) ? o.byPrefix : {},
     pendingByPrefix: isCountMap(o.pendingByPrefix) ? o.pendingByPrefix : {},
     byMonth,
+    ...(parsePermBlock(o.perm) ? { perm: parsePermBlock(o.perm) } : {}),
     asOf: typeof o.asOf === "string" ? o.asOf : null,
     computedAt,
   };

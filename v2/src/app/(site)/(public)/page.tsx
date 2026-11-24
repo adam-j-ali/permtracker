@@ -23,7 +23,7 @@
  */
 
 import type { Metadata } from "next";
-import { getPwdSummary } from "@/lib/db/pwdCases";
+import { getPwdSummary, permScope } from "@/lib/db/pwdCases";
 import { SectionDivider } from "@/components/home/SectionDivider";
 import { withSocialCard } from "@/lib/socialCard";
 import {
@@ -201,7 +201,7 @@ export default async function HomePage() {
   const workingMonth = line?.month ?? analyst?.priorityDate ?? null;
   const months = homeMonths(backlog, workingMonth, easternDay().slice(0, 7));
   const pwdPending =
-    pwdSummary?.pending ??
+    permScope(pwdSummary)?.pending ??
     (snapshot?.pwdPermBacklog?.length ? snapshot.pwdPermBacklog.reduce((sum, r) => sum + r.remainingRequests, 0) : null);
 
   const baseUrl = SITE_URL;
