@@ -1,8 +1,11 @@
 [Unit]
 Description=Schedule for permtracker-sweep@pwd-active
-# The wage requests most likely to move, weekday afternoons. Moved from GitHub's runners on Nov 7 2026 (the same clock the dispatch timer had).
+# The open PERM wage requests through where DOL is deciding, every weekday hour from 8:10 AM to 7:10 PM. One pass
+# a weekday afternoon left the day's moves (RFI answered, determinations issued) for the next morning, while a third
+# party showed them by evening (Nov 23 2026). A pass is about 170 requests to DOL and 90 seconds; the PERM daytime
+# pass runs every 15 minutes at :00, :15, :30 and :45, so this one keeps to :10.
 [Timer]
-OnCalendar=Mon..Fri *-*-* 15:10:00 America/New_York
+OnCalendar=Mon..Fri *-*-* 08..19:10:00 America/New_York
 Persistent=true
 Unit=permtracker-sweep@pwd-active.service
 
