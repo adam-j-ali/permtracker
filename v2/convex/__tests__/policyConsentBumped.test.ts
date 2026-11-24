@@ -32,15 +32,20 @@ const V = "2027-02-01";
 const SUMMARY = "We now share the number of alerts we send each month with a research partner.";
 const originalFetch = global.fetch;
 let resendSends = 0;
+/** The recipients these tests create: every one is an address at policy-test.example. */
+const OURS = /@policy-test\.example/;
 
 beforeEach(() => {
   vi.stubEnv("UNSUBSCRIBE_SECRET", SECRET);
   vi.stubEnv("AUTH_RESEND_KEY", "re_test_key");
   vi.stubEnv("BLOCKED_EMAILS", "");
   resendSends = 0;
-  global.fetch = (async (url: unknown) => {
+  global.fetch = (async (url: unknown, init?: RequestInit) => {
     // The parsed host, so a URL that only mentions Resend somewhere never counts as a send.
     if (new URL(String(url)).hostname === "api.resend.com") {
+      // Only this file's own recipients count: another file's leftover scheduled email (an admin notice, an error
+      // report) can still be on its way when these tests run, and it would land in this stub.
+      if (!OURS.test(String(init?.body ?? ""))) return new Response(JSON.stringify({ id: "elsewhere" }), { status: 200 });
       resendSends += 1;
       return new Response(JSON.stringify({ id: `email-${resendSends}` }), { status: 200, headers: { "Content-Type": "application/json" } });
     }
@@ -94,7 +99,7 @@ describe("an account", () => {
         existingUserId: null,
         type: "oauth",
         provider: { id: "google", type: "oidc" },
-        profile: { email: "new@example.com", name: "New Person", emailVerified: true },
+        profile: { email: "new@policy-test.example", name: "New Person", emailVerified: true },
       } as unknown as Parameters<Hook>[1]),
     );
     const status = await t.withIdentity({ subject: userId }).query(api.policyConsent.myStatus, {});
@@ -111,7 +116,7 @@ describe("an account", () => {
 describe("the emailed accept link", () => {
   it("shows what changed on GET and records nothing; the POST records once, by the address's hash", async () => {
     const t = trackedTestContext();
-    const token = await makeUnsubscribeToken("Sub@Example.com", SECRET, policyAcceptPurpose(V));
+    const token = await makeUnsubscribeToken("Sub@Policy-Test.example", SECRET, policyAcceptPurpose(V));
     const path = `/prefs/policy?token=${encodeURIComponent(token)}&v=${V}`;
     const page = await t.fetch(path, { method: "GET" });
     expect(page.status).toBe(200);
@@ -125,14 +130,14 @@ describe("the emailed accept link", () => {
     expect(await (await t.fetch(path, { method: "POST" })).text()).toContain("Already accepted");
     const rows = await consentRows(t);
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ key: await raterKeyFor("sub@example.com"), version: V });
-    expect(JSON.stringify(rows)).not.toContain("example.com");
+    expect(rows[0]).toMatchObject({ key: await raterKeyFor("sub@policy-test.example"), version: V });
+    expect(JSON.stringify(rows).toLowerCase()).not.toContain("policy-test.example");
   });
 
   it("refuses a forged token, another purpose's, an old version's and a missing version", async () => {
     const t = trackedTestContext();
-    const prefs = await makeUnsubscribeToken("sub@example.com", SECRET, "prefs");
-    const old = await makeUnsubscribeToken("sub@example.com", SECRET, policyAcceptPurpose("2026-11-18"));
+    const prefs = await makeUnsubscribeToken("sub@policy-test.example", SECRET, "prefs");
+    const old = await makeUnsubscribeToken("sub@policy-test.example", SECRET, policyAcceptPurpose("2026-11-18"));
     expect((await t.fetch(`/prefs/policy?token=forged.sig&v=${V}`, { method: "POST" })).status).toBe(400);
     expect((await t.fetch(`/prefs/policy?token=${encodeURIComponent(prefs)}&v=${V}`, { method: "POST" })).status).toBe(400);
     expect((await t.fetch(`/prefs/policy?token=${encodeURIComponent(prefs)}`, { method: "GET" })).status).toBe(400);
@@ -148,7 +153,7 @@ describe("the emailed accept link", () => {
       last = (await t.fetch(`/prefs/policy?token=forged.sig&v=${V}`, { method: "POST", headers })).status;
     }
     expect(last).toBe(429);
-    const token = await makeUnsubscribeToken("real@example.com", SECRET, policyAcceptPurpose(V));
+    const token = await makeUnsubscribeToken("real@policy-test.example", SECRET, policyAcceptPurpose(V));
     const ok = await t.fetch(`/prefs/policy?token=${encodeURIComponent(token)}&v=${V}`, { method: "POST", headers });
     expect(ok.status).toBe(200);
     expect(await ok.text()).toContain("Accepted");
@@ -158,22 +163,22 @@ describe("the emailed accept link", () => {
 describe("the change email, run by hand", () => {
   it("mails each live subscriber without an account once, charging the pool before each send", async () => {
     const t = trackedTestContext();
-    await caseRow(t, "one@example.com");
-    await bulletinRow(t, "one@example.com");
-    await caseRow(t, "two@example.com");
-    await caseRow(t, "pending@example.com", { confirmedAt: undefined });
-    await caseRow(t, "gone@example.com", { unsubscribedAt: 3 });
-    await caseRow(t, "closed@example.com", { caseClosedAt: 3 });
-    await caseRow(t, "member@example.com");
+    await caseRow(t, "one@policy-test.example");
+    await bulletinRow(t, "one@policy-test.example");
+    await caseRow(t, "two@policy-test.example");
+    await caseRow(t, "pending@policy-test.example", { confirmedAt: undefined });
+    await caseRow(t, "gone@policy-test.example", { unsubscribedAt: 3 });
+    await caseRow(t, "closed@policy-test.example", { caseClosedAt: 3 });
+    await caseRow(t, "member@policy-test.example");
     await t.run(async (ctx) => {
-      await ctx.db.insert("users", { email: "member@example.com" });
+      await ctx.db.insert("users", { email: "member@policy-test.example" });
     });
 
     expect(await step(t, "caseStatusAlerts")).toMatchObject({ claimed: 2, waiting: false });
     // The same address on a second list is not mailed twice.
     expect((await step(t, "bulletinAlerts")).claimed).toBe(0);
     expect(await charges(t)).toBe(2);
-    const keys = await Promise.all(["one@example.com", "two@example.com"].map(consentKey));
+    const keys = await Promise.all(["one@policy-test.example", "two@policy-test.example"].map(consentKey));
     expect((await consentRows(t)).map((r) => r.key).sort()).toEqual([...keys].sort());
     await finishScheduledNow(t);
     expect(resendSends).toBe(2);
@@ -181,19 +186,19 @@ describe("the change email, run by hand", () => {
 
   it("passes over rows confirmed during the sweep, but still counts that address's older live row", async () => {
     const t = trackedTestContext();
-    await caseRow(t, "late@example.com", { confirmedAt: T0 + 5 });
-    await caseRow(t, "both@example.com", { confirmedAt: T0 + 5 });
-    await caseRow(t, "both@example.com", { confirmedAt: 2, caseNumber: "G-100-26125-000001" });
+    await caseRow(t, "late@policy-test.example", { confirmedAt: T0 + 5 });
+    await caseRow(t, "both@policy-test.example", { confirmedAt: T0 + 5 });
+    await caseRow(t, "both@policy-test.example", { confirmedAt: 2, caseNumber: "G-100-26125-000001" });
     const r = await step(t, "caseStatusAlerts");
     expect(r.claimed).toBe(1);
-    expect((await consentRows(t))[0]?.key).toBe(await consentKey("both@example.com"));
+    expect((await consentRows(t))[0]?.key).toBe(await consentKey("both@policy-test.example"));
   });
 
   it("skips an address whose only rows have finished, and counts one with a live row left", async () => {
     const t = trackedTestContext();
-    await caseRow(t, "done@example.com", { caseClosedAt: 3 });
-    await caseRow(t, "mixed@example.com", { caseClosedAt: 3 });
-    await caseRow(t, "mixed@example.com", { caseNumber: "G-100-26125-000002" });
+    await caseRow(t, "done@policy-test.example", { caseClosedAt: 3 });
+    await caseRow(t, "mixed@policy-test.example", { caseClosedAt: 3 });
+    await caseRow(t, "mixed@policy-test.example", { caseNumber: "G-100-26125-000002" });
     expect((await step(t, "caseStatusAlerts")).claimed).toBe(1);
   });
 
@@ -203,7 +208,7 @@ describe("the change email, run by hand", () => {
       await ctx.db.insert("emailDays", { day: utcDay(Date.now()), sent: LIST_CEILING - 1 });
     });
     const ids: string[] = [];
-    for (const e of ["a@example.com", "b@example.com", "c@example.com"]) ids.push(await caseRow(t, e));
+    for (const e of ["a@policy-test.example", "b@policy-test.example", "c@policy-test.example"]) ids.push(await caseRow(t, e));
     expect((await step(t, "caseStatusAlerts")).claimed).toBe(3);
     await finishScheduledNow(t);
     expect(resendSends).toBe(1);
@@ -215,7 +220,7 @@ describe("the change email, run by hand", () => {
   it("waits at the pool's end instead of bursting", async () => {
     const t = trackedTestContext();
     const n = BUDGETS.policyNotice.limit + 3;
-    for (let i = 0; i < n; i++) await caseRow(t, `s${String(i).padStart(3, "0")}@example.com`);
+    for (let i = 0; i < n; i++) await caseRow(t, `s${String(i).padStart(3, "0")}@policy-test.example`);
     expect(await step(t, "caseStatusAlerts")).toMatchObject({ claimed: BUDGETS.policyNotice.limit, waiting: true });
     expect(await charges(t)).toBe(BUDGETS.policyNotice.limit);
   });
@@ -223,12 +228,12 @@ describe("the change email, run by hand", () => {
   it("never asks someone who confirmed the digest after the change", async () => {
     const t = trackedTestContext();
     await t.run(async (ctx) => {
-      await ctx.db.insert("newsletterSubscribers", { email: "digest@example.com", createdAt: 1 });
+      await ctx.db.insert("newsletterSubscribers", { email: "digest@policy-test.example", createdAt: 1 });
     });
-    await t.mutation(internal.emailPrefs.confirmNewsletterForEmail, { email: "digest@example.com" });
+    await t.mutation(internal.emailPrefs.confirmNewsletterForEmail, { email: "digest@policy-test.example" });
     const rows = await consentRows(t);
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ key: await consentKey("digest@example.com"), version: V });
+    expect(rows[0]).toMatchObject({ key: await consentKey("digest@policy-test.example"), version: V });
     expect(typeof rows[0]?.acceptedAt).toBe("number");
     // Confirmed after the sweep began, and already accepted: the sweep passes it over.
     expect((await step(t, "newsletterSubscribers", 0)).claimed).toBe(0);
@@ -236,7 +241,7 @@ describe("the change email, run by hand", () => {
 
   it("sends nothing for a version that isn't current", async () => {
     const t = trackedTestContext();
-    await caseRow(t, "one@example.com");
+    await caseRow(t, "one@policy-test.example");
     expect(await t.mutation(internal.policyConsent.startNotices, { version: "2026-11-18" })).toMatchObject({ started: false });
     expect(
       await t.mutation(internal.policyConsent.noticeBatch, { version: "2026-11-18", table: "caseStatusAlerts", cursor: null, startedAt: T0 }),
