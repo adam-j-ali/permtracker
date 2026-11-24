@@ -1,4 +1,5 @@
-import { ChartHit, hitSpan } from "@/components/data/ChartHit";
+import { hitRow, hitSpan } from "@/components/data/ChartHit";
+import { ChartHitRows } from "@/components/data/ChartHitRows";
 import { ChartTips } from "@/components/data/ChartTips";
 import { evenTickIndices, tickAnchor } from "@/components/tools/chartTicks";
 import { segments, toWeeks, weekStart, type ActivityDay } from "@/lib/activityStats";
@@ -237,17 +238,19 @@ export function DecisionPaceChart({
               {(monthTick(weekNames[i] ?? "") ?? weekNames[i] ?? "")}
             </text>
           ))}
-          {plotted.map((p) => (
-            <ChartHit
-              key={`hit-${p.i}-${p.label}`}
-              tip={`${weekLabel(p.week.weekStart)}\n${formatInt(p.week.total)} decided\n${formatInt(p.week.certified)} certified\n${formatInt(p.week.denied)} denied\n${formatInt(p.week.withdrawn)} withdrawn\n${p.label}`}
-              {...hitSpan(p.i, spine.length, x, PAD_L, W - PAD_R)}
-              y={PAD_T}
-              height={plotH}
-              cx={x(p.i)}
-              cy={y(p.total)}
-            />
-          ))}
+          {/* A column per week, drawn by the browser: a thousand of them drawn here were 0.83 MB of the page. */}
+          <ChartHitRows
+            y={PAD_T}
+            height={plotH}
+            rows={plotted.map((p) =>
+              hitRow(
+                hitSpan(p.i, spine.length, x, PAD_L, W - PAD_R),
+                x(p.i),
+                y(p.total),
+                `${weekLabel(p.week.weekStart)}\n${formatInt(p.week.total)} decided\n${formatInt(p.week.certified)} certified\n${formatInt(p.week.denied)} denied\n${formatInt(p.week.withdrawn)} withdrawn\n${p.label}`,
+              ),
+            )}
+          />
         </svg>
       </ChartTips>
     </div>

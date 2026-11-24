@@ -49,6 +49,16 @@ export function ChartHit({
   );
 }
 
+/** One point for `ChartHitRows`: its column, its point and its tip. */
+export type HitRow = readonly [x: number, width: number, cx: number, cy: number, tip: string];
+
+const hundredths = (n: number) => Math.round(n * 100) / 100;
+
+/** A point as a `HitRow`, its places rounded to hundredths of a unit: finer than any screen draws, and short to send. */
+export function hitRow(column: { x: number; width: number }, cx: number, cy: number, tip: string): HitRow {
+  return [hundredths(column.x), hundredths(column.width), hundredths(cx), hundredths(cy), tip];
+}
+
 /**
  * Evenly spaced columns for points at x(i): each column runs halfway to its
  * neighbours, clamped to the plot's left and right edges.
