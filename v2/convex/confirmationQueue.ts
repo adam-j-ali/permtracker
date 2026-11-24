@@ -185,7 +185,10 @@ function easternTime(ms: number): string {
  */
 async function alertAdmin(ctx: MutationCtx, what: "queued" | "turnedAway", pool: BudgetName, held: number, used = 0) {
   const words = adminNoticeWords(what, pool, held, used, Date.now());
-  await ctx.scheduler.runAfter(0, internal.notificationActions.sendAdminNotificationEmail, words);
+  await ctx.scheduler.runAfter(0, internal.notificationActions.sendAdminNotificationEmail, {
+    ...words,
+    route: "notice.email-queue",
+  });
 }
 
 /** The admin email's subject and body, pure so the tests can read them. */

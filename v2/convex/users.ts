@@ -317,6 +317,7 @@ export const recordMyLogin = mutation({
             await ctx.scheduler.runAfter(0, internal.notificationActions.sendAdminNotificationEmail, {
               subject: "Signup spike on PERM Tracker",
               body: `More than ${SIGNUP_BURST_PER_HOUR} new accounts were verified within an hour — well above the ~1/day baseline, which may indicate signup abuse. Review /admin/security.\n\n(This alert is rate-limited to at most one per hour.)`,
+              route: "notice.signup-spike",
             });
           }
         }

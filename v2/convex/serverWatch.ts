@@ -3,7 +3,8 @@
  * database answer, and is its disk nearly full? Emails the owner when the
  * answer changes (start, every 6 hours while it lasts, recovery); the database
  * not answering mails only on the second check in a row. The rules and the
- * reason this lives off the server: convex/lib/serverWatch.ts.
+ * reason this lives off the server: convex/lib/serverWatch.ts. Each kind's
+ * channel is the routing list's (scripts/data/alert_routes.json).
  *
  * Runs only where SERVER_WATCH=on (production). The development deployment's
  * database is the retired Turso copy, whose health report is weeks old, so it
@@ -15,7 +16,7 @@ import { internal } from "./_generated/api";
 import { internalAction, internalMutation } from "./_generated/server";
 import { cleared, pushPhone, started } from "./lib/phonePush";
 import { one } from "./lib/publicMirror";
-import { type HealthRow, judge, pushFor, step } from "./lib/serverWatch";
+import { type HealthRow, judge, mailsNow, pushFor, routeOfReason, step } from "./lib/serverWatch";
 
 const KEY = "server";
 
@@ -34,7 +35,8 @@ export const check = internalAction({
     }
     const reason = judge(row, now, readError);
     const mail = await ctx.runMutation(internal.serverWatch.record, { reason, now });
-    if (mail) {
+    // Sent only when the routing list sends its kind as it happens; otherwise the row is its record (the admin page).
+    if (mail && mailsNow(mail)) {
       const subject = mail.kind === "clear"
         ? "PERM Tracker server: reporting again"
         : `PERM Tracker server: ${mail.kind === "still" ? "still needs a look" : "needs a look"}`;
@@ -45,7 +47,9 @@ export const check = internalAction({
       const body = mail.kind === "clear"
         ? `As of ${when}, the server's health report is fresh again and its disk has room. It had been: ${mail.reason}.`
         : `As of ${when}, ${mail.reason}.\n\nThis check runs on Convex, outside the server, every 15 minutes, so it works when the server itself can't report. The server's own alarm (permtracker-alarm) covers the disk, memory and failed jobs from inside. It emails again every 6 hours while this lasts, and once when it clears.`;
-      await ctx.scheduler.runAfter(0, internal.notificationActions.sendAdminNotificationEmail, { subject, body });
+      await ctx.scheduler.runAfter(0, internal.notificationActions.sendAdminNotificationEmail, {
+        subject, body, route: routeOfReason(mail.reason),
+      });
       // The phone, after the email: a push that fails is logged, and the email has the same news.
       const push = pushFor(mail);
       if (push) {
