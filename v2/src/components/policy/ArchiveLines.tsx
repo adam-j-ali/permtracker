@@ -1,14 +1,13 @@
 "use client";
 
-/**
- * One year's folded archive lines: the document's id, its day and source, its
- * address and its title. A client component on purpose: its rows travel to the
- * browser as four short strings each, where a server component's markup would
- * travel a second time in the page's payload (about 1,000 rows on
- * /policy-changes). Every title is still in the served HTML.
- */
-export type ArchiveLine = readonly [id: string, day: string, url: string, title: string];
+import type { ArchiveLine } from "@/lib/policyArchive";
 
+export type { ArchiveLine } from "@/lib/policyArchive";
+
+/**
+ * A page of one folded year's lines (ArchiveYear): the document's day and source, and its title linking to where it
+ * was published. Each line keeps its `doc-<id>` anchor.
+ */
 export function ArchiveLines({ lines }: { lines: readonly ArchiveLine[] }) {
   return (
     <ul className="border-t-2 border-border/40 px-5 pb-4 pt-3 text-base leading-relaxed sm:px-6">

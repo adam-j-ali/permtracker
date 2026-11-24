@@ -9,8 +9,11 @@
  * re-derives the list from the app tree, so a page that starts reading the
  * pipeline can't quietly show yesterday's stage for six hours.
  */
-/** The page and the documents its search box loads (`policy-changes/search.json`). */
-export const POLICY_PAGES = ["/policy-changes", "/policy-changes/search.json"] as const;
+/**
+ * The page, the documents its search box loads (`policy-changes/search.json`) and the lines of its folded years
+ * (`policy-changes/archive.json`).
+ */
+export const POLICY_PAGES = ["/policy-changes", "/policy-changes/search.json", "/policy-changes/archive.json"] as const;
 
 /**
  * The article parts that read the rule watch's record. Every article using one is expired too,

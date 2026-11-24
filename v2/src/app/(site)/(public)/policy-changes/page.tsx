@@ -39,9 +39,12 @@ import { easternDay } from "@/lib/time";
  * often appears before the Register. Every source is read every 30 minutes
  * or every weekday hour (`scripts/lib_policy_feed.py`).
  *
- * What a reader meets is a twelve-month strip and collapsed rows; what a
- * crawler reads is every title, abstract and date, because a <details> keeps
- * its body in the DOM. No summary, no take on what a document means: the
+ * What a reader meets is a twelve-month strip and collapsed rows. A crawler
+ * reads every Register document's title, abstract and dates, because a
+ * <details> keeps its body in the DOM, and each long list's newest rows; the
+ * older years of the agencies' and the courts' lists load when a reader opens
+ * one (/policy-changes/archive.json), which kept 0.62 MB out of a page that
+ * had reached 1.64 MB. No summary, no take on what a document means: the
  * document is one click away and says it itself.
  */
 
@@ -187,7 +190,7 @@ export default async function PolicyChangesPage() {
               {ledger.announcementsSince ? `, back to ${ledger.announcementsSince.slice(0, 4)}` : ""}. A change
               often appears here before it reaches the Federal Register.
             </p>{" "}
-            <OflcArchive items={feed.announcements} today={today} />
+            <OflcArchive feed={feed} list="agencies" today={today} />
           </section>{" "}
 
           {feed.decisions.length > 0 ? (
@@ -197,7 +200,7 @@ export default async function PolicyChangesPage() {
                 {feed.decisions.length} federal court opinions and decisions of DOL&apos;s Board of Alien Labor
                 Certification Appeals on these programs, newest first. A person named in a case is shown by initials.
               </p>{" "}
-              <OflcArchive items={feed.decisions} today={today} lead={6} />
+              <OflcArchive feed={feed} list="decisions" today={today} />
             </section>
           ) : null}{" "}
 
