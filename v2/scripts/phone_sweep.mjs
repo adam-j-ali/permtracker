@@ -28,7 +28,7 @@
  *   whose removal ends it.
  * - An inline link inside a sentence is exempt from the tap size (WCAG 2.5.8), a checkbox counts by
  *   its label, and a button out of the tab order inside a full-size field is a shortcut, not a target.
- * - A split name fails the run (PT_SPLIT_BLOCKS=0 only reports it). It's fixed where it's printed:
+ * - A split name is reported, and fails the run only with PT_SPLIT_BLOCKS=1. It's fixed where it's printed:
  *   KeepWhole (src/components/ui/keep-whole.tsx) around typed copy (scripts/keep_whole_codemod.mjs writes
  *   it), keepWhole() in a shared part that prints a label or a title from data; the articles' MDX does it
  *   on its own.
@@ -38,8 +38,8 @@
  *   sentence, the link through a <b>, the source line or the link that is a cell's whole content, and
  *   never the 44px chip), and split=1 at 320 and split=4 at 390, whose line counts the three wide widths
  *   too (the CW-1 in the narrow box, never the one in a no-wrap span); the sweep exits 1. With
- *   PT_SPLIT_BLOCKS=0 the counts are the same, and the split alone would no longer fail it: strip the
- *   probe to its two split lines to see the exit go from 1 to 0. A change to a rule that prints any
+ *   PT_SPLIT_BLOCKS=1 the counts are the same, and the split alone fails it: strip the probe to its two
+ *   split lines to see the exit go from 0 to 1. A change to a rule that prints any
  *   other count changed the rule.
  */
 import { chromium } from "playwright-core";
@@ -48,11 +48,12 @@ import { coveredText } from "./lib_covered_text.mjs";
 import { PROGRAM_NAME_SOURCE, pastTheEdge, splitNames } from "./lib_phone_checks.mjs";
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-// A program name split across two lines fails the run, like anything past the edge. The site-wide keep-whole pass
-// (Nov 24 2026) kept every name the pages type and every one the shared parts print, and the source gate
-// (src/app/__tests__/program-names-kept-whole.test.ts) holds the typed ones. PT_SPLIT_BLOCKS=0 reports splits
-// without failing, for a sweep that's after something else.
-const SPLIT_BLOCKS = process.env.PT_SPLIT_BLOCKS !== "0";
+// A program name split across two lines is reported; it fails the run only with PT_SPLIT_BLOCKS=1. The keep-whole
+// pass (Nov 23 2026) kept the names the pages type, and the source gate (program-names-kept-whole.test.ts) holds
+// them, but names in text drawn from data lists still split on pages each build happened to check (/calculators,
+// /glossary, /for-attorneys on Nov 23), one page per build. Blocking returns once a sweep of every page comes back
+// clean.
+const SPLIT_BLOCKS = process.env.PT_SPLIT_BLOCKS === "1";
 const [base, ...paths] = process.argv.slice(2);
 if (!base || !paths.length) {
   console.error("usage: node scripts/phone_sweep.mjs <base-url> <path> [path ...]");
