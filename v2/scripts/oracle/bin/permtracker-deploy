@@ -33,7 +33,7 @@ ensure_env(){ # $1 copy: blue2/green2 need a PORT file like blue's and green's
 active=$(cat $A/active)
 log(){ echo "[deploy $(date -u +%H:%M:%S)] $*"; logger -t permtracker-deploy "$*"; }
 # A RELEASE MAKES ITS OWN ROOM BEFORE IT ARRIVES. The page caches sit at their
-# budgets, which leaves about 30 GB free (permtracker-prune's KEEP_FREE), and a
+# budgets, which leaves about 35 GB free (permtracker-prune's KEEP_FREE), and a
 # release needs about 5 GB more for a few minutes: its archive, its two
 # folders, the pages warmed on them. Nov 13 2026: that took the disk to 23.5 GB
 # free, under the alarm's 25 GB line, and the alarm emailed the owner about a

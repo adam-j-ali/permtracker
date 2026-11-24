@@ -29,7 +29,7 @@ one takes 0.1 to 2.6 s to build again, so every GB kept is speed. The disk held
 both budgets full still leaves over 60 GB free for the database to grow.
 
 THE BUDGETS FIT THE DISK (Nov 5 2026). Every cache at its budget may never
-leave less than KEEP_FREE (30 GB) free: when the rest of the disk has grown,
+leave less than KEEP_FREE (35 GB) free: when the rest of the disk has grown,
 the live folders' budget shrinks to what fits (the standby keeps its 6 GB
 until even that won't fit). By Nov 5 the two databases held 16 GB each after
 the LCA history loads, and full budgets would have left 20 GB, the alarm's own
@@ -72,7 +72,9 @@ COPIES = 2
 BUDGET = {"live": 60 * GB // COPIES, "standby": 6 * GB // COPIES, "old": 0}
 TIGHT = {"live": 8 * GB // COPIES, "standby": 0, "old": 0}
 FREE_FLOOR = 20 * GB
-KEEP_FREE = 30 * GB
+# 35 GB since Nov 24 2026 (30 before): the caches grow about 5 GB between two runs after a deploy, and at 30 the disk
+# dipped to the alarm's 25 GB line between runs and couldn't climb past its clear line (30). test_prune.py holds it.
+KEEP_FREE = 35 * GB
 # A page group: the .meta file names it; these are its other pieces.
 PIECES = (".html", ".rsc", ".body", ".meta")
 # Pages rendered within two minutes of the unpack (the deploy's own health

@@ -123,7 +123,7 @@ Oct 17 to 18 eight of the thirteen people shown the busy page came within an hou
 
 A deploy first makes its own room (`make_room`, since Nov 13 2026): it runs the page-cache cap with
 `--standby-only`, which drops the idle slot's rendered pages (up to 6 GB) and never opens a live folder. The caches
-at their budgets leave about 30 GB free and a release needs about 5 GB more for a few minutes; that night one took
+at their budgets leave about 35 GB free (30 until Nov 24 2026) and a release needs about 5 GB more for a few minutes; that night one took
 the disk to 23.5 GB, under the alarm's 25 GB line, and the alarm emailed about a release working as designed. The
 release replaces the idle slot minutes later, so nothing is lost. A first version asked the cap to refit every
 budget (`--keep-free 40`): that walks the live caches, 8 to 13 minutes at midday, and ran past the step's 5-minute

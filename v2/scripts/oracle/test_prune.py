@@ -116,7 +116,7 @@ check("with room to spare the budgets stay as set", b == prune.BUDGET and not f,
 b, f = prune.fit(prune.BUDGET, 63 * G, int(27.7 * G), 2, 2)
 at_cap = 63 * G + int(27.7 * G) - (b["live"] * 2 + b["standby"] * 2)
 check("a disk that has grown shrinks the live budget", f and b["live"] < prune.BUDGET["live"], str(b))
-check("every cache at its fitted budget leaves 30 GB free", abs(at_cap - prune.KEEP_FREE) < G, f"{at_cap / G:.1f} GB")
+check("every cache at its fitted budget leaves KEEP_FREE free", abs(at_cap - prune.KEEP_FREE) < G, f"{at_cap / G:.1f} GB")
 check("the standby keeps its budget while the live one can still shrink", b["standby"] == prune.BUDGET["standby"])
 b, f = prune.fit(prune.BUDGET, 35 * G, 5 * G, 2, 2)
 check("a disk with little room drops the standby first", b["standby"] == 0 and b["live"] >= prune.TIGHT["live"], str(b))
@@ -206,6 +206,15 @@ _low = int(_re.search(r"^DISK_LOW_GB = (\d+)$", (HERE / "bin" / "permtracker-ala
 _after = (prune.KEEP_FREE + prune.BUDGET["standby"] * prune.COPIES) / prune.GB
 check("the idle slot's pages give back more than a release takes", prune.BUDGET["standby"] * prune.COPIES >= 5.3 * prune.GB)
 check("and a release's own 10 GB still leaves the disk above the alarm's line", _after - 10 >= _low, f"{_after:.0f} - 10 against {_low}")
+
+# The cap's floor sits above the alarm's clear line by the caches' growth between two runs (Nov 24 2026). With 30 GB
+# kept free, a run every 30 minutes (6 minutes each) and the caches refilling at about 7 GB an hour after a deploy, the
+# disk dipped to the alarm's 25 GB line between runs: the alarm emailed and pushed at 10:32 PM about the cap working as
+# designed, then stayed on for five hours because its clear line (25 + 5) was the cap's own floor.
+_clear = _low + int(_re.search(r"^DISK_CLEAR_MARGIN_GB = (\d+)$", (HERE / "bin" / "permtracker-alarm").read_text(), _re.M).group(1))
+GROWTH_BETWEEN_RUNS_GB = 5  # 7 GB an hour over a 30-minute interval plus a 6-minute run, rounded up
+check("the cap's floor sits above the alarm's clear line by the growth between two runs",
+      prune.KEEP_FREE / prune.GB >= _clear + GROWTH_BETWEEN_RUNS_GB, f"{prune.KEEP_FREE / prune.GB:.0f} against {_clear} + {GROWTH_BETWEEN_RUNS_GB}")
 
 # Every slot runs two copies, each in its own folder with the slot's role, so
 # a folder's budget is half the slot's: two live folders must fit 60 GB.
