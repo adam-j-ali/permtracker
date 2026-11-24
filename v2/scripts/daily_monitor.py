@@ -1851,6 +1851,64 @@ def server_section(now_ms: int) -> dict:
     return server_verdict(read_doc(db, "server_health"), now_ms, DEPLOY_SWITCH_MS if DEPLOY_SWITCH_MS or SPEED_READ else None)
 
 
+
+# ── the owner's Mac (scripts/store_mac_health.py, sent after the Mac's own check) ──
+
+MAC_STALE_MS = 12 * HOUR_MS
+MAC_TITLE = "The Mac's own jobs"
+
+
+def mac_verdict(doc: dict | None, now_ms: int) -> dict:
+    """Judge perm_docs['mac_health']: the Mac's scheduled jobs, its free space and the owner's asks past their date.
+
+    The Mac checks itself every two hours and pushes its own problems to the phone; this is the morning's summary of
+    the last check. A Mac that's off or asleep sends nothing, so a late check warns with its time and never fails."""
+    if not doc:
+        return section("mac", MAC_TITLE, "off", "The Mac hasn't sent a check yet")
+    try:
+        at = dt.datetime.fromisoformat(str(doc.get("at")))
+        at_ms = int(at.timestamp() * 1000) if at.tzinfo else None
+    except ValueError:
+        at_ms = None
+    warns: list[str] = []
+    lines: list[str] = []
+    if at_ms is None:
+        warns.append("The Mac's last check has no time it can be read by")
+    elif now_ms - at_ms > MAC_STALE_MS:
+        when = dt.datetime.fromtimestamp(at_ms / 1000, ET).strftime("%-I:%M %p %a")
+        warns.append(f"The Mac's last check was {when}: it may be off or asleep")
+    problems = [str(p) for p in doc.get("problems") or []]
+    warns += problems
+    if doc.get("ok") is not True and not problems:
+        warns.append("The Mac's check wasn't clean and named no problem")
+    asks = doc.get("asks")
+    behind: list[str] = []
+    if not isinstance(asks, dict):
+        warns.append("The Mac sent no count of the asks past their date")
+    else:
+        if asks.get("error"):
+            warns.append(f"The asks list couldn't be read: {asks['error']}")
+        behind = [str(b) for b in asks.get("behind") or []]
+        if behind:
+            lines.append(f"Asks past their date ({len(behind)} of {asks.get('open', 0)} open): {', '.join(behind)}")
+        if asks.get("unreadable"):
+            lines.append(f"Rows of the asks list that couldn't be read: {asks['unreadable']}")
+    lines += [str(n) for n in doc.get("notes") or []]
+    free = doc.get("freeGb")
+    if not warns:
+        summary = "Every job on the Mac ran" + (f"; {free} GB free" if free is not None else "")
+        if behind:
+            summary += f"; {len(behind)} ask{'' if len(behind) == 1 else 's'} past their date"
+        return section("mac", MAC_TITLE, "ok", summary, lines)
+    return section("mac", MAC_TITLE, "warn", warns[0], warns + lines)
+
+
+def mac_section(now_ms: int) -> dict:
+    from lib_db import Database, read_doc  # noqa: PLC0415 - only needed here
+
+    return mac_verdict(read_doc(Database(), "mac_health"), now_ms)
+
+
 # ── page speed (bin/permtracker-perf on the server, hourly) ───────────────
 
 PERF_STALE_MS = 3 * HOUR_MS
@@ -2178,6 +2236,7 @@ def build(now: dt.datetime) -> dict:
         guarded("sentry", "Errors (Sentry)", sentry_section),
         guarded("browser", "Errors in visitors' browsers", browser_errors_section),
         guarded("server", "The server (Oracle)", server_section, now_ms),
+        guarded("mac", MAC_TITLE, mac_section, now_ms),
         guarded("perf", "Page speed (the server's own readings)", perf_section, now_ms),
         guarded("chat", "The chat's AI models", chat_models_section, now_ms),
     ]

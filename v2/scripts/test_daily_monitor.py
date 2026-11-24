@@ -766,6 +766,7 @@ def main() -> int:
     ai_assistant_visits_are_counted()
     site_audit_says_what_grew()
     github_judges_each_workflow_by_its_newest_run()
+    mac_section_reads_the_macs_own_check()
 
     # The API and the assistants: keyed calls by account, keyless ones by bucket.
     rows = [("2026-10-07", "acct_a", "k1", 30), ("2026-10-07", "acct_b", "k2", 5), ("2026-10-07", "anonymous", "mcp", 12),
@@ -1127,6 +1128,32 @@ def ai_assistant_visits_are_counted() -> None:
         dm.http_json = real_http
     check(seen and f"LIMIT {dm.AI_ROWS_CAP}" in seen[0], f"the AI query sets its own row cap ({seen[:1]})")
     check(any("row cap" in ln for ln in capped), f"a full answer says the cap was reached ({capped[-1:]})")
+
+
+def mac_section_reads_the_macs_own_check() -> None:
+    """perm_docs['mac_health'], which the owner's Mac sends after its own check every two hours (Nov 24 2026)."""
+    now_ms = int(dt.datetime(2026, 11, 24, 12, 30, tzinfo=dt.timezone.utc).timestamp() * 1000)  # 7:30 AM ET
+    good = {"at": "2026-11-24T07:05:00-05:00", "ok": True, "problems": [], "notes": [], "freeGb": 7.0,
+            "asks": {"total": 96, "open": 64, "behind": [], "unreadable": 0, "error": None}}
+    v = dm.mac_verdict
+    r = v(good, now_ms)
+    check(r["key"] == "mac" and r["status"] == "ok" and "7.0 GB free" in r["summary"], f"a clean check reads ok ({r['summary']})")
+    check(v(None, now_ms)["status"] == "off", "no check yet is off, never a failure")
+    late = v({**good, "at": "2026-11-23T17:05:00-05:00"}, now_ms)
+    check(late["status"] == "warn" and "5:05 PM" in late["summary"], f"a check over 12 hours old warns with its time ({late['summary']})")
+    check(v({**good, "at": "not a time"}, now_ms)["status"] == "warn", "a check with no readable time warns")
+    bad = v({**good, "ok": False, "problems": ["A job: failed twice in a row"]}, now_ms)
+    check(bad["status"] == "warn" and bad["summary"] == "A job: failed twice in a row", f"a problem warns and leads ({bad['summary']})")
+    check(v({**good, "ok": False}, now_ms)["status"] == "warn", "not ok with no problem named still warns")
+    behind = v({**good, "asks": {**good["asks"], "behind": ["G3", "N4"]}}, now_ms)
+    check(behind["status"] == "ok" and "2 asks past their date" in behind["summary"]
+          and any("G3, N4" in ln for ln in behind["lines"]), f"asks past their date are named, without turning the section yellow ({behind})")
+    broken = v({**good, "asks": {**good["asks"], "error": "ASKS.md missing"}}, now_ms)
+    check(broken["status"] == "warn" and any("ASKS.md missing" in ln for ln in [broken["summary"], *broken["lines"]]),
+          "an asks list that can't be read warns")
+    check(v({**good, "asks": None}, now_ms)["status"] == "warn", "no asks count at all warns")
+    noted = v({**good, "notes": ["A reader: 3 chats not found"]}, now_ms)
+    check(noted["status"] == "ok" and "A reader: 3 chats not found" in noted["lines"], "notes are listed under an ok")
 
 
 if __name__ == "__main__":
