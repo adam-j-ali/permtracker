@@ -9,6 +9,7 @@ import { CALCULATOR_SHOTS } from "@/components/tools/calculatorShots";
 import { DATA_SHOTS } from "@/components/tools/dataShots";
 import { GROUPS, SECTIONS, type DataGroup, type DataNavSection } from "@/lib/siteMap";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The calculators page as bands in the order a case moves, one after another as the reader scrolls (the attorney
@@ -100,9 +101,9 @@ function ToolLinks({ tools, ink }: { tools: readonly DataNavSection[]; ink: bool
           <li className={cn("border-b-2", rule)}>
             <Link href={t.href} className="group flex min-h-11 items-center gap-3 py-2.5">
               <span className="min-w-0">
-                <span className="block text-base font-bold leading-snug group-hover:underline">{t.name}</span>{" "}
+                <span className="block text-base font-bold leading-snug group-hover:underline">{keepWhole(t.name)}</span>{" "}
                 <span className={cn("block text-sm leading-snug", ink ? "text-white/75 dark:text-muted-foreground" : "text-muted-foreground")}>
-                  {t.does}
+                  {keepWhole(t.does)}
                 </span>
               </span>{" "}
               <ArrowRightIcon

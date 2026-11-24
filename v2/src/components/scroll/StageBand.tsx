@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * A full-width band: its words on one side and a picture on the other, paper and ink bands alternating, stacked
@@ -72,8 +73,8 @@ export function StageBand({
         )}
       >
         <div className={cn("lg:col-span-4", flip && (pinned ? "lg:motion-reduce:order-2" : "lg:order-2"))}>
-          <h2 className="font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] sm:text-4xl lg:text-3xl xl:text-4xl">{title}</h2>{" "}
-          <p className={cn("mt-4 text-lg leading-relaxed", ink ? "text-white/80 dark:text-soft" : "text-soft")}>{lead}</p>{" "}
+          <h2 className="font-heading text-3xl font-bold leading-[1.05] tracking-[-0.02em] sm:text-4xl lg:text-3xl xl:text-4xl">{keepWhole(title)}</h2>{" "}
+          <p className={cn("mt-4 text-lg leading-relaxed", ink ? "text-white/80 dark:text-soft" : "text-soft")}>{keepWhole(lead)}</p>{" "}
           {children}
         </div>{" "}
         {/* The window runs off the right edge; on a flipped row it stops at the page's own margin, because a

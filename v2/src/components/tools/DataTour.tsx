@@ -7,6 +7,7 @@ import { StageBand } from "@/components/scroll/StageBand";
 import { DATA_SHOTS, type DataShot } from "@/components/tools/dataShots";
 import { GROUPS, SECTIONS, type DataGroup } from "@/lib/siteMap";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 import { longDate } from "@convex/lib/months";
 
 /**
@@ -83,7 +84,7 @@ function PageLinks({ group, ink }: { group: DataGroup; ink: boolean }) {
           {" "}
           <li className={cn("border-b-2", rule)}>
             <Link href={p.href} className="group flex min-h-11 items-center gap-2 py-2 text-base font-bold leading-snug">
-              <span className="min-w-0 group-hover:underline">{p.name}</span>{" "}
+              <span className="min-w-0 group-hover:underline">{keepWhole(p.name)}</span>{" "}
               <ArrowRightIcon
                 aria-hidden="true"
                 weight="bold"

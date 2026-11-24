@@ -158,12 +158,12 @@ export default function GlossaryPage() {
                       </span>{" "}
                       {t.aka && t.aka.length > 0 ? (
                         <span className="mt-1 block text-sm text-muted-foreground">
-                          {t.aka.join(", ")}
+                          {keepWhole(t.aka.join(", "))}
                         </span>
                       ) : null}
                     </span>{" "}
                     <span className="mt-1 block text-base leading-relaxed text-soft sm:mt-0">
-                      {lead}
+                      {keepWhole(lead)}
                     </span>{" "}
                     <CaretDownIcon
                       className="mt-1 h-5 w-5 shrink-0 justify-self-end text-primary transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none"
@@ -173,7 +173,7 @@ export default function GlossaryPage() {
                   <div className="max-w-3xl pb-4 sm:ml-[calc(14rem+2rem)]">
                     {rest.length > 0 ? (
                       <p className="text-base leading-relaxed text-soft">
-                        {rest.join(" ")}
+                        {keepWhole(rest.join(" "))}
                       </p>
                     ) : null}{" "}
                     {t.cite || (t.see && t.see.length > 0) ? (

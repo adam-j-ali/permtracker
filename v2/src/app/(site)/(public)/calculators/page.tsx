@@ -160,7 +160,7 @@ export default function CalculatorsPage() {
                 { s: "Weighing EB-2 against EB-3", q: "Which category is USCIS clearing?", href: "/tools/i140-trends", tool: "I-140 trends" },
               ].map((r) => (
                 <tr key={r.href} className="border-t border-border/40">
-                  <td className="p-3">{r.s}{" "}</td>
+                  <td className="p-3">{keepWhole(r.s)}{" "}</td>
                   <td className="p-3 text-muted-foreground">{keepWhole(r.q)}{" "}</td>
                   <td className="p-3">
                     <a href={r.href} className="link">
