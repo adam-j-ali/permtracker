@@ -19,6 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useSocProfile } from "@/hooks/useSocProfile";
 import { buildSocDescription, placeDescription, SHOWN_TASKS, type PlaceHow, type SocProfile } from "@/lib/socProfile";
 import { toast } from "@/lib/toast";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * A job description to start from, drawn from the case's SOC code and offered, never applied: the person chooses
@@ -128,7 +129,7 @@ function Suggestion({
   return (
     <section aria-label={`Suggested description from ${label}`} className="space-y-3 border-l-2 border-primary pl-4">
       <h3 className="text-sm font-semibold">Suggested from {label}</h3>{" "}
-      {profile.description ? <p className="text-base leading-relaxed">{profile.description}</p> : null}{" "}
+      {profile.description ? <p className="text-base leading-relaxed">{keepWhole(profile.description)}</p> : null}{" "}
       {profile.tasks.length ? (
         <fieldset>
           <legend className="text-sm text-soft">Tasks to include, most important first</legend>{" "}

@@ -10,6 +10,7 @@ import {
   type CaseEstimateInput,
 } from "@/lib/caseEstimate";
 import { formatAsOf } from "@/lib/dolFormat";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The estimate block on the case-status page: when could THIS case be
@@ -162,7 +163,7 @@ export function CaseEstimatePanel({
         ) : null}
       </p>{" "}
       {est.stage ? (
-        <p className="mt-4 max-w-2xl text-base leading-relaxed text-soft">{est.stage.note}</p>
+        <p className="mt-4 max-w-2xl text-base leading-relaxed text-soft">{keepWhole(est.stage.note)}</p>
       ) : null}{" "}
       <FinePrint summary="How this is worked out" className="mt-4">
         <p>

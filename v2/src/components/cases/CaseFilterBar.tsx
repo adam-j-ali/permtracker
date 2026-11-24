@@ -25,6 +25,7 @@ import type {
   CaseListSortField,
 } from "@convex/lib/caseListTypes";
 import type { CaseStatus, ProgressStatus } from "@convex/lib/dashboardTypes";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // ============================================================================
 // TYPES
@@ -486,7 +487,7 @@ export function CaseFilterBar({
               t.id === "completed" ? "max-sm:flex-[1.5]" : "max-sm:flex-1",
             )}
           >
-            {t.label}
+            {keepWhole(t.label)}
           </button>
         ))}
       </div>

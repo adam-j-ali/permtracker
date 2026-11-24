@@ -39,6 +39,7 @@ import { ArrowsClockwiseIcon as RefreshCw, CalendarIcon, CheckIcon, CircleNotchI
 import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
 import type { Id } from "@convex/_generated/dataModel";
 import type { NotificationTabType } from "./NotificationTabs";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // Types
 type NotificationType =
@@ -209,7 +210,7 @@ function NotificationListItem({
           title={notification.title}
         >
           {!notification.isRead && <span className="sr-only">Unread: </span>}
-          {notification.title}
+          {keepWhole(notification.title)}
         </button>
 
         <p className="line-clamp-2 break-words text-sm text-muted-foreground" title={notification.message}>

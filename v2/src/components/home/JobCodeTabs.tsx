@@ -4,6 +4,7 @@ import { Fragment, useRef, useState, type KeyboardEvent } from "react";
 
 import { AppWindow, type WindowShots } from "@/components/marketing/AppWindow";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface JobCodeStep {
   /** The step's name on the switch, a few words. */
@@ -86,7 +87,7 @@ export function JobCodeTabs({ steps, label }: { steps: JobCodeStep[]; label: str
                 <span aria-hidden="true" className="font-mono text-xs sm:text-sm">
                   {i + 1}
                 </span>{" "}
-                <span className="min-w-0">{s.title}</span>
+                <span className="min-w-0">{keepWhole(s.title)}</span>
               </button>
             </Fragment>
           );
@@ -101,7 +102,7 @@ export function JobCodeTabs({ steps, label }: { steps: JobCodeStep[]; label: str
           hidden={i !== active}
           className="pt-5"
         >
-          <p className="max-w-2xl text-base leading-relaxed">{s.text}</p>{" "}
+          <p className="max-w-2xl text-base leading-relaxed">{keepWhole(s.text)}</p>{" "}
           <AppWindow url={s.url} shots={s.shots} alt={s.alt} caption="Sample cases." className="mt-5" />
         </div>
       ))}

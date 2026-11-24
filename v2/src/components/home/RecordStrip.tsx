@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 import type { RecordFigure } from "@/lib/recordCounts";
 import { MONTH_ABBR } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The record behind the site, set as a ledger inside the About column.
@@ -53,7 +54,7 @@ export function RecordStrip({
         className="flex items-center gap-2 border-b-2 border-black bg-[#141414] px-5 py-3 font-heading text-base font-bold text-white"
       >
         <DatabaseIcon aria-hidden="true" weight="bold" className="size-5 text-[#2ECC40]" />
-        {label}
+        {keepWhole(label)}
       </p>{" "}
       <dl className="px-5">
         {record.map((f) => (
@@ -68,7 +69,7 @@ export function RecordStrip({
             </dt>{" "}
             <dd className="text-base leading-snug">
               <Link href={f.href} className="link">
-                {f.label}
+                {keepWhole(f.label)}
               </Link>
               {f.trend ? (
                 <>

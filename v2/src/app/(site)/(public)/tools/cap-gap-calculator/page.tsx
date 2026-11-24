@@ -6,6 +6,7 @@ import { FaqList } from "@/components/tools/FaqList";
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Two F-1 dates, as calculators: how far the cap-gap carries status and OPT to an H-1B start, and the OPT
@@ -61,7 +62,10 @@ export default function CapGapCalculatorPage() {
       <header>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Cap-gap and OPT days</h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          How far a pending H-1B carries F-1 status and OPT, and the unemployment days OPT has left. Dates and citations.
+          <KeepWhole>
+            {"How far a pending H-1B carries F-1 status and OPT, and the unemployment days OPT has left. Dates " +
+              "and citations."}
+          </KeepWhole>
         </p>
       </header>
       <section data-embed="cap-gap" aria-labelledby="capgap-h" className="mt-10">

@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { CaseStatus } from "@/lib/perm"
 import { STAGE_VISUALS } from "./stage-visuals"
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /** Fallback for unknown/invalid stages (defensive coding) */
 const FALLBACK = { fill: "bg-muted-foreground", label: "Unknown" }
@@ -20,7 +21,7 @@ export function CaseStageBadge({ stage, className }: CaseStageBadgeProps) {
   return (
     <Badge className={cn("font-normal", className)} data-status={stage}>
       <span aria-hidden="true" className={cn("size-2 shrink-0", config.fill)} />
-      {config.label}
+      {keepWhole(config.label)}
     </Badge>
   )
 }

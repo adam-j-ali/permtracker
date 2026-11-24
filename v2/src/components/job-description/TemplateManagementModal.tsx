@@ -30,6 +30,7 @@ import type { JobDescriptionTemplate } from "@/hooks/useJobDescriptionTemplates"
 import { ConvexError } from "convex/values";
 import { formatTemplateDate, copyToClipboard, isTemplateNameTaken, templateErrorMessage } from "./shared";
 import { captureError } from "@/lib/sentry";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // ============================================================================
 // TYPES
@@ -305,7 +306,7 @@ export function TemplateManagementModal({
                           <CaretRightIcon className="h-5 w-5 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
                         </div>
                         <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                          {template.description}
+                          {keepWhole(template.description)}
                         </p>{" "}
                         <p className="text-sm text-muted-foreground mt-1">
                           Used {template.usageCount}× • Updated {formatTemplateDate(template.updatedAt)}
@@ -520,7 +521,7 @@ export function TemplateManagementModal({
                             </p>
                             <div className="bg-tint/30 p-3 sm:p-4 overflow-auto border-2 border-border">
                               <p className="text-sm whitespace-pre-wrap break-words">
-                                {selectedTemplate.description}
+                                {keepWhole(selectedTemplate.description)}
                               </p>
                             </div>
                           </div>

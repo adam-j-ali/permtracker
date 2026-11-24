@@ -5,6 +5,7 @@ import { computeMetrics, OFFICE_LIST_OPENS_AT, OFFICE_METRIC_IDS, toOfficeRow, t
 import { officeByCode } from "@/lib/uscisOffices";
 
 import { OfficeTimelines, type OfficeTimelineView } from "../OfficeTimelines";
+import { htmlText } from "../../../../test-utils/text-content";
 
 /**
  * "Timelines people shared from this office", on a USCIS office's page. What must hold: it says whose dates these
@@ -81,7 +82,7 @@ describe("OfficeTimelines", () => {
     expect(out).toContain("40 days");
     expect(out).toContain("278 days");
     expect(out).toContain("295 days");
-    expect(out).toContain("RFE on the I-485, approved after it");
+    expect(htmlText(out)).toContain("RFE on the I-485, approved after it");
     expect(out).toContain("EB-2");
     expect(out).toContain("India");
     expect(out).not.toContain("2025-05-01");

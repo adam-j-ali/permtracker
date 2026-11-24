@@ -14,6 +14,7 @@ import { formatInt } from "@/lib/format";
 import { calculateCspa, CSPA_FINAL_ACTION_POLICY_FROM, parseCutoff, type Age, type ChartKind, type CountryKey, type CspaResult } from "@/lib/perm";
 import { bulletinsOf, type BulletinLine, type LineChartSet } from "@/lib/bulletinLineHistory";
 import { cn } from "@/lib/utils";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /** The Label component's look, for the rows that are a group rather than one field. */
 const LABEL = "block text-sm font-semibold leading-none";
@@ -267,7 +268,7 @@ export function CspaCalculator({
           <DateInput id={ids.pd} value={pd} onChange={(e) => setPd(e.target.value)} className="mt-1.5" />
         </div>{" "}
         <div>
-          <Label htmlFor={ids.filed}>{set === "family" ? "I-130 receipt date" : "The parent's I-140 receipt date"}</Label>{" "}
+          <Label htmlFor={ids.filed}>{keepWhole(set === "family" ? "I-130 receipt date" : "The parent's I-140 receipt date")}</Label>{" "}
           <DateInput id={ids.filed} value={filed} onChange={(e) => setFiled(e.target.value)} className="mt-1.5" />{" "}
           <p className="mt-1 text-sm text-muted-foreground">The petition the green card rests on.</p>
         </div>{" "}
@@ -279,7 +280,7 @@ export function CspaCalculator({
         <div>
           <Label htmlFor={ids.sought}>When the child filed (optional)</Label>{" "}
           <DateInput id={ids.sought} value={sought} onChange={(e) => setSought(e.target.value)} className="mt-1.5" />{" "}
-          <p className="mt-1 text-sm text-muted-foreground">The I-485 receipt date, the DS-260, or the visa fee.</p>
+          <p className="mt-1 text-sm text-muted-foreground"><KeepWhole>{"The I-485 receipt date, the DS-260, or the visa fee."}</KeepWhole></p>
         </div>{" "}
         {formerPolicyFiling ? (
           <div>

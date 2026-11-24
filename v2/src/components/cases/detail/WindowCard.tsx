@@ -1,6 +1,7 @@
 "use client";
 
 import { fmtISOShort, type WindowStatus } from "./case-detail-utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 interface WindowCardProps {
   ws: WindowStatus;
@@ -27,7 +28,7 @@ export function WindowCard({ ws, title, stageColor, startDate, endDate }: Window
           {ws.days === null ? (
             // Done with (filed, or recruitment begun in time): no count, just what happened.
             <div className="win-hero">
-              <div className="font-heading text-lg font-bold">{ws.label}</div>
+              <div className="font-heading text-lg font-bold">{keepWhole(ws.label)}</div>
             </div>
           ) : (
             <div className="win-hero">
@@ -35,7 +36,7 @@ export function WindowCard({ ws, title, stageColor, startDate, endDate }: Window
                 <span className="win-hero-num" style={{ color: stageColor }}>{ws.days}</span>{" "}
                 <span className="win-hero-unit">{ws.days === 1 ? "day" : "days"}</span>
               </div>
-              <div className="win-hero-label">{ws.label}</div>
+              <div className="win-hero-label">{keepWhole(ws.label)}</div>
             </div>
           )}
           <div className="win-progress">

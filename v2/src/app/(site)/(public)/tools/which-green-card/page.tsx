@@ -7,6 +7,7 @@ import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { AlertMark } from "@/components/ui/note";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Which employment-based green card categories could fit, from a few answers
@@ -82,8 +83,8 @@ export default function WhichGreenCardPage() {
         <ul className="mt-3 list-disc space-y-2 pl-5 text-base leading-relaxed text-soft">
           <li>Whether your evidence meets a definition. That&apos;s USCIS&apos;s decision, and an attorney&apos;s job to judge first.</li>{" "}
           <li>Anything about family-sponsored or investment green cards beyond pointing to them.</li>{" "}
-          <li>Temporary visas such as H-1B or L-1, which are a separate question from the green card category.</li>{" "}
-          <li>How long a category takes. Each result links to its bulletin line and, for EB-2 and EB-3, the people ahead.</li>
+          <li><KeepWhole>{"Temporary visas such as H-1B or L-1, which are a separate question from the green card category."}</KeepWhole></li>{" "}
+          <li><KeepWhole>{"How long a category takes. Each result links to its bulletin line and, for EB-2 and EB-3, the people ahead."}</KeepWhole></li>
         </ul>
         <p className="mt-3 text-base text-soft">
           Definitions from 8 CFR 204.5 (eCFR, read Sep 26, 2026) and USCIS&apos;s national interest waiver guidance

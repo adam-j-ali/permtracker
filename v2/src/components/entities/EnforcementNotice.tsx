@@ -6,6 +6,7 @@ import { formatInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { shortDate } from "@convex/lib/months";
 import { actionsFor, type EnforcementAction } from "@/lib/enforcement/actions";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * What the Justice or Labor Department did to this employer, on its own page: each settlement, lawsuit or
@@ -56,7 +57,7 @@ export function EnforcementNotice({ slug, className = "mt-8" }: { slug: string; 
               {a.civilPenalty || a.backPay ? ". " : null}
               {a.sources[0] ? (
                 <a href={a.sources[0].url} target="_blank" rel="noopener" className="link">
-                  {a.sources[0].label}
+                  {keepWhole(a.sources[0].label)}
                   <span className="sr-only"> (opens in a new tab)</span>
                 </a>
               ) : null}

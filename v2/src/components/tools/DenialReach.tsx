@@ -7,6 +7,7 @@ import { formatInt } from "@/lib/format";
 import { ScrollBox } from "@/components/ui/scroll-box";
 
 import { DataView } from "./DataView";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Rate against reach: the half of a denial factor every risk tool leaves out.
@@ -97,7 +98,7 @@ export function DenialReach({
             {" "}
             <li data-tip={`${c.label}\n${formatInt(c.denied)} of ${formatInt(c.decided)} denied\n${pct(c.reach)} of all decided cases\n${pct(c.share)} of all denials`}>
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-              <p className="font-bold">{c.label}</p>{" "}
+              <p className="font-bold">{keepWhole(c.label)}</p>{" "}
               <p className="font-mono text-sm tabular-nums text-muted-foreground">
                 {formatInt(c.denied)} of {formatInt(c.decided)} denied
               </p>
@@ -131,7 +132,7 @@ export function DenialReach({
               </div>
             </div>
             {c.note ? (
-              <p className="mt-2 text-sm leading-snug text-muted-foreground">{c.note}</p>
+              <p className="mt-2 text-sm leading-snug text-muted-foreground">{keepWhole(c.note)}</p>
             ) : null}
             </li>
           </Fragment>
@@ -172,7 +173,7 @@ export function DenialReach({
         <tbody className="bg-card">
           {computed.map((c) => (
             <tr key={c.label} className="border-t border-border/40">
-              <td className="p-3 font-bold">{c.label}{" "}</td>
+              <td className="p-3 font-bold">{keepWhole(c.label)}{" "}</td>
               <td className="p-3 text-right tabular-nums">{formatInt(c.decided)}{" "}</td>
               <td className="p-3 text-right tabular-nums">{formatInt(c.denied)}{" "}</td>
               <td className="p-3 text-right tabular-nums">{pct(c.reach)}{" "}</td>

@@ -31,6 +31,7 @@ import { useAuthContext } from '@/lib/contexts/AuthContext';
 import { CHAT_LIMITS } from '@convex/lib/chatLimits';
 import { handleOperationError } from '@/lib/errors';
 import { useFocusNext } from '@/components/ui/use-focus-next';
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Conversations shown per page. The list grows with every conversation the
@@ -195,7 +196,7 @@ export function ChatHistory({
                       }}
                     >
                       <span className="block font-medium text-sm truncate" title={conv.title}>
-                        {conv.title}
+                        {keepWhole(conv.title)}
                       </span>{" "}
                       <span className="block text-sm text-muted-foreground mt-1">
                         {formatDistanceToNow(conv.updatedAt, { addSuffix: true })}

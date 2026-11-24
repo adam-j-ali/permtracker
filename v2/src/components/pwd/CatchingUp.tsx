@@ -8,6 +8,7 @@ import { formatInt } from "@/lib/format";
 import { flowVerdict, type FlowSpan } from "@/lib/pwdNow";
 import { cn } from "@/lib/utils";
 import { monthDay, weekdayName } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Is DOL keeping up? The requests that left the line (decided, or withdrawn
@@ -45,7 +46,7 @@ export function CatchingUp({ day, week, noun }: { day: FlowSpan; week: FlowSpan;
       </div>{" "}
       <p className={cn("mt-4 flex items-start gap-2 text-lg font-semibold", toneText)}>
         <Mark aria-hidden="true" weight="bold" className="mt-1 size-5 shrink-0" />
-        <span>{v.text}</span>
+        <span>{keepWhole(v.text)}</span>
       </p>{" "}
       <p className="mt-1 text-sm text-muted-foreground">{when}</p>{" "}
       {/* Each row is one dt and two dd in a grid: the label, the figure, and the bar under them (a
@@ -53,7 +54,7 @@ export function CatchingUp({ day, week, noun }: { day: FlowSpan; week: FlowSpan;
       <dl className="mt-3 space-y-3">
         {bars.map((b) => (
           <div key={b.label} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3">
-            <dt className="text-base">{b.label}</dt>{" "}
+            <dt className="text-base">{keepWhole(b.label)}</dt>{" "}
             <dd className="font-heading text-2xl font-bold tabular-nums">{formatInt(b.value)}</dd>{" "}
             <dd className="col-span-2 mt-1 h-3 w-full bg-muted" aria-hidden="true">
               <div className={cn("h-full border-r-2", b.fill)} style={{ width: `${(b.value / top) * 100}%` }} />

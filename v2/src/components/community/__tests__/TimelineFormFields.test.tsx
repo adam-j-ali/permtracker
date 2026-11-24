@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { ACCOUNT_CODES, I485_CENTERS, type TimelineInput } from "@/lib/communityTimeline";
 
 import { TimelineFormFields } from "../TimelineFormFields";
+import { textContent } from "../../../../test-utils/text-content";
 
 /**
  * The timeline form's account updates, service center and hints: what a person filling it sees and can do. The rules
@@ -142,7 +143,7 @@ describe("a spouse's H-4", () => {
     it(`takes the four H-4 dates on the ${variant} form, each by its own label, on either route`, () => {
       render(<Form variant={variant} start={{ route: "consular" }} />);
       const h4 = screen.getByRole("group", { name: "A spouse's H-4 (optional)" });
-      expect(within(h4).getByText(/so say how yours went in\. Left blank, the same filing day as the I-539 counts as filed with it\./)).toBeTruthy();
+      expect(within(h4).getByText(textContent(/so say how yours went in\. Left blank, the same filing day as the I-539 counts as filed with it\./))).toBeTruthy();
       fireEvent.change(within(h4).getByLabelText("H-4 extension (I-539) filed"), { target: { value: "2026-01-05" } });
       fireEvent.change(within(h4).getByLabelText("H-4 extension (I-539) approved"), { target: { value: "2026-07-01" } });
       fireEvent.change(within(h4).getByLabelText("H-4 work permit (I-765, category (c)(26)) filed"), { target: { value: "2026-01-05" } });

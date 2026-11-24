@@ -10,6 +10,7 @@ import { isCenter, type UscisOffice } from "@/lib/uscisOffices";
 
 import { ShareTimeline } from "./ShareTimeline";
 import { AccountCodes, StageMedians, contactsText, h4Text, updatesText } from "./TimelineBoard";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * "Timelines people shared from this office": what happened to I-485s at one USCIS office, as the people waiting
@@ -64,7 +65,7 @@ export function OfficeTimelines({ office, view }: { office: UscisOffice; view: O
           <b className="font-semibold text-foreground">
             {formatInt(view.total)} {view.total === 1 ? "timeline" : "timelines"}
           </b>{" "}
-          so far{view.capped ? ", counting the newest" : ""}. Each step is counted in days from the day the I-485 was filed.
+          so far{view.capped ? ", counting the newest" : ""}<KeepWhole>{". Each step is counted in days from the day the I-485 was filed."}</KeepWhole>
         </p>
       )}
 
@@ -88,11 +89,11 @@ export function OfficeTimelines({ office, view }: { office: UscisOffice; view: O
             <ScrollBox label={`Timelines shared from ${place(office)}`} className="mt-6 border-t-2 border-[var(--object-border)]">
               <table className="w-full min-w-[880px] border-collapse text-left text-base">
                 <caption className="sr-only">
-                  Timelines people shared from {place(office)}: the month the I-485 was filed, then the days to each step
+                  Timelines people shared from {place(office)}<KeepWhole>{": the month the I-485 was filed, then the days to each step"}</KeepWhole>
                 </caption>
                 <thead className="bg-sage">
                   <tr>
-                    <th scope="col" className="px-3 py-3 text-sm font-bold">I-485 filed{" "}</th>
+                    <th scope="col" className="px-3 py-3 text-sm font-bold"><KeepWhole>{"I-485 filed"}</KeepWhole>{" "}</th>
                     <th scope="col" className="px-3 py-3 text-sm font-bold">Category{" "}</th>
                     <th scope="col" className="px-3 py-3 text-sm font-bold">Country{" "}</th>
                     {OFFICE_STOPS.map((id) => (
@@ -110,7 +111,7 @@ export function OfficeTimelines({ office, view }: { office: UscisOffice; view: O
                         {r.filedMonth ? `${monthName(r.filedMonth)} ` : "Not given "}
                         {r.rfe ? (
                           <span className="block text-sm text-muted-foreground">
-                            {`RFE on the I-485${r.rfe.outcome === "approved" ? ", approved after it" : r.rfe.outcome === "denied" ? ", denied" : ""} `}
+                            <KeepWhole>{`RFE on the I-485${r.rfe.outcome === "approved" ? ", approved after it" : r.rfe.outcome === "denied" ? ", denied" : ""} `}</KeepWhole>
                           </span>
                         ) : null}
                       </th>

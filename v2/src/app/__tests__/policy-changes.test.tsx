@@ -19,6 +19,7 @@ import type { RuleRecord } from "@convex/lib/ruleSteps";
 import { POLICY_SHOTS } from "@/lib/policyShots";
 import { webpSize } from "../../../test-utils/image-size";
 import PolicyChangesPage from "../(site)/(public)/policy-changes/page";
+import { htmlText } from "../../../test-utils/text-content";
 
 function n(over: Partial<PolicyNotice> & { documentNumber: string; publicationDate: string }): PolicyNotice {
   return {
@@ -127,7 +128,7 @@ describe("/policy-changes", () => {
     const html = await render();
     expect(html).toContain("OFLC Releases Public Disclosure Data for Q3");
     expect(html).toContain("OFLC Releases the H-2B Foreign Labor Recruiter List");
-    expect(html).not.toContain("more on H-2A, H-2B and CW-1");
+    expect(htmlText(html)).not.toContain("more on H-2A, H-2B and CW-1");
     // Eight rows lead (the two 2026 ones and six from 2019); the other four
     // 2019 announcements are still in the DOM, folded under their year.
     expect((html.match(/Older OFLC announcement \d/g) ?? []).length).toBe(10);

@@ -6,6 +6,7 @@ vi.mock("@/lib/db/nivIssuances", () => ({ nivSummary: vi.fn(), classesByPost: vi
 
 import { classesByPost, nivSummary } from "@/lib/db/nivIssuances";
 import { NivByPost } from "../NivByPost";
+import { htmlText } from "../../../../test-utils/text-content";
 
 /** The consulates index's switch: H-1B, L-1 and K-1 fiancé(e) visas by consulate, State's newest month. */
 
@@ -34,9 +35,11 @@ beforeEach(() => {
 describe("visas issued by consulate", () => {
   it("switches between H-1B, L-1 and K-1 fiancé(e), for State's newest month", async () => {
     const out = await html();
-    for (const tab of ["H-1B", "L-1", "K-1 fiancé(e)"]) expect(out).toContain(`>${tab}<`);
+    // A span is inline: taken out, each tab's whole label is the text between its tags again.
+    const flat = out.replace(/<\/?span\b[^>]*>/g, "");
+    for (const tab of ["H-1B", "L-1", "K-1 fiancé(e)"]) expect(flat).toContain(`>${tab}<`);
     expect(vi.mocked(classesByPost)).toHaveBeenCalledWith("2026-02", ["H1B", "L1", "K1"]);
-    expect(out).toContain("1,588 K-1 fiancé(e) visas worldwide in February 2026");
+    expect(htmlText(out)).toContain("1,588 K-1 fiancé(e) visas worldwide in February 2026");
   });
 
   it("links a consulate that has a page here, and names one that doesn't", async () => {

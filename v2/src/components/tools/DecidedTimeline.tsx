@@ -7,6 +7,7 @@ import type { DecidedTimelineRead } from "@/lib/db/decidedTimeline";
 import { formatInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { shortDate } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /** Each step's mark: the stage it belongs to (STAGE_VISUALS, the one map) and the outcome colour code. */
 const MARK: Record<TimelineTone, string> = {
@@ -50,7 +51,7 @@ export function DecidedTimeline({ read }: { read: DecidedTimelineRead | null }) 
               {s.until && s.until !== s.date ? `${day(s.date)} to ${day(s.until)}` : day(s.date)}
             </span>{" "}
             <span className="min-w-0 max-sm:col-start-2">
-              <span className="block font-semibold">{s.label}</span>{" "}
+              <span className="block font-semibold">{keepWhole(s.label)}</span>{" "}
               {s.detail ? (
                 <span className={cn("block text-sm", s.key === "filed" ? "font-semibold text-foreground" : "text-soft")}>{s.detail}</span>
               ) : null}

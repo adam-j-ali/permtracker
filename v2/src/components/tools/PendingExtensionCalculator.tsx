@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { DateRuler } from "@/components/tools/DateRuler";
 import { RuleNotes } from "@/components/tools/RuleNotes";
 import { calculatePendingExtension, EXTENSION_PENDING_DAYS } from "@/lib/perm";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The 240-day rule, 8 CFR 274a.12(b)(20): working for the same employer while a timely filed extension waits. The
@@ -40,7 +41,7 @@ export function PendingExtensionCalculator() {
     <div className="object p-5 sm:p-8">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
         <div>
-          <Label htmlFor={ids.end}>I-94 end date</Label>{" "}
+          <Label htmlFor={ids.end}><KeepWhole>{"I-94 end date"}</KeepWhole></Label>{" "}
           <DateInput id={ids.end} value={end} onChange={(e) => setEnd(e.target.value)} className="mt-1.5" />{" "}
           <p className="mt-1 text-sm text-muted-foreground">The end of the authorized stay.</p>
         </div>{" "}
@@ -69,8 +70,10 @@ export function PendingExtensionCalculator() {
             </p>
           ) : null}
           <p className="text-base leading-relaxed">
-            Counting the I-94&apos;s end date as day one, as &ldquo;beginning on the date of the expiration&rdquo; reads, day
-            240 is <strong>{long(r.lastDay)}</strong>. Counted from the next day it&apos;s {long(r.lastDayCountingFromNext)}.
+            <KeepWhole>
+              {"Counting the I-94's end date as day one, as “beginning on the date of the expiration” reads, day " +
+                "240 is "}
+            </KeepWhole><strong>{long(r.lastDay)}</strong>. Counted from the next day it&apos;s {long(r.lastDayCountingFromNext)}.
             A denial before then ends it at once.
           </p>{" "}
           <RuleNotes

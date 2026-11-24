@@ -1,6 +1,7 @@
 import type { TimingView } from "@/lib/seasonalTiming";
 import { formatAsOf, formatMonthDay } from "@/lib/dolFormat";
 import { PageSection } from "@/components/data/PageSection";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * When DOL usually decides a case like this one: a range bar drawn from DOL's
@@ -62,9 +63,9 @@ export function SeasonalTimingPanel({
         {view.filedBecause && firstDay
           ? `This job starts ${day(firstDay)}, ${view.filedBecause === "far" ? "more than 75 days after filing, and DOL decides jobs that far out within weeks of filing" : "close to its filing date"}, so it's counted from filing. `
           : ""}
-        {start
+        {keepWhole(start
           ? `Half of the H-2A applications DOL certified were decided ${view.days.to} to ${view.days.from} days before the work began. For this job, starting ${firstDay ? day(firstDay) : "on its first day"}, that's `
-          : `Half of the ${view.visa} applications DOL certified${view.season ? ` that were filed ${view.season}` : ""} were decided ${view.days.from} to ${view.days.to} days after filing. For this case${filingDate ? `, filed ${day(filingDate)}` : ""}, that's `}
+          : `Half of the ${view.visa} applications DOL certified${view.season ? ` that were filed ${view.season}` : ""} were decided ${view.days.from} to ${view.days.to} days after filing. For this case${filingDate ? `, filed ${day(filingDate)}` : ""}, that's `)}
         <b className="font-semibold text-foreground">
           {day(view.from)} to {day(view.to)}
         </b>
@@ -137,8 +138,7 @@ export function SeasonalTimingPanel({
       ) : null}{" "}
       {view.group ? (
         <p className="mt-4 text-sm text-muted-foreground">
-          From DOL&apos;s {view.group.season} H-2B assignment-group list, which puts the applications filed in the
-          season&apos;s first three days in groups by lottery and works them in order (
+          From DOL&apos;s {view.group.season}<KeepWhole>{" H-2B assignment-group list, which puts the applications filed in the season's first three days in groups by lottery and works them in order ("}</KeepWhole>
           <a target="_blank" href="https://www.federalregister.gov/documents/2019/03/04/2019-03809/selection-procedures-for-reviewing-applications-filed-by-employers-seeking-temporary-employment-of" className="link" rel="noopener">
             84 FR 7399
           </a>

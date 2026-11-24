@@ -9,6 +9,7 @@ import { GROUP_PATH, type GroupDetail, type GroupKind, type GroupSummary } from 
 import { stateName } from "@/lib/usStateNames";
 import { formatInt } from "@/lib/format";
 import { entityHref } from "@/lib/entityPayload";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * One city's, industry's or country's PERM record: the headline counts, the
@@ -54,7 +55,7 @@ function Ranked({
             <span className="flex items-baseline justify-between gap-3">
               {/* The name is one clipped line, link or plain text: the clip is on the child, so a link's tap box isn't cut. */}
               <span className="min-w-0 text-sm font-bold [&>*]:block [&>*]:truncate">
-                {typeof it.label === "string" ? <span>{it.label}</span> : it.label}
+                {typeof it.label === "string" ? <span>{keepWhole(it.label)}</span> : it.label}
               </span>{" "}
               <span className="shrink-0 font-mono text-sm tabular-nums text-muted-foreground">{formatInt(it.n)}</span>
             </span>{" "}
@@ -169,7 +170,7 @@ export function GroupView({
             label:
               c.n >= FLOOR ? (
                 <Link href={`${GROUP_PATH.city}/${c.slug}`} className={RANKED_LINK}>
-                  {c.label}
+                  {keepWhole(c.label)}
                 </Link>
               ) : (
                 c.label
@@ -210,7 +211,7 @@ export function GroupView({
             label:
               c.n >= FLOOR ? (
                 <Link href={`${GROUP_PATH.country}/${c.slug}`} className={RANKED_LINK}>
-                  {c.label}
+                  {keepWhole(c.label)}
                 </Link>
               ) : (
                 c.label

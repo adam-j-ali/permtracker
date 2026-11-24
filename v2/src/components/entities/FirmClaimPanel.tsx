@@ -31,6 +31,7 @@ import {
 } from "@/lib/firmProfile";
 import { convexSiteUrl } from "@/lib/convexSite";
 import { buttonVariants } from "@/components/ui/button";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 type Status = "idle" | "sending" | "done" | "error";
 type FieldErrors = Partial<Record<ProfileField | "email" | "role", string>>;
@@ -189,7 +190,7 @@ function ClaimForm({ slug }: { slug: string }) {
           {FOCUS_OPTIONS.map((o) => (
             <label key={o.id} className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 text-base">
               <input type="checkbox" name="focus" value={o.id} className="size-5 shrink-0 accent-[var(--primary)]" />
-              {o.label}{" "}
+              {keepWhole(o.label)}{" "}
             </label>
           ))}
         </div>

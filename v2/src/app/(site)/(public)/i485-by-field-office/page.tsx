@@ -43,6 +43,7 @@ import {
 import { SITE_URL } from "@/lib/constants/site";
 import { formatInt } from "@/lib/format";
 import { StepBothSources } from "@/components/community/StepBothSources";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "I-485 Processing by USCIS Field Office";
 const DESCRIPTION =
@@ -202,7 +203,7 @@ export default async function I485ByFieldOfficePage() {
 
       <header>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">
-          The I-485 by field office
+          <KeepWhole>{"The I-485 by field office"}</KeepWhole>
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           What each USCIS office received, decided and still holds
@@ -295,8 +296,7 @@ export default async function I485ByFieldOfficePage() {
               caption={
                 <>
                   The service centers and the National Benefits Center approved{" "}
-                  {centerApproved.total.toLocaleString("en-US")} employment-based I-485s in the
-                  quarter. Every field office together approved{" "}
+                  {centerApproved.total.toLocaleString("en-US")}<KeepWhole>{" employment-based I-485s in the quarter. Every field office together approved"}</KeepWhole>{" "}
                   {fieldApproved.total.toLocaleString("en-US")}
                   {fieldApproved.withheld ? ` (${fieldApproved.withheld} cells withheld)` : ""}. Most
                   employment-based cases are decided without an interview. That&apos;s why the
@@ -322,22 +322,22 @@ export default async function I485ByFieldOfficePage() {
         <ul className="mt-4 space-y-2">
           <li>
             <Link href="/guides/fastest-field-office-eb-i485" className="link">
-              Which field office is fastest for an employment-based I-485
+              <KeepWhole>{"Which field office is fastest for an employment-based I-485"}</KeepWhole>
             </Link>
           </li>{" "}
           <li>
             <Link href="/tools/i485-queue-position" className="link">
-              Your place in USCIS&apos;s I-485 inventory by priority date
+              <KeepWhole>{"Your place in USCIS's I-485 inventory by priority date"}</KeepWhole>
             </Link>
           </li>{" "}
           <li>
             <Link href="/guides/i485-vs-i485j-supplement-j" className="link">
-              I-485 and Supplement J, told apart
+              <KeepWhole>{"I-485 and Supplement J, told apart"}</KeepWhole>
             </Link>
           </li>{" "}
           <li>
             <Link href="/guides/i693-medical-exam" className="link">
-              The I-693 medical exam every I-485 needs
+              <KeepWhole>{"The I-693 medical exam every I-485 needs"}</KeepWhole>
             </Link>
             , and{" "}
             <a

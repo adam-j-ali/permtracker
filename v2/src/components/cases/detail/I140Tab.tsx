@@ -12,6 +12,7 @@ import { ReportedI140ForCase } from "./ReportedI140ForCase";
 import { PublicNumber } from "./PublicNumber";
 import { BULLETIN_CATEGORIES_HREF, receiptPageHref } from "@/lib/cases/publicLinks";
 import { casePriorityDate } from "@/lib/perm";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 interface I140TabProps {
   caseData: CaseDetailData;
@@ -53,7 +54,7 @@ export function I140Tab({ caseData }: I140TabProps) {
             <div className="detail-card-head ch-i140">
               <h2 className="flex items-center gap-1.5">
                 <ShieldIcon className="h-3.5 w-3.5" />
-                I-140 petition
+                <KeepWhole>{"I-140 petition"}</KeepWhole>
               </h2>{" "}
               <span className="head-badge">{statusLabel}</span>
             </div>
@@ -132,11 +133,11 @@ export function I140Tab({ caseData }: I140TabProps) {
               <div className="detail-status-bar">
                 <ClockIcon className="h-4 w-4 shrink-0" style={{ color: "var(--stage-i140-ink)" }} />
                 <span>
-                  {isFiled
+                  {keepWhole(isFiled
                     ? "I-140 filed. Awaiting USCIS decision."
                     : caseData.eta9089CertificationDate
                       ? "PERM certified. Ready to file I-140 with USCIS."
-                      : "Awaiting PERM certification before I-140 can be filed with USCIS."}
+                      : "Awaiting PERM certification before I-140 can be filed with USCIS.")}
                 </span>
               </div>
             )}

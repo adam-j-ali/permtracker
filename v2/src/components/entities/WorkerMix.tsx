@@ -4,6 +4,7 @@ import { ChartTips } from "@/components/data/ChartTips";
 import type { WorkerFacet, WorkerFacetRow } from "@/lib/db/employerHistory";
 import { cn } from "@/lib/utils";
 import { formatInt } from "@/lib/format";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Who an employer (or an occupation) sponsored, from its FY2016 to FY2023
@@ -36,7 +37,7 @@ function Panel({ title, rows }: { title: string; rows: WorkerFacetRow[] }) {
             {" "}
             <li data-tip={`${r.label}\n${formatInt(r.n)} ${r.n === 1 ? "case" : "cases"}, FY2016 to FY2023\n#${i + 1} of the top ${rows.length}`}>
               <span className="flex items-baseline justify-between gap-3">
-                <span className="min-w-0 truncate text-sm font-bold">{r.label}</span>{" "}
+                <span className="min-w-0 truncate text-sm font-bold">{keepWhole(r.label)}</span>{" "}
                 <span className="shrink-0 font-mono text-sm tabular-nums text-muted-foreground">{formatInt(r.n)}</span>
               </span>{" "}
               <span className="mt-1 block h-2 w-full bg-sage" aria-hidden="true">

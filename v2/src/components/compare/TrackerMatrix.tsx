@@ -2,7 +2,7 @@ import { Fragment } from "react";
 import { CheckIcon, MinusIcon, QuestionIcon } from "@phosphor-icons/react/ssr";
 
 import { ChartTips } from "@/components/data/ChartTips";
-import { KeepWhole } from "@/components/ui/keep-whole";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 import { GROUPS, ROWS, type Cell, type Mark, type Tracker } from "@/lib/compare/trackers";
 import { cn } from "@/lib/utils";
 
@@ -97,7 +97,7 @@ export function TrackerMatrix({ trackers }: { trackers: readonly Tracker[] }) {
                       colSpan={g.span}
                       className={cn("px-3 pb-1 pt-3 text-left text-sm font-semibold text-soft", i > 0 && "border-l-2 border-foreground")}
                     >
-                      {g.label}{" "}
+                      {keepWhole(g.label)}{" "}
                     </th>
                   </Fragment>
                 ))}

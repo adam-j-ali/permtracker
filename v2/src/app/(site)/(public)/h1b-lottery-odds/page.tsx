@@ -32,6 +32,7 @@ import { formatPercent } from "@/lib/format";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { AlertMark } from "@/components/ui/note";
 import { StepBothSources } from "@/components/community/StepBothSources";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "H-1B Lottery Odds by Year";
 const DESCRIPTION =
@@ -95,10 +96,12 @@ export default function H1bLotteryOddsPage() {
       <JsonLdScript schema={faqSchema} />
 
       <header>
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">H-1B lottery odds, year by year</h1>{" "}
+        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl"><KeepWhole>{"H-1B lottery odds, year by year"}</KeepWhole></h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          How many H-1B cap registrations USCIS received and selected each year, from its own table, and how the odds
-          change now that the draw is weighted by wage.
+          <KeepWhole>
+            {"How many H-1B cap registrations USCIS received and selected each year, from its own table, and how " +
+              "the odds change now that the draw is weighted by wage."}
+          </KeepWhole>
         </p>
       </header>
 
@@ -245,7 +248,7 @@ export default function H1bLotteryOddsPage() {
         <p className="mt-3 text-base text-soft">
           From USCIS&apos;s{" "}
           <a href={H1B_REGISTRATION_SOURCE} className="link" rel="noopener" target="_blank">
-            H-1B electronic registration page
+            <KeepWhole>{"H-1B electronic registration page"}</KeepWhole>
           </a>
           , last revised {H1B_REGISTRATION_REVISED}, read {H1B_REGISTRATION_READ}. Eligible leaves out duplicates,
           registrations deleted before the period closed, invalid passports and failed payments. The selected count is

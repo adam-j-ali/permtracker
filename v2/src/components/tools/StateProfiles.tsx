@@ -12,6 +12,7 @@ import { FilterableStatTable, type CsvSpec, type StatColumn } from "./Filterable
 import { choiceVariants } from "@/components/ui/choice";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { entityHref } from "@/lib/entityPayload";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Concentration: the fact a choropleth structurally cannot show.
@@ -130,7 +131,7 @@ function Bars({ bars, unit }: { bars: Bar[]; unit: string }) {
             <span className="text-sm font-bold text-muted-foreground">
               {unit}
             </span>{" "}
-            {b.label}
+            {keepWhole(b.label)}
           </p>
           </li>
         </Fragment>
@@ -167,7 +168,7 @@ function BarTable({ bars, unit }: { bars: Bar[]; unit: string }) {
           {bars.map((b) => (
             <tr key={b.state} className="border-t border-border/40">
               <td className="p-3 font-bold">{stateName(b.state)}{" "}</td>
-              <td className="p-3">{b.label}{" "}</td>
+              <td className="p-3">{keepWhole(b.label)}{" "}</td>
               <td className="p-3 text-right tabular-nums">{formatInt(b.count)}{" "}</td>
               <td className="p-3 text-right font-bold tabular-nums">{pct(b.share)}{" "}</td>
             </tr>
@@ -214,7 +215,7 @@ export function StateConcentration({
                   aria-pressed={axis === a.key}
                   className={choiceVariants({ on: axis === a.key })}
                 >
-                  {a.label}
+                  {keepWhole(a.label)}
                 </button>
                 </Fragment>
               ))}

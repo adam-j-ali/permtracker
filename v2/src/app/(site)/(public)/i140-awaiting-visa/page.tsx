@@ -50,6 +50,7 @@ import { SITE_URL } from "@/lib/constants/site";
 import { formatInt } from "@/lib/format";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { StepBothSources } from "@/components/community/StepBothSources";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "Approved I-140s Waiting for a Visa Number";
 const DESCRIPTION =
@@ -177,8 +178,10 @@ export default async function I140AwaitingVisaPage() {
           Approved, and waiting for a visa number
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          USCIS&apos;s count of approved I-140, I-360 and I-526 petitions whose beneficiary can&apos;t file
-          for a green card yet, by category and country of birth
+          <KeepWhole>
+            {"USCIS's count of approved I-140, I-360 and I-526 petitions whose beneficiary can't file for a green " +
+              "card yet, by category and country of birth"}
+          </KeepWhole>
           {awaiting ? `, as of ${monthLabel(awaiting.asOf)}` : ""}. This page also shows how the count moved since USCIS&apos;s last one.
         </p>
       </header>
@@ -304,10 +307,11 @@ export default async function I140AwaitingVisaPage() {
             subject={`India against all countries, FY${indiaYears[0]!.fy} to FY${indiaYears[indiaYears.length - 1]!.fy}, as of ${asOfQuarterLabel(classCountry.asOf)}`}
             caption={
               <>
-                How many I-140s USCIS received each fiscal year and where they stand
-                now. The bar is India&apos;s receipts, and the figure beside each bar is India&apos;s
-                share of every country&apos;s. A recent year is mostly pending because it
-                hasn&apos;t been decided yet. Approvals didn&apos;t fall.
+                <KeepWhole>
+                  {"How many I-140s USCIS received each fiscal year and where they stand now. The bar is India's " +
+                    "receipts, and the figure beside each bar is India's share of every country's. A recent year " +
+                    "is mostly pending because it hasn't been decided yet. Approvals didn't fall."}
+                </KeepWhole>
               </>
             }
             source={<>USCIS, {classCountry.sourceFile}, by fiscal year received. The newest year is partial.</>}
@@ -344,7 +348,7 @@ export default async function I140AwaitingVisaPage() {
                     <tbody>
                       {classApprovals(classCountry.cells, "All Countries", latestFullFy).map((cls) => (
                         <tr key={cls.code} className="border-b border-border/50">
-                          <td className="py-1.5 pr-4">{cls.label} <span className="font-mono text-muted-foreground">({cls.code})</span>{" "}</td>
+                          <td className="py-1.5 pr-4">{keepWhole(cls.label)} <span className="font-mono text-muted-foreground">({cls.code})</span>{" "}</td>
                           {countries.map((c) => {
                             const v = classApprovals(classCountry.cells, c, latestFullFy).find((x) => x.code === cls.code)?.approved;
                             return (
@@ -372,7 +376,7 @@ export default async function I140AwaitingVisaPage() {
         <ul className="mt-4 space-y-2">
           <li>
             <Link href="/guides/approved-i140-no-visa-number-eb2-india" className="link">
-              Approved I-140, no visa number: what the India wait actually is
+              <KeepWhole>{"Approved I-140, no visa number: what the India wait actually is"}</KeepWhole>
             </Link>
           </li>{" "}
           <li>
@@ -382,7 +386,7 @@ export default async function I140AwaitingVisaPage() {
           </li>{" "}
           <li>
             <Link href="/tools/i485-queue-position" className="link">
-              The I-485 inventory ahead of a priority date
+              <KeepWhole>{"The I-485 inventory ahead of a priority date"}</KeepWhole>
             </Link>
           </li>
         </ul>

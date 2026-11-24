@@ -7,6 +7,7 @@ import type { UnifiedFlagRow } from "@/lib/flagMerge";
 import { formatWage } from "@/lib/wageFormat";
 import { FilingRows } from "@/components/entities/FilingRows";
 import { ROW_LINK } from "@/components/entities/caseRows";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * One employer's newest wage requests and H-1B LCAs, two columns of five.
@@ -49,7 +50,7 @@ export function WageAndLcaFilings({
           {" "}
           <div className="mt-5">
             <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-              <ListHeading className="text-base font-bold">{list.label}</ListHeading>{" "}
+              <ListHeading className="text-base font-bold">{keepWhole(list.label)}</ListHeading>{" "}
               <IntentLink href={list.href} className={`${ROW_LINK} text-sm font-semibold`}>
                 {list.all} by this employer
               </IntentLink>

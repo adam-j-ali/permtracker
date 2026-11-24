@@ -40,6 +40,7 @@ import {
 } from "@/components/timeline";
 import { TimelineLegendCompact } from "@/components/timeline";
 import type { DeadlineType } from "@/lib/calendar/types";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 // ============================================================================
 // Types
@@ -340,7 +341,7 @@ export function CalendarFilters({
               htmlFor="show-completed"
               className="text-sm cursor-pointer whitespace-nowrap"
             >
-              Show completed (I-140 approved)
+              <KeepWhole>{"Show completed (I-140 approved)"}</KeepWhole>
             </Label>
           </div>
 
@@ -413,7 +414,7 @@ export function CalendarFilters({
                         htmlFor={`filter-${type.value}`}
                         className="text-sm cursor-pointer font-normal"
                       >
-                        {type.label}
+                        {keepWhole(type.label)}
                       </Label>
                     </div>
                   ))}

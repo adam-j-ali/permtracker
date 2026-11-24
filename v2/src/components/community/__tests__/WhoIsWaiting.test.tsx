@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { WhoIsWaiting } from "../TimelineBoard";
+import { textContent } from "../../../../test-utils/text-content";
 
 const byStage = [
   { id: "pwd", label: "Wage request or recruitment", count: 310 },
@@ -15,7 +16,7 @@ describe("WhoIsWaiting", () => {
     const office = [{ id: "perm", label: "PERM pending", count: 0 }, { id: "i485", label: "I-485 pending", count: 40 }];
     render(<WhoIsWaiting waiting={{ byStage: office, lines: [{ category: "EB-2", country: "India", counts: [0, 12], total: 12 }], unlisted: 28, unlistedCounts: [0, 28] }} total={40} noun={["person", "people"]} />);
     expect(screen.queryByText("PERM pending")).not.toBeInTheDocument();
-    expect(screen.getAllByText("I-485 pending").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(textContent("I-485 pending")).length).toBeGreaterThan(0);
   });
 
   it("leads with everyone at each step and ends with the people no line shows, so no column reads all zeros", () => {

@@ -48,6 +48,7 @@ import { DAYS_PER_MONTH, easternDay } from "@/lib/time";
 import { buttonVariants } from "@/components/ui/button";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { softFail } from "@/lib/softRead";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 // A bulletin changes once a month and USCIS's counts monthly or quarterly.
 export const revalidate = 86400;
@@ -215,8 +216,10 @@ export default async function BulletinLinePage({ params }: { params: Promise<{ l
           </div>
         </dl>{" "}
         <p className="mt-3 text-base text-muted-foreground">
-          Final action decides when a green card can be approved. Dates for filing, when USCIS allows it, decides when
-          an I-485 can be filed.{" "}
+          <KeepWhole>
+            {"Final action decides when a green card can be approved. Dates for filing, when USCIS allows it, " +
+              "decides when an I-485 can be filed."}
+          </KeepWhole>{" "}
           <Link href="/guides/how-the-visa-bulletin-works" className="link">
             How the visa bulletin works
           </Link>
@@ -309,14 +312,14 @@ export default async function BulletinLinePage({ params }: { params: Promise<{ l
               <Fragment>
                 {" "}
                 <div className="bg-sage p-4 border-2 shadow-hard border-border">
-                  <dt className="text-base text-soft">I-485s pending, visa number available</dt>{" "}
+                  <dt className="text-base text-soft"><KeepWhole>{"I-485s pending, visa number available"}</KeepWhole></dt>{" "}
                   <dd className="mt-1 font-heading text-3xl font-bold tabular-nums">
                     {rangeLabel(counts.inventory.available)}
                   </dd>{" "}
                   <dd className="font-mono text-sm text-muted-foreground">inventory of {counts.inventory.asOf}</dd>
                 </div>{" "}
                 <div className="bg-sage p-4 border-2 shadow-hard border-border">
-                  <dt className="text-base text-soft">I-485s pending, waiting for a visa number</dt>{" "}
+                  <dt className="text-base text-soft"><KeepWhole>{"I-485s pending, waiting for a visa number"}</KeepWhole></dt>{" "}
                   <dd className="mt-1 font-heading text-3xl font-bold tabular-nums">
                     {rangeLabel(counts.inventory.awaiting)}
                   </dd>{" "}
@@ -326,8 +329,10 @@ export default async function BulletinLinePage({ params }: { params: Promise<{ l
             ) : null}
           </dl>{" "}
           <p className="mt-4 max-w-3xl text-base text-muted-foreground">
-            Approved counts count petitions. They don&apos;t count people. I-485 counts are ranges (USCIS withholds cells of 1 to 10)
-            and leave out people getting their visa abroad.
+            <KeepWhole>
+              {"Approved counts count petitions. They don't count people. I-485 counts are ranges (USCIS " +
+                "withholds cells of 1 to 10) and leave out people getting their visa abroad."}
+            </KeepWhole>
           </p>{" "}
           {GREEN_CARD_LINE.has(category) ? (
             <Link
@@ -348,7 +353,7 @@ export default async function BulletinLinePage({ params }: { params: Promise<{ l
           </h2>{" "}
           <p className="mt-2 max-w-3xl text-base leading-relaxed">
             <span className="font-heading text-3xl font-bold tabular-nums">{issued.total.toLocaleString("en-US")}</span>{" "}
-            {issued.wholeCategory ? "EB-5 visas (all EB-5, which State doesn't split by set-aside)" : `${cat} visas`}{" "}
+            {keepWhole(issued.wholeCategory ? "EB-5 visas (all EB-5, which State doesn't split by set-aside)" : `${cat} visas`)}{" "}
             {country === "worldwide" ? "to people outside the four countries listed apart" : `to people chargeable ${where}`}{" "}
             from {monthName(issued.from)} to {monthName(issued.to)}, {issued.newest.toLocaleString("en-US")} of them in{" "}
             {monthName(issued.to)}. Consulates only: a green card granted inside the US isn&apos;t in this count.{" "}

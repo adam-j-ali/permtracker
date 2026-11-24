@@ -39,6 +39,7 @@ import { trackPaletteSelected } from "@/lib/funnelEvents";
 import { SEARCH_TEXT_MAX } from "@/lib/search/limits";
 import { caseSearchHref } from "@/lib/caseSearchPlan";
 import { entityHref } from "@/lib/entityPayload";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface SearchArticle {
   title: string;
@@ -519,7 +520,7 @@ export function SearchPalette({
                       onSelect={() => go(p.href, p.label)}
                       className={ROW}
                     >
-                      {p.label}
+                      {keepWhole(p.label)}
                     </Command.Item>
                   ))}
               </Command.Group>
@@ -543,7 +544,7 @@ export function SearchPalette({
                   onSelect={() => go(a.href, a.title)}
                   className={ROW}
                 >
-                  <span className="min-w-0 truncate">{a.title}</span>{" "}
+                  <span className="min-w-0 truncate">{keepWhole(a.title)}</span>{" "}
                   <span className="shrink-0 text-sm text-muted-foreground">
                     {a.kind}
                   </span>

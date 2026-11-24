@@ -1,6 +1,7 @@
 import { ChartTips } from "@/components/data/ChartTips";
 import { shortDate } from "@convex/lib/months";
 import { barEnds } from "@/lib/enforcement/actions";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Cloudera's case on one time line: DOJ's investigation and lawsuit, DOL's 180-day suspension, and the 24
@@ -71,7 +72,7 @@ export function ClouderaTrack({ lastPerm, today }: { lastPerm: string | null; to
         <div className="min-w-[640px]" role="group" aria-label={`Cloudera: DOJ's investigation from ${shortDate(c.investigationOpened)}, DOL's suspension from ${shortDate(c.suspended)}, no PERM filing until about ${shortDate(barEnd)}`}>
           {rows.map((r) => (
             <div key={r.label} className="grid grid-cols-[8.5rem_1fr] items-center border-b border-border/60">
-              <p className="pr-3 text-sm font-bold">{r.label}</p>{" "}
+              <p className="pr-3 text-sm font-bold">{keepWhole(r.label)}</p>{" "}
               <div className="relative h-14">
                 <span
                   data-tip={r.bar.tip}

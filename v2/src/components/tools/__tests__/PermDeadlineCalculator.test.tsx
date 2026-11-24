@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { PermDeadlineCalculator } from "../PermDeadlineCalculator";
 import { calculateFilingWindow } from "@/lib/perm";
+import { textContent } from "../../../../test-utils/text-content";
 
 /**
  * The deadline calculator is arithmetic on the central PERM model, and these
@@ -74,7 +75,7 @@ describe("PermDeadlineCalculator", () => {
     setDate(/first recruitment step/i, "2026-02-01"); // inside validity; first + 180 = 2026-07-31
     // Karl Storz (BALCA en banc, 2011): begun inside validity, the expiry no
     // longer limits the filing, so the close is first + 180.
-    expect(screen.getByText(/ETA-9089 filing window closes/i)).toBeInTheDocument();
+    expect(screen.getByText(textContent(/ETA-9089 filing window closes/i))).toBeInTheDocument();
     expect(screen.getAllByText("July 31, 2026").length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText(/capped by the prevailing wage expiration/i)).not.toBeInTheDocument();
     expect(screen.getByText(/no longer limits the filing/i)).toBeInTheDocument();
@@ -84,7 +85,7 @@ describe("PermDeadlineCalculator", () => {
     render(<PermDeadlineCalculator />);
     setDate(/prevailing wage determination date/i, "2026-01-15"); // expires 2026-06-30
     setDate(/first recruitment step/i, "2026-01-10"); // before the determination; first + 180 = 2026-07-09
-    expect(screen.getByText(/ETA-9089 filing window closes/i)).toBeInTheDocument();
+    expect(screen.getByText(textContent(/ETA-9089 filing window closes/i))).toBeInTheDocument();
     expect(screen.getAllByText("June 30, 2026").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/capped by the prevailing wage expiration/i)).toBeInTheDocument();
   });
@@ -105,8 +106,8 @@ describe("PermDeadlineCalculator", () => {
     setDate(/first recruitment step/i, "2026-03-10");
     setDate(/last recruitment step/i, "2026-02-01"); // before the first
     expect(screen.getByRole("alert")).toHaveTextContent(/last recruitment step is before the first/i);
-    expect(screen.queryByText(/ETA-9089 filing window opens/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/ETA-9089 filing window closes/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(textContent(/ETA-9089 filing window opens/i))).not.toBeInTheDocument();
+    expect(screen.queryByText(textContent(/ETA-9089 filing window closes/i))).not.toBeInTheDocument();
   });
 
   it("warns when recruitment begins after the determination expires", () => {
@@ -175,7 +176,7 @@ describe("PermDeadlineCalculator", () => {
       setDate(/prevailing wage determination date/i, "2025-01-10");
       setDate(/first recruitment step/i, "2025-04-20");
       const note = screen.getByText(/expired during the 2025 shutdown/i);
-      const closes = screen.getByText(/ETA-9089 filing window closes/i);
+      const closes = screen.getByText(textContent(/ETA-9089 filing window closes/i));
       expect(
         note.compareDocumentPosition(closes) & Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();

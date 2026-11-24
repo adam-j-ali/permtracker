@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { pickI140Rows, ReportedI140ForCase } from "../ReportedI140ForCase";
 import type { I140Summary } from "@/lib/reportedSummary";
+import { textContent } from "../../../../../test-utils/text-content";
 
 const row = (category: string, premium: I140Summary["premium"], medianDays: number | null, decided = 30): I140Summary => ({
   category, premium, reported: decided + 10, decidedAllTime: decided + 20, windowDays: 183, decided,
@@ -49,7 +50,7 @@ describe("ReportedI140ForCase", () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);
     render(<ReportedI140ForCase premium filedOn="2026-01-01" />);
-    expect(screen.getByText(/Add the I-140's category/)).toBeInTheDocument();
+    expect(screen.getByText(textContent(/Add the I-140's category/))).toBeInTheDocument();
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 

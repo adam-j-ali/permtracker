@@ -30,6 +30,7 @@ import type { PolicyNotice } from "@/lib/db/policyNotices";
 
 import { dayLabel } from "./format";
 import { Badge } from "@/components/ui/badge";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * One document, collapsed to what a reader decides on: the stage, the day,
@@ -177,7 +178,7 @@ export function DocRow({
               </span>
             ) : null}
           </span>{" "}
-          <h3 className="mt-2 font-heading text-lg font-bold leading-snug">{doc.title}</h3>{" "}
+          <h3 className="mt-2 font-heading text-lg font-bold leading-snug">{keepWhole(doc.title)}</h3>{" "}
           {line ? <span className="mt-1.5 block font-heading text-base font-bold">{line}</span> : null}{" "}
           {posted ? <span className="mt-1 block font-mono text-sm tabular-nums text-soft">{posted}</span> : null}
         </span>{" "}

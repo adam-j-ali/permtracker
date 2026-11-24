@@ -24,6 +24,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { getDatasetSchema } from "@/lib/structuredData";
 import { longDate } from "@convex/lib/months";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * O*NET's Bright Outlook jobs (projected to grow fast, with many openings, or new and emerging) beside the PERM
@@ -99,7 +100,7 @@ function money(v: number | null): string {
 function jobName(j: BrightJob, className = "link py-[10px] sm:py-0") {
   return j.permSlug ? (
     <Link href={`/perm-wages/${j.permSlug}`} className={className}>
-      {j.title}
+      {keepWhole(j.title)}
     </Link>
   ) : (
     j.title
@@ -150,8 +151,11 @@ export default async function Page() {
       <header className="max-w-3xl">
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Fast-growing jobs that get sponsored</h1>{" "}
         <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-          O*NET marks a job Bright Outlook when it&apos;s projected to grow fast, to have many openings, or is new and emerging.
-          Here each one sits beside the PERM cases DOL decided for it and the H-1B LCAs employers filed.
+          <KeepWhole>
+            {"O*NET marks a job Bright Outlook when it's projected to grow fast, to have many openings, or is new " +
+              "and emerging. Here each one sits beside the PERM cases DOL decided for it and the H-1B LCAs " +
+              "employers filed."}
+          </KeepWhole>
         </p>
       </header>{" "}
       {jobs.length > 0 ? (
@@ -233,7 +237,10 @@ export default async function Page() {
               <ScrollBox label="Every Bright Outlook job" className="border-2 border-border">
                 <table className="w-full min-w-[56rem] border-collapse text-left text-sm">
                   <caption className="sr-only">
-                    Every Bright Outlook job with its projected growth, openings, median pay, PERM cases and H-1B LCAs{" "}
+                    <KeepWhole>
+                      {"Every Bright Outlook job with its projected growth, openings, median pay, PERM cases and " +
+                        "H-1B LCAs"}
+                    </KeepWhole>{" "}
                   </caption>
                   <thead>
                     <tr className="border-b-2 border-border">
@@ -244,7 +251,7 @@ export default async function Page() {
                       <th scope="col" className="p-2.5 text-right font-semibold">Median pay{" "}</th>
                       <th scope="col" className="p-2.5 text-right font-semibold">PERM cases{" "}</th>
                       <th scope="col" className="p-2.5 text-right font-semibold">Certified{" "}</th>
-                      <th scope="col" className="p-2.5 text-right font-semibold">H-1B LCAs{" "}</th>
+                      <th scope="col" className="p-2.5 text-right font-semibold"><KeepWhole>{"H-1B LCAs"}</KeepWhole>{" "}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -288,8 +295,7 @@ export default async function Page() {
           O*NET marks occupations, some of them detailed jobs inside a code (15-1299.08 inside 15-1299). DOL&apos;s files record
           the 7-digit code, so each row is the code. Where O*NET marks only the detailed jobs inside a code, the row names those jobs.
           Growth, openings and median pay are BLS&apos;s 2025-35 projections for the code. PERM cases are every decided case
-          under the code {span}, every job title together. The certified share needs 30 certified or denied. H-1B LCAs are
-          certified LCAs since October 2019 under the code, for codes with {lcaFloor ?? 30} or more.
+          under the code {span}<KeepWhole>{", every job title together. The certified share needs 30 certified or denied. H-1B LCAs are certified LCAs since October 2019 under the code, for codes with "}</KeepWhole>{lcaFloor ?? 30} or more.
         </p>
       </FinePrint>{" "}
       <OnetCredit version={onet.version} note="Bright Outlook occupations grouped by SOC code" className="mt-6" compact />{" "}
@@ -301,10 +307,10 @@ export default async function Page() {
           Find a SOC code
         </Link>{" "}
         <Link href="/lca-wages" className="link inline-flex min-h-11 items-center">
-          H-1B salaries
+          <KeepWhole>{"H-1B salaries"}</KeepWhole>
         </Link>{" "}
         <Link href="/h1b-employers" className="link inline-flex min-h-11 items-center">
-          Top H-1B employers
+          <KeepWhole>{"Top H-1B employers"}</KeepWhole>
         </Link>
       </nav>{" "}
       <DataProvenance datasets={["onet", "bls-projections", "perm-cases", "lca-disclosure"]} />

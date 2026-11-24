@@ -25,6 +25,7 @@ import { useCardMutations } from "./useCardMutations";
 import { CaseBadges, CaseDates } from "./CaseCardParts";
 import { LiveStatusChip } from "./LiveStatusChip";
 import { DeadlineCountdown } from "./DeadlineCountdown";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 interface CaseCardProps {
   case: CaseCardData;
@@ -67,7 +68,7 @@ export const CaseCard = memo(function CaseCard({
       </span>{" "}
       {/* The folder's tab, in its stage's colour, so a row of folders reads
           by stage at a glance. */}
-      <span className={cn("manila-tab", stage.fill, stage.onFill)}>{stage.label}</span>
+      <span className={cn("manila-tab", stage.fill, stage.onFill)}>{keepWhole(stage.label)}</span>
       <div className="flex flex-1 flex-col gap-3 p-5 pt-4">
         {/* The controls sit in the corner, beside the name, not on a row of their own. */}
         <div className="absolute right-2 top-2 z-10 flex items-center gap-2">

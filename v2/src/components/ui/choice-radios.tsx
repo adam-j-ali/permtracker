@@ -2,6 +2,7 @@ import { Fragment, useId, type ReactNode } from "react";
 
 import { choiceVariants } from "@/components/ui/choice";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * ChoiceRow's look for a plain GET form that has to work before any script runs
@@ -46,7 +47,7 @@ export function ChoiceRadios({
                 defaultChecked={o.value === defaultValue}
                 className="sr-only"
               />
-              {o.label}
+              {keepWhole(o.label)}
             </label>{" "}
           </Fragment>
         ))}

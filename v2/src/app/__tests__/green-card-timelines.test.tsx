@@ -14,6 +14,7 @@ import { getUscisPosted } from "@/lib/db/uscisPosted";
 import type { ReportedSummary, StepFigure } from "@/lib/reportedSummary";
 import { BOARD_OPENS_AT, OFFICE_LIST_OPENS_AT, computeMetrics, summarizeRfes, toBoardRow, whoIsWaiting, type TimelineRecord } from "@/lib/communityTimeline";
 import Page from "../(site)/(public)/green-card-timelines/page";
+import { htmlText } from "../../../test-utils/text-content";
 
 /**
  * The public board page. What must hold: nothing that identifies a case
@@ -132,7 +133,7 @@ describe("/green-card-timelines", () => {
     const out = await html();
     expect(out).toContain('href="/i485-by-field-office/hartford-connecticut#timelines"');
     expect(out).toMatch(/By USCIS office:.*Hartford/s);
-    expect(out).toContain("I-485 at Hartford");
+    expect(htmlText(out)).toContain("I-485 at Hartford");
     expect(out).toContain(`which opens at ${OFFICE_LIST_OPENS_AT} shared timelines from that office`);
   });
 

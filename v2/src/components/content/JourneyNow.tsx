@@ -12,6 +12,7 @@ import { calculateGreenCardFees, FEE_SCHEDULE } from "@/lib/perm";
 import { cn } from "@/lib/utils";
 import { longDate } from "@convex/lib/months";
 import { easternDay } from "@convex/lib/time";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /** The bulletin wait's share of the strip: it has no length to scale, so it takes a fixed share and says why. */
 const VISA_SHARE = 16;
@@ -96,7 +97,7 @@ export async function JourneyNow() {
                   <Link href={STEP_HREF[s.key]} className="link inline-flex min-h-11 items-center gap-1 font-heading text-lg font-bold sm:min-h-0">
                     {s.name} <ArrowRightIcon aria-hidden="true" weight="bold" className="size-4" />
                   </Link>{" "}
-                  <span className="block text-sm text-soft">{s.who}</span>
+                  <span className="block text-sm text-soft">{keepWhole(s.who)}</span>
                 </span>
               </div>{" "}
               {/* Length and fee side by side on a phone, their own columns from sm. Blocks, not paragraphs: an

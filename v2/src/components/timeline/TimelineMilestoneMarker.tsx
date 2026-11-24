@@ -18,6 +18,7 @@ import { formatISODate } from "@/lib/utils/date";
 import { clampPosition } from "@/lib/timeline/positioning";
 import { Z_INDEX } from "@/lib/timeline/constants";
 import { STAGE_ON_FILL, type Milestone } from "@/lib/timeline/types";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // ============================================================================
 // Types
@@ -155,7 +156,7 @@ export function TimelineMilestoneMarker({
             <div className="space-y-1">
               {all.map((m) => (
                 <div key={`${m.field}-${m.date}`}>
-                  <div className="font-semibold">{m.label}</div>
+                  <div className="font-semibold">{keepWhole(m.label)}</div>
                   <div className="text-sm opacity-80">{formatISODate(m.date)}</div>
                 </div>
               ))}

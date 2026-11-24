@@ -39,6 +39,7 @@ import { REPORTED_PLACES } from "@/lib/reportedCases";
 import { stepTrend, windowText, type ReportedSummary } from "@/lib/reportedSummary";
 import { StepBothSources } from "@/components/community/StepBothSources";
 import { DataProvenance } from "@/components/data/DataProvenance";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Green card timelines, as the people waiting report them.
@@ -201,8 +202,10 @@ export default async function GreenCardTimelinesPage() {
             Add yours
           </h2>{" "}
           <p className="text-base leading-relaxed text-soft">
-            Waiting on an I-140 or an I-485? Add your dates. It takes a minute, with no account and no case number, and
-            we check each timeline before it counts.
+            <KeepWhole>
+              {"Waiting on an I-140 or an I-485? Add your dates. It takes a minute, with no account and no case " +
+                "number, and we check each timeline before it counts."}
+            </KeepWhole>
           </p>{" "}
           <ShareTimeline
             sharePath="/green-card-timelines"
@@ -262,7 +265,7 @@ export default async function GreenCardTimelinesPage() {
                 <p className="mt-6 max-w-3xl text-base leading-relaxed">
                   What each step means, and what to do while you wait:{" "}
                   <Link href="/guides/i485-timeline-each-step" className="link font-bold">
-                    the I-485 timeline
+                    <KeepWhole>{"the I-485 timeline"}</KeepWhole>
                   </Link>
                   ,{" "}
                   <Link href="/guides/i485-transferred-to-field-office" className="link font-bold">
@@ -471,10 +474,10 @@ export default async function GreenCardTimelinesPage() {
             <Link href="/visa-bulletin" className="font-bold link">
               visa bulletin
             </Link>
-            , which decides when an I-485 can be filed at all.
+            <KeepWhole>{", which decides when an I-485 can be filed at all."}</KeepWhole>
           </p>{" "}
           <p>
-            <b>Premium and regular I-140s are kept apart</b>, because a median across both describes neither. A
+            <b><KeepWhole>{"Premium and regular I-140s are kept apart"}</KeepWhole></b>, because a median across both describes neither. A
             timeline that doesn&apos;t say is left out of both.
           </p>
         </div>

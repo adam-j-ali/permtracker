@@ -4,6 +4,7 @@ import { CaretRightIcon } from "@phosphor-icons/react/ssr";
 import { FinePrint } from "@/components/data/FinePrint";
 import { formatInt } from "@/lib/format";
 import type { WhdCase, WhdSummary } from "@/lib/db/whd";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * An employer's Wage and Hour Division cases, on its own page: the totals first, the newest cases folded under them.
@@ -116,7 +117,7 @@ export function WageHourCases({
                 {c.city || c.state ? `, ${[c.city, c.state].filter(Boolean).join(", ")}` : ""}: {caseLine(c)}{" "}
                 {c.visa.map((v) => (
                   <span key={v.program} className="block">
-                    {v.program}: {plural(v.violations, "violation")}
+                    {keepWhole(v.program)}: {plural(v.violations, "violation")}
                     {v.backWages > 0 ? `, ${money(v.backWages)} to ${plural(v.workers, "worker")}` : ""}
                     {v.penalties > 0 ? `, ${money(v.penalties)} in penalties` : ""}.{" "}
                   </span>

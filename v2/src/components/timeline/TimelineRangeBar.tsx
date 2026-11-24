@@ -15,6 +15,7 @@ import { formatISODate } from "@/lib/utils/date";
 import { clampPosition } from "@/lib/timeline/positioning";
 import { Z_INDEX } from "@/lib/timeline/constants";
 import type { RangeBar } from "@/lib/timeline/types";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // ============================================================================
 // Types
@@ -123,7 +124,7 @@ export function TimelineRangeBar({
             "border-foreground border"
           )}
         >
-          <div className="font-semibold">{rangeBar.label}</div>
+          <div className="font-semibold">{keepWhole(rangeBar.label)}</div>
           <div className="text-sm opacity-80">
             {formatISODate(rangeBar.startDate)} - {formatISODate(rangeBar.endDate)}
           </div>

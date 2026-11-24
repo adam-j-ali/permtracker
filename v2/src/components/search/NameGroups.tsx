@@ -8,6 +8,7 @@ import { rankFuzzy } from "@/lib/fuzzy";
 import { staticIndex } from "@/lib/search/siteIndex";
 import type { NameSuggestion, SuggestKind } from "@/lib/search/suggestTypes";
 import { formatInt } from "@/lib/format";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The pages a name search can also mean, grouped beside the filings it found:
@@ -47,7 +48,7 @@ export function NameGroups({ query, enabled }: { query: string; enabled: boolean
       <div className="mt-3 grid gap-x-8 gap-y-4 sm:grid-cols-3 [&>*]:min-w-0">
         {byKind.map((g) => (
           <div key={g.kind}>
-            <h3 className="text-sm font-semibold text-muted-foreground">{g.heading}</h3>{" "}
+            <h3 className="text-sm font-semibold text-muted-foreground">{keepWhole(g.heading)}</h3>{" "}
             <ul className="mt-1">
               {g.rows.map((s) => (
                 <li key={s.href}>
@@ -83,7 +84,7 @@ export function PageMatches({ query }: { query: string }) {
         {hits.map(({ item }) => (
           <li key={item.href}>
             <Link href={item.href} className={LINK}>
-              {item.label}
+              {keepWhole(item.label)}
             </Link>
           </li>
         ))}

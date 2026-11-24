@@ -7,6 +7,7 @@ import { nivClass, RANKED_CLASSES, rankPosts, type RankedClass } from "@/lib/con
 import { classesByPost, nivSummary } from "@/lib/db/nivIssuances";
 import { monthName } from "@/lib/db/visaIssuances";
 import { formatInt } from "@/lib/format";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The consulates that issued the most H-1B, L-1 and K-1 fiancé(e) visas in State's newest month,
@@ -64,7 +65,7 @@ export async function NivByPost({ pages, className }: { pages: ReadonlyMap<strin
       panel: rows.length ? (
         <>
           <p className="mb-4 text-base text-muted-foreground">
-            {formatInt(total)} {TAB_LABEL[cls]} visas worldwide in {monthName(month)}: {nivClass(cls).what}
+            {formatInt(total)} {TAB_LABEL[cls]} visas worldwide in {monthName(month)}: {keepWhole(nivClass(cls).what)}
             {cls === "K1" ? " of a U.S. citizen" : ""}.
           </p>{" "}
           <BarRows inline rows={rows} label={`${TAB_LABEL[cls]} visas issued by consulate, ${monthName(month)}`} />

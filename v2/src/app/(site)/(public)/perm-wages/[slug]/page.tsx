@@ -73,6 +73,7 @@ import { ChapterNav, type ChapterItem } from "@/components/entities/Chapters";
 import { getPwdLinks } from "@/lib/db/pwdLinks";
 import { PwdToPerm } from "@/components/entities/PwdToPerm";
 import { softFail } from "@/lib/softRead";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * THIRTY DAYS, AND THE REASON IS THE SOURCE'S CADENCE.
@@ -593,7 +594,7 @@ export default async function OccupationPage({
           </li>{" "}
           <li>
             <Link href={caseSearchHref({ occupation: row.slug })} className="link">
-              Every filing for it, PERM, wage requests and H-1B, case by case
+              <KeepWhole>{"Every filing for it, PERM, wage requests and H-1B, case by case"}</KeepWhole>
             </Link>{" "}
           </li>
         </ul>
@@ -668,8 +669,7 @@ export default async function OccupationPage({
         <Chapter id="h1b" title="The same job on H-1B">
         <section className="mt-6 bg-tint p-6 sm:p-8 border-2 shadow-hard border-border">
           <p className="max-w-3xl text-base leading-relaxed text-soft">
-            <span className="font-heading text-2xl font-bold tabular-nums">{formatInt(h1b.n)}</span> certified H-1B
-            labor condition applications for this occupation since FY2020
+            <span className="font-heading text-2xl font-bold tabular-nums">{formatInt(h1b.n)}</span><KeepWhole>{" certified H-1B labor condition applications for this occupation since FY2020"}</KeepWhole>
             {h1b.p50 != null ? `, offering a median of ${formatDollars(h1b.p50)} a year` : ""}
             {h1b.p25 != null && h1b.p75 != null
               ? `; the middle half ran ${formatDollars(h1b.p25)} to ${formatDollars(h1b.p75)}`

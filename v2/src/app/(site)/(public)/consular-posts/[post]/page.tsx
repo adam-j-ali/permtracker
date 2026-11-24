@@ -39,6 +39,7 @@ import { consularDescription } from "@/lib/consular/describe";
 import { fitTitle, metadataTitle } from "@/lib/pageTitle";
 import { withSocialCard } from "@/lib/socialCard";
 import { longDate, monthTick, shiftMonth, shortDate } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export const revalidate = 86400;
 
@@ -342,7 +343,7 @@ function EmbassyNoticeList({ data }: { data: EmbassyNotices }) {
               <li key={n.url} className="py-4">
                 <p className="text-sm font-semibold tabular-nums text-muted-foreground">{longDate(n.day) ?? n.day}</p>{" "}
                 <a href={n.url} target="_blank" rel="noopener noreferrer" className="link inline-flex min-h-11 items-center font-heading text-lg font-bold">
-                  {n.title}
+                  {keepWhole(n.title)}
                 </a>{" "}
                 {n.excerpt ? <p className="mt-1 max-w-3xl text-base leading-relaxed">{shortExcerpt(n.excerpt)}</p> : null}
               </li>

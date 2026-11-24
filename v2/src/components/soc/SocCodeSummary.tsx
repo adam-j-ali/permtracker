@@ -10,6 +10,7 @@ import { MIN_DECIDED_FOR_MEDIAN, MIN_DECIDED_FOR_RATE } from "@/lib/entityPayloa
 import { formatDollars, formatInt, formatShareOf } from "@/lib/format";
 import type { SocProfile } from "@/lib/socProfile";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /** How many of the code's filed titles the card draws. */
 const TITLES_SHOWN = 3;
@@ -41,7 +42,7 @@ export function SocCodeSummary({
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b-2 border-border px-4 py-3">
         <p className="min-w-0 font-heading text-lg font-bold leading-snug">
           <span className="mr-2 whitespace-nowrap font-mono text-base">{profile.soc}</span>{" "}
-          {profile.title}
+          {keepWhole(profile.title)}
         </p>{" "}
         {profile.zoneLabel ? (
           <p className="text-sm text-soft" title={profile.zoneName ?? undefined}>
@@ -113,7 +114,7 @@ export function SocCodeBrief({ profile, className }: { profile: SocProfile; clas
   return (
     <div aria-label={`SOC code ${profile.soc}`} role="group" className={cn("space-y-1 border-l-2 border-primary pl-3 text-sm leading-relaxed", className)}>
       <p>
-        <span className="font-mono font-semibold">{profile.soc}</span> <span className="font-semibold">{profile.title}</span>
+        <span className="font-mono font-semibold">{profile.soc}</span> <span className="font-semibold">{keepWhole(profile.title)}</span>
         {profile.zoneLabel ? (
           <span className="text-soft" title={profile.zoneName ?? undefined}>
             {" "}
@@ -146,7 +147,7 @@ export function SocCodeBrief({ profile, className }: { profile: SocProfile; clas
           Employers file it as{" "}
           {titles.map((t, i) => (
             <span key={t.title}>
-              <span className="text-foreground">{t.title}</span> ({share(t.filings)}){i < titles.length - 1 ? ", " : ""}
+              <span className="text-foreground">{keepWhole(t.title)}</span> ({share(t.filings)}){i < titles.length - 1 ? ", " : ""}
             </span>
           ))}
           .

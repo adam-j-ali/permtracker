@@ -10,6 +10,7 @@ import { formatInt } from "@/lib/format";
 import { federalHolidayName } from "@/lib/perm";
 import { cn } from "@/lib/utils";
 import { monthDay, weekdayName } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * PERM decisions and wage determinations, side by side: the newest week of each against the week before, then a row
@@ -136,7 +137,7 @@ export function DolDaysBoard({
       ) : more ? (
         <p className="mt-3 text-base">
           <Link href={more.href} className="link inline-flex min-h-11 items-center">
-            {more.label}
+            {keepWhole(more.label)}
           </Link>
         </p>
       ) : null}

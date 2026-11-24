@@ -15,6 +15,7 @@ import { forgetLink, keepLink, keptLink } from "@/lib/reviews/keptLink";
 import { useFormDomSync } from "@/hooks/useFormDomSync";
 import { cn } from "@/lib/utils";
 import { NOTE_MAX, REVIEW_NAME_MAX, REVIEW_TEXT_MAX, type ReviewField } from "@convex/lib/siteReview";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The site's review form, kept to the least a person has to do (the owner's call, Oct 23 2026): tap the stars, write something if they want, a name, an email if they
@@ -280,7 +281,7 @@ export function ReviewForm() {
         </div>{" "}
         {/* Focus lands on the heading, so a screen reader starts with it and reads on. */}
         <h2 ref={thanks} tabIndex={-1} className="mt-6 font-heading text-3xl font-bold outline-none">
-          {words.title}
+          {keepWhole(words.title)}
         </h2>{" "}
         <p className="mt-3 text-lg leading-relaxed text-soft">{words.body}</p>{" "}
         {words.ask && sent.reviewId && sent.noteToken ? (

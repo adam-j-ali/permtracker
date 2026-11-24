@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import type { StageCohort } from "@/lib/db/rfi";
 import { GROUP_STYLE, stageMeta } from "./stageMeta";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Which filing months are holding each review stage right now.
@@ -244,7 +245,7 @@ export function StageCohortsTable({
             <th className="py-2 pr-3 text-right font-bold">Cases filed{" "} </th>
             {rows.map((r) => (
               <th key={r.status} className="py-2 pr-3 text-right font-bold">
-                {stageMeta(r.status).label}{" "}
+                {keepWhole(stageMeta(r.status).label)}{" "}
               </th>
             ))}
           </tr>

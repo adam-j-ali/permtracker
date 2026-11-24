@@ -11,6 +11,7 @@ import { monthYear } from "@convex/lib/months";
 
 import { dayLabel, rangeLabel } from "./format";
 import { NumberBox } from "./NumberBox";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface BulletinControls {
   method: BulletinMethod;
@@ -115,7 +116,7 @@ export function BulletinNote({
                   aria-hidden="true"
                   className={cn("size-3.5 shrink-0 rounded-full border-2", chosen ? "border-foreground bg-primary" : "border-input bg-background")}
                 />{" "}
-                <span>{o.title}</span>{" "}
+                <span>{keepWhole(o.title)}</span>{" "}
                 {chosen ? <span className="ml-auto border-2 border-foreground bg-primary px-2 py-0.5 text-sm font-semibold text-black">In your plan</span> : null}
               </span>{" "}
               {o.reach ? (

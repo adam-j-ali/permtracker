@@ -6,6 +6,7 @@ import type { ReportedOverview as Overview } from "@/lib/db/communityReports";
 import { formatInt } from "@/lib/format";
 import { shortSourceName } from "@/lib/reportedCases";
 import { officeByCode, officeHref } from "@/lib/uscisOffices";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Every case people reported, from every source, at a glance (the merged list, src/lib/reportedCases.ts): how many
@@ -66,7 +67,7 @@ export function ReportedOverview({ overview }: { overview: Overview | null }) {
             ))}
             <li>
               <Link href="/uscis-processing-times/i-140#reported" className="link inline-flex min-h-11 items-center">
-                {`I-140s: ${formatInt(overview.i140s)} ${overview.i140s === 1 ? "case" : "cases"}, by category and premium processing`}
+                <KeepWhole>{`I-140s: ${formatInt(overview.i140s)} ${overview.i140s === 1 ? "case" : "cases"}, by category and premium processing`}</KeepWhole>
               </Link>{" "}
             </li>
           </ul>

@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { formatInt } from "@/lib/format";
 import { longDate } from "@convex/lib/months";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * What USCIS decided on one employer's H-1B petitions, year by year, from its
@@ -52,12 +53,12 @@ export function UscisH1bRecord({
 
   return (
     <section className={cn("mt-10 border-2 shadow-hard p-6 sm:p-8 bg-card border-border", className)}>
-      <h2 className="font-heading text-xl font-bold">What USCIS decided on its H-1B petitions</h2>{" "}
+      <h2 className="font-heading text-xl font-bold"><KeepWhole>{"What USCIS decided on its H-1B petitions"}</KeepWhole></h2>{" "}
       <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
         Workers approved and denied on USCIS&apos;s first decision, FY{first} to FY{newest.fy}
         {throughLabel && through && through < `${newest.fy}-09-30` ? ` (through ${throughLabel})` : ""}, from{" "}
         <a target="_blank" href={USCIS_H1B_HUB} rel="noopener noreferrer" className="link">
-          USCIS&apos;s H-1B Employer Data Hub
+          <KeepWhole>{"USCIS's H-1B Employer Data Hub"}</KeepWhole>
         </a>
         .
       </p>
@@ -135,7 +136,7 @@ export function UscisH1bRecord({
               <Fragment key={k.key}>
                 {" "}
                 <li>
-                  <b className="font-bold">{k.label}.</b> {k.meaning}
+                  <b className="font-bold">{keepWhole(k.label)}.</b> {k.meaning}
                 </li>
               </Fragment>
             ))}

@@ -34,6 +34,7 @@ import { AnalyticsSwitch } from "./AnalyticsSwitch";
 import { NOT_LEGAL_SERVICES } from "@/lib/constants/about";
 import { SOCIAL_LINKS } from "@/lib/constants/externalLinks";
 import { APP_FOOTER, FOOTER_COLUMNS, FOOTER_LEGAL } from "@/lib/siteMap";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 const SOCIAL_ICONS = {
   twitter: XLogoIcon,
@@ -110,7 +111,7 @@ export default function Footer({ audience = "public" }: { audience?: "public" | 
           </div>{" "}
           {FOOTER_COLUMNS.map((col) => (
             <nav key={col.title} aria-label={col.title}>
-              <p className="font-heading text-base font-bold text-foreground">{col.title}</p>{" "}
+              <p className="font-heading text-base font-bold text-foreground">{keepWhole(col.title)}</p>{" "}
               <ul className="mt-2">
                 {col.pages.map((p) => (
                   <li key={p.href}>

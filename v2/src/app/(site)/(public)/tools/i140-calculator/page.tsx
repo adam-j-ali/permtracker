@@ -16,6 +16,7 @@ import { i140Lead } from "@/lib/processing-times/i140ProcessingTimes";
 import { withSocialCard } from "@/lib/socialCard";
 import { buttonVariants } from "@/components/ui/button";
 import { StepBothSources } from "@/components/community/StepBothSources";
+import { KeepWhole } from "@/components/ui/keep-whole";
 /**
  * I-140 queue calculator.
  *
@@ -94,7 +95,7 @@ export default async function I140CalculatorPage() {
 
       <header>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">
-          I-140 queue calculator
+          <KeepWhole>{"I-140 queue calculator"}</KeepWhole>
         </h1>{" "}
         {/* The answer to "I-140 processing time" first, from USCIS's own figures. */}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
@@ -136,10 +137,12 @@ export default async function I140CalculatorPage() {
         </p>{" "}
         <ol className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3 [&>*]:min-w-0">
           <li className="bg-tint p-5 border-2 border-border">
-            <p className="font-heading text-lg font-bold">The H-1B six years are running out</p>{" "}
+            <p className="font-heading text-lg font-bold"><KeepWhole>{"The H-1B six years are running out"}</KeepWhole></p>{" "}
             <p className="mt-2 text-base leading-relaxed text-soft">
-              An approved I-140 is what lets H-1B status continue past six years, in steps of up to three years, when no
-              visa number is available (8 CFR 214.2(h)(13)(iii)(E)).{" "}
+              <KeepWhole>
+                {"An approved I-140 is what lets H-1B status continue past six years, in steps of up to three " +
+                  "years, when no visa number is available (8 CFR 214.2(h)(13)(iii)(E))."}
+              </KeepWhole>{" "}
               <Link href="/tools/h1b-six-year-limit" className="link">
                 Work out the date
               </Link>
@@ -148,9 +151,11 @@ export default async function I140CalculatorPage() {
           <li className="bg-tint p-5 border-2 border-border">
             <p className="font-heading text-lg font-bold">The worker might change jobs</p>{" "}
             <p className="mt-2 text-base leading-relaxed text-soft">
-              After 180 days of approval, the employer withdrawing the I-140 doesn&apos;t undo it (8 CFR
-              205.1(a)(3)(iii)(C)), and the priority date carries to a new petition (8 CFR 204.5(e)). Premium
-              processing starts that clock sooner.{" "}
+              <KeepWhole>
+                {"After 180 days of approval, the employer withdrawing the I-140 doesn't undo it (8 CFR " +
+                  "205.1(a)(3)(iii)(C)), and the priority date carries to a new petition (8 CFR 204.5(e)). Premium " +
+                  "processing starts that clock sooner."}
+              </KeepWhole>{" "}
               <Link href="/tools/priority-date-retention" className="link">
                 Check a priority date
               </Link>
@@ -159,8 +164,10 @@ export default async function I140CalculatorPage() {
           <li className="bg-tint p-5 border-2 border-border">
             <p className="font-heading text-lg font-bold">The priority date is about to be current</p>{" "}
             <p className="mt-2 text-base leading-relaxed text-soft">
-              If the bulletin reaches the date before a regular I-140 would be decided, premium can be the difference
-              between filing the green card application this month or later.{" "}
+              <KeepWhole>
+                {"If the bulletin reaches the date before a regular I-140 would be decided, premium can be the " +
+                  "difference between filing the green card application this month or later."}
+              </KeepWhole>{" "}
               <Link href="/tools/priority-date-calculator" className="link">
                 Is it current?
               </Link>
@@ -168,8 +175,11 @@ export default async function I140CalculatorPage() {
           </li>
         </ol>{" "}
         <p className="mt-4 text-sm text-muted-foreground">
-          Otherwise, a priority date that&apos;s years from current gains little from a faster I-140. The fee is the one
-          in force since March 1, 2026 (91 FR 1059). This is general information. It isn&apos;t advice on a particular case.
+          <KeepWhole>
+            {"Otherwise, a priority date that's years from current gains little from a faster I-140. The fee is " +
+              "the one in force since March 1, 2026 (91 FR 1059). This is general information. It isn't advice on " +
+              "a particular case."}
+          </KeepWhole>
         </p>
       </section>
 
@@ -181,7 +191,7 @@ export default async function I140CalculatorPage() {
 
       <section className="mt-12 bg-tint p-6 sm:p-8 border-2 shadow-hard border-border">
         <h2 className="font-heading text-2xl font-bold">
-          The I-140 comes after the part you control
+          <KeepWhole>{"The I-140 comes after the part you control"}</KeepWhole>
         </h2>{" "}
         <p className="mt-3 leading-relaxed text-muted-foreground">
           A petition can only be filed once the labor certification is approved,

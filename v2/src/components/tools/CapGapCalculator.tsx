@@ -11,6 +11,7 @@ import { RuleNotes } from "@/components/tools/RuleNotes";
 import { formatInt } from "@/lib/format";
 import { calculateCapGap, calculateOptUnemployment } from "@/lib/perm";
 import { cn } from "@/lib/utils";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 const STEM_CHOICES = [
   { value: "no", label: "No: post-completion OPT" },
@@ -65,12 +66,12 @@ export function CapGapPart() {
           <p className="mt-1 text-sm text-muted-foreground">The end date on the EAD.</p>
         </div>{" "}
         <div>
-          <Label htmlFor={ids.start}>H-1B start asked for</Label>{" "}
+          <Label htmlFor={ids.start}><KeepWhole>{"H-1B start asked for"}</KeepWhole></Label>{" "}
           <DateInput id={ids.start} value={start} onChange={(e) => setStart(e.target.value)} className="mt-1.5" />{" "}
           <p className="mt-1 text-sm text-muted-foreground">Usually October 1.</p>
         </div>{" "}
         <div>
-          <Label htmlFor={ids.filed}>H-1B petition filed</Label>{" "}
+          <Label htmlFor={ids.filed}><KeepWhole>{"H-1B petition filed"}</KeepWhole></Label>{" "}
           <DateInput id={ids.filed} value={filed} onChange={(e) => setFiled(e.target.value)} className="mt-1.5" />
         </div>{" "}
         <div>
@@ -92,7 +93,7 @@ export function CapGapPart() {
       />{" "}
       {r ? (
         <div className="mt-4">
-          {!r.gap ? <Note>The OPT runs past the H-1B start, so there&apos;s no gap to bridge.</Note> : null}
+          {!r.gap ? <Note><KeepWhole>{"The OPT runs past the H-1B start, so there's no gap to bridge."}</KeepWhole></Note> : null}
           {!r.optValidAtFiling ? (
             <Note>
               The OPT had ended by the day the petition was filed. The rule extends the student&apos;s status and the OPT work

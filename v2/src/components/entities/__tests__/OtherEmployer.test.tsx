@@ -11,6 +11,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { OtherEmployerRecord } from "@/lib/db/otherEmployers";
 import type { SeasonalEmployerCase } from "@/lib/db/seasonalEmployers";
+import { wholeText } from "../../../../test-utils/text-content";
 
 // An async server component; its own test covers it.
 vi.mock("@/components/data/DataProvenance", () => ({ DataProvenance: () => null }));
@@ -133,7 +134,7 @@ describe("OtherEmployer", () => {
 
   it("says when the seasonal list is cut, and where the rest are", () => {
     page({}, true);
-    expect(screen.getByRole("heading", { name: "Its newest 2 H-2A, H-2B and CW-1 filings" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: wholeText("Its newest 2 H-2A, H-2B and CW-1 filings") })).toBeInTheDocument();
     const rest = screen.getByRole("link", { name: "Every seasonal filing under this name" });
     expect(rest.getAttribute("href")).toBe("/seasonal-cases?q=Shore%20Crabs%20LLC");
   });

@@ -23,6 +23,7 @@ import {
 import type { ValidationState } from "@/hooks/useDateFieldValidation";
 import { CharLimit } from "@/components/ui/char-limit";
 import { DolNumberFinder } from "@/components/forms/DolNumberFinder";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // ============================================================================
 // TYPES
@@ -494,7 +495,7 @@ export function ETA9089Section(props: ETA9089SectionProps) {
               }
             >
               {denialLine.late ? <WarningIcon aria-hidden className="mt-0.5 size-4 shrink-0" weight="bold" /> : null}
-              <p>{denialLine.text}</p>
+              <p>{keepWhole(denialLine.text)}</p>
             </div>
           ) : null}
         </div>

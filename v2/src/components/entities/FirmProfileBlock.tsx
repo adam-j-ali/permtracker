@@ -12,6 +12,7 @@ import { ArrowSquareOutIcon } from "@phosphor-icons/react/ssr";
 
 import { focusLabel } from "@/lib/firmProfile";
 import { US_STATE_NAMES } from "@/lib/usStateNames";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface PublishedFirmProfile {
   website?: string;
@@ -99,7 +100,7 @@ export function FirmProfileBlock({
         <p className="text-sm font-bold text-muted-foreground">In the firm&apos;s own words</p>
       </div>{" "}
       {profile.description ? (
-        <p className="mt-4 max-w-3xl whitespace-pre-line text-base leading-relaxed">{profile.description}</p>
+        <p className="mt-4 max-w-3xl whitespace-pre-line text-base leading-relaxed">{keepWhole(profile.description)}</p>
       ) : null}{" "}
       {rows.length > 0 ? (
         <dl className="mt-5 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-[max-content_1fr]">

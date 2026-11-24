@@ -14,6 +14,7 @@ import { getSponsorProfile } from "@/lib/db/sponsorIndex";
 import { partValue, type SponsorPart } from "@/lib/sponsorProfile";
 import { formatDollars, formatInt, formatPercent } from "@/lib/format";
 import { softFail } from "@/lib/softRead";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Two employers side by side.
@@ -163,7 +164,7 @@ export default async function CompareEmployersPage({
                   href={`/perm-employers/compare?a=${e.a}&b=${e.b}`}
                   className="inline-flex min-h-11 items-center border-2 border-dashed border-foreground/50 bg-background px-3 text-sm font-bold hover:border-solid hover:bg-sage"
                 >
-                  {e.label}
+                  {keepWhole(e.label)}
                 </Link>{" "}
               </Fragment>
             ))}
@@ -176,7 +177,7 @@ export default async function CompareEmployersPage({
                   key={r.label}
                   className="grid grid-cols-[minmax(0,1fr)_5rem_5rem] items-center gap-3 py-2 sm:grid-cols-[minmax(0,16rem)_8rem_8rem] [&>*]:min-w-0"
                 >
-                  <dt className="text-sm text-muted-foreground">{r.label}{" "}</dt>{" "}
+                  <dt className="text-sm text-muted-foreground">{keepWhole(r.label)}{" "}</dt>{" "}
                   <dd className="h-4 bg-sage" />{" "}
                   <dd className="h-4 bg-sage" />
                 </div>
@@ -214,8 +215,8 @@ export default async function CompareEmployersPage({
                 <Fragment key={r.label}>
                   <tr className="border-t-2 border-border align-top">
                     <th scope="row" className="px-4 py-3 text-left font-semibold">
-                      {r.label}{" "}
-                      {r.note ? <span className="block text-sm font-normal text-muted-foreground">{r.note}</span> : null}{" "}
+                      {keepWhole(r.label)}{" "}
+                      {r.note ? <span className="block text-sm font-normal text-muted-foreground">{keepWhole(r.note)}</span> : null}{" "}
                     </th>
                     <td className="px-4 py-3 font-heading font-bold">{r.value(left)}{" "} </td>
                     <td className="px-4 py-3 font-heading font-bold">{r.value(right)}{" "} </td>
@@ -246,22 +247,28 @@ export default async function CompareEmployersPage({
             Where your own case stands matters more than any figure above.
           </p>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-base leading-relaxed text-soft">
-            <li>Before the I-140 is approved, a move usually means a new PERM with the new employer.</li>{" "}
+            <li><KeepWhole>{"Before the I-140 is approved, a move usually means a new PERM with the new employer."}</KeepWhole></li>{" "}
             <li>
               Once it&apos;s approved, the priority date stays yours for a later employment-based petition. The
               exception is a revocation by USCIS for fraud or a willful misrepresentation, a revoked or invalidated
               labor certification, or a material error (8 CFR 204.5(e)).
             </li>{" "}
             <li>
-              If the old employer withdraws the I-140 180 days or more after approval, it stays approved (8 CFR
-              205.1(a)(3)(iii)(C)).
+              <KeepWhole>
+                {"If the old employer withdraws the I-140 180 days or more after approval, it stays approved (8 " +
+                  "CFR 205.1(a)(3)(iii)(C))."}
+              </KeepWhole>
             </li>{" "}
             <li>
-              An I-485 pending 180 days or more can move to a same or similar job (INA 204(j); 8 CFR 245.25).
+              <KeepWhole>
+                {"An I-485 pending 180 days or more can move to a same or similar job (INA 204(j); 8 CFR 245.25)."}
+              </KeepWhole>
             </li>{" "}
             <li>
-              In H-1B status, you can start with the new employer on the later of two dates: when it files a
-              nonfrivolous H-1B petition for you, or its requested start date (8 CFR 214.2(h)(2)(i)(H)).
+              <KeepWhole>
+                {"In H-1B status, you can start with the new employer on the later of two dates: when it files a " +
+                  "nonfrivolous H-1B petition for you, or its requested start date (8 CFR 214.2(h)(2)(i)(H))."}
+              </KeepWhole>
             </li>
           </ul>{" "}
           <p className="mt-3 text-base">
@@ -274,7 +281,7 @@ export default async function CompareEmployersPage({
             </Link>
             , or see{" "}
             <Link href="/tools/h1b-six-year-limit" className="link">
-              how H-1B time past six years works
+              <KeepWhole>{"how H-1B time past six years works"}</KeepWhole>
             </Link>
             .
           </p>

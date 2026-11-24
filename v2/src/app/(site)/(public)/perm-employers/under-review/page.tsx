@@ -34,6 +34,7 @@ import { formatInt, formatShare } from "@/lib/format";
 import { daysBetween } from "@/lib/time";
 import { caseSearchHref } from "@/lib/caseSearchPlan";
 import { entityHref } from "@/lib/entityPayload";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Employers by their PERM cases outside DOL's normal queue.
@@ -312,7 +313,7 @@ export default async function EmployersUnderReviewPage() {
                   <dd className="text-base leading-snug">
                     {hasStagePage(status) ? (
                       <Link href={`/perm-rfi-audit/${stageSlug(status)}`} className="link">
-                        {stageMeta(status).label}
+                        {keepWhole(stageMeta(status).label)}
                       </Link>
                     ) : (
                       stageMeta(status).label

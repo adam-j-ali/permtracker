@@ -154,6 +154,7 @@ import { FilingRows } from "@/components/entities/FilingRows";
 import { ROW_LINK } from "@/components/entities/caseRows";
 import { caseSearchHref } from "@/lib/caseSearchPlan";
 import { softFail } from "@/lib/softRead";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * THIRTY DAYS, AND THE REASON IS THE SOURCE'S CADENCE.
@@ -1297,7 +1298,7 @@ export default async function EmployerPage({
                     <>
                       The employers filing the most PERM cases for{" "}
                       <Link href={entityHref("occupation", similar.occupation.slug)} className="link">
-                        {similar.occupation.label}
+                        {keepWhole(similar.occupation.label)}
                       </Link>
                       , its main job.
                     </>

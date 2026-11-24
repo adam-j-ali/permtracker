@@ -8,6 +8,7 @@ import { longDate } from "@convex/lib/months";
 import { ProductShot } from "@/components/marketing/ProductShot";
 import { TOUR_SHOTS } from "@/components/marketing/tourShots";
 import { SignupPageClient } from "./SignupPageClient";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // Daily, the same window every data page uses, AND force-static. The (auth)
 // layout's Convex provider reads cookies, and one cookie read makes a route
@@ -134,7 +135,7 @@ export default async function SignupPage() {
               {figures.map((f) => (
                 <div key={f.label}>
                   <dt className="text-sm text-muted-foreground">
-                    {f.label}
+                    {keepWhole(f.label)}
                   </dt>{" "}
                   <dd className="mt-1 font-heading text-4xl font-bold leading-none">
                     {f.value}

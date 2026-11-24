@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowUpRightIcon } from "@phosphor-icons/react/ssr";
 
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 
 /**
@@ -48,7 +49,7 @@ export function ToolPageFooter({ reading }: ToolPageFooterProps) {
                 >
                   <span className="flex items-start justify-between gap-3">
                     <span className="font-heading text-base font-bold leading-tight group-hover:underline">
-                      {r.label}
+                      {keepWhole(r.label)}
                     </span>
                     <ArrowUpRightIcon
                       className="mt-0.5 h-4 w-4 shrink-0 text-primary-text motion-safe:group-hover:translate-x-0.5 motion-safe:group-hover:-translate-y-0.5 transition-[color,background-color,border-color,box-shadow,transform]"
@@ -56,7 +57,7 @@ export function ToolPageFooter({ reading }: ToolPageFooterProps) {
                     />
                   </span>{" "}
                   <span className="mt-1.5 text-base leading-relaxed text-soft">
-                    {r.note}
+                    {keepWhole(r.note)}
                   </span>
                 </Link>
               </li>

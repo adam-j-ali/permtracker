@@ -6,6 +6,7 @@ import { formatDollars, formatShareOf } from "@/lib/format";
 import type { CodeSummary } from "@/lib/db/reference";
 import { codeHref, type TitleCode } from "@/lib/socFinder";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * What each SOC code a title was filed under covers, side by side: O*NET's description, its three most
@@ -33,7 +34,7 @@ function Card({ code, summary, total, top, pay }: { code: TitleCode; summary: Co
           </span>
         </Link>
       </h3>{" "}
-      <p className="mt-3 text-base leading-relaxed">{summary.description}</p>{" "}
+      <p className="mt-3 text-base leading-relaxed">{keepWhole(summary.description)}</p>{" "}
       {summary.tasks.length ? (
         <>
           <p className="mt-4 text-sm font-bold text-muted-foreground">Main tasks</p>{" "}

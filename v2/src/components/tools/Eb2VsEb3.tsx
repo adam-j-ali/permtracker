@@ -14,6 +14,7 @@ import { LINE_COUNTRIES, LINE_COUNTRY_LABEL, type LineResult, type LineSnapshot 
 import { compareLines, plausibleRange, type Fewer } from "@/lib/greenCardLineCompare";
 import type { CountryKey } from "@/lib/perm";
 import { cn } from "@/lib/utils";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 const SELECT_CLASS =
   "mt-2 block min-h-[44px] w-full min-w-0 border-2 border-input bg-background px-3 py-2 text-base font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2";
@@ -103,8 +104,10 @@ export function Eb2VsEb3({ snapshot, defaultCountry = "india", className }: Eb2V
         // each with its cutoff and the people ahead, hatched.
         <div className="p-6 sm:p-8">
           <p className="text-base text-muted-foreground">
-            Pick a priority date and this sets EB-2 and EB-3 next to each other: what this month&apos;s bulletin prints
-            for each, and how many people stand ahead of you in each line.
+            <KeepWhole>
+              {"Pick a priority date and this sets EB-2 and EB-3 next to each other: what this month's bulletin " +
+                "prints for each, and how many people stand ahead of you in each line."}
+            </KeepWhole>
           </p>{" "}
           <div aria-hidden="true" className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
             {["EB-2", "EB-3"].map((line) => (
@@ -141,10 +144,12 @@ export function Eb2VsEb3({ snapshot, defaultCountry = "india", className }: Eb2V
             </summary>
             <div className="mt-3 max-w-3xl space-y-3 text-base leading-relaxed text-soft">
               <p>
-                A second I-140 in the other category can be filed on the same certified PERM when the job&apos;s
-                requirements support it, and it keeps the original priority date under 8 CFR 204.5(e).{" "}
+                <KeepWhole>
+                  {"A second I-140 in the other category can be filed on the same certified PERM when the job's " +
+                    "requirements support it, and it keeps the original priority date under 8 CFR 204.5(e)."}
+                </KeepWhole>{" "}
                 <Link href="/guides/eb2-vs-eb3-perm" className="link">
-                  EB-2 vs EB-3 on a PERM
+                  <KeepWhole>{"EB-2 vs EB-3 on a PERM"}</KeepWhole>
                 </Link>{" "}
                 covers what decides the category and what a downgrade keeps.
               </p>{" "}
@@ -161,8 +166,10 @@ export function Eb2VsEb3({ snapshot, defaultCountry = "india", className }: Eb2V
             <ul className="mt-3 list-disc space-y-2 pl-5 text-base leading-relaxed text-soft">
               <li>PERMs still at the Department of Labor with earlier priority dates.</li>{" "}
               <li>
-                People counted in both lines. Someone who downgraded holds an approved I-140 in each, and USCIS counts
-                every petition, so both counts run high by the same people.
+                <KeepWhole>
+                  {"People counted in both lines. Someone who downgraded holds an approved I-140 in each, and " +
+                    "USCIS counts every petition, so both counts run high by the same people."}
+                </KeepWhole>
               </li>{" "}
               <li>People who leave the line. Nobody publishes how many, so nobody is taken out.</li>{" "}
               <li>
@@ -344,8 +351,7 @@ function LineCard({
           {result.counted && result.counted.low > 0 ? (
             <p className="mt-2 text-base text-soft">
               USCIS counted at least{" "}
-              <b className="font-bold text-foreground tabular-nums">{result.counted.low.toLocaleString("en-US")}</b> of them
-              in its I-485 inventory.
+              <b className="font-bold text-foreground tabular-nums">{result.counted.low.toLocaleString("en-US")}</b><KeepWhole>{" of them in its I-485 inventory."}</KeepWhole>
             </p>
           ) : null}{" "}
           {result.check?.disagrees && result.check.scaled ? (

@@ -4,6 +4,7 @@ import { Fragment } from "react";
 
 import type { SortColumn, SortState } from "@/lib/tableSort";
 import { SortMark } from "@/components/ui/sort-mark";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The header row of a sortable table, on this site's inverted header bar.
@@ -68,7 +69,7 @@ export function SortableHeader<T>({
                     (active ? "underline" : "")
                   }
                 >
-                  {c.label}
+                  {keepWhole(c.label)}
                   <SortMark dir={active ? (sort.dir === 1 ? "asc" : "desc") : null} />
                 </button>{" "}
             </th>

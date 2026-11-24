@@ -6,6 +6,7 @@ import { CheckIcon, CopyIcon } from "@phosphor-icons/react";
 import { BADGE_THEMES, type BadgeStyle, type BadgeTheme } from "@/lib/badge";
 import { choiceVariants } from "@/components/ui/choice";
 import { buttonVariants } from "@/components/ui/button";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The catalogue: pick a shape, a theme and a snippet format once, and every
@@ -224,7 +225,7 @@ function MatrixGroup({
                             leaves out visible text fails WCAG 2.5.3. */}
                         {/* Our own string from the renderer; the trailing space
                             keeps one cell's words off the next. */}
-                        <span className="sr-only">{`${cell.label} `}</span>{" "}
+                        <span className="sr-only"><KeepWhole>{`${cell.label} `}</KeepWhole></span>{" "}
                         <span aria-hidden="true" className="contents" dangerouslySetInnerHTML={{ __html: `${cv.svg} ` }} />
                       </button>{" "}
                     </td>
@@ -236,7 +237,7 @@ function MatrixGroup({
         </table>
       </div>{" "}
       <div className="flex flex-col gap-2 border-t-2 border-border p-4 sm:flex-row sm:items-stretch [&>*]:min-w-0">
-        <p className="shrink-0 self-center font-heading text-base font-bold sm:w-40">{row.label}</p>{" "}
+        <p className="shrink-0 self-center font-heading text-base font-bold sm:w-40">{keepWhole(row.label)}</p>{" "}
         <pre
           role="region"
           aria-label={`${row.label} code`}
@@ -315,7 +316,7 @@ export function BadgeCatalogue({ rows, origin }: { rows: BadgeRow[]; origin: str
             <p className="font-heading text-sm font-bold">Snippet</p>{" "}
             <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Snippet format">
               {FORMATS.map((f) => (
-                <Chip key={f.id} active={format === f.id} onClick={() => setFormat(f.id)}>{f.label}</Chip>
+                <Chip key={f.id} active={format === f.id} onClick={() => setFormat(f.id)}>{keepWhole(f.label)}</Chip>
               ))}
             </div>{" "}
             {activeFormat ? <p className="mt-2 text-sm text-muted-foreground">Good for {activeFormat.hint}.</p> : null}
@@ -366,7 +367,7 @@ export function BadgeCatalogue({ rows, origin }: { rows: BadgeRow[]; origin: str
                       dangerouslySetInnerHTML={{ __html: `${v.svg} ` }}
                     />{" "}
                     <div className="flex flex-1 flex-col p-4">
-                      <p className="font-heading text-lg font-bold">{row.label}</p>{" "}
+                      <p className="font-heading text-lg font-bold">{keepWhole(row.label)}</p>{" "}
                       <p className="mt-1 text-sm leading-relaxed text-soft">{row.meaning}</p>{" "}
                       {substituted ? (
                         <p className="mt-2 text-sm text-muted-foreground">

@@ -24,6 +24,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { formatInt, formatShareOf } from "@/lib/format";
 import { codeHref, majorGroups } from "@/lib/socFinder";
 import { withSocialCard } from "@/lib/socialCard";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "SOC Code Lookup: Find a Job's Occupation Code";
 const DESCRIPTION =
@@ -99,7 +100,7 @@ export default async function SocCodesPage() {
             {top.map((p, i) => (
               <li key={p.slug} className={i >= 10 ? "hidden bg-card sm:block" : "bg-card"}>
                 <Link href={`/soc-codes/${p.slug}`} className="flex min-h-[44px] flex-col gap-0.5 p-4 hover:bg-sage">
-                  <span className="font-heading text-lg font-bold leading-snug">{p.title}</span>{" "}
+                  <span className="font-heading text-lg font-bold leading-snug">{keepWhole(p.title)}</span>{" "}
                   <span className="text-sm text-soft">
                     {p.topSoc ? (
                       <>
@@ -150,7 +151,7 @@ export default async function SocCodesPage() {
                     <li key={c.soc}>
                       <Link href={codeHref(c.soc, c.slug)} className="link inline-flex min-h-11 items-center">
                         <span>
-                          <span className="whitespace-nowrap font-mono text-sm">{c.soc}</span> {c.title}
+                          <span className="whitespace-nowrap font-mono text-sm">{c.soc}</span> {keepWhole(c.title)}
                         </span>
                       </Link>{" "}
                     </li>

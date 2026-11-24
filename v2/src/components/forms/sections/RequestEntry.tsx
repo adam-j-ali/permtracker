@@ -17,6 +17,7 @@ import type { ISODateString } from "@/lib/perm";
 import type { RequestKind } from "@/components/forms/CaseFormContext";
 import type { CaseFormData, RFIEntry, RFEEntry } from "@/lib/forms/case-form-schema";
 import { CharLimit } from "@/components/ui/char-limit";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 // ============================================================================
 // KINDS
@@ -318,7 +319,7 @@ function RequestEntryComponent({
       {/* ========== STATUS BADGES ========== */}
       <div className="mb-3 flex items-center justify-between gap-2">
         {isActive && (
-          <ToneBadge tone="bad">{`Active ${copy.label}`}</ToneBadge>
+          <ToneBadge tone="bad"><KeepWhole>{`Active ${copy.label}`}</KeepWhole></ToneBadge>
         )}
         {isCompleted && (
           <ToneBadge tone="good">Completed</ToneBadge>

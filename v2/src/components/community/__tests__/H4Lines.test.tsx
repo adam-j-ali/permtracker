@@ -7,6 +7,7 @@ import { officeByCode } from "@/lib/uscisOffices";
 
 import { OfficeTimelines } from "../OfficeTimelines";
 import { BoardTable, StageMedians, h4Text } from "../TimelineBoard";
+import { textContent } from "../../../../test-utils/text-content";
 
 /** A row's H-4 papers in words, durations only, kept apart from the lines around them. */
 const rec = (over: Partial<TimelineRecord>): TimelineRecord => ({ public: true, updatedAt: Date.UTC(2026, 10, 1), ...over });
@@ -72,7 +73,7 @@ describe("the empty state's list of stages", () => {
     const steps = within(lists[0]!).getAllByRole("listitem").map((li) => li.textContent ?? "");
     expect(steps.some((t) => /H-4|RFE/.test(t))).toBe(false);
     expect(steps[0]).toMatch(/^1\s?PERM filed to certified/);
-    expect(screen.getByText("Beside the case: RFEs and a spouse's H-4")).toBeTruthy();
+    expect(screen.getByText(textContent("Beside the case: RFEs and a spouse's H-4"))).toBeTruthy();
     const side = within(lists[1]!).getAllByRole("listitem").map((li) => li.textContent ?? "");
     expect(side).toHaveLength(SIDE_METRIC_IDS.length);
     expect(side.every((t) => !/^\d/.test(t.trim()))).toBe(true);

@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import Link from "next/link";
 
 import { OpenOnHash } from "./OpenOnHash";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * A jump list for a long legal page.
@@ -55,7 +56,7 @@ export function SectionIndex({
                 href={`#${s.id}`}
                 className="link inline-flex min-h-[44px] items-center text-base"
               >
-                {s.title}
+                {keepWhole(s.title)}
               </Link>
             </li>{" "}
           </Fragment>

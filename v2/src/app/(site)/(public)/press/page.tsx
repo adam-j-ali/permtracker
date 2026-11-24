@@ -26,6 +26,7 @@ import { withSocialCard } from "@/lib/socialCard";
 import { getEmployerStages } from "@/lib/db/employerStages";
 import { buttonVariants } from "@/components/ui/button";
 import { softFail } from "@/lib/softRead";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "Press and Data for Journalists";
 const DESCRIPTION =
@@ -210,7 +211,7 @@ export default async function PressPage() {
               <s.icon size={26} className="shrink-0 text-primary-text" aria-hidden="true" />{" "}
               <span>
                 <span className="block font-heading text-lg font-bold">{s.name}</span>{" "}
-                <span className="mt-1 block text-base text-soft">{s.what}</span>
+                <span className="mt-1 block text-base text-soft">{keepWhole(s.what)}</span>
               </span>{" "}
             </li>
           ))}

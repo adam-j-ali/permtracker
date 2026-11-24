@@ -26,6 +26,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { getDatasetSchema } from "@/lib/structuredData";
 import { softFail } from "@/lib/softRead";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * What employers told DOL about layoffs on their PERM applications (Form 9089,
@@ -249,7 +250,7 @@ export default async function Page() {
                   key: j.code,
                   label: j.slug ? (
                     <Link href={entityHref("occupation", j.slug)} className="link py-[10px] sm:py-0">
-                      {j.title}
+                      {keepWhole(j.title)}
                     </Link>
                   ) : (
                     j.title

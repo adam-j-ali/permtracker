@@ -9,6 +9,7 @@
 import { type ReactNode } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /** A dashboard section: a plain box with a heading row. */
 // A widget sits under one ink rule, like the charts; its tiles carry the tint.
@@ -113,7 +114,7 @@ export function WidgetEmptyState({
       {cta ? (
         <p className="mt-3 text-sm">
           <Link href={cta.href} className="link">
-            {cta.label}
+            {keepWhole(cta.label)}
           </Link>
         </p>
       ) : null}

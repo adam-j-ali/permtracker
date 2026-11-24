@@ -15,6 +15,7 @@ import {
 import { NotFoundSuggestions } from "@/components/search/NotFoundSuggestions";
 import { CaseLookupForm } from "@/components/tools/CaseLookupForm";
 import { SpotPicture } from "@/components/ui/spot-picture";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 const DOORS = [
   { href: "/", label: "Home", Icon: HouseIcon },
@@ -60,7 +61,7 @@ export function NotFoundBody() {
                 className="lift flex min-h-[56px] items-center gap-3 border-2 border-border bg-card px-4 font-semibold shadow-hard-sm hover:bg-accent"
               >
                 <d.Icon aria-hidden="true" className="size-5 shrink-0 text-primary-text" />{" "}
-                <span className="flex-1">{d.label}</span>{" "}
+                <span className="flex-1">{keepWhole(d.label)}</span>{" "}
                 <ArrowRightIcon aria-hidden="true" className="size-4 shrink-0" />
               </Link>
             </li>{" "}

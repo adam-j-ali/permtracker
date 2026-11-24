@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { filterOptions, nextActive, type ComboboxOption } from "@/lib/comboboxFilter";
 import { formatInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export type { ComboboxOption };
 
@@ -256,7 +257,7 @@ export function FilterCombobox({
                     className={cn("size-4 shrink-0", isChosen ? "text-primary-text" : "invisible")}
                   />{" "}
                   <span className="min-w-0 break-words">
-                    {o.label}
+                    {keepWhole(o.label)}
                     {isChosen ? <span className="sr-only"> (chosen)</span> : null}
                   </span>
                 </li>

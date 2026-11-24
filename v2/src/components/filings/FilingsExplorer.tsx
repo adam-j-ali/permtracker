@@ -28,6 +28,7 @@ import {
 } from "@/lib/filingsByDay";
 import { formatInt } from "@/lib/format";
 import { longDate, shortDate, weekdayName } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The daily filings for any program and any period since FY2020 (the owner's call, Nov 5 2026). The page carries the
@@ -129,7 +130,7 @@ export function FilingsExplorer({ asOf, windowFrom, programs }: { asOf: string; 
               onClick={() => setPeriod({ period: p.key === "30" ? null : p.key, from: null, to: null })}
               className={choiceVariants({ on: !custom && (preset?.key ?? "30") === p.key })}
             >
-              {p.label}
+              {keepWhole(p.label)}
             </button>{" "}
           </Fragment>
         ))}
@@ -186,7 +187,7 @@ export function FilingsExplorer({ asOf, windowFrom, programs }: { asOf: string; 
               { label: "Files give another day", value: total.mismatch },
             ].map((f) => (
               <div key={f.label} className="bg-tint p-3 sm:p-4">
-                <dt className="text-sm text-soft">{f.label}</dt>{" "}
+                <dt className="text-sm text-soft">{keepWhole(f.label)}</dt>{" "}
                 <dd className="m-0 mt-1 font-heading text-2xl font-bold tabular-nums sm:text-3xl">{formatInt(f.value)}</dd>
               </div>
             ))}
@@ -246,7 +247,7 @@ export function FilingsExplorer({ asOf, windowFrom, programs }: { asOf: string; 
                         onClick={() => sortBy(c.key)}
                         className={`inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold ${c.numeric ? "flex-row-reverse" : ""}`}
                       >
-                        {c.label} <SortMark dir={sort.key === c.key ? sort.dir : null} />
+                        {keepWhole(c.label)} <SortMark dir={sort.key === c.key ? sort.dir : null} />
                       </button>{" "}
                     </th>
                   ))}

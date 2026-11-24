@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 import { WageAxis } from "./WageAxis";
 import { WageLadderKey, WageLadderRow } from "./WageLadderRow";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * One subject's ladder in each fiscal year it has one, on a shared axis.
@@ -82,7 +83,7 @@ export function LadderByYear({
           <li className="border-t-2 border-border py-3 first:border-t-0 first:pt-0">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <p className="text-sm font-bold">
-                {l.label}
+                {keepWhole(l.label)}
               </p>{" "}
               <p className="font-mono text-sm font-bold tabular-nums text-muted-foreground">
                 {formatDollars(l.p50 as number)} median ·{" "}
@@ -114,7 +115,7 @@ export function LadderByYear({
                   placeholder glyph in a numeric column reads as a value. */}
               {pct === null ? null : (
                 <dd className="mt-0.5 font-mono text-sm tabular-nums text-muted-foreground">
-                  {`${pct >= 0 ? "+" : ""}${pct.toFixed(1)}% since ${first.label}`}
+                  <KeepWhole>{`${pct >= 0 ? "+" : ""}${pct.toFixed(1)}% since ${first.label}`}</KeepWhole>
                 </dd>
               )}
             </div>

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CaseLookupForm } from "../CaseLookupForm";
 import { FinderDock, FinderDockPanel } from "../FinderDock";
+import { textContent } from "../../../../test-utils/text-content";
 
 // The finder loads when it's first opened. Loaded here once, so no test's wait depends on how long
 // the first import of it takes on a busy machine.
@@ -188,10 +189,10 @@ describe("a case box with nothing typed", () => {
   it("gives the example under the box, where it can't be taken for a number already typed", () => {
     // The example was the placeholder, and left the page with it. A first-time visitor still needs to see the shape.
     render(<CaseLookupForm />);
-    expect(screen.getByText(/It's on your ETA-9089 receipt\./).textContent).toMatch(/A case number looks like G-100-26125-868956\.$/);
+    expect(screen.getByText(textContent(/^It's on your ETA-9089 receipt\. A case number/)).textContent).toMatch(/A case number looks like G-100-26125-868956\.$/);
     cleanup();
     render(<CaseLookupForm example="P-100-26140-123456" help="It's on your ETA-9141." />);
-    expect(screen.getByText(/It's on your ETA-9141\./).textContent).toMatch(/A case number looks like P-100-26140-123456\.$/);
+    expect(screen.getByText(textContent(/^It's on your ETA-9141\. A case number/)).textContent).toMatch(/A case number looks like P-100-26140-123456\.$/);
     cleanup();
     // A box that also takes a name says so in its own words: an example number alone would say names aren't taken.
     render(<CaseLookupForm names label="Case number or employer" />);
@@ -200,7 +201,7 @@ describe("a case box with nothing typed", () => {
 
   it("says what else the box takes after the example, and gives way to the shape warning", () => {
     render(<CaseLookupForm also="Wage request numbers work too." />);
-    expect(screen.getByText(/It's on your ETA-9089 receipt\./).textContent).toMatch(
+    expect(screen.getByText(textContent(/^It's on your ETA-9089 receipt\. A case number/)).textContent).toMatch(
       /A case number looks like G-100-26125-868956\. Wage request numbers work too\.$/,
     );
     fireEvent.change(box(), { target: { value: "hello 12" } });

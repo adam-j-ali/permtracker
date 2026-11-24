@@ -33,6 +33,7 @@ import { finderHref, DEFAULT_FILTERS } from "@/lib/sponsorFinder";
 import { withSocialCard } from "@/lib/socialCard";
 import { softFail } from "@/lib/softRead";
 import { socTitleDescription } from "@/lib/socTitleDescription";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // The titles move with the quarterly loads.
 export const revalidate = 604800;
@@ -160,7 +161,7 @@ export default async function SocTitlePage({ params }: { params: Promise<{ title
       <JsonLdScript schema={breadcrumbSchema(path, a.title)} />{" "}
       <JsonLdScript schema={faqSchema} />
       <header className="max-w-3xl">
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">SOC code for {a.title}</h1>{" "}
+        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">SOC code for {keepWhole(a.title)}</h1>{" "}
         <p className="mt-4 text-lg leading-relaxed text-soft">
           <SocCodeText text={describe(a)} />
         </p>
@@ -221,7 +222,7 @@ export default async function SocTitlePage({ params }: { params: Promise<{ title
       ) : null}{" "}
       {onetOnly.length ? (
         <p className="mt-6 max-w-3xl text-base text-soft">
-          O*NET also lists {a.title} under{" "}
+          O*NET also lists {keepWhole(a.title)} under{" "}
           {onetOnly.slice(0, 6).map((c, i, all) => (
             <Fragment key={c.soc}>
               <Link href={codeHref(c.soc, c.slug)} className="link">

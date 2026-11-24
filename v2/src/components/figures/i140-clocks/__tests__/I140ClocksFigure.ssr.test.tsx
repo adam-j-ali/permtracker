@@ -7,6 +7,7 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import I140ClocksFigure from "../I140ClocksFigure";
+import { htmlText } from "../../../../../test-utils/text-content";
 
 describe("I140ClocksFigure on the server", () => {
   const html = renderToStaticMarkup(<I140ClocksFigure />);
@@ -20,9 +21,9 @@ describe("I140ClocksFigure on the server", () => {
   });
 
   it("starts on the guide's October 1 and gives both dates in words", () => {
-    expect(html).toContain("Leave on Oct 1: a withdrawal would revoke the I-140, and the I-485 can&#x27;t move yet.");
-    expect(html).toContain("From October 17, 2026, an employer&#x27;s withdrawal no longer revokes the I-140.");
-    expect(html).toContain("From October 31, 2026, the I-485 can move to a new job in the same or a similar occupation");
+    expect(htmlText(html)).toContain("Leave on Oct 1: a withdrawal would revoke the I-140, and the I-485 can&#x27;t move yet.");
+    expect(htmlText(html)).toContain("From October 17, 2026, an employer&#x27;s withdrawal no longer revokes the I-140.");
+    expect(htmlText(html)).toContain("From October 31, 2026, the I-485 can move to a new job in the same or a similar occupation");
   });
 
   it("can be paused, and is moved by dragging with no slider or keys", () => {

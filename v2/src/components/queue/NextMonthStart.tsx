@@ -14,6 +14,7 @@ import { formatShareOf } from "@convex/lib/format";
 
 import { stageOf } from "./stages";
 import { MONTH_NAMES, monthDay, monthYear, weekdayName } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * "When does DOL start the next month?", answered from DOL's own record.
@@ -175,7 +176,7 @@ export function NextMonthStart({
               {" "}
               <li className="flex items-center gap-2">
                 <span className={cn("inline-block size-3.5 shrink-0 border border-input", s.tone)} aria-hidden="true" />{" "}
-                <span className="text-soft">{s.label}</span>{" "}
+                <span className="text-soft">{keepWhole(s.label)}</span>{" "}
                 <span className="font-mono font-semibold tabular-nums">{formatInt(split[s.key])}</span>
               </li>
             </Fragment>

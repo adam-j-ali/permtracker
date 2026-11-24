@@ -18,6 +18,7 @@ import type { HomeMonth } from "@/lib/homeMonths";
 import { cn } from "@/lib/utils";
 import { monthTick } from "@convex/lib/months";
 import { HOME_WIDTH } from "./homeWidth";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The home page's first screen answers before it explains (owner, Oct 27 2026:
@@ -248,7 +249,7 @@ export function HeroSection({ wait = null, board, months = [], trends = {}, appr
               <Fragment key={f.label}>
                 {" "}
                 <div className="border-l-4 border-primary pl-3">
-                  <dt className="text-sm text-soft">{f.label}</dt>{" "}
+                  <dt className="text-sm text-soft">{keepWhole(f.label)}</dt>{" "}
                   <dd className="m-0 mt-0.5 font-heading text-xl font-bold tabular-nums sm:text-[1.75rem]">
                     {f.href ? (
                       // 44px tall to tap on a phone; the negative margin keeps the figure's own line height.
@@ -278,7 +279,7 @@ export function HeroSection({ wait = null, board, months = [], trends = {}, appr
           <ul aria-label="Free on both sides" className="mt-3 flex flex-col gap-2 text-base">
             <li className="flex items-start gap-2.5">
               <MagnifyingGlassIcon size={20} weight="bold" aria-hidden="true" className="mt-0.5 shrink-0 text-primary-text" />{" "}
-              <span>A lookup of any PERM, wage request, LCA, H-2A or H-2B case{" "}</span>
+              <span><KeepWhole>{"A lookup of any PERM, wage request, LCA, H-2A or H-2B case"}</KeepWhole>{" "}</span>
             </li>{" "}
             <li className="flex items-start gap-2.5">
               <FolderSimpleIcon size={20} weight="bold" aria-hidden="true" className="mt-0.5 shrink-0 text-primary-text" />{" "}

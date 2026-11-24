@@ -23,6 +23,7 @@ import type { CaseDetailData } from "./case-detail-types";
 import { fmtISODate, fmtCurrency } from "./case-detail-utils";
 import { PublicNumber } from "./PublicNumber";
 import { dolCasePageHref } from "@/lib/cases/publicLinks";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export type { JobDescEditProps } from "./JobDescriptionCard";
 
@@ -67,7 +68,7 @@ export function OverviewTab({
             <span className="min-w-0 flex-1">
               <span className="next-up-label block">Next up</span>{" "}
               <h3>{nextAction.action}</h3>{" "}
-              <p>{nextAction.description}</p>
+              <p>{keepWhole(nextAction.description)}</p>
             </span>{" "}
             {canExpand ? (
               <CaretDownIcon

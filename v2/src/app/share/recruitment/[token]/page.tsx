@@ -8,6 +8,7 @@ import { PrintButton } from "@/components/ui/print-button";
 import { readSharedRecord, type SharedRecord } from "@/lib/sharedRecruitmentRecord";
 import { emailStamp } from "@/lib/time";
 import { RecordViewed } from "./RecordViewed";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * A case's recruitment record, shared by the attorney's office with its client through a private link
@@ -95,7 +96,7 @@ export default async function SharedRecruitmentRecordPage({ params }: { params: 
         <ol aria-labelledby="shared-steps" className="mt-4 border-t-2 border-foreground">
           {record.steps.map((s) => (
             <li key={s.key} className="flex flex-col gap-1 border-b border-border py-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
-              <span className="font-semibold">{s.label}</span>{" "}
+              <span className="font-semibold">{keepWhole(s.label)}</span>{" "}
               <span className={`tabular-nums sm:text-right ${s.dates.length ? "" : "text-muted-foreground"}`}>{datesText(s.dates)}</span>{" "}
             </li>
           ))}
@@ -106,8 +107,10 @@ export default async function SharedRecruitmentRecordPage({ params }: { params: 
         <section aria-labelledby="shared-window" className="mt-12 print:mt-8">
           <h2 id="shared-window" className="font-heading text-2xl font-bold">ETA 9089 filing window</h2>{" "}
           <p className="mt-2 max-w-prose text-soft">
-            The days in which the application for labor certification, Form ETA-9089, can be filed with the Department of
-            Labor.
+            <KeepWhole>
+              {"The days in which the application for labor certification, Form ETA-9089, can be filed with the " +
+                "Department of Labor."}
+            </KeepWhole>
           </p>{" "}
           <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="bg-tint p-4">

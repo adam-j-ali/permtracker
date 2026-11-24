@@ -28,6 +28,7 @@ import { MONTH_ABBR } from "@convex/lib/months";
 import { AlertMark } from "@/components/ui/note";
 import { softFail } from "@/lib/softRead";
 import { StepBothSources } from "@/components/community/StepBothSources";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export const revalidate = 86400;
 
@@ -88,7 +89,7 @@ function CategoryTable({ rows, caption }: { rows: CategorySeries[]; caption: str
         <tbody>
           {rows.map((r) => (
             <tr key={r.key} className="border-b border-border last:border-b-0">
-              <th scope="row" className="px-4 py-3 font-bold">{r.label}{" "}</th>
+              <th scope="row" className="px-4 py-3 font-bold">{keepWhole(r.label)}{" "}</th>
               <td className="px-4 py-2">
                 <Spark row={r} max={max} />{" "}
               </td>
@@ -161,7 +162,7 @@ export default async function NvcWaitingListPage() {
                 <Fragment key={t.label}>
                   {" "}
                   <div className="bg-sage p-5 border-2 shadow-hard border-border">
-                    <dt className="text-base text-soft">{t.label}</dt>{" "}
+                    <dt className="text-base text-soft">{keepWhole(t.label)}</dt>{" "}
                     <dd className="mt-1 font-heading text-3xl font-bold tabular-nums">{t.now.toLocaleString("en-US")}</dd>{" "}
                     <dd className="font-mono text-sm text-muted-foreground">
                       {dateLabel(newest.asOf)}

@@ -15,6 +15,7 @@ import {
   type Qualification,
   type Sponsor,
 } from "@/lib/visaChooser";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 const SELECT_CLASS =
   "mt-2 block min-h-[44px] w-full min-w-0 border-2 border-input bg-background px-3 py-2 text-base font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2";
@@ -80,7 +81,7 @@ function Radios<T extends string>({
                 onChange={() => onChange(o.value)}
                 className="h-5 w-5 shrink-0 accent-primary"
               />{" "}
-              <span>{o.label}</span>
+              <span>{keepWhole(o.label)}</span>
             </label>
           </Fragment>
         ))}
@@ -134,7 +135,7 @@ export function VisaChooser({ className }: { className?: string }) {
                     onChange={(e) => set(s.key, e.target.checked)}
                     className="h-5 w-5 shrink-0 accent-primary"
                   />{" "}
-                  <span>{s.label}</span>
+                  <span>{keepWhole(s.label)}</span>
                 </label>
               </Fragment>
             ))}

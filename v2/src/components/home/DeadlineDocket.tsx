@@ -10,6 +10,7 @@ import {
 } from "@/lib/perm";
 import { cn } from "@/lib/utils";
 import { MS_PER_DAY } from "@/lib/time";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * One example case's docket: the dates an attorney types, and every deadline
@@ -124,7 +125,7 @@ function Row({ row }: { row: DocketRow }) {
       <span className="font-mono text-sm font-bold tabular-nums">{formatAsOfShort(row.date)}</span>{" "}
       <span className="flex min-w-0 items-baseline gap-2 text-base leading-snug">
         <span aria-hidden="true" className={cn("relative top-[-1px] size-2.5 shrink-0 border border-border", KIND_MARK[row.kind])} />{" "}
-        <span>{row.what}</span>
+        <span>{keepWhole(row.what)}</span>
       </span>{" "}
       <span className="col-start-2 font-mono text-sm text-muted-foreground @md:col-start-auto">20 CFR {row.rule}</span>
     </li>
@@ -153,7 +154,7 @@ export function DeadlineDocket({ className }: { className?: string }) {
             <Fragment key={e.label}>
               {" "}
               <li className="inline-flex items-baseline gap-2 border-2 border-border bg-background px-2.5 py-1.5 text-sm">
-                <span className="text-muted-foreground">{e.label}</span>{" "}
+                <span className="text-muted-foreground">{keepWhole(e.label)}</span>{" "}
                 <span className="font-mono font-bold tabular-nums">{formatAsOfShort(e.date)}</span>
               </li>
             </Fragment>

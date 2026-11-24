@@ -54,6 +54,7 @@ import { checkedPhrase } from "@/lib/checkTimes";
 import { monthDay, monthYear, shiftMonth, shortDate } from "@convex/lib/months";
 import { softFail } from "@/lib/softRead";
 import { DataProvenance } from "@/components/data/DataProvenance";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Where every step stands today: one page that gathers the answer each data
@@ -444,7 +445,7 @@ export default async function TodayPage() {
                     {" "}
                     <li>
                       <Link href={s.href} className="link inline-flex min-h-11 items-center text-sm">
-                        {s.label}
+                        {keepWhole(s.label)}
                       </Link>
                     </li>
                   </Fragment>

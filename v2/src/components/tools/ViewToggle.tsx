@@ -18,6 +18,7 @@
 import { Fragment } from "react";
 
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface ViewToggleOption<T extends string> {
   value: T;
@@ -66,7 +67,7 @@ export function ViewToggle<T extends string>({
               active ? "bg-tint font-semibold text-foreground" : "bg-card text-soft hover:text-foreground",
             )}
           >
-            {o.label}
+            {keepWhole(o.label)}
             </button>
           </Fragment>
         );

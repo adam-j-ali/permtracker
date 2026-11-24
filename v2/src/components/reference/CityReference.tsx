@@ -13,6 +13,7 @@ import {
 import { socGroup } from "@/lib/socCode";
 import { PayBands, type PayBand } from "./PayBands";
 import { entityHref } from "@/lib/entityPayload";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Where a worksite city sits and what the jobs filed there pay in its metro.
@@ -193,7 +194,7 @@ export async function CityReference({
                       <td className="py-2 pr-4">
                         {job?.slug ? (
                           <Link href={entityHref("occupation", job.slug)} className="link">
-                            {b.label}
+                            {keepWhole(b.label)}
                           </Link>
                         ) : (
                           b.label

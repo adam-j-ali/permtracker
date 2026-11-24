@@ -9,6 +9,7 @@ import * as React from "react";
 import { WarningIcon as AlertTriangle } from "@phosphor-icons/react/ssr";
 import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface ErrorAction {
   label: string;
@@ -62,7 +63,7 @@ export function ErrorDisplay({
               className="gap-2"
             >
               {action.icon && <action.icon className="size-4" />}
-              {action.label}
+              {keepWhole(action.label)}
             </Button>
           ))}
         </div>

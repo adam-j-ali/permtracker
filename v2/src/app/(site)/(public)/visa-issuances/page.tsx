@@ -38,6 +38,7 @@ import {
 } from "@/lib/db/visaIssuances";
 import { shiftMonth } from "@convex/lib/months";
 import { StepBothSources } from "@/components/community/StepBothSources";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 export const revalidate = 86400;
 
@@ -212,12 +213,12 @@ export default async function VisaIssuancesPage() {
             The 75-country pause, in State&apos;s own counts
           </h2>{" "}
           <p className="mt-2 max-w-3xl text-base leading-relaxed text-muted-foreground">
-            {SEVENTY_FIVE.summary} Employment visas were refused under it too.{" "}
+            {keepWhole(SEVENTY_FIVE.summary)} Employment visas were refused under it too.{" "}
             {SEVENTY_FIVE.sources.map((src, i) => (
               <Fragment key={src.url}>
                 {i ? ", " : "Sources: "}
                 <a href={src.url} className="link" target="_blank" rel="noopener noreferrer">
-                  {src.label}
+                  {keepWhole(src.label)}
                 </a>
               </Fragment>
             ))}
@@ -346,9 +347,12 @@ export default async function VisaIssuancesPage() {
             >
               Immigrant Visa Symbols
             </a>
-            : E1 is EB-1, E2 EB-2, E3 EB-3 skilled workers and professionals, EW EB-3 other workers, C5, T5, R5, I5 and
-            the regional-center symbols added in 2022 EB-5, and so on. State&apos;s earlier tables print each symbol with
-            its sub-class (E21, E22) and its later ones as one group (E2); the categories add both the same way.
+            <KeepWhole>
+              {": E1 is EB-1, E2 EB-2, E3 EB-3 skilled workers and professionals, EW EB-3 other workers, C5, T5, " +
+                "R5, I5 and the regional-center symbols added in 2022 EB-5, and so on. State's earlier tables " +
+                "print each symbol with its sub-class (E21, E22) and its later ones as one group (E2); the " +
+                "categories add both the same way."}
+            </KeepWhole>
           </p>
         </FinePrint>
       </section>
@@ -357,8 +361,10 @@ export default async function VisaIssuancesPage() {
         <div >
           <h2 className="font-heading text-lg font-bold">Visas issued abroad</h2>{" "}
           <p className="mt-2 text-base leading-relaxed text-muted-foreground">
-            These are visas consulates issued to people outside the country. Someone in the US on an H-1B gets the
-            green card from USCIS instead, which counts it in its own{" "}
+            <KeepWhole>
+              {"These are visas consulates issued to people outside the country. Someone in the US on an H-1B " +
+                "gets the green card from USCIS instead, which counts it in its own"}
+            </KeepWhole>{" "}
             <Link href="/uscis-processing-times" className="link">
               quarterly figures
             </Link>

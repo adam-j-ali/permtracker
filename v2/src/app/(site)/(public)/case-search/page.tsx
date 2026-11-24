@@ -19,6 +19,7 @@ import { getSeasonalPublishedSummary, getSeasonalSummary } from "@/lib/db/season
 import { SearchParamsBoundary } from "@/hooks/useUrlSearchParams";
 import { MoreText } from "@/components/data/MoreText";
 import { softFail } from "@/lib/softRead";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * One search over every DOL filing this site holds.
@@ -150,7 +151,7 @@ export default async function CaseSearchPage() {
         title="Search every case an employer has filed"
         lede={
           <>
-            PERM, wage requests, H-1B LCAs and seasonal work in one search, open and decided
+            <KeepWhole>{"PERM, wage requests, H-1B LCAs and seasonal work in one search, open and decided"}</KeepWhole>
             {firstYear ? `, back to FY${firstYear} for PERM` : ""}.
           </>
         }

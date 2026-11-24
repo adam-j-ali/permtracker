@@ -8,6 +8,7 @@ import { HOLD_STATUS, longDate, type EmployerStageRow } from "@/lib/employerStag
 import { formatInt, formatShare } from "@/lib/format";
 import { SITE_URL } from "@/lib/constants/site";
 import { entityHref } from "@/lib/entityPayload";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Every employer with pending PERM cases, by how many sit outside DOL's
@@ -102,7 +103,7 @@ function columns(logFrom: string | null): StatColumn<EmployerStageRow>[] {
       key: "holdSince",
       label: "On hold since",
       sortValue: (r) => holdCell(r, logFrom).sort,
-      render: (r) => <span className="tabular-nums">{holdCell(r, logFrom).text}</span>,
+      render: (r) => <span className="tabular-nums">{keepWhole(holdCell(r, logFrom).text)}</span>,
       secondary: true,
     },
   ];

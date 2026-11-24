@@ -14,6 +14,7 @@ import { formatCaseStatus } from "@convex/lib/notificationHelpers";
 import { CaseListRow } from "./CaseListRow";
 import type { CaseCardData } from "@convex/lib/caseListTypes";
 import type { CaseListSortField } from "@convex/lib/caseListTypes";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface CaseListViewProps {
   /** Cases to display */
@@ -215,7 +216,7 @@ export function CaseListView({
           {group.label && (
             <div className="sticky top-16 z-20 border-b border-border bg-muted px-4 py-2">
               <h3 className="text-sm font-semibold">
-                {group.label}{" "}
+                {keepWhole(group.label)}{" "}
                 <span className="font-normal text-muted-foreground">{group.cases.length}</span>
               </h3>
             </div>

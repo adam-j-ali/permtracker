@@ -10,6 +10,7 @@ import { shortDate } from "@convex/lib/months";
 import type { EnforcementAction, EnforcementKind } from "@/lib/enforcement/actions";
 import type { SponsorRecord } from "@/lib/db/sponsorRecords";
 import { PROGRAM_LANES } from "./EnforcementTimeline";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Every action, newest first: the day and what kind of action, the company and what it did, the money and
@@ -100,7 +101,7 @@ export function ActionList({
                       {" "}
                       <li>
                         <a href={s.url} target="_blank" rel="noopener" className={`${ROW_LINK} gap-1 text-sm`}>
-                          {s.label}
+                          {keepWhole(s.label)}
                           <ArrowSquareOutIcon className="size-3.5" aria-hidden="true" />
                           <span className="sr-only"> (opens in a new tab)</span>
                         </a>
@@ -145,7 +146,7 @@ function Record({ action, records }: { action: EnforcementAction; records: Reado
                 <dd className="text-right font-semibold">{r.lastPerm ? shortDate(r.lastPerm) : "none"}</dd>{" "}
                 <dt className="text-muted-foreground">Waiting at DOL</dt>{" "}
                 <dd className="text-right font-semibold">{formatInt(r.waiting)}</dd>{" "}
-                <dt className="text-muted-foreground">{`H-1B LCAs since ${shortDate(r.since)}`}</dt>{" "}
+                <dt className="text-muted-foreground"><KeepWhole>{`H-1B LCAs since ${shortDate(r.since)}`}</KeepWhole></dt>{" "}
                 <dd className="text-right font-semibold">{formatInt(r.lcaSince)}</dd>
               </dl>
             ) : null}

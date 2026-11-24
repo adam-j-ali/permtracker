@@ -3,6 +3,7 @@ import { CalendarCheckIcon } from "@phosphor-icons/react/ssr";
 import { USCIS_CHARTS_URL, type UscisChart, type UscisCharts } from "@/lib/uscisCharts";
 import { cn } from "@/lib/utils";
 import { monthYear } from "@convex/lib/months";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 const MEANS: Record<UscisChart, string> = {
   "Dates for Filing": "A priority date before this chart's cutoff can file now, but approval still waits for the Final Action date.",
@@ -42,7 +43,7 @@ export function UscisChartNote({
     <section aria-labelledby="uscis-chart-h" className={cn("border-2 border-border bg-card p-5 sm:p-6", className)}>
       <h2 id="uscis-chart-h" className="flex items-center gap-2 font-heading text-lg font-bold">
         <CalendarCheckIcon aria-hidden="true" className="size-6 shrink-0 text-primary-text" weight="bold" />{" "}
-        {`Filing an I-485 in ${label}`}
+        <KeepWhole>{`Filing an I-485 in ${label}`}</KeepWhole>
       </h2>{" "}
       <dl className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {rows.map(([k, who, chart]) => (

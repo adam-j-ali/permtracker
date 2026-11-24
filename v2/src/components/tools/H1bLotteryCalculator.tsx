@@ -29,6 +29,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { SocPicker } from "@/components/soc/SocPicker";
 import { AreaLoadFailure, areaPlaceholder, useWageAreas } from "@/components/tools/WageAreas";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The weighted H-1B lottery for one job: the OEWS level an offer meets in
@@ -367,7 +368,7 @@ export function H1bLotteryCalculator() {
                 {done.sites.map((s, i) => (
                   <tr key={`${s.label}-${i}`} className="border-b border-border last:border-b-0">
                     <th scope="row" className="px-3 py-2 font-bold">
-                      {s.label}
+                      {keepWhole(s.label)}
                       {done.sites.length > 1 && i === assigned.limiting ? " (sets the level)" : ""}{" "}
                     </th>
                     <td className="px-3 py-2">

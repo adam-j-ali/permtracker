@@ -7,7 +7,7 @@ import { hasLcaDetail, newVersusTransfer, percent, type LcaProfile as Profile } 
 import { cn } from "@/lib/utils";
 import { formatInt } from "@/lib/format";
 import { longDate } from "@convex/lib/months";
-import { KeepWhole } from "@/components/ui/keep-whole";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * What one employer's H-1B LCAs were for: new hires against transfers, the
@@ -90,7 +90,7 @@ export function LcaProfile({
 
   return (
     <section className={cn("mt-10 border-2 shadow-hard p-6 sm:p-8 bg-card border-border", className)}>
-      <h2 className="font-heading text-xl font-bold">What its H-1B LCAs were for</h2>{" "}
+      <h2 className="font-heading text-xl font-bold"><KeepWhole>{"What its H-1B LCAs were for"}</KeepWhole></h2>{" "}
       <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
         From DOL&apos;s LCA files{p.fyFrom ? `, FY${p.fyFrom} on` : ""}: {formatInt(p.filings)}{" "}
         {p.filings === 1 ? "LCA" : "LCAs"} filed by {name}
@@ -144,7 +144,7 @@ export function LcaProfile({
                     {" "}
                     <li>
                       <b className="font-bold">
-                        {k.kind.label} ({k.kind.item}).
+                        {keepWhole(k.kind.label)} ({k.kind.item}).
                       </b>{" "}
                       {k.kind.meaning}
                     </li>
@@ -152,8 +152,10 @@ export function LcaProfile({
                 ))}
               </ul>{" "}
               <p className="mt-2 text-sm text-muted-foreground">
-                Form ETA-9035, Section B, Item 7, in DOL&apos;s words from its LCA record layout. One LCA can
-                tick several boxes.
+                <KeepWhole>
+                  {"Form ETA-9035, Section B, Item 7, in DOL's words from its LCA record layout. One LCA can tick " +
+                    "several boxes."}
+                </KeepWhole>
               </p>
             </FinePrint>
           </div>
@@ -192,7 +194,7 @@ export function LcaProfile({
           {p.newest ? (
             <dl className="mt-3 grid grid-cols-1 gap-3 [&>*]:min-w-0 sm:grid-cols-2">
               <div className="bg-sage p-4 border-2 border-border">
-                <dt className="text-sm font-bold text-muted-foreground">H-1B-dependent</dt>{" "}
+                <dt className="text-sm font-bold text-muted-foreground"><KeepWhole>{"H-1B-dependent"}</KeepWhole></dt>{" "}
                 <dd className="mt-1 font-heading text-2xl font-bold">{yesNo(p.newest.dependent)}</dd>
               </div>{" "}
               <div className="bg-sage p-4 border-2 border-border">
@@ -203,15 +205,13 @@ export function LcaProfile({
           ) : null}{" "}
           <p className="mt-3 text-sm text-muted-foreground">
             {p.newest ? `As answered on its newest LCA${filed ? `, filed ${filed}` : ""}. ` : ""}
-            Declared H-1B-dependent on {formatInt(p.dependent.yes)} of {formatInt(p.dependent.of)} LCAs, and a willful
+            <KeepWhole>{"Declared H-1B-dependent on "}</KeepWhole>{formatInt(p.dependent.yes)} of {formatInt(p.dependent.of)} LCAs, and a willful
             violator on {formatInt(p.violator.yes)} of {formatInt(p.violator.of)}. Both are the employer&apos;s own answers.
           </p>{" "}
           <FinePrint summary="What the two answers mean" className="mt-2">
             <div className="mt-2 space-y-2 text-sm leading-relaxed text-soft">
               <p>
-                <b className="font-bold">H-1B-dependent</b> (20 CFR 655.736(a)): 25 or fewer full-time-equivalent
-                employees in the US and more than 7 H-1B workers. Or 26 to 50 employees and more than 12 H-1B workers. Or
-                51 or more employees, with H-1B workers equal to at least 15% of them.
+                <b className="font-bold"><KeepWhole>{"H-1B-dependent"}</KeepWhole></b><KeepWhole>{" (20 CFR 655.736(a)): 25 or fewer full-time-equivalent employees in the US and more than 7 H-1B workers. Or 26 to 50 employees and more than 12 H-1B workers. Or 51 or more employees, with H-1B workers equal to at least 15% of them."}</KeepWhole>
               </p>{" "}
               <p>
                 <b className="font-bold">Willful violator</b> (655.736(f)): DOL or the Justice Department found a
@@ -219,10 +219,12 @@ export function LcaProfile({
                 filed.
               </p>{" "}
               <p>
-                Either one adds two promises to the employer&apos;s LCAs: not to displace US workers, and to
-                recruit US workers before hiring H-1B workers (655.738, 655.739). They don&apos;t apply to an LCA
-                used only for exempt workers, paid at least $60,000 a year or holding a related master&apos;s
-                degree (655.737).{" "}
+                <KeepWhole>
+                  {"Either one adds two promises to the employer's LCAs: not to displace US workers, and to " +
+                    "recruit US workers before hiring H-1B workers (655.738, 655.739). They don't apply to an LCA " +
+                    "used only for exempt workers, paid at least $60,000 a year or holding a related master's " +
+                    "degree (655.737)."}
+                </KeepWhole>{" "}
                 <a target="_blank" rel="noopener noreferrer"
                   href={ECFR}
                   className="link"

@@ -90,6 +90,7 @@ One line each. The reasons, and the incident behind each, are in the notes file 
 
 **Pages**
 - JSX glues adjacent element text: `{" "}` between text siblings and inside every mapped item, table cell and `<th>`. The rendered audit (`scripts/audit_glued_text.py`) is the authority ([site](docs/notes/site.md)).
+- A program or form name (H-1B, CW-1, I-140) never splits at its hyphen: typed page text sits in `<KeepWhole>` (`scripts/keep_whole_codemod.mjs` writes it, `program-names-kept-whole.test.ts` holds it), and a part printing text from data passes it through `keepWhole()`.
 - Server files import icons from `@phosphor-icons/react/ssr`. Arrows and sort marks are Phosphor icons, never typed glyphs.
 - Never `fetchQuery` from `convex/nextjs` on a public page: use `queryStatic` (`src/lib/convexStatic.ts`), or the route turns dynamic.
 - No `AbortSignal.any` in browser code (Chrome 109).

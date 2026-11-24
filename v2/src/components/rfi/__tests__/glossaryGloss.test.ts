@@ -60,11 +60,11 @@ describe("every entry carries a usable gloss", () => {
 
 describe("the collapse keeps every word for search", () => {
   it("renders the long-form fields, not only the gloss", () => {
-    // The bodies are `{e.what}`, `{e.deadline}`, `{e.next}`, `{e.unsourced}`.
-    // A refactor that dropped one to shorten the page would take it out of the
-    // DOM too, which is the difference between collapsing and deleting.
-    for (const field of ["{e.what}", "{e.deadline}", "{e.next}", "{e.unsourced}"]) {
-      expect(SRC).toContain(field);
+    // The bodies are `{e.what}`, `{e.deadline}`, `{e.next}`, `{e.unsourced}`, each printed bare or through
+    // keepWhole(). A refactor that dropped one to shorten the page would take it out of the DOM too, which is the
+    // difference between collapsing and deleting.
+    for (const field of ["what", "deadline", "next", "unsourced"]) {
+      expect(SRC).toMatch(new RegExp(`\\{(keepWhole\\()?e\\.${field}\\)?\\}`));
     }
   });
 

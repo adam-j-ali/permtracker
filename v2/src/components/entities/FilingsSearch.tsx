@@ -7,7 +7,7 @@ import { CASE_SEARCH_PATH, caseSearchHref } from "@/lib/caseSearchPlan";
 import { formatInt } from "@/lib/format";
 import { stateName } from "@/lib/usStateNames";
 import type { FacetRow } from "@/lib/db/entityDetail";
-import { KeepWhole } from "@/components/ui/keep-whole";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Search one employer's, one job's or one law firm's filings, case by case, from its own page.
@@ -97,7 +97,7 @@ export function FilingsSearch({ what, fixed, ask, jobs = [], employers = [], sta
                     href={c.href}
                     className="inline-flex min-h-11 max-w-full flex-wrap items-baseline gap-x-2 gap-y-0.5 border-2 border-border bg-tint px-3 py-2 text-left text-sm font-semibold [overflow-wrap:anywhere] hover:border-foreground focus-visible:ring-2 focus-visible:ring-primary"
                   >
-                    <span className="min-w-0">{c.label}</span>{" "}
+                    <span className="min-w-0">{keepWhole(c.label)}</span>{" "}
                     <span className="shrink-0 font-mono tabular-nums text-muted-foreground">{formatInt(c.n)}</span>
                   </Link>
                 </li>

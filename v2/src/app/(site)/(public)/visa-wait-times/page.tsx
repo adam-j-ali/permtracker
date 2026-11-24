@@ -27,6 +27,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { FEATURED, WAIT_COLUMNS, cellKey, monthSlots, waitBarDays, waitWords, type WaitCell } from "@/lib/visaWaits";
 import { isQuickWork, postWaitMoved, quickMoved } from "@/lib/visaWaitTrends";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "Visa Appointment Wait Times by Consulate";
 const DESCRIPTION =
@@ -236,7 +237,7 @@ export default async function VisaWaitTimesPage() {
           {WAIT_COLUMNS.map((col) => (
             <Fragment key={col.key}>
               <div>
-                <dt className="inline font-semibold text-foreground">{col.short}:</dt> <dd className="inline">{col.label}</dd>
+                <dt className="inline font-semibold text-foreground">{keepWhole(col.short)}:</dt> <dd className="inline">{keepWhole(col.label)}</dd>
               </div>{" "}
             </Fragment>
           ))}

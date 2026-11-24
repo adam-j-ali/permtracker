@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { BulletinAlertForm } from "@/components/tools/BulletinAlertForm";
 import { Button } from "@/components/ui/button";
 import { trackUscisInterest } from "@/lib/funnelEvents";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /** The browser's own note that this question was answered here, so one person is one count. */
 const ASKED_KEY = "pt_uscis_interest";
@@ -69,7 +70,7 @@ export function CertifiedNextWatch({ anchorId, filingDate }: { anchorId: string;
         />
       </div>{" "}
       <div className="mt-6 border-t-2 border-foreground/10 pt-5">
-        <h3 className="font-heading text-lg font-bold leading-snug">After that, USCIS: tracking for your I-140 and I-485</h3>{" "}
+        <h3 className="font-heading text-lg font-bold leading-snug"><KeepWhole>{"After that, USCIS: tracking for your I-140 and I-485"}</KeepWhole></h3>{" "}
         <p className="mt-2 max-w-2xl text-base leading-relaxed text-soft">
           We&apos;re working on it. You&apos;d give a receipt number once and get an email when USCIS changes the case,
           the way this page does for PERM.

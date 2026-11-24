@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { WarningIcon } from "@phosphor-icons/react/ssr";
 import { EASTERN_TIMEZONE } from "@/lib/time";
 import { longDate } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The live half of `/uscis-case-status`: asks our own route for the receipt
@@ -202,7 +203,7 @@ export function UscisStatusResult({ receipt }: { receipt: string }) {
             {status.history.map((h) => (
               <li key={`${h.date}-${h.text}`} className="flex flex-wrap gap-x-4 gap-y-1">
                 <span className="font-mono text-muted-foreground">{longDate(h.date) ?? h.date}</span>{" "}
-                <span>{h.text}</span>{" "}
+                <span>{keepWhole(h.text)}</span>{" "}
               </li>
             ))}
           </ol>

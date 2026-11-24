@@ -29,6 +29,7 @@ import { caseStatusTint, CASE_STATUS_FILL, type CaseStatusTint } from "@/lib/sta
 import { cn } from "@/lib/utils";
 import { SITE_URL } from "@/lib/constants/site";
 import { softFail } from "@/lib/softRead";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Every status word FLAG can show, with what it means, what the regulation
@@ -148,7 +149,7 @@ function Source({ cite, unsourced }: { cite?: { label: string; href: string } | 
     <p className="mt-3 text-sm text-muted-foreground">
       Source:{" "}
       <a href={cite.href} rel="noopener noreferrer" className="link font-mono">
-        {cite.label}
+        {keepWhole(cite.label)}
       </a>
     </p>
   ) : (
@@ -189,7 +190,7 @@ function FlagEntry({ e, anchor, n, max }: { e: FlagStatusEntry; anchor: string; 
         <ToneChip status={e.status} />{" "}
         <span className="min-w-0 flex-1">
           <h3 className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-            <span className="font-heading text-base font-bold">{e.label}</span>{" "}
+            <span className="font-heading text-base font-bold">{keepWhole(e.label)}</span>{" "}
             <code className="text-sm text-muted-foreground">{e.status}</code>
           </h3>{" "}
           <span className="mt-1 block text-sm leading-relaxed text-soft">{lead}</span>
@@ -277,8 +278,10 @@ export default async function PermCaseStatusesPage() {
           Every case status, explained
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          What each status DOL shows on a PERM, wage request, LCA, H-2A or H-2B case means, the rule behind
-          it, and how many cases carry it today.
+          <KeepWhole>
+            {"What each status DOL shows on a PERM, wage request, LCA, H-2A or H-2B case means, the rule behind " +
+              "it, and how many cases carry it today."}
+          </KeepWhole>
         </p>
       </header>{" "}
 
@@ -297,7 +300,7 @@ export default async function PermCaseStatusesPage() {
                 href={`#${pr.id}`}
                 className="flex min-h-[44px] flex-col gap-0.5 border-2 border-border bg-card px-4 py-3 shadow-hard transition-transform motion-safe:hover:-translate-y-0.5 motion-reduce:transition-none"
               >
-                <span className="font-heading font-bold">{pr.label}</span>{" "}
+                <span className="font-heading font-bold">{keepWhole(pr.label)}</span>{" "}
                 <span className="font-mono text-sm text-muted-foreground">
                   {anchors.filter((a) => a.program === pr.program).length} statuses
                 </span>
@@ -313,14 +316,14 @@ export default async function PermCaseStatusesPage() {
           <div className="grid gap-6 border-t-2 border-border/40 p-4 sm:grid-cols-2 lg:grid-cols-4">
             {PROGRAMS.map((pr) => (
               <div key={pr.id}>
-                <p className="text-sm font-bold">{pr.label}</p>{" "}
+                <p className="text-sm font-bold">{keepWhole(pr.label)}</p>{" "}
                 <ul className="mt-2 space-y-1.5 text-sm">
                   {anchors
                     .filter((a) => a.program === pr.program)
                     .map((a) => (
                       <li key={a.anchor}>
                         <a href={`#${a.anchor}`} className="link">
-                          {a.label}
+                          {keepWhole(a.label)}
                         </a>{" "}
                       </li>
                     ))}
@@ -348,8 +351,8 @@ export default async function PermCaseStatusesPage() {
         {groups.map((g, gi) => (
           <div key={g.kind} className={gi > 0 ? "border-t-2 border-border" : undefined}>
             <div className={cn("border-b-2 border-border px-4 py-3 sm:px-5", KIND_FILL[g.kind])}>
-              <h3 className="font-heading text-lg font-bold">{KIND_HEADING[g.kind].title}</h3>{" "}
-              <p className="mt-0.5 max-w-3xl text-sm leading-relaxed text-soft">{KIND_HEADING[g.kind].lede}</p>
+              <h3 className="font-heading text-lg font-bold">{keepWhole(KIND_HEADING[g.kind].title)}</h3>{" "}
+              <p className="mt-0.5 max-w-3xl text-sm leading-relaxed text-soft">{keepWhole(KIND_HEADING[g.kind].lede)}</p>
             </div>{" "}
             <div className="divide-y divide-border">
               {g.entries.map((m, _i, all) => {
@@ -363,7 +366,7 @@ export default async function PermCaseStatusesPage() {
                       <ToneChip status={m.status} />{" "}
                       <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                          <span className="font-heading text-base font-bold">{m.label}</span>{" "}
+                          <span className="font-heading text-base font-bold">{keepWhole(m.label)}</span>{" "}
                           <code className="text-sm text-muted-foreground">{m.status}</code>
                         </span>{" "}
                         <span className="mt-1 block text-sm leading-relaxed text-soft">{lead}</span>
@@ -469,9 +472,11 @@ export default async function PermCaseStatusesPage() {
       <section className="mt-14 max-w-3xl">
         <h2 className="font-heading text-2xl font-bold">Where these words come from</h2>{" "}
         <p className="mt-3 text-base leading-relaxed text-soft">
-          DOL&apos;s case-status search shows one status per case and never explains it. The regulations (20 CFR
-          part 656 for PERM and wage requests, part 655 for LCAs, H-2A and H-2B) define the steps with a deadline.
-          The rest are workflow words, described here by what the workflow shows.
+          <KeepWhole>
+            {"DOL's case-status search shows one status per case and never explains it. The regulations (20 CFR " +
+              "part 656 for PERM and wage requests, part 655 for LCAs, H-2A and H-2B) define the steps with a " +
+              "deadline. The rest are workflow words, described here by what the workflow shows."}
+          </KeepWhole>
         </p>{" "}
         <p className="mt-3 text-base leading-relaxed text-soft">
           <Link href="/perm-case-status" className="link">

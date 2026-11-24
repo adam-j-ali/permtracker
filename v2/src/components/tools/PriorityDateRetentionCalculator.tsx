@@ -10,6 +10,7 @@ import { DateRuler } from "@/components/tools/DateRuler";
 import { RuleNotes } from "@/components/tools/RuleNotes";
 import { calculatePriorityDateRetention, RETENTION_DAYS, type RetentionResult } from "@/lib/perm";
 import { formatInt } from "@/lib/format";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 type Outcome = { kind: "error"; error: string } | { kind: "ok"; r: RetentionResult; warnings: string[] };
 
@@ -62,11 +63,11 @@ export function PriorityDateRetentionCalculator() {
     <div className="object p-5 sm:p-8">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 [&>*]:min-w-0">
         <div>
-          <Label htmlFor={approvedId}>I-140 approval date</Label>{" "}
+          <Label htmlFor={approvedId}><KeepWhole>{"I-140 approval date"}</KeepWhole></Label>{" "}
           <DateInput id={approvedId} value={approved} onChange={(e) => setApproved(e.target.value)} className="mt-1.5" />
         </div>{" "}
         <div>
-          <Label htmlFor={i485Id}>I-485 receipt date (optional)</Label>{" "}
+          <Label htmlFor={i485Id}><KeepWhole>{"I-485 receipt date (optional)"}</KeepWhole></Label>{" "}
           <DateInput id={i485Id} value={i485} onChange={(e) => setI485(e.target.value)} className="mt-1.5" />
         </div>{" "}
         <div>
@@ -107,7 +108,7 @@ export function PriorityDateRetentionCalculator() {
           <dl className="border-t-2 border-border">
             {result.r.portableFrom ? (
               <div className="grid grid-cols-1 gap-y-1 border-b-2 border-border [&>*]:min-w-0 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-baseline sm:gap-x-4">
-                <dt className="text-base">The job can change to a same-or-similar one under 204(j) from ({RETENTION_DAYS} days after the I-485 was filed)</dt>{" "}
+                <dt className="text-base">The job can change to a same-or-similar one under 204(j) from ({RETENTION_DAYS}<KeepWhole>{" days after the I-485 was filed)"}</KeepWhole></dt>{" "}
                 <dd className="font-heading text-xl font-bold tabular-nums">{long(result.r.portableFrom)}</dd>
               </div>
             ) : null}{" "}
@@ -117,12 +118,12 @@ export function PriorityDateRetentionCalculator() {
                   A withdrawal on {long(result.r.withdrawal.on)}, {formatInt(result.r.withdrawal.daysAfterApproval)} days after approval
                 </dt>{" "}
                 <dd className={`font-heading text-xl font-bold ${result.r.withdrawal.autoRevokes ? "text-muted-foreground" : ""}`}>
-                  {result.r.withdrawal.autoRevokes ? "Revokes the I-140 automatically" : "Doesn't revoke the I-140"}
+                  {keepWhole(result.r.withdrawal.autoRevokes ? "Revokes the I-140 automatically" : "Doesn't revoke the I-140")}
                 </dd>
               </div>
             ) : null}{" "}
             <div className="grid grid-cols-1 gap-y-1 border-b-2 border-border [&>*]:min-w-0 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-baseline sm:gap-x-4">
-              <dt className="text-base">The priority date, for a future EB-1, EB-2 or EB-3 petition</dt>{" "}
+              <dt className="text-base"><KeepWhole>{"The priority date, for a future EB-1, EB-2 or EB-3 petition"}</KeepWhole></dt>{" "}
               <dd className="font-heading text-xl font-bold">Retained</dd>
             </div>
           </dl>{" "}

@@ -5,6 +5,7 @@ import { ArrowRightIcon } from "@phosphor-icons/react";
 import { Fragment, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface StageCard {
   key: string;
@@ -104,7 +105,7 @@ export function StagePicker({ stages, initial = 0 }: { stages: StageCard[]; init
             </div>{" "}
             <div>
               <dt className="text-sm text-soft">Who files</dt>{" "}
-              <dd className="mt-1 text-base font-semibold leading-snug">{s.who}</dd>
+              <dd className="mt-1 text-base font-semibold leading-snug">{keepWhole(s.who)}</dd>
             </div>{" "}
             <div>
               <dt className="text-sm text-soft">The form, and where</dt>{" "}
@@ -115,7 +116,7 @@ export function StagePicker({ stages, initial = 0 }: { stages: StageCard[]; init
           <div className="mt-6 grid grid-cols-1 gap-x-8 gap-y-4 border-t-2 border-border pt-5 sm:grid-cols-2 [&>*]:min-w-0">
             <p className="text-base leading-relaxed">
               <span className="font-semibold">What happens. </span>
-              {s.what}
+              {keepWhole(s.what)}
             </p>{" "}
             <p className="border-l-4 border-data-warn pl-4 text-base leading-relaxed">
               <span className="font-semibold">Watch for. </span>

@@ -28,6 +28,7 @@ import { useEffect } from "react";
 import { ArrowClockwiseIcon, ArrowSquareOutIcon } from "@phosphor-icons/react/dist/ssr";
 import { claimAutoReload, isReloadCurable, reportCaughtError } from "@/components/error/recovery";
 import { buttonVariants } from "@/components/ui/button";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /** Where each dataset actually comes from, for the outage case. */
 const PRIMARY_SOURCES = [
@@ -105,10 +106,10 @@ export default function PublicDataError({
                 rel="noopener noreferrer"
                 className="link inline-flex min-h-[44px] items-center gap-2"
               >
-                {s.label}
+                {keepWhole(s.label)}
                 <ArrowSquareOutIcon className="size-4" aria-hidden="true" />
               </a>{" "}
-              <span className="block text-sm text-muted-foreground">{s.note}</span>
+              <span className="block text-sm text-muted-foreground">{keepWhole(s.note)}</span>
             </li>
           ))}
         </ul>

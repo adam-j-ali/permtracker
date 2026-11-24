@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Fragment } from "react";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface AppBreadcrumbStep {
   href: string;
@@ -18,7 +19,7 @@ export function AppBreadcrumb({ steps, current }: { steps: AppBreadcrumbStep[]; 
           <Fragment key={step.href}>
             <li className="min-w-0">
               <Link href={step.href} className="link block truncate" title={step.label}>
-                {step.label}
+                {keepWhole(step.label)}
               </Link>
             </li>{" "}
             <li aria-hidden="true" className="text-muted-foreground">

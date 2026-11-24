@@ -13,6 +13,7 @@ import { getFamilyBulletinSeries } from "@/lib/db/publicData";
 import { withSocialCard } from "@/lib/socialCard";
 import { SITE_URL } from "@/lib/constants/site";
 import { ScrollBox } from "@/components/ui/scroll-box";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Family-sponsored cutoff history from the bulletin archive.
@@ -179,9 +180,11 @@ export default async function FamilyBulletinPage() {
       <section className="mt-10 max-w-3xl">
         <h2 className="font-heading text-2xl font-bold">What this page doesn&apos;t do</h2>{" "}
         <p className="mt-3 text-base leading-relaxed text-soft">
-          It gives no queue position and no forecast. USCIS publishes its I-485 inventory by priority date only for
-          employment categories, so a family &ldquo;queue position&rdquo; from any source is a guess. The history
-          above is what can be measured.
+          <KeepWhole>
+            {"It gives no queue position and no forecast. USCIS publishes its I-485 inventory by priority date " +
+              "only for employment categories, so a family “queue position” from any source is a guess. The " +
+              "history above is what can be measured."}
+          </KeepWhole>
         </p>{" "}
         <p className="mt-3 text-base leading-relaxed text-soft">
           Each bulletin is read from the State Department&apos;s pages the day it appears. Employment history is

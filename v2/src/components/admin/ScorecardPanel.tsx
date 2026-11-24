@@ -22,6 +22,7 @@ import {
   sourceName,
   type RivalReading,
 } from "@/lib/scorecard/verdict";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The private competitor scorecard: our daily sample against the same cases
@@ -299,8 +300,10 @@ export function ScorecardPanel() {
         <section aria-labelledby="sc-others" className="border-2 border-border bg-card p-5 sm:p-6 shadow-hard">
           <h2 id="sc-others" className="font-heading text-xl font-bold">The other estimates</h2>{" "}
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-            Ours only: no rival dates wage requests or H-2A, H-2B and CW-1 cases. Each seasonal application is
-            recorded once, in its first week.
+            <KeepWhole>
+              {"Ours only: no rival dates wage requests or H-2A, H-2B and CW-1 cases. Each seasonal application " +
+                "is recorded once, in its first week."}
+            </KeepWhole>
           </p>{" "}
           <ScrollBox label="The other estimates" className="mt-4 border border-border">
             <table className="w-full min-w-[640px] text-sm">

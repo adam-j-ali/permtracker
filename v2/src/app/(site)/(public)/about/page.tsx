@@ -69,6 +69,7 @@ import {
 import { SITE_URL } from "@/lib/constants/site";
 import { buttonVariants } from "@/components/ui/button";
 import { monthYear } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "About PERM Tracker";
 const DESCRIPTION =
@@ -265,7 +266,7 @@ export default async function AboutPage() {
                   <dt className="font-heading text-4xl font-bold tabular-nums tracking-tight">{f.value.toLocaleString("en-US")}</dt>{" "}
                   <dd className="mt-1 text-base leading-snug">
                     <Link href={f.href} className="link">
-                      {f.label}
+                      {keepWhole(f.label)}
                     </Link>
                   </dd>
                 </div>
@@ -315,7 +316,7 @@ export default async function AboutPage() {
             <article key={h.key} className="flex flex-col">
               <div className="flex items-center gap-3">
                 <h.Icon aria-hidden="true" className="size-7 shrink-0 text-primary-text" />{" "}
-                <h3 className="font-heading text-2xl font-bold">{h.title}</h3>
+                <h3 className="font-heading text-2xl font-bold">{keepWhole(h.title)}</h3>
               </div>{" "}
               <p className="mt-3 max-w-xl text-base leading-relaxed text-soft">{h.line}</p>{" "}
               <ul className="mt-5 flex flex-wrap gap-3">
@@ -323,7 +324,7 @@ export default async function AboutPage() {
                   <Fragment key={l.href}>
                     <li>
                       <Link href={l.href} className={buttonVariants({ variant: "outline" })}>
-                        {l.label} <ArrowRightIcon aria-hidden="true" className="size-4" weight="bold" />
+                        {keepWhole(l.label)} <ArrowRightIcon aria-hidden="true" className="size-4" weight="bold" />
                       </Link>
                     </li>{" "}
                   </Fragment>
@@ -351,7 +352,7 @@ export default async function AboutPage() {
               <Fragment key={s.agency}>
                 <li className="bg-tint p-4 border-2 shadow-hard-sm border-border">
                   <span className="block font-heading text-lg font-bold">{s.agency}</span>{" "}
-                  <span className="mt-1 block text-sm leading-snug text-muted-foreground">{s.what}</span>
+                  <span className="mt-1 block text-sm leading-snug text-muted-foreground">{keepWhole(s.what)}</span>
                 </li>{" "}
               </Fragment>
             ))}
@@ -379,7 +380,7 @@ export default async function AboutPage() {
                     href={pg.href}
                     className={buttonVariants({ variant: "outline", size: "lg", className: "justify-between" })}
                   >
-                    {pg.label} <ArrowRightIcon aria-hidden="true" className="size-4 shrink-0" weight="bold" />
+                    {keepWhole(pg.label)} <ArrowRightIcon aria-hidden="true" className="size-4 shrink-0" weight="bold" />
                   </Link>
                 </li>{" "}
               </Fragment>
@@ -421,10 +422,10 @@ export default async function AboutPage() {
                   {m.href ? (
                     // A milestone's link stands alone on its lines, so on a phone it gets the tap floor.
                     <Link href={m.href} className={`${LINK} max-sm:inline-flex max-sm:min-h-11 max-sm:items-center`}>
-                      {m.what}
+                      {keepWhole(m.what)}
                     </Link>
                   ) : (
-                    m.what
+                    keepWhole(m.what)
                   )}
                 </span>
               </li>{" "}
@@ -444,7 +445,7 @@ export default async function AboutPage() {
             <Fragment key={n.title}>
               <li className="lift border-2 border-border bg-card p-5 shadow-hard-sm">
                 <n.Icon aria-hidden="true" className="size-7 text-muted-foreground" />{" "}
-                <span className="mt-4 block font-heading text-xl font-bold">{n.title}</span>{" "}
+                <span className="mt-4 block font-heading text-xl font-bold">{keepWhole(n.title)}</span>{" "}
                 <span className="mt-2 block text-base leading-relaxed text-soft">{n.line}</span>
               </li>{" "}
             </Fragment>
@@ -473,7 +474,7 @@ export default async function AboutPage() {
                   target="_blank"
                   className={buttonVariants({ variant: "outline", size: "lg" })}
                 >
-                  {e.label} <ArrowUpRightIcon aria-hidden="true" className="size-4" weight="bold" />
+                  {keepWhole(e.label)} <ArrowUpRightIcon aria-hidden="true" className="size-4" weight="bold" />
                 </a>
               </li>{" "}
             </Fragment>

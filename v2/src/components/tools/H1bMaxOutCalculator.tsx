@@ -10,6 +10,7 @@ import { DateRuler } from "@/components/tools/DateRuler";
 import { RuleNotes } from "@/components/tools/RuleNotes";
 import { calculateH1bMaxOut, PERM_ADVANCE_DAYS, type H1bMaxOutResult } from "@/lib/perm";
 import { formatInt } from "@/lib/format";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 type Outcome = { kind: "error"; error: string } | { kind: "ok"; r: H1bMaxOutResult; warnings: string[] };
 
@@ -67,9 +68,9 @@ export function H1bMaxOutCalculator() {
     <div className="object p-5 sm:p-8">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 [&>*]:min-w-0">
         <div>
-          <Label htmlFor={startId}>First day of H-1B status</Label>{" "}
+          <Label htmlFor={startId}><KeepWhole>{"First day of H-1B status"}</KeepWhole></Label>{" "}
           <DateInput id={startId} value={start} onChange={(e) => setStart(e.target.value)} className="mt-1.5" />{" "}
-          <p className="mt-1 text-sm text-muted-foreground">Or the earliest H-1B or L-1 start if the six years combine.</p>
+          <p className="mt-1 text-sm text-muted-foreground"><KeepWhole>{"Or the earliest H-1B or L-1 start if the six years combine."}</KeepWhole></p>
         </div>{" "}
         <div>
           <Label htmlFor={outsideId}>Days outside the U.S. (optional)</Label>{" "}
@@ -84,7 +85,7 @@ export function H1bMaxOutCalculator() {
             placeholder="0"
             className="mt-1.5 min-h-11 w-full min-w-0 border-2 border-input bg-background px-3 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           />{" "}
-          <p className="mt-1 text-sm text-muted-foreground">Time abroad during H-1B status can be recaptured.</p>
+          <p className="mt-1 text-sm text-muted-foreground"><KeepWhole>{"Time abroad during H-1B status can be recaptured."}</KeepWhole></p>
         </div>{" "}
         <div>
           <Label htmlFor={permId}>PERM filing date (optional)</Label>{" "}

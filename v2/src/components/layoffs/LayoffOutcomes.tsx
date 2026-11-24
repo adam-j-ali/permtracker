@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { ChartTips } from "@/components/data/ChartTips";
 import { formatInt, formatShareOf } from "@/lib/format";
 import { outcomeTotal, type LayoffOutcomes as Outcomes } from "@/lib/layoffDisclosures";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * How the applications that said yes ended, beside those that said no, in the
@@ -39,7 +40,7 @@ function Row({ title, o }: { title: string; o: Outcomes }) {
           <Fragment key={p.key}>
             <li className="flex items-center gap-1.5">
               <span aria-hidden="true" className={`inline-block h-3 w-3 shrink-0 border border-input ${p.bg}`} />{" "}
-              <span>{p.label}</span>{" "}
+              <span>{keepWhole(p.label)}</span>{" "}
               <span className="font-mono font-bold tabular-nums">{formatShareOf(o[p.key], total)}</span>
             </li>{" "}
           </Fragment>

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { embedBySlug, type EmbedDef } from "@/lib/embeds";
 import { EmbedRuntime } from "./EmbedRuntime";
 import { RefreshWhenStale } from "@/components/ui/refresh-when-stale";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The shell every `/embed/<slug>` page renders inside: a title bar, the tool,
@@ -66,7 +67,7 @@ export function EmbedFrame({ slug, children }: { slug: string; children: React.R
       <style dangerouslySetInnerHTML={{ __html: embedCss(slug) }} />
       <EmbedRuntime slug={slug} />
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b-2 border-border bg-card px-4 py-2">
-        <h1 className="font-heading text-lg font-bold leading-tight">{def.title}</h1>{" "}
+        <h1 className="font-heading text-lg font-bold leading-tight">{keepWhole(def.title)}</h1>{" "}
         <a href="/" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-sm font-bold hover:text-primary">
           PERM Tracker
         </a>

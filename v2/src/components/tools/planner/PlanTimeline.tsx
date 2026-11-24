@@ -8,6 +8,7 @@ import { MS_PER_DAY } from "@convex/lib/time";
 
 import { axisTicks } from "./axis";
 import { dayLabel, lengthLabel } from "./format";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /** Where each step's own page is. */
 export const STEP_HREF: Record<PlanStep["key"], string> = {
@@ -110,7 +111,7 @@ export function PlanTimeline({ steps, sideSteps, today }: { steps: PlanStep[]; s
                   className={cn("absolute -translate-x-1/2 whitespace-nowrap", t.year && "font-semibold text-foreground", thin && i % 2 === 1 && !t.year && "max-md:hidden")}
                   style={{ left: `${pct(t.iso)}%` }}
                 >
-                  {t.label}
+                  {keepWhole(t.label)}
                 </span>{" "}
               </Fragment>
             ) : null,

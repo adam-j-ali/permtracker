@@ -71,6 +71,7 @@ import { getRangeCoverage } from "@/lib/db/rangeCoverage";
 import { softFail } from "@/lib/softRead";
 import { NextStartLine } from "@/components/queue/NextMonthStart";
 import { getNextStart } from "@/lib/db/monthStarts";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * One filing month, split across the queues DOL actually runs.
@@ -643,7 +644,7 @@ function MonthHeadline({
           <Fragment key={p.key}>{" "}
           <li className="flex items-center gap-2">
             <span className={`inline-block size-3 border border-input ${p.cls}`} aria-hidden="true" />{" "}
-            {`${formatInt(p.n)} ${p.text}`}
+            <KeepWhole>{`${formatInt(p.n)} ${p.text}`}</KeepWhole>
           </li>
           </Fragment>
         ))}

@@ -1,6 +1,7 @@
 import { RUNGS, RUNG_LABEL, isComplete, type Ladder } from "@/lib/wageLadder";
 import { formatDollars } from "@/lib/format";
 import { ScrollBox } from "@/components/ui/scroll-box";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The same ladders as exact figures.
@@ -64,7 +65,7 @@ export function LadderTable({
           {rows.map((l) => (
             <tr key={l.key} className="border-b border-border last:border-b-0">
               <th scope="row" className="px-3 py-2 text-left font-bold">
-                {l.label}{" "}
+                {keepWhole(l.label)}{" "}
               </th>
               <td className="px-3 py-2 text-right font-mono tabular-nums">
                 {l.count.toLocaleString("en-US")}{" "}

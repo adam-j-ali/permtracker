@@ -53,6 +53,7 @@ import { checkedLabel } from "@/lib/time";
 import { analystReviewQueue } from "@convex/lib/dolProcessingTimes";
 import { longDate, monthDay, monthTick, monthYear, weekdayName } from "@convex/lib/months";
 import { softFail } from "@/lib/softRead";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * PERM by the numbers: the totals DOL's own case records add up to, which DOL
@@ -225,7 +226,7 @@ export default async function PermByTheNumbersPage() {
     key: e.slug ?? e.label,
     label: e.slug ? (
       <Link href={entityHref("employer", e.slug)} className="link">
-        {e.label}
+        {keepWhole(e.label)}
       </Link>
     ) : (
       e.label
@@ -308,7 +309,7 @@ export default async function PermByTheNumbersPage() {
                     <Fragment key={f.label}>
                       {" "}
                       <div>
-                        <dt className="text-sm text-muted-foreground">{f.label}</dt>{" "}
+                        <dt className="text-sm text-muted-foreground">{keepWhole(f.label)}</dt>{" "}
                         <dd className="m-0 mt-1 font-heading text-2xl font-bold tabular-nums">{f.value}</dd>
                       </div>
                     </Fragment>
@@ -423,10 +424,10 @@ export default async function PermByTheNumbersPage() {
                     {e.slug ? (
                       // the link fills its 44px row, so the whole row is the tap target
                       <Link href={entityHref("employer", e.slug)} className="link -my-2 block min-w-0 truncate py-2.5">
-                        {e.label}
+                        {keepWhole(e.label)}
                       </Link>
                     ) : (
-                      <span className="min-w-0 truncate">{e.label}</span>
+                      <span className="min-w-0 truncate">{keepWhole(e.label)}</span>
                     )}{" "}
                     <span className="shrink-0 font-mono text-base font-bold tabular-nums">{formatInt(e.cases)}</span>
                   </li>

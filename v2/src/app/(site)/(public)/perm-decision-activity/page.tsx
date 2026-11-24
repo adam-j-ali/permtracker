@@ -57,6 +57,7 @@ import { MS_PER_DAY } from "@/lib/time";
 import { SITE_URL } from "@/lib/constants/site";
 import { softFail } from "@/lib/softRead";
 import { StepBothSources } from "@/components/community/StepBothSources";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "PERM Decision Activity";
 const DESCRIPTION =
@@ -347,10 +348,11 @@ export default async function DecisionActivityPage() {
               observed. It doesn&apos;t mean DOL was idle.
             </p>{" "}
             <p>
-              Two kinds of row are left out of every day, and the count each one
-              costs that day is printed above the table, because it changes with
-              the day the reader picks. A certification whose 180-day I-140
-              window lapsed is a clock running out. DOL didn{"\u2019"}t act on
+              <KeepWhole>
+                {"Two kinds of row are left out of every day, and the count each one costs that day is printed " +
+                  "above the table, because it changes with the day the reader picks. A certification whose " +
+                  "180-day I-140 window lapsed is a clock running out. DOL didn"}
+              </KeepWhole>{"\u2019"}t act on
               the case. And a single timestamp carrying more than 5,000 changes
               is a scan catching up on months of history: DOL{"\u2019"}s heaviest
               measured day is under 2,000, and one sweep wrote 94,523 rows at
@@ -470,7 +472,7 @@ export default async function DecisionActivityPage() {
               <Fragment key={col.title}>
               <div >
                 <h3 className="text-sm font-bold text-muted-foreground">
-                  {col.title}
+                  {keepWhole(col.title)}
                 </h3>{" "}
                 <ol className="mt-3 m-0 list-none p-0">
                   {col.rows.map((d) => (

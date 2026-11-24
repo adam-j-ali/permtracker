@@ -7,6 +7,7 @@ import { ColumnChart, type Column } from "@/components/numbers/ColumnChart";
 import { choiceVariants } from "@/components/ui/choice";
 import { flowTotals, type FlowMonth } from "@/lib/byTheNumbers";
 import { formatInt, formatShareOf } from "@/lib/format";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /** The outcome colours, the status code used everywhere: certified green, denied red, withdrawn purple. */
 const OUTCOMES = [
@@ -82,7 +83,7 @@ export function MonthlyFlow({ months, gapReason }: { months: readonly FlowMonth[
           <Fragment key={p.key}>
             {" "}
             <button type="button" aria-pressed={period === p.key} onClick={() => setPeriod(p.key)} className={choiceVariants({ on: period === p.key })}>
-              {p.label}
+              {keepWhole(p.label)}
             </button>
           </Fragment>
         ))}
@@ -108,7 +109,7 @@ export function MonthlyFlow({ months, gapReason }: { months: readonly FlowMonth[
       <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm">
         {OUTCOMES.slice(0, 3).map((o) => (
           <li key={o.key} className="flex items-center gap-2">
-            <span aria-hidden="true" className={`inline-block size-3 border border-input ${o.fill}`} /> {o.label}{" "}
+            <span aria-hidden="true" className={`inline-block size-3 border border-input ${o.fill}`} /> {keepWhole(o.label)}{" "}
           </li>
         ))}
         {totals.noRecord.length > 0 ? (

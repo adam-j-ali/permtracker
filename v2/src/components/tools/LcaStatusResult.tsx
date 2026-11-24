@@ -15,6 +15,7 @@ import { formatDay } from "@/lib/dolFormat";
 import { prettyStatus } from "@/components/queue/stages";
 import { softFail } from "@/lib/softRead";
 import { caseHref } from "@/lib/caseLinks";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * A labor condition application (ETA-9035) by number: DOL's own status,
@@ -153,7 +154,7 @@ export async function LcaLookup({ caseNumber }: { caseNumber: string }) {
   ]);
   const label = (n: string) => (
     <>
-      H-1B LCA <span translate="no">{n}</span>
+      <KeepWhole>{"H-1B LCA "}</KeepWhole><span translate="no">{n}</span>
     </>
   );
 

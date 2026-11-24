@@ -12,6 +12,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { h4EadTimes } from "@/lib/uscisPosted";
 import { longDate } from "@convex/lib/months";
 import { withSocialCard } from "@/lib/socialCard";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Was a work permit automatically extended by its renewal? Since October 30,
@@ -98,10 +99,12 @@ export default async function EadExtensionPage() {
       </section>
 
       <section className="mt-10 max-w-3xl" id="h4-ead">
-        <h2 className="font-heading text-2xl font-bold">H-4 EAD: who can apply, and how long it takes</h2>{" "}
+        <h2 className="font-heading text-2xl font-bold"><KeepWhole>{"H-4 EAD: who can apply, and how long it takes"}</KeepWhole></h2>{" "}
         <p className="mt-3 text-base leading-relaxed text-soft">
-          An H-4 spouse of an H-1B worker can get a work permit only if the H-1B worker has an approved I-140, or is
-          in H-1B status past six years under sections 106(a) and (b) of AC21 (
+          <KeepWhole>
+            {"An H-4 spouse of an H-1B worker can get a work permit only if the H-1B worker has an approved " +
+              "I-140, or is in H-1B status past six years under sections 106(a) and (b) of AC21 ("}
+          </KeepWhole>
           <a href={H4_RULE_URL} rel="noopener" className="link">
             8 CFR 214.2(h)(9)(iv)
           </a>
@@ -111,7 +114,7 @@ export default async function EadExtensionPage() {
           <>
             <p className="mt-3 text-base leading-relaxed text-soft">
               How long USCIS took to decide 80% of these applications over the past six months, as its processing-times
-              page posted on {longDate(h4.published)}. Filing with the H-4 extension is the faster route.
+              page posted on {longDate(h4.published)}<KeepWhole>{". Filing with the H-4 extension is the faster route."}</KeepWhole>
             </p>{" "}
             <div className="mt-4">
               <BarRows
@@ -133,16 +136,18 @@ export default async function EadExtensionPage() {
             <a href="https://egov.uscis.gov/processing-times/" rel="noopener" className="link">
               its processing-times page
             </a>{" "}
-            (Form I-765, category (c)(26)).
+            <KeepWhole>{"(Form I-765, category (c)(26))."}</KeepWhole>
           </p>
         )}{" "}
         <p className="mt-3 text-base leading-relaxed text-soft">
-          People also add their own H-4 work permit dates on{" "}
+          <KeepWhole>{"People also add their own H-4 work permit dates on"}</KeepWhole>{" "}
           <Link href="/green-card-timelines" className="link">
             the green card timelines page
           </Link>
-          , alongside at least one date from the green card case, such as the I-140&apos;s filing. Each route, filed with
-          the I-539 or on its own, gets a median there once five people report it.
+          <KeepWhole>
+            {", alongside at least one date from the green card case, such as the I-140's filing. Each route, " +
+              "filed with the I-539 or on its own, gets a median there once five people report it."}
+          </KeepWhole>
         </p>
       </section>
 

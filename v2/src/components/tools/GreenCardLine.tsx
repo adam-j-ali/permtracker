@@ -25,6 +25,7 @@ import { plausibleRange } from "@/lib/greenCardLineCompare";
 import { monthsToReach, type CountryKey, type PaceBasis } from "@/lib/perm";
 import { cn } from "@/lib/utils";
 import { DAYS_PER_MONTH_2DP } from "@/lib/time";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 const SELECT_CLASS =
   "mt-2 block min-h-[44px] w-full min-w-0 border-2 border-input bg-background px-3 py-2 text-base font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2";
@@ -193,7 +194,7 @@ export function GreenCardLine({
           <ul aria-hidden="true" className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
             <li>Current, not finished</li>{" "}
             <li>Approved, waiting for the bulletin</li>{" "}
-            <li>Waiting for I-140 approval</li>
+            <li><KeepWhole>{"Waiting for I-140 approval"}</KeepWhole></li>
           </ul>{" "}
           <p className="mt-4 text-base text-muted-foreground">
             Pick a priority date and this fills in: how many people stand ahead of you in
@@ -297,8 +298,7 @@ function LineAnswer({
         {result.counted && result.counted.low > 0 ? (
           <p className="mt-2 text-base text-soft">
             USCIS counted at least{" "}
-            <b className="font-bold text-foreground tabular-nums">{result.counted.low.toLocaleString("en-US")}</b> of
-            them in its I-485 inventory{result.i485AsOf ? ` of ${formatAsOf(result.i485AsOf)}` : ""}.
+            <b className="font-bold text-foreground tabular-nums">{result.counted.low.toLocaleString("en-US")}</b><KeepWhole>{" of them in its I-485 inventory"}</KeepWhole>{result.i485AsOf ? ` of ${formatAsOf(result.i485AsOf)}` : ""}.
           </p>
         ) : null}
 
@@ -344,8 +344,8 @@ function LineAnswer({
                 <span className={cn("mt-1.5 h-3 w-3 shrink-0 border-input border", s.cls)} aria-hidden="true" />{" "}
                 <span>
                   <b className="block font-bold tabular-nums">{roundPeople(s.value)}</b>{" "}
-                  <span className="block text-base font-semibold">{s.label}</span>{" "}
-                  <span className="block text-sm text-muted-foreground">{s.note}</span>
+                  <span className="block text-base font-semibold">{keepWhole(s.label)}</span>{" "}
+                  <span className="block text-sm text-muted-foreground">{keepWhole(s.note)}</span>
                 </span>
               </li>
             </Fragment>
@@ -407,8 +407,10 @@ function LineAnswer({
             count high too.
           </li>{" "}
           <li>
-            Priority dates kept from an earlier petition. Someone who files a new I-140 and keeps an older date sits
-            earlier in the line than their filing year, and this spread can&apos;t see it.
+            <KeepWhole>
+              {"Priority dates kept from an earlier petition. Someone who files a new I-140 and keeps an older " +
+                "date sits earlier in the line than their filing year, and this spread can't see it."}
+            </KeepWhole>
           </li>
         </ul>
       </details>
@@ -420,32 +422,34 @@ function LineAnswer({
         <div className="mt-3 max-w-3xl space-y-3 text-base leading-relaxed text-soft">
           <p>
             USCIS counted <b className="font-bold">{result.awaitingTotal.toLocaleString("en-US")}</b> approved
-            petitions in this line waiting for a visa number as of {formatMonth(result.awaitingAsOf)}, primary
-            applicants only. It doesn&apos;t say which priority dates they hold, so this spreads them by how USCIS
-            approved I-140s year by year, each moved back by the time the PERM took (a priority date is the day DOL
-            received the PERM).
+            petitions in this line waiting for a visa number as of {formatMonth(result.awaitingAsOf)}<KeepWhole>{", primary applicants only. It doesn't say which priority dates they hold, so this spreads them by how USCIS approved I-140s year by year, each moved back by the time the PERM took (a priority date is the day DOL received the PERM)."}</KeepWhole>
           </p>{" "}
           <p>
-            That time is measured from DOL&apos;s decided cases for petitions filed since October 2023 (about 11 to 17
-            months), plus up to six months to file the I-140, since a certification lasts 180 days. For older
-            petitions this site holds no DOL decisions, so it assumes {PERM_MONTHS_BEFORE_MEASURED.low} to{" "}
+            <KeepWhole>
+              {"That time is measured from DOL's decided cases for petitions filed since October 2023 (about 11 " +
+                "to 17 months), plus up to six months to file the I-140, since a certification lasts 180 days. For " +
+                "older petitions this site holds no DOL decisions, so it assumes "}
+            </KeepWhole>{PERM_MONTHS_BEFORE_MEASURED.low} to{" "}
             {PERM_MONTHS_BEFORE_MEASURED.high} months. National interest waivers skip the PERM and keep their filing
             date. The range above carries both.
           </p>{" "}
           <p>
             Each petition becomes {FAMILY_SIZE[category].low.toFixed(2)} to {FAMILY_SIZE[category].high.toFixed(2)}{" "}
-            people, the ratio DHS measured when this category got green cards in fiscal 2023 and 2024. Pending I-140s
-            are counted at the share USCIS approved in complete years. The I-485s already current come straight from
-            USCIS&apos;s monthly inventory, where cells of 1 to 10 are withheld, so they&apos;re a range too.
+            <KeepWhole>
+              {"people, the ratio DHS measured when this category got green cards in fiscal 2023 and 2024. " +
+                "Pending I-140s are counted at the share USCIS approved in complete years. The I-485s already " +
+                "current come straight from USCIS's monthly inventory, where cells of 1 to 10 are withheld, so " +
+                "they're a range too."}
+            </KeepWhole>
           </p>{" "}
           {result.check ? (
             <p>
               Checked where both views exist: at the dates-for-filing cutoff ({formatAsOf(result.check.at)}) the
               estimate is {rangeText(result.check.estimate.low, result.check.estimate.high)} and USCIS counted{" "}
               {roundPeople(result.check.counted.low)} who filed.{" "}
-              {result.check.comparable
+              {keepWhole(result.check.comparable
                 ? "Most of this category adjusts inside the US, so the two should be close."
-                : "Most of this category gets its visa abroad, which the I-485 inventory can't count, so a gap here is expected."}
+                : "Most of this category gets its visa abroad, which the I-485 inventory can't count, so a gap here is expected.")}
             </p>
           ) : null}
         </div>

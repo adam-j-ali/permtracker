@@ -7,6 +7,7 @@
 import { Badge, ToneBadge } from "@/components/ui/badge";
 import { countShownDates, formatCompactDate } from "./case-card.utils";
 import type { CaseCardData } from "@convex/lib/caseListTypes";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // ============================================================================
 // CASE BADGES
@@ -63,7 +64,7 @@ function DateSection({ title, dates }: { title: string; dates: Array<{ label: st
       <dl className="mt-1 space-y-0.5 text-sm">
         {shown.map((d) => (
           <div key={d.label} className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">{d.label}</dt>{" "}
+            <dt className="text-muted-foreground">{keepWhole(d.label)}</dt>{" "}
             <dd className="tabular-nums">{formatCompactDate(d.value)}</dd>
           </div>
         ))}

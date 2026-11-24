@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import { HOME_WIDTH } from "./homeWidth";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 
 
@@ -318,14 +319,14 @@ export function DataShelf({ figures }: { figures?: DataPageFigures }) {
                   restating the label; the whole card is the link, and `what`
                   names it for screen readers. */}
               <span className="flex items-center justify-between gap-2 font-heading text-lg font-bold">
-                {d.label}{" "}
+                {keepWhole(d.label)}{" "}
               </span>{" "}
               {d.figure ? (
                 <span className="mt-3 block border-t-2 border-border">
                   {d.figure}
                 </span>
               ) : null}{" "}
-              <span className="sr-only">{d.what}</span>{" "}
+              <span className="sr-only">{keepWhole(d.what)}</span>{" "}
             </Link>
           ))}
         </nav>

@@ -10,6 +10,7 @@ import { GREEN_CARD_ROUTES, milestoneLabel, type Milestone } from "@/lib/perm";
 import { PLAN_CATEGORIES, PLAN_COUNTRIES, type PlanCategory, type PlanCountry } from "@/lib/planQuery";
 
 import { milestonesUpTo, planPatch, requiredMilestones, WHERE, type PlanUrlState, type WhereKey } from "./planUrl";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 export const FIELD =
   "mt-1.5 min-h-11 w-full min-w-0 border-2 border-input bg-background px-3 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
@@ -111,7 +112,7 @@ export function CaseInputs({ state, set }: { state: PlanUrlState; set: (patch: R
                 />{" "}
                 <span className="min-w-0">
                   <span className="block font-semibold">{ROUTE_LABEL[r].name}</span>{" "}
-                  <span className="block text-sm text-soft">{ROUTE_LABEL[r].note}</span>
+                  <span className="block text-sm text-soft">{keepWhole(ROUTE_LABEL[r].note)}</span>
                 </span>
               </label>
             ))}
@@ -119,7 +120,7 @@ export function CaseInputs({ state, set }: { state: PlanUrlState; set: (patch: R
         </fieldset>{" "}
         <label htmlFor={ids("premium")} className="flex min-h-11 items-center gap-3 self-end text-base">
           <input id={ids("premium")} type="checkbox" checked={state.premium} onChange={(e) => set(planPatch({ premium: e.target.checked }))} className={CHECK} />{" "}
-          Premium processing on the I-140
+          <KeepWhole>{"Premium processing on the I-140"}</KeepWhole>
         </label>
       </div>{" "}
       {more.length > 0 ? (

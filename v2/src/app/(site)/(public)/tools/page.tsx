@@ -22,6 +22,7 @@ import { getDolPosition } from "@/lib/db/dolPosition";
 import { longDate } from "@convex/lib/months";
 import { CaseLookupForm } from "@/components/tools/CaseLookupForm";
 import { DataTour } from "@/components/tools/DataTour";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "Live PERM Data Overview";
 const DESCRIPTION =
@@ -146,8 +147,10 @@ export default async function ToolsPage() {
         <div>
           <h2 className="font-heading text-2xl font-bold">All {CALCULATOR_PAGES.length} calculators</h2>{" "}
           <p className="mt-1 max-w-xl text-base">
-            Decision times, the wage, I-140 and I-485 queues, priority dates,
-            the whole green card dated from your own case, and every statutory deadline.
+            <KeepWhole>
+              {"Decision times, the wage, I-140 and I-485 queues, priority dates, the whole green card dated from " +
+                "your own case, and every statutory deadline."}
+            </KeepWhole>
           </p>
         </div>{" "}
         <Link href="/calculators" className={buttonVariants({ variant: "outline", size: "lg" })}>

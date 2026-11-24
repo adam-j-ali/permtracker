@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, type KeyboardEvent } from "react";
 import { FileTextIcon, FolderOpenIcon, NoteIcon as StickyNote, ScalesIcon as Scale, SquaresFourIcon as LayoutDashboard, UsersIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export type TabId =
   | "overview"
@@ -105,7 +106,7 @@ export function CaseDetailTabs({
               onClick={() => onTabChange(tab.id)}
             >
               <Icon className="size-4 shrink-0" aria-hidden="true" />
-              {tab.label}
+              {keepWhole(tab.label)}
             </button>
           );
         })}

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { DateRuler } from "@/components/tools/DateRuler";
 import { EAD_CATEGORIES, EXTENSION_DAYS, eadExtension, type EadVerdict } from "@/lib/eadExtension";
 import { SelectedInFull } from "@/components/tools/SelectedInFull";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /** A category as the receipt prints it, "(c)(9)", with its name. */
 function categoryLabel(c: { code: string; label: string }): string {
@@ -112,7 +113,7 @@ export function EadExtensionCalculator() {
           <DateInput id={expiresId} value={expires} onChange={(e) => setExpires(e.target.value)} className="mt-1.5" />
         </div>{" "}
         <div>
-          <Label htmlFor={receivedId}>&quot;Received Date&quot; on the renewal&apos;s I-797C</Label>{" "}
+          <Label htmlFor={receivedId}><KeepWhole>{"\"Received Date\" on the renewal's I-797C"}</KeepWhole></Label>{" "}
           <DateInput id={receivedId} value={received} onChange={(e) => setReceived(e.target.value)} className="mt-1.5" />
         </div>{" "}
         <div>
@@ -136,7 +137,7 @@ export function EadExtensionCalculator() {
         </div>{" "}
         {capsAtI94 ? (
           <div>
-            <Label htmlFor={i94Id}>Your I-94&apos;s end date</Label>{" "}
+            <Label htmlFor={i94Id}><KeepWhole>{"Your I-94's end date"}</KeepWhole></Label>{" "}
             <DateInput id={i94Id} value={i94} onChange={(e) => setI94(e.target.value)} className="mt-1.5" />
           </div>
         ) : null}

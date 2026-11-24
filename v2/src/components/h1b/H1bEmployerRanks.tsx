@@ -33,6 +33,7 @@ import {
 import { US_STATE_NAMES } from "@/lib/usStateNames";
 import { choiceVariants } from "@/components/ui/choice";
 import { entityHref } from "@/lib/entityPayload";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The ranked list on /h1b-employers and its state pages.
@@ -119,7 +120,7 @@ function Marks({ r }: { r: H1bRankRow }) {
     <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="On the record">
       {marks.map((m) => (
         <li key={m.key} className={`inline-flex min-h-7 items-center border-2 bg-card px-2 text-sm font-semibold border-border ${m.tone}`}>
-          {m.text}{" "}
+          {keepWhole(m.text)}{" "}
         </li>
       ))}
     </ul>
@@ -175,7 +176,7 @@ function Row({
           const sub = c.sub?.(r) ?? null;
           return (
             <div key={c.label} className="min-w-0 lg:text-right">
-              <dt className="text-sm text-muted-foreground lg:sr-only">{c.label}</dt>{" "}
+              <dt className="text-sm text-muted-foreground lg:sr-only">{keepWhole(c.label)}</dt>{" "}
               <dd className={`font-mono text-base tabular-nums ${c.lead ? "font-bold" : ""}`}>
                 {c.value(r)}
                 {sub ? " " : null}
@@ -238,7 +239,7 @@ function Headline({ view, rows }: { view: H1bView; rows: H1bRankRow[] }) {
           <li key={b.key} className="flex items-center gap-2">
             <span className={`inline-block size-3.5 border border-input ${b.swatch}`} aria-hidden="true" />{" "}
             <span>
-              {b.label}: <span className="font-mono font-bold tabular-nums">{formatInt(b.n)}</span>
+              {keepWhole(b.label)}: <span className="font-mono font-bold tabular-nums">{formatInt(b.n)}</span>
             </span>
           </li>
         ))}
@@ -366,9 +367,9 @@ export function H1bEmployerRanks({
         {view ? <Headline view={view} rows={rows} /> : null}{" "}
         {view && rows.length === 0 ? (
           <p className="mt-8 bg-sage p-5 text-base border-2 border-border">
-            {by === "lca"
+            {keepWhole(by === "lca"
               ? `DOL's files hold no certified H-1B LCAs for ${placeName(state)} in FY${year.fy}.`
-              : `USCIS's counts hold no H-1B approvals for ${placeName(state)} in FY${year.fy}.`}
+              : `USCIS's counts hold no H-1B approvals for ${placeName(state)} in FY${year.fy}.`)}
           </p>
         ) : null}{" "}
         {rows.length > 0 ? (
@@ -381,7 +382,7 @@ export function H1bEmployerRanks({
               {cols.map((c) => (
                 <Fragment key={c.label}>
                   {" "}
-                  <span className="text-right">{c.label}</span>
+                  <span className="text-right">{keepWhole(c.label)}</span>
                 </Fragment>
               ))}
             </div>{" "}

@@ -10,6 +10,7 @@ import { postNiv, type PostNiv } from "@/lib/db/nivIssuances";
 import { monthName } from "@/lib/db/visaIssuances";
 import { formatInt } from "@/lib/format";
 import { monthTick } from "@convex/lib/months";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * A consulate's nonimmigrant visas, work visas first (State's monthly issuances by post,
@@ -122,10 +123,10 @@ export function WorkVisasView({ data, name, className }: { data: PostNiv; name: 
           />
           <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-sm" aria-label="Colour key">
             <li className="flex items-center gap-2">
-              <span aria-hidden="true" className="inline-block size-3 bg-primary" /> H-1B
+              <span aria-hidden="true" className="inline-block size-3 bg-primary" /><KeepWhole>{" H-1B"}</KeepWhole>
             </li>{" "}
             <li className="flex items-center gap-2">
-              <span aria-hidden="true" className="inline-block size-3 bg-chart-blue" /> L-1
+              <span aria-hidden="true" className="inline-block size-3 bg-chart-blue" /><KeepWhole>{" L-1"}</KeepWhole>
             </li>
           </ul>
         </FigurePlate>
@@ -133,7 +134,9 @@ export function WorkVisasView({ data, name, className }: { data: PostNiv; name: 
 
       <h3 className="mt-8 font-heading text-lg font-bold">Every visa class issued here</h3>{" "}
       <p className="mt-1 max-w-3xl text-base text-muted-foreground">
-        Work visas first, then everything else, visitors, students and K-1 fiancé(e) visas among them.
+        <KeepWhole>
+          {"Work visas first, then everything else, visitors, students and K-1 fiancé(e) visas among them."}
+        </KeepWhole>
       </p>
       <ScrollBox label={`Nonimmigrant visas issued in ${name}, by class`} className="mt-3 border-t-2 border-[var(--object-border)] bg-card">
         <table className="w-full min-w-[36rem] text-left text-base">
@@ -150,7 +153,7 @@ export function WorkVisasView({ data, name, className }: { data: PostNiv; name: 
             {rows.map((r) => (
               <tr key={r.symbol} className="border-b border-border last:border-b-0">
                 <th scope="row" className="whitespace-nowrap px-4 py-3 font-bold">
-                  {r.symbol === "K1" ? "K-1 fiancé(e)" : r.name}{" "}
+                  {keepWhole(r.symbol === "K1" ? "K-1 fiancé(e)" : r.name)}{" "}
                 </th>
                 <td className="px-4 py-3 text-muted-foreground">
                   {r.symbol === "K1" ? `${nivClass("K1").what} of a U.S. citizen` : r.what}

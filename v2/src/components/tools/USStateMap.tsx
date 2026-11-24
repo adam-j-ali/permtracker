@@ -8,6 +8,7 @@ import { stateName } from "@/lib/usStateNames";
 import { formatDollars, formatInt } from "@/lib/format";
 import { ScopeSelect } from "./DataView";
 import { FilterableStatTable, type CsvSpec, type StatColumn } from "./FilterableStatTable";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The by-state choropleth: real Census geometry (Albers USA composite,
@@ -410,7 +411,7 @@ export function USStateMap({
           no numbers on it is a decoration. */}
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
         <span className="text-sm font-bold text-muted-foreground">
-          {spec.label}
+          {keepWhole(spec.label)}
         </span>{" "}
         <span className="text-sm text-muted-foreground">
           {range ? spec.format(range.lo) : "—"}
@@ -483,7 +484,7 @@ export function USStateMap({
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
               {metricValue.has(active.state) ? (
                 <>
-                  {spec.label} here is{" "}
+                  {keepWhole(spec.label)} here is{" "}
                   <strong className="font-bold">
                     {spec.format(metricValue.get(active.state)!)}
                   </strong>
@@ -494,7 +495,7 @@ export function USStateMap({
                 </>
               ) : (
                 <>
-                  {spec.label} is withheld here: {formatInt(spec.population(active))}{" "}
+                  {keepWhole(spec.label)} is withheld here: {formatInt(spec.population(active))}{" "}
                   {spec.populationNoun} is under the floor of {formatInt(floor)}, and a rate
                   over a population that small says more about the sample than the state.
                   Counts carry no floor, so those are shown for every state.

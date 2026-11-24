@@ -20,6 +20,7 @@ import { TimelineMilestoneMarker } from "@/components/timeline/TimelineMilestone
 import { TimelineRangeBar } from "@/components/timeline/TimelineRangeBar";
 import { TimelineLegend } from "@/components/timeline/TimelineLegend";
 import { TodayIndicator } from "@/components/timeline/TimelineGrid";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // ============================================================================
 // TYPES
@@ -317,7 +318,7 @@ export function InlineCaseTimeline({
                       style={{ zIndex: Z_INDEX.stickyLabel }}
                     >
                       <span className={cn("truncate text-sm font-bold", row.textClass)}>
-                        {row.label}
+                        {keepWhole(row.label)}
                       </span>
                     </div>
 

@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { useFinderDock } from "@/components/tools/FinderDock";
 import { normaliseCaseNumber } from "@/lib/caseNumberShape";
 import { looksLikeReceipt } from "@/lib/uscis/receipt";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // Loaded when someone opens it: the homepage carries this box, and most visitors have their number.
 const CaseFinder = dynamic(() => import("@/components/tools/CaseFinder").then((m) => m.CaseFinder), {
@@ -168,7 +169,7 @@ export function CaseLookupForm({
     // The example sits under the box. As the box's placeholder it read as a number already typed (about 600 empty
     // presses in 30 days), and with words there instead, a first-time visitor had no example to go by.
     <>
-      {help} A case number looks like <span translate="no">{example}</span>.{also ? <> {also}</> : null}
+      {keepWhole(help)} A case number looks like <span translate="no">{example}</span>.{also ? <> {keepWhole(also)}</> : null}
     </>
   );
 
@@ -186,7 +187,7 @@ export function CaseLookupForm({
         }}
       >
         <label htmlFor={inputId} className={compact ? "sr-only" : "block text-base font-semibold"}>
-          {label}
+          {keepWhole(label)}
         </label>{" "}
         <div className={cn("flex flex-wrap items-stretch gap-3", !compact && "mt-2")}>
           <input
@@ -235,7 +236,7 @@ export function CaseLookupForm({
           : null}
         {hint ? (
           <p id={helpId} className={cn("mt-2 text-sm", compact && !isReceipt && !malformed ? "sr-only" : "text-muted-foreground")}>
-            {hint}
+            {keepWhole(hint)}
           </p>
         ) : null}
       </form>{" "}
@@ -336,7 +337,7 @@ function NoNumber({
             {[{ href: searchHref, label: searchLabel }, ...more].map((m) => (
               <li key={m.href}>
                 <Link href={m.href} className={ROW}>
-                  <span className={ROW_WORDS}>{m.label}</span>
+                  <span className={ROW_WORDS}>{keepWhole(m.label)}</span>
                   <ArrowRightIcon aria-hidden="true" weight="bold" className={ROW_MARK} />
                 </Link>{" "}
               </li>
@@ -359,7 +360,7 @@ function NoNumber({
             <span key={m.href} className="contents">
               {" "}
               <Link href={m.href} className={WAY}>
-                {m.label}
+                {keepWhole(m.label)}
               </Link>
             </span>
           ))}

@@ -8,6 +8,7 @@ import { estimateLine } from "@/lib/greenCardLine";
 import { monthIndex } from "@convex/lib/months";
 import { plausibleRange } from "@/lib/greenCardLineCompare";
 import { rangeText } from "../GreenCardLine";
+import { textContent } from "../../../../test-utils/text-content";
 
 /**
  * The calculator's four states, on the made-up EB-3 Other Workers line the
@@ -51,7 +52,7 @@ describe("GreenCardLine", () => {
     expect(screen.getByText("people ahead of you")).toBeInTheDocument();
     expect(screen.getByText(/green cards\s+went to this line and country that year/i)).toBeInTheDocument();
     for (const g of [/current, not finished/i, /approved, waiting for the bulletin/i, /waiting for I-140 approval/i]) {
-      expect(screen.getByText(g)).toBeInTheDocument();
+      expect(screen.getByText(textContent(g))).toBeInTheDocument();
     }
     // The method sits behind a disclosure, shut.
     const details = [...container.querySelectorAll("details")];

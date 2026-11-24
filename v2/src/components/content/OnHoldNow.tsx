@@ -7,6 +7,7 @@ import { getEmployerStages } from "@/lib/db/employerStages";
 import { formatInt, formatShare } from "@/lib/format";
 import { entityHref } from "@/lib/entityPayload";
 import { softFail } from "@/lib/softRead";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The on-hold guide's numbers, read live from the census the sweep writes.
@@ -64,7 +65,7 @@ export async function OnHoldNow() {
         <tbody translate="no">
           {stages.map(([status, n]) => (
             <tr key={status} className="border-b border-border">
-              <td className={`py-2 pr-4 ${status === HOLD_STATUS ? "font-bold" : ""}`}>{`${stageMeta(status).label} `}</td>
+              <td className={`py-2 pr-4 ${status === HOLD_STATUS ? "font-bold" : ""}`}><KeepWhole>{`${stageMeta(status).label} `}</KeepWhole></td>
               <td className={`py-2 text-right tabular-nums ${status === HOLD_STATUS ? "font-bold" : ""}`}>{`${formatInt(n)} `}</td>
             </tr>
           ))}

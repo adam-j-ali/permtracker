@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 
 import { RECEIPT_SHAPE_MESSAGE, normaliseReceipt } from "@/lib/uscis/receipt";
 import { buttonVariants } from "@/components/ui/button";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The receipt box on `/uscis-case-status`, as a plain GET form.
@@ -85,15 +86,18 @@ export function UscisReceiptForm({ defaultValue = "", className, live = false }:
           <span className="font-bold text-data-bad-ink">{RECEIPT_SHAPE_MESSAGE}</span>
         ) : live ? (
           <>
-            It&apos;s at the top of every I-797 notice USCIS mailed. The number goes
-            into this page&apos;s address so you can bookmark or share the result.
-            The receipt number and USCIS&apos;s answer are kept for twelve months
-            after the last lookup. Nothing about you is kept.
+            <KeepWhole>
+              {"It's at the top of every I-797 notice USCIS mailed. The number goes into this page's address so " +
+                "you can bookmark or share the result. The receipt number and USCIS's answer are kept for twelve " +
+                "months after the last lookup. Nothing about you is kept."}
+            </KeepWhole>
           </>
         ) : (
           <>
-            It&apos;s at the top of every I-797 notice USCIS mailed. The number goes
-            into this page&apos;s address so you can bookmark or share what it encodes.
+            <KeepWhole>
+              {"It's at the top of every I-797 notice USCIS mailed. The number goes into this page's address so " +
+                "you can bookmark or share what it encodes."}
+            </KeepWhole>
           </>
         )}
       </p>{" "}

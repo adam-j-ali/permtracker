@@ -27,6 +27,7 @@ import {
 import { CharLimit } from "@/components/ui/char-limit";
 import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from "@/lib/time";
 import { NOTES_PER_CASE_MAX, liveNotes, notesLimitMessage } from "./notesLimit";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /** How many notes the journal lists before a show-more. */
 const NOTES_SHOWN_STEP = 20;
@@ -442,7 +443,7 @@ export function NotesJournal({
                 onClick={() => setFilterBy(f.id)}
                 className={cn(choiceVariants({ on: filterBy === f.id }), "px-3")}
               >
-                {f.label}
+                {keepWhole(f.label)}
                 <span className="text-muted-foreground tabular-nums"> {counts[f.count]}</span>
               </button>
             ))}
@@ -494,7 +495,7 @@ export function NotesJournal({
                       {/* Badges row */}
                       <div className="flex flex-wrap items-center gap-1.5">
                         {/* Priority badge */}
-                        <ToneBadge tone={priorityConfig.tone}>{priorityConfig.label}</ToneBadge>{" "}
+                        <ToneBadge tone={priorityConfig.tone}>{keepWhole(priorityConfig.label)}</ToneBadge>{" "}
                         <span className="text-sm text-muted-foreground">
                           {NOTE_CATEGORY_LABELS[note.category || "other"]}
                         </span>

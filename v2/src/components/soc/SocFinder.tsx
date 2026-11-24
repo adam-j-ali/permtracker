@@ -9,6 +9,7 @@ import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 import { formatShareOf } from "@/lib/format";
 import { codeHref, zoneLabelOf, type CodeAnswer, type TitleAnswer } from "@/lib/socFinder";
 import { formText } from "@/lib/forms/formText";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The job code finder: a job title or a code in, the codes employers filed it under out, each with
@@ -135,7 +136,7 @@ export function SocFinder({ examples }: { examples: { slug: string; title: strin
                     void ask(x.title);
                   }}
                 >
-                  {x.title}
+                  {keepWhole(x.title)}
                 </button>{" "}
               </Fragment>
             ))}
@@ -188,7 +189,7 @@ function Results({ found }: { found: Found }) {
               <li key={c.soc}>
                 <Link href={codeHref(c.soc, c.slug)} className="link inline-flex min-h-11 items-center">
                   <span>
-                    <span className="whitespace-nowrap font-mono">{c.soc}</span>&nbsp;{c.title}
+                    <span className="whitespace-nowrap font-mono">{c.soc}</span>&nbsp;{keepWhole(c.title)}
                   </span>
                 </Link>{" "}
               </li>
@@ -210,7 +211,7 @@ function TitleResult({ title }: { title: TitleAnswer }) {
         <h3 className="font-heading text-xl font-bold leading-tight">
           {title.slug ? (
             <Link href={`/soc-codes/${title.slug}`} className="link">
-              {title.title}
+              {keepWhole(title.title)}
             </Link>
           ) : (
             title.title
@@ -239,7 +240,7 @@ function TitleResult({ title }: { title: TitleAnswer }) {
                     A 2010 code. BLS replaced it in 2018 with {c.becameCodes.join(" and ")}.
                   </p>
                 ) : null}{" "}
-                {c.summary ? <p className="mb-1.5 max-w-2xl text-sm leading-relaxed text-soft">{c.summary}</p> : null}
+                {c.summary ? <p className="mb-1.5 max-w-2xl text-sm leading-relaxed text-soft">{keepWhole(c.summary)}</p> : null}
                 <div className="mt-1 h-2.5 w-full bg-sage" aria-hidden="true">
                   <div className="h-full bg-primary" style={{ width: `${top > 0 ? Math.max(1, ((c.share ?? 0) / top) * 100) : 0}%` }} />
                 </div>
@@ -284,7 +285,7 @@ function CodeResult({ code }: { code: CodeAnswer }) {
       <h3 className="font-heading text-xl font-bold">
         <span className="whitespace-nowrap font-mono">{code.soc}</span> {code.title !== code.soc ? code.title : ""}
       </h3>{" "}
-      {code.summary ? <p className="mt-2 max-w-2xl text-base leading-relaxed">{code.summary}</p> : null}
+      {code.summary ? <p className="mt-2 max-w-2xl text-base leading-relaxed">{keepWhole(code.summary)}</p> : null}
       <p className="mt-2 text-base text-soft">
         {retired ? "A 2010 code: BLS replaced it in 2018. " : ""}
         {code.filings > 0
@@ -302,7 +303,7 @@ function CodeResult({ code }: { code: CodeAnswer }) {
               <li key={b.soc}>
                 <Link href={codeHref(b.soc, b.slug)} className="link inline-flex min-h-11 items-center font-semibold">
                   <span>
-                    <span className="whitespace-nowrap font-mono">{b.soc}</span>&nbsp;{b.title}
+                    <span className="whitespace-nowrap font-mono">{b.soc}</span>&nbsp;{keepWhole(b.title)}
                   </span>
                 </Link>{" "}
               </li>

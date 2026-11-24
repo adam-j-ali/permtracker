@@ -32,6 +32,7 @@ import { Label } from "@/components/ui/label";
 import { CaveatBox } from "@/components/ui/note";
 import { cn } from "@/lib/utils";
 import { formatShareOf } from "@/lib/format";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 export interface I140QueueEstimatorProps {
   subtypes: readonly I140QuarterStats[];
@@ -105,7 +106,7 @@ export function I140QueueEstimator({
     return (
       <div className={cn("object p-6", className)}>
         <p className="text-base leading-relaxed">
-          USCIS&apos;s quarterly I-140 figures are being fetched. Until they land,{" "}
+          <KeepWhole>{"USCIS's quarterly I-140 figures are being fetched. Until they land,"}</KeepWhole>{" "}
           <a
             href="https://www.uscis.gov/tools/reports-and-studies/immigration-and-citizenship-data"
             className="link"
@@ -131,7 +132,7 @@ export function I140QueueEstimator({
         <div className="flex items-center gap-3">
           <FileTextIcon className="h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
           <h2 className="font-heading text-2xl font-bold leading-tight">
-            How deep is the I-140 queue?
+            <KeepWhole>{"How deep is the I-140 queue?"}</KeepWhole>
           </h2>
         </div>
         <p className="mt-3 text-base leading-relaxed text-muted-foreground">
@@ -167,8 +168,7 @@ export function I140QueueEstimator({
             {estimate.pending.toLocaleString("en-US")}
           </p>{" "}
           <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-            {formatShareOf(estimate.pending, subtypes.reduce((n, s) => n + s.pending, 0))} of every I-140 USCIS
-            has pending.
+            {formatShareOf(estimate.pending, subtypes.reduce((n, s) => n + s.pending, 0))}<KeepWhole>{" of every I-140 USCIS has pending."}</KeepWhole>
           </p>
         </div>
         <div className="bg-card p-6 sm:p-8">
@@ -207,13 +207,13 @@ export function I140QueueEstimator({
         {quarterlyMedian ? (
           <div className="bg-card p-6 sm:p-8">
             <p className="text-sm font-bold text-muted-foreground">
-              USCIS quarterly median, all I-140s
+              <KeepWhole>{"USCIS quarterly median, all I-140s"}</KeepWhole>
             </p>{" "}
             <p className="mt-2 font-heading text-2xl font-bold leading-none">
               {Number.isInteger(quarterlyMedian.months) ? quarterlyMedian.months : quarterlyMedian.months.toFixed(1)} months
             </p>{" "}
             <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-              Half of every I-140 decided in {quarterlyMedian.quarterLabel} took less
+              <KeepWhole>{"Half of every I-140 decided in "}</KeepWhole>{quarterlyMedian.quarterLabel} took less
               {quarterlyMedian.completed !== null ? `, over ${quarterlyMedian.completed.toLocaleString("en-US")} decisions` : ""}.
               This is one median across every subtype. The figure beside it covers 80% of cases, per subtype.{" "}
               <Link href="/uscis-processing-times" className="link">
@@ -263,8 +263,7 @@ export function I140QueueEstimator({
       <div className="border-b-2 border-border p-6 sm:p-8">
         <h3 className="font-heading text-lg font-bold">Where the backlog sits</h3>{" "}
         <p className="mt-2 text-base leading-relaxed text-muted-foreground">
-          Every I-140 petition type USCIS reports, and how many are waiting on
-          each.
+          <KeepWhole>{"Every I-140 petition type USCIS reports, and how many are waiting on each."}</KeepWhole>
         </p>
         <ChartTips label="I-140 petitions pending, by type" className="mt-6">
         <ol className="space-y-2">
@@ -287,7 +286,7 @@ export function I140QueueEstimator({
                     )}
                   >
                     <span className="sm:hidden">{s.code}</span>{" "}
-                    <span className="hidden sm:inline">{s.label}</span>
+                    <span className="hidden sm:inline">{keepWhole(s.label)}</span>
                   </span>{" "}
                   <span className="h-6 w-full border-input bg-sage border">
                     <span

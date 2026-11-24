@@ -12,6 +12,7 @@ import type { ContentType, PostSummary } from "@/lib/content/types";
 import { cn } from "@/lib/utils";
 
 import { TopicStackStage } from "./TopicStackStage";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * "Browse by topic": one card per topic, ahead of the full listing. Each card is the topic's drawing, its name,
@@ -94,7 +95,7 @@ function Card({ data, index, type }: { data: TopicCardData; index: number; type:
           />{" "}
           <div className="min-w-0">
             <p className="font-heading text-xl font-bold leading-tight sm:text-2xl lg:motion-safe:text-3xl">
-              {topic.label}
+              {keepWhole(topic.label)}
             </p>{" "}
             <p className="mt-1 text-sm text-muted-foreground sm:text-base">
               {count} {noun}
@@ -102,7 +103,7 @@ function Card({ data, index, type }: { data: TopicCardData; index: number; type:
           </div>
         </div>{" "}
         <p className="mt-4 text-base leading-relaxed text-soft max-sm:hidden lg:motion-safe:[@media(max-height:840px)]:hidden">
-          {topic.blurb}
+          {keepWhole(topic.blurb)}
         </p>{" "}
         <ul className="mt-5 border-t-2 border-border max-sm:hidden lg:motion-safe:[@media(max-height:700px)]:[&>li:nth-of-type(n+3)]:hidden">
           {newest.map((p) => (
@@ -113,7 +114,7 @@ function Card({ data, index, type }: { data: TopicCardData; index: number; type:
                   href={`/${p.type}/${p.slug}`}
                   className="flex min-h-11 items-center gap-2 py-2 text-base font-semibold hover:underline"
                 >
-                  <span className="min-w-0 lg:motion-safe:line-clamp-2">{p.meta.title}</span>{" "}
+                  <span className="min-w-0 lg:motion-safe:line-clamp-2">{keepWhole(p.meta.title)}</span>{" "}
                   <ArrowRightIcon aria-hidden="true" weight="bold" className="ml-auto size-4 shrink-0 text-primary-text" />
                 </Link>
               </li>
@@ -126,7 +127,7 @@ function Card({ data, index, type }: { data: TopicCardData; index: number; type:
             className={buttonVariants({ variant: "outline", className: "max-sm:min-h-11 max-sm:px-3" })}
           >
             All {count} {noun}
-            <span className="sr-only"> in {topic.label}</span>
+            <span className="sr-only"> in {keepWhole(topic.label)}</span>
           </Link>
         </div>
       </div>{" "}

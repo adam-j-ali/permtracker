@@ -13,6 +13,7 @@ import {
   type TrendRow,
 } from "@/lib/i140Trends";
 import { formatInt } from "@/lib/format";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * USCIS's quarterly I-140 counts, by category.
@@ -96,7 +97,7 @@ export function I140Trends({ rows }: I140TrendsProps) {
     <div className="border-border bg-card border">
       <div className="border-b-2 border-border p-6 sm:p-8">
         <h2 className="font-heading text-2xl font-bold leading-tight">
-          I-140 petitions, quarter by quarter
+          <KeepWhole>{"I-140 petitions, quarter by quarter"}</KeepWhole>
         </h2>{" "}
         <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted-foreground">
           USCIS&rsquo;s own figures, and its own category names.
@@ -197,7 +198,7 @@ export function I140Trends({ rows }: I140TrendsProps) {
                       aria-label={`${p.label}: ${formatInt(p.received)} received`}
                       data-tip={`${p.label}\n${formatInt(p.received)} received\n${formatInt(p.approved)} approved, ${formatInt(p.denied)} denied\n${formatInt(p.pending)} pending at quarter end`}
                     >
-                      <span className="text-sm tabular-nums text-muted-foreground">{p.label}</span>{" "}
+                      <span className="text-sm tabular-nums text-muted-foreground">{keepWhole(p.label)}</span>{" "}
                       <span className="block h-6 w-full border-input bg-sage border">
                         <span
                           className="block h-full bg-primary"
@@ -236,7 +237,7 @@ export function I140Trends({ rows }: I140TrendsProps) {
                         aria-label={`${p.label}: ${formatInt(p.approved)} approved, ${formatInt(p.denied)} denied`}
                         data-tip={`${p.label}\n${formatInt(p.approved)} approved\n${formatInt(p.denied)} denied\n${formatInt(decided)} decided${p.denialRate !== null ? `\n${pct(p.denialRate)} denied` : ""}`}
                       >
-                        <span className="text-sm tabular-nums text-muted-foreground">{p.label}</span>{" "}
+                        <span className="text-sm tabular-nums text-muted-foreground">{keepWhole(p.label)}</span>{" "}
                         <span className="block h-6 w-full border-input bg-sage border">
                           <span className="flex h-full" style={{ width: `${Math.max(width, 1)}%` }}>
                             <span
@@ -293,7 +294,7 @@ export function I140Trends({ rows }: I140TrendsProps) {
                         className="grid grid-cols-1 gap-1 sm:grid-cols-[16rem_1fr_5rem] sm:items-center sm:gap-4 [&>*]:min-w-0"
                       >
                         <span className="text-sm font-bold">
-                          {c.code} · {c.label}
+                          {c.code} · {keepWhole(c.label)}
                         </span>{" "}
                         <span className="relative block h-6 border-input bg-background border">
                           <span

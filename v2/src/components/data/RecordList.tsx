@@ -1,6 +1,7 @@
 import { Fragment, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface RecordRow {
   label: string;
@@ -22,7 +23,7 @@ export function RecordList({ rows, className }: { rows: readonly RecordRow[]; cl
         <Fragment key={r.label}>
           {" "}
           <div className="grid grid-cols-1 gap-x-6 gap-y-0.5 py-3 sm:grid-cols-[12rem_minmax(0,1fr)]">
-            <dt className="text-sm text-muted-foreground">{r.label}</dt>{" "}
+            <dt className="text-sm text-muted-foreground">{keepWhole(r.label)}</dt>{" "}
             <dd
               className={cn("min-w-0 break-words text-base font-semibold text-foreground", r.mono && "font-mono")}
               translate={r.raw ? "no" : undefined}

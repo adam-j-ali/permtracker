@@ -10,6 +10,7 @@ import { WEIGHTED_ESTIMATE, WEIGHTED_FROM } from "@/lib/h1bLottery";
 import { LOTTERY_RULE } from "@/lib/h1bLotteryCalc";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The weighted H-1B lottery for one job. /h1b-lottery-odds is the record
@@ -64,7 +65,7 @@ export default function H1bLotteryCalculatorPage() {
       <div className="pt-10 sm:pt-12" />
       <JsonLdScript schema={faqSchema} />
       <header>
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">H-1B lottery odds for one job</h1>{" "}
+        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl"><KeepWhole>{"H-1B lottery odds for one job"}</KeepWhole></h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           From the FY{WEIGHTED_FROM} cap the draw is weighted by wage. Put in the job, its location and the offer, and see
           the level DOL&apos;s own figures give it and DHS&apos;s estimated chance at that level.
@@ -80,7 +81,7 @@ export default function H1bLotteryCalculatorPage() {
       <p className="mt-4 max-w-3xl text-base text-soft">
         Every year&apos;s registrations and selections, from USCIS&apos;s own table, are on{" "}
         <Link href="/h1b-lottery-odds" className="link">
-          H-1B lottery odds by year
+          <KeepWhole>{"H-1B lottery odds by year"}</KeepWhole>
         </Link>
         . Cap-exempt employers, such as universities and their affiliated nonprofits, file outside the lottery.
       </p>

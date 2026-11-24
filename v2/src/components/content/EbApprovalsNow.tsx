@@ -7,6 +7,7 @@ import { getI140ClassCountry } from "@/lib/db/uscisQuarterly";
 import { formatInt, formatShareOf } from "@/lib/format";
 import { countryOrder, permLineYears } from "@/lib/uscisQuarterlyShape";
 import { softFail } from "@/lib/softRead";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 const EB2_FILL = EB_LINE_COLOURS.EB2.fill;
 const EB3_FILL = EB_LINE_COLOURS.EB3.fill;
@@ -27,9 +28,9 @@ export async function EbApprovalsNow({ country }: { country?: string }) {
   if (!data || data.years.length < 2) {
     return (
       <p>
-        USCIS&apos;s I-140 counts are unavailable for the moment. The{" "}
+        <KeepWhole>{"USCIS's I-140 counts are unavailable for the moment. The"}</KeepWhole>{" "}
         <Link href="/i140-awaiting-visa" className="link">
-          approved I-140s page
+          <KeepWhole>{"approved I-140s page"}</KeepWhole>
         </Link>{" "}
         carries them.
       </p>
@@ -94,8 +95,8 @@ export async function EbApprovalsNow({ country }: { country?: string }) {
                   </div>
                 </dd>{" "}
                 <dd className="mt-1 flex justify-between gap-3 text-sm tabular-nums">
-                  <span>EB-2 {formatShareOf(year.eb2, total)}</span>{" "}
-                  <span>EB-3 {formatShareOf(year.eb3, total)}</span>
+                  <span><KeepWhole>{"EB-2 "}</KeepWhole>{formatShareOf(year.eb2, total)}</span>{" "}
+                  <span><KeepWhole>{"EB-3 "}</KeepWhole>{formatShareOf(year.eb3, total)}</span>
                 </dd>
               </div>
             </Fragment>
@@ -114,10 +115,10 @@ function Key() {
   return (
     <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm">
       <li className="flex items-center gap-2">
-        <span aria-hidden="true" className={`inline-block size-3 border-2 ${EB_LINE_COLOURS.EB2.edge} ${EB2_FILL}`} /> EB-2, advanced degree{" "}
+        <span aria-hidden="true" className={`inline-block size-3 border-2 ${EB_LINE_COLOURS.EB2.edge} ${EB2_FILL}`} /><KeepWhole>{" EB-2, advanced degree"}</KeepWhole>{" "}
       </li>{" "}
       <li className="flex items-center gap-2">
-        <span aria-hidden="true" className={`inline-block size-3 border-2 ${EB_LINE_COLOURS.EB3.edge} ${EB3_FILL}`} /> EB-3, skilled, professional or other worker{" "}
+        <span aria-hidden="true" className={`inline-block size-3 border-2 ${EB_LINE_COLOURS.EB3.edge} ${EB3_FILL}`} /><KeepWhole>{" EB-3, skilled, professional or other worker"}</KeepWhole>{" "}
       </li>
     </ul>
   );

@@ -17,6 +17,7 @@ import { LEAD_BANDS, NOTICE_METHODS, RECRUITMENT_STEPS } from "@/lib/recruitment
 import { withSocialCard } from "@/lib/socialCard";
 import { stateName } from "@/lib/usStateNames";
 import { StepBothSources } from "@/components/community/StepBothSources";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Where and when PERM employers recruit, nationally: DOL's Form 9089 Section H
@@ -148,7 +149,7 @@ function PaperList({ papers, className }: { papers: Paper[]; className?: string 
           {" "}
           <li className="flex items-baseline gap-3 py-2 text-base">
             <span className="w-6 shrink-0 text-right font-mono text-sm tabular-nums text-muted-foreground">{`${i + 1} `}</span>{" "}
-            <span className="min-w-0">{p.label}</span>{" "}
+            <span className="min-w-0">{keepWhole(p.label)}</span>{" "}
             <span className="ml-auto font-mono text-sm tabular-nums">{formatInt(p.n)}</span>
           </li>
         </Fragment>
@@ -191,7 +192,7 @@ export default async function PermRecruitmentPage() {
             ].map((f) => (
               // The figure reads first on screen; the label stays first for a screen reader.
               <div key={f.label} className="flex flex-col-reverse justify-end">
-                <dt className="text-base text-muted-foreground">{f.label}</dt>{" "}
+                <dt className="text-base text-muted-foreground">{keepWhole(f.label)}</dt>{" "}
                 <dd className="font-heading text-3xl font-bold tabular-nums">{f.value}</dd>
               </div>
             ))}

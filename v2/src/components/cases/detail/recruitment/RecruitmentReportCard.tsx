@@ -7,6 +7,7 @@ import type { ApplicantEntry, RecruitmentReport } from "@convex/lib/perm/recruit
 import { Button } from "@/components/ui/button";
 import { buildAuditFile, type AuditDocument } from "@/lib/recruitment/auditFile";
 import { toast } from "@/lib/toast";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The draft recruitment report the log builds (20 CFR 656.17(g)(1)), for the employer or its representative to
@@ -82,7 +83,7 @@ export function RecruitmentReportCard({
           <ul className="space-y-3">
             {report.groups.map((g) => (
               <li key={g.key}>
-                <h3 className="text-base font-bold">{`${g.label}: ${g.entries.length}`}</h3>{" "}
+                <h3 className="text-base font-bold"><KeepWhole>{`${g.label}: ${g.entries.length}`}</KeepWhole></h3>{" "}
                 <ul className="mt-1 space-y-1 text-base">
                   {g.entries.map((e) => (
                     <li key={e.ref}>{`${e.ref}: ${e.reason?.trim() || "no reason written yet"}`}</li>

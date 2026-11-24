@@ -54,6 +54,7 @@ import { ScrollBox } from "@/components/ui/scroll-box";
 import { FORM_PAGES, slotShort } from "@/lib/uscisForms";
 import { monthsVs, pointBefore } from "@/lib/uscisTrends";
 import { StepBothSources } from "@/components/community/StepBothSources";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "USCIS Processing Times by Form (Median)";
 const DESCRIPTION =
@@ -332,9 +333,11 @@ export default async function UscisProcessingTimesPage() {
               subject={`The employment green card's forms, ${quarterLabel(quarter.fy, quarter.quarter)}`}
               caption={
                 <>
-                  Each bar is the median USCIS printed for that form line: half the
-                  cases decided in the quarter took less, half took more. The
-                  employment-based I-485 and the I-140 are drawn in the accent.
+                  <KeepWhole>
+                    {"Each bar is the median USCIS printed for that form line: half the cases decided in the " +
+                      "quarter took less, half took more. The employment-based I-485 and the I-140 are drawn in " +
+                      "the accent."}
+                  </KeepWhole>
                 </>
               }
               source={<>USCIS, {quarter.sourceFile}, received to completion, cases decided in the quarter.</>}
@@ -368,11 +371,12 @@ export default async function UscisProcessingTimesPage() {
                 subject="The I-140: the quarterly median beside the processing-times page"
                 caption={
                   <>
-                    The processing-times page publishes one figure per subtype: the time
-                    USCIS took to finish 80% of the petitions it decided over the past six
-                    months, and it tells you to wait that long before asking about a case. The quarterly file
-                    publishes one median over every I-140 decided in the quarter. Both
-                    are USCIS&apos;s. Only the second says what the typical case took.
+                    <KeepWhole>
+                      {"The processing-times page publishes one figure per subtype: the time USCIS took to finish " +
+                        "80% of the petitions it decided over the past six months, and it tells you to wait that " +
+                        "long before asking about a case. The quarterly file publishes one median over every I-140 " +
+                        "decided in the quarter. Both are USCIS's. Only the second says what the typical case took."}
+                    </KeepWhole>
                   </>
                 }
                 source={
@@ -387,7 +391,7 @@ export default async function UscisProcessingTimesPage() {
               >
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)] [&>*]:min-w-0">
                   <div className="bg-sage p-5 border-2 border-border">
-                    <p className="text-sm font-bold text-muted-foreground">Quarterly median, all I-140s</p>{" "}
+                    <p className="text-sm font-bold text-muted-foreground"><KeepWhole>{"Quarterly median, all I-140s"}</KeepWhole></p>{" "}
                     <p className="mt-2 font-heading text-5xl font-bold leading-none tabular-nums">{monthsLabel(i140.medianMonths)}</p>{" "}
                     <p className="mt-2 text-sm text-muted-foreground">
                       months, over {(i140.completed ?? 0).toLocaleString("en-US")} petitions decided in the quarter
@@ -399,7 +403,7 @@ export default async function UscisProcessingTimesPage() {
                       {egovSubtypes.map((s) => (
                         <Fragment key={s.code}>{" "}
                         <li className="flex items-baseline justify-between gap-4 py-2">
-                          <span className="text-base">{s.label} <span className="font-mono text-sm text-muted-foreground">({s.code})</span></span>{" "}
+                          <span className="text-base">{keepWhole(s.label)} <span className="font-mono text-sm text-muted-foreground">({s.code})</span></span>{" "}
                           <span className="whitespace-nowrap font-mono text-base font-bold tabular-nums">{`${s.months80} mo`}</span>
                         </li>
                         </Fragment>
@@ -444,9 +448,10 @@ export default async function UscisProcessingTimesPage() {
                 subject="The only history USCIS publishes for medians"
                 caption={
                   <>
-                    Five of the sixteen lines in USCIS&apos;s historical factsheet. The
-                    employment-based I-485 peaked at 11 months in FY2022 and read 7.2 in
-                    the part of FY2024 the sheet covers. {historical.note}
+                    <KeepWhole>
+                      {"Five of the sixteen lines in USCIS's historical factsheet. The employment-based I-485 " +
+                        "peaked at 11 months in FY2022 and read 7.2 in the part of FY2024 the sheet covers. "}
+                    </KeepWhole>{keepWhole(historical.note)}
                   </>
                 }
                 source={<>USCIS historical processing times factsheet, data as of {formatAsOf(historical.asOf)}.</>}
@@ -457,7 +462,7 @@ export default async function UscisProcessingTimesPage() {
                     <Fragment key={s.label}>{" "}
                     <li className="flex items-center gap-1.5">
                       <span className={`inline-block w-5 ${seriesStyle(i).swatch}`} aria-hidden="true" />{" "}
-                      <span>{s.label}</span>{" "}
+                      <span>{keepWhole(s.label)}</span>{" "}
                       <span className="font-mono font-bold tabular-nums">{monthsLabel(s.months[s.months.length - 1] ?? null)}</span>
                     </li>
                     </Fragment>
@@ -471,8 +476,8 @@ export default async function UscisProcessingTimesPage() {
                         <thead>
                           <tr className="border-b-2 border-border text-left">
                             <th className="py-1.5 pr-4 font-bold">Quarter{" "}</th>
-                            <th className="py-1.5 pr-4 text-right font-bold">I-140{" "}</th>
-                            <th className="py-1.5 text-right font-bold">I-485, employment{" "}</th>
+                            <th className="py-1.5 pr-4 text-right font-bold"><KeepWhole>{"I-140"}</KeepWhole>{" "}</th>
+                            <th className="py-1.5 text-right font-bold"><KeepWhole>{"I-485, employment"}</KeepWhole>{" "}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -533,7 +538,7 @@ export default async function UscisProcessingTimesPage() {
                               <Fragment key={`${r.form}|${r.title}`}>
                                 <tr id={daca?.id} className={daca ? "scroll-mt-24" : "border-b border-border/50"}>
                                   <td className="px-4 py-1.5 font-mono font-bold">{r.form}{" "}</td>
-                                  <td className="px-2 py-1.5">{r.title}{daca?.suffix}{" "}</td>
+                                  <td className="px-2 py-1.5">{keepWhole(r.title)}{daca?.suffix}{" "}</td>
                                   <td className="px-2 py-1.5 text-right font-mono tabular-nums">{r.received === null ? "n/a" : r.received.toLocaleString("en-US")}{" "}</td>
                                   <td className="px-2 py-1.5 text-right font-mono tabular-nums">{r.completed === null ? "n/a" : r.completed.toLocaleString("en-US")}{" "}</td>
                                   <td className="px-2 py-1.5 text-right font-mono tabular-nums">{r.pending === null ? "n/a" : r.pending.toLocaleString("en-US")}{" "}</td>
@@ -610,12 +615,12 @@ export default async function UscisProcessingTimesPage() {
           </li>{" "}
           <li>
             <Link href="/tools/i140-calculator" className="link">
-              The I-140 queue by category
+              <KeepWhole>{"The I-140 queue by category"}</KeepWhole>
             </Link>
           </li>{" "}
           <li>
             <Link href="/i485-by-field-office" className="link">
-              The I-485 by field office
+              <KeepWhole>{"The I-485 by field office"}</KeepWhole>
             </Link>
           </li>{" "}
           <li>

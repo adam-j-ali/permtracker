@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * What a DOL case number is, drawn: one real-shaped number with its three
@@ -25,10 +26,11 @@ export function CaseNumberAnatomy({ id, employerName = true }: { id: string; emp
   return (
     <div id={id} className="mt-4">
       <p className="sr-only">
-        A case number has three parts: the program and office (G-100 is PERM),
-        the day it was filed (26240 is the 240th day of 2026), and DOL&apos;s
-        serial. PERM (G-), wage request (P-), LCA (I-), H-2A and H-2B (H-, JO-A-)
-        and CW-1 (C-) numbers all work{employerName ? ", and so does an employer's name" : ""}.
+        <KeepWhole>
+          {"A case number has three parts: the program and office (G-100 is PERM), the day it was filed (26240 is " +
+            "the 240th day of 2026), and DOL's serial. PERM (G-), wage request (P-), LCA (I-), H-2A and H-2B (H-, " +
+            "JO-A-) and CW-1 (C-) numbers all work"}
+        </KeepWhole>{employerName ? ", and so does an employer's name" : ""}.
       </p>{" "}
       {/* A grid, so each label sits under its own part. */}
       <div aria-hidden="true" className="grid w-max grid-cols-[auto_auto_auto_auto_auto] items-center gap-x-1.5 font-mono [&>*]:min-w-0">
@@ -43,7 +45,7 @@ export function CaseNumberAnatomy({ id, employerName = true }: { id: string; emp
         {parts.map((p, i) => (
           <Fragment key={`${p.seg}-label`}>
             {i > 0 ? <span /> : null}{" "}
-            <span className="mt-1 whitespace-nowrap text-sm text-muted-foreground">{p.what}</span>{" "}
+            <span className="mt-1 whitespace-nowrap text-sm text-muted-foreground">{keepWhole(p.what)}</span>{" "}
           </Fragment>
         ))}
       </div>{" "}
@@ -52,7 +54,7 @@ export function CaseNumberAnatomy({ id, employerName = true }: { id: string; emp
           <Fragment key={c.what}>
             <span className="inline-flex items-center gap-1.5 border-2 border-border/60 px-2 py-0.5 text-sm">
               {c.prefix ? <b className="font-mono font-bold">{c.prefix}</b> : null}{" "}
-              {c.what}
+              {keepWhole(c.what)}
             </span>{" "}
           </Fragment>
         ))}

@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 
 import { factSentence, partBasis, partRank, partValue, type SponsorFact, type SponsorPart } from "@/lib/sponsorProfile";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * How a sponsor compares, part by part: each figure with what it counts, and
@@ -37,10 +38,10 @@ export function SponsorProfile({
               <Fragment key={p.id}>
                 {" "}
                 <li>
-                  <p className="text-sm font-bold">{p.label}</p>{" "}
+                  <p className="text-sm font-bold">{keepWhole(p.label)}</p>{" "}
                   <p className="mt-0.5">
                     <span className="font-heading text-2xl font-bold tabular-nums">{partValue(p)}</span>{" "}
-                    <span className="text-sm text-muted-foreground">{partBasis(p)}</span>
+                    <span className="text-sm text-muted-foreground">{keepWhole(partBasis(p))}</span>
                   </p>{" "}
                   <div
                     className="relative mt-2 h-3 border-input bg-background border"
@@ -54,7 +55,7 @@ export function SponsorProfile({
                       aria-hidden="true"
                     />
                   </div>{" "}
-                  <p className="mt-1 text-sm text-muted-foreground">{partRank(p)}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{keepWhole(partRank(p))}</p>
                 </li>
               </Fragment>
             );

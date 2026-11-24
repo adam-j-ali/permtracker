@@ -85,6 +85,7 @@ import { entityHref } from "@/lib/entityPayload";
 import { CURRENT_FIRST_FY } from "@/lib/permEras";
 import { planHref } from "@/components/tools/planner/planUrl";
 import { statusCasesHref } from "@/components/queue/statusLinks";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Everything this project can honestly say about one case, arranged.
@@ -362,7 +363,7 @@ export function CaseStatusResult({
       <StatusHistory events={history} filedOn={filingDate} />
 
       {meaning && actionStage ? (
-        <PageSection title={<>What &ldquo;{meaning.label}&rdquo; means</>}>
+        <PageSection title={<>What &ldquo;{keepWhole(meaning.label)}&rdquo; means</>}>
           <StatusExplainer meaning={meaning} nowInStatus={statusOutlook?.nowInStatus ?? null} />
         </PageSection>
       ) : null}
@@ -391,7 +392,7 @@ export function CaseStatusResult({
           </Fold>
         ) : null}
         {meaning && !actionStage ? (
-          <Fold title={<>What &ldquo;{meaning.label}&rdquo; means</>} hint={KIND_LABEL[meaning.kind]}>
+          <Fold title={<>What &ldquo;{keepWhole(meaning.label)}&rdquo; means</>} hint={KIND_LABEL[meaning.kind]}>
             <StatusExplainer meaning={meaning} nowInStatus={statusOutlook?.nowInStatus ?? null} />
           </Fold>
         ) : !meaning && status ? (
@@ -700,9 +701,9 @@ function DecidedNext({
         <CertifiedNextWatch anchorId={WATCH_ANCHOR} filingDate={filingDate} />
       ) : null}{" "}
       <Link href={next.href} className={buttonVariants({ variant: "outline", size: "lg" })}>
-        {next.label}
+        {keepWhole(next.label)}
       </Link>{" "}
-      <p className="mt-2 text-sm text-muted-foreground">{next.note}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{keepWhole(next.note)}</p>
     </div>
   );
 }
@@ -1131,7 +1132,7 @@ function StatusExplainer({
 }) {
   return (
     <div className="max-w-3xl">
-      <p className="text-base leading-relaxed text-soft">{meaning.summary}</p>{" "}
+      <p className="text-base leading-relaxed text-soft">{keepWhole(meaning.summary)}</p>{" "}
       {meaning.deadline ? (
         <p className="mt-4 border-l-2 border-data-warn-ink bg-data-warn/8 px-4 py-3 text-base leading-relaxed text-soft">
           <b className="font-semibold text-foreground">The clock:</b> {meaning.deadline}
@@ -1154,7 +1155,7 @@ function StatusExplainer({
       <p className="mt-4 flex flex-wrap gap-x-6 text-sm">
         {meaning.cite ? (
           <a target="_blank" href={meaning.cite.href} rel="noopener noreferrer" className={cn("inline-flex min-h-11 items-center font-mono", "link")}>
-            {meaning.cite.label}
+            {keepWhole(meaning.cite.label)}
           </a>
         ) : (
           <span className="inline-flex min-h-11 items-center text-muted-foreground">No published definition</span>
@@ -1312,7 +1313,7 @@ function EmployerRecord({
                 textContent, which is what Google reads. */}
             <div className="flex min-w-0 flex-row-reverse items-baseline justify-end gap-2">
               <dt className="text-sm text-muted-foreground">
-                {f.label}
+                {keepWhole(f.label)}
               </dt>{" "}
               <dd className="font-heading text-3xl font-bold leading-none tabular-nums">
                 {f.value}

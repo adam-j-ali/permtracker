@@ -26,6 +26,7 @@ import { SpotPicture } from "@/components/ui/spot-picture";
 import { clampPage, Pagination, usePageParam, useQueryParam } from "@/components/ui/pagination";
 import { SelectInput } from "@/components/forms/SelectInput";
 import { AUDIENCES, SORTS, audienceOf, forAudience, sortOf, sortPosts, sortedHeading } from "@/lib/content/listing";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /** Articles a page (the owner's call, Oct 21 2026). */
 export const PER_PAGE = 12;
@@ -159,9 +160,9 @@ export default function ContentListing({ posts, type }: ContentListingProps) {
             <SpotPicture name={topic.picture} alt="" className="w-16 shrink-0 sm:w-24" />{" "}
             <div className="min-w-0">
               <h2 id={`${topic.id}-h`} className="font-heading text-2xl font-bold sm:text-3xl">
-                {topic.label}
+                {keepWhole(topic.label)}
               </h2>{" "}
-              <p className="mt-1 text-base text-soft">{topic.blurb}</p>
+              <p className="mt-1 text-base text-soft">{keepWhole(topic.blurb)}</p>
             </div>
           </div>
           <ContentGrid posts={list} headingLevel={3} shown={onPage} />

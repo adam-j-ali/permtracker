@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { captureError } from "@/lib/sentry";
 import { toast } from "@/lib/toast";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The ask after a policy change that affects information already given (convex/policyConsent.ts): one line, never a
@@ -49,7 +50,7 @@ function Banner() {
       <div className="mx-auto flex max-w-7xl flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <p className="min-w-0 text-sm text-foreground">
           <span className="font-medium">We updated our Privacy Policy and Terms.</span>{" "}
-          {status.summary ? <span>{status.summary}</span> : null}{" "}
+          {status.summary ? <span>{keepWhole(status.summary)}</span> : null}{" "}
           <span>It applies to you only once you accept it.</span>
         </p>{" "}
         <div className="flex flex-shrink-0 items-center gap-3">

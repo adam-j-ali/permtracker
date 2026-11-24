@@ -28,6 +28,7 @@ import { BaselineMultiple } from "./Insight";
 import { DataView, ScopeSelect } from "./DataView";
 import { FilterableStatTable, type CsvSpec, type Facet, type StatColumn } from "./FilterableStatTable";
 import { SortMark } from "@/components/ui/sort-mark";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface RateRow {
   label: string;
@@ -110,7 +111,7 @@ export function RateBars({ rows, baseline }: { rows: RateRow[]; baseline: number
           return (
             <div key={r.label} data-tip={rateTip(r, baseline)}>
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                <p className="text-sm font-bold">{r.label}</p>{" "}
+                <p className="text-sm font-bold">{keepWhole(r.label)}</p>{" "}
                 <p className="flex items-baseline gap-2 font-mono text-sm font-bold tabular-nums">
                   <BaselineMultiple rate={r.rate} baseline={baseline} withTitle={false} />{" "}
                   <span>
@@ -138,7 +139,7 @@ export function RateBars({ rows, baseline }: { rows: RateRow[]; baseline: number
                 />
               </div>
               {r.note ? (
-                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{r.note}</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{keepWhole(r.note)}</p>
               ) : null}
             </div>
           );
@@ -260,10 +261,10 @@ export function RateTable({
             return (
               <tr key={r.label} className="border-t border-border/40">
                 <td className="px-3 py-2.5 font-bold">
-                  {r.label}
+                  {keepWhole(r.label)}
                   {r.note ? (
                     <span className="block text-sm font-normal leading-relaxed text-muted-foreground">
-                      {r.note}
+                      {keepWhole(r.note)}
                     </span>
                   ) : null}
                 {" "}</td>
@@ -386,7 +387,7 @@ export function RankedRateViews({
         key: "label",
         label: unitLabel,
         sortValue: (r) => r.label,
-        render: (r) => <span className="font-bold">{r.label}</span>,
+        render: (r) => <span className="font-bold">{keepWhole(r.label)}</span>,
       },
       {
         key: "rate",

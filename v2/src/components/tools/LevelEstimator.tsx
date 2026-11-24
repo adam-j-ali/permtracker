@@ -14,6 +14,7 @@ import {
 } from "@/lib/wageLevelEstimate";
 import { formatShare } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * "Which level will DOL likely give this job?", under the four levels on /tools/wage-levels. The job's requirements
@@ -203,7 +204,7 @@ export function LevelEstimator({
                       <span className={cn("font-mono font-bold tabular-nums", s.points > 0 ? "text-foreground" : "text-muted-foreground")}>
                         {`+${s.points}`}
                       </span>{" "}
-                      <span>{s.note}</span>
+                      <span>{keepWhole(s.note)}</span>
                     </li>
                   ))}
                 </ol>{" "}

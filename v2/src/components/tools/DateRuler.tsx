@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { formatInt } from "@/lib/format";
 import { daysBetween } from "@/lib/time";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * A deadline drawn as a ruler: the date that starts the clock at one end, the
@@ -137,7 +138,7 @@ export function DateRuler({
               {" "}
               <li className="text-sm">
                 <span aria-hidden="true" className={cn("mr-1.5 inline-block size-2.5 align-middle", TICK[m.tone ?? "ink"])} />
-                {m.label} <span className="font-bold tabular-nums">{short(m.at)}</span>{" "}
+                {keepWhole(m.label)} <span className="font-bold tabular-nums">{short(m.at)}</span>{" "}
               </li>
             </Fragment>
           ))}

@@ -5,6 +5,7 @@ import { WageAxis } from "@/components/wages/WageAxis";
 import { formatDollars } from "@/lib/format";
 import { moneyShort } from "@/lib/wageLadder";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * What a job pays in the market, with DOL's four prevailing wage levels on the
@@ -175,7 +176,7 @@ export function PayBands({
           {bands.map((b) => (
             <li key={b.key} className="grid grid-cols-1 gap-1 sm:grid-cols-[13rem_1fr] sm:items-center sm:gap-4 [&>*]:min-w-0">
               <div className="min-w-0">
-                <div className="truncate text-base font-bold">{b.label}</div>
+                <div className="truncate text-base font-bold">{keepWhole(b.label)}</div>
                 {b.sub ? <div className="truncate text-sm text-muted-foreground">{b.sub}</div> : null}
               </div>{" "}
               <Track band={b} domain={perRow ? (bandDomain([b]) ?? domain) : domain} ends={perRow} />

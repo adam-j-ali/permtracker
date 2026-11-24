@@ -36,6 +36,7 @@ import { formatInt } from "@/lib/format";
 import { MS_PER_DAY } from "@/lib/time";
 import { softFail } from "@/lib/softRead";
 import { DataProvenance } from "@/components/data/DataProvenance";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The estimate scorecard, in three layers, strongest evidence first.
@@ -273,9 +274,11 @@ export default async function EstimateScorecardPage() {
         <section aria-labelledby="every-h" className="mt-8">
           <h2 id="every-h" className="font-heading text-2xl font-bold sm:text-3xl">Every estimate, checked</h2>{" "}
           <p className="mt-2 max-w-2xl text-base leading-relaxed text-soft">
-            Each kind of date the site gives, rebuilt from the record as it stood earlier and set against what DOL,
-            or the State Department, then did. Each check reruns on its own: the PERM and wage-request ones nightly,
-            the bulletin and H-2A, H-2B and CW-1 ones weekly.
+            <KeepWhole>
+              {"Each kind of date the site gives, rebuilt from the record as it stood earlier and set against " +
+                "what DOL, or the State Department, then did. Each check reruns on its own: the PERM and " +
+                "wage-request ones nightly, the bulletin and H-2A, H-2B and CW-1 ones weekly."}
+            </KeepWhole>
           </p>{" "}
           <EstimateChecksList rows={everyCheck} className="mt-4" />
         </section>
@@ -357,8 +360,10 @@ export default async function EstimateScorecardPage() {
       <section aria-labelledby="other-h" className="mt-12">
         <h2 id="other-h" className="font-heading text-2xl font-bold sm:text-3xl">The other estimates</h2>{" "}
         <p className="mt-2 max-w-2xl text-base text-soft">
-          The wage-request date and the H-2A, H-2B and CW-1 dates, written down and graded the same way. Each H-2A,
-          H-2B and CW-1 application is recorded once, in its first week, as its case page dated it.
+          <KeepWhole>
+            {"The wage-request date and the H-2A, H-2B and CW-1 dates, written down and graded the same way. Each " +
+              "H-2A, H-2B and CW-1 application is recorded once, in its first week, as its case page dated it."}
+          </KeepWhole>
         </p>{" "}
         {others.length > 0 ? (
           <ScrollBox label="The other estimates" className="mt-4">
@@ -376,7 +381,7 @@ export default async function EstimateScorecardPage() {
               <tbody>
                 {others.map((r) => (
                   <tr key={r.model} className="border-b border-border/40 align-top">
-                    <td className="py-2 pr-3">{r.label}{" "}</td>
+                    <td className="py-2 pr-3">{keepWhole(r.label)}{" "}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">{formatInt(r.recorded)}{" "}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">{formatInt(r.graded)}{" "}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">{r.graded > 0 ? days(r.typicalMissDays) : "none yet"}{" "}</td>
@@ -397,10 +402,13 @@ export default async function EstimateScorecardPage() {
           <p className="mt-4 text-base text-soft">The first of these are recorded the morning after this section went live.</p>
         )}{" "}
         <FinePrint summary="How these are graded">
-          The wage-request estimate names a month, so it&rsquo;s graded against the middle of the month, and the month is its
-          range. An H-2A, H-2B or CW-1 range is the middle half of DOL&rsquo;s past certifications, so a well-judged one
-          catches about half. It&rsquo;s graded on certifications only, as the case page dates them. The past-filings column is
-          the weekly test of each method against the next quarter&rsquo;s decisions.
+          <KeepWhole>
+            {"The wage-request estimate names a month, so it’s graded against the middle of the month, and the " +
+              "month is its range. An H-2A, H-2B or CW-1 range is the middle half of DOL’s past certifications, so " +
+              "a well-judged one catches about half. It’s graded on certifications only, as the case page dates " +
+              "them. The past-filings column is the weekly test of each method against the next quarter’s " +
+              "decisions."}
+          </KeepWhole>
           {pwdBeforeFix ? (
             <>
               {" "}

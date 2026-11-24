@@ -35,6 +35,7 @@ import { safeFormatDistanceToNow } from "@/lib/utils/date";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import type { Id } from "@convex/_generated/dataModel";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // Type for notification from getRecentNotifications
 type NotificationType =
@@ -191,7 +192,7 @@ function NotificationItem({
           )}
           title={notification.title}
         >
-          {notification.title}
+          {keepWhole(notification.title)}
         </p>{" "}
 
         {/* Message - 2 line truncate */}

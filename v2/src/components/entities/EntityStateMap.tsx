@@ -10,6 +10,7 @@ import { legendSteps, stepBreaks, stepOf, type MapEra, type MapState } from "@/l
 import { stateName } from "@/lib/usStateNames";
 import { US_MAP_VIEWBOX, US_STATES } from "@/lib/usStatesGeometry";
 import { cn } from "@/lib/utils";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Where one employer's, law firm's or job's filings are, state by state: the picture at the top of its "Where"
@@ -243,7 +244,7 @@ export function EntityStateMap({ eras, label, noun = "filings", office = null, c
             {" "}
             <li className="inline-flex items-center gap-1.5">
               <span aria-hidden="true" className="inline-block h-3.5 w-6 border border-input" style={{ background: blueFill(l.step) }} />{" "}
-              {l.text}
+              {keepWhole(l.text)}
             </li>
           </Fragment>
         ))}{" "}
@@ -253,7 +254,7 @@ export function EntityStateMap({ eras, label, noun = "filings", office = null, c
         {office ? (
           <li className="inline-flex items-center gap-1.5">
             <span aria-hidden="true" className="inline-block h-3.5 w-6 border-2 border-dashed border-foreground" />{" "}
-            {office.label}
+            {keepWhole(office.label)}
           </li>
         ) : null}{" "}
         <li className="font-semibold text-foreground">
@@ -265,7 +266,7 @@ export function EntityStateMap({ eras, label, noun = "filings", office = null, c
           <>
             <p className="font-heading text-lg font-bold">{stateName(shown.state)}</p>{" "}
             <p className="mt-1 text-base">
-              {`${formatInt(shown.n)} ${noun}, ${share(shown.n)} of ${formatInt(era.total)} ${era.label}`}
+              <KeepWhole>{`${formatInt(shown.n)} ${noun}, ${share(shown.n)} of ${formatInt(era.total)} ${era.label}`}</KeepWhole>
             </p>{" "}
             {shown.certified + shown.denied > 0 ? (
               <p className="text-sm text-muted-foreground">
@@ -273,7 +274,7 @@ export function EntityStateMap({ eras, label, noun = "filings", office = null, c
               </p>
             ) : null}{" "}
             {shown.extra ? <p className="mt-1 text-base">{shown.extra}</p> : null}{" "}
-            {office?.state === shown.state ? <p className="text-sm text-muted-foreground">{office.label}</p> : null}{" "}
+            {office?.state === shown.state ? <p className="text-sm text-muted-foreground">{keepWhole(office.label)}</p> : null}{" "}
             {pinned === shown.state && shown.href ? (
               <Link href={shown.href} className="link mt-1 inline-flex min-h-11 items-center font-semibold">
                 {shown.linkText ?? `Its ${noun} in ${stateName(shown.state)}`}
@@ -282,7 +283,7 @@ export function EntityStateMap({ eras, label, noun = "filings", office = null, c
           </>
         ) : (
           <p className="text-base">
-            {`${stateName(busiest.state)} has the most: ${formatInt(busiest.n)} of ${formatInt(era.total)} ${noun} ${era.label}, or ${share(busiest.n)}.`}
+            <KeepWhole>{`${stateName(busiest.state)} has the most: ${formatInt(busiest.n)} of ${formatInt(era.total)} ${noun} ${era.label}, or ${share(busiest.n)}.`}</KeepWhole>
           </p>
         )}
       </div>

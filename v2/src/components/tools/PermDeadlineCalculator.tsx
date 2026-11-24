@@ -50,6 +50,7 @@ import { DeadlineWindowDiagram } from "./DeadlineWindowDiagram";
 import { SaveDatesAsCase } from "./SaveDatesAsCase";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface PermDeadlineCalculatorProps {
   className?: string;
@@ -465,7 +466,7 @@ export function PermDeadlineCalculator({ className }: PermDeadlineCalculatorProp
           {result.rows.map((row) => (
             <div key={row.label} className="p-6 sm:p-8">
               <p className="text-sm font-bold text-muted-foreground">
-                {row.label}
+                {keepWhole(row.label)}
               </p>{" "}
               <p className="mt-2 font-heading text-2xl font-bold leading-none sm:text-3xl">
                 {formatAsOf(row.date)}

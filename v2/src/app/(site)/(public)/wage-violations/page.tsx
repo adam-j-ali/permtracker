@@ -11,6 +11,7 @@ import { entityHref } from "@/lib/entityPayload";
 import { formatInt } from "@/lib/format";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The Labor Department's Wage and Hour cases under the three visa programs, as DOL publishes them.
@@ -63,7 +64,7 @@ function ProgramBlock({ p, first, last }: { p: WhdBoardProgram; first: number; l
   return (
     <section id={id} aria-labelledby={`${id}-h`} className="mt-12 border-t-2 border-border pt-8">
       <h2 id={`${id}-h`} className="font-heading text-2xl font-bold sm:text-3xl">
-        {p.program}
+        {keepWhole(p.program)}
       </h2>{" "}
       <p className="mt-2 max-w-2xl text-base text-muted-foreground">{ABOUT[p.program]}</p>{" "}
       <dl className="mt-5 grid grid-cols-1 border-y-2 border-border sm:grid-cols-3 [&>*]:min-w-0">
@@ -91,7 +92,7 @@ function ProgramBlock({ p, first, last }: { p: WhdBoardProgram; first: number; l
         partialKey="Cases still being concluded"
         className="mt-6"
       />{" "}
-      <h3 className="mt-8 font-heading text-lg font-bold">The largest {p.program} back wages</h3>{" "}
+      <h3 className="mt-8 font-heading text-lg font-bold">The largest {keepWhole(p.program)} back wages</h3>{" "}
       <ol className="mt-2 divide-y divide-border/40 border-y-2 border-border">
         {p.top.map((r) => (
           <Fragment key={r.caseId}>
@@ -127,7 +128,7 @@ export default async function WageViolationsPage() {
     <div className="mx-auto w-full max-w-6xl px-4 pb-12 sm:px-6 sm:pb-16">
       <div className="pt-10 sm:pt-12" />
       <header>
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">H-1B, H-2A and H-2B wage violations</h1>{" "}
+        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl"><KeepWhole>{"H-1B, H-2A and H-2B wage violations"}</KeepWhole></h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           Every Wage and Hour case the Labor Department concluded under the three visa programs, from DOL&apos;s own file:
           what it found, and the back wages owed to workers.
@@ -140,7 +141,7 @@ export default async function WageViolationsPage() {
               <Fragment key={p.program}>
                 {" "}
                 <a href={`#${p.program.toLowerCase().replace("-", "")}`} className="link inline-flex min-h-11 items-center font-bold">
-                  {p.program}: {money(p.backWages)}
+                  {keepWhole(p.program)}: {money(p.backWages)}
                 </a>
               </Fragment>
             ))}

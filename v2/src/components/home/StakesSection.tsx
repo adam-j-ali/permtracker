@@ -7,6 +7,7 @@ import {
   FILING_WINDOW_WAIT_DAYS,
   RFI_DUE_DAYS,
 } from "@convex/lib/perm/constants";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The attorney page's case for computing deadlines: each deadline that can
@@ -79,7 +80,7 @@ export function StakesSection() {
               className={`lift flex flex-col border-2 border-l-[6px] border-black bg-card p-5 shadow-hard ${EDGE[s.severity]}`}
             >
               <WarningIcon weight="fill" aria-hidden="true" className={`size-9 ${MARK[s.severity]}`} />{" "}
-              <h3 className="mt-3 font-heading text-xl font-bold">{s.title}</h3>{" "}
+              <h3 className="mt-3 font-heading text-xl font-bold">{keepWhole(s.title)}</h3>{" "}
               <p className="mb-4 mt-2 text-base leading-relaxed text-soft">{s.cost}</p>{" "}
               <p className="mt-auto flex gap-2 border-t-2 border-border pt-4 text-base leading-relaxed">
                 <ShieldCheckIcon weight="fill" aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-primary-text" />{" "}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * One tile of a board: its claim as the heading (the figure first), then its
@@ -51,7 +52,7 @@ export function Tile({
       {more ? (
         <p className="mt-4">
           <Link href={more.href} className="link inline-flex min-h-[44px] items-center text-base font-semibold">
-            {more.label}
+            {keepWhole(more.label)}
           </Link>
         </p>
       ) : null}{" "}

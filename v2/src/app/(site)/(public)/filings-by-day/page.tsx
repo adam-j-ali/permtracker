@@ -37,6 +37,7 @@ import { withSocialCard } from "@/lib/socialCard";
 import { getDatasetSchema } from "@/lib/structuredData";
 import { longDate, weekdayName } from "@convex/lib/months";
 import { StepBothSources } from "@/components/community/StepBothSources";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "PERM Cases Filed Today and Each Day";
 const DESCRIPTION =
@@ -114,8 +115,10 @@ export default async function FilingsByDayPage() {
       <header className="max-w-3xl">
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Cases filed each day</h1>{" "}
         <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-          How many PERM cases, wage requests, H-1B LCAs and H-2A, H-2B and CW-1 filings reached DOL on each day, from its
-          live case-status service and its published files.
+          <KeepWhole>
+            {"How many PERM cases, wage requests, H-1B LCAs and H-2A, H-2B and CW-1 filings reached DOL on each " +
+              "day, from its live case-status service and its published files."}
+          </KeepWhole>
         </p>
       </header>{" "}
       <section aria-label="PERM filings now" className="mt-8 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 xl:grid-cols-4 [&>*]:min-w-0">

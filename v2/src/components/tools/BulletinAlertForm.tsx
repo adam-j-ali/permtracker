@@ -23,6 +23,7 @@ import { useAlertFormTelemetry } from "@/lib/funnelEvents";
 import { convexSiteUrl } from "@/lib/convexSite";
 import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 import { longDate } from "@convex/lib/months";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 const CATEGORIES = [
   { value: "EB1", label: "EB-1" },
@@ -168,8 +169,7 @@ export function BulletinAlertForm({
       </p>{" "}
       {priorityLabel ? (
         <p className="mt-3 max-w-2xl text-base leading-relaxed">
-          Your priority date is <strong>{priorityLabel}</strong>. Pick the category on your I-140 and your country of
-          birth, and set each cutoff we send against that date.
+          Your priority date is <strong>{priorityLabel}</strong><KeepWhole>{". Pick the category on your I-140 and your country of birth, and set each cutoff we send against that date."}</KeepWhole>
         </p>
       ) : null}
       <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3 [&>*]:min-w-0">
