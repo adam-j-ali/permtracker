@@ -38,7 +38,13 @@ describe("the contents list beside the text", () => {
   const src = read("src/components/legal/SectionIndex.tsx");
 
   it("runs one column and no taller than the window there, two columns on a phone's wider widths as before", () => {
-    expect(src).toContain('"@[56rem]:max-h-[calc(100dvh-8rem)] @[56rem]:overflow-y-auto"');
+    expect(src).toContain("@[56rem]:max-h-[calc(100dvh-8rem)] @[56rem]:overflow-y-auto");
+  });
+
+  it("is a plain outlined list beside the text, never the tinted card with a hard shadow that outweighed the page", () => {
+    const sideBox = src.match(/side\s*\?\s*"([^"]+)"/)?.[1] ?? "";
+    expect(sideBox).toContain("border-2");
+    expect(sideBox).not.toMatch(/bg-tint|shadow-hard/);
     expect(src).toContain('"sm:grid-cols-2 @[56rem]:grid-cols-1"');
   });
 });

@@ -58,6 +58,29 @@ describe("ProfileHeader", () => {
     expect(grid.className).toContain("@[52rem]:grid-rows-[auto_1fr]");
   });
 
+  it("sets the figures beside the case box when nothing else sits under the name, so the box opens no empty gap", () => {
+    render(
+      <ProfileHeader
+        eyebrow="PERM by worksite city"
+        name="PERM jobs in New York, NY"
+        answer="73,863 PERM decisions name New York, NY as the worksite."
+        aside={<section aria-label="Check your case">case box</section>}
+        figures={<p>the figures</p>}
+      />,
+    );
+    const cell = screen.getByText("the figures").parentElement!;
+    expect(cell.className.split(" ")).toEqual(expect.arrayContaining(["@[52rem]:col-start-1", "@[52rem]:row-start-2"]));
+    // In the grid beside the box, not under the whole header.
+    expect(cell.parentElement).toBe(screen.getByRole("region", { name: "Check your case" }).parentElement!.parentElement);
+  });
+
+  it("keeps the figures under the whole header when tags or facts sit under the name", () => {
+    header();
+    const cell = screen.getByText("figures").parentElement!;
+    expect(cell.className).toContain("mt-8");
+    expect(cell.className).not.toContain("@[52rem]:row-start-2");
+  });
+
   it("keeps a hold, an appeal or a debarment in its box, and only those", () => {
     header();
     const boxes = within(screen.getByRole("list", { name: "What stands out now" })).getAllByRole("link");

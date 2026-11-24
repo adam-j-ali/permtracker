@@ -48,8 +48,10 @@ export function SectionIndex({
     <nav
       aria-label={label}
       className={cn(
-        "bg-tint p-5 border-2 shadow-hard border-border",
-        side ? "@[56rem]:max-h-[calc(100dvh-8rem)] @[56rem]:overflow-y-auto" : "mt-8",
+        // Beside the text it's a plain outlined list: tinted with a hard shadow it outweighed the page it indexes.
+        side
+          ? "border-2 border-border bg-card p-4 @[56rem]:max-h-[calc(100dvh-8rem)] @[56rem]:overflow-y-auto"
+          : "mt-8 bg-tint p-5 border-2 shadow-hard border-border",
       )}
     >
       <OpenOnHash />

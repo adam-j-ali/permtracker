@@ -75,6 +75,8 @@ describe("the boxes that hold the case form", () => {
             source="employer-page"
           />
         }
+        // An employer page always has facts under its name, so its figures sit under the whole header.
+        facts={[{ label: "Main job", value: "Software Developers" }]}
         figures={<p>figures</p>}
       />,
     );

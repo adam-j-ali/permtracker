@@ -68,6 +68,9 @@ export function ProfileHeader({
   const boxed = tags.filter((t): t is ProfileTag & { tone: "warn" | "bad" } => t.tone !== "ink");
   const record = tags.filter((t) => t.tone === "ink");
   const below = boxed.length > 0 || record.length > 0 || facts.length > 0;
+  // With nothing under the name (a city, an industry, a country), the figures take that row beside the case box: the
+  // box is taller than a name and one line, and on its own it left an empty block before the figures began.
+  const figuresBeside = Boolean(figures && aside && !below);
   return (
     // Two columns by the header's own width, never the screen's: beside the data rail a 1024px screen leaves the
     // title a 256px column. One column below that, in reading order: the name and its answer, the case box, then
@@ -147,11 +150,12 @@ export function ProfileHeader({
               </dl>
             ) : null}
           </div>
-        ) : null}
+        ) : null}{" "}
+        {figuresBeside ? <div className="@[52rem]:col-start-1 @[52rem]:row-start-2">{figures}</div> : null}
       </div>{" "}
       <FinderDockPanel className="mt-6" />
       </FinderDock>{" "}
-      {figures ? <div className="mt-8">{figures}</div> : null}
+      {figures && !figuresBeside ? <div className="mt-8">{figures}</div> : null}
     </header>
   );
 }
