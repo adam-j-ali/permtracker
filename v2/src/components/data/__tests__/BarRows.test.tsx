@@ -1,7 +1,7 @@
 import { fireEvent, render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { BarRows, StackedBar, barRowTip, type BarRow } from "../BarRows";
+import { BarRows, QuarterlyEmpty, StackedBar, barRowTip, type BarRow } from "../BarRows";
 
 /**
  * Every page that draws BarRows or a StackedBar gets hover detail from the
@@ -75,5 +75,19 @@ describe("StackedBar tooltips", () => {
     );
     const tips = [...container.querySelectorAll("[data-tip]")].map((el) => el.getAttribute("data-tip"));
     expect(tips).toEqual(["India\n150\n75% of 200 in all", "China\n50\n25% of 200 in all"]);
+  });
+});
+
+describe("QuarterlyEmpty", () => {
+  it("says what will show, names the file, and links USCIS's own page in a new tab, in the shared empty box", () => {
+    const { container, getByRole } = render(<QuarterlyEmpty file="i485_performance_data" />);
+    const title = getByRole("heading", { level: 2, name: "USCIS's quarterly figures will show here" });
+    const box = title.closest("section")!;
+    expect(box.className).toMatch(/\bshadow-hard-sm\b/);
+    expect(box.className).toMatch(/\bbg-tint\b/);
+    expect(container.textContent).toContain("(i485_performance_data)");
+    const link = getByRole("link", { name: /immigration and citizenship data page/ });
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toContain("noopener");
   });
 });

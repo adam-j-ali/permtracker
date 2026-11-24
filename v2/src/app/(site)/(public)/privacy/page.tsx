@@ -9,6 +9,7 @@
 import type { Metadata } from "next";
 import { ArrowLeftIcon, PlusIcon } from "@phosphor-icons/react/ssr";
 import { withSocialCard } from "@/lib/socialCard";
+import { SplitColumns } from "@/components/data/SplitColumns";
 import { SectionIndex } from "@/components/legal/SectionIndex";
 import { LEGAL_DBA, LEGAL_FORM, LEGAL_NAME, POSTAL_ADDRESS, TRADE_NAME } from "@/lib/constants/about";
 // The floors the policy states are the ones the code holds, read from the same constants.
@@ -64,16 +65,15 @@ const SECTIONS = [
 
 export default function PrivacyPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-16 pt-10 sm:px-6 sm:pt-14">
+    <div className="mx-auto max-w-6xl px-4 pb-16 pt-10 sm:px-6 sm:pt-14">
       <div>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Privacy policy</h1>{" "}
         <p className="mb-8 mt-4 text-lg text-muted-foreground">
           Effective Date: February 17, 2026 | Last Updated: November 20, 2026
         </p>{" "}
 
-        <SectionIndex sections={SECTIONS} />
-
-
+        {/* The contents beside the text on a wide page, held in view while it scrolls; above it on a phone. */}
+        <SplitColumns asideFirst sticky aside={<SectionIndex sections={SECTIONS} side />}>
         <div className="prose prose-neutral dark:prose-invert max-w-none space-y-6">
           <details className="legal-section group border-b-2 border-border">
             <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-4 py-4 [&::-webkit-details-marker]:hidden">
@@ -1959,6 +1959,7 @@ export default function PrivacyPage() {
             </ul>
           </details>
         </div>
+        </SplitColumns>
 
         {/* Back link */}
         <div className="mt-12 text-center">

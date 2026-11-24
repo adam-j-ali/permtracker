@@ -30,6 +30,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { getFAQPageSchema } from "@/lib/structuredData";
 import { DataProvenance } from "@/components/data/DataProvenance";
+import { ChapterFold } from "@/components/entities/ChapterFold";
 import { BulletinAlertFormFromUrl } from "@/components/tools/BulletinAlertForm";
 import { SearchParamsBoundary } from "@/hooks/useUrlSearchParams";
 import { FaqList } from "@/components/tools/FaqList";
@@ -460,9 +461,14 @@ export default async function VisaBulletinPage() {
         />
       ) : null}
 
+      {/* The year's limits are reference, read once a year: they wait behind one line, the words still in the page. */}
       {spill ? (
-        <>
-          <h2 className="mt-12 font-heading text-2xl font-bold tracking-tight">The spillover, as the Department set it</h2>{" "}
+        <ChapterFold
+          summary={`The spillover for fiscal year ${spill.fiscalYear}`}
+          hint={`The employment-based limit by category, ${formatInt(spill.employmentTotal)} worldwide`}
+          className="mt-12"
+        >
+          <h2 className="font-heading text-2xl font-bold tracking-tight">The spillover, as the Department set it</h2>{" "}
           <p className="mt-3 max-w-3xl text-base leading-relaxed text-soft">
             For fiscal year {spill.fiscalYear}, the State Department set the employment-based limit at{" "}
             {formatInt(spill.employmentTotal)} worldwide: the statutory {formatInt(spill.employmentBase)} plus{" "}
@@ -510,7 +516,7 @@ export default async function VisaBulletinPage() {
               bulletin day. This page prints it when the Department posts its sheet, usually in the first weeks of the fiscal year.
             </p>
           </MoreText>
-        </>
+        </ChapterFold>
       ) : null}
 
 

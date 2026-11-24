@@ -11,7 +11,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Fragment } from "react";
+import { ListMagnifyingGlassIcon } from "@phosphor-icons/react/ssr";
 
+import { EmptyState } from "@/components/data/EmptyState";
 import { PageSection } from "@/components/data/PageSection";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { SocFinder } from "@/components/soc/SocFinder";
@@ -88,7 +90,7 @@ export default async function SocCodesPage() {
           see the job.
         </p>
       </header>{" "}
-      <section className="mt-8 max-w-3xl" data-embed="soc-codes">
+      <section id="soc-finder" className="mt-8 max-w-3xl scroll-mt-24" data-embed="soc-codes">
         <SearchParamsBoundary>
           <SocFinder examples={top.slice(0, 3).map(({ slug, title }) => ({ slug, title }))} />
         </SearchParamsBoundary>
@@ -169,7 +171,14 @@ export default async function SocCodesPage() {
       {groups.length === 0 ? (
         <Fragment>
           {" "}
-          <p className="mt-6 text-base text-soft">The code list isn&apos;t loaded yet. The finder above still answers.</p>
+          <EmptyState
+            title="Every code, by group, will list here"
+            icon={<ListMagnifyingGlassIcon weight="bold" />}
+            action={{ href: "#soc-finder", label: "Use the finder" }}
+            className="mt-6"
+          >
+            BLS&apos;s code list isn&apos;t loaded yet. The finder at the top still answers from DOL&apos;s files.
+          </EmptyState>
         </Fragment>
       ) : null}
     </div>

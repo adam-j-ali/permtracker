@@ -10,13 +10,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowSquareOutIcon, BriefcaseIcon, HeartIcon, MegaphoneSimpleIcon, UsersThreeIcon } from "@phosphor-icons/react/ssr";
+import { ArrowSquareOutIcon, BriefcaseIcon, CalendarBlankIcon, HeartIcon, MegaphoneSimpleIcon, UsersThreeIcon } from "@phosphor-icons/react/ssr";
 
 import { api } from "@convex/_generated/api";
 import { ConsularPauseNote } from "@/components/consular/ConsularPauseNote";
 import { WorkVisasAtPost } from "@/components/consular/WorkVisasAtPost";
 import { ConsularReports } from "@/components/consular/ConsularReports";
 import { DataProvenance } from "@/components/data/DataProvenance";
+import { EmptyState } from "@/components/data/EmptyState";
 import { Figure, FigureRow } from "@/components/data/FigureRow";
 import { FinePrint } from "@/components/data/FinePrint";
 import { ColumnChart, type Column } from "@/components/numbers/ColumnChart";
@@ -190,9 +191,14 @@ export default async function ConsularPostPage({ params }: { params: Promise<{ p
           })}
         </FigureRow>
       ) : (
-        <p className="mt-8 max-w-3xl text-base text-muted-foreground">
-          State&apos;s scheduling table doesn&apos;t list {post.name}.
-        </p>
+        <EmptyState
+          title="Its scheduling months will show here"
+          icon={<CalendarBlankIcon weight="bold" />}
+          action={{ href: "/consular-posts", label: "See every post State lists" }}
+          className="mt-8 max-w-3xl"
+        >
+          State&apos;s scheduling table doesn&apos;t list {post.name}, so there&apos;s no month to show for it yet.
+        </EmptyState>
       )}
 
       {embassy ? <EmbassyNoticeList data={embassy} /> : null}
@@ -350,10 +356,10 @@ function EmbassyNoticeList({ data }: { data: EmbassyNotices }) {
           </ol>
         </>
       ) : (
-        <p className="mt-2 text-base text-muted-foreground">
+        <EmptyState title="Its notices will list here" heading="h3" icon={<MegaphoneSimpleIcon weight="bold" />} className="mt-4">
           The embassy hasn&apos;t posted a notice on consular operations or immigrant visas in the last year that this site
-          has read.
-        </p>
+          has read. Its own site, linked below, has everything it posts.
+        </EmptyState>
       )}{" "}
       <a
         href={own}

@@ -6,6 +6,9 @@
  * outcomes and pace, never a grade.
  */
 
+import { formatInt } from "@/lib/format";
+import { US_STATE_NAMES } from "@/lib/usStateNames";
+
 export type FirmProgram = "perm" | "lca";
 
 export interface FirmRankRow {
@@ -90,6 +93,34 @@ export function certifiedShare(r: Pick<FirmRankRow, "certified" | "denied">): nu
 
 /** Rows drawn as bars; the rest of the 100 fold into a table. */
 export const BARS_SHOWN = 25;
+
+interface ProgramLead {
+  fy: number | null;
+  top: Pick<FirmRankRow, "name" | "filings"> | null;
+}
+
+/**
+ * The rankings page's answer line, under its title: the busiest firm for each program in the place shown, with its
+ * count. One firm leading both is named once; each program names its own year where the two differ. Null with no
+ * ranking held for either.
+ */
+export function firmRanksAnswer(state: string, perm: ProgramLead, lca: ProgramLead): string | null {
+  const where = state === NATION ? "across the country" : `for jobs in ${US_STATE_NAMES[state] ?? state}`;
+  const p = perm.fy !== null && perm.top ? { fy: perm.fy, ...perm.top } : null;
+  const l = lca.fy !== null && lca.top ? { fy: lca.fy, ...lca.top } : null;
+  const n = (x: number) => formatInt(x);
+  if (p && l && p.name === l.name && p.fy === l.fy) {
+    return `In FY${p.fy}, ${p.name} filed the most PERM cases ${where} (${n(p.filings)}), and the most certified H-1B LCAs (${n(l.filings)}).`;
+  }
+  const parts: string[] = [];
+  if (p) parts.push(`In FY${p.fy}, ${p.name} filed the most PERM cases ${where} (${n(p.filings)}).`);
+  if (l) {
+    const lead = p && p.fy === l.fy ? "" : `In FY${l.fy}, `;
+    const tail = p ? "" : ` ${where}`;
+    parts.push(`${lead}${l.name} filed the most certified H-1B LCAs${tail} (${n(l.filings)}).`);
+  }
+  return parts.length > 0 ? parts.join(" ") : null;
+}
 
 /** The newest decision day either program's shown year holds: the page's date. */
 export function firmRanksAsOf(summary: FirmRanksSummary | null | undefined): string | null {

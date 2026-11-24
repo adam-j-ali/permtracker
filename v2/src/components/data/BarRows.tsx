@@ -1,6 +1,7 @@
 import { Fragment, type ReactNode } from "react";
 
 import { ChartTips } from "@/components/data/ChartTips";
+import { EmptyState } from "@/components/data/EmptyState";
 import { plainText } from "@/components/data/MoreText";
 import { cn } from "@/lib/utils";
 
@@ -205,14 +206,12 @@ export function StackedBar({
   );
 }
 
-/** The empty state every USCIS quarterly page shares: the file has not arrived. */
+/** The empty state every USCIS quarterly page shares: the file has not arrived. The site's one empty box. */
 export function QuarterlyEmpty({ file, children }: { file: string; children?: ReactNode }) {
   return (
-    <section className="mt-8 bg-sage p-6 sm:p-8 border-2 border-border">
-      <h2 className="font-heading text-xl font-bold">Nothing loaded yet</h2>{" "}
-      <p className="mt-3 max-w-2xl leading-relaxed text-muted-foreground">
-        USCIS&apos;s quarterly file ({file}) hasn&apos;t been read into this site&apos;s
-        record yet, so there are no figures to show. The file itself is on{" "}
+    <EmptyState title="USCIS's quarterly figures will show here" spot="topic-data-notes" className="mt-8">
+      <p>
+        USCIS&apos;s quarterly file ({file}) hasn&apos;t been read into this site&apos;s record yet. The file itself is on{" "}
         <a
           href="https://www.uscis.gov/tools/reports-and-studies/immigration-and-citizenship-data"
           target="_blank"
@@ -224,6 +223,6 @@ export function QuarterlyEmpty({ file, children }: { file: string; children?: Re
         .
       </p>{" "}
       {children}
-    </section>
+    </EmptyState>
   );
 }

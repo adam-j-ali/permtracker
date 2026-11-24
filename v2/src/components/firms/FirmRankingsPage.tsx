@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Fragment } from "react";
-import { BuildingsIcon, FilesIcon, ScalesIcon, TrophyIcon } from "@phosphor-icons/react/ssr";
+import { BuildingsIcon, FilesIcon, ScalesIcon } from "@phosphor-icons/react/ssr";
 
 import { BarRows, StackedBar, type BarRow } from "@/components/data/BarRows";
 import { DataProvenance } from "@/components/data/DataProvenance";
+import { EmptyState } from "@/components/data/EmptyState";
 import { Figure, FigureRow } from "@/components/data/FigureRow";
+import { ChapterFold } from "@/components/entities/ChapterFold";
 import { FinePrint } from "@/components/data/FinePrint";
 import { PageSection } from "@/components/data/PageSection";
 import { SiteBreadcrumbs } from "@/components/layout/SiteBreadcrumbs";
@@ -25,6 +27,7 @@ import {
   NATION,
   certifiedShare,
   filingSplit,
+  firmRanksAnswer,
   firmRanksAsOf,
   firstRankedYear,
   lastYearWords,
@@ -216,14 +219,22 @@ async function Ranking({ program, state, summary }: { program: FirmProgram; stat
   if (!totals || list.length === 0) {
     return (
       <PageSection id={program} title={`${p.title}, FY${fy}`}>
-        <p className="max-w-2xl text-base text-soft">
-          No law firm filed {p.noun} for jobs in {place} in FY{fy}.
-        </p>
+        <EmptyState
+          title={`No firm to rank here for FY${fy}`}
+          heading="h3"
+          icon={<ScalesIcon weight="bold" />}
+          action={
+            state === NATION
+              ? { href: "/perm-attorneys", label: "See every PERM law firm" }
+              : { href: FIRM_RANKS_PATH, label: "See the whole country's ranking" }
+          }
+        >
+          No law firm filed {p.noun} for jobs in {place} in FY{fy}. A firm shows here once DOL&apos;s files name one.
+        </EmptyState>
       </PageSection>
     );
   }
   const rest = list.slice(BARS_SHOWN);
-  const top = list[0]!;
   return (
     <PageSection
       id={program}
@@ -235,14 +246,9 @@ async function Ranking({ program, state, summary }: { program: FirmProgram; stat
       }
       lede={`October ${fy - 1} to September ${fy}, counted ${p.countedAt}.`}
     >
+      {/* Three figures. The busiest firm is the page's answer line and the first bar below, so it isn't a fourth
+          figure, and lime stays on the action. */}
       <FigureRow>
-        <Figure
-          tone="lime"
-          label="The busiest firm"
-          icon={<TrophyIcon weight="bold" className="text-primary-text" />}
-          value={formatInt(top.filings)}
-          note={top.name}
-        />{" "}
         <Figure
           label={`${p.noun[0]!.toUpperCase()}${p.noun.slice(1)} naming a firm`}
           icon={<FilesIcon weight="bold" className="text-primary-text" />}
@@ -339,6 +345,15 @@ export async function FirmRankingsPage({ state }: { state: string }) {
   const lcaFrom = summary ? firstRankedYear(summary, "lca") : null;
   const from = [permFrom, lcaFrom].filter((y): y is number => y !== null);
   const since = (fy: number | null) => (fy === null ? "DOL" : `DOL, FY${fy} on`);
+  // The answer line: the busiest firm for each program here. The rankings below read the same cached lists.
+  const lead = async (program: FirmProgram) => {
+    const fy = summary ? shownYear(summary, program) : null;
+    if (fy === null) return { fy, top: null };
+    const list = await getFirmRanks(program, fy, state).catch(softFail("FirmRankingsPage.answer", []));
+    return { fy, top: list[0] ?? null };
+  };
+  const [permLead, lcaLead] = await Promise.all([lead("perm"), lead("lca")]);
+  const answer = firmRanksAnswer(state, permLead, lcaLead);
 
   const schemas: object[] = [
     getDatasetSchema(SITE_URL, {
@@ -367,31 +382,20 @@ export async function FirmRankingsPage({ state }: { state: string }) {
         ))}
         <header className="max-w-3xl">
           <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">{heading}</h1>{" "}
-          <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+          {answer ? <p className="mt-4 text-lg font-semibold leading-relaxed text-foreground">{answer}</p> : null}{" "}
+          <p className="mt-3 text-base leading-relaxed text-muted-foreground">
             Ranked by the PERM and H-1B cases DOL decided with each firm named, from DOL&apos;s own files. Each firm links to
             its full record.
           </p>
         </header>{" "}
-        {summary ? (
-          <>
-            <Ranking program="perm" state={state} summary={summary} />{" "}
-            <Ranking program="lca" state={state} summary={summary} />
-          </>
-        ) : (
-          <p className="mt-8 border-2 border-border bg-sage p-5 text-base">
-            The rankings aren&apos;t built yet. They&apos;re made from DOL&apos;s PERM and LCA files after each load. In the meantime, the{" "}
-            <Link href="/perm-attorneys" className="link">
-              law firm list
-            </Link>{" "}
-            ranks every firm by its PERM filings.
-          </p>
-        )}{" "}
+        {/* The way in comes first: another state's ranking is one press away, before the figures. */}
         {states.length > 0 ? (
-          <section aria-labelledby="firms-by-state" className="mt-14">
-            <h2 id="firms-by-state" className="font-heading text-2xl font-bold">
-              By state
-            </h2>{" "}
-            <ul className="mt-4 flex flex-wrap gap-2">
+          <ChapterFold
+            summary={state === NATION ? "Rankings for one state" : "Rankings for another state"}
+            hint={`Every state with ranked firms, ${formatInt(states.length)} in all`}
+            className="mt-6"
+          >
+            <ul aria-label="Rankings by state" className="flex flex-wrap gap-2">
               {state !== NATION ? (
                 <li>
                   <Link href={FIRM_RANKS_PATH} className={buttonVariants({ variant: "outline", size: "default" })}>
@@ -417,8 +421,24 @@ export async function FirmRankingsPage({ state }: { state: string }) {
                   </Fragment>
                 ))}
             </ul>
-          </section>
+          </ChapterFold>
         ) : null}{" "}
+        {summary ? (
+          <>
+            <Ranking program="perm" state={state} summary={summary} />{" "}
+            <Ranking program="lca" state={state} summary={summary} />
+          </>
+        ) : (
+          <EmptyState
+            title="The rankings will show here"
+            spot="topic-practice"
+            action={{ href: "/perm-attorneys", label: "See every PERM law firm" }}
+            className="mt-8"
+          >
+            They&apos;re built from DOL&apos;s PERM and LCA files after each load. Meanwhile the law firm list ranks every
+            firm by its PERM filings.
+          </EmptyState>
+        )}{" "}
         <section className="mt-12">
           <h2 className="font-heading text-2xl font-bold">FAQs</h2>
           <FaqList items={FAQS} openFirst={false} />
