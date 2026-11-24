@@ -12,7 +12,7 @@ import { describe, expect, it, vi } from "vitest";
  * `prepareDestination`, as resolve-routes calls it for a redirect), so this checks what a visitor gets.
  */
 
-vi.mock("@sentry/nextjs", () => ({ withSentryConfig: (c: unknown) => c }));
+vi.mock("@sentry/nextjs/config", () => ({ withSentryConfig: (c: unknown) => c }));
 vi.mock("@serwist/next", () => ({ default: () => (c: unknown) => c }));
 vi.mock("@next/bundle-analyzer", () => ({ default: () => (c: unknown) => c }));
 

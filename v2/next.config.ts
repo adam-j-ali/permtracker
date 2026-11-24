@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import { withSentryConfig } from "@sentry/nextjs";
+import { type SentryBuildOptions, withSentryConfig } from "@sentry/nextjs/config";
 import withSerwistInit from "@serwist/next";
 import bundleAnalyzer from "@next/bundle-analyzer";
 
@@ -454,8 +454,9 @@ const nextConfig: NextConfig = {
 
 const configWithSerwist = withSerwist(nextConfig);
 
-// Sentry configuration options
-const sentryOptions = {
+// Sentry configuration options. Typed, so an option a Sentry release removes fails the typecheck: next.config.ts is
+// read at build time, where a removed option only logs a warning.
+const sentryOptions: SentryBuildOptions = {
   // Suppress source map upload logs during build
   silent: true,
 
@@ -471,9 +472,6 @@ const sentryOptions = {
       disable: false,
     },
   }),
-
-  // Hide source maps from generated client bundles
-  hideSourceMaps: true,
 
   // We do NOT wire Sentry's client navigation-span instrumentation: tracing is
   // stripped from the bundle (excludeTracing below) and the client SDK is

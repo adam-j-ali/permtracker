@@ -75,7 +75,7 @@
     "@react-email/render": "^2.3.0",
     "@remotion/player": "4.0.544",
     "@remotion/transitions": "4.0.544",
-    "@sentry/nextjs": "~10.75.2",
+    "@sentry/nextjs": "~11.14.0",
     "@serwist/next": "^9.5.15",
     "@types/react-big-calendar": "^1.16.3",
     "ai": "^7.0.176",

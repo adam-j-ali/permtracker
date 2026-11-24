@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { redactBrowserEvent, scrubShareKeys } from "../sentryRedact";
+import { redactBrowserEvent, scrubShareKeys, scrubShareKeysOnSend } from "../sentryRedact";
 
 /** No email address leaves the browser for Sentry (Nov 4 2026: the signed-in person's address went as the user). */
 describe("redactBrowserEvent", () => {
@@ -79,6 +79,34 @@ describe("scrubShareKeys", () => {
     const looped: Record<string, unknown> = { message: PATH };
     looped.self = looped;
     expect(scrubShareKeys(looped).message).toBe("/share/recruitment/redacted");
+  });
+
+  it("scrubs a streamed span (Sentry 11's format): its name, attributes and links", () => {
+    const span = scrubShareKeys({
+      name: `GET ${PATH}`,
+      is_segment: true,
+      attributes: { "url.full": `https://permtracker.app${PATH}`, "http.request.header.referer": [`https://permtracker.app${PATH}`] },
+      links: [{ attributes: { "url.path": PATH } }],
+    });
+    expect(JSON.stringify(span)).not.toContain(KEY);
+    expect(span.name).toBe("GET /share/recruitment/redacted");
+  });
+
+  it("scrubs a whole envelope as it is sent: its trace header and every item", () => {
+    const on = vi.fn();
+    scrubShareKeysOnSend({ on } as unknown as Parameters<typeof scrubShareKeysOnSend>[0]);
+    expect(on).toHaveBeenCalledWith("beforeEnvelope", expect.any(Function));
+    const envelope = [
+      { trace: { transaction: `GET ${PATH}` } },
+      [[{ type: "span" }, { items: [{ name: "db", attributes: { "sentry.segment.name": { value: `GET ${PATH}` } } }] }]],
+    ];
+    (on.mock.calls[0]![1] as (e: unknown) => void)(envelope);
+    expect(JSON.stringify(envelope)).not.toContain(KEY);
+    expect(JSON.stringify(envelope)).toContain("/share/recruitment/redacted");
+  });
+
+  it("does nothing without a client", () => {
+    expect(() => scrubShareKeysOnSend(undefined)).not.toThrow();
   });
 
   it("is part of what every browser event goes through", async () => {

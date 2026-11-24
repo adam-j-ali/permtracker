@@ -35,14 +35,15 @@ updates:
       # upgraded by hand; minors and patches come through here.
       - dependency-name: "next"
         update-types: ["version-update:semver-major"]
-      # @sentry/nextjs 10.72 vendored an ESM file into its CJS build that reads
-      # `import.meta.url` at load, which Vitest can't resolve: the suite failed
-      # on import while the production build was fine. 10.75 runs under Vitest
-      # (the full suite passed with it, Oct 24 2026), so v2/package.json pins
-      # ~10.75.2 for its critical-advisory fix (GHSA-mchm-gjx6-7h55). A newer
-      # version comes in by hand, after the full suite passes with it.
+      # @sentry/nextjs comes in by hand. A release has broken the suite on
+      # import while the production build was fine (10.72 read
+      # `import.meta.url` in its CJS build), and since 11.x what Sentry
+      # collects depends on options a release can change (dataCollection,
+      # span streaming), which the Privacy Policy relies on. v2/package.json
+      # pins ~11.14.0 (Nov 24 2026); a newer version comes in after the full
+      # suite, src/lib/__tests__/sentry-config.test.ts included, passes with it.
       - dependency-name: "@sentry/nextjs"
-        versions: [">=10.76.0"]
+        versions: [">=11.15.0"]
 
   # GitHub Actions dependencies
   - package-ecosystem: "github-actions"

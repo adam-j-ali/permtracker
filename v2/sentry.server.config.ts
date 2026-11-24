@@ -11,7 +11,8 @@ import * as Sentry from "@sentry/nextjs";
 
 import { serverEventFromStrayPost } from "./src/lib/exceptionNoise";
 import { createSentryBudget } from "./src/lib/sentryBudget";
-import { scrubShareKeys } from "./src/lib/sentryRedact";
+import { SENTRY_DATA_COLLECTION } from "./src/lib/sentryDataCollection";
+import { scrubShareKeys, scrubShareKeysOnSend } from "./src/lib/sentryRedact";
 
 // A per-process ceiling on what reaches Sentry in an hour (src/lib/sentryBudget.ts):
 // far above a normal day, so a storm cannot spend the monthly allowance.
@@ -29,11 +30,15 @@ Sentry.init({
   environment: process.env.SENTRY_ENVIRONMENT,
   release: process.env.VERCEL_GIT_COMMIT_SHA,
 
-  // Structured logging
-  enableLogs: true,
+  // What Sentry may collect: no request body, cookie or IP address (src/lib/sentryDataCollection.ts).
+  dataCollection: SENTRY_DATA_COLLECTION,
 
-  // Performance monitoring - sample 10% of transactions in production
+  // Performance monitoring - sample 10% of traces in production
   tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
+
+  // Spans are streamed as they end, and beforeSendSpan below takes that format. Set here rather than left to the
+  // default, so SENTRY_TRACE_LIFECYCLE=static in an environment file can't switch formats and skip the callback.
+  traceLifecycle: "stream",
 
   // Debug mode (very noisy — only enable when troubleshooting Sentry itself)
   debug: false,
@@ -45,20 +50,23 @@ Sentry.init({
     "NEXT_REDIRECT",
   ],
 
-
   // A stranger's POST to a page (a scanner, a broken client) is not an error of ours: src/lib/exceptionNoise.ts.
-  // Nothing sent carries a shared recruitment record's key: an error's request URL and path, a trace's spans and a
-  // log line all name the page by its address (scrubShareKeys, src/lib/sentryRedact.ts).
+  // Nothing sent carries a shared recruitment record's key: an error's request URL and path, a span's name and URL
+  // and a log line all name the page by its address (scrubShareKeys, src/lib/sentryRedact.ts), and every envelope is
+  // scrubbed again as it goes (scrubShareKeysOnSend, below).
   beforeSend: (event) => (serverEventFromStrayPost(event) ? null : budget.error(scrubShareKeys(event))),
-  beforeSendTransaction: (event) => scrubShareKeys(event),
+  beforeSendSpan: (span) => scrubShareKeys(span),
   beforeSendLog: (log) => budget.log(scrubShareKeys(log)),
 
   integrations: [
-    // Forward console.warn and console.error to Sentry Logs
+    // Forward console.warn and console.error to Sentry Logs. This integration is what turns logs on: there is no
+    // separate switch.
     Sentry.consoleLoggingIntegration({ levels: ["warn", "error"] }),
     // No request body ever reaches Sentry. The SDK's default ("medium") attaches up to 10 KB of the body to an error
     // in that request, which here includes a sign-in's email and password. disableIncomingRequestSpans is the Next.js
     // SDK's own setting for this integration (Next traces requests itself), kept because this entry replaces its own.
-    Sentry.httpIntegration({ disableIncomingRequestSpans: true, maxIncomingRequestBodySize: "none" }),
+    Sentry.httpIntegration({ disableIncomingRequestSpans: true, maxRequestBodySize: "none" }),
   ],
 });
+
+scrubShareKeysOnSend(Sentry.getClient());

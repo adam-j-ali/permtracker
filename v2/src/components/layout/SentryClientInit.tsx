@@ -3,8 +3,9 @@
 import { useEffect } from "react";
 import { isStaleDeploymentError } from "@/components/error/auth-error";
 import { sentryEventFromInjectedPageScript } from "@/lib/exceptionNoise";
+import { SENTRY_DATA_COLLECTION } from "@/lib/sentryDataCollection";
 import { CLIENT_IGNORE_ERRORS } from "@/lib/sentryIgnore";
-import { redactBrowserEvent } from "@/lib/sentryRedact";
+import { redactBrowserEvent, scrubShareKeys, scrubShareKeysOnSend } from "@/lib/sentryRedact";
 
 let sentryInitialized = false;
 
@@ -43,7 +44,8 @@ export function SentryClientInit() {
         dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
         environment: process.env.NODE_ENV,
         release: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA,
-        enableLogs: true,
+        // What Sentry may collect: no request body, cookie or IP address (src/lib/sentryDataCollection.ts).
+        dataCollection: SENTRY_DATA_COLLECTION,
         // No tracesSampleRate: tracing is tree-shaken out of the bundle
         // (bundleSizeOptimizations.excludeTracing in next.config.ts), so a
         // sample rate has no pipeline to configure. This SDK is errors-only.
@@ -72,14 +74,19 @@ export function SentryClientInit() {
           // No email address goes to Sentry, from the user or from any message (src/lib/sentryRedact.ts).
           return redactBrowserEvent(event);
         },
+        // A span, should one ever be sent from here, carries no share key either. Streamed, the format this takes.
+        traceLifecycle: "stream",
+        beforeSendSpan: (span) => scrubShareKeys(span),
         // NO SESSION REPLAY, here or in PostHog: the Privacy Policy says it's
         // off (session-replay-off.test.ts). Sentry stays for the explicit
         // captureError() calls throughout the app and its console integration;
-        // PostHog owns analytics.
+        // PostHog owns analytics. The console integration is what turns logs on.
         integrations: [
           Sentry.consoleLoggingIntegration({ levels: ["warn", "error"] }),
         ],
       });
+      // Every envelope is scrubbed of share keys again as it goes (src/lib/sentryRedact.ts).
+      scrubShareKeysOnSend(Sentry.getClient());
     };
 
     if ("requestIdleCallback" in window) {

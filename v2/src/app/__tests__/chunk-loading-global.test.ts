@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
  * next.config.ts and Sentry 4Y and 53.
  */
 
-vi.mock("@sentry/nextjs", () => ({ withSentryConfig: (c: unknown) => c }));
+vi.mock("@sentry/nextjs/config", () => ({ withSentryConfig: (c: unknown) => c }));
 vi.mock("@serwist/next", () => ({ default: () => (c: unknown) => c }));
 vi.mock("@next/bundle-analyzer", () => ({ default: () => (c: unknown) => c }));
 

@@ -212,6 +212,9 @@ const ISOLATED_UNIT_FILES = [
   "src/lib/db/__tests__/employerHistory.test.ts",
   // Added 2026-11-21. Mocks ../client with an answer per table.
   "src/lib/db/__tests__/permCasesHistory.test.ts",
+  // Added 2026-11-24. Mocks @sentry/nextjs onto a real Sentry Node client, which holds process-wide state (its
+  // client, its HTTP and console hooks): no neighbour may share its process.
+  "src/lib/__tests__/sentry-config.test.ts",
   // Added 2026-11-23. Mocks ../client and sets per-test answers.
   "src/lib/db/__tests__/wageDeterminations.test.ts",
   "src/lib/db/__tests__/caseWageContext.test.ts",
