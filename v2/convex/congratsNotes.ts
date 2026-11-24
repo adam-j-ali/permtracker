@@ -246,6 +246,56 @@ export const skip = internalMutation({
   },
 });
 
+/**
+ * Let a held note go: back to waiting, or, when it was already put in Zoho's Outbox by hand (the Zoho message id
+ * given), recorded as scheduled so the sent check finds it. Refused for a note that isn't held, for an address that
+ * opted out, and for an address that already has a note scheduled or sent, so nobody is written to twice.
+ */
+export const unhold = internalMutation({
+  args: {
+    id: v.id("congratsNotes"),
+    zohoMessageId: v.optional(v.string()),
+    scheduledFor: v.optional(v.string()),
+    now: v.number(),
+  },
+  returns: v.union(
+    v.literal("due"),
+    v.literal("scheduled"),
+    v.literal("refused: not held"),
+    v.literal("refused: opted out"),
+    v.literal("refused: already written to"),
+  ),
+  handler: async (ctx, args) => {
+    const note = await ctx.db.get(args.id);
+    if (!note || note.state !== "skipped") return "refused: not held";
+    const email = norm(note.email);
+    const optedOut = await ctx.db
+      .query("congratsNoteOptOuts")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .first();
+    if (optedOut) return "refused: opted out";
+    const others = await ctx.db
+      .query("congratsNotes")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .take(50);
+    if (others.some((n) => n._id !== note._id && (n.state === "scheduled" || n.state === "sent"))) {
+      return "refused: already written to";
+    }
+    if (args.zohoMessageId && args.scheduledFor) {
+      await ctx.db.patch(args.id, {
+        state: "scheduled",
+        reason: undefined,
+        zohoMessageId: args.zohoMessageId,
+        scheduledFor: args.scheduledFor,
+        scheduledAt: args.now,
+      });
+      return "scheduled";
+    }
+    await ctx.db.patch(args.id, { state: "due", reason: undefined });
+    return "due";
+  },
+});
+
 /** "If you'd rather I didn't write again": never another note to this address, and none still waiting. */
 export const optOut = internalMutation({
   args: { email: v.string(), note: v.optional(v.string()), now: v.number() },

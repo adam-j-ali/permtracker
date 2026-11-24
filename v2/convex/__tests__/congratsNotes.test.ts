@@ -201,3 +201,63 @@ describe("congratsNotes.due", () => {
     expect((await t.mutation(internal.congratsNotes.due, { now: FRI })).notes).toHaveLength(0);
   });
 });
+
+describe("congratsNotes.unhold", () => {
+  // A note held by the person reading it, then let go (Nov 24 2026: a note held for its law-firm domain was the
+  // applicant's own work mail). It goes back to waiting, or, when it was already put in Zoho's Outbox by hand, it's
+  // recorded as scheduled so the sent check finds it and no second note goes to that address.
+  async function held(t: ReturnType<typeof createTestContext>, email = "first.last@firm.example") {
+    await watch(t, { email });
+    const [note] = (await t.mutation(internal.congratsNotes.due, { now: FRI })).notes;
+    await t.mutation(internal.congratsNotes.skip, { id: note!.id, reason: "a law firm's domain: Adam decides" });
+    return note!.id;
+  }
+
+  it("puts a held note back to waiting, and due hands it back", async () => {
+    const t = createTestContext();
+    const id = await held(t);
+    expect(await t.mutation(internal.congratsNotes.unhold, { id, now: FRI })).toBe("due");
+    const again = await t.mutation(internal.congratsNotes.due, { now: FRI + 3600_000 });
+    expect(again.notes.map((n) => n.id)).toEqual([id]);
+  });
+
+  it("records a held note already put in the Outbox as scheduled, and then sent", async () => {
+    const t = createTestContext();
+    const id = await held(t);
+    const r = await t.mutation(internal.congratsNotes.unhold, {
+      id,
+      zohoMessageId: "z9",
+      scheduledFor: "10/23/2026 11:26:00",
+      now: FRI,
+    });
+    expect(r).toBe("scheduled");
+    expect((await t.mutation(internal.congratsNotes.due, { now: FRI + 3600_000 })).notes).toHaveLength(0);
+    expect(await t.mutation(internal.congratsNotes.markSent, { id, now: FRI })).toBe(true);
+  });
+
+  it("refuses a note whose person opted out, and one that isn't held", async () => {
+    const t = createTestContext();
+    const id = await held(t, "quiet@firm.example");
+    await t.mutation(internal.congratsNotes.optOut, { email: "quiet@firm.example", now: FRI });
+    expect(await t.mutation(internal.congratsNotes.unhold, { id, now: FRI })).toBe("refused: opted out");
+
+    const t2 = createTestContext();
+    await watch(t2);
+    const [waiting] = (await t2.mutation(internal.congratsNotes.due, { now: FRI })).notes;
+    expect(await t2.mutation(internal.congratsNotes.unhold, { id: waiting!.id, now: FRI })).toBe("refused: not held");
+  });
+
+  it("refuses when that address already has a note scheduled or sent", async () => {
+    const t = createTestContext();
+    const id = await held(t, "two@firm.example");
+    await watch(t, { email: "two@firm.example", caseNumber: "I-200-26070-444444" });
+    const [other] = (await t.mutation(internal.congratsNotes.due, { now: FRI })).notes;
+    await t.mutation(internal.congratsNotes.markScheduled, {
+      id: other!.id,
+      zohoMessageId: "z2",
+      scheduledFor: "10/23/2026 10:15:00",
+      now: FRI,
+    });
+    expect(await t.mutation(internal.congratsNotes.unhold, { id, now: FRI })).toBe("refused: already written to");
+  });
+});
