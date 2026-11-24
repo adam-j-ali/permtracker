@@ -135,16 +135,18 @@ def headings(html: str) -> list[tuple[int, str]]:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="https://permtracker.app")
-    ap.add_argument("--pages", nargs="*", default=None)
+    ap.add_argument("--pages", nargs="*", default=None, help="these paths only, in place of the sitemap walk")
+    ap.add_argument("--also", nargs="*", default=None, help="these paths as well as the sitemap walk (a push's changed pages)")
     args = ap.parse_args()
     base = args.base.rstrip("/")
 
-    paths = args.pages or page_paths(base)
+    walk = [] if args.pages else page_paths(base)
+    paths = args.pages or list(dict.fromkeys([*walk, *(args.also or [])]))
     # The floor guards the sitemap walk, not an explicit list: a walk that
     # returns three pages means the walk broke, while checking one page by
     # name on purpose is fine.
-    if args.pages is None and len(paths) < 20:
-        print(f"FAIL: the sitemap walk found only {len(paths)} pages. That is "
+    if args.pages is None and len(walk) < 20:
+        print(f"FAIL: the sitemap walk found only {len(walk)} pages. That is "
               "a defect in this script or in the sitemap, not a clean site.")
         return 2
 

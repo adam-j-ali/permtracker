@@ -270,6 +270,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="https://permtracker.app")
     ap.add_argument("--pages", nargs="*", default=None, help="these paths only, in place of the sitemap's sample")
+    ap.add_argument("--also", nargs="*", default=None, help="these paths as well as the sitemap's sample (a push's changed pages)")
     ap.add_argument("--files", nargs="*", default=None, help="HTML files saved to disk, in place of fetching")
     args = ap.parse_args()
 
@@ -278,8 +279,10 @@ def main() -> int:
         targets = len(args.files)
     else:
         base = args.base.rstrip("/")
-        sample = args.pages if args.pages is not None else page_paths(base)
-        if not sample:
+        walk = [] if args.pages is not None else page_paths(base)
+        sample = args.pages if args.pages is not None else list(dict.fromkeys([*walk, *(args.also or [])]))
+        # A walk that gave nothing is a broken walk, whatever --also added.
+        if not sample or (args.pages is None and not walk):
             print("FATAL: no pages to read; the sitemap gave nothing", file=sys.stderr)
             return 2
         paths = list(dict.fromkeys([*sample, *([] if args.pages is not None else HEAVIEST)]))

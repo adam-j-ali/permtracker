@@ -4,6 +4,7 @@ Oct 26 2026: the phone sweep failed on two pages at 390px, and the morning
 report showed its last 12 lines, every one a clean 320px page.
 """
 import sys
+from pathlib import Path
 
 import page_checks as pc
 
@@ -81,6 +82,45 @@ def main() -> int:
     found = pc.run({**markup, "cmd": [sys.executable, "-c", script]}).get("findings") or []
     if [f.split(":")[0] for f in found] != ["/perm-employers", "/h1b-employers/x"]:
         failures.append(f"a failing markup check's report names each page it found (got {found})")
+    # Nov 24 2026: a push's changed pages replaced the sitemap walk of the headings, trust and markup checks, so a
+    # push that changed pages read about 20 of them (headings in 1 s) while the night run read 504 and held the
+    # release on a heading the push build never looked at. The changed pages are added to the walk, never in its place.
+    with_extra = {c["key"]: c["cmd"] for c in pc.checks("https://example.test", ["/changed-page"])}
+    for key in ("headings", "trust", "markup"):
+        cmd = with_extra[key]
+        if "--pages" in cmd or "--also" not in cmd or "/changed-page" not in cmd:
+            failures.append(f"the {key} check adds a push's changed pages to its walk, never in its place (got {cmd[2:6]})")
+    without = {c["key"]: c["cmd"] for c in pc.checks("https://example.test")}
+    for key in ("headings", "trust", "markup"):
+        if "--pages" in without[key] or "--also" in without[key]:
+            failures.append(f"the {key} check walks the whole sitemap when nothing changed (got {without[key][2:6]})")
+    # Each audit takes --also and keeps its walk: its own parser, read for the flag (the walk itself needs a site).
+    for script in ("audit_headings.py", "audit_trust.py", "audit_page_markup.py"):
+        src = Path(__file__).with_name(script).read_text()
+        if '"--also"' not in src or "args.also" not in src:
+            failures.append(f"{script} takes --also, the pages to read as well as its walk")
+    import contextlib
+    import io
+
+    import audit_headings as ah
+    page = "<html><body><main><h1>A page</h1><h2>One part</h2></main></body></html>"
+    seen: list[str] = []
+    ah.fetch = lambda url: (seen.append(url), page)[1]
+    for walk, argv, want_exit, want_seen in (
+        ([f"/w{i}" for i in range(25)], ["--also", "/changed"], 0, 26),
+        ([], ["--also", *[f"/c{i}" for i in range(25)]], 2, 0),
+    ):
+        seen.clear()
+        ah.page_paths = lambda base, w=walk: list(w)
+        old_argv = sys.argv
+        sys.argv = ["audit_headings.py", "--base", "https://example.test", *argv]
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = ah.main()
+        finally:
+            sys.argv = old_argv
+        if code != want_exit or len(seen) != want_seen:
+            failures.append(f"audit_headings with a walk of {len(walk)} and {argv[:2]}: exit {code}, read {len(seen)} (want {want_exit}, {want_seen})")
     passing = pc.run({**flows, "cmd": [sys.executable, "-c", "print('  1) [chromium] x')"], "env": {}})
     if "findings" in passing:
         failures.append("a check that passed carries no findings")
