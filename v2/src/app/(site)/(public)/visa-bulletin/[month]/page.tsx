@@ -47,6 +47,7 @@ import { SiteBreadcrumbs } from "@/components/layout/SiteBreadcrumbs";
 import { buttonVariants } from "@/components/ui/button";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { ISO_MONTH_RE, shiftMonth } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // A bulletin changes once a month; a day bounds any re-parse far below that.
 export const revalidate = 86400;
@@ -286,7 +287,7 @@ function ChartTable({
                     {row.map((cell) => (
                       <Fragment key={cell.country}>
                         <td className="px-3 py-3">
-                          <span className="font-heading font-bold">{cell.label}</span>{" "}
+                          <span className="font-heading font-bold">{keepWhole(cell.label)}</span>{" "}
                           {cell.move ? (
                             <span className={`mt-0.5 block font-mono text-sm font-bold ${moveClass(cell.kind)}`}>{cell.move} </span>
                           ) : null}{" "}
@@ -401,11 +402,11 @@ export default async function BulletinMonthPage({
         every priority date can. <strong className="font-semibold text-foreground">Unavailable</strong>{" "}
         means none can, usually because the fiscal year&apos;s numbers for that
         category and country are used up.{" "}
-        {hasSetAsides
+        {keepWhole(hasSetAsides
           ? "The three EB-5 set-asides are the reserved rural, high-unemployment and infrastructure allocations created in 2022. USCIS publishes their I-485 inventory separately."
           : month < SET_ASIDES_FROM
             ? "The EB-5 set-aside rows didn't exist yet in this month's bulletin. They begin in May 2022."
-            : "This month's copy was read before the parser learned the three EB-5 set-aside rows. They'll appear once it's re-read."}
+            : "This month's copy was read before the parser learned the three EB-5 set-aside rows. They'll appear once it's re-read.")}
       </p>{" "}
 
       <nav aria-label="Other bulletins" className="mt-8 flex flex-wrap items-center gap-3">

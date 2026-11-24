@@ -21,6 +21,7 @@ import {
 import { PERM_CASE, isPermCategory, validateTimeline, type TimelineInput } from "@/lib/communityTimeline";
 import { convexSiteUrl } from "@/lib/convexSite";
 import { shortDate } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The case's timeline after PERM: what people report, and a form to add
@@ -181,7 +182,7 @@ export function CaseMilestones({ caseNumber, className }: { caseNumber: string; 
               {shown.map((st, i) => (
                 <Fragment key={st.id}>
                   {i > 0 ? ", " : ""}
-                  <b className="font-semibold text-foreground">{st.label}</b> ({st.count})
+                  <b className="font-semibold text-foreground">{keepWhole(st.label)}</b> ({st.count})
                 </Fragment>
               ))}
               .

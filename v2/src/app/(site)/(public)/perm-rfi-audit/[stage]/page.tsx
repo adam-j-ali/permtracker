@@ -57,6 +57,7 @@ import { withSocialCard } from "@/lib/socialCard";
 import { movesFrom, reconsiderationOutcome, type Move } from "@/lib/stageMoves";
 import { knownWaitSummary, waitBuckets, weeklyExits, type StageExit } from "@/lib/stageWait";
 import { easternDay } from "@convex/lib/time";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /** Same window as the audit page this is a leaf of: the record moves daily. */
 export const revalidate = 86400;
@@ -458,7 +459,7 @@ export default async function StagePage({ params }: { params: Promise<{ stage: s
         {entry ? (
           <PageSection id="what-it-means" title="What this status means">
             <div className="grid max-w-3xl gap-3 text-base leading-relaxed">
-              <p>{entry.what}</p>{" "}
+              <p>{keepWhole(entry.what)}</p>{" "}
               {entry.next ? <p className="text-soft">{entry.next}</p> : null}{" "}
               <p className="text-sm text-muted-foreground">
                 DOL&apos;s record prints it as <span className="font-mono font-bold text-foreground">{status}</span>.
@@ -497,7 +498,7 @@ export default async function StagePage({ params }: { params: Promise<{ stage: s
                   {" "}
                   <li>
                     <Link href={`/perm-rfi-audit/${s.slug}`} className={buttonVariants({ variant: "outline", size: "default" })}>
-                      {stageMeta(s.status).label}
+                      {keepWhole(stageMeta(s.status).label)}
                       <span className="font-mono text-sm font-normal tabular-nums text-muted-foreground">
                         {formatInt(stages.find((x) => x.status === s.status)?.cases ?? 0)}
                       </span>
@@ -511,7 +512,7 @@ export default async function StagePage({ params }: { params: Promise<{ stage: s
             {guide ? (
               <li>
                 <Link href={guide.href} className="link inline-flex min-h-11 items-center">
-                  {guide.label}
+                  {keepWhole(guide.label)}
                 </Link>
               </li>
             ) : null}{" "}

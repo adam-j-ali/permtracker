@@ -3,6 +3,7 @@ import { ruleCompareCells, type RuleCell } from "@convex/lib/ruleSteps";
 import { ComparisonTable } from "@/components/content/ComparisonTable";
 import { readRules } from "@/lib/db/rulePipeline";
 import { easternDay } from "@/lib/seasonalTiming";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Rules side by side for an article, one column a rule: a subject the article writes, then the
@@ -24,7 +25,7 @@ export async function RuleCompare({ rules }: { rules: { rin: string; subject: st
       "Not in our record"
     ) : c.href ? (
       <a href={c.href} className="link" target="_blank" rel="noopener">
-        {c.text}
+        {keepWhole(c.text)}
       </a>
     ) : (
       c.text

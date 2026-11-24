@@ -38,6 +38,7 @@ import { CaseStageBadge } from "@/components/status/case-stage-badge";
 import { ProgressStatusBadge } from "@/components/status/progress-status-badge";
 import { toast } from "@/lib/toast";
 import { captureError } from "@/lib/sentry";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 // ============================================================================
 // TYPES
@@ -596,10 +597,8 @@ export function ImportModal({
                           <div className="flex items-start gap-3 border-2 border-destructive bg-destructive/8 p-3" role="alert">
                             <AlertTriangle className="h-5 w-5 text-destructive-text flex-shrink-0 mt-0.5" aria-hidden="true" />
                             <p className="text-sm text-destructive-text">
-                              {passed.length === 1 ? "One of these dates has" : `${passed.length} of these dates have`} already passed
-                              with no I-140 filing recorded. If deadline enforcement is on in Settings,{" "}
-                              {passed.length === 1 ? "that case" : "those cases"} will be closed automatically. Add the I-140 filing date
-                              first if one was filed.
+                              {passed.length === 1 ? "One of these dates has" : `${passed.length} of these dates have`}<KeepWhole>{" already passed with no I-140 filing recorded. If deadline enforcement is on in Settings,"}</KeepWhole>{" "}
+                              {passed.length === 1 ? "that case" : "those cases"}<KeepWhole>{" will be closed automatically. Add the I-140 filing date first if one was filed."}</KeepWhole>
                             </p>
                           </div>
                         )}

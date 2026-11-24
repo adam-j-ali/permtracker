@@ -30,6 +30,7 @@ import {
 } from "@/lib/mailKinds";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Everything PERM Tracker emails, and the one link that turns it off.
@@ -81,12 +82,12 @@ function KindTile({ id }: { id: MailKindId }) {
         <span className="text-sm text-muted-foreground border-2 px-2 py-0.5 border-border">{kind.when}</span>
       </div>{" "}
       <h4 className="mt-4 font-heading text-lg font-bold">{kind.name}</h4>{" "}
-      <p className="mt-1 flex-1 text-base leading-relaxed text-soft">{kind.what}</p>{" "}
+      <p className="mt-1 flex-1 text-base leading-relaxed text-soft">{keepWhole(kind.what)}</p>{" "}
       <Link
         href={kind.start.href}
         className="link group mt-4 inline-flex min-h-[44px] items-center gap-2 self-start text-sm"
       >
-        {kind.start.label}{" "}
+        {keepWhole(kind.start.label)}{" "}
         <ArrowRightIcon aria-hidden="true" className="size-4 transition-transform motion-safe:group-hover:translate-x-0.5" />
       </Link>
     </li>
@@ -145,7 +146,7 @@ export default function EmailPreferencesPage() {
                 {/* Green ink, not lime: lime is the page's one action, the form's button. */}
                 <Glyph aria-hidden="true" className="size-7 shrink-0 text-primary-text" weight="bold" />{" "}
                 <div>
-                  <p className="font-heading font-bold">{rule.title}</p>{" "}
+                  <p className="font-heading font-bold">{keepWhole(rule.title)}</p>{" "}
                   <p className="mt-1 text-base text-soft">{rule.body}</p>
                 </div>
               </li>

@@ -34,6 +34,7 @@ import {
   isListedCode,
 } from "@/lib/communityTimeline";
 import { USCIS_OFFICES, isCenter, officePlace } from "@/lib/uscisOffices";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The boxes of a shared timeline, used by both forms: the one on a case's page (`variant="case"`) and the one on
@@ -102,7 +103,7 @@ function Dates({ uid, ids, form, set }: { uid: string; ids: readonly DateFieldId
         <Fragment key={f.id}>
           {" "}
           <div>
-            <Label htmlFor={`${uid}-${f.id}`}>{f.label}</Label>
+            <Label htmlFor={`${uid}-${f.id}`}>{keepWhole(f.label)}</Label>
             <DateInput
               id={`${uid}-${f.id}`}
               value={(form[f.id] as string | null | undefined) ?? ""}
@@ -119,7 +120,7 @@ function Dates({ uid, ids, form, set }: { uid: string; ids: readonly DateFieldId
 function OfficePick({ uid, form, set }: { uid: string; form: TimelineInput; set: Set }) {
   return (
     <div className="sm:col-span-2">
-      <Label htmlFor={`${uid}-office`}>USCIS office handling the I-485</Label>
+      <Label htmlFor={`${uid}-office`}><KeepWhole>{"USCIS office handling the I-485"}</KeepWhole></Label>
       <select
         id={`${uid}-office`}
         className={selectCls}
@@ -144,7 +145,7 @@ function OfficePick({ uid, form, set }: { uid: string; form: TimelineInput; set:
 function CenterPick({ uid, form, set }: { uid: string; form: TimelineInput; set: Set }) {
   return (
     <div className="sm:col-span-2">
-      <Label htmlFor={`${uid}-i485-center`}>Service center that took in the I-485</Label>
+      <Label htmlFor={`${uid}-i485-center`}><KeepWhole>{"Service center that took in the I-485"}</KeepWhole></Label>
       <select
         id={`${uid}-i485-center`}
         className={selectCls}
@@ -433,7 +434,7 @@ function Premium({ uid, form, set }: { uid: string; form: TimelineInput; set: Se
           if (!e.target.checked) set("premiumOn", null);
         }}
       />
-      <span>The I-140 had premium processing</span>
+      <span><KeepWhole>{"The I-140 had premium processing"}</KeepWhole></span>
     </label>{" "}
     {form.premium === true ? <DetailDate uid={uid} id="premiumOn" form={form} set={set} /> : null}
     </>
@@ -445,7 +446,7 @@ function DetailDate({ uid, id, form, set }: { uid: string; id: (typeof DETAIL_DA
   const f = DETAIL_DATES.find((d) => d.id === id)!;
   return (
     <div>
-      <Label htmlFor={`${uid}-${id}`}>{f.label}</Label>
+      <Label htmlFor={`${uid}-${id}`}>{keepWhole(f.label)}</Label>
       <DateInput id={`${uid}-${id}`} value={form[id] ?? ""} onChange={(e) => set(id, e.target.value || null)} className="mt-1.5" />
     </div>
   );
@@ -473,15 +474,17 @@ function Details({ uid, form, set, route }: { uid: string; form: TimelineInput; 
 function H4({ uid, form, set }: { uid: string; form: TimelineInput; set: Set }) {
   return (
     <fieldset className={gridCls} aria-describedby={`${uid}-h4-hint`}>
-      <legend className={legendCls}>A spouse&apos;s H-4 (optional)</legend>
+      <legend className={legendCls}><KeepWhole>{"A spouse's H-4 (optional)"}</KeepWhole></legend>
       <p id={`${uid}-h4-hint`} className="text-sm text-muted-foreground sm:col-span-2">
-        USCIS times the work permit differently when it&apos;s filed with the I-539, so say how yours went in. Left
-        blank, the same filing day as the I-539 counts as filed with it.
+        <KeepWhole>
+          {"USCIS times the work permit differently when it's filed with the I-539, so say how yours went in. " +
+            "Left blank, the same filing day as the I-539 counts as filed with it."}
+        </KeepWhole>
       </p>{" "}
       {H4_DATES.map((f) => (
         <Fragment key={f.id}>
           <div>
-            <Label htmlFor={`${uid}-${f.id}`}>{f.label}</Label>
+            <Label htmlFor={`${uid}-${f.id}`}>{keepWhole(f.label)}</Label>
             <DateInput id={`${uid}-${f.id}`} value={form[f.id] ?? ""} onChange={(e) => set(f.id, e.target.value || null)} className="mt-1.5" />
           </div>{" "}
         </Fragment>
@@ -653,7 +656,7 @@ export function TimelineFormFields({
   return (
     <>
       <fieldset className={gridCls}>
-        <legend className={legendCls}>{route === "adjustment" ? "Your I-485, only the dates that have happened" : "Your interview abroad, only the dates that have happened"}</legend>
+        <legend className={legendCls}>{keepWhole(route === "adjustment" ? "Your I-485, only the dates that have happened" : "Your interview abroad, only the dates that have happened")}</legend>
         {route === "adjustment" ? <OfficePick uid={uid} form={form} set={set} /> : null}{" "}
         {route === "adjustment" ? <CenterPick uid={uid} form={form} set={set} /> : null}{" "}
         <Dates uid={uid} ids={first} form={form} set={set} />{" "}
@@ -669,8 +672,7 @@ export function TimelineFormFields({
       </fieldset>{" "}
       <details className="group/more border-2 border-border p-2">
         <summary className={foldCls}>
-          <CaretRightIcon className="size-4 shrink-0 transition-transform group-open/more:rotate-90" weight="bold" aria-hidden="true" /> More, if you
-          have it: the I-140, the work permit, the travel document
+          <CaretRightIcon className="size-4 shrink-0 transition-transform group-open/more:rotate-90" weight="bold" aria-hidden="true" /><KeepWhole>{" More, if you have it: the I-140, the work permit, the travel document"}</KeepWhole>
         </summary>
         <div className={`mt-3 ${gridCls}`}>
           <Pick id={`${uid}-route`} label="After the I-140" value={route} options={ROUTES} onChange={(v) => set("route", v)} />{" "}
@@ -691,7 +693,10 @@ export function TimelineFormFields({
               aria-describedby={`${uid}-case-hint`}
             />
             <p id={`${uid}-case-hint`} className="mt-1.5 text-sm text-muted-foreground">
-              It lets us add DOL&apos;s own PERM dates. It never shows on any page. Leave it empty for EB-1 or a waiver.
+              <KeepWhole>
+                {"It lets us add DOL's own PERM dates. It never shows on any page. Leave it empty for EB-1 or a " +
+                  "waiver."}
+              </KeepWhole>
             </p>
           </div>
         </div>

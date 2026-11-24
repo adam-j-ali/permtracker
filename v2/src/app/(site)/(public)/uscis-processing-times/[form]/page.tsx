@@ -68,6 +68,7 @@ import { PostedI140History } from "@/components/uscis/PostedI140History";
 import { monthsLabel, quarterLabel } from "@/lib/uscisQuarterlyShape";
 import { approvalMoved, countMoved, medianMoved } from "@/lib/uscisTrends";
 import { softFail } from "@/lib/softRead";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 // The workbook changes four times a year; the quarterly ingest's new quarter is
 // picked up within a week, as on the hub.
@@ -276,7 +277,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
             <p className="mt-2 max-w-3xl text-base leading-relaxed">
               Each step explained:{" "}
               <Link href="/guides/i485-timeline-each-step" className="link">
-                the I-485 timeline
+                <KeepWhole>{"the I-485 timeline"}</KeepWhole>
               </Link>
               ,{" "}
               <Link href="/guides/i485-transferred-to-field-office" className="link">
@@ -291,7 +292,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
           ) : page.form === "I-765" || page.form === "I-131" ? (
             <p className="mt-2 max-w-3xl text-base leading-relaxed">
               <Link href="/guides/ead-and-advance-parole-timelines" className="link">
-                The work permit and travel document while an I-485 is pending
+                <KeepWhole>{"The work permit and travel document while an I-485 is pending"}</KeepWhole>
               </Link>
               , from USCIS&apos;s figures and these.
             </p>
@@ -307,7 +308,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
       <header className="max-w-3xl">
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">{page.form} processing time</h1>{" "}
         <p className="mt-3 text-lg font-semibold">{page.name}</p>{" "}
-        <p className="mt-2 text-base leading-relaxed text-soft">{page.who}</p>{" "}
+        <p className="mt-2 text-base leading-relaxed text-soft">{keepWhole(page.who)}</p>{" "}
         {lead && leadNow?.row?.medianMonths != null ? (
           <p className="mt-4 text-lg leading-relaxed">
             USCIS decided half its {lines.length > 1 ? `${lead.line.label.toLowerCase()} ` : ""}
@@ -317,7 +318,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
         ) : null}{" "}
         {key && fresh ? (
           <p className="mt-3 text-lg leading-relaxed">
-            {`For ${key.what}, USCIS posts ${key.time.months} months at ${key.at} as of its ${formatAsOf(fresh.published)} posting${keyYear ? `, ${changeWords(keyYear)}` : ""}. That's the time within which it decided 8 cases in 10.`}{" "}
+            <KeepWhole>{`For ${key.what}, USCIS posts ${key.time.months} months at ${key.at} as of its ${formatAsOf(fresh.published)} posting${keyYear ? `, ${changeWords(keyYear)}` : ""}. That's the time within which it decided 8 cases in 10.`}</KeepWhole>{" "}
             <a href="#posted" className="link font-bold">
               Every posting since {formatAsOf(keyHistory[0]?.[0] ?? fresh.published)}
             </a>
@@ -446,7 +447,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
               {lines.map(({ line, points }) => (
                 <Fragment key={line.key}>
                   <li className="object min-w-0 p-4 sm:p-5">
-                    <p className="font-heading text-lg font-bold">{line.label}{" "}</p>{" "}
+                    <p className="font-heading text-lg font-bold">{keepWhole(line.label)}{" "}</p>{" "}
                     <ColumnChart
                       columns={medianColumns(points)}
                       label={`${page.form}, ${line.label}: median months to a decision, each quarter`}
@@ -560,7 +561,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
           {page.form === "I-485" && monthly.newest ? (
             <ScrollBox label={`Every I-485 basis in ${monthWords(monthly.newest)}`} className="mt-6 border-t-2 border-[var(--object-border)]">
               <table className="w-full min-w-[560px] border-collapse text-left text-base">
-                <caption className="sr-only">{`Every I-485 basis USCIS reports, ${monthWords(monthly.newest)}`}</caption>
+                <caption className="sr-only"><KeepWhole>{`Every I-485 basis USCIS reports, ${monthWords(monthly.newest)}`}</KeepWhole></caption>
                 <thead className="dark border-b border-black bg-[#141414] text-foreground">
                   <tr>
                     <th scope="col" className="px-3 py-3 text-sm font-bold">{`Basis, ${monthWords(monthly.newest)}`}{" "}</th>
@@ -608,7 +609,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
             {factsheet.map(({ line, cols }) => (
               <Fragment key={line.key}>
                 <li className="object min-w-0 p-4 sm:p-5">
-                  <p className="font-heading text-lg font-bold">{line.label}{" "}</p>{" "}
+                  <p className="font-heading text-lg font-bold">{keepWhole(line.label)}{" "}</p>{" "}
                   <ColumnChart
                     columns={cols}
                     label={`${page.form}, ${line.label}: median months each fiscal year, FY2016 to FY2024`}
@@ -638,7 +639,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
             <Fragment key={l.href}>
               <li>
                 <Link href={l.href} className="object flex min-h-[44px] items-center p-4 font-semibold hover:bg-tint">
-                  {l.label}
+                  {keepWhole(l.label)}
                 </Link>{" "}
               </li>
             </Fragment>
@@ -665,7 +666,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
           <Link href="/uscis-processing-times" className="link">
             the hub
           </Link>{" "}
-          sets them side by side for the I-140.
+          <KeepWhole>{"sets them side by side for the I-140."}</KeepWhole>
         </p>
       </FinePrint>{" "}
       <DataProvenance datasets={["uscis-form-quarters", "uscis-posted-times"]} />

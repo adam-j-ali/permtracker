@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { formatInt } from "@/lib/format";
 
 import { STAGE_META, STAGE_ORDER, type StageGroup } from "./stages";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * One filing month's pending cases, drawn as a segmented bar.
@@ -172,7 +173,7 @@ export function StageLegend({
                   aria-hidden="true"
                 />{" "}
                 <span className="text-sm font-bold text-soft">
-                  {meta.label}
+                  {keepWhole(meta.label)}
                 </span>
               </span>{" "}
               <span className="mt-1 block font-heading text-xl font-bold tabular-nums sm:text-2xl">

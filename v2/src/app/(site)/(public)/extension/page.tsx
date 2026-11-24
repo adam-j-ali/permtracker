@@ -20,6 +20,7 @@ import { panelFor, type PanelModel } from "../../../../../extension/src/model";
 import type { LookupAnswer } from "../../../../../extension/src/api";
 import { buttonVariants } from "@/components/ui/button";
 import { ExtensionTour } from "@/components/marketing/ExtensionTour";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /** The listing's address, once the Chrome Web Store publishes it. */
 const CHROME_STORE_URL: string | null = null;
@@ -62,14 +63,14 @@ function ExamplePanel({ model }: { model: PanelModel }) {
           <span className="font-heading text-base font-bold">PERM Tracker</span>
         </div>{" "}
         <div className="px-4 py-4">
-          <p className="font-heading text-lg font-bold leading-snug [overflow-wrap:anywhere]">{model.title}</p>{" "}
+          <p className="font-heading text-lg font-bold leading-snug [overflow-wrap:anywhere]">{keepWhole(model.title)}</p>{" "}
           <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-3 gap-y-2">
             {model.rows.map((r) => (
               <div key={r.label} className="contents">
-                <dt className="text-sm text-muted-foreground">{r.label}</dt>{" "}
+                <dt className="text-sm text-muted-foreground">{keepWhole(r.label)}</dt>{" "}
                 <dd className="text-right text-base font-bold tabular-nums">
                   {r.value}
-                  {r.note ? <span className="block text-sm font-normal text-muted-foreground">{r.note}</span> : null}
+                  {r.note ? <span className="block text-sm font-normal text-muted-foreground">{keepWhole(r.note)}</span> : null}
                 </dd>{" "}
               </div>
             ))}
@@ -77,7 +78,7 @@ function ExamplePanel({ model }: { model: PanelModel }) {
           {model.link ? (
             <p className="mt-3">
               <a href={model.link.href} className="font-bold link">
-                {model.link.text}
+                {keepWhole(model.link.text)}
               </a>
             </p>
           ) : null}{" "}
@@ -117,8 +118,10 @@ export default async function ExtensionPage() {
         <div>
           <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">PERM Tracker for Chrome</h1>{" "}
           <p className="mt-4 max-w-xl text-lg leading-relaxed text-soft">
-            Open a job posting and see whether that employer sponsors green cards and H-1Bs, from the Labor
-            Department&rsquo;s own files, without leaving the page. Free, and it sends only the employer&rsquo;s name.
+            <KeepWhole>
+              {"Open a job posting and see whether that employer sponsors green cards and H-1Bs, from the Labor " +
+                "Department’s own files, without leaving the page. Free, and it sends only the employer’s name."}
+            </KeepWhole>
           </p>{" "}
           <div className="mt-6">
             {CHROME_STORE_URL ? (

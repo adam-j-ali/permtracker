@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The interpretation layer: say what the number MEANS, above the number.
@@ -176,7 +177,7 @@ export function FreshnessDots({ items }: { items: Freshness[] }) {
             )}
           />
           <span className="text-sm text-muted-foreground">
-            {f.label}: {f.asOf}
+            {keepWhole(f.label)}: {f.asOf}
           </span>
         </span>
       ))}

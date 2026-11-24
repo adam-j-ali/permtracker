@@ -84,6 +84,7 @@ import { ScrollBox } from "@/components/ui/scroll-box";
 import { cn } from "@/lib/utils";
 import { softFail } from "@/lib/softRead";
 import { StepBothSources } from "@/components/community/StepBothSources";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 const DOL_SOURCE = "https://flag.dol.gov/processingtimes";
 // Same expression as layout.tsx, sitemap.ts, feed.xml and seo.ts. A bare
@@ -586,7 +587,7 @@ export default async function PermProcessingTimesPage() {
                 <>
                   {waitYoy ? (
                     <>
-                      <strong className="text-foreground">{speedVerdict(waitYoy).answer}</strong>{" "}
+                      <strong className="text-foreground">{keepWhole(speedVerdict(waitYoy).answer)}</strong>{" "}
                     </>
                   ) : null}
                   Cases DOL decided in {monthYear(waitNewest.m)} waited a median of{" "}

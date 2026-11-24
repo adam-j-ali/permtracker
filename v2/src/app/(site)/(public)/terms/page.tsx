@@ -14,6 +14,7 @@ import { SectionIndex } from "@/components/legal/SectionIndex";
 import { LEGAL_DBA, LEGAL_FORM, POSTAL_ADDRESS } from "@/lib/constants/about";
 import { openGraphBase } from "@/lib/openGraphBase";
 import Link from "next/link";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 // Force static generation for instant loading
 export const dynamic = "force-static";
@@ -94,12 +95,7 @@ export default function TermsPage() {
             </p>{" "}
             <ul className="list-disc list-inside text-soft space-y-2 ml-4 mt-4">
               <li>
-                <strong>Public lookups and data.</strong> Anyone, with or without an
-                account, may look up PERM, prevailing wage, LCA, H-2A, H-2B and CW-1 case
-                numbers; view data published by the Department of Labor (DOL), U.S.
-                Citizenship and Immigration Services (USCIS) and the Department of
-                State, and figures derived from it; read estimates; and subscribe to
-                email alerts.
+                <strong>Public lookups and data.</strong><KeepWhole>{" Anyone, with or without an account, may look up PERM, prevailing wage, LCA, H-2A, H-2B and CW-1 case numbers; view data published by the Department of Labor (DOL), U.S. Citizenship and Immigration Services (USCIS) and the Department of State, and figures derived from it; read estimates; and subscribe to email alerts."}</KeepWhole>
               </li>{" "}
               <li>
                 <strong>Case management.</strong> Account holders, such as

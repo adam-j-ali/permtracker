@@ -30,6 +30,7 @@ import { withSocialCard } from "@/lib/socialCard";
 import { softFail } from "@/lib/softRead";
 import { CASE_CHECKS } from "@/lib/sweepSchedule";
 import { longDate, weekdayName } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /** The three figures move once a day at most. */
 export const revalidate = 86400;
@@ -144,7 +145,7 @@ export default async function ForEmployersPage() {
                   {i + 1}
                 </span>{" "}
                 <p className="min-w-0 text-base leading-relaxed">
-                  <span className="font-heading text-lg font-bold leading-snug">{s.title}.</span>{" "}
+                  <span className="font-heading text-lg font-bold leading-snug">{keepWhole(s.title)}.</span>{" "}
                   <span className="text-soft">{s.body}</span>
                 </p>
               </li>

@@ -9,6 +9,7 @@ import { DateRuler } from "@/components/tools/DateRuler";
 import { RuleNotes } from "@/components/tools/RuleNotes";
 import { calculatePWDExpiration } from "@/lib/perm";
 import { daysBetween } from "@/lib/time";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * When a prevailing wage determination expires, from its determination date.
@@ -57,7 +58,7 @@ export function PwdValidityCalculator() {
         <div>
           <Label htmlFor={detId}>Determination date</Label>{" "}
           <DateInput id={detId} value={det} onChange={(e) => setDet(e.target.value)} className="mt-1.5" />{" "}
-          <p className="mt-1 text-sm text-muted-foreground">The date on the ETA-9141 determination. The day it was requested doesn&apos;t count here.</p>
+          <p className="mt-1 text-sm text-muted-foreground"><KeepWhole>{"The date on the ETA-9141 determination. The day it was requested doesn't count here."}</KeepWhole></p>
         </div>
       </div>{" "}
 

@@ -6,6 +6,7 @@ import { CaretRightIcon, CheckIcon, XIcon } from "@phosphor-icons/react";
 import { useOnboarding } from "./OnboardingProvider";
 import { CHECKLIST_ITEMS } from "@/lib/onboarding/constants";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export function OnboardingChecklist() {
   const router = useRouter();
@@ -112,11 +113,11 @@ export function OnboardingChecklist() {
                     isComplete && "line-through text-muted-foreground"
                   )}
                 >
-                  {item.label}
+                  {keepWhole(item.label)}
                 </p>
                 {!isComplete && (
                   <p className="text-sm text-muted-foreground truncate">
-                    {item.description}
+                    {keepWhole(item.description)}
                   </p>
                 )}
               </div>

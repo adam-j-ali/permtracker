@@ -10,6 +10,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { getLcaWageFilterOptions } from "@/lib/db/lcaWages";
 import { MIN_FOR_MEDIAN } from "@/lib/wageStats";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Compare my offer.
@@ -80,9 +81,10 @@ export default async function CompareMyOfferPage() {
           Compare my offer
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          Pick the occupation and state on the filing, enter the offer, and
-          see where it sits among what employers filed: certified
-          H-1B LCAs and certified PERM offers, side by side.
+          <KeepWhole>
+            {"Pick the occupation and state on the filing, enter the offer, and see where it sits among what " +
+              "employers filed: certified H-1B LCAs and certified PERM offers, side by side."}
+          </KeepWhole>
         </p>
       </header>
 

@@ -20,6 +20,7 @@ import { withSocialCard } from "@/lib/socialCard";
 import { enforcementTotals } from "@/lib/enforcement/actions";
 import { formatInt } from "@/lib/format";
 import { shortDate } from "@convex/lib/months";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * DOL's debarment lists, as published.
@@ -75,9 +76,10 @@ export default async function DebarmentsPage() {
 
       {all.length === 0 ? (
         <p className="mt-10 bg-tint p-5 text-base border-2 border-border">
-          The lists haven&apos;t been read yet. The daily ingest reads DOL&apos;s
-          program-debarments document and the H-1B page. Until it has run, the
-          originals are at{" "}
+          <KeepWhole>
+            {"The lists haven't been read yet. The daily ingest reads DOL's program-debarments document and the " +
+              "H-1B page. Until it has run, the originals are at"}
+          </KeepWhole>{" "}
           <a href="https://www.dol.gov/agencies/eta/foreign-labor/program-debarments" className="link" rel="noopener" target="_blank">
             dol.gov (OFLC)
           </a>{" "}
@@ -96,7 +98,7 @@ export default async function DebarmentsPage() {
               : ""}
             .
             {summary?.pdfDate ? ` OFLC's document was last modified ${day(summary.pdfDate)}.` : ""}
-            {summary?.h1bEffective ? ` The H-1B list is effective as of ${day(summary.h1bEffective)}.` : ""}
+            {keepWhole(summary?.h1bEffective ? ` The H-1B list is effective as of ${day(summary.h1bEffective)}.` : "")}
           </p>{" "}
           <Link
             href="/debarments/settlements"
@@ -135,21 +137,22 @@ export default async function DebarmentsPage() {
             a reader came for; this stays in the DOM for search either way. */}
         <FinePrint summary="The rule, and what this page doesn't count as one" className="mt-3">
         <p className="mt-3 text-base leading-relaxed text-soft">
-          Under 20 CFR 656.31(f), DOL may debar an employer, attorney or agent
-          from PERM for one to three years for conduct the regulation lists,
-          including failing to respond to an audit. During that period OFLC won&apos;t
-          accept filings from that party under PERM or the H-1B, H-2A and H-2B
-          programs. A debarment is a decision DOL has made and published. A case
-          on hold or under audit isn&apos;t one, and this site keeps the two
-          apart. Employer and law-firm pages carry a notice when a name on these
-          lists matches theirs.
+          <KeepWhole>
+            {"Under 20 CFR 656.31(f), DOL may debar an employer, attorney or agent from PERM for one to three " +
+              "years for conduct the regulation lists, including failing to respond to an audit. During that " +
+              "period OFLC won't accept filings from that party under PERM or the H-1B, H-2A and H-2B programs. A " +
+              "debarment is a decision DOL has made and published. A case on hold or under audit isn't one, and " +
+              "this site keeps the two apart. Employer and law-firm pages carry a notice when a name on these " +
+              "lists matches theirs."}
+          </KeepWhole>
         </p>{" "}
         <p className="mt-3 text-base leading-relaxed text-soft">
-          Wage and Hour Division debarments arise from its own H-1B, H-2A and
-          H-2B investigations, and the H-2A list also carries plea and settlement
-          agreements from criminal cases. The violation column says which. A
-          Farm Labor Contractor listing is a separate register at the Wage and
-          Hour Division and isn&apos;t reproduced here.
+          <KeepWhole>
+            {"Wage and Hour Division debarments arise from its own H-1B, H-2A and H-2B investigations, and the " +
+              "H-2A list also carries plea and settlement agreements from criminal cases. The violation column " +
+              "says which. A Farm Labor Contractor listing is a separate register at the Wage and Hour Division " +
+              "and isn't reproduced here."}
+          </KeepWhole>
         </p>
         </FinePrint>
       </section>{" "}

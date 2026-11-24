@@ -20,6 +20,7 @@ import { getCommentCounts } from "@/lib/db/policyComments";
 import { listPolicyNotices } from "@/lib/db/policyNotices";
 import { getRulePipeline } from "@/lib/db/rulePipeline";
 import { easternDay } from "@/lib/time";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Policy changes, from the record itself.
@@ -110,11 +111,11 @@ export default async function PolicyChangesPage() {
         Policy changes, on the record
       </h1>{" "}
       <p className="mt-5 max-w-3xl text-lg leading-relaxed text-soft">
-        Every rule, notice, presidential action, bill and court decision on
-        PERM, prevailing wages, H-1B, H-2A, H-2B and green cards, from the
-        White House, the Federal Register, Congress, the courts, USCIS, DOL,
-        OFLC and the State Department, read from each source as often as it
-        allows.
+        <KeepWhole>
+          {"Every rule, notice, presidential action, bill and court decision on PERM, prevailing wages, H-1B, " +
+            "H-2A, H-2B and green cards, from the White House, the Federal Register, Congress, the courts, USCIS, " +
+            "DOL, OFLC and the State Department, read from each source as often as it allows."}
+        </KeepWhole>
       </p>{" "}
 
       {empty ? (
@@ -229,38 +230,33 @@ export default async function PolicyChangesPage() {
             </p>{" "}
             <FinePrint summary="The selection rules in full" className="mt-3 max-w-3xl">
               <p>
-                Federal Register documents from USCIS, DHS, the State Department,
-                DOL or the President that match one of eleven terms: labor
-                certification, prevailing wage, H-1B, H-2A, H-2B, CW-1, I-140,
-                adjustment of status, visa bulletin, EB-5, premium processing.
-                Documents from DOL outside its Employment and Training
-                Administration, and the President&apos;s, must also name an
-                immigration subject. Dropped by rule: the Unified Agenda omnibus
-                notices, paperwork notices that name no form this site is about,
-                and agency housekeeping such as board appointments and meeting
-                notices. A correction is folded into the document it corrects.
+                <KeepWhole>
+                  {"Federal Register documents from USCIS, DHS, the State Department, DOL or the President that " +
+                    "match one of eleven terms: labor certification, prevailing wage, H-1B, H-2A, H-2B, CW-1, " +
+                    "I-140, adjustment of status, visa bulletin, EB-5, premium processing. Documents from DOL " +
+                    "outside its Employment and Training Administration, and the President's, must also name an " +
+                    "immigration subject. Dropped by rule: the Unified Agenda omnibus notices, paperwork notices " +
+                    "that name no form this site is about, and agency housekeeping such as board appointments and " +
+                    "meeting notices. A correction is folded into the document it corrects."}
+                </KeepWhole>
               </p>{" "}
               <p className="mt-3">
-                Public inspection filings are kept by the same rules, judged on the
-                title, and followed until the Register publishes them. White House
-                actions are kept when the title names an immigration subject or the
-                text names a work visa at least three times, and are replaced by the
-                Register&apos;s document once it&apos;s published. USCIS and DOL
-                announcements are kept when they touch work-based immigration, and every
-                OFLC announcement is listed. Bills and joint resolutions in the
-                current Congress are kept when the title names a work visa or an
-                employment-based green card. Federal court opinions come from
-                CourtListener when the passage that matched names labor
-                certification, H-1B, H-2A, H-2B, I-140, ETA 9089, an
-                employment-based category or the visa bulletin, from federal courts
-                only. Criminal cases and petitions for review of removal orders are
-                left out. BALCA&apos;s decisions are OALJ&apos;s own lists: every en
-                banc PERM decision, and prevailing wage, H-2A and H-2B appeals
-                decided since October 2024. A person named in a case is shown by
-                initials. The comment count beside an open
-                proposed rule is regulations.gov&apos;s count of comments posted,
-                which trails what people have sent while the agency screens them.
-                The wording everywhere is the agency&apos;s own.{" "}
+                <KeepWhole>
+                  {"Public inspection filings are kept by the same rules, judged on the title, and followed until " +
+                    "the Register publishes them. White House actions are kept when the title names an immigration " +
+                    "subject or the text names a work visa at least three times, and are replaced by the " +
+                    "Register's document once it's published. USCIS and DOL announcements are kept when they touch " +
+                    "work-based immigration, and every OFLC announcement is listed. Bills and joint resolutions in " +
+                    "the current Congress are kept when the title names a work visa or an employment-based green " +
+                    "card. Federal court opinions come from CourtListener when the passage that matched names " +
+                    "labor certification, H-1B, H-2A, H-2B, I-140, ETA 9089, an employment-based category or the " +
+                    "visa bulletin, from federal courts only. Criminal cases and petitions for review of removal " +
+                    "orders are left out. BALCA's decisions are OALJ's own lists: every en banc PERM decision, and " +
+                    "prevailing wage, H-2A and H-2B appeals decided since October 2024. A person named in a case " +
+                    "is shown by initials. The comment count beside an open proposed rule is regulations.gov's " +
+                    "count of comments posted, which trails what people have sent while the agency screens them. " +
+                    "The wording everywhere is the agency's own."}
+                </KeepWhole>{" "}
                 <Link href="/changelog" className={LINK}>
                   What changed on this site
                 </Link>{" "}

@@ -90,6 +90,7 @@ import { caseSearchHref } from "@/lib/caseSearchPlan";
 import { getPwdLinks } from "@/lib/db/pwdLinks";
 import { PwdToPerm } from "@/components/entities/PwdToPerm";
 import { softFail } from "@/lib/softRead";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * THIRTY DAYS, AND THE REASON IS THE SOURCE'S CADENCE.
@@ -632,7 +633,7 @@ export default async function AttorneyPage({
               <Link href="/signup" className="link">
                 free tracker
               </Link>{" "}
-              carries the deadlines on every case, from the wage request to the I-140.
+              <KeepWhole>{"carries the deadlines on every case, from the wage request to the I-140."}</KeepWhole>
             </p>
           </div>
         </Chapter>

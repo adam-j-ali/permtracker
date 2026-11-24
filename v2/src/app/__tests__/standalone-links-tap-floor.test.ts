@@ -52,6 +52,6 @@ describe("a link alone on its line has the phone tap floor", () => {
     expect(src).not.toContain('className="link"');
     expect(src.match(/className=\{RANKED_LINK\}/g)?.length).toBe(5);
     expect(src).toContain("[&>*]:block [&>*]:truncate");
-    expect(src).toContain('typeof it.label === "string" ? <span>{it.label}</span> : it.label');
+    expect(src).toContain('typeof it.label === "string" ? <span>{keepWhole(it.label)}</span> : it.label');
   });
 });

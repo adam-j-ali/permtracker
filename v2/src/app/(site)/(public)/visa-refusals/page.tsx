@@ -36,6 +36,7 @@ import {
   type RefusalField,
   type RefusalRow,
 } from "@/lib/visaRefusals";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export const revalidate = 86400;
 
@@ -172,7 +173,7 @@ export default async function VisaRefusalsPage() {
           Public charge, year by year
         </h2>{" "}
         <p className="mt-2 max-w-3xl text-base leading-relaxed text-muted-foreground">
-          Section 212(a)(4): {TRACKED_WORDS[PUBLIC_CHARGE].what}. {trendWords(pc, "ivFound") ?? ""}
+          Section 212(a)(4): {keepWhole(TRACKED_WORDS[PUBLIC_CHARGE].what)}. {trendWords(pc, "ivFound") ?? ""}
         </p>
         {pc.length ? (
           <FigurePlate
@@ -252,7 +253,7 @@ export default async function VisaRefusalsPage() {
           221(g) and 214(b), year by year
         </h2>{" "}
         <p className="mt-2 max-w-3xl text-base leading-relaxed text-muted-foreground">
-          221(g): {TRACKED_WORDS[MISSING_DOCUMENTS].what}. 214(b): {TRACKED_WORDS[INTENT_TO_RETURN].what}.
+          221(g): {keepWhole(TRACKED_WORDS[MISSING_DOCUMENTS].what)}. 214(b): {keepWhole(TRACKED_WORDS[INTENT_TO_RETURN].what)}.
           {g221Now && g221Now.ivFound !== null ? ` In ${fyLabel(newest)}, 221(g) also held up ${formatInt(g221Now.ivFound)} immigrant visa applications.` : ""}
         </p>
         <FigurePlate

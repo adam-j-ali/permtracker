@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { CHECK, Field, FIELD } from "./CaseInputs";
 import { dayLabel, usd } from "./format";
 import { NumberBox } from "./NumberBox";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /** The most people one case files for, the fee schedule's own limit. */
 export const MAX_PEOPLE = 20;
@@ -126,7 +127,7 @@ export function PlanCosts({
               </p>{" "}
               <div className="flex items-baseline justify-between gap-4">
                 <p className="min-w-0 text-base">
-                  {c.form && c.source === "schedule" ? <b className="font-semibold">{c.form}</b> : null} {c.label}
+                  {c.form && c.source === "schedule" ? <b className="font-semibold">{c.form}</b> : null} {keepWhole(c.label)}
                   {c.count > 1 ? `, ${c.count} × ${usd(c.each)}` : ""}
                   <span className="sr-only">. {PAYER_LABEL[c.payer]}.</span>
                 </p>{" "}
@@ -154,7 +155,7 @@ export function PlanCosts({
               ) : null}{" "}
               <label htmlFor={ids("online")} className="flex min-h-11 items-center gap-3 text-base">
                 <input id={ids("online")} type="checkbox" checked={fees.online} onChange={(e) => setFees({ ...fees, online: e.target.checked })} className={CHECK} />{" "}
-                {plan.route === "aos" ? "Filed online where USCIS allows (I-140, I-485, I-131)" : "I-140 filed online"}
+                {keepWhole(plan.route === "aos" ? "Filed online where USCIS allows (I-140, I-485, I-131)" : "I-140 filed online")}
               </label>
             </div>
           </fieldset>{" "}
@@ -182,7 +183,7 @@ export function PlanCosts({
         </div>
       </details>{" "}
       <p className="mt-4 max-w-3xl text-sm leading-relaxed text-soft">
-        USCIS&apos;s fees are from its fee schedule, Form G-1055, edition {plan.fees.edition}{" "}
+        <KeepWhole>{"USCIS's fees are from its fee schedule, Form G-1055, edition "}</KeepWhole>{plan.fees.edition}{" "}
         (<a href={FEE_SCHEDULE.source} target="_blank" rel="noopener noreferrer" className="link">
           read it at USCIS
         </a>

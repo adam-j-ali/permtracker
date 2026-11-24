@@ -21,6 +21,7 @@ import { HEIGHT, WIDTH, buildRail } from "./geometry";
 import { captionOf, frameAt, keySteps, readingAt, type BulletinRun } from "./model";
 import { MotionToggle } from "../MotionToggle";
 import { CAPTION_CLASS, FIGURE_CLASS, READOUT_CLASS, SUMMARY_CLASS } from "../frame";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /** Real seconds to move from one bulletin to the next, to hold on one, and to hold on one that changed something. */
 const MOVE_S = 0.45;
@@ -296,7 +297,7 @@ export default function BulletinCutoffFigure({ run }: { run: BulletinRun }) {
           <p className="mt-1 leading-relaxed">
         {captionOf(run)}{" "}
         <Link href={`/visa-bulletin/categories/${lineSlug(run.category, run.country)}`} className="link">
-          {`Every ${run.label} bulletin, month by month`}
+          <KeepWhole>{`Every ${run.label} bulletin, month by month`}</KeepWhole>
         </Link>
         .
       </p>

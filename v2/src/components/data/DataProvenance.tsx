@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { MONTH_ABBR } from "@convex/lib/months";
 import { easternDay } from "@convex/lib/time";
 import { softFail } from "@/lib/softRead";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Where a page's figures came from, rendered beside them: one visible line
@@ -55,7 +56,7 @@ export async function DataProvenance({ datasets, className }: { datasets: string
         {fresh.map((r, i) => (
           <Fragment key={r.dataset}>
             {i > 0 ? " · " : ""}
-            <span className="font-semibold text-soft">{label(r.dataset)}</span>
+            <span className="font-semibold text-soft">{keepWhole(label(r.dataset))}</span>
             {when(r)}
           </Fragment>
         ))}
@@ -82,7 +83,7 @@ export async function DataProvenance({ datasets, className }: { datasets: string
               <Fragment key={r.dataset}>
                 {" "}
                 <p>
-                  <span className="font-bold text-soft">{label(r.dataset)}:</span> {r.source}
+                  <span className="font-bold text-soft">{keepWhole(label(r.dataset))}:</span> {keepWhole(r.source)}
                   {r.asOf || isNewsFeed(r.dataset) ? <> ·{when(r, "data through")}</> : null} · {r.cadence.toLowerCase()}
                 </p>
               </Fragment>
@@ -94,7 +95,7 @@ export async function DataProvenance({ datasets, className }: { datasets: string
               <Fragment key={`c-${c.dataset}`}>
                 {" "}
                 <p>
-                  <span className="font-bold text-soft">{label(c.dataset)}:</span> {c.text}
+                  <span className="font-bold text-soft">{keepWhole(label(c.dataset))}:</span> {keepWhole(c.text)}
                 </p>
               </Fragment>
             ))}
@@ -126,7 +127,7 @@ function StaleLine({ r }: { r: DatasetFreshness }) {
       <WarningIcon className="mt-0.5 h-4 w-4 shrink-0 text-data-warn-ink" weight="fill" aria-hidden="true" />{" "}
       <span>
         <b className="font-bold text-data-warn-ink">
-          {label(r.dataset)} hasn&apos;t refreshed{agePhrase(r)}.
+          {keepWhole(label(r.dataset))} hasn&apos;t refreshed{agePhrase(r)}.
         </b>{" "}
         It should update {r.cadence.toLowerCase()}, so the figures below are the last ones that arrived and may be
         out of date. Source: {r.source}

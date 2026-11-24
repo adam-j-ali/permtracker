@@ -37,6 +37,7 @@ import { softFail } from "@/lib/softRead";
 import { withSocialCard } from "@/lib/socialCard";
 import { api } from "@convex/_generated/api";
 import { longDate } from "@convex/lib/months";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 export const revalidate = 86400;
 
@@ -207,9 +208,11 @@ export default async function ConsularPostsPage() {
             the documentarily complete month and year for which NVC is scheduling most interviews in your classification
             at the selected U.S. embassy or consulate.
           </q>{" "}
-          A case is documentarily complete once NVC has the fees, the DS-260 and every document. Compare that month with
-          yours: if the post&apos;s month is later, NVC is scheduling cases like yours. A preference case also needs a
-          current priority date in the{" "}
+          <KeepWhole>
+            {"A case is documentarily complete once NVC has the fees, the DS-260 and every document. Compare that " +
+              "month with yours: if the post's month is later, NVC is scheduling cases like yours. A preference " +
+              "case also needs a current priority date in the"}
+          </KeepWhole>{" "}
           <Link href="/visa-bulletin" className="link">
             visa bulletin
           </Link>

@@ -10,6 +10,7 @@ import { socGroup } from "@/lib/socCode";
 import { predecessorsOf } from "@/lib/socCrosswalk";
 import { SOC_TITLES_BASE } from "@/lib/socTitleBrowse";
 import { titleSlug } from "@/lib/socTitleKey";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * On an occupation page: the job titles employers filed under its code in DOL's files, the titles
@@ -33,7 +34,7 @@ export async function CodeTitles({ code, className }: { code: string | null | un
     label:
       t.keyFilings >= pageMin ? (
         <Link href={`/soc-codes/${titleSlug(t.key)}`} className="link">
-          {t.title}
+          {keepWhole(t.title)}
         </Link>
       ) : (
         t.title
@@ -47,7 +48,9 @@ export async function CodeTitles({ code, className }: { code: string | null | un
     <section id="titles" className={className}>
       <h3 className="font-heading text-xl font-bold">The titles employers file under {soc}</h3>{" "}
       <p className="mt-1 max-w-3xl text-base text-soft">
-        From DOL&apos;s PERM, wage request and H-1B files. The share says how much of each title goes to this code.
+        <KeepWhole>
+          {"From DOL's PERM, wage request and H-1B files. The share says how much of each title goes to this code."}
+        </KeepWhole>
       </p>{" "}
       {rows.length ? <BarRows rows={rows} inline label={`Job titles filed under ${soc}`} className="mt-4" /> : null}{" "}
       {more.length ? (
@@ -85,7 +88,7 @@ export async function CodeTitles({ code, className }: { code: string | null | un
           {preds.map((p, i) => (
             <Fragment key={p.code}>
               <Link href={`/soc-codes?q=${p.code}`} className="link">
-                {p.code} {p.title}
+                {p.code} {keepWhole(p.title)}
               </Link>
               {i < preds.length - 2 ? ", " : i === preds.length - 2 ? " and " : "."}{" "}
             </Fragment>

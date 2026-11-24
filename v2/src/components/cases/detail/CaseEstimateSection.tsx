@@ -51,6 +51,7 @@ import type { LineAheadRow } from "@/lib/queueAhead";
 import { CaseNumberSuggestion } from "./CaseNumberSuggestion";
 import { canonicalStatus } from "@/lib/caseStatusVocabulary";
 import { NewTabLink } from "@/components/ui/new-tab-link";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface CaseEstimateSectionCase {
   _id: Id<"cases">;
@@ -325,7 +326,7 @@ function QueueBar({ rows, perDay }: { rows: readonly LineAheadRow[]; perDay: num
                   {/* Named in place when there is room; the tip and the fold carry the rest. */}
                   {share >= 0.16 ? (
                     <span className="truncate whitespace-nowrap">
-                      <b className="font-semibold">{r.label}</b>{" "}
+                      <b className="font-semibold">{keepWhole(r.label)}</b>{" "}
                       <span className="hidden tabular-nums @lg:inline">{int(r.n)}</span>
                     </span>
                   ) : null}
@@ -458,7 +459,7 @@ export function CaseEstimateSection({ caseData }: { caseData: CaseEstimateSectio
 
       {est && est.kind === "no-date" ? (
         <div className="space-y-2 px-5 py-4 text-sm">
-          <p className="text-base">{est.note}</p>{" "}
+          <p className="text-base">{keepWhole(est.note)}</p>{" "}
           <p className="text-muted-foreground">
             {est.age.of === "stage" ? "Cases at this stage have been pending a measured average of " : "This case has been pending "}
             <b className="font-semibold text-foreground tabular-nums">{int(est.age.days)} days</b>
@@ -513,7 +514,7 @@ export function CaseEstimateSection({ caseData }: { caseData: CaseEstimateSectio
                 <p>{est.totalDays.toLocaleString("en-US")} days from filing. It&apos;s an estimate. It isn&apos;t a promise.</p>{" "}
                 {est.stage ? (
                   <p>
-                    {est.stage.note} Adjusted for the case&rsquo;s stage: the {est.stage.percentile}th percentile of its
+                    {keepWhole(est.stage.note)} Adjusted for the case&rsquo;s stage: the {est.stage.percentile}th percentile of its
                     filing month.
                   </p>
                 ) : null}{" "}
@@ -538,7 +539,7 @@ export function CaseEstimateSection({ caseData }: { caseData: CaseEstimateSectio
                     <Fragment key={r.key}>
                       {" "}
                       <li className="contents">
-                        <span className={r.own ? "font-semibold text-foreground" : undefined}>{r.label}</span>{" "}
+                        <span className={r.own ? "font-semibold text-foreground" : undefined}>{keepWhole(r.label)}</span>{" "}
                         <span className="text-right">{int(r.n)}</span>
                       </li>
                     </Fragment>

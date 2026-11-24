@@ -24,6 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // ============================================================================
 // USER MENU COMPONENT
@@ -224,7 +225,7 @@ export default function Header(): React.ReactElement {
                       isActive ? "border-primary-text font-semibold text-foreground" : "border-transparent text-soft hover:text-foreground",
                     )}
                   >
-                    {link.label}
+                    {keepWhole(link.label)}
                   </NavLink>{" "}
                 </Fragment>
               );
@@ -282,7 +283,7 @@ export default function Header(): React.ReactElement {
                   className={cn("flex min-h-12 items-center text-lg", isActive ? "font-semibold text-foreground" : "text-soft")}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  {link.label}
+                  {keepWhole(link.label)}
                 </NavLink>
               );
             })}

@@ -27,6 +27,7 @@ import { withSocialCard } from "@/lib/socialCard";
 import { buttonVariants } from "@/components/ui/button";
 import { softFail } from "@/lib/softRead";
 import { StepBothSources } from "@/components/community/StepBothSources";
+import { KeepWhole } from "@/components/ui/keep-whole";
 /**
  * PERM decision-date calculator.
  *
@@ -178,10 +179,11 @@ export default async function PermTimelineCalculatorPage() {
           The deadlines on your side of the process are fixed
         </h2>{" "}
         <p className="mt-3 leading-relaxed text-muted-foreground">
-          Nobody can tell you exactly when DOL will decide. The recruitment
-          window, the quiet period, the filing window and the I-140 deadline
-          are arithmetic on your prevailing wage determination, and getting one
-          wrong restarts the case.
+          <KeepWhole>
+            {"Nobody can tell you exactly when DOL will decide. The recruitment window, the quiet period, the " +
+              "filing window and the I-140 deadline are arithmetic on your prevailing wage determination, and " +
+              "getting one wrong restarts the case."}
+          </KeepWhole>
         </p>
         <Link
           href="/tools/perm-deadline-calculator"

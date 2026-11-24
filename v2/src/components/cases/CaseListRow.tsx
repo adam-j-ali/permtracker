@@ -21,6 +21,7 @@ import { STAGE_VISUALS } from "@/components/status/stage-visuals";
 import { formatClosureReasonLabel, formatCompactDate, formatDeadlineDate } from "./case-card.utils";
 import { CountdownChip } from "./DeadlineCountdown";
 import type { CaseCardData } from "@convex/lib/caseListTypes";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface CaseListRowProps {
   caseData: CaseCardData;
@@ -85,7 +86,7 @@ export const CaseListRow = memo(function CaseListRow({
             </>
           ) : null}
           {c.positionTitle && stage?.label ? " · " : ""}
-          {stage?.label}
+          {keepWhole(stage?.label)}
         </p>
       </div>
       {open && c.nextDeadline ? (

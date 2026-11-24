@@ -8,6 +8,7 @@ import { MoreText, firstSentence, plainText, wordCount } from "@/components/data
 import { formatInt } from "@/lib/format";
 import { describeDisclosureFiles } from "@/lib/disclosureFiles";
 import { MIN_DECIDED_FOR_RATE } from "@/lib/entityPayload";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The context modules the 16,210 entity detail pages are built out of.
@@ -371,7 +372,7 @@ export function RankLadder({
             {" "}
             <div className="min-w-0">
               <dt className="text-sm font-bold text-muted-foreground">
-                {r.label}
+                {keepWhole(r.label)}
               </dt>{" "}
               <dd className="mt-1 min-w-0">
                 <IntentLink

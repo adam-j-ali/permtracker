@@ -3,6 +3,7 @@ import { Fragment, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 import { FinderDock, FinderDockPanel } from "@/components/tools/FinderDock";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The top of an entity page: what this is, what is true of it right now, and
@@ -77,15 +78,15 @@ export function ProfileHeader({
       <FinderDock>
       <div className="grid grid-cols-1 gap-x-8 gap-y-6 @[52rem]:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)] @[52rem]:grid-rows-[auto_1fr] @[52rem]:items-start [&>*]:min-w-0">
         <div>
-          <p className="text-sm text-muted-foreground">{eyebrow}</p>{" "}
+          <p className="text-sm text-muted-foreground">{keepWhole(eyebrow)}</p>{" "}
           <h1
             translate="no"
             className="mt-1.5 font-heading text-3xl font-bold leading-tight [overflow-wrap:anywhere] sm:text-[2.5rem]"
           >
-            {name}
+            {keepWhole(name)}
           </h1>{" "}
-          {answer ? <p className="mt-3 max-w-2xl text-base leading-relaxed text-foreground sm:text-[1.0625rem]">{answer}</p> : null}{" "}
-          {note ? <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{note}</p> : null}
+          {answer ? <p className="mt-3 max-w-2xl text-base leading-relaxed text-foreground sm:text-[1.0625rem]">{keepWhole(answer)}</p> : null}{" "}
+          {note ? <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{keepWhole(note)}</p> : null}
         </div>{" "}
         {aside ? <div className="@[52rem]:col-start-2 @[52rem]:row-span-2 @[52rem]:row-start-1">{aside}</div> : null}{" "}
         {below ? (
@@ -101,7 +102,7 @@ export function ProfileHeader({
                         className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold underline-offset-2 hover:underline border-2 shadow-hard-sm motion-safe:hover:-translate-y-0.5 px-3 bg-card border-border transition-[color,background-color,border-color,box-shadow,transform]"
                       >
                         <span aria-hidden="true" className={cn("size-2.5 shrink-0", TONE[t.tone])} />
-                        {t.text}
+                        {keepWhole(t.text)}
                       </a>
                     </li>
                   </Fragment>
@@ -115,7 +116,7 @@ export function ProfileHeader({
                   <Fragment key={t.text}>
                     {i > 0 ? " · " : null}
                     <a href={t.href} className={LINE_LINK}>
-                      {t.text}
+                      {keepWhole(t.text)}
                     </a>
                   </Fragment>
                 ))}
@@ -130,7 +131,7 @@ export function ProfileHeader({
               >
                 {facts.map((f) => (
                   <div key={f.label} className="min-w-0">
-                    <dt className="text-sm text-muted-foreground">{f.label}</dt>{" "}
+                    <dt className="text-sm text-muted-foreground">{keepWhole(f.label)}</dt>{" "}
                     <dd className="text-base font-semibold [overflow-wrap:anywhere]">
                       {f.href ? (
                         <Link href={f.href} className="link">
@@ -139,7 +140,7 @@ export function ProfileHeader({
                       ) : (
                         f.value
                       )}
-                      {f.note ? <span className="font-normal text-muted-foreground"> · {f.note}</span> : null}
+                      {f.note ? <span className="font-normal text-muted-foreground"> · {keepWhole(f.note)}</span> : null}
                     </dd>
                   </div>
                 ))}

@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { FlagCaseRow } from "@/lib/db/flagCases";
 import { seasonalForm } from "@/lib/seasonalForms";
 import { FilingRows } from "@/components/entities/FilingRows";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * One employer's H-2A and H-2B filings, newest first, from DOL's live record.
@@ -27,7 +28,7 @@ export function SeasonalFilings({
   if (rows.length === 0) return null;
   return (
     <section className={`${className}`}>
-      <h2 className="font-heading text-xl font-bold">Seasonal work: H-2A, H-2B and CW-1</h2>{" "}
+      <h2 className="font-heading text-xl font-bold"><KeepWhole>{"Seasonal work: H-2A, H-2B and CW-1"}</KeepWhole></h2>{" "}
       <p className="mt-1 text-sm text-muted-foreground">As DOL&apos;s case-status service shows them.</p>{" "}
       <FilingRows
         className="mt-4"
@@ -43,7 +44,7 @@ export function SeasonalFilings({
           href={`/seasonal-cases?q=${encodeURIComponent(name)}`}
           className="link"
         >
-          All H-2A, H-2B and CW-1 filings by this employer
+          <KeepWhole>{"All H-2A, H-2B and CW-1 filings by this employer"}</KeepWhole>
         </Link>
       </p>
     </section>

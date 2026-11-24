@@ -11,6 +11,7 @@
 import Link from "next/link";
 import type { PostSummary } from "@/lib/content/types";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // Shared formatting for the entry's published/updated <time> elements. Module
 // scope so the Intl.DateTimeFormatOptions object isn’t reallocated each render.
@@ -104,10 +105,10 @@ export default function ChangelogTimeline({ posts }: ChangelogTimelineProps) {
             <h2 className="mt-1.5 font-heading text-lg font-bold leading-snug">
               {/* The padding makes a one-line title a 44px tap target without moving the text. */}
               <Link href={`/changelog/${entry.post.slug}`} className="inline-block py-2.5 -my-2.5">
-                <span className="hover-underline">{meta.title}</span>
+                <span className="hover-underline">{keepWhole(meta.title)}</span>
               </Link>
             </h2>{" "}
-            <p className="mt-1 leading-relaxed text-soft">{meta.description}</p>
+            <p className="mt-1 leading-relaxed text-soft">{keepWhole(meta.description)}</p>
           </li>
         );
       })}

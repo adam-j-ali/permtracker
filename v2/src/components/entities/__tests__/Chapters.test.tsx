@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -94,5 +97,27 @@ describe("ChapterNav", () => {
     render(<ChapterNav items={ITEMS} />);
     scroll();
     expect(marked()).toBe("Notes");
+  });
+});
+
+describe("the chapter bar's ground", () => {
+  // A box reaching past the bar to the measured edges widened the page whenever a measurement was a few pixels
+  // off (a job page ran 7px past a 320px screen). The ground is paint: a border image's outset and a clip path,
+  // which draw outside the box without making the page any wider.
+  const css = readFileSync(join(__dirname, "..", "..", "..", "app", "globals.css"), "utf8");
+  const rule = css.slice(css.indexOf(".chapter-ground::before {"), css.indexOf("}", css.indexOf(".chapter-ground::before {")));
+
+  it("is drawn by the bar's own class, with no box stretched out to the edges", () => {
+    render(<ChapterNav items={ITEMS} />);
+    const nav = screen.getByRole("navigation", { name: "On this page" });
+    expect(nav.className).toContain("chapter-ground");
+    expect(nav.className).not.toMatch(/before:(left|right)-/);
+  });
+
+  it("reaches the measured edges as paint only", () => {
+    expect(rule).toContain("inset: 0;");
+    expect(rule).toMatch(/border-image:[^;]*fill 0 \/ 0 \/ 0 100vmax;/);
+    expect(rule).toContain("clip-path: inset(0 calc(-1 * var(--bleed-r, 0px)) 0 calc(-1 * var(--bleed-l, 0px)));");
+    expect(rule).not.toMatch(/(^|[^-])(left|right):/m);
   });
 });

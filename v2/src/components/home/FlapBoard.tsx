@@ -14,6 +14,7 @@
  */
 
 import { FlapBoardMotion } from "./FlapBoardMotion";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface FlapRow {
   /** What the row is, in plain words. */
@@ -43,7 +44,7 @@ export function FlapBoard({
       <dl>
         {rows.map((row) => (
           <div key={row.label} className="flap-row">
-            <dt className="flap-label">{row.label}</dt>{" "}
+            <dt className="flap-label">{keepWhole(row.label)}</dt>{" "}
             <dd className="m-0">
               <span className="sr-only">{row.value}</span>{" "}
               <span className="flap-cells" aria-hidden="true">

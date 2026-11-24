@@ -6,6 +6,7 @@ import { ROUTE_LABEL } from "@/components/tools/greenCardRoute";
 import { Label } from "@/components/ui/label";
 import { ChoiceRow } from "@/components/ui/choice-row";
 import { calculateGreenCardFees, FEE_SCHEDULE, GREEN_CARD_ROUTES, STATE_FEES, type FeeInput, type GreenCardRoute } from "@/lib/perm";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /** The three fee rates USCIS charges an I-140's asylum program fee at, each one tap. */
 const PETITIONERS: readonly { value: FeeInput["petitioner"]; label: string }[] = [
@@ -85,7 +86,7 @@ export function GreenCardFeesCalculator() {
               />{" "}
               <span className="min-w-0">
                 <span className="block font-semibold">{ROUTE_LABEL[r].name}</span>{" "}
-                <span className="block text-sm text-soft">{ROUTE_LABEL[r].note}</span>
+                <span className="block text-sm text-soft">{keepWhole(ROUTE_LABEL[r].note)}</span>
               </span>
             </label>
           ))}
@@ -100,15 +101,15 @@ export function GreenCardFeesCalculator() {
             value={petitioner}
             onChange={setPetitioner}
           />{" "}
-          <p className="mt-1 text-sm text-muted-foreground">Sets the asylum program fee USCIS charges with every I-140, counted in full-time employees. A self-petitioner pays the 25-or-fewer amount.</p>
+          <p className="mt-1 text-sm text-muted-foreground"><KeepWhole>{"Sets the asylum program fee USCIS charges with every I-140, counted in full-time employees. A self-petitioner pays the 25-or-fewer amount."}</KeepWhole></p>
         </div>{" "}
         <div className="flex flex-col justify-end gap-3">
           <label htmlFor={onlineId} className="flex min-h-11 items-center gap-3 text-base">
             <input id={onlineId} type="checkbox" checked={online} onChange={(e) => setOnline(e.target.checked)} className="size-5 accent-primary" />{" "}
-            {route === "aos" ? "Filed online where USCIS allows (I-140, I-485, I-131)" : `I-140 filed online (${usd(FEE_SCHEDULE.i140Online)} instead of ${usd(FEE_SCHEDULE.i140Paper)})`}
+            {keepWhole(route === "aos" ? "Filed online where USCIS allows (I-140, I-485, I-131)" : `I-140 filed online (${usd(FEE_SCHEDULE.i140Online)} instead of ${usd(FEE_SCHEDULE.i140Paper)})`)}
           </label>{" "}
           <label htmlFor={premiumId} className="flex min-h-11 items-center gap-3 text-base">
-            <input id={premiumId} type="checkbox" checked={premium} onChange={(e) => setPremium(e.target.checked)} className="size-5 accent-primary" /> Premium processing on the I-140 ({usd(FEE_SCHEDULE.i907I140)})
+            <input id={premiumId} type="checkbox" checked={premium} onChange={(e) => setPremium(e.target.checked)} className="size-5 accent-primary" /><KeepWhole>{" Premium processing on the I-140 ("}</KeepWhole>{usd(FEE_SCHEDULE.i907I140)})
           </label>
         </div>{" "}
         <Count id={adultsId} label="Applicants 14 and over" value={adults} onChange={setAdults} note="The principal and any spouse or older child immigrating." />{" "}
@@ -152,11 +153,11 @@ export function GreenCardFeesCalculator() {
         ) : null}{" "}
         <dl className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 [&>*]:min-w-0">
           <div className="flex items-baseline justify-between gap-3 border-t border-border/40 pt-2">
-            <dt>Petition stage (I-140){" "}</dt>{" "}
+            <dt><KeepWhole>{"Petition stage (I-140)"}</KeepWhole>{" "}</dt>{" "}
             <dd className="font-bold tabular-nums">{usd(result.petitionTotal)}</dd>
           </div>{" "}
           <div className="flex items-baseline justify-between gap-3 border-t border-border/40 pt-2">
-            <dt>{route === "aos" ? "Adjustment stage (I-485 and what rides it)" : "Visa stage (State's visa fee and USCIS's immigrant fee)"}{" "}</dt>{" "}
+            <dt>{keepWhole(route === "aos" ? "Adjustment stage (I-485 and what rides it)" : "Visa stage (State's visa fee and USCIS's immigrant fee)")}{" "}</dt>{" "}
             <dd className="font-bold tabular-nums">{usd(result.applicationTotal)}</dd>
           </div>
         </dl>
@@ -176,7 +177,7 @@ export function GreenCardFeesCalculator() {
             <tr key={`${l.form}-${l.label}`} className="border-b border-border/40 align-top">
               <td className="py-2 pr-3 font-mono text-sm font-bold">{l.form}{" "}</td>
               <td className="py-2 pr-3">
-                {l.label}{" "}
+                {keepWhole(l.label)}{" "}
                 <span className="block text-muted-foreground tabular-nums">
                   {usd(l.each)} × {l.count}
                 </span>{" "}
@@ -187,7 +188,7 @@ export function GreenCardFeesCalculator() {
         </tbody>
       </table>{" "}
       <p className="mt-3 text-sm text-muted-foreground">
-        USCIS&apos;s figures are from its Form G-1055, edition {result.edition}, read at{" "}
+        <KeepWhole>{"USCIS's figures are from its Form G-1055, edition "}</KeepWhole>{result.edition}, read at{" "}
         <a target="_blank" href={result.source} className="link" rel="noopener">
           uscis.gov/g-1055
         </a>
@@ -209,7 +210,7 @@ export function GreenCardFeesCalculator() {
           {route === "aos" ? (
             <>
               <li>
-                The I-693 medical exam: USCIS charges nothing, the civil surgeon does.{" "}
+                <KeepWhole>{"The I-693 medical exam: USCIS charges nothing, the civil surgeon does."}</KeepWhole>{" "}
                 <a target="_blank"
                   href="https://www.uscis.gov/tools/find-a-civil-surgeon"
                   rel="noopener"
@@ -219,14 +220,17 @@ export function GreenCardFeesCalculator() {
                 </a>
                 .
               </li>{" "}
-              <li>Premium processing on an I-485, which USCIS doesn&apos;t offer.</li>
+              <li><KeepWhole>{"Premium processing on an I-485, which USCIS doesn't offer."}</KeepWhole></li>
             </>
           ) : (
             <>
               <li>The medical exam: a panel physician the consulate names charges for it.</li>{" "}
               <li>
-                The affidavit of support review ($120 at NVC), which an employment case needs only when a relative who&apos;s a citizen
-                or permanent resident filed the I-140 or owns 5% or more of the employer (8 CFR 213a.2(a)(2)(i)(C)).
+                <KeepWhole>
+                  {"The affidavit of support review ($120 at NVC), which an employment case needs only when a " +
+                    "relative who's a citizen or permanent resident filed the I-140 or owns 5% or more of the " +
+                    "employer (8 CFR 213a.2(a)(2)(i)(C))."}
+                </KeepWhole>
               </li>
             </>
           )}

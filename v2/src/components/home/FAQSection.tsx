@@ -15,6 +15,7 @@ import { ArrowRightIcon, CaretDownIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { HOME_FAQS, type HomeFaqItem } from "./faqData";
 import { HOME_WIDTH } from "./homeWidth";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 
 
@@ -56,7 +57,7 @@ function FAQAccordionItem({ item, isOpen, onToggle, index }: FAQAccordionItemPro
         )}
       >
         <span className="font-heading text-base font-semibold tracking-tight sm:text-lg text-foreground">
-          {item.question}
+          {keepWhole(item.question)}
         </span>
 
         {/* Chevron: turns when the answer opens */}
@@ -85,7 +86,7 @@ function FAQAccordionItem({ item, isOpen, onToggle, index }: FAQAccordionItemPro
         <div ref={contentRef} className="overflow-hidden">
           <div className="px-5 pb-5 border-t-2 border-border">
             <p className="text-base leading-7 text-soft">
-              {item.rich}
+              {keepWhole(item.rich)}
             </p>
           </div>
         </div>

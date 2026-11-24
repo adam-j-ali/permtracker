@@ -7,6 +7,7 @@ import { PendingExtensionCalculator } from "@/components/tools/PendingExtensionC
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The H-1B six-year limit against the PERM 365-day rule, as a calculator.
@@ -67,12 +68,13 @@ export default function H1bSixYearLimitPage() {
       <JsonLdScript schema={faqSchema} />
       <header>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">
-          H-1B six-year limit and the PERM 365-day rule
+          <KeepWhole>{"H-1B six-year limit and the PERM 365-day rule"}</KeepWhole>
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          The day H-1B status runs out, and the last day a PERM can be filed so
-          the one-year extensions stay open. Every date comes with its
-          citation, and nothing is predicted.
+          <KeepWhole>
+            {"The day H-1B status runs out, and the last day a PERM can be filed so the one-year extensions stay " +
+              "open. Every date comes with its citation, and nothing is predicted."}
+          </KeepWhole>
         </p>
       </header>
       <section data-embed="h1b-six-year" className="mt-10">
@@ -83,7 +85,10 @@ export default function H1bSixYearLimitPage() {
           While an extension is pending: the 240-day rule
         </h2>{" "}
         <p className="mt-2 max-w-2xl text-base text-muted-foreground">
-          How long work with the same employer can go on after the I-94 ends, while a timely filed extension waits.
+          <KeepWhole>
+            {"How long work with the same employer can go on after the I-94 ends, while a timely filed extension " +
+              "waits."}
+          </KeepWhole>
         </p>{" "}
         <div className="mt-6">
           <PendingExtensionCalculator />

@@ -20,6 +20,7 @@ import { AreaLoadFailure, areaPlaceholder, useWageAreas } from "@/components/too
 import { LevelEstimator } from "@/components/tools/LevelEstimator";
 import { cn } from "@/lib/utils";
 import { WageProposalTable, type WageRuleStage } from "@/components/tools/WageProposalTable";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The four prevailing wage levels for one occupation in one area, read live
@@ -339,7 +340,10 @@ export function WageLevelsTool({
             <a target="_blank" href={result.source} rel="noopener noreferrer" className="link">
               {result.fromFile ? "OFLC wage data downloads" : "OFLC wage search"}
             </a>
-            , all-industries OEWS. The level a case is set at depends on the job&apos;s requirements, which DOL decides on the ETA-9141.
+            <KeepWhole>
+              {", all-industries OEWS. The level a case is set at depends on the job's requirements, which DOL " +
+                "decides on the ETA-9141."}
+            </KeepWhole>
           </p>{" "}
           <WageProposalTable levels={result.levels} stage={ruleStage} />{" "}
           <LevelEstimator soc={result.soc} onLevel={setEstimated} />

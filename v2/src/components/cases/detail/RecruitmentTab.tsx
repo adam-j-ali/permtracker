@@ -19,6 +19,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/comp
 import type { CaseDetailData } from "./case-detail-types";
 import { fmtISODate, fmtISOShort, computeWindowStatus } from "./case-detail-utils";
 import { WindowCard } from "./WindowCard";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // NOF mini-calendar using central business day logic from @/lib/perm
 function NOFMiniCalendar({ start, end }: { start: string; end: string }) {
@@ -357,14 +358,14 @@ export function RecruitmentTab({ caseData, onUpload }: RecruitmentTabProps) {
                       <div className="recruit-info">
                         <div className="recruit-title" title={getMethodLabel(method.method)}>{getMethodLabel(method.method)}</div>
                         {method.description && (
-                          <div className="recruit-detail" title={method.description}>{method.description}</div>
+                          <div className="recruit-detail" title={method.description}>{keepWhole(method.description)}</div>
                         )}
                         {method.subEntries && method.subEntries.length > 0 && (
                           <div className="recruit-sub-entries">
                             {method.subEntries.map((sub, j) => (
                               <div key={j} className="recruit-sub-entry">
                                 {sub.date && <span className="recruit-sub-date">{fmtISODate(sub.date)}</span>}
-                                {sub.description && <span className="recruit-sub-desc" title={sub.description}>{sub.description}</span>}
+                                {sub.description && <span className="recruit-sub-desc" title={sub.description}>{keepWhole(sub.description)}</span>}
                               </div>
                             ))}
                           </div>

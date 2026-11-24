@@ -22,6 +22,7 @@ import { REMINDER_INVITES_PER_ACCOUNT } from "@convex/lib/alertBudgets";
 import { RECENT_SEARCHES_KEPT } from "@/lib/search/recentSearches";
 import { openGraphBase } from "@/lib/openGraphBase";
 import Link from "next/link";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 // Force static generation for instant loading
 export const dynamic = "force-static";
@@ -165,13 +166,13 @@ export default function PrivacyPage() {
             </h3>{" "}
             <ul className="list-disc list-inside text-soft space-y-2 ml-4">
               <li>
-                If you switch on &quot;Count my cases in the public figures&quot;
-                in Settings, the dates on the cases saved in your account are
-                included, each hour, in the figures our public pages show for how
-                long each step takes: the day a prevailing wage request was filed
-                and issued, the day a PERM application was filed and decided, and
-                the day an I-140 was filed and decided, with the I-140&apos;s
-                category and whether premium processing was used
+                <KeepWhole>
+                  {"If you switch on \"Count my cases in the public figures\" in Settings, the dates on the cases " +
+                    "saved in your account are included, each hour, in the figures our public pages show for how " +
+                    "long each step takes: the day a prevailing wage request was filed and issued, the day a PERM " +
+                    "application was filed and decided, and the day an I-140 was filed and decided, with the " +
+                    "I-140's category and whether premium processing was used"}
+                </KeepWhole>
               </li>{" "}
               <li>
                 Nothing else is included: no name, employer, position, case
@@ -447,33 +448,26 @@ export default function PrivacyPage() {
             </h3>{" "}
             <ul className="list-disc list-inside text-soft space-y-2 ml-4">
               <li>
-                On a case’s page, a USCIS office’s page or the green card
-                timelines page you can save the dates that came after PERM (the
-                I-140, the I-485, a biometrics appointment, a work permit, a
-                travel document, a Supplement J approval, an interview, the green
-                card, the day premium processing was requested, the move to a
-                field office, the card’s arrival) and a few choices from fixed
-                lists, such as your category,
-                your country, whether the case is the main applicant’s or a
-                spouse’s or child’s, whether the interview was held or waived,
-                the USCIS office handling your I-485 and the service center that
-                took it in. You can also add the updates your own USCIS account
-                showed: the day, the form and the code, and what you did to move
-                the case (a service request, an Emma chat, a call, a
-                congressional inquiry, the CIS Ombudsman or an expedite
-                request), each with its day, and a spouse’s H-4 dates (the H-4
-                extension and the H-4 work permit, each filed and approved, and
-                whether the work permit was filed with the extension). On the
-                site they show as days from filing to approval and that route,
-                and an H-4 work permit approved this week counts toward the
-                week&apos;s tally once five people report one.
-                No receipt number is asked for or kept.
-                There’s no free-text box. The one thing you can type is an
-                account code, 2 to 6 letters and digits, and we read any code
-                that isn’t on our list before the timeline shows. A PERM case
-                number is optional; when you give one, the PERM dates come from
-                DOL’s own record and are never typed by you, and the number is
-                never shown on any page
+                <KeepWhole>
+                  {"On a case’s page, a USCIS office’s page or the green card timelines page you can save the " +
+                    "dates that came after PERM (the I-140, the I-485, a biometrics appointment, a work permit, a " +
+                    "travel document, a Supplement J approval, an interview, the green card, the day premium " +
+                    "processing was requested, the move to a field office, the card’s arrival) and a few choices " +
+                    "from fixed lists, such as your category, your country, whether the case is the main " +
+                    "applicant’s or a spouse’s or child’s, whether the interview was held or waived, the USCIS " +
+                    "office handling your I-485 and the service center that took it in. You can also add the " +
+                    "updates your own USCIS account showed: the day, the form and the code, and what you did to " +
+                    "move the case (a service request, an Emma chat, a call, a congressional inquiry, the CIS " +
+                    "Ombudsman or an expedite request), each with its day, and a spouse’s H-4 dates (the H-4 " +
+                    "extension and the H-4 work permit, each filed and approved, and whether the work permit was " +
+                    "filed with the extension). On the site they show as days from filing to approval and that " +
+                    "route, and an H-4 work permit approved this week counts toward the week's tally once five " +
+                    "people report one. No receipt number is asked for or kept. There’s no free-text box. The one " +
+                    "thing you can type is an account code, 2 to 6 letters and digits, and we read any code that " +
+                    "isn’t on our list before the timeline shows. A PERM case number is optional; when you give " +
+                    "one, the PERM dates come from DOL’s own record and are never typed by you, and the number is " +
+                    "never shown on any page"}
+                </KeepWhole>
               </li>{" "}
               <li>
                 No account is needed. Your browser keeps a random key for your
@@ -538,16 +532,15 @@ export default function PrivacyPage() {
             </h3>{" "}
             <ul className="list-disc list-inside text-soft space-y-2 ml-4">
               <li>
-                On a consulate’s page, anyone who had a visa appointment there
-                can report it: the kind of visa and its exact category (such as
-                EB-2 or F2A), whether it was an interview or a drop box, the
-                month NVC said the case was complete, the dates of the
-                appointment letter, the interview, the approval and the visa,
-                and what happened (such as a 221(g) with the reason given, its
-                slip colour and whether you were asked to email documents, a
-                refusal and its ground, or who cancelled or moved the
-                interview). Each is a date or a choice from a fixed list.
-                There’s no free-text box
+                <KeepWhole>
+                  {"On a consulate’s page, anyone who had a visa appointment there can report it: the kind of " +
+                    "visa and its exact category (such as EB-2 or F2A), whether it was an interview or a drop box, " +
+                    "the month NVC said the case was complete, the dates of the appointment letter, the interview, " +
+                    "the approval and the visa, and what happened (such as a 221(g) with the reason given, its " +
+                    "slip colour and whether you were asked to email documents, a refusal and its ground, or who " +
+                    "cancelled or moved the interview). Each is a date or a choice from a fixed list. There’s no " +
+                    "free-text box"}
+                </KeepWhole>
               </li>{" "}
               <li>
                 No account is needed, and we never ask for or keep a name or a
@@ -813,17 +806,7 @@ export default function PrivacyPage() {
                 only when displayed to the authenticated case owner
               </li>{" "}
               <li>
-                <strong>Backups:</strong> each night we copy our databases to
-                Cloudflare R2 storage. The copies that hold your account, your
-                cases, our alert lists and the website&apos;s own database are sealed before they&apos;re stored, so that only a key kept
-                off our servers and out of R2 can open them. The copy of the
-                app&apos;s database (accounts, cases and alert lists) is made on
-                a GitHub Actions runner, which holds it unsealed for the few
-                minutes that takes, seals it and deletes the unsealed file. The one copy that
-                isn&apos;t sealed holds only DOL&apos;s published H-1B LCA
-                records. We keep the newest 15 nightly copies and the first copy
-                of each of the last 3 months, so something you delete leaves our
-                backups within about three months
+                <strong>Backups:</strong><KeepWhole>{" each night we copy our databases to Cloudflare R2 storage. The copies that hold your account, your cases, our alert lists and the website's own database are sealed before they're stored, so that only a key kept off our servers and out of R2 can open them. The copy of the app's database (accounts, cases and alert lists) is made on a GitHub Actions runner, which holds it unsealed for the few minutes that takes, seals it and deletes the unsealed file. The one copy that isn't sealed holds only DOL's published H-1B LCA records. We keep the newest 15 nightly copies and the first copy of each of the last 3 months, so something you delete leaves our backups within about three months"}</KeepWhole>
               </li>{" "}
               <li>
                 <strong>Signing out:</strong> when you&apos;re signed in, the app

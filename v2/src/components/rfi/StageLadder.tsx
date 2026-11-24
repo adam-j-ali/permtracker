@@ -4,6 +4,7 @@ import { ChartTips } from "@/components/data/ChartTips";
 import type { ReviewStage } from "@/lib/db/rfi";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { GROUP_STYLE, stageMeta } from "./stageMeta";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Where each stage sits in a case's life, on a real axis of days since filing.
@@ -73,7 +74,7 @@ export function StageLadder({ stages, marker = null }: StageLadderProps) {
               <div className="grid grid-cols-[10.5rem_1fr] items-center gap-3 border-b border-border/25 py-2.5 last:border-b-0">
                 <div className="min-w-0">
                   <div className="truncate font-heading text-sm font-bold leading-tight">
-                    {meta.label}
+                    {keepWhole(meta.label)}
                   </div>{" "}
                   <div className="font-mono text-sm tabular-nums text-muted-foreground">
                     {s.cases.toLocaleString()} cases
@@ -221,7 +222,7 @@ function Marker({
             paddingLeft: flip ? undefined : "0.45rem",
           }}
         >
-          {marker.label}
+          {keepWhole(marker.label)}
         </span>
       </div>
     </div>
@@ -267,7 +268,7 @@ export function StageLadderTable({ stages }: { stages: ReviewStage[] }) {
                     style={{ backgroundColor: GROUP_STYLE[meta.group].fill }}
                     aria-hidden="true"
                   />{" "}
-                  {meta.label}{" "}
+                  {keepWhole(meta.label)}{" "}
                 </td>
                 <td className="py-2 pr-3 text-right font-mono tabular-nums">
                   {s.cases.toLocaleString()}{" "}

@@ -34,6 +34,7 @@ import {
   isComplexAction,
 } from "./action-config";
 import { caseWriteErrorMessage } from "@/lib/caseWriteErrors";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // ============================================================================
 // TYPES
@@ -438,7 +439,7 @@ export function QuickEditFields({
           return (
             <div key={field.name} className="space-y-1">
               <label className="text-sm font-medium text-muted-foreground">
-                {field.label}
+                {keepWhole(field.label)}
               </label>
               <DateInput
                 value={value}

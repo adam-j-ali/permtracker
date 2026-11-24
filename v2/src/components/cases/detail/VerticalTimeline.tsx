@@ -8,6 +8,7 @@ import { extractMilestones } from "@/lib/timeline/milestones";
 import { isRecruitmentComplete } from "@/lib/perm";
 import { getEditFieldForTimelineStep, buildEditUrl } from "@/lib/cases/editDeepLinks";
 import type { CaseDetailData } from "./case-detail-types";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // All key PERM stages to always show
 const ALL_STAGES: { field: string; label: string }[] = [
@@ -157,7 +158,7 @@ export function VerticalTimeline({ caseData }: VerticalTimelineProps) {
                 </div>
                 <div className="vtl-content">
                   <div className={`vtl-title ${step.status === "pending" ? "pending" : ""}`}>
-                    {step.label}
+                    {keepWhole(step.label)}
                   </div>
                   <div className="vtl-date">{dateStr}</div>
                 </div>

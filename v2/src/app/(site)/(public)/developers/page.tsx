@@ -24,6 +24,7 @@ import { ScrollBox } from "@/components/ui/scroll-box";
 import { SpotPicture } from "@/components/ui/spot-picture";
 import { CodeWindow } from "@/components/marketing/CodeWindow";
 import { StageBand } from "@/components/scroll/StageBand";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "PERM Tracker API and MCP Server";
 const DESCRIPTION =
@@ -168,7 +169,7 @@ export default function DevelopersPage() {
               <span className="flex size-9 shrink-0 items-center justify-center border-input bg-primary font-mono text-base font-bold border">
                 {i + 1}
               </span>{" "}
-              <span className="font-heading text-xl font-bold">{s.title}</span>
+              <span className="font-heading text-xl font-bold">{keepWhole(s.title)}</span>
             </p>{" "}
             <p className="mt-3 text-base leading-relaxed text-soft">{s.body}</p>{" "}
             <Code>{s.code}</Code>{" "}
@@ -242,7 +243,7 @@ export default function DevelopersPage() {
           return (
             <div key={tag.name} className="mt-8">
               <h3 className="font-heading text-xl font-bold">{tag.name}</h3>{" "}
-              <p className="mt-1 max-w-3xl text-base leading-relaxed text-soft">{tag.description}</p>{" "}
+              <p className="mt-1 max-w-3xl text-base leading-relaxed text-soft">{keepWhole(tag.description)}</p>{" "}
               <ScrollBox label={`${tag.name} endpoints`} className="mt-3 border-t-2 border-[var(--object-border)]">
                 <table className="w-full min-w-[640px] text-left text-sm">
                   <thead className="bg-muted">
@@ -260,8 +261,8 @@ export default function DevelopersPage() {
                           {e.path}{" "}
                         </td>
                         <td className="px-4 py-3 leading-relaxed">
-                          <span className="block font-bold">{e.summary}</span>{" "}
-                          <span className="mt-1 block">{e.description}</span>{" "}
+                          <span className="block font-bold">{keepWhole(e.summary)}</span>{" "}
+                          <span className="mt-1 block">{keepWhole(e.description)}</span>{" "}
                           <span className="mt-1 block text-soft">
                             {e.keyless ? "No key." : e.scope ? `Needs the ${e.scope} scope.` : "Needs a key."}{" "}
                             {e.counted ? "Counted." : "Not counted."}
@@ -331,7 +332,7 @@ export default function DevelopersPage() {
                   <td className="px-4 py-3 font-mono font-bold">{e.status}{" "}</td>
                   <td className="px-4 py-3 font-mono">{e.code}{" "}</td>
                   <td className="px-4 py-3 leading-relaxed">
-                    <span className="block font-bold">{e.title}</span>{" "}
+                    <span className="block font-bold">{keepWhole(e.title)}</span>{" "}
                     <span className="mt-1 block">{e.meaning}</span>{" "}
                     <span className="mt-1 block text-soft">{e.counted ? "Counted, because the lookup ran." : "Not counted."}</span>{" "}
                   </td>
@@ -464,8 +465,8 @@ export default function DevelopersPage() {
           {MCP_TOOLS.map((t) => (
             <li key={t.name} className="bg-tint px-4 py-3 border-2 border-border">
               <p className="font-mono text-sm font-bold">{t.name}</p>{" "}
-              <p className="mt-1 text-sm font-semibold leading-relaxed">{t.title}</p>{" "}
-              <p className="mt-1 text-sm leading-relaxed text-soft">{t.summary}</p>
+              <p className="mt-1 text-sm font-semibold leading-relaxed">{keepWhole(t.title)}</p>{" "}
+              <p className="mt-1 text-sm leading-relaxed text-soft">{keepWhole(t.summary)}</p>
             </li>
           ))}
         </ul>{" "}

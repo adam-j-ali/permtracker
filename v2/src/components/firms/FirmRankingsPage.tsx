@@ -46,6 +46,7 @@ import { pageDate } from "@/lib/pageDates";
 import { getDatasetSchema } from "@/lib/structuredData";
 import { US_STATE_NAMES } from "@/lib/usStateNames";
 import { softFail } from "@/lib/softRead";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * /law-firm-rankings and /law-firm-rankings/<state>: the busiest immigration law
@@ -240,7 +241,7 @@ async function Ranking({ program, state, summary }: { program: FirmProgram; stat
       id={program}
       title={
         <>
-          {p.title}
+          {keepWhole(p.title)}
           <span data-fy>, FY{fy}</span>
         </>
       }
@@ -381,11 +382,13 @@ export async function FirmRankingsPage({ state }: { state: string }) {
           <JsonLdScript key={i} schema={s} />
         ))}
         <header className="max-w-3xl">
-          <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">{heading}</h1>{" "}
+          <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">{keepWhole(heading)}</h1>{" "}
           {answer ? <p className="mt-4 text-lg font-semibold leading-relaxed text-foreground">{answer}</p> : null}{" "}
           <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-            Ranked by the PERM and H-1B cases DOL decided with each firm named, from DOL&apos;s own files. Each firm links to
-            its full record.
+            <KeepWhole>
+              {"Ranked by the PERM and H-1B cases DOL decided with each firm named, from DOL's own files. Each " +
+                "firm links to its full record."}
+            </KeepWhole>
           </p>
         </header>{" "}
         {/* The way in comes first: another state's ranking is one press away, before the figures. */}
@@ -451,8 +454,11 @@ export async function FirmRankingsPage({ state }: { state: string }) {
             the state of its job. Where DOL&apos;s older files print no worksite, it counts in the employer&apos;s state.
           </p>{" "}
           <p>
-            H-1B counts certified LCAs for the H-1B class only (H-1B1 and E-3 left out), in the state of the job. Positions
-            are the workers each LCA covers. An LCA comes before the petition, and not every LCA becomes one.
+            <KeepWhole>
+              {"H-1B counts certified LCAs for the H-1B class only (H-1B1 and E-3 left out), in the state of the " +
+                "job. Positions are the workers each LCA covers. An LCA comes before the petition, and not every " +
+                "LCA becomes one."}
+            </KeepWhole>
           </p>{" "}
           <p>
             &quot;The year before&quot; is the firm&apos;s rank among every firm with filings there that year. Cases that
@@ -464,7 +470,7 @@ export async function FirmRankingsPage({ state }: { state: string }) {
             Every PERM law firm
           </Link>{" "}
           <Link href="/h1b-employers" className="link inline-flex min-h-11 items-center">
-            Top H-1B employers
+            <KeepWhole>{"Top H-1B employers"}</KeepWhole>
           </Link>{" "}
           <Link href="/sponsor-finder" className="link inline-flex min-h-11 items-center">
             Find a green card sponsor

@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { ChartTips } from "@/components/data/ChartTips";
 import type { WeekdayProfile } from "@/lib/activityStats";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * How much DOL decides on each day of the week.
@@ -56,7 +57,7 @@ export function WeekdayShape({
           >
             <div className="flex items-baseline justify-between gap-3">
               <span className="text-sm font-bold">
-                {p.label}
+                {keepWhole(p.label)}
               </span>{" "}
               <span className="text-sm font-bold tabular-nums text-muted-foreground">
                 {p.mean.toLocaleString("en-US")} a day · {p.days} days ·{" "}

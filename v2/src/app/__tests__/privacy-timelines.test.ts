@@ -11,7 +11,9 @@ import { join } from "node:path";
 
 const SRC = join(process.cwd(), "src");
 const read = (p: string) => readFileSync(join(SRC, p), "utf8");
-const flat = (s: string) => s.replace(/\s+/g, " ");
+// A long sentence may be written as string pieces joined with `+` (a name kept whole by KeepWhole): joined back,
+// it reads as the page shows it.
+const flat = (s: string) => s.replace(/"\s*\+\s*"/g, "").replace(/\s+/g, " ");
 
 const page = read("app/(site)/(public)/privacy/page.tsx");
 const start = page.indexOf('id="community-timelines"');

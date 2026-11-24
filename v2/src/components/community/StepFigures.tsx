@@ -6,6 +6,7 @@ import { TrendChip } from "@/components/data/FigureRow";
 import { formatInt } from "@/lib/format";
 import { stepTrend, stepsIn, windowText, type StepFigure, type StepGroup, type StepMonth } from "@/lib/reportedSummary";
 import { cn } from "@/lib/utils";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * How long each step took, from every case people reported (src/lib/reportedSummary.ts): one card per step with the
@@ -61,7 +62,7 @@ function StepCard({ s, pct }: { s: StepFigure; pct: (d: number) => string }) {
   return (
     // Every card here is a median of the cases people reported, so its kind is fixed: community.
     <li data-source-kind="community" className="min-w-0 bg-sage p-4 border-2 border-border">
-      <p className="font-heading text-base font-bold">{s.label}</p>{" "}
+      <p className="font-heading text-base font-bold"><KeepWhole>{s.label}</KeepWhole></p>{" "}
       <p className="mt-1 text-sm text-muted-foreground">
         {measured
           ? `${formatInt(s.n)} ${s.n === 1 ? "case" : "cases"} finished in ${windowText(s.windowDays)}, ${s.verified ? "DOL's record" : "self-reported"}`
@@ -180,7 +181,7 @@ export function StepsByStage({
         const waiting = inStage.filter((s) => s.median === null);
         return (
           <section key={st.title} aria-label={st.title}>
-            <H className="font-heading text-xl font-bold">{st.title}</H>{" "}
+            <H className="font-heading text-xl font-bold"><KeepWhole>{st.title}</KeepWhole></H>{" "}
             {shown.length ? <StepFigures steps={shown} scaleFrom={measured} className="mt-3" /> : null}{" "}
             {waiting.length ? (
               <div className="mt-3 max-w-3xl">
@@ -190,7 +191,7 @@ export function StepsByStage({
                 <ul className="mt-1 list-disc pl-5 text-base text-muted-foreground">
                   {waiting.map((s) => (
                     <li key={s.id}>
-                      {`${s.label}, ${s.allTime === 0 ? "none reported yet" : `${formatInt(s.allTime)} ever reported`} `}
+                      <KeepWhole>{`${s.label}, ${s.allTime === 0 ? "none reported yet" : `${formatInt(s.allTime)} ever reported`} `}</KeepWhole>
                     </li>
                   ))}
                 </ul>

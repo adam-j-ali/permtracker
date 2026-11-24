@@ -4,6 +4,7 @@ import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type Keybo
 
 import { choiceVariants } from "@/components/ui/choice";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface PanelTab {
   /** A stable id for the tab and its panel. */
@@ -83,7 +84,7 @@ export function PanelTabs({ tabs, label, className }: { tabs: PanelTab[]; label:
                 onClick={() => setActive(i)}
                 className={cn(choiceVariants({ on }))}
               >
-                {t.label}
+                {keepWhole(t.label)}
               </button>
             </Fragment>
           );

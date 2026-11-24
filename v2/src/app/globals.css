@@ -1308,6 +1308,26 @@ html {
   .full-bleed { width: 100vw; margin-left: calc(-50vw + 50%); margin-right: 0; }
 }
 
+/* The chapter bar's ground and its two rules (src/components/entities/Chapters.tsx), reaching past the bar to the
+   edges it measured (--bleed-l, --bleed-r) as paint, never as a box. A border image's outset and a clip path draw
+   outside the box without widening anything, so the page can't scroll to them: the ground used to be a box
+   stretched out by those measurements, and a measurement a few pixels off ran the page past the screen's edge
+   (a job page, 7px at 320, Nov 23 2026), hidden from the eye only by body's clip. */
+.chapter-ground::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -10;
+  border-image: linear-gradient(
+      to bottom,
+      var(--color-border) 0 2px,
+      var(--color-background) 2px calc(100% - 2px),
+      var(--color-border) calc(100% - 2px)
+    )
+    fill 0 / 0 / 0 100vmax;
+  clip-path: inset(0 calc(-1 * var(--bleed-r, 0px)) 0 calc(-1 * var(--bleed-l, 0px)));
+}
+
 /* File input button press animation */
 input[type="file"]::file-selector-button:active {
   transform: none;

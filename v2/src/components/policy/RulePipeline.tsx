@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import type { CommentCount } from "@/lib/db/policyComments";
 
 import { dayLabel } from "./format";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Rules on their way. A rule with something under way (at OIRA, on public
@@ -67,11 +68,11 @@ function Track({ rule, today }: { rule: RuleRecord; today: string }) {
             className={`mt-0.5 block size-5 shrink-0 border-2 lg:mt-0 lg:h-4 lg:w-full ${SEGMENT[s.state]}`}
           />{" "}
           <span className="block min-w-0 lg:mt-2">
-            <span className="block text-sm font-semibold leading-snug">{s.label}</span>{" "}
+            <span className="block text-sm font-semibold leading-snug">{keepWhole(s.label)}</span>{" "}
             <span className="block font-mono text-sm text-soft">
               {s.shown ?? (s.date ? dayLabel(s.date) : NO_DATE[s.state as keyof typeof NO_DATE])}
             </span>{" "}
-            {s.note ? <span className="block text-sm leading-snug text-muted-foreground">{s.note}</span> : null}
+            {s.note ? <span className="block text-sm leading-snug text-muted-foreground">{keepWhole(s.note)}</span> : null}
           </span>
         </li>
       ))}
@@ -133,7 +134,7 @@ export function RuleCard({
         {links.map((l) => (
           <span key={l.href}>
             <a href={l.href} className={LINK} target="_blank" rel="noopener">
-              {l.label}
+              {keepWhole(l.label)}
             </a>{" "}
           </span>
         ))}
@@ -166,7 +167,7 @@ function QuietRow({ rule, today }: { rule: RuleRecord; today: string }) {
         {doc ? (
           <span>
             <a href={doc.href} className={LINK} target="_blank" rel="noopener">
-              {doc.label}
+              {keepWhole(doc.label)}
             </a>{" "}
           </span>
         ) : null}

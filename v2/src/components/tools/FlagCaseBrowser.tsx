@@ -44,6 +44,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { CaseStatusChip } from "@/components/ui/badge";
 import { ISO_MONTH_RE } from "@convex/lib/months";
 import { entityHref } from "@/lib/entityPayload";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Find a FLAG case (prevailing wage request, or LCA) by employer, and browse
@@ -440,7 +441,7 @@ function FlagSearchFilters({
               // Occupations and firms run to hundreds: a box you can type into, every one of them in it.
               <div>
                 <label className={FILTER_LABEL} htmlFor={`${id}-${f.key}`}>
-                  {f.label}
+                  {keepWhole(f.label)}
                 </label>{" "}
                 <FilterCombobox
                   id={`${id}-${f.key}`}
@@ -454,7 +455,7 @@ function FlagSearchFilters({
               </div>
             ) : (
               <label className="block" htmlFor={`${id}-${f.key}`}>
-                <span className={FILTER_LABEL}>{f.label}</span>{" "}
+                <span className={FILTER_LABEL}>{keepWhole(f.label)}</span>{" "}
                 <select
                   id={`${id}-${f.key}`}
                   value={value[f.key] ?? ""}
@@ -901,7 +902,9 @@ export function FlagCaseBrowser({
         >
           Search every DOL program at once
         </IntentLink>{" "}
-        for the PERM, the wage request, the LCA and any H-2A, H-2B or CW-1 filing side by side.
+        <KeepWhole>
+          {"for the PERM, the wage request, the LCA and any H-2A, H-2B or CW-1 filing side by side."}
+        </KeepWhole>
       </p>
 
       {between}{" "}

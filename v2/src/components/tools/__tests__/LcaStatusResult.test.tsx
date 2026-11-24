@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { textContent } from "../../../../test-utils/text-content";
 
 /**
  * An LCA's page prints DOL's decided record, and on the few LCAs whose file cites a wage request, a link to that
@@ -96,6 +97,6 @@ describe("an LCA's page and the wage request it cites", () => {
     expect(screen.getByText("San Jose, Santa Clara County, CA")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Firm LLP" })).toHaveAttribute("href", "/perm-attorneys/firm-llp");
     expect(screen.getByText("New employment")).toBeInTheDocument();
-    expect(screen.getByText("H-1B dependent employer")).toBeInTheDocument();
+    expect(screen.getByText(textContent("H-1B dependent employer"))).toBeInTheDocument();
   });
 });

@@ -18,6 +18,7 @@ import {
   type MoveRow,
 } from "@/lib/stageMoves";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * What happens next at each step, from our own sweep of every PERM case: the
@@ -105,7 +106,7 @@ export function MoveKey({ rows }: { rows: MoveRow[] }) {
           <li className="flex items-center gap-1.5">
             <span aria-hidden="true" className={cn("size-3 shrink-0 border border-foreground/40", MOVE_FILL[r.tone])} />
             <span>
-              {r.label} <b className="font-bold tabular-nums">{pct(r.share)}</b>{" "}
+              {keepWhole(r.label)} <b className="font-bold tabular-nums">{pct(r.share)}</b>{" "}
               <span className="text-muted-foreground tabular-nums">({int(r.n)})</span>
             </span>
           </li>
@@ -221,7 +222,7 @@ export function RfiJourney({
             {compare.map((c) => (
               // One row of the list: a dt and its dd's only (axe: no other element sits in a dl's row).
               <div key={c.label} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3">
-                <dt className="text-base">{c.label}</dt>{" "}
+                <dt className="text-base">{keepWhole(c.label)}</dt>{" "}
                 <dd className="font-heading text-2xl font-bold tabular-nums">{pct(c.share)}</dd>{" "}
                 <dd className="col-span-2">
                   <div className="mt-1 h-3 w-full bg-muted" aria-hidden="true">
@@ -289,7 +290,7 @@ export function StageMoves({
             {" "}
             <li className="p-4 sm:p-5">
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <h3 className="font-heading text-lg font-bold">{s.title}</h3>{" "}
+                <h3 className="font-heading text-lg font-bold">{keepWhole(s.title)}</h3>{" "}
                 <p className="text-sm text-muted-foreground">
                   {int(s.moves!.total)} moves seen
                   {s.dwell ? `, typically ${s.dwell.p50} days at this step` : ""}

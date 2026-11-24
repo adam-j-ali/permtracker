@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { ChartTips } from "@/components/data/ChartTips";
 import { formatInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Columns for a short series (weeks, days, readings), drawn in HTML so every
@@ -268,7 +269,7 @@ export function ColumnChart({
             {columns.map((c) => (
               <Fragment key={c.key}>
                 <tr>
-                  <td>{c.label}{" "}</td>
+                  <td>{keepWhole(c.label)}{" "}</td>
                   <td>{c.gap ? "No record" : `${formatInt(c.value)}${c.partial ? " so far" : ""}`}{" "}</td>
                   {partNames.map((n, i) => (
                     <td key={n}>{c.gap ? "" : formatInt(c.parts?.[i]?.value ?? 0)}{" "}</td>

@@ -21,6 +21,7 @@ import { PwdBacklogChart } from "@/components/tools/PwdBacklogChart";
 import { Label } from "@/components/ui/label";
 import { CaveatBox } from "@/components/ui/note";
 import { cn } from "@/lib/utils";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 export interface PwdQueueEstimatorProps {
   frontier: { oewsMonth: string | null; nonOewsMonth: string | null } | null;
@@ -108,8 +109,10 @@ export function PwdQueueEstimator({
           </h2>
         </div>
         <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-          Pick the month DOL received your ETA-9141. The number of requests
-          ahead of yours is DOL&apos;s own published count.
+          <KeepWhole>
+            {"Pick the month DOL received your ETA-9141. The number of requests ahead of yours is DOL's own " +
+              "published count."}
+          </KeepWhole>
         </p>
 
         <div className="mt-6">

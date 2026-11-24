@@ -71,6 +71,7 @@ import { trackEstimateShown } from "@/lib/funnelEvents";
 import { buttonVariants } from "@/components/ui/button";
 import { CaveatBox } from "@/components/ui/note";
 import { ISO_MONTH_RE, longDate, monthDay } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface PermTimelineEstimatorProps {
   frontier: DolFrontier | null;
@@ -203,7 +204,7 @@ function StagesLine({
       {parts.map((p, i) => (
         <Fragment key={p.label}>
           {i > 0 ? (i === parts.length - 1 && rest <= 0 ? " and " : ", ") : ""}
-          {formatInt(p.n)} {p.label}
+          {formatInt(p.n)} {keepWhole(p.label)}
         {" "}
         </Fragment>
       ))}
@@ -897,7 +898,7 @@ export function PermTimelineEstimator({
             Queue position
           </p>{" "}
           <p className="mt-2 font-heading text-xl font-bold leading-tight sm:text-2xl">
-            {position.heading}
+            {keepWhole(position.heading)}
           </p>{" "}
           <p className="mt-2 text-base leading-relaxed text-muted-foreground">
             DOL&apos;s analyst review queue is working{" "}
@@ -1010,7 +1011,7 @@ export function PermTimelineEstimator({
           {estimate.models.map((model, i) => (
             <div key={model.id} className="p-6 sm:p-8">
               <p className="text-sm font-bold text-muted-foreground">
-                {model.label}
+                {keepWhole(model.label)}
                 {i === 0 ? (
                   <span className="ml-2 text-primary">· the one above</span>
                 ) : null}

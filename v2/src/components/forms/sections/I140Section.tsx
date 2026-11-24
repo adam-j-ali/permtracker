@@ -19,6 +19,7 @@ import type { I140Category } from "@/lib/processing-times/i140ProcessingTimes";
 import { CheckCircleIcon as CheckCircle2, InfoIcon, WarningIcon } from "@phosphor-icons/react";
 import { CharLimit } from "@/components/ui/char-limit";
 import { ChoiceRow } from "@/components/ui/choice-row";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 type ServiceCenter = "" | "Texas" | "Nebraska" | "California" | "Vermont";
 const SERVICE_CENTERS: readonly { value: ServiceCenter; label: string }[] = [
@@ -260,7 +261,7 @@ export function I140Section(props: I140SectionProps) {
         {isApproved && (
           <p className="flex items-center gap-2 font-semibold text-primary-text">
             <CheckCircle2 className="size-5" aria-hidden="true" />
-            Complete: I-140 approved
+            <KeepWhole>{"Complete: I-140 approved"}</KeepWhole>
           </p>
         )}
 

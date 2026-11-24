@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRightIcon } from "@phosphor-icons/react/ssr";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The homepage FAQ, single-sourced: SIX questions, three per audience.
@@ -35,7 +36,7 @@ export const HOME_FAQS: HomeFaqItem[] = [
     rich: (
       <>
         Two things, both free. Anyone waiting on a case can{" "}
-        <Link href="/perm-case-status" className="link">look up a PERM, prevailing wage or H-1B LCA number</Link>,
+        <Link href="/perm-case-status" className="link"><KeepWhole>{"look up a PERM, prevailing wage or H-1B LCA number"}</KeepWhole></Link>,
         pending ones included. They see the federal record and where DOL&apos;s queue
         stands, and they can get an email when the status changes. They can also search every filing by
         employer, law firm, state or occupation, with no account. For attorneys,
@@ -66,11 +67,12 @@ export const HOME_FAQS: HomeFaqItem[] = [
       <>
         Yes. Enter the case number on the homepage or on{" "}
         <Link href="/perm-case-status" className="link">the case status page</Link>{" "}
-        and it shows DOL&apos;s current status and when it was last seen. It also
-        shows how many cases DOL is working ahead of yours, and an estimate when
-        the data supports one. It takes all three DOL numbers: a PERM case (G- or A-), a
-        prevailing wage request (P-), or an H-1B LCA (I-). From there you can
-        set a free email alert for the next change.
+        <KeepWhole>
+          {"and it shows DOL's current status and when it was last seen. It also shows how many cases DOL is " +
+            "working ahead of yours, and an estimate when the data supports one. It takes all three DOL numbers: a " +
+            "PERM case (G- or A-), a prevailing wage request (P-), or an H-1B LCA (I-). From there you can set a " +
+            "free email alert for the next change."}
+        </KeepWhole>
       </>
     ),
   },
@@ -81,14 +83,13 @@ export const HOME_FAQS: HomeFaqItem[] = [
       "Enter a case's dates once and every deadline comes out computed under 20 CFR 656: prevailing wage expiration, recruitment clocks, the 30-180 day ETA 9089 filing window, audit and RFI response dates, and the I-140 filing cutoff. Change one date and the downstream dates recalculate. Email and push reminders run 1 to 30 days out with quiet hours and calendar sync. A weekly case summary arrives on Mondays in any week something changed, and an AI assistant answers questions over your own cases.",
     rich: (
       <>
-        Enter a case&apos;s dates once and every deadline comes out computed
-        under 20 CFR 656: prevailing wage expiration, recruitment clocks, the
-        30-180 day ETA 9089 filing window, audit and RFI response dates, and the
-        I-140 filing cutoff. Change one date and the downstream dates
-        recalculate. Email and push reminders run 1 to 30 days out with quiet
-        hours and calendar sync. A weekly case summary arrives on Mondays in any week
-        something changed, and an
-        AI assistant answers questions over your own cases.{" "}
+        <KeepWhole>
+          {"Enter a case's dates once and every deadline comes out computed under 20 CFR 656: prevailing wage " +
+            "expiration, recruitment clocks, the 30-180 day ETA 9089 filing window, audit and RFI response dates, " +
+            "and the I-140 filing cutoff. Change one date and the downstream dates recalculate. Email and push " +
+            "reminders run 1 to 30 days out with quiet hours and calendar sync. A weekly case summary arrives on " +
+            "Mondays in any week something changed, and an AI assistant answers questions over your own cases."}
+        </KeepWhole>{" "}
         <Link href="/for-attorneys" className="link">How the software works <ArrowRightIcon aria-hidden="true" weight="bold" className="inline size-4 align-[-0.125em]" /></Link>
       </>
     ),

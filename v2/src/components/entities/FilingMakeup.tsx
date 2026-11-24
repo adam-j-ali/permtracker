@@ -14,6 +14,7 @@ import { ROW_LINK } from "@/components/entities/caseRows";
 import { stateName } from "@/lib/usStateNames";
 import { cn } from "@/lib/utils";
 import { formatApprovalRate, formatInt, formatShareOf } from "@/lib/format";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * What an entity's filings are actually MADE OF.
@@ -157,7 +158,7 @@ export function OccupationMix({
             href={entityHref("occupation", lead.key)}
             className="link"
           >
-            {lead.label}
+            {keepWhole(lead.label)}
           </IntentLink>
         ) : (
           lead.label
@@ -186,7 +187,7 @@ export function OccupationMix({
                       // The job's name stands alone on its line, so on a phone it gets the tap floor.
                       className="link max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
                     >
-                      {r.label}
+                      {keepWhole(r.label)}
                     </IntentLink>
                   ) : (
                     r.label
@@ -347,10 +348,10 @@ export function PartyMix({
                 <span className="min-w-0 flex-1">
                   {r.key ? (
                     <IntentLink href={`${hrefBase}/${r.key}`} className={`${ROW_LINK} leading-snug`}>
-                      {r.label}
+                      {keepWhole(r.label)}
                     </IntentLink>
                   ) : (
-                    <span className="font-bold leading-snug">{r.label}</span>
+                    <span className="font-bold leading-snug">{keepWhole(r.label)}</span>
                   )}{" "}
                   <span className="mt-0.5 block font-mono text-sm tabular-nums text-muted-foreground">
                     <Count row={r} href={filingsHref} />
@@ -441,7 +442,7 @@ export function PlaceMix({
                 {" "}
                 <li data-tip={`${r.label}\n${formatInt(r.n)} of ${formatInt(total)} filings${approvedNote(r).replace(" · ", "\n")}`}>
                   <span className="flex items-baseline justify-between gap-3">
-                    <span className="min-w-0 truncate text-sm font-bold">{r.label}</span>{" "}
+                    <span className="min-w-0 truncate text-sm font-bold">{keepWhole(r.label)}</span>{" "}
                     <span className="shrink-0 font-mono text-sm tabular-nums text-muted-foreground">{formatInt(r.n)}</span>
                   </span>{" "}
                   <span className="mt-1 block h-2 w-full bg-sage" aria-hidden="true">
@@ -503,7 +504,7 @@ export function IndustryMix({
       }
       className={className}
     >
-      <p className="font-heading text-xl font-bold leading-tight">{lead.label}</p>{" "}
+      <p className="font-heading text-xl font-bold leading-tight">{keepWhole(lead.label)}</p>{" "}
       <p className="mt-1.5 text-sm tabular-nums text-muted-foreground">
         NAICS {lead.codes.join(", ")} &middot; {formatInt(lead.n)} filings
       </p>
@@ -513,7 +514,7 @@ export function IndustryMix({
             <Fragment key={r.label}>
               {" "}
               <li className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
-                <span className="min-w-0 flex-1 text-sm font-bold leading-snug">{r.label}</span>{" "}
+                <span className="min-w-0 flex-1 text-sm font-bold leading-snug">{keepWhole(r.label)}</span>{" "}
                 <span className="font-mono text-sm tabular-nums text-muted-foreground">
                   <span className="mr-2 font-normal text-muted-foreground">{r.codes.join(", ")}</span>{" "}
                   {formatInt(r.n)}
@@ -566,7 +567,7 @@ export function RecruitmentMix({
       {onePaper ? (
         <p className="col-span-full">
           <span className="block text-sm text-muted-foreground">Newspaper it advertised in</span>{" "}
-          <span className="font-bold">{onePaper.label}</span>{" "}
+          <span className="font-bold">{keepWhole(onePaper.label)}</span>{" "}
           <span className="font-mono text-sm tabular-nums text-muted-foreground">
             &middot; {formatInt(onePaper.n)} {onePaper.n === 1 ? "case" : "cases"}, its only paper
           </span>
@@ -667,7 +668,7 @@ function LeadColumns({ byBand, recorded }: { byBand: Map<string | null, number>;
       </p>
       <ul className="sr-only">
         {LEAD_BANDS.map((b, i) => (
-          <li key={b.id}>{`${b.label}: ${counts[i] === 0 ? "none" : `${formatInt(counts[i]!)} cases, ${formatShareOf(counts[i]!, recorded)}`}. `}</li>
+          <li key={b.id}><KeepWhole>{`${b.label}: ${counts[i] === 0 ? "none" : `${formatInt(counts[i]!)} cases, ${formatShareOf(counts[i]!, recorded)}`}. `}</KeepWhole></li>
         ))}
       </ul>
     </ChartTips>

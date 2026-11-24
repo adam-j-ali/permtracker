@@ -41,6 +41,7 @@ import { ChoiceRow } from "@/components/ui/choice-row";
 import { CaveatBox } from "@/components/ui/note";
 import { cn } from "@/lib/utils";
 import { MS_PER_DAY, daysBetween } from "@/lib/time";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 export interface PriorityDateEstimatorProps {
   bulletins: readonly BulletinMonth[];
@@ -646,7 +647,7 @@ export function PriorityDateEstimator({
               onChange={setChart}
             />
             <p className="mt-2 text-sm text-muted-foreground">
-              {CHARTS.find((c) => c.code === chart)?.note}
+              {keepWhole(CHARTS.find((c) => c.code === chart)?.note)}
             </p>
           </div>
         </div>
@@ -784,13 +785,13 @@ export function PriorityDateEstimator({
           className={cn("border-b-2 border-border p-6 sm:p-8", i485.can ? "bg-soft-good border-l-8 border-primary" : "bg-soft-wait")}
         >
           <p className="text-sm font-bold text-muted-foreground">
-            Can you file an <span className="whitespace-nowrap">I-485</span> for {formatMonth(i485.month)}?
+            Can you file an <span className="whitespace-nowrap"><KeepWhole>{"I-485"}</KeepWhole></span> for {formatMonth(i485.month)}?
           </p>{" "}
           <p className="mt-2 font-heading text-2xl font-bold leading-tight sm:text-3xl">
             {i485.can ? "Yes, by the date" : i485.cutoff.kind === "unavailable" ? "No, the category is closed" : "Not yet"}
           </p>{" "}
           <p className="mt-3 text-base leading-relaxed">
-            USCIS takes employment-based <span className="whitespace-nowrap">I-485s</span> on the <strong>{i485.chart}</strong> chart for {formatMonth(i485.month)}
+            USCIS takes employment-based <span className="whitespace-nowrap"><KeepWhole>{"I-485s"}</KeepWhole></span> on the <strong>{i485.chart}</strong> chart for {formatMonth(i485.month)}
             {i485.cutoff.kind === "date" ? (
               <>
                 , and its cutoff for this line is <strong>{formatAsOf(i485.cutoff.iso)}</strong>.
@@ -809,8 +810,8 @@ export function PriorityDateEstimator({
             )}
           </p>{" "}
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            The date is the part this answers. The <span className="whitespace-nowrap">I-485</span> also needs the{" "}
-            <span className="whitespace-nowrap">I-140</span> filed or approved, and the person in the United States in a
+            The date is the part this answers. The <span className="whitespace-nowrap"><KeepWhole>{"I-485"}</KeepWhole></span> also needs the{" "}
+            <span className="whitespace-nowrap"><KeepWhole>{"I-140"}</KeepWhole></span> filed or approved, and the person in the United States in a
             status that allows adjusting.
           </p>
         </div>
@@ -1263,7 +1264,7 @@ export function PriorityDateEstimator({
                     >
                       {l.swatch()}
                     </svg>{" "}
-                    <span>{l.label}</span>
+                    <span>{keepWhole(l.label)}</span>
                     </li>
                   </Fragment>
                 ))}

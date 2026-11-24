@@ -3,6 +3,7 @@ import { Fragment } from "react";
 
 import { formatInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * What one search reaches, drawn as one bar: each program's filings as its
@@ -58,7 +59,7 @@ export function RecordShares({ rows, className }: { rows: RecordShare[]; classNa
                   href={r.href}
                   className="link max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
                 >
-                  {r.label}
+                  {keepWhole(r.label)}
                 </Link>{" "}
                 <span className="mt-0.5 flex flex-wrap gap-x-2 font-mono text-sm text-muted-foreground">
                   {/* One unit per prefix, so "P-400" never breaks at its hyphen. */}

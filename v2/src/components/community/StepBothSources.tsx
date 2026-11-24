@@ -8,6 +8,7 @@ import { getReportedSummary } from "@/lib/db/reportedSummary";
 import { softFail } from "@/lib/softRead";
 import { stepsIn, windowText, type ReportedSummary, type StepGroup } from "@/lib/reportedSummary";
 import { STEP_GROUP_NAMES } from "@/lib/stepSources";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Both sources for a step, on every page about it: the agency's own headline figure (DOL, USCIS or State, dated
@@ -62,10 +63,10 @@ export async function StepBothSources({
               kind={h.kind}
               note={
                 <>
-                  {h.note}{" "}
+                  {keepWhole(h.note)}{" "}
                   {h.href === here ? null : (
                     <Link href={h.href} className="link">
-                      {`${STEP_GROUP_NAMES[g]}: the agency's figures`}
+                      <KeepWhole>{`${STEP_GROUP_NAMES[g]}: the agency's figures`}</KeepWhole>
                     </Link>
                   )}
                 </>
@@ -84,9 +85,9 @@ export async function StepBothSources({
         </div>
       ) : (
         <p className="mt-6 max-w-3xl text-base leading-relaxed">
-          {few.length
+          {keepWhole(few.length
             ? `Only ${few.map((s) => `${s.n} ${s.n === 1 ? "case" : "cases"} for "${s.label}"`).join(", ")} were reported in ${windowText(few[0]!.windowDays)}, too few for a typical wait. The agency's figure above covers every case.`
-            : "Few people report this step's dates, so the agency's figure above is the guide."}{" "}
+            : "Few people report this step's dates, so the agency's figure above is the guide.")}{" "}
           <Link href="/green-card-timelines#add-h" className="link font-bold">
             Add your own dates
           </Link>

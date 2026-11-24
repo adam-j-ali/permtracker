@@ -14,6 +14,7 @@ import { FILING_PROGRAMS, type FilingProgram } from "@/lib/filingsByDay";
 import { formatInt } from "@/lib/format";
 import { easternDay, MS_PER_DAY } from "@convex/lib/time";
 import { longDate, monthYear, weekdayName } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * One filing day: every PERM case, wage request, H-1B LCA and H-2A, H-2B and CW-1 filing DOL's
@@ -81,7 +82,7 @@ export default async function FiledOnDayPage({ params }: { params: Promise<Param
           { label: "H-1B LCAs filed", value: counts.lca === undefined ? "Not counted" : formatInt(counts.lca) },
         ].map((f) => (
           <div key={f.label} className="bg-tint p-3 sm:p-4">
-            <dt className="text-sm text-soft">{f.label}</dt>{" "}
+            <dt className="text-sm text-soft">{keepWhole(f.label)}</dt>{" "}
             <dd className="m-0 mt-1 font-heading text-2xl font-bold tabular-nums sm:text-3xl">{f.value}</dd>
           </div>
         ))}

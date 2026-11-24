@@ -6,6 +6,7 @@ import { MOVE_FILL, type MoveTone } from "@/lib/stageMoves";
 import type { WaitBucket, WeekExits } from "@/lib/stageWait";
 import { cn } from "@/lib/utils";
 import { shortDate } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The two pictures on a review stage's page: how long the cases there now have waited, and how many left each
@@ -51,7 +52,7 @@ export function StageWaitChart({
               <Fragment key={b.key}>
                 {" "}
                 <li className="grid min-h-11 grid-cols-[8.5rem_1fr_3.5rem] items-center gap-2 [&>*]:min-w-0 sm:grid-cols-[10rem_1fr_4rem] sm:gap-3">
-                  <span className="text-sm text-soft">{b.label}</span>{" "}
+                  <span className="text-sm text-soft">{keepWhole(b.label)}</span>{" "}
                   <span
                     className="flex h-5"
                     data-tip={`${b.label}\n${formatInt(n)} ${n === 1 ? "case" : "cases"}${appeal && b.denied > 0 ? `\n${formatInt(b.seen)} seen arriving, ${formatInt(b.denied)} from the denial date` : ""}`}
@@ -91,7 +92,7 @@ export function StageWaitChart({
           <tbody>
             {buckets.map((b) => (
               <tr key={b.key}>
-                <th scope="row">{b.label}{" "}</th>
+                <th scope="row">{keepWhole(b.label)}{" "}</th>
                 <td>{b.seen}{" "}</td>
                 <td>{b.denied}{" "}</td>
               </tr>

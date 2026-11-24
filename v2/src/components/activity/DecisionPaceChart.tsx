@@ -5,6 +5,7 @@ import { evenTickIndices, tickAnchor } from "@/components/tools/chartTicks";
 import { segments, toWeeks, weekStart, type ActivityDay } from "@/lib/activityStats";
 import { formatInt } from "@/lib/format";
 import { monthTick, shortDate } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Decisions per week across the whole record, drawn with its holes intact.
@@ -140,7 +141,7 @@ export function DecisionPaceChart({
               className="h-[3px] w-8"
               style={{ background: s.color }}
             />{" "}
-            <span>{s.label}</span>
+            <span>{keepWhole(s.label)}</span>
           </li>
         ))}
       </ul>

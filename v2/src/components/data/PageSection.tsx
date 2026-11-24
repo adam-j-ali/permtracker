@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * A main section of a page: a heavy ink rule (the original's border-t-4), a
@@ -31,11 +32,11 @@ export function PageSection({
       <span aria-hidden="true" className="absolute -top-1 left-0 h-1 w-16 bg-primary" />
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
         <h2 id={headingId} className="font-heading text-2xl font-bold sm:text-[1.75rem]">
-          {title}
+          {keepWhole(title)}
         </h2>{" "}
         {aside ?? null}
       </div>{" "}
-      {lede ? <p className="mt-2 max-w-2xl text-base leading-relaxed text-soft">{lede}</p> : null}{" "}
+      {lede ? <p className="mt-2 max-w-2xl text-base leading-relaxed text-soft">{keepWhole(lede)}</p> : null}{" "}
       <div className="mt-5">{children}</div>
     </section>
   );

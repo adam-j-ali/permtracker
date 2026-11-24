@@ -27,6 +27,7 @@ import { SHOWN_TASKS } from "@/lib/socProfile";
 import { predecessorNote } from "@/lib/socCrosswalk";
 import { PayBands, type PayBand } from "./PayBands";
 import { entityHref } from "@/lib/entityPayload";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The occupation outside PERM: what O*NET says the job is and takes, what BLS
@@ -127,9 +128,11 @@ export async function OccupationReference({
           subject={`${series ? `BLS ${series}` : "BLS"}${levelYear ? `, DOL wage year ${wageYearLabel(levelYear)}` : ""}`}
           caption={
             <>
-              The block is the middle half of what employers report paying everyone in this job, citizen or not. The
-              ticks under it are DOL&apos;s four prevailing wage levels for that metro, the floors a PERM or H-1B offer
-              is held to.
+              <KeepWhole>
+                {"The block is the middle half of what employers report paying everyone in this job, citizen or " +
+                  "not. The ticks under it are DOL's four prevailing wage levels for that metro, the floors a PERM " +
+                  "or H-1B offer is held to."}
+              </KeepWhole>
               {permMedian != null ? " The marker on the national line is the median PERM offer above." : ""}
             </>
           }
@@ -154,7 +157,7 @@ export async function OccupationReference({
               <tbody>
                 {bands.map((b) => (
                   <tr key={b.key} className="border-b border-border/60">
-                    <td className="py-2 pr-4">{b.label}{" "}</td>
+                    <td className="py-2 pr-4">{keepWhole(b.label)}{" "}</td>
                     {anyBlsMedian ? (
                       <td className="py-2 pr-4 text-right tabular-nums">{b.median != null ? formatDollars(b.median) : "—"}{" "}</td>
                     ) : null}
@@ -267,7 +270,7 @@ export async function OccupationReference({
           <h2 id="occ-onet" className="font-heading text-2xl font-bold">
             What the job is
           </h2>{" "}
-          <p className="mt-3 max-w-3xl text-lg leading-relaxed">{main.description}</p>{" "}
+          <p className="mt-3 max-w-3xl text-lg leading-relaxed">{keepWhole(main.description)}</p>{" "}
           <dl className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
             {zone ? (
               <div className="bg-sage p-4">
@@ -373,7 +376,7 @@ export async function OccupationReference({
                   <span key={r.code}>
                     {slug ? (
                       <Link href={entityHref("occupation", slug)} className="link">
-                        {r.title}
+                        {keepWhole(r.title)}
                       </Link>
                     ) : (
                       r.title

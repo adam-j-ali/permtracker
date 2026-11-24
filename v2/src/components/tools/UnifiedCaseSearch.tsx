@@ -65,6 +65,7 @@ import { ISO_MONTH_RE } from "@convex/lib/months";
 import { ISO_DATE_REGEX } from "@convex/lib/dateValidation";
 import { entityHref } from "@/lib/entityPayload";
 import { caseHref, namedByLabel } from "@/lib/caseLinks";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Every DOL filing this site holds, in one search, with every filter the
@@ -1340,9 +1341,11 @@ export function UnifiedCaseSearch({
           <fieldset className="min-w-0">
             <legend className="sr-only">Industry, city, worker and job</legend>{" "}
             <p className="mb-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-              Industry and city come from every program&apos;s published file, so they leave out filings still
-              open. The worker&apos;s details are fields of DOL&apos;s published PERM file alone, so setting one
-              also leaves out wage requests, LCAs and H-2A, H-2B and CW-1 filings.{" "}
+              <KeepWhole>
+                {"Industry and city come from every program's published file, so they leave out filings still " +
+                  "open. The worker's details are fields of DOL's published PERM file alone, so setting one also " +
+                  "leaves out wage requests, LCAs and H-2A, H-2B and CW-1 filings."}
+              </KeepWhole>{" "}
               {OLD_FORM_NOTE}
             </p>{" "}
             {lcaOnlySet && can.wageSource.on ? (
@@ -1443,7 +1446,7 @@ export function UnifiedCaseSearch({
             initiallyOpen={false}
           >
           <fieldset className="min-w-0">
-            <legend className="sr-only">H-1B prevailing wage</legend>{" "}
+            <legend className="sr-only"><KeepWhole>{"H-1B prevailing wage"}</KeepWhole></legend>{" "}
             <p className="mb-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">
               Where the employer&apos;s prevailing wage came from is a field of DOL&apos;s
               published LCA file alone, so setting it reads published LCAs only.{" "}
@@ -1708,8 +1711,7 @@ export function UnifiedCaseSearch({
           <p className="text-base leading-relaxed">
             <b className="font-bold">Only published PERM cases are in this answer.</b>{" "}
             The {data.permOnly?.join(", ")}{" "}
-            {data.permOnly?.length === 1 ? "is a field" : "are fields"} of
-            DOL&apos;s PERM file alone. Wage requests, LCAs and H-2A, H-2B and CW-1 filings don&apos;t carry{" "}
+            {data.permOnly?.length === 1 ? "is a field" : "are fields"}<KeepWhole>{" of DOL's PERM file alone. Wage requests, LCAs and H-2A, H-2B and CW-1 filings don't carry"}</KeepWhole>{" "}
             {data.permOnly?.length === 1 ? "it" : "them"}.
           </p>
         </div>
@@ -1718,9 +1720,11 @@ export function UnifiedCaseSearch({
       {data && !data.needsLead && (data.lcaOnly?.length ?? 0) > 0 ? (
         <div className="bg-tint p-4 border-2 border-border">
           <p className="text-base leading-relaxed">
-            <b className="font-bold">Only published H-1B LCAs are in this answer.</b>{" "}
-            The prevailing wage source is a field of DOL&apos;s LCA file alone. PERM,
-            wage requests and H-2A, H-2B and CW-1 filings don&apos;t carry it.
+            <b className="font-bold"><KeepWhole>{"Only published H-1B LCAs are in this answer."}</KeepWhole></b>{" "}
+            <KeepWhole>
+              {"The prevailing wage source is a field of DOL's LCA file alone. PERM, wage requests and H-2A, H-2B " +
+                "and CW-1 filings don't carry it."}
+            </KeepWhole>
           </p>
         </div>
       ) : null}
@@ -1806,7 +1810,7 @@ export function UnifiedCaseSearch({
           <div className="mt-4 hidden overflow-x-auto sm:block">
             <table className="w-full min-w-[1200px] border-collapse text-left text-base">
               <caption className="sr-only">
-                Every filing found across PERM, wage requests, LCAs and H-2A, H-2B and CW-1
+                <KeepWhole>{"Every filing found across PERM, wage requests, LCAs and H-2A, H-2B and CW-1"}</KeepWhole>
               </caption>
               <SortableHeader
                 columns={COLUMNS}

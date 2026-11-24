@@ -54,6 +54,7 @@ import { StepsByStage } from "@/components/community/StepFigures";
 import { WhoIsWaiting } from "@/components/community/TimelineBoard";
 import { getOfficeSummary } from "@/lib/db/reportedSummary";
 import type { PlaceSummary } from "@/lib/reportedSummary";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 const INDEX = "/i485-by-field-office";
 const USCIS_DATA_PAGE = "https://www.uscis.gov/tools/reports-and-studies/immigration-and-citizenship-data";
@@ -284,13 +285,13 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
       <JsonLdScript schema={faqSchema} />
       <header>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">
-          I-485s at {theOffice(office)}
+          <KeepWhole>{"I-485s at "}</KeepWhole>{theOffice(office)}
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           {current && current.row.empPending !== null ? (
             <>
               On {formatAsOf(current.quarterEnd)}, USCIS&apos;s {center ? office.name : `field office in ${place}`} held{" "}
-              <b className="font-bold text-foreground">{formatInt(current.row.empPending)}</b> employment-based I-485s
+              <b className="font-bold text-foreground">{formatInt(current.row.empPending)}</b><KeepWhole>{" employment-based I-485s"}</KeepWhole>
               {current.row.empApproved !== null ? <>. It approved {formatInt(current.row.empApproved)} in the three months before</> : null}.
               These are USCIS&apos;s own counts.
             </>
@@ -353,12 +354,14 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
           <section id="quarters" className="mt-12 scroll-mt-24">
             <h2 className="font-heading text-2xl font-bold">The last {year.length === 1 ? "quarter" : `${year.length} quarters`}</h2>{" "}
             <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
-              Employment-based I-485s at this office, newest quarter first, with the family-based pile beside them for scale.
-              Pending is the count on the quarter&apos;s last day.
+              <KeepWhole>
+                {"Employment-based I-485s at this office, newest quarter first, with the family-based pile beside " +
+                  "them for scale. Pending is the count on the quarter's last day."}
+              </KeepWhole>
             </p>{" "}
             <ScrollBox label={`I-485s at ${theOffice(office)}, by quarter`} className="mt-4 border-t-2 border-[var(--object-border)]">
               <table className="w-full min-w-[640px] border-collapse text-left text-base">
-                <caption className="sr-only">Employment-based I-485s received, approved, denied and pending at {theOffice(office)}, by quarter</caption>
+                <caption className="sr-only"><KeepWhole>{"Employment-based I-485s received, approved, denied and pending at "}</KeepWhole>{theOffice(office)}, by quarter</caption>
                 <thead className="dark border-b border-black bg-[#141414] text-foreground">
                   <tr>
                     <th scope="col" className="px-3 py-3 text-sm font-bold">Quarter{" "}</th>
@@ -395,21 +398,23 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
               <p className="mt-2 max-w-2xl text-base leading-relaxed">
                 {postedMonths !== null && posted ? (
                   <>
-                    USCIS posts one time for employment-based I-485s at every field office together:{" "}
+                    <KeepWhole>
+                      {"USCIS posts one time for employment-based I-485s at every field office together:"}
+                    </KeepWhole>{" "}
                     <b className="font-bold">{postedMonths} months</b>, as of its {formatAsOf(posted.published)} posting. That&apos;s
                     the time within which it decided 8 cases in 10. It posts no separate time for {office.name}.
                   </>
                 ) : (
-                  <>USCIS posts one time for employment-based I-485s at every field office together, and no separate time for {office.name}.</>
+                  <><KeepWhole>{"USCIS posts one time for employment-based I-485s at every field office together, and no separate time for "}</KeepWhole>{office.name}.</>
                 )}{" "}
                 <Link href="/uscis-processing-times/i-485" className="link font-bold">
-                  Every I-485 time USCIS posts
+                  <KeepWhole>{"Every I-485 time USCIS posts"}</KeepWhole>
                 </Link>
               </p>{" "}
               {ownNow ? (
                 <>
                   <p className="mt-4 max-w-2xl text-base leading-relaxed">
-                    {`The one time USCIS posts for ${office.name} alone is for family-based I-485s: ${ownNow[1]} months, as of its ${formatAsOf(ownNow[0])} posting${ownYear ? `, ${changeWords(ownYear)}` : ""}.${ownPlaceText} It isn't the wait for an employment-based case, but it moves with how busy this office is, so its history below is the closest public measure of this office's own pace.`}
+                    <KeepWhole>{`The one time USCIS posts for ${office.name} alone is for family-based I-485s: ${ownNow[1]} months, as of its ${formatAsOf(ownNow[0])} posting${ownYear ? `, ${changeWords(ownYear)}` : ""}.${ownPlaceText} It isn't the wait for an employment-based case, but it moves with how busy this office is, so its history below is the closest public measure of this office's own pace.`}</KeepWhole>
                   </p>{" "}
                   <div className="mt-4 max-w-3xl">
                     <PostedI140History
@@ -432,12 +437,12 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
               ) : null}{" "}
               {papers && (papers.ead || papers.ap) ? (
                 <p className="mt-4 max-w-2xl text-base leading-relaxed">
-                  {`While an I-485 waits, USCIS posts ${[
+                  <KeepWhole>{`While an I-485 waits, USCIS posts ${[
                     papers.ead ? `${papers.ead.months} months for a work permit based on it (I-765, category (c)(9), at the ${papers.ead.office})` : null,
                     papers.ap ? `${papers.ap.months} months for advance parole (I-131, at ${papers.ap.office})` : null,
                   ]
                     .filter(Boolean)
-                    .join(" and ")}, as of its ${formatAsOf(papers.published)} posting.`}
+                    .join(" and ")}, as of its ${formatAsOf(papers.published)} posting.`}</KeepWhole>
                 </p>
               ) : null}
             </section>
@@ -530,17 +535,17 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
         <ul className="mt-4 space-y-2">
           <li>
             <Link href={INDEX} className="link">
-              The I-485 at every USCIS field office and service center
+              <KeepWhole>{"The I-485 at every USCIS field office and service center"}</KeepWhole>
             </Link>
           </li>{" "}
           <li>
             <Link href="/guides/fastest-field-office-eb-i485" className="link">
-              Which field office is fastest for an employment-based I-485
+              <KeepWhole>{"Which field office is fastest for an employment-based I-485"}</KeepWhole>
             </Link>
           </li>{" "}
           <li>
             <Link href="/tools/i485-queue-position" className="link">
-              Your place in USCIS&apos;s I-485 inventory by priority date
+              <KeepWhole>{"Your place in USCIS's I-485 inventory by priority date"}</KeepWhole>
             </Link>
           </li>{" "}
           <li>

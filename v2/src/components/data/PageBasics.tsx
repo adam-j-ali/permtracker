@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CaretDownIcon } from "@phosphor-icons/react/ssr";
 import type { ReactNode } from "react";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The FAQs block: plain-English grounding at the bottom of a data page.
@@ -79,11 +80,11 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "What is a PERM salary, exactly?",
       a: (
         <>
-          The annual wage an employer committed to on the ETA-9089 filing, as
-          published in the Department of Labor&apos;s own disclosure files. It
-          isn&apos;t a survey estimate or a self-report. Every figure on this
-          page came off a federal filing, from the decided cases in DOL&apos;s
-          published files from FY2024 on.
+          <KeepWhole>
+            {"The annual wage an employer committed to on the ETA-9089 filing, as published in the Department of " +
+              "Labor's own disclosure files. It isn't a survey estimate or a self-report. Every figure on this " +
+              "page came off a federal filing, from the decided cases in DOL's published files from FY2024 on."}
+          </KeepWhole>
         </>
       ),
     },
@@ -244,10 +245,11 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "What is a prevailing wage determination?",
       a: (
         <>
-          Before an employer can file a PERM, it has to ask the Department of
-          Labor what the job legally has to pay. That request is form ETA-9141.
-          DOL answers with a prevailing wage determination, and the PERM
-          offer can&apos;t come in under it. Case numbers start with{" "}
+          <KeepWhole>
+            {"Before an employer can file a PERM, it has to ask the Department of Labor what the job legally has " +
+              "to pay. That request is form ETA-9141. DOL answers with a prevailing wage determination, and the " +
+              "PERM offer can't come in under it. Case numbers start with"}
+          </KeepWhole>{" "}
           <b className="font-bold">P-</b>. PERM Tracker holds every decided
           wage request in DOL&apos;s published files, from October 2023 to the
           end of DOL&apos;s newest file.
@@ -304,13 +306,12 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "What is an LCA?",
       a: (
         <>
-          A Labor Condition Application, form ETA-9035, is what an employer
-          files before petitioning for an H-1B. It commits them to a wage and a
-          named worksite, and DOL certifies it in days rather than months.
-          An H-1B number starts with <b className="font-bold">I-200</b>.{" "}
-          <b className="font-bold">I-201</b> and <b className="font-bold">I-202</b> are the H-1B1 for Chile and
-          Singapore, and <b className="font-bold">I-203</b> the E-3 for Australians. PERM Tracker holds every LCA in
-          DOL&apos;s disclosure files from FY2020 to the newest quarter.
+          <KeepWhole>
+            {"A Labor Condition Application, form ETA-9035, is what an employer files before petitioning for an " +
+              "H-1B. It commits them to a wage and a named worksite, and DOL certifies it in days rather than " +
+              "months. An H-1B number starts with "}
+          </KeepWhole><b className="font-bold"><KeepWhole>{"I-200"}</KeepWhole></b>.{" "}
+          <b className="font-bold"><KeepWhole>{"I-201"}</KeepWhole></b> and <b className="font-bold"><KeepWhole>{"I-202"}</KeepWhole></b><KeepWhole>{" are the H-1B1 for Chile and Singapore, and "}</KeepWhole><b className="font-bold"><KeepWhole>{"I-203"}</KeepWhole></b><KeepWhole>{" the E-3 for Australians. PERM Tracker holds every LCA in DOL's disclosure files from FY2020 to the newest quarter."}</KeepWhole>
         </>
       ),
     },
@@ -318,11 +319,11 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "Is an LCA the same as an H-1B approval?",
       a: (
         <>
-          No, and the gap matters. An LCA is a wage-and-worksite promise
-          certified by the Department of Labor. USCIS, a different agency,
-          decides the H-1B petition itself later. A certified LCA means the
-          employer cleared the first step. It doesn&apos;t mean anyone has been
-          approved to work.
+          <KeepWhole>
+            {"No, and the gap matters. An LCA is a wage-and-worksite promise certified by the Department of " +
+              "Labor. USCIS, a different agency, decides the H-1B petition itself later. A certified LCA means the " +
+              "employer cleared the first step. It doesn't mean anyone has been approved to work."}
+          </KeepWhole>
         </>
       ),
     },
@@ -354,20 +355,15 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "What are H-2A, H-2B and CW-1?",
       a: (
         <>
-          Temporary work visas. H-2A covers seasonal or temporary farm work.
-          H-2B covers non-farm work with a one-time, seasonal, peakload or
-          intermittent need, usually up to nine months (20 CFR 655.6). Before
-          USCIS can approve either petition, the Department of Labor must
-          certify that no qualified U.S. workers are available and that hiring
-          won&apos;t lower local wages (20 CFR 655.100). CW-1 is temporary work
-          in the Northern Mariana Islands, certified by DOL on form ETA-9142C.
-          Numbers start with <b className="font-bold">H-300</b> (H-2A, form
-          ETA-9142A), <b className="font-bold">JO-A-300</b> (the H-2A job
-          order, ETA-790A), <b className="font-bold">H-400</b> (H-2B,
-          ETA-9142B), <b className="font-bold">C-500</b> (CW-1), or{" "}
+          <KeepWhole>
+            {"Temporary work visas. H-2A covers seasonal or temporary farm work. H-2B covers non-farm work with a " +
+              "one-time, seasonal, peakload or intermittent need, usually up to nine months (20 CFR 655.6). Before " +
+              "USCIS can approve either petition, the Department of Labor must certify that no qualified U.S. " +
+              "workers are available and that hiring won't lower local wages (20 CFR 655.100). CW-1 is temporary " +
+              "work in the Northern Mariana Islands, certified by DOL on form ETA-9142C. Numbers start with "}
+          </KeepWhole><b className="font-bold">H-300</b><KeepWhole>{" (H-2A, form ETA-9142A), "}</KeepWhole><b className="font-bold">JO-A-300</b><KeepWhole>{" (the H-2A job order, ETA-790A), "}</KeepWhole><b className="font-bold">H-400</b><KeepWhole>{" (H-2B, ETA-9142B), "}</KeepWhole><b className="font-bold">C-500</b><KeepWhole>{" (CW-1), or"}</KeepWhole>{" "}
           <b className="font-bold">P-400</b> and{" "}
-          <b className="font-bold">P-500</b> (the wage request for an H-2B or
-          CW-1 job).
+          <b className="font-bold">P-500</b><KeepWhole>{" (the wage request for an H-2B or CW-1 job)."}</KeepWhole>
         </>
       ),
     },
@@ -375,13 +371,13 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "How long does DOL take on an H-2A or H-2B application?",
       a: (
         <>
-          The rules set the clock around the employer&apos;s date of need. An
-          H-2A application is filed at least 45 days before it (20 CFR
-          655.130), DOL accepts it or sends a notice of deficiency within 7
-          calendar days, and a complete application is decided no later than 30
-          days before the date of need (655.141, 655.143, 655.160). An H-2B
-          application is filed 75 to 90 days before the date of need, and DOL
-          answers within 7 business days (655.15, 655.31, 655.33).
+          <KeepWhole>
+            {"The rules set the clock around the employer's date of need. An H-2A application is filed at least " +
+              "45 days before it (20 CFR 655.130), DOL accepts it or sends a notice of deficiency within 7 " +
+              "calendar days, and a complete application is decided no later than 30 days before the date of need " +
+              "(655.141, 655.143, 655.160). An H-2B application is filed 75 to 90 days before the date of need, " +
+              "and DOL answers within 7 business days (655.15, 655.31, 655.33)."}
+          </KeepWhole>
         </>
       ),
     },
@@ -389,10 +385,11 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "What does a status like NOD issued or accepted, pending recruitment mean?",
       a: (
         <>
-          A notice of deficiency (NOD) means DOL found something to fix. The
-          employer has 5 business days (H-2A) or 10 (H-2B) to send a corrected
-          application. Accepted, pending recruitment means DOL accepted it and
-          the employer is now recruiting U.S. workers before the decision. The{" "}
+          <KeepWhole>
+            {"A notice of deficiency (NOD) means DOL found something to fix. The employer has 5 business days " +
+              "(H-2A) or 10 (H-2B) to send a corrected application. Accepted, pending recruitment means DOL " +
+              "accepted it and the employer is now recruiting U.S. workers before the decision. The"}
+          </KeepWhole>{" "}
           <Link href="/perm-case-statuses" className={link}>
             status dictionary
           </Link>{" "}
@@ -404,11 +401,12 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "Where do the wage and the number of workers come from?",
       a: (
         <>
-          DOL&apos;s case lookup never returns them. Once a case is decided, they
-          come from DOL&apos;s quarterly H-2A, H-2B and CW-1 disclosure files.
-          For an H-2A or H-2B job DOL has accepted but not yet decided, they
-          come from its SeasonalJobs feed. A case newer than both shows the status,
-          employer, job title and filing date DOL&apos;s own system reports.
+          <KeepWhole>
+            {"DOL's case lookup never returns them. Once a case is decided, they come from DOL's quarterly H-2A, " +
+              "H-2B and CW-1 disclosure files. For an H-2A or H-2B job DOL has accepted but not yet decided, they " +
+              "come from its SeasonalJobs feed. A case newer than both shows the status, employer, job title and " +
+              "filing date DOL's own system reports."}
+          </KeepWhole>
         </>
       ),
     },
@@ -511,13 +509,13 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "What is a USCIS processing time?",
       a: (
         <>
-          USCIS publishes two. The processing-times page gives, per form and
-          subtype, the months within which most recently completed cases
-          finished, and tells you to wait that long before asking about yours.
-          The quarterly performance data gives the median: the months it took
-          to decide half the cases finished that quarter. This page shows the
-          median for every form, dated to its quarter, and the processing-times
-          figure beside it for the I-140.
+          <KeepWhole>
+            {"USCIS publishes two. The processing-times page gives, per form and subtype, the months within which " +
+              "most recently completed cases finished, and tells you to wait that long before asking about yours. " +
+              "The quarterly performance data gives the median: the months it took to decide half the cases " +
+              "finished that quarter. This page shows the median for every form, dated to its quarter, and the " +
+              "processing-times figure beside it for the I-140."}
+          </KeepWhole>
         </>
       ),
     },
@@ -525,13 +523,14 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "How long does an I-140 take?",
       a: (
         <>
-          In USCIS&apos;s quarterly data the median I-140 decided in the third
-          quarter of FY2026 (April to June 2026) took 3.9 months. USCIS&apos;s
-          processing-times page gives longer figures per subtype, from a few
-          months for an advanced-degree professional to nearly three years for
-          extraordinary ability, because it measures the slow tail. The{" "}
+          <KeepWhole>
+            {"In USCIS's quarterly data the median I-140 decided in the third quarter of FY2026 (April to June " +
+              "2026) took 3.9 months. USCIS's processing-times page gives longer figures per subtype, from a few " +
+              "months for an advanced-degree professional to nearly three years for extraordinary ability, because " +
+              "it measures the slow tail. The"}
+          </KeepWhole>{" "}
           <Link href="/tools/i140-calculator" className={link}>
-            I-140 queue page
+            <KeepWhole>{"I-140 queue page"}</KeepWhole>
           </Link>{" "}
           shows how many are pending in each category.
         </>
@@ -541,12 +540,13 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "How long does an employment-based I-485 take?",
       a: (
         <>
-          The median employment-based I-485 decided in April to June 2026 took 6
-          months, against 7 for family-based and 25.6 for asylum-based, in
-          USCIS&apos;s own quarterly data. Where a case is decided matters too:
-          the{" "}
+          <KeepWhole>
+            {"The median employment-based I-485 decided in April to June 2026 took 6 months, against 7 for " +
+              "family-based and 25.6 for asylum-based, in USCIS's own quarterly data. Where a case is decided " +
+              "matters too: the"}
+          </KeepWhole>{" "}
           <Link href="/i485-by-field-office" className={link}>
-            I-485 by field office
+            <KeepWhole>{"I-485 by field office"}</KeepWhole>
           </Link>{" "}
           page shows each office&apos;s pile.
         </>
@@ -556,11 +556,11 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "Why did USCIS processing times go up or down?",
       a: (
         <>
-          The median is measured over cases completed in the quarter, so a
-          quarter in which USCIS cleared old cases reads slower than one in
-          which it cleared new ones, and USCIS&apos;s I-90 note says exactly
-          that about FY2023. Read a change together with the completions count
-          beside it.
+          <KeepWhole>
+            {"The median is measured over cases completed in the quarter, so a quarter in which USCIS cleared old " +
+              "cases reads slower than one in which it cleared new ones, and USCIS's I-90 note says exactly that " +
+              "about FY2023. Read a change together with the completions count beside it."}
+          </KeepWhole>
         </>
       ),
     },
@@ -570,11 +570,12 @@ export const BASICS: Record<string, BasicsEntry[]> = {
         <>
           DACA is{" "}
           <Link href="/uscis-processing-times#daca" className={link}>
-            Form I-821D
+            <KeepWhole>{"Form I-821D"}</KeepWhole>
           </Link>
-          , in the Humanitarian table under every form USCIS reports, and its
-          work permit is with the I-765 lines. Both pending counts include
-          first-time requests, which USCIS accepts but doesn&apos;t process.
+          <KeepWhole>
+            {", in the Humanitarian table under every form USCIS reports, and its work permit is with the I-765 " +
+              "lines. Both pending counts include first-time requests, which USCIS accepts but doesn't process."}
+          </KeepWhole>
         </>
       ),
     },
@@ -597,13 +598,13 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "How many I-485 applications are pending at USCIS?",
       a: (f) => (
         <>
-          {f.empPending && f.quarter
+          {keepWhole(f.empPending && f.quarter
             ? `USCIS's quarterly data for ${f.quarter} puts employment-based I-485 applications pending at ${f.empPending} across every office and service center${f.famPending ? `, with ${f.famPending} family-based` : ""}.`
-            : "USCIS publishes the count every quarter, and the newest is at the top of this page."}{" "}
+            : "USCIS publishes the count every quarter, and the newest is at the top of this page.")}{" "}
           Your place inside that pile by
           priority date is on the{" "}
           <Link href="/tools/i485-queue-position" className={link}>
-            I-485 queue position
+            <KeepWhole>{"I-485 queue position"}</KeepWhole>
           </Link>{" "}
           page, from USCIS&apos;s monthly inventory.
         </>
@@ -638,9 +639,9 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "How many people are waiting for an EB-2 India green card?",
       a: (f) => (
         <>
-          {f.indiaEb2 && f.asOf
+          {keepWhole(f.indiaEb2 && f.asOf
             ? `USCIS counted ${f.indiaEb2} approved petitions for India-born beneficiaries in EB-2 as of ${f.asOf}${f.indiaEb2Share ? `, ${f.indiaEb2Share} of everyone waiting in that category` : ""}, before dependents.`
-            : "USCIS counts approved petitions for India-born beneficiaries in EB-2 every quarter, before dependents, and the newest count is at the top of this page."}{" "}
+            : "USCIS counts approved petitions for India-born beneficiaries in EB-2 every quarter, before dependents, and the newest count is at the top of this page.")}{" "}
           USCIS publishes the count. It doesn&apos;t publish a wait in years.
           The{" "}
           <Link href="/tools/green-card-line" className={link}>
@@ -699,11 +700,9 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       a: (f) =>
         f.h1bApprovedAfterRfe && f.h1bApprovalRate ? (
           <>
-            Usually not. Of the H-1B petitions USCIS decided with an RFE in{" "}
+            <KeepWhole>{"Usually not. Of the H-1B petitions USCIS decided with an RFE in"}</KeepWhole>{" "}
             {f.h1bFy} so far ({f.h1bSpan}), {f.h1bApprovedAfterRfe} were approved,
-            against {f.h1bApprovalRate} of all H-1B petitions decided. Petitions
-            with an RFE are approved less often than the rest, and most still
-            are. The cards above give the same share for every visa.
+            against {f.h1bApprovalRate}<KeepWhole>{" of all H-1B petitions decided. Petitions with an RFE are approved less often than the rest, and most still are. The cards above give the same share for every visa."}</KeepWhole>
           </>
         ) : (
           <>
@@ -717,10 +716,11 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "Where are the RFE rates for green cards?",
       a: (
         <>
-          USCIS doesn&apos;t publish them. Its request-for-evidence counts cover
-          the I-129 work visa petition alone, with nothing like them for the
-          I-140 or the I-485. For those forms its quarterly data gives approvals,
-          denials and how long decisions took, on the{" "}
+          <KeepWhole>
+            {"USCIS doesn't publish them. Its request-for-evidence counts cover the I-129 work visa petition " +
+              "alone, with nothing like them for the I-140 or the I-485. For those forms its quarterly data gives " +
+              "approvals, denials and how long decisions took, on the"}
+          </KeepWhole>{" "}
           <Link href="/uscis-processing-times" className={link}>
             USCIS processing times
           </Link>{" "}
@@ -736,16 +736,17 @@ export const BASICS: Record<string, BasicsEntry[]> = {
       q: "Which USCIS forms follow a PERM?",
       a: (
         <>
-          The I-140 immigrant petition, filed by the employer within 180 days
-          of the PERM certification, and then the I-485 adjustment of status
-          once a visa number is available. Each gets its own receipt number.
-          The{" "}
+          <KeepWhole>
+            {"The I-140 immigrant petition, filed by the employer within 180 days of the PERM certification, and " +
+              "then the I-485 adjustment of status once a visa number is available. Each gets its own receipt " +
+              "number. The"}
+          </KeepWhole>{" "}
           <Link href="/tools/i140-calculator" className={link}>
-            I-140 queue
+            <KeepWhole>{"I-140 queue"}</KeepWhole>
           </Link>{" "}
           and{" "}
           <Link href="/tools/i485-queue-position" className={link}>
-            I-485 queue position
+            <KeepWhole>{"I-485 queue position"}</KeepWhole>
           </Link>{" "}
           pages read USCIS&apos;s published figures for those stages.
         </>
@@ -784,14 +785,14 @@ export function PageBasics({
         {entries.map((e) => (
           <details key={e.q} className="group bg-tint">
             <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-4 px-5 py-3 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:px-6 [&::-webkit-details-marker]:hidden">
-              <h3 className="font-heading text-base font-bold">{e.q}</h3>{" "}
+              <h3 className="font-heading text-base font-bold">{keepWhole(e.q)}</h3>{" "}
               <CaretDownIcon
                 className="h-5 w-5 shrink-0 transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none"
                 aria-hidden="true"
               />
             </summary>{" "}
             <p className="max-w-prose px-5 pb-4 text-base leading-relaxed text-soft sm:px-6 border-t-2 border-border">
-              {typeof e.a === "function" ? e.a(figures) : e.a}
+              {keepWhole(typeof e.a === "function" ? e.a(figures) : e.a)}
             </p>
           </details>
         ))}

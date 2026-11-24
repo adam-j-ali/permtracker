@@ -9,6 +9,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { getLineSnapshot } from "@/lib/db/greenCardLine";
 import { StepBothSources } from "@/components/community/StepBothSources";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * EB-2 and EB-3 for one priority date, side by side. The counts are the green
@@ -73,7 +74,7 @@ export default async function Eb2VsEb3Page() {
       <JsonLdScript schema={faqSchema} />
 
       <header>
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">EB-2 or EB-3, for your date</h1>{" "}
+        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl"><KeepWhole>{"EB-2 or EB-3, for your date"}</KeepWhole></h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           The two lines side by side for one country and priority date: what this month&apos;s bulletin prints for each,
           and how many people stand ahead of you in each.

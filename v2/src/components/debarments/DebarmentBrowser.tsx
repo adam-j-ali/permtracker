@@ -11,6 +11,7 @@ import { rankFuzzy } from "@/lib/fuzzy";
 import { shortDate } from "@convex/lib/months";
 import { Pagination } from "@/components/ui/pagination";
 import { ChoiceRow } from "@/components/ui/choice-row";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export type DebarmentView = Debarment & { phase: DebarmentPhase };
 
@@ -240,7 +241,7 @@ export function DebarmentBrowser({ rows, sections }: { rows: DebarmentView[]; se
           <Fragment key={s.program}>
             {" "}
             <section className="mt-10">
-              <h2 className="font-heading text-xl font-bold sm:text-2xl">{s.label}</h2>{" "}
+              <h2 className="font-heading text-xl font-bold sm:text-2xl">{keepWhole(s.label)}</h2>{" "}
               <p className="mt-1 text-sm text-muted-foreground">
                 {all.length === 0
                   ? `${s.emptyNote} `

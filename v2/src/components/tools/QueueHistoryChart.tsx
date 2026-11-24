@@ -11,6 +11,7 @@ import { dayNumber } from "@/lib/time";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { DataView, ScopeSelect } from "./DataView";
 import { MONTH_ABBR, monthIndex } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * DOL's published queue position, drawn over our record of its snapshots.
@@ -418,7 +419,7 @@ function QueueHistoryTable({
   return (
     <ScrollBox label={copy.caption}>
       <table className="w-full min-w-[560px] border-t-2 border-[var(--object-border)] text-left text-sm">
-        <caption className="sr-only">{copy.caption}</caption>
+        <caption className="sr-only">{keepWhole(copy.caption)}</caption>
         <thead className="dark border-b border-black bg-[#141414] text-foreground">
           <tr>
             <th scope="col" className="px-3 py-2 text-sm font-bold">

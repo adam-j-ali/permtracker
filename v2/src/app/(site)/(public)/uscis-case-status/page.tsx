@@ -25,6 +25,7 @@ import { formatInt } from "@/lib/format";
 import { uscisPublic } from "@/lib/uscis/torchClient";
 import { MoreText } from "@/components/data/MoreText";
 import { buttonVariants } from "@/components/ui/button";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * A USCIS receipt number in; what it encodes, and (with USCIS's API keys on
@@ -177,12 +178,13 @@ export default async function UscisCaseStatusPage({
           Check a USCIS case by receipt number
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-soft">
-          The number at the top of an I-797 notice. See which office issued it, what the digits mean,
-          and{" "}
+          <KeepWhole>
+            {"The number at the top of an I-797 notice. See which office issued it, what the digits mean, and"}
+          </KeepWhole>{" "}
           {enabled
             ? "the case's current status from USCIS."
             : "where USCIS shows its status."}{" "}
-          A DOL number (G-100-…) goes on the{" "}
+          <KeepWhole>{"A DOL number (G-100-…) goes on the"}</KeepWhole>{" "}
           <Link href="/perm-case-status" className={link}>
             PERM case page
           </Link>
@@ -371,8 +373,8 @@ function CheckWithUscis() {
                 className="lift flex min-h-[44px] w-full items-start justify-between gap-3 border-2 border-black bg-[#1A4480] px-4 py-3 text-white shadow-hard-sm hover:bg-[#005288] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 <span className="flex flex-col">
-                  <span className="font-heading text-base font-bold">{t.title}</span>{" "}
-                  <span className="text-sm text-white/85">{t.note}</span>
+                  <span className="font-heading text-base font-bold">{keepWhole(t.title)}</span>{" "}
+                  <span className="text-sm text-white/85">{keepWhole(t.note)}</span>
                 </span>{" "}
                 <ArrowSquareOutIcon aria-hidden="true" weight="bold" className="mt-1 size-4 shrink-0" />
               </a>

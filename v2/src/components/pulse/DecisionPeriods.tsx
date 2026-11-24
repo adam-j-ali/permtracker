@@ -16,6 +16,7 @@ import { federalHolidayName } from "@/lib/perm";
 import { SHUTDOWN_SOURCE_URL } from "@/lib/permShutdown2025";
 import { cn } from "@/lib/utils";
 import { MONTH_ABBR, MONTH_NAMES, WEEKDAY_NAMES, longDate, monthDay, monthYear } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * PERM decisions over time, by day, week, month or year, each beside the same days a year earlier: one chart with a
@@ -228,7 +229,7 @@ function OutcomeKey() {
     <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-soft">
       {OUTCOMES.map((o) => (
         <li key={o.key} className="inline-flex items-center gap-1.5">
-          <span aria-hidden="true" className={cn("size-3", o.fill)} /> {o.label}{" "}
+          <span aria-hidden="true" className={cn("size-3", o.fill)} /> {keepWhole(o.label)}{" "}
         </li>
       ))}
     </ul>

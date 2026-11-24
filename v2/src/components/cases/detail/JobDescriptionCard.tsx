@@ -15,6 +15,7 @@ import type { CaseDetailData } from "./case-detail-types";
 import { fmtCurrency } from "./case-detail-utils";
 import { PublicNumber } from "./PublicNumber";
 import { socWagePageHref } from "@/lib/cases/publicLinks";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /** Saving and clearing the case's job description. Each throws when the write fails, so the editor stays open. */
 export interface JobDescEditProps {
@@ -187,7 +188,7 @@ export function JobDescriptionCard({ caseData, jobDescProps }: { caseData: CaseD
           {blocks.map((b, i) =>
             b.kind === "paragraph" ? (
               <p key={i} className="max-w-prose text-base leading-relaxed">
-                {b.text}
+                {keepWhole(b.text)}
               </p>
             ) : (
               <ul key={i} className="space-y-1.5">

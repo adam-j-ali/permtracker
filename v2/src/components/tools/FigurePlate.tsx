@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 import { MoreText, firstSentence, plainText, wordCount } from "@/components/data/MoreText";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The frame every chart on the site sits in: an ink frame, a title band naming
@@ -65,8 +66,8 @@ export function FigurePlate({ title, subject, caption, source, tone = "paper", i
           ink ? "border-white/25" : "border-border",
         )}
       >
-        <span className="font-heading text-lg font-bold">{title}</span>{" "}
-        {subject ? <span className={cn("text-sm", ink ? "text-white/75" : "text-soft")}>{subject}</span> : null}
+        <span className="font-heading text-lg font-bold">{keepWhole(title)}</span>{" "}
+        {subject ? <span className={cn("text-sm", ink ? "text-white/75" : "text-soft")}>{keepWhole(subject)}</span> : null}
       </div>
 
       <div className="flex-1 px-4 py-5 sm:px-5 sm:py-6">{children}</div>
@@ -80,10 +81,10 @@ export function FigurePlate({ title, subject, caption, source, tone = "paper", i
         >
           {caption && wordCount(caption) > 28 ? (
             <MoreText gist={firstSentence(plainText(caption))} size="sm" className="max-w-none">
-              <div>{caption}</div>
+              <div>{keepWhole(caption)}</div>
             </MoreText>
           ) : (
-            caption
+            keepWhole(caption)
           )}
           {source ? (
             <>

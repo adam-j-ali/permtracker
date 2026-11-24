@@ -4,6 +4,7 @@ import Link from "next/link";
 import { formatInt, formatShareOf } from "@/lib/format";
 import type { LcaCity } from "@/lib/db/lcaCities";
 import { entityHref } from "@/lib/entityPayload";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * A city's H-1B record beside its PERM one: how many LCAs name a worksite
@@ -18,14 +19,13 @@ export function CityH1b({ city, className = "mt-10" }: { city: LcaCity | null; c
   return (
     <section className={`${className}`} aria-labelledby="city-h1b">
       <h2 id="city-h1b" className="font-heading text-xl font-bold">
-        H-1B in {city.label}
+        <KeepWhole>{"H-1B in "}</KeepWhole>{keepWhole(city.label)}
       </h2>{" "}
       <p className="mt-2 text-base leading-relaxed text-muted-foreground">
         <span className="font-heading text-2xl font-bold tabular-nums text-foreground">{formatInt(city.total)}</span>{" "}
         labor condition applications name a worksite here{span ? `, ${span}` : ""}, and DOL certified{" "}
         {formatInt(city.certified)}
-        {city.total > 0 ? ` (${formatShareOf(city.certified, city.total)})` : ""}. An LCA is the employer&apos;s wage
-        attestation before an H-1B petition, so it counts positions offered. It doesn&apos;t count people hired.
+        {city.total > 0 ? ` (${formatShareOf(city.certified, city.total)})` : ""}<KeepWhole>{". An LCA is the employer's wage attestation before an H-1B petition, so it counts positions offered. It doesn't count people hired."}</KeepWhole>
       </p>{" "}
       <div className="mt-5 grid grid-cols-1 gap-8 sm:grid-cols-2 [&>*]:min-w-0">
         {[
@@ -35,7 +35,7 @@ export function CityH1b({ city, className = "mt-10" }: { city: LcaCity | null; c
           col.items.length ? (
             <div key={col.label}>
               <h3 className="text-sm font-bold text-muted-foreground">
-                {`${col.label}, certified LCAs${city.since ? ` since FY${city.since}` : ""}`}
+                <KeepWhole>{`${col.label}, certified LCAs${city.since ? ` since FY${city.since}` : ""}`}</KeepWhole>
               </h3>
               <ol className="mt-2 divide-y divide-border/60">
                 {col.items.map((it, i) => (
@@ -45,10 +45,10 @@ export function CityH1b({ city, className = "mt-10" }: { city: LcaCity | null; c
                       {it.href ? (
                         // The link fills the row's height, so the tap target is 44px.
                         <Link href={it.href} className="link min-w-0 truncate py-2.5">
-                          {it.text}
+                          {keepWhole(it.text)}
                         </Link>
                       ) : (
-                        <span className="min-w-0 truncate py-2.5">{it.text}</span>
+                        <span className="min-w-0 truncate py-2.5">{keepWhole(it.text)}</span>
                       )}{" "}
                       <span className="ml-auto font-mono text-sm tabular-nums text-muted-foreground">{formatInt(it.n)}</span>
                     </li>

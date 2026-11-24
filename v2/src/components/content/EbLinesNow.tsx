@@ -4,6 +4,7 @@ import { Eb2VsEb3 } from "@/components/tools/Eb2VsEb3";
 import { getLineSnapshot } from "@/lib/db/greenCardLine";
 import type { CountryKey } from "@/lib/perm";
 import { softFail } from "@/lib/softRead";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * EB-2 and EB-3 side by side, live, inside an article: the same comparison the
@@ -18,7 +19,7 @@ export async function EbLinesNow({ country = "india" }: { country?: CountryKey }
       <p>
         The live comparison is unavailable for the moment. The{" "}
         <Link href="/tools/eb2-vs-eb3" className="link">
-          EB-2 or EB-3 tool
+          <KeepWhole>{"EB-2 or EB-3 tool"}</KeepWhole>
         </Link>{" "}
         carries the same figures.
       </p>

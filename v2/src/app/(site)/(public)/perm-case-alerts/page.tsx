@@ -14,6 +14,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 
 import { QueueAlertForm } from "../perm-processing-times/QueueAlertForm";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Every free email alert on one page: a case (or a pasted list of them), a filing month, a wage request's
@@ -134,8 +135,10 @@ export default function Page() {
           <CaseLookupForm action="/perm-case-status#watch" label="Your case number" source="alerts-page" buttonLabel="Next" />
         </div>{" "}
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-soft">
-          Wage request and H-1B LCA numbers work in the same box, and so do H-2A, H-2B and CW-1 numbers. On the case&apos;s
-          page you can also have your browser notify you, with no email at all. Have several cases?{" "}
+          <KeepWhole>
+            {"Wage request and H-1B LCA numbers work in the same box, and so do H-2A, H-2B and CW-1 numbers. On " +
+              "the case's page you can also have your browser notify you, with no email at all. Have several cases?"}
+          </KeepWhole>{" "}
           <a href="#list" className="link">
             Paste them all at once
           </a>
@@ -148,7 +151,7 @@ export default function Page() {
                 {i + 1}
               </span>{" "}
               <div className="min-w-0">
-                <p className="font-heading text-lg font-bold leading-snug">{s.title}</p>{" "}
+                <p className="font-heading text-lg font-bold leading-snug">{keepWhole(s.title)}</p>{" "}
                 <p className="mt-1 text-base leading-relaxed text-soft">{s.body}</p>
               </div>
             </li>

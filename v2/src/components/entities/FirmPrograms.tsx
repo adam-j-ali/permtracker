@@ -5,6 +5,7 @@ import { formatInt, formatShareOf } from "@/lib/format";
 import type { FirmProgramLine, FirmPrograms as FirmProgramsData } from "@/lib/db/firmPrograms";
 import { entityHref } from "@/lib/entityPayload";
 import { ROW_LINK } from "@/components/entities/caseRows";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * A law firm's H-1B, wage-request and H-2A, H-2B and CW-1 work, beside its
@@ -76,7 +77,9 @@ export function FirmPrograms({ name, data, className = "mt-10" }: { name: string
     <section className={`${className}`}>
       <h3 className="font-heading text-lg font-bold">Its other work for clients</h3>{" "}
       <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-        The H-1B LCAs, wage requests and H-2A, H-2B and CW-1 applications in DOL&apos;s files that name {name}
+        <KeepWhole>
+          {"The H-1B LCAs, wage requests and H-2A, H-2B and CW-1 applications in DOL's files that name "}
+        </KeepWhole>{name}
         {data.spellings > 1 ? `, under ${formatInt(data.spellings)} spellings of its name` : ""}.
       </p>{" "}
       <div

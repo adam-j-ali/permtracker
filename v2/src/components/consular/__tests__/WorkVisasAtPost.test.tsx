@@ -20,7 +20,9 @@ const data = { months, held: ["2025-12", "2026-01", "2026-02"], byMonth };
 
 function render(d = data) {
   const out = renderToStaticMarkup(<WorkVisasView data={d} name="Mumbai" />);
-  return { out, text: out.replace(/<[^>]+>/g, " ").replace(/&#x27;/g, "'").replace(/\s+/g, " ") };
+  // A span is inline: the words either side of it touch, so it comes out without the space a cell or a block gets.
+  const flat = out.replace(/<\/?span\b[^>]*>/g, "");
+  return { out, flat, text: flat.replace(/<[^>]+>/g, " ").replace(/&#x27;/g, "'").replace(/\s+/g, " ") };
 }
 
 describe("work visas at a consulate", () => {
@@ -41,8 +43,8 @@ describe("work visas at a consulate", () => {
   });
 
   it("lists every class, work visas first, K-1 labelled as a fiancé(e) visa", () => {
-    const { out, text } = render();
-    const order = ["H-1B", "H-4", "L-1", "L-2", "B-1/B-2", "F-1", "K-1 fiancé(e)"].map((n) => out.indexOf(`>${n} <`));
+    const { flat, text } = render();
+    const order = ["H-1B", "H-4", "L-1", "L-2", "B-1/B-2", "F-1", "K-1 fiancé(e)"].map((n) => flat.indexOf(`>${n} <`));
     expect(order.every((i) => i > 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(text).toContain("fiancé(e) of a U.S. citizen");

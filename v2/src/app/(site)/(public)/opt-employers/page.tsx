@@ -12,6 +12,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { formatInt } from "@/lib/format";
 import { getSevpLists, type SevpList } from "@/lib/db/sevpEmployers";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * ICE's yearly top-200 lists of employers of F-1 students on OPT, STEM OPT
@@ -194,7 +195,7 @@ export default async function OptEmployersPage() {
           <p>
             Planning the next step?{" "}
             <Link href="/tools/h1b-lottery-odds-calculator" className="link">
-              The H-1B lottery odds for a job
+              <KeepWhole>{"The H-1B lottery odds for a job"}</KeepWhole>
             </Link>{" "}
             work from the wage and the area.
           </p>

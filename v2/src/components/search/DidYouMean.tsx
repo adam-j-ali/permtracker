@@ -6,6 +6,7 @@ import { CircleNotchIcon } from "@phosphor-icons/react";
 
 import { KIND_NOUN, type NameSuggestion, type SuggestKind } from "@/lib/search/suggestTypes";
 import { cn } from "@/lib/utils";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * "Did you mean" for any search that found nothing.
@@ -111,13 +112,13 @@ export function DidYouMean({
             <li>
               {s.href ? (
                 <Link href={s.href} className={chip}>
-                  {s.label}
-                  {s.note ? <span className="whitespace-nowrap text-sm font-normal text-muted-foreground">{` ${s.note}`}</span> : null}
+                  {keepWhole(s.label)}
+                  {s.note ? <span className="whitespace-nowrap text-sm font-normal text-muted-foreground"><KeepWhole>{` ${s.note}`}</KeepWhole></span> : null}
                 </Link>
               ) : (
                 <button type="button" onClick={s.onPick} className={chip}>
-                  {s.label}
-                  {s.note ? <span className="whitespace-nowrap text-sm font-normal text-muted-foreground">{` ${s.note}`}</span> : null}
+                  {keepWhole(s.label)}
+                  {s.note ? <span className="whitespace-nowrap text-sm font-normal text-muted-foreground"><KeepWhole>{` ${s.note}`}</KeepWhole></span> : null}
                 </button>
               )}
             </li>{" "}

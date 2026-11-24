@@ -5,6 +5,7 @@ import { formatAsOf } from "@/lib/dolFormat";
 
 import { GROUP_STYLE, stageFromSlug, stageMeta, stageSlug } from "./stageMeta";
 import { monthDay, monthYear } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The count beside a definition, dated, and linked where there is a page.
@@ -321,7 +322,7 @@ export function StageGlossary({
                 />
               </summary>{" "}
               <div className="grid gap-2 border-t-2 border-border/40 px-4 pb-4 pt-3 text-sm leading-relaxed sm:px-5 sm:pb-5">
-                <p>{e.what}</p>{" "}
+                <p>{keepWhole(e.what)}</p>{" "}
                 {e.status && counts?.[e.status] && stageListHref(e.status) ? (
                   <p>
                     <Link href={stageListHref(e.status)!} className="link">
@@ -355,7 +356,7 @@ export function StageGlossary({
                       rel="noopener noreferrer"
                       target="_blank"
                     >
-                      {e.cite.label}
+                      {keepWhole(e.cite.label)}
                     </a>
                   </p>
                 ) : null}{" "}

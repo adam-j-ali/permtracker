@@ -12,6 +12,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { getFAQPageSchema } from "@/lib/structuredData";
 import { ACCOUNT_CODE_INFO, EVIDENCE_WORDS } from "@/lib/uscis/accountCodes";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Paste what your own USCIS online account shows: each update by date, what its code is known to mean, and a way to
@@ -149,7 +150,7 @@ export default function UscisAccountReaderPage() {
             <Fragment key={l.href}>
               <li>
                 <Link href={l.href} className="link inline-flex min-h-11 items-center">
-                  {l.label}
+                  {keepWhole(l.label)}
                 </Link>
               </li>{" "}
             </Fragment>

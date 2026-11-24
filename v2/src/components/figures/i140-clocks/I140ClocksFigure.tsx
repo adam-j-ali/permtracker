@@ -20,6 +20,7 @@ import { BACK, DAY_ON_SCREEN, GANTRY, HEIGHT, LANES, LOCK_DAY, WIDTH, fillAt, ga
 import { APPROVED, I485_FILED, LEAVE_MAX, LEAVE_MIN, PORTABLE_FROM, SAFE_FROM, readClocks } from "./model";
 import { MotionToggle } from "../MotionToggle";
 import { CAPTION_CLASS, FIGURE_CLASS, READOUT_CLASS, SUMMARY_CLASS } from "../frame";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 const LABEL =
   "An illustration of two 180-day clocks as lanes on a bench. The back lane starts at the I-140 approval, the front lane at the I-485 receipt, and each ends at a lock. A gantry across both lanes marks the day you leave. Each lane fills up to it, and a lock turns lime once its 180 days have run.";
@@ -270,7 +271,7 @@ export default function I140ClocksFigure() {
         <details>
           <summary className={SUMMARY_CLASS}>What this shows</summary>{" "}
           <p className="mt-1 leading-relaxed">
-        {`An illustration on the worked example above: an I-140 approved ${longDate(APPROVED)} and an I-485 received ${longDate(I485_FILED)}. From ${longDate(SAFE_FROM)}, an employer's withdrawal no longer revokes the I-140. From ${longDate(PORTABLE_FROM)}, the I-485 can move to a new job in the same or a similar occupation, on Supplement J. The first clock, the certification's, stopped mattering once the I-140 was filed. The priority date stays either way, unless USCIS revokes the approval for cause. Drag the gantry, or scroll, to move the day you leave. The dates come from the same rule as the retention calculator.`}
+        <KeepWhole>{`An illustration on the worked example above: an I-140 approved ${longDate(APPROVED)} and an I-485 received ${longDate(I485_FILED)}. From ${longDate(SAFE_FROM)}, an employer's withdrawal no longer revokes the I-140. From ${longDate(PORTABLE_FROM)}, the I-485 can move to a new job in the same or a similar occupation, on Supplement J. The first clock, the certification's, stopped mattering once the I-140 was filed. The priority date stays either way, unless USCIS revokes the approval for cause. Drag the gantry, or scroll, to move the day you leave. The dates come from the same rule as the retention calculator.`}</KeepWhole>
       </p>
         </details>
       </figcaption>

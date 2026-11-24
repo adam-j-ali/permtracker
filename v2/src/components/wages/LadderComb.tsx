@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 import { WageAxis } from "./WageAxis";
 import { WageLadderKey, WageLadderRow } from "./WageLadderRow";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * A set of wage ladders on ONE shared axis, one row per subject.
@@ -81,7 +82,7 @@ export function LadderComb({
                       href={link}
                       className="link"
                     >
-                      {l.label}
+                      {keepWhole(l.label)}
                     </Link>
                   ) : (
                     l.label
@@ -137,7 +138,7 @@ export function TwoMarketsNote({
     <p className={cn("text-sm leading-relaxed text-muted-foreground", className)}>
       {disjoint && ratio !== null ? (
         <>
-          The two ends don&apos;t meet. {high.label} open at{" "}
+          The two ends don&apos;t meet. {keepWhole(high.label)} open at{" "}
           {formatDollars(high.p5 as number)} on the 5th percentile, which is{" "}
           {ratio.toFixed(1)} times what {low.label.toLowerCase()} reach at the
           95th ({formatDollars(floor)}). There&apos;s no wage at which those two
@@ -147,7 +148,7 @@ export function TwoMarketsNote({
       ) : (
         <>
           The highest-paid and lowest-paid occupations in this set now overlap:{" "}
-          {high.label} start at {formatDollars(high.p5 as number)} on the 5th percentile
+          {keepWhole(high.label)} start at {formatDollars(high.p5 as number)} on the 5th percentile
           against {formatDollars(low.p95 as number)} at the 95th for{" "}
           {low.label.toLowerCase()}.
         </>

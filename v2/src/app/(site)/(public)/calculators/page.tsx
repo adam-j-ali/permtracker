@@ -18,6 +18,7 @@ import { PageBasics } from "@/components/data/PageBasics";
 import { CalculatorTour } from "@/components/tools/CalculatorTour";
 import { SITE_URL } from "@/lib/constants/site";
 import { CALCULATOR_PAGES, pageName } from "@/lib/siteMap";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "Free PERM Timeline and Deadline Calculators";
 const DESCRIPTION =
@@ -160,7 +161,7 @@ export default function CalculatorsPage() {
               ].map((r) => (
                 <tr key={r.href} className="border-t border-border/40">
                   <td className="p-3">{r.s}{" "}</td>
-                  <td className="p-3 text-muted-foreground">{r.q}{" "}</td>
+                  <td className="p-3 text-muted-foreground">{keepWhole(r.q)}{" "}</td>
                   <td className="p-3">
                     <a href={r.href} className="link">
                       {r.tool}
@@ -202,7 +203,7 @@ export default function CalculatorsPage() {
                     <span className="u-title">{t.name}</span>
                   </h3>{" "}
                   <p className="mt-2 text-base leading-relaxed text-muted-foreground">
-                    {t.blurb}
+                    {keepWhole(t.blurb)}
                   </p>
                 </div>
                 <ArrowRightIcon

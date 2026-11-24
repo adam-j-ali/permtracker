@@ -1,6 +1,7 @@
 import { formatInt } from "@/lib/format";
 
 import { YearBars, fillYears, type YearCount } from "./YearBars";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * An employer's H-1B LCAs by fiscal year, FY2008 on (lib/db/lcaYears.ts), on the PERM chart's bars. One year
@@ -17,9 +18,9 @@ export function LcaYears({ years, className }: { years: YearCount[]; className?:
   const peak = series[totals.indexOf(Math.max(...totals))]!;
   return (
     <section className={className}>
-      <h3 className="font-heading text-lg font-bold">H-1B LCAs year by year since {first}</h3>{" "}
+      <h3 className="font-heading text-lg font-bold"><KeepWhole>{"H-1B LCAs year by year since "}</KeepWhole>{first}</h3>{" "}
       <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-        {formatInt(total)} H-1B LCAs DOL decided from FY{first} to FY{last}, busiest in FY{peak.fy} with{" "}
+        {formatInt(total)}<KeepWhole>{" H-1B LCAs DOL decided from FY"}</KeepWhole>{first} to FY{last}, busiest in FY{peak.fy} with{" "}
         {formatInt(peak.certified + peak.denied + peak.withdrawn)}.
       </p>
       <div className="mt-4">
@@ -29,9 +30,11 @@ export function LcaYears({ years, className }: { years: YearCount[]; className?:
           noun="H-1B LCAs"
           note={
             <>
-              From DOL&apos;s H-1B disclosure files, matched to this page by the employer&apos;s spellings. An LCA
-              certified and then withdrawn counts as withdrawn. Fiscal years run October to September, and the newest is
-              partial.
+              <KeepWhole>
+                {"From DOL's H-1B disclosure files, matched to this page by the employer's spellings. An LCA " +
+                  "certified and then withdrawn counts as withdrawn. Fiscal years run October to September, and " +
+                  "the newest is partial."}
+              </KeepWhole>
             </>
           }
         />

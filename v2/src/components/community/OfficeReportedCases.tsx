@@ -8,6 +8,7 @@ import { formatInt } from "@/lib/format";
 import { MEDIAN_FROM, reportedIn, shortSourceName, sourcesIn, transferCohorts, type ReportedCase } from "@/lib/reportedCases";
 import { emailStamp } from "@/lib/time";
 import { shortDate } from "@convex/lib/months";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The cases people reported for this office, from every source, each person once (src/lib/reportedCases.ts): when
@@ -98,7 +99,7 @@ export function OfficeReportedCases({
               <th scope="col" className={TH}>Category{" "}</th>
               <th scope="col" className={TH}>Country{" "}</th>
               <th scope="col" className={TH}>Priority date{" "}</th>
-              <th scope="col" className={TH}>I-485 received{" "}</th>
+              <th scope="col" className={TH}><KeepWhole>{"I-485 received"}</KeepWhole>{" "}</th>
               <th scope="col" className={TH}>Biometrics{" "}</th>
               <th scope="col" className={TH}>Moved here{" "}</th>
               <th scope="col" className={TH}>Approved{" "}</th>

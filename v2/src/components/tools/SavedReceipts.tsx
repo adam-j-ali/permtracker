@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
 import { normaliseReceipt } from "@/lib/uscis/receipt";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * A short list of receipt numbers, kept in this browser only.
@@ -93,7 +94,7 @@ export function SavedReceipts({ current }: { current: string | null }) {
                 <Link href={`/uscis-case-status?receipt=${encodeURIComponent(s.receipt)}`} className={LINK}>
                   {s.receipt}
                 </Link>{" "}
-                {s.label ? <span className="text-base text-soft">{s.label}</span> : null}{" "}
+                {s.label ? <span className="text-base text-soft">{keepWhole(s.label)}</span> : null}{" "}
                 <button
                   type="button"
                   onClick={() => update(list.filter((x) => x.receipt !== s.receipt))}

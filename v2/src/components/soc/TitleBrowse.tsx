@@ -11,6 +11,7 @@ import { formatInt } from "@/lib/format";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { SOC_TITLES_BASE, titleBucketCounts, titleLetterDescription, titlesByBucket } from "@/lib/socTitleBrowse";
 import { withSocialCard } from "@/lib/socialCard";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The job title A to Z: /soc-codes/browse and a page per letter, every title page a crawlable link
@@ -97,7 +98,7 @@ export async function TitleIndexBody() {
       <section className="mt-10">
         <h2 className="font-heading text-2xl font-bold">Pick a letter</h2>{" "}
         <p className="mt-2 max-w-3xl text-base text-muted-foreground">
-          {pageMin ? `A title gets a page at ${formatInt(pageMin)} filings across DOL's PERM, wage request and H-1B files. ` : ""}
+          {keepWhole(pageMin ? `A title gets a page at ${formatInt(pageMin)} filings across DOL's PERM, wage request and H-1B files. ` : "")}
           Seniority words and level marks don&apos;t make a new title: Sr. Software Engineer III is counted as Software
           Engineer, so all its filings sit on one page. The{" "}
           <Link href={SOC_TITLES_BASE} className="link">
@@ -132,7 +133,7 @@ export async function TitleLetterBody({ letter }: { letter: string }) {
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
             {formatInt(pages.length)} of the {formatInt(total)} job titles with a page here. The busiest is{" "}
             <Link href={`${SOC_TITLES_BASE}/${busiest.slug}`} className="link">
-              {busiest.title}
+              {keepWhole(busiest.title)}
             </Link>{" "}
             with {formatInt(busiest.filings)} filings. Each page shows the SOC codes employers filed the title under, and how
             often.
@@ -149,7 +150,9 @@ export async function TitleLetterBody({ letter }: { letter: string }) {
         <section className="mt-10">
           <h2 className="font-heading text-2xl font-bold">All {formatInt(pages.length)}, alphabetically</h2>{" "}
           <p className="mt-2 max-w-3xl text-base text-muted-foreground">
-            Each number is the filings with that title in DOL&apos;s PERM, wage request and H-1B files.
+            <KeepWhole>
+              {"Each number is the filings with that title in DOL's PERM, wage request and H-1B files."}
+            </KeepWhole>
           </p>{" "}
           <BrowseList
             id="title-list"

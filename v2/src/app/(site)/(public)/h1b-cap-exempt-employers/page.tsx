@@ -35,6 +35,7 @@ import { getDatasetSchema } from "@/lib/structuredData";
 import { US_STATE_NAMES } from "@/lib/usStateNames";
 import { MONTH_ABBR, MONTH_NAMES } from "@convex/lib/months";
 import { softFail } from "@/lib/softRead";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The employers whose wage requests tell DOL that ACWIA covers them, the kinds
@@ -205,10 +206,13 @@ export default async function Page() {
           <JsonLdScript key={i} schema={s} />
         ))}
         <header className="max-w-3xl">
-          <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">H-1B cap-exempt employers</h1>{" "}
+          <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl"><KeepWhole>{"H-1B cap-exempt employers"}</KeepWhole></h1>{" "}
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-            Colleges and universities, the nonprofits tied to them, and research organizations hire H-1B workers outside the
-            lottery. These are the employers whose wage requests tell DOL they&apos;re one of those.
+            <KeepWhole>
+              {"Colleges and universities, the nonprofits tied to them, and research organizations hire H-1B " +
+                "workers outside the lottery. These are the employers whose wage requests tell DOL they're one of " +
+                "those."}
+            </KeepWhole>
           </p>
         </header>{" "}
         {doc ? (
@@ -273,7 +277,7 @@ export default async function Page() {
                     noun="employers"
                     caption={
                       <caption className="sr-only">
-                        Cap-exempt employers ranked {SHOWN + 1} to {list.length} by certified H-1B LCAs{" "}
+                        Cap-exempt employers ranked {SHOWN + 1} to {list.length}<KeepWhole>{" by certified H-1B LCAs"}</KeepWhole>{" "}
                       </caption>
                     }
                     head={
@@ -340,28 +344,31 @@ export default async function Page() {
         </section>{" "}
         <FinePrint summary="How the list is made" className="mt-8">
           <p>
-            Every wage request (Form ETA-9141) asks whether ACWIA covers the employer and as which kind. An employer is listed
-            when most of its answered requests in DOL&apos;s files say yes, with the kind it named most and the state most of
-            those jobs were in. Each spelling of an employer&apos;s name counts on one page.
+            <KeepWhole>
+              {"Every wage request (Form ETA-9141) asks whether ACWIA covers the employer and as which kind. An " +
+                "employer is listed when most of its answered requests in DOL's files say yes, with the kind it " +
+                "named most and the state most of those jobs were in. Each spelling of an employer's name counts " +
+                "on one page."}
+            </KeepWhole>
           </p>{" "}
           {doc ? (
             <p>
-              LCAs are certified H-1B LCAs (H-1B1 and E-3 left out) in fiscal year {doc.asOf.lcaFy}, the newest finished one.
+              <KeepWhole>{"LCAs are certified H-1B LCAs (H-1B1 and E-3 left out) in fiscal year "}</KeepWhole>{doc.asOf.lcaFy}, the newest finished one.
               USCIS&apos;s approvals are its Employer Data Hub for fiscal year {doc.asOf.uscisFy}, shown only where USCIS&apos;s
               spelling of the employer reaches its page. These employers held{" "}
-              {formatShareOf(doc.lcas, doc.allLcas)} of all certified H-1B LCAs that year.
+              {formatShareOf(doc.lcas, doc.allLcas)}<KeepWhole>{" of all certified H-1B LCAs that year."}</KeepWhole>
             </p>
           ) : null}
         </FinePrint>{" "}
         <nav aria-label="Related" className="mt-8 flex flex-wrap gap-x-6 text-base">
           <Link href="/h1b-lottery-odds" className="link inline-flex min-h-11 items-center">
-            H-1B lottery odds
+            <KeepWhole>{"H-1B lottery odds"}</KeepWhole>
           </Link>{" "}
           <Link href="/h1b-employers" className="link inline-flex min-h-11 items-center">
-            Top H-1B employers
+            <KeepWhole>{"Top H-1B employers"}</KeepWhole>
           </Link>{" "}
           <Link href="/lca-cases" className="link inline-flex min-h-11 items-center">
-            Search H-1B LCAs
+            <KeepWhole>{"Search H-1B LCAs"}</KeepWhole>
           </Link>{" "}
           <Link href="/law-firm-rankings" className="link inline-flex min-h-11 items-center">
             Law firm rankings

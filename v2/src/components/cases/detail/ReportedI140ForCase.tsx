@@ -10,6 +10,7 @@ import { REPORTED_PLACES } from "@/lib/reportedPlaces";
 import { easternDay } from "@/lib/time";
 import type { Premium } from "@/lib/reportedI140";
 import { windowText, type I140Summary } from "@/lib/reportedSummary";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * "How I-140s like this one are going", on a saved case's I-140 tab: the I-140s people reported in the same category
@@ -98,25 +99,27 @@ export function ReportedI140ForCase({
       <div className="detail-card-head ch-i140">
         <h2 id="reported-i140-h" className="flex items-center gap-1.5">
           <UsersThreeIcon className="h-3.5 w-3.5" aria-hidden="true" />
-          How I-140s like this one are going
+          <KeepWhole>{"How I-140s like this one are going"}</KeepWhole>
         </h2>
       </div>{" "}
       <div className="detail-card-body grid grid-cols-1 gap-4 [&>*]:min-w-0">
         {!cat ? (
           <p className="text-base text-muted-foreground">
-            Add the I-140&apos;s category in the case form to compare it with the I-140s people reported.
+            <KeepWhole>
+              {"Add the I-140's category in the case form to compare it with the I-140s people reported."}
+            </KeepWhole>
           </p>
         ) : got.kind === "loading" ? (
-          <p className="text-base text-muted-foreground">Reading the I-140s people reported…</p>
+          <p className="text-base text-muted-foreground"><KeepWhole>{"Reading the I-140s people reported…"}</KeepWhole></p>
         ) : got.kind === "error" ? (
           <p className="text-base" role="alert">
-            The reported I-140 figures couldn&apos;t be read just now. Try again in a minute.
+            <KeepWhole>{"The reported I-140 figures couldn't be read just now. Try again in a minute."}</KeepWhole>
           </p>
         ) : (
           <Rows rows={pickI140Rows(got.rows, category, premium)} cat={cat} days={days} decided={!!decidedOn} />
         )}{" "}
         <p className="text-sm text-muted-foreground">
-          {`From the I-140s people reported in ${REPORTED_PLACES} and on PERM Tracker, updated each hour. USCIS posts its own processing times as well.`}{" "}
+          <KeepWhole>{`From the I-140s people reported in ${REPORTED_PLACES} and on PERM Tracker, updated each hour. USCIS posts its own processing times as well.`}</KeepWhole>{" "}
           <Link href="/uscis-processing-times/i-140" className="link">
             USCIS&apos;s posted times and every category
           </Link>

@@ -31,6 +31,7 @@ import type { CalendarEvent } from "@/lib/calendar/types";
 import { STAGE_COLORS } from "@/lib/calendar/types";
 import { DaysChip } from "@/components/cases/DeadlineCountdown";
 import type { CaseDataMap } from "./CalendarView";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // ============================================================================
 // Types
@@ -189,7 +190,7 @@ export function CalendarMobileList({
                     aria-label={`${event.title}, ${employerName ?? "case"}, ${formatEventDate(event.start)}`}
                   >
                     <span className="min-w-0 flex-1">
-                      <span className="line-clamp-2 font-semibold leading-snug">{event.title}</span>{" "}
+                      <span className="line-clamp-2 font-semibold leading-snug">{keepWhole(event.title)}</span>{" "}
                       <span className="mt-0.5 block truncate text-sm text-muted-foreground">
                         {employerName ?? "Unknown case"}
                         {caseData?.positionTitle ? <span className="hidden sm:inline">{` - ${caseData.positionTitle}`}</span> : null}

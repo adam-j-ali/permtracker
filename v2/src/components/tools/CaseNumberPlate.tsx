@@ -1,6 +1,7 @@
 import type { ParsedCaseNumber } from "@/lib/permCaseNumber";
 import { daysBetween } from "@/lib/time";
 import { longDate } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The case number, read back as the artifact it is.
@@ -65,10 +66,10 @@ export function CaseNumberPlate({
             <div key={s.label} className="flex items-end">
               <span className="block">
                 <span className="block text-sm text-muted-foreground">
-                  {s.label}
+                  {keepWhole(s.label)}
                 </span>{" "}
                 <span className="block font-mono text-xl font-semibold leading-none tabular-nums sm:text-2xl">
-                  {s.text}
+                  {keepWhole(s.text)}
                 </span>
               </span>
               {i < segments.length - 1 ? (

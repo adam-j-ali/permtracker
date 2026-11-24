@@ -22,6 +22,7 @@ import { toast } from "@/lib/toast";
 import { handleOperationError } from "@/lib/errors";
 import { fmtISODate, fmtISOShort } from "./case-detail-utils";
 import type { CaseDetailData } from "./case-detail-types";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // ============================================================================
 // TYPES
@@ -304,7 +305,7 @@ export function RecruitmentResultsCard({
                   config.text
                 )}
               >
-                {config.label}
+                {keepWhole(config.label)}
               </span>
             </div>
             <p className={cn("text-sm font-medium ml-7", config.text)}>

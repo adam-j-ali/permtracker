@@ -35,6 +35,7 @@ import { SITE_URL } from "@/lib/constants/site";
 import { pageCardUrl } from "@/lib/pageCards";
 import { changed } from "@/lib/pageDates";
 import { getLongReadSchema } from "@/lib/structuredData";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "How PERM Tracker's Estimates Work";
 const DESCRIPTION =
@@ -343,7 +344,7 @@ export default async function MethodologyPage() {
                 <img src={s.seal} alt={s.sealAlt} width={44} height={44} loading="lazy" className="h-11 w-11 shrink-0" />
                 <div className="min-w-0">
                   <h3 className="font-heading text-lg font-bold leading-snug">{s.name}</h3>{" "}
-                  <p className="mt-1 text-base">{s.short}</p>
+                  <p className="mt-1 text-base">{keepWhole(s.short)}</p>
                 </div>
               </div>{" "}
               <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
@@ -359,7 +360,7 @@ export default async function MethodologyPage() {
                 </a>
               </div>{" "}
               <FinePrint summary="How it's read">
-                <p className="mt-1 text-sm leading-relaxed text-soft">{s.what}</p>{" "}
+                <p className="mt-1 text-sm leading-relaxed text-soft">{keepWhole(s.what)}</p>{" "}
                 <p className="mt-2 text-sm text-soft">{s.cadence}</p>
               </FinePrint>
             </li>
@@ -405,7 +406,7 @@ export default async function MethodologyPage() {
                     href={t.where.href}
                     className="link text-sm"
                   >
-                    Open {t.where.label}
+                    Open {keepWhole(t.where.label)}
                   </Link>
                 </p>
               </>

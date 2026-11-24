@@ -37,6 +37,7 @@ import {
   type FinderFilters,
 } from "@/lib/sponsorFinder";
 import { US_STATE_NAMES, stateName } from "@/lib/usStateNames";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Find a green card sponsor by job, place and what its record shows: the
@@ -162,14 +163,14 @@ function JobLine({ pick, f }: { pick: JobPick; f: FinderFilters }) {
   if (pick.kind === "unknown") {
     return (
       <p className="mt-6 max-w-3xl border-l-4 border-data-warn pl-4 text-base">
-        No job matches &ldquo;{pick.text}&rdquo;. Try its usual title, such as software developers or accountants.
+        No job matches &ldquo;{keepWhole(pick.text)}&rdquo;. Try its usual title, such as software developers or accountants.
       </p>
     );
   }
   return (
     <div className="mt-6 max-w-3xl text-base">
       <p>
-        Sponsors for <strong>{pick.title}</strong> <span className="whitespace-nowrap text-muted-foreground">(SOC {pick.soc})</span>
+        Sponsors for <strong>{keepWhole(pick.title)}</strong> <span className="whitespace-nowrap text-muted-foreground">(SOC {pick.soc})</span>
         {f.state ? ` in ${stateName(f.state)}` : ""}.
       </p>{" "}
       {isScheduleA(pick.soc) ? <ScheduleANote /> : null}
@@ -358,7 +359,7 @@ export default async function SponsorFinderPage({
           </label>{" "}
           <label className="flex min-h-[44px] items-center gap-2">
             <input type="checkbox" name="transfers" value="1" defaultChecked={f.transfers} className="size-5 shrink-0" />
-            Hires H-1B transfers ({Math.round(TRANSFER_SHARE * 100)}% or more of positions)
+            <KeepWhole>{"Hires H-1B transfers ("}</KeepWhole>{Math.round(TRANSFER_SHARE * 100)}% or more of positions)
           </label>{" "}
           <label className="flex min-h-[44px] items-center gap-2">
             <input type="checkbox" name="senior" value="1" defaultChecked={f.senior} className="size-5 shrink-0" />
@@ -423,7 +424,7 @@ export default async function SponsorFinderPage({
                       <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm [&>*]:min-w-0">
                         {COLUMNS.map((c) => (
                           <Fragment key={c.label}>
-                            <dt className="text-muted-foreground">{c.label}</dt>{" "}
+                            <dt className="text-muted-foreground">{keepWhole(c.label)}</dt>{" "}
                             <dd className="text-right tabular-nums">{c.cell(r)}</dd>{" "}
                           </Fragment>
                         ))}
@@ -439,7 +440,7 @@ export default async function SponsorFinderPage({
                         <th scope="col" className="p-2 font-bold">Employer </th>
                         {COLUMNS.map((c) => (
                           <th key={c.label} scope="col" className={`p-2 font-bold ${c.numeric ? "text-right" : ""}`}>
-                            {c.label}{" "}
+                            {keepWhole(c.label)}{" "}
                           </th>
                         ))}
                       </tr>
@@ -479,11 +480,7 @@ export default async function SponsorFinderPage({
           A job is its SOC occupation as DOL&apos;s files code it, both the dotted and plain spellings. Filings, the
           approval rate, the median offered wage and the typical decision are from DOL&apos;s published PERM files for
           that job and state (every outcome counted, as on each employer&apos;s page). A rate shows over{" "}
-          {MIN_DECIDED_FOR_RATE} or more decided cases and a median over {MIN_DECIDED_FOR_MEDIAN} or more, the employer
-          pages&apos; own bars. Filings in the last 12 months and cases waiting now include DOL&apos;s live record, which
-          names no job or worksite, so they count every job. H-1B LCAs come from DOL&apos;s LCA files, read under every
-          spelling of the employer&apos;s name. &quot;Transfers&quot; is the share of certified H-1B positions that were a
-          change of employer, and &quot;senior&quot; the share of LCAs at wage level III or IV (
+          {MIN_DECIDED_FOR_RATE} or more decided cases and a median over {MIN_DECIDED_FOR_MEDIAN}<KeepWhole>{" or more, the employer pages' own bars. Filings in the last 12 months and cases waiting now include DOL's live record, which names no job or worksite, so they count every job. H-1B LCAs come from DOL's LCA files, read under every spelling of the employer's name. \"Transfers\" is the share of certified H-1B positions that were a change of employer, and \"senior\" the share of LCAs at wage level III or IV ("}</KeepWhole>
           {Math.round(SENIOR_SHARE * 100)}% or more), each over the most recent 24 months of LCAs this site holds that
           detail for. &quot;Likely cap-exempt&quot; means most of the employer&apos;s wage requests tell DOL that ACWIA
           covers it (the{" "}

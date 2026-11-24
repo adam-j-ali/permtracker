@@ -9,6 +9,7 @@ import { FinderDock, FinderDockPanel } from "@/components/tools/FinderDock";
 import { Figure, FigureRow, type FigureTrend } from "@/components/data/FigureRow";
 import { Spark, SplitBar, type SplitPart } from "@/components/data/FigureVisual";
 import type { FigureKind } from "@/lib/sourceKind";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The top of a list page: what the list is, its headline figures, and the
@@ -20,22 +21,6 @@ import type { FigureKind } from "@/lib/sourceKind";
  * which the table reads on load (`queryFromUrl`), so the answer opens already
  * filtered with no script of its own.
  */
-
-/** A form or visa code is one word ("H-2A", "CW-1", "I-140"): a line must never end on its hyphen. */
-const CODE = /([A-Z]{1,3}-\d[0-9A-Z]*)/;
-
-/** A heading's words with each code kept whole. Split on a captured group, so the codes are the odd pieces. */
-export function wholeCodes(text: string): ReactNode[] {
-  return text.split(CODE).map((piece, i) =>
-    i % 2 === 1 ? (
-      <span key={i} className="whitespace-nowrap">
-        {piece}
-      </span>
-    ) : (
-      piece
-    ),
-  );
-}
 
 export interface IndexFigure {
   label: string;
@@ -113,8 +98,8 @@ export function IndexHeader({
           then the figures in one even row. Side by side, the title's column and the box's column never ended on the
           same line: one of them always stood over empty space, and the figures broke two and one. */}
       <div className="[&>*]:min-w-0">
-        <h1 className="text-balance font-heading text-4xl font-bold leading-tight sm:text-5xl">{wholeCodes(title)}</h1>{" "}
-        <p className="mt-4 max-w-2xl text-lg leading-relaxed text-soft">{lede}</p>{" "}
+        <h1 className="text-balance font-heading text-4xl font-bold leading-tight sm:text-5xl"><KeepWhole>{title}</KeepWhole></h1>{" "}
+        <p className="mt-4 max-w-2xl text-lg leading-relaxed text-soft">{keepWhole(lede)}</p>{" "}
         {aside ? <div className="mt-6 max-w-3xl">{aside}</div> : null}{" "}
         <IndexFigures figures={figures} className="mt-6" />
       </div>{" "}

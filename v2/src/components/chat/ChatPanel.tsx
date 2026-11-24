@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import type { ToolConfirmationState } from '@/lib/ai/tool-confirmation-types';
 import type { DisplayMessage } from '@/hooks/useChatWithPersistence';
 import { chatErrorText, cutShortNotice } from '@/lib/ai/limits';
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Props for the ChatPanel component
@@ -473,7 +474,7 @@ export function ChatPanel({
                     <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-destructive">
-                        {errorText.title}
+                        {keepWhole(errorText.title)}
                       </p>{" "}
                       <p className="text-sm text-destructive mt-1 break-words">
                         {errorText.detail}

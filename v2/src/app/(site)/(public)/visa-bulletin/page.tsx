@@ -60,6 +60,7 @@ import { ScrollBox } from "@/components/ui/scroll-box";
 import { MONTH_NAMES, shiftMonth } from "@convex/lib/months";
 import { softFail } from "@/lib/softRead";
 import { StepBothSources } from "@/components/community/StepBothSources";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "The Next Visa Bulletin, From Every Past One";
 const DESCRIPTION =
@@ -358,7 +359,7 @@ export default async function VisaBulletinPage() {
       {sections.map((s) => (
         <details key={s.key} className="group border-b-2 border-border last:border-b-0">
           <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-4 px-5 py-3 hover:bg-sage-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:px-6 [&::-webkit-details-marker]:hidden">
-            <h3 className="font-heading text-lg font-bold tracking-tight">{s.label}</h3>{" "}
+            <h3 className="font-heading text-lg font-bold tracking-tight">{keepWhole(s.label)}</h3>{" "}
             <span className="flex items-center gap-3">
               <span className="font-mono text-sm text-muted-foreground">{s.rows.length} {s.rows.length === 1 ? "country" : "countries"}</span>{" "}
               <CaretDownIcon className="h-5 w-5 shrink-0 text-primary transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
@@ -429,9 +430,9 @@ export default async function VisaBulletinPage() {
 
       <MoreText gist={"Bulletins are the State Department's. The line ahead is USCIS's monthly inventory."} className="mt-6">
         <p className="text-sm text-muted-foreground">
-          Bulletin figures are the State Department&apos;s, one row per published bulletin since {monthLabel(series[0]!.bulletinMonth)}. Inventory figures are USCIS&apos;s monthly pending I-485 counts. Every month-by-month cutoff, both charts, is on the{" "}
+          Bulletin figures are the State Department&apos;s, one row per published bulletin since {monthLabel(series[0]!.bulletinMonth)}<KeepWhole>{". Inventory figures are USCIS's monthly pending I-485 counts. Every month-by-month cutoff, both charts, is on the"}</KeepWhole>{" "}
           <Link href="/tools/priority-date-calculator" className="link">priority date page</Link>, and the queue ahead of your own date on the{" "}
-          <Link href="/tools/i485-queue-position" className="link">I-485 queue position tool</Link>.
+          <Link href="/tools/i485-queue-position" className="link"><KeepWhole>{"I-485 queue position tool"}</KeepWhole></Link>.
         </p>
       </MoreText>
 
@@ -488,7 +489,7 @@ export default async function VisaBulletinPage() {
               <tbody>
                 {spill.rows.map((r) => (
                   <tr key={r.label} className={r.label.startsWith("All") ? "border-t-2 border-border font-bold" : "border-b border-border/40"}>
-                    <td className="py-2 pr-3">{r.label}{" "}</td>
+                    <td className="py-2 pr-3">{keepWhole(r.label)}{" "}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">{formatInt(r.worldwide)}{" "}</td>
                     <td className="py-2 text-right tabular-nums">{r.foreignState === null ? "" : formatInt(r.foreignState)}{" "}</td>
                   </tr>

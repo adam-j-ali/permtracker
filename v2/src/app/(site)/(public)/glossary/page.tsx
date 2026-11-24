@@ -26,6 +26,7 @@ import { withSocialCard } from "@/lib/socialCard";
 import { SITE_URL } from "@/lib/constants/site";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The glossary: every term the site uses, defined once, each pointing at the
@@ -153,7 +154,7 @@ export default function GlossaryPage() {
                   <summary className="flex min-h-[44px] cursor-pointer list-none items-start justify-between gap-3 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:grid sm:grid-cols-[14rem_minmax(0,1fr)_1.25rem] sm:gap-x-8 [&::-webkit-details-marker]:hidden">
                     <span className="min-w-0">
                       <span className="font-heading text-lg font-bold">
-                        {t.term}
+                        {keepWhole(t.term)}
                       </span>{" "}
                       {t.aka && t.aka.length > 0 ? (
                         <span className="mt-1 block text-sm text-muted-foreground">
@@ -184,7 +185,7 @@ export default function GlossaryPage() {
                             rel="noopener noreferrer"
                             className="link inline-flex min-h-11 items-center font-mono text-sm"
                           >
-                            {t.cite.label}
+                            {keepWhole(t.cite.label)}
                           </a>
                         ) : null}{" "}
                         {(t.see ?? []).map((s) => (
@@ -194,7 +195,7 @@ export default function GlossaryPage() {
                               href={s.href}
                               className="link inline-flex min-h-11 items-center"
                             >
-                              {s.label}
+                              {keepWhole(s.label)}
                             </Link>
                           </Fragment>
                         ))}
@@ -237,7 +238,7 @@ function StageName({ stage }: { stage: GlossaryStage }) {
   return (
     <span className="block">
       <span className="block font-heading text-lg font-bold leading-tight">{stage.name}</span>{" "}
-      <span className="block text-sm text-muted-foreground">{stage.who}</span>
+      <span className="block text-sm text-muted-foreground">{keepWhole(stage.who)}</span>
     </span>
   );
 }

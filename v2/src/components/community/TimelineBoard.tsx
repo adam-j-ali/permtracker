@@ -21,6 +21,7 @@ import { ChartTips } from "@/components/data/ChartTips";
 import { cn } from "@/lib/utils";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { officeByCode } from "@/lib/uscisOffices";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /** One stage in the empty state: its name and how many of the five reports a median needs it holds. */
 function EmptyStep({ m, n }: { m: MetricResult; n: number | null }) {
@@ -32,7 +33,7 @@ function EmptyStep({ m, n }: { m: MetricResult; n: number | null }) {
         </span>
       ) : null}{" "}
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-bold">{m.label}</span>{" "}
+        <span className="block text-sm font-bold">{keepWhole(m.label)}</span>{" "}
         <span aria-hidden="true" className="mt-2 flex gap-1">
           {Array.from({ length: METRIC_MIN_N }, (_, k) => (
             <span
@@ -97,7 +98,7 @@ export function StageMedians({ metrics }: { metrics: readonly MetricResult[] }) 
         </ol>{" "}
         {side.length > 0 ? (
           <>
-            <p className="mt-4 text-sm font-bold">Beside the case: RFEs and a spouse&apos;s H-4</p>{" "}
+            <p className="mt-4 text-sm font-bold"><KeepWhole>{"Beside the case: RFEs and a spouse's H-4"}</KeepWhole></p>{" "}
             <ul className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
               {side.map((m) => (
                 <Fragment key={m.id}>
@@ -120,7 +121,7 @@ export function StageMedians({ metrics }: { metrics: readonly MetricResult[] }) 
           {" "}
           <li className="bg-sage p-4 border-2 border-border">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-              <p className="font-heading text-base font-bold">{m.label}</p>{" "}
+              <p className="font-heading text-base font-bold">{keepWhole(m.label)}</p>{" "}
               <p className="text-sm text-muted-foreground">
                 {m.verified ? "DOL's record" : "self-reported"}, {m.n.toLocaleString("en-US")}{" "}
                 {m.n === 1 ? "timeline" : "timelines"}
@@ -203,7 +204,7 @@ export function BoardKey() {
               className={cn("inline-block size-3 border-input border", DOT[s.id], shape(s.id))}
               aria-hidden="true"
             />{" "}
-            {s.short}
+            {keepWhole(s.short)}
           </li>
         </Fragment>
       ))}
@@ -239,7 +240,7 @@ export function RecentApprovals({
       <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 [&>*]:min-w-0">
         {recent.steps.map((s) => (
           <li key={s.id} className="flex items-baseline justify-between gap-3 border-2 border-border px-4 py-3">
-            <span>{s.label}</span>{" "}
+            <span>{keepWhole(s.label)}</span>{" "}
             <span className={s.count === null ? "text-muted-foreground" : "font-heading text-xl font-bold tabular-nums"}>
               {s.count === null ? `Fewer than ${RECENT_MIN}` : s.count.toLocaleString("en-US")}
             </span>{" "}
@@ -270,7 +271,7 @@ export function ThirtyDayLine({ month, className }: { month: ThirtyDays; classNa
   return (
     <p className={cn("text-base leading-relaxed", className)}>
       In the last 30 days: <b className="font-heading text-xl font-bold tabular-nums">{f(month.greenCards)}</b>{" "}
-      {month.greenCards === 1 ? "green card" : "green cards"}, with {f(month.i140s)} I-140 and {f(month.perm)} PERM decisions,
+      {month.greenCards === 1 ? "green card" : "green cards"}, with {f(month.i140s)}<KeepWhole>{" I-140 and "}</KeepWhole>{f(month.perm)} PERM decisions,
       reported by the people who got them.
     </p>
   );
@@ -310,7 +311,7 @@ export function BoardTable({ rows }: { rows: readonly BoardRow[] }) {
                 <td className="px-3 py-3">{label(COUNTRIES, r.country) ?? ""}{" "}</td>
                 <td className="px-3 py-3">
                   {r.route ? (label(ROUTES, r.route) ?? "").replace(/ \(.*\)$/, "") : ""}{" "}
-                  {r.premium ? <span className="block text-muted-foreground">premium I-140</span> : null}{" "}
+                  {r.premium ? <span className="block text-muted-foreground"><KeepWhole>{"premium I-140"}</KeepWhole></span> : null}{" "}
                   {r.applicant === "dependent" ? <span className="block text-muted-foreground">a dependent&apos;s case</span> : null}{" "}
                   {r.interview === "waived" ? <span className="block text-muted-foreground">interview waived</span> : null}{" "}
                   {r.contacts ? <span className="block text-muted-foreground">{`${contactsText(r.contacts)} `}</span> : null}{" "}
@@ -318,7 +319,7 @@ export function BoardTable({ rows }: { rows: readonly BoardRow[] }) {
                   {r.h4 ? <span className="block text-muted-foreground">{`${h4Text(r.h4)} `}</span> : null}{" "}
                   {/* Optional: a backend older than Nov 11 2026 sends no office. */}
                   {r.office && officeByCode(r.office) ? (
-                    <span className="block text-muted-foreground">{`I-485 at ${officeByCode(r.office)!.name}`}</span>
+                    <span className="block text-muted-foreground"><KeepWhole>{`I-485 at ${officeByCode(r.office)!.name}`}</KeepWhole></span>
                   ) : null}{" "}
                   {/* Optional: a backend older than Nov 17 2026 sends no center. */}
                   {r.center && officeByCode(r.center) ? (
@@ -450,7 +451,7 @@ export function ContactOutcomes({ outcomes }: { outcomes: readonly Outcome[] }) 
       <ul className="mt-1 space-y-1 text-base leading-relaxed">
         {shown.map((o) => (
           <li key={o.kind}>
-            {`After ${/^[aeiou]/i.test(o.label) ? "an" : "a"} ${o.label}: ${n(o.reported, "timeline", "timelines")}, ${o.withCard === 0 ? "none with a green card yet" : `${o.withCard.toLocaleString("en-US")} with a green card${o.medianToCard !== null ? `, a median of ${days(o.medianToCard)} later` : ""}`}${o.waiting ? `, ${o.waiting.toLocaleString("en-US")} still waiting` : ""}.`}{" "}
+            <KeepWhole>{`After ${/^[aeiou]/i.test(o.label) ? "an" : "a"} ${o.label}: ${n(o.reported, "timeline", "timelines")}, ${o.withCard === 0 ? "none with a green card yet" : `${o.withCard.toLocaleString("en-US")} with a green card${o.medianToCard !== null ? `, a median of ${days(o.medianToCard)} later` : ""}`}${o.waiting ? `, ${o.waiting.toLocaleString("en-US")} still waiting` : ""}.`}</KeepWhole>{" "}
           </li>
         ))}
       </ul>{" "}
@@ -487,7 +488,7 @@ export function ThirdFta0Line({ r }: { r: { reported: number; withCard: number; 
     <div className="max-w-3xl border-l-4 border-data-info-ink bg-tint px-4 py-3">
       <p className="text-base font-semibold">After a third FTA0</p>{" "}
       <p className="mt-1 text-base leading-relaxed">
-        {`Of the ${n(r.reported, "timeline", "timelines")} reporting a third FTA0 on the I-485, ${card}${wait}`}
+        <KeepWhole>{`Of the ${n(r.reported, "timeline", "timelines")} reporting a third FTA0 on the I-485, ${card}${wait}`}</KeepWhole>
       </p>{" "}
       <p className="mt-1 text-sm text-muted-foreground">
         Self-reported, and counted only from timelines updated in the last 60 days for the still waiting. A median shows
@@ -513,7 +514,7 @@ export function RfeBars({ rfe }: { rfe: RfeSummary }) {
               data-tip={`${r.label}\n${r.count.toLocaleString("en-US")} of ${rfe.total.toLocaleString("en-US")} RFEs reported`}
               className="grid grid-cols-[minmax(0,14rem)_1fr_auto] items-center gap-3 text-sm"
             >
-              <span className="font-bold">{r.label}</span>{" "}
+              <span className="font-bold">{keepWhole(r.label)}</span>{" "}
               <span className="h-4 border-input bg-background border" aria-hidden="true">
                 <span className="block h-full bg-primary" style={{ width: `${(r.count / most) * 100}%` }} />
               </span>{" "}
@@ -528,7 +529,7 @@ export function RfeBars({ rfe }: { rfe: RfeSummary }) {
           <Fragment key={f.id}>
             {" "}
             <div className="flex justify-between gap-4">
-              <dt>RFEs on the {f.label}</dt>{" "}
+              <dt>RFEs on the {keepWhole(f.label)}</dt>{" "}
               <dd className="font-bold tabular-nums">{f.count}</dd>
             </div>
           </Fragment>
@@ -537,7 +538,7 @@ export function RfeBars({ rfe }: { rfe: RfeSummary }) {
           <Fragment key={o.id}>
             {" "}
             <div className="flex justify-between gap-4 border-t border-border/40 pt-2">
-              <dt>{o.label}</dt>{" "}
+              <dt>{keepWhole(o.label)}</dt>{" "}
               <dd className="font-bold tabular-nums">{o.count}</dd>
             </div>
           </Fragment>
@@ -589,7 +590,7 @@ export function WhoIsWaiting({
                 data-tip={`${s.label}\n${s.count.toLocaleString("en-US")} of ${total.toLocaleString("en-US")} ${many}`}
                 className="grid grid-cols-[minmax(0,15rem)_1fr_auto] items-center gap-3 text-sm"
               >
-                <span className="font-bold">{s.label}</span>{" "}
+                <span className="font-bold">{keepWhole(s.label)}</span>{" "}
                 <span className="h-4 border-input bg-background border" aria-hidden="true">
                   <span className="block h-full bg-primary" style={{ width: `${(s.count / most) * 100}%` }} />
                 </span>{" "}
@@ -610,7 +611,7 @@ export function WhoIsWaiting({
                 </th>
                 {stages.map((s) => (
                   <th key={s.id} scope="col" className="p-2 text-right font-bold">
-                    {`${s.label} `}
+                    <KeepWhole>{`${s.label} `}</KeepWhole>
                   </th>
                 ))}
               </tr>

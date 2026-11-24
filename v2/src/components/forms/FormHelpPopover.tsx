@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CaretLeftIcon, CaretRightIcon, QuestionIcon as HelpCircle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Fixed-position help panel for the case form.
@@ -137,7 +138,7 @@ export function FormHelpPanel() {
 
           {/* I-140 Section */}
           <section>
-            <SectionHeading>4. I-140 (Immigrant Petition)</SectionHeading>
+            <SectionHeading><KeepWhole>{"4. I-140 (Immigrant Petition)"}</KeepWhole></SectionHeading>
             <p className="text-muted-foreground mb-2">
               The immigrant petition filed with USCIS. Must be filed on or before the ETA 9089 expiration date (certification + 179 days, the date DOL prints).
             </p>

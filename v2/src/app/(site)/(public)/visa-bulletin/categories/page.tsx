@@ -17,6 +17,7 @@ import { withSocialCard } from "@/lib/socialCard";
 import type { BulletinMonth } from "@/lib/perm";
 import { summariseBulletins } from "@/lib/db/bulletin";
 import { getVisaBulletins } from "@/lib/db/publicData";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 export const revalidate = 86400;
 
@@ -128,14 +129,16 @@ export default async function BulletinCategoriesPage() {
               <li key={k.label} className="flex items-center gap-2">
                 <span aria-hidden="true" className={`size-4 shrink-0 border border-input ${k.fill}`} />{" "}
                 <span>
-                  <span className="font-bold">{k.label}</span>: {k.means}
+                  <span className="font-bold">{keepWhole(k.label)}</span>: {k.means}
                 </span>{" "}
               </li>
             ))}
           </ul>{" "}
           <p className="mt-3 text-base text-muted-foreground">
-            Top of each cell: the final action date, when a green card can be approved, which sets the cell&apos;s fill.
-            Under it: the dates for filing, when USCIS allows it for filing an I-485.
+            <KeepWhole>
+              {"Top of each cell: the final action date, when a green card can be approved, which sets the cell's " +
+                "fill. Under it: the dates for filing, when USCIS allows it for filing an I-485."}
+            </KeepWhole>
           </p>
         </section>
       ) : null}

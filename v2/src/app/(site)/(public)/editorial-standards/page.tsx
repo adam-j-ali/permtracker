@@ -26,6 +26,7 @@ import { SourcePages } from "@/components/about/SourcePages";
 import { NOT_LEGAL_SERVICES, SABRINA } from "@/lib/constants/about";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export const dynamic = "force-static";
 
@@ -150,7 +151,7 @@ export default function EditorialStandardsPage() {
                 <s.icon className="size-6" />
               </span>{" "}
               <div>
-                <h2 className="font-heading text-xl font-bold">{s.title}</h2>{" "}
+                <h2 className="font-heading text-xl font-bold">{keepWhole(s.title)}</h2>{" "}
                 <p className="mt-2 text-base leading-relaxed text-soft">{s.body}</p>
               </div>
             </li>

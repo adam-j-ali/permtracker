@@ -36,6 +36,7 @@ import {
 } from "./geometry";
 import type { SorterRun } from "./model";
 import { MotionToggle } from "../MotionToggle";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /** Seconds between cards leaving the hopper, and a card's legs. */
 const EMIT_S = 0.3;
@@ -397,7 +398,7 @@ export default function CardSorterFigure({ run }: { run: SorterRun }) {
             <Fragment key={p.key}>
               {" "}
               <li className="border-t-2 border-border pt-3">
-                <span className="block text-sm font-bold text-soft">{p.label}</span>{" "}
+                <span className="block text-sm font-bold text-soft">{keepWhole(p.label)}</span>{" "}
                 <span className="mt-1 block font-heading text-2xl font-bold tabular-nums">{formatInt(p.count)}</span>{" "}
                 <span className="mt-1 block text-sm leading-snug text-muted-foreground">
                   {p.gloss}.{" "}

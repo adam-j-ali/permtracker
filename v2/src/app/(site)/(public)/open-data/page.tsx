@@ -34,6 +34,7 @@ import { getProcessingTimesArchive, getVisaBulletinsArchive } from "@/lib/db/ope
 import { buttonVariants } from "@/components/ui/button";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { longDate, MONTH_ABBR, shortDate } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "Open Data: Visa Bulletin and DOL History";
 const DESCRIPTION =
@@ -200,12 +201,12 @@ export default async function OpenDataPage() {
         <p className="mt-2 max-w-2xl text-base leading-relaxed text-soft">
           Free to copy, change and publish for non-commercial use under{" "}
           <a href={OPEN_DATA_LICENSE.url} className="link" rel="license">
-            {OPEN_DATA_LICENSE.short}
+            {keepWhole(OPEN_DATA_LICENSE.short)}
           </a>
           . {OPEN_DATA_EXTRA.allowed} {OPEN_DATA_EXTRA.ask} Credit us like this:
         </p>{" "}
         <p className="mt-4 bg-tint px-4 py-3 tabular-nums text-sm break-words border-2 border-border">
-          Source: {OPEN_DATA_CREDIT}, from U.S. Department of State and Department of Labor records. {OPEN_DATA_LICENSE.short}.
+          Source: {OPEN_DATA_CREDIT}, from U.S. Department of State and Department of Labor records. {keepWhole(OPEN_DATA_LICENSE.short)}.
         </p>{" "}
         <p className="mt-4 text-base text-soft">On a web page, with the link:</p>{" "}
         <div className="mt-2 flex flex-wrap items-start gap-3">
@@ -325,7 +326,7 @@ function DatasetPanel<T extends object>({
         <p className="text-sm text-muted-foreground">
           From the{" "}
           <a href={source.href} className="link" rel="noopener noreferrer" target="_blank">
-            {source.label}
+            {keepWhole(source.label)}
           </a>
           . Updated the day it changes.
         </p>{" "}

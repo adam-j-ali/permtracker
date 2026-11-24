@@ -4,6 +4,7 @@ import { useEffect, useCallback, useRef, KeyboardEvent } from "react";
 import { choiceVariants } from "@/components/ui/choice";
 import { cn } from "@/lib/utils";
 import { useSettingsUnsavedChanges } from "./SettingsUnsavedChangesContext";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // ============================================================================
 // TYPES
@@ -132,7 +133,7 @@ export default function SettingsLayout({
                 !isActive && "md:bg-transparent md:hover:border-transparent md:hover:bg-muted",
               )}
             >
-              {item.label}
+              {keepWhole(item.label)}
             </button>
           );
         })}

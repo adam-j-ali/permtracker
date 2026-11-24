@@ -16,6 +16,7 @@
 
 import { cn } from "@/lib/utils";
 import { choiceVariants } from "@/components/ui/choice";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /** The one list the tabs filter; the page gives it this id. */
 export const NOTIFICATION_PANEL_ID = "notification-panel";
@@ -70,7 +71,7 @@ export default function NotificationTabs({
             onClick={() => onTabChange(tab.id)}
             className={cn(choiceVariants({ on: isActive }), "justify-center px-2 sm:px-4")}
           >
-            {tab.label}
+            {keepWhole(tab.label)}
             {count !== undefined && count > 0 && (
               <span className="text-muted-foreground tabular-nums">
                 {" "}

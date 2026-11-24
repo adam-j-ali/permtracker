@@ -12,6 +12,7 @@ import {
 import type { DecidedCase } from "@/lib/db/decidedDays";
 import { buttonVariants } from "@/components/ui/button";
 import { FilterCombobox } from "@/components/ui/filter-combobox";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 const CONTROL =
   "mt-1 w-full min-w-0 min-h-[44px] border-2 border-input bg-card px-3 text-base font-medium focus-visible:ring-2 focus-visible:ring-primary";
@@ -73,7 +74,7 @@ export function DecidedFilters({
             {" "}
             <div>
               <label htmlFor={`${id}-${f.key}`} className={LABEL}>
-                {f.label}
+                {keepWhole(f.label)}
               </label>{" "}
               {TYPED_NOUN[f.key] ? (
                 <FilterCombobox

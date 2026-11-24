@@ -4,6 +4,7 @@ import { PageSection } from "@/components/data/PageSection";
 import { ChartTips } from "@/components/data/ChartTips";
 import { formatInt } from "@/lib/format";
 import type { LineAheadRow } from "@/lib/queueAhead";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The line ahead of a case in DOL's ordinary queue, month by month.
@@ -54,7 +55,7 @@ export function LineAhead({
               data-tip={`${r.label}${r.own ? ", your own month, filed before you" : ""}\n${formatInt(r.n)} cases still in line`}
               data-href={r.key.startsWith("before:") ? undefined : `/perm-queue/${r.key}`}
             >
-              <span className={`font-mono text-sm ${r.own ? "font-semibold" : "text-soft"}`}>{r.label}</span>{" "}
+              <span className={`font-mono text-sm ${r.own ? "font-semibold" : "text-soft"}`}>{keepWhole(r.label)}</span>{" "}
               {/* Soft colours, no black or grey (round 3, Oct 15 2026): the
                   line ahead of you soft green, your own month lime. */}
               <span className="block h-4 border border-foreground/30 bg-card" aria-hidden="true">

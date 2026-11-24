@@ -30,6 +30,7 @@ import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 import { choiceVariants } from "@/components/ui/choice";
 import { ChoiceRow } from "@/components/ui/choice-row";
 import { useListSize } from "@/components/ui/pagination";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Everything DOL moved on a day, searchable, filterable and sortable.
@@ -803,7 +804,7 @@ export function ChangeFeedBrowser({
               {UNAVAILABLE.map((u) => (
                 <Fragment key={u.slug}>
                   <li className="bg-tint p-3 border-2 border-border">
-                    <span className={LABEL}>{u.label}</span>{" "}
+                    <span className={LABEL}>{keepWhole(u.label)}</span>{" "}
                     <span className="mt-1 block text-sm leading-relaxed text-soft">
                       {u.why}
                     </span>
@@ -996,9 +997,7 @@ export function ChangeFeedBrowser({
               Left out of that count:{" "}
               {feed.expiriesExcluded > 0 ? (
                 <>
-                  {formatInt(feed.expiriesExcluded)} certifications whose 180-day
-                  I-140 window lapsed, because a clock running out isn&apos;t DOL
-                  acting on a case
+                  {formatInt(feed.expiriesExcluded)}<KeepWhole>{" certifications whose 180-day I-140 window lapsed, because a clock running out isn't DOL acting on a case"}</KeepWhole>
                 </>
               ) : null}
               {feed.expiriesExcluded > 0 && feed.bulkExcluded > 0 ? "; " : ""}

@@ -14,6 +14,7 @@ import { getLineSnapshot } from "@/lib/db/greenCardLine";
 import { paceByLine } from "@/lib/perm";
 import { softFail } from "@/lib/softRead";
 import { StepBothSources } from "@/components/community/StepBothSources";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The whole employment-based line in front of one priority date: approved
@@ -105,8 +106,11 @@ export default async function GreenCardLinePage() {
           Your place in the green card line
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          This counts everyone ahead of your priority date in EB-2, EB-3 or EB-3 Other Workers, from what USCIS and the
-          State Department publish. It also shows what that means in years at the pace the line got green cards last year.
+          <KeepWhole>
+            {"This counts everyone ahead of your priority date in EB-2, EB-3 or EB-3 Other Workers, from what " +
+              "USCIS and the State Department publish. It also shows what that means in years at the pace the line " +
+              "got green cards last year."}
+          </KeepWhole>
         </p>
       </header>
       <ConsularPauseNote className="mt-6" />{" "}

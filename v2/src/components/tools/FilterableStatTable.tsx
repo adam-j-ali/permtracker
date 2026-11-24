@@ -15,6 +15,7 @@ import { compareNullsLast } from "@/lib/tableSort";
 import { NARROW_HIDDEN, Pagination, useNarrowScreen } from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
 import { SortMark } from "@/components/ui/sort-mark";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The searchable, filterable, paged table every entity index stands on.
@@ -432,7 +433,7 @@ export function FilterableStatTable<T>({
             <Fragment key={f.key}>{" "}
             <label className="flex min-h-[44px] w-full min-w-0 items-center gap-2 border-2 border-input bg-card px-3 focus-within:ring-2 focus-within:ring-primary shadow-hard-sm">
               <span className="text-sm font-bold text-muted-foreground">
-                {f.label}
+                {keepWhole(f.label)}
               </span>{" "}
               <select
                 value={facetValues[f.key] ?? ""}
@@ -602,7 +603,7 @@ export function FilterableStatTable<T>({
                       >
                         <span className={"inline-flex items-center gap-1.5" + (c.numeric ? " flex-row-reverse" : "")}>
                           <SortMark dir={isSorted ? (sortDesc ? "desc" : "asc") : null} />
-                          {c.label}
+                          {keepWhole(c.label)}
                         </span>
                         {/* Separator INSIDE the cell. Between two <th> it is
                             a whitespace text node whose parent is <tr>, which

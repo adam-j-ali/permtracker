@@ -4,6 +4,7 @@ import { Fragment } from "react";
 import { formatInt } from "@/lib/format";
 
 import { STAGE_META, prettyStatus, type StageGroup } from "./stages";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Every DOL status a pending case is sitting in, grouped by queue.
@@ -80,7 +81,7 @@ export function PendingCensus({
                       aria-hidden="true"
                     />{" "}
                     <span className="font-heading text-base font-bold">
-                      {meta.label}
+                      {keepWhole(meta.label)}
                     </span>{" "}
                     <span className="font-mono text-sm tabular-nums text-muted-foreground">
                       {formatInt(group.count)}

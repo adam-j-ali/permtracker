@@ -35,6 +35,7 @@ import { entityHref } from "@/lib/entityPayload";
 import { CURRENT_FIRST_FY } from "@/lib/permEras";
 import { compareNullsLast } from "@/lib/tableSort";
 import { SortMark } from "@/components/ui/sort-mark";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /** One shared empty result, so an empty page or search does not mint a new array identity per render. */
 const EMPTY_ROWS: CaseRow[] = [];
@@ -1227,7 +1228,7 @@ function CaseTable({
                     onClick={() => (c.key ? onSort(c.key) : undefined)}
                     className="inline-flex min-h-[44px] items-center gap-1.5 underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-primary"
                   >
-                    {c.label}
+                    {keepWhole(c.label)}
                     <SortMark dir={active ? (sortAsc ? "asc" : "desc") : null} />
                   </button>
                 ) : (

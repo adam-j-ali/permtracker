@@ -30,6 +30,7 @@ import { GroupView, groupAnswer, groupFigures } from "./GroupView";
 import { industryFrames, industryName, industryTitle } from "@/lib/industryTitle";
 import { fitTitle, metadataTitle } from "@/lib/pageTitle";
 import { softFail } from "@/lib/softRead";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The shared body of the six browse routes (an index and a detail page per
@@ -200,7 +201,7 @@ export async function GroupIndexPage({ kind }: { kind: GroupKind }) {
                           href={`${path}/${r.slug}`}
                           className="link col-span-2 block truncate py-3 text-sm leading-5 sm:col-span-1 sm:py-0"
                         >
-                          {r.label}
+                          {keepWhole(r.label)}
                         </Link>{" "}
                         <span aria-hidden="true" className="block h-5">
                           <span
@@ -289,10 +290,9 @@ export async function GroupDetailPage({ kind, slug }: { kind: GroupKind; slug: s
         <div className="pt-10 sm:pt-12" />
         <JsonLdScript schema={breadcrumbSchema(`${GROUP_PATH.city}/${slug}`, city.label)} />
         <header>
-          <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">H-1B jobs in {city.label}</h1>{" "}
+          <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl"><KeepWhole>{"H-1B jobs in "}</KeepWhole>{keepWhole(city.label)}</h1>{" "}
           <p className="mt-4 max-w-3xl text-lg leading-relaxed text-muted-foreground">
-            Fewer than 20 PERM green card cases name {city.label} as the worksite, so this city has no PERM page. Its
-            H-1B record is below.
+            Fewer than 20 PERM green card cases name {keepWhole(city.label)}<KeepWhole>{" as the worksite, so this city has no PERM page. Its H-1B record is below."}</KeepWhole>
           </p>
         </header>
         <CityH1b city={city} />

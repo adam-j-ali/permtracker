@@ -6,6 +6,7 @@ import { REPORTED_COMMUNITY_PLACES } from "@/lib/reportedCases";
 import { PREMIUM_LABELS } from "@/lib/reportedI140";
 import type { I140Summary, StepFigure } from "@/lib/reportedSummary";
 import { StepFigures } from "./StepFigures";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The I-140s people reported themselves, beside USCIS's own figures on the I-140 page: each step's days (the shared
@@ -60,8 +61,11 @@ export function ReportedI140({ figures, steps }: { figures: readonly I140Summary
       <ScrollBox label="Every category and kind of premium processing people reported" className="mt-6">
         <table className="w-full min-w-[640px] border-collapse text-left text-base">
           <caption className="sr-only">
-            I-140s people reported, by category and premium processing: how many, how many decided, the share approved,
-            the median days to a decision and the share that got an RFE or a notice of intent to deny
+            <KeepWhole>
+              {"I-140s people reported, by category and premium processing: how many, how many decided, the share " +
+                "approved, the median days to a decision and the share that got an RFE or a notice of intent to " +
+                "deny"}
+            </KeepWhole>
           </caption>
           <thead>
             <tr className="border-b-2 border-border text-sm text-muted-foreground">

@@ -41,6 +41,7 @@ import { caseSearchHref } from "@/lib/caseSearchPlan";
 import { entityHref } from "@/lib/entityPayload";
 import { recordSearch } from "@/lib/search/recentSearches";
 import { ClearRecentButton, RECENT_CLEARED, RECENT_HEADING, recentSearchCount, useRecentSearches } from "@/components/search/RecentSearches";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface SearchArticle {
   title: string;
@@ -578,7 +579,7 @@ export function SearchPalette({
                       onSelect={() => go(p.href, p.label, query.trim() ? p.label : null)}
                       className={ROW}
                     >
-                      {p.label}
+                      {keepWhole(p.label)}
                     </Command.Item>
                   ))}
               </Command.Group>
@@ -602,7 +603,7 @@ export function SearchPalette({
                   onSelect={() => go(a.href, a.title, query.trim() ? a.title : null)}
                   className={ROW}
                 >
-                  <span className="min-w-0 truncate">{a.title}</span>{" "}
+                  <span className="min-w-0 truncate">{keepWhole(a.title)}</span>{" "}
                   <span className="shrink-0 text-sm text-muted-foreground">
                     {a.kind}
                   </span>

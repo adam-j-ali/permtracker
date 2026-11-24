@@ -27,6 +27,7 @@ import {
   type RateReliability,
 } from "@/components/tools/EntityContext";
 import { MIN_DECIDED_FOR_MEDIAN } from "@/lib/entityPayload";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 
 // ============================================================================
@@ -322,7 +323,7 @@ export function wageIsTheJobLimit({
       <>
         {topOccupation ? (
           <>
-            Their filings are led by {topOccupation.label}, {formatInt(topOccupation.n)} of{" "}
+            Their filings are led by {keepWhole(topOccupation.label)}, {formatInt(topOccupation.n)} of{" "}
             {formatInt(total)}.{" "}
           </>
         ) : null}

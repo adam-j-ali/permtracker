@@ -33,6 +33,7 @@ import { US_STATE_NAMES } from "@/lib/usStateNames";
 import { choiceVariants } from "@/components/ui/choice";
 import { buttonVariants } from "@/components/ui/button";
 import { softFail } from "@/lib/softRead";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * /h1b-employers and /h1b-employers/<state>: the busiest H-1B employers by
@@ -160,9 +161,9 @@ export async function H1bEmployersPage({ state }: { state: string }) {
         <JsonLdScript key={i} schema={s} />
       ))}
       <header className="max-w-3xl">
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">{heading}</h1>{" "}
+        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">{keepWhole(heading)}</h1>{" "}
         <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-          Who files the most H-1B work each fiscal year
+          <KeepWhole>{"Who files the most H-1B work each fiscal year"}</KeepWhole>
           {state === NATION ? ", nationally and by state" : ""}, from DOL&apos;s certified LCAs and USCIS&apos;s
           approvals. Each employer links to its full record.
         </p>
@@ -216,11 +217,14 @@ export async function H1bEmployersPage({ state }: { state: string }) {
       </section>{" "}
       <FinePrint summary="How these are counted" className="mt-8">
         <p>
-          DOL&apos;s figures count certified LCAs for the H-1B class only (H-1B1 and E-3 left out), in the fiscal year of
-          DOL&apos;s decision, at the worksite&apos;s state. Positions are the workers each LCA covers. Median pay is the
-          middle yearly wage over the employer&apos;s certified LCAs, annualised from the unit DOL printed. An amount that
-          can&apos;t be pay for its unit is left out, and a median of fewer than five filings isn&apos;t shown.
-          &quot;Senior roles&quot; is the share at wage level III or IV, over 20 or more leveled LCAs.
+          <KeepWhole>
+            {"DOL's figures count certified LCAs for the H-1B class only (H-1B1 and E-3 left out), in the fiscal " +
+              "year of DOL's decision, at the worksite's state. Positions are the workers each LCA covers. Median " +
+              "pay is the middle yearly wage over the employer's certified LCAs, annualised from the unit DOL " +
+              "printed. An amount that can't be pay for its unit is left out, and a median of fewer than five " +
+              "filings isn't shown. \"Senior roles\" is the share at wage level III or IV, over 20 or more leveled " +
+              "LCAs."}
+          </KeepWhole>
         </p>{" "}
         <p>
           USCIS&apos;s figures are the workers it approved and denied on its first decision, all six kinds of petition
@@ -228,7 +232,7 @@ export async function H1bEmployersPage({ state }: { state: string }) {
           employer&apos;s name counts on one page. The newest year runs to the last quarter DOL and USCIS have published.
         </p>{" "}
         <p>
-          The marks on a row: <Link href="/glossary#h1b-dependent">H-1B dependent</Link> when most of the year&apos;s
+          The marks on a row: <Link href="/glossary#h1b-dependent"><KeepWhole>{"H-1B dependent"}</KeepWhole></Link> when most of the year&apos;s
           LCAs declared it; PERM cases <Link href="/perm-employers/under-review">DOL has on hold</Link> today; WARN{" "}
           <Link href="/layoffs">layoff notices</Link> in the last two years; an active{" "}
           <Link href="/debarments">debarment</Link>; and a willful violation only when most of the year&apos;s LCAs
@@ -237,16 +241,16 @@ export async function H1bEmployersPage({ state }: { state: string }) {
       </FinePrint>{" "}
       <nav aria-label="Related" className="mt-8 flex flex-wrap gap-x-6 text-base">
         <Link href="/lca-wages" className="link inline-flex min-h-11 items-center">
-          H-1B salaries
+          <KeepWhole>{"H-1B salaries"}</KeepWhole>
         </Link>{" "}
         <Link href="/sponsor-finder" className="link inline-flex min-h-11 items-center">
           Find a green card sponsor
         </Link>{" "}
         <Link href="/h1b-lottery-odds" className="link inline-flex min-h-11 items-center">
-          H-1B lottery odds
+          <KeepWhole>{"H-1B lottery odds"}</KeepWhole>
         </Link>{" "}
         <Link href="/lca-cases" className="link inline-flex min-h-11 items-center">
-          Search H-1B LCAs
+          <KeepWhole>{"Search H-1B LCAs"}</KeepWhole>
         </Link>
       </nav>{" "}
       <DataProvenance datasets={["lca-disclosure", "uscis-h1b-hub"]} />

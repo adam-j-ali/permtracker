@@ -9,6 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { SpotPicture } from "@/components/ui/spot-picture";
 import type { SpotPictureName } from "@/lib/spotPictures";
 import { HOME_WIDTH } from "./homeWidth";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The two audiences, side by side, with EQUAL headings.
@@ -108,7 +109,7 @@ export function AudienceBlocks() {
               <div className="flex items-center gap-4">
                 <SpotPicture name={h.picture} alt="" className="w-24 shrink-0 sm:w-28" />{" "}
                 <h3 className="font-heading text-xl font-bold">
-                  {h.heading}
+                  {keepWhole(h.heading)}
                 </h3>
               </div>{" "}
               <ExplainerFilm film={h.film} className="mt-4" />{" "}
@@ -119,17 +120,17 @@ export function AudienceBlocks() {
                 </summary>{" "}
                 <div className="pb-4">
                   <Bullets items={h.items} />
-                  <p className="mt-4 text-base leading-relaxed text-soft">{h.lede}</p>
+                  <p className="mt-4 text-base leading-relaxed text-soft">{keepWhole(h.lede)}</p>
                 </div>
               </details>{" "}
               {/* The page's one lime action is the case box above; these are
                   the next doors, so outline buttons and a link. */}
               <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Link href={h.cta.href} className={buttonVariants({ variant: "outline", size: "lg" })}>
-                  {h.cta.label}
+                  {keepWhole(h.cta.label)}
                 </Link>{" "}
                 <Link href={h.secondary.href} className="link inline-flex min-h-11 items-center">
-                  {h.secondary.label}
+                  {keepWhole(h.secondary.label)}
                 </Link>
               </div>
             </article>

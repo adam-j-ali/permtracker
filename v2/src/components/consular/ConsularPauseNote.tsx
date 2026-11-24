@@ -6,6 +6,7 @@ import { FinePrint } from "@/components/data/FinePrint";
 import { CONSULAR_PAUSE, pauseActive, type ConsularPause } from "@/lib/consular/facts";
 import { cn } from "@/lib/utils";
 import { longDate } from "@convex/lib/months";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The consular interview pause, dated, from the one hand-kept record (scripts/data/consular_facts.json).
@@ -37,8 +38,7 @@ export function ConsularPauseNote({
         <WarningCircleIcon aria-hidden="true" weight="bold" className="mt-1 size-4 shrink-0 text-data-warn-ink" />{" "}
         <span>
           <span className="font-bold">Consulate interviews are paused at most posts.</span> State postponed immigrant visa
-          interviews worldwide from {pause.sinceLabel} for new public charge training and has named no end date, so a
-          current date abroad isn&apos;t an interview yet. An I-485 filed inside the US isn&apos;t part of this pause.{" "}
+          interviews worldwide from {pause.sinceLabel}<KeepWhole>{" for new public charge training and has named no end date, so a current date abroad isn't an interview yet. An I-485 filed inside the US isn't part of this pause."}</KeepWhole>{" "}
           <Link href="/consular-posts" className="link">
             Where each consulate stands
           </Link>{" "}
@@ -53,7 +53,7 @@ export function ConsularPauseNote({
         <WarningCircleIcon aria-hidden="true" weight="bold" className="size-5 shrink-0 text-data-warn-ink" /> Interviews paused
         since {pause.sinceLabel}
       </h2>{" "}
-      <p className="mt-3 max-w-3xl text-base leading-relaxed">{pause.summary}</p>{" "}
+      <p className="mt-3 max-w-3xl text-base leading-relaxed">{keepWhole(pause.summary)}</p>{" "}
       <p className="mt-2 max-w-3xl text-base leading-relaxed">{pause.reinterviewsExempt}</p>{" "}
       <p className="mt-2 max-w-3xl text-base leading-relaxed">
         How often consular officers have refused visas on public charge grounds, year by year, in State&apos;s own counts:{" "}
@@ -69,7 +69,7 @@ export function ConsularPauseNote({
             <li key={s.url} className="text-base leading-relaxed">
               <q>{s.quote}</q>{" "}
               <a href={s.url} className="link" target="_blank" rel="noopener noreferrer">
-                {s.label}
+                {keepWhole(s.label)}
               </a>{" "}
             </li>
           ))}
@@ -82,7 +82,7 @@ export function ConsularPauseNote({
               <li key={r.url} className="text-base leading-relaxed">
                 {r.says}{" "}
                 <a href={r.url} className="link" target="_blank" rel="noopener noreferrer">
-                  {r.label}
+                  {keepWhole(r.label)}
                 </a>{" "}
               </li>
             ))}

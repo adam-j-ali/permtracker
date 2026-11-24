@@ -31,6 +31,7 @@ import { getSweepCoverage } from "@/lib/db/sweepCoverage";
 import { daysBetween, easternDay } from "@/lib/time";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "PERM Trackers Compared: PERM Update, PERM Timeline and More";
 const DESCRIPTION =
@@ -174,9 +175,9 @@ export default async function ComparePage() {
                       </a>
                     )}{" "}
                   </th>
-                  <td className="px-4 py-3 align-top">{t.bestFor}{" "}</td>
-                  <td className="hidden px-4 py-3 align-top text-soft md:table-cell">{t.dataFrom}{" "}</td>
-                  <td className="hidden px-4 py-3 align-top text-soft lg:table-cell">{t.price}{" "}</td>
+                  <td className="px-4 py-3 align-top">{keepWhole(t.bestFor)}{" "}</td>
+                  <td className="hidden px-4 py-3 align-top text-soft md:table-cell">{keepWhole(t.dataFrom)}{" "}</td>
+                  <td className="hidden px-4 py-3 align-top text-soft lg:table-cell">{keepWhole(t.price)}{" "}</td>
                 </tr>
               ))}
             </tbody>
@@ -215,7 +216,7 @@ export default async function ComparePage() {
           return (
             <Fragment key={g.key}>
               <h3 className="mt-8 font-heading text-lg font-bold">
-                {g.label}{" "}
+                {keepWhole(g.label)}{" "}
               </h3>{" "}
               <ul aria-label={g.label} className="mt-4 space-y-6">
                 {rivals.map((t) => {
@@ -253,10 +254,10 @@ export default async function ComparePage() {
                               {t.operator ? <>, run by {t.operator}</> : null}{" "}
                             </p>
                           </div>{" "}
-                          <p className="bg-tint px-2.5 py-1 text-sm font-semibold">{t.price}</p>
+                          <p className="bg-tint px-2.5 py-1 text-sm font-semibold">{keepWhole(t.price)}</p>
                         </div>{" "}
                         <p className="text-base">
-                          <span className="font-semibold">Best for:</span> {t.bestFor}{" "}
+                          <span className="font-semibold">Best for:</span> {keepWhole(t.bestFor)}{" "}
                         </p>{" "}
                         <div className={t.beatsUs.length ? "grid grid-cols-1 gap-4 lg:grid-cols-2 [&>*]:min-w-0" : undefined}>
                           {t.strengths.length ? (
@@ -266,7 +267,7 @@ export default async function ComparePage() {
                                 {ownStrengths(t).map((s) => (
                                   <li key={s} className="flex items-start gap-2.5">
                                     <MarkIcon mark="yes" className="mt-0.5 size-5 shrink-0 [&_svg]:size-3" />
-                                    <span>{s}{" "}</span>
+                                    <span>{keepWhole(s)}{" "}</span>
                                   </li>
                                 ))}
                               </ul>
@@ -277,7 +278,7 @@ export default async function ComparePage() {
                               <p className="text-sm font-semibold text-soft">What it does that we don&apos;t</p>{" "}
                               <ul className="mt-2 space-y-2 text-base">
                                 {t.beatsUs.map((s) => (
-                                  <li key={s}>{s}{" "}</li>
+                                  <li key={s}>{keepWhole(s)}{" "}</li>
                                 ))}
                               </ul>
                             </div>
@@ -333,14 +334,14 @@ export default async function ComparePage() {
                       <MarkIcon mark={c.mark} className="mt-0.5 size-6 shrink-0" />{" "}
                       <div className="min-w-0">
                         <p>
-                          <span className="font-semibold">{r.label}:</span> {MARK_WORD[c.mark]}
-                          {c.note ? <>. {c.note}</> : null}{" "}
+                          <span className="font-semibold">{keepWhole(r.label)}:</span> {MARK_WORD[c.mark]}
+                          {c.note ? <>. {keepWhole(c.note)}</> : null}{" "}
                         </p>
                         {c.evidence ? (
                           <p className="mt-0.5 break-words text-sm text-soft">
                             {/* A <q>: the browser draws the curly quotes, and checkers can tell the
                                 rival's own words (dashes and all) from ours. */}
-                            {c.evidence.quote ? <><q>{c.evidence.quote}</q>{" "}</> : null}
+                            {c.evidence.quote ? <><q>{keepWhole(c.evidence.quote)}</q>{" "}</> : null}
                             <a href={c.evidence.url} target="_blank" rel="noopener noreferrer nofollow" className="link">
                               {c.evidence.url.replace(/^https?:\/\//, "")}
                             </a>

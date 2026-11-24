@@ -11,6 +11,7 @@
 
 import type { ContentType } from "@/lib/content/types";
 import { CONTENT_TYPE_CONFIG } from "@/lib/content/types";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 interface ContentHeroProps {
   type: ContentType;
@@ -31,8 +32,8 @@ export default function ContentHero({ type, title, description, postCount }: Con
     <section className="dark border-b-2 border-black bg-[#141414] text-foreground">
       <div className="mx-auto max-w-[1400px] px-4 pb-10 pt-10 sm:px-6 sm:pb-12 sm:pt-14">
         <span aria-hidden="true" className="block h-1.5 w-16 bg-primary" />
-        <h1 className="mt-5 font-heading text-4xl font-bold leading-tight text-white sm:text-5xl">{title ?? config.plural}</h1>{" "}
-        <p className="mt-4 max-w-2xl text-lg leading-relaxed text-soft">{description ?? config.description}</p>
+        <h1 className="mt-5 font-heading text-4xl font-bold leading-tight text-white sm:text-5xl">{keepWhole(title ?? config.plural)}</h1>{" "}
+        <p className="mt-4 max-w-2xl text-lg leading-relaxed text-soft">{keepWhole(description ?? config.description)}</p>
         {postCount !== undefined ? (
           <p className="mt-5">
             <span className="inline-flex items-center border-2 border-black bg-primary px-3 py-1 font-heading text-sm font-bold text-black shadow-[3px_3px_0_0_rgba(255,255,255,0.35)]">

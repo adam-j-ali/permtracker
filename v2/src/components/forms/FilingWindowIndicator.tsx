@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { ToneBadge } from "@/components/ui/badge";
 import { WarningIcon as AlertTriangle } from "@phosphor-icons/react";
 import { format, parseISO, differenceInDays } from "date-fns";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // ============================================================================
 // TYPES
@@ -148,7 +149,7 @@ export function FilingWindowIndicator({ window, label, className }: FilingWindow
     <div className={cn("space-y-3 bg-tint p-4", className)}>
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-semibold">{label}</span>
-        <ToneBadge tone={config.tone}>{config.label}</ToneBadge>
+        <ToneBadge tone={config.tone}>{keepWhole(config.label)}</ToneBadge>
       </div>
 
       {(status === "open" || status === "closing_soon") && (

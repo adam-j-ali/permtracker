@@ -49,6 +49,7 @@ import { cn } from "@/lib/utils";
 import { formatInt } from "@/lib/format";
 import { buttonVariants } from "@/components/ui/button";
 import { MONTH_NAMES } from "@convex/lib/months";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 export interface I485QueuePositionProps {
   /** How the past-pace arithmetic held on past bulletins (scripts/backtest_bulletin.py). */
@@ -407,10 +408,7 @@ export function I485QueuePosition({
               Filing hasn’t opened for this priority date yet. The Dates for
               Filing chart for {label(activeCategory)}, {country} stands at{" "}
               {formatAsOf(filing.iso)}
-              {filingChartMonth ? ` in the ${formatMonth(filingChartMonth)} bulletin` : ""},
-              and an I-485 can only be filed once that chart reaches your
-              priority date. So nobody at your date has filed one, which is why
-              USCIS publishes no inventory for it.{" "}
+              {filingChartMonth ? ` in the ${formatMonth(filingChartMonth)} bulletin` : ""}<KeepWhole>{", and an I-485 can only be filed once that chart reaches your priority date. So nobody at your date has filed one, which is why USCIS publishes no inventory for it."}</KeepWhole>{" "}
               <a
                 href="/tools/priority-date-calculator"
                 className="link"
@@ -762,7 +760,7 @@ function SupplyScenario({ low, high }: { low: number; high: number }) {
               title={a.note}
               className={buttonVariants({ variant: "outline", size: "default" })}
             >
-              {a.label}: {formatInt(a.value)}
+              {keepWhole(a.label)}: {formatInt(a.value)}
             </button>
           </Fragment>
         ))}

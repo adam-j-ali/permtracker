@@ -10,6 +10,7 @@ import { missingProof, stepInSentence, type RecruitmentStep } from "@convex/lib/
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { fmtISODate } from "../case-detail-utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Each recruitment step the case entered, with the proof the rule names for it and the files that prove it. A file
@@ -102,7 +103,7 @@ export function RecruitmentProof({
             return (
               <li key={s.key} className="space-y-2 py-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h3 className="text-base font-bold">{s.label}</h3>{" "}
+                  <h3 className="text-base font-bold">{keepWhole(s.label)}</h3>{" "}
                   <span className="text-sm text-muted-foreground">{s.cite}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">{s.proof}</p>

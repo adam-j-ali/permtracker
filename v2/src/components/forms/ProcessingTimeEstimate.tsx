@@ -12,6 +12,7 @@ import {
   type I140Category,
 } from "@/lib/processing-times/i140ProcessingTimes";
 import { formatAsOf } from "@/lib/dolFormat";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface ProcessingTimeEstimateProps {
   /** Petition category recorded on the case. */
@@ -115,7 +116,7 @@ export function ProcessingTimeEstimate({
             <ul className="mt-2 space-y-1 text-sm">
               {range.subtypes.map((s) => (
                 <li key={s.code} className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">{s.label}</span>{" "}
+                  <span className="text-muted-foreground">{keepWhole(s.label)}</span>{" "}
                   <span className="font-medium tabular-nums">
                     {s.premiumBusinessDays} days
                   </span>
@@ -135,7 +136,7 @@ export function ProcessingTimeEstimate({
             <ul className="mt-2 space-y-1 text-sm">
               {range.subtypes.map((s) => (
                 <li key={s.code} className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">{s.label}</span>{" "}
+                  <span className="text-muted-foreground">{keepWhole(s.label)}</span>{" "}
                   <span className="font-medium tabular-nums">
                     {formatMonths(s.months80)}
                   </span>

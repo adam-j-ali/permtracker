@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * A long page in named parts: the bar stays under the site header while the
@@ -111,10 +112,10 @@ export function ChapterNav({ items, className }: { items: ChapterItem[]; classNa
       className={cn(
         // Sticks under the fixed header. `-mx` lines its parts up with the
         // column's edges; the ground and rules are a layer behind them that
-        // reaches as far as the effect above measured.
-        "sticky top-(--site-header-h) z-30 -mx-4 px-4 sm:-mx-6 sm:px-6 print:hidden",
-        "before:absolute before:inset-y-0 before:-z-10 before:border-y-2 before:border-border before:bg-background before:content-['']",
-        "before:left-[calc(-1*var(--bleed-l,0px))] before:right-[calc(-1*var(--bleed-r,0px))]",
+        // reaches as far as the effect above measured, painted rather than
+        // sized (`chapter-ground` in globals.css), so no measurement can make
+        // the page wider than the screen.
+        "chapter-ground sticky top-(--site-header-h) z-30 -mx-4 min-w-0 px-4 sm:-mx-6 sm:px-6 print:hidden",
         className,
       )}
     >
@@ -137,7 +138,7 @@ export function ChapterNav({ items, className }: { items: ChapterItem[]; classNa
                   // is a tile, the one on screen filled lime.
                   className="inline-flex min-h-11 items-center whitespace-nowrap border-2 border-border bg-card px-3 text-sm font-bold text-foreground shadow-hard-sm transition-colors duration-150 hover:bg-sage-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary aria-[current=location]:border-black aria-[current=location]:bg-primary aria-[current=location]:text-black"
                 >
-                  {i.label}
+                  {keepWhole(i.label)}
                 </a>
               </li>
             </Fragment>

@@ -23,6 +23,7 @@ import { ScrollBox } from "@/components/ui/scroll-box";
 import { choiceVariants } from "@/components/ui/choice";
 // A type only: BLS's crosswalk itself stays on the server.
 import type { EarlierSocCode } from "@/lib/socCrosswalk";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Offered wages in DOL's disclosure files, filtered.
@@ -475,7 +476,7 @@ export function SalaryExplorer({
       {report.note ? (
         <p className="flex items-start gap-2 border-b-2 border-border bg-data-warn/8 px-6 py-4 text-base text-soft sm:px-8">
           <WarningIcon className="mt-0.5 h-4 w-4 shrink-0 text-data-warn-ink" weight="fill" aria-hidden="true" />{" "}
-          <span>{report.note}</span>
+          <span>{keepWhole(report.note)}</span>
         </p>
       ) : null}
       {/* BLS renumbered jobs in 2018, and DOL's older files carry the 2010
@@ -499,7 +500,7 @@ export function SalaryExplorer({
                     className={cn(choiceVariants({ on: false }), "h-auto max-w-full flex-wrap justify-start py-2 text-left")}
                   >
                     <span className="font-bold tabular-nums">{c.code}</span>{" "}
-                    <span>{c.title}</span>{" "}
+                    <span>{keepWhole(c.title)}</span>{" "}
                     <span className="text-muted-foreground">
                       ({formatInt(c.n)} {c.n === 1 ? noun : nounPlural})
                     </span>
@@ -537,7 +538,7 @@ export function SalaryExplorer({
                     className="min-w-0 flex-1 basis-52 bg-sage p-4 border-2 border-border"
                   >
                     <p className="text-sm font-semibold text-muted-foreground">
-                      {c.label}
+                      {keepWhole(c.label)}
                     </p>{" "}
                     <p className="mt-1 font-heading text-2xl font-bold leading-none tabular-nums">
                       {usd(c.v)}

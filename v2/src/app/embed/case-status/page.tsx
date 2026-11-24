@@ -12,6 +12,7 @@ import { lookupForEmbed, type EmbedCaseAnswer } from "@/lib/db/embedLookup";
 import { EASTERN_TIMEZONE } from "@/lib/time";
 import { CaseLookupForm } from "@/components/tools/CaseLookupForm";
 import { softFail } from "@/lib/softRead";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The embeddable case lookup: one box, one answer card.
@@ -104,7 +105,7 @@ function Answer({ typed, answer }: { typed: string; answer: EmbedCaseAnswer | nu
       <p className="mt-1 font-heading text-2xl font-bold leading-tight" translate="no">
         {prettyStatus(answer.status ?? "")}
       </p>{" "}
-      {meaning ? <p className="mt-2 text-base leading-relaxed text-soft">{meaning.summary}</p> : null}{" "}
+      {meaning ? <p className="mt-2 text-base leading-relaxed text-soft">{keepWhole(meaning.summary)}</p> : null}{" "}
       <dl className="mt-3 text-sm">
         <Row term="Case number" value={answer.caseNumber} noTranslate />
         <Row term="Filed" value={day(answer.filingDate)} />

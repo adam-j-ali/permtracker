@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthContext } from "@/lib/contexts/AuthContext";
 import { handleOperationError } from "@/lib/errors";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 export default function CountCasesToggle() {
   const { isSigningOut } = useAuthContext();
@@ -54,10 +55,12 @@ export default function CountCasesToggle() {
             Count my cases in the public figures
           </Label>
           <p id="count-cases-description" className="mt-1 text-sm text-muted-foreground">
-            The dates on your cases (when each step was filed and decided), the I-140&apos;s category and premium
-            processing count toward the waits on the site&apos;s public pages. No name, employer, job, case number or
-            note is shared, and no case is ever listed or shown on its own. Switch it off and they leave the figures
-            within the hour.{" "}
+            <KeepWhole>
+              {"The dates on your cases (when each step was filed and decided), the I-140's category and premium " +
+                "processing count toward the waits on the site's public pages. No name, employer, job, case number " +
+                "or note is shared, and no case is ever listed or shown on its own. Switch it off and they leave " +
+                "the figures within the hour."}
+            </KeepWhole>{" "}
             <Link href="/privacy#counted-cases" className="link">
               How it&apos;s handled
             </Link>

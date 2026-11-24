@@ -2,6 +2,7 @@ import { isComplete, widestStep, RUNG_LABEL, type Ladder } from "@/lib/wageLadde
 import { formatDollars } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { MoreText } from "@/components/data/MoreText";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Names the ladders with the widest jump between two neighbouring rungs.
@@ -55,7 +56,7 @@ export function SplitLadderNote({
     <MoreText gist={"A ladder that jumps is two populations sharing one row."}>
       <p className={cn("text-sm leading-relaxed text-muted-foreground", className)}>
         A few ladders jump rather than climb, and a jump is the signature of two
-        populations sharing one row. {first.ladder.label} rises{" "}
+        populations sharing one row. {keepWhole(first.ladder.label)} rises{" "}
         {first.step.ratio.toFixed(1)} times between the{" "}
         {RUNG_LABEL[first.step.from].toLowerCase()} and the{" "}
         {RUNG_LABEL[first.step.to].toLowerCase()}, from{" "}

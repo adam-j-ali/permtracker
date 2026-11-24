@@ -8,6 +8,7 @@ import { formatShareOf } from "@/lib/format";
 import { SOC_CODE_RE, socGroup } from "@/lib/socCode";
 import type { CodeAnswer, TitleAnswer } from "@/lib/socFinder";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * A box that takes a SOC code or a job title and hands back a code: type "data scientist" and pick
@@ -289,7 +290,7 @@ export function SocPicker({
                   className={cn("flex min-h-11 cursor-pointer flex-col justify-center px-3 py-1.5", i === active && "bg-sage")}
                 >
                   <span className="text-base font-semibold">
-                    <span className="whitespace-nowrap font-mono">{o.soc}</span> {o.title}
+                    <span className="whitespace-nowrap font-mono">{o.soc}</span> {keepWhole(o.title)}
                   </span>{" "}
                   <span className="text-sm text-soft">{o.why}</span>
                 </li>
@@ -300,7 +301,7 @@ export function SocPicker({
       </Popover>{" "}
       {picked && showPicked ? (
         <p className="mt-1 text-sm text-soft" aria-live="polite">
-          <span className="whitespace-nowrap font-mono">{picked.soc}</span> {picked.title}
+          <span className="whitespace-nowrap font-mono">{picked.soc}</span> {keepWhole(picked.title)}
         </p>
       ) : null}
     </div>

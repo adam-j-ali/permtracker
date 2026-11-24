@@ -15,6 +15,7 @@ import { topicFor } from "@/lib/content/topics";
 import { isWholeHero, WHOLE_HERO_GROUND } from "@/lib/content/wholeHeroes";
 import { NavLink, useNavigationContext } from "@/components/ui/nav-link";
 import { Badge } from "@/components/ui/badge";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 interface ContentCardProps {
   post: PostSummary;
@@ -91,7 +92,7 @@ export default function ContentCard({
               />
               {/* Type badge overlay */}
               {showType && (
-                <Badge variant="outline" className="absolute left-3 top-3 bg-card max-sm:hidden">{config.label}</Badge>
+                <Badge variant="outline" className="absolute left-3 top-3 bg-card max-sm:hidden">{keepWhole(config.label)}</Badge>
               )}
             </div>
           )}{" "}
@@ -100,17 +101,17 @@ export default function ContentCard({
           <div className="min-w-0 p-3 sm:p-5">
             {/* The topic it's filed under, in words (lib/content/topics.ts). */}
             {topic ? (
-              <p className="mb-2 text-sm font-semibold text-primary-text">{topic.label}</p>
+              <p className="mb-2 text-sm font-semibold text-primary-text">{keepWhole(topic.label)}</p>
             ) : null}{" "}
 
             {/* Title */}
             <Heading className="mb-2 font-heading text-base font-bold leading-tight sm:text-lg">
-              <span className="u-title">{meta.title}</span>
+              <span className="u-title">{keepWhole(meta.title)}</span>
             </Heading>{" "}
 
             {/* Description */}
             <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-muted-foreground max-sm:hidden">
-              {meta.description}
+              {keepWhole(meta.description)}
             </p>{" "}
 
             {/* Meta row */}

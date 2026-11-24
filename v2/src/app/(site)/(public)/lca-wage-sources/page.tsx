@@ -12,6 +12,7 @@ import { getWageSources } from "@/lib/db/wageSources";
 import { splitYears } from "@/lib/wageSourceYears";
 import { entityHref } from "@/lib/entityPayload";
 import { ROW_LINK } from "@/components/entities/caseRows";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Where an H-1B's prevailing wage comes from. Under 20 CFR 655.731(a)(2) a
@@ -64,11 +65,11 @@ export default async function LcaWageSourcesPage() {
     <div className="mx-auto w-full max-w-5xl px-4 pb-12 sm:px-6 sm:pb-16">
       <div className="pt-10 sm:pt-12" />
       <header className="max-w-3xl">
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Where H-1B prevailing wages come from</h1>{" "}
+        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl"><KeepWhole>{"Where H-1B prevailing wages come from"}</KeepWhole></h1>{" "}
         <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-          {latest
+          {keepWhole(latest
             ? `In FY${latest.fy}, ${formatShare(latest.OES / latest.total)} of LCAs set their prevailing wage from DOL's OES data and ${formatShare(latest.Survey / latest.total)} from a private salary survey. A union contract's rate applies where one covers the job. Otherwise the employer picks the source, and DOL's file says which.`
-            : "Each H-1B labor condition application names where its prevailing wage came from: DOL's OES data, a private survey or a union contract."}
+            : "Each H-1B labor condition application names where its prevailing wage came from: DOL's OES data, a private survey or a union contract.")}
         </p>
       </header>
 

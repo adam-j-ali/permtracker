@@ -9,6 +9,7 @@ import type { PwdLine } from "@/lib/pwdLine";
 import type { PwdReviewRow } from "@convex/lib/dolProcessingTimes";
 import { catchingUp, outcomeMix, speedVerdict, yearOnYear, type PwdQueueDoc, type WaitTrend } from "@/lib/pwdNow";
 import { longDate, monthDay, monthYear } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The wage-request page's board: the answers first, each a compact tile with
@@ -161,7 +162,7 @@ export function PwdNowBoard({
                 <div key={r.label} className="flex items-baseline justify-between gap-3 text-base">
                   <dt className="flex items-center gap-2">
                     <span className={`inline-block size-3 border border-foreground ${r.fill}`} aria-hidden="true" />{" "}
-                    {r.label}
+                    {keepWhole(r.label)}
                   </dt>{" "}
                   <dd className="tabular-nums">
                     {formatInt(r.n)}
@@ -208,7 +209,7 @@ export function PwdNowBoard({
               ) : null}
               {others.map((q) => (
                 <div key={q.program} className="flex items-baseline justify-between gap-3 text-base">
-                  <dt>{q.program}</dt>{" "}
+                  <dt>{keepWhole(q.program)}</dt>{" "}
                   <dd className="font-semibold">{q.month ? monthYear(q.month) : "Not published"}</dd>
                 </div>
               ))}

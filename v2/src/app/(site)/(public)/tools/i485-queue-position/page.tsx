@@ -31,6 +31,7 @@ import type { I485CellTable } from "@/lib/i485/position";
 import { withSocialCard } from "@/lib/socialCard";
 import { SearchParamsBoundary } from "@/hooks/useUrlSearchParams";
 import { StepBothSources } from "@/components/community/StepBothSources";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Queue position inside USCIS's employment-based I-485 pending inventory.
@@ -145,7 +146,7 @@ export default async function I485QueuePositionPage() {
 
       <header>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">
-          I-485 queue position
+          <KeepWhole>{"I-485 queue position"}</KeepWhole>
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           How many employment-based adjustment applications USCIS had pending

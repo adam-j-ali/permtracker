@@ -25,6 +25,7 @@ import {
   unsubscribeFromPush,
   type PushSubscriptionStatus,
 } from "@/lib/pushSubscription";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 // ============================================================================
 // CONSTANTS
@@ -473,7 +474,7 @@ export default function NotificationPreferencesSection({
                     <span className={cn("block text-sm font-medium", !emailEnabled && "text-muted-foreground")}>
                       {MAIL_KINDS.reminders.name}
                     </span>{" "}
-                    <span className="block text-sm text-muted-foreground">{MAIL_KINDS.reminders.what}</span>
+                    <span className="block text-sm text-muted-foreground">{keepWhole(MAIL_KINDS.reminders.what)}</span>
                   </span>
                 </button>
                 <Switch

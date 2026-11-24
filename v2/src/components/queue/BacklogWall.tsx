@@ -12,6 +12,7 @@ import { formatInt, formatShareOf } from "@/lib/format";
 import { StageBar } from "./StageBar";
 import { groupByStage } from "./stages";
 import { shareMark } from "@/components/ui/share-mark";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The wall: every filing month still carrying undecided cases.
@@ -105,7 +106,7 @@ export function BacklogWall({
       <Header />
       {outline ? (
         <p className="mt-2 flex items-center gap-2 text-sm text-soft">
-          <span aria-hidden="true" className="inline-block h-3 w-8 border-2 border-dashed border-foreground" /> {outline.label}
+          <span aria-hidden="true" className="inline-block h-3 w-8 border-2 border-dashed border-foreground" /> {keepWhole(outline.label)}
         </p>
       ) : null}
 

@@ -10,6 +10,7 @@ import { getI140Trends } from "@/lib/db/publicData";
 import { quartersFor, totalsFor } from "@/lib/i140Trends";
 import { withSocialCard } from "@/lib/socialCard";
 import { StepBothSources } from "@/components/community/StepBothSources";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * I-140 outcomes by category, quarter by quarter.
@@ -94,7 +95,7 @@ export default async function I140TrendsPage() {
 
       <header>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">
-          I-140 trends by category
+          <KeepWhole>{"I-140 trends by category"}</KeepWhole>
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           What USCIS received, approved, denied and still has pending in each
@@ -112,7 +113,7 @@ export default async function I140TrendsPage() {
             same category
           </h2>{" "}
           <p className="mt-3 max-w-3xl text-base leading-relaxed text-soft">
-            Both are EB-2, reported separately. Over these quarters,{" "}
+            <KeepWhole>{"Both are EB-2, reported separately. Over these quarters,"}</KeepWhole>{" "}
             <b className="font-bold text-foreground">
               E21 was denied {e21.denialRate!.toFixed(2)}% of the time and a national interest waiver{" "}
               {niw.denialRate!.toFixed(2)}%

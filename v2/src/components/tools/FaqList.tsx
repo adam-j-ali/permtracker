@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { CaretDownIcon } from "@phosphor-icons/react/ssr";
 
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Collapsible reference lists: the questions at the foot of a calculator page,
@@ -54,15 +55,15 @@ function DisclosureShell({
             )}
           >
             <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span>{item.term}</span>{" "}
-              {item.hint ? <span className="text-sm font-normal text-muted-foreground">{item.hint}</span> : null}
+              <span>{keepWhole(item.term)}</span>{" "}
+              {item.hint ? <span className="text-sm font-normal text-muted-foreground">{keepWhole(item.hint)}</span> : null}
             </span>{" "}
             <CaretDownIcon
               className="size-5 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180"
               aria-hidden="true"
             />
           </summary>{" "}
-          <div className={cn("max-w-3xl text-base leading-relaxed text-soft", compact ? "pb-4" : "pb-5")}>{item.body}</div>
+          <div className={cn("max-w-3xl text-base leading-relaxed text-soft", compact ? "pb-4" : "pb-5")}>{keepWhole(item.body)}</div>
         </details>
       ))}
     </div>

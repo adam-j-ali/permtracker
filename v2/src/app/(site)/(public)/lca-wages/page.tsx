@@ -16,6 +16,7 @@ import {
 } from "@/lib/db/lcaWages";
 import { binWidth, clampBins, MIN_FOR_MEDIAN } from "@/lib/wageStats";
 import { SearchParamsBoundary } from "@/hooks/useUrlSearchParams";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * H-1B salary explorer.
@@ -100,11 +101,13 @@ export default async function LcaWagesPage() {
       <JsonLdScript schema={faqSchema} />
       <header>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">
-          H-1B salary explorer
+          <KeepWhole>{"H-1B salary explorer"}</KeepWhole>
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          The wages employers attested on certified H-1B LCAs, as DOL published them. Filter by occupation,
-          state or year.{" "}
+          <KeepWhole>
+            {"The wages employers attested on certified H-1B LCAs, as DOL published them. Filter by occupation, " +
+              "state or year."}
+          </KeepWhole>{" "}
           <Link href="/tools/compare-my-offer" className="link">
             Have an offer? See where it falls.
           </Link>

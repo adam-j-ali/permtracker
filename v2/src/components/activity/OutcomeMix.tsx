@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { ChartTips } from "@/components/data/ChartTips";
 import type { OutcomeQuarter } from "@/lib/activityStats";
 import { ScrollBox } from "@/components/ui/scroll-box";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * What happened to the cases DOL decided, quarter by quarter.
@@ -62,7 +63,7 @@ export function OutcomeMix({
                   {/* The strip's own label is its legend: the swatch beside the name. */}
                   <p className="flex items-center gap-2 text-sm font-bold">
                     <span aria-hidden="true" className={`h-3 w-8 border border-input ${s.bg}`} />{" "}
-                    <span>{s.label}</span>
+                    <span>{keepWhole(s.label)}</span>
                   </p>{" "}
                   <p className="font-mono text-sm tabular-nums text-muted-foreground">
                     {`${newest[s.key].toFixed(2)}% in ${newest.quarter}. Lowest ${low[s.key].toFixed(2)}% (${low.quarter}), highest ${high[s.key].toFixed(2)}% (${high.quarter})`}

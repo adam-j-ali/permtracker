@@ -18,6 +18,7 @@ import { formatInt } from "@/lib/format";
 import { filedLastMonth, waitingSplit } from "@/lib/figureVisuals";
 import { longDate } from "@convex/lib/months";
 import { softFail } from "@/lib/softRead";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * H-2A, H-2B and CW-1 filings, findable by employer as DOL confirms them.
@@ -150,7 +151,7 @@ export default async function SeasonalCasesPage() {
                     <p className="font-mono text-sm font-bold">
                       {p}- <span className="text-muted-foreground">· {f.form}</span>
                     </p>{" "}
-                    <p className="mt-1 font-heading text-lg font-bold">{f.label}</p>{" "}
+                    <p className="mt-1 font-heading text-lg font-bold">{keepWhole(f.label)}</p>{" "}
                     <p className="mt-2 font-heading text-3xl font-bold">{formatInt(n)}</p>{" "}
                     <p className="text-sm text-muted-foreground">{formatInt(pending)} still in process</p>{" "}
                     {/* Drawn to measure: the bar is this form's share of every filing held. */}
@@ -176,11 +177,11 @@ export default async function SeasonalCasesPage() {
           The box at the top takes any H-300, JO-A-300, H-400, P-400, C-500 or P-500 number. What each status means,
           and when DOL decides:{" "}
           <Link href="/guides/h2a-case-status-and-timing" className="link">
-            H-2A
+            <KeepWhole>{"H-2A"}</KeepWhole>
           </Link>{" "}
           and{" "}
           <Link href="/guides/h2b-and-cw1-case-status-and-timing" className="link">
-            H-2B and CW-1
+            <KeepWhole>{"H-2B and CW-1"}</KeepWhole>
           </Link>
           .
         </p>{" "}
@@ -191,9 +192,11 @@ export default async function SeasonalCasesPage() {
           </summary>
           <div className="border-t-2 border-border p-4">
             <p className="text-base leading-relaxed text-soft">
-              Every status comes from DOL&apos;s case system, pending ones included. The wage, the workers and the
-              worksite come from DOL&apos;s quarterly H-2A, H-2B and CW-1 files once a case is decided. For an application DOL
-              has accepted but not yet decided, they come from its SeasonalJobs feed.
+              <KeepWhole>
+                {"Every status comes from DOL's case system, pending ones included. The wage, the workers and the " +
+                  "worksite come from DOL's quarterly H-2A, H-2B and CW-1 files once a case is decided. For an " +
+                  "application DOL has accepted but not yet decided, they come from its SeasonalJobs feed."}
+              </KeepWhole>
             </p>{" "}
             {published.length > 0 ? (
               <ul className="mt-3 space-y-1 text-sm text-soft">
@@ -215,7 +218,7 @@ export default async function SeasonalCasesPage() {
             What DOL decides, week by week
           </h2>{" "}
           <p className="mt-1 text-sm text-muted-foreground">
-            H-2A, H-2B and CW-1 together, by DOL&apos;s own decision date in its published files,{" "}
+            <KeepWhole>{"H-2A, H-2B and CW-1 together, by DOL's own decision date in its published files,"}</KeepWhole>{" "}
             {longDate(allDecided[0]!.date) ?? allDecided[0]!.date} to{" "}
             {longDate(allDecided[allDecided.length - 1]!.date) ?? allDecided[allDecided.length - 1]!.date}.
             {/* Measured Oct 7 2026: no H-2A, H-2B or CW-1 decision from Oct 1 to Oct 30, 2025, the

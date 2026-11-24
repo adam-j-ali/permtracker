@@ -56,6 +56,7 @@ import { MoreText } from "@/components/data/MoreText";
 import { buttonVariants } from "@/components/ui/button";
 import { SEARCH_TEXT_MAX, SEARCH_TEXT_MIN } from "@/lib/search/limits";
 import { caseSearchHref } from "@/lib/caseSearchPlan";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * One PERM case number in, everything we can honestly say about it out.
@@ -254,14 +255,14 @@ export async function CaseStatusPage({ raw }: { raw: string | undefined }) {
         <p className="mt-6 flex items-start gap-2 border-l-2 border-data-warn-ink bg-data-warn/8 px-4 py-3 text-base leading-relaxed text-soft border-2">
           <WarningIcon className="mt-1 size-4 shrink-0 text-data-warn-ink" weight="fill" aria-hidden="true" />{" "}
           <span>
-            <b className="font-semibold text-foreground">That isn&apos;t the shape of a case number,</b> so nothing was looked up. PERM numbers look like G-100-26125-868956 (A-23043-00641 for 2022 and 2023) and are on the ETA-9089 receipt. Wage requests start with P, H-1B LCAs with I, H-2A and H-2B cases with H (an H-2A job order with JO-A), and CW-1 with C.
+            <b className="font-semibold text-foreground">That isn&apos;t the shape of a case number,</b><KeepWhole>{" so nothing was looked up. PERM numbers look like G-100-26125-868956 (A-23043-00641 for 2022 and 2023) and are on the ETA-9089 receipt. Wage requests start with P, H-1B LCAs with I, H-2A and H-2B cases with H (an H-2A job order with JO-A), and CW-1 with C."}</KeepWhole>
           </span>
         </p>
       ) : null}
       {malformed && looksLikeReceipt(typed) ? (
         <div className="mt-4 bg-tint p-5 border-2 border-border">
           <p className="text-base leading-relaxed">
-            <b className="font-semibold">Holding a USCIS receipt number?</b> Three letters and ten digits, like EAC2190123456, is USCIS&apos;s record of the I-140 or I-485. DOL&apos;s PERM record uses a different number, and the USCIS receipt has its own page.
+            <b className="font-semibold">Holding a USCIS receipt number?</b><KeepWhole>{" Three letters and ten digits, like EAC2190123456, is USCIS's record of the I-140 or I-485. DOL's PERM record uses a different number, and the USCIS receipt has its own page."}</KeepWhole>
           </p>{" "}
           <p className="mt-3">
             <Link href="/uscis-case-status" className={buttonVariants({ variant: "outline" })}>

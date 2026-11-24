@@ -4,6 +4,7 @@ import { Fragment, useId, type ReactNode } from "react";
 
 import { choiceVariants } from "@/components/ui/choice";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export interface ChoiceRowOption<T extends string> {
   value: T;
@@ -67,7 +68,7 @@ export function ChoiceRow<T extends string>({
               }}
               className={choiceVariants({ on: o.value === value })}
             >
-              {o.label}
+              {keepWhole(o.label)}
             </button>{" "}
           </Fragment>
         ))}

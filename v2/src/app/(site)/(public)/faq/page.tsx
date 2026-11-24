@@ -23,6 +23,7 @@ import { getPermLine } from "@/lib/db/permLine";
 import { getProcessingTimes } from "@/lib/db/processingTimes";
 import { softFail } from "@/lib/softRead";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 const START_LINKS = [
   { href: "/perm-processing-times", label: "Processing times", note: "Which month DOL is reviewing now", Icon: ClockIcon },
@@ -232,8 +233,8 @@ export default async function FAQPage() {
                   className="group flex flex-col border-2 border-input bg-card p-4 transition-[color,background-color,border-color,box-shadow,transform] hover:bg-accent shadow-hard-sm motion-safe:hover:-translate-y-0.5"
                 >
                   <l.Icon aria-hidden="true" className="size-6 text-primary-text" />{" "}
-                  <span className="mt-3 font-heading text-base font-bold leading-tight">{l.label}</span>{" "}
-                  <span className="mt-1 text-sm leading-snug text-muted-foreground">{l.note}</span>
+                  <span className="mt-3 font-heading text-base font-bold leading-tight">{keepWhole(l.label)}</span>{" "}
+                  <span className="mt-1 text-sm leading-snug text-muted-foreground">{keepWhole(l.note)}</span>
                 </Link>
               </Fragment>
             ))}
@@ -279,9 +280,9 @@ export default async function FAQPage() {
               <Fragment key={l.href}>
                 <li>
                   <Link href={l.href} className="link">
-                    {l.label}
+                    {keepWhole(l.label)}
                   </Link>{" "}
-                  <span className="text-muted-foreground">{l.note}</span>
+                  <span className="text-muted-foreground">{keepWhole(l.note)}</span>
                 </li>{" "}
               </Fragment>
             ))}

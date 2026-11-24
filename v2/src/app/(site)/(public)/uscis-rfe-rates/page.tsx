@@ -43,6 +43,7 @@ import {
   type RfeMonthPoint,
   type RfeYear,
 } from "@/lib/uscisRfe";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "USCIS RFE Rates: H-1B, L-1, O-1 and More";
 const DESCRIPTION =
@@ -228,14 +229,17 @@ export default async function UscisRfeRatesPage() {
 
       <header>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">
-          USCIS RFE rates for H-1B, L-1, O-1 and other work visas
+          <KeepWhole>{"USCIS RFE rates for H-1B, L-1, O-1 and other work visas"}</KeepWhole>
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          How often USCIS asked for more evidence before deciding an I-129 work visa petition, every month since{" "}
+          <KeepWhole>
+            {"How often USCIS asked for more evidence before deciding an I-129 work visa petition, every month " +
+              "since"}
+          </KeepWhole>{" "}
           {monthLabel(firstMonth.fy, firstMonth.month)}, from the counts USCIS publishes each quarter.
         </p>{" "}
         <p className="mt-3 max-w-2xl text-base leading-relaxed">
-          USCIS publishes no RFE counts for the I-140 or the I-485. For those, the{" "}
+          <KeepWhole>{"USCIS publishes no RFE counts for the I-140 or the I-485. For those, the"}</KeepWhole>{" "}
           <Link href="/green-card-timelines" className="link">
             green card timelines
           </Link>{" "}
@@ -246,14 +250,14 @@ export default async function UscisRfeRatesPage() {
 
       <section id="h1b-now" className="mt-10 scroll-mt-24" aria-labelledby="h1b-now-title">
         <h2 id="h1b-now-title" className="font-heading text-2xl font-bold">
-          H-1B, FY{h1b.fy} so far
+          <KeepWhole>{"H-1B, FY"}</KeepWhole>{h1b.fy} so far
         </h2>{" "}
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
           <div className="border-2 border-border bg-sage p-5">
             <p className="text-sm font-bold text-muted-foreground">{span}</p>{" "}
             <p className="mt-2 font-heading text-5xl font-bold leading-none tabular-nums">{pct(h1b.now.rfeShare)}</p>{" "}
             <p className="mt-2 text-base">
-              of the {int(h1b.now.completions)} H-1B petitions USCIS decided had an RFE ({int(h1b.now.rfeCompletions)}).
+              of the {int(h1b.now.completions)}<KeepWhole>{" H-1B petitions USCIS decided had an RFE ("}</KeepWhole>{int(h1b.now.rfeCompletions)}).
             </p>
           </div>{" "}
           {before ? (
@@ -268,9 +272,9 @@ export default async function UscisRfeRatesPage() {
         </div>{" "}
         {h1b.now.approvedAfterRfe !== null && h1b.now.approvalRate !== null ? (
           <p className="mt-4 max-w-3xl text-base leading-relaxed">
-            Of the H-1B petitions decided with an RFE in FY{h1b.fy} so far,{" "}
+            <KeepWhole>{"Of the H-1B petitions decided with an RFE in FY"}</KeepWhole>{h1b.fy} so far,{" "}
             <b className="font-bold">{pct(h1b.now.approvedAfterRfe)} were approved</b>, against{" "}
-            {pct(h1b.now.approvalRate)} of all H-1B petitions decided. Data through{" "}
+            {pct(h1b.now.approvalRate)}<KeepWhole>{" of all H-1B petitions decided. Data through"}</KeepWhole>{" "}
             {summary ? formatAsOf(summary.asOf) : monthLabel(h1b.last.fy, h1b.last.month)}.
           </p>
         ) : null}
@@ -282,13 +286,15 @@ export default async function UscisRfeRatesPage() {
           subject={`${monthShort(firstMonth.fy, firstMonth.month)} to ${monthShort(h1b.last.fy, h1b.last.month)}, share of the month's decisions`}
           caption={
             <>
-              Each column is the share of the H-1B petitions USCIS decided that month that had an RFE. The green
-              part at its foot is the ones approved after it.
+              <KeepWhole>
+                {"Each column is the share of the H-1B petitions USCIS decided that month that had an RFE. The " +
+                  "green part at its foot is the ones approved after it."}
+              </KeepWhole>
             </>
           }
           source={
             <>
-              USCIS&apos;s quarterly I-129 request-for-evidence files ({h1bFiles.length}), each checked against its own
+              <KeepWhole>{"USCIS's quarterly I-129 request-for-evidence files ("}</KeepWhole>{h1bFiles.length}), each checked against its own
               totals.
             </>
           }
@@ -309,7 +315,7 @@ export default async function UscisRfeRatesPage() {
       </section>
 
       <section id="by-visa" className="mt-12 scroll-mt-24">
-        <h2 className="font-heading text-2xl font-bold">Every I-129 visa, by fiscal year</h2>{" "}
+        <h2 className="font-heading text-2xl font-bold"><KeepWhole>{"Every I-129 visa, by fiscal year"}</KeepWhole></h2>{" "}
         <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
           The share of each visa&apos;s decisions that had an RFE, FY{fys[0]} to FY{fys[fys.length - 1]}, every card on the
           same scale.
@@ -322,7 +328,7 @@ export default async function UscisRfeRatesPage() {
                 {" "}
                 <li className="border-2 border-border bg-card p-4">
                   <div className="flex items-baseline justify-between gap-3">
-                    <h3 className="font-heading text-lg font-bold">{v.label}</h3>{" "}
+                    <h3 className="font-heading text-lg font-bold">{keepWhole(v.label)}</h3>{" "}
                     <p className="font-mono text-sm text-muted-foreground">
                       FY{latest.fy}
                       {latest.complete ? "" : " so far"}
@@ -338,8 +344,7 @@ export default async function UscisRfeRatesPage() {
                   </div>{" "}
                   {v.key === "l1" ? (
                     <p className="mt-2 text-sm text-muted-foreground">
-                      FY{v.years[0]!.fy} to FY{latest.fy} only: the files that reach those years print L-1A and L-1B as
-                      one table.
+                      FY{v.years[0]!.fy} to FY{latest.fy}<KeepWhole>{" only: the files that reach those years print L-1A and L-1B as one table."}</KeepWhole>
                     </p>
                   ) : null}
                 </li>
@@ -361,7 +366,7 @@ export default async function UscisRfeRatesPage() {
               <tbody>
                 {visas.map((v) => (
                   <tr key={v.key} className="border-b border-border/60">
-                    <td className="py-1.5 pr-3 font-bold">{v.label}{" "}</td>
+                    <td className="py-1.5 pr-3 font-bold">{keepWhole(v.label)}{" "}</td>
                     {fys.map((fy) => {
                       const yr = v.years.find((x) => x.fy === fy);
                       return (
@@ -386,8 +391,10 @@ export default async function UscisRfeRatesPage() {
         <CaveatBox title="What this can't tell you">
           <ul className="list-disc space-y-2 pl-5">
             <li>
-              RFE rates for the I-140, the I-485 or any one employer. USCIS publishes these counts for the I-129 alone,
-              and for no petitioner by name.
+              <KeepWhole>
+                {"RFE rates for the I-140, the I-485 or any one employer. USCIS publishes these counts for the " +
+                  "I-129 alone, and for no petitioner by name."}
+              </KeepWhole>
             </li>{" "}
             <li>
               How many RFEs were sent. A petition with several RFEs counts once, as one completion that had an RFE.
@@ -397,7 +404,10 @@ export default async function UscisRfeRatesPage() {
               months earlier, and the RFE may have gone out in yet another month.
             </li>{" "}
             <li>
-              Why the H-1B share rose in FY2018 and FY2019. The files count RFEs, but they give no reason for them.
+              <KeepWhole>
+                {"Why the H-1B share rose in FY2018 and FY2019. The files count RFEs, but they give no reason for " +
+                  "them."}
+              </KeepWhole>
             </li>{" "}
             <li>
               Final outcomes. Approved and denied are USCIS&apos;s initial decisions, so a later revocation or reopening
@@ -417,12 +427,12 @@ export default async function UscisRfeRatesPage() {
           </li>{" "}
           <li>
             <Link href="/h1b-employers" className="link">
-              The busiest H-1B employers each year
+              <KeepWhole>{"The busiest H-1B employers each year"}</KeepWhole>
             </Link>
           </li>{" "}
           <li>
             <Link href="/lca-cases" className="link">
-              H-1B LCAs, the step before the petition
+              <KeepWhole>{"H-1B LCAs, the step before the petition"}</KeepWhole>
             </Link>
           </li>
         </ul>

@@ -9,6 +9,7 @@ import { longDate, workedLabel, type EmployerMove, type EmployerStageRow } from 
 import { formatInt } from "@/lib/format";
 import { monthDay } from "@convex/lib/months";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Follow an employer: what its pending cases look like today, what DOL has
@@ -103,7 +104,7 @@ export function EmployerFollow({
                   <Fragment key={l.key}>
                     <li className="flex items-center gap-2">
                       <span aria-hidden="true" className={`inline-block h-3.5 w-3.5 shrink-0 border border-input ${l.cls}`} />{" "}
-                      <span>{l.text}</span>
+                      <span>{keepWhole(l.text)}</span>
                     </li>{" "}
                   </Fragment>
                 ))}

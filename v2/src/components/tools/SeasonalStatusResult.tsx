@@ -37,6 +37,7 @@ import { entityHref } from "@/lib/entityPayload";
 import { naicsTitle } from "@/lib/naicsTitles";
 import { getPwdDetail, type PwdDetail } from "@/lib/db/pwdDetail";
 import { linkTargets, linkableSlugs } from "@/lib/db/entityLinks";
+import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
  * An H-2A application (`H-300-`), an H-2B application (`H-400-`) or an H-2B
@@ -208,7 +209,10 @@ function SeasonalDetails({
       <RecordList rows={rows} />{" "}
       {decideBy ? (
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-soft">
-          By rule DOL decides an H-2A application no later than 30 days before the first day of work, so this one by{" "}
+          <KeepWhole>
+            {"By rule DOL decides an H-2A application no later than 30 days before the first day of work, so this " +
+              "one by"}
+          </KeepWhole>{" "}
           <b className="font-semibold text-foreground">{formatDay(decideBy)}</b>, unless the application was modified (
           <a target="_blank" href="https://www.ecfr.gov/current/title-20/chapter-V/part-655/section-655.160" className="link" rel="noopener">
             20 CFR 655.160

@@ -10,6 +10,7 @@ import type { OtherEmployerRecord } from "@/lib/db/otherEmployers";
 import type { SeasonalEmployerCase } from "@/lib/db/seasonalEmployers";
 import { longDate } from "@convex/lib/months";
 import { caseSearchHref } from "@/lib/caseSearchPlan";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * An employer's page when it has no PERM record: its filings are H-1B LCAs,
@@ -44,9 +45,9 @@ function SeasonalCaseList({
   return (
     <section className="mt-10 border-2 shadow-hard p-6 sm:p-8 bg-card border-border">
       <h2 className="font-heading text-xl font-bold">
-        {more
+        {keepWhole(more
           ? `Its newest ${formatInt(cases.length)} H-2A, H-2B and CW-1 filings`
-          : `Its ${formatInt(cases.length)} H-2A, H-2B and CW-1 ${cases.length === 1 ? "filing" : "filings"}`}
+          : `Its ${formatInt(cases.length)} H-2A, H-2B and CW-1 ${cases.length === 1 ? "filing" : "filings"}`)}
       </h2>{" "}
       <p className="mt-2 max-w-3xl text-base leading-relaxed text-muted-foreground">
         DOL&apos;s live status on each, and, once a case is decided, the wage, workers and worksite from its

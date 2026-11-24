@@ -4,6 +4,7 @@ import { ChartTips } from "@/components/data/ChartTips";
 import { EmptyState } from "@/components/data/EmptyState";
 import { plainText } from "@/components/data/MoreText";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Server-rendered bar rows and a stacked bar, for the USCIS quarterly pages.
@@ -102,8 +103,8 @@ export function BarRows({
               className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 sm:grid-cols-[minmax(10rem,22rem)_minmax(0,1fr)_auto] sm:gap-x-6"
             >
               <div className="col-span-2 min-w-0 sm:col-span-1">
-                <p className="text-base font-semibold leading-snug">{r.label}</p>{" "}
-                {r.sub ? <p className="text-sm text-muted-foreground">{r.sub}</p> : null}
+                <p className="text-base font-semibold leading-snug">{keepWhole(r.label)}</p>{" "}
+                {r.sub ? <p className="text-sm text-muted-foreground">{keepWhole(r.sub)}</p> : null}
               </div>{" "}
               <div className="h-2.5 w-full bg-sage" aria-hidden="true">
                 {r.value !== null ? (
@@ -122,12 +123,12 @@ export function BarRows({
             {/* The figure sits on its label's line, flush right, and the bar runs the full width under both:
                 every track is the same length, so the bars compare, and no figure floats away from its row. */}
             <div className="flex items-baseline justify-between gap-x-4">
-              <p className="min-w-0 text-base font-semibold leading-snug">{r.label}</p>{" "}
+              <p className="min-w-0 text-base font-semibold leading-snug">{keepWhole(r.label)}</p>{" "}
               <span className="shrink-0 whitespace-nowrap text-right font-mono text-sm font-bold tabular-nums sm:text-base">
                 {figureText(r)}
               </span>
             </div>{" "}
-            {r.sub ? <p className="text-sm text-muted-foreground">{r.sub}</p> : null}
+            {r.sub ? <p className="text-sm text-muted-foreground">{keepWhole(r.sub)}</p> : null}
             <div className="mt-1.5 h-2.5 w-full bg-sage" aria-hidden="true">
               {r.value !== null ? (
                 <div
@@ -193,7 +194,7 @@ export function StackedBar({
           <Fragment key={s.key}>{" "}
           <li className="flex items-center gap-1.5">
             <span className={cn("inline-block h-3 w-3 shrink-0", STACK_TONES[i % STACK_TONES.length])} aria-hidden="true" />{" "}
-            <span className="text-soft">{s.label}</span>{" "}
+            <span className="text-soft">{keepWhole(s.label)}</span>{" "}
             <span className="font-mono font-bold tabular-nums">{s.value.toLocaleString("en-US")}</span>{" "}
             {sum > 0 ? (
               <span className="text-muted-foreground">({Math.round((s.value / sum) * 100)}%)</span>

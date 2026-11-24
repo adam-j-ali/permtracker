@@ -6,6 +6,7 @@ import { MONTH_ABBR, shortDate } from "@convex/lib/months";
 import { dayNumber } from "@convex/lib/time";
 import { settlementMoney, shortName, type EnforcementAction, type EnforcementProgram } from "@/lib/enforcement/actions";
 import { dodge, reach } from "@/lib/enforcement/dodge";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Every settlement on one time line, a lane per visa program, each a square as big as the money it moved
@@ -56,7 +57,7 @@ export function EnforcementTimeline({ actions, today }: { actions: readonly Enfo
             <div key={lane.program} className="grid grid-cols-[9.5rem_1fr] items-center border-b border-border/60">
               <p className="pr-3 text-sm font-bold leading-tight">
                 <span className={`mr-2 inline-block size-3 align-middle ${lane.fill}`} aria-hidden="true" />
-                {lane.label}
+                {keepWhole(lane.label)}
               </p>{" "}
               <LaneMarks
                 marks={settled.filter((a) => a.program === lane.program)}

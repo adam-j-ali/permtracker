@@ -3,6 +3,7 @@ import { MinusIcon, TrendDownIcon, TrendUpIcon } from "@phosphor-icons/react/ssr
 
 import { kindsOf, type FigureKind } from "@/lib/sourceKind";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * A row of headline figures in one ink frame, each figure its own
@@ -58,7 +59,7 @@ export function TrendChip({ trend, className }: { trend: FigureTrend; className?
   return (
     <span className={cn("inline-flex items-center gap-1 px-1.5 py-0.5 text-sm font-semibold leading-snug text-foreground", TREND_FILL[trend.tone], className)}>
       <Arrow aria-hidden="true" weight="bold" className={cn("size-4 shrink-0", TREND_INK[trend.tone])} />
-      {trend.text}
+      {keepWhole(trend.text)}
     </span>
   );
 }
@@ -104,7 +105,7 @@ export function Figure({
     >
       <p className="flex items-center gap-1.5 text-sm font-bold">
         {icon ? <span aria-hidden="true" className="inline-flex shrink-0 [&_svg]:size-4">{icon}</span> : null}
-        {label}
+        {keepWhole(label)}
       </p>{" "}
       {/* A number is the figure, so it's the largest thing in the card. A name or a date is words: set a step
           smaller, it reads as a name and wraps inside its card, where at a number's size one long name made its
@@ -115,12 +116,12 @@ export function Figure({
           number ? "whitespace-nowrap text-[1.75rem] leading-none sm:text-[2rem]" : "text-xl leading-tight sm:text-[1.375rem]",
         )}
       >
-        {value}
+        {number ? value : keepWhole(value)}
       </p>{" "}
       {visual ? <div className="mt-2.5">{visual}</div> : null}{" "}
       {trend ? <TrendChip trend={trend} className="mt-2" /> : null}{" "}
       {note ? (
-        <p className={cn("mt-1.5 text-sm leading-snug", tone === "paper" ? "text-muted-foreground" : "opacity-85")}>{note}</p>
+        <p className={cn("mt-1.5 text-sm leading-snug", tone === "paper" ? "text-muted-foreground" : "opacity-85")}>{keepWhole(note)}</p>
       ) : null}
     </div>
   );

@@ -7,6 +7,7 @@ import { rankFuzzy } from "@/lib/fuzzy";
 import type { PolicyFacets, PolicyItem } from "@/lib/policySearch";
 import { shortDate } from "@convex/lib/months";
 import { RecentSearchesField } from "@/components/search/RecentSearches";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 export type { PolicyItem } from "@/lib/policySearch";
 
@@ -191,7 +192,7 @@ export function PolicySearch({
                   <span className="shrink-0 font-mono text-sm font-bold sm:w-32">{i.kind}{" "}</span>{" "}
                   <span className="min-w-0">
                     <a href={i.url} rel="noopener" target="_blank" className="link">
-                      {i.title}
+                      {keepWhole(i.title)}
                     </a>{" "}
                     {i.agencies ? <span className="block text-sm text-muted-foreground">{i.agencies}{" "}</span> : null}
                     {i.commentsOpen ? <span className="block text-sm font-bold">Open for comment{" "}</span> : null}

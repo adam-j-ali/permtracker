@@ -9,6 +9,7 @@ import { useAuthContext } from "@/lib/contexts/AuthContext";
 import { STAGE_VISUALS } from "@/components/status/stage-visuals";
 import { cn } from "@/lib/utils";
 import { WIDGET_CONTAINER_CLASSES, WidgetHeader, WidgetLink } from "./widget-primitives";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The account's cases by stage, as one row of counts. Each count links to
@@ -53,9 +54,9 @@ function CountRow({ cells }: { cells: readonly Cell[] }) {
             className="group flex h-full min-h-24 flex-col px-3 pb-3 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
           >
             <span aria-hidden="true" className={cn("-mx-3 mb-2.5 block h-1", c.dot)} />
-            <span className="text-sm font-semibold">{c.label}</span>{" "}
+            <span className="text-sm font-semibold">{keepWhole(c.label)}</span>{" "}
             <span className="mt-0.5 font-heading text-3xl font-bold leading-none tabular-nums group-hover:underline">{c.count}</span>{" "}
-            {c.note ? <span className="mt-1.5 text-sm leading-snug text-soft">{c.note}</span> : null}
+            {c.note ? <span className="mt-1.5 text-sm leading-snug text-soft">{keepWhole(c.note)}</span> : null}
           </Link>
         </li>
       ))}

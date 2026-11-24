@@ -13,6 +13,7 @@ import {
   type ProgramLine,
 } from "@/lib/employerPrograms";
 import { formatDollars, formatInt, formatShare } from "@/lib/format";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * One employer across DOL's programs, as a ledger.
@@ -69,8 +70,8 @@ export function EmployerPrograms({
         <>
           <h2 className="font-heading text-xl font-bold">Across DOL&apos;s programs</h2>{" "}
           <p className="mt-2 max-w-3xl text-base text-soft">
-            {perm ? "The wage request, the PERM and the H-1B labor condition application" : "Each program it files"}
-            {perm && seasonal ? ", and its seasonal H-2A, H-2B and CW-1 work" : ""}, one line each.
+            {keepWhole(perm ? "The wage request, the PERM and the H-1B labor condition application" : "Each program it files")}
+            {keepWhole(perm && seasonal ? ", and its seasonal H-2A, H-2B and CW-1 work" : "")}, one line each.
           </p>
         </>
       ) : null}{" "}
@@ -155,16 +156,18 @@ export function EmployerPrograms({
             ? ` Published counts every year DOL's files hold, back to FY${OLDER_FROM_FY}: the PERM decisions from FY${OLDER_FROM_FY} to FY${NEWER_FROM_FY.perm - 1} and the LCAs from FY${OLDER_FROM_FY} to FY${NEWER_FROM_FY.lca - 1} come from DOL's older yearly files, counted when each one loads.`
             : ""}
           {dated ? " The PERM and LCA medians read the newer files only, from the year each one names." : ""}
-          {lca ? " The LCA line counts every LCA DOL publishes for the employer, the E-3 and H-1B1 LCAs filed on the same form among them." : ""}
+          {keepWhole(lca ? " The LCA line counts every LCA DOL publishes for the employer, the E-3 and H-1B1 LCAs filed on the same form among them." : "")}
           {" "}DOL publishes no employer number, so filings are matched by the employer&apos;s legal name
           {spellings && spellings > 1 ? `, read under the ${formatInt(spellings)} spellings DOL's files use for it` : ""}
           . Another employer with the same legal name would be counted here too.{" "}
-          The PERM is the green-card step. The wage request comes months before
-          it, and the LCA is the separate form for an H-1B. DOL publishes each
-          in its own file, and its live record shows what&apos;s still open.
-          {seasonal
+          <KeepWhole>
+            {"The PERM is the green-card step. The wage request comes months before it, and the LCA is the " +
+              "separate form for an H-1B. DOL publishes each in its own file, and its live record shows what's " +
+              "still open."}
+          </KeepWhole>
+          {keepWhole(seasonal
             ? ` Seasonal wages stay hourly, as DOL's H-2A, H-2B and CW-1 files quote them: a job lasting a season, annualised over a full year, would describe pay nobody earns.${seasonal.workersCertified ? ` DOL certified ${formatInt(seasonal.workersCertified)} workers across these filings.` : ""}`
-            : ""}
+            : "")}
         </p>
       </FinePrint>
     </section>

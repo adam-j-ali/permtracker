@@ -9,6 +9,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 interface TocItem {
   id: string;
@@ -90,7 +91,7 @@ export default function TableOfContents() {
                   : "border-transparent text-muted-foreground hover:text-foreground"
               )}
             >
-              {heading.text}
+              {keepWhole(heading.text)}
             </a>
           </li>
         ))}

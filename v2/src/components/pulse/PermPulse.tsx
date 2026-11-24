@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { formatInt } from "@/lib/format";
 import { checkedLabel } from "@/lib/time";
 import { weekdayName } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * PERM decisions, day by day: DOL's last working day under our check (a
@@ -151,10 +152,10 @@ export function PermPulse({ days, checkedAt, showLink = true, variant = "band", 
           <Fragment key={f.label}>
             {" "}
             <div>
-              <dt className="text-sm text-muted-foreground">{f.label}</dt>{" "}
+              <dt className="text-sm text-muted-foreground">{keepWhole(f.label)}</dt>{" "}
               <dd className="m-0 mt-1 font-heading text-3xl font-bold leading-none tabular-nums">
                 {f.value}
-                {f.note ? <span className="mt-1.5 block font-sans text-sm font-normal text-muted-foreground"> {f.note}</span> : null}
+                {f.note ? <span className="mt-1.5 block font-sans text-sm font-normal text-muted-foreground"> {keepWhole(f.note)}</span> : null}
               </dd>
             </div>
           </Fragment>

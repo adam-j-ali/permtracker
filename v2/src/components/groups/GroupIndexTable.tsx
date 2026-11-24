@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { FilterableStatTable, type Facet, type StatColumn } from "@/components/tools/FilterableStatTable";
 import { formatInt } from "@/lib/format";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * Every city, industry or country group of one kind, searchable, sortable by
@@ -54,7 +55,7 @@ export function GroupIndexTable({
           href={`${basePath}/${r.slug}`}
           className="link"
         >
-          {r.label}
+          {keepWhole(r.label)}
         </Link>
       ),
     },

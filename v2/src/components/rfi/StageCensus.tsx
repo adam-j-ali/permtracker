@@ -10,6 +10,7 @@ import {
   type StageGroup,
 } from "./stageMeta";
 import { MONTH_ABBR } from "@convex/lib/months";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * How many cases sit at each stage right now.
@@ -121,7 +122,7 @@ function StageRow({
               href={`/perm-rfi-audit/${stageSlug(stage.status)}`}
               className="link max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
             >
-              {meta.label}
+              {keepWhole(meta.label)}
             </Link>
           ) : (
             meta.label

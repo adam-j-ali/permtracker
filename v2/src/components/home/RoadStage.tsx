@@ -6,6 +6,7 @@ import { useCallback, useRef, type CSSProperties, type FocusEvent } from "react"
 import { SiteImage } from "@/components/ui/site-image";
 import { goToStep, useScrollStage, type StagePlace } from "@/components/scroll/useScrollStage";
 import { HOME_WIDTH } from "./homeWidth";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The road as a scroll stage (PREVIEW, Oct 21 2026). One DOM for every mode:
@@ -161,7 +162,7 @@ export function RoadStage({ stops }: { stops: RoadStop[] }) {
                         className={`mt-1 flex items-center gap-2 text-sm font-semibold text-soft lg:motion-safe:group-data-[on=false]/stop:text-muted-foreground`}
                       >
                         <span aria-hidden="true" className={`size-2.5 shrink-0 ${s.dot}`} />
-                        <span id={`road-${i}-who`}>{s.who}</span>
+                        <span id={`road-${i}-who`}>{keepWhole(s.who)}</span>
                       </span>{" "}
                       <span
                         id={`road-${i}-fact`}

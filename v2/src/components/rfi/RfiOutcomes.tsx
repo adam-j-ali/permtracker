@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { ChartTips } from "@/components/data/ChartTips";
 import type { BlendedRfiFunnel, RfiFunnel } from "@/lib/db/rfi";
 import { MoreText } from "@/components/data/MoreText";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * What happened to the cases that already went through an RFI.
@@ -134,7 +135,7 @@ export function RfiOutcomes({ funnel }: { funnel: RfiFunnel | BlendedRfiFunnel }
               <span className="font-mono text-sm font-bold tabular-nums">
                 {s.n.toLocaleString()}
               </span>{" "}
-              <span className="text-sm">{s.label}</span>{" "}
+              <span className="text-sm">{keepWhole(s.label)}</span>{" "}
               <span
                 className="ml-auto font-mono text-sm tabular-nums"
                 style={{ color: s.ink }}

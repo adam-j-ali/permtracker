@@ -2,6 +2,7 @@ import { Fragment } from "react";
 
 import { CopyButton } from "@/components/badges/BadgeCatalogue";
 import { EMBED_GROUP_LABEL, EMBED_SITE_DAILY_LIVE, EMBEDS, embedSnippet, type EmbedGroup } from "@/lib/embeds";
+import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The embed gallery on /badges: every tool another site can frame, grouped,
@@ -38,9 +39,9 @@ export function EmbedGallery({ origin }: { origin: string }) {
           />
         </div>{" "}
         <div className="self-center">
-          <p className="font-heading text-xl font-bold">{lookup.title}</p>{" "}
+          <p className="font-heading text-xl font-bold">{keepWhole(lookup.title)}</p>{" "}
           <p className="mt-2 text-base leading-relaxed text-soft">
-            {lookup.blurb} It asks DOL live, up to {EMBED_SITE_DAILY_LIVE} lookups a day from each site. Past that, it
+            {keepWhole(lookup.blurb)} It asks DOL live, up to {EMBED_SITE_DAILY_LIVE} lookups a day from each site. Past that, it
             answers from PERM Tracker&apos;s own record and says so under the answer.
           </p>{" "}
           <Snippet html={embedSnippet(lookup, origin)} />
@@ -57,8 +58,8 @@ export function EmbedGallery({ origin }: { origin: string }) {
                 {" "}
                 {/* Its own address (/badges#embed-<slug>), so a page that offers one box can point straight at its code. */}
                 <li id={`embed-${e.slug}`} className="flex scroll-mt-24 flex-col bg-tint p-4 border-2 border-border">
-                  <p className="font-heading text-base font-bold">{e.title}</p>{" "}
-                  <p className="mt-1 flex-1 text-sm leading-relaxed text-soft">{e.blurb}</p>{" "}
+                  <p className="font-heading text-base font-bold">{keepWhole(e.title)}</p>{" "}
+                  <p className="mt-1 flex-1 text-sm leading-relaxed text-soft">{keepWhole(e.blurb)}</p>{" "}
                   <p className="mt-2 text-sm">
                     <a href={`/embed/${e.slug}`} target="_blank" rel="noopener noreferrer" className="font-bold link">
                       Preview the frame
