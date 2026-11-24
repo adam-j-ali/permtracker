@@ -127,9 +127,9 @@ export default async function VisaWaitTimesPage() {
       <FigureRow className="mt-2">
         {indiaLong ? (
           <Figure kind="official"
-            tone="lime"
+            tone="ink"
             label="Longest wait in India"
-            icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />}
+            icon={<HourglassMediumIcon weight="bold" />}
             trend={postWaitMoved(data.history, indiaLong.post, indiaLong, reading)}
             value={waitWords(indiaLong)}
             note={indiaLong.post}

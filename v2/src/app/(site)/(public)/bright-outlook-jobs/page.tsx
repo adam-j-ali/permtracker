@@ -162,7 +162,7 @@ export default async function Page() {
         <>
           <section className="mt-10" aria-label="The list in figures">
             <FigureRow>
-              <Figure kind="official" tone="lime" label="Bright Outlook jobs" icon={<SunIcon weight="bold" />} value={formatInt(totals.jobs)} note="By job code, O*NET's list" />{" "}
+              <Figure kind="official" tone="ink" label="Bright Outlook jobs" icon={<SunIcon weight="bold" />} value={formatInt(totals.jobs)} note="By job code, O*NET's list" />{" "}
               <Figure kind="measured"
                 label="With PERM cases"
                 icon={<ClipboardTextIcon weight="bold" className="text-primary-text" />}

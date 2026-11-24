@@ -220,7 +220,7 @@ export default async function Page() {
             <section className="mt-10" aria-label="The employers in figures">
               <FigureRow>
                 <Figure kind="measured"
-                  tone="lime"
+                  tone="ink"
                   label="Employers"
                   icon={<BuildingsIcon weight="bold" />}
                   value={formatInt(doc.employers)}

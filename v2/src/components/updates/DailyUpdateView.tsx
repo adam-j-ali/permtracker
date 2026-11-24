@@ -183,7 +183,7 @@ export function DailyUpdateView({
       <FigureRow id="counts" className="mt-6 scroll-mt-24">
         <Figure kind="measured"
           label="Certified"
-          tone="lime"
+          tone="ink"
           icon={<CheckCircleIcon weight="bold" />}
           value={formatInt(perm.certified)}
           trend={final ? (trendAgainst(perm.certified, usual.certified, weekday, "good") ?? undefined) : undefined}

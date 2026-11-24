@@ -48,9 +48,9 @@ function Headline({ r }: { r: QuarterReport }) {
   return (
     <FigureRow className="not-prose prose-reset my-8">
       <Figure kind="measured"
-        tone="lime"
+        tone="ink"
         label="Decisions"
-        icon={<StampIcon weight="bold" className="text-primary-text" />}
+        icon={<StampIcon weight="bold" />}
         trend={quarterCountMoved(t.total, p.total)}
         value={formatInt(t.total)}
         note={yearAgoNote(t.total, y.total)}

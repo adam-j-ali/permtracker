@@ -87,7 +87,7 @@ export default async function SettlementsPage() {
           label="About PERM recruitment"
           value={formatInt(totals.perm)}
           note={`All since ${shortDate(perm[0]?.date ?? totals.newest)}`}
-          tone="lime"
+          tone="ink"
         />
         <Figure kind="measured"
           icon={<CurrencyDollarIcon className="size-5" aria-hidden="true" />}

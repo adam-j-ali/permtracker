@@ -345,9 +345,9 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
           <FigureRow className="mt-8">
             {lead && leadNow?.row?.medianMonths != null ? (
               <Figure kind="official"
-                tone="lime"
+                tone="ink"
                 label={`Median, ${slotShort(leadNow.slot)}`}
-                icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />}
+                icon={<HourglassMediumIcon weight="bold" />}
                 trend={medianMoved(lead.points)}
                 value={monthsPhrase(leadNow.row.medianMonths)}
                 note={lines.length > 1 ? lead.line.label : "Half were decided sooner"}
