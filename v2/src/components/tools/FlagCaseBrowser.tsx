@@ -687,7 +687,7 @@ export function FlagCaseBrowser({
     <div className="space-y-10">
       <section className="object p-5 sm:p-6">
         {/* The page's one way in: an employer's name searches the list, and a case number goes to its own page. */}
-        <h2 className="font-heading text-xl font-bold">Find {program.article ?? "a"} {program.noun}</h2>{" "}
+        <h2 className="font-heading text-xl font-bold">Find {program.article ?? "a"} {keepWhole(program.noun)}</h2>{" "}
         <p className="mt-2 max-w-2xl text-base leading-relaxed text-soft">
           Type the start of the employer&apos;s name, or a case number. Add a word from the job
           title or a filing month if the employer files a lot.
@@ -931,10 +931,10 @@ export function FlagCaseBrowser({
 
       {between}{" "}
       <section id="browse" ref={browseTop} className="scroll-mt-28 object p-5 sm:p-6">
-        <h2 className="font-heading text-xl font-bold">Browse every {program.noun} DOL has confirmed</h2>{" "}
+        <h2 className="font-heading text-xl font-bold">Browse every {keepWhole(program.noun)} DOL has confirmed</h2>{" "}
         {summary ? (
           <p className="mt-2 max-w-3xl text-base leading-relaxed text-soft">
-            {formatInt(summary.total)} {program.nouns} so far: {formatInt(summary.pending)} still waiting,{" "}
+            {formatInt(summary.total)} {keepWhole(program.nouns)} so far: {formatInt(summary.pending)} still waiting,{" "}
             {formatInt(summary.decided)} {program.decidedLabel.toLowerCase()}.
           </p>
         ) : null}{" "}

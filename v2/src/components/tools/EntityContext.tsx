@@ -308,9 +308,10 @@ export function PeerList({
                   {p.name}
                   {p.state ? <span className="font-normal text-muted-foreground">{` · ${p.state}`}</span> : null}
                 </span>{" "}
-                <span className="col-start-2 whitespace-nowrap font-mono text-sm tabular-nums text-muted-foreground sm:col-start-3 sm:text-right">
-                  {formatInt(p.total)} {unit}
-                  {p.denied > 0 ? ` · ${formatInt(p.denied)} denied` : " · none denied"}
+                {/* Two halves that each stay whole and may wrap between them: on a 320px phone the line ran 7px past the screen. */}
+                <span className="col-start-2 font-mono text-sm tabular-nums text-muted-foreground sm:col-start-3 sm:whitespace-nowrap sm:text-right">
+                  <span className="whitespace-nowrap">{`${formatInt(p.total)} ${unit}`}</span>{" "}
+                  <span className="whitespace-nowrap">{p.denied > 0 ? `· ${formatInt(p.denied)} denied` : "· none denied"}</span>
                 </span>
               </IntentLink>
             </li>

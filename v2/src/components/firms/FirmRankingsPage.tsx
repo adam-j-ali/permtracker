@@ -230,7 +230,7 @@ async function Ranking({ program, state, summary }: { program: FirmProgram; stat
               : { href: FIRM_RANKS_PATH, label: "See the whole country's ranking" }
           }
         >
-          No law firm filed {p.noun} for jobs in {place} in FY{fy}. A firm shows here once DOL&apos;s files name one.
+          No law firm filed {keepWhole(p.noun)} for jobs in {place} in FY{fy}. A firm shows here once DOL&apos;s files name one.
         </EmptyState>
       </PageSection>
     );
