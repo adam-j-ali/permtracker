@@ -256,6 +256,7 @@ import type * as lib_userDefaults from "../lib/userDefaults.js";
 import type * as lib_validation from "../lib/validation.js";
 import type * as lib_webhookQueue from "../lib/webhookQueue.js";
 import type * as lib_webhookSign from "../lib/webhookSign.js";
+import type * as lib_wilson from "../lib/wilson.js";
 import type * as lib_withheldNames from "../lib/withheldNames.js";
 import type * as marketingEmail from "../marketingEmail.js";
 import type * as marketingEmailHelpers from "../marketingEmailHelpers.js";
@@ -553,6 +554,7 @@ declare const fullApi: ApiFromModules<{
   "lib/validation": typeof lib_validation;
   "lib/webhookQueue": typeof lib_webhookQueue;
   "lib/webhookSign": typeof lib_webhookSign;
+  "lib/wilson": typeof lib_wilson;
   "lib/withheldNames": typeof lib_withheldNames;
   marketingEmail: typeof marketingEmail;
   marketingEmailHelpers: typeof marketingEmailHelpers;
