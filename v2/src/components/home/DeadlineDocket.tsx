@@ -9,7 +9,7 @@ import {
   calculatePWDExpiration,
 } from "@/lib/perm";
 import { cn } from "@/lib/utils";
-import { dayNumber, MS_PER_DAY } from "@/lib/time";
+import { dayNumber } from "@/lib/time";
 import { keepWhole } from "@/components/ui/keep-whole";
 
 /**

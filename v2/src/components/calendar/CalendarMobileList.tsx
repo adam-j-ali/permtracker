@@ -26,7 +26,6 @@ import {
 } from "date-fns";
 import { CalendarIcon } from "@phosphor-icons/react/ssr";
 
-import { cn } from "@/lib/utils";
 import type { CalendarEvent } from "@/lib/calendar/types";
 import { STAGE_COLORS } from "@/lib/calendar/types";
 import { DaysChip } from "@/components/cases/DeadlineCountdown";

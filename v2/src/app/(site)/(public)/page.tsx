@@ -53,7 +53,7 @@ import { getProcessingTimes } from "@/lib/db/processingTimes";
 import { getRecordCounts } from "@/lib/db/recordCounts";
 import { getSiteReviews } from "@/lib/reviews/read";
 import { getObservedDays } from "@/lib/db/pulse";
-import { getCheckTimes, getSweepCoverage } from "@/lib/db/sweepCoverage";
+import { getCheckTimes } from "@/lib/db/sweepCoverage";
 import { getBacklogMatrix } from "@/lib/db/backlog";
 import { getPermBoard } from "@/lib/db/board";
 import { getPermLine } from "@/lib/db/permLine";

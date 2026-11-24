@@ -94,7 +94,6 @@ export async function generateMetadata({ params }: { params: Promise<{ stage: st
   const { stage } = await params;
   const status = stageFromSlug(stage);
   if (!status) notFound();
-  const meta = stageMeta(status);
   const entry = stageEntry(status);
 
   const title = `PERM ${stageInSentence(status)}: how long cases wait`;

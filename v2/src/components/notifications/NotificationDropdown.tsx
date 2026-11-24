@@ -23,7 +23,7 @@
 
 import { useState, useEffect } from "react";
 import { handleOperationError } from "@/lib/errors";
-import { ArrowsClockwiseIcon as RefreshCw, BellIcon, CalendarIcon, CircleNotchIcon, ClockIcon, InfoIcon, WarningIcon as AlertTriangle, XIcon, type Icon as PhosphorIcon, CheckIcon, ArrowRightIcon } from "@phosphor-icons/react";
+import { ArrowsClockwiseIcon as RefreshCw, CalendarIcon, CircleNotchIcon, ClockIcon, InfoIcon, WarningIcon as AlertTriangle, XIcon, type Icon as PhosphorIcon, CheckIcon, ArrowRightIcon } from "@phosphor-icons/react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useAuthContext } from "@/lib/contexts/AuthContext";

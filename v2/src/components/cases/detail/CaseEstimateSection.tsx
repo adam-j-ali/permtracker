@@ -89,13 +89,6 @@ function day(iso: string, withYear = true): string {
 
 const int = (n: number) => Math.round(n).toLocaleString("en-US");
 
-/** A label's anchor on a bar: centred on its spot, unless that runs off an end. */
-function anchor(pct: number): string {
-  if (pct < 15) return "translate-x-0";
-  if (pct > 85) return "-translate-x-full";
-  return "-translate-x-1/2";
-}
-
 /**
  * What the range means, in a few words, per model. The public panel says the
  * same in a full sentence (`ESTIMATE_PANEL.en.window`); a scenario must never
