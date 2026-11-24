@@ -98,9 +98,10 @@ describe("the answer and the figures at the top of the homepage", () => {
     expect(textOf(nav)).toBe("Past PERM already? I-140 times Visa bulletin I-485 times ");
   });
 
-  it("opens the wage request wait from the wage requests figure and the day's own page from the day's count, and links no other figure", () => {
+  it("opens the waiting wage requests from their count and the day's own page from the day's count, and links no other figure", () => {
     const withWage = renderToStaticMarkup(<HeroSection board={{ ...board, pwdPending: 46298 }} months={months} />);
-    expect(withWage).toMatch(/<a [^>]*href="\/tools\/pwd-calculator"[^>]*>46,298<\/a>/);
+    // A count of requests waiting opens the requests waiting; the calculator stays one tap on from there.
+    expect(withWage).toMatch(/<a [^>]*href="\/pwd-cases"[^>]*>46,298<\/a>/);
     const linked = heroFigures({ ...board, pwdPending: 46298 }, null).filter((f) => f.href);
     expect(linked.map((f) => f.label)).toEqual(["Decided on Oct 5", "Wage requests waiting"]);
     // The count of a day opens that day: which cases, and the filing dates DOL reached.

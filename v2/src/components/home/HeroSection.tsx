@@ -117,7 +117,7 @@ export function heroFigures(board: HeroBoard | undefined, wait: HeroWait | null,
   }
   // The step before PERM: its number opens the wage request wait, the way in for someone waiting on a wage request
   // (their request's own number goes in the case box above, like any other).
-  if (board?.pwdPending) rows.push({ label: "Wage requests waiting", value: formatInt(board.pwdPending), href: "/tools/pwd-calculator" });
+  if (board?.pwdPending) rows.push({ label: "Wage requests waiting", value: formatInt(board.pwdPending), href: "/pwd-cases" });
   return rows;
 }
 
