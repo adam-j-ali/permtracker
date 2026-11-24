@@ -297,10 +297,13 @@ function Rows({
                   set that column's width, and employer names wrapped to make room. */}
               <td className="whitespace-nowrap px-3 py-3 font-mono text-sm max-sm:font-sans max-sm:text-muted-foreground max-sm:[grid-area:dates]">
                 <span className="sm:hidden">Filed</span>{" "}
-                <span>{r.filingDate ?? ""}</span>
-                <span className="sm:hidden">
-                  {sinceDay(r) ? `, in this status since ${sinceDay(r)}` : ""}
-                  {checkedDay(r) ? `, checked with DOL ${checkedDay(r)}` : ""}
+                {/* The phone line's dates ride inside the filing date's span: the comma belongs to it, with no gap. */}
+                <span>
+                  {r.filingDate ?? ""}
+                  <span className="sm:hidden">
+                    {sinceDay(r) ? `, in this status since ${sinceDay(r)}` : ""}
+                    {checkedDay(r) ? `, checked with DOL ${checkedDay(r)}` : ""}
+                  </span>
                 </span>
               {" "}</td>
               <td className="whitespace-nowrap px-3 py-3 font-mono text-sm text-soft max-sm:hidden">
