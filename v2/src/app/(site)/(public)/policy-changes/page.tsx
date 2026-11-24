@@ -4,7 +4,7 @@ import Link from "next/link";
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { FinePrint } from "@/components/data/FinePrint";
 import { RecordStrip } from "@/components/home/RecordStrip";
-import { DocRow, typeLabel } from "@/components/policy/DocRow";
+import { DocRow } from "@/components/policy/DocRow";
 import { PolicySearch } from "@/components/policy/PolicySearch";
 import { monthYear } from "@/components/policy/format";
 import { OflcArchive } from "@/components/policy/OflcArchive";
