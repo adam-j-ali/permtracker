@@ -58,8 +58,16 @@ WHAT IT FIXES before it emails:
               takes seconds where the cap's page-by-page walk takes minutes;
               then starts the cap for the live copies
 
-PHONE. Each alarm also pushes to the owner's phone (ntfy, lib/phone_push.py), beside its email and never
-instead of it: once when it starts and once when it clears, never a 6-hour reminder. A service systemd has stopped
+WHERE EACH GOES. Every alarm is one kind in the routing list (scripts/data/alert_routes.json, read through
+lib/alert_routes.py): its channel says whether it goes by phone and email, waits for the morning report, or stays on
+the admin page, and its level and reminder hours come from there too. A timed job's first failed run waits for the
+report (the next run usually fixes it); two failed runs in a row go by phone and email. Every alarm's start is kept a
+day in this job's memory (`events`), which the health sampler copies into the server's report, so the morning report
+lists what didn't go out at once. A list that can't be read sends every alarm by email and phone, as before the
+list, and the email says why.
+
+PHONE. Each alarm that goes by phone pushes to the owner's phone (ntfy, lib/phone_push.py), beside its email and never
+instead of it: once when it starts and once when it clears, never a reminder. A service systemd has stopped
 restarting (the site's own: the web copies, nginx, the tunnel, the databases) pushes as urgent; every other alarm as
 high; a timed job pushes only once two of its runs in a row have failed, since one failure the next run fixes is
 nobody's business. At most 12 pushes an Eastern day, urgent ones excepted. A push that fails is tried again next
@@ -89,6 +97,27 @@ try:
     import phone_push
 except ImportError:  # the email still goes; main() says the push couldn't
     phone_push = None
+
+
+class _NoList:
+    """The routing list's stand-in when lib/alert_routes.py isn't installed: every alarm is sent, as before the list."""
+    ok, problem = False, "lib/alert_routes.py isn't installed"
+
+    def loud(self, rid: str) -> bool:
+        return True
+
+    def level(self, rid: str, default: str = "high") -> str | None:
+        return default
+
+    def remind_s(self, rid: str, default: float | None = 6 * 3600) -> float | None:
+        return default
+
+
+try:
+    import alert_routes
+    ROUTES = alert_routes.load()
+except ImportError:  # the email says why
+    ROUTES = _NoList()
 
 APP = pathlib.Path(os.environ.get("PT_APP_ROOT", "/srv/permtracker"))
 RUN = pathlib.Path(os.environ.get("PT_RUN_DIR", "/run/permtracker"))
@@ -274,6 +303,25 @@ def unit_key(unit: str) -> str:
     return "unit:" + unit.removesuffix(".service")
 
 
+# Each alarm's kind in the routing list (scripts/data/alert_routes.json); a unit's depends on what it is.
+ROUTE_OF = {
+    "disk": "alarm.disk", "disk-crit": "alarm.disk-critical", "memory": "alarm.memory", "backup": "alarm.backup",
+    "sampler": "alarm.sampler", "page-cache": "alarm.page-cache", "page-cache-blind": "alarm.page-cache-blind",
+    "journal": "alarm.journal",
+}
+
+
+def route_of(key: str, info: dict[str, dict], runs: dict[str, dict]) -> str:
+    """The routing list's kind for one alarm. A timed job is alarm.job-once until two of its runs in a row have
+    failed, then alarm.job-twice; any other unit is a service (alarm.service), whose type systemd may not report."""
+    if not key.startswith("unit:"):
+        return ROUTE_OF[key]
+    unit = key[5:] + ".service"
+    if (info.get(unit) or {}).get("type") == "oneshot":
+        return "alarm.job-twice" if (runs.get(unit) or {}).get("fails", 0) >= JOB_FAILS_TO_PUSH else "alarm.job-once"
+    return "alarm.service"
+
+
 def units_seen(prev: dict | None, snap: dict, now: float) -> dict[str, float]:
     """When each of our units was last seen failed or stopped after an error,
     kept for UNIT_CLEAR_S (evaluate holds an alarm that long after a restart)."""
@@ -305,23 +353,29 @@ def uncounted_releases(report: dict) -> list[str]:
 
 
 def plan(on: dict[str, str], state: dict, now: float,
-         runs: dict[str, str | None] | None = None) -> tuple[list[tuple[str, str, str]], dict]:
+         runs: dict[str, str | None] | None = None,
+         remind: dict[str, float | None] | None = None) -> tuple[list[tuple[str, str, str]], dict]:
     """Which emails to send: (key, kind, reason), kind start | still | clear.
 
     `runs`: for a timed job's alarm, the failed run it's on (its start, from job_runs). Its reminder goes only once a
-    newer run has failed again, and still no sooner than REMIND_S: a daily job that failed once sent a start, three
-    6-hour reminders and a clear (Nov 22 2026), when nothing had changed between them.
+    newer run has failed again, and still no sooner than its reminder gap: a daily job that failed once sent a start,
+    three 6-hour reminders and a clear (Nov 22 2026), when nothing had changed between them.
+    `remind`: an alarm's seconds between reminders, from its kind in the routing list, None for never; REMIND_S for an
+    alarm not named.
     """
     runs = runs or {}
+    remind = remind or {}
     alarms = dict(state.get("alarms", {}))
     out: list[tuple[str, str, str]] = []
     for key, reason in on.items():
         a = alarms.get(key)
         run = {"run": runs[key]} if key in runs else {}
+        gap = remind.get(key, REMIND_S)
         if a is None:
             out.append((key, "start", reason))
             alarms[key] = {"since": now, "mailed": now, "reason": reason, **run}
-        elif now - a.get("mailed", 0) >= REMIND_S and (key not in runs or runs[key] != a.get("run")):
+        elif (gap is not None and now - a.get("mailed", 0) >= gap
+              and (key not in runs or runs[key] != a.get("run"))):
             out.append((key, "still", reason))
             alarms[key] = {**a, "mailed": now, "reason": reason, **run}
         else:
@@ -380,16 +434,47 @@ def job_runs(prev: dict | None, info: dict[str, dict]) -> dict[str, dict]:
     return out
 
 
+# Each kind's push before the routing list, kept for a list that can't be read: a service systemd has given up
+# restarting is urgent, a job's single failure doesn't push, the rest are high.
+LEVEL_WITHOUT_LIST = {"alarm.service": "urgent", "alarm.job-once": None}
+
+
 def push_level(key: str, info: dict[str, dict], runs: dict[str, dict]) -> str | None:
-    """urgent, high, or None (no push) for one alarm that is on."""
-    if not key.startswith("unit:"):
-        return "high"
-    unit = key[5:] + ".service"
-    i = info.get(unit) or {}
-    if i.get("type") == "oneshot":
-        return "high" if (runs.get(unit) or {}).get("fails", 0) >= JOB_FAILS_TO_PUSH else None
-    # A service systemd has given up restarting (or one whose type it can't tell): a run that can't restart itself.
-    return "urgent"
+    """urgent, high, or None (no push) for one alarm that is on: its kind's level in the routing list."""
+    rid = route_of(key, info, runs)
+    if not ROUTES.ok:
+        return LEVEL_WITHOUT_LIST.get(rid, "high")
+    return ROUTES.level(rid)
+
+
+def mailable(on: dict[str, str], routes: dict[str, str], state: dict) -> dict[str, str]:
+    """The alarms the email deals with: each whose kind is sent at once, and each already emailed, so its clear still
+    goes. A kind the routing list leaves to the morning report or the admin page is kept only in `events`."""
+    sent = state.get("alarms", {})
+    return {k: r for k, r in on.items() if ROUTES.loud(routes[k]) or k in sent}
+
+
+EVENTS_KEEP_S = 24 * 3600
+EVENTS_MAX = 60
+
+
+def record_events(events: list[dict] | None, on: dict[str, str], routes: dict[str, str],
+                  runs: dict[str, str | None], now: float) -> list[dict]:
+    """A day of alarm starts, each with its kind, which the health sampler copies into the server's report: the
+    morning report lists from here what the routing list kept out of the email (a job's one failed run). A timed job
+    starts one event per failed run; anything else, one each time it comes on. `over` is when it went off."""
+    kept = [dict(e) for e in (events or []) if now - float(e.get("at") or 0) < EVENTS_KEEP_S]
+    for e in kept:
+        if "over" not in e and (e.get("key") not in on or runs.get(e["key"]) != e.get("run")):
+            e["over"] = now
+    live = {(e["key"], e.get("run")) for e in kept if "over" not in e}
+    for key, reason in on.items():
+        # A job whose run has since passed is held on a while (UNIT_CLEAR_S): that's its event ending, not a new one.
+        if routes[key] in ("alarm.job-once", "alarm.job-twice") and runs.get(key) is None:
+            continue
+        if (key, runs.get(key)) not in live:
+            kept.append({"at": now, "key": key, "route": routes[key], "reason": reason[:200], "run": runs.get(key)})
+    return kept[-EVENTS_MAX:]
 
 
 # A journal line that says why a job failed: its own verdict words, or a Python error's last line.
@@ -755,9 +840,14 @@ def compose(mail: list[tuple[str, str, str]], snap: dict, rate: float | None,
         lines.append(f"Pushes to your phone have failed since "
                      f"{datetime.fromtimestamp(push_failing['since'], ET).strftime('%A %b %-d, %-I:%M %p %Z')}"
                      f" ({push_failing.get('why', 'no reason given')}); each run tries again.")
+    if not ROUTES.ok:
+        lines.append(f"The routing list couldn't be used ({ROUTES.problem}), so every alarm goes by email and phone "
+                     "until it can.")
     lines += ["", "This alarm runs every 5 minutes on the server (permtracker-alarm); it emails again "
               "every 6 hours while something lasts (a timed job's only once a newer run has failed again), and "
-              "once when it clears. It pushes to your phone once when something starts and once when it clears."]
+              "once when it clears. It pushes to your phone once when something starts and once when it clears. "
+              "Where each alarm goes is set in the routing list, scripts/data/alert_routes.json: a timed job's "
+              "first failed run waits for the morning report."]
     return subject, "\n".join(lines)
 
 
@@ -796,7 +886,10 @@ def main() -> int:
     state["job_runs"] = job_runs(state.get("job_runs"), info)
     levels = {k: push_level(k, info, state["job_runs"]) for k in on}
     runs = {unit_key(u): r.get("start") for u, r in state["job_runs"].items()}
-    mail, planned = plan(on, state, now, runs)
+    # Each alarm's kind in the routing list decides whether the email deals with it and how often it reminds.
+    routes = {k: route_of(k, info, state["job_runs"]) for k in on}
+    remind = {k: ROUTES.remind_s(routes[k]) for k in on}
+    mail, planned = plan(mailable(on, routes, state), state, now, runs, remind)
     # Why each failed unit failed, from its own log, for the email that names it.
     why = {k: failure_lines(read_journal(k[5:] + ".service")) for k, kind, _ in mail
            if k.startswith("unit:") and kind != "clear"}
@@ -818,6 +911,8 @@ def main() -> int:
         capped = True
     # The phone, after the email: a push never holds the email up.
     state, pushed = send_pushes(state, on, levels, now)
+    # Every start, sent or not, for the morning report (the health sampler copies it into the server's report).
+    state["events"] = record_events(state.get("events"), on, routes, runs, now)
     if not DRY_RUN:
         STATE.write_text(json.dumps(state))
     print(f"free {snap['disk_free_gb']:.1f} GB, rate "

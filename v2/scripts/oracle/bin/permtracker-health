@@ -251,6 +251,34 @@ def bucket_history(path: pathlib.Path, day: str, size) -> list:
     return rows
 
 
+# The alarm's memory (bin/permtracker-alarm, root, in RAM): its last day of alarm starts, each with its kind in the
+# routing list (scripts/data/alert_routes.json). The morning report lists from here what the list kept out of the
+# email, such as a job's one failed run.
+ALARM_STATE = pathlib.Path(os.environ.get("PT_RUN_DIR", "/run/permtracker")) / "alarm.json"
+ALARM_EVENTS_KEEP_S = 24 * 3600
+
+
+def alarm_events(path: pathlib.Path, now: float) -> list | None:
+    """The alarm's starts in the last day (at, key, route, reason, over), oldest first; None when its memory can't be
+    read, which the report says rather than reading it as a quiet day. Pure given the file, for the test."""
+    try:
+        doc = json.loads(path.read_text())
+    except FileNotFoundError:
+        return []          # the alarm hasn't run since the server started: nothing to list
+    except (OSError, ValueError):
+        return None
+    events = doc.get("events") if isinstance(doc, dict) else None
+    out = []
+    for e in events if isinstance(events, list) else []:
+        try:
+            if now - float(e.get("at") or 0) >= ALARM_EVENTS_KEEP_S:
+                continue
+        except (AttributeError, TypeError, ValueError):
+            continue
+        out.append({k: e[k] for k in ("at", "key", "route", "reason", "over") if k in e})
+    return out
+
+
 def p95(xs):
     if not xs:
         return None
@@ -465,6 +493,8 @@ def main():
         "defense24h": [r for r in repairs if " defend: " in r and " defend: would " not in r][-5:],
         "defenseCount24h": sum(1 for r in repairs if " defend: " in r and " defend: would " not in r),
         "underAttack24h": sum(1 for r in repairs if " defend: Under Attack Mode on" in r),
+        # The alarm's starts in the last day, each with its kind in the routing list (null: its memory unreadable).
+        "alarmEvents24h": alarm_events(ALARM_STATE, now),
         "timersEnabled": len(re.findall(r"permtracker[^\s]*\.timer", timers)),
         "timers": sorted(set(re.findall(r"permtracker[^\s]*\.timer", timers))),
         "slot": {"active": slot, "release": release},
