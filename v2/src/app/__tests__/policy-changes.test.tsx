@@ -17,6 +17,8 @@ import { listPolicyNotices } from "@/lib/db/policyNotices";
 import { getRulePipeline } from "@/lib/db/rulePipeline";
 import type { RuleRecord } from "@convex/lib/ruleSteps";
 import { POLICY_SHOTS } from "@/lib/policyShots";
+import { archiveBook } from "@/lib/policyArchive";
+import { buildFeed } from "@/lib/policyFeed";
 import { webpSize } from "../../../test-utils/image-size";
 import PolicyChangesPage from "../(site)/(public)/policy-changes/page";
 
@@ -128,10 +130,22 @@ describe("/policy-changes", () => {
     expect(html).toContain("OFLC Releases Public Disclosure Data for Q3");
     expect(html).toContain("OFLC Releases the H-2B Foreign Labor Recruiter List");
     expect(html).not.toContain("more on H-2A, H-2B and CW-1");
-    // Eight rows lead (the two 2026 ones and six from 2019); the other four
-    // 2019 announcements are still in the DOM, folded under their year.
-    expect((html.match(/Older OFLC announcement \d/g) ?? []).length).toBe(10);
+    // Eight rows lead (the two 2026 ones and six from 2019). The other four
+    // 2019 announcements are folded under their year, which says how many,
+    // and load from /policy-changes/archive.json when it's opened.
+    expect((html.match(/Older OFLC announcement \d/g) ?? []).length).toBe(6);
     expect(html).toMatch(/<summary[^>]*>[\s\S]*?2019[\s\S]*?4 announcements/);
+  });
+
+  it("keeps the folded years' lines out of the page, with every one in the archive file", async () => {
+    const html = await render();
+    const book = archiveBook(buildFeed(FIXTURE, "2027-01-15"));
+    const folded = book.agencies["2019"] ?? [];
+    expect(folded).toHaveLength(4);
+    for (const [id, , , title] of folded) {
+      expect(html).not.toContain(`id="doc-${id}"`);
+      expect(html).not.toContain(`${title}<`);
+    }
   });
 
   it("draws the strip with one mark per document in the window and a today line", async () => {

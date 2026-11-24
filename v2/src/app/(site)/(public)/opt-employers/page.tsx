@@ -17,8 +17,8 @@ import { getSevpLists, type SevpList } from "@/lib/db/sevpEmployers";
  * ICE's yearly top-200 lists of employers of F-1 students on OPT, STEM OPT
  * and CPT, the only federal count of who hires students on practical
  * training. Every list ICE linked is here in full, as ICE printed it
- * (scripts/ingest_sevp_top_employers.py); the newest year is open, earlier
- * years fold.
+ * (scripts/ingest_sevp_top_employers.py), a page of each at a time; the
+ * newest year is open, earlier years fold.
  */
 
 const TITLE = "Top OPT and CPT Employers";
@@ -37,8 +37,6 @@ export const revalidate = 604800;
 
 const SOURCE = "https://www.ice.gov/sevis/whats-new";
 
-/** Rows each table shows before the rest of its 200 fold. */
-const OPEN_ROWS = 25;
 const LEADERS = 10;
 
 /**
@@ -141,7 +139,7 @@ export default async function OptEmployersPage() {
               : "Students on Curricular Practical Training in the year: work that's part of a degree program."}
           </p>
           <div className="mt-4">
-            <SevpEmployerTable list={l} open={OPEN_ROWS} />
+            <SevpEmployerTable list={l} />
           </div>
           <AsPrinted notes={l.asPrinted} />
         </section>
@@ -164,7 +162,7 @@ export default async function OptEmployersPage() {
                     <PlusIcon aria-hidden="true" className="size-5 shrink-0 transition-transform group-open:rotate-45 motion-reduce:transition-none" />
                   </summary>
                   <div className="p-4 pt-0">
-                    <SevpEmployerTable list={l} open={OPEN_ROWS} />
+                    <SevpEmployerTable list={l} />
                     <AsPrinted notes={l.asPrinted} />
                   </div>
                 </details>

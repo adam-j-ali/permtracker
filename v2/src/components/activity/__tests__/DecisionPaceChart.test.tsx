@@ -1,5 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { act } from "react";
+import { hydrateRoot } from "react-dom/client";
+import { renderToStaticMarkup, renderToString } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+
+import { hitRow } from "@/components/data/ChartHit";
 
 import type { ActivityDay } from "@/lib/activityStats";
 
@@ -221,5 +226,56 @@ describe("DecisionPaceChart hover detail", () => {
     expect(tips[0]).toMatch(/^Week of Jun 22, 2026\n4,200 decided\n/);
     expect(tips[0]).toMatch(/\nDisclosure$/);
     expect(tips[3]).toMatch(/^Week of Aug 17, 2026\n5,600 decided\n[\s\S]*\nLive$/);
+  });
+});
+
+/**
+ * The hover columns are drawn by the browser. Drawn on the server, each week's column was in the HTML and again in
+ * the page's data: the record's 1,003 weeks were 0.83 MB of /perm-decision-activity's 1.54 MB (Nov 23 2026), and the
+ * page is held under 1.5 MB (scripts/audit_page_markup.py).
+ */
+describe("DecisionPaceChart hover columns", () => {
+  const LONG = run("2007-10-01", 7021, 300);
+
+  it("leaves the hover columns out of the server's HTML and keeps the drawing", () => {
+    // Act
+    const html = renderToStaticMarkup(
+      <DecisionPaceChart series={[{ label: "Disclosure", color: "var(--data-good-ink)", days: LONG }]} />,
+    );
+    // Assert: the line and the axis are drawn, and no week costs any markup
+    expect(html).toContain("<polyline");
+    expect(html).not.toContain("data-tip");
+    expect(html.length).toBeLessThan(20_000);
+  });
+
+  it("draws every week's column once the page starts, with no mismatch against the server's HTML", async () => {
+    // Arrange: the server's HTML in a page, as a browser receives it
+    const chart = <DecisionPaceChart series={[{ label: "Disclosure", color: "var(--data-good-ink)", days: DISCLOSURE }]} />;
+    const host = document.createElement("div");
+    // renderToString, as a server render does: it marks the edges between text nodes, which hydration reads.
+    host.innerHTML = renderToString(chart);
+    document.body.appendChild(host);
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    const recoverable: unknown[] = [];
+    // Act
+    await act(async () => {
+      hydrateRoot(host, chart, { onRecoverableError: (e) => recoverable.push(e) });
+    });
+    // Assert
+    const tips = [...host.querySelectorAll("[data-tip]")].map((el) => el.getAttribute("data-tip") ?? "");
+    expect(tips).toHaveLength(3);
+    expect(tips[0]).toMatch(/^Week of Jun 22, 2026\n4,200 decided\n3,906 certified\n168 denied\n126 withdrawn\nDisclosure$/);
+    expect(recoverable).toEqual([]);
+    expect(errors).not.toHaveBeenCalled();
+    errors.mockRestore();
+    host.remove();
+  });
+});
+
+describe("hitRow", () => {
+  it("rounds a column and its point to hundredths of a unit, and keeps the tip whole", () => {
+    expect(hitRow({ x: 60.323647, width: 0.32364729458917907 }, 60.5, 171.23676393499912, "Week of Oct 1, 2007\n1,368 decided")).toEqual([
+      60.32, 0.32, 60.5, 171.24, "Week of Oct 1, 2007\n1,368 decided",
+    ]);
   });
 });

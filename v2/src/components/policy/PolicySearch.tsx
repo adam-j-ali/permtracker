@@ -2,31 +2,15 @@
 
 import { useCallback, useEffect, useId, useMemo, useState, type ReactNode } from "react";
 
+import { fetchOnce } from "@/lib/fetchOnce";
 import { rankFuzzy } from "@/lib/fuzzy";
 import type { PolicyFacets, PolicyItem } from "@/lib/policySearch";
 import { shortDate } from "@convex/lib/months";
 
 export type { PolicyItem } from "@/lib/policySearch";
 
-let pending: Promise<PolicyItem[]> | null = null;
-
 /** The page's documents, fetched at most once a visit; a failed fetch is forgotten, so the next try asks again. */
-export function loadPolicyItems(): Promise<PolicyItem[]> {
-  pending ??= fetch("/policy-changes/search.json")
-    .then((r) => {
-      if (!r.ok) throw new Error(`search.json answered ${r.status}`);
-      return r.json();
-    })
-    .then((list: unknown) => {
-      if (!Array.isArray(list)) throw new Error("search.json is not a list");
-      return list as PolicyItem[];
-    })
-    .catch((e: unknown) => {
-      pending = null;
-      throw e;
-    });
-  return pending;
-}
+export const loadPolicyItems = fetchOnce("/policy-changes/search.json", (list: unknown): list is PolicyItem[] => Array.isArray(list));
 
 export interface PolicyQuery {
   text: string;

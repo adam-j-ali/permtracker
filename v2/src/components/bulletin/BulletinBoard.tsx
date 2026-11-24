@@ -26,13 +26,14 @@ import { formatMonth, formatAsOf } from "@/lib/dolFormat";
 // value import from here would drag it into the client bundle. The type
 // import is erased at compile time; the labels below are presentation and
 // live with the presentation.
-import type { BulletinBoard as Board, BoardCell } from "@/lib/db/bulletin";
+import type { BulletinBoardSummary as Board, BoardCellSummary as BoardCell } from "@/lib/db/bulletin";
 import type { ChartKind, CountryKey } from "@/lib/perm";
 import { cn } from "@/lib/utils";
 import { DAYS_PER_MONTH } from "@/lib/time";
 import { ScrollBox } from "@/components/ui/scroll-box";
 
 export interface BulletinBoardProps {
+  /** `boardSummary(board)`: the figures without each cell's history, which this never draws. */
   board: Board;
   className?: string;
 }

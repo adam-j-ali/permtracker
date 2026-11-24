@@ -9,7 +9,7 @@ import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { BulletinAlertForm } from "@/components/tools/BulletinAlertForm";
 import { getVisaBulletinSeries } from "@/lib/db/publicData";
-import { getBulletinBoard, categoriesIn } from "@/lib/db/bulletin";
+import { boardSummary, getBulletinBoard, categoriesIn } from "@/lib/db/bulletin";
 
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { withSocialCard } from "@/lib/socialCard";
@@ -156,7 +156,7 @@ export default async function PriorityDateCalculatorPage() {
 
       {board ? (
         <section data-embed="visa-bulletin" className="mt-12">
-          <BulletinBoard board={board} />
+          <BulletinBoard board={boardSummary(board)} />
         </section>
       ) : null}
 
