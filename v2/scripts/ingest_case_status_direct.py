@@ -366,7 +366,7 @@ def run_discovery(db, *, lookup=None, today: datetime.date | None = None,
     made, and the frontier stays at the last confirmed hit.
     """
     lookup = lookup or lookup_with_retry
-    today = today or datetime.date.today()
+    today = today or datetime.datetime.now(ET).date()  # the Eastern day: the server's clock is UTC
     today_code = day_code(today)
     start = frontier_override or _frontier_doc(db)
     if start is None:

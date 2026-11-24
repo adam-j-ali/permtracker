@@ -591,7 +591,7 @@ def sweep(db: Database, program: str, pending_only: bool, limit: int | None,
         where = "WHERE is_final = 0 OR is_final = '0'"
         order = "case_number"
     elif window_days:
-        cutoff = (datetime.date.today() - datetime.timedelta(days=window_days)).isoformat()
+        cutoff = (datetime.datetime.now(ET).date() - datetime.timedelta(days=window_days)).isoformat()
         where, args = "WHERE filing_date >= ?", [cutoff]
         order = "filing_date, case_number"      # the index's own order: no sort
         log(f"{program}: rolling window, filed on or after {cutoff}")
@@ -1062,7 +1062,7 @@ def main() -> int:
 
     db = Database()
     ensure_schema(db)
-    today = datetime.date.today()
+    today = datetime.datetime.now(ET).date()  # the Eastern day: the server's clock is UTC
     started = time.time()
 
     def finish_docs(note_for=None) -> list[tuple[str, str]]:
