@@ -16,7 +16,8 @@ import type { RfiFunnel, RfiObserved } from "../rfi";
 vi.mock("server-only", () => ({}));
 vi.mock("../client", () => ({ one: vi.fn(), rows: vi.fn() }));
 
-const { blendRfiFunnel, wilsonInterval, DIRECT_EVENT_SOURCE } = await import("../rfi");
+const { blendRfiFunnel, DIRECT_EVENT_SOURCE } = await import("../rfi");
+const { wilsonInterval } = await import("@convex/lib/wilson");
 
 const BASE: RfiFunnel = {
   totalTracked: 211_719,

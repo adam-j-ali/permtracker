@@ -8,7 +8,7 @@
  */
 
 import { formatAsOf } from "@/lib/dolFormat";
-import { MS_PER_DAY } from "../../convex/lib/time";
+import { daysBetween } from "../../convex/lib/time";
 import { getI140ProcessingTime, PROCESSING_TIMES_AS_OF, type I140Category, type I140Subtype } from "@/lib/processing-times/i140ProcessingTimes";
 
 export interface PostedRow {
@@ -85,8 +85,6 @@ export function parseUscisPosted(json: string): UscisPosted | null {
   return { published: raw.published, postings, newest, series, longestGapDays: num(raw.longestGapDays),
     project: str(raw.project) ?? "https://github.com/jzebedee/uscis" };
 }
-
-const daysBetween = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
 
 /** Whether the newest posting is recent enough to stand for "now": USCIS's longest gap so far, with room. */
 export function isCurrent(doc: UscisPosted, today: string): boolean {
@@ -294,11 +292,10 @@ const YEAR_SLACK_DAYS = 15;
 export function yearChange(points: readonly [string, number][]): YearChange | null {
   const last = points[points.length - 1];
   if (!last) return null;
-  const at = (d: string) => Date.parse(`${d}T00:00:00Z`);
   let then: [string, number] | undefined;
   let off = Infinity;
   for (const p of points) {
-    const miss = Math.abs((at(last[0]) - at(p[0])) / MS_PER_DAY - 365);
+    const miss = Math.abs(daysBetween(p[0], last[0]) - 365);
     if (miss <= YEAR_SLACK_DAYS && miss < off) {
       then = p;
       off = miss;

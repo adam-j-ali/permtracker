@@ -125,7 +125,7 @@ export default async function VisaWaitTimesPage() {
       <p className="mt-8 text-sm font-semibold text-soft">Work visas (H, L, O, P and Q): the next interview</p>{" "}
       <FigureRow className="mt-2">
         {indiaLong ? (
-          <Figure
+          <Figure kind="official"
             tone="lime"
             label="Longest wait in India"
             icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />}
@@ -135,7 +135,7 @@ export default async function VisaWaitTimesPage() {
           />
         ) : null}{" "}
         {indiaShort ? (
-          <Figure
+          <Figure kind="official"
             label="Shortest in India"
             icon={<TimerIcon weight="bold" className="text-primary-text" />}
             trend={postWaitMoved(data.history, indiaShort.post, indiaShort, reading)}
@@ -143,14 +143,14 @@ export default async function VisaWaitTimesPage() {
             note={indiaShort.post}
           />
         ) : null}{" "}
-        <Figure
+        <Figure kind="official"
           label="An interview within 15 days"
           icon={<CalendarCheckIcon weight="bold" className="text-primary-text" />}
           trend={quickMoved(data.history, quick, reading)}
           value={`${quick} of ${work.length}`}
           note={`consulates, as of ${readingDate}`}
         />{" "}
-        <Figure
+        <Figure kind="official"
           label="No figure printed"
           icon={<ProhibitIcon weight="bold" className="text-primary-text" />}
           value={String(noFigure)}

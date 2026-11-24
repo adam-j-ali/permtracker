@@ -17,10 +17,11 @@ import {
   entityTitle,
   rateReliability,
   separationN,
-  wilsonUpperPct,
+  upperBoundPct,
   type PeerEntity,
 } from "../EntityContext";
 import { MIN_DECIDED_FOR_RATE } from "@/lib/entityPayload";
+import { Z_95 } from "@convex/lib/wilson";
 
 /** DOL's measured denial rate over 248,158 decided cases in this window. */
 const BASELINE = 2.57;
@@ -38,31 +39,31 @@ function peer(over: Partial<PeerEntity> & { slug: string; name: string }): PeerE
   };
 }
 
-describe("wilsonUpperPct", () => {
+describe("upperBoundPct", () => {
   it("never returns zero for a spotless record, which is the whole point", () => {
     // The textbook normal interval gives exactly 0 here, which would assert
     // that a three-case employer's denial rate is KNOWN to be zero.
-    expect(wilsonUpperPct(0, 3)).toBeGreaterThan(50);
+    expect(upperBoundPct(0, 3)).toBeGreaterThan(50);
   });
 
   it("collapses to z^2 / (n + z^2) when there are no failures", () => {
     // Closed form, so these are derived rather than recorded from a run.
-    const z2 = 1.959963984540054 ** 2;
+    const z2 = Z_95 ** 2;
     for (const n of [10, 30, 100, 500]) {
-      expect(wilsonUpperPct(0, n)).toBeCloseTo((z2 / (n + z2)) * 100, 6);
+      expect(upperBoundPct(0, n)).toBeCloseTo((z2 / (n + z2)) * 100, 6);
     }
-    expect(wilsonUpperPct(0, 30)).toBeCloseTo(11.35, 1);
+    expect(upperBoundPct(0, 30)).toBeCloseTo(11.35, 1);
   });
 
   it("tightens as the count grows", () => {
-    const widths = [10, 50, 200, 2000].map((n) => wilsonUpperPct(1, n));
+    const widths = [10, 50, 200, 2000].map((n) => upperBoundPct(1, n));
     for (let i = 1; i < widths.length; i++) {
       expect(widths[i]!).toBeLessThan(widths[i - 1]!);
     }
   });
 
   it("refuses to claim anything from an empty denominator", () => {
-    expect(wilsonUpperPct(0, 0)).toBe(100);
+    expect(upperBoundPct(0, 0)).toBe(100);
   });
 });
 

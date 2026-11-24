@@ -49,12 +49,14 @@ export default async function LcaCasesPage() {
   // The overview, drawn between the search and the list.
   const figures: IndexFigure[] = [
           {
+            kind: "measured",
             label: "Waiting at DOL now",
             value: summary ? formatInt(summary.pending) : "—",
             note: "DOL has seven working days to decide one",
             ...(waitingSplit(summary, "LCAs") ? { split: waitingSplit(summary, "LCAs") } : {}),
           },
           {
+            kind: "measured",
             label: "Decided, with the wage offered",
             value: disclosure ? formatInt(disclosure.rows) : "—",
             ...(longDate(disclosure?.latestDecision ?? null)

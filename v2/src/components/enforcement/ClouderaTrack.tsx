@@ -1,5 +1,6 @@
 import { ChartTips } from "@/components/data/ChartTips";
 import { shortDate } from "@convex/lib/months";
+import { dayFromNumber, dayNumber } from "@convex/lib/time";
 import { barEnds } from "@/lib/enforcement/actions";
 
 /**
@@ -24,8 +25,7 @@ export const CLOUDERA = {
   barMonths: 24,
 } as const;
 
-const dayNumber = (iso: string) => Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)));
-const addDays = (iso: string, n: number) => new Date(dayNumber(iso) + n * 86_400_000).toISOString().slice(0, 10);
+const addDays = (iso: string, n: number) => dayFromNumber(dayNumber(iso) + n);
 
 export function ClouderaTrack({ lastPerm, today }: { lastPerm: string | null; today: string }) {
   const c = CLOUDERA;

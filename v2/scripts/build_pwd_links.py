@@ -45,6 +45,7 @@ import sys
 import time
 from collections import defaultdict
 
+from lib_days import day_of, days_between
 from lib_db import Database, query_rows, record_run, stamp_freshness
 from lib_recruitment import quiet_period_end
 from lib_reference import sync_rows
@@ -89,13 +90,6 @@ def log(msg: str) -> None:
     print(msg, flush=True)
 
 
-def days(a: str | None, b: str | None) -> int | None:
-    try:
-        return (dt.date.fromisoformat(str(b)[:10]) - dt.date.fromisoformat(str(a)[:10])).days
-    except (TypeError, ValueError):
-        return None
-
-
 def at(vals: list[int], q: float) -> int:
     """Nearest-rank percentile of a sorted list."""
     return vals[min(len(vals) - 1, max(0, round(q * (len(vals) - 1))))]
@@ -133,7 +127,7 @@ def window(db: Database, cases: list[dict]) -> tuple[str, str]:
     newest = max(str(c["decided"])[:10] for c in cases if c["decided"])
     year_ago = (dt.date.fromisoformat(newest) - dt.timedelta(days=365)).isoformat()
     taking = sorted(d for c in cases if c["decided"] and str(c["decided"])[:10] >= year_ago
-                    for d in [days(c["filed"], c["decided"])] if d is not None and d >= 0)
+                    for d in [days_between(day_of(c["filed"]), day_of(c["decided"]))] if d is not None and d >= 0)
     end = dt.date.fromisoformat(newest) - dt.timedelta(days=DETERMINATION_LIFE_DAYS + at(taking, DECIDED_SHARE))
     first_fy = query_rows(db, "SELECT MIN(fiscal_year) FROM pwd_cases WHERE visa_class = 'PERM'")[0][0]
     return max(f"{int(float(first_fy)) - 1}-10-01", numbered_from(db)), end.isoformat()
@@ -170,8 +164,8 @@ def plan(cases: list[dict], start: str, end: str) -> list[list]:
         if not (c["determined"] and start <= str(c["determined"])[:10] <= end):
             continue
         keys = [ALL] + [(k, c[k]) for k in ("employer", "attorney", "occupation") if c[k]]
-        gap = days(c["determined"], c["filed"])
-        q = days(quiet_period_end(c), c["filed"])
+        gap = days_between(day_of(c["determined"]), day_of(c["filed"]))
+        q = days_between(day_of(quiet_period_end(c)), day_of(c["filed"]))
         for key in keys:
             if gap is not None and 0 <= gap <= MAX_GAP_DAYS:
                 gaps[key].append(gap)

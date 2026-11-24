@@ -12,7 +12,7 @@
 
 import { estimateByPace, type MeasuredPace, type RangeCoverage } from "@/lib/perm";
 import { casesAheadOfDay, deriveQueueAhead, inLine, lineAheadByMonth, type DayCounts, type LineAheadRow, type MonthQueue } from "@/lib/queueAhead";
-import { MS_PER_DAY } from "@/lib/time";
+import { dayFromNumber, dayNumber, daysBetween } from "@/lib/time";
 
 export interface BacklogRow {
   month: string;
@@ -36,12 +36,7 @@ export function caseEstimateInputs(input: {
   // A MISSING SWEEP RECORD IS NOT TREATED AS STALE: `getDecisionPace` refuses
   // a series whose newest day is more than three days old, and the same sweep
   // writes it, so a stopped sweep takes the pace with it.
-  const sweepAgeDays = sweepFinishedOn
-    ? Math.floor(
-        (Date.parse(`${today}T00:00:00Z`) - Date.parse(`${sweepFinishedOn}T00:00:00Z`)) /
-          MS_PER_DAY,
-      )
-    : null;
+  const sweepAgeDays = sweepFinishedOn ? daysBetween(sweepFinishedOn, today) : null;
   // The same month split by filing day where the sweep's day counts hold it,
   // spread evenly otherwise, and only the cases in line (analyst review):
   // see `casesAheadOfDay` and `inLine` in queueAhead.ts.
@@ -101,11 +96,11 @@ export function monthEndDate(input: {
   const monthsBehind = index(month) - index(frontierMonth);
   if (monthsBehind < 0) return { kind: "passed", inLine: inLine(subject) };
   const sweepAgeDays = sweepFinishedOn
-    ? Math.floor((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${sweepFinishedOn}T00:00:00Z`)) / MS_PER_DAY)
+    ? daysBetween(sweepFinishedOn, today)
     : 0;
   const casesThrough = ahead + inLine(subject);
   const r = estimateByPace({
-    today: Math.floor(Date.parse(`${today}T00:00:00Z`) / MS_PER_DAY),
+    today: dayNumber(today),
     casesAhead: casesThrough,
     pace,
     status: "ANALYST REVIEW",
@@ -114,6 +109,6 @@ export function monthEndDate(input: {
     measuredRange: input.rangeCoverage?.measured ?? null,
   });
   if (r.kind !== "estimate") return null;
-  const iso = (d: number) => new Date(d * MS_PER_DAY).toISOString().slice(0, 10);
+  const iso = dayFromNumber;
   return { kind: "estimate", date: iso(r.day), early: iso(r.early), late: iso(r.late), rangeFrom: r.rangeFrom, casesThrough };
 }

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { MS_PER_DAY } from "@/lib/time";
+import { daysBetweenOrNull } from "@/lib/time";
 
 import type { LiveCaseRow } from "./cases";
 import { permsNaming } from "./caseLinks";
@@ -270,12 +270,9 @@ const fromFlagLive = (r: FlagCaseRow, program: ChangeProgram): UnifiedCase => ({
  * missing rather than 0, because "we do not know" and "decided the same day"
  * are different facts and a 0 would read as the second.
  */
-function daysBetween(from: string | null, to: string | null): number | null {
-  if (!from || !to) return null;
-  const a = Date.parse(`${from}T00:00:00Z`);
-  const b = Date.parse(`${to}T00:00:00Z`);
-  if (!Number.isFinite(a) || !Number.isFinite(b) || b < a) return null;
-  return Math.round((b - a) / MS_PER_DAY);
+function elapsedDays(from: string | null, to: string | null): number | null {
+  const days = daysBetweenOrNull(from, to);
+  return days !== null && days >= 0 ? days : null;
 }
 
 const fromFlagDisclosed = (r: FlagDisclosedRow, program: ChangeProgram): UnifiedCase => ({
@@ -301,7 +298,7 @@ const fromFlagDisclosed = (r: FlagDisclosedRow, program: ChangeProgram): Unified
   // DERIVED, because these tables carry no `days` column while `perm_cases`
   // does. Both dates are right here, so leaving it null showed a filing date
   // and a decision date beside an empty "days" on every wage request and LCA.
-  days: daysBetween(r.receivedDate, r.decisionDate),
+  days: elapsedDays(r.receivedDate, r.decisionDate),
   industryCode: r.naics,
   industryTitle: naicsTitle(r.naics)?.title ?? null,
   city: r.worksiteCity,

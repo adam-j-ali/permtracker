@@ -13,6 +13,7 @@
  */
 
 import { dolDayOf } from "@/lib/dolDay";
+import { daysBetween } from "@/lib/time";
 import { HISTORY_FROM } from "@/lib/statusHistory";
 import { moveTone, type MoveTone } from "@/lib/stageMoves";
 
@@ -26,11 +27,6 @@ export interface StageStart {
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 const DAY_MS = 86_400_000;
-
-/** Whole days from one ISO day to another (UTC midnights, so a clock change never shifts it). */
-export function daysBetween(from: string, to: string): number {
-  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS);
-}
 
 /** Where a case's wait at a stage starts: our seen arrival first, then (appeal stages) DOL's denial date. */
 export function startFor(arrivalAt: number | null, deniedOn: string | null, appeal: boolean): StageStart {

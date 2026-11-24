@@ -7,7 +7,7 @@
  */
 import { estimateRfiCase, RFI_DUE_DAYS, type RfiClock } from "@/lib/perm";
 import { sumOutcomes, type RfiPath } from "@/lib/stageMoves";
-import { MS_PER_DAY } from "@/lib/time";
+import { dayFromNumber, dayNumber } from "@/lib/time";
 import { longDate } from "@convex/lib/months";
 
 export interface RfiRun {
@@ -41,8 +41,7 @@ export interface RfiRun {
   afterReply: { decided: number; certified: number } | null;
 }
 
-const dayNum = (iso: string) => Math.floor(Date.parse(`${iso}T00:00:00Z`) / MS_PER_DAY);
-const addDays = (iso: string, n: number) => new Date((dayNum(iso) + n) * MS_PER_DAY).toISOString().slice(0, 10);
+const addDays = (iso: string, n: number) => dayFromNumber(dayNumber(iso) + n);
 
 /**
  * The run for an RFI issued `today`, or null when there's nothing honest to show: no measured
@@ -53,16 +52,16 @@ export function buildRfiRun(input: { clock: RfiClock | null; path: RfiPath | nul
   if (!clock) return null;
   const est = estimateRfiCase({ enteredOn: today, today, clock });
   if (est.kind !== "estimate") return null;
-  const start = dayNum(today);
+  const start = dayNumber(today);
   const leaveDay = clock.leaveDays.p50;
   const afterReply = path ? sumOutcomes(path.afterReply) : 0;
   return {
     rfiDay: today,
     dueDays: RFI_DUE_DAYS,
     leaveDay,
-    decideDay: dayNum(est.date) - start,
-    earliestDay: dayNum(est.earliest) - start,
-    latestDay: dayNum(est.latest) - start,
+    decideDay: dayNumber(est.date) - start,
+    earliestDay: dayNumber(est.earliest) - start,
+    latestDay: dayNumber(est.latest) - start,
     dueDate: addDays(today, RFI_DUE_DAYS),
     leaveDate: addDays(today, leaveDay),
     decideDate: est.date,

@@ -6,7 +6,7 @@ import { ArrowRightIcon } from "@phosphor-icons/react/ssr";
 import { PermTimelineEstimator } from "@/components/tools/PermTimelineEstimator";
 import { getDailyDecisions, getQueueAhead } from "@/lib/db/publicData";
 import { businessDayPace } from "@/lib/dolPace";
-import { MS_PER_DAY } from "@/lib/time";
+import { daysBetween } from "@/lib/time";
 import { QueueAlertForm } from "../../perm-processing-times/QueueAlertForm";
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
 import { FaqList } from "@/components/tools/FaqList";
@@ -149,13 +149,7 @@ export default async function PermTimelineCalculatorPage() {
           pace={pace}
           decisionPace={decisionPace ? decisionPace.pace : null}
           sweepAgeDays={
-            sweep
-              ? Math.floor(
-                  (Date.parse(`${today}T00:00:00Z`) -
-                    Date.parse(`${sweep.finishedOn}T00:00:00Z`)) /
-                    MS_PER_DAY,
-                )
-              : null
+            sweep ? daysBetween(sweep.finishedOn, today) : null
           }
           months={queue ? queue.months : []}
           byDay={byDay}

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   adjacentFrom,
   aheadPendingFrom,
+  censusDayOf,
   monthRowsFrom,
   parseLiveCensusDoc,
   statusTotalFrom,
@@ -142,5 +143,12 @@ describe("adjacentFrom", () => {
   it("returns nulls at the edges", () => {
     expect(adjacentFrom(MATRIX, "2024-03").previous).toBeNull();
     expect(adjacentFrom(MATRIX, "2024-06").next).toBeNull();
+  });
+});
+
+describe("censusDayOf", () => {
+  it("is the census doc's own day, or the day the page counted the mirror itself", () => {
+    expect(censusDayOf({ asOf: "2026-11-22" }, "2026-11-23")).toBe("2026-11-22");
+    expect(censusDayOf(null, "2026-11-23")).toBe("2026-11-23");
   });
 });

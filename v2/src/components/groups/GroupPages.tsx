@@ -147,11 +147,11 @@ export async function GroupIndexPage({ kind }: { kind: GroupKind }) {
         figures={
           rows.length > 0
             ? [
-                { label: `${c.noun[0]!.toUpperCase()}${c.noun.slice(1)} with a page`, value: formatInt(rows.length) },
+                { kind: "measured" as const, label: `${c.noun[0]!.toUpperCase()}${c.noun.slice(1)} with a page`, value: formatInt(rows.length) },
                 ...(leader
-                  ? [{ label: "The busiest", value: leader.label, href: `${path}/${leader.slug}`, note: `${formatInt(leader.total)} decisions` }]
+                  ? [{ kind: "measured" as const, label: "The busiest", value: leader.label, href: `${path}/${leader.slug}`, note: `${formatInt(leader.total)} decisions` }]
                   : []),
-                ...(tenShare !== null ? [{ label: "The ten busiest hold", value: `${tenShare}%`, note: `of ${formatInt(all)} decisions` }] : []),
+                ...(tenShare !== null ? [{ kind: "measured" as const, label: "The ten busiest hold", value: `${tenShare}%`, note: `of ${formatInt(all)} decisions` }] : []),
               ]
             : []
         }

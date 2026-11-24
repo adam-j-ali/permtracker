@@ -1369,10 +1369,6 @@ OUTCOMES = ("certified", "denied", "withdrawn")
 SOC_GROUP = re.compile(r"^(\d{2}-\d{4})")
 
 
-def days_between(a: str, b: str) -> int:
-    return (date.fromisoformat(b) - date.fromisoformat(a)).days
-
-
 def decision_slices(first: str, last: str) -> list[tuple[str, str]]:
     """Half-open slices of SLICE_DAYS decision days, [a, b), from `first` through `last`. Pure."""
     out: list[tuple[str, str]] = []

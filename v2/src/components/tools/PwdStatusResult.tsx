@@ -440,14 +440,14 @@ export async function PwdLookup({ caseNumber }: { caseNumber: string }) {
           )}{" "}
           {estimate && month ? (
             <FigureRow className="mt-6">
-              <Figure
+              <Figure kind="measured"
                 label={`Requests ahead of ${formatMonth(month)}`}
                 icon={<QueueIcon weight="bold" className="text-primary-text" />}
                 value={formatInt(estimate.requestsAhead)}
               />
               {/* DOL's table runs to its as-of month: a later month has no row yet, and a 0 would read as nobody else filing then. */}
               {monthInDolTable(month, est?.asOf ?? null) ? (
-                <Figure
+                <Figure kind="measured"
                   label="Received the same month"
                   icon={<CalendarBlankIcon weight="bold" className="text-primary-text" />}
                   value={formatInt(estimate.requestsSameMonth)}

@@ -7,7 +7,7 @@
  */
 import { estimateByPace, type MeasuredPace } from "@/lib/perm";
 import { monthEndDate, type BacklogRow } from "@/lib/caseEstimateInputs";
-import { MS_PER_DAY } from "@/lib/time";
+import { dayFromNumber, dayNumber, daysBetween } from "@/lib/time";
 import { inLine } from "@/lib/queueAhead";
 import { longDate, monthYear } from "@convex/lib/months";
 
@@ -42,7 +42,7 @@ export interface QueueRun {
 
 const index = (ym: string) => Number(ym.slice(0, 4)) * 12 + Number(ym.slice(5, 7)) - 1;
 const monthOf = (i: number) => `${Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, "0")}`;
-const addDays = (iso: string, n: number) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * MS_PER_DAY).toISOString().slice(0, 10);
+const addDays = (iso: string, n: number) => dayFromNumber(dayNumber(iso) + n);
 
 /**
  * The run for today's line, or null when there's nothing honest to show: no pace, no published
@@ -69,9 +69,9 @@ export function buildQueueRun(input: {
   if (!picked || picked.inLine === 0) return null;
 
   const ahead = earlier + months.filter((m) => m.month < pick).reduce((sum, m) => sum + m.inLine, 0);
-  const sweepAgeDays = sweepFinishedOn ? Math.floor((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${sweepFinishedOn}T00:00:00Z`)) / MS_PER_DAY) : 0;
+  const sweepAgeDays = sweepFinishedOn ? daysBetween(sweepFinishedOn, today) : 0;
   const reach = estimateByPace({
-    today: Math.floor(Date.parse(`${today}T00:00:00Z`) / MS_PER_DAY),
+    today: dayNumber(today),
     casesAhead: ahead,
     pace,
     status: "ANALYST REVIEW",
@@ -80,8 +80,8 @@ export function buildQueueRun(input: {
   });
   const end = monthEndDate({ backlog, month: pick, pace, frontierMonth: dolMonth, sweepFinishedOn, today });
   if (reach.kind !== "estimate" || end?.kind !== "estimate") return null;
-  const reachDate = new Date(reach.day * MS_PER_DAY).toISOString().slice(0, 10);
-  const daysTo = (iso: string) => Math.round((Date.parse(`${iso}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / MS_PER_DAY);
+  const reachDate = dayFromNumber(reach.day);
+  const daysTo = (iso: string) => daysBetween(today, iso);
   return {
     months,
     earlier,

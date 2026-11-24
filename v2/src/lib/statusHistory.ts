@@ -1,4 +1,5 @@
 import { dolDayOf } from "@/lib/dolDay";
+import { daysBetween } from "@/lib/time";
 
 /**
  * A case's status history: every status DOL's record showed, in order, from the changes our checks saw.
@@ -39,7 +40,6 @@ export interface HistoryStep {
 }
 
 const norm = (s: string) => s.trim().toUpperCase();
-const dayMs = (d: string) => Date.parse(`${d}T12:00:00Z`);
 
 /**
  * The steps, oldest first, or [] when nothing changed on our record. A change to the same status (a correction
@@ -77,7 +77,7 @@ export function statusHistory(events: readonly StatusEvent[], filedOn?: string |
     const s = steps[i]!;
     if (s.since === null) continue;
     const next = steps[i + 1]!;
-    s.days = Math.round((dayMs(next.since!) - dayMs(s.since!)) / 86_400_000);
+    s.days = daysBetween(s.since!, next.since!);
   }
   return steps.length > 1 ? steps : [];
 }

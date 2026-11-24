@@ -33,7 +33,7 @@ import { DolDaysBoard } from "@/components/pulse/DolDaysBoard";
 import { dolDays } from "@/lib/dolDays";
 import { decisionViews } from "@/lib/decisionPeriods";
 import { getPwdNowDocs } from "@/lib/db/pwdDayQueue";
-import { easternDay } from "@convex/lib/time";
+import { daysBetween, easternDay } from "@convex/lib/time";
 import { getCheckTimes } from "@/lib/db/sweepCoverage";
 import { OutcomeMix } from "@/components/activity/OutcomeMix";
 import { WeekdayShape } from "@/components/activity/WeekdayShape";
@@ -53,7 +53,6 @@ import {
   type ActivityDay,
 } from "@/lib/activityStats";
 import { formatInt } from "@/lib/format";
-import { MS_PER_DAY } from "@/lib/time";
 import { SITE_URL } from "@/lib/constants/site";
 import { softFail } from "@/lib/softRead";
 import { StepBothSources } from "@/components/community/StepBothSources";
@@ -138,7 +137,7 @@ export default async function DecisionActivityPage() {
   const firstObserved = live?.days[0]?.date;
   const gapDays =
     lastDisclosed && firstObserved
-      ? Math.round((Date.parse(`${firstObserved}T00:00:00Z`) - Date.parse(`${lastDisclosed}T00:00:00Z`)) / MS_PER_DAY) - 1
+      ? daysBetween(lastDisclosed, firstObserved) - 1
       : null;
   const currentPace = current ? pace(current.days, 28) : null;
   // ZERO-FILLED, and that is the difference between showing October 2025 and

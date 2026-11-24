@@ -20,7 +20,7 @@
 // TYPES
 // ============================================================================
 
-import { MS_PER_DAY } from "../../time";
+import { daysBetween } from "../../time";
 
 export type CountryKey = "worldwide" | "china" | "india" | "mexico" | "philippines";
 
@@ -118,10 +118,6 @@ export function parseCutoff(cell: string | undefined): Cutoff | null {
     kind: "date",
     iso: `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
   };
-}
-
-function daysBetween(a: string, b: string): number {
-  return Math.round((Date.parse(b) - Date.parse(a)) / MS_PER_DAY);
 }
 
 /**
@@ -243,7 +239,7 @@ export function monthsToReach(
 ): { months: number; gapDays: number; basis: { movedDays: number; spanMonths: number; retrogressions: number } } | null {
   if (cell.latest.kind !== "date") return null;
   if (cell.movedDays === null || cell.spanMonths === null || cell.movedDays <= 0 || cell.spanMonths <= 0) return null;
-  const gapDays = Math.round((Date.parse(priorityDate) - Date.parse(cell.latest.iso)) / MS_PER_DAY);
+  const gapDays = daysBetween(cell.latest.iso, priorityDate);
   const perMonth = cell.movedDays / cell.spanMonths;
   const months = gapDays <= 0 ? 0 : Math.round((gapDays / perMonth) * 10) / 10;
   return { months, gapDays: Math.max(gapDays, 0), basis: { movedDays: cell.movedDays, spanMonths: cell.spanMonths, retrogressions: cell.retrogressions.length } };

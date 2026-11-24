@@ -24,6 +24,7 @@
 
 import type { GroupPick } from "@/lib/h2bGroups";
 import { seasonalForm, type SeasonalVisa } from "@/lib/seasonalForms";
+import { dayNumber } from "@/lib/time";
 
 export interface TimingPercentiles {
   n: number;
@@ -195,7 +196,6 @@ function addDays(day: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-const dayNumber = (day: string) => Math.round(Date.parse(`${day}T12:00:00Z`) / 86_400_000);
 
 /**
  * The card's numbers for one pending application, or null when there is no

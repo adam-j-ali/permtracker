@@ -24,7 +24,7 @@
 
 import { MIN_CASE_REPORTERS } from "./communityTimeline";
 import { monthDay } from "./months";
-import { MS_PER_DAY } from "./time";
+import { MS_PER_DAY, daysBetween } from "./time";
 
 /**
  * The kind of visa. Every kind, because everyone goes through the same posts and one person's report tells
@@ -493,11 +493,6 @@ export function activityDay(r: ReportRecord): string {
   return dates.length ? dates.sort()[dates.length - 1]! : isoToday(r.updatedAt);
 }
 
-/** Whole days from `a` to `b`, both ISO days. */
-function daysFrom(a: string, b: string): number {
-  return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / MS_PER_DAY);
-}
-
 /**
  * Days from NVC's complete month to the interview, counted from the middle of that month (the month alone
  * can't say which day; the middle is wrong by at most half a month either way). Null when either is
@@ -505,7 +500,7 @@ function daysFrom(a: string, b: string): number {
  */
 export function waitDays(r: ReportRecord): number | null {
   if (!r.nvcCompleteMonth || !heldInterview(r)) return null;
-  const d = daysFrom(`${r.nvcCompleteMonth}-15`, r.interviewOn!);
+  const d = daysBetween(`${r.nvcCompleteMonth}-15`, r.interviewOn!);
   return Number.isFinite(d) && d >= 0 ? d : null;
 }
 
@@ -519,7 +514,7 @@ export function afterAppointment(r: ReportRecord): { finishedInDays: number } | 
   const end =
     r.outcome === "221g" ? r.resolvedOn : APPROVED_OUTCOMES.has(r.outcome) ? (r.approvedOn ?? r.resolvedOn) : undefined;
   if (end) {
-    const d = daysFrom(r.interviewOn!, end);
+    const d = daysBetween(r.interviewOn!, end);
     return Number.isFinite(d) && d >= 0 ? { finishedInDays: d } : null;
   }
   if (r.outcome === "waiting" || r.outcome === "221g") return "waiting";

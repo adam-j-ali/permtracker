@@ -76,26 +76,26 @@ export default async function SettlementsPage() {
       </p>{" "}
 
       <FigureRow className="mt-8">
-        <Figure
+        <Figure kind="measured"
           icon={<ScalesIcon className="size-5" aria-hidden="true" />}
           label="Settlements"
           value={formatInt(totals.settlements)}
           note={`${shortDate(totals.first)} to ${shortDate(totals.newest)}`}
         />
-        <Figure
+        <Figure kind="measured"
           icon={<BriefcaseIcon className="size-5" aria-hidden="true" />}
           label="About PERM recruitment"
           value={formatInt(totals.perm)}
           note={`All since ${shortDate(perm[0]?.date ?? totals.newest)}`}
           tone="lime"
         />
-        <Figure
+        <Figure kind="measured"
           icon={<CurrencyDollarIcon className="size-5" aria-hidden="true" />}
           label="Civil penalties"
           value={money(totals.penalties)}
           note={`And ${money(totals.backPay)} for workers`}
         />
-        <Figure
+        <Figure kind="measured"
           icon={<ProhibitIcon className="size-5" aria-hidden="true" />}
           label="Barred from PERM"
           value={formatInt(barred.length)}

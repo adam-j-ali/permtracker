@@ -19,7 +19,7 @@ import type { IvCell } from "@/lib/consular/scheduling";
 import { getI140ProcessingTime, PROCESSING_TIMES_AS_OF } from "@/lib/processing-times/i140ProcessingTimes";
 import { quarterLabel } from "@/lib/uscisQuarterlyShape";
 import { shortDate } from "@convex/lib/months";
-import { MS_PER_DAY } from "@convex/lib/time";
+import { daysBetween } from "@convex/lib/time";
 
 import { getPermBoard, getPwdBoard } from "./board";
 import { getConsularIndex } from "./consularPosts";
@@ -100,7 +100,7 @@ export interface PlanReading {
  */
 export function waitSpanOf(span: DecidedSpan | null, decidedOn: string): Span | null {
   if (!span) return null;
-  const days = (filed: string) => Math.round((Date.parse(`${decidedOn}T12:00:00Z`) - Date.parse(`${filed}T12:00:00Z`)) / MS_PER_DAY);
+  const days = (filed: string) => daysBetween(filed, decidedOn);
   const s = { low: days(span.to), mid: days(span.middle), high: days(span.from) };
   return [s.low, s.mid, s.high].every((n) => Number.isFinite(n) && n >= 0) ? s : null;
 }

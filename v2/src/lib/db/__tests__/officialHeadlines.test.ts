@@ -32,15 +32,15 @@ describe("getOfficialHeadlines", () => {
     lca.mockResolvedValue(null);
     const h = await getOfficialHeadlines(["pwd", "perm", "i140", "i485", "consular", "h1b"]);
     // PERM's own wage requests only: the H-1B ones wait in another line.
-    expect(h.pwd).toMatchObject({ value: "17,098", href: "/pwd-cases" });
+    expect(h.pwd).toMatchObject({ value: "17,098", href: "/pwd-cases", kind: "measured" });
     expect(h.pwd?.note).toContain("August 14, 2026");
-    expect(h.perm).toMatchObject({ value: "142,000", href: "/perm-queue" });
+    expect(h.perm).toMatchObject({ value: "142,000", href: "/perm-queue", kind: "measured" });
     expect(h.perm?.note).toContain("October 2025");
-    expect(h.i140).toMatchObject({ value: "6.1 months", href: "/uscis-processing-times/i-140" });
-    expect(h.i485).toMatchObject({ value: "262,000" });
+    expect(h.i140).toMatchObject({ value: "6.1 months", href: "/uscis-processing-times/i-140", kind: "official" });
+    expect(h.i485).toMatchObject({ value: "262,000", kind: "official" });
     expect(h.i485?.note).toContain("September 2026");
     expect(h.consular?.value).toBe("1 of 2");
-    expect(h.h1b).toMatchObject({ value: "2.3 months", href: "/uscis-processing-times/i-129" });
+    expect(h.h1b).toMatchObject({ value: "2.3 months", href: "/uscis-processing-times/i-129", kind: "official" });
   });
 
   it("leaves out a step whose read failed or has no date, and keeps the rest", async () => {

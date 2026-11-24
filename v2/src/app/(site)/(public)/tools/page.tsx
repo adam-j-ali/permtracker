@@ -82,20 +82,20 @@ export default async function ToolsPage() {
         {where.month || where.averageDays !== null || where.pwdPending !== null ? (
           <section aria-label="Live DOL position">
             <FigureRow className="border-t-0 shadow-none">
-              <Figure
+              <Figure kind={["measured", "official"] as const}
                 tone="lime"
                 label="DOL is deciding cases filed"
                 icon={<CalendarCheckIcon weight="bold" />}
                 value={formatMonth(where.month) ?? "Not published"}
                 note="Analyst review, the queue nearly every case sits in."
               />
-              <Figure
+              <Figure kind="official"
                 label="Average to a determination"
                 icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />}
                 value={where.averageDays !== null ? `${where.averageDays} days` : "Not published"}
                 note="Across cases DOL decided recently. An RFI or audit can make one case take longer."
               />
-              <Figure
+              <Figure kind={["measured", "official"] as const}
                 label="Wage requests pending"
                 icon={<CurrencyDollarIcon weight="bold" className="text-primary-text" />}
                 value={where.pwdPending !== null ? where.pwdPending.toLocaleString("en-US") : "Not published"}

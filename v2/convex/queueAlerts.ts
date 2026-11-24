@@ -91,7 +91,7 @@ import { isPlausibleEmail } from "./lib/emailShape";
 import { TEXT_LEGAL_LINE } from "./lib/textFooter";
 import { one } from "./lib/publicMirror";
 import { permLineFrom, type CensusCell } from "./lib/permLine";
-import { easternDay } from "./lib/time";
+import { daysBetween, easternDay } from "./lib/time";
 
 const log = createLogger("QueueAlerts");
 
@@ -1054,7 +1054,7 @@ export const sweepPermFromCheck = internalAction({
         (doc.matrix as CensusCell[]).filter((r) => typeof r?.month === "string" && typeof r?.n === "number")
       : [];
     if (!asOf) return { swept: false, reason: "census undated" };
-    const ageDays = (Date.parse(`${easternDay()}T00:00:00Z`) - Date.parse(`${asOf}T00:00:00Z`)) / 86_400_000;
+    const ageDays = daysBetween(asOf, easternDay());
     if (!(ageDays <= CHECK_MAX_AGE_DAYS)) {
       log.warn("live census too old for PERM month alerts", { asOf, ageDays });
       return { swept: false, reason: "census too old" };

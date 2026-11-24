@@ -4,6 +4,7 @@ import { getFilingsByDay } from "@/lib/db/filingsByDay";
 import { FILING_PROGRAMS, RANGE_MAX_DAYS, type FilingDay, type FilingProgram } from "@/lib/filingsByDay";
 import { FILINGS_FROM } from "@/lib/filingDay";
 import { ISO_DATE_REGEX } from "@convex/lib/dateValidation";
+import { daysBetween } from "@convex/lib/time";
 
 /**
  * GET /api/filings-by-day?from=YYYY-MM-DD&to=YYYY-MM-DD: every program's filings by day for a
@@ -21,7 +22,7 @@ export async function GET(req: Request) {
   if (!ISO_DATE_REGEX.test(from) || !ISO_DATE_REGEX.test(to)) {
     return NextResponse.json({ error: "from and to must be YYYY-MM-DD" }, { status: 400 });
   }
-  const span = (Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86_400_000 + 1;
+  const span = daysBetween(from, to) + 1;
   if (!(span >= 1) || span > RANGE_MAX_DAYS) {
     return NextResponse.json({ error: `a period runs from its first day to its last, ${RANGE_MAX_DAYS} days at most` }, { status: 400 });
   }

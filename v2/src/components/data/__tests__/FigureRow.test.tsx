@@ -11,11 +11,11 @@ describe("Figure", () => {
   it("keeps a number on one line, in a tile that won't shrink below it", () => {
     render(
       <FigureRow>
-        <Figure label="Median wage" value="$119,350" note="offered, per year" />
-        <Figure label="Approval" value="99.8%" />
-        <Figure label="Filings" value="1,617" />
-        <Figure label="Median days" value="347" />
-        <Figure label="Median wait" value="3.9 mo" />
+        <Figure kind="measured" label="Median wage" value="$119,350" note="offered, per year" />
+        <Figure kind="measured" label="Approval" value="99.8%" />
+        <Figure kind="measured" label="Filings" value="1,617" />
+        <Figure kind="measured" label="Median days" value="347" />
+        <Figure kind="measured" label="Median wait" value="3.9 mo" />
       </FigureRow>,
     );
     for (const v of ["$119,350", "99.8%", "1,617", "347", "3.9 mo"]) {
@@ -26,12 +26,28 @@ describe("Figure", () => {
     }
   });
 
+  it("writes its kind of source on the card, and a blend names each kind once", () => {
+    // Arrange / Act
+    render(
+      <FigureRow>
+        <Figure kind="official" label="DOL's average" value="501 days" />
+        <Figure kind={["measured", "official", "measured"]} label="DOL is working" value="June 2025" />
+        <Figure kind="community" label="I-485 filed to green card" value="290 days" />
+      </FigureRow>,
+    );
+    // Assert
+    const card = (text: string) => screen.getByText(text).parentElement!;
+    expect(card("501 days").dataset.sourceKind).toBe("official");
+    expect(card("June 2025").dataset.sourceKind).toBe("measured official");
+    expect(card("290 days").dataset.sourceKind).toBe("community");
+  });
+
   it("lets words wrap and their tile shrink, as before", () => {
     render(
       <FigureRow>
-        <Figure label="Oldest month still open" value="January 2026" />
-        <Figure label="Main job" value="Software Developers, Applications" />
-        <Figure label="Linked" value={<a href="/x">166,112</a>} />
+        <Figure kind="measured" label="Oldest month still open" value="January 2026" />
+        <Figure kind="measured" label="Main job" value="Software Developers, Applications" />
+        <Figure kind="measured" label="Linked" value={<a href="/x">166,112</a>} />
       </FigureRow>,
     );
     for (const v of ["January 2026", "Software Developers, Applications"]) {

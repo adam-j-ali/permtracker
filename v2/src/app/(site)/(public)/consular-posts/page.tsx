@@ -113,7 +113,7 @@ export default async function ConsularPostsPage() {
       <ConsularPauseNote variant="full" className="mt-8" />
 
       <FigureRow className="mt-8">
-        <Figure
+        <Figure kind="official"
           label="Caught up on paper"
           icon={<CheckCircleIcon weight="bold" className="text-primary-text" />}
           value={asOf ? `${caughtUp} of ${listed.length}` : "Not loaded"}
@@ -131,13 +131,13 @@ export default async function ConsularPostsPage() {
           }
           note={asOf ? `posts scheduling employment cases completed this month, State's update of ${longDate(asOf)}` : undefined}
         />{" "}
-        <Figure
+        <Figure kind="official"
           label="Behind on employment cases"
           icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />}
           value={formatInt(behind.length)}
           note={asOf ? `posts scheduling cases completed in an earlier month` : undefined}
         />{" "}
-        <Figure
+        <Figure kind="official"
           label="Employment visas issued abroad"
           icon={<StampIcon weight="bold" className="text-primary-text" />}
           value={formatInt(employmentAbroad)}

@@ -13,7 +13,7 @@
  * address.
  */
 
-import { MS_PER_DAY } from "@/lib/time";
+import { daysBetween } from "@/lib/time";
 
 /**
  * What a rival published for the SAME case on the same day.
@@ -192,7 +192,7 @@ export interface Score {
   inWindow: boolean;
 }
 
-const days = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / MS_PER_DAY);
+const days = daysBetween;
 
 /** Score one prediction against the day DOL decided. */
 export function scorePrediction(p: Prediction, decidedOn: string): Score {

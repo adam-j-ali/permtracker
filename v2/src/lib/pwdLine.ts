@@ -13,6 +13,7 @@
  */
 
 import { longDate } from "@convex/lib/months";
+import { daysBetween } from "@convex/lib/time";
 
 /** A filing day with at least this many requests says where the line is. */
 export const BUSY_DAY = 100;
@@ -33,7 +34,6 @@ export interface PwdLine {
 }
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
-const ms = (iso: string) => Date.parse(`${iso}T00:00:00Z`);
 
 export function sweepPwdLine(queueJson: string | null): PwdLine | null {
   if (!queueJson) return null;
@@ -69,7 +69,7 @@ export function sweepPwdLine(queueJson: string | null): PwdLine | null {
     decidedShare: now.share,
     before: { day: prev.day, decidedShare: prev.share },
     asOf: q.asOf,
-    waitDays: Math.round((ms(q.asOf) - ms(now.day)) / 86_400_000),
+    waitDays: daysBetween(now.day, q.asOf),
   };
 }
 

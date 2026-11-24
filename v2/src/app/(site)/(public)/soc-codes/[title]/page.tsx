@@ -205,6 +205,7 @@ export default async function SocTitlePage({ params }: { params: Promise<{ title
         // Zone, a fourth figure before, is the answer's note.
         <FigureRow className="mt-8">
           <Figure
+            kind="measured"
             tone="ink"
             label="Filed most under"
             icon={<HashIcon weight="bold" />}
@@ -212,6 +213,7 @@ export default async function SocTitlePage({ params }: { params: Promise<{ title
             note={top.zone ? `${top.codeTitle}. O*NET Job Zone ${zoneLabelOf(top.zone)} of 5.` : top.codeTitle}
           />{" "}
           <Figure
+            kind="measured"
             label="Of its filings"
             icon={<ChartPieSliceIcon weight="bold" className="text-primary-text" />}
             value={formatShareOf(top.filings, a.total)}
@@ -227,7 +229,7 @@ export default async function SocTitlePage({ params }: { params: Promise<{ title
             note={`${formatInt(a.total)} in all`}
           />{" "}
           {payOf.get(top.soc) ? (
-            <Figure
+            <Figure kind="official"
               label="BLS median pay for the code"
               icon={<CurrencyDollarIcon weight="bold" className="text-primary-text" />}
               value={formatDollars(payOf.get(top.soc)!)}

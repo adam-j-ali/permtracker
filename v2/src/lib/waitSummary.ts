@@ -3,8 +3,7 @@
  * test it; `src/lib/db/employerWait.ts` feeds it rows.
  */
 
-import { MS_PER_DAY } from "@/lib/time";
-import { easternDay } from "./time";
+import { daysBetween, easternDay } from "./time";
 
 export interface WaitSummary {
   n: number;
@@ -21,7 +20,7 @@ export function summariseWaits(pairs: readonly { filed: string; stamp: number }[
   const days = pairs
     .map((p) => {
       const decided = easternDay(p.stamp);
-      return Math.round((Date.parse(`${decided}T00:00:00Z`) - Date.parse(`${p.filed.slice(0, 10)}T00:00:00Z`)) / MS_PER_DAY);
+      return daysBetween(p.filed.slice(0, 10), decided);
     })
     .filter((d) => Number.isFinite(d) && d >= 0)
     .sort((a, b) => a - b);

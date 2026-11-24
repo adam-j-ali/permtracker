@@ -21,7 +21,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import datetime as dt
 import json
 import pathlib
 import sys
@@ -30,6 +29,7 @@ from collections import Counter, defaultdict
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from ingest_perm_disclosure import percentile  # noqa: E402
+from lib_days import day_of, days_between  # noqa: E402
 from lib_db import Database, record_run, rows_of, write_doc  # noqa: E402
 from lib_recruitment import LEAD_BANDS, NOTICE, STEPS, case_papers, lead_band, step_starts, steps_of  # noqa: E402
 
@@ -63,12 +63,6 @@ def read(db: Database):
         after = str(page[-1][0])
 
 
-def days_between(a: str | None, b: str | None) -> int | None:
-    if not a or not b:
-        return None
-    return (dt.date.fromisoformat(str(b)[:10]) - dt.date.fromisoformat(str(a)[:10])).days
-
-
 def summarise(rows) -> dict:
     """The doc, from an iterable of rows. Pure, for the test."""
     n = 0
@@ -98,13 +92,13 @@ def summarise(rows) -> dict:
         starts = step_starts(r)
         received = r.get("received_date")
         if starts:
-            lead["firstStep"].append(days_between(starts[0], received))
-            lead["lastStep"].append(days_between(starts[-1], received))
+            lead["firstStep"].append(days_between(day_of(starts[0]), day_of(received)))
+            lead["lastStep"].append(days_between(day_of(starts[-1]), day_of(received)))
             b = lead_band(received, starts[0])
             if b:
                 bands[b] += 1
-        lead["secondAd"].append(days_between(r.get("ad2"), received))
-        lead["jobOrderEnd"].append(days_between(r.get("job_order_end"), received))
+        lead["secondAd"].append(days_between(day_of(r.get("ad2")), day_of(received)))
+        lead["jobOrderEnd"].append(days_between(day_of(r.get("job_order_end")), day_of(received)))
 
     def label(k: str) -> str:
         return votes[k].most_common(1)[0][0]

@@ -28,7 +28,7 @@ import { FaqList } from "@/components/tools/FaqList";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { longDate as formatLongDate } from "@convex/lib/months";
 import { getSweepCoverage } from "@/lib/db/sweepCoverage";
-import { easternDay } from "@/lib/time";
+import { daysBetween, easternDay } from "@/lib/time";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 
@@ -55,10 +55,6 @@ export const revalidate = 86400;
 const checked = checkedPhrase(RIVALS.map((t) => t.checkedOn));
 
 /** Whole days between two Eastern days. */
-function daysBetween(from: string, to: string): number {
-  return Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86_400_000);
-}
-
 /** A site's strengths, less any its "does that we don't" list already says (it opens with the same words). */
 function ownStrengths(t: Tracker): string[] {
   return t.strengths.filter((s) => !t.beatsUs.some((b) => b.startsWith(s.slice(0, 25))));

@@ -127,7 +127,7 @@ function Headline({ summary }: { summary: ReportedSummary }) {
   return (
     <FigureRow className="mt-8">
       {gc ? (
-        <Figure
+        <Figure kind="community"
           label="I-485 filed to green card"
           value={`${formatInt(gc.median!)} days`}
           trend={stepTrend(gc) ?? undefined}
@@ -135,7 +135,7 @@ function Headline({ summary }: { summary: ReportedSummary }) {
         />
       ) : null}
       {perm ? (
-        <Figure
+        <Figure kind="community"
           label="PERM filed to decided"
           value={`${formatInt(perm.median!)} days`}
           trend={stepTrend(perm) ?? undefined}
@@ -143,7 +143,7 @@ function Headline({ summary }: { summary: ReportedSummary }) {
         />
       ) : null}
       {i140 ? (
-        <Figure
+        <Figure kind="community"
           label="I-140 with premium processing"
           value={`${formatInt(i140.median!)} days`}
           trend={stepTrend(i140) ?? undefined}

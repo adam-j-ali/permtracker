@@ -17,6 +17,7 @@
  * until then. No range is wider than MAX_BAND_DAYS.
  */
 
+import { dayFromNumber, dayNumber } from '../../time';
 import { boundRange } from './decisionPace';
 
 export interface RfiClock {
@@ -49,8 +50,6 @@ export type RfiEstimate =
     }
   | { kind: 'refused'; reason: 'start-unknown' | 'past-window'; detail: string; /** past-window: days the case has been at RFI. */ daysInRfi?: number };
 
-const dayNum = (iso: string) => Math.floor(Date.parse(`${iso}T00:00:00Z`) / 86_400_000);
-const isoOf = (n: number) => new Date(n * 86_400_000).toISOString().slice(0, 10);
 
 export function estimateRfiCase(input: {
   /** The day our sweep saw the case enter RFI, `YYYY-MM-DD`, or null. */
@@ -66,8 +65,8 @@ export function estimateRfiCase(input: {
       detail: 'This RFI began before our daily record of DOL did, so the day it began, which the date counts from, is unknown.',
     };
   }
-  const start = dayNum(enteredOn);
-  const today = dayNum(input.today);
+  const start = dayNumber(enteredOn);
+  const today = dayNumber(input.today);
   const lv = clock.leaveDays;
   const af = clock.afterLeaveDays;
   const day = start + lv.p50 + af.p50;
@@ -83,9 +82,9 @@ export function estimateRfiCase(input: {
   const [early, late] = boundRange(Math.max(day, today), start + (lv.p25 ?? lv.p50) + (af.p25 ?? 0), lateEnd, today);
   return {
     kind: 'estimate',
-    date: isoOf(Math.max(day, today)),
-    earliest: isoOf(early),
-    latest: isoOf(late),
+    date: dayFromNumber(Math.max(day, today)),
+    earliest: dayFromNumber(early),
+    latest: dayFromNumber(late),
     daysInRfi: today - start,
   };
 }

@@ -244,14 +244,14 @@ export default async function PermQueuePage() {
           is folded under them (owner, Oct 28 2026: pictures, not text boxes). */}
       <section aria-label="The PERM queue in three figures" className="mt-8">
         <FigureRow>
-          <Figure
+          <Figure kind="measured"
             label="Still waiting"
             icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />}
             trend={backlogTrend(permBoard?.flow)}
             value={formatInt(census.pending)}
-            note={`PERM cases, across ${census.months.length} filing months`}
+            note={`PERM cases across ${census.months.length} filing months${census.asOf ? `, by our check on ${monthDay(census.asOf) ?? census.asOf}` : ""}`}
           />
-          <Figure
+          <Figure kind={["measured", "official"] as const}
             tone="lime"
             label="DOL is working"
             icon={<CalendarCheckIcon weight="bold" className="text-primary-text" />}
@@ -265,7 +265,7 @@ export default async function PermQueuePage() {
                   : "DOL printed no readable month"
             }
           />
-          <Figure
+          <Figure kind="measured"
             label="Months cleared a month"
             icon={<GaugeIcon weight="bold" className="text-primary-text" />}
             value={advance ? `${advance.rate.toFixed(1)}` : "Not measurable"}

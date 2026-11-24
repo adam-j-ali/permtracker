@@ -11,7 +11,7 @@
  */
 import { sheetFor, SHEETS } from "./communitySheets";
 
-import { MS_PER_DAY } from "@/lib/time";
+import { daysBetween } from "@/lib/time";
 
 /** The places reported cases come from, said once (./reportedPlaces.ts): "cases people reported in ${REPORTED_PLACES}". */
 export { REPORTED_COMMUNITY_PLACES, REPORTED_PLACES } from "./reportedPlaces";
@@ -124,8 +124,7 @@ export interface TransferCohort {
 /** A median from fewer approvals than this reads as one person's case, so none is given. */
 export const MEDIAN_FROM = 3;
 
-const days = (from: string, to: string) =>
-  Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / MS_PER_DAY);
+const days = daysBetween;
 
 function median(xs: number[]): number | null {
   if (xs.length < MEDIAN_FROM) return null;

@@ -7,7 +7,7 @@
  */
 import { calculatePriorityDateRetention } from "@/lib/perm";
 import { monthDay } from "@convex/lib/months";
-import { MS_PER_DAY } from "@/lib/time";
+import { MS_PER_DAY, daysBetween } from "@/lib/time";
 
 export const APPROVED = "2026-04-20";
 export const I485_FILED = "2026-05-04";
@@ -17,7 +17,7 @@ export const SAFE_FROM = rule.withdrawalSafeFrom;
 /** From this day the I-485 can move to a same or similar job. */
 export const PORTABLE_FROM = rule.portableFrom!;
 
-const dayOf = (iso: string) => Math.round((Date.parse(`${iso}T00:00:00Z`) - Date.parse(`${APPROVED}T00:00:00Z`)) / MS_PER_DAY);
+const dayOf = (iso: string) => daysBetween(APPROVED, iso);
 const iso = (day: number) => new Date(Date.parse(`${APPROVED}T00:00:00Z`) + day * MS_PER_DAY).toISOString().slice(0, 10);
 
 /** Days from the approval: where each lane starts and ends. */

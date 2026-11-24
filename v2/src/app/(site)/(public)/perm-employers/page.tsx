@@ -92,12 +92,12 @@ export default async function PermEmployersPage() {
   const busiest = topTen[0];
   const mostWaiting = leaders[0];
   const figures: IndexFigure[] = [
-    { label: "Sponsors in DOL's published files", value: formatInt(employerCount), note: "Each with its own page" },
+    { kind: "measured" as const, label: "Sponsors in DOL's published files", value: formatInt(employerCount), note: "Each with its own page" },
     ...(busiest
-      ? [{ label: "Files the most", value: busiest.name, href: entityHref("employer", busiest.slug), note: `${formatInt(busiest.total)} filings` }]
+      ? [{ kind: "measured" as const, label: "Files the most", value: busiest.name, href: entityHref("employer", busiest.slug), note: `${formatInt(busiest.total)} filings` }]
       : []),
     ...(mostWaiting
-      ? [{ label: "Most cases waiting now", value: mostWaiting.name, href: entityHref("employer", mostWaiting.slug), note: `${formatInt(mostWaiting.pending)} waiting on DOL` }]
+      ? [{ kind: "measured" as const, label: "Most cases waiting now", value: mostWaiting.name, href: entityHref("employer", mostWaiting.slug), note: `${formatInt(mostWaiting.pending)} waiting on DOL` }]
       : []),
   ];
   const chapters: ChapterItem[] = [

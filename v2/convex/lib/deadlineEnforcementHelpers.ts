@@ -20,10 +20,9 @@
 
 import {
   isValidISODate,
-  parseISOToUTCSafe,
   getTodayISO,
 } from "./dateValidation";
-import { MS_PER_DAY } from "./time";
+import { daysBetweenOrNull } from "./time";
 import { longDate } from "./months";
 
 /** A date in a closure reason, written the way every notice writes one ("October 10, 2026"). */
@@ -193,19 +192,6 @@ export function mapCaseToEnforcementData(
 // HELPER FUNCTIONS
 // ============================================================================
 
-/**
- * Calculate days between two ISO date strings.
- * Returns null for invalid dates (non-throwing variant for enforcement checks).
- */
-function daysBetween(fromISO: string, toISO: string): number | null {
-  const fromUTC = parseISOToUTCSafe(fromISO);
-  const toUTC = parseISOToUTCSafe(toISO);
-
-  if (fromUTC === null || toUTC === null) return null;
-
-  return Math.floor((toUTC - fromUTC) / MS_PER_DAY);
-}
-
 // ============================================================================
 // MAIN ENFORCEMENT FUNCTIONS
 // ============================================================================
@@ -255,7 +241,7 @@ export function getRestartViability(
 ): RestartViability {
   if (!isValidISODate(pwdExpirationDate)) return "unknown";
 
-  const daysRemaining = daysBetween(todayISO, pwdExpirationDate);
+  const daysRemaining = daysBetweenOrNull(todayISO, pwdExpirationDate);
 
   if (daysRemaining === null) return "unknown";
 
@@ -301,7 +287,7 @@ function checkPwdExpiration(
   if (caseData.eta9089FilingDate) return null; // ETA 9089 already filed, PWD expiration doesn't matter
   if (caseData.pwdBearing === "began-inside") return null; // the filing window governs
 
-  const daysUntil = daysBetween(todayISO, caseData.pwdExpirationDate);
+  const daysUntil = daysBetweenOrNull(todayISO, caseData.pwdExpirationDate);
 
   if (daysUntil === null) return null;
 
@@ -382,7 +368,7 @@ function checkRecruitmentWindow(
     return null;
   }
 
-  const daysUntil = daysBetween(effectiveToday, windowCloses);
+  const daysUntil = daysBetweenOrNull(effectiveToday, windowCloses);
 
   if (daysUntil === null) return null;
 
@@ -430,7 +416,7 @@ function checkFilingWindow(
 
   if (!isValidISODate(caseData.filingWindowCloses)) return null;
 
-  const daysUntil = daysBetween(todayISO, caseData.filingWindowCloses);
+  const daysUntil = daysBetweenOrNull(todayISO, caseData.filingWindowCloses);
 
   if (daysUntil === null) return null;
 
@@ -479,7 +465,7 @@ function checkEta9089Expiration(
   );
   if (!expirationDate) return null;
 
-  const daysUntil = daysBetween(todayISO, expirationDate);
+  const daysUntil = daysBetweenOrNull(todayISO, expirationDate);
 
   if (daysUntil === null) return null;
 
@@ -500,7 +486,7 @@ function checkEta9089Expiration(
     let windowOpen: boolean | null = null; // null: no window date on file
     if (isValidISODate(caseData.filingWindowCloses)) {
       const filingToday = dolTodayISO ?? todayISO;
-      const filingDaysUntil = daysBetween(filingToday, caseData.filingWindowCloses);
+      const filingDaysUntil = daysBetweenOrNull(filingToday, caseData.filingWindowCloses);
       windowOpen = filingDaysUntil !== null && filingDaysUntil >= 0;
     }
     const pwdAllowsRefiling = viability === "viable" || caseData.pwdBearing === "began-inside";

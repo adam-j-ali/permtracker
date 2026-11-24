@@ -7,7 +7,7 @@
  */
 import { estimatePriorityDate, parseCutoff, type BulletinMonth, type ChartKind, type CountryKey, type Cutoff } from "@/lib/perm";
 import { LINE_CATEGORY_SHORT, LINE_COUNTRY_SHORT } from "@/lib/bulletinLines";
-import { MS_PER_DAY } from "@/lib/time";
+import { dayFromNumber, dayNumber } from "@/lib/time";
 import { MONTH_NAMES, longDate, monthFromIndex, monthIndex, monthYear, shortDate } from "@convex/lib/months";
 
 export interface BulletinStep {
@@ -34,8 +34,6 @@ export interface BulletinRun {
   railTo: string;
 }
 
-const dayNumber = (iso: string) => Date.parse(`${iso}T00:00:00Z`) / MS_PER_DAY;
-const isoOf = (day: number) => new Date(Math.round(day) * MS_PER_DAY).toISOString().slice(0, 10);
 const dated = (c: Cutoff | null): c is { kind: "date"; iso: string } => c?.kind === "date";
 
 /**
@@ -114,7 +112,7 @@ export function pickExample(cutoffs: ReadonlyArray<Cutoff | null>): string {
     from = all[0]!;
     to = all[all.length - 1]!;
   }
-  const middle = isoOf((dayNumber(from) + dayNumber(to)) / 2);
+  const middle = dayFromNumber((dayNumber(from) + dayNumber(to)) / 2);
   const onCutoff = new Set(cutoffs.filter(dated).map((c) => c.iso));
   const first = `${middle.slice(0, 7)}-01`;
   return onCutoff.has(first) ? `${middle.slice(0, 7)}-15` : first;

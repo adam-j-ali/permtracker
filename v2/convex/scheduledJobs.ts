@@ -61,7 +61,7 @@ import {
   mapCaseToEnforcementData,
   VIOLATION_TO_DEADLINE_TYPE,
 } from "./lib/deadlineEnforcementHelpers";
-import { MS_PER_DAY, emailStamp } from "./lib/time";
+import { MS_PER_DAY, daysBetween, emailStamp } from "./lib/time";
 import { countLiveCases } from "./lib/liveCases";
 
 /** Read notifications deleted per cleanup run; the hourly run takes the rest next time. */
@@ -110,10 +110,7 @@ function daysUntilDeadline(
   deadlineType: DeadlineType,
   userTimezone: string
 ): number {
-  const todayStr = getTodayForDeadline(deadlineType, userTimezone);
-  const todayMs = new Date(todayStr + "T00:00:00Z").getTime();
-  const deadlineMs = new Date(deadlineDate + "T00:00:00Z").getTime();
-  return Math.ceil((deadlineMs - todayMs) / MS_PER_DAY);
+  return daysBetween(getTodayForDeadline(deadlineType, userTimezone), deadlineDate);
 }
 
 // ============================================================================

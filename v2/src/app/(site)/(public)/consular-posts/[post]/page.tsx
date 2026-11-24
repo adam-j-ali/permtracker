@@ -180,7 +180,7 @@ export default async function ConsularPostPage({ params }: { params: Promise<{ p
           {IV_CATEGORIES.map((c) => {
             const Icon = ICON[c];
             return (
-              <Figure
+              <Figure kind="official"
                 key={c}
                 icon={<Icon aria-hidden="true" weight="bold" className="size-4" />}
                 label={`${IV_CATEGORY_LABEL[c]} cases`}

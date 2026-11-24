@@ -3,7 +3,8 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { DATASET_COVERAGE, coverageFor, datasetLabel } from "../datasetCoverage";
+import { DATASET_COVERAGE, coverageFor, datasetKind, datasetLabel } from "../datasetCoverage";
+import { SOURCE_KINDS } from "../sourceKind";
 
 /**
  * Every dataset the ingests register says what it CONTAINS, not just how often
@@ -68,16 +69,32 @@ describe("dataset coverage", () => {
 
   it("separates decided-only from pending-included, in the reader's words", () => {
     // The two that are most often confused must each say which they are.
-    expect(DATASET_COVERAGE["perm-cases"]).toMatch(/decided/i);
-    expect(DATASET_COVERAGE["perm-cases"]).not.toMatch(/pending included/i);
-    expect(DATASET_COVERAGE["perm-case-status"]).toMatch(/pending included/i);
+    expect(coverageFor("perm-cases")).toMatch(/decided/i);
+    expect(coverageFor("perm-cases")).not.toMatch(/pending included/i);
+    expect(coverageFor("perm-case-status")).toMatch(/pending included/i);
     // ...and the live sweep must admit what it does NOT carry, because a
     // reader who expects a wage there and finds none assumes we lost it.
-    expect(DATASET_COVERAGE["perm-case-status"]).toMatch(/wage/i);
+    expect(coverageFor("perm-case-status")).toMatch(/wage/i);
+  });
+
+  it("says what kind of source every dataset is", () => {
+    for (const [id, row] of Object.entries(DATASET_COVERAGE)) {
+      expect(SOURCE_KINDS, id).toContain(row.kind);
+    }
+    // Our own sweep of DOL's service is measured, never the agency's own figure; DOL's average is official.
+    expect(datasetKind("perm-case-status")).toBe("measured");
+    expect(datasetKind("perm-cases")).toBe("measured");
+    expect(datasetKind("processing-times")).toBe("official");
+    expect(datasetKind("uscis-posted-times")).toBe("official");
+    expect(datasetKind("reported-cases")).toBe("community");
+    for (const id of Object.keys(DATASET_COVERAGE).filter((d) => d.startsWith("community-"))) {
+      expect(datasetKind(id), id).toBe("community");
+    }
+    expect(datasetKind("no-such-dataset")).toBeNull();
   });
 
   it("writes sentences, not schema notes", () => {
-    for (const [id, sentence] of Object.entries(DATASET_COVERAGE)) {
+    for (const [id, { text: sentence }] of Object.entries(DATASET_COVERAGE)) {
       expect(sentence.length, id).toBeGreaterThan(30);
       expect(sentence.trim().endsWith("."), `${id} should end in a full stop`).toBe(true);
       // Table and column names are how this drifts back into schema-speak.

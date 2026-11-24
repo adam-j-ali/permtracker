@@ -26,7 +26,7 @@ import "server-only";
 
 import { getVisaBulletins } from "./publicData";
 import { parseCutoff, type BulletinMonth, type CountryKey, type ChartKind, type Cutoff } from "@/lib/perm";
-import { DAYS_PER_MONTH, MS_PER_DAY } from "@/lib/time";
+import { DAYS_PER_MONTH, daysBetween } from "@/lib/time";
 
 export const BOARD_COUNTRIES: readonly CountryKey[] = [
   "worldwide",
@@ -152,9 +152,7 @@ function cellFor(
   let movedDays: number | null = null;
   let spanMonths: number | null = null;
   if (first && last && first !== last) {
-    movedDays = Math.round(
-      (Date.parse(last.cutoff.iso) - Date.parse(first.cutoff.iso)) / MS_PER_DAY,
-    );
+    movedDays = daysBetween(first.cutoff.iso, last.cutoff.iso);
     spanMonths = monthsBetween(first.month, last.month);
   }
 

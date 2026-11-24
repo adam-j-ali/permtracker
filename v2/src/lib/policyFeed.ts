@@ -12,7 +12,7 @@
  */
 
 import type { PolicyNotice } from "@/lib/db/policyNotices";
-import { MS_PER_DAY } from "@/lib/time";
+import { daysBetween } from "@/lib/time";
 import { MONTH_ABBR } from "@convex/lib/months";
 
 export const OFLC_TYPE = "OFLC announcement";
@@ -133,12 +133,6 @@ export function buildFeed(all: readonly PolicyNotice[], today?: string): PolicyF
   );
   const announcements = rows.filter(isAnnouncement).sort(byDateDesc);
   return { register, filed, signed, announcements, bills, decisions };
-}
-
-/** Whole days from `from` to `to`, ISO dates, UTC arithmetic so no zone can shift a boundary. */
-export function daysBetween(from: string, to: string): number {
-  return Math.round((Date.UTC(+to.slice(0, 4), +to.slice(5, 7) - 1, +to.slice(8, 10)) -
-    Date.UTC(+from.slice(0, 4), +from.slice(5, 7) - 1, +from.slice(8, 10))) / MS_PER_DAY);
 }
 
 export interface CommentWindow {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { measurePace } from './decisionPace';
+import { daysBetween, daysBetweenOrNull } from '../../time';
 import { PACE_ABSENT,
   estimateNoteText,
   rangeCaveat,
@@ -774,8 +775,7 @@ describe('estimateQueueDecision: decision pace', () => {
     const r = paceAsk({ casesAhead: near, rangeCoverage: MEASURED });
     const m = r.models.find((x) => x.id === 'decision-pace')!;
     expect(m.rangeFrom).toBe('measured');
-    const day = Date.parse(`${m.estimatedDate}T00:00:00Z`) / 86_400_000;
-    expect(Date.parse(`${m.latestDate}T00:00:00Z`) / 86_400_000).toBe(day + 13);
+    expect(daysBetweenOrNull(m.estimatedDate, m.latestDate)).toBe(13);
     // The out-of-sample test is under 1,000 cases, so the in-sample figure is quoted, and said to be.
     expect(m.rangeNote).toContain('On the 4,785 recent cases it was measured on, 63% were decided inside it');
     expect(m.rangeNote).toContain('21% were still waiting two weeks after their date');
@@ -812,9 +812,7 @@ describe('estimateQueueDecision: decision pace', () => {
     const r = paceAsk();
     const pace = r.models.find((m) => m.id === 'decision-pace')!;
     const queue = r.models.find((m) => m.id === 'queue-advance')!;
-    const gap = Math.abs(
-      (Date.parse(pace.estimatedDate) - Date.parse(queue.estimatedDate)) / 86_400_000,
-    );
+    const gap = Math.abs(daysBetween(queue.estimatedDate, pace.estimatedDate));
     expect(gap).toBeLessThan(45);
   });
 });

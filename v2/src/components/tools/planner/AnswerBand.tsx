@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { CurrencyDollarIcon, HourglassMediumIcon, IdentificationCardIcon } from "@phosphor-icons/react/ssr";
+import { kindsOf, type FigureKind } from "@/lib/sourceKind";
 
 import { aboutMonths } from "@/lib/board";
 import type { Plan } from "@/lib/perm";
@@ -19,22 +20,37 @@ export function AnswerBand({ plan, today, noDateWhy }: { plan: Plan; today: stri
   return (
     <section aria-label="Your plan at a glance" className="mt-8">
       <dl className="grid grid-cols-1 bg-foreground text-background sm:grid-cols-3 dark:bg-card dark:text-foreground">
-        <Figure icon={<IdentificationCardIcon weight="bold" />} label="Green card" value={gc ? dayLabel(gc.mid, today, known) : "No date yet"} note={gc ? (known ? "Your date" : rangeLabel(gc, today)) : noDateWhy} lead />{" "}
-        <Figure
+        <Figure kind={["measured", "official"] as const} icon={<IdentificationCardIcon weight="bold" />} label="Green card" value={gc ? dayLabel(gc.mid, today, known) : "No date yet"} note={gc ? (known ? "Your date" : rangeLabel(gc, today)) : noDateWhy} lead />{" "}
+        <Figure kind={["measured", "official"] as const}
           icon={<HourglassMediumIcon weight="bold" />}
           label="From today"
           value={wait === null ? "Not dated" : wait <= 0 ? "Done" : aboutMonths(wait).replace(/^about /, "")}
           note={wait === null ? "Every step before the bulletin is dated below" : wait <= 0 ? "Approved" : "Typical. The range is in your dates"}
         />{" "}
-        <Figure icon={<CurrencyDollarIcon weight="bold" />} label="Cost" value={usd(plan.totals.all)} note={hasOwn ? "Government fees and your own costs" : "Government fees. Add your own costs below"} />
+        <Figure kind="official" icon={<CurrencyDollarIcon weight="bold" />} label="Cost" value={usd(plan.totals.all)} note={hasOwn ? "Government fees and your own costs" : "Government fees. Add your own costs below"} />
       </dl>
     </section>
   );
 }
 
-function Figure({ icon, label, value, note, lead }: { icon: ReactNode; label: string; value: string; note: string; lead?: boolean }) {
+function Figure({
+  icon,
+  label,
+  value,
+  kind,
+  note,
+  lead,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  /** The kind of source the figure comes from (src/lib/sourceKind.ts). */
+  kind: FigureKind;
+  note: string;
+  lead?: boolean;
+}) {
   return (
-    <div className="border-t border-background/20 p-5 first:border-t-0 sm:border-t-0 sm:border-l sm:p-6 sm:first:border-l-0 dark:border-foreground/20">
+    <div data-source-kind={kindsOf(kind).join(" ")} className="border-t border-background/20 p-5 first:border-t-0 sm:border-t-0 sm:border-l sm:p-6 sm:first:border-l-0 dark:border-foreground/20">
       <dt className="flex items-center gap-1.5 text-sm opacity-80">
         <span aria-hidden="true" className="inline-flex shrink-0 [&_svg]:size-4">
           {icon}

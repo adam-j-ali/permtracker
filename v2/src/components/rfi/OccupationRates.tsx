@@ -19,9 +19,7 @@ import { monthYear } from "@convex/lib/months";
  * orders of magnitude and the point estimates do not say so. Nail technicians
  * are 15 of 51 and software engineers are 14 of 1,848: the same kind of
  * number, one of them far shakier. The interval arrives on the row from the
- * read layer, already computed: this is a SERVER component, and calling
- * RateBars' `wilsonInterval` from here threw at runtime because RateBars is a
- * `"use client"` module. Typecheck and jsdom both missed it.
+ * read layer, already computed (`wilsonInterval`, convex/lib/wilson.ts).
  *
  * NO DIRECTION COLOUR ON THE MULTIPLE, which is why the shared
  * `BaselineMultiple` from Insight.tsx is not reused here. It paints anything

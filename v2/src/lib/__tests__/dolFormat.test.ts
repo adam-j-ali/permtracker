@@ -4,7 +4,6 @@ import {
   formatAsOf,
   formatCount,
   monthsMoved,
-  daysBetween,
   daysAsApproxMonths,
 } from "../dolFormat";
 
@@ -65,24 +64,6 @@ describe("monthsMoved", () => {
   });
 });
 
-describe("daysBetween", () => {
-  it("counts calendar days", () => {
-    expect(daysBetween("2026-08-01", "2026-08-20")).toBe(19);
-    expect(daysBetween("2026-01-01", "2027-01-01")).toBe(365);
-  });
-
-  it("is timezone-stable", () => {
-    // Parsed as UTC on both ends, so a machine in New York and one in UTC
-    // agree. The suite pins TZ to America/New_York precisely to catch this.
-    expect(daysBetween("2026-03-08", "2026-03-09")).toBe(1);
-    expect(daysBetween("2026-11-01", "2026-11-02")).toBe(1);
-  });
-
-  it("returns null on unparseable input", () => {
-    expect(daysBetween("nope", "2026-08-20")).toBeNull();
-  });
-});
-
 describe("daysAsApproxMonths", () => {
   it("reads DOL's average as months without implying false precision", () => {
     expect(daysAsApproxMonths(372)).toBe("about 12 months");
@@ -105,14 +86,6 @@ describe("formatCount", () => {
 // Guards added after a review found each of these rendered onto a public page
 // or silently removed a section, with nothing erroring in either case.
 describe("null and nonsense guards", () => {
-  it("daysBetween refuses a month where a date is wanted", () => {
-    // "2025-09" compiled fine against the old `string` signature and produced
-    // NaN, so the velocity section just vanished with nothing to debug.
-    expect(daysBetween("2025-09", "2026-08-20")).toBeNull();
-    expect(daysBetween(null, "2026-08-20")).toBeNull();
-    expect(daysBetween("2026-08-20", undefined)).toBeNull();
-  });
-
   it("daysAsApproxMonths never renders NaN or a negative", () => {
     expect(daysAsApproxMonths(null)).toBeNull();
     expect(daysAsApproxMonths(undefined)).toBeNull();

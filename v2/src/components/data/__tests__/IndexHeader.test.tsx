@@ -10,8 +10,8 @@ describe("IndexHeader", () => {
         title="Find a prevailing wage request"
         lede="Search by employer."
         figures={[
-          { label: "Waiting at DOL now", value: "47,681", trend: { text: "1,204 fewer in 30 days", dir: "down", tone: "good" }, note: "From DOL's case-status service" },
-          { label: "Decided, with the wage set", value: "886,809" },
+          { kind: "measured", label: "Waiting at DOL now", value: "47,681", trend: { text: "1,204 fewer in 30 days", dir: "down", tone: "good" }, note: "From DOL's case-status service" },
+          { kind: "measured", label: "Decided, with the wage set", value: "886,809" },
         ]}
       />,
     );
@@ -20,6 +20,8 @@ describe("IndexHeader", () => {
     // One chip in all: the second figure's card holds its label and its number, nothing else.
     const second = screen.getByText("Decided, with the wage set").parentElement!;
     expect(second.textContent?.replace(/\s+/g, " ").trim()).toBe("Decided, with the wage set 886,809");
+    // Each card carries the kind its figure was given.
+    expect(second.dataset.sourceKind).toBe("measured");
   });
 
   it("draws a figure's small picture when it's given one: a split bar named by its sentence", () => {
@@ -29,11 +31,12 @@ describe("IndexHeader", () => {
         lede="Search by employer."
         figures={[
           {
+            kind: "measured",
             label: "Waiting at DOL now",
             value: "47,681",
             split: { parts: [{ value: 90, tone: "good" }, { value: 10, tone: "wait" }], label: "10 of 100 wage requests are still waiting." },
           },
-          { label: "Decided, with the wage set", value: "886,809" },
+          { kind: "measured", label: "Decided, with the wage set", value: "886,809" },
         ]}
       />,
     );

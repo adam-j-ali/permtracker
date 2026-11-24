@@ -25,7 +25,7 @@
  */
 
 import { USCIS_OFFICES, isCenter } from "../../src/lib/uscisOffices";
-import { MS_PER_DAY } from "./time";
+import { MS_PER_DAY, daysBetweenOrNull } from "./time";
 
 /** `perm` is false for a category that has no labor certification, so no PERM case number. */
 export const CATEGORIES = [
@@ -684,14 +684,6 @@ function readContacts(
   return { ok: true, value: value.length > 0 ? value : undefined };
 }
 
-/** Whole days from `a` to `b`, both ISO; null when either is missing. */
-export function daysBetween(a?: string | null, b?: string | null): number | null {
-  if (!a || !b) return null;
-  const ms = Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`);
-  if (!Number.isFinite(ms)) return null;
-  return Math.round(ms / MS_PER_DAY);
-}
-
 /** The stored row, as the board sees it: the verified PERM half plus the fields. */
 export interface TimelineRecord extends TimelineFields {
   /** DOL's filing date for the case, when found. Never typed by the reporter. */
@@ -803,7 +795,7 @@ export function computeMetrics(records: readonly TimelineRecord[]): MetricResult
             if (all.some((x) => x !== e && x.form === e.form && x.issuedOn && e.respondedOn && x.issuedOn > e.respondedOn)) continue;
           }
           const end = m.perRfe === "answer" ? e.respondedOn : e.form === "i140" ? r.i140ApprovedOn : r.greenCardOn;
-          const d = daysBetween(m.perRfe === "answer" ? e.issuedOn : e.respondedOn, end);
+          const d = daysBetweenOrNull(m.perRfe === "answer" ? e.issuedOn : e.respondedOn, end);
           if (d !== null && d >= 0 && d <= 3650) {
             vals.push(d);
             added = true;
@@ -812,7 +804,7 @@ export function computeMetrics(records: readonly TimelineRecord[]): MetricResult
         if (added) people += 1;
         continue;
       }
-      const d = daysBetween(from, at[m.to]);
+      const d = daysBetweenOrNull(from, at[m.to]);
       if (d !== null && d >= 0 && d <= 3650) {
         vals.push(d);
         people += 1;
@@ -867,7 +859,7 @@ function updatesOf(r: TimelineRecord, origin: string | null): UpdatesSummary | n
   const last = events[events.length - 1];
   if (!last) return null;
   const codes = [...new Set(events.map((e) => e.code).filter((c): c is string => typeof c === "string"))];
-  const day = origin ? daysBetween(origin, last.on) : null;
+  const day = origin ? daysBetweenOrNull(origin, last.on) : null;
   return { count: events.length, codes, lastDay: day !== null && day >= 0 ? day : null };
 }
 
@@ -917,13 +909,13 @@ export function thirdFta0(records: readonly TimelineRecord[], today: string = is
     const third = (r.accountEvents ?? []).filter((e) => e.form === "i485" && e.code === "FTA0").map((e) => e.on).sort()[2];
     if (!third) continue;
     reported += 1;
-    const card = daysBetween(third, r.greenCardOn);
+    const card = daysBetweenOrNull(third, r.greenCardOn);
     if (card !== null && card >= 0) {
       toCard.push(card);
       continue;
     }
-    const quiet = daysBetween(new Date(r.updatedAt).toISOString().slice(0, 10), today);
-    const since = daysBetween(third, today);
+    const quiet = daysBetweenOrNull(new Date(r.updatedAt).toISOString().slice(0, 10), today);
+    const since = daysBetweenOrNull(third, today);
     if (!r.greenCardOn && quiet !== null && quiet <= STILL_WAITING_DAYS && since !== null && since >= 0) waited.push(since);
   }
   const median = (xs: number[]) => (xs.length >= METRIC_MIN_N ? nearestRank([...xs].sort((a, b) => a - b), 0.5) : null);
@@ -968,12 +960,12 @@ export function contactOutcomes(records: readonly TimelineRecord[], today: strin
       if (!first) continue;
       if (r.greenCardOn && r.greenCardOn < first) continue;
       reported += 1;
-      const card = daysBetween(first, r.greenCardOn);
+      const card = daysBetweenOrNull(first, r.greenCardOn);
       if (card !== null && card >= 0) {
         toCard.push(card);
         continue;
       }
-      const quiet = daysBetween(new Date(r.updatedAt).toISOString().slice(0, 10), today);
+      const quiet = daysBetweenOrNull(new Date(r.updatedAt).toISOString().slice(0, 10), today);
       if (!r.greenCardOn && quiet !== null && quiet <= STILL_WAITING_DAYS) waiting += 1;
     }
     const median = toCard.length >= METRIC_MIN_N ? nearestRank([...toCard].sort((a, b) => a - b), 0.5) : null;
@@ -997,7 +989,7 @@ export interface H4Summary {
 
 function h4Of(r: TimelineRecord): H4Summary | null {
   const span = (a?: string, b?: string) => {
-    const d = daysBetween(a, b);
+    const d = daysBetweenOrNull(a, b);
     return d !== null && d >= 0 ? d : null;
   };
   const extensionDays = span(r.h4FiledOn, r.h4ApprovedOn);
@@ -1042,7 +1034,7 @@ export function toBoardRow(r: TimelineRecord, showOffice = false, showCenter = f
   const origin = r.permFiledOn ?? null;
   const stop = (id: DateFieldId | "permCertifiedOn") => {
     const iso = (r as unknown as Record<string, string | undefined>)[id];
-    return { id, day: origin && iso ? daysBetween(origin, iso) : null, month: iso ? iso.slice(0, 7) : null };
+    return { id, day: origin && iso ? daysBetweenOrNull(origin, iso) : null, month: iso ? iso.slice(0, 7) : null };
   };
   return {
     filedMonth: origin ? origin.slice(0, 7) : null,
@@ -1143,7 +1135,7 @@ export function toOfficeRow(r: TimelineRecord): OfficeRow {
     h4: h4Of(r),
     stops: OFFICE_STOPS.map((id) => {
       const iso = r[id];
-      const day = origin && iso ? daysBetween(origin, iso) : null;
+      const day = origin && iso ? daysBetweenOrNull(origin, iso) : null;
       return { id, day: day !== null && day >= 0 ? day : null, month: iso ? iso.slice(0, 7) : null };
     }),
     rfe: ((e) => (e ? { outcome: e.outcome ?? null } : null))(rfesOf(r).find((e) => e.form === "i485")),
@@ -1158,7 +1150,7 @@ export function toOfficeRow(r: TimelineRecord): OfficeRow {
  */
 export function reviewFlags(r: TimelineRecord & { caseNumber?: string; permCheckedAt?: number }): string[] {
   const flags: string[] = [];
-  const gap = (a?: string, b?: string) => daysBetween(a, b);
+  const gap = (a?: string, b?: string) => daysBetweenOrNull(a, b);
   const gc = gap(r.i485FiledOn, r.greenCardOn);
   if (gc !== null && gc < 30 && r.route !== "consular") flags.push(`The green card is dated ${gc} days after the I-485 filing.`);
   const certToI140 = gap(r.permCertifiedOn, r.i140FiledOn);

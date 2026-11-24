@@ -37,14 +37,14 @@ export function ReportedOverview({ overview }: { overview: Overview | null }) {
         reports join only when three of their dates match. Only the timelines shared here are checked.
       </p>{" "}
       <FigureRow className="mt-5">
-        <Figure label="People's cases" value={formatInt(overview.people)} note="every source, each person once" />
-        <Figure
+        <Figure kind="community" label="People's cases" value={formatInt(overview.people)} note="every source, each person once" />
+        <Figure kind="community"
           label="I-485s at a USCIS office"
           value={formatInt(offices.reduce((n, o) => n + o.cases, 0))}
           note={offices.length === 1 ? `all at ${offices[0]!.name}` : `at ${formatInt(offices.length)} offices`}
         />
-        <Figure label="I-140s" value={formatInt(overview.i140s)} note="by category and premium processing" />
-        <Figure label="Reported in two places or more" value={formatInt(overview.inSeveral)} note="counted once" />
+        <Figure kind="community" label="I-140s" value={formatInt(overview.i140s)} note="by category and premium processing" />
+        <Figure kind="community" label="Reported in two places or more" value={formatInt(overview.inSeveral)} note="counted once" />
       </FigureRow>{" "}
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 [&>*]:min-w-0">
         <div className="object p-4 sm:p-5">

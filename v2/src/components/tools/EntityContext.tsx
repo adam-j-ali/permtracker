@@ -1,4 +1,6 @@
 import { Fragment, type ReactNode } from "react";
+
+import { Z_95, wilsonInterval } from "@convex/lib/wilson";
 import { IntentLink } from "@/components/ui/intent-link";
 
 import { cn } from "@/lib/utils";
@@ -27,25 +29,17 @@ import { MIN_DECIDED_FOR_RATE } from "@/lib/entityPayload";
  * authoritative than the warning about it.
  */
 
-/** 95th-percentile two-sided z. */
-const Z = 1.959963984540054;
-
 /**
- * The 95% Wilson upper bound on a proportion, as a percentage.
+ * The 95% Wilson upper bound on a proportion, as a percentage (the one interval, convex/lib/wilson.ts).
  *
  * Wilson rather than the textbook normal interval because the counts here sit
- * hard against zero, where the normal interval returns a negative lower bound
- * and an upper bound of exactly zero for a clean record - which would say a
- * three-case employer's denial rate is known to be 0%, the precise falsehood
- * this file exists to prevent.
+ * hard against zero, where the normal interval returns an upper bound of
+ * exactly zero for a clean record - which would say a three-case employer's
+ * denial rate is known to be 0%, the precise falsehood this file exists to
+ * prevent. Nothing to bound is the widest answer, 100.
  */
-export function wilsonUpperPct(successes: number, n: number): number {
-  if (n <= 0) return 100;
-  const p = successes / n;
-  const denom = 1 + (Z * Z) / n;
-  const centre = (p + (Z * Z) / (2 * n)) / denom;
-  const half = (Z * Math.sqrt((p * (1 - p)) / n + (Z * Z) / (4 * n * n))) / denom;
-  return Math.min(100, (centre + half) * 100);
+export function upperBoundPct(successes: number, n: number): number {
+  return wilsonInterval(successes, n)?.hi ?? 100;
 }
 
 /**
@@ -58,7 +52,7 @@ export function wilsonUpperPct(successes: number, n: number): number {
  */
 export function separationN(baselineDenialPct: number): number {
   if (baselineDenialPct <= 0) return Infinity;
-  return Math.ceil((Z * Z) / (baselineDenialPct / 100) - Z * Z);
+  return Math.ceil((Z_95 * Z_95) / (baselineDenialPct / 100) - Z_95 * Z_95);
 }
 
 export type RateTier = "withheld" | "soft" | "firm";
@@ -93,8 +87,8 @@ export function rateReliability(
   if (decided < MIN_DECIDED_FOR_RATE) {
     return { decided, ratePct: null, tier: "withheld", upperDenialPct: 100, needed };
   }
-  const upperDenialPct = wilsonUpperPct(denied, decided);
-  const lowerDenialPct = 100 - wilsonUpperPct(certified, decided);
+  const upperDenialPct = upperBoundPct(denied, decided);
+  const lowerDenialPct = 100 - upperBoundPct(certified, decided);
   // "Soft" whenever the interval still straddles the field's own rate: the
   // entity cannot be said to differ from it in either direction.
   const straddles = lowerDenialPct <= baselineDenialPct && upperDenialPct >= baselineDenialPct;

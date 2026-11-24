@@ -249,19 +249,19 @@ async function Ranking({ program, state, summary }: { program: FirmProgram; stat
       {/* Three figures. The busiest firm is the page's answer line and the first bar below, so it isn't a fourth
           figure, and lime stays on the action. */}
       <FigureRow>
-        <Figure
+        <Figure kind="measured"
           label={`${p.noun[0]!.toUpperCase()}${p.noun.slice(1)} naming a firm`}
           icon={<FilesIcon weight="bold" className="text-primary-text" />}
           trend={yearOnYear(totals.filings, lastYear?.filings, fy - 1)}
           value={formatInt(totals.filings)}
         />{" "}
-        <Figure
+        <Figure kind="measured"
           label="Law firms that filed them"
           icon={<ScalesIcon weight="bold" className="text-primary-text" />}
           trend={yearOnYear(totals.firms, lastYear?.firms, fy - 1)}
           value={formatInt(totals.firms)}
         />{" "}
-        <Figure
+        <Figure kind="measured"
           label="Naming no law firm"
           icon={<BuildingsIcon weight="bold" className="text-primary-text" />}
           trend={yearOnYear(totals.unnamed, lastYear?.unnamed, fy - 1)}

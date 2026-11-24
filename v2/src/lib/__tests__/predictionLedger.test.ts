@@ -3,6 +3,8 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { daysBetween } from "@/lib/time";
+
 import { daysToAnchor, PREDICTIONS, scorePrediction, summarizeScores,
   scoreAll,
 } from "../predictionLedger";
@@ -130,9 +132,7 @@ describe("recorded rival predictions are plausible", () => {
     const offenders: string[] = [];
     for (const p of PREDICTIONS) {
       for (const r of p.rivals ?? []) {
-        const gap = Math.abs(
-          (Date.parse(`${r.anchorIso}T00:00:00Z`) - Date.parse(`${p.anchorIso}T00:00:00Z`)) / 86_400_000,
-        );
+        const gap = Math.abs(daysBetween(p.anchorIso, r.anchorIso));
         if (gap > MAX_PLAUSIBLE_GAP_DAYS) {
           offenders.push(`${p.caseNumber} ${r.site} ${r.anchorIso} vs ours ${p.anchorIso} (${Math.round(gap)}d)`);
         }

@@ -1,7 +1,7 @@
 import { ChartTips } from "@/components/data/ChartTips";
 import { formatAsOf } from "@/lib/dolFormat";
 import { cn } from "@/lib/utils";
-import { MS_PER_DAY } from "@/lib/time";
+import { dayNumber } from "@/lib/time";
 
 /**
  * The deadline calculator's own drawing: the case's windows on one date axis.
@@ -33,7 +33,6 @@ const W = 720;
 const ROW_H = 44;
 const PAD = { top: 26, right: 16, bottom: 34, left: 148 };
 
-const day = (iso: string) => Date.parse(`${iso}T00:00:00Z`) / MS_PER_DAY;
 
 export function DeadlineWindowDiagram({
   pwdDate,
@@ -86,12 +85,12 @@ export function DeadlineWindowDiagram({
   }
   if (rows.length < 2) return null;
 
-  const d0 = Math.min(...rows.map((r) => day(r.from)));
-  const d1 = Math.max(...rows.map((r) => day(r.to)));
+  const d0 = Math.min(...rows.map((r) => dayNumber(r.from)));
+  const d1 = Math.max(...rows.map((r) => dayNumber(r.to)));
   if (d1 <= d0) return null;
   const H = PAD.top + rows.length * ROW_H + PAD.bottom;
   const px = (iso: string) =>
-    PAD.left + ((day(iso) - d0) / (d1 - d0)) * (W - PAD.left - PAD.right);
+    PAD.left + ((dayNumber(iso) - d0) / (d1 - d0)) * (W - PAD.left - PAD.right);
 
   const FILL = {
     muted: "var(--muted-foreground)",

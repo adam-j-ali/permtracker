@@ -1253,7 +1253,8 @@ def probe_registry() -> None:
     # dataset-coverage.test.ts holds the same rule in vitest; this reads the file the same way.
     ts = (HERE.parent / "src" / "lib" / "datasetCoverage.ts").read_text()
     for d in sorted(want):
-        sentence = re.search(rf'"{d}":\s*"([^"]+)"', ts)
+        # The row's sentence, wrapped in its kind of source (official, measured or community).
+        sentence = re.search(rf'"{d}":\s*(?:(?:official|measured|community)\()?"([^"]+)"', ts)
         check(f"{d} has a sentence and a short name in datasetCoverage.ts",
               sentence is not None and len(sentence.group(1)) > 30 and sentence.group(1).rstrip().endswith(".")
               and len(re.findall(rf'"{d}":', ts)) == 2)

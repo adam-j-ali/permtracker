@@ -51,7 +51,7 @@ import { monthEndDate, type MonthEnd } from "@/lib/caseEstimateInputs";
 import { monthMakeup, type MonthMakeup, WITHDRAWALS_LEAD } from "@/lib/monthMakeup";
 import { buildMonthShare, monthParts, type MonthPartKey } from "@/lib/monthShare";
 import { MonthShareBlock } from "@/components/queue/MonthShareBlock";
-import { getLiveCensus } from "@/lib/db/liveCensus";
+import { censusDayOf, getLiveCensus } from "@/lib/db/liveCensus";
 import { dolDecisions, weekOnWeek, type MonthDetail } from "@/lib/monthDetail";
 import { getMonthDetail } from "@/lib/db/monthDetail";
 import { keepLinkableSlugs } from "@/lib/db/entityLinks";
@@ -262,6 +262,7 @@ export default async function CohortPage({
           dolAsOfIso={dolAsOfIso}
           checked={Boolean(line)}
           ahead={ahead}
+          countedOn={censusDayOf(census)}
           waitingMoved={waitingTrend(makeup.inLine + makeup.outside, pastDay?.month?.pending, pastDay?.day)}
           dolMoved={dolMonth ? queueMoveTrend(dolHistory, (h) => ({ month: analystReviewQueue(h.permQueues)?.priorityDate, asOf: h.permAsOf })) : undefined}
         />{" "}
@@ -597,6 +598,7 @@ function MonthHeadline({
   dolAsOfIso,
   checked,
   ahead,
+  countedOn,
   waitingMoved,
   dolMoved,
 }: {
@@ -611,6 +613,8 @@ function MonthHeadline({
   checked: boolean;
   /** Cases filed before this month still undecided at their last check. */
   ahead: number;
+  /** The day the month's count is as of, "YYYY-MM-DD" (`censusDayOf`). */
+  countedOn: string;
   /** How the month's waiting count moved since the census's newest earlier day. */
   waitingMoved?: FigureTrend;
   /** How DOL's month moved over about a month of its readings. */
@@ -652,15 +656,15 @@ function MonthHeadline({
           key above them): what's still waiting, where DOL's line is (lime: the reader's own
           question), when the line reaches this month's end, and what's filed ahead of it. */}
       <FigureRow className="mt-6">
-        <Figure
+        <Figure kind="measured"
           label="Still waiting"
           icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />}
           trend={waitingMoved}
           value={formatInt(m.inLine + m.outside)}
-          note={`${formatInt(m.inLine)} in DOL's line, ${formatInt(m.outside)} outside it`}
+          note={`${formatInt(m.inLine)} in DOL's line, ${formatInt(m.outside)} outside it, by our check on ${monthDay(countedOn) ?? countedOn}`}
         />{" "}
         {dolMonth ? (
-          <Figure
+          <Figure kind="official"
             tone="lime"
             label="DOL is working"
             icon={<CalendarCheckIcon weight="bold" className="text-primary-text" />}
@@ -670,7 +674,7 @@ function MonthHeadline({
           />
         ) : null}{" "}
         {end?.kind === "estimate" ? (
-          <Figure
+          <Figure kind="measured"
             label="The line reaches this month's end"
             icon={<FlagCheckeredIcon weight="bold" className="text-primary-text" />}
             value={shortDate(end.date) ?? end.date}
@@ -678,7 +682,7 @@ function MonthHeadline({
           />
         ) : null}{" "}
         {dolMonth && month > dolMonth && ahead > 0 ? (
-          <Figure
+          <Figure kind="measured"
             label="Filed earlier, still waiting"
             icon={<UsersIcon weight="bold" className="text-primary-text" />}
             value={formatInt(ahead)}

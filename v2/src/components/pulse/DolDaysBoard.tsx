@@ -57,14 +57,14 @@ export function DolDaysBoard({
       </Heading>{" "}
       {/* One figure a row on a phone: side by side at 358px each chip wrapped to five lines. */}
       <FigureRow className="mt-5 max-sm:[&>*]:basis-full">
-        <Figure
+        <Figure kind="measured"
           label="PERM decisions, last 7 days"
           icon={<ClipboardTextIcon weight="bold" className="text-primary-text" />}
           value={week(perm)}
           trend={perm ? (weekTrend(perm, holidays) ?? undefined) : undefined}
           note={perm ? `Certified, denied or withdrawn, through ${through}.` : "Our check hasn't reached one of these seven days yet."}
         />{" "}
-        <Figure
+        <Figure kind="measured"
           label="Wage determinations, last 7 days"
           icon={<CurrencyDollarIcon weight="bold" className="text-primary-text" />}
           value={week(wage)}

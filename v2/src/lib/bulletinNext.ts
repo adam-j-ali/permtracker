@@ -10,7 +10,7 @@
  * are named, never turned into a number.
  */
 import { parseCutoff, type BulletinMonth, type ChartKind, type CountryKey, type Cutoff } from "@/lib/perm";
-import { MS_PER_DAY } from "@/lib/time";
+import { daysBetween } from "@/lib/time";
 import { MONTH_NAMES, shiftMonth, shortDate } from "@convex/lib/months";
 
 export type MoveKind =
@@ -119,7 +119,7 @@ export function classifyMove(from: Cutoff | null, to: Cutoff | null): { kind: Mo
 function classify(from: Cutoff | null, to: Cutoff | null): { kind: MoveKind; movedDays: number | null } {
   if (!from || !to) return { kind: "unknown", movedDays: null };
   if (from.kind === "date" && to.kind === "date") {
-    const days = Math.round((Date.parse(to.iso) - Date.parse(from.iso)) / MS_PER_DAY);
+    const days = daysBetween(from.iso, to.iso);
     return { kind: days > 0 ? "advanced" : days < 0 ? "retrogressed" : "held", movedDays: days };
   }
   if (from.kind === "current" && to.kind === "current") return { kind: "current", movedDays: null };

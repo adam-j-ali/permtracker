@@ -2,7 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
-import { MS_PER_DAY } from "@/lib/time";
+import { MS_PER_DAY, easternDay } from "@/lib/time";
 
 import { one } from "./client";
 
@@ -130,6 +130,14 @@ export const getLiveCensus = cache(async (): Promise<LiveCensus | null> => {
 // ---------------------------------------------------------------------------
 // Pure folds. Each replaces a query that used to run per request.
 // ---------------------------------------------------------------------------
+
+/**
+ * The day a census count is as of: the doc's own day, or, when there's no fresh doc and the page counts the mirror
+ * itself, the day of that count. Every pending figure built from the census says this day.
+ */
+export function censusDayOf(census: Pick<LiveCensus, "asOf"> | null, today: string = easternDay()): string {
+  return census?.asOf ?? today;
+}
 
 /** All of one filing month's rows. Replaces the substr(=) group-by. */
 export function monthRowsFrom(

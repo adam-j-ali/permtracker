@@ -100,6 +100,7 @@ export default async function OptEmployersPage() {
     ...(optNewest && leader
       ? [
           {
+            kind: "official" as const,
             label: `Busiest in ${optNewest.year}, ${label(optNewest)}`,
             value: leader.employer,
             note: `${formatInt(leader.total)} students`,
@@ -107,7 +108,7 @@ export default async function OptEmployersPage() {
           },
         ]
       : []),
-    ...(years.length > 0 ? [{ label: "Years ICE published", value: years.join(", ") }] : []),
+    ...(years.length > 0 ? [{ kind: "official" as const, label: "Years ICE published", value: years.join(", ") }] : []),
   ];
 
   return (

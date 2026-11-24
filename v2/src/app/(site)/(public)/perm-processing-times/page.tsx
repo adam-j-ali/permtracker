@@ -39,7 +39,8 @@ import { averageTrend, queueMoveTrend } from "@/lib/dolTrends";
 
 import { openGraphBase } from "@/lib/openGraphBase";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
-import { currentMonthUtc, daysAsApproxMonths, daysBetween, formatAsOf, formatMonth, monthsMoved } from "@/lib/dolFormat";
+import { currentMonthUtc, daysAsApproxMonths, formatAsOf, formatMonth, monthsMoved } from "@/lib/dolFormat";
+import { daysBetweenOrNull } from "@/lib/time";
 import {
   analystReviewQueue,
   analystReviewAverage,
@@ -262,7 +263,7 @@ export default async function PermProcessingTimesPage() {
     oldestAnalyst?.priorityDate ?? null,
     analyst?.priorityDate ?? null,
   );
-  const observedDays = daysBetween(oldest?.permAsOf, snapshot?.permAsOf);
+  const observedDays = daysBetweenOrNull(oldest?.permAsOf, snapshot?.permAsOf);
   // `movedMonths > 0` is doing real work. Two snapshots can differ (DOL
   // refreshes the backlog counts monthly) while the analyst priority date holds,
   // which rendered "the analyst review queue advanced 0 months", and a DOL
@@ -481,7 +482,7 @@ export default async function PermProcessingTimesPage() {
           <FigureRow className="mt-8">
             {/* DOL is past the halfway mark of this month and still finishing it. */}
             {oldestOpen ? (
-              <Figure
+              <Figure kind="official"
                 label={oldestOpen.label}
                 icon={<CalendarBlankIcon weight="bold" className="text-primary-text" />}
                 value={oldestOpen.value}
@@ -489,7 +490,7 @@ export default async function PermProcessingTimesPage() {
               />
             ) : null}{" "}
             {analystAvg?.calendarDays !== null && analystAvg?.calendarDays !== undefined ? (
-              <Figure
+              <Figure kind="official"
                 label="Average to a determination"
                 icon={<HourglassMediumIcon weight="bold" className="text-primary-text" />}
                 trend={averageTrend(history)}
@@ -511,7 +512,7 @@ export default async function PermProcessingTimesPage() {
             ) : null}
 
             {audit?.priorityDate ? (
-              <Figure
+              <Figure kind="official"
                 label="Audit review queue"
                 icon={<MagnifyingGlassIcon weight="bold" className="text-primary-text" />}
                 trend={queueMoveTrend(history, (h) => ({ month: h.permQueues.find((q) => /audit review/i.test(q.queue))?.priorityDate, asOf: h.permAsOf }))}
@@ -522,7 +523,7 @@ export default async function PermProcessingTimesPage() {
 
             {/* Our daily check leads: DOL's wage table is dated weeks behind it (lib/pwdLine.ts). */}
             {pwdLine ? (
-              <Figure
+              <Figure kind="official"
                 label="Prevailing wage (PERM)"
                 icon={<CurrencyDollarIcon weight="bold" className="text-primary-text" />}
                 value={longDate(pwdLine.day) ?? pwdLine.day}
@@ -533,7 +534,7 @@ export default async function PermProcessingTimesPage() {
                 }`}
               />
             ) : pwdPerm?.oewsReceiptDate ? (
-              <Figure
+              <Figure kind="official"
                 label="Prevailing wage (PERM)"
                 icon={<CurrencyDollarIcon weight="bold" className="text-primary-text" />}
                 trend={queueMoveTrend(history, (h) => ({ month: h.pwdQueues.find((q) => /^perm\b/i.test(q.program.trim()))?.oewsReceiptDate, asOf: h.pwdAsOf }))}
