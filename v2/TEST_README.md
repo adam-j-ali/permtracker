@@ -13,21 +13,24 @@ pnpm test:all      # Run all tests
 
 ## Recommended dev workflow
 
-Use the right command for the situation. You rarely need the full 10-minute suite:
+Use the right command for the situation. The whole suite takes about a minute on the new Mac under Vitest 5 (twelve
+minutes on the old Air), and `pnpm check` runs it before every push:
 
 | When | Command | Time | Tests |
 |------|---------|------|-------|
 | **Active coding** | `pnpm test` | Instant on change | Only affected |
 | **Working on one file** | `pnpm test path/to/file.test.ts` | ~2s | That file |
 | **Before commit** | `pnpm test:fast` | ~40s | 1359 |
-| **Before PR** | `pnpm test:run` | ~10 min | 3603 |
+| **Before a push** | `pnpm check` | ~75s | The whole suite, shuffled, plus typecheck, data tests and audits |
+| **Whole suite alone** | `pnpm test:run` | ~1 min | About 15,800 |
 
 ```bash
 # While coding - watch mode re-tests on save (recommended)
 pnpm test
 
-# Before a push: typecheck, the data scripts' lint and tests, and the
-# vitest tests that import anything changed since origin/main
+# Before a push: both typecheckers, the data scripts' lint and tests (14 at a
+# time), the source audits, eslint on changed files, and the whole vitest
+# suite, shuffled (scripts/check.sh)
 pnpm check
 
 # Just the affected vitest tests
@@ -70,7 +73,7 @@ pnpm test:convex      # Convex integration tests only
 |---------|---------|-------------|
 | `pnpm test:fast` | Unit + PERM tests (~40s, 1300+ tests) | During development |
 | `pnpm test:perm` | PERM business logic only | Working on calculators/validators |
-| `pnpm check` | Typecheck, data scripts, and the tests affected since `origin/main` | Before a push |
+| `pnpm check` | Typecheck, data scripts, the source audits and the whole vitest suite, shuffled (~75s) | Before a push |
 | `pnpm test:changed` | The vitest tests affected since `origin/main` | While working |
 | `pnpm test:run` | Full suite (all 5 projects) | When a change is broad. CI runs it on every push and the deploy waits for it |
 
