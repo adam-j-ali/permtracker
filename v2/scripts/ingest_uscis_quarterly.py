@@ -946,8 +946,14 @@ def reconcile_awaiting(p: Parsed) -> None:
 # ---------------------------------------------------------------------------
 
 def sheet_country(name: str) -> str:
-    """`India FY26` -> India, `Vietnam 2026` -> Vietnam, `All Countries FY26` -> All Countries."""
-    return re.sub(r"\s+(FY\s?\d{2,4}|\d{4})$", "", name.strip(), flags=re.I).strip()
+    """`India FY26` -> India, `Vietnam 2026` -> Vietnam, `All Countries FY26` -> All Countries, and FY2024's
+    `All_Countries_FY24` -> All Countries."""
+    return re.sub(r"\s+(FY\s?\d{2,4}|\d{4})$", "", name.strip().replace("_", " "), flags=re.I).strip()
+
+
+# USCIS's own tables sometimes miss their total by a count (FY2024 Q4: China's 2016 preferences sum to 16,987 against
+# 16,988). A misread column is off by thousands; a gap this small is the file's own rounding, kept as printed with a note.
+OWN_ROUNDING = 0.0005
 
 
 def parse_i140_class_country(sheets: list[tuple[str, list[dict[int, str]]]],
@@ -1065,9 +1071,12 @@ def reconcile_class_country(p: Parsed) -> None:
                     raise Refusal(f"{p.name}: {country} {pref} {fy}: approved+denied+pending "
                                   f"{parts:,} against a total of {t:,}")
             prefs = sum(by[(country, pr, "total", fy)] for pr in ("EB1", "EB2", "EB3", "OTHER"))
-            if prefs != by[(country, "ALL", "total", fy)]:
-                raise Refusal(f"{p.name}: {country} {fy}: preferences sum to {prefs:,} "
-                              f"against {by[(country, 'ALL', 'total', fy)]:,}")
+            printed = by[(country, "ALL", "total", fy)]
+            if prefs != printed:
+                if abs(prefs - printed) > max(1, round(printed * OWN_ROUNDING)):
+                    raise Refusal(f"{p.name}: {country} {fy}: preferences sum to {prefs:,} against {printed:,}")
+                p.notes.append(f"{country} {fy}: preferences sum to {prefs:,} against {printed:,} in USCIS's own "
+                               "file; kept as printed")
             # Approvals by class must sum to the preference's approvals.
             for pref in ("EB1", "EB2", "EB3"):
                 classes = sum(v for (c, pr, m, y), v in by.items()

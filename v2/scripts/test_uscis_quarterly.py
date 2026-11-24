@@ -344,6 +344,11 @@ def main() -> int:
     check("sheet_country strips FY26 and a bare year",
           (q.sheet_country("India FY26"), q.sheet_country("Vietnam 2026"), q.sheet_country("All Countries FY26"))
           == ("India", "Vietnam", "All Countries"))
+    # FY2024's Q2 and Q3 files name their sheets with underscores and a glued year (Nov 24 2026: refused as
+    # "sheets held ['All_Countries_FY24', 'Brazil_FY24', ...]", so no All Countries sheet was found).
+    check("sheet_country reads FY2024's underscored names",
+          (q.sheet_country("All_Countries_FY24"), q.sheet_country("Brazil_FY24"), q.sheet_country("India_FY24"))
+          == ("All Countries", "Brazil", "India"))
 
     # -- a history load never moves the freshness stamp back ---------------
     check("freshness: a first stamp is written", q.stamp_moves_forward(None, "2025-09-30"))
@@ -477,6 +482,24 @@ def main() -> int:
              and r["measure"] == "approved_E31" and r["fy"] == 2026)["count"] += 1
         q.reconcile_class_country(bad)
     refuses("class/country: classes that no longer sum to approved are refused", cc_bad, "classes sum")
+
+    # USCIS's own FY2024 Q4 file prints China's 2016 preferences summing to 16,987 against an all-preferences total of
+    # 16,988 (Nov 24 2026). A misread column is off by thousands; one count in 17,000 is the file's own rounding: kept as
+    # printed, with a note. A gap past the tolerance is still refused.
+    def cc_off(by_n: int) -> q.Parsed:
+        bad = q.Parsed(cc.kind, cc.fy, cc.quarter, cc.name, as_of=cc.as_of, rows=[dict(r) for r in cc.rows])
+        row = next(r for r in bad.rows if r["country"] == "India" and r["preference"] == "ALL"
+                   and r["measure"] == "total" and r["fy"] == 2025)
+        row["count"] += by_n
+        # the ALL block's own parts move with it, so only the preferences' sum disagrees
+        next(r for r in bad.rows if r["country"] == "India" and r["preference"] == "ALL"
+             and r["measure"] == "pending" and r["fy"] == 2025)["count"] += by_n
+        q.reconcile_class_country(bad)
+        return bad
+    one = cc_off(1)
+    check("class/country: USCIS's own off-by-one in the preferences' sum is kept, with a note",
+          any("preferences sum" in n and "as printed" in n for n in one.notes), str(one.notes[-1:]))
+    refuses("class/country: a gap past the tolerance is still refused", lambda: cc_off(3), "preferences sum")
 
     # -- storage counted back ------------------------------------------------
     db = FakeDb()
