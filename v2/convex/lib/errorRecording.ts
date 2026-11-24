@@ -52,6 +52,17 @@ export function isTransientDbError(message: string): boolean {
   return TRANSIENT_DB_ERROR.test(message.slice(0, 2000));
 }
 
+export type ErrorRoute = "errors.once" | "errors.repeat" | "errors.blip";
+
+/**
+ * A recorded error's kind in the routing list (scripts/data/alert_routes.json): a repeat when the same operation
+ * already failed within the hour, else a blip when it's a database timeout or busy answer, else a first failure.
+ */
+export function errorRoute(message: string, repeated: boolean): ErrorRoute {
+  if (repeated) return "errors.repeat";
+  return isTransientDbError(message) ? "errors.blip" : "errors.once";
+}
+
 // FilterApi generic can't fully resolve internal.systemErrors at the type level.
 // The reference is verified correct — see convex/systemErrors.ts (internalMutation).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

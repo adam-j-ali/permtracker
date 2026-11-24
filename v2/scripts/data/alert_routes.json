@@ -1,0 +1,363 @@
+{
+  "about": "Where every alert about the site goes: one row per kind, read by each program that raises one (the server's alarm and defense, Convex's watch, errors and notices, the morning report, the ingest health check, the site audit) and listed on /admin#monitor. scripts/test_alert_routes.py fails when a program raises a kind this list doesn't name, or when a row here has no program raising it.",
+  "channels": {
+    "phone": "Phone and email, once when it starts and once when it clears",
+    "report": "In the 7:30 AM email report only",
+    "email": "Email as it happens: things you decide",
+    "admin": "On the admin page only: it fixed itself, or nobody can act on it"
+  },
+  "runs": {
+    "alarm": "The server's alarm, every 5 minutes",
+    "defense": "The automatic defense, every minute",
+    "watch": "Convex's outside watch on the server, every 15 minutes",
+    "errors": "Convex's recorded errors, as they happen",
+    "notices": "Convex's admin notices",
+    "mail": "Convex's mail to you",
+    "worker": "The mail Worker on Cloudflare",
+    "report": "The 7:30 AM report",
+    "ingest": "The ingest health check, daily",
+    "audit": "The site audit, nightly on the server"
+  },
+  "routes": [
+    {
+      "id": "watch.quiet",
+      "runs": "watch",
+      "channel": "phone",
+      "level": "urgent",
+      "remindHours": 6,
+      "what": "The server can't be heard from: its health report is over 35 minutes old, was never written, or can't be read.",
+      "repeat": "Once when it starts and once when it clears. The email comes again every 6 hours while it lasts."
+    },
+    {
+      "id": "watch.database",
+      "runs": "watch",
+      "channel": "phone",
+      "level": "urgent",
+      "remindHours": 6,
+      "what": "The server's database didn't answer two checks in a row.",
+      "repeat": "Once when it starts and once when it clears. The email comes again every 6 hours while it lasts."
+    },
+    {
+      "id": "watch.disk",
+      "runs": "watch",
+      "channel": "phone",
+      "level": "high",
+      "remindHours": 6,
+      "what": "The server's own report says its disk is 90% full or more.",
+      "repeat": "Once when it starts and once when it clears. The email comes again every 6 hours while it lasts."
+    },
+    {
+      "id": "watch.blip",
+      "runs": "watch",
+      "channel": "admin",
+      "section": "errors",
+      "what": "The database missed one check and answered the next.",
+      "repeat": "Kept for a day."
+    },
+    {
+      "id": "alarm.service",
+      "runs": "alarm",
+      "channel": "phone",
+      "level": "urgent",
+      "remindHours": 6,
+      "section": "server",
+      "what": "A service systemd won't restart: a web copy, nginx, the tunnel or a database.",
+      "repeat": "Once when it starts and once when it clears. The email comes again every 6 hours while it lasts."
+    },
+    {
+      "id": "alarm.job-twice",
+      "runs": "alarm",
+      "channel": "phone",
+      "level": "high",
+      "remindHours": 6,
+      "section": "server",
+      "what": "A timed job on the server failed two runs in a row.",
+      "repeat": "Once when it starts and once when it clears. The email comes again only when a newer run has failed too, 6 hours apart at least."
+    },
+    {
+      "id": "alarm.job-once",
+      "runs": "alarm",
+      "channel": "report",
+      "section": "server",
+      "what": "A timed job on the server failed one run. The next run usually fixes it.",
+      "repeat": "Listed in the next morning's report."
+    },
+    {
+      "id": "alarm.disk",
+      "runs": "alarm",
+      "channel": "phone",
+      "level": "high",
+      "remindHours": 6,
+      "section": "server",
+      "what": "The disk is low: under 25 GB free, or full within a day at the last two hours' rate. The page-cache cap is started first.",
+      "repeat": "Once when it starts and once when it clears. The email comes again every 6 hours while it lasts."
+    },
+    {
+      "id": "alarm.disk-critical",
+      "runs": "alarm",
+      "channel": "phone",
+      "level": "high",
+      "remindHours": 6,
+      "section": "server",
+      "what": "Under 10 GB of the disk is free. Old page caches are deleted first.",
+      "repeat": "Once when it starts and once when it clears. The email comes again every 6 hours while it lasts."
+    },
+    {
+      "id": "alarm.memory",
+      "runs": "alarm",
+      "channel": "phone",
+      "level": "high",
+      "remindHours": 6,
+      "section": "server",
+      "what": "Memory is short: under 500 MB available, or swap moving while under 2 GB is available.",
+      "repeat": "Once when it starts and once when it clears. The email comes again every 6 hours while it lasts."
+    },
+    {
+      "id": "alarm.backup",
+      "runs": "alarm",
+      "channel": "phone",
+      "level": "high",
+      "remindHours": 6,
+      "section": "server",
+      "what": "The nightly backup failed: its last success is over 30 hours old.",
+      "repeat": "Once when it starts and once when it clears. The email comes again every 6 hours while it lasts."
+    },
+    {
+      "id": "alarm.sampler",
+      "runs": "alarm",
+      "channel": "phone",
+      "level": "high",
+      "remindHours": 6,
+      "section": "server",
+      "what": "The health sampler has written nothing for 30 minutes.",
+      "repeat": "Once when it starts and once when it clears. The email comes again every 6 hours while it lasts."
+    },
+    {
+      "id": "alarm.page-cache",
+      "runs": "alarm",
+      "channel": "phone",
+      "level": "high",
+      "remindHours": 6,
+      "section": "server",
+      "what": "The page-cache cap hasn't finished for 2.5 hours, so nothing stops the caches filling the disk.",
+      "repeat": "Once when it starts and once when it clears. The email comes again every 6 hours while it lasts."
+    },
+    {
+      "id": "alarm.page-cache-blind",
+      "runs": "alarm",
+      "channel": "phone",
+      "level": "high",
+      "remindHours": 6,
+      "section": "server",
+      "what": "A release holds pages the page-cache cap doesn't count.",
+      "repeat": "Once when it starts and once when it clears. The email comes again every 6 hours while it lasts."
+    },
+    {
+      "id": "alarm.journal",
+      "runs": "alarm",
+      "channel": "phone",
+      "level": "high",
+      "remindHours": 6,
+      "section": "server",
+      "what": "Nothing has reached the server's log on disk for an hour. journald is asked to write there again first.",
+      "repeat": "Once when it starts and once when it clears. The email comes again every 6 hours while it lasts."
+    },
+    {
+      "id": "defense.rule",
+      "runs": "defense",
+      "channel": "admin",
+      "section": "server",
+      "what": "The automatic defense asked one network, browser label or part of the site to pass a browser check.",
+      "repeat": "Each action is in the server's repair log. It turns itself off after 30 calm minutes."
+    },
+    {
+      "id": "defense.attack",
+      "runs": "defense",
+      "channel": "admin",
+      "section": "server",
+      "what": "The automatic defense switched on Under Attack Mode, so every visitor passes Cloudflare's check.",
+      "repeat": "Each action is in the server's repair log. It steps back after an hour at most."
+    },
+    {
+      "id": "errors.repeat",
+      "runs": "errors",
+      "channel": "phone",
+      "level": "high",
+      "remindHours": null,
+      "section": "errors",
+      "what": "The same backend operation failed again within the hour.",
+      "repeat": "Once a day for each operation. There's no clear: Convex records failures, not successes."
+    },
+    {
+      "id": "errors.once",
+      "runs": "errors",
+      "channel": "report",
+      "section": "errors",
+      "what": "A backend operation failed once.",
+      "repeat": "Counted by operation in the next morning's report."
+    },
+    {
+      "id": "errors.blip",
+      "runs": "errors",
+      "channel": "admin",
+      "section": "errors",
+      "what": "A backend operation's database call failed once on a timeout or a busy answer.",
+      "repeat": "Kept with the recorded errors. A second within the hour is a repeat."
+    },
+    {
+      "id": "report.github-red",
+      "runs": "report",
+      "channel": "report",
+      "section": "github",
+      "what": "A GitHub workflow's newest run on main failed.",
+      "repeat": "Every morning until a run passes."
+    },
+    {
+      "id": "report.backups-filling",
+      "runs": "report",
+      "channel": "report",
+      "section": "server",
+      "what": "The off-site backups are near the free 10 GB.",
+      "repeat": "Every morning while it lasts."
+    },
+    {
+      "id": "report.watchdog",
+      "runs": "report",
+      "channel": "admin",
+      "section": "server",
+      "what": "The watchdog restarted something, and it came back.",
+      "repeat": "The last day's restarts are listed."
+    },
+    {
+      "id": "report.bulletin-late",
+      "runs": "report",
+      "channel": "admin",
+      "section": "data",
+      "what": "State hasn't posted the visa bulletin by our estimated day.",
+      "repeat": "Listed each morning until it's posted."
+    },
+    {
+      "id": "ingest.late",
+      "runs": "ingest",
+      "channel": "report",
+      "section": "health",
+      "what": "A data load is late: the agency hasn't republished, while our ingest still reads it on time.",
+      "repeat": "Every morning while it lasts. Past its grace, it fails the check."
+    },
+    {
+      "id": "ingest.layoffs-quiet",
+      "runs": "ingest",
+      "channel": "admin",
+      "section": "health",
+      "what": "A state's layoff list has no new notice lately, though it's read on time. Employers file these only when they lay people off.",
+      "repeat": "One plain line in the check's table."
+    },
+    {
+      "id": "audit.weekly",
+      "runs": "audit",
+      "channel": "report",
+      "section": "siteaudit",
+      "what": "A count in the weekly site audit grew: pages over 1.5 MB, slow pages, titles, descriptions, orphans or broken pages.",
+      "repeat": "Every morning while the week's report stands."
+    },
+    {
+      "id": "notice.auto-suspend",
+      "runs": "notices",
+      "channel": "email",
+      "what": "An account was suspended for an hour after many failed sign-ins.",
+      "repeat": "Each suspension."
+    },
+    {
+      "id": "notice.signup-spike",
+      "runs": "notices",
+      "channel": "email",
+      "what": "Many more accounts than usual were verified within an hour.",
+      "repeat": "Once an hour at most."
+    },
+    {
+      "id": "notice.email-queue",
+      "runs": "notices",
+      "channel": "email",
+      "section": "email",
+      "what": "An email pool is full: confirmations are waiting in the queue, or one was turned away.",
+      "repeat": "Once a day for each pool."
+    },
+    {
+      "id": "notice.email-failures",
+      "runs": "notices",
+      "channel": "email",
+      "section": "email",
+      "what": "Emails failed to send and went to the retry queue, or were given up on.",
+      "repeat": "Once a day."
+    },
+    {
+      "id": "mail.daily-report",
+      "runs": "report",
+      "channel": "report",
+      "what": "The morning report itself: every check's verdict, what needs a look first.",
+      "repeat": "Every morning at about 7:30 AM."
+    },
+    {
+      "id": "mail.site-review",
+      "runs": "mail",
+      "channel": "email",
+      "section": "reviews",
+      "what": "A new review is waiting for your approval.",
+      "repeat": "Each review."
+    },
+    {
+      "id": "mail.timeline-review",
+      "runs": "mail",
+      "channel": "email",
+      "section": "timelines",
+      "what": "A shared green card timeline is waiting for your review.",
+      "repeat": "Each timeline."
+    },
+    {
+      "id": "mail.consular-reports",
+      "runs": "mail",
+      "channel": "email",
+      "what": "Visitor reports on consulate pages, posted and waiting for a look.",
+      "repeat": "A digest of the new ones."
+    },
+    {
+      "id": "mail.firm-claim-review",
+      "runs": "mail",
+      "channel": "email",
+      "section": "firms",
+      "what": "A law firm's claim or profile change is waiting for your review.",
+      "repeat": "Each claim or change."
+    },
+    {
+      "id": "mail.contact-form",
+      "runs": "mail",
+      "channel": "email",
+      "what": "A message from the site's contact form.",
+      "repeat": "Each message."
+    },
+    {
+      "id": "mail.spam-release",
+      "runs": "mail",
+      "channel": "email",
+      "section": "spam",
+      "what": "A message the spam filter held, sent on after you pressed Not spam.",
+      "repeat": "Each one you release."
+    },
+    {
+      "id": "mail.newsworthy",
+      "runs": "mail",
+      "channel": "email",
+      "section": "newsworthy",
+      "what": "Newsworthy: the day's moves worth telling, with the file comparison.",
+      "repeat": "Each evening there's something to tell."
+    },
+    {
+      "id": "mail.support-inbox",
+      "runs": "worker",
+      "channel": "email",
+      "section": "spam",
+      "what": "Mail to support@ and the site's other addresses, forwarded to your inbox unless the spam check holds it.",
+      "repeat": "Each message."
+    }
+  ]
+}
