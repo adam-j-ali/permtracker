@@ -30,6 +30,7 @@ from lib_flag_serials import (  # noqa: E402
 )
 import ingest_case_status_direct as core  # noqa: E402
 import ingest_pwd_status_direct as programs  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 # A day's own span only. Holes are read BETWEEN the lowest and highest serial we
 # already hold for that day: outside that range we cannot tell a hole from the
@@ -439,7 +440,7 @@ def main() -> int:
     unknown = [p for p in recheck if p not in ALL_FLAG_PREFIXES]
     if unknown:
         raise SystemExit(f"--recheck-prefixes: not a known prefix: {', '.join(unknown)}")
-    today = datetime.date.today()
+    today = today_et()
     if a.frm and a.to:
         # Newest first here too, matching the default path below, so a run
         # that is interrupted or capped has already covered the recent days.

@@ -38,6 +38,7 @@ from collections import Counter, defaultdict
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from lib_db import Database, read_doc, record_run, rows_of, write_doc  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 DOC_PREFIX = "quarter_report"
 TOP = 10
@@ -278,7 +279,7 @@ def main() -> int:
         "figures": {"this": summary(this), "prior": summary(prior), "yearAgo": summary(year_ago)},
         "programs": programs,
         **lists,
-        "builtOn": dt.date.today().isoformat(),
+        "builtOn": today_et().isoformat(),
     }
     t = doc["figures"]["this"]
     log(f"FY{fy} Q{q} ({lo} to {hi}): {t['total']:,} decisions, {t['certified']:,} certified, "

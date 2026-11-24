@@ -32,7 +32,6 @@ done here and labelled as ours. Nothing is forecast.
 from __future__ import annotations
 
 import argparse
-import datetime as dt
 import io
 import json
 import os
@@ -42,6 +41,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lib_db import Database, read_doc, record_run, stamp_freshness, write_doc  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 DOC_KEY = "visa_annual_limits"
 DATASET = "visa-annual-limits"
@@ -329,7 +329,7 @@ def main() -> int:
         doc.setdefault("limits", {})[str(limits["fiscal_year"])] = limits
     if table_v:
         doc.setdefault("table_v", {})[str(table_v["fiscal_year"])] = table_v
-    doc["updated"] = dt.date.today().isoformat()
+    doc["updated"] = today_et().isoformat()
     write_doc(db, DOC_KEY, json.dumps(doc))
     newest = max(int(k) for k in doc.get("limits", {}))
     stamp_freshness(db, DATASET, as_of=f"{newest - 1}-10-01", source=STATS_PAGE, cadence="Yearly", max_age_days=420, note=f"limits FY{sorted(doc.get('limits', {}))}; Table V FY{sorted(doc.get('table_v', {}))}")

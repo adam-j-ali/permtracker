@@ -34,7 +34,6 @@ fixtures rather than on the live fetch.
 from __future__ import annotations
 
 import argparse
-import datetime
 import html
 import io
 import re
@@ -45,6 +44,7 @@ import urllib.request
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
 from lib_db import Database, query_dicts, record_run, stamp_freshness, write_doc  # noqa: E402
 from lib_slugs import slugify  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 OFLC_URL = "https://www.dol.gov/agencies/eta/foreign-labor/program-debarments"
 WHD_URL = "https://www.dol.gov/agencies/whd/immigration/h1b/debarment"
@@ -339,7 +339,7 @@ def main() -> int:
         "SELECT name FROM sqlite_master WHERE type='table' AND name='debarments'") else 0
     n = write(db, rows)
     after = int(db.scalar("SELECT COUNT(*) FROM debarments") or 0)
-    as_of = datetime.date.today().isoformat()
+    as_of = today_et().isoformat()
     doc = {"asOf": as_of, "pdfDate": pdf_date, "h1bEffective": effective,
            "counts": {p: sum(1 for r in rows if r["program"] == p) for p in ("perm", "h1b", "h2a", "h2b")},
            "sources": {"oflc": OFLC_URL, "whd": WHD_URL}}

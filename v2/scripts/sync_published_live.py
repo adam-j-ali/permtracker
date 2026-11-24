@@ -41,6 +41,7 @@ from lib_db import Database, query_rows, record_run  # noqa: E402
 from lib_flag_serials import PERM_OFFICE_PREFIXES, queue_date  # noqa: E402
 import ingest_case_status_direct as core  # noqa: E402
 import ingest_pwd_status_direct as programs  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 SCRIPT = "sync_published_live.py"
 SYNC_SOURCE = "flag.dol.gov/recaptcha/caseStatus (DOL, from the published file)"
@@ -101,7 +102,7 @@ def insert_perm(db, hits: list[dict], now_iso: str, stamp: int) -> int:
 def sync(db, *, cap: int, lookup=None, dry: bool = False, today: datetime.date | None = None,
          pace: float = core.PACE_S, sleep=time.sleep) -> dict:
     lookup = lookup or core.lookup_with_retry
-    today = today or datetime.date.today()
+    today = today or today_et()
     have = {str(r[0]) for r in query_rows(db, "SELECT name FROM sqlite_master WHERE type = 'table'", [])}
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
     stamp = int(time.time() * 1000)

@@ -47,6 +47,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lib_gov_data import fetch, log  # noqa: E402
 from lib_reference import keep_record, seen_before, sha256, sync_rows  # noqa: E402
 from lib_db import Database, record_run, stamp_freshness, write_doc  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 SCRIPT = "ingest_onet.py"
 # What the site prints as the source line: a readable name, never a bare URL (a URL has no
@@ -207,7 +208,7 @@ def parse(zip_bytes: bytes, bright_rows: list[dict[str, str]] | None,
     if len(zone_ref) < 4:
         raise Refusal(f"the Job Zone reference holds {len(zone_ref)} zones")
     newest = max((info.date_time for info in archive.infolist()), default=None)
-    as_of = f"{newest[0]:04d}-{newest[1]:02d}-{newest[2]:02d}" if newest else time.strftime("%Y-%m-%d")
+    as_of = f"{newest[0]:04d}-{newest[1]:02d}-{newest[2]:02d}" if newest else today_et().isoformat()
     reference = {"jobZones": {str(k): v for k, v in sorted(zone_ref.items())}, "asOf": as_of,
                  "brightCount": sum(1 for r in rows if r[5])}
     return rows, reference

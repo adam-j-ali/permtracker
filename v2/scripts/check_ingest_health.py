@@ -36,6 +36,7 @@ from build_lca_years import fiscal_year_of  # noqa: E402
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent / "oracle" / "lib"))
 import alert_routes  # noqa: E402 - the one routing list, shared with the server's scripts
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 # Where a late source and a quiet layoff list go (scripts/data/alert_routes.json): ingest.late is a warning the
 # morning report shows, ingest.layoffs-quiet a plain line in the table, and either moves by the list alone.
@@ -351,7 +352,7 @@ def check_frontier(db) -> int:
     judged: a visitor looking up a fresh case inserts a fresh row, so that
     number can stay current with the walk dead.
     """
-    today = datetime.date.today()
+    today = today_et()
     try:
         res = db.execute("SELECT json FROM perm_docs WHERE key = ?", [FRONTIER_DOC])
         rows = res["response"]["result"]["rows"]
@@ -1111,7 +1112,7 @@ def check_posted_vs_typed(db) -> int:
         return 0
     try:
         doc = json.loads(got[0][0] or "{}")
-        lag = (datetime.date.today() - datetime.date.fromisoformat(str(doc.get("newestRelease")))).days
+        lag = (today_et() - datetime.date.fromisoformat(str(doc.get("newestRelease")))).days
     except (ValueError, TypeError):
         lag = None
     if lag is not None and lag > 4:
@@ -1237,7 +1238,7 @@ def check_hand_read_figures(today: datetime.date | None = None) -> int:
         print("HAND-READ FIGURES: PROCESSING_TIMES_AS_OF unreadable; the pages can't date them")
         return 1
     as_of = datetime.date.fromisoformat(m.group(1))
-    today = today or datetime.date.today()
+    today = today or today_et()
     verdict = hand_read_verdict(as_of, today)
     age = (today - as_of).days
     how = ("read the eight I-140 classes at https://egov.uscis.gov/processing-times/ "
@@ -1269,7 +1270,7 @@ def check_consular_facts(today: datetime.date | None = None, path: pathlib.Path 
     except (OSError, ValueError, KeyError, TypeError) as exc:
         print(f"::warning::The consular pause record ({path.name}) is unreadable: {exc}")
         return 0
-    today = today or datetime.date.today()
+    today = today or today_et()
     if today > recheck:
         print(f"::warning::The consular pause record ({status}, checked {checked}) was due a "
               f"re-read by {recheck}: read the sources it cites, then move checked and recheckBy")
@@ -1294,7 +1295,7 @@ def main() -> int:
         print("FAIL: data_freshness is empty - the checker has no subject")
         return 2
 
-    today = datetime.date.today()
+    today = today_et()
     stale, unparseable = [], []
     print(f"{'dataset':22s} {'as_of':12s} {'age':>6s} {'budget':>7s}  verdict")
     for dataset, as_of, max_age, source, cadence, fetched_at in rows:

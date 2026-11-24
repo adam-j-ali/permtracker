@@ -56,6 +56,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from lib_wage import ANNUAL_WAGE_SQL, FLAG_BAND  # noqa: E402
 from lib_slugs import slugify  # noqa: E402
 from lib_db import Database, read_doc, record_run, rows_of, write_doc  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 TABLE = "h1b_employer_ranks"
 DOC_KEY = "h1b_ranks_summary"
@@ -394,7 +395,7 @@ def main() -> int:
     WRITE_PAUSE_S = max(0.0, args.pause)
     started = time.time()
     db = Database()
-    today = dt.date.today()
+    today = today_et()
     page_of, names = read_pages(db)
     pages = set(names)
     current = read_current(db, page_of, today)

@@ -57,6 +57,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lib_slugs import slugify  # noqa: E402
 from lib_gov_data import iter_rows, log, read_shared_strings  # noqa: E402
 from lib_db import Database, read_doc, record_run, write_doc  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 SCRIPT = "ingest_h1b_lottery_foia.py"
 REPO = "BloombergGraphics/2024-h1b-immigration-data"
@@ -275,7 +276,7 @@ def main(argv: list[str] | None = None) -> int:
 
     db = None if args.dry_run else Database()
     doc: dict = {"source": SOURCE, "license": "Apache-2.0", "credit": "USCIS, obtained by Bloomberg News under FOIA",
-                 "queried": "2024-05", "read": time.strftime("%Y-%m-%d"), "years": {}}
+                 "queried": "2024-05", "read": today_et().isoformat(), "years": {}}
     if db:
         doc["years"] = (read_doc(db, DOC) or {}).get("years", {})
     wanted = [args.fy] if args.fy else sorted(files)

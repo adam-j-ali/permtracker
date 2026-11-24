@@ -28,7 +28,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import datetime as dt
 import json
 import pathlib
 import sys
@@ -37,6 +36,7 @@ from collections import defaultdict
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from lib_db import Database, read_doc, record_run, rows_of, write_doc  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 DOC_KEY = "layoff_disclosures"
 TABLES = ("perm_cases", "perm_cases_history")
@@ -237,7 +237,7 @@ def main() -> int:
     employers, answering = read_employers(db, newest, page_of, names)
     doc = plan(years, fys, employers, answering, read_jobs(db, newest),
                read_top_by_year(db, fys, page_of, names))
-    doc["builtOn"] = dt.date.today().isoformat()
+    doc["builtOn"] = today_et().isoformat()
     log(f"FY{newest} through {doc['newestThrough']}: {doc['employersYes']:,} of {doc['employersAnswering']:,} "
         f"answering employers said yes at least once")
     for r in employers[:8]:

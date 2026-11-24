@@ -79,6 +79,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lib_slugs import slugify  # noqa: E402
 from lib_gov_data import BROWSER_HEADERS, fetch, log, quarter_end  # noqa: E402
 from lib_db import Database, read_doc, record_run, stamp_freshness, write_doc  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 SCRIPT = "ingest_uscis_h1b_hub.py"
 # For readers only (the freshness record's source line). Never fetched: see above.
@@ -361,7 +362,7 @@ def load_year(db: Database | None, fy: int, rows: list[dict], loads: dict, quart
         return 0
     n = store(db, fy, rows)
     loads[str(fy)] = {"rows": len(rows), "approvals": appr, "quarter": quarter,
-                      "loaded_at": time.strftime("%Y-%m-%d")}
+                      "loaded_at": today_et().isoformat()}
     write_doc(db, LOADS_DOC, json.dumps(loads, sort_keys=True))
     return n
 

@@ -36,11 +36,11 @@ RUN IT AFTER EVERY `ingest_perm_disclosure.py` RUN. It reads the same corpus.
 from __future__ import annotations
 
 import argparse
-import datetime
 import json
 import sys
 
 from lib_db import Database, lit, query_dicts, write_doc
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 DOC_KEY = "alphabet"
 
@@ -89,7 +89,7 @@ def log(msg: str) -> None:
 
 def maturity_cutoff() -> str:
     """The newest filing month mature enough to measure, as `YYYY-MM-01`."""
-    today = datetime.date.today()
+    today = today_et()
     months = today.year * 12 + (today.month - 1) - MATURITY_LAG_MONTHS
     return f"{months // 12:04d}-{months % 12 + 1:02d}-01"
 

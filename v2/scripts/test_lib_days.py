@@ -27,6 +27,14 @@ def check(label: str, got, want) -> None:
         FAILS.append(f"{label}: got {got!r}, want {want!r}")
 
 
+def _raises(fn) -> bool:
+    try:
+        fn()
+    except ValueError:
+        return True
+    return False
+
+
 def main() -> int:
     for c in FIXTURE["cases"]:
         check(f"{c['from']!r} to {c['to']!r}", days_between(c["from"], c["to"]), c["days"])
@@ -39,6 +47,15 @@ def main() -> int:
     check("day_of a datetime", day_of(dt.datetime(2026, 1, 1, 9, 30)), "2026-01-01")
     check("day_of nothing", (day_of(None), day_of("")), (None, None))
     check("a row's two stamps", days_between(day_of("2026-01-01T09:30:00Z"), day_of(dt.date(2026, 1, 10))), 9)
+    # Today is the Eastern day whatever the machine's clock: 1:30 AM UTC on Nov 24 is still 8:30 PM on the 23rd in New
+    # York, and in July (EDT) 3:59 AM UTC is still the day before.
+    from lib_days import today_et
+    utc = dt.timezone.utc
+    check("evening in winter", today_et(dt.datetime(2026, 11, 24, 1, 30, tzinfo=utc)), dt.date(2026, 11, 23))
+    check("evening in summer", today_et(dt.datetime(2026, 7, 2, 3, 59, tzinfo=utc)), dt.date(2026, 7, 1))
+    check("past midnight Eastern", today_et(dt.datetime(2026, 11, 24, 5, 0, tzinfo=utc)), dt.date(2026, 11, 24))
+    check("a clock with no zone is refused", _raises(lambda: today_et(dt.datetime(2026, 11, 24, 1, 30))), True)
+    check("no clock given: a date", isinstance(today_et(), dt.date) and not isinstance(today_et(), dt.datetime), True)
     if FAILS:
         print("\n".join(FAILS))
         print(f"{len(FAILS)} of {N} checks failed")

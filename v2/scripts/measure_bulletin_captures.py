@@ -38,6 +38,7 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import ingest_visa_bulletin as vb  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 HERE = pathlib.Path(__file__).resolve().parent
 OUT = HERE.parent / "src" / "lib" / "bulletinCaptures.ts"
@@ -124,7 +125,7 @@ def render_ts(rows: list[dict], measured: str) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    this_year = datetime.date.today().year
+    this_year = today_et().year
     ap.add_argument("--years", type=int, nargs="*", default=list(range(2015, this_year + 2)),
                     help="Fiscal-year folders to read")
     ap.add_argument("--cdx-dir", help="Read cdx<YEAR>.json from here instead of asking the archive")

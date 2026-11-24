@@ -36,6 +36,7 @@ from __future__ import annotations
 import datetime
 import statistics
 from collections import Counter, defaultdict
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 # "PIECE RATE" is an H-2B and CW-1 unit (their record layouts list it beside
 # hour, week, bi-weekly, month and year); a piece rate has no range to check.
@@ -95,7 +96,7 @@ class Fingerprint:
 
     def __init__(self, today: datetime.date | None = None,
                  tracked: tuple[str, ...] = TRACKED_FIELDS) -> None:
-        self.today = today or datetime.date.today()
+        self.today = today or today_et()
         self.tracked = tracked
         self.rows = 0
         self.blank: Counter = Counter()

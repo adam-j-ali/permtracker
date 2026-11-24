@@ -35,7 +35,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import datetime as dt
 import json
 import pathlib
 import sys
@@ -44,6 +43,7 @@ from collections import Counter, defaultdict
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from lib_db import SLUG_WINDOWS, Database, read_doc, record_run, rows_of, slug_window, write_doc  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 DOC_KEY = "cap_exempt"
 TABLE = "cap_exempt_employers"
@@ -282,7 +282,7 @@ def main() -> int:
     uscis_fy, uscis = read_uscis(db, page_of)
     doc = plan(acwia, lca, loose, uscis, names, fy)
     doc.update({"asOf": {"pwFrom": pw_from, "pwThrough": pw_through, "lcaFy": fy, "lcaThrough": lca_through,
-                         "uscisFy": uscis_fy}, "builtOn": dt.date.today().isoformat()})
+                         "uscisFy": uscis_fy}, "builtOn": today_et().isoformat()})
     if doc["employers"] == 0:
         log("FATAL: no employer's wage requests say ACWIA covers it; the column may not be loaded")
         record_run(db, "build_cap_exempt.py", status="failed", note="no ACWIA answers", started_at=started)

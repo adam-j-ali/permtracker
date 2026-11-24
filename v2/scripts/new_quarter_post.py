@@ -14,12 +14,12 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import datetime as dt
 import pathlib
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from build_quarter_report import quarter_span  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
           "November", "December"]
@@ -117,7 +117,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     ap.add_argument("--fy", type=int, required=True)
     ap.add_argument("--q", type=int, required=True, choices=[1, 2, 3, 4])
-    ap.add_argument("--date", default=dt.date.today().isoformat())
+    ap.add_argument("--date", default=today_et().isoformat())
     ap.add_argument("--force", action="store_true", help="overwrite a post that exists")
     args = ap.parse_args()
     out = ROOT / "content" / "blog" / f"{slug_of(args.fy, args.q)}.mdx"

@@ -31,12 +31,12 @@ Writes `perm_docs['nvc_waiting_list']` and a `data_freshness` row
 from __future__ import annotations
 
 import argparse
-import datetime
 import json
 import pathlib
 import re
 import sys
 import time
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
@@ -250,7 +250,7 @@ def main() -> int:
     # then isn't loaded for months.
     stamp_freshness(db, DATASET, as_of=doc["newest"],
                     source="State Dept annual NVC waiting list report, via Internet Archive or a saved page",
-                    cadence="Yearly", note=f"{len(doc['series'])} dates, {datetime.date.today():%Y-%m-%d} load",
+                    cadence="Yearly", note=f"{len(doc['series'])} dates, {today_et():%Y-%m-%d} load",
                     max_age_days=MAX_AGE_DAYS)
     print(f"wrote perm_docs['{DOC_KEY}'] ({len(json.dumps(doc)) / 1024:.1f} KB)")
     return 0

@@ -44,6 +44,7 @@ import urllib.request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lib_db import Database, et_today, record_run, stamp_freshness  # noqa: E402
 from lib_policy_feed import expire_policy_page, record_quiet_run, write_notices  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 URL = "https://www.dol.gov/agencies/eta/foreign-labor/news"
 DATASET = "policy-notices-oflc"
@@ -141,7 +142,7 @@ def parse_announcements(text: str) -> list[dict]:
         # health check printed "ok" for a feed it could no longer vouch for.
         # Bound it to the plausible window and count what is dropped: silence
         # here is what let one typo sit in the record for days.
-        if not (EARLIEST <= date <= dt.date.today() + dt.timedelta(days=DATE_SLACK_DAYS)):
+        if not (EARLIEST <= date <= today_et() + dt.timedelta(days=DATE_SLACK_DAYS)):
             implausible.append((date.isoformat(), m["title"].strip()[:70]))
             continue
         heads.append((i, {"date": date.isoformat(), "title": m["title"].strip().rstrip(".") + ("." if m["title"].strip().endswith(".") else "")}))

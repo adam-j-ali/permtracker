@@ -44,6 +44,7 @@ import urllib.request
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from lib_db import Database, add_missing_columns, query_rows, record_run, stamp_freshness  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 # Queried per calendar year: one wildcard over the whole bulletin path hits the
 # row limit and truncates before the recent months, while reporting success.
@@ -789,13 +790,13 @@ def main() -> int:
     if args.backfill_turso:
         # The folder is the FISCAL year, so cover a wide span by default
         # rather than the two the archive route assumes.
-        this_year = datetime.date.today().year
+        this_year = today_et().year
         return backfill_from_archive(
             args.years or list(range(this_year - 4, this_year + 1)), args.months, args.dry_run)
     if not args.out:
         ap.error("--out is required unless --from-file or --backfill-turso is given")
 
-    this_year = datetime.date.today().year
+    this_year = today_et().year
     years = args.years or [this_year, this_year - 1]
     snapshots = discover_snapshots(args.months, years)
     bulletins = []
@@ -832,7 +833,7 @@ def main() -> int:
         # State the lag rather than leaving it to be noticed: the archive stopped
         # capturing new bulletins, so a lag here is the expected steady state, not
         # a failed run.
-        today = datetime.date.today()
+        today = today_et()
         ny, nm = (int(x) for x in newest.split("-"))
         behind = (today.year - ny) * 12 + (today.month - nm)
         log(f"today             {today:%Y-%m}")

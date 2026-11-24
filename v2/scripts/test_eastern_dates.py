@@ -1,8 +1,9 @@
-"""The jobs that run into the evening date their work by the Eastern day, never the server's clock.
+"""Every data script dates its work by the Eastern day, never the machine's clock.
 
 The server's clock is UTC: after 7 or 8 PM Eastern it's already tomorrow there. record_sweep dated an 8 PM sweep
-"November 24" on the evening of the 23rd (Nov 23 2026). These scripts run until 7:10 PM (the wage-request daytime pass),
-7:45 PM (the PERM daytime pass) or 8:10 PM (the evening pass), so none may read today's date from the server's clock.
+"November 24" on the evening of the 23rd (Nov 23 2026). The gate first held the three evening jobs; on Nov 24 every
+script moved to lib_days.today_et() (52 uses in 32 scripts), and the gate now reads them all. A UTC instant written as one
+(time.gmtime() with a Z) is an instant, never a day, and passes.
 """
 from __future__ import annotations
 
@@ -11,8 +12,14 @@ import re
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
-EVENING_SCRIPTS = ["ingest_pwd_status_direct.py", "ingest_case_status_direct.py", "lib_db.py"]
-SERVER_CLOCK = re.compile(r"date\.today\(\)|time\.localtime\(|time\.strftime\(\"%Y-%m-%d\"\)")
+SERVER_CLOCK = re.compile(r"date\.today\(\)|time\.localtime\(|time\.strftime\(\"%Y-%m-%d\"\)|datetime\.now\(\)\.date\(\)")
+
+
+def scripts() -> list[pathlib.Path]:
+    """Every data script and server script; the tests are left out (a fixture may pin a day)."""
+    found = [p for p in sorted(HERE.glob("*.py")) if not p.name.startswith("test_")]
+    found += [p for p in sorted((HERE / "oracle").rglob("*.py")) if not p.name.startswith("test_")]
+    return found
 
 
 def offenders(text: str) -> list[int]:
@@ -22,18 +29,23 @@ def offenders(text: str) -> list[int]:
 
 def main() -> int:
     bad = []
-    for name in EVENING_SCRIPTS:
-        for n in offenders((HERE / name).read_text()):
-            bad.append(f"{name}:{n}")
+    every = scripts()
+    for path in every:
+        for n in offenders(path.read_text()):
+            bad.append(f"{path.relative_to(HERE)}:{n}")
+    if len(every) < 100:
+        print(f"FAIL the gate read only {len(every)} scripts; it should read every one")
+        return 1
     # The gate catches what it says it catches.
-    probe = 'today = datetime.date.today()\nstamp = time.strftime("%Y-%m-%d")\n# date.today() in a comment is fine\n'
-    if offenders(probe) != [1, 2]:
+    probe = ('today = datetime.date.today()\nstamp = time.strftime("%Y-%m-%d")\n# date.today() in a comment is fine\n'
+             'built = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())\nday = datetime.now().date()\n')
+    if offenders(probe) != [1, 2, 5]:
         print("FAIL the probe: the pattern missed a server-clock date or flagged a comment")
         return 1
     if bad:
-        print("FAIL server-clock dates in evening jobs (use et_today(), et_date() or datetime.now(ET)):", ", ".join(bad))
+        print("FAIL server-clock dates (use lib_days.today_et(), lib_db.et_date() or datetime.now(ET)):", ", ".join(bad))
         return 1
-    print("ok: the evening jobs date their work by the Eastern day")
+    print(f"ok: all {len(every)} scripts date their work by the Eastern day")
     return 0
 
 

@@ -21,8 +21,8 @@ import json
 import re
 import sys
 import urllib.request
-from datetime import date
 from pathlib import Path
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 OUT = Path(__file__).resolve().parent / "data" / "schema_org_properties.json"
 TYPE_PAGE = "https://schema.org/{}"
@@ -69,7 +69,7 @@ def main() -> int:
     doc = {
         "about": "The properties schema.org allows on each type this site emits, read from each type's own page "
         "(its property table, the supertypes' rows included). Written by scripts/schema_vocab.py.",
-        "read": date.today().isoformat(),
+        "read": today_et().isoformat(),
         "types": dict(sorted(doc["types"].items())),
     }
     OUT.write_text(json.dumps(doc, indent=1) + "\n")

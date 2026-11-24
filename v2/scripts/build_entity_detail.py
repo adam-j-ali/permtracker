@@ -45,6 +45,7 @@ from lib_db import (  # noqa: E402
     ET, Database, add_missing_columns, cell, et_date, insert_rows, record_run, rows_of,
     stamp_freshness, write_doc,
 )
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 # An entity gets facets from this many filings. Every entity has a page from one
 # (MIN_TOTAL_FOR_PAGE in src/lib/entityPayload.ts); a facet of one or two cases
@@ -1080,7 +1081,7 @@ def refresh_recent_12m(db: Database) -> tuple[int, int]:
     """
     if add_missing_columns(db, "perm_entities", {"recent_12m": "INTEGER"}):
         log("  added perm_entities.recent_12m")
-    cutoff = (datetime.date.today() - datetime.timedelta(days=RECENT_WINDOW_DAYS)).isoformat()
+    cutoff = (today_et() - datetime.timedelta(days=RECENT_WINDOW_DAYS)).isoformat()
     counts: dict[tuple[str, str], int] = defaultdict(int)
     for kind, col, table, date_col in (
         ("employer", "employer_slug", "perm_cases", "received_date"),

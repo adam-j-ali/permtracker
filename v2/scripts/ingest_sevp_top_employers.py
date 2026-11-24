@@ -47,6 +47,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lib_gov_data import discover_links, fetch, log  # noqa: E402
 from lib_db import Database, record_run, stamp_freshness, write_doc  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 SCRIPT = "ingest_sevp_top_employers.py"
 PAGE = "https://www.ice.gov/sevis/whats-new"
@@ -242,7 +243,7 @@ def main(argv: list[str] | None = None) -> int:
             record_run(db, SCRIPT, status="failed", rows_written=written, note=str(e)[:300], started_at=started)
         return 1
     if db:
-        write_doc(db, DOC, json.dumps({"page": PAGE, "lists": summary, "read": time.strftime("%Y-%m-%d")}, sort_keys=True))
+        write_doc(db, DOC, json.dumps({"page": PAGE, "lists": summary, "read": today_et().isoformat()}, sort_keys=True))
         newest = max(y for y, _ in lists)
         stamp_freshness(db, "sevp-top-employers", as_of=f"{newest}-12-31", source=PAGE, cadence="Yearly",
                         note=f"top-200 lists for {sorted({y for y, _ in lists})}", max_age_days=900)

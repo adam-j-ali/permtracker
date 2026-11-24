@@ -53,6 +53,7 @@ from lib_warn import (
     notice, parse_date, parse_int, parse_month, pause, pdf_tables, post, session, table_with, tables, text_of,
     xlsx_sheets,
 )
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 # Notices dated before this are left out. It matches Texas's open data portal,
 # which starts in 2019, keeps a paged or per-notice source to a bounded walk,
@@ -93,12 +94,12 @@ def full_history(state: str, today: dt.date | None = None) -> bool:
     changes, and a daily walk of seven years would be most of the run. A run
     with nothing held (a parse-only run included) reads everything.
     """
-    return not held_for(state) or (today or dt.date.today()).weekday() == walk_day(state)
+    return not held_for(state) or (today or today_et()).weekday() == walk_day(state)
 
 
 def years_to_read(state: str, today: dt.date | None = None) -> list[int]:
     """This year back to SINCE's year, or just this year and last."""
-    this = (today or dt.date.today()).year
+    this = (today or today_et()).year
     first = int(SINCE[:4]) if full_history(state, today) else this - 1
     return list(range(this, first - 1, -1))
 
@@ -517,12 +518,12 @@ def colorado_sheet_list(today: dt.date | None = None, path: str = CO_SAVED) -> l
         if not (isinstance(e, RobotsDisallowed) or is_unreachable(e)):
             raise
         read_on, sheets = saved_colorado_sheets(path)
-        this = (today or dt.date.today()).year
+        this = (today or today_et()).year
         why = f"its page refused this runner ({type(e).__name__})"
         if this not in {y for y, _ in sheets}:
             msg = (f"Colorado: {why}, and the sheet links saved on {read_on} have no {this} sheet. Read the page in a "
                    f"browser and add it to scripts/data/colorado_warn_sheets.json")
-            if (today or dt.date.today()).month > 1:
+            if (today or today_et()).month > 1:
                 raise ValueError(msg) from e
             print(f"::warning::{msg} (January: Colorado may not have opened it yet)", flush=True)
         print(f"::warning::Colorado: {why}; reading the sheets its page listed on {read_on}", flush=True)
@@ -674,7 +675,7 @@ def load_north_carolina(f: str | None) -> list[dict]:
     if f:
         return parse_north_carolina(read(f))
     out = parse_north_carolina(get(NC_CSV + "?:showVizHome=no", referer=NC_PAGE))
-    years = [y for y in years_to_read("NC") if y < dt.date.today().year]
+    years = [y for y in years_to_read("NC") if y < today_et().year]
     if years:
         pause()
         page = get_text(NC_ARCHIVE)
@@ -1223,7 +1224,7 @@ DC_KIND = {"1": "Layoff", "2": "Closure"}
 
 
 def parse_dc(data: bytes, source_url: str | None = None) -> list[dict]:
-    rows = html_table("DC", decode(data), source_url or DC_PAGE.format(year=dt.date.today().year),
+    rows = html_table("DC", decode(data), source_url or DC_PAGE.format(year=today_et().year),
                       ("notice date", "organization"), {
                           "notice": ("notice date",), "company": ("organization",), "employees": ("employees",),
                           "effective": ("effective",), "kind": ("code",)}, kinds=DC_KIND)
@@ -1233,7 +1234,7 @@ def parse_dc(data: bytes, source_url: str | None = None) -> list[dict]:
 def load_dc(f: str | None) -> list[dict]:
     if f:
         return parse_dc(read(f))
-    this = dt.date.today().year
+    this = today_et().year
     entry = page = None
     for year in (this, this - 1):  # in January, this year's page may not exist yet
         try:
@@ -1549,7 +1550,7 @@ def parse_oregon(data: bytes) -> list[dict]:
 def load_oregon(f: str | None) -> list[dict]:
     if f:
         return parse_oregon(read(f))
-    floor = SINCE if full_history("OR") else (dt.date.today() - dt.timedelta(days=OR_DAYS)).isoformat()
+    floor = SINCE if full_history("OR") else (today_et() - dt.timedelta(days=OR_DAYS)).isoformat()
     out: list[dict] = []
     for n in range(1, 400):
         rows = parse_oregon_page(decode(get(f"{OR_PAGE}?page={n}")))
@@ -1640,7 +1641,7 @@ def load_job_center(state: str) -> Callable[[str | None], list[dict]]:
     def load(f: str | None) -> list[dict]:
         if f:
             return parse_job_center(state, read(f))
-        today = dt.date.today()
+        today = today_et()
         since = SINCE if full_history(state) else (today - dt.timedelta(days=JC_DAYS)).isoformat()
         rows: list[dict] = []
         for n in range(1, 200):
@@ -2730,7 +2731,7 @@ STATES: dict[str, dict] = {
            "load": load_job_center("AZ")},
     "de": {"name": "Delaware", "page": JOB_CENTERS["DE"] + "/search/warn_lookups/new", "days": 308, "snapshot": True,
            "load": load_job_center("DE")},
-    "dc": {"name": "District of Columbia", "page": DC_PAGE.format(year=dt.date.today().year), "days": 105,
+    "dc": {"name": "District of Columbia", "page": DC_PAGE.format(year=today_et().year), "days": 105,
            "snapshot": True, "load": load_dc},
     "hi": {"name": "Hawaii", "page": HI_PAGE, "days": 63, "snapshot": True, "load": load_hawaii},
     "ia": {"name": "Iowa", "page": IA_PAGE, "days": 35, "snapshot": True, "load": load_iowa},

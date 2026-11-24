@@ -37,6 +37,7 @@ from html.parser import HTMLParser
 from typing import NamedTuple
 
 from lib_gov_data import BROWSER_HEADERS, RobotsDisallowed, fetch as gov_fetch, robots_allowed
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 # Between two requests to the same state's host in one run.
 PAUSE_S = 1.0
@@ -70,7 +71,7 @@ def _year(y: str) -> int:
     if len(y) == 4:
         return n
     # A two-digit year: the century that puts it no more than five years ahead.
-    pivot = (dt.date.today().year % 100) + 5
+    pivot = (today_et().year % 100) + 5
     return 2000 + n if n <= pivot else 1900 + n
 
 
@@ -269,7 +270,7 @@ def finish(rows: list[dict], since: str | None) -> list[dict]:
     """Drop rows with no company or no notice date, those before `since` and
     those dated impossibly far ahead, then give the rest their ids. Every new
     state's parser ends here."""
-    latest = (dt.date.today() + dt.timedelta(days=FUTURE_SLIP_DAYS)).isoformat()
+    latest = (today_et() + dt.timedelta(days=FUTURE_SLIP_DAYS)).isoformat()
     slips = [r for r in rows if r["notice_date"] and as_of_date(r["notice_date"]) > latest]
     if slips:
         print(f"  {slips[0]['state']}: {len(slips)} notice(s) dated past {latest[:4]}, a slip in the state's file, "

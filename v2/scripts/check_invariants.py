@@ -29,6 +29,7 @@ from lib_flag_serials import (  # noqa: E402
 from ingest_case_status_direct import FINAL_STATUSES as PERM_FINAL  # noqa: E402
 from ingest_pwd_status_direct import PROGRAMS  # noqa: E402
 from reconcile_entity_aliases import classify as classify_aliases  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 # Statuses PERM rows may carry while open. The sweep treats anything outside
 # FINAL as pending, so an unknown status is invisible unless listed here.
@@ -139,7 +140,7 @@ def check_no_duplicate_indexes(rows) -> tuple[bool, str]:
 
 def main(today: datetime.date | None = None) -> int:
     db = Database()
-    today = today or datetime.date.today()
+    today = today or today_et()
 
     def rows(sql: str, args: list | None = None) -> list[list]:
         return query_rows(db, sql, args)

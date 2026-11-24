@@ -72,6 +72,7 @@ from ingest_perm_disclosure import percentile as value_at  # noqa: E402
 from lca_history_rollups import WILLFUL as LCA_HISTORY_WILLFUL  # noqa: E402
 from lib_db import Database, add_missing_columns, record_run, rows_of  # noqa: E402
 from lib_naics import sector_of  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 TABLE = "sponsor_index"
 COLS = [
@@ -614,7 +615,7 @@ def main() -> int:
     WRITE_PAUSE_S = max(0.0, args.pause)
     started = time.time()
     db = Database()
-    today = dt.date.today()
+    today = today_et()
     data = read(db, today)
     rows = plan(data, today)
     jobs = plan_jobs(read_jobs(db, data["sponsors"]), data["sponsors"])

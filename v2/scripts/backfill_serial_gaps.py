@@ -36,6 +36,7 @@ from zoneinfo import ZoneInfo
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from lib_db import Database, query_rows, record_run, write_doc  # noqa: E402
 import sweep_serial_gaps as g  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 SCRIPT = "backfill_serial_gaps.py"
 DOC = "gap_backfill"
@@ -185,7 +186,7 @@ def main() -> int:
             return g.sweep(db, [str(code)], cap=10**9, lookup=paced, bounds=bounds,
                            settle_after=a.settle_after)
 
-        today = datetime.date.today()
+        today = today_et()
         if not state.get("finished"):
             codes = todo_codes(bounds, today, a.window)
             if state.get("nextDay") is not None:

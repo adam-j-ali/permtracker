@@ -28,6 +28,7 @@ import os
 import re
 import sys
 import time
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -170,7 +171,7 @@ def parse_date(v: str) -> str | None:
             return None
     if re.search(r"[a-z]", v, re.I) and re.search(r"\b20\d{2}\b", v):
         import lib_post_dates
-        got = lib_post_dates.parse_date(v, dt.date.today(), "mdy")
+        got = lib_post_dates.parse_date(v, today_et(), "mdy")
         if got and got[1] and len(got[0]) == 10:
             return got[0]
     return None

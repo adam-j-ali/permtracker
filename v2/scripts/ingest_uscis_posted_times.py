@@ -51,6 +51,7 @@ import urllib.request
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from lib_db import Database, insert_rows, query_rows, record_run, run_stmts, stamp_freshness, stmt, write_doc  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 SCRIPT = "ingest_uscis_posted_times.py"
 DATASET = "uscis-posted-times"
@@ -400,7 +401,7 @@ def main() -> int:
         write_doc(db, DOC, doc)
         notes = [f"{loaded:,} releases read ({unreadable:,} unreadable); newest posting {doc['published']}, "
                  f"{len(doc['postings']):,} postings held"]
-        stalled = stall_note(newest_tag, dt.date.today())
+        stalled = stall_note(newest_tag, today_et())
         if stalled:
             # The project's own run stopped: a source that has gone quiet, not our failure (the budget below alarms).
             print(f"::warning::{stalled}", flush=True)

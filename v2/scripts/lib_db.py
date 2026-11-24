@@ -509,9 +509,11 @@ MS_EPOCH_FLOOR = 10_000_000_000
 
 
 def et_today() -> str:
-    """Today's Eastern date, which every date the site shows is in: the runners
-    are on UTC, where after 8 PM Eastern it's already tomorrow."""
-    return et_date(time.time() * 1000) or ""
+    """Today's Eastern date as "YYYY-MM-DD" (lib_days.today_et, the one rule)."""
+    from lib_days import today_et  # noqa: PLC0415 - lib_days is beside this file
+
+    # The clock is read here, through time.time, so a test can pin it (test_case_status_direct.py does).
+    return today_et(datetime.datetime.fromtimestamp(time.time(), tz=datetime.timezone.utc)).isoformat()
 
 
 def et_date(stamp) -> str | None:

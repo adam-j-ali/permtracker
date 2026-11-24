@@ -8,6 +8,9 @@ from __future__ import annotations
 
 import datetime as dt
 import re
+from zoneinfo import ZoneInfo
+
+ET = ZoneInfo("America/New_York")
 
 _DAY_SHAPE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
@@ -40,3 +43,12 @@ def days_between(a: object, b: object) -> int | None:
     if start is None or end is None:
         return None
     return (end - start).days
+
+
+def today_et(now: dt.datetime | None = None) -> dt.date:
+    """Today's Eastern day, the day every date the site shows is in. The server and GitHub's runners keep UTC, where
+    after 7 or 8 PM Eastern it's already tomorrow, so no script reads the day from the machine's clock
+    (test_eastern_dates.py). `now` must carry its zone."""
+    if now is not None and now.tzinfo is None:
+        raise ValueError("today_et needs a clock with its zone")
+    return (now or dt.datetime.now(dt.timezone.utc)).astimezone(ET).date()

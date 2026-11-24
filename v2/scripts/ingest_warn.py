@@ -57,6 +57,7 @@ from lib_db import (  # noqa: E402
 )
 from lib_gov_data import robots_allowed  # noqa: E402
 from lib_warn import NoneSince, as_of_date, assign_ids, get, is_unreachable  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 CA_URL = "https://edd.ca.gov/siteassets/files/jobs_and_training/warn/warn_report1.xlsx"
 CA_PAGE = "https://edd.ca.gov/en/jobs_and_training/Layoff_Services_WARN/"
@@ -399,7 +400,7 @@ def fetch_washington(days: int = WA_DAYS, max_pages: int = WA_MAX_PAGES) -> list
         headers = {"User-Agent": UA, **({"Content-Type": "application/x-www-form-urlencoded"} if data else {})}
         return opener.open(urllib.request.Request(WA_URL, data=data, headers=headers), timeout=60).read().decode("utf8", "ignore")
 
-    floor = (dt.date.today() - dt.timedelta(days=days)).isoformat()
+    floor = (today_et() - dt.timedelta(days=days)).isoformat()
     page_html = get()
     rows: list[dict] = []
     for n in range(1, max_pages + 1):
@@ -421,7 +422,7 @@ def load_washington(f: str | None = None, today: dt.date | None = None) -> list[
     if f:
         return parse_washington_page(open(f, encoding="utf8").read())
     if warn_states.full_history("WA", today):
-        days = ((today or dt.date.today()) - dt.date.fromisoformat(warn_states.SINCE)).days
+        days = ((today or today_et()) - dt.date.fromisoformat(warn_states.SINCE)).days
         return fetch_washington(days=days, max_pages=WA_HISTORY_PAGES)
     return fetch_washington()
 
@@ -701,7 +702,7 @@ def texas_sheets(this_year: int | None = None) -> tuple[list[dict], list[str]]:
 def _texas_sheets(this_year: int | None) -> tuple[list[dict], list[str]]:
     from lib_warn import archive_copy, archive_index, is_xlsx, pause
 
-    year = this_year or dt.date.today().year
+    year = this_year or today_et().year
     rows: list[dict] = []
     captured: list[str] = []
     try:
@@ -794,7 +795,7 @@ def stamp_date(d: str) -> str:
     each printed a notice dated days ahead (a typing slip); a future date would
     read as fresh for as long as it stayed ahead.
     """
-    return min(as_of_date(d), dt.date.today().isoformat())
+    return min(as_of_date(d), today_et().isoformat())
 
 
 def load_state(st: str, from_file: str | None) -> tuple[list[dict], str]:

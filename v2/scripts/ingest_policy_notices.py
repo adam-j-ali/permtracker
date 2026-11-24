@@ -68,6 +68,7 @@ from lib_policy_feed import (  # noqa: E402
     EXTRA_COLUMNS, eastern_day, ensure_table, expire_policy_page, link_presidential,
     mentions_immigration, record_quiet_run, topics_of, write_notices,
 )
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 API = "https://www.federalregister.gov/api/v1/documents.json"
 UA = "permtracker.app policy feed (support@permtracker.app)"
@@ -262,7 +263,7 @@ def shape(d: dict) -> dict:
 
 
 def collect(days: int) -> tuple[list[dict], str | None]:
-    since = (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
+    since = (today_et() - datetime.timedelta(days=days)).isoformat()
     by_number: dict[str, dict] = {}
     for topic, term in TOPICS.items():
         page = 1
@@ -302,7 +303,7 @@ def presidential(days: int) -> list[dict]:
     """Presidential documents on an immigration subject that no topic term
     matched (a proclamation suspending entry names no form). The term search
     already catches the ones that name H-1B or a labor certification."""
-    since = (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
+    since = (today_et() - datetime.timedelta(days=days)).isoformat()
     params = [("per_page", "200"), ("order", "newest"), ("conditions[publication_date][gte]", since),
               ("conditions[type][]", "PRESDOCU")] + [("fields[]", f) for f in FIELDS]
     res = fetch_json(API + "?" + urllib.parse.urlencode(params))

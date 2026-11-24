@@ -105,6 +105,7 @@ from lib_db import (  # noqa: E402
 from lib_gov_data import SPREADSHEET_NS, column_index, fetch, log, read_shared_strings  # noqa: E402
 from lib_slugs import slugify  # noqa: E402
 from lib_withheld import Matcher, matcher_for  # noqa: E402
+from lib_days import today_et  # noqa: E402 - the scripts folder is on the path
 
 FIRST_FY, LAST_FY = 2008, 2023
 ROWS_FROM_FY = 2008
@@ -1764,7 +1765,7 @@ def main() -> int:
         wrote_cases += write_cases(db, got["rows"], emp, att, withheld)
         loaded[name] = {"fy": fy, "cases": got["kept"], "caseRows": len(got["rows"]),
                         "matchedShare": match["matchedShare"], "resolved": got["resolved"],
-                        "loadedAt": date.today().isoformat()}
+                        "loadedAt": today_et().isoformat()}
         store_doc(db, doc)
 
     if db:
