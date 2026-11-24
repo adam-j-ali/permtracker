@@ -437,7 +437,8 @@ check("...and never sooner than six hours after the last", mail == [], str(mail)
 mail, st = alarm.plan({}, st, T0 + 3 * alarm.REMIND_S, runs={})
 check("...and once when it clears", [(k, kind) for k, kind, _ in mail] == [(UNIT, "clear")], str(mail))
 
-# In a run: the unit's journal is read for its email, and a run that reads it as a failed job passes its run along.
+# Where each alarm goes is its kind in the routing list (scripts/data/alert_routes.json). A timed job's first failed
+# run waits for the morning report; its second in a row goes by email and phone, with the job's own failure lines.
 _d3 = _tf.mkdtemp()
 alarm.RUN = pathlib.Path(_d3)
 alarm.STATE = alarm.RUN / "alarm.json"
@@ -446,10 +447,62 @@ alarm.send = lambda subject, text: _mails.append((subject, text)) or True
 _asked: list[str] = []
 alarm.read_journal = lambda unit: _asked.append(unit) or JOURNAL
 _job = "permtracker-cron@ingest-health.service"
+_JKEY = "unit:permtracker-cron@ingest-health"
 alarm.snapshot = lambda now: healthy(failed_units=[_job], stopped_units=[],
                                      unit_info={_job: {"state": "failed", "type": "oneshot", "start": "111"}})
 alarm.main()
-check("a run reads the failed unit's journal and puts its reason in the email",
+_saved = alarm.json.loads(alarm.STATE.read_text())
+check("a timed job's first failed run emails nothing", _mails == [] and _asked == [], str(_mails))
+check("...and is kept as a job-once event for the morning report",
+      [(e["key"], e["route"]) for e in _saved.get("events", [])] == [(_JKEY, "alarm.job-once")], str(_saved.get("events")))
+alarm.snapshot = lambda now: healthy(failed_units=[_job], stopped_units=[],
+                                     unit_info={_job: {"state": "failed", "type": "oneshot", "start": "222"}})
+alarm.main()
+check("its second failed run in a row reads the journal and emails why",
       _asked == [_job] and len(_mails) == 1 and "RUNS BROKEN: 1" in _mails[0][1], str((_asked, _mails[-1:])))
+_saved = alarm.json.loads(alarm.STATE.read_text())
+check("...as a job-twice event, the first one over",
+      [(e["route"], "over" in e) for e in _saved["events"]] == [("alarm.job-once", True), ("alarm.job-twice", False)],
+      str(_saved["events"]))
+
+# Every kind the alarm can raise is in the list, so none goes by the "unlisted, so loud" fallback.
+_info = {"a.service": {"type": "oneshot"}, "b.service": {"type": "notify"}}
+_kinds = {alarm.route_of(k, {}, {}) for k in alarm.ROUTE_OF} | {
+    alarm.route_of("unit:a", _info, {}), alarm.route_of("unit:a", _info, {"a.service": {"fails": 2}}),
+    alarm.route_of("unit:b", _info, {}), alarm.route_of("unit:c", {}, {})}
+check("every alarm's kind is in the routing list", alarm.ROUTES.ok and all(alarm.ROUTES.get(k) for k in _kinds),
+      str(sorted(k for k in _kinds if not alarm.ROUTES.get(k))))
+check("a unit whose type systemd doesn't report is a service", alarm.route_of("unit:c", {}, {}) == "alarm.service")
+check("every alarm's title and clear words cover its key", set(alarm.ROUTE_OF) <= set(alarm.TITLES) & set(alarm.CLEARED))
+
+# What the email deals with: a kind sent at once, or one already emailed (so its clear still goes).
+_routes = {"disk": "alarm.disk", _JKEY: "alarm.job-once"}
+_on = {"disk": "20 GB free", _JKEY: "x failed"}
+check("a job's single failure stays out of the email", alarm.mailable(_on, _routes, {}) == {"disk": "20 GB free"})
+check("an alarm already emailed stays in it while on", _JKEY in alarm.mailable(_on, _routes, {"alarms": {_JKEY: {}}}))
+mail, st = alarm.plan({"disk": "20 GB free"}, {}, T0, remind={"disk": None})
+mail, st = alarm.plan({"disk": "20 GB free"}, st, T0 + 3 * alarm.REMIND_S, remind={"disk": None})
+check("a kind the list gives no reminder sends none", mail == [], str(mail))
+
+# A job held on after a run that passed is its event ending, never a new one-failure event.
+_ev = alarm.record_events(None, {_JKEY: "x failed"}, {_JKEY: "alarm.job-once"}, {_JKEY: "111"}, T0)
+_ev = alarm.record_events(_ev, {_JKEY: "x failed"}, {_JKEY: "alarm.job-once"}, {}, T0 + 600)
+check("a job that passed after one failure is one event, over", [("over" in e) for e in _ev] == [True], str(_ev))
+_ev = alarm.record_events(_ev, {}, {}, {}, T0 + 25 * 3600)
+check("events are kept a day", _ev == [], str(_ev))
+
+# A list that can't be read never silences an alarm: everything is emailed, the pushes keep their old rule.
+_real_routes = alarm.ROUTES
+alarm.ROUTES = alarm.alert_routes.load("/nonexistent/alert_routes.json")
+try:
+    check("an unread list emails a job's single failure", _JKEY in alarm.mailable(_on, _routes, {}))
+    _uinfo = {_job: {"type": "oneshot"}, "permtracker-web@1.service": {"type": "notify"}}
+    check("...and pushes as before the list",
+          alarm.push_level(_JKEY, _uinfo, {}) is None and alarm.push_level("unit:permtracker-web@1", _uinfo, {}) == "urgent"
+          and alarm.push_level("disk", _uinfo, {}) == "high")
+    _, text = alarm.compose([("disk", "start", "20 GB free")], healthy(disk_free_gb=20.0), None, [], T0)
+    check("...and the email says why", "The routing list couldn't be used" in text, text[-400:])
+finally:
+    alarm.ROUTES = _real_routes
 
 sys.exit(1 if failures else 0)

@@ -28,6 +28,9 @@ describe("dailyReport.facts", () => {
       await ctx.db.insert("alertOutbox", { ...base, email: "d@x.com", kind: "bulletin", ref: "bulletin:1", status: "queued" });
       await ctx.db.insert("systemErrors", { source: "action", operation: "sweep", message: "m", resolved: false, createdAt: now - 1000 });
       await ctx.db.insert("systemErrors", { source: "action", operation: "sweep", message: "m", resolved: false, createdAt: now - 2 * 86_400_000 });
+      // The routing list keeps a database timeout alone (errors.blip) on the admin page: counted apart, never a look.
+      await ctx.db.insert("systemErrors", { source: "cron", operation: "pwd", message: "libsql HTTP 502", resolved: false, createdAt: now - 500, route: "errors.blip" });
+      await ctx.db.insert("systemErrors", { source: "cron", operation: "old", message: "libsql HTTP 503 x", resolved: false, createdAt: now - 400 });
       const userId = await ctx.db.insert("users", { email: "dev@x.com", deletedAt: now });
       await ctx.db.insert("apiKeys", { userId, account: "acct_1", keyHash: "h1", keyId: "AAAAAAAA", name: "ci", createdAt: now, scopes: ["read", "export"] });
       await ctx.db.insert("apiKeys", { userId, account: "acct_1", keyHash: "h2", keyId: "BBBBBBBB", name: "old", createdAt: now, revokedAt: now });
@@ -38,7 +41,7 @@ describe("dailyReport.facts", () => {
     const f = await t.query(internal.dailyReport.facts, {});
     expect(f.users).toBe(1);
     expect(f.outbox).toMatchObject({ sent24h: 1, failed24h: 1, queued: 1 });
-    expect(f.errors).toEqual({ count: 1, top: [["sweep", 1]] });
+    expect(f.errors, "a row from before the list is judged by the same rule").toEqual({ count: 1, top: [["sweep", 1]], quiet: 2 });
     expect(f.developers.keys).toMatchObject({ live: 1, sandbox: 0, byScope: { read: 1, export: 1, webhooks: 0 } });
     expect(f.developers.webhooks).toMatchObject({ endpoints: 1, paused: 0, watches: 0 });
     expect(JSON.stringify(f)).not.toMatch(/@|hooks\.example\.org|acct_1/);

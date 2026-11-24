@@ -31,6 +31,8 @@ import {
   worstStatus,
 } from "./lib/dailyReportCompose";
 import { getResend } from "./lib/email";
+import { channelOf } from "./lib/alertRoutes";
+import { errorRoute } from "./lib/errorRecording";
 import { loggers } from "./lib/logging";
 import { easternDay, MS_PER_DAY } from "./lib/time";
 import { RETRY_MAX_ROWS } from "./lib/emailLimits";
@@ -95,8 +97,11 @@ export const facts = internalQuery({
       .query("systemErrors")
       .withIndex("by_created_at", (q) => q.gt("createdAt", since))
       .take(ERRORS_READ);
+    // What the routing list leaves to the admin page (a database timeout alone, errors.blip) is a line, never counted
+    // as needing a look. A row from before the list carries no route: it's judged by the same rule.
+    const counted = errors.filter((e) => channelOf(e.route ?? errorRoute(e.message, false)) !== "admin");
     const byOp = new Map<string, number>();
-    for (const e of errors) byOp.set(e.operation, (byOp.get(e.operation) ?? 0) + 1);
+    for (const e of counted) byOp.set(e.operation, (byOp.get(e.operation) ?? 0) + 1);
 
     const outbox = await ctx.db.query("alertOutbox").order("desc").take(TABLE_READ);
     const queued = outbox.filter((r) => r.status === "queued");
@@ -143,8 +148,9 @@ export const facts = internalQuery({
       logins24h: profiles.filter((p) => (p.lastLoginAt ?? 0) > since).length,
       subs,
       errors: {
-        count: errors.length,
+        count: counted.length,
         top: [...byOp.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5),
+        quiet: errors.length - counted.length,
       },
       outbox: {
         sent24h: outbox.filter((r) => r.status === "sent" && (r.sentAt ?? 0) > since).length,

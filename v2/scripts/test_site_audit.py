@@ -10,6 +10,7 @@ this machine.
 """
 from __future__ import annotations
 
+import contextlib
 import datetime as dt
 import http.server
 import json
@@ -599,6 +600,49 @@ def test_an_unsent_mail_waits_for_the_next_night() -> None:
     assert sa.pending_mail(doc) is None and doc["mail"]["sentWeek"] == "2026-11-08"
 
 
+@contextlib.contextmanager
+def audit_emails():
+    """Run as if the routing list sent the week's growth (audit.weekly) by email. Today's list leaves it to the
+    morning report; the tests of the email itself run under this."""
+    routes = json.loads((HERE / "data" / "alert_routes.json").read_text())
+    for r in routes["routes"]:
+        if r["id"] == "audit.weekly":
+            r["channel"] = "email"
+    real = sa.ROUTES
+    sa.ROUTES = sa.alert_routes.Routes(routes)
+    try:
+        yield
+    finally:
+        sa.ROUTES = real
+
+
+def test_the_routing_list_decides_whether_the_audit_emails() -> None:
+    # The week's growth is the routing list's audit.weekly (scripts/data/alert_routes.json): left to the morning
+    # report, which carries it, the audit sends nothing and marks the week done, so it doesn't wait as pending.
+    doc, mail = sa.finish_week({}, report({"orphan": 10}), "2026-11-08", NOW)
+    assert sa.ROUTES.ok and sa.ROUTES.channel("audit.weekly") == "report"
+    left, due = sa.mail_due(doc, mail)
+    assert due is None and sa.pending_mail(left) is None and left["mail"]["sentWeek"] == "2026-11-08", left
+    _, again = sa.finish_week(left, report({"orphan": 10}), "2026-11-08", NOW + 60_000)
+    assert again is None, "the same week is never composed again"
+    with audit_emails():
+        assert sa.mail_due(doc, mail) == (doc, mail), "sent by email, the audit's own email goes as before"
+
+
+def test_a_sunday_under_todays_list_mails_nothing() -> None:
+    from lib_db import read_doc
+
+    d = db()
+    with Upstream() as base:
+        up = sa.Upstream(base, host="permtracker.app")
+        before = len([m for m in Fake.mail if m["path"] == "/owner"])
+        sa.run_night(d, up, day=dt.date(2026, 11, 22), seconds=30, rate=200,
+                     mail_cfg={"url": f"{base}/owner", "key": "k"}, clock_ms=lambda: NOW, log=lambda *a: None)
+        assert len([m for m in Fake.mail if m["path"] == "/owner"]) == before, "the morning report carries the week"
+        doc = read_doc(d, sa.DOC_KEY)
+        assert doc["latestWeek"]["complete"] and doc["mail"]["leftToReport"] and not doc["mail"]["pending"]
+
+
 def test_the_mail_reads_like_a_person_wrote_it() -> None:
     doc, mail = sa.finish_week({}, report({"orphan": 3713, "title_long": 24}), "2026-11-22", NOW)
     text = mail["subject"] + "\n" + mail["text"]
@@ -668,7 +712,7 @@ def test_a_night_reads_stores_reports_and_closes_the_week() -> None:
     d = db()
     sunday = dt.date(2026, 11, 22)
     clock = lambda: NOW  # noqa: E731
-    with Upstream() as base:
+    with Upstream() as base, audit_emails():
         up = sa.Upstream(base, host="permtracker.app")
         cfg = {"url": f"{base}/owner", "key": "k"}
         # A Thursday: its seventh, then every never-read page; no week closes, nobody is mailed.
@@ -700,7 +744,7 @@ def test_a_mail_the_worker_refused_is_kept_and_sent_the_next_night() -> None:
     from lib_db import read_doc
 
     d = db()
-    with Upstream() as base:
+    with Upstream() as base, audit_emails():
         up = sa.Upstream(base, host="permtracker.app")
         sa.run_night(d, up, day=dt.date(2026, 11, 22), seconds=30, rate=200,
                      mail_cfg={"url": f"{base}/broken", "key": "k"}, clock_ms=lambda: NOW, log=lambda *a: None)

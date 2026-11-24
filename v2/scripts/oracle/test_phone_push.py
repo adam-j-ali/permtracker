@@ -176,9 +176,11 @@ dstate2: dict = {}
 defend.phone(dstate2, "t", "m", "high")
 check("a push the defense couldn't send isn't counted", not any(dstate2.get("pushes", {}).values()))
 src = (HERE / "bin" / "permtracker-defend").read_text()
-# One email an episode (Nov 23 2026): its first action, a rule or Under Attack Mode, and its summary at the end.
-check("each of the defense's three emails has its push beside it",
-      src.count("phone(state, \"PERM Tracker:") == 3 and src.count("email(state, cfg, \"PERM Tracker:") == 3)
+# Told once an episode when the routing list sends its kind by phone (Nov 23 2026): its first action, a rule or Under
+# Attack Mode, and its summary at the end. test_defend.py runs the episode under both channels.
+check("the defense pushes only beside an email, from its two tell functions",
+      src.count("phone(state,") == 2 and src.count("email(state, cfg,") == 2
+      and src.count("tell_start(state, cfg,") == 2 and src.count("tell_end(state, cfg,") == 1)
 check("only the defense switching off is a clear", src.count('"clear")') == 1)
 
 print(f"\n{len(failures)} failed")

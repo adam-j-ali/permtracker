@@ -41,8 +41,24 @@ from zoneinfo import ZoneInfo
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE / "oracle" / "lib"))
+import alert_routes  # noqa: E402 - the one routing list, shared with the server's scripts
 
 ET = ZoneInfo("America/New_York")
+# Where each finding goes (scripts/data/alert_routes.json): one the list keeps on the admin page is a plain line in
+# its section, never a warning in the email; anything else that needs a look warns.
+ROUTES = alert_routes.load()
+
+
+def needs_look(route: str) -> bool:
+    """True when the routing list puts this kind in the morning email (the report's channel, or a louder one the
+    report repeats); False when it's the admin page's alone."""
+    return ROUTES.channel(route) != "admin"
+
+
+def routed(route: str, text: str, warns: list[str], lines: list[str]) -> None:
+    """A finding goes where its kind's channel says: a warning, or a plain line for the admin page."""
+    (warns if needs_look(route) else lines).append(text)
 REPO = "adam-j-ali/permtracker"
 SITE = "https://permtracker.app"
 POSTHOG_PROJECT = "322551"
@@ -295,7 +311,8 @@ def github_verdict(runs: list[dict], names: dict[str, str], newest: dict[str, di
             if reasons.get(name):
                 lead += f", at the step '{reasons[name]}'"
             bits.append(lead)
-            statuses.append("fail" if name in DATA_WORKFLOWS else "warn")
+            if needs_look("report.github-red"):
+                statuses.append("fail" if name in DATA_WORKFLOWS else "warn")
         if w:
             bits.append(f"{w['runs']} run{'s' if w['runs'] != 1 else ''} in 24 h")
             if w["failed"] and not failing:
@@ -714,6 +731,7 @@ def health_verdict(returncode: int, lines: list[str]) -> tuple[str, str]:
                    f"{'their agencies' if waiting != 1 else 'its agency'} to republish")
     if watching:
         summary += f", {watching} to watch"
+    # A late data load is a warning line only when the routing list puts ingest.late in the report: the check decides.
     return ("warn" if watching else "ok"), summary
 
 
@@ -907,7 +925,8 @@ def data_section(now_ms: int) -> dict:
         for alarm in priv.get("alarms") or []:
             lines.append(f"Scorecard alarm: {alarm}")
             status = "warn"
-    # A bulletin State hasn't published past our estimate: a plain line, never amber. Read by idx_ep_open.
+    # A bulletin State hasn't published past our estimate: nobody here can act on it, so the routing list keeps it a
+    # plain line, never amber. Read by idx_ep_open.
     try:
         waiting = one("SELECT case_number, MIN(predicted) FROM estimate_predictions WHERE outcome IS NULL "
                       "AND program = 'bulletin' AND source = 'ours' GROUP BY case_number ORDER BY 2 LIMIT 1")
@@ -916,6 +935,8 @@ def data_section(now_ms: int) -> dict:
         line = bulletin_wait_line(waiting, read[0] if read else None, now_ms)
         if line:
             lines.append(line)
+            if needs_look("report.bulletin-late"):
+                status = "warn"
     except Exception as e:  # noqa: BLE001 - an unread line is said, never a crash of the section
         lines.append(f"The visa bulletin's wait couldn't be read ({type(e).__name__})")
     if not moved or int(moved[0]) == 0:
@@ -1559,6 +1580,29 @@ def pct_word(x) -> str:
     return "" if x is None else f"{x:.0f}% "
 
 
+def alarm_event_lines(doc: dict, warns: list[str], lines: list[str]) -> None:
+    """What the server's alarm kept out of the email in the last day, from its events (bin/permtracker-alarm, copied
+    by bin/permtracker-health): a timed job's one failed run (alarm.job-once), unless its next run failed too, which
+    went by email and phone as alarm.job-twice. An unreadable record warns; a report written before the events
+    existed says nothing."""
+    if "alarmEvents24h" not in doc:
+        return
+    events = doc["alarmEvents24h"]
+    if events is None:
+        warns.append("the server alarm's record of the last day couldn't be read, so a job's single failure "
+                     "wouldn't show here")
+        return
+    twice = {e.get("key") for e in events if e.get("route") == "alarm.job-twice"}
+    for e in events:
+        if e.get("route") != "alarm.job-once" or e.get("key") in twice:
+            continue
+        unit = str(e.get("key") or "").removeprefix("unit:")
+        at = dt.datetime.fromtimestamp(float(e.get("at") or 0), ET).strftime("%-I:%M %p %a")
+        after = (f", and its next run passed by {dt.datetime.fromtimestamp(float(e['over']), ET).strftime('%-I:%M %p')}"
+                 if e.get("over") else ", and it hasn't run cleanly since")
+        routed("alarm.job-once", f"{unit} failed one run at {at}{after}", warns, lines)
+
+
 def server_verdict(doc: dict | None, now_ms: int, switches: list[int] | None = None) -> dict:
     """Judge perm_docs['server_health'], which the server writes every 10 minutes."""
     title = "The server (Oracle)"
@@ -1586,15 +1630,19 @@ def server_verdict(doc: dict | None, now_ms: int, switches: list[int] | None = N
         warns.append(f"the site is running on one copy: {second} is {svc.get(second)}")
     if doc.get("failedUnits"):
         warns.append("failed units: " + ", ".join(doc["failedUnits"][:5]))
+    # A restart that worked and the defense acting on a scraper fixed themselves: the routing list keeps them on the
+    # admin page, as lines.
     if doc.get("repairCount24h"):
-        warns.append(f"the watchdog restarted something {doc['repairCount24h']} time(s) in 24 h")
+        routed("report.watchdog", f"the watchdog restarted something {doc['repairCount24h']} time(s) in 24 h",
+               warns, lines)
         lines.extend("Repair: " + r for r in (doc.get("repairs24h") or [])[-3:])
     if doc.get("underAttack24h"):
-        warns.append(f"the automatic defense turned on Under Attack Mode {doc['underAttack24h']} time(s) in 24 h "
-                     "(every visitor passes Cloudflare's check while it's on)")
+        routed("defense.attack", f"the automatic defense turned on Under Attack Mode {doc['underAttack24h']} time(s) "
+               "in 24 h (every visitor passes Cloudflare's check while it's on)", warns, lines)
     elif doc.get("defenseCount24h"):
-        warns.append(f"the automatic defense acted {doc['defenseCount24h']} time(s) in 24 h")
+        routed("defense.rule", f"the automatic defense acted {doc['defenseCount24h']} time(s) in 24 h", warns, lines)
     lines.extend("Defense: " + r for r in (doc.get("defense24h") or [])[-3:])
+    alarm_event_lines(doc, warns, lines)
 
     idle = doc.get("idle") or {}
     cpu, mem = idle.get("cpuP95"), idle.get("memP95")
@@ -1645,7 +1693,7 @@ def server_verdict(doc: dict | None, now_ms: int, switches: list[int] | None = N
             if gb > R2_FAIL_GB:
                 fails.append(f"R2 holds {gb:.1f} GB, about to pass the free 10 GB{when}")
             elif gb > R2_WARN_GB:
-                warns.append(f"R2 holds {gb:.1f} GB of the free 10 GB{when}")
+                routed("report.backups-filling", f"R2 holds {gb:.1f} GB of the free 10 GB{when}", warns, lines)
             if pace is None:
                 lines.append(f"R2 bucket: {gb:.1f} GB used of the free 10 GB")
             elif pace[1] is None:
@@ -2020,8 +2068,14 @@ def site_audit_verdict(doc: dict | None, now_ms: int) -> dict:
                         f"({int(week.get('read') or 0):,} of {int(week.get('sitemap') or 0):,} pages), so it wasn't "
                         "compared with the week before.")
     if grew:
-        warns.insert(0, f"{len(grew)} problem{'s' if len(grew) != 1 else ''} grew in the week ending {when}: "
-                        + ", ".join(FAMILIES[f].lower() for f in grew) + ".")
+        # The week's growth is the routing list's audit.weekly: the morning report carries it (the audit's own email
+        # goes only when the list sends it by email).
+        grew_line = (f"{len(grew)} problem{'s' if len(grew) != 1 else ''} grew in the week ending {when}: "
+                     + ", ".join(FAMILIES[f].lower() for f in grew) + ".")
+        if needs_look("audit.weekly"):
+            warns.insert(0, grew_line)
+        else:
+            lines.insert(0, grew_line)
     said = fails + warns
     summary = said[0] if said else (f"The week ending {when} read {int(week.get('read') or 0):,} of "
                                     f"{int(week.get('sitemap') or 0):,} sitemap pages; nothing grew.")

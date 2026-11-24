@@ -20,6 +20,7 @@
  */
 
 import { sendOwnerMail } from "./lib/ownerMail";
+import { isSentNow } from "./lib/alertRoutes";
 import { action, internalAction, type ActionCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { render } from "@react-email/render";
@@ -606,6 +607,11 @@ export const sendTestEmail = action({
  * INTENTIONALLY non-throwing: admin notifications must never block user
  * operations (signup, case creation). Errors are logged but swallowed so
  * the calling action can continue normally.
+ *
+ * `route` names the alert's kind in the routing list (scripts/data/alert_routes.json); every caller passes one
+ * (scripts/test_alert_routes.py holds them to it). A kind the list leaves to the morning report or the admin page
+ * isn't emailed. Optional in the validator only so a send scheduled before a deploy still runs; one without a route
+ * is sent.
  */
 export const sendAdminNotificationEmail = internalAction({
   args: {
@@ -613,8 +619,13 @@ export const sendAdminNotificationEmail = internalAction({
     body: v.string(),
     to: v.optional(v.string()),
     recipientName: v.optional(v.string()),
+    route: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    if (args.route && !isSentNow(args.route)) {
+      log.info("Admin notification left to the routing list's channel", { route: args.route, subject: args.subject });
+      return;
+    }
     const { getSecurityAlertEmail } = await import("./lib/admin");
     const { AdminEmail } = await import("../src/emails/AdminEmail");
 

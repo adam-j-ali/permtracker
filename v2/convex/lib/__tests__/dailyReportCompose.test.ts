@@ -176,6 +176,18 @@ describe("the Convex sections", () => {
       /^The server's database didn't answer the outside watch's check once \(\d{1,2}:\d{2} [AP]M ET, \w{3} \d{1,2}\); the next check answered, so nothing was emailed\.$/,
     );
   });
+
+  it("names database timeouts the routing list keeps on the admin page, without raising the section", () => {
+    // Arrange: two timeouts that each came alone (errors.blip), nothing else
+    const f = facts({ errors: { count: 0, top: [], quiet: 2 } });
+    // Act
+    const [, , errors] = convexSections(f, { sent: 1, bounced: 0, complained: 0 }, NOW);
+    // Assert
+    expect(errors!.status).toBe("ok");
+    expect(errors!.lines).toEqual([
+      "2 database timeouts or busy answers that didn't come again within the hour, so nothing was emailed.",
+    ]);
+  });
 });
 
 describe("law firms waiting for review", () => {

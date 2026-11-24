@@ -108,51 +108,78 @@ describe("systemErrors", () => {
   });
 });
 
-describe("systemErrors.record admin email", () => {
+/*
+ * Where an error goes is the routing list's (scripts/data/alert_routes.json): an operation's first failure in the
+ * hour waits for the morning report (errors.once), a database timeout or busy answer alone stays on the admin page
+ * (errors.blip; Nov 2026: a server blip mailed "[System Error]" for something the next run never saw), and the same
+ * operation failing again within the hour is emailed and pushed to the phone (errors.repeat), once a day each.
+ */
+describe("systemErrors.record: where each error goes", () => {
   setupSchedulerTests();
 
-  async function scheduledEmails(t: ReturnType<typeof createTestContext>) {
+  /** The phone push this module schedules beside a repeat's email. */
+  const PUSH = /systemErrors[^]*push$/;
+  async function scheduled(t: ReturnType<typeof createTestContext>, name: string | RegExp) {
     return t.run(async (ctx) => {
       const jobs = await ctx.db.system.query("_scheduled_functions").collect();
-      return jobs.filter((j) => j.name.includes("sendAdminNotificationEmail"));
+      return jobs.filter((j) => (typeof name === "string" ? j.name.includes(name) : name.test(j.name)));
     });
   }
+  const routes = (t: ReturnType<typeof createTestContext>) =>
+    t.run(async (ctx) => (await ctx.db.query("systemErrors").collect()).map((e) => e.route));
+  const boom = { source: "cron" as const, operation: "x.y", message: "boom" };
 
-  it("emails the admin by default", async () => {
+  it("keeps an operation's first failure for the morning report: recorded, never emailed", async () => {
+    // Arrange
     const t = createTestContext();
-    await t.mutation(internal.systemErrors.record, { source: "cron", operation: "x.y", message: "boom" });
-    expect(await scheduledEmails(t)).toHaveLength(1);
+    // Act
+    await t.mutation(internal.systemErrors.record, boom);
+    // Assert
+    expect(await scheduled(t, "sendAdminNotificationEmail")).toHaveLength(0);
+    expect(await routes(t)).toEqual(["errors.once"]);
   });
 
-  it("says when it happened, in Eastern time", async () => {
+  it("emails and pushes the same operation's second failure within the hour, saying when in Eastern time", async () => {
+    // Arrange
     const t = createTestContext();
-    await t.mutation(internal.systemErrors.record, { source: "cron", operation: "x.y", message: "boom" });
-    const [job] = await scheduledEmails(t);
-    expect(String((job?.args[0] as { body?: string })?.body)).toMatch(/^At: \w+ \d{1,2}, \d{4}, \d{1,2}:\d{2} [AP]M ET$/m);
+    // Act
+    await t.mutation(internal.systemErrors.record, boom);
+    await t.mutation(internal.systemErrors.record, boom);
+    // Assert
+    const mails = await scheduled(t, "sendAdminNotificationEmail");
+    expect(mails).toHaveLength(1);
+    const args = mails[0]?.args[0] as { body?: string; route?: string };
+    expect(args.route).toBe("errors.repeat");
+    expect(String(args.body)).toMatch(/^At: \w+ \d{1,2}, \d{4}, \d{1,2}:\d{2} [AP]M ET$/m);
+    expect(String(args.body)).toMatch(/failed again within the hour/);
+    const pushes = await scheduled(t, PUSH);
+    expect(pushes).toHaveLength(1);
+    expect((pushes[0]?.args[0] as { level?: string }).level).toBe("high");
+    expect(await routes(t)).toEqual(["errors.once", "errors.repeat"]);
   });
 
-  /*
-   * Nov 2026: a database blip on the server mailed "[System Error]" for something the next run never saw. A
-   * transient database error (libsql answering 5xx, a timeout) mails only when the same operation fails twice
-   * within an hour; it's always recorded.
-   */
+  it("tells each operation's repeats once a day, however often it fails", async () => {
+    const t = createTestContext();
+    for (let i = 0; i < 4; i++) await t.mutation(internal.systemErrors.record, boom);
+    expect(await scheduled(t, "sendAdminNotificationEmail")).toHaveLength(1);
+    expect(await scheduled(t, PUSH)).toHaveLength(1);
+  });
+
   it("holds a single transient database error, and mails the same operation's second within the hour", async () => {
     // Arrange
     const t = createTestContext();
     const blip = { source: "cron" as const, operation: "pwdSweep.run", message: "libsql HTTP 502 Bad Gateway" };
     // Act
     await t.mutation(internal.systemErrors.record, blip);
-    const afterOne = await scheduledEmails(t);
+    const afterOne = await scheduled(t, "sendAdminNotificationEmail");
     await t.mutation(internal.systemErrors.record, { ...blip, operation: "caseSweep.run" });
-    const afterOther = await scheduledEmails(t);
+    const afterOther = await scheduled(t, "sendAdminNotificationEmail");
     await t.mutation(internal.systemErrors.record, blip);
     // Assert
     expect(afterOne, "one transient error is recorded, not mailed").toHaveLength(0);
     expect(afterOther, "another operation's is its own first").toHaveLength(0);
-    const mails = await scheduledEmails(t);
-    expect(mails).toHaveLength(1);
-    expect(String((mails[0]?.args[0] as { body?: string })?.body)).toMatch(/second database error within an hour/);
-    expect(await t.run((ctx) => ctx.db.query("systemErrors").collect())).toHaveLength(3);
+    expect(await scheduled(t, "sendAdminNotificationEmail")).toHaveLength(1);
+    expect(await routes(t)).toEqual(["errors.blip", "errors.blip", "errors.repeat"]);
   });
 
   it("knows a transient database error from the rest", () => {
@@ -172,14 +199,15 @@ describe("systemErrors.record admin email", () => {
     }
   });
 
-  it("records but does not email when ADMIN_ERROR_EMAILS is off (a non-live deployment)", async () => {
+  it("records but neither emails nor pushes when ADMIN_ERROR_EMAILS is off (a non-live deployment)", async () => {
     process.env.ADMIN_ERROR_EMAILS = "off";
     try {
       const t = createTestContext();
-      await t.mutation(internal.systemErrors.record, { source: "cron", operation: "x.y", message: "boom" });
-      expect(await scheduledEmails(t)).toHaveLength(0);
-      const rows = await t.run((ctx) => ctx.db.query("systemErrors").collect());
-      expect(rows).toHaveLength(1);
+      await t.mutation(internal.systemErrors.record, boom);
+      await t.mutation(internal.systemErrors.record, boom);
+      expect(await scheduled(t, "sendAdminNotificationEmail")).toHaveLength(0);
+      expect(await scheduled(t, PUSH)).toHaveLength(0);
+      expect(await t.run((ctx) => ctx.db.query("systemErrors").collect())).toHaveLength(2);
     } finally {
       delete process.env.ADMIN_ERROR_EMAILS;
     }

@@ -1205,6 +1205,8 @@ export default defineSchema({
     extra: v.optional(v.string()),
     resolved: v.boolean(),
     createdAt: v.number(),
+    /** Its kind in the routing list (errors.once, errors.repeat or errors.blip); absent on rows before Nov 24 2026. */
+    route: v.optional(v.string()),
   })
     .index("by_resolved", ["resolved", "createdAt"])
     .index("by_source", ["source", "createdAt"])

@@ -93,7 +93,9 @@ async function countOnDay(ctx: MutationCtx, field: "retried" | "lost", n = 1): P
 async function alertOnce(ctx: MutationCtx, row: Doc<"emailDays">, subject: string, body: string) {
   if (row.alertedAt !== undefined) return;
   await ctx.db.patch(row._id, { alertedAt: Date.now() });
-  await ctx.scheduler.runAfter(0, internal.notificationActions.sendAdminNotificationEmail, { subject, body });
+  await ctx.scheduler.runAfter(0, internal.notificationActions.sendAdminNotificationEmail, {
+    subject, body, route: "notice.email-failures",
+  });
 }
 
 /**

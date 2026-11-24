@@ -370,14 +370,28 @@ finally:
     d.urllib.request.urlopen, d.read_env = _real_open, _real_env
 check("an email is counted on its Eastern day", _state.get("emails") == {"2026-10-29": 1}, str(_state.get("emails")))
 
-# One email an episode (Nov 2026: the defense sent 12 emails in one evening, switching on and off): the first action,
-# then one summary when it ends, with how many times it acted and the source. The phone gets the same two.
-with tempfile.TemporaryDirectory() as tmp:
-    t = pathlib.Path(tmp)
+# Who hears of an episode is the routing list's (scripts/data/alert_routes.json). The defense fixes what it acts on,
+# so both its kinds are the admin page's: every action goes in the repairs log, and nothing is emailed or pushed.
+# A kind the list sends by phone is told once an episode (Nov 2026: the defense sent 12 emails in one evening,
+# switching on and off): the first action, then one summary when it ends, with how many times it acted and the
+# source. The phone gets the same two.
+check("the list keeps a rule on one source and Under Attack Mode to the admin page",
+      d.ROUTES.ok and d.ROUTES.channel("defense.rule") == "admin" and d.ROUTES.channel("defense.attack") == "admin")
+
+
+def episode(routes) -> tuple[list, list, str, dict]:
+    """One episode (the rule, Under Attack Mode 10 minutes on, then 31 calm minutes) under `routes`: the emails, the
+    pushes, the repairs log and the saved state."""
+    with tempfile.TemporaryDirectory() as tmp:
+        return _episode(pathlib.Path(tmp), routes)
+
+
+def _episode(t: pathlib.Path, routes) -> tuple[list, list, str, dict]:
     (t / "defend.env").write_text("CF_API_TOKEN=x\nCF_ZONE_ID=z\n")
     saved = {k: getattr(d, k) for k in ("HEALTH", "STATE", "OFF", "REPAIRS", "CONFIG", "Cloudflare", "email", "phone",
-                                        "people_busy", "find_source", "tail_lines")}
+                                        "people_busy", "find_source", "tail_lines", "ROUTES")}
     d.HEALTH, d.STATE, d.OFF, d.REPAIRS, d.CONFIG = t, t / "defend.json", t / "defend.off", t / "repairs.log", t / "defend.env"
+    d.ROUTES = routes
 
     class FakeCF:
         level = "low"
@@ -421,17 +435,30 @@ with tempfile.TemporaryDirectory() as tmp:
         d.time.time = real_time
         for k, v in saved.items():
             setattr(d, k, v)
-    check("an episode sends two emails: its first action and its end", [m[0] for m in mails] ==
-          ["PERM Tracker: automatic defense on", "PERM Tracker: automatic defense off"], str([m[0] for m in mails]))
-    summary = mails[-1][1] if mails else ""
-    check("the summary says how many times it acted and the source",
-          "acted 2 times" in summary and "AS132203" in summary and "Under Attack Mode" in summary, summary)
-    check("the phone gets the start and the end, nothing between",
-          [p[1] for p in pushes] == ["high", "clear"], str(pushes))
-    log = (t / "repairs.log").read_text()
-    check("every action is still in the repairs log", "challenge on" in log and "Under Attack Mode on" in log
-          and "all off" in log, log)
-    check("the episode is closed", json.loads((t / "defend.json").read_text()).get("episode") is None)
+    return mails, pushes, (t / "repairs.log").read_text(), json.loads((t / "defend.json").read_text())
+
+
+mails, pushes, log, end = episode(d.ROUTES)
+check("with today's list, an episode emails and pushes nothing", mails == [] and pushes == [], str((mails, pushes)))
+check("every action is in the repairs log", "challenge on" in log and "Under Attack Mode on" in log
+      and "all off" in log, log)
+check("the episode is closed", end.get("episode") is None)
+
+_phone_doc = json.loads((HERE.parent / "data" / "alert_routes.json").read_text())
+for _r in _phone_doc["routes"]:
+    if _r["id"].startswith("defense."):
+        _r.update(channel="phone", level="high", remindHours=None)
+mails, pushes, log, end = episode(d.alert_routes.Routes(_phone_doc))
+check("sent by phone, an episode sends two emails: its first action and its end", [m[0] for m in mails] ==
+      ["PERM Tracker: automatic defense on", "PERM Tracker: automatic defense off"], str([m[0] for m in mails]))
+summary = mails[-1][1] if mails else ""
+check("the summary says how many times it acted and the source",
+      "acted 2 times" in summary and "AS132203" in summary and "Under Attack Mode" in summary, summary)
+check("the phone gets the start and the end, nothing between", [p[1] for p in pushes] == ["high", "clear"], str(pushes))
+check("and the repairs log still has every action", "challenge on" in log and "all off" in log, log)
+mails, pushes, _, _ = episode(d.alert_routes.Routes(None, "the routing list isn't installed"))
+check("a list that can't be read tells the episode as before it", len(mails) == 2 and len(pushes) == 2,
+      str((mails, pushes)))
 
 print()
 print(f"{len(failures)} failure(s)")

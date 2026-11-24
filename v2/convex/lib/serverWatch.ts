@@ -16,12 +16,17 @@
  * The database not answering mails only after two checks in a row (30 minutes):
  * a 15-minute blip sent a start and a clear for something that fixed itself
  * (Nov 2026). One miss is kept a day in `blips`, for the morning report.
+ *
+ * Where each kind goes, its push's level and its reminders are the routing list's
+ * (scripts/data/alert_routes.json, convex/lib/alertRoutes.ts): watch.quiet,
+ * watch.database, watch.disk and watch.blip.
  */
+import { isSentNow, levelOf, remindMsOf } from "./alertRoutes";
 import type { PushLevel } from "./phonePush";
 
 /** The sampler writes every 10 minutes; three missed writes is an alarm. */
 export const STALE_MS = 35 * 60 * 1000;
-/** Reminders while an alarm lasts. */
+/** Reminders while an alarm lasts, for a kind the routing list doesn't name. */
 export const REMIND_MS = 6 * 60 * 60 * 1000;
 /** Disk use the report itself flags (the server's own alarm acts at 25 GB free, about 83%). */
 export const DISK_PCT = 90;
@@ -29,6 +34,15 @@ export const DISK_PCT = 90;
 export const BLIP_KEEP_MS = 24 * 60 * 60 * 1000;
 /** judge's words for a database that didn't answer: the one reason a single check may be a blip. */
 export const DB_MISS = "the server's database did not answer";
+
+export type WatchRoute = "watch.quiet" | "watch.database" | "watch.disk";
+
+/** The routing list's kind for one of judge's reasons. */
+export function routeOfReason(reason: string): WatchRoute {
+  if (reason.startsWith(DB_MISS)) return "watch.database";
+  if (reason.startsWith("the server's disk")) return "watch.disk";
+  return "watch.quiet";
+}
 
 export interface HealthRow {
   computed_at: number | string | null;
@@ -68,14 +82,24 @@ export interface WatchState {
 /** since: when the trouble started (for a clear, the start of the trouble that ended). */
 export type WatchMail = { kind: "start" | "still" | "clear"; reason: string; since: number } | null;
 
-/** The push for this email, or null: a start or a clear pushes, a 6-hour reminder never does. */
+/**
+ * The push for this email, or null: a start or a clear pushes when the routing list sends its kind by phone, at the
+ * kind's level; a reminder never does.
+ */
 export function pushFor(mail: WatchMail): { level: PushLevel; title: string; todo: string } | null {
   if (!mail || mail.kind === "still") return null;
+  const route = routeOfReason(mail.reason);
+  const level = levelOf(route);
+  if (level === null) return null;
   if (mail.kind === "clear") return { level: "clear", title: "PERM Tracker server: reporting again", todo: "" };
-  const disk = mail.reason.startsWith("the server's disk");
-  return disk
-    ? { level: "high", title: "PERM Tracker server: disk nearly full", todo: "ssh permtracker and follow the runbook's disk steps." }
-    : { level: "urgent", title: "PERM Tracker server: can't be heard from", todo: "Open permtracker.app; if it's down, ssh permtracker and check its services." };
+  return route === "watch.disk"
+    ? { level, title: "PERM Tracker server: disk nearly full", todo: "ssh permtracker and follow the runbook's disk steps." }
+    : { level, title: "PERM Tracker server: can't be heard from", todo: "Open permtracker.app; if it's down, ssh permtracker and check its services." };
+}
+
+/** True when the routing list sends this email's kind as it happens; false leaves it to the report or the admin page. */
+export function mailsNow(mail: WatchMail): boolean {
+  return mail !== null && isSentNow(routeOfReason(mail.reason));
 }
 
 /**
@@ -87,8 +111,9 @@ export function step(prev: WatchState | null, reason: string | null, now: number
   const settled = { pendingSince: undefined, pendingReason: undefined, blips };
   if (reason) {
     if (!prev || !prev.down) {
-      // A first database miss waits for the next check; anything else, or a second check in trouble, mails now.
-      if (reason.startsWith(DB_MISS) && prev?.pendingSince === undefined) {
+      // A first database miss waits for the next check while the routing list keeps one miss (watch.blip) off the
+      // email; anything else, or a second check in trouble, mails now.
+      if (reason.startsWith(DB_MISS) && prev?.pendingSince === undefined && !isSentNow("watch.blip")) {
         return {
           next: { down: false, since: prev?.since ?? now, mailedAt: prev?.mailedAt ?? 0, reason: "",
                   pendingSince: now, pendingReason: reason, blips },
@@ -98,7 +123,8 @@ export function step(prev: WatchState | null, reason: string | null, now: number
       const since = prev?.pendingSince ?? now;
       return { next: { down: true, since, mailedAt: now, reason, ...settled }, mail: { kind: "start", reason, since } };
     }
-    if (now - prev.mailedAt >= REMIND_MS) {
+    const remind = remindMsOf(routeOfReason(reason), REMIND_MS);
+    if (remind !== null && now - prev.mailedAt >= remind) {
       return { next: { ...prev, mailedAt: now, reason, ...settled }, mail: { kind: "still", reason, since: prev.since } };
     }
     return { next: { ...prev, reason, ...settled }, mail: null };

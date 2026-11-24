@@ -28,9 +28,10 @@ STATE lives in the database (lib_db): `site_audit_pages` (one row per page, its 
 (one row per link target, when a read page last linked to it), both created here, and perm_docs['site_audit'] (the
 last night, the current counts, the weekly reports and the email's state). Rows unread for 30 days are removed.
 
-OUTPUT. The morning report's "Site audit" section reads perm_docs['site_audit'] (daily_monitor.py). The owner gets
-an email only when a weekly count rises or a new kind of problem appears, through the mail Worker (its key is the
-systemd credential `owner-mail`); an email that couldn't go is kept and tried again each night.
+OUTPUT. The morning report's "Site audit" section reads perm_docs['site_audit'] (daily_monitor.py) and warns when a
+weekly count rises or a new kind of problem appears. This job emails the owner about it itself only when the routing
+list sends audit.weekly by email (scripts/data/alert_routes.json; today it's the morning report's), through the mail
+Worker (its key is the systemd credential `owner-mail`); an email that couldn't go is kept and tried again each night.
 
     python3 scripts/site_audit.py                          # tonight's seventh (permtracker-site-audit.timer)
     python3 scripts/site_audit.py --report                 # the counts over the sitemap now, reading no page
@@ -61,8 +62,12 @@ from urllib.parse import quote, unquote, urljoin, urlsplit
 from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "oracle" / "lib"))
+import alert_routes  # noqa: E402 - the one routing list, shared with the server's scripts
 
 ET = ZoneInfo("America/New_York")
+# Whether the week's growth is emailed by this job or left to the morning report: the routing list's audit.weekly.
+ROUTES = alert_routes.load()
 SCRIPT = "site_audit.py"
 DOC_KEY = "site_audit"
 PAGES = "site_audit_pages"
@@ -877,6 +882,15 @@ def pending_mail(doc: dict) -> dict | None:
     return (doc.get("mail") or {}).get("pending")
 
 
+def mail_due(doc: dict, mail: dict | None) -> tuple[dict, dict | None]:
+    """The owner's email to send now, after the routing list. When it leaves the week's growth (audit.weekly) to the
+    morning report, which carries it in its site audit section, the week is marked done and nothing is sent."""
+    if mail and not ROUTES.loud("audit.weekly"):
+        return {**doc, "mail": {"sentWeek": mail["week"], "sentAt": None, "pending": None, "lastError": None,
+                                "leftToReport": True}}, None
+    return doc, mail
+
+
 # ── the owner's email, through the mail Worker ─────────────────────────────
 
 
@@ -1035,7 +1049,10 @@ def run_night(db, up: Upstream, *, day: dt.date, seconds: float, workers: int = 
         doc, mail = finish_week(doc, report, day.isoformat(), now_ms)
         log(f"the week closed: {'complete' if doc['latestWeek']['complete'] else 'INCOMPLETE'}, "
             f"{len(doc['latestWeek']['rises'])} grew")
-    mail = mail or pending_mail(doc)
+    due = mail or pending_mail(doc)
+    doc, mail = mail_due(doc, due)
+    if due and not mail:
+        log("the owner's email: left to the morning report (audit.weekly in scripts/data/alert_routes.json)")
     if mail:
         ok, err = send_owner_mail(mail["subject"], mail["text"], mail_cfg)
         doc = mail_sent(doc, mail, now_ms) if ok else mail_failed(doc, mail, err or "not sent")

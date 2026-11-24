@@ -1022,6 +1022,22 @@ def check_layoff_lists_wait_on_employers() -> None:
           and dm.SOURCE_WAIT not in out and rc == 0, out)
     kept = [l for l in dm.health_lines(out) if "warn-notices" in l]
     check("layoff lists: the morning report keeps nothing of it", kept == [], str(kept))
+    # The plain line is the routing list's ingest.layoffs-quiet on the admin page; moved to the report, the quiet list
+    # is judged like any other source again.
+    check("layoff lists: the routing list keeps a quiet list on the admin page",
+          health.ROUTES.channel("ingest.layoffs-quiet") == "admin")
+    doc = json.loads((pathlib.Path(health.__file__).parent / "data" / "alert_routes.json").read_text())
+    for r in doc["routes"]:
+        if r["id"] == "ingest.layoffs-quiet":
+            r["channel"] = "report"
+    real = health.ROUTES
+    health.ROUTES = health.alert_routes.Routes(doc)
+    try:
+        _, moved = table([("warn-notices-al", quiet_since, 30, recent)])
+    finally:
+        health.ROUTES = real
+    check("layoff lists: moved to the report, a quiet list is a source wait again",
+          f"no new notice since {quiet_since}" not in moved and "warn-notices-al" in moved, moved)
     rc, out = table([("warn-notices-tx", (today - datetime.timedelta(days=100)).isoformat(), 30, stopped)])
     check("layoff lists: a list our reader stopped reading still fails", rc == 1 and "warn-notices-tx (has not RUN)" in out,
           out)

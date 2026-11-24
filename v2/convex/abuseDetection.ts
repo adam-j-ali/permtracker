@@ -127,6 +127,7 @@ export const recordAuthFailure = internalMutation({
           `Email: ${normalizedEmail}\n` +
           `Failures in last 30 min: ${recent.length}\n\n` +
           `Auto-lifts in 1 hour. Manual override at /admin/security.`,
+        route: "notice.auto-suspend",
       },
     );
 
