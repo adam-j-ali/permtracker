@@ -29,7 +29,7 @@ http://localhost:3000 · [Convex Dashboard](https://dashboard.convex.dev)
 | `pnpm typecheck:convex` | `tsc -p convex --noEmit` (Convex's own tsconfig) |
 | `pnpm test` | Vitest watch |
 | `pnpm test:fast` | ~1300 tests, **2 of 5 projects only** (~40s). Not a pre-push gate |
-| `pnpm test:run` | All 5 projects. Baseline 787 files / 10,530 tests (2026-10-24; 12 min on the old Mac under nvm's Node 24.22.1, which jsdom 30 needs). GitHub runs it on every push and the deploy waits for it; run it locally for a broad change |
+| `pnpm test:run` | All 5 projects. Baseline 1,347 files / 15,803 tests (2026-11-24; 115 s on the new MacBook Pro, 12 min on the old Air). GitHub runs it on every push and the deploy waits for it; run it locally for a broad change |
 | `pnpm check` | **The pre-push gate (owner, Oct 8 2026, 3:09 PM EDT)**: typecheckers, pyflakes, every data script test, the source audits, eslint on the changed files, and the vitest tests affected since `origin/main` (`scripts/check.sh`, about 2 min). CI runs the whole suite and the deploy waits for it, and the site goes live with the 2 AM night run (`-f when=now` for an urgent fix); deploy Convex only once that suite is green |
 | `pnpm test:e2e` | Playwright E2E |
 | `pnpm storybook` | Component dev (:6006) |
@@ -71,7 +71,7 @@ One line each. The reasons, and the incident behind each, are in the notes file 
 **Shipping**
 - `pnpm check` before every push. After the push, read the Oracle run's Build step (`gh run list --workflow oracle-deploy.yml`): only a build prerenders pages, and a held push still builds ([ops](docs/notes/ops.md)).
 - Deploy Convex before the site whenever a page starts reading a new Convex function; when Convex needs the new site first, deploy it after the night run.
-- Run the suite on this Mac under nvm's Node 24.22.1 (`PATH="$HOME/.nvm/versions/node/v24.22.1/bin:$PATH"`): jsdom 30 needs it, and `/usr/local/bin/node` is older.
+- Run the suite under nvm's Node 24.22.1, the Mac's default (`PATH="$HOME/.nvm/versions/node/v24.22.1/bin:$PATH"` in a script): jsdom 30 needs it, and the server and CI run Node 24 too (the server 24.22.3).
 - Check a rendered change on the dev server against production data, never by bulk-capturing production (795 page loads set off Under Attack Mode, Oct 11). The tunnel, both databases: `ssh -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -fN -L 127.0.0.1:18081:127.0.0.1:8080 -L 127.0.0.1:18082:127.0.0.1:8082 permtracker`, then `DATABASE_URL=http://127.0.0.1:18081 DATABASE_LCA_URL=http://127.0.0.1:18082` and the server's read-only token as `DATABASE_AUTH_TOKEN`, read into a variable and never printed ([testing](docs/notes/testing.md)).
 - A dev server can serve old modules: restart it before believing a render that contradicts the source. Its Turbopack cache fills the disk: stop it and `rm -rf .next/dev/cache` between long runs.
 
