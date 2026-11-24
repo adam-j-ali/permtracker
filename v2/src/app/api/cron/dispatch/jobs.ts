@@ -83,7 +83,7 @@ export const CRON_JOBS: Record<string, CronJob> = {
     inputs: { mode: "active" },
     schedule: "10 15 * * 1-5",
     zone: "America/New_York",
-    description: "the PERM wage requests DOL is working, a weekday-afternoon pass, so today's determinations show today",
+    description: "every open PERM wage request through where DOL is deciding, each weekday hour, so today's moves show within the hour",
   },
   "processing-times-hourly": {
     workflow: "processing-times-ingest.yml",
