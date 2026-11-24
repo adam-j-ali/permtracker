@@ -4,7 +4,7 @@
  * The public site's header: one 64px bar, the page's own colour, on every
  * public page (Oct 14 2026).
  *
- *   PERM Tracker | Case status · Processing times · Data · Learn · For professionals | search | Sign in
+ *   PERM Tracker | Case status · Today's decisions · Processing times · Data · Learn · For professionals | search | Sign in
  *
  * No Sign up in the header (owner, Oct 27 2026). It came back on Oct 22 because visits to /signup fell when the
  * Oct 14 header dropped it, but the accounts it brought were people waiting on their own case or who never
@@ -12,7 +12,7 @@
  * button and without it. "For professionals" names attorneys, paralegals, HR and employers in one word, and
  * that page carries its own sign-up.
  *
- * The first two are what most people come for. Data opens one panel with the
+ * The first three are what most people come for. Data opens one panel with the
  * six groups of data pages side by side, so nothing is hunted for group by
  * group; Learn opens the reading and reference pages. On a phone the bar holds
  * the logo, search and Menu, and the menu is one sheet, two levels at most.
