@@ -82,22 +82,27 @@ def active_pass_band() -> None:
     db = SqliteTurso()
     db.script([
         "CREATE TABLE pwd_case_status (case_number TEXT PRIMARY KEY, filing_date TEXT, current_status TEXT, "
-        "is_final INTEGER, employer_name TEXT, job_title TEXT, visa_type TEXT)",
+        "is_final INTEGER, employer_name TEXT, job_title TEXT, visa_type TEXT, last_checked_at TEXT, source TEXT, "
+        "fetched_at INTEGER)",
         "CREATE TABLE pwd_case_events (case_number TEXT, changed_at INTEGER, from_status TEXT, to_status TEXT, "
         "to_final INTEGER, source TEXT)",
     ])
     today = datetime.date(2026, 10, 27)
     day_ms = lambda d: int(datetime.datetime.combine(d, datetime.time(5, 40), tzinfo=m.ET).timestamp() * 1000)
-    db.conn.executemany("INSERT INTO pwd_case_status VALUES (?,?,?,?,?,?,?)", [
+    db.conn.executemany("INSERT INTO pwd_case_status (case_number, filing_date, current_status, is_final, "
+                        "employer_name, job_title, visa_type) VALUES (?,?,?,?,?,?,?)", [
         ("P-100-26190-000001", "2026-07-17", "DETERMINATION ISSUED", 1, "A", "t", "PERM"),  # decided lately
         ("P-100-26200-000002", "2026-07-19", "IN PROCESS", 0, "B", "t", "PERM"),             # in the band
         ("P-100-26205-000003", "2026-07-24", "IN PROCESS", 0, "C", "t", None),               # a week past: in
         ("P-100-26210-000004", "2026-07-29", "IN PROCESS", 0, "D", "t", "PERM"),             # past the band
         ("P-100-26200-000005", "2026-07-19", "IN PROCESS", 0, "E", "t", "H-1B"),             # not a PERM wage
         ("P-200-26200-000006", "2026-07-19", "IN PROCESS", 0, "F", "t", None),               # another office
-        ("P-100-26150-000007", "2026-05-30", "CENTER DIRECTOR REVIEW", 0, "G", "t", "PERM"), # not in process
+        ("P-100-26150-000007", "2026-05-30", "CENTER DIRECTOR REVIEW", 0, "G", "t", "PERM"), # open, not in process
+        ("P-100-26201-000009", "2026-07-20", "RFI ISSUED", 0, "I", "t", "PERM"),             # waiting on the employer
+        ("P-100-26202-000010", "2026-07-21", "PENDING REDETERMINATION", 0, "J", "t", "PERM"),  # being reconsidered
     ])
-    db.conn.executemany("INSERT INTO pwd_case_status VALUES (?,?,?,?,?,?,?)", [
+    db.conn.executemany("INSERT INTO pwd_case_status (case_number, filing_date, current_status, is_final, "
+                        "employer_name, job_title, visa_type) VALUES (?,?,?,?,?,?,?)", [
         ("P-100-26290-000008", "2026-10-17", "WITHDRAWN", 1, "H", "t", "PERM"),  # the employer's act
     ])
     db.conn.executemany("INSERT INTO pwd_case_events VALUES (?,?,?,?,?,?)", [
@@ -118,8 +123,11 @@ def active_pass_band() -> None:
         m.sweep(db, "pwd", pending_only=True, limit=None, active_through_day=through)
     finally:
         m.lookup_with_retry, m.record_sweep, m.time.sleep, m.decided_in_file = saved
-    check("it asks only the in-process PERM wage requests in the band", sorted(asked),
-          ["P-100-26200-000002", "P-100-26205-000003"])
+    # DOL moves requests out of RFI and redetermination during the day too (24 July ones on Nov 23 2026); a pass that
+    # asked only the in-process ones left them stale until the next morning.
+    check("it asks every open PERM wage request in the band, RFI and redetermination included", sorted(asked),
+          ["P-100-26150-000007", "P-100-26200-000002", "P-100-26201-000009", "P-100-26202-000010",
+           "P-100-26205-000003"])
     check("it records itself as the active mode, never a check of every case",
           (recorded.get("mode"), recorded.get("complete")), ("active", True))
     db.conn.execute("UPDATE pwd_case_events SET changed_at = ?", [day_ms(datetime.date(2026, 10, 10))])

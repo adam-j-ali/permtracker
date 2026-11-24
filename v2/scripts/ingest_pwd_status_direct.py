@@ -564,7 +564,7 @@ def sweep(db: Database, program: str, pending_only: bool, limit: int | None,
           window_days: int | None = None, active_through_day: str | None = None) -> dict:
     """Re-ask DOL about a set of cases and record what moved.
 
-    active_through_day  PERM wage requests in process filed on or before this
+    active_through_day  open PERM wage requests filed on or before this
                   day (the daytime pass, `active_through`); recorded as mode
                   "active", which no page reads as a check of every case
     pending_only  every non-final row (the daily pass; index case_status_final)
@@ -579,12 +579,14 @@ def sweep(db: Database, program: str, pending_only: bool, limit: int | None,
     args: list = []
     if active_through_day:
         lo, hi = DAY_QUEUE_RANGE
-        where = (f"WHERE case_number >= ? AND case_number < ? AND current_status = 'IN PROCESS' "
+        # Every open request in the band, not only the in-process ones: DOL moves requests out of RFI and
+        # redetermination during the day too, and asking only IN PROCESS left those a day stale.
+        where = (f"WHERE case_number >= ? AND case_number < ? AND (is_final = 0 OR is_final = '0') "
                  f"AND filing_date <= ? AND {PERM_WAGE}")
         args = [lo, hi, active_through_day]
         order = "filing_date, case_number"
         limit = limit or ACTIVE_CAP
-        log(f"{program}: PERM wage requests DOL is working, filed through {active_through_day}")
+        log(f"{program}: open PERM wage requests, filed through {active_through_day}")
     elif pending_only:
         where = "WHERE is_final = 0 OR is_final = '0'"
         order = "case_number"
