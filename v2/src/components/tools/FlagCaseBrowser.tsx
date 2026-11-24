@@ -91,7 +91,7 @@ export const PWD_PROGRAM: FlagBrowserProgram = {
   api: "/api/pwd-cases",
   noun: "wage request",
   nouns: "wage requests",
-  pendingLabel: "In process",
+  pendingLabel: "Still waiting",
   // Every request DOL is done with, withdrawn and returned ones too, so never "Issued".
   decidedLabel: "Decided",
   wageLabel: "Wage set",
@@ -112,7 +112,7 @@ export const SEASONAL_PROGRAM: FlagBrowserProgram = {
   api: "/api/seasonal-cases",
   noun: "H-2A, H-2B or CW-1 filing",
   nouns: "H-2A, H-2B and CW-1 filings",
-  pendingLabel: "In process",
+  pendingLabel: "Still waiting",
   decidedLabel: "Decided",
   // DOL's quarterly H-2A, H-2B and CW-1 files (`seasonal_cases`): the wage the
   // employer offered, in the unit the file quotes (an hour, mostly).
@@ -454,7 +454,7 @@ function FlagSearchFilters({
                 <FilterCombobox
                   id={`${id}-${f.key}`}
                   noun={f.key === "firm" ? "law firms" : "occupations"}
-                  emptyLabel={`Any (${formatInt(opts.length)})`}
+                  emptyLabel={`Any ${f.label.toLowerCase()}`}
                   options={opts.map((o) => ({ value: o.value, label: `${o.value} (${formatInt(o.n)})` }))}
                   value={value[f.key] ?? ""}
                   onChange={(v) => onChange({ ...value, [f.key]: v || undefined })}
@@ -470,7 +470,7 @@ function FlagSearchFilters({
                   onChange={(e) => onChange({ ...value, [f.key]: e.target.value || undefined })}
                   className={CONTROL}
                 >
-                  <option value="">Any ({formatInt(opts.length)})</option>
+                  <option value="">{`Any ${f.label.toLowerCase()}`}</option>
                   {opts.map((o) => (
                     <option key={o.value} value={o.value}>
                       {`${o.value} (${formatInt(o.n)})`}
@@ -931,7 +931,7 @@ export function FlagCaseBrowser({
         <h2 className="font-heading text-xl font-bold">Browse every {program.noun} DOL has confirmed</h2>{" "}
         {summary ? (
           <p className="mt-2 max-w-3xl text-base leading-relaxed text-soft">
-            {formatInt(summary.total)} {program.nouns} so far: {formatInt(summary.pending)} still in process,{" "}
+            {formatInt(summary.total)} {program.nouns} so far: {formatInt(summary.pending)} still waiting,{" "}
             {formatInt(summary.decided)} {program.decidedLabel.toLowerCase()}.
           </p>
         ) : null}{" "}

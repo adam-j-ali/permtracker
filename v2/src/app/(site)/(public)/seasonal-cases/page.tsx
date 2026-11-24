@@ -153,12 +153,12 @@ export default async function SeasonalCasesPage() {
                     </p>{" "}
                     <p className="mt-1 font-heading text-lg font-bold">{keepWhole(f.label)}</p>{" "}
                     <p className="mt-2 font-heading text-3xl font-bold">{formatInt(n)}</p>{" "}
-                    <p className="text-sm text-muted-foreground">{formatInt(pending)} still in process</p>{" "}
+                    <p className="text-sm text-muted-foreground">{formatInt(pending)} still waiting</p>{" "}
                     {/* Drawn to measure: the bar is this form's share of every filing held. */}
                     <div
                       className="mt-3 h-2 w-full bg-background"
                       aria-hidden="true"
-                      data-tip={`${p}- ${f.label}\n${share}% of the ${formatInt(summary.total)} filings held\n${formatInt(n)} filings, ${formatInt(pending)} still in process`}
+                      data-tip={`${p}- ${f.label}\n${share}% of the ${formatInt(summary.total)} filings held\n${formatInt(n)} filings, ${formatInt(pending)} still waiting`}
                     >
                       <div className="h-2 bg-primary" style={{ width: `${share}%` }} />
                     </div>

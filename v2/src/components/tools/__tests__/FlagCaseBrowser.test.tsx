@@ -110,7 +110,10 @@ describe("FlagCaseBrowser names the finished filings for what the list holds", (
     render(<FlagCaseBrowser summary={summary} program={PWD_PROGRAM} />);
     expect(screen.getByRole("button", { name: "Decided · 520,636" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Issued/ })).toBeNull();
-    expect(screen.getByText(/46,069 still in process, 520,636 decided\./)).toBeInTheDocument();
+    // "Still waiting": the open filter holds RFI and redetermination requests too, not only DOL's IN PROCESS.
+    expect(screen.getByText(/46,069 still waiting, 520,636 decided\./)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Still waiting/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^In process/ })).toBeNull();
   });
 });
 
