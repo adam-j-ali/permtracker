@@ -22,8 +22,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-const FFMPEG = "/usr/local/Caskroom/miniconda/base/bin/ffmpeg";
-const PYTHON = "/usr/local/Caskroom/miniconda/base/bin/python3";
+const FFMPEG = "/opt/homebrew/Caskroom/miniconda/base/bin/ffmpeg";
+const PYTHON = "/opt/homebrew/Caskroom/miniconda/base/bin/python3";
 const OUT = "public/videos/guides";
 const SIZE = { width: 1280, height: 800 };
 const TODAY = new Date("2026-10-01T15:00:00Z");

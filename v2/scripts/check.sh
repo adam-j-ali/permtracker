@@ -20,7 +20,7 @@ base=${1:-origin/main}
 
 # The Mac's /usr/bin/python3 is 3.9 and can't read these scripts' f-strings.
 PY=python3
-[ -x /usr/local/Caskroom/miniconda/base/bin/python3 ] && PY=/usr/local/Caskroom/miniconda/base/bin/python3
+[ -x /opt/homebrew/Caskroom/miniconda/base/bin/python3 ] && PY=/opt/homebrew/Caskroom/miniconda/base/bin/python3
 
 # Each step says how long it took, and the end gives the total.
 t0=$(date +%s); tlast=$t0

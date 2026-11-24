@@ -404,7 +404,7 @@ Run any of them locally with the miniconda python (the system `python3` is
 3.9 and lacks the libraries):
 
 ```bash
-/usr/local/Caskroom/miniconda/base/bin/python3 scripts/test_load_guard.py
+/opt/homebrew/Caskroom/miniconda/base/bin/python3 scripts/test_load_guard.py
 ```
 
 | file | pins |
