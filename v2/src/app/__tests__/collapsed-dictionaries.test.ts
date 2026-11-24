@@ -36,8 +36,9 @@ const PAGES = {
 
 describe("every word stays in the DOM", () => {
   it("/glossary still renders the whole definition (lead AND rest)", () => {
-    expect(PAGES.glossary).toContain("{lead}");
-    expect(PAGES.glossary).toContain("{rest.join(\" \")}");
+    // Each part may go through keepWhole (program names held on one line); either way it's rendered.
+    expect(PAGES.glossary).toMatch(/\{(?:keepWhole\()?lead\)?\}/);
+    expect(PAGES.glossary).toMatch(/\{(?:keepWhole\()?rest\.join\(" "\)\)?\}/);
   });
   it("/perm-case-statuses still renders the rest of each summary, the clock, who acts and the source", () => {
     for (const field of ["{rest}", "{m.deadline}", "{m.action}", "<Source cite={m.cite}", "<Source cite={e.cite}"]) {
