@@ -41,7 +41,9 @@ import {
   isOutcome,
   isSearchOrder,
   isWageSource,
+  caseSearchHref,
 } from "@/lib/caseSearchPlan";
+import { RecentSearchesField } from "@/components/search/RecentSearches";
 // One line, deliberately: no-server-only-in-client.test.ts checks each import
 // line on its own, so a type import wrapped over several lines reads as a
 // runtime import of a "server-only" module.
@@ -823,24 +825,27 @@ export function UnifiedCaseSearch({
                 <label className="mb-2 block font-heading text-xl font-bold leading-tight" htmlFor={`${uid}-q`}>
                   Employer or case number
                 </label>{" "}
-                <input
-                  id={`${uid}-q`}
-                  type="text"
-                  name="q"
-                  value={textInput}
-                  onChange={(e) => setTextInput(e.target.value)}
-                  /* 361.8px of real Inter at 16px/500 before this, in a box
-                     that is 220px wide on a 320px phone: the reader saw
-                     "Start of the employer's name, or G-" and no more, so the
-                     three other prefixes the field accepts were invisible on
-                     every phone. The list moved to the hint below, which is
-                     where it can be read. */
-                  placeholder="e.g. Microsoft or G-100-…"
-                  maxLength={120}
-                  autoComplete="off"
-                  aria-describedby={`${uid}-q-hint`}
-                  className={CONTROL}
-                />
+                {/* A recent search reopens as a name search here; one made on this page runs again in place. */}
+                <RecentSearchesField record="submit" value={textInput} hrefFor={(q) => caseSearchHref({ q })} onRestore={runExample}>
+                  <input
+                    id={`${uid}-q`}
+                    type="text"
+                    name="q"
+                    value={textInput}
+                    onChange={(e) => setTextInput(e.target.value)}
+                    /* 361.8px of real Inter at 16px/500 before this, in a box
+                       that is 220px wide on a 320px phone: the reader saw
+                       "Start of the employer's name, or G-" and no more, so the
+                       three other prefixes the field accepts were invisible on
+                       every phone. The list moved to the hint below, which is
+                       where it can be read. */
+                    placeholder="e.g. Microsoft or G-100-…"
+                    maxLength={120}
+                    autoComplete="off"
+                    aria-describedby={`${uid}-q-hint`}
+                    className={CONTROL}
+                  />
+                </RecentSearchesField>
               </div>{" "}
               <div className="flex items-end">
                 <button type="submit" className={buttonVariants({ size: "lg" })} disabled={pending} aria-busy={pending}>

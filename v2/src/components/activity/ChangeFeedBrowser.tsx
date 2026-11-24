@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRightIcon } from "@phosphor-icons/react";
 
 import { DidYouMean } from "@/components/search/DidYouMean";
+import { RecentSearchesField } from "@/components/search/RecentSearches";
 import { usePublicQuery } from "@/hooks/usePublicQuery";
 import { rankFuzzy } from "@/lib/fuzzy";
 import { nextSort, sortRows, type SortState } from "@/lib/tableSort";
@@ -504,21 +505,32 @@ export function ChangeFeedBrowser({
           <label htmlFor={`${id}-q`} className={LABEL}>
             Search these dates
           </label>{" "}
-          <input
-            id={`${id}-q`}
-            type="search"
+          <RecentSearchesField
+            record="filter"
             value={search}
-            disabled={!ready}
-            onChange={(e) => {
-              setSearch(e.target.value);
+            onRestore={(v) => {
+              setSearch(v);
               reset();
             }}
-            placeholder="Search"
-            maxLength={120}
-            autoComplete="off"
-            aria-describedby={`${id}-q-hint`}
-            className={`${CONTROL} mt-1`}
-          />{" "}
+            restoreFromUrl
+            className="mt-1"
+          >
+            <input
+              id={`${id}-q`}
+              type="search"
+              value={search}
+              disabled={!ready}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                reset();
+              }}
+              placeholder="Search"
+              maxLength={120}
+              autoComplete="off"
+              aria-describedby={`${id}-q-hint`}
+              className={CONTROL}
+            />
+          </RecentSearchesField>{" "}
           <p id={`${id}-q-hint`} className="mt-1 text-sm text-muted-foreground">
             Case number, employer, job title. Occupation and state too on
             published dates.

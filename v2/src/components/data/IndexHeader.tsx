@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { CaseLookupForm } from "@/components/tools/CaseLookupForm";
+import { RecentSearchesField } from "@/components/search/RecentSearches";
 import { FinderDock, FinderDockPanel } from "@/components/tools/FinderDock";
 import { Figure, FigureRow, type FigureTrend } from "@/components/data/FigureRow";
 import { Spark, SplitBar, type SplitPart } from "@/components/data/FigureVisual";
@@ -154,16 +155,18 @@ export function IndexSearch({
       </label>{" "}
       {note ? <p className="mt-1 text-sm leading-relaxed text-soft">{note}</p> : null}{" "}
       <div className="mt-3 flex gap-2">
-        <input
-          id="index-search"
-          name={name}
-          type="search"
-          required
-          minLength={2}
-          autoComplete="off"
-          placeholder={placeholder}
-          className="h-12 min-w-0 flex-1 border-2 border-input bg-card px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        />{" "}
+        <RecentSearchesField record="submit" className="min-w-0 flex-1">
+          <input
+            id="index-search"
+            name={name}
+            type="search"
+            required
+            minLength={2}
+            autoComplete="off"
+            placeholder={placeholder}
+            className="h-12 w-full min-w-0 border-2 border-input bg-card px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+        </RecentSearchesField>{" "}
         <button type="submit" className={buttonVariants({ size: "lg" })}>
           {button}
         </button>

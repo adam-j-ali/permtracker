@@ -22,6 +22,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
 import { updateToastAuthState } from "@/lib/toast";
 import { analytics } from "@/lib/analytics";
+import { clearRecentSearches } from "@/lib/search/recentSearches";
 
 // ============================================================================
 // TYPES
@@ -78,6 +79,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [authState]);
 
   const beginSignOut = useCallback(() => {
+    // Every sign-out passes here. The next person at this browser starts with no recent searches: they can hold
+    // case numbers and the employers on the account's cases.
+    clearRecentSearches();
     setAuthState((current) => {
       // Only transition from idle to signingOut
       if (current === "idle") {

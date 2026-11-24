@@ -4,10 +4,14 @@
  * ContentSearch
  *
  * The article listings' filter box: filters posts by title and description,
- * with a clear button once something is typed.
+ * with a clear button once something is typed. Empty and focused, it offers
+ * the visitor's recent searches; a search is kept on Enter or on leaving the
+ * box, and a listing opened from one starts filtered by it.
  */
 
 import { MagnifyingGlassIcon as Search, XIcon } from "@phosphor-icons/react";
+
+import { RecentSearchesField } from "@/components/search/RecentSearches";
 
 interface ContentSearchProps {
   value: string;
@@ -21,7 +25,7 @@ export default function ContentSearch({
   placeholder = "Search articles...",
 }: ContentSearchProps) {
   return (
-    <div className="relative">
+    <RecentSearchesField record="filter" value={value} onRestore={onChange} restoreFromUrl>
       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <input
         type="search"
@@ -47,6 +51,6 @@ export default function ContentSearch({
             <XIcon className="h-4 w-4" />
           </button>
         )}
-    </div>
+    </RecentSearchesField>
   );
 }

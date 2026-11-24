@@ -25,6 +25,7 @@ import { LIST_PAGE_SIZE, LIST_ROW, LIST_TABLE, NUMBER_CELL, PHONE_ROW, TITLE_ON_
 import type { CasePage } from "@/lib/db/cases";
 import { RequestFailed } from "@/components/tools/RequestFailed";
 import { DidYouMean, useNameSuggestions } from "@/components/search/DidYouMean";
+import { RecentSearchesField } from "@/components/search/RecentSearches";
 import { formatInt } from "@/lib/format";
 import { formText } from "@/lib/forms/formText";
 import { CaseStatusChip } from "@/components/ui/badge";
@@ -296,6 +297,13 @@ export function CaseBrowser({
   const [caseSubmit, setCaseSubmit] = useState(0);
   const [nameSubmit, setNameSubmit] = useState(0);
   const [listSubmit, setListSubmit] = useState(0);
+  /** Run the name search from a recent search made on this page, with the narrowing already chosen. */
+  const searchName = (name: string) => {
+    setNameInput(name);
+    setNameNote(null);
+    setNameQuery(name);
+    setNameSubmit((s) => s + 1);
+  };
 
   const slice = useMemo(() => {
     switch (dimension) {
@@ -582,20 +590,27 @@ export function CaseBrowser({
             setCaseSubmit((s) => s + 1);
           }}
         >
-          <label className="block">
-            <span className="sr-only">Case number</span>{" "}
-            <input
-              type="text"
-              name="case"
-              value={caseInput}
-              onChange={(e) => setCaseInput(e.target.value)}
-              placeholder="A-24123-45678"
-              maxLength={32}
-              autoComplete="off"
-              spellCheck={false}
-              className={CONTROL}
-            />
-          </label>{" "}
+          {/* A number is kept at the case's own page, where every box sends one. */}
+          <RecentSearchesField
+            record="submit"
+            value={caseInput}
+            hrefFor={(n) => `/perm-case-status?case=${encodeURIComponent(n)}`}
+          >
+            <label className="block">
+              <span className="sr-only">Case number</span>{" "}
+              <input
+                type="text"
+                name="case"
+                value={caseInput}
+                onChange={(e) => setCaseInput(e.target.value)}
+                placeholder="A-24123-45678"
+                maxLength={32}
+                autoComplete="off"
+                spellCheck={false}
+                className={CONTROL}
+              />
+            </label>
+          </RecentSearchesField>{" "}
           <button
             type="submit"
             className={buttonVariants({ size: "lg" })}
@@ -730,19 +745,23 @@ export function CaseBrowser({
               <option value="attorney">Law firm</option>
             </select>
           </label>{" "}
-          <label className="block">
-            <span className="sr-only">Name</span>{" "}
-            <input
-              type="text"
-              name="q"
-              value={nameInput}
-              onChange={(e) => setNameInput(e.target.value)}
-              placeholder="Start of a name"
-              maxLength={120}
-              autoComplete="off"
-              className={CONTROL}
-            />
-          </label>{" "}
+          {/* Around the label, so the list under the box is never read as part of the box's name. The page
+              opens this search from `q`; one made here runs again in place. */}
+          <RecentSearchesField record="submit" value={nameInput} onRestore={searchName}>
+            <label className="block">
+              <span className="sr-only">Name</span>{" "}
+              <input
+                type="text"
+                name="q"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder="Start of a name"
+                maxLength={120}
+                autoComplete="off"
+                className={CONTROL}
+              />
+            </label>
+          </RecentSearchesField>{" "}
           <button
             type="submit"
             className={BUTTON}

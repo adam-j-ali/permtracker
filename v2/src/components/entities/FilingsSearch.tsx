@@ -8,6 +8,7 @@ import { formatInt } from "@/lib/format";
 import { stateName } from "@/lib/usStateNames";
 import type { FacetRow } from "@/lib/db/entityDetail";
 import { KeepWhole } from "@/components/ui/keep-whole";
+import { RecentSearchesField } from "@/components/search/RecentSearches";
 
 /**
  * Search one employer's, one job's or one law firm's filings, case by case, from its own page.
@@ -116,10 +117,13 @@ export function FilingsSearch({ what, fixed, ask, jobs = [], employers = [], sta
         }`}
       >
         {Object.entries(fixed).map(([k, v]) => (v ? <input key={k} type="hidden" name={k} value={v} /> : null))}
-        <label className={LABEL}>
-          {ASK_LABEL[ask]}{" "}
-          <input type="search" name={ask} placeholder={ASK_HINT[ask]} maxLength={80} autoComplete="off" className={FIELD} />
-        </label>{" "}
+        {/* Around the label, so the list under the box is never read as part of the box's name. */}
+        <RecentSearchesField record="submit">
+          <label className={LABEL}>
+            {ASK_LABEL[ask]}{" "}
+            <input type="search" name={ask} placeholder={ASK_HINT[ask]} maxLength={80} autoComplete="off" className={FIELD} />
+          </label>
+        </RecentSearchesField>{" "}
         {pickJob ? (
           <label className={LABEL}>
             Job (SOC){" "}

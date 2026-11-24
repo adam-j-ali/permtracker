@@ -4,6 +4,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 
 import { DayCaseRow } from "@/components/queue/DayCaseRow";
 import { RequestFailed } from "@/components/tools/RequestFailed";
+import { RecentSearchesField } from "@/components/search/RecentSearches";
 import { Pagination, usePerPage } from "@/components/ui/pagination";
 import { usePublicQuery } from "@/hooks/usePublicQuery";
 import { useUrlPatch, useUrlSearchParams } from "@/hooks/useUrlSearchParams";
@@ -177,18 +178,22 @@ export function FiledOnDay({
             ))}
           </div>{" "}
           <div className="mt-5 flex flex-wrap items-end gap-3">
-            <label className="flex min-w-0 flex-[1_1_16rem] flex-col gap-1 text-sm font-semibold">
-              Search the day
-              <input
-                type="search"
-                name="q"
-                autoComplete="off"
-                value={typed}
-                onChange={(e) => setTyped(e.target.value)}
-                placeholder="Case, employer or job"
-                className="min-h-11 w-full min-w-0 border-2 border-input bg-background px-3 text-base font-normal"
-              />
-            </label>{" "}
+            {/* Around the label, so the list under the box is never read as part of the box's name. The box
+                writes the address itself, so a search made here fills it again in place. */}
+            <RecentSearchesField record="filter" value={typed} onRestore={setTyped} className="min-w-0 flex-[1_1_16rem]">
+              <label className="flex min-w-0 flex-col gap-1 text-sm font-semibold">
+                Search the day
+                <input
+                  type="search"
+                  name="q"
+                  autoComplete="off"
+                  value={typed}
+                  onChange={(e) => setTyped(e.target.value)}
+                  placeholder="Case, employer or job"
+                  className="min-h-11 w-full min-w-0 border-2 border-input bg-background px-3 text-base font-normal"
+                />
+              </label>
+            </RecentSearchesField>{" "}
             <label className="flex min-w-0 flex-[0_1_14rem] flex-col gap-1 text-sm font-semibold">
               Order
               <select

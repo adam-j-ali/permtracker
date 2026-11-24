@@ -144,6 +144,7 @@ never black-weight. Prose runs at 68 characters at most (`max-w-prose` or
 | `IndexHeader`, `ProfileHeader`, `Chapter`, `ChapterNav` | `components/data/`, `components/entities/` | the top of list pages and of employer, firm and occupation pages. |
 | `CaseLookupForm`, `CaseNextStep` | `components/tools/` | the case-number box (a plain GET form, works without scripts) and the one next step for someone waiting on a case. |
 | `DidYouMean`, `NameGroups` | `components/search/` | "did you mean" for any empty search; the pages a name can mean, beside its filings. |
+| `RecentSearchesField`, `useRecentSearches` | `components/search/RecentSearches.tsx` | every search box's recent searches: a short list under the empty, focused box, with Clear, kept in the browser only (`lib/search/recentSearches.ts`). A new search box goes inside one, around its label, or `search-boxes-keep-no-history.test.ts` fails. |
 | `ChartTips`, `DateRuler` | `components/data/`, `components/tools/` | every chart's hover and tap readout; a deadline drawn as a ruler. A chart wider than a phone passes its scroll box's classes as `scroll`, so the one tab stop is the box that scrolls. |
 | `ScrollBox` | `ui/scroll-box.tsx` | a table or strip that scrolls sideways on a phone: a named region with a tab stop, so a keyboard can reach it. A box holding links already has one and needs nothing. |
 | `PageHeading`, `AppBreadcrumb`, `SettingsCard` | `app/(authenticated)/components/`, `components/settings/` | the signed-in app's title block, trail and settings sections. |

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import { renderHook } from "@testing-library/react";
 import { AuthProvider, useAuthContext } from "../AuthContext";
+import { RECENT_SEARCHES_KEY } from "@/lib/search/recentSearches";
 
 // ============================================================================
 // PROVIDER TESTS
@@ -116,6 +117,20 @@ describe("useAuthContext", () => {
 
       // State should still be signingOut (no error, no change)
       expect(result.current.authState).toBe("signingOut");
+    });
+
+    it("beginSignOut clears the recent searches, so the next person at this browser starts with none", () => {
+      window.localStorage.setItem(
+        RECENT_SEARCHES_KEY,
+        JSON.stringify([{ label: "Juniper Biologics", href: "/cases/c1", at: Date.UTC(2026, 10, 23) }]),
+      );
+      const { result } = renderHook(() => useAuthContext(), { wrapper });
+
+      act(() => {
+        result.current.beginSignOut();
+      });
+
+      expect(window.localStorage.getItem(RECENT_SEARCHES_KEY)).toBeNull();
     });
   });
 

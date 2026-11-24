@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { useFinderDock } from "@/components/tools/FinderDock";
 import { normaliseCaseNumber } from "@/lib/caseNumberShape";
 import { looksLikeReceipt } from "@/lib/uscis/receipt";
+import { RecentSearchesField } from "@/components/search/RecentSearches";
 
 // Loaded when someone opens it: the homepage carries this box, and most visitors have their number.
 const CaseFinder = dynamic(() => import("@/components/tools/CaseFinder").then((m) => m.CaseFinder), {
@@ -189,39 +190,46 @@ export function CaseLookupForm({
           {label}
         </label>{" "}
         <div className={cn("flex flex-wrap items-stretch gap-3", !compact && "mt-2")}>
-          <input
-            id={inputId}
-            name="case"
-            type="text"
-            defaultValue={defaultValue}
-            // The browser's own check, so it holds with or without scripts; with them, the message is ours. The
-            // browser stops an empty press before it's a submit (the event doesn't reach the form), so it's
-            // counted here, as the empty shape it was counted as when the press went on to an empty case page.
-            required
-            onInvalid={(e) => {
-              e.currentTarget.setCustomValidity(EMPTY_PRESS[names ? "name" : "number"]);
-              if (source) trackLookup(source, "");
-            }}
-            onInput={(e) => e.currentTarget.setCustomValidity("")}
-            onChange={(e) => {
-              setValue(e.target.value);
-              setEdited(true);
-            }}
-            placeholder={placeholder ?? PLACEHOLDER[names ? "name" : "number"]}
-            autoComplete="off"
-            autoCapitalize={names ? "none" : "characters"}
-            spellCheck={false}
-            enterKeyHint="search"
-            translate="no"
-            maxLength={names ? 120 : 40}
-            aria-invalid={malformed || undefined}
-            aria-describedby={hint ? helpId : undefined}
-            className={cn(
-              "h-12 w-full min-w-0 flex-1 border border-input bg-card px-4 text-base placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring",
-              stack ? "basis-full" : "basis-56",
-              !names && "font-mono",
-            )}
-          />
+          {/* The box offers this visitor's recent searches and keeps the number it sends; inside another site's
+              page (the embed) it does neither. */}
+          <RecentSearchesField
+            record="submit"
+            off={action.startsWith("/embed/")}
+            className={cn("min-w-0 flex-1", stack ? "basis-full" : "basis-56")}
+          >
+            <input
+              id={inputId}
+              name="case"
+              type="text"
+              defaultValue={defaultValue}
+              // The browser's own check, so it holds with or without scripts; with them, the message is ours. The
+              // browser stops an empty press before it's a submit (the event doesn't reach the form), so it's
+              // counted here, as the empty shape it was counted as when the press went on to an empty case page.
+              required
+              onInvalid={(e) => {
+                e.currentTarget.setCustomValidity(EMPTY_PRESS[names ? "name" : "number"]);
+                if (source) trackLookup(source, "");
+              }}
+              onInput={(e) => e.currentTarget.setCustomValidity("")}
+              onChange={(e) => {
+                setValue(e.target.value);
+                setEdited(true);
+              }}
+              placeholder={placeholder ?? PLACEHOLDER[names ? "name" : "number"]}
+              autoComplete="off"
+              autoCapitalize={names ? "none" : "characters"}
+              spellCheck={false}
+              enterKeyHint="search"
+              translate="no"
+              maxLength={names ? 120 : 40}
+              aria-invalid={malformed || undefined}
+              aria-describedby={hint ? helpId : undefined}
+              className={cn(
+                "h-12 w-full min-w-0 border border-input bg-card px-4 text-base placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring",
+                !names && "font-mono",
+              )}
+            />
+          </RecentSearchesField>{" "}
           <button
             type="submit"
             data-ph-capture-attribute-cta="case-lookup"

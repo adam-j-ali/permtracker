@@ -18,6 +18,8 @@ import { comparableWage, formatWage } from "@/lib/wageFormat";
 import { YearlyPayNote } from "@/components/data/YearlyPayNote";
 import { mergeHalves } from "@/lib/flagMerge";
 import { normaliseCaseNumber } from "@/lib/caseNumberShape";
+import { hrefWithSearch } from "@/lib/search/recentSearches";
+import { RecentSearchesField } from "@/components/search/RecentSearches";
 import { SortableHeader } from "@/components/tools/SortableHeader";
 import {
   FLAG_FILTER_FIELDS,
@@ -566,6 +568,13 @@ export function FlagCaseBrowser({
     n: 0,
   });
   const [filters, setFilters] = useState<FlagFilters>({});
+  /** Run an employer search from a recent search made on this page, keeping the narrowing already chosen. */
+  const searchEmployer = (employer: string) => {
+    setEmployerInput(employer);
+    setSearchNote(null);
+    setQuery((q) => ({ ...q, employer, n: q.n + 1 }));
+    setFilters({});
+  };
 
   const searchUrl = useMemo(() => {
     if (query.employer.length < 2) return "skip" as const;
@@ -704,23 +713,35 @@ export function FlagCaseBrowser({
             setFilters({});
           }}
         >
-          <label className="block sm:col-span-2">
-            <span className="mb-1 block text-sm font-bold">Employer or case number</span>{" "}
-            <input
-              type="text"
-              name="q"
-              value={employerInput}
-              onChange={(e) => setEmployerInput(e.target.value)}
-              /* 221.7px in a 220px box on a 320px phone: it clipped, and
-                 the sentence above the form already says the start of the name
-                 is enough. An example is shorter and more use than a rule. */
-              placeholder="e.g. Microsoft"
-              maxLength={120}
-              autoComplete="off"
-              aria-describedby={numberNoteId}
-              className={CONTROL}
-            />
-          </label>{" "}
+          {/* Around the label, so the list under the box is never read as part of the box's name. A case
+              number goes to its own page, as the form sends it; a name made on this page runs again in place. */}
+          <RecentSearchesField
+            record="submit"
+            value={employerInput}
+            hrefFor={(q) =>
+              normaliseCaseNumber(q) ? `/perm-case-status?case=${encodeURIComponent(q)}` : hrefWithSearch(window.location.href, "q", q)
+            }
+            onRestore={searchEmployer}
+            className="sm:col-span-2"
+          >
+            <label className="block">
+              <span className="mb-1 block text-sm font-bold">Employer or case number</span>{" "}
+              <input
+                type="text"
+                name="q"
+                value={employerInput}
+                onChange={(e) => setEmployerInput(e.target.value)}
+                /* 221.7px in a 220px box on a 320px phone: it clipped, and
+                   the sentence above the form already says the start of the name
+                   is enough. An example is shorter and more use than a rule. */
+                placeholder="e.g. Microsoft"
+                maxLength={120}
+                autoComplete="off"
+                aria-describedby={numberNoteId}
+                className={CONTROL}
+              />
+            </label>
+          </RecentSearchesField>{" "}
           <div className="flex items-end">
             <button type="submit" className={buttonVariants({ size: "lg" })} disabled={searchPending} aria-busy={searchPending}>
               {searchPending ? "Searching…" : "Search"}
