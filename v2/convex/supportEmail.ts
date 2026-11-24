@@ -406,6 +406,29 @@ export const markReplied = internalMutation({
   },
 });
 
+/** The reason a message marked by hand carries in spamReasons. */
+export const SPAM_BY_HAND = "Spam or marketing, marked by hand";
+
+/**
+ * Spam or marketing: a message that gets no reply, archived so nothing lists it as waiting. Run by hand, like a
+ * reply: `npx convex run supportEmail:markSpamOrMarketing '{"supportEmailId":"<id>"}' --prod`. Marking it twice
+ * changes nothing; a message already replied to keeps its reply and is archived too.
+ */
+export const markSpamOrMarketing = internalMutation({
+  args: { supportEmailId: v.id("supportEmails") },
+  returns: v.union(v.null(), v.object({ was: v.string() })),
+  handler: async (ctx, { supportEmailId }) => {
+    const row = await ctx.db.get(supportEmailId);
+    if (!row) return null;
+    const reasons = row.spamReasons ?? [];
+    await ctx.db.patch(supportEmailId, {
+      status: "archived",
+      spamReasons: reasons.includes(SPAM_BY_HAND) ? reasons : [...reasons, SPAM_BY_HAND],
+    });
+    return { was: row.status };
+  },
+});
+
 // ============================================================================
 // ADMIN QUERIES
 // ============================================================================
