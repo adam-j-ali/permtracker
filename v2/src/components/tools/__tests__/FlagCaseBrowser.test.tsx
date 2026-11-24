@@ -271,3 +271,43 @@ describe("FlagCaseBrowser's search results come a short page at a time", () => {
   });
 });
 
+
+describe("a row's dates", () => {
+  function browse(found: FlagCaseRow[]) {
+    usePublicQuery.mockImplementation((url: string) =>
+      typeof url === "string" && url.includes("action=search")
+        ? { data: { cases: [], disclosed: [] }, failed: false }
+        : { data: { rows: found, isDone: true, continueCursor: "0" }, failed: false },
+    );
+  }
+  const row = (over: Partial<FlagCaseRow>): FlagCaseRow => ({
+    ...live("P-100-26212-139238", "RFI ISSUED"),
+    filingDate: "2026-07-31",
+    isFinal: false,
+    statusSince: "2026-11-16T09:00:00Z",
+    sinceFirstSeen: false,
+    lastCheckedAt: "2026-11-23",
+    ...over,
+  });
+
+  it("says when the status last changed and when DOL was last asked, apart", () => {
+    browse([row({})]);
+    render(<FlagCaseBrowser summary={null} program={PWD_PROGRAM} />);
+    expect(document.body.textContent).toContain("Filed 2026-07-31, in this status since 2026-11-16, checked with DOL 2026-11-23");
+    expect(screen.getByRole("columnheader", { name: /In this status since/ })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /Checked with DOL/ })).toBeInTheDocument();
+  });
+
+  it("says 'or earlier' when the status hasn't changed since the case was first seen", () => {
+    browse([row({ statusSince: "2026-09-07T05:00:00Z", sinceFirstSeen: true })]);
+    render(<FlagCaseBrowser summary={null} program={PWD_PROGRAM} />);
+    expect(document.body.textContent).toContain("in this status since 2026-09-07 or earlier");
+  });
+
+  it("gives a decided row no check date: it isn't asked again", () => {
+    browse([row({ status: "DETERMINATION ISSUED", isFinal: true, lastCheckedAt: "2026-11-16T09:00:00Z" })]);
+    render(<FlagCaseBrowser summary={null} program={PWD_PROGRAM} />);
+    expect(document.body.textContent).toContain("Filed 2026-07-31, in this status since 2026-11-16");
+    expect(document.body.textContent).not.toContain("checked with DOL");
+  });
+});

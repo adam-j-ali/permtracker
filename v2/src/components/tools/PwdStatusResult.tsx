@@ -32,6 +32,7 @@ import { CalendarBlankIcon, QueueIcon } from "@phosphor-icons/react/ssr";
 import { isLookupGap } from "@/lib/dolMiss";
 import { formatInt } from "@/lib/format";
 import { formatDay } from "@/lib/dolFormat";
+import { statusDates } from "@/lib/statusDates";
 import { prettyStatus } from "@/components/queue/stages";
 import { getPermsNamingPwd, type PermNamingPwd } from "@/lib/db/decidedTimeline";
 import { casesCitingPwd, type CaseCitingPwd } from "@/lib/db/caseLinks";
@@ -57,6 +58,14 @@ import { softFail } from "@/lib/softRead";
 
 
 /** A share as a percent; one decimal just under 100, so 99.5% never reads as all of them. */
+/** The answer card's source line: when the status last changed and, for an open request, when DOL was last asked. */
+function statusSourceLine(row: Parameters<typeof statusDates>[0]): string | undefined {
+  const d = statusDates(row);
+  const since = d.since ? `${formatDay(d.since)}${d.sinceOrEarlier ? " or earlier" : ""}` : null;
+  if (d.checked) return since ? `In this status since ${since}, checked with DOL ${formatDay(d.checked)}` : `Checked with DOL ${formatDay(d.checked)}`;
+  return since ? `DOL showed this status on ${since}` : undefined;
+}
+
 function sharePct(x: number): string {
   return x >= 0.99 && x < 1 ? `${(Math.floor(x * 1000) / 10).toFixed(1)}%` : `${Math.round(x * 100)}%`;
 }
@@ -334,6 +343,7 @@ export async function PwdLookup({ caseNumber }: { caseNumber: string }) {
   const dated = dayEst && dayEst.kind === "estimate" ? dayEst : null;
 
   const pending = !row.isFinal;
+  const dates = statusDates(row);
   const upper = row.status.toUpperCase();
   const issuedNow = ISSUED.test(upper);
   const filed = formatDay(row.submittedDate) ?? formatDay(row.filingDate);
@@ -349,7 +359,7 @@ export async function PwdLookup({ caseNumber }: { caseNumber: string }) {
             Wage request <span translate="no">{row.caseNumber}</span>
           </>
         }
-        source={row.lastCheckedAt ? `DOL showed this status on ${formatDay(row.lastCheckedAt)}` : undefined}
+        source={statusSourceLine(row)}
         actions={
           pending ? (
             <AnswerNext
@@ -501,7 +511,11 @@ export async function PwdLookup({ caseNumber }: { caseNumber: string }) {
             { label: "Job title", value: row.jobTitle ?? "Not given", raw: !!row.jobTitle },
             { label: "Case number", value: row.caseNumber, raw: true, mono: true },
             { label: "Filed with DOL", value: filed ?? "Unknown" },
-            { label: "Last checked against DOL", value: formatDay(row.lastCheckedAt) ?? "Today" },
+            {
+              label: "In this status since",
+              value: dates.since ? `${formatDay(dates.since)}${dates.sinceOrEarlier ? " or earlier" : ""}` : "Unknown",
+            },
+            ...(dates.checked ? [{ label: "Last checked with DOL", value: formatDay(dates.checked) ?? dates.checked }] : []),
           ]}
         />
       </PageSection>

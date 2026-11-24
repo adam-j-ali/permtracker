@@ -226,3 +226,50 @@ describe("the decided half: DOL's quarterly file", () => {
     expect(rows.mock.calls.at(-1)![1]).toEqual(["flag_disclosure_summary_pw"]);
   });
 });
+
+describe("a row's two dates: when its status last changed, and when DOL was last asked", () => {
+  const summaryDoc = JSON.stringify({ total: 3, pending: 2, decided: 1, byStatus: { "IN PROCESS": 2 }, byMonth: [] });
+  const row = (over: Record<string, unknown>) => ({
+    case_number: "P-100-26212-139238",
+    filing_date: "2026-07-31",
+    current_status: "RFI ISSUED",
+    is_final: 0,
+    employer_name: "U.S. Bank National Association",
+    employer_slug: "u-s-bank-national-association",
+    job_title: "Software Engineer",
+    visa_type: "PERM",
+    submitted_date: null,
+    first_seen_at: "2026-08-02T10:00:00Z",
+    last_checked_at: "2026-11-16T09:00:00Z",
+    ...over,
+  });
+
+  it("keeps the day the status changed, and dates the check by the newest sweep", async () => {
+    const swept = Date.now() - 60_000;
+    one.mockResolvedValue({ json: summaryDoc, computed_at: swept });
+    rows.mockResolvedValue([row({})]);
+    const page = await listPwdCases({ kind: "pending", numItems: 10 });
+    const r = page.rows[0]!;
+    expect(r.statusSince?.slice(0, 10)).toBe("2026-11-16");
+    expect(r.sinceFirstSeen).toBe(false);
+    // An Eastern day: a sweep finished at 8 PM Eastern or later must not read as tomorrow.
+    const { easternDay } = await import("@/lib/time");
+    expect(r.lastCheckedAt).toBe(easternDay(swept));
+  });
+
+  it("says a status unchanged since we first saw the case is that old or older", async () => {
+    one.mockResolvedValue({ json: summaryDoc, computed_at: Date.now() });
+    rows.mockResolvedValue([row({ current_status: "IN PROCESS", first_seen_at: "2026-09-07T05:00:00Z", last_checked_at: "2026-09-07T05:00:00Z" })]);
+    const r = (await listPwdCases({ kind: "pending", numItems: 10 })).rows[0]!;
+    expect(r.statusSince?.slice(0, 10)).toBe("2026-09-07");
+    expect(r.sinceFirstSeen).toBe(true);
+  });
+
+  it("never re-dates a decided row's check: it isn't asked again", async () => {
+    one.mockResolvedValue({ json: summaryDoc, computed_at: Date.now() });
+    rows.mockResolvedValue([row({ current_status: "DETERMINATION ISSUED", is_final: 1 })]);
+    const r = (await listPwdCases({ kind: "decided", numItems: 10 })).rows[0]!;
+    expect(r.lastCheckedAt).toBe("2026-11-16T09:00:00Z");
+    expect(r.statusSince).toBe("2026-11-16T09:00:00Z");
+  });
+});

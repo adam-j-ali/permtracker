@@ -1,6 +1,6 @@
 import "server-only";
 import { cache } from "react";
-import { MS_PER_DAY } from "@/lib/time";
+import { MS_PER_DAY, easternDay } from "@/lib/time";
 import { exec, one, rows, rowsPaged } from "./client";
 import { mergeDisclosureSummaries } from "@/lib/disclosureSummary";
 import { slugify } from "@/lib/entitySlug";
@@ -255,7 +255,12 @@ export interface FlagCaseRow {
   visaType: string | null;
   submittedDate: string | null;
   firstSeenAt: string | null;
+  /** When DOL was last asked about it: a pending row by the newest sweep, a decided one when it was seen decided. */
   lastCheckedAt: string | null;
+  /** When its status last changed: the row is written only on a change, so this is its stored stamp. */
+  statusSince: string | null;
+  /** The status hasn't changed since the case was first seen, so it held it on that day or earlier. */
+  sinceFirstSeen: boolean;
 }
 
 export interface FlagDbRow {
@@ -289,6 +294,8 @@ export const toFlagRow = (r: FlagDbRow): FlagCaseRow => ({
   submittedDate: r.submitted_date,
   firstSeenAt: r.first_seen_at,
   lastCheckedAt: r.last_checked_at,
+  statusSince: r.last_checked_at,
+  sinceFirstSeen: Boolean(r.first_seen_at && r.last_checked_at && r.last_checked_at.slice(0, 10) <= r.first_seen_at.slice(0, 10)),
 });
 
 export type FlagVisaScope = "default" | "all";
@@ -518,6 +525,8 @@ export function makeFlagProgram(config: FlagProgramConfig): FlagProgram {
         submittedDate: rec.submittedDate,
         firstSeenAt: nowIso,
         lastCheckedAt: nowIso,
+        statusSince: nowIso,
+        sinceFirstSeen: true,
       },
     };
   };
@@ -533,19 +542,8 @@ export function makeFlagProgram(config: FlagProgramConfig): FlagProgram {
     if (!cn) return { row: null, dolMiss: null };
     const r = await one<FlagDbRow>(`SELECT ${FLAG_COLS} FROM ${table} WHERE case_number = ?`, [cn]);
     if (r) {
-      const row = toFlagRow(r);
-      // A pending row is re-asked of DOL by the daily sweep, which no longer
-      // stamps rows it found unchanged (that was ~300k no-op writes a week).
-      // Its honest check date is the sweep's own: the summary doc is written
-      // at the end of every sweep. A final row keeps its stamp; it is not
-      // re-checked, and saying otherwise would be the older lie in reverse.
-      if (!row.isFinal) {
-        const summary = await getSummary();
-        if (summary?.computedAt) {
-          row.lastCheckedAt = laterDate(row.lastCheckedAt, new Date(summary.computedAt).toISOString());
-        }
-      }
-      return { row, dolMiss: null };
+      const [row] = await datedBySweep([toFlagRow(r)]);
+      return { row: row!, dolMiss: null };
     }
     // A case the quarterly file already holds is decided; the page renders
     // the file's record. Asking DOL live for it spent a budget unit and a
@@ -580,7 +578,7 @@ export function makeFlagProgram(config: FlagProgramConfig): FlagProgram {
         "ORDER BY filing_date DESC, case_number DESC LIMIT ?",
       [...params, take],
     );
-    return found.map(toFlagRow);
+    return datedBySweep(found.map(toFlagRow));
   };
 
   const list = async (args: ListFlagArgs): Promise<FlagListPage> => {
@@ -619,7 +617,7 @@ export function makeFlagProgram(config: FlagProgramConfig): FlagProgram {
       take,
     );
     return {
-      rows: found.page.map(toFlagRow),
+      rows: await datedBySweep(found.page.map(toFlagRow)),
       isDone: !found.more,
       continueCursor: String(offset + found.consumed),
       kind: args.kind,
@@ -770,6 +768,21 @@ export function makeFlagProgram(config: FlagProgramConfig): FlagProgram {
     };
     return mergeDisclosureSummaries(read(config.disclosureDocKey), read(historyKey));
   });
+
+  /**
+   * A pending row is re-asked of DOL by the daily sweep, which doesn't rewrite a row it found unchanged (that was
+   * ~300k no-op writes a week). Its honest check date is the sweep's own: the summary doc is written at the end of
+   * every sweep. A decided row keeps its stamp; it isn't asked again, and saying otherwise would be the older lie in
+   * reverse. The day its status changed stays in statusSince either way.
+   */
+  async function datedBySweep(found: FlagCaseRow[]): Promise<FlagCaseRow[]> {
+    if (!found.some((r) => !r.isFinal)) return found;
+    const summary = await getSummary();
+    if (!summary?.computedAt) return found;
+    // The sweep's Eastern day: a UTC slice would date an evening sweep tomorrow.
+    const swept = easternDay(summary.computedAt);
+    return found.map((r) => (r.isFinal ? r : { ...r, lastCheckedAt: laterDate(r.lastCheckedAt, swept) }));
+  }
 
   const getSummary = cache(async (): Promise<FlagSummary | null> => {
     const r = await one<{ json: string; computed_at: number }>(

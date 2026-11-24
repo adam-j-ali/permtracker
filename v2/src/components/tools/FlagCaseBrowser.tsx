@@ -45,6 +45,7 @@ import { CaseStatusChip } from "@/components/ui/badge";
 import { ISO_MONTH_RE } from "@convex/lib/months";
 import { entityHref } from "@/lib/entityPayload";
 import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
+import { statusDates } from "@/lib/statusDates";
 
 /**
  * Find a FLAG case (prevailing wage request, or LCA) by employer, and browse
@@ -219,7 +220,8 @@ function Rows({
     }
     cols.push(
       { key: "filed", label: "Filed", descFirst: true, get: (r) => r.filingDate },
-      { key: "checked", label: "Checked", descFirst: true, get: (r) => r.lastCheckedAt ?? null },
+      { key: "since", label: "In this status since", descFirst: true, get: (r) => r.statusSince ?? null },
+      { key: "checked", label: "Checked with DOL", descFirst: true, get: (r) => checkedDay(r) },
     );
     return cols;
   }, [withWage, wageLabel, wages, showForm]);
@@ -296,10 +298,16 @@ function Rows({
               <td className="whitespace-nowrap px-3 py-3 font-mono text-sm max-sm:font-sans max-sm:text-muted-foreground max-sm:[grid-area:dates]">
                 <span className="sm:hidden">Filed</span>{" "}
                 <span>{r.filingDate ?? ""}</span>
-                {r.lastCheckedAt ? <span className="sm:hidden">{`, checked ${r.lastCheckedAt.slice(0, 10)}`}</span> : null}
+                <span className="sm:hidden">
+                  {sinceDay(r) ? `, in this status since ${sinceDay(r)}` : ""}
+                  {checkedDay(r) ? `, checked with DOL ${checkedDay(r)}` : ""}
+                </span>
               {" "}</td>
               <td className="whitespace-nowrap px-3 py-3 font-mono text-sm text-soft max-sm:hidden">
-                <span>{r.lastCheckedAt?.slice(0, 10) ?? ""}</span>
+                <span>{sinceDay(r) ?? ""}</span>
+              {" "}</td>
+              <td className="whitespace-nowrap px-3 py-3 font-mono text-sm text-soft max-sm:hidden">
+                <span>{checkedDay(r) ?? ""}</span>
               {" "}</td>
             </tr>
           ))}
@@ -520,6 +528,17 @@ function FlagSearchFilters({
       </div>
     </div>
   );
+}
+
+/** When the row's status last changed, and "or earlier" when it hasn't changed since the case was first seen. */
+function sinceDay(r: FlagCaseRow): string | null {
+  const d = statusDates(r);
+  return d.since && d.sinceOrEarlier ? `${d.since} or earlier` : d.since;
+}
+
+/** When DOL was last asked: the newest sweep for an open request; a decided one isn't asked again. */
+function checkedDay(r: FlagCaseRow): string | null {
+  return statusDates(r).checked;
 }
 
 export function FlagCaseBrowser({
