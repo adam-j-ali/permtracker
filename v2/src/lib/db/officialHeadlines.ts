@@ -10,7 +10,7 @@ import { getConsularIndex } from "./consularPosts";
 import { getLcaSummary } from "./lcaCases";
 import { getPermLine } from "./permLine";
 import { getPwdLine } from "./pwdDayQueue";
-import { getPwdSummary } from "./pwdCases";
+import { getPwdSummary, permPending } from "./pwdCases";
 import { getRecordCounts } from "./recordCounts";
 import { getUscisFormMedian } from "./uscisQuarterly";
 import { getUscisMonthly } from "./uscisMonthly";
@@ -40,8 +40,8 @@ async function pwd(): Promise<OfficialHeadline | null> {
     getPwdSummary().catch(softFail("officialHeadlines.pwdSummary", null)),
     getPwdLine().catch(softFail("officialHeadlines.pwdLine", null)),
   ]);
-  // PERM's own wage requests (P-100): the H-1B, H-1B1 and E-3 ones (P-200 to P-203) wait in another line.
-  const waiting = summary?.pendingByPrefix?.["P-100"];
+  // PERM's own wage requests: the same count /pwd-cases and the homepage show (the H-1B, H-1B1 and E-3 ones wait apart).
+  const waiting = permPending(summary);
   if (!line && !waiting) return null;
   const checked = formatDay(line?.asOf ?? summary?.asOf ?? null);
   if (!checked) return null;

@@ -36,7 +36,7 @@ import { DecisionPeriods } from "@/components/pulse/DecisionPeriods";
 import { getActivitySeries } from "@/lib/db/activity";
 import { decisionViews } from "@/lib/decisionPeriods";
 import { getObservedDays } from "@/lib/db/pulse";
-import { getPwdSummary } from "@/lib/db/pwdCases";
+import { getPwdSummary, permScope } from "@/lib/db/pwdCases";
 import { getPermWaitTrend, getPwdLine } from "@/lib/db/pwdDayQueue";
 import { WaitTrendChart } from "@/components/numbers/WaitTrendChart";
 import { yearOnYear } from "@/lib/pwdNow";
@@ -110,7 +110,7 @@ function weekColumns(weeks: readonly WeekCount[], noun: string, unitOne: string)
 }
 
 export default async function PermByTheNumbersPage() {
-  const [census, observed, coverage, stages, filings, newEmployers, rfiWeeks, rfiClock, pwd, snapshot, readings, bulletins, decidedByMonth, pwdLine, waitTrend, series] =
+  const [census, observed, coverage, stages, filings, newEmployers, rfiWeeks, rfiClock, pwdAll, snapshot, readings, bulletins, decidedByMonth, pwdLine, waitTrend, series] =
     await Promise.all([
       getBacklogCensus(),
       getObservedDays(),
@@ -129,6 +129,8 @@ export default async function PermByTheNumbersPage() {
       getPermWaitTrend(),
       getActivitySeries(),
     ]);
+  // PERM wage requests alone, the same count /pwd-cases and the homepage show.
+  const pwd = permScope(pwdAll);
   // Where DOL is in the line by our own check of DOL's records, dated by it; DOL's table is the fallback.
   const permLine = await getPermLine().catch(softFail("perm-by-the-numbers/page.getPermLine", null));
 
@@ -468,7 +470,7 @@ export default async function PermByTheNumbersPage() {
             id="wage-requests"
             className="lg:col-span-4"
             figure={formatInt(pwd.pending)}
-            claim="wage requests waiting"
+            claim="PERM wage requests waiting"
             sub={pwdSub}
             more={{ href: "/pwd-cases", label: "Wage requests" }}
           >

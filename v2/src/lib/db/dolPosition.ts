@@ -3,7 +3,7 @@ import "server-only";
 import { analystReviewAverage, analystReviewQueue } from "@convex/lib/dolProcessingTimes";
 import { getPermLine } from "./permLine";
 import { getProcessingTimes } from "./processingTimes";
-import { getPwdSummary } from "./pwdCases";
+import { getPwdSummary, permPending } from "./pwdCases";
 import { softFail } from "@/lib/softRead";
 
 /**
@@ -38,7 +38,8 @@ export async function getDolPosition(): Promise<DolPosition> {
   return {
     month: line?.month ?? (dolMonth ? dolMonth.slice(0, 7) : null),
     averageDays: snapshot ? (analystReviewAverage(snapshot.permAverageDays)?.calendarDays ?? null) : null,
-    pwdPending: pwd?.pending ?? dolPwd,
+    // PERM wage requests alone, the same count /pwd-cases and the homepage show.
+    pwdPending: permPending(pwd) ?? dolPwd,
     checkedOn: line || pwd ? checkedOn : null,
     dolAsOf: snapshot?.permAsOf ?? null,
   };

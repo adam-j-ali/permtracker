@@ -28,3 +28,25 @@ describe("statusDates", () => {
     });
   });
 });
+
+describe("the case pages' wording", async () => {
+  const { statusSourceLine, statusRecordRows } = await import("../statusDates");
+  const fmt = (d: string) => `<${d}>`;
+  const open = { isFinal: false, statusSince: "2026-11-16T09:00:00Z", sinceFirstSeen: false, lastCheckedAt: "2026-11-23" };
+
+  it("names both dates for an open case, and only the status day for a decided one", () => {
+    expect(statusSourceLine(open, fmt)).toBe("In this status since <2026-11-16>, checked with DOL <2026-11-23>");
+    expect(statusSourceLine({ ...open, isFinal: true }, fmt)).toBe("DOL showed this status on <2026-11-16>");
+    expect(statusSourceLine({ ...open, sinceFirstSeen: true }, fmt)).toBe(
+      "In this status since <2026-11-16> or earlier, checked with DOL <2026-11-23>",
+    );
+  });
+
+  it("gives two record rows for an open case and one for a decided case", () => {
+    expect(statusRecordRows(open, fmt)).toEqual([
+      { label: "In this status since", value: "<2026-11-16>" },
+      { label: "Last checked with DOL", value: "<2026-11-23>" },
+    ]);
+    expect(statusRecordRows({ ...open, isFinal: true }, fmt)).toHaveLength(1);
+  });
+});

@@ -25,3 +25,34 @@ export function statusDates(r: {
   const since = dayOf(r.statusSince);
   return { since, sinceOrEarlier: since !== null && r.sinceFirstSeen, checked: r.isFinal ? null : dayOf(r.lastCheckedAt) };
 }
+
+/** "Nov 16, 2026", with " or earlier" when the status hasn't changed since the case was first seen. */
+function sinceWords(d: StatusDates, fmt: (day: string) => string | null): string | null {
+  return d.since ? `${fmt(d.since) ?? d.since}${d.sinceOrEarlier ? " or earlier" : ""}` : null;
+}
+
+/** A case page's source line: when the status last changed and, for an open case, when DOL was last asked. */
+export function statusSourceLine(
+  row: Parameters<typeof statusDates>[0],
+  fmt: (day: string) => string | null,
+): string | undefined {
+  const d = statusDates(row);
+  const since = sinceWords(d, fmt);
+  if (d.checked) {
+    const checked = fmt(d.checked) ?? d.checked;
+    return since ? `In this status since ${since}, checked with DOL ${checked}` : `Checked with DOL ${checked}`;
+  }
+  return since ? `DOL showed this status on ${since}` : undefined;
+}
+
+/** A case page's two record rows: in this status since, and (for an open case) last checked with DOL. */
+export function statusRecordRows(
+  row: Parameters<typeof statusDates>[0],
+  fmt: (day: string) => string | null,
+): { label: string; value: string }[] {
+  const d = statusDates(row);
+  return [
+    { label: "In this status since", value: sinceWords(d, fmt) ?? "Unknown" },
+    ...(d.checked ? [{ label: "Last checked with DOL", value: fmt(d.checked) ?? d.checked }] : []),
+  ];
+}

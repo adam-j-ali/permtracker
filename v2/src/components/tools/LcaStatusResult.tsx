@@ -12,6 +12,7 @@ import { PageSection } from "@/components/data/PageSection";
 import { RecordList } from "@/components/data/RecordList";
 import { isLookupGap } from "@/lib/dolMiss";
 import { formatDay } from "@/lib/dolFormat";
+import { statusRecordRows, statusSourceLine } from "@/lib/statusDates";
 import { prettyStatus } from "@/components/queue/stages";
 import { softFail } from "@/lib/softRead";
 import { caseHref } from "@/lib/caseLinks";
@@ -223,7 +224,7 @@ export async function LcaLookup({ caseNumber }: { caseNumber: string }) {
         verdict={row.isFinal ? "Decided" : "Waiting"}
         direction={u.startsWith("CERTIFIED") ? "good" : u === "DENIED" ? "bad" : "flat"}
         label={label(row.caseNumber)}
-        source={row.lastCheckedAt ? `DOL showed this status on ${formatDay(row.lastCheckedAt)}` : undefined}
+        source={statusSourceLine(row, formatDay)}
         actions={
           // An LCA is usually decided within seven business days, so the alert
           // is offered only while it's pending: on a certified one it would be
@@ -251,7 +252,7 @@ export async function LcaLookup({ caseNumber }: { caseNumber: string }) {
             { label: "Job title", value: row.jobTitle ?? "Not given", raw: !!row.jobTitle },
             { label: "Case number", value: row.caseNumber, raw: true, mono: true },
             { label: "Filed with DOL", value: filed ?? "Unknown" },
-            { label: "Last checked against DOL", value: formatDay(row.lastCheckedAt) ?? "Today" },
+            ...statusRecordRows(row, formatDay),
           ]}
         />
       </PageSection>

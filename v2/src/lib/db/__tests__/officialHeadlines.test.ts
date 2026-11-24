@@ -9,7 +9,10 @@ const formMedian = vi.fn();
 const monthly = vi.fn();
 const consular = vi.fn();
 const lca = vi.fn();
-vi.mock("../pwdCases", () => ({ getPwdSummary: () => pwdSummary() }));
+vi.mock("../pwdCases", async () => ({
+  getPwdSummary: () => pwdSummary(),
+  permPending: (await vi.importActual<typeof import("../pwdCases")>("../pwdCases")).permPending,
+}));
 vi.mock("../pwdDayQueue", () => ({ getPwdLine: () => pwdLine() }));
 vi.mock("../recordCounts", () => ({ getRecordCounts: () => recordCounts() }));
 vi.mock("../permLine", () => ({ getPermLine: () => permLine() }));

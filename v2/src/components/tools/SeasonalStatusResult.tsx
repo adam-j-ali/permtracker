@@ -30,6 +30,7 @@ import { getH2bGroupTiming, h2bGroupOf } from "@/lib/db/h2bGroups";
 import { pickGroup } from "@/lib/h2bGroups";
 import { SeasonalTimingPanel } from "@/components/tools/SeasonalTimingPanel";
 import { formatDay } from "@/lib/dolFormat";
+import { statusRecordRows, statusSourceLine } from "@/lib/statusDates";
 import { prettyStatus } from "@/components/queue/stages";
 import { softFail } from "@/lib/softRead";
 import { caseHref } from "@/lib/caseLinks";
@@ -383,7 +384,7 @@ export async function SeasonalLookup({ caseNumber }: { caseNumber: string }) {
             {form} <span translate="no">{row.caseNumber}</span>
           </>
         }
-        source={row.lastCheckedAt ? `DOL showed this status on ${formatDay(row.lastCheckedAt)}` : undefined}
+        source={statusSourceLine(row, formatDay)}
         actions={
           done ? undefined : (
             <div className="mt-6 border-t border-foreground/10 pt-6">
@@ -442,7 +443,7 @@ export async function SeasonalLookup({ caseNumber }: { caseNumber: string }) {
             { label: "Job title", value: row.jobTitle ?? "Not given", raw: !!row.jobTitle },
             { label: "Case number", value: row.caseNumber, raw: true, mono: true },
             { label: "Filed with DOL", value: filed ?? "Unknown" },
-            { label: "Last checked against DOL", value: formatDay(row.lastCheckedAt) ?? "Today" },
+            ...statusRecordRows(row, formatDay),
           ]}
         />{" "}
         {entry ? (

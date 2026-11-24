@@ -308,3 +308,14 @@ describe("permScope", () => {
     expect(permScope(null)).toBeNull();
   });
 });
+
+describe("permPending", () => {
+  it("reads the PERM block, then the P-100 count of an older doc, then the whole table", async () => {
+    const { permPending } = await import("../pwdCases");
+    const base = { total: 9, pending: 30000, decided: 0, byStatus: {}, byVisaType: {}, byPrefix: {}, pendingByPrefix: {}, byMonth: [], asOf: null, computedAt: 1 };
+    expect(permPending({ ...base, perm: { total: 1, pending: 16900, decided: 0, byMonth: [], openByMonth: {} } })).toBe(16900);
+    expect(permPending({ ...base, pendingByPrefix: { "P-100": 17098 } })).toBe(17098);
+    expect(permPending(base)).toBe(30000);
+    expect(permPending(null)).toBeNull();
+  });
+});

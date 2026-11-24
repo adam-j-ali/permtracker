@@ -101,3 +101,12 @@ export function permScope(
     otherFormsPending: Math.max(0, s.pending - s.perm.pending),
   };
 }
+
+/**
+ * PERM wage requests waiting, the one count every page shows: the PERM block, or on a doc written before it, the
+ * P-100 requests, and only then the whole table.
+ */
+export function permPending(s: FlagSummary | null | undefined): number | null {
+  if (!s) return null;
+  return s.perm?.pending ?? s.pendingByPrefix?.["P-100"] ?? s.pending;
+}
