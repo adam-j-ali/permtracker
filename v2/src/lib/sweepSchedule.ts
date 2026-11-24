@@ -84,13 +84,14 @@ export function nextCheckLabel(from: number): string | null {
 }
 
 /**
- * When the server reads the wage requests (permtracker-sweep@pwd-pending.timer, then pwd-active.timer): the pending
- * ones at 5:40 AM every day, the likeliest to move at 3:10 PM on weekdays. The weekly read of every one (Sundays 6:40
- * AM) is left out: Saturday's work has already arrived at 5:40. sweepSchedule.test.ts holds this to the timer files.
+ * When the server reads the wage requests (permtracker-sweep@pwd-pending.timer, then pwd-active.timer): every open one
+ * at 5:40 AM every day, and every open one through where DOL is deciding each weekday hour from 8:10 AM to 7:10 PM.
+ * The weekly read of every one (Sundays 6:40 AM) is left out: Saturday's work has already arrived at 5:40.
+ * sweepSchedule.test.ts holds this to the timer files.
  */
 export const WAGE_CHECKS: readonly CaseCheck[] = [
   { at: "05:40", weekdays: false },
-  { at: "15:10", weekdays: true },
+  ...Array.from({ length: 12 }, (_, i) => ({ at: `${String(8 + i).padStart(2, "0")}:10`, weekdays: true })),
 ];
 
 /** About how long after a read starts the pages show what it found. */

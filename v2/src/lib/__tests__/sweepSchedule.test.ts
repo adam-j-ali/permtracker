@@ -76,12 +76,16 @@ describe("the case checks' clock", () => {
 });
 
 describe("the wage requests' reads", () => {
-  it("are the server's own timers: 5:40 AM every day and 3:10 PM on weekdays", () => {
+  it("are the server's own timers: 5:40 AM every day and each weekday hour from 8:10 AM to 7:10 PM", () => {
     const dir = resolve(process.cwd(), "scripts/oracle/systemd");
-    const onServer = ["permtracker-sweep@pwd-pending.timer", "permtracker-sweep@pwd-active.timer"].map((f) => {
-      const m = readFileSync(resolve(dir, f), "utf8").match(/^OnCalendar=(Mon\.\.Fri )?\*-\*-\* (\d{2}:\d{2}):00 America\/New_York$/m);
+    const onServer = ["permtracker-sweep@pwd-pending.timer", "permtracker-sweep@pwd-active.timer"].flatMap((f) => {
+      // "05:40" or an hour range, "08..19:10".
+      const m = readFileSync(resolve(dir, f), "utf8").match(
+        /^OnCalendar=(Mon\.\.Fri )?\*-\*-\* (\d{2})(?:\.\.(\d{2}))?:(\d{2}):00 America\/New_York$/m,
+      );
       if (!m) throw new Error(`${f}: its OnCalendar line isn't one this test can read`);
-      return { at: m[2]!, weekdays: Boolean(m[1]) };
+      const [from, to] = [Number(m[2]), Number(m[3] ?? m[2])];
+      return Array.from({ length: to - from + 1 }, (_, i) => ({ at: `${String(from + i).padStart(2, "0")}:${m[4]}`, weekdays: Boolean(m[1]) }));
     });
     expect(onServer).toEqual([...WAGE_CHECKS]);
   });
