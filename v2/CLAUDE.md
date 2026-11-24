@@ -29,7 +29,7 @@ http://localhost:3000 · [Convex Dashboard](https://dashboard.convex.dev)
 | `pnpm typecheck:convex` | `tsc -p convex --noEmit` (Convex's own tsconfig) |
 | `pnpm test` | Vitest watch |
 | `pnpm test:fast` | ~1300 tests, **2 of 5 projects only** (~40s). Not a pre-push gate |
-| `pnpm test:run` | All 5 projects. Baseline 1,347 files / 15,803 tests (2026-11-24; 115 s on the new MacBook Pro, 12 min on the old Air). GitHub runs it on every push and the deploy waits for it; run it locally for a broad change |
+| `pnpm test:run` | All 5 projects. Baseline 1,347 files / 15,803 tests (2026-11-24; 56 s on the new MacBook Pro under Vitest 5, 12 min on the old Air under Vitest 4). GitHub runs it on every push and the deploy waits for it; run it locally for a broad change |
 | `pnpm check` | **The pre-push gate (owner, Oct 8 2026, 3:09 PM EDT)**: typecheckers, pyflakes, every data script test, the source audits, eslint on the changed files, and the vitest tests affected since `origin/main` (`scripts/check.sh`, about 2 min). CI runs the whole suite and the deploy waits for it, and the site goes live with the 2 AM night run (`-f when=now` for an urgent fix); deploy Convex only once that suite is green |
 | `pnpm test:e2e` | Playwright E2E |
 | `pnpm storybook` | Component dev (:6006) |

@@ -74,7 +74,7 @@ export function SiteSearch({ className }: { className?: string }) {
         onClick={() => openPalette("button")}
         aria-label={loadingPalette ? "Opening search" : "Search"}
         aria-busy={loadingPalette}
-        className="flex size-11 items-center justify-center text-foreground hover:bg-accent xl:hidden"
+        className="flex size-11 items-center justify-center text-foreground hover:bg-accent min-[1400px]:hidden"
       >
         {icon}
       </button>{" "}
@@ -82,7 +82,7 @@ export function SiteSearch({ className }: { className?: string }) {
         action="/case-search"
         method="get"
         role="search"
-        className={cn("relative hidden items-center xl:flex", className)}
+        className={cn("relative hidden items-center min-[1400px]:flex", className)}
         onSubmit={(e) => {
           // With scripts, the palette answers instead of a page load.
           e.preventDefault();
@@ -104,7 +104,7 @@ export function SiteSearch({ className }: { className?: string }) {
           onFocus={(e) => openPalette("button", e.currentTarget.value)}
           className="h-10 w-full min-w-0 text-ellipsis border border-input bg-card pl-10 pr-12 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         />
-        <kbd className="pointer-events-none absolute right-3 hidden font-mono text-sm text-muted-foreground xl:inline">
+        <kbd className="pointer-events-none absolute right-3 hidden font-mono text-sm text-muted-foreground min-[1400px]:inline">
           ⌘K
         </kbd>
       </form>

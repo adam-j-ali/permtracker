@@ -236,6 +236,7 @@ export default function SiteHeader() {
   // attorneys" three times each while on that page, then left).
   const close = () => setMenu(null);
   const onData = isDataPath(pathname);
+  const onToday = pathname === HEADER_PAGES.today.href || pathname.startsWith(`${HEADER_PAGES.today.href}/`);
   const onLearn = isLearnPath(pathname);
 
   return (
@@ -250,7 +251,7 @@ export default function SiteHeader() {
           backing above the bar (before:) is its own colour reaching up behind
           it: an in-app browser (Telegram's, Nov 24 2026) lays its own bar over
           the page and leaves a strip above ours where the page scrolled through. */}
-      <div className="dark mx-auto flex h-full max-w-[1440px] items-center gap-2 px-4 text-foreground sm:px-6 lg:gap-6">
+      <div className="dark mx-auto flex h-full max-w-[1440px] items-center gap-2 px-4 text-foreground sm:px-6 xl:gap-6">
         <IntentLink
           href="/"
           className="logo-link relative flex h-11 shrink-0 items-center gap-2 font-heading text-xl font-bold text-foreground group/logo"
@@ -264,25 +265,28 @@ export default function SiteHeader() {
             <span className="text-primary-text">PERM</span> <span className="logo-word">Tracker</span>
           </span>
         </IntentLink>{" "}
-        <nav aria-label="Main" className="hidden items-center lg:flex">
+        {/* The bar's six entries, the search box and Sign in need about 1,140px: below 1280 they sit in the menu, as on a
+            tablet, rather than crowding Sign in off the edge. */}
+        <nav aria-label="Main" className="hidden items-center xl:flex">
           <BarLink page={HEADER_PAGES.caseStatus} current={pathname === HEADER_PAGES.caseStatus.href} />{" "}
+          <BarLink page={HEADER_PAGES.today} current={onToday} />{" "}
           <BarLink page={HEADER_PAGES.processingTimes} current={pathname === HEADER_PAGES.processingTimes.href} />{" "}
           <MenuButton
             id="data-menu"
             label="Data"
             open={menu === "data"}
-            current={onData && pathname !== HEADER_PAGES.caseStatus.href && pathname !== HEADER_PAGES.processingTimes.href}
+            current={onData && !onToday && pathname !== HEADER_PAGES.caseStatus.href && pathname !== HEADER_PAGES.processingTimes.href}
             onToggle={() => toggle("data")}
           />{" "}
           <MenuButton id="learn-menu" label="Learn" open={menu === "learn"} current={onLearn} onToggle={() => toggle("learn")} />{" "}
           <BarLink page={HEADER_PAGES.forAttorneys} current={pathname === HEADER_PAGES.forAttorneys.href} />
         </nav>{" "}
-        <div className="ml-auto flex items-center gap-1 lg:gap-2 min-[1400px]:gap-3">
-          <SiteSearch className="w-72 min-[1400px]:w-[22rem] 2xl:w-96" />{" "}
+        <div className="ml-auto flex items-center gap-1 xl:gap-2 min-[1400px]:gap-3">
+          <SiteSearch className="w-[22rem] 2xl:w-96" />{" "}
           {pathname !== "/login" ? (
             <IntentLink
               href="/login"
-              className="relative hidden h-10 items-center whitespace-nowrap border border-input bg-card px-3 text-base font-semibold text-foreground transition-colors hover:bg-accent lg:flex min-[1400px]:px-4"
+              className="relative hidden h-10 items-center whitespace-nowrap border border-input bg-card px-3 text-base font-semibold text-foreground transition-colors hover:bg-accent xl:flex min-[1400px]:px-4"
             >
               Sign in
               <LinkPending kind="button" />
@@ -293,7 +297,7 @@ export default function SiteHeader() {
             aria-expanded={menu === "mobile"}
             aria-controls="mobile-menu"
             onClick={() => toggle("mobile")}
-            className="flex h-11 items-center gap-2 px-2 text-base font-semibold text-foreground hover:bg-accent lg:hidden"
+            className="flex h-11 items-center gap-2 px-2 text-base font-semibold text-foreground hover:bg-accent xl:hidden"
           >
             {menu === "mobile" ? <XIcon aria-hidden="true" className="size-5" /> : <ListIcon aria-hidden="true" className="size-5" />}
             Menu
@@ -301,7 +305,7 @@ export default function SiteHeader() {
         </div>
       </div>
 
-      <Panel id="data-menu" open={menu === "data"} className="hidden lg:block">
+      <Panel id="data-menu" open={menu === "data"} className="hidden xl:block">
         <div className="mx-auto grid max-w-[1440px] grid-cols-5 gap-x-6 gap-y-8 px-6 py-6 xl:gap-x-10">
           {GROUPS.map((group) => (
             <div key={group}>
@@ -327,7 +331,7 @@ export default function SiteHeader() {
         </div>
       </Panel>
 
-      <Panel id="learn-menu" open={menu === "learn"} className="hidden lg:block">
+      <Panel id="learn-menu" open={menu === "learn"} className="hidden xl:block">
         <ul className="mx-auto grid max-w-[1440px] grid-cols-4 gap-x-10 px-6 py-5">
           {LEARN_PAGES.map((p) => (
             <li key={p.href}>
@@ -347,16 +351,16 @@ export default function SiteHeader() {
           aria-hidden="true"
           data-testid="mobile-menu-backdrop"
           onClick={close}
-          className="fixed inset-x-0 bottom-0 top-[var(--site-header-h)] bg-black/50 lg:hidden"
+          className="fixed inset-x-0 bottom-0 top-[var(--site-header-h)] bg-black/50 xl:hidden"
         />
       ) : null}
       {menu === "mobile" ? (
         <div
           id="mobile-menu"
-          className="absolute inset-x-0 top-full max-h-[calc(100dvh-var(--site-header-h))] overflow-y-auto overscroll-contain border-b-2 border-black bg-popover px-4 pb-8 shadow-hard md:left-auto md:right-[calc(1rem_+_env(safe-area-inset-right,0px))] md:w-[26rem] md:border-x-2 lg:hidden"
+          className="absolute inset-x-0 top-full max-h-[calc(100dvh-var(--site-header-h))] overflow-y-auto overscroll-contain border-b-2 border-black bg-popover px-4 pb-8 shadow-hard md:left-auto md:right-[calc(1rem_+_env(safe-area-inset-right,0px))] md:w-[26rem] md:border-x-2 xl:hidden"
         >
           <nav aria-label="Menu" className="divide-y divide-border">
-            {[HEADER_PAGES.caseStatus, HEADER_PAGES.processingTimes].map((p) => (
+            {[HEADER_PAGES.caseStatus, HEADER_PAGES.today, HEADER_PAGES.processingTimes].map((p) => (
               <PhoneLink key={p.href} href={p.href} label={p.name} pathname={pathname} onPick={close} />
             ))}
             <details className="group">

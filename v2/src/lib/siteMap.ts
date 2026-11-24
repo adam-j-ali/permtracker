@@ -275,6 +275,8 @@ export const LEARN_PAGES: readonly SitePage[] = [
 /** The header's links, beside the Data and Learn menus. */
 export const HEADER_PAGES = {
   caseStatus: { href: "/perm-case-status", name: "Case status" },
+  // The question asked most after "where's my case": how many DOL decided today. One tap from any page.
+  today: { href: "/perm-updates", name: "Today's decisions" },
   processingTimes: { href: "/perm-processing-times", name: "Processing times" },
   forAttorneys: { href: "/for-attorneys", name: "For professionals" },
 } as const satisfies Record<string, SitePage>;

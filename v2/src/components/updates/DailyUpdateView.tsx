@@ -315,6 +315,10 @@ export function DailyUpdateView({
           ) : null}{" "}
           <Link href="/perm-decision-activity" className="link inline-flex min-h-11 items-center sm:ml-auto">
             Every day, and DOL&apos;s pace over time
+          </Link>{" "}
+          {/* The other daily page: the wage request, PERM, the petition and the bulletin, side by side. */}
+          <Link href="/today" className="link inline-flex min-h-11 items-center">
+            Where every step stands today
           </Link>
         </div>{" "}
         {earlier.length > 0 ? (

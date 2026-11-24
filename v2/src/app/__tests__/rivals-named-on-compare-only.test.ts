@@ -23,8 +23,6 @@ const OUR_OWN: Record<string, string[]> = {
   // The searched phrase, as the page's own title.
   "src/app/(site)/(public)/calculators/page.tsx": ["PERM Timeline"],
   "src/app/(site)/(public)/tools/perm-timeline-calculator/page.tsx": ["PERM Timeline"],
-  // "Today's PERM Update": the daily page's own title.
-  "src/app/(site)/(public)/today/page.tsx": ["PERM Update"],
   "src/app/__tests__/rivals-named-on-compare-only.test.ts": [],
 };
 
