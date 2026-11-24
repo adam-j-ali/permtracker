@@ -14,6 +14,7 @@ import { AdminTabs } from "@/components/admin/AdminTabs";
 import { ScorecardPanel } from "@/components/admin/ScorecardPanel";
 import { DevelopersPanel } from "@/components/admin/DevelopersPanel";
 import { MonitorPanel } from "@/components/admin/MonitorPanel";
+import { AlertRoutesPanel } from "@/components/admin/AlertRoutesPanel";
 import { FirmClaimsPanel } from "@/components/admin/FirmClaimsPanel";
 import { AlertRatingsPanel } from "@/components/admin/AlertRatingsPanel";
 import { ReviewsPanel } from "@/components/admin/ReviewsPanel";
@@ -266,7 +267,12 @@ export default function AdminDashboardClient() {
           {
             id: "monitor",
             label: "Monitor",
-            content: <MonitorPanel />,
+            content: (
+              <div className="space-y-10">
+                <MonitorPanel />{" "}
+                <AlertRoutesPanel />
+              </div>
+            ),
           },
         ]}
       />
