@@ -224,6 +224,8 @@ export function EntityStateMap({ eras, label, noun = "filings", office = null, c
                 <button
                   type="button"
                   {...control(s.state)}
+                  // A tile's name starts with the words it shows, so voice control finds it by them (WCAG 2.5.3).
+                  aria-label={`${s.state} ${formatInt(s.n)}, ${describe(s)}`}
                   className={cn(
                     "inline-flex min-h-11 items-center gap-2 border-2 bg-card px-3 text-sm font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
                     pinned === s.state || previewed === s.state ? "border-foreground" : "border-input hover:border-foreground",

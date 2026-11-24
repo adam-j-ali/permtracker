@@ -97,7 +97,7 @@ describe("EntityStateMap", () => {
     const or = screen.getByRole("button", { name: /^Oregon/ });
     expect(document.activeElement).toBe(or);
     fireEvent.keyDown(or, { key: "ArrowRight" });
-    const nj = screen.getByRole("button", { name: /^New Jersey/ });
+    const nj = screen.getByRole("button", { name: /^NJ 30, New Jersey/ });
     expect(document.activeElement).toBe(nj);
     expect(nj.tagName).toBe("BUTTON");
     fireEvent.keyDown(nj, { key: "ArrowLeft" });
@@ -110,7 +110,7 @@ describe("EntityStateMap", () => {
     fireEvent.keyDown(or, { key: "Escape" });
     expect(or.getAttribute("aria-pressed")).toBe("false");
     fireEvent.keyDown(or, { key: "End" });
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: /^Puerto Rico/ }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: /^PR 5, Puerto Rico/ }));
   });
 
   it("gives the small states and the territories tiles, since their shapes are too small to tap", () => {
@@ -118,8 +118,19 @@ describe("EntityStateMap", () => {
     const tiles = screen.getByRole("list", { name: "Small states and territories" });
     const names = within(tiles).getAllByRole("button").map((b) => b.textContent?.trim());
     expect(names).toEqual(["NJ 30", "PR 5"]);
-    fireEvent.click(within(tiles).getByRole("button", { name: /^New Jersey/ }));
+    fireEvent.click(within(tiles).getByRole("button", { name: /^NJ 30, New Jersey/ }));
     expect(screen.getByRole("link", { name: "Its 30 New Jersey filings in the case search" })).toBeInTheDocument();
+  });
+
+  it("names each tile by the words it shows first, then the state in full (WCAG 2.5.3, label in name)", () => {
+    // axe failed the employer page's build on Nov 24 2026: a "DC 1,234" tile was named "District of Columbia: ...",
+    // so someone saying "DC" to voice control couldn't reach it.
+    map();
+    const tiles = within(screen.getByRole("list", { name: "Small states and territories" })).getAllByRole("button");
+    for (const b of tiles) {
+      const shown = (b.textContent ?? "").replace(/\s+/g, " ").trim();
+      expect(b.getAttribute("aria-label")?.startsWith(`${shown}, `)).toBe(true);
+    }
   });
 
   it("reads a state out with no link on a withheld employer's neutral page, which searches by no name", () => {
