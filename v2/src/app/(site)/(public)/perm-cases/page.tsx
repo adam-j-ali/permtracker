@@ -37,7 +37,7 @@ import { formatInt } from "@/lib/format";
 import { filedLastMonth, waitingSplit } from "@/lib/figureVisuals";
 import { SITE_URL } from "@/lib/constants/site";
 import { StepBothSources } from "@/components/community/StepBothSources";
-const TITLE = "PERM Case Search";
+const TITLE = "PERM Case Search: Browse Decided Cases";
 const DESCRIPTION =
   "Search every PERM case in DOL's published disclosure window by case number, employer, law firm, state or occupation, with the wage and the days it took.";
 
@@ -156,7 +156,7 @@ export default async function PermCasesPage() {
       <JsonLdScript schema={datasetSchema} />
 
       <IndexHeader
-        title="Every PERM case, decided and waiting"
+        title="Browse decided PERM cases"
         lede={
           <>
             DOL&apos;s published decisions come with the wage and the days each took. Every newer case comes from

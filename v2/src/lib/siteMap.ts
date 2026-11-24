@@ -168,7 +168,7 @@ export const SECTIONS: DataNavSection[] = [
   t("deadlines", "Recruitment", "PERM deadlines", "/tools/perm-deadline-calculator", "The recruitment window, the quiet period and the filing window."),
   s("layoff-answers", "Recruitment", "Layoffs reported on PERM", "/perm-layoff-disclosures"),
 
-  s("cases", "PERM", "PERM cases", "/perm-cases"),
+  s("cases", "PERM", "Browse decided PERM cases", "/perm-cases"),
   s("processing-times", "PERM", "PERM processing times", "/perm-processing-times"),
   t("timeline-calculator", "PERM", "Timeline calculator", "/tools/perm-timeline-calculator", "The likely decision day and its range."),
   s("queue", "PERM", "Queue backlog", "/perm-queue"),
@@ -204,7 +204,7 @@ export const SECTIONS: DataNavSection[] = [
   s("consular-posts", "Green card line", "Consulates", "/consular-posts"),
 
   s("employers", "Employers and firms", "Employers", "/perm-employers"),
-  s("attorneys", "Employers and firms", "Law firms", "/perm-attorneys"),
+  s("attorneys", "Employers and firms", "Find a PERM law firm", "/perm-attorneys"),
   s("firm-rankings", "Employers and firms", "Law firm rankings", "/law-firm-rankings"),
   s("sponsor-finder", "Employers and firms", "Find a sponsor", "/sponsor-finder"),
   s("compare-employers", "Employers and firms", "Compare employers", "/perm-employers/compare"),

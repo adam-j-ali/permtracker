@@ -69,7 +69,7 @@ export default async function ToolsPage() {
               figure and calculator, and the queue is one of the things it links
               to. The H1 now says what the page is, matching its own title. */}
           <h1 className="font-heading text-3xl font-bold leading-tight sm:text-5xl">
-            Live PERM data and free calculators
+            Live PERM data
           </h1>{" "}
           {where.checkedOn || dolAsOf ? (
             <p className="mt-3 text-base text-soft sm:text-lg">

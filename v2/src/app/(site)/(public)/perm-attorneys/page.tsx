@@ -28,7 +28,7 @@ import { ChapterNav, type ChapterItem } from "@/components/entities/Chapters";
 import { formatInt } from "@/lib/format";
 import { SITE_URL } from "@/lib/constants/site";
 import { entityHref } from "@/lib/entityPayload";
-const TITLE = "PERM Law Firms by Cases and Approval Rate";
+const TITLE = "Find a PERM Law Firm: Cases and Approvals";
 const DESCRIPTION =
   "Compare every immigration law firm filing PERM cases by cases filed, approval rate and processing time, from DOL's own disclosure data.";
 
@@ -82,7 +82,7 @@ export default async function PermAttorneysPage() {
       <JsonLdScript schema={datasetSchema} />
 
       <IndexHeader
-        title="Who files the most PERM cases"
+        title="Find a PERM law firm"
         lede="Every PERM filing names the firm that made it, so DOL's published files rank the whole field."
         figures={[
           { kind: "measured" as const, label: "Firms in DOL's files", value: formatInt(firmCount) },

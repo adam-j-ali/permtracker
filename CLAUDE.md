@@ -141,6 +141,7 @@ Each was decided once and holds until the owner changes it. The reasons are in t
 - Pictures before words; a short looping clip beats a still where something happens (Oct 26, Oct 27). Article pictures: a relevant photo first, then something colourful, a pale screenshot last (Nov 2).
 - First things first on every page: the search box, then the overview (the answer or the summary figures), then the list in short pages, then the rest (Nov 11).
 - Every question a visitor asks has one page that answers it on its first screen, within two taps of the homepage on a phone, named the same in the header, menu, title, heading and search; two pages for one question get merged, renamed or given distinct jobs, a merge being the owner's call with pictures; the site map registry and the phone task walk hold it (Nov 24, after asking since Nov 23: "NEVER AGAIN").
+- The phone menu keeps its Data list folded: a data page is Menu, Data, then the page; the header carries the top tasks (Nov 24, 5:35 PM).
 - Nothing a reader sees or uses is removed, hidden or unpinned to fix a flaw in it: the flaw is fixed and the thing stays. A repeat stays where it's relevant and important to that page. A real removal is the owner's call, asked with the picture (Nov 12).
 - Every search box, the site-wide one included, offers the visitor's recent searches, kept only in their browser (Nov 23).
 - Every employer page says near the top that its filings are past filings, and that sponsorship now depends on the job and the employer (Nov 23).
