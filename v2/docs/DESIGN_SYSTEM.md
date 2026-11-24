@@ -22,7 +22,8 @@ When this file and the code disagree, the code is right and this file is stale.
    one ink rule. The hard shadow comes only from those named rules in
    `globals.css`, never a class.
 3. **Lime is solid or an edge, never a wash.** Lime fills the main action and marks
-   "now" or "you" (with ink on it, 9.8:1); a lime edge (4px or more) can mark a
+   "now" or "you" (with ink on it, 9.8:1); a figure card holding a plain total takes the ink card,
+   never lime (`lime-figures-mark-now-or-you.test.ts` lists the cards that keep lime); a lime edge (4px or more) can mark a
    panel. No pale lime or green wash anywhere (owner, Oct 15: "I don't like that
    highlighter green"): a wash behind text or a row is the tint. Lime is never text
    (2.05:1); green text uses the ink (`text-primary-text`, `.link`).

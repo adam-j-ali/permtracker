@@ -80,13 +80,14 @@ One line each. The reasons, and the incident behind each, are in the notes file 
 - DOL's figures (its average, its months, the wage-request wait) are never typed into prose: `<DolNow />` and `src/lib/dolNow.ts`. Any figure typed into copy carries its date, or the staleness audit fails it.
 - Each FLAG program has two sources and needs both: DOL's live service (pending cases, no wage) and the quarterly file (decided only, with the wage) ([data](docs/notes/data.md)).
 - Discover a government file's address from the agency's own page, never build it. Respect robots.txt (`lib_gov_data.fetch` checks it) and never defeat a challenge: pages that refuse scripts are read in the owner's Chrome by the session timers.
-- Freshness stamps and day keys are Eastern days (`et_today()`). A run that stops on its own cap or budget records `ok` and names it; a run that fails and carries on ends red ([ops](docs/notes/ops.md)).
+- Freshness stamps and day keys are Eastern days (`et_today()`, `et_date()`): the server's clock is UTC, so never `date.today()` or `time.localtime` for a date the site shows ("Updated November 24" on the evening of the 23rd). A run that stops on its own cap or budget records `ok` and names it; a run that fails and carries on ends red ([ops](docs/notes/ops.md)).
+- A case row's stored stamp is the day its status last changed: show it as "since", and "checked" only from the newest sweep (`src/lib/statusDates.ts`). A pass that re-asks DOL asks every open case in its band, never one status ([data](docs/notes/data.md)).
 - Nothing may follow a script's `__main__` guard (`scripts/test_main_guard.py`).
 - libSQL returns integers as strings: one normaliser on both sides of any diff.
 - A statement naming `lca_cases` goes to the LCA database; never join it to a main-database table ([ops](docs/notes/ops.md)).
 - Big reads through the tunnel go in bounded slug slices (`SLUG_WINDOWS` in `scripts/lib_db.py`).
 - Time a query on the live database one statement at a time, the smallest window first, and stop at the first one over a second: a batch of year-wide scans stalled page reads for 22 seconds (Nov 10) ([ops](docs/notes/ops.md)).
-- One rule per thing, never a copy: PERM deadlines `convex/lib/perm`, months `convex/lib/months.ts`, shares `formatShareOf` (`convex/lib/format.ts`), entity links `entityHref`, LIKE `src/lib/db/like.ts`, job codes `socGroup`, yearly wages `comparableWage` and `scripts/data/pay_periods.json`, slugs `entitySlug.ts` and `lib_slugs.py`.
+- One rule per thing, never a copy: PERM deadlines `convex/lib/perm`, months `convex/lib/months.ts`, shares `formatShareOf` (`convex/lib/format.ts`), entity links `entityHref`, LIKE `src/lib/db/like.ts`, job codes `socGroup`, yearly wages `comparableWage` and `scripts/data/pay_periods.json`, slugs `entitySlug.ts` and `lib_slugs.py`, PERM wage requests waiting `permPending` and PERM-only counts `permScope` (`src/lib/db/pwdCases.ts`), Wilson intervals `convex/lib/wilson.ts` and `lib_wilson.py`, day differences `daysBetween` and `lib_days.py`.
 
 **Pages**
 - JSX glues adjacent element text: `{" "}` between text siblings and inside every mapped item, table cell and `<th>`. The rendered audit (`scripts/audit_glued_text.py`) is the authority ([site](docs/notes/site.md)).
@@ -97,7 +98,7 @@ One line each. The reasons, and the incident behind each, are in the notes file 
 - Motion's `initial` is written into the server's HTML: nothing above the fold may start hidden (the `ssr` vitest project and `audit_ssr_visibility.py` check it).
 - A `loading.tsx` renders the page's own loading component, and prerendered pages have none. A public `[param]` route needs `generateStaticParams`.
 - A `route.ts` exports handler names only. `robots: undefined` drops the root's robots tag.
-- WCAG 2.1 AA, public text 14px or more, 44px tap targets, sentence case. Lime is the action and the picked option; text on paper uses the `-ink` tokens ([DESIGN_SYSTEM](docs/DESIGN_SYSTEM.md)).
+- WCAG 2.1 AA, public text 14px or more, 44px tap targets, sentence case. Lime is the action and the picked option; a figure card's lime fill marks only where DOL is now or the reader's own figure, a total takes the ink card (`lime-figures-mark-now-or-you.test.ts`); text on paper uses the `-ink` tokens ([DESIGN_SYSTEM](docs/DESIGN_SYSTEM.md)).
 - A grid holding form controls needs `grid-cols-1 [&>*]:min-w-0`; `sr-only` goes on a wrapper, never a `<table>`; a table that scrolls sideways is a `ScrollBox`.
 - A social card never carries a live figure (`"mask": "figures"` in `scripts/page-cards.json`), and every public page names its card through `withSocialCard`.
 - A change to a box many pages share (the case box, the header, the footer, a list's header) gets `node scripts/phone_sweep.mjs <dev server> <a page carrying it>` through `solo-headless.sh` before the push: the deploy runs that sweep and `pnpm check` can't ([testing](docs/notes/testing.md)).

@@ -102,6 +102,7 @@ Each was decided once and holds until the owner changes it. The reasons are in t
 - The disk is 150 GB of Oracle's free 200 on purpose: the rest is room for a second free server (Sep 28). The server's Oracle identity holds `manage all-resources in tenancy` (Oct 13).
 - The server's alarms go by email and to the owner's phone, never by phone alone; the Mac's go to the phone (Oct 10; the phone added Nov 23). The database RAM lock is retired (Oct 29).
 - Limits are lax and broad, set from measurements: performance, experience and SEO first (Sep 29).
+- Where every alert goes is one list, `scripts/data/alert_routes.json`, read by every sender and shown at /admin#monitor: phone and email for what needs the owner, the morning report for a one-off failure the next run fixes, the admin page only for the defense acting on a scraper (Nov 23).
 - Search Console's page requests go with each release, the morning after it's live, never held to the end of a plan; a new sitemap family is still resubmitted the same day (Nov 23).
 - The automatic defense acts at 5 people shown the busy page in 10 minutes, and a full app 3 minutes running still acts with nobody refused (Oct 3, Oct 5).
 - Meta's AI crawler, Perplexity, ClaudeBot and Applebot read at 30 pages a minute; people's AI assistants have their own room at the front door (Oct 2 to Oct 22).
