@@ -227,6 +227,30 @@ export function summariseBulletins(bulletins: readonly BulletinMonth[]): Bulleti
   };
 }
 
+/**
+ * A cell as the browser gets it: every figure the board draws, without the month-by-month history it never draws.
+ * `states?: never` makes handing the board a whole cell a type error.
+ */
+export type BoardCellSummary = Omit<BoardCell, "states"> & { states?: never };
+
+export interface BulletinBoardSummary extends Omit<BulletinBoard, "finalAction" | "datesForFiling"> {
+  finalAction: BoardCellSummary[];
+  datesForFiling: BoardCellSummary[];
+}
+
+/**
+ * The board for a client component. Each cell's `states` holds every bulletin since 2005, and across both charts
+ * that was 0.76 MB of /tools/priority-date-calculator's 1.61 MB (Nov 23 2026) for a drawing that reads none of it.
+ */
+export function boardSummary(board: BulletinBoard): BulletinBoardSummary {
+  const slim = (cells: readonly BoardCell[]): BoardCellSummary[] =>
+    cells.map(({ states: _history, ...figures }) => {
+      void _history;
+      return figures;
+    });
+  return { ...board, finalAction: slim(board.finalAction), datesForFiling: slim(board.datesForFiling) };
+}
+
 /** The board, read from the archive. Null when the archive is empty. */
 export async function getBulletinBoard(): Promise<BulletinBoard | null> {
   const raw = await getVisaBulletins();

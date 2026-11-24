@@ -17,7 +17,7 @@ import { DAYS_PER_MONTH } from "@/lib/time";
 // in the libSQL client. Only the pure half is under test here.
 vi.mock("../publicData", () => ({ getVisaBulletins: vi.fn() }));
 
-const { summariseBulletins, categoriesIn } = await import("../bulletin");
+const { summariseBulletins, categoriesIn, boardSummary } = await import("../bulletin");
 
 function b(
   month: string,
@@ -185,5 +185,22 @@ describe("bulletins older than the measured window", () => {
     expect(withOld.movedDays).toBe(without.movedDays);
     expect(withOld.spanMonths).toBe(without.spanMonths);
     expect(withOld.retrogressions).toEqual(without.retrogressions);
+  });
+});
+
+describe("boardSummary: what the browser gets", () => {
+  it("keeps every figure the board draws and leaves each cell's month-by-month history on the server", () => {
+    // Arrange: a board whose cells carry a history
+    const board = summariseBulletins(slowSeries())!;
+    expect(board.finalAction[0]!.states.length).toBe(12);
+    // Act
+    const sent = boardSummary(board);
+    // Assert: no history rides along, and nothing else changed
+    for (const cell of [...sent.finalAction, ...sent.datesForFiling]) expect("states" in cell).toBe(false);
+    const { states: _drop, ...rest } = board.finalAction[0]!;
+    void _drop;
+    expect(sent.finalAction[0]).toEqual(rest);
+    expect({ ...sent, finalAction: [], datesForFiling: [] }).toEqual({ ...board, finalAction: [], datesForFiling: [] });
+    expect(JSON.stringify(sent)).not.toContain('"states"');
   });
 });

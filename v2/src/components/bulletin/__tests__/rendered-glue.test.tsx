@@ -3,7 +3,7 @@ import { render } from "@testing-library/react";
 
 import { BulletinBoard } from "../BulletinBoard";
 import { PriorityDateEstimator } from "@/components/tools/PriorityDateEstimator";
-import type { BulletinBoard as Board, BoardCell } from "@/lib/db/bulletin";
+import type { BulletinBoardSummary as Board, BoardCellSummary as BoardCell } from "@/lib/db/bulletin";
 import type { BulletinMonth } from "@/lib/perm";
 
 /**
@@ -87,7 +87,6 @@ function cell(over: Partial<BoardCell> & Pick<BoardCell, "category" | "country">
     spanMonths: 35,
     pace: 0.57,
     retrogressions: [],
-    states: [],
     ...over,
   };
 }
