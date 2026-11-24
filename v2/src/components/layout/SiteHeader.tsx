@@ -243,10 +243,13 @@ export default function SiteHeader() {
       ref={barRef}
       data-site-header=""
       style={{ height: "var(--site-header-h)" }}
-      className="fixed inset-x-0 top-0 z-[45] border-b-2 border-black bg-[#141414] print:hidden"
+      className="fixed inset-x-0 top-0 z-[45] border-b-2 border-black bg-[#141414] print:hidden before:pointer-events-none before:absolute before:inset-x-0 before:bottom-full before:h-screen before:bg-[#141414] before:content-['']"
     >
       {/* Black in both themes, like the footer (owner, Oct 15 2026): the bar is
-          dark-scoped, its dropdown panels below keep the page's theme. */}
+          dark-scoped, its dropdown panels below keep the page's theme. The
+          backing above the bar (before:) is its own colour reaching up behind
+          it: an in-app browser (Telegram's, Nov 24 2026) lays its own bar over
+          the page and leaves a strip above ours where the page scrolled through. */}
       <div className="dark mx-auto flex h-full max-w-[1440px] items-center gap-2 px-4 text-foreground sm:px-6 lg:gap-6">
         <IntentLink
           href="/"
