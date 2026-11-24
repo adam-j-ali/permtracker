@@ -34,6 +34,13 @@ from lib_db import QUARTERLY_FILE_MAX_AGE_DAYS, Database, query_rows, rows_of  #
 import lca_numbers  # noqa: E402
 from build_lca_years import fiscal_year_of  # noqa: E402
 
+sys.path.insert(0, str(pathlib.Path(__file__).parent / "oracle" / "lib"))
+import alert_routes  # noqa: E402 - the one routing list, shared with the server's scripts
+
+# Where a late source and a quiet layoff list go (scripts/data/alert_routes.json): ingest.late is a warning the
+# morning report shows, ingest.layoffs-quiet a plain line in the table, and either moves by the list alone.
+ROUTES = alert_routes.load()
+
 
 def budget_for(cadence: str, max_age: int) -> int:
     """The budget a row is judged by: its own, never less than lib_db.QUARTERLY_FILE_MAX_AGE_DAYS for a quarterly
@@ -1333,7 +1340,7 @@ def main() -> int:
         # A source that hasn't republished while our ingest reads it on time is the agency's wait, not a stale
         # ingest: freshness_verdict below decides it the same way, and its warning line says so.
         not_run = any(s[0] == dataset + " (has not RUN)" for s in stale)
-        if data_stale and not not_run and is_layoff_list(dataset):
+        if data_stale and not not_run and is_layoff_list(dataset) and ROUTES.channel("ingest.layoffs-quiet") == "admin":
             stale.pop()
             print(f"{dataset:22s} no new notice since {as_of} (list read {et_clock(fetched_at)})  ok")
             continue
@@ -1397,8 +1404,10 @@ def main() -> int:
                   "good numbers under their own as-of date, which is honest but "
                   "invisible. This is a WARNING, not a failure, until "
                   f"{SOURCE_PAUSED_GRACE}x the budget.")
+            # A warning the morning report shows, unless the routing list keeps a late load on the admin page.
+            mark = "::warning::" if ROUTES.channel("ingest.late") != "admin" else "  "
             for d, age, budget, _src in watching:
-                print(f"::warning::{d} is {age} days old against a {budget}-day "
+                print(f"{mark}{d} is {age} days old against a {budget}-day "
                       "budget; the agency has not republished and our ingest is "
                       f"fine. Becomes a failure at {budget * SOURCE_PAUSED_GRACE} days.")
         if silent:

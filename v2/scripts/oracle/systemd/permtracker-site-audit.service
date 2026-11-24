@@ -1,7 +1,8 @@
 # The site's own full audit (scripts/site_audit.py): a seventh of the sitemap each night through nginx on this
 # machine, so every page is read once a week; Sunday night's run closes the week. It writes its tables and
-# perm_docs['site_audit'] (the morning report reads it) and emails the owner through the mail Worker only when a
-# weekly count grew. Started by permtracker-site-audit.timer at 9:30 PM Eastern; it stops reading at 12:45 AM, before
+# perm_docs['site_audit'] (the morning report reads it and warns when a weekly count grew); it emails the owner
+# through the mail Worker itself only when the routing list sends audit.weekly by email. Started by
+# permtracker-site-audit.timer at 9:30 PM Eastern; it stops reading at 12:45 AM, before
 # the night deploys, the backups and the 4:10 AM sweep, and waits on its own while a deploy or a sweep runs or the
 # load is high. Install: scripts/oracle/README.md, "The site audit".
 [Unit]

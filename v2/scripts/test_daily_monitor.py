@@ -524,15 +524,33 @@ def main() -> int:
     check("GB" in " ".join(v(doc(), now_ms)["lines"]) and "BB" not in " ".join(v(doc(), now_ms)["lines"]),
           "database size reads in GB")
     check("server" in inspect.getsource(dm.build), "build() includes the server section")
+    # A restart that worked and the defense acting on a scraper fixed themselves: the routing list keeps both on the
+    # admin page, as lines, never a warning in the email.
     rep = v(doc(repairCount24h=2, repairs24h=["2026-09-28T17:35:39Z web_blue: restarted"]), now_ms)
-    check(rep["status"] == "warn" and any("Repair:" in ln for ln in rep["lines"]),
-          "a watchdog repair in the last day warns and names it")
+    check(rep["status"] == "ok" and any("Repair:" in ln for ln in rep["lines"])
+          and any("restarted something 2 time(s)" in ln for ln in rep["lines"]),
+          "a watchdog repair in the last day is named as a line, not a warning", str(rep))
     ua = v(doc(underAttack24h=2, defenseCount24h=4,
                defense24h=["2026-10-02T21:38:35Z defend: Under Attack Mode on (no single source)"]), now_ms)
     said = " ".join(ua["lines"]) + " " + str(ua.get("summary", ""))
-    check(ua["status"] == "warn" and "restarted" not in said
+    check(ua["status"] == "ok" and "restarted" not in said
           and "Under Attack Mode 2 time(s)" in said and any("Defense:" in ln for ln in ua["lines"]),
-          "the defense is reported as the defense, never as restarts")
+          "the defense is reported as the defense, never as restarts, and as a line", str(ua))
+    # The alarm keeps a timed job's one failed run out of the email (alarm.job-once): the report names it.
+    t0 = now_ms / 1000 - 5 * 3600
+    once = v(doc(alarmEvents24h=[{"at": t0, "key": "unit:permtracker-cron@flag-notice", "route": "alarm.job-once",
+                                  "reason": "x failed", "over": t0 + 900}]), now_ms)
+    check(once["status"] == "warn" and "permtracker-cron@flag-notice failed one run at" in once["summary"]
+          and "its next run passed by" in once["summary"], "a job's one failed run warns in the report", str(once))
+    both = v(doc(alarmEvents24h=[
+        {"at": t0, "key": "unit:permtracker-cron@flag-notice", "route": "alarm.job-once", "over": t0 + 900},
+        {"at": t0 + 900, "key": "unit:permtracker-cron@flag-notice", "route": "alarm.job-twice"}]), now_ms)
+    check(not any("failed one run" in s for s in says(both)),
+          "a failed run followed by a second isn't listed as one: it went by email and phone", str(both))
+    blind = v(doc(alarmEvents24h=None), now_ms)
+    check(blind["status"] == "warn" and any("couldn't be read" in s for s in says(blind)),
+          "an unreadable alarm record warns, never reads as a quiet day", str(blind))
+    check(v(doc(), now_ms)["status"] == "ok", "a report from before the alarm's record says nothing about it")
     check(v(doc(now={"dbBytes": 7_000_000_000, "dbDataBytes": 3_300_000_000}), now_ms)["status"] == "ok",
           "a database folder at 2.1x its data file is normal (one snapshot)")
     # Oct 11 2026, the morning that read "3.1x ... not being trimmed": sqld
