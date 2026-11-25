@@ -37,6 +37,9 @@ export default function robots(): MetadataRoute.Robots {
     // render that can ask DOL live, and a crawler walking thousands of them is
     // pure cost, in database reads and DOL requests.
     '/perm-case-status?',
+    // A USCIS receipt in the address is one person's number. Its page is noindex already; a crawler following a shared
+    // link must not set off a status lookup with a number nobody typed (USCIS's API terms ask for the person's consent).
+    '/uscis-case-status?',
     // The embedded lookup asks DOL live on every query (under a daily cap per
     // embedding site), so its query variants are the same cost, and worse.
     '/embed/case-status?',
