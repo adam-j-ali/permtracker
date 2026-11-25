@@ -86,6 +86,7 @@ export const PAGE_KEYWORDS: Readonly<Record<string, string>> = {
   "/law-firm-rankings": "law firm rankings top immigration lawyers attorneys biggest busiest firms perm h-1b h1b lca by state fiscal year fragomen",
   "/h1b-employers": "h-1b h1b top employers sponsors biggest largest busiest companies ranking lca uscis data hub approvals by state",
   "/lca-wage-sources": "prevailing wage source survey oes radford aon mercer willis towers watson cba union h-1b lca",
+  "/uscis-case-statuses": "uscis case status meaning what does my status mean case was received actively reviewed approved rfe denied rejected card produced",
   "/uscis-receipt-blocks": "receipt block blocks ioe uscis processing which block approvals i-485 i485 i-765 ead i-131 sample case status",
   "/uscis-rfe-rates": "rfe request for evidence rate rates h-1b h1b l-1 l1 o-1 tn h-2a h-2b i-129 uscis denial",
   "/visa-wait-times": "visa appointment interview wait time times consulate embassy stamping h-1b h1b l-1 f-1 b1 b2 visitor student india hyderabad chennai mumbai new delhi kolkata",

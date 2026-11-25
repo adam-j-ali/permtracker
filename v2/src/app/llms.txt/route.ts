@@ -54,6 +54,12 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
       "Paste what your own USCIS online account shows (the case data or the list of updates) and see each update by date with what its code is known to mean: FTA0, IAF, FJ, H008, IK1 and others, each labelled as quoted from a government code list, reported by filers, or unsettled. It runs in the browser: nothing is sent, stored or signed in. The updates can be added to a green card timeline, which is checked before it shows.",
   },
   {
+    path: "/uscis-case-statuses",
+    label: "What each USCIS case status means",
+    blurb:
+      "USCIS's case statuses in ten kinds, from received to approved, denied or rejected: what each means, what to do next, and USCIS's own wording for each.",
+  },
+  {
     path: "/uscis-receipt-blocks",
     label: "USCIS receipt blocks: where approvals are now",
     blurb:

@@ -1840,5 +1840,18 @@
    1504,
    948
   ]
+ },
+ {
+  "slug": "uscis-case-statuses",
+  "path": "/uscis-case-statuses",
+  "title": "What each USCIS case status means",
+  "label": "Ten kinds of USCIS case status, what each means and what to do next.",
+  "shot": "uscis-case-statuses.png",
+  "crop": [
+   0,
+   0,
+   2048,
+   1376
+  ]
  }
 ]

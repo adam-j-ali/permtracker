@@ -118,6 +118,7 @@ export const PAGE_CARD_ALT = {
   "pwd-cases": "Find a prevailing wage request. Pending from DOL's case status, decided with the wage set, searched by employer.",
   "security": "How your data is protected. Encryption at rest, isolated accounts, short sessions, and no client data on the public pages.",
   "accessibility": "The standard the site builds to, WCAG 2.2 AA, what it means on each page, and where to report a barrier.",
+  "uscis-case-statuses": "What each USCIS case status means: ten kinds, what each means and what to do next.",
   "uscis-receipt-blocks": "USCIS receipt blocks: the share of each online receipt block's sampled cases USCIS shows as approved, and where approvals stop.",
   "uscis-case-status": "A USCIS receipt number decoded: what its letters and digits encode, with links to USCIS's own status pages.",
   "uscis-account-reader": "The USCIS account reader: paste your account's updates and see each code by date with what it's known to mean.",

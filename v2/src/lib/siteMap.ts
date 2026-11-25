@@ -274,6 +274,7 @@ export const LEARN_PAGES: readonly SitePage[] = [
   { href: "/blog", name: "Blog" },
   { href: "/faq", name: "FAQ" },
   { href: "/perm-case-statuses", name: "What each case status means" },
+  { href: "/uscis-case-statuses", name: "What each USCIS case status means" },
   { href: "/glossary", name: "Glossary" },
   { href: "/policy-changes", name: "Policy changes" },
   { href: "/methodology", name: "Methodology" },
