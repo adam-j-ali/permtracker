@@ -28,7 +28,7 @@ describe("a typed receipt's last status from the sample", () => {
     const { container } = render(await ReceiptSampleNote({ receipt: "IOE0000000012" }));
     const text = container.textContent ?? "";
     expect(text).toContain("on November 24, 2026, USCIS showed Case Was Approved for an I-485.");
-    expect(text).toContain("Our sample first saw that status on November 20, 2026; USCIS may have shown it earlier.");
+    expect(text).toContain("Our sample first saw that status on November 20, 2026. USCIS may have shown it earlier, and its own page has today's.");
     expect(text).not.toContain("held since");
   });
 });

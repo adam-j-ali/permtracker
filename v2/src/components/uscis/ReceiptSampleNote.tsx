@@ -27,7 +27,7 @@ export async function ReceiptSampleNote({ receipt }: { receipt: string }) {
           The last time our sample checked this number, on {formatAsOf(seen.checked_on)}, USCIS showed{" "}
           <b className="font-bold">{seen.status}</b>
           {seen.form ? <> for an {keepWhole(seen.form)}</> : null}. Our sample first saw that status on{" "}
-          {formatAsOf(seen.since_on)}; USCIS may have shown it earlier. USCIS&apos;s own page has today&apos;s.
+          {formatAsOf(seen.since_on)}. USCIS may have shown it earlier, and its own page has today&apos;s.
         </p>
       ) : null}{" "}
       {block ? (
