@@ -51,7 +51,7 @@ describe("GreenCardTab", () => {
         caseData={caseData({
           greenCardPath: "adjustment",
           i485FilingDate: "2025-01-02",
-          i485ReceiptNumber: "IOE0912345678",
+          i485ReceiptNumber: "IOE0000000050",
           eadApprovalDate: "2025-05-01",
           cardReceivedDate: undefined,
         })}
@@ -59,7 +59,7 @@ describe("GreenCardTab", () => {
     );
     expect(whole("Adjustment of status in the US (I-485)").closest("h2")).not.toBeNull();
     expect(whole("I-485 filed")).toBeInTheDocument();
-    expect(screen.getAllByText(/IOE0912345678/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/IOE0000000050/).length).toBeGreaterThan(0);
     expect(whole("Work permit approved")).toBeInTheDocument();
     expect(whole("Card received")).toBeInTheDocument();
   });

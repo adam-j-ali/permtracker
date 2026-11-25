@@ -142,14 +142,19 @@ export default function PrivacyPage() {
               <li>Case status and progress information</li>{" "}
               <li>Important dates (PWD filing, recruitment dates, etc.)</li>{" "}
               <li>
-                The green card&apos;s own steps, if you enter them: whether the case goes through adjustment of
-                status in the US or a visa at a consulate, the preference category and its kind (such as EB-2 or
-                EB-3 other worker), and the dates of the I-485, the work permit, the travel document, the National
-                Visa Center, the DS-260, the interview and the card
+                <KeepWhole>
+                  {"The green card's own steps, if you enter them: whether the case goes through adjustment of " +
+                    "status in the US or a visa at a consulate, the preference category and its kind (such as EB-2 " +
+                    "or EB-3 other worker), and the dates of the I-485, the work permit, the travel document, the " +
+                    "National Visa Center, the DS-260, the interview and the card"}
+                </KeepWhole>
               </li>{" "}
               <li>
-                USCIS receipt numbers you enter for the I-485, the work permit and the travel document. We use a
-                receipt number only to show it on your case and to link it to the public status page you ask for
+                <KeepWhole>
+                  {"USCIS receipt numbers you enter for the I-485, the work permit and the travel document. We " +
+                    "use a receipt number only to show it on your case and to link it to the public status page " +
+                    "you ask for"}
+                </KeepWhole>
               </li>{" "}
               <li>
                 The country of birth and, when it differs, the country the case is charged to. We store each as a

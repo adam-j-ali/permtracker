@@ -50,12 +50,12 @@ describe("a case past the I-140", () => {
       chargeabilityCountry: "CA",
       i485FilingDate: "2025-01-02",
       i485ReceiptDate: "2025-01-09",
-      i485ReceiptNumber: "IOE0912345678",
+      i485ReceiptNumber: "IOE0000000050",
       i485BiometricsDate: "2025-02-01",
       eadFilingDate: "2025-01-02",
-      eadReceiptNumber: "IOE0912345679",
+      eadReceiptNumber: "IOE0000000051",
       apFilingDate: "2025-01-02",
-      apReceiptNumber: "IOE0912345680",
+      apReceiptNumber: "IOE0000000052",
     });
     const c = await read();
     expect(c).toMatchObject({
@@ -65,9 +65,9 @@ describe("a case past the I-140", () => {
       ebCategory: "EB-3-other",
       countryOfBirth: "IN",
       chargeabilityCountry: "CA",
-      i485ReceiptNumber: "IOE0912345678",
-      eadReceiptNumber: "IOE0912345679",
-      apReceiptNumber: "IOE0912345680",
+      i485ReceiptNumber: "IOE0000000050",
+      eadReceiptNumber: "IOE0000000051",
+      apReceiptNumber: "IOE0000000052",
     });
     // The older category follows the newer one, so what reads it (the chat, the export, the I-140 estimate) agrees.
     expect(c.i140Category).toBe("EB-3");
