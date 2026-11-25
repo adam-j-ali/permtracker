@@ -202,7 +202,6 @@ describe("InlineCaseTimeline - Milestone Positioning", () => {
     // Each band carries its own left position, and each marker its position
     // as --x (its class clamps it inside the grid's edges).
     milestones.forEach((milestone) => {
-      // eslint-disable-next-line security/detect-unsafe-regex -- safe-regex flags this heuristically, but the pattern is linear (no nested/overlapping quantifiers) and runs on a short style string in a test
       expect((milestone as HTMLElement).getAttribute("style")).toMatch(/(left|--x):\s*\d+(\.\d+)?%/);
     });
   });

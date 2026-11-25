@@ -46,6 +46,7 @@ export function loadShareFonts(): Promise<ShareFont[]> {
         ["Inter", "inter-700.ttf", 700],
       ] as const
     ).map(async ([name, file, weight]): Promise<ShareFont> => {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- the file names are the three fixed fonts listed above, all in public/fonts
       const buf = await readFile(join(process.cwd(), "public", "fonts", file));
       return { name, data: buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer, weight, style: "normal" };
     }),

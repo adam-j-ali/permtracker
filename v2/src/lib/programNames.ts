@@ -13,6 +13,7 @@ export const PROGRAM_NAME_SOURCE: string = names.source;
 
 /** A fresh global pattern on each call: a shared /g RegExp keeps its lastIndex from one string to the next. */
 export function programNamePattern(): RegExp {
+  // eslint-disable-next-line security/detect-non-literal-regexp -- the source is programNames.json in the repository, never a visitor's text
   return new RegExp(PROGRAM_NAME_SOURCE, "g");
 }
 

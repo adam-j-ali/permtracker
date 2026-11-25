@@ -700,6 +700,7 @@ const freshnessUncached = async (): Promise<Record<string, DatasetFreshness>> =>
       // anything a caller supplies, so the attacker-controlled precondition
       // does not hold either. Not suppressed inline on purpose: the reason
       // belongs where the next reader will look.
+      // eslint-disable-next-line security/detect-unsafe-regex -- safe-regex counts the fixed {2} inside the optional part as nesting; the match is linear
       const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(asOf);
       if (m) {
         const y = Number(m[1]);

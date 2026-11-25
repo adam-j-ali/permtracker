@@ -10,6 +10,7 @@ export interface TextRun {
 }
 
 // "§" or "§§", a space (regular or no-break), the section, its subsections.
+// eslint-disable-next-line security/detect-unsafe-regex -- each subsection closes on a required ')' its class leaves out, so the match is linear
 const SECTION_CITE = /§§?[ \u00a0]\d+\.\d+(?:\([A-Za-z0-9]+\))*/g;
 
 export function citationRuns(text: string): TextRun[] {

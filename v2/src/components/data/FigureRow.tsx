@@ -65,6 +65,7 @@ export function TrendChip({ trend, className }: { trend: FigureTrend; className?
 }
 
 /** A figure that is a number: digits with their separators, a currency sign before or a percent or short unit after. */
+// eslint-disable-next-line security/detect-unsafe-regex -- safe-regex counts the bounded {1,4} inside the optional unit as nesting; the match is linear
 const NUMBER = /^[$€£]?\d[\d,.]*\s?(?:%|[A-Za-z]{1,4})?$/;
 
 export function Figure({

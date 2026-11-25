@@ -164,6 +164,7 @@ function when(r: DatasetFreshness, through = "through"): string {
 
 function fmt(iso: string): string {
   // "2026-06-30" -> "Jun 30, 2026"; "2026-09" -> "Sep 2026"; else verbatim.
+  // eslint-disable-next-line security/detect-unsafe-regex -- safe-regex counts the fixed {2} inside the optional part as nesting; the match is linear
   const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(iso);
   if (!m) return iso;
   const name = MONTH_ABBR[Number(m[2]) - 1];

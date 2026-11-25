@@ -290,6 +290,7 @@ export interface UscisCaseStatus {
  */
 export function uscisDateToIso(s: string | undefined | null): string | null {
   if (!s) return null;
+  // eslint-disable-next-line security/detect-unsafe-regex -- safe-regex counts the fixed {2} inside the optional part as nesting; the match is linear
   const m = /^(\d{2})-(\d{2})-(\d{4})(?: (\d{2}):(\d{2}):(\d{2}))?$/.exec(s.trim());
   if (!m) return null;
   const [, mm, dd, yyyy, hh = "00", mi = "00", ss = "00"] = m;

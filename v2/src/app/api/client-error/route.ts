@@ -34,6 +34,7 @@ const staticRoots = () => [
   join(process.env.PT_SHARED_ROOT || "/srv/permtracker/app/shared", "_next", "static"),
   join(process.cwd(), ".next", "static"),
 ];
+// eslint-disable-next-line security/detect-non-literal-fs-filename -- file is chunkFileOf's answer: a path under chunks/ or css/ with no '..' and no backslash
 const onServer = (file: string) => staticRoots().some((root) => existsSync(join(root, file)));
 const budget = createClientErrorBudget();
 

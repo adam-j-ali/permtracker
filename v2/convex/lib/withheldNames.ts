@@ -383,9 +383,12 @@ const SQL_WORDS = new Set([
   "union", "select", "as", "using", "natural", "full", "set", "values", "and", "or", "not",
 ]);
 
+// These read at most 240 characters of our own SQL before one placeholder (scan, below), never a visitor's text.
+/* eslint-disable security/detect-unsafe-regex -- each optional `.column` starts at a required dot, and the input is capped at 240 characters */
 const COMPARE = /([a-z_][a-z0-9_]*(?:\.[a-z_][a-z0-9_]*)?)\s*(==|=|!=|<>|>=|<=|>|<|\blike\b|\bglob\b|\bis\b)\s*$/i;
 const COMPARE_CALL = /\(\s*([a-z_][a-z0-9_]*(?:\.[a-z_][a-z0-9_]*)?)[^()]*\)\s*(==|=|!=|<>|>=|<=|>|<|\blike\b|\bglob\b)\s*$/i;
 const IN_LIST = /([a-z_][a-z0-9_]*(?:\.[a-z_][a-z0-9_]*)?)\s+(?:not\s+)?in\s*\((?:\s*\?\s*,)*\s*$/i;
+/* eslint-enable security/detect-unsafe-regex */
 const BETWEEN = /\bbetween\s*$|\bbetween\s+\?\s+and\s*$/i;
 
 function scan(sql: string): Scanned {
@@ -416,6 +419,7 @@ function scan(sql: string): Scanned {
     if (!SQL_WORDS.has(name)) tables.add(name);
   }
   const kindLiterals: string[] = [];
+  // eslint-disable-next-line security/detect-unsafe-regex -- reads our own SQL, and the optional `table.` prefix ends at a required dot
   const litRe = /\b(?:[a-z_][a-z0-9_]*\.)?(?:kind|facet)\s*=\s*'([a-z]+)'/gi;
   let k: RegExpExecArray | null;
   while ((k = litRe.exec(b))) kindLiterals.push(k[1]!.toLowerCase());
@@ -725,6 +729,7 @@ export function makeMasker(entries: readonly WithheldEntry[]): Masker {
   // a name costs one regular expression and no parse.
   // Every pattern below is built from the server's own withheld lists (never a visitor's input), each value
   // through escapeRe, joined only by fixed, bounded pieces (flexName's [^a-z0-9]{1,8}, FORM_TAIL).
+  /* eslint-disable security/detect-non-literal-regexp -- the server's own withheld lists, each value through escapeRe */
   const looseParts: string[] = [];
   const namePatterns: { re: RegExp; entry: WithheldEntry }[] = [];
   for (const e of entries) {
@@ -753,8 +758,9 @@ export function makeMasker(entries: readonly WithheldEntry[]): Masker {
       to: neutralPath(e) ?? NEUTRAL_BASE[e.kind],
     })),
   );
+  /* eslint-enable security/detect-non-literal-regexp */
 
-  const scrubText = (text: string): string => {
+  const scrubText =(text: string): string => {
     if (!loose || !loose.test(text)) return text;
     let out = text;
     for (const { re, to } of pathPatterns) out = out.replace(re, to);

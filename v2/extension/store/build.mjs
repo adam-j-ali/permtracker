@@ -76,7 +76,7 @@ const bundle = await build({
 const PANEL_JS = bundle.outputFiles[0].text;
 
 // A plain, generic posting: a document, not any job site's layout.
-function postingPage({ company, title, location, key, width, height }) {
+function postingPage({ company, title, location, key, width }) {
   const data = JSON.stringify(answer(key)).replace(/</g, "\\u003c");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Example job posting</title>
 <style>
@@ -248,14 +248,14 @@ async function shoot(html, file, width, height, wait = "ready") {
 
 try {
   // Chrome Web Store screenshots, 1280x800
-  await shoot(postingPage({ company: "Microsoft Corporation", title: "Software engineer, storage systems", location: "Redmond, WA", key: "exact", width: 1280, height: 800 }), "cws-screenshot-1-record.png", 1280, 800);
-  await shoot(postingPage({ company: "Amazon", title: "Data engineer, logistics", location: "Seattle, WA", key: "possible", width: 1280, height: 800 }), "cws-screenshot-2-possible-match.png", 1280, 800);
-  await shoot(postingPage({ company: "Acme Robotics Studio", title: "Robotics engineer", location: "Austin, TX", key: "none", width: 1280, height: 800 }), "cws-screenshot-3-no-record.png", 1280, 800);
+  await shoot(postingPage({ company: "Microsoft Corporation", title: "Software engineer, storage systems", location: "Redmond, WA", key: "exact", width: 1280 }), "cws-screenshot-1-record.png", 1280, 800);
+  await shoot(postingPage({ company: "Amazon", title: "Data engineer, logistics", location: "Seattle, WA", key: "possible", width: 1280 }), "cws-screenshot-2-possible-match.png", 1280, 800);
+  await shoot(postingPage({ company: "Acme Robotics Studio", title: "Robotics engineer", location: "Austin, TX", key: "none", width: 1280 }), "cws-screenshot-3-no-record.png", 1280, 800);
   // promo tiles
   await shoot(tilePage({ width: 440, height: 280, art: drawingSvg(170, 150, "promo-small-art"), big: false, line: true }), "cws-promo-small-440x280.png", 440, 280, "none");
   await shoot(tilePage({ width: 1400, height: 560, art: drawingSvg(560, 460, "promo-marquee-art"), big: true, line: true }), "cws-promo-marquee-1400x560.png", 1400, 560, "none");
   // Product Hunt: the extension panel on a posting, at the gallery's size, and the thumbnail
-  await shoot(postingPage({ company: "Microsoft Corporation", title: "Software engineer, storage systems", location: "Redmond, WA", key: "exact", width: 1270, height: 760 }), "ph-gallery-3-extension.png", 1270, 760);
+  await shoot(postingPage({ company: "Microsoft Corporation", title: "Software engineer, storage systems", location: "Redmond, WA", key: "exact", width: 1270 }), "ph-gallery-3-extension.png", 1270, 760);
   await shoot(`<!doctype html><html><head><style>html,body{margin:0}</style></head><body>${mark(240, 0)}</body></html>`, "ph-thumbnail-240.png", 240, 240, "none");
 
   if (args.has("--site")) {

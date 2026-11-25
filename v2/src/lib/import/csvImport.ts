@@ -151,6 +151,7 @@ export function csvDate(value: string): string | undefined {
   const s = value.trim();
   // No date is longer than this, and the cap comes before any pattern reads the cell.
   if (!s || s.length > 40) return undefined;
+  // eslint-disable-next-line security/detect-unsafe-regex -- the cell is at most 40 characters (checked above), and the optional time is the pattern's last part
   let m = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[T ].*)?$/.exec(s);
   if (m) return iso(Number(m[1]), Number(m[2]), Number(m[3]));
   m = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2}|\d{4})$/.exec(s);
@@ -170,6 +171,7 @@ export function csvDate(value: string): string | undefined {
     const mo = MONTHS.indexOf(m[2]!.slice(0, 3).toLowerCase());
     return mo < 0 ? undefined : iso(fullYear(Number(m[3])), mo + 1, Number(m[1]));
   }
+  // eslint-disable-next-line security/detect-unsafe-regex -- the cell is at most 40 characters (checked above), and a required '.' fences the fraction
   if (/^\d{5}(?:\.\d+)?$/.test(s)) {
     const n = Math.floor(Number(s));
     if (n >= 20000 && n <= 80000) {
@@ -190,6 +192,7 @@ function csvBoolean(value: string): boolean | undefined {
 
 function csvNumber(value: string): number | undefined {
   const s = value.trim().replace(/[$,\s]/g, "");
+  // eslint-disable-next-line security/detect-unsafe-regex -- a required '.' fences the fraction from the whole number, so the match is linear
   if (!/^-?\d+(?:\.\d+)?$/.test(s)) return undefined;
   return Number(s);
 }

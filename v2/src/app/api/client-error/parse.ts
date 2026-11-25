@@ -103,6 +103,7 @@ export function isDroppedRequest(message: string): boolean {
  * (Nov 2 2026).
  */
 export function chunkFileOf(message: string): string | null {
+  // eslint-disable-next-line security/detect-unsafe-regex -- each folder ends at a required '/' its class leaves out, and the route caps the body first, so the match is linear
   const m = /\/_next\/static\/((?:chunks|css)\/(?:[\w()[\]%@.-]+\/)*[\w.-]+\.(?:js|css))(?:[?\s)]|$)/.exec(message);
   if (!m || !/chunk/i.test(message)) return null;
   let file: string;

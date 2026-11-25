@@ -100,7 +100,7 @@ export async function webhookHeaders(secret: string, id: string, timestamp: numb
 
 const URL_MAX = 2048;
 const PRIVATE_HOST = /(^|\.)(localhost|local|internal|intranet|lan|home|corp|localdomain)$/i;
-const IPV4 = /^\d{1,3}(\.\d{1,3}){3}$/;
+const IPV4 = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
 
 /**
  * An address we'll POST to: https, a public host name (no IP address, no

@@ -112,6 +112,7 @@ export function parseSocQuery(raw: string): SocQuery {
   const q = (raw ?? "").trim();
   if (!q) return { kind: "empty" };
   // "15-1252", "15-1252.00", "151252", "15 1252": a reader types a code more ways than DOL prints one.
+  // eslint-disable-next-line security/detect-unsafe-regex -- safe-regex counts the fixed {2} inside the optional part as nesting; the match is linear
   const m = /^(\d{2})[\s-]?(\d{4})(?:\.\d{2})?$/.exec(q);
   if (m) return { kind: "code", soc: `${m[1]}-${m[2]}` };
   return { kind: "words", text: q };

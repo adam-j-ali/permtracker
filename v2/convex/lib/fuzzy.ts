@@ -100,7 +100,7 @@ function scoreNormalized(nq: string, nc: string): number {
   // busier farm job "in a nursery".
   const at = nc.startsWith(nq) ? 0 : nc.indexOf(` ${nq}`) >= 0 ? nc.indexOf(` ${nq}`) + 1 : -1;
   if (at >= 0) {
-    const wholeWord = /^(?:e?s)?(?: |$)/.test(nc.slice(at + nq.length));
+    const wholeWord = /^(?:es|s)?(?: |$)/.test(nc.slice(at + nq.length));
     return (wholeWord ? WHOLE_WORD : WORD_START) + 0.05 * (nq.length / nc.length);
   }
 

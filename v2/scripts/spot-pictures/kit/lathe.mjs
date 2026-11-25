@@ -411,7 +411,10 @@ function smoothRows(meridian, F, P, { rows = 6, slope = null, radius = null, ste
         if (entry.used) continue;
         const aligned = align(arc, entry.arc);
         const value = overlap(arc, aligned);
-        if (value > score) (score = value), (best = entry);
+        if (value > score) {
+          score = value;
+          best = entry;
+        }
       }
       if (best && score > -0.05) {
         best.used = true;

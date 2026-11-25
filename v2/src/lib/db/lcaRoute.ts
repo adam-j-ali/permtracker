@@ -26,6 +26,7 @@ const TXN_CONTROL = /^\s*(BEGIN|COMMIT|END|ROLLBACK|SAVEPOINT|RELEASE)\b/i;
 // UPDATE, unless a parenthesis follows (a table-valued function like json_each).
 const TABLE_REF = /\b(?:FROM|JOIN|INTO|UPDATE)\s+([A-Za-z_]\w*)\b(?!\s*\()/gi;
 // A name the statement defines for itself: `WITH f AS (` or `, f AS (`.
+// eslint-disable-next-line security/detect-unsafe-regex -- each optional part starts with a fixed word, so no two runs can claim the same text
 const CTE_NAME = /(?:\bWITH(?:\s+RECURSIVE)?|,)\s*([A-Za-z_]\w*)\s+AS\s*(?:NOT\s+)?(?:MATERIALIZED\s*)?\(/gi;
 // Words that can follow those four and aren't tables (`ON CONFLICT DO UPDATE SET`).
 const NOT_TABLES = new Set(["set", "select", "values", "where", "default", "or", "ignore", "replace"]);

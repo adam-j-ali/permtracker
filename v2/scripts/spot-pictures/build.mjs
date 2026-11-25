@@ -75,7 +75,6 @@ const screws = (pts, z, ring = 1.2) =>
 const faceY = (y, x0, x1, z0, z1) => k.pathOf([[x0, y, z0], [x1, y, z0], [x1, y, z1], [x0, y, z1]].map(at), true);
 const faceX = (x, y0, y1, z0, z1) => k.pathOf([[x, y0, z0], [x, y1, z0], [x, y1, z1], [x, y0, z1]].map(at), true);
 const segY = (y, x0, z0, x1, z1) => k.pathOf([[x0, y, z0], [x1, y, z1]].map(at));
-const segX = (x, y0, z0, y1, z1) => k.pathOf([[x, y0, z0], [x, y1, z1]].map(at));
 const slab = (plan, z, h, style = {}, steps = 3, bevel = 0.3) => S(k.slabOf(plan, z, h, P, steps, bevel), style);
 // A box on a vertical face that sticks out toward the viewer: plan x0..x1, y0..y1, z0..z1.
 const block = (x0, x1, y0, y1, z0, z1, style = {}, r = 0.4) => slab({ x: x0, y: y0, w: x1 - x0, d: y1 - y0, r }, z0, z1 - z0, style, 2, 0.2);

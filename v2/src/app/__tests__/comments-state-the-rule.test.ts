@@ -57,7 +57,6 @@ function commentLines(text: string): { n: number; line: string }[] {
 }
 
 /** "owner, Oct 21 2026: “..." and "the owner: “...": a decision with the chat line it came in. */
-// eslint-disable-next-line security/detect-unsafe-regex -- reads our own comment lines, one short line at a time
 const QUOTED_CHAT = /\b(?:owner|owner[’']s call)\b[^"“\n]{0,24}(?:\d{4}|[A-Z][a-z]{2} \d{1,2})?[^"“\n]{0,6}:\s*["“]/;
 const NAMED = /\b(?:Adam|Sabrina)\b/;
 /** "Name, Nov 1 2026: “...": anyone's words, with the day they said them. */

@@ -37,6 +37,8 @@ export const titleSlug = (key: string): string => key.replace(/ /g, "-");
 
 /** The key a title page's address segment stands for; null when it can't be one. */
 export function keyOfSlug(slug: string): string | null {
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || slug.length > 120) return null;
+  if (slug.length > 120) return null;
+  // eslint-disable-next-line security/detect-unsafe-regex -- each repeat starts at a required '-' its class leaves out, and the length is capped above
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return null;
   return slug.replace(/-/g, " ");
 }

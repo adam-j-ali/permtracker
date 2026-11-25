@@ -5,6 +5,7 @@ import { Fragment } from "react";
  * "15-" at a line's end reads as a different number. The characters stay as written, so search still matches them.
  */
 export function SocCodeText({ text }: { text: string }) {
+  // eslint-disable-next-line security/detect-unsafe-regex -- safe-regex counts the fixed {2} inside the optional part as nesting; the match is linear
   const parts = text.split(/(\b\d{2}-\d{4}(?:\.\d{2})?\b)/);
   return (
     <>

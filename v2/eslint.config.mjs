@@ -72,9 +72,10 @@ const eslintConfig = defineConfig([
       "security/detect-object-injection": "off",
     },
   },
-  // Less strict rules for test files
+  // Less strict rules for test code: the unit tests, their shared helpers
+  // (test-utils/) and the browser flows (tests/e2e/).
   {
-    files: ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/**"],
+    files: ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/**", "test-utils/**", "tests/**"],
     rules: {
       // Test files often have unused variables from render destructuring, setup functions, and mocks
       "@typescript-eslint/no-unused-vars": [
@@ -96,6 +97,26 @@ const eslintConfig = defineConfig([
       // runtime; a test walking its own repository is the false-positive case
       // by construction, and the warnings had been accumulating as tolerated
       // baseline noise, which teaches people to ignore the linter.
+      "security/detect-non-literal-fs-filename": "off",
+      "security/detect-non-literal-regexp": "off",
+      // The same holds for a slow pattern: a test's pattern reads the
+      // repository's own files or a fixed string, so the worst a slow one can
+      // cost is a slow test. The rule stays on everywhere a request's text is
+      // read.
+      "security/detect-unsafe-regex": "off",
+    },
+  },
+  // Tools a person runs on their own machine, or CI runs on the repository:
+  // the build, capture and audit scripts, the extension's store pictures, and
+  // the SDK's command line. Every path they open is built from their own
+  // folder, a list in the repository or the command line of the person
+  // running them, and every pattern they build comes from the same places; no
+  // request from outside ever reaches them. The rules below look for exactly
+  // that request, so here they can only ever be wrong. Both stay on for the
+  // site, Convex, the extension's own code and the SDK's library.
+  {
+    files: ["scripts/**", "extension/store/**", "sdk/src/cli.ts"],
+    rules: {
       "security/detect-non-literal-fs-filename": "off",
       "security/detect-non-literal-regexp": "off",
     },

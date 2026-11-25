@@ -55,7 +55,8 @@ export function parseUscisCharts(html: string): UscisCharts | null {
   const text = pageText(html);
   // Anchored on USCIS's heading, never a bare "<Month> <Year>": the page lists
   // a dozen archive months, and the first bare match is the month in force.
-  const months = [...text.matchAll(new RegExp(`USCIS (${MONTHS}) (\\d{4}) Adjustment of Status Filing Charts`, "g"))]
+  /* eslint-disable security/detect-non-literal-regexp -- both patterns are built only from MONTHS and fixed words, never from the page */
+  const months =[...text.matchAll(new RegExp(`USCIS (${MONTHS}) (\\d{4}) Adjustment of Status Filing Charts`, "g"))]
     .map((m) => iso(m[1]!, m[2]!))
     .sort();
   const month = months[months.length - 1];
@@ -73,5 +74,6 @@ export function parseUscisCharts(html: string): UscisCharts | null {
     for (const m of text.matchAll(re)) if (iso(m[2]!, m[3]!) === month) return m[1] as UscisChart;
     return null;
   };
+  /* eslint-enable security/detect-non-literal-regexp */
   return { month, employment: chartFor("employment-based"), family: chartFor("family-sponsored") };
 }

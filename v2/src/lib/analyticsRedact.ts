@@ -38,6 +38,7 @@ const IDENTIFIERS: readonly RegExp[] = [
   // Email addresses. Every run is bounded (64 before the @, 63 a label, as the mail
   // standards have it), so the work stays in step with the text's length: unbounded,
   // one 200,000-character run of letters took a minute to rule out.
+  // eslint-disable-next-line security/detect-unsafe-regex -- every run is bounded and each label starts at a required '.' its class leaves out, so the match is linear
   /[\w.+-]{1,64}@[\w-]{1,63}(?:\.[\w-]{1,63})+/g,
 ];
 
@@ -104,6 +105,7 @@ const ADDRESS_FIELDS = [
 const PRIVATE_PARAMS = /([?&](?:case|receipt|t)=)[^&#]*/gi;
 
 /** An email address as an address bar prints it, bounded like the plain one above. */
+// eslint-disable-next-line security/detect-unsafe-regex -- every run is bounded and each label starts at a required '.' its class leaves out, so the match is linear
 const ENCODED_EMAIL = /[\w.+-]{1,64}%40[\w-]{1,63}(?:\.[\w-]{1,63})+/gi;
 
 /**
