@@ -73,6 +73,63 @@ describe("GreenCardTab", () => {
     expect(whole("I-485 denied")).toBeInTheDocument();
   });
 
+  describe("how long the I-485 and the work permit take", () => {
+    const FIGURES = {
+      ok: true,
+      steps: {
+        i485: {
+          official: { min: 9.5, max: 24, postedOn: "2026-11-03", where: "field offices" },
+          measured: { asOf: "2026-11-24", months: [{ month: "2025-01", counted: 120, share: 0.31, low: 0.26, high: 0.36 }] },
+          community: { median: 410, p25: 360, p75: 470, n: 37, windowDays: 365 },
+        },
+        ead: {
+          official: { min: 12, max: 12, postedOn: "2026-11-03", where: "National Benefits Center" },
+          measured: null,
+          community: { median: null, p25: null, p75: null, n: 3, windowDays: null },
+        },
+      },
+      unreadable: [],
+    };
+    const route = (estimates: Response | (() => Response)) =>
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (url: string) =>
+          url.startsWith("/api/step-estimates")
+            ? typeof estimates === "function"
+              ? estimates()
+              : estimates
+            : new Response(JSON.stringify(LINE), { status: 200 }),
+        ),
+      );
+
+    it("shows the three kinds for each step, each named and marked with its kind", async () => {
+      route(new Response(JSON.stringify(FIGURES), { status: 200 }));
+      render(<GreenCardTab caseData={caseData({ greenCardPath: "adjustment", i485FilingDate: "2025-01-02" })} />);
+      const card = await screen.findByRole("region", { name: "How long these steps take" });
+      expect(await within(card).findAllByText("The agency")).toHaveLength(2);
+      expect(within(card).getAllByText("Our count")).toHaveLength(2);
+      expect(within(card).getAllByText("People's reports")).toHaveLength(2);
+      const kinds = [...card.querySelectorAll("[data-source-kind]")].map((el) => el.getAttribute("data-source-kind"));
+      expect(kinds).toEqual(["official", "measured", "community", "official", "measured", "community"]);
+      expect(within(card).getByText("9.5 to 24 months")).toBeInTheDocument();
+      expect(within(card).getByText(/the month yours was/)).toBeInTheDocument();
+      expect(fetch).toHaveBeenCalledWith("/api/step-estimates");
+    });
+
+    it("says the figures can't be read when the request fails", async () => {
+      route(() => new Response("{}", { status: 503 }));
+      render(<GreenCardTab caseData={caseData({ greenCardPath: "adjustment" })} />);
+      const card = await screen.findByRole("region", { name: "How long these steps take" });
+      expect(await within(card).findByText(/couldn.t be read just now/)).toBeInTheDocument();
+    });
+
+    it("isn't shown on the consular path", () => {
+      route(new Response(JSON.stringify(FIGURES), { status: 200 }));
+      render(<GreenCardTab caseData={caseData({ greenCardPath: "consular" })} />);
+      expect(screen.queryByRole("region", { name: "How long these steps take" })).not.toBeInTheDocument();
+    });
+  });
+
   it("shows the consulate's steps on the consular path, and no I-485", () => {
     render(<GreenCardTab caseData={caseData({ greenCardPath: "consular", ds260SubmittedDate: "2025-02-01" })} />);
     expect(whole("Immigrant visa at a consulate abroad").closest("h2")).not.toBeNull();
@@ -94,7 +151,8 @@ describe("GreenCardTab", () => {
   it("asks for what the line needs when the category or country is missing", () => {
     render(<GreenCardTab caseData={caseData({ greenCardPath: "adjustment" })} />);
     expect(screen.getByText(/Add the preference category and the country of birth/)).toBeInTheDocument();
-    expect(fetch).not.toHaveBeenCalled();
+    // No line to read, so no bulletin is asked for (the step estimates are a read of their own).
+    expect(fetch).not.toHaveBeenCalledWith(expect.stringContaining("/api/bulletin-line"));
   });
 });
 

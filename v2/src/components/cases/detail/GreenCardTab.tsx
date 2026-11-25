@@ -5,8 +5,9 @@
  * line the category and chargeability put the case in, with the priority date read against the newest bulletin.
  *
  * The line's reading uses the central calculator (estimatePriorityDate) on the archive the public bulletin pages
- * read (/api/bulletin-line), so the case page and the public line page can't disagree. Nothing here is an estimate
- * of a USCIS decision; the bulletin says only when a priority date is current.
+ * read (/api/bulletin-line), so the case page and the public line page can't disagree. The bulletin says only when a
+ * priority date is current; how long the I-485 and the work permit take is its own card (StepEstimatesCard), three
+ * kinds of figure, each named.
  */
 
 import { useEffect, useState } from "react";
@@ -38,6 +39,7 @@ import type { CaseDetailData } from "./case-detail-types";
 import { fmtISODate } from "./case-detail-utils";
 import { PublicNumber } from "./PublicNumber";
 import { BulletinAlertSwitch } from "./BulletinAlertSwitch";
+import { StepEstimatesCard } from "./StepEstimatesCard";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 
 interface GreenCardTabProps {
@@ -287,6 +289,8 @@ export function GreenCardTab({ caseData }: GreenCardTabProps) {
             </div>
           )}
       </div>
+
+      {path === "adjustment" ? <StepEstimatesCard caseData={caseData} /> : null}
 
       <BulletinLineCard caseData={caseData} />
     </div>
