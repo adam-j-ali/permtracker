@@ -311,8 +311,6 @@ function keyKind(key: string): KindMask | null {
   return null;
 }
 
-const CASE_NUMBER = /^[A-Z]{1,2}(-[A-Z])?-\d{3}-\d{5}-\d{6}$/i;
-
 /**
  * The pair a slug or name column belongs to: `employer_slug` and `employer_name` are "employer", `attorneySlug`
  * and `attorneyName` "attorney", a page's own `slug` and `name` "". Null for any other column. The two cells of a

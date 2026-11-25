@@ -16,19 +16,19 @@ import { cn } from "@/lib/utils";
 export function SpotPicture({ name, alt, className }: { name: SpotPictureName; alt: string; className?: string }) {
   const p = SPOT_PICTURES[name];
   const decorative = alt === "";
-  const img = { width: p.width, height: p.height, alt, loading: "lazy" as const, decoding: "async" as const, draggable: false };
+  const img = { width: p.width, height: p.height, loading: "lazy" as const, decoding: "async" as const, draggable: false };
   return (
     <span className={cn("block", className)} aria-hidden={decorative ? true : undefined} data-spot={name}>
       {"light" in p ? (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element -- a static SVG drawn for this site */}
-          <img src={p.light} className="block h-auto w-full dark:hidden" {...img} />
+          <img src={p.light} alt={alt} className="block h-auto w-full dark:hidden" {...img} />
           {/* eslint-disable-next-line @next/next/no-img-element -- a static SVG drawn for this site */}
-          <img src={p.dark} className="hidden h-auto w-full dark:block" {...img} />
+          <img src={p.dark} alt={alt} className="hidden h-auto w-full dark:block" {...img} />
         </>
       ) : (
         // eslint-disable-next-line @next/next/no-img-element -- a static SVG drawn for this site
-        <img src={p.dark} className="block h-auto w-full" {...img} />
+        <img src={p.dark} alt={alt} className="block h-auto w-full" {...img} />
       )}
     </span>
   );

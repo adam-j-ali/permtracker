@@ -35,6 +35,7 @@ export function PanelTabs({ tabs, label, className }: { tabs: PanelTab[]; label:
   const fromHash = tabs.findIndex((t) => hash === t.id || hash === `${t.id}-tab`);
   // A new address picks its tab once; a click afterwards still moves freely.
   const [seenHash, setSeenHash] = useState("");
+  // eslint-disable-next-line security/detect-possible-timing-attacks -- the address bar's #fragment, not a secret
   if (hash !== seenHash) {
     setSeenHash(hash);
     if (fromHash >= 0) setActive(fromHash);

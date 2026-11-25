@@ -9,6 +9,7 @@ const SECRET = "cron-secret-for-tests";
 
 function call(auth?: string): Promise<Response> {
   const headers: Record<string, string> = {};
+  // eslint-disable-next-line security/detect-possible-timing-attacks -- a test choosing whether to send a header
   if (auth !== undefined) headers.authorization = auth;
   return GET(new Request("https://permtracker.app/api/cron/prune-uscis", { headers }));
 }

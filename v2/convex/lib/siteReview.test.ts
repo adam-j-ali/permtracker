@@ -85,6 +85,7 @@ describe("checkReview", () => {
   });
 
   it("strips direction overrides and control characters, and keeps the joiners Indic and Persian need", () => {
+    // eslint-disable-next-line security/detect-bidi-characters -- the hidden-direction characters are the input this test proves are stripped
     const r = checkReview({ ...good, text: "Told me‮ the day\u0007 my case﻿ moved.", name: "Pat⁦" });
     expect(r.ok && r.review.text).toBe("Told me the day my case moved.");
     expect(r.ok && r.review.name).toBe("Pat");

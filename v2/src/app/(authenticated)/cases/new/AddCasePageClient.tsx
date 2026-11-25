@@ -116,7 +116,7 @@ export function AddCasePageClient() {
         setIsCreating(false);
       }
     },
-    [createMutation, router, carried]
+    [createMutation, router, carried, dolRecord]
   );
 
   /**

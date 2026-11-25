@@ -4,7 +4,6 @@
  * frames a figure itself; the tones live in iso.css). Pure functions: safe on the server and the client.
  * MIT licensed by its author: the notice is in ./LICENSE and travels with the copy.
  */
-/* eslint-disable */
 export type Flat = [number, number];
 export type Point3 = [number, number, number];
 export type Plane = [number, number];

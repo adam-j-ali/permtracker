@@ -33,7 +33,6 @@ import {
   isValidISODate,
   parseISOToUTCSafe,
   addDaysToISOSafe,
-  getMinDate,
 } from './dateValidation';
 import { getFirstRecruitmentDate, getLastRecruitmentDate } from './perm/dates/filingWindow';
 import { pwdFilingLimitFromCase } from './perm/dates/pwdValidity';

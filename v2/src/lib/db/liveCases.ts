@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { MS_PER_DAY } from "@/lib/time";
-import { one, rows, rowsPaged } from "./client";
+import { one, rowsPaged } from "./client";
 import { ISO_MONTH_RE, shiftMonth } from "@convex/lib/months";
 import { INITIAL_RE, OTHER_INITIAL } from "@/lib/employerInitial";
 import { LIKE_ESCAPE, likeContains } from "./like";

@@ -18,6 +18,7 @@ const TOKEN = "github-token-for-tests";
 
 function call(job: string, auth: string | null = `Bearer ${SECRET}`) {
   const headers: Record<string, string> = {};
+  // eslint-disable-next-line security/detect-possible-timing-attacks -- a test choosing whether to send a header
   if (auth !== null) headers.authorization = auth;
   const request = new Request(`https://permtracker.app/api/cron/dispatch/${job}`, { headers });
   return GET(request, { params: Promise.resolve({ job }) });
