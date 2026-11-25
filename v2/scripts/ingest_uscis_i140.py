@@ -20,7 +20,7 @@ bad trade, and one ingest pattern is easier to keep working than two.
 
 Usage:
     python3 scripts/ingest_uscis_i140.py --out /tmp/uscis.json
-    npx convex run uscisI140:storeStats "$(cat /tmp/uscis.json)" --prod   # optional
+    npx convex run uscisI140:storeStats "$(cat /tmp/uscis.json)" --prod   # retired: the site no longer reads it
 
 THE PAGES READ THE DATABASE COPY FIRST (Sep 29 2026). Every run that parses
 a complete quarter writes it to `perm_docs['uscis_i140']`, which

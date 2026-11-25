@@ -1,23 +1,18 @@
 import "server-only";
 
-import { queryStatic } from "@/lib/convexStatic";
 import { parseI140Snapshot, type I140Snapshot } from "@/lib/uscisI140Shape";
 
-import { api } from "@convex/_generated/api";
 import { doc } from "./publicData";
-import { softFail } from "@/lib/softRead";
 
 /**
- * The newest USCIS I-140 quarter: the database copy first, Convex second.
+ * The newest USCIS I-140 quarter, from the database copy that every complete run of scripts/ingest_uscis_i140.py
+ * writes, on the server or on GitHub.
  *
- * The database copy is written by every run of scripts/ingest_uscis_i140.py
- * that parses a complete quarter, on GitHub or on the server. Convex is written
- * only where a deploy key is held, which is GitHub, and www.uscis.gov refuses
- * GitHub's runners, so the database is the copy that moves.
- * Convex stays as the fallback for a database that has never held a quarter.
+ * The Convex copy (`uscisI140:getLatest`) is no longer read: only GitHub holds the key that writes it, and
+ * www.uscis.gov refuses GitHub's runners, so it stopped at the quarter it last held. A failed read throws, so the page
+ * keeps its last good render; null means the database has never held a quarter. The `revalidateSeconds` argument is
+ * kept for the callers' signature.
  */
-export async function getI140Snapshot(revalidateSeconds: number): Promise<I140Snapshot | null> {
-  const fromDb = parseI140Snapshot(await doc<unknown>("uscis_i140").catch(softFail("uscisI140.doc", null)));
-  if (fromDb) return fromDb;
-  return queryStatic(api.uscisI140.getLatest, {}, revalidateSeconds).catch(softFail("uscisI140.queryStatic", null));
+export async function getI140Snapshot(_revalidateSeconds: number): Promise<I140Snapshot | null> {
+  return parseI140Snapshot(await doc<unknown>("uscis_i140"));
 }

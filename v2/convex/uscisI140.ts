@@ -11,6 +11,10 @@ import type { Doc } from "./_generated/dataModel";
  * fetched by anything here; they live as a small dated table in
  * `src/lib/processing-times/i140ProcessingTimes.ts` with a test that fails
  * when they age out.
+ *
+ * Retired as a source: the site reads the database copy alone since Nov 25 2026 (src/lib/db/uscisI140.ts), because
+ * only GitHub can write this table and www.uscis.gov refuses GitHub's runners. The table waits on the retired-tables
+ * decision.
  */
 
 const subtypeValidator = v.object({
