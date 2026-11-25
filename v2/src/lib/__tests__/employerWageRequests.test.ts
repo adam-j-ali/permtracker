@@ -5,10 +5,12 @@ import {
   lookbackStart,
   mergePermCases,
   mergeWageRequests,
+  narrowFound,
   permWindowStart,
   WAGE_REQUESTS_SHOWN,
   wageIssued,
 } from "../employerWageRequests";
+import { MOST_LIKELY_MAX_LEFT } from "../wageLink";
 
 describe("lookbackStart", () => {
   it("goes back 30 months to the first of that month, across years", () => {
@@ -136,5 +138,42 @@ describe("the reverse: a wage request's likely PERM cases", () => {
       ["G-100-26012-000002", "ANALYST REVIEW", null],
       ["G-100-25300-000001", "Certified", "2026-06-30"],
     ]);
+  });
+});
+
+describe("narrowFound", () => {
+  const row = (caseNumber: string, decided: string | null) => ({
+    caseNumber, status: "DETERMINATION ISSUED", filed: decided, decided, jobTitle: "Engineer", wage: 100_000, wageUnit: "Year",
+  });
+  const perm = { caseNumber: "G-100-26000-000001", filed: "2026-03-15" };
+
+  it("puts the likeliest first, counts what the rules set aside by reason, and caps the list", () => {
+    const found = {
+      rows: [
+        row("P-100-a", "2026-03-20"), // decided after filing
+        row("P-100-b", "2024-08-01"), // expired too long before
+        row("P-100-c", "2025-10-01"), // named by another case
+        ...["2025-09-20", "2025-09-25", "2025-08-01", "2025-07-01", "2025-11-01", "2026-01-10"].map((d, i) => row(`P-100-k${i}`, d)),
+      ],
+      more: false,
+    };
+    const got = narrowFound(found, perm, new Map([["P-100-c", ["2026-02-01"]]]));
+    expect(got.rows).toHaveLength(WAGE_REQUESTS_SHOWN);
+    expect(got.more).toBe(true);
+    expect(got.rows[0]!.caseNumber).toBe("P-100-c"); // another case used it 42 days before this filing: reuse ranks first
+    expect(new Map(got.ruledOut!.map((r) => [r.why, r.count]))).toEqual(
+      new Map([
+        ["decided after the case was filed", 1],
+        ["expired too long before the case was filed", 1],
+      ]),
+    );
+  });
+
+  it("names one 'most likely' only where the backtest allows it (one left)", () => {
+    const got = narrowFound({ rows: [row("P-100-only", "2025-09-25")], more: false }, perm, new Map());
+    expect(got.rows.map((r) => r.caseNumber)).toEqual(["P-100-only"]);
+    expect(got.mostLikely).toBe(MOST_LIKELY_MAX_LEFT >= 1 ? "P-100-only" : null);
+    const two = narrowFound({ rows: [row("P-100-a", "2025-09-25"), row("P-100-b", "2025-07-01")], more: false }, perm, new Map());
+    expect(two.mostLikely).toBeNull();
   });
 });

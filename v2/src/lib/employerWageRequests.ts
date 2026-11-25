@@ -11,6 +11,8 @@
  * Plain module: the merge is tested here; the reads are lib/db/employerWageRequests.ts.
  */
 
+import { mostLikelyOf, narrowWageCandidates, usesBefore } from "./wageLink";
+
 /** Months before the PERM's filing a wage request can have been filed and still be in use. */
 export const WAGE_REQUEST_LOOKBACK_MONTHS = 30;
 /** At most this many are listed. */
@@ -68,10 +70,14 @@ export function lookbackStart(filingDate: string, months = WAGE_REQUEST_LOOKBACK
 }
 
 export interface EmployerWageRequests {
-  /** The newest, at most WAGE_REQUESTS_SHOWN. */
+  /** The newest, at most WAGE_REQUESTS_SHOWN; once narrowed (narrowFound), the likeliest first. */
   rows: EmployerWageRequest[];
   /** More than that were found: the list is the newest, not all of them. */
   more: boolean;
+  /** The one to call "most likely", where the backtest measured the top one right often enough (wageLink.ts). */
+  mostLikely?: string | null;
+  /** The requests the rules set aside, by reason, for the page to say how many and why. */
+  ruledOut?: { why: string; count: number }[];
 }
 
 /**
@@ -83,6 +89,7 @@ export function mergeWageRequests(
   live: readonly LiveWageRow[],
   file: readonly FileWageRow[],
   permFiled: string | null = null,
+  limit: number = WAGE_REQUESTS_SHOWN,
 ): EmployerWageRequests {
   const byCase = new Map<string, EmployerWageRequest>();
   for (const f of file) {
@@ -114,7 +121,33 @@ export function mergeWageRequests(
     .sort(
     (a, b) => (b.filed ?? "").localeCompare(a.filed ?? "") || b.caseNumber.localeCompare(a.caseNumber),
   );
-  return { rows: all.slice(0, WAGE_REQUESTS_SHOWN), more: all.length > WAGE_REQUESTS_SHOWN };
+  return { rows: all.slice(0, limit), more: all.length > limit };
+}
+
+/**
+ * Every candidate (mergeWageRequests with no limit), narrowed and ranked by wageLink.ts's rules: the likeliest first,
+ * at most WAGE_REQUESTS_SHOWN, the top one marked "most likely" where the backtest allows, and the ruled-out ones
+ * counted by reason. `uses` holds, per request, the decision days of the other published PERM cases that name it.
+ */
+export function narrowFound(
+  found: EmployerWageRequests,
+  perm: { caseNumber: string; filed: string },
+  uses: ReadonlyMap<string, readonly string[]>,
+): EmployerWageRequests {
+  const byCase = new Map(found.rows.map((r) => [r.caseNumber, r]));
+  const { kept, dropped } = narrowWageCandidates(
+    found.rows.map((r) => ({ caseNumber: r.caseNumber, received: r.filed, decided: r.decided, ...usesBefore(uses.get(r.caseNumber), perm.filed) })),
+    perm,
+  );
+  const counts = new Map<string, number>();
+  for (const d of dropped) counts.set(d.why, (counts.get(d.why) ?? 0) + 1);
+  const rows = kept.map((k) => byCase.get(k.caseNumber)!).slice(0, WAGE_REQUESTS_SHOWN);
+  return {
+    rows,
+    more: found.more || kept.length > WAGE_REQUESTS_SHOWN,
+    mostLikely: mostLikelyOf(kept),
+    ruledOut: [...counts].map(([why, count]) => ({ why, count })),
+  };
 }
 
 /** A PERM case an employer filed for a wage request's job, from DOL's live record or its published file. */

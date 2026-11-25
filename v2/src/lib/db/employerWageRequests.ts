@@ -6,6 +6,7 @@ import {
   lookbackStart,
   mergePermCases,
   mergeWageRequests,
+  narrowFound,
   permWindowStart,
   type EmployerPermCases,
   WAGE_REQUESTS_SHOWN,
@@ -16,6 +17,9 @@ import {
 
 import { one, rows } from "./client";
 import { employerMatch, pageForSpelling } from "./employerSlugs";
+
+/** How many of the employer's same-title requests are read before the rules narrow them (the newest). */
+const CANDIDATES_READ = 100;
 
 /** The statuses that carry an issued wage (lib/employerWageRequests.ts WAGE_ISSUED_RE), as SQL. */
 const ISSUED_SQL = (col: string) =>
@@ -81,7 +85,7 @@ export async function getEmployerWageRequests(
         WHERE ${match.where} AND filing_date >= ? AND filing_date <= ?
           AND upper(trim(job_title)) = upper(?) AND case_number LIKE 'P-100-%' AND ${ISSUED_SQL("current_status")}
         ORDER BY filing_date DESC LIMIT ?`,
-      [...match.args, since, until, title, WAGE_REQUESTS_SHOWN * 3],
+      [...match.args, since, until, title, CANDIDATES_READ],
     ),
     rows<Record<string, unknown>>(
       `SELECT case_number, case_status, received_date, decision_date, job_title, wage, wage_unit FROM pwd_cases
@@ -89,7 +93,7 @@ export async function getEmployerWageRequests(
           AND upper(trim(job_title)) = upper(?) AND case_number LIKE 'P-100-%' AND ${ISSUED_SQL("case_status")}
           AND (decision_date IS NULL OR decision_date <= ?)
         ORDER BY received_date DESC LIMIT ?`,
-      [...match.args, since, until, title, until, WAGE_REQUESTS_SHOWN * 3],
+      [...match.args, since, until, title, until, CANDIDATES_READ],
     ),
   ]);
   const text = (v: unknown): string | null => (typeof v === "string" && v.trim() !== "" ? v : null);
@@ -116,7 +120,24 @@ export async function getEmployerWageRequests(
     wage: num(r.wage),
     wageUnit: text(r.wage_unit),
   }));
-  return mergeWageRequests(liveRows, fileRows, until);
+  // Every candidate, then the rules (lib/wageLink.ts). How many other published PERM cases used each request, and
+  // when, ranks them: employers reuse a request for several workers. That read is on perm_cases' pwd_number index
+  // (idx_pc_pwd_number).
+  const all = mergeWageRequests(liveRows, fileRows, until, CANDIDATES_READ);
+  const numbers = all.rows.map((r) => r.caseNumber);
+  const uses = new Map<string, string[]>();
+  if (numbers.length > 0) {
+    const named = await rows<{ pwd_number: string; case_number: string; decision_date: string | null }>(
+      `SELECT pwd_number, case_number, decision_date FROM perm_cases WHERE pwd_number IN (${numbers.map(() => "?").join(",")})`,
+      numbers,
+    );
+    for (const r of named) {
+      if (String(r.case_number) === caseNumber || !r.decision_date) continue;
+      const k = String(r.pwd_number);
+      uses.set(k, [...(uses.get(k) ?? []), String(r.decision_date).slice(0, 10)]);
+    }
+  }
+  return narrowFound(all, { caseNumber, filed: until }, uses);
 }
 
 /**
