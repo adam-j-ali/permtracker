@@ -142,7 +142,7 @@ describe("PermTracker", () => {
     const f = fakeFetch(200, { data: { form: "I-485" }, meta: { source: "USCIS", asOf: null } });
     const pt = new PermTracker({ apiKey: KEY, fetch: f as unknown as typeof fetch });
     await pt.receiptBlocks();
-    await pt.receiptBlocks("I-765");
+    await pt.receiptBlocks("I-765", "IOE09366");
     await pt.receiptBlock(" ioe09366 ");
     await pt.receiptMonths("I-485");
     await pt.i140Figures();
@@ -153,7 +153,7 @@ describe("PermTracker", () => {
     await pt.accuracy();
     expect(f.mock.calls.map(([url]) => String(url).replace("https://permtracker.app/v1", ""))).toEqual([
       "/uscis/receipt-blocks",
-      "/uscis/receipt-blocks?form=I-765",
+      "/uscis/receipt-blocks?form=I-765&near=IOE09366",
       "/uscis/receipt-blocks/IOE09366",
       "/uscis/receipt-months?form=I-485",
       "/uscis/i140",

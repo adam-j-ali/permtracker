@@ -133,7 +133,7 @@ const RUNNERS: Record<string, (a: ToolArgs) => Promise<ReadResult<unknown>>> = {
   getOccupation: (a) => readEntity("occupation", String(a.slug ?? "")),
   lookupEmployer: (a) => lookupEmployer(String(a.name ?? "")),
   lookupSoc: (a) => lookupSoc(String(a.q ?? "")),
-  getReceiptBlocks: (a) => readReceiptBlocks(str(a.form)),
+  getReceiptBlocks: (a) => readReceiptBlocks(str(a.form), str(a.near)),
   getReceiptBlock: (a) => readReceiptBlock(String(a.block ?? "")),
   getReceiptMonths: (a) => readReceiptMonths(str(a.form)),
   getUscisPetitions: () => readUscisI140(),

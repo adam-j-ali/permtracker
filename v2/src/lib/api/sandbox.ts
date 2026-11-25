@@ -322,9 +322,10 @@ const SAMPLE_RECEIPT_BLOCKS = {
   form: "I-485",
   forms: ["I-485", "I-765", "I-131"],
   approvalsSeenUpTo: "IOE00002",
+  near: null,
   blocks: [
-    { block: "IOE00001", counted: 30, groups: SAMPLE_GROUPS_I485 },
-    { block: "IOE00002", counted: 30, groups: SAMPLE_GROUPS_I485 },
+    { block: "IOE00001", counted: 30, approved: SAMPLE_GROUPS_I485.approved },
+    { block: "IOE00002", counted: 30, approved: SAMPLE_GROUPS_I485.approved },
   ],
   casesInSample: 2_000,
 };
@@ -335,12 +336,13 @@ const SAMPLE_RECEIPT_BLOCK = {
   before: null,
   after: "IOE00002",
   recentMoves: [{ day: AS_OF, form: "I-485", movedTo: "approved", cases: 2 }],
+  unreadable: [],
 };
 
 const SAMPLE_RECEIPT_MONTHS = {
   form: "I-485",
   forms: ["I-485", "I-765", "I-131"],
-  months: [{ month: "2026-02", counted: 60, walked: false, groups: SAMPLE_GROUPS_I485 }],
+  months: [{ month: "2026-02", counted: 60, walked: false, approved: SAMPLE_GROUPS_I485.approved, rfe: SAMPLE_GROUPS_I485.rfe, waiting: SAMPLE_GROUPS_I485.waiting }],
 };
 
 const SAMPLE_I140 = {
@@ -368,8 +370,6 @@ const sampleOffice = (code: string, office: string, state: string) => ({
   withheld: 0,
   employment: { received: 900, approved: 800, denied: 40, pending: 3_000, pendingLastQuarter: 3_200 },
   family: { received: 1_200, approved: 1_100, denied: 60, pending: 4_000 },
-  humanitarian: { received: 10, approved: 8, denied: 1, pending: 30 },
-  other: { received: 20, approved: 15, denied: 2, pending: 50 },
   all: { received: 2_130, approved: 1_923, denied: 103, pending: 7_080 },
 });
 

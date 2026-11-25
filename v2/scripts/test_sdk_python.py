@@ -48,7 +48,7 @@ check(nokey.lookup_soc("15-1252").data == {"match": "exact"} and "/lookup/soc?q=
 figures = PermTracker(api_key=KEY, transport=transport(200, {"data": {"form": "I-485"}, "meta": {}}))
 for call, want in [
     (lambda: figures.receipt_blocks(), "/v1/uscis/receipt-blocks"),
-    (lambda: figures.receipt_blocks("I-765"), "/v1/uscis/receipt-blocks?form=I-765"),
+    (lambda: figures.receipt_blocks("I-765", near="IOE09366"), "/v1/uscis/receipt-blocks?form=I-765&near=IOE09366"),
     (lambda: figures.receipt_block(" ioe09366 "), "/v1/uscis/receipt-blocks/IOE09366"),
     (lambda: figures.receipt_months("I-485"), "/v1/uscis/receipt-months?form=I-485"),
     (lambda: figures.i140_figures(), "/v1/uscis/i140"),

@@ -38,7 +38,6 @@ import {
   approvalsStopAfter,
   blockForms,
   blockSeries,
-  formFigure,
   monthFigures,
   neighbours,
   topForms,
@@ -48,7 +47,7 @@ import {
 
 import type { ReadResult } from "./reads";
 
-/** A receipt number's shape: three letters and ten digits (IOE0912345678, EAC2412345678). */
+/** A receipt number's shape: three letters and ten digits, the way USCIS prints one. */
 export const RECEIPT_SHAPE = /[A-Za-z]{3}\d{10}/;
 
 const bad = (message: string): ReadResult<never> => ({ ok: false, status: 400, code: "bad_request", message });
@@ -136,10 +135,20 @@ function pickForm(asked: string | null, held: string[]): string | null {
   return held.includes("I-485") ? "I-485" : (held[0] ?? null);
 }
 
-export async function readReceiptBlocks(formInput?: string | null): Promise<ReadResult<Record<string, unknown>>> {
+/** Blocks either side of `near` that a list asked for with it holds. */
+export const NEAR_BLOCKS = 10;
+
+/**
+ * Every block holding the form, with its approved share: the chart's figures. The other groups are the one-block
+ * answer's, so a whole list stays small enough for an assistant to read (every group made it 195 KB). With `near`,
+ * only the blocks either side of that one.
+ */
+export async function readReceiptBlocks(formInput?: string | null, nearInput?: string | null): Promise<ReadResult<Record<string, unknown>>> {
   const asked = formInput ? formName(formInput) : null;
   if (formInput && !asked) return bad("form must be a USCIS form, like I-485 or I-765.");
-  return keep(`blocks:${asked ?? ""}`, async () => {
+  const near = nearInput ? nearInput.slice(0, 12).trim().toUpperCase() : null;
+  if (near && !BLOCK_RE.test(near)) return bad("near must be a block, IOE and five digits, like IOE09366.");
+  return keep(`blocks:${asked ?? ""}:${near ?? ""}`, async () => {
     const [doc, meta] = await Promise.all([getSampleBlocks(), getSampleMeta().catch(softFail("api/figureReads.sampleMeta", null))]);
     if (!doc) return notLoaded("The sample's figures");
     const forms = topForms(doc, 12);
@@ -148,13 +157,18 @@ export async function readReceiptBlocks(formInput?: string | null): Promise<Read
     if (!form || series.length === 0) {
       return { ok: false, status: 404, code: "not_found", message: `The sample counts no ${asked ?? "form"} in any block. Its forms: ${forms.join(", ")}.`, url: `${SITE_URL}/uscis-receipt-blocks` };
     }
+    // The blocks either side of `near`, counted in the list of blocks that hold the form.
+    const at = near ? series.findIndex((p) => p.block >= near) : -1;
+    const mid = at < 0 ? series.length : at;
+    const shown = near ? series.slice(Math.max(0, mid - NEAR_BLOCKS), mid + NEAR_BLOCKS + 1) : series;
     return noReceipts({
       ok: true,
       data: {
         form,
         forms,
         approvalsSeenUpTo: approvalsStopAfter(series),
-        blocks: series.map((p) => ({ block: p.block, counted: p.counted, groups: formFigure(doc.by_block[p.block] ?? {}, form)!.groups })),
+        near,
+        blocks: shown.map((p) => ({ block: p.block, counted: p.counted, approved: p.approved })),
         casesInSample: meta?.cases ?? null,
       },
       meta: { source: SAMPLE_SOURCE, asOf: doc.as_of, url: `${SITE_URL}/uscis-receipt-blocks` },
@@ -167,7 +181,9 @@ export async function readReceiptBlock(blockInput: string): Promise<ReadResult<R
   const block = blockInput.slice(0, 12).trim().toUpperCase();
   if (!BLOCK_RE.test(block)) return bad("A block is IOE and five digits, like IOE09366: the first eight characters of an online receipt number.");
   return keep(`block:${block}`, async () => {
-    const [doc, moves] = await Promise.all([getSampleBlocks(), getBlockMoves(block)]);
+    // The moves are a part the figures can go without: before the cases table's first load there's none to read.
+    const { unreadable, soft } = partsReader("block");
+    const [doc, moves] = await Promise.all([getSampleBlocks(), soft("recentMoves", getBlockMoves(block))]);
     if (!doc) return notLoaded("The sample's figures");
     const forms = blockForms(doc.by_block[block] ?? {});
     const near = neighbours(doc, block);
@@ -189,7 +205,8 @@ export async function readReceiptBlock(blockInput: string): Promise<ReadResult<R
         forms: forms.map((f) => figureOut(f.form, f.figure)),
         before: near.before,
         after: near.after,
-        recentMoves: moves.map((m) => ({ day: m.on_day, form: m.form, movedTo: m.to_grp, cases: m.n })),
+        recentMoves: moves ? moves.map((m) => ({ day: m.on_day, form: m.form, movedTo: m.to_grp, cases: m.n })) : null,
+        unreadable,
       },
       meta: { source: SAMPLE_SOURCE, asOf: doc.as_of, url },
     });
@@ -213,7 +230,15 @@ export async function readReceiptMonths(formInput?: string | null): Promise<Read
       data: {
         form,
         forms,
-        months: rows.map((r) => ({ month: r.month, counted: r.figure.counted, walked: r.walked, groups: r.figure.groups })),
+        // The month table's three groups: the rest are near zero for a receipt month, and every group made it 59 KB.
+        months: rows.map((r) => ({
+          month: r.month,
+          counted: r.figure.counted,
+          walked: r.walked,
+          approved: r.figure.groups.approved,
+          rfe: r.figure.groups.rfe,
+          waiting: r.figure.groups.waiting,
+        })),
       },
       meta: { source: SAMPLE_SOURCE, asOf: doc.as_of, url: `${SITE_URL}/uscis-receipt-blocks` },
     });
@@ -296,8 +321,6 @@ const officeOut = (r: OfficeRow, previous: Record<string, number | null> | null)
     pendingLastQuarter: previous ? (previous[r.code] ?? null) : null,
   },
   family: { received: r.famReceived, approved: r.famApproved, denied: r.famDenied, pending: r.famPending },
-  humanitarian: { received: r.humReceived, approved: r.humApproved, denied: r.humDenied, pending: r.humPending },
-  other: { received: r.othReceived, approved: r.othApproved, denied: r.othDenied, pending: r.othPending },
   all: { received: r.allReceived, approved: r.allApproved, denied: r.allDenied, pending: r.allPending },
 });
 

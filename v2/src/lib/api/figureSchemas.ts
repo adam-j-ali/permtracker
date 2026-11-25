@@ -63,14 +63,15 @@ export const ReceiptBlocksSchema = z
           .looseObject({
             block: z.string().describe("The block: IOE and five digits, the first eight characters of an online receipt number. Each block is 100,000 numbers."),
             counted: count("Cases of this form the sample counted in the block."),
-            groups,
+            approved: groupFigure,
           })
-          .describe("One receipt block's figures for the form."),
+          .describe("One receipt block's approved share for the form. The one-block answer has every group."),
       )
-      .describe("Every block where the sample counted the form, in block order."),
+      .describe("Every block where the sample counted the form, in block order, or the blocks near the one asked for."),
+    near: z.string().nullable().describe("The block the list was asked to centre on, or null for every block."),
     casesInSample: z.number().int().nullable().describe("Every case in the sample, all forms, online and paper. Null when it couldn't be read."),
   })
-  .describe("The share of one form's sampled cases in each status group, block by block, from receipt numbers checked on USCIS's Case Status page. Estimates with a 95% margin.");
+  .describe("The share of one form's sampled cases approved, block by block, from receipt numbers checked on USCIS's Case Status page. Estimates with a 95% margin.");
 
 export const ReceiptBlockSchema = z
   .looseObject({
@@ -89,7 +90,9 @@ export const ReceiptBlockSchema = z
           })
           .describe("Sampled cases in the block that changed status on one day, counted by form and new group."),
       )
-      .describe("The newest status changes the sample saw in the block, as counts. No receipt number is ever listed."),
+      .nullable()
+      .describe("The newest status changes the sample saw in the block, as counts. No receipt number is ever listed. Null when they couldn't be read."),
+    unreadable,
   })
   .describe("One receipt block: each form's share in each status group with its margin, the blocks either side, and the newest moves the sample saw.");
 
@@ -104,13 +107,15 @@ export const ReceiptMonthsSchema = z
             month: z.string().describe("The month USCIS received the cases, as YYYY-MM."),
             counted: count("Cases of this form the sample counted from that month."),
             walked: z.boolean().describe("True when part of the month was checked number by number and counted whole, the rest estimated from the draw."),
-            groups,
+            approved: groupFigure,
+            rfe: groupFigure,
+            waiting: groupFigure,
           })
           .describe("One receipt month's figures for the form."),
       )
       .describe("Every receipt month the sample counted the form, newest first."),
   })
-  .describe("The share of one form's online filings in each status group, by the month USCIS received them. Estimates with a 95% margin.");
+  .describe("The share of one form's online filings approved, sent an evidence request and still waiting, by the month USCIS received them. Estimates with a 95% margin.");
 
 /* ------------------------------------------------------------------ */
 /* USCIS's own figures                                                 */
@@ -234,11 +239,9 @@ const officeRow = z
       })
       .describe("Employment-based I-485s, with the pending count a quarter earlier."),
     family: officeCounts("Family-based"),
-    humanitarian: officeCounts("Humanitarian"),
-    other: officeCounts("Other"),
     all: officeCounts("All"),
   })
-  .describe("One USCIS office's I-485 counts for the quarter.");
+  .describe("One USCIS office's I-485 counts for the quarter: employment-based, family-based, and every category together.");
 
 const inventoryPoint = z
   .looseObject({

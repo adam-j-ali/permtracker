@@ -114,6 +114,8 @@ const ISOLATED_UNIT_FILES = [
   "src/lib/api/__tests__/live.test.ts",
   "src/lib/api/__tests__/exports.test.ts",
   "src/lib/api/__tests__/webhooksApi.test.ts",
+  // Added 2026-11-25: the figure reads (API 1.2) mock every database reader they call.
+  "src/lib/api/__tests__/figureReads.test.ts",
   "src/lib/db/__tests__/openDataArchive.test.ts",
   "src/lib/ai/__tests__/page-context.test.tsx",
   // Added 2026-10-12: mocks convex/nextjs per test.

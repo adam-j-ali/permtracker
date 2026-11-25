@@ -138,7 +138,7 @@ describe("the MCP server at /mcp", () => {
     await rpc("tools/call", { name: "get_receipt_block", arguments: { block: "IOE09366" } });
     expect(figures.readReceiptBlock).toHaveBeenCalledExactlyOnceWith("IOE09366");
     await rpc("tools/call", { name: "get_receipt_blocks", arguments: {} });
-    expect(figures.readReceiptBlocks).toHaveBeenCalledExactlyOnceWith(null);
+    expect(figures.readReceiptBlocks).toHaveBeenCalledExactlyOnceWith(null, null);
     await rpc("tools/call", { name: "get_receipt_months", arguments: { form: "I-765" } });
     expect(figures.readReceiptMonths).toHaveBeenCalledExactlyOnceWith("I-765");
     await rpc("tools/call", { name: "get_timelines", arguments: { office: "SFV" } });

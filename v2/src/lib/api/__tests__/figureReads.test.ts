@@ -230,6 +230,15 @@ describe("the receipt-number sample", () => {
     expect(r.data).toMatchObject({ form: "I-485", approvalsSeenUpTo: "IOE09365", casesInSample: 2000 });
     expect((r.data.blocks as { block: string }[]).map((b) => b.block)).toEqual(["IOE09364", "IOE09365", "IOE09366"]);
     expect(r.meta).toMatchObject({ asOf: "2026-11-25", url: "https://permtracker.app/uscis-receipt-blocks" });
+    // The list carries the chart's figure, the approved share. Every group is the one-block answer's.
+    expect((r.data.blocks as Record<string, unknown>[])[0]).toEqual({ block: "IOE09364", counted: 10, approved: BLOCKS.by_block.IOE09364["I-485"].groups.approved });
+  });
+
+  it("keeps the blocks near one when asked, and refuses a near that isn't a block", async () => {
+    const r = await readReceiptBlocks("I-485", "ioe09366");
+    fits("getReceiptBlocks", r);
+    expect(r.ok && r.data.near).toBe("IOE09366");
+    expect(await readReceiptBlocks("I-485", "IOE0936612345")).toMatchObject({ ok: false, status: 400 });
   });
 
   it("reads a form however it's typed, and refuses what isn't one", async () => {
@@ -249,6 +258,13 @@ describe("the receipt-number sample", () => {
     expect(getBlockMoves).toHaveBeenCalledWith("IOE09365");
   });
 
+  it("still answers a block when its moves can't be read, and names them", async () => {
+    getBlockMoves.mockRejectedValue(new Error("no such table: uscis_sample_events"));
+    const r = await readReceiptBlock("IOE09365");
+    fits("getReceiptBlock", r);
+    expect(r.ok && r.data).toMatchObject({ block: "IOE09365", recentMoves: null, unreadable: ["recentMoves"] });
+  });
+
   it("refuses a whole receipt number without repeating it", async () => {
     const r = await readReceiptBlock("IOE0936612345");
     expect(r).toMatchObject({ ok: false, status: 400 });
@@ -265,8 +281,8 @@ describe("the receipt-number sample", () => {
   it("gives the shares by receipt month, newest first, saying which months were partly walked", async () => {
     const r = await readReceiptMonths();
     fits("getReceiptMonths", r);
-    const months = r.ok ? (r.data.months as { month: string; walked: boolean }[]) : [];
-    expect(months.map((m) => [m.month, m.walked])).toEqual([["2026-02", false], ["2026-01", true]]);
+    const months = r.ok ? (r.data.months as { month: string; walked: boolean; approved: { count: number } }[]) : [];
+    expect(months.map((m) => [m.month, m.walked, m.approved.count])).toEqual([["2026-02", false, 10], ["2026-01", true, 30]]);
   });
 
   it("says the sample isn't loaded yet, never that it holds nothing", async () => {

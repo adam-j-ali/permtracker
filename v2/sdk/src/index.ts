@@ -457,10 +457,11 @@ export class PermTracker {
 
   /**
    * One USCIS form's approval shares in every online receipt block (IOE and five digits) that PERM Tracker's sample
-   * counts, each with a 95% margin. I-485 unless `form` says. Counts and shares only: never a receipt number.
+   * counts, each with a 95% margin. I-485 unless `form` says. `near` (a block) keeps the 10 blocks either side of it.
+   * Counts and shares only: never a receipt number.
    */
-  receiptBlocks(form?: string): Promise<Answer<Record<string, unknown>>> {
-    return this.get("/uscis/receipt-blocks", { form });
+  receiptBlocks(form?: string, near?: string): Promise<Answer<Record<string, unknown>>> {
+    return this.get("/uscis/receipt-blocks", { form, near });
   }
 
   /** One receipt block (IOE09366): each form's shares, the blocks either side and the newest moves, as counts. */

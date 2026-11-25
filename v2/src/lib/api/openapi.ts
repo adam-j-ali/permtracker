@@ -325,9 +325,12 @@ export const ENDPOINTS: EndpointDoc[] = [
     path: "/uscis/receipt-blocks",
     summary: "Get the sample's approval shares by receipt block",
     description:
-      "For one USCIS form (I-485 unless asked), the share of the sample's cases in each status group in every online receipt block (IOE and five digits, 100,000 numbers each), with a 95% margin, and the newest block where the sample saw an approval. From receipt numbers PERM Tracker checks on USCIS's Case Status page: an estimate, never a receipt number.",
-    example: "/uscis/receipt-blocks?form=I-485",
-    params: [FORM],
+      "For one USCIS form (I-485 unless asked), the share of the sample's cases approved in every online receipt block (IOE and five digits, 100,000 numbers each), with a 95% margin, and the newest block where the sample saw an approval. Send near for the 10 blocks either side of one. From receipt numbers PERM Tracker checks on USCIS's Case Status page: an estimate, never a receipt number. One block's every status group is in the block endpoint.",
+    example: "/uscis/receipt-blocks?form=I-485&near=IOE09366",
+    params: [
+      FORM,
+      { name: "near", in: "query", required: false, description: "A block, IOE and five digits: only the 10 blocks either side of it that hold the form.", example: "IOE09366", minLength: 8, maxLength: 8 },
+    ],
     counted: true,
     response: { schema: ReceiptBlocksSchema, schemaName: "ReceiptBlocks", ...sample("/uscis/receipt-blocks") },
     tool: { title: "Get approval shares by USCIS receipt block" },
@@ -351,7 +354,7 @@ export const ENDPOINTS: EndpointDoc[] = [
     path: "/uscis/receipt-months",
     summary: "Get the sample's approval shares by receipt month",
     description:
-      "For one USCIS form (I-485 unless asked), the share of the sample's online filings in each status group by the month USCIS received them, newest first, with a 95% margin. A month's newest cases are the least decided, so its share approved climbs as the month ages.",
+      "For one USCIS form (I-485 unless asked), the sample's online filings by the month USCIS received them, newest first. Each month gives the share approved, the share sent an evidence request and the share still waiting, with a 95% margin. A month's newest cases are the least decided, so its share approved climbs as the month ages.",
     example: "/uscis/receipt-months?form=I-485",
     params: [FORM],
     counted: true,
@@ -376,7 +379,7 @@ export const ENDPOINTS: EndpointDoc[] = [
     path: "/uscis/i485",
     summary: "Get USCIS's I-485 figures",
     description:
-      "USCIS's own I-485 figures: the newest quarter's receipts, approvals, denials and pending at every field office and service center, employment-based beside the other categories. It adds the pending employment-based inventory with its history, and the median and posted processing times. Each part carries its own date.",
+      "USCIS's own I-485 figures: the newest quarter's receipts, approvals, denials and pending at every field office and service center, employment-based beside family-based and every category together. It adds the pending employment-based inventory with its history, and the median and posted processing times. Each part carries its own date.",
     example: "/uscis/i485",
     counted: true,
     response: { schema: UscisI485Schema, schemaName: "UscisI485", ...sample("/uscis/i485") },

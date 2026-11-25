@@ -243,11 +243,11 @@ class PermTracker:
         and its PERM approval rate and median wage. No key needed."""
         return self.get("/lookup/soc", {"q": q}, needs_key=False)
 
-    def receipt_blocks(self, form: Optional[str] = None) -> Answer:
+    def receipt_blocks(self, form: Optional[str] = None, near: Optional[str] = None) -> Answer:
         """One USCIS form's approval shares in every online receipt block (IOE and five digits) that
-        PERM Tracker's sample counts, each with a 95% margin. I-485 unless form says. Counts and
-        shares only: never a receipt number."""
-        return self.get("/uscis/receipt-blocks", {"form": form})
+        PERM Tracker's sample counts, each with a 95% margin. I-485 unless form says. near (a block)
+        keeps the 10 blocks either side of it. Counts and shares only: never a receipt number."""
+        return self.get("/uscis/receipt-blocks", {"form": form, "near": near})
 
     def receipt_block(self, block: str) -> Answer:
         """One receipt block (IOE09366): each form's shares, the blocks either side and the newest moves, as counts."""
