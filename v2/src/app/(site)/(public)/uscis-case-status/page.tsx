@@ -11,6 +11,8 @@ import { SavedReceipts } from "@/components/tools/SavedReceipts";
 import { UscisReceiptForm } from "@/components/tools/UscisReceiptForm";
 import { ReceiptSampleNote } from "@/components/uscis/ReceiptSampleNote";
 import { UscisStatusResult } from "@/components/tools/UscisStatusResult";
+import { UscisWatchForm } from "@/components/tools/UscisWatchForm";
+import { watchableReceipt } from "@convex/lib/uscisWatch";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { normaliseCaseNumber } from "@/lib/caseNumberShape";
 import { openGraphBase } from "@/lib/openGraphBase";
@@ -108,10 +110,14 @@ function faqsFor(enabled: boolean) {
       a: "USCIS doesn't publish a reading of them. On a paper-filed number, practitioners read the digits in three parts: the federal fiscal year (two digits), the day of that year (three) and a sequence number (five). A 9 right after the year marks another series: a count for the year at a USCIS lockbox, the office that takes in paper filings, so there's no day to read. Online filing numbers (IOE) count up in one run and don't name a year or a day. This page shows each reading and labels it, because USCIS hasn't confirmed any of them.",
     },
     {
+      q: "Can you email me when my USCIS case changes?",
+      a: "Yes, in a beta. Look up your receipt, then add your email under the answer. We check each watched receipt with USCIS every 4 hours and after USCIS's overnight updates, and email you when its status changes. You confirm by email first, every email says when we checked, and one click stops it.",
+    },
+    {
       q: "Do you store the receipt number I type in?",
       a: enabled
-        ? "Yes, and nothing about you. Each lookup sends the receipt number to USCIS and keeps what comes back: the receipt number, the form type, the status text, the dated history and the time of the lookup. A stored lookup is deleted twelve months after the last lookup of that receipt, or sooner on request. No name, email or address is asked for or kept. Section 18 of the privacy policy states exactly this."
-        : "This page doesn't store it. The number sits in the page's address so you can bookmark or share the result, and decoding it asks nothing of USCIS. A list you save stays in your own browser.",
+        ? "A lookup keeps the receipt and nothing about you: each one sends the receipt number to USCIS and keeps what comes back, the form type, the status text, the dated history and the time of the lookup, for twelve months after the last lookup of that receipt, or less on request. If you ask us to email you about a receipt, we keep it with your email address until you stop. Section 18 of the privacy policy states exactly this."
+        : "A lookup doesn't store it. The number sits in the page's address so you can bookmark or share the result, and decoding it asks nothing of USCIS. A list you save stays in your own browser. If you ask us to email you about a receipt, we keep it with your email address until you stop, as section 18 of the privacy policy says.",
     },
   ];
 }
@@ -153,6 +159,8 @@ export default async function UscisCaseStatusPage({
       ? (normaliseCaseNumber(trimmed) ?? trimmed.toUpperCase())
       : null;
   const receipt = !dolNumber && trimmed.length > 0 ? normaliseReceipt(trimmed) : null;
+  // A masked receipt reads as one, but only a whole number can be watched.
+  const watchable = receipt ? watchableReceipt(receipt) : null;
   const decoded = receipt ? decodeReceipt(receipt) : null;
   const malformed = trimmed.length > 0 && !dolNumber && receipt === null;
 
@@ -262,6 +270,12 @@ export default async function UscisCaseStatusPage({
           <CheckWithUscis />
         </div>
       )}
+
+      {watchable ? (
+        <section id="watch" aria-label="Email alerts for this receipt" className="object mt-8 scroll-mt-28 p-5 sm:p-6">
+          <UscisWatchForm receipt={watchable} source="uscis-case-status" />
+        </section>
+      ) : null}
 
       <section className="mt-14">
         <h2 className="font-heading text-2xl font-bold">The three letters</h2>{" "}

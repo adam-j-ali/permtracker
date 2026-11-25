@@ -33,7 +33,10 @@ describe("the privacy page and recent searches", () => {
     expect(page).toContain('import { RECENT_SEARCHES_KEPT } from "@/lib/search/recentSearches";');
   });
 
-  it("is dated the day it changed", () => {
-    expect(page).toContain("Last Updated: November 23, 2026");
+  it("is dated the day it changed, or a later change's day", () => {
+    // A later change moves the date on; it can never go back before this one.
+    const dated = /Last Updated: ([A-Z][a-z]+ \d{1,2}, \d{4})/.exec(page)?.[1];
+    expect(dated).toBeDefined();
+    expect(Date.parse(dated!)).toBeGreaterThanOrEqual(Date.parse("November 23, 2026"));
   });
 });

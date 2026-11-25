@@ -72,7 +72,7 @@ export default function PrivacyPage() {
       <div>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Privacy policy</h1>{" "}
         <p className="mb-8 mt-4 text-lg text-muted-foreground">
-          Effective Date: February 17, 2026 | Last Updated: November 23, 2026
+          Effective Date: February 17, 2026 | Last Updated: November 25, 2026
         </p>{" "}
 
         {/* The contents beside the text on a wide page, held in view while it scrolls; above it on a phone. */}
@@ -1884,7 +1884,20 @@ export default function PrivacyPage() {
               <li>We store it so a later lookup of the same receipt can show what changed, and so we can count lookups by form type and status. Counts are published only in aggregate; a receipt number is never published or shared.</li>{" "}
               <li>A receipt number identifies a case rather than a person, and we treat it as personal data anyway: it&apos;s encrypted at rest with the rest of the database, it&apos;s not sold, and it&apos;s not used for advertising.</li>{" "}
               <li>Stored lookups are deleted twelve months after the last lookup of that receipt, or sooner if you ask at <a href="mailto:support@permtracker.app?subject=USCIS%20lookup%20deletion" className="link">support@permtracker.app</a> with the receipt number.</li>{" "}
-              <li>No email or notification is sent from a lookup. If alerts on USCIS receipts are ever offered they will be a separate, opt-in subscription described here first.</li>
+              <li>No email or notification is sent from a lookup. Receipt alerts are a separate subscription you opt in to, described next.</li>
+            </ul>{" "}
+            <h3 id="uscis-receipt-alerts" className="font-heading text-lg font-bold mt-6 mb-3">Receipt alerts (beta)</h3>{" "}
+            <p className="text-soft leading-relaxed">
+              You can ask us to email you when USCIS changes the status of a receipt. Nothing is sent until you
+              confirm from the email we send you, and you can stop at any time.
+            </p>{" "}
+            <ul className="list-disc list-inside text-soft space-y-2 ml-4 mt-4">
+              <li>What we keep: your email address, the receipt numbers you ask us to watch, and a DOL case number if you add one. For each receipt we keep USCIS&apos;s newest status, when we last checked it, and the status we last emailed you about. We also keep when you signed up and when you confirmed, which is when you agreed to this policy.</li>{" "}
+              <li>Why: only to email you when a status changes, and to show you what we hold on your email preferences page.</li>{" "}
+              <li>How often: we check each watched receipt with USCIS every 4 hours, and again after USCIS&apos;s overnight updates. Only the receipt number goes to USCIS, never your email address. Each email says when we checked.</li>{" "}
+              <li>How to stop: every email has a one-click link that stops the alerts, and your email preferences page turns off any one receipt. Stopping deletes the receipts you were watching, and deleting your account does the same for its email address. A watch also ends, and is deleted, a year after a final decision with nothing new.</li>{" "}
+              <li>A sign-up nobody confirms is deleted after 30 days.</li>{" "}
+              <li>A receipt number is never published or shared, and receipt alerts aren&apos;t counted in any figure we publish.</li>
             </ul>
           </details>{" "}
 

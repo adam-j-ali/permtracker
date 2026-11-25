@@ -74,6 +74,8 @@ const WITHOUT_RECENT: Readonly<Record<string, string>> = {
   "src/components/tools/UscisReceiptForm.tsx":
     "it takes only USCIS receipt numbers, which are never kept; the saved list under it (SavedReceipts) keeps one when asked",
   "src/components/admin/SignalsPanel.tsx": "an admin tool, and it takes email addresses",
+  "src/components/tools/UscisWatchForm.tsx":
+    "a sign-up for receipt alerts, not a search: it takes the one receipt to watch, and receipt numbers are never kept in the browser",
   "src/components/timeline/CaseSelectionModal.tsx": "it picks one of the account's own cases for the timeline: a picker, not a search",
 };
 

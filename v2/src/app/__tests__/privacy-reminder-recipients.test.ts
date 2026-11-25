@@ -111,7 +111,10 @@ describe("the privacy page and a case's second reminder recipient", () => {
     expect(page).toContain(`<strong>An invitation to a case's deadline reminders</strong> that isn't confirmed is deleted, with its address, after ${INVITE_DAYS} days`);
   });
 
-  it("is dated the day it changed", () => {
-    expect(page).toContain("Last Updated: November 23, 2026");
+  it("is dated the day it changed, or a later change's day", () => {
+    // A later change moves the date on; it can never go back before this one.
+    const dated = /Last Updated: ([A-Z][a-z]+ \d{1,2}, \d{4})/.exec(page)?.[1];
+    expect(dated).toBeDefined();
+    expect(Date.parse(dated!)).toBeGreaterThanOrEqual(Date.parse("November 23, 2026"));
   });
 });

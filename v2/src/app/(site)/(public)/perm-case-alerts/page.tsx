@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BellRingingIcon, BuildingsIcon, CalendarCheckIcon, CurrencyDollarIcon, EnvelopeSimpleIcon, NewspaperIcon } from "@phosphor-icons/react/ssr";
+import {
+  BellRingingIcon,
+  BuildingsIcon,
+  CalendarCheckIcon,
+  CurrencyDollarIcon,
+  EnvelopeSimpleIcon,
+  IdentificationCardIcon,
+  NewspaperIcon,
+} from "@phosphor-icons/react/ssr";
 
 import { PageSection } from "@/components/data/PageSection";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
@@ -9,6 +17,7 @@ import { CaseListAlertForm } from "@/components/tools/CaseListAlertForm";
 import { CaseLookupForm } from "@/components/tools/CaseLookupForm";
 import { DigestSignupForm } from "@/components/tools/DigestSignupForm";
 import { FaqList } from "@/components/tools/FaqList";
+import { UscisWatchForm } from "@/components/tools/UscisWatchForm";
 import { currentMonthUtc } from "@/lib/dolFormat";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
@@ -17,7 +26,8 @@ import { QueueAlertForm } from "../perm-processing-times/QueueAlertForm";
 import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
- * Every free email alert on one page: a case (or a pasted list of them), a filing month, a wage request's
+ * Every free email alert on one page: a case (or a pasted list of them), a USCIS receipt (the tracking beta,
+ * convex/uscisAlerts.ts), a filing month, a wage request's
  * month, the visa bulletin, an employer, and the weekly digest on its own (Oct
  * 29 2026: the wage-request queue and the digest had no place here). Built for the searches that never reached the site (Search
  * Console, 3 months to Oct 28 2026: no appearance at all for any search naming
@@ -66,6 +76,10 @@ const FAQS = [
     a: "Yes, up to 100 for one email address. Paste the numbers into the list box on this page: one email names each case with DOL's status for it, and one click confirms them all. Entering them one after another works too, and you won't get an email for each.",
   },
   {
+    q: "Can I get alerts for my USCIS receipt too?",
+    a: "Yes, in a beta. Enter the receipt number from the I-797 notice in the USCIS receipt box on this page. We check it with USCIS every 4 hours and after USCIS's overnight updates, and email you when its status changes. Each email says when we checked.",
+  },
+  {
     q: "What happens after DOL decides my case?",
     a: "The watch carries on for a year, in case of an appeal or a reversal, then stops by itself. A certification lapsing on its own clock isn't emailed.",
   },
@@ -85,6 +99,7 @@ const FAQS = [
 
 const KINDS = [
   { id: "case", icon: BellRingingIcon, title: "Your case", note: "DOL changes its status" },
+  { id: "uscis", icon: IdentificationCardIcon, title: "Your USCIS receipt", note: "USCIS changes its status" },
   { id: "month", icon: CalendarCheckIcon, title: "Your filing month", note: "DOL reaches it" },
   { id: "wage", icon: CurrencyDollarIcon, title: "Your wage request", note: "DOL reaches its month" },
   { id: "bulletin", icon: EnvelopeSimpleIcon, title: "The visa bulletin", note: "your line's cutoff moves" },
@@ -104,8 +119,8 @@ export default function Page() {
       <header className="max-w-3xl">
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Email alerts when your PERM case changes</h1>{" "}
         <p className="mt-4 text-lg leading-relaxed text-soft">
-          Free alerts for your case, your filing month, your wage request, the visa bulletin and any employer, and a
-          weekly digest. No account, and one click to stop.
+          Free alerts for your case, your USCIS receipt, your filing month, your wage request, the visa bulletin and
+          any employer, and a weekly digest. No account, and one click to stop.
         </p>{" "}
         <p className="mt-3 text-base text-soft">
           Already signed up?{" "}
@@ -163,6 +178,15 @@ export default function Page() {
             Paste the numbers. One email names them all, each with DOL&apos;s status, and one click confirms the list.
           </p>{" "}
           <CaseListAlertForm source="alerts-page" className="mt-5" />
+        </div>
+      </PageSection>{" "}
+      <PageSection
+        id="uscis"
+        title="Your USCIS receipt"
+        lede="After PERM, the I-140 and the I-485 each have a USCIS receipt number, at the top of the I-797 notice."
+      >
+        <div className="max-w-2xl">
+          <UscisWatchForm source="alerts-page" />
         </div>
       </PageSection>{" "}
       <PageSection id="month" title="Your filing month">
