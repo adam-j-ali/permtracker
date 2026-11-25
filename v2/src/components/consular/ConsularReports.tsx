@@ -174,7 +174,7 @@ export function ConsularReports({
             />{" "}
             <Figure kind="community"
               icon={<ClockCountdownIcon weight="bold" />}
-              label="NVC complete to interview"
+              label="NVC complete to interview, in reports here"
               value={view.wait.median !== null ? `${formatInt(view.wait.median)} days` : "Not yet"}
               note={
                 view.wait.median !== null

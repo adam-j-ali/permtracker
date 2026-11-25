@@ -33,7 +33,7 @@ import { getConsularIndex, getEmbassyNotices, getPostDetail, type EmbassyNotices
 import { EMPLOYMENT_CATEGORIES, monthName } from "@/lib/db/visaIssuances";
 import { formatInt } from "@/lib/format";
 import { StepFigures } from "@/components/community/StepFigures";
-import { getPostSummary } from "@/lib/db/reportedSummary";
+import { getPostSummary, getReportedSummary } from "@/lib/db/reportedSummary";
 import type { PlaceSummary } from "@/lib/reportedSummary";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { consularDescription } from "@/lib/consular/describe";
@@ -141,13 +141,19 @@ export default async function ConsularPostPage({ params }: { params: Promise<{ p
   const [post, index] = await Promise.all([getPostDetail(slug), getConsularIndex()]);
   if (!post) notFound();
   // Visitors' own reports (convex/consularReports.ts): a page that can't read them still renders State's figures.
-  const [embassy, reports, everyPost, summary] = await Promise.all([
+  const [embassy, reports, everyPost, summary, merged] = await Promise.all([
     getEmbassyNotices(post.key),
     queryStatic(api.consularReports.forPost, { post: post.slug }, revalidate).catch(softFail("consular-posts/post.reports", null)),
     queryStatic(api.consularReports.overview, {}, revalidate).catch(softFail("consular-posts/post.overview", null)),
     // The steps here from every case people reported at this consulate (community sheets and reports, merged hourly).
     getPostSummary(post.slug).catch(softFail<PlaceSummary | null>("consular-posts/post.summary", null)),
+    // Every consulate together, for a post too few people have reported yet (Nov 25 2026: such a post showed nothing).
+    getReportedSummary().catch(softFail("consular-posts/post.mergedSummary", null)),
   ]);
+  const postMeasured = !!summary && summary.steps.some((st) => st.median !== null);
+  const everyConsulate = postMeasured
+    ? []
+    : (merged?.steps ?? []).filter((st) => st.group === "consular" && st.median !== null);
   const path = `/consular-posts/${post.slug}`;
   const asOf = index.asOf;
   const now = post.now;
@@ -293,7 +299,7 @@ export default async function ConsularPostPage({ params }: { params: Promise<{ p
         {index.issuedTo ? ` through ${monthName(index.issuedTo)}` : ""}.
       </p>
 
-      {summary && summary.steps.some((st) => st.median !== null) ? (
+      {summary && postMeasured ? (
         <section className="mt-12 border-t-2 border-border pt-10" aria-labelledby="reported-steps-h">
           <h2 id="reported-steps-h" className="font-heading text-2xl font-bold sm:text-3xl">
             How long each step took here, as people report it
@@ -302,6 +308,16 @@ export default async function ConsularPostPage({ params }: { params: Promise<{ p
             {`From the ${formatInt(summary.cases)} cases people reported at ${post.name} in community sheets and on this site, each person once, over the cases that finished each step in the last 6 months (12 when 6 hold too few). Self-reported and unchecked.`}
           </p>
           <StepFigures steps={summary.steps} allHref="/green-card-timelines" className="mt-5" />
+        </section>
+      ) : everyConsulate.length > 0 ? (
+        <section className="mt-12 border-t-2 border-border pt-10" aria-labelledby="reported-steps-h">
+          <h2 id="reported-steps-h" className="font-heading text-2xl font-bold sm:text-3xl">
+            How long each step took at every consulate, as people report it
+          </h2>{" "}
+          <p className="mt-2 max-w-2xl text-base text-muted-foreground">
+            {`Too few people have reported ${post.name} yet for figures of its own. These count every consulate together, each person once, from community sheets and this site. They're self-reported and unchecked, and the figures for ${post.name} alone replace them once enough people report it.`}
+          </p>
+          <StepFigures steps={everyConsulate} allHref="/green-card-timelines" className="mt-5" />
         </section>
       ) : null}
 

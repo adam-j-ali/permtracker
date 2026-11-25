@@ -92,6 +92,9 @@ describe("the path list", () => {
     const routes = pages
       .map((f) => "/" + relative(appDir, f).replace(/\/?page\.tsx$/, "").split("/").filter((s) => !s.startsWith("(")).join("/"))
       .filter((r) => !r.startsWith("/i485-by-field-office/"))
+      // A consulate's page is refreshed by name when its own figures move (POST_PAGES); its every-consulate fallback for
+      // a thin post rides the page's own daily window, a day's lag on a six-month median (Nov 25 2026).
+      .filter((r) => !r.startsWith("/consular-posts/"))
       // The form page draws the summary for each form people report (FORM_STEPS in that page).
       .flatMap((r) => (r.includes("/[form]") ? ["i-140", "i-485", "i-765", "i-131", "i-129"].map((f) => r.replace("/[form]", `/${f}`)) : [r]))
       .sort();
