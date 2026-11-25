@@ -113,6 +113,8 @@ export const DATASET_COVERAGE: Readonly<Record<string, DatasetCoverage>> = {
     official("State's yearly count, each November 1 since 2016, of applicants waiting for an immigrant visa at the National Visa Center. It's by category, with spouses and children included. It covers consular cases only, so adjustments at USCIS aren't in it."),
   "visa-annual-limits":
     official("The State Department's annual numerical limits and the prior year's usage."),
+  "uscis-sample":
+    measured("A spread of USCIS receipt numbers we check on USCIS's own Case Status page each day, and the share in each status estimated from them, with a 95% margin. A sample, not a count of every case: small groups carry wide margins, and receipt numbers aren't decided strictly in order."),
   "uscis-case-status":
     official("USCIS's own case status text and dated history for a receipt number, read from its Case Status API at lookup time and kept twelve months after the last lookup. Nothing is estimated."),
   "i485-inventory":
@@ -458,6 +460,7 @@ export const DATASET_LABELS: Readonly<Record<string, string>> = {
   "uscis-i140-class-country": "I-140 by class and country",
   "uscis-i765-categories": "I-765 by eligibility category",
   "uscis-i765-pending-days": "Pending I-765s by days waited",
+  "uscis-sample": "Our USCIS case status sample",
   "uscis-net-backlog": "USCIS net backlog",
   "uscis-i907-premium": "Premium processing requests",
   "uscis-n400-offices": "N-400 by field office",

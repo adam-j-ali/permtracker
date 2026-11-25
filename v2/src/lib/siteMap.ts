@@ -48,6 +48,7 @@ export type DataSection =
   | "lca-cases"
   | "seasonal-cases"
   | "uscis-case-status"
+  | "uscis-blocks"
   | "processing-times"
   | "timeline-calculator"
   | "queue"
@@ -158,6 +159,7 @@ export const SECTIONS: DataNavSection[] = [
   t("fees", "Your case", "Green card government fees", "/tools/green-card-fees", "USCIS's fees for the whole case."),
   t("ead-extension", "Your case", "Was my work permit extended?", "/tools/ead-extension", "Whether a renewal keeps work authorization."),
   s("uscis-case-status", "Your case", "USCIS case status", "/uscis-case-status"),
+  s("uscis-blocks", "Your case", "USCIS receipt blocks", "/uscis-receipt-blocks"),
   s("timelines", "Your case", "Reported green card timelines", "/green-card-timelines"),
 
   s("pwd-cases", "Wage request", "Wage requests", "/pwd-cases"),

@@ -52,6 +52,8 @@ def test_read_cases():
           "a malformed receipt is refused")
     check(refused(lambda: read_cases(cases_file(HEAD + A.replace(",approved,", ",maybe,"))), "group"),
           "a group the site doesn't know is refused")
+    check(read_cases(cases_file(HEAD + A.replace(",approved,", ",rejected,")))["EAC3512345678"]["grp"] == "rejected",
+          "a rejected filing, an unnamed decision and an other status load (the kit's own groups)")
     check(refused(lambda: read_cases(cases_file(HEAD + A.replace("2026-11-24", "Nov 24"))), "day"),
           "a day that isn't YYYY-MM-DD is refused")
 

@@ -469,6 +469,7 @@ export async function pagesEntries(): Promise<Entry[]> {
     // canonicalises back here, so advertising one would contradict the page's
     // own directive and open ~412,000 URLs of crawl space.
     { url: `${base}/perm-case-status`, lastModified: at("/perm-case-status"), images: [`${base}/og/perm-case-status.jpg`] },
+    { url: `${base}/uscis-receipt-blocks`, lastModified: at("/uscis-receipt-blocks") },
     { url: `${base}/uscis-case-status`, lastModified: at("/uscis-case-status"), images: [`${base}/og/uscis-case-status.jpg`] },
     { url: `${base}/uscis-account-reader`, lastModified: at("/uscis-account-reader"), images: [`${base}/og/uscis-account-reader.jpg`] },
     { url: `${base}/perm-denial-risk`, lastModified: at("/perm-denial-risk"), images: [`${base}/og/perm-denial-risk.jpg`] },

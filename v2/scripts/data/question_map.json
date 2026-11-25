@@ -25,6 +25,7 @@
     { "question": "How long does USCIS take with the I-140?", "page": "/uscis-processing-times" },
     { "question": "How long is the I-485 at my field office?", "page": "/i485-by-field-office" },
     { "question": "What's happening with my USCIS case?", "page": "/uscis-case-status" },
+    { "question": "Which receipt block is USCIS processing?", "page": "/uscis-receipt-blocks" },
     { "question": "How long is the visa interview wait at my consulate?", "page": "/visa-wait-times" },
     { "question": "Which employers sponsor the most green cards?", "page": "/perm-employers" },
     { "question": "Who sponsors my kind of job?", "page": "/sponsor-finder" },

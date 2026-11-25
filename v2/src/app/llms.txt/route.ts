@@ -54,6 +54,12 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
       "Paste what your own USCIS online account shows (the case data or the list of updates) and see each update by date with what its code is known to mean: FTA0, IAF, FJ, H008, IK1 and others, each labelled as quoted from a government code list, reported by filers, or unsettled. It runs in the browser: nothing is sent, stored or signed in. The updates can be added to a green card timeline, which is checked before it shows.",
   },
   {
+    path: "/uscis-receipt-blocks",
+    label: "USCIS receipt blocks: where approvals are now",
+    blurb:
+      "Type an online (IOE) receipt or block to see how cases filed near it are moving: the share of each block's sampled cases USCIS shows as approved, per form, with a 95% margin, and the newest block where approvals appear. From receipt numbers checked daily on USCIS's own Case Status page; the numbers themselves are never shown.",
+  },
+  {
     path: "/uscis-case-status",
     label: "USCIS receipt numbers decoded",
     blurb:

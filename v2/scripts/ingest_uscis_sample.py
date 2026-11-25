@@ -3,6 +3,7 @@
 
     python3 scripts/ingest_uscis_sample.py load <dir>            # sample-cases.csv and sample-figures.json
     python3 scripts/ingest_uscis_sample.py load <dir> --dry-run  # check and count, write nothing
+    python3 scripts/ingest_uscis_sample.py load <dir> --figures-only  # the figures now, the cases table at night
 
 The sample is a spread of USCIS receipt numbers checked on USCIS's public Case Status page. Its files are prepared off
 this server and copied into <dir>:
@@ -13,8 +14,9 @@ this server and copied into <dir>:
 Each load writes only what changed since the last one (the last loaded file is kept beside the new one): a changed row
 is upserted into uscis_sample_cases, a number gone from the file deleted, and a status that changed recorded in
 uscis_sample_events (a first sighting isn't a move). The figures go to perm_docs 'uscis_sample_months' and
-'uscis_sample_blocks', and 'uscis_sample' holds the day, the count and when it loaded. A repeat of the last day is
-skipped; an older day, a file under 95% of the last load's cases, figures that disagree with the cases file, and
+'uscis_sample_blocks', and 'uscis_sample' holds the day, the count and when it loaded; 'uscis_sample_load' records the
+last load of the cases table, which --figures-only (a few small documents, safe in the day) leaves alone. A repeat of
+the last day is skipped; an older day, a file under 95% of the last load's cases, figures that disagree with the cases file, and
 figures holding any receipt number are refused, leaving the last good load in place. A receipt number reaches a reader
 only through that number's own lookup.
 """
@@ -32,8 +34,9 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 SCRIPT = "ingest_uscis_sample.py"
+DATASET = "uscis-sample"
 CASE_FIELDS = ("receipt", "form", "grp", "status", "checked_on", "since_on", "month", "kind")
-GROUPS = frozenset({"approved", "denied", "withdrawn", "closed", "revoked", "rfe", "waiting"})
+GROUPS = frozenset({"approved", "denied", "withdrawn", "closed", "revoked", "rfe", "waiting", "rejected", "decided", "other"})
 RECEIPT = re.compile(r"^[A-Z]{3}[0-9]{10}$")
 ANY_RECEIPT = re.compile(r"[A-Z]{3}[0-9]{10}")
 DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -113,7 +116,20 @@ def diff_cases(prev: dict[str, dict], new: dict[str, dict]) -> tuple[list[dict],
     return upserts, deletes, events
 
 
-def load(folder: str, dry_run: bool) -> int:
+def write_figures(db, figures: dict, cases: int) -> None:
+    from lib_db import stamp_freshness, write_doc
+
+    write_doc(db, "uscis_sample_months", {"as_of": figures["as_of"], "groups": figures.get("groups"),
+                                          "by_month": figures["by_month"]})
+    write_doc(db, "uscis_sample_blocks", {"as_of": figures["as_of"], "groups": figures.get("groups"),
+                                          "by_block": figures["by_block"]})
+    write_doc(db, "uscis_sample", {"as_of": figures["as_of"], "cases": cases, "made_at": figures.get("made_at"),
+                                   "loaded_at": int(time.time() * 1000)})
+    stamp_freshness(db, DATASET, as_of=figures["as_of"], source="USCIS Case Status Online, a spread of receipt numbers",
+                    cadence="Daily", note=f"{cases:,} cases", max_age_days=3)
+
+
+def load(folder: str, dry_run: bool, figures_only: bool = False) -> int:
     from lib_db import Database, read_doc, record_run, run_stmts, stmt, write_doc
 
     started = time.time()
@@ -121,10 +137,16 @@ def load(folder: str, dry_run: bool) -> int:
     cases_path = os.path.join(folder, "sample-cases.csv")
     figures = json.load(open(os.path.join(folder, "sample-figures.json"), encoding="utf-8"))
     new = read_cases(cases_path)
-    last = read_doc(db, "uscis_sample")
+    last = read_doc(db, "uscis_sample" if figures_only else "uscis_sample_load")
     verdict = check_figures(figures, last=last, cases_read=len(new))
     if verdict == "repeat":
         print(f"already loaded {figures['as_of']}; nothing to do")
+        return 0
+    if figures_only:
+        print(f"{figures['as_of']}: the figures for {len(new):,} cases" + (" (dry run)" if dry_run else ""))
+        if not dry_run:
+            write_figures(db, figures, len(new))
+            record_run(db, SCRIPT, status="ok", rows_written=3, note=f"{figures['as_of']}: figures only", started_at=started)
         return 0
     prev_path = os.path.join(folder, LOADED, "sample-cases.csv")
     prev = read_cases(prev_path) if os.path.exists(prev_path) and last else {}
@@ -145,12 +167,8 @@ def load(folder: str, dry_run: bool) -> int:
                         [e["receipt"], e["on_day"], e["from_grp"], e["to_grp"], e["from_status"], e["to_status"],
                          e["form"] or None]) for e in events]
     run_stmts(db, statements, per_request=500)
-    write_doc(db, "uscis_sample_months", {"as_of": figures["as_of"], "groups": figures.get("groups"),
-                                          "by_month": figures["by_month"]})
-    write_doc(db, "uscis_sample_blocks", {"as_of": figures["as_of"], "groups": figures.get("groups"),
-                                          "by_block": figures["by_block"]})
-    write_doc(db, "uscis_sample", {"as_of": figures["as_of"], "cases": len(new), "made_at": figures.get("made_at"),
-                                   "loaded_at": int(time.time() * 1000)})
+    write_figures(db, figures, len(new))
+    write_doc(db, "uscis_sample_load", {"as_of": figures["as_of"], "cases": len(new), "loaded_at": int(time.time() * 1000)})
     os.makedirs(os.path.join(folder, LOADED), exist_ok=True)
     shutil.copyfile(cases_path, prev_path + ".tmp")
     os.replace(prev_path + ".tmp", prev_path)
@@ -166,9 +184,10 @@ def main() -> int:
     p = sub.add_parser("load")
     p.add_argument("folder")
     p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--figures-only", action="store_true", help="write the figures, leave the cases table for the night")
     args = ap.parse_args()
     try:
-        return load(args.folder, args.dry_run)
+        return load(args.folder, args.dry_run, args.figures_only)
     except SampleError as exc:
         print(f"refused: {exc}", file=sys.stderr)
         from lib_db import Database, record_run

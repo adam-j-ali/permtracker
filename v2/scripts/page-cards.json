@@ -1579,6 +1579,21 @@
   "viewport": 1440
  },
  {
+  "slug": "uscis-receipt-blocks",
+  "path": "/uscis-receipt-blocks",
+  "title": "USCIS receipt blocks",
+  "label": "Where USCIS approvals are, block by block, from receipt numbers checked on USCIS's own page.",
+  "shot": "uscis-receipt-blocks.png",
+  "crop": [
+   0,
+   0,
+   2336,
+   1478
+  ],
+  "viewport": 1440,
+  "mask": "figures"
+ },
+ {
   "slug": "terms",
   "path": "/terms",
   "title": "Terms of service",
