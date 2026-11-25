@@ -126,6 +126,8 @@ state, done = alarm.send_pushes(state, {"memory": "300 MB available"}, {"memory"
 check("the next run sends it, and the failure note clears", done == ["memory start"] and not state.get("push_failing"))
 
 got.clear()
+# The rule set's number, held here: the cap tests below read the constant, so they'd pass at any value.
+check("the server alarm sends at most 12 pushes an Eastern day", alarm.PUSHES_PER_DAY == 12, str(alarm.PUSHES_PER_DAY))
 state = {"alarms": {}, "pushes": {alarm.email_day(now): alarm.PUSHES_PER_DAY}}
 on = {"journal": "x", "unit:permtracker-web@1": "y failed"}
 state, done = alarm.send_pushes(state, on, {"journal": "high", "unit:permtracker-web@1": "urgent"}, now,
