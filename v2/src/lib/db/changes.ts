@@ -306,7 +306,11 @@ function foldDays(
 export async function getChangeCalendar(
   limit = DAY_LIST_LIMIT,
 ): Promise<ChangeCalendar> {
-  const floor = Date.now() - CALENDAR_WINDOW_DAYS * MS_PER_DAY;
+  // The window opens at the start of a DOL day: an edge in the middle of one counted only part of the oldest day, so
+  // the calendar and that day's own page disagreed about its total (found Nov 25 2026, when the edge fell inside a
+  // day the tests hold).
+  const edge = Date.now() - CALENDAR_WINDOW_DAYS * MS_PER_DAY;
+  const floor = dayBounds(isoDay(edge))?.lo ?? edge;
   const rolls = await Promise.all(
     CHANGE_PROGRAMS.map(async (p) => [p, await rollUp(p, floor)] as const),
   );

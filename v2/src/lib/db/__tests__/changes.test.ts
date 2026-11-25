@@ -195,6 +195,23 @@ describe("the change feed's two filters", () => {
     });
   });
 
+  it("opens the calendar at the start of a DOL day, so its oldest day matches that day's own total", async () => {
+    // Nov 25 2026, 2:30 PM Eastern: 90 days back falls in the middle of DOL's Aug 27, inside the fixture. An edge in
+    // the middle of a day counted only that day's later stamps (58 of 106).
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(new Date("2026-11-25T19:30:00Z"));
+      mockDb();
+      const calendar = await getChangeCalendar();
+      const oldest = calendar.days[calendar.days.length - 1]!;
+      rows.mockClear();
+      const day = await getChangeDay(oldest.date);
+      expect([oldest.date, oldest.total]).toEqual([oldest.date, day?.total]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("applies the identical rule to the calendar and to the day it lists", async () => {
     // A calendar and a day computed under different rules disagree about which
     // days hold data, so a reader picks a day and is told it is empty.
