@@ -93,7 +93,11 @@ export function ScopeSelect({
     // `max-w-full` because a flex item's automatic minimum size is its
     // content, so a long option label ("District of Columbia") pushes the
     // control past a 390px viewport and takes the page sideways with it.
-    <label className="flex min-h-[44px] max-w-full items-center gap-2 border-2 border-input bg-card px-3 focus-within:ring-2 focus-within:ring-primary shadow-hard-sm">
+    // And `w-full` on the select: a form control with a percentage width adds
+    // nothing to its row's minimum width, so the row can shrink on a narrow
+    // phone (Nov 25 2026: "Received before yours" held it 7px past 320 on
+    // Linux Chromium, and 48px past at 270 everywhere).
+    <label className="flex min-h-[44px] min-w-0 max-w-full items-center gap-2 border-2 border-input bg-card px-3 focus-within:ring-2 focus-within:ring-primary shadow-hard-sm">
       <span className="text-sm font-bold text-muted-foreground">
         {label}
       </span>{" "}
@@ -101,7 +105,7 @@ export function ScopeSelect({
         value={value}
         aria-label={hint ? `${label}. ${hint}` : label}
         onChange={(e) => onChange(e.target.value)}
-        className="min-h-11 min-w-0 max-w-[16rem] bg-transparent text-base outline-none"
+        className="min-h-11 w-full min-w-0 max-w-[16rem] bg-transparent text-base outline-none"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
