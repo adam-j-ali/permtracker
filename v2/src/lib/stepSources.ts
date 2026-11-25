@@ -1,3 +1,4 @@
+import { BESIDE_THE_ROAD, ROAD } from "@/lib/road";
 import type { StepGroup } from "@/lib/reportedSummary";
 
 /**
@@ -8,15 +9,10 @@ import type { StepGroup } from "@/lib/reportedSummary";
  * ship showing one source.
  */
 
-/** Each step's name, as a link's words: "the wage request: the agency's figures". */
-export const STEP_GROUP_NAMES: Record<StepGroup, string> = {
-  h1b: "The H-1B and its LCA",
-  pwd: "The wage request",
-  perm: "PERM",
-  i140: "The I-140",
-  i485: "The I-485",
-  consular: "The consulate",
-};
+/** Each step's name, as a link's words: "the wage request: the agency's figures". From the road (src/lib/road.ts). */
+export const STEP_GROUP_NAMES = Object.fromEntries(
+  [BESIDE_THE_ROAD, ...ROAD].flatMap((s) => (s.reported ? [[s.reported.group, s.reported.name]] : [])),
+) as Record<StepGroup, string>;
 
 export type StepPage = { groups: readonly StepGroup[]; reported: boolean } | { exempt: string };
 

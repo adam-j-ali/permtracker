@@ -1,6 +1,7 @@
-import { PLAN_STAGES, type FeeResult, type PlanStage, type StageOwner } from "@/lib/perm";
+import { PLAN_STAGES, type FeeResult, type StageOwner } from "@/lib/perm";
 
 import { aboutMonths } from "@/lib/board";
+import { INSIDE_STEPS, type InsideStepId } from "@/lib/road";
 import { formatInt } from "@/lib/format";
 
 /**
@@ -10,9 +11,9 @@ import { formatInt } from "@/lib/format";
  * length: it depends on the reader's line, and the line says so.
  */
 
-/** The steps the guide walks, inside the US: the planner's, without the I-140's preparation (an assumption, not a measurement). */
-export const JOURNEY_STEPS = ["pwd", "recruitment", "perm", "i140", "visa", "i485"] as const satisfies readonly PlanStage[];
-export type JourneyKey = (typeof JOURNEY_STEPS)[number];
+/** The steps the guide walks: the road's steps inside the US (src/lib/road.ts), the I-140's preparation inside its step. */
+export const JOURNEY_STEPS = INSIDE_STEPS;
+export type JourneyKey = InsideStepId;
 
 const OWNER: Record<StageOwner, string> = {
   dol: "DOL",

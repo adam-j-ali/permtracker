@@ -1,3 +1,5 @@
+import { ROAD_MENU_GROUPS } from "@/lib/road";
+
 /**
  * The public site's map: every page's one name, and where each one sits.
  *
@@ -240,11 +242,8 @@ export const SECTIONS: DataNavSection[] = [
 
 export const GROUPS: DataGroup[] = [
   "Your case",
-  "Wage request",
-  "Recruitment",
-  "PERM",
-  "I-140",
-  "Green card line",
+  // The steps of the process, in the road's order (src/lib/road.ts).
+  ...ROAD_MENU_GROUPS,
   "Employers and firms",
   "Breakdowns",
   "Wages",
