@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
-import { CapGapPart, OptDaysPart } from "@/components/tools/CapGapCalculator";
+import { CapGapPart, OptDaysPart, OptJobDaysPart } from "@/components/tools/CapGapCalculator";
 import { FaqList } from "@/components/tools/FaqList";
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
 import { openGraphBase } from "@/lib/openGraphBase";
@@ -28,7 +28,7 @@ export const dynamic = "force-static";
 
 const FAQS = [
   {
-    q: "What is the cap-gap?",
+    q: "What's the cap-gap?",
     a: "The months between an F-1 student's OPT ending in spring or summer and an H-1B starting on October 1. Under 8 CFR 214.2(f)(5)(vii), a timely filed, nonfrivolous cap petition asking for a change of status extends the student's F-1 status and OPT work authorization across it.",
   },
   {
@@ -42,6 +42,10 @@ const FAQS = [
   {
     q: "How many unemployment days does OPT allow?",
     a: "90 in all during post-completion OPT. With a 24-month STEM extension granted, 150 in all across the whole OPT period, the first part included (8 CFR 214.2(f)(10)(ii)(E)).",
+  },
+  {
+    q: "How are OPT unemployment days counted?",
+    a: "SEVIS looks back to the OPT start date on the EAD and counts each day with no employer reported, weekends included. A job counts as employment at 20 hours a week or more, and time abroad counts as unemployment unless it's leave from the job or travel for it (SEVIS Help Hub, Unemployment Counter, and SEVP Policy Guidance 1004-03).",
   },
   {
     q: "Is this legal advice?",
@@ -78,6 +82,9 @@ export default function CapGapCalculatorPage() {
         <h2 id="optdays-h" className="mb-4 font-heading text-2xl font-bold sm:text-3xl">
           OPT unemployment days left
         </h2>{" "}
+        <h3 className="mb-3 font-heading text-lg font-bold">Counted from your job dates</h3>{" "}
+        <OptJobDaysPart />{" "}
+        <h3 className="mb-3 mt-10 font-heading text-lg font-bold">Or from the days you&apos;ve counted</h3>{" "}
         <OptDaysPart />
       </section>
       <section className="mt-12">
