@@ -227,22 +227,28 @@
     "alt": "The PERM deadline calculator: every date in a case computed from the wage determination and recruitment dates"
   },
   "guides/the-perm-deadlines-that-matter": {
-    "tour": {
-      "file": "hub-light.webp",
+    "photo": {
+      "file": "the-perm-deadlines-that-matter.jpg",
       "focus": [
-        0.0,
-        0.0
+        0.5,
+        0.45
       ]
     },
-    "credit": "The PERM Tracker app, drawn from a sample firm's cases",
-    "alt": "The PERM Tracker Deadlines panel: overdue, this week, this month and later"
+    "credit": "Photo: Claudio Elias / Wikimedia Commons, public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:WallCalendar.jpg",
+    "alt": "A wall calendar showing September and October 2007, with October 24 boxed in red"
   },
   "guides/three-180-day-clocks": {
-    "capture": {
-      "url": "/tools/green-card-timeline?where=perm-certified&date=2026-06-01&pd=2025-09-15"
+    "photo": {
+      "file": "three-180-day-clocks.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 28, 2026",
-    "alt": "The green card timeline for a certified PERM: the priority date, the I-140, the visa bulletin wait and the green card, each dated on one time line"
+    "credit": "Photo: Wellcome Collection / Wikimedia Commons, CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:3_Hourglasses_Wellcome_L0011331.jpg",
+    "alt": "Three old hourglasses in turned wooden frames standing side by side"
   },
   "guides/perm-recruitment-checklist": {
     "pdf": {
@@ -353,11 +359,16 @@
     "alt": "Fragomen's PERM record on permtracker.app: cases filed, approval rate and median days"
   },
   "guides/employer-layoffs-and-your-perm": {
-    "capture": {
-      "url": "/layoffs"
+    "photo": {
+      "file": "employer-layoffs-and-your-perm.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 15, 2026",
-    "alt": "Layoff notices against PERM sponsors, from four states' WARN filings"
+    "credit": "Photo: Np6824 / Wikimedia Commons, CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Empty_room_of_office.jpg",
+    "alt": "An empty office room with bare blue carpet, blank walls and a row of windows"
   },
   "guides/employer-stopped-filing-perms": {
     "capture": {
@@ -480,11 +491,16 @@
     "alt": "USCIS processing times by form, the median from USCIS's own quarterly files"
   },
   "guides/eb2-vs-eb3-perm": {
-    "capture": {
-      "url": "/tools/eb2-vs-eb3"
+    "photo": {
+      "file": "eb2-vs-eb3-perm.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 15, 2026",
-    "alt": "EB-2 or EB-3 for one priority date: the two lines side by side"
+    "credit": "Photo: AKS.9955 / Wikimedia Commons, CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Square_academic_cap_(graduation_hats).JPG",
+    "alt": "Graduates throw their square caps into the air under a white tent at a business school commencement in Hyderabad, India"
   },
   "guides/eb3-other-workers": {
     "pdf": {
@@ -497,11 +513,16 @@
     "alt": "The first page of the State Department's Visa Bulletin for September 2026"
   },
   "guides/perm-vs-niw": {
-    "capture": {
-      "url": "/tools/which-green-card"
+    "photo": {
+      "file": "perm-vs-niw.jpg",
+      "focus": [
+        0.45,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 15, 2026",
-    "alt": "Which green card fits: the employment-based routes compared"
+    "credit": "Photo: Maggie Bartlett, NHGRI / Wikimedia Commons, public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:NHGRI_researcher_uses_a_pipette_to_remove_DNA_from_a_micro_test_tube.jpg",
+    "alt": "A researcher's gloved hand holds a small test tube while a pipette draws DNA out of it, at the National Human Genome Research Institute"
   },
   "guides/h2a-case-status-and-timing": {
     "pdf": {
@@ -933,12 +954,16 @@
     "alt": "The first page of the Federal Register proposal to end the discretionary 60-day grace period"
   },
   "guides/h1b-six-year-limit-with-perm-pending": {
-    "capture": {
-      "url": "/tools/h1b-six-year-limit",
-      "width": 1000
+    "photo": {
+      "file": "h1b-six-year-limit-with-perm-pending.jpg",
+      "focus": [
+        0.5,
+        0.51
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "The H-1B six-year limit and PERM 365-day rule calculator on permtracker.app"
+    "credit": "Photo: John Morgan / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Hourglass_with_sand.jpg",
+    "alt": "An hourglass in a brass frame, its white sand running from the upper bulb into the lower one"
   },
   "guides/how-long-perm-recruitment-stays-valid": {
     "pdf": {
@@ -972,12 +997,16 @@
     "alt": "Rows of open shelves holding case files at the USCIS National Benefits Center, with shelf labels that read I-485 EB"
   },
   "guides/opt-to-green-card-employers": {
-    "capture": {
-      "url": "/opt-employers",
-      "width": 1000
+    "photo": {
+      "file": "opt-to-green-card-employers.jpg",
+      "focus": [
+        0.55,
+        0.55
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "The employers with the largest counts of students on OPT and CPT, from ICE's own lists"
+    "credit": "Photo: Julian Herzog / Wikimedia Commons, CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Cary_Quad_Purdue_University_2016_02.jpg",
+    "alt": "The red-brick towers and gables of Cary Quadrangle, a residence hall at Purdue University, behind a green lawn under a cloudy sky"
   },
   "guides/perm-audit-file-index": {
     "pdf": {
@@ -1056,13 +1085,16 @@
     "alt": "Form ETA-9089's notice of posting questions, from the bargaining representative to the employer's own media"
   },
   "guides/perm-recruitment-failed-h1b-clock": {
-    "capture": {
-      "url": "/tools/h1b-six-year-limit",
-      "clip": "fromm:FAQs",
-      "width": 1000
+    "photo": {
+      "file": "perm-recruitment-failed-h1b-clock.jpg",
+      "focus": [
+        0.4,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "Questions on the H-1B six-year limit and the PERM 365-day rule, answered from the regulations"
+    "credit": "Photo: DiscoA340 / Wikimedia Commons, CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:%22Now_Hiring%22_Sign.jpg",
+    "alt": "A Now Hiring sign that reads Come work with us! beside a sidewalk in Pittsboro, North Carolina"
   },
   "guides/perm-recruitment-report-sample": {
     "pdf": {
@@ -1104,12 +1136,16 @@
     "alt": "How the EB-2 India cutoff has moved, forward and back, bulletin by bulletin"
   },
   "guides/salary-high-enough-perm-h1b": {
-    "capture": {
-      "url": "/tools/wage-levels",
-      "width": 1000
+    "photo": {
+      "file": "salary-high-enough-perm-h1b.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "The prevailing wage levels tool on permtracker.app, DOL's four levels for a job and area"
+    "credit": "Photo: Pictures of Money / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:1_dollar_bill.jpg",
+    "alt": "One-dollar bills spread out, the back of one in focus with ONE printed in large letters"
   },
   "guides/special-handling-university-teachers": {
     "pdf": {
@@ -1174,13 +1210,16 @@
     "alt": "The free PERM calculators on permtracker.app, matched to the question each answers"
   },
   "blog/h1b-sponsors-layoff-notices-october-2026": {
-    "capture": {
-      "url": "/layoffs",
-      "clip": "h:The notices, by month and by sponsor",
-      "width": 1000
+    "photo": {
+      "file": "h1b-sponsors-layoff-notices-october-2026.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "WARN layoff notices from H-1B and PERM sponsors, by month and by sponsor"
+    "credit": "Photo: Mike Beltzner / Wikimedia Commons, CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:345_Adelaide_-_Alternate_Layout_-2_(5364785830).jpg",
+    "alt": "An open office floor of empty desks and chairs under long rows of ceiling lights"
   },
   "blog/immigration-software-pricing-2026": {
     "photo": {
