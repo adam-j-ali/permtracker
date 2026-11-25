@@ -29,7 +29,7 @@ const label = (m: string) =>
   new Date(`${m}-15T12:00:00Z`).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
 
 /**
- * The sample's shares by receipt month (read from where a number falls among the month's numbers), one form at a time, a year to a page. Each share comes with its
+ * The sample's shares by the month USCIS received each case (its own status page's day), one form at a time, a year to a page. Each share comes with its
  * 95% margin and the cases behind it.
  */
 export function MonthTable({ series }: { series: { form: string; rows: MonthLine[] }[] }) {
