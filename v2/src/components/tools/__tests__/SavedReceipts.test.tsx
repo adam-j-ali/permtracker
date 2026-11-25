@@ -35,21 +35,21 @@ describe("SavedReceipts", () => {
   });
 
   it("puts the newest receipt first and doesn't add one twice", async () => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([{ receipt: "IOE9912345678", label: "Mine" }]));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([{ receipt: "IOE0000000000", label: "Mine" }]));
     const { unmount } = render(<SavedReceipts current="eac 3590123456" />);
     await act(async () => {});
     unmount();
     render(<SavedReceipts current="EAC3590123456" />);
     await act(async () => {});
-    expect(readSaved().map((s) => s.receipt)).toEqual(["EAC3590123456", "IOE9912345678"]);
+    expect(readSaved().map((s) => s.receipt)).toEqual(["EAC3590123456", "IOE0000000000"]);
   });
 
   it("removes a receipt", async () => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([{ receipt: "IOE9912345678", label: "" }]));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([{ receipt: "IOE0000000000", label: "" }]));
     render(<SavedReceipts current={null} />);
     await act(async () => {});
-    fireEvent.click(screen.getByRole("button", { name: "Remove IOE9912345678" }));
-    expect(screen.queryByRole("link", { name: "IOE9912345678" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Remove IOE0000000000" }));
+    expect(screen.queryByRole("link", { name: "IOE0000000000" })).toBeNull();
     expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY)!)).toEqual([]);
   });
 

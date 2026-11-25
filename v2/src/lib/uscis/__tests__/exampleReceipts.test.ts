@@ -23,8 +23,8 @@ describe('example receipt numbers', () => {
     }
   });
 
-  it('put the online example far past the running count (IOE numbers are about 09 billion today)', () => {
-    expect(Number(EXAMPLE_ONLINE_RECEIPT.slice(3))).toBeGreaterThan(9_500_000_000);
+  it('put the online example at zero: online numbers count up from one, and real ones reach at least IOE98', () => {
+    expect(EXAMPLE_ONLINE_RECEIPT).toBe('IOE0000000000');
   });
 
   it('lead with a service-center number', () => {

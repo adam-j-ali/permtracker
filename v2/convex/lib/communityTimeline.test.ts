@@ -391,7 +391,7 @@ describe("account updates, the service center and the Supplement J date", () => 
     const bad = (accountEvents: unknown) => validateTimeline({ ...base, accountEvents } as never, TODAY);
     expect(bad([{ form: "i485", code: "FTA0" }])).toMatchObject({ ok: false, code: "account-date" });
     expect(bad([{ on: "2027-01-01" }])).toMatchObject({ ok: false, code: "account-date" });
-    expect(bad([{ on: "2026-05-05", code: "IOE9912345678" }])).toMatchObject({ ok: false, code: "account-code" });
+    expect(bad([{ on: "2026-05-05", code: "IOE0000000000" }])).toMatchObject({ ok: false, code: "account-code" });
     expect(bad([{ on: "2026-05-05", code: "555-1212" }])).toMatchObject({ ok: false, code: "account-code" });
     expect(bad([{ on: "2026-05-05", code: "1FTA" }])).toMatchObject({ ok: false, code: "account-code" });
     expect(bad([{ on: "2026-05-05", form: "n400" }])).toMatchObject({ ok: false, code: "account-form" });

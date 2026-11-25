@@ -198,10 +198,10 @@ describe("UscisCaseTimeline", () => {
     mount();
     receipt("2025-03-03");
     fireEvent.change(screen.getByLabelText("Your name"), { target: { value: "Sam Example" } });
-    fireEvent.change(screen.getByLabelText("Receipt number"), { target: { value: "IOE9912345678" } });
+    fireEvent.change(screen.getByLabelText("Receipt number"), { target: { value: "IOE0000000000" } });
     const note = screen.getByTestId("congress-note").textContent ?? "";
     expect(note).toContain("My name is Sam Example.");
-    expect(note).toContain("Receipt number: IOE9912345678");
+    expect(note).toContain("Receipt number: IOE0000000000");
     expect(note).toContain("Form: I-485, Application to Register Permanent Residence or Adjust Status (Employment-based adjustment applications)");
     expect(note).toContain("takes inquiries for cases received before April 21, 2025");
     expect(note.toLowerCase()).not.toContain("social security number:");

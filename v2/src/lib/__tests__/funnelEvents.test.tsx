@@ -15,7 +15,7 @@ describe("queryShape", () => {
     expect(queryShape("g10026254230507")).toBe("case-undashed");
     expect(queryShape("G 100 26254 230507")).toBe("case-undashed");
     expect(queryShape("P-100-26161-003499")).toBe("case");
-    expect(queryShape("IOE9912345678")).toBe("receipt");
+    expect(queryShape("IOE0000000000")).toBe("receipt");
     expect(queryShape("2025-11")).toBe("month");
     expect(queryShape("Adobe")).toBe("name");
     expect(queryShape("2025-13")).toBe("name");

@@ -22,7 +22,7 @@ const ACCOUNT = JSON.stringify({
       ],
     },
     {
-      receiptNumber: "IOE9912345678",
+      receiptNumber: "IOE0000000000",
       formType: "I-765",
       events: [{ eventCode: "LDA", eventDateTime: "2026-05-20T18:00:00.000Z" }],
     },
@@ -48,7 +48,7 @@ describe("reading a pasted account", () => {
   it("never returns a receipt number whole", () => {
     const r = readAccount(ACCOUNT);
     expect(JSON.stringify(r)).not.toContain("MSC2690012345");
-    expect(JSON.stringify(r)).not.toContain("9912345678");
+    expect(JSON.stringify(r)).not.toContain("IOE0000000000");
     expect(r.cases[0]!.receipt).toBe("MSC••••••2345");
   });
 

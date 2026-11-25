@@ -62,7 +62,7 @@ describe("what a recent search keeps of what was typed", () => {
 
   it("never keeps a USCIS receipt number, whole, masked or overlong", () => {
     expect(recentSearchLabel("EAC3590123456")).toBeNull();
-    expect(recentSearchLabel("ioe 9912345678")).toBeNull();
+    expect(recentSearchLabel("ioe 0000000000")).toBeNull();
     expect(recentSearchLabel("EAC*590123456")).toBeNull();
     expect(recentSearchLabel("EAC21901234567890")).toBeNull();
     // Short groups: no run of digits, nothing shaped like a phone number, still a receipt.

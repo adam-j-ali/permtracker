@@ -98,7 +98,7 @@ describe("decodeReceipt", () => {
       const d = decodeReceipt(r)!.digits;
       return d.series === "day" || d.series === "lockbox" ? d.fiscalYear : null;
     };
-    expect(year("LIN9912345678")).toBe(1999);
+    expect(year("LIN9990000000")).toBe(1999);
     expect(year("LIN0012345678")).toBe(2000);
     expect(year("LIN2612345678")).toBe(2026);
   });
@@ -115,7 +115,7 @@ describe("decodeReceipt", () => {
 describe("looksLikeReceipt", () => {
   it("catches a half-typed receipt so the DOL page can point at the right one", () => {
     expect(looksLikeReceipt("EAC2190")).toBe(true);
-    expect(looksLikeReceipt("ioe9912345678")).toBe(true);
+    expect(looksLikeReceipt("ioe0000000000")).toBe(true);
     expect(looksLikeReceipt("EAC*1234")).toBe(true);
   });
 
@@ -178,7 +178,7 @@ describe("readPartialReceipt: a receipt read as it's typed (RT1, Nov 25 2026)", 
     expect(readPartialReceipt("LIN26042I4850").suggestion).toBe("LIN2604214850"); // I for one
     expect(readPartialReceipt("LIN26042l4850").suggestion).toBe("LIN2604214850"); // l for one
     expect(readPartialReceipt("L1N2604214850").suggestion).toBe("LIN2604214850"); // 1 for I in the letters
-    expect(readPartialReceipt("I0E9912345678").suggestion).toBe("IOE9912345678"); // 0 for O in the letters
+    expect(readPartialReceipt("I0E0000000000").suggestion).toBe("IOE0000000000"); // 0 for O in the letters
     expect(readPartialReceipt("LIN2604214850").suggestion).toBeNull();
     expect(readPartialReceipt("LIN26XX214850").suggestion).toBeNull(); // two wrong characters: no guess
   });
