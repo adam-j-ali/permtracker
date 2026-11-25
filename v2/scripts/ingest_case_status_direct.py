@@ -2092,6 +2092,75 @@ def rebuild_docs(db) -> list[tuple[str, str]]:
         _DOCS_AS_OF = None
 
 
+# The tables this sweep owns, written here so a rebuilt database has them before the first statement that names them,
+# ready for the rows scripts/dump_observations.py backs up. On the live database each already exists and each
+# statement does nothing. The columns are every one the writers name (here, scripts/sync_published_live.py and
+# src/lib/db/caseDiscovery.ts); `last_checked_at` is inherited and never written by this sweep.
+CASE_TABLES_DDL = [
+    """CREATE TABLE IF NOT EXISTS perm_case_status (
+         case_number     TEXT PRIMARY KEY,
+         filing_date     TEXT,
+         current_status  TEXT,
+         is_final        INTEGER,
+         is_disclosed    INTEGER,
+         employer_name   TEXT,
+         job_title       TEXT,
+         submitted_date  TEXT,
+         last_checked_at TEXT,
+         verified        INTEGER,
+         source          TEXT NOT NULL,
+         fetched_at      INTEGER NOT NULL)""",
+    # Append-only: one row per move between two statuses, keyed so the same move written twice adds nothing.
+    """CREATE TABLE IF NOT EXISTS perm_case_events (
+         case_number TEXT NOT NULL,
+         changed_at  INTEGER NOT NULL,
+         from_status TEXT NOT NULL,
+         to_status   TEXT NOT NULL,
+         to_final    INTEGER NOT NULL,
+         source      TEXT NOT NULL,
+         PRIMARY KEY (case_number, changed_at))""",
+    # Two frozen tables that nothing writes any more, defined beside the tables they stand with so their readers
+    # find no rows on a rebuilt database rather than no table. rfi_funnel is the RFI outcomes observed once,
+    # which src/lib/db/rfi.ts blends with perm_case_events after its observed_at; perm_month_stats is the old
+    # per-month queue count that getQueueAhead (src/lib/db/publicData.ts) falls back to when the live census
+    # is missing.
+    """CREATE TABLE IF NOT EXISTS rfi_funnel (
+         observed_at             INTEGER PRIMARY KEY,
+         total_tracked           INTEGER,
+         ever_rfi                INTEGER,
+         ever_audit              INTEGER,
+         ever_reconsideration    INTEGER,
+         ever_balca              INTEGER,
+         current_rfi             INTEGER,
+         current_audit           INTEGER,
+         rfi_resolved            INTEGER,
+         rfi_certified           INTEGER,
+         rfi_denied              INTEGER,
+         rfi_withdrawn           INTEGER,
+         median_days_to_decision INTEGER,
+         source                  TEXT NOT NULL)""",
+    """CREATE TABLE IF NOT EXISTS perm_month_stats (
+         filing_month   TEXT PRIMARY KEY,
+         total          INTEGER,
+         pending        INTEGER,
+         decided        INTEGER,
+         analyst_review INTEGER,
+         rfi_issued     INTEGER,
+         audit_response INTEGER,
+         appeals        INTEGER,
+         certified      INTEGER,
+         denied         INTEGER,
+         withdrawn      INTEGER,
+         source         TEXT NOT NULL,
+         fetched_at     INTEGER NOT NULL)""",
+]
+
+
+def ensure_case_tables(db) -> None:
+    """Create the tables above where they're missing: one request, and nothing at all where they exist."""
+    db.script(CASE_TABLES_DDL)
+
+
 def main() -> int:
     t0 = time.monotonic()          # the discovery budget counts from here
     ap = argparse.ArgumentParser(description=__doc__)
@@ -2132,6 +2201,7 @@ def main() -> int:
         ap.error("--docs runs alone: it reads the tables and asks DOL nothing")
 
     db = Database()
+    ensure_case_tables(db)
 
     if args.docs:
         failed = rebuild_docs(db)

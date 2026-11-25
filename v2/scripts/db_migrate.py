@@ -246,9 +246,13 @@ def existing_fingerprints(db: Database) -> dict[str, tuple[str, tuple[str, ...]]
     everything already stored.
 
     Read in pages: the whole table in one response is tens of megabytes of JSON,
-    past the pipeline's response cap.
+    past the pipeline's response cap. A database with no perm_cases yet (a
+    rebuilt one) has nothing stored, so the caller falls back to the full load,
+    whose SCHEMA creates the table.
     """
     out: dict[str, str] = {}
+    if not query_rows(db, "PRAGMA table_info(perm_cases)"):
+        return out
     page = 20000
     after = ""
     while True:
