@@ -43,9 +43,19 @@ const BANDS: Record<DataGroup, { lead: string; shot: DataShot; url: string }> = 
     url: "permtracker.app/uscis-processing-times",
   },
   "Green card line": {
-    lead: "The visa bulletin since 2005, who's ahead of a priority date, the I-485 by office, and the visas the State Department issues.",
+    lead: "The visa bulletin since 2005, who's ahead of a priority date, and whether EB-2 or EB-3 gets there first.",
     shot: "line",
     url: "permtracker.app/visa-bulletin",
+  },
+  "I-485": {
+    lead: "What each USCIS office holds and decides, how long the I-485, the work permit and the travel document take, and your own account's updates in plain words.",
+    shot: "i485",
+    url: "permtracker.app/i485-by-field-office",
+  },
+  Consulate: {
+    lead: "The consulate route: the National Visa Center's waiting list, the visas each consulate issues, and where each post stands.",
+    shot: "consular",
+    url: "permtracker.app/consular-posts",
   },
   "After the green card": {
     lead: "The 90 days to file to remove a two-year card's conditions, and the first day to apply for citizenship, each worked out from the card.",

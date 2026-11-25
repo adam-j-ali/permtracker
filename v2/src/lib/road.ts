@@ -30,8 +30,8 @@ export const ROAD = [
   { id: "perm", menu: "PERM", reported: { group: "perm", name: "PERM" }, planner: ["perm"], app: "eta9089", where: "us" },
   { id: "i140", menu: "I-140", reported: { group: "i140", name: "The I-140" }, planner: ["i140Prep", "i140"], app: "i140", where: "us" },
   { id: "visa", menu: "Green card line", reported: null, planner: ["visa"], app: null, where: "us" },
-  { id: "i485", menu: "Green card line", reported: { group: "i485", name: "The I-485" }, planner: ["i485"], app: null, where: "us" },
-  { id: "consular", menu: "Green card line", reported: { group: "consular", name: "The consulate" }, planner: ["consular"], app: null, where: "abroad" },
+  { id: "i485", menu: "I-485", reported: { group: "i485", name: "The I-485" }, planner: ["i485"], app: "i485", where: "us" },
+  { id: "consular", menu: "Consulate", reported: { group: "consular", name: "The consulate" }, planner: ["consular"], app: "consular", where: "abroad" },
 ] as const satisfies readonly RoadStep[];
 
 export type RoadStepId = (typeof ROAD)[number]["id"];

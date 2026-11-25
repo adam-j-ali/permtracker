@@ -30,6 +30,9 @@ describe("the road", () => {
       "PERM",
       "I-140",
       "Green card line",
+      // Batch 8 (Nov 25 2026): the I-485 and the consulate get groups of their own, in the road's order.
+      "I-485",
+      "Consulate",
       "After the green card",
       "Employers and firms",
       "Breakdowns",
@@ -63,8 +66,9 @@ describe("the road", () => {
       perm: "eta9089",
       i140: "i140",
       visa: null,
-      i485: null,
-      consular: null,
+      // Batch 7 (Nov 25 2026): the app tracks the I-485 and the consulate as stages of their own.
+      i485: "i485",
+      consular: "consular",
     });
   });
 });

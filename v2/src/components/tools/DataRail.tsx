@@ -7,6 +7,8 @@ import { IntentLink } from "@/components/ui/intent-link";
 import { usePathname } from "next/navigation";
 import {
   AirplaneTiltIcon,
+  GlobeHemisphereWestIcon,
+  StampIcon,
   GraduationCapIcon,
   BellRingingIcon,
   BuildingsIcon,
@@ -74,6 +76,8 @@ export const GROUP_ICONS: Record<DataGroup, Icon> = {
   PERM: SealCheckIcon,
   "I-140": FileTextIcon,
   "Green card line": CalendarDotsIcon,
+  "I-485": StampIcon,
+  Consulate: GlobeHemisphereWestIcon,
   "After the green card": IdentificationCardIcon,
   "Employers and firms": BuildingsIcon,
   Breakdowns: ChartPieSliceIcon,

@@ -25,6 +25,8 @@ import {
  * derivation, and that the map points only at pages that exist.
  */
 
+import { FORM_PAGES } from "@/lib/uscisForms";
+
 const PUBLIC = resolve(__dirname, "..", "(site)", "(public)");
 
 /** Whether a public path has a page file (static or under a [param] folder). */
@@ -33,6 +35,10 @@ function pageExists(href: string): boolean {
   // An article is its section's [slug] page, backed by its own file.
   const article = /^\/(guides|blog|changelog)\/([a-z0-9-]+)$/.exec(href);
   if (article) return existsSync(resolve(__dirname, "..", "..", "..", "content", article[1]!, `${article[2]}.mdx`));
+  // A USCIS form's page is the [form] route, one per FORM_PAGES slug (the I-485, work permit and travel document
+  // pages joined the menu on Nov 25 2026).
+  const form = /^\/uscis-processing-times\/([a-z0-9-]+)$/.exec(href);
+  if (form) return FORM_PAGES.some((p) => p.slug === form[1]);
   return existsSync(join(PUBLIC, ...href.split("/").filter(Boolean), "page.tsx"));
 }
 

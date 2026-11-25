@@ -33,6 +33,8 @@ export type DataGroup =
   | "PERM"
   | "I-140"
   | "Green card line"
+  | "I-485"
+  | "Consulate"
   | "After the green card"
   | "Employers and firms"
   | "Breakdowns"
@@ -112,6 +114,9 @@ export type DataSection =
   | "i485-position"
   | "fees"
   | "ead-extension"
+  | "i485-time"
+  | "ead-time"
+  | "ap-time"
   | "uscis-inquiry"
   | "lottery-calculator"
   | "six-year-limit"
@@ -206,12 +211,15 @@ export const SECTIONS: DataNavSection[] = [
   t("priority-dates", "Green card line", "Priority date calculator", "/tools/priority-date-calculator", "Your date against every bulletin."),
   t("green-card-line", "Green card line", "Your place in line", "/tools/green-card-line", "Everyone ahead of your priority date."),
   t("eb2-vs-eb3", "Green card line", "EB-2 or EB-3", "/tools/eb2-vs-eb3", "Which line has fewer people ahead of your date."),
-  s("i485-offices", "Green card line", "I-485 by field office", "/i485-by-field-office"),
-  s("uscis-account-reader", "Green card line", "Your USCIS account updates", "/uscis-account-reader"),
-  t("i485-position", "Green card line", "I-485 queue position", "/tools/i485-queue-position", "Adjustment applications pending ahead of you."),
-  s("nvc-waiting-list", "Green card line", "NVC waiting list", "/nvc-waiting-list"),
-  s("visa-issuances", "Green card line", "Visas issued", "/visa-issuances"),
-  s("consular-posts", "Green card line", "Consulates", "/consular-posts"),
+  s("i485-offices", "I-485", "I-485 by field office", "/i485-by-field-office"),
+  s("i485-time", "I-485", "I-485 processing time", "/uscis-processing-times/i-485"),
+  s("ead-time", "I-485", "I-765 processing time", "/uscis-processing-times/i-765"),
+  s("ap-time", "I-485", "I-131 processing time", "/uscis-processing-times/i-131"),
+  s("uscis-account-reader", "I-485", "Your USCIS account updates", "/uscis-account-reader"),
+  t("i485-position", "I-485", "I-485 queue position", "/tools/i485-queue-position", "Adjustment applications pending ahead of you."),
+  s("nvc-waiting-list", "Consulate", "NVC waiting list", "/nvc-waiting-list"),
+  s("visa-issuances", "Consulate", "Visas issued", "/visa-issuances"),
+  s("consular-posts", "Consulate", "Consulates", "/consular-posts"),
 
   // The steps past the green card: removing the conditions on a two-year card, then citizenship.
   t("i751-window", "After the green card", "I-751 filing window", "/tools/i751-filing-window", "The 90 days to file to remove conditions."),
