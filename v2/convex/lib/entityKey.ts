@@ -55,7 +55,12 @@ export function entityKey(raw: string): string {
       i += 1;
     }
   }
-  const kept = glued.filter((w) => !ENTITY_NOISE.has(w));
+  let kept = glued.filter((w) => !ENTITY_NOISE.has(w));
+  // Rule E (scripts/entity_identity.py): a name printed twice keys as the name once (Nov 25 2026).
+  const half = Math.floor(kept.length / 2);
+  if (half >= 3 && kept.length % 2 === 0 && kept.slice(0, half).join(" ") === kept.slice(half).join(" ")) {
+    kept = kept.slice(0, half);
+  }
   return kept.length > 0 ? kept.join(" ") : cleaned.trim();
 }
 

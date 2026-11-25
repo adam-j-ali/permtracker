@@ -98,8 +98,10 @@ export async function generateMetadata({ params }: { params: Promise<{ line: str
   const got = await load(line);
   if (!got) notFound();
   const { cat, where } = names(got.category, got.country);
-  // "Cutoff" is what people check; "history" is what the page adds.
-  const base = `${cat} ${where} Visa Bulletin Cutoff and History`;
+  // "Cutoff" is what people check; "history" is what the page adds. A long line name drops "and History" first,
+  // then "Cutoff", so the title fits what Google shows (60 characters) and the line's own words are never cut.
+  const base = [`${cat} ${where} Visa Bulletin Cutoff and History`, `${cat} ${where} Visa Bulletin Cutoff`, `${cat} ${where} Visa Bulletin`]
+    .find((t) => t.length <= 60) ?? `${cat} ${where} Visa Bulletin`;
   const description = `The ${cat} cutoff for ${where === "Rest of World" ? "the rest of the world" : where}: this month on both charts, each fiscal year since ${got.board.firstMonth.slice(0, 4)}, and USCIS's count behind it.`;
   const path = `/visa-bulletin/categories/${line}`;
   return withSocialCard(

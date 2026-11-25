@@ -147,6 +147,12 @@ def entity_key(name: str) -> str:
             glued.append(raw[i])
             i += 1
     words = [w for w in glued if w not in ENTITY_NOISE]
+    # Rule E: a name DOL printed twice ("Fragomen, Del Rey, Bernsen Loewy, LLP Fragomen, Del Rey, Bernsen Loewy, LLP")
+    # keys as the name once (Nov 25 2026). The same three or more words in the same order, twice: "Walla Walla" and
+    # "New York New York" stay as they are.
+    half = len(words) // 2
+    if half >= 3 and len(words) % 2 == 0 and words[:half] == words[half:]:
+        words = words[:half]
     return " ".join(words) or cleaned.strip()
 
 
