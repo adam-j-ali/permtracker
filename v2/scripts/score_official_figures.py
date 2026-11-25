@@ -3,11 +3,13 @@
 
     python3 scripts/score_official_figures.py [--dry-run]
 
-Two scores so far, each on the official figure's own definition, window, day and scope (lib_figure_scores.py):
+Three scores so far, each on the official figure's own definition, window, day and scope (lib_figure_scores.py):
 - our census of open PERM cases against "applications remaining" on the day of DOL's newest Selected Statistics sheet
   (perm_docs['dol_selected_statistics'], from ingest_dol_selected_stats.py), counted two ways;
 - our mean days to a decision out of analyst review against DOL's "Last 30 Days" (and longer) averages on its
-  processing-times page (processing_time_readings), over each window our history covers.
+  processing-times page (processing_time_readings), over each window our history covers;
+- our PERM wage requests (P-100) still waiting on DOL's day, by receipt month, against the same page's table of
+  remaining requests, from DOL's Nov 30 2026 table on (PWD_SCORABLE_FROM).
 A missing or late official figure scores nothing and the run says why. One row per figure, scope and as-of day,
 rewritten when recomputed. The server's daily quarterly job runs it after the sheet reader.
 """
@@ -19,10 +21,17 @@ import json
 import os
 import sys
 import time
+from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ingest_case_status_direct import HISTORY_FROM, SOURCE as DIRECT_SOURCE  # noqa: E402
-from lib_figure_scores import FigureScore, analyst_review_scores, pending_scores  # noqa: E402
+from lib_figure_scores import (  # noqa: E402
+    PWD_SCORABLE_FROM,
+    FigureScore,
+    analyst_review_scores,
+    pending_scores,
+    pwd_pending_scores,
+)
 from lib_gov_data import log  # noqa: E402
 from lib_holidays import decided_on  # noqa: E402
 
@@ -98,6 +107,28 @@ def main() -> int:
             skipped += why
         else:
             skipped.append("perm.analyst_review: DOL's reading has no as-of day")
+
+        pwd_as_of = reading.get("pwdAsOf")
+        table = reading.get("pwdPermBacklog") or []
+        ours_by_month: dict[str, int] = {}
+        # Count only when the table can score: a table from before the fix scores nothing, and says so below.
+        if pwd_as_of and table and pwd_as_of >= PWD_SCORABLE_FROM:
+            first = min(str(r["receiptMonth"]) for r in table) + "-01"
+            # The end of DOL's day, Eastern: a request decided after it was still waiting on DOL's day.
+            day_end = dt.datetime.combine(dt.date.fromisoformat(pwd_as_of) + dt.timedelta(days=1), dt.time(),
+                                          tzinfo=ZoneInfo("America/New_York"))
+            end_ms = int(day_end.timestamp() * 1000)
+            ours_by_month = {str(m): int(n) for m, n in query_rows(db, """
+                SELECT substr(s.filing_date, 1, 7), COUNT(*) FROM pwd_case_status s
+                 WHERE s.filing_date >= ? AND s.filing_date <= ?
+                   AND s.case_number >= 'P-100-' AND s.case_number < 'P-100.'
+                   AND (s.is_final = 0 OR (SELECT MIN(e.changed_at) FROM pwd_case_events e
+                                            WHERE e.case_number = s.case_number AND e.to_final = 1) >= ?)
+                 GROUP BY 1""", [first, pwd_as_of, end_ms])}
+        got, why = pwd_pending_scores(reading, ours_by_month, source=reading.get("sourceUrl")
+                                      or "https://flag.dol.gov/processingtimes", read_on=et_date(int(reading_rows[0][1])))
+        scores += got
+        skipped += why
 
     for s in scores:
         log(f"  {s.figure} [{s.scope}] {s.as_of}: ours {s.ours:,} against {s.theirs:,}, gap {s.gap:+,} "

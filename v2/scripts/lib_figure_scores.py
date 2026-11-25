@@ -22,6 +22,13 @@ DAYS_TOLERANCE = 3
 # Statuses DOL's Selected Statistics appear not to count among "applications remaining" (an INFERENCE: the sheet
 # defines nothing; on Sep 30 2026 leaving these out put our census 0.2% from DOL's count, v2/docs/notes/data.md).
 NOT_IN_DOL_SCOPE = frozenset({"APPLICATION ON HOLD", "BALCA APPEALS"})
+# A month DOL counts in dozens agrees inside 10 requests, where 1% would be none: a handful decided the morning of DOL's
+# cutoff moves it.
+PWD_MONTH_TOLERANCE_FLOOR = 10
+# The first DOL table of wage requests remaining that our check can match: before Nov 23 2026 (647021352) the
+# afternoon pass asked only IN PROCESS requests in its band, so older requests' decisions reached us late (Oct 31's
+# July: 4,098 of ours against DOL's 1,346). DOL dates each table to a month's end; Nov 30 is the first after the fix.
+PWD_SCORABLE_FROM = "2026-11-30"
 
 
 @dataclass(frozen=True)
@@ -107,3 +114,34 @@ def analyst_review_scores(reading: dict, decisions: list[tuple[str, str]], *, hi
             f"perm_case_events, {len(waits):,} decisions out of analyst review, {start} to {as_of}", source, read_on,
             f"DOL's '{period}' average; ours is the mean over the decisions our daily check saw, withdrawals left out"))
     return scores, skipped
+
+
+def pwd_pending_scores(reading: dict, ours_by_month: dict[str, int], *, source: str, read_on: str | None
+                       ) -> tuple[list[FigureScore], list[str]]:
+    """Our PERM wage requests (P-100) still waiting on DOL's day, by the month DOL received them, against its
+    'remaining requests' table on its processing-times page: one score per month DOL lists, and their total.
+    `ours_by_month` holds our count per receipt month as of the end of DOL's day; a month with none is 0."""
+    as_of = reading.get("pwdAsOf")
+    if not as_of:
+        return [], ["pwd.pending_perm: DOL's reading has no as-of day"]
+    table = reading.get("pwdPermBacklog") or []
+    if not table:
+        return [], [f"pwd.pending_perm: DOL's reading of {as_of} has no table of remaining requests"]
+    if as_of < PWD_SCORABLE_FROM:
+        return [], [f"pwd.pending_perm: DOL's table of {as_of} is from before our check asked older requests "
+                    f"(scores from {PWD_SCORABLE_FROM})"]
+    ours_source = f"pwd_case_status and pwd_case_events, P-100 requests not decided by the end of {as_of}"
+    note = "by the month DOL received each request; DOL's table holds PERM wage requests only"
+    scores: list[FigureScore] = []
+    for row in table:
+        month, theirs = str(row["receiptMonth"]), int(row["remainingRequests"])
+        ours = int(ours_by_month.get(month, 0))
+        tolerance = max(round(theirs * PENDING_TOLERANCE_SHARE), PWD_MONTH_TOLERANCE_FLOOR)
+        scores.append(FigureScore("pwd.pending_perm", f"received {month}", as_of, "requests", ours, theirs, tolerance,
+                                  ours_source, source, read_on, note))
+    theirs_all = sum(int(r["remainingRequests"]) for r in table)
+    ours_all = sum(int(ours_by_month.get(str(r["receiptMonth"]), 0)) for r in table)
+    scores.append(FigureScore("pwd.pending_perm", "every receipt month DOL lists", as_of, "requests", ours_all,
+                              theirs_all, max(round(theirs_all * PENDING_TOLERANCE_SHARE), PWD_MONTH_TOLERANCE_FLOOR),
+                              ours_source, source, read_on, note))
+    return scores, []

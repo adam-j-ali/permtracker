@@ -66,8 +66,9 @@ took
 echo "== 5/6 eslint on the changed files"
 lintable=$( { git diff --name-only --relative "$base" 2>/dev/null; git ls-files --others --exclude-standard; } | sort -u | grep -E '^(src|convex)/.*\.(ts|tsx|mjs|js)$' | while read -r f; do [ -f "$f" ] && echo "$f"; done || true)
 if [ -n "$lintable" ]; then
+  # --no-warn-ignored: a changed file eslint is told to skip (convex/_generated) is no warning of ours.
   # shellcheck disable=SC2086
-  pnpm exec eslint --cache --cache-location node_modules/.cache/eslint $lintable
+  pnpm exec eslint --cache --cache-location node_modules/.cache/eslint --no-warn-ignored $lintable
 else
   echo "   nothing to lint"
 fi

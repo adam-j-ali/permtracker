@@ -12,7 +12,13 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from lib_figure_scores import DAYS_TOLERANCE, analyst_review_scores, pending_scores  # noqa: E402
+from lib_figure_scores import (  # noqa: E402
+    DAYS_TOLERANCE,
+    PWD_SCORABLE_FROM,
+    analyst_review_scores,
+    pending_scores,
+    pwd_pending_scores,
+)
 
 fails: list[str] = []
 
@@ -80,8 +86,50 @@ def test_analyst_review_edges():
     check(s == [] and "can't read" in k[0], "a period in other words is named, never guessed")
 
 
+# DOL's PERM wage requests remaining by receipt month on Oct 31 2026, and ours rebuilt for that day (notes/data.md).
+PWD_OCT31 = {"pwdAsOf": "2026-10-31", "pwdPermBacklog": [
+    {"receiptMonth": "2026-05", "remainingRequests": 12}, {"receiptMonth": "2026-06", "remainingRequests": 30},
+    {"receiptMonth": "2026-07", "remainingRequests": 1346}, {"receiptMonth": "2026-08", "remainingRequests": 14925},
+    {"receiptMonth": "2026-09", "remainingRequests": 14400}, {"receiptMonth": "2026-10", "remainingRequests": 13179}]}
+OURS_OCT31 = {"2026-05": 15, "2026-06": 41, "2026-07": 4098, "2026-08": 15005, "2026-09": 14428, "2026-10": 13311}
+
+
+def test_pwd_pending_waits_for_a_month_end_after_the_fix():
+    scores, skipped = pwd_pending_scores(PWD_OCT31, OURS_OCT31, source="DOL page", read_on="2026-11-02")
+    check(scores == [], "Oct 31's table scores nothing: our check's older requests lagged before Nov 23")
+    check(len(skipped) == 1 and PWD_SCORABLE_FROM in skipped[0], "and the run says why, naming the first scorable day")
+
+
+def test_pwd_pending_by_month():
+    reading = dict(PWD_OCT31, pwdAsOf=PWD_SCORABLE_FROM)
+    scores, skipped = pwd_pending_scores(reading, OURS_OCT31, source="DOL page", read_on="2026-12-03")
+    by = {s.scope: s for s in scores}
+    check(skipped == [] and len(scores) == 7, "one score per receipt month DOL lists, and their total")
+    aug = by["received 2026-08"]
+    check((aug.ours, aug.theirs, aug.gap, aug.figure) == (15005, 14925, 80, "pwd.pending_perm"),
+          "August: 15,005 against 14,925, 80 over")
+    check(aug.within and aug.tolerance == 149, "August inside 1% of DOL's count (149 requests)")
+    may = by["received 2026-05"]
+    check(may.tolerance == 10 and may.within, "a month DOL counts in dozens gets the 10-request floor: May, 3 over")
+    check(not by["received 2026-07"].within, "July's 4,098 against 1,346 is outside")
+    total = by["every receipt month DOL lists"]
+    check((total.ours, total.theirs) == (46898, 43892), "the total: 46,898 against 43,892")
+    no_month = pwd_pending_scores(dict(reading, pwdPermBacklog=[{"receiptMonth": "2026-11", "remainingRequests": 9}]),
+                                  {}, source="DOL page", read_on="2026-12-03")[0]
+    check([s.ours for s in no_month] == [0, 0], "a month we hold no open request for counts 0, never missing")
+
+
+def test_pwd_pending_missing_table():
+    scores, skipped = pwd_pending_scores({"pwdAsOf": "2026-12-31"}, OURS_OCT31, source="x", read_on=None)
+    check(scores == [] and "table" in skipped[0], "a reading without DOL's table scores nothing and says so")
+    scores, skipped = pwd_pending_scores({}, OURS_OCT31, source="x", read_on=None)
+    check(scores == [] and "as-of" in skipped[0], "a reading without its as-of day scores nothing and says so")
+
+
 def main() -> int:
-    for fn in (test_pending_two_ways, test_no_census_scores_nothing, test_analyst_review_windows, test_analyst_review_edges):
+    for fn in (test_pending_two_ways, test_no_census_scores_nothing, test_analyst_review_windows, test_analyst_review_edges,
+               test_pwd_pending_waits_for_a_month_end_after_the_fix, test_pwd_pending_by_month,
+               test_pwd_pending_missing_table):
         fn()
     print(f"\n{len(fails)} failure(s)")
     return 1 if fails else 0
