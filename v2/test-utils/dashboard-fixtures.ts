@@ -211,7 +211,7 @@ export const i140Fixtures = {
       positionTitle: "Systems Architect", caseStatus: "i140", progressStatus: "filed",
       pwdFilingDate: daysAgo(350), pwdDeterminationDate: daysAgo(320), pwdExpirationDate: daysAgo(20),
       eta9089FilingDate: daysAgo(200), eta9089CertificationDate: daysAgo(80), eta9089ExpirationDate: daysFromNow(100),
-      i140FilingDate: daysAgo(60), i140ReceiptDate: daysAgo(55), i140ReceiptNumber: "WAC2412345678",
+      i140FilingDate: daysAgo(60), i140ReceiptDate: daysAgo(55), i140ReceiptNumber: "WAC3512345678",
       recruitmentApplicantsCount: 11, isProfessionalOccupation: true,
     }),
 
@@ -221,7 +221,7 @@ export const i140Fixtures = {
       positionTitle: "Creative Director", caseStatus: "i140", progressStatus: "rfi_rfe",
       pwdFilingDate: daysAgo(380), pwdDeterminationDate: daysAgo(350), pwdExpirationDate: daysAgo(50),
       eta9089FilingDate: daysAgo(230), eta9089CertificationDate: daysAgo(110), eta9089ExpirationDate: daysFromNow(70),
-      i140FilingDate: daysAgo(90), i140ReceiptDate: daysAgo(85), i140ReceiptNumber: "LIN2498765432",
+      i140FilingDate: daysAgo(90), i140ReceiptDate: daysAgo(85), i140ReceiptNumber: "LIN3598765432",
       rfeEntries: [{
         id: "rfe-1", receivedDate: daysAgo(15), responseDueDate: daysFromNow(72),
         createdAt: Date.now() - 15 * 24 * 60 * 60 * 1000,
@@ -236,7 +236,7 @@ export const i140Fixtures = {
       positionTitle: "Project Manager", caseStatus: "i140", progressStatus: "approved",
       pwdFilingDate: daysAgo(400), pwdDeterminationDate: daysAgo(370), pwdExpirationDate: daysAgo(70),
       eta9089FilingDate: daysAgo(250), eta9089CertificationDate: daysAgo(130), eta9089ExpirationDate: daysFromNow(50),
-      i140FilingDate: daysAgo(110), i140ReceiptDate: daysAgo(105), i140ReceiptNumber: "SRC2487654321",
+      i140FilingDate: daysAgo(110), i140ReceiptDate: daysAgo(105), i140ReceiptNumber: "SRC3587654321",
       i140ApprovalDate: daysAgo(10), recruitmentApplicantsCount: 5,
       isProfessionalOccupation: true, isFavorite: true, tags: ["success", "priority_date_locked"],
     }),
