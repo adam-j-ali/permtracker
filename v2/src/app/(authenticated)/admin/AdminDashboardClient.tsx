@@ -12,6 +12,7 @@ import { ActivityPanel, DigestPanel, SubscriptionsPanel } from "@/components/adm
 import { BudgetPools, DeliveryPanel } from "@/components/admin/DeliveryPanel";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { ScorecardPanel } from "@/components/admin/ScorecardPanel";
+import { FigureScoresPanel } from "@/components/admin/FigureScoresPanel";
 import { DevelopersPanel } from "@/components/admin/DevelopersPanel";
 import { MonitorPanel } from "@/components/admin/MonitorPanel";
 import { AlertRoutesPanel } from "@/components/admin/AlertRoutesPanel";
@@ -230,7 +231,12 @@ export default function AdminDashboardClient() {
           {
             id: "scorecard",
             label: "Scorecard",
-            content: <ScorecardPanel />,
+            content: (
+              <div className="space-y-10">
+                <FigureScoresPanel />{" "}
+                <ScorecardPanel />
+              </div>
+            ),
           },
           {
             id: "firm-claims",
