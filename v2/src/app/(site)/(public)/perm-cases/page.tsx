@@ -13,7 +13,7 @@
 
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getDatasetSchema } from "@/lib/structuredData";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { FinePrint } from "@/components/data/FinePrint";
 import { openGraphBase } from "@/lib/openGraphBase";
@@ -37,6 +37,9 @@ import { formatInt } from "@/lib/format";
 import { filedLastMonth, waitingSplit } from "@/lib/figureVisuals";
 import { SITE_URL } from "@/lib/constants/site";
 import { StepBothSources } from "@/components/community/StepBothSources";
+
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["perm-cases"] as const;
 const TITLE = "PERM Case Search: Browse Decided Cases";
 const DESCRIPTION =
   "Search every PERM case in DOL's published disclosure window by case number, employer, law firm, state or occupation, with the wage and the days it took.";
@@ -104,7 +107,7 @@ export default async function PermCasesPage() {
     row.code ? [{ code: row.code, name: row.name, total: row.total }] : [],
   );
 
-  const datasetSchema = getDatasetSchema(SITE_URL, {
+  const datasetSchema = datasetSchemaFor(SITE_URL, DATASETS, {
     name: "PERM labor certification case decisions",
     description: DESCRIPTION,
     url: `${SITE_URL}/perm-cases`,
@@ -267,7 +270,7 @@ export default async function PermCasesPage() {
       </section>
       <StepBothSources here="/perm-cases" groups={["perm"]} />{" "}
       <PageBasics page="perm-cases" />{" "}
-      <DataProvenance datasets={["perm-cases"]} />
+      <DataProvenance datasets={DATASETS} />
     </div>
   );
 }

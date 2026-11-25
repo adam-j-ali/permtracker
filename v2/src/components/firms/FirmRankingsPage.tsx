@@ -43,10 +43,14 @@ import { formatInt, formatShareOf } from "@/lib/format";
 import { placeName, stateSlug } from "@/lib/h1bRanks";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { pageDate } from "@/lib/pageDates";
-import { getDatasetSchema } from "@/lib/structuredData";
+import { getFAQPageSchema } from "@/lib/structuredData";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { US_STATE_NAMES } from "@/lib/usStateNames";
 import { softFail } from "@/lib/softRead";
 import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
+
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["perm-cases", "lca-disclosure"] as const;
 
 /**
  * /law-firm-rankings and /law-firm-rankings/<state>: the busiest immigration law
@@ -357,19 +361,14 @@ export async function FirmRankingsPage({ state }: { state: string }) {
   const answer = firmRanksAnswer(state, permLead, lcaLead);
 
   const schemas: object[] = [
-    getDatasetSchema(SITE_URL, {
+    datasetSchemaFor(SITE_URL, DATASETS, {
       name: state === NATION ? "Top immigration law firms by fiscal year and state" : `Top immigration law firms in ${name}`,
       description: `Law firms ranked by PERM decisions (${since(permFrom)}) and by certified H-1B Labor Condition Applications (${since(lcaFrom)}), with outcomes, employers and median days to certify.`,
       url: `${SITE_URL}${path}`,
-      isBasedOn: "https://www.dol.gov/agencies/eta/foreign-labor/performance",
       ...(from.length ? { temporalCoverage: `${Math.min(...from) - 1}-10-01/..` } : {}),
       variableMeasured: ["PERM decisions", "Certified share", "Median days to certify", "Certified H-1B LCAs", "Positions"],
     }),
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
-    },
+    getFAQPageSchema(FAQS),
   ];
   if (state !== NATION) schemas.push(breadcrumbSchema(path, name));
 
@@ -479,7 +478,7 @@ export async function FirmRankingsPage({ state }: { state: string }) {
             Search a firm&apos;s filings
           </Link>
         </nav>{" "}
-        <DataProvenance datasets={["perm-cases", "lca-disclosure"]} />
+        <DataProvenance datasets={DATASETS} />
       </div>
     </>
   );

@@ -1,0 +1,69 @@
+[
+ {
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "name": "USCIS approved employment-based petitions awaiting visa availability",
+  "description": "Approved Form I-140, I-360 and I-526 petitions awaiting a visa number by employment preference category and country of birth, as counted by USCIS each quarter. It also holds I-140 receipts by fiscal year, class and country.",
+  "url": "https://permtracker.app/i140-awaiting-visa",
+  "isBasedOn": "https://www.uscis.gov/tools/reports-and-studies/immigration-and-citizenship-data",
+  "creator": {
+   "@type": "Organization",
+   "name": "U.S. Citizenship and Immigration Services",
+   "url": "https://www.uscis.gov"
+  },
+  "isAccessibleForFree": true,
+  "license": "https://www.usa.gov/government-works",
+  "variableMeasured": [
+   "approved petitions awaiting visa availability",
+   "preference category",
+   "country of birth",
+   "I-140 receipts by fiscal year"
+  ]
+ },
+ {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+   {
+    "@type": "Question",
+    "name": "What does 'awaiting visa availability' mean?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "The petition is approved, so USCIS agrees the person qualifies. But the visa bulletin's final action date for their category and country hasn't reached their priority date. Until it does, they can't file the I-485. If they filed early under a dates-for-filing chart, they can't be approved. This count is those people, primary beneficiaries only."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "Is this the same as the I-485 inventory?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "No. The two sit on either side of one line. This page counts approved petitions whose beneficiary is still waiting to file, while USCIS's monthly I-485 inventory counts applications already filed and pending. The queue position calculator on this site reads the inventory, and this page reads the stage before it."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "Why doesn't the page say how many years the wait is?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "Because the arithmetic needs figures nobody publishes: how many of these beneficiaries will still want the visa when their date comes, how many dependents each brings (USCIS leaves them out here, and the visa limit counts them), and how the annual limit will be split. A years figure built on three guesses would read as a measurement. The count is the measurement. The visa bulletin page on this site shows how the cutoffs have moved."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "Why is India so large and Mexico so small?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "Each country is limited to about seven percent of the employment-based visas in a year, whatever its demand. India's demand in EB-2 and EB-3 is many times that share, so approved petitions pile up. Mexico's demand is mostly in EB-3 other workers and EB-4, as its row shows."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "Where does the fiscal-year table come from?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "From a second USCIS workbook: I-140 petitions by the fiscal year they were received and their current status, all countries and the top five. A recent year is mostly still pending because USCIS hasn't decided it yet. Approvals didn't fall."
+    }
+   }
+  ]
+ }
+]

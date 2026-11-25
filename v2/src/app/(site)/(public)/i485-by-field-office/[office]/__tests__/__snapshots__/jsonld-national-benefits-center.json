@@ -1,0 +1,71 @@
+[
+ {
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "name": "I-485 applications at USCIS's National Benefits Center, by quarter",
+  "description": "Employment-based I-485s received, approved, denied and pending at USCIS's National Benefits Center each quarter, from USCIS's own data.",
+  "url": "https://permtracker.app/i485-by-field-office/national-benefits-center",
+  "dateModified": "2026-06-30",
+  "isBasedOn": "https://www.uscis.gov/tools/reports-and-studies/immigration-and-citizenship-data",
+  "creator": {
+   "@type": "Organization",
+   "name": "U.S. Citizenship and Immigration Services",
+   "url": "https://www.uscis.gov"
+  },
+  "isAccessibleForFree": true,
+  "license": "https://www.usa.gov/government-works",
+  "variableMeasured": [
+   "applications received",
+   "approved",
+   "denied",
+   "pending",
+   "category of admission"
+  ]
+ },
+ {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+   {
+    "@type": "Question",
+    "name": "How many employment-based I-485s are pending at the National Benefits Center?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "USCIS's file for Apr to Jun 2026 lists 61,000 employment-based I-485s pending at the National Benefits Center on the quarter's last day, with 9,500 approved and 60 denied during the quarter."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "How long does the National Benefits Center take to decide an I-485?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "USCIS doesn't publish a wait for one office. Its quarterly file gives each office's pending pile and its quarter's decisions, which this page prints. USCIS's own posted processing times are on the I-485 processing times page."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "Can my I-485 be decided at an office other than my local one?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "Yes. USCIS can move a case from one office to another while it waits, and its file counts a case wherever it sits on the quarter's last day. USCIS says it sends a transfer notice when it moves a case, and an interview or appointment notice names the office to go to."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "How long did people at the National Benefits Center wait for their I-485?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "USCIS doesn't publish a wait for one office. People whose I-485 was at the National Benefits Center can share their own dates on this page, and it shows a median once five have."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "Where do these numbers come from?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "From the I-485 file USCIS publishes each quarter on its Immigration and Citizenship Data page, which lists every field office and service center. This site copies it as published and names the quarter beside every figure."
+    }
+   }
+  ]
+ }
+]

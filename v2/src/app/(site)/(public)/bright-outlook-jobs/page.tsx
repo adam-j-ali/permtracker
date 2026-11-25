@@ -22,9 +22,13 @@ import { onetReference } from "@/lib/db/reference";
 import { formatInt, formatShare, formatShareOf } from "@/lib/format";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
-import { getDatasetSchema } from "@/lib/structuredData";
+import { getFAQPageSchema } from "@/lib/structuredData";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { longDate } from "@convex/lib/months";
 import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
+
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["onet", "bls-projections", "perm-cases", "lca-disclosure"] as const;
 
 /**
  * O*NET's Bright Outlook jobs (projected to grow fast, with many openings, or new and emerging) beside the PERM
@@ -128,7 +132,7 @@ export default async function Page() {
       ? `from ${longDate(meta.firstDecisionDate)} to ${longDate(meta.lastDecisionDate)}`
       : "in DOL's files";
   const schemas: object[] = [
-    getDatasetSchema(SITE_URL, {
+    datasetSchemaFor(SITE_URL, DATASETS, {
       name: "Bright Outlook jobs and their sponsorship",
       description:
         "O*NET's Bright Outlook occupations with BLS's 2025-35 employment projections, the PERM cases DOL decided under each job code and its certified H-1B LCAs.",
@@ -136,11 +140,7 @@ export default async function Page() {
       isBasedOn: "https://www.onetonline.org/find/bright",
       variableMeasured: ["Projected employment change", "Annual openings", "PERM cases decided", "Certified H-1B LCAs"],
     }),
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
-    },
+    getFAQPageSchema(FAQS),
   ];
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-12 sm:px-6 sm:pb-16">
@@ -313,7 +313,7 @@ export default async function Page() {
           <KeepWhole>{"Top H-1B employers"}</KeepWhole>
         </Link>
       </nav>{" "}
-      <DataProvenance datasets={["onet", "bls-projections", "perm-cases", "lca-disclosure"]} />
+      <DataProvenance datasets={DATASETS} />
     </div>
   );
 }

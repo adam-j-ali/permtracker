@@ -3,7 +3,7 @@ import { CalendarCheckIcon, GaugeIcon, HourglassMediumIcon } from "@phosphor-ico
 import { Figure, FigureRow } from "@/components/data/FigureRow";
 import { withSocialCard } from "@/lib/socialCard";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
-import { getDatasetSchema } from "@/lib/structuredData";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import Link from "next/link";
 
 import { DataProvenance } from "@/components/data/DataProvenance";
@@ -51,6 +51,9 @@ import { NextMonthStart } from "@/components/queue/NextMonthStart";
 import { getNextStart } from "@/lib/db/monthStarts";
 import { QueueAlertForm } from "../perm-processing-times/QueueAlertForm";
 import { StepBothSources } from "@/components/community/StepBothSources";
+
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["perm-case-status", "processing-times", "perm-cases"] as const;
 
 /**
  * Where DOL's PERM queue stands right now, from a per-case scan.
@@ -193,7 +196,7 @@ export default async function PermQueuePage() {
   // every page looks finished on its own. It is the AEO lever for a data
   // page: it is what tells an answer engine the numbers have a named federal
   // source, a licence and a coverage window rather than being prose.
-  const datasetSchema = getDatasetSchema(SITE_URL, {
+  const datasetSchema = datasetSchemaFor(SITE_URL, DATASETS, {
     name: "PERM pending queue census by filing month",
     description:
       "How many PERM cases remain undecided in each filing month, which DOL review queue they sit in, and how far each month has been worked through. Read per case from DOL's own case-status search.",
@@ -466,7 +469,7 @@ export default async function PermQueuePage() {
       <StepBothSources here="/perm-queue" groups={["perm"]} />{" "}
       <PageBasics page="perm-queue" />{" "}
       <DataProvenance
-        datasets={["perm-case-status", "processing-times", "perm-cases"]}
+        datasets={DATASETS}
         className="mt-8 border-t-2 border-border pt-4"
       />{" "}
       {/* The page ends on the reader's own next step: where their case sits in this queue. */}

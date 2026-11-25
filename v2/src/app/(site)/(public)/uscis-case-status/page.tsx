@@ -14,6 +14,7 @@ import { UscisStatusResult } from "@/components/tools/UscisStatusResult";
 import { UscisWatchForm } from "@/components/tools/UscisWatchForm";
 import { watchableReceipt } from "@convex/lib/uscisWatch";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { normaliseCaseNumber } from "@/lib/caseNumberShape";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
@@ -165,15 +166,7 @@ export default async function UscisCaseStatusPage({
   const malformed = trimmed.length > 0 && !dolNumber && receipt === null;
 
   const faqs = faqsFor(enabled);
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage" as const,
-    mainEntity: faqs.map((f) => ({
-      "@type": "Question" as const,
-      name: f.q,
-      acceptedAnswer: { "@type": "Answer" as const, text: f.a },
-    })),
-  };
+  const faqSchema = getFAQPageSchema(faqs);
 
   const prefixes = Object.entries(RECEIPT_PREFIXES);
 

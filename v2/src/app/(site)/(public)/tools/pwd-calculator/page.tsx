@@ -7,6 +7,7 @@ import { PwdValidityWindow } from "@/components/tools/PwdValidityWindow";
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
 import { FaqList } from "@/components/tools/FaqList";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { getPwdEstimatorData } from "@/lib/db/estimate";
 import { getPwdDayData, getPwdLine, getPwdNowDocs } from "@/lib/db/pwdDayQueue";
@@ -82,15 +83,7 @@ export default async function PwdCalculatorPage() {
   // The day the page rendered, Eastern; the sweep revalidates this page after each run (revalidate-sweep/paths.ts).
   const today = easternDay();
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage" as const,
-    mainEntity: FAQS.map((f) => ({
-      "@type": "Question" as const,
-      name: f.q,
-      acceptedAnswer: { "@type": "Answer" as const, text: f.a },
-    })),
-  };
+  const faqSchema = getFAQPageSchema(FAQS);
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">      <div className="pt-10 sm:pt-12" />

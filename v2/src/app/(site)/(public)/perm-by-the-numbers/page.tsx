@@ -49,12 +49,15 @@ import { formatInt, formatShareOf } from "@/lib/format";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { pulseHeadline, pulseSummary } from "@/lib/pulseStats";
 import { withSocialCard } from "@/lib/socialCard";
-import { getDatasetSchema } from "@/lib/structuredData";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { checkedLabel } from "@/lib/time";
 import { analystReviewQueue } from "@convex/lib/dolProcessingTimes";
 import { longDate, monthDay, monthTick, monthYear, weekdayName } from "@convex/lib/months";
 import { softFail } from "@/lib/softRead";
 import { keepWhole } from "@/components/ui/keep-whole";
+
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["perm-case-status", "live-recent", "review-stages", "decisions-observed", "pwd-status", "processing-times", "visa-bulletin"] as const;
 
 /**
  * PERM by the numbers: the totals DOL's own case records add up to, which DOL
@@ -240,12 +243,11 @@ export default async function PermByTheNumbersPage() {
     tip: `${e.label}\n${formatInt(e.cases)} filed in ${RECENT_DAYS} days`,
   }));
 
-  const datasetSchema = getDatasetSchema(SITE_URL, {
+  const datasetSchema = datasetSchemaFor(SITE_URL, DATASETS, {
     name: "PERM by the numbers",
     description:
       "Totals from DOL's PERM case records that DOL doesn't publish: pending cases by stage and filing month, holds by employer, decisions per day, new filings by job and employer, employers new to PERM, and RFIs issued per week.",
     url: `${SITE_URL}/perm-by-the-numbers`,
-    isBasedOn: "https://flag.dol.gov/case-status-search",
   });
 
   return (
@@ -552,7 +554,7 @@ export default async function PermByTheNumbersPage() {
       ) : null}{" "}
 
       <DataProvenance
-        datasets={["perm-case-status", "live-recent", "review-stages", "decisions-observed", "pwd-status", "processing-times", "visa-bulletin"]}
+        datasets={DATASETS}
         className="mt-10 border-t-2 border-border pt-4"
       />{" "}
       {/* The page ends on the reader's own next step: these figures, for their own case. */}

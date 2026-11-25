@@ -39,6 +39,7 @@ import { averageTrend, queueMoveTrend } from "@/lib/dolTrends";
 
 import { openGraphBase } from "@/lib/openGraphBase";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { currentMonthUtc, daysAsApproxMonths, formatAsOf, formatMonth, monthsMoved } from "@/lib/dolFormat";
 import { daysBetweenOrNull } from "@/lib/time";
 import {
@@ -78,6 +79,7 @@ import { ChapterNav } from "@/components/entities/Chapters";
 import { FinePrint } from "@/components/data/FinePrint";
 import { FaqList } from "@/components/tools/FaqList";
 import { SITE_URL } from "@/lib/constants/site";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { describeDisclosureFiles } from "@/lib/disclosureFiles";
 import { buttonVariants } from "@/components/ui/button";
 import { ScrollBox } from "@/components/ui/scroll-box";
@@ -87,6 +89,8 @@ import { StepBothSources } from "@/components/community/StepBothSources";
 import { keepWhole } from "@/components/ui/keep-whole";
 
 const DOL_SOURCE = "https://flag.dol.gov/processingtimes";
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["processing-times"] as const;
 // Same expression as layout.tsx, sitemap.ts, feed.xml and seo.ts. A bare
 // literal here meant a preview deploy emitted Dataset markup pointing at
 // production, which is a different page than the one being previewed.
@@ -310,48 +314,17 @@ export default async function PermProcessingTimesPage() {
 
   // Dataset markup. This page is a redistribution of a government dataset with
   // provenance attached, and saying so is what makes it citable by assistants
-  // rather than just crawlable.
-  const datasetSchema = {
-    "@context": "https://schema.org",
-    "@type": "Dataset",
+  // rather than just crawlable. DOL's own table, transcribed: OFLC is its
+  // creator and usa.gov's government works its licence (datasetSchemaFor).
+  const datasetSchema = datasetSchemaFor(SITE, DATASETS, {
     name: "DOL PERM and prevailing wage processing times",
     description:
       "Queue positions and average determination times for the US Department of Labor's PERM labor certification and prevailing wage programs, captured from DOL's published figures.",
     url: `${SITE}/perm-processing-times`,
     ...(snapshot ? { dateModified: snapshot.permAsOf } : {}),
-    isBasedOn: DOL_SOURCE,
-    // "Organization", NOT "GovernmentOrganization". Search Console flags the
-    // subtype as "Invalid object type for field creator". The subtype is
-    // perfectly valid schema.org - GovernmentOrganization IS an Organization -
-    // but Google's Dataset parser matches the type literally and does not walk
-    // the hierarchy, so the more precise answer was the rejected one. The name
-    // still says which agency, so no information is lost.
-    creator: {
-      "@type": "Organization",
-      name: "Office of Foreign Labor Certification, US Department of Labor",
-      url: DOL_SOURCE,
-    },
-    isAccessibleForFree: true,
-    // usa.gov/government-works, NOT this site's terms, and that is deliberate.
-    // The two are the two layers §6 of the Terms now separates. THIS dataset is
-    // DOL's own published table, transcribed: a work of the United States
-    // Government, which under 17 U.S.C. 105 carries no copyright and which we
-    // claim nothing over. The datasets that DO point at /terms#intellectual-
-    // property are our compilations - the case corpus, the resolved entities,
-    // the derived statistics - where the selection and arrangement is ours.
-    // Do not "fix" this one to match the others.
-    license: "https://www.usa.gov/government-works",
-  };
+  });
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faq.map((f) => ({
-      "@type": "Question",
-      name: f.question,
-      acceptedAnswer: { "@type": "Answer", text: f.answer },
-    })),
-  };
+  const faqSchema = getFAQPageSchema(faq);
 
   // The parts the bar jumps to, in page order; a part with nothing to draw is left off both.
   // The newest whole month of decisions against the same month a year before.
@@ -889,7 +862,7 @@ export default async function PermProcessingTimesPage() {
         </p>
       </section>
       </Chapter>
-      <DataProvenance datasets={["processing-times"]} />
+      <DataProvenance datasets={DATASETS} />
     </div>
   );
 }

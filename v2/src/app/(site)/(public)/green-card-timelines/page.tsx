@@ -19,6 +19,7 @@ import {
   WhoIsWaiting,
 } from "@/components/community/TimelineBoard";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { FaqList } from "@/components/tools/FaqList";
 import { BOARD_OPENS_AT, METRIC_MIN_N, OFFICE_LIST_OPENS_AT, shareProgress } from "@/lib/communityTimeline";
 import { officeByCode, officeHref } from "@/lib/uscisOffices";
@@ -179,11 +180,7 @@ export default async function GreenCardTimelinesPage() {
     const href = officeHref(o.code);
     return office && href ? [{ name: office.name, href: `${href}#timelines`, shared: o.shared }] : [];
   });
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage" as const,
-    mainEntity: FAQS.map((f) => ({ "@type": "Question" as const, name: f.q, acceptedAnswer: { "@type": "Answer" as const, text: f.a } })),
-  };
+  const faqSchema = getFAQPageSchema(FAQS);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-12 sm:px-6 sm:pb-16">

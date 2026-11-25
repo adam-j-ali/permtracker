@@ -20,6 +20,7 @@ import Link from "next/link";
 import { withSocialCard } from "@/lib/socialCard";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { FaqList } from "@/components/tools/FaqList";
 import { FigurePlate } from "@/components/tools/FigurePlate";
 import { FinePrint } from "@/components/data/FinePrint";
@@ -41,6 +42,7 @@ import {
   type OfficeRow,
 } from "@/lib/uscisQuarterlyShape";
 import { SITE_URL } from "@/lib/constants/site";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { formatInt } from "@/lib/format";
 import { StepBothSources } from "@/components/community/StepBothSources";
 import { KeepWhole } from "@/components/ui/keep-whole";
@@ -50,7 +52,8 @@ const DESCRIPTION =
   "Employment-based I-485s received, approved, denied and pending at every USCIS field office and service center last quarter, from USCIS's own data.";
 const PATH = "/i485-by-field-office";
 const SITE = SITE_URL;
-const USCIS_DATA_PAGE = "https://www.uscis.gov/tools/reports-and-studies/immigration-and-citizenship-data";
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["uscis-i485-offices"] as const;
 
 export const metadata: Metadata = withSocialCard({
   title: TITLE,
@@ -100,31 +103,16 @@ function fmt(n: number | null): string {
 export default async function I485ByFieldOfficePage() {
   const data = await getI485Offices();
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage" as const,
-    mainEntity: FAQS.map((f) => ({
-      "@type": "Question" as const,
-      name: f.q,
-      acceptedAnswer: { "@type": "Answer" as const, text: f.a },
-    })),
-  };
-  // USCIS's own table, transcribed; usa.gov's licence, a bare Organization
-  // creator (Google's Dataset parser matches the type literally).
-  const datasetSchema = {
-    "@context": "https://schema.org",
-    "@type": "Dataset",
+  const faqSchema = getFAQPageSchema(FAQS);
+  // USCIS's own table, transcribed: its creator is USCIS and its licence usa.gov's (datasetSchemaFor).
+  const datasetSchema = datasetSchemaFor(SITE, DATASETS, {
     name: "USCIS I-485 applications by field office and service center",
     description:
       "I-485 applications received, approved, denied and pending at each USCIS field office and service center per fiscal quarter, by family, employment, humanitarian and other basis, from USCIS's quarterly performance data.",
     url: `${SITE}${PATH}`,
     ...(data ? { dateModified: data.quarterEnd } : {}),
-    isBasedOn: USCIS_DATA_PAGE,
-    creator: { "@type": "Organization", name: "U.S. Citizenship and Immigration Services", url: "https://www.uscis.gov" },
-    isAccessibleForFree: true,
-    license: "https://www.usa.gov/government-works",
     variableMeasured: ["applications received", "approved", "denied", "pending", "field office", "category of admission"],
-  };
+  });
 
   const { fieldOffices, serviceCenters } = data ? splitOffices(data.offices) : { fieldOffices: [], serviceCenters: [] };
   const total = data?.total ?? null;
@@ -360,7 +348,7 @@ export default async function I485ByFieldOfficePage() {
           quarter: data ? quarterLabel(data.fy, data.quarter).replace(/^FY\d+ Q\d \((.*)\)$/, "$1") : undefined,
         }}
       />{" "}
-      <DataProvenance datasets={["uscis-i485-offices"]} />
+      <DataProvenance datasets={DATASETS} />
     </div>
   );
 }

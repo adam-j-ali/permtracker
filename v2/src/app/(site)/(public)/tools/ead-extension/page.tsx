@@ -4,6 +4,7 @@ import Link from "next/link";
 import ScreenshotFigure from "@/components/content/ScreenshotFigure";
 import { BarRows } from "@/components/data/BarRows";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { EadExtensionCalculator } from "@/components/tools/EadExtensionCalculator";
 import { FaqList } from "@/components/tools/FaqList";
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
@@ -64,11 +65,7 @@ const FAQS = [
 
 export default async function EadExtensionPage() {
   const h4 = h4EadTimes(await getUscisPosted(), new Date().toISOString().slice(0, 10));
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage" as const,
-    mainEntity: FAQS.map((f) => ({ "@type": "Question" as const, name: f.q, acceptedAnswer: { "@type": "Answer" as const, text: f.a } })),
-  };
+  const faqSchema = getFAQPageSchema(FAQS);
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pb-12 sm:px-6 sm:pb-16">
       <div className="pt-10 sm:pt-12" />

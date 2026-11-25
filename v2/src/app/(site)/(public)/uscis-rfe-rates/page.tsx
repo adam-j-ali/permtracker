@@ -25,6 +25,7 @@ import { FigurePlate } from "@/components/tools/FigurePlate";
 import { CaveatBox } from "@/components/ui/note";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { SITE_URL } from "@/lib/constants/site";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { formatAsOf } from "@/lib/dolFormat";
 import { getRfeMonths, getRfeSummary } from "@/lib/db/uscisRfe";
 import { openGraphBase } from "@/lib/openGraphBase";
@@ -49,7 +50,8 @@ const TITLE = "USCIS RFE Rates: H-1B, L-1, O-1 and More";
 const DESCRIPTION =
   "How often USCIS sent a request for evidence on H-1B, L-1, O-1 and other work visa petitions, by month since FY2015, from USCIS's own quarterly files.";
 const PATH = "/uscis-rfe-rates";
-const USCIS_DATA_PAGE = "https://www.uscis.gov/tools/reports-and-studies/immigration-and-citizenship-data";
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["uscis-rfe"] as const;
 
 export const metadata: Metadata = withSocialCard(
   {
@@ -177,20 +179,14 @@ export default async function UscisRfeRatesPage() {
   const [months, summary] = await Promise.all([getRfeMonths(), getRfeSummary()]);
   const h1b = sameMonths(months, "h1b");
 
-  const datasetSchema = {
-    "@context": "https://schema.org",
-    "@type": "Dataset",
+  const datasetSchema = datasetSchemaFor(SITE_URL, DATASETS, {
     name: "USCIS I-129 requests for evidence, by month and visa classification",
     description:
       "Petitions received, initially approved and denied, completions, and completions with a request for evidence, per month and I-129 visa classification, from USCIS's quarterly request-for-evidence files.",
     url: `${SITE_URL}${PATH}`,
     ...(summary ? { dateModified: summary.asOf } : {}),
-    isBasedOn: USCIS_DATA_PAGE,
-    creator: { "@type": "Organization", name: "U.S. Citizenship and Immigration Services", url: "https://www.uscis.gov" },
-    isAccessibleForFree: true,
-    license: "https://www.usa.gov/government-works",
     variableMeasured: ["petitions received", "initially approved", "initially denied", "total completions", "completions with an RFE", "approved with an RFE"],
-  };
+  });
 
   if (months.length === 0 || !h1b) {
     return (
@@ -440,7 +436,7 @@ export default async function UscisRfeRatesPage() {
 
       <StepBothSources here="/uscis-rfe-rates" groups={["i140"]} />{" "}
       <PageBasics page="uscis-rfe-rates" title="FAQs" figures={figures} />{" "}
-      <DataProvenance datasets={["uscis-rfe"]} />
+      <DataProvenance datasets={DATASETS} />
     </div>
   );
 }

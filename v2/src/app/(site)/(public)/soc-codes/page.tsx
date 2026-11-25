@@ -16,6 +16,7 @@ import { ListMagnifyingGlassIcon } from "@phosphor-icons/react/ssr";
 import { EmptyState } from "@/components/data/EmptyState";
 import { PageSection } from "@/components/data/PageSection";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { SocFinder } from "@/components/soc/SocFinder";
 import { SocSources } from "@/components/soc/SocSources";
 import { TitleLetterStrip } from "@/components/soc/TitleBrowse";
@@ -76,11 +77,7 @@ export default async function SocCodesPage() {
   // The showcase skips titles carrying an employer's own job code ("Manager JC50 ..."): they keep
   // their pages, but a reader browsing doesn't search for them.
   const top = (pages?.pages ?? []).filter((p) => !/\d/.test(p.slug)).slice(0, 24);
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage" as const,
-    mainEntity: FAQS.map((f) => ({ "@type": "Question" as const, name: f.q, acceptedAnswer: { "@type": "Answer" as const, text: f.a } })),
-  };
+  const faqSchema = getFAQPageSchema(FAQS);
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-16 pt-10 sm:px-6 sm:pt-12">
       <JsonLdScript schema={faqSchema} />

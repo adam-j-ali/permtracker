@@ -298,4 +298,12 @@ describe("a USCIS office's page", () => {
     expect(String(long.title).length).toBeLessThanOrEqual(45);
     expect(meta.alternates?.canonical).toBe("/i485-by-field-office/hartford-connecticut");
   });
+
+  // Written by the inline literals before the move to getFAQPageSchema and datasetSchemaFor (Nov 25 2026), matched by
+  // the helpers after it: the move changed how the nodes are written, never what they say.
+  it.each(["hartford-connecticut", "national-benefits-center"])("renders the same JSON-LD through the shared helpers (%s)", async (slug) => {
+    const { container } = await page(slug);
+    const blocks = [...container.querySelectorAll('script[type="application/ld+json"]')].map((s) => JSON.parse(s.textContent ?? "null"));
+    await expect(JSON.stringify(blocks, null, 1)).toMatchFileSnapshot(`./__snapshots__/jsonld-${slug}.json`);
+  });
 });

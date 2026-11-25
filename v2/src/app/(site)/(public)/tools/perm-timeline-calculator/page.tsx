@@ -11,6 +11,7 @@ import { QueueAlertForm } from "../../perm-processing-times/QueueAlertForm";
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
 import { FaqList } from "@/components/tools/FaqList";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { currentMonthUtc } from "@/lib/dolFormat";
 import { getDecisionPace } from "@/lib/db/decisionPace";
@@ -116,15 +117,7 @@ export default async function PermTimelineCalculatorPage() {
     data?.frontier ? data.frontier.analystQueueMonth : today.slice(0, 7),
   );
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage" as const,
-    mainEntity: FAQS.map((f) => ({
-      "@type": "Question" as const,
-      name: f.q,
-      acceptedAnswer: { "@type": "Answer" as const, text: f.a },
-    })),
-  };
+  const faqSchema = getFAQPageSchema(FAQS);
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">      <div className="pt-10 sm:pt-12" />

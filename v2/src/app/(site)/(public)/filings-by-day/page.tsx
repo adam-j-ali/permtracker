@@ -34,10 +34,13 @@ import {
 import { formatInt } from "@/lib/format";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
-import { getDatasetSchema } from "@/lib/structuredData";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { longDate, weekdayName } from "@convex/lib/months";
 import { StepBothSources } from "@/components/community/StepBothSources";
 import { KeepWhole } from "@/components/ui/keep-whole";
+
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["perm-case-status", "pwd-status", "lca-status", "seasonal-status", "perm-cases", "pw-disclosure", "lca-disclosure"] as const;
 
 const TITLE = "PERM Cases Filed Today and Each Day";
 const DESCRIPTION =
@@ -67,11 +70,10 @@ function compare(n: number, usual: number | null): string | null {
 
 export default async function FilingsByDayPage() {
   const doc = await getFilingsByDay();
-  const schema = getDatasetSchema(SITE_URL, {
+  const schema = datasetSchemaFor(SITE_URL, DATASETS, {
     name: "Immigration filings per day",
     description: DESCRIPTION,
     url: `${SITE_URL}/filings-by-day`,
-    isBasedOn: "https://flag.dol.gov/case-status-search",
   });
 
   if (!doc) {
@@ -206,7 +208,7 @@ export default async function FilingsByDayPage() {
         </p>
       </FinePrint>{" "}
       <StepBothSources here="/filings-by-day" groups={["perm"]} />{" "}
-      <DataProvenance datasets={["perm-case-status", "pwd-status", "lca-status", "seasonal-status", "perm-cases", "pw-disclosure", "lca-disclosure"]} />
+      <DataProvenance datasets={DATASETS} />
     </div>
   );
 }

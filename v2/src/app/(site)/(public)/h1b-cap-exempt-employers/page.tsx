@@ -31,11 +31,15 @@ import { formatInt, formatShare, formatShareOf } from "@/lib/format";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { pageDate } from "@/lib/pageDates";
 import { withSocialCard } from "@/lib/socialCard";
-import { getDatasetSchema } from "@/lib/structuredData";
+import { getFAQPageSchema } from "@/lib/structuredData";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { US_STATE_NAMES } from "@/lib/usStateNames";
 import { MONTH_ABBR, MONTH_NAMES } from "@convex/lib/months";
 import { softFail } from "@/lib/softRead";
 import { KeepWhole } from "@/components/ui/keep-whole";
+
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["pw-disclosure", "lca-disclosure", "uscis-h1b-hub"] as const;
 
 /**
  * The employers whose wage requests tell DOL that ACWIA covers them, the kinds
@@ -180,20 +184,15 @@ export default async function Page() {
   const updated = pageDate(PATH, { capExempt: capExemptAsOf(doc) });
   const fy = doc?.asOf.lcaFy ?? null;
   const schemas: object[] = [
-    getDatasetSchema(SITE_URL, {
+    datasetSchemaFor(SITE_URL, DATASETS, {
       name: "H-1B cap-exempt employers",
       description:
         "Employers whose wage requests to DOL say ACWIA covers them (colleges and universities, affiliated nonprofits and research organizations), with certified H-1B LCAs by month and USCIS's H-1B approvals.",
       url: `${SITE_URL}${PATH}`,
-      isBasedOn: "https://www.dol.gov/agencies/eta/foreign-labor/performance",
       temporalCoverage: "2022-10-01/..",
       variableMeasured: ["Employers covered by ACWIA", "Certified H-1B LCAs", "H-1B approvals"],
     }),
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
-    },
+    getFAQPageSchema(FAQS),
   ];
   const list = doc?.top ?? [];
   const rest = list.slice(SHOWN);
@@ -374,7 +373,7 @@ export default async function Page() {
             Law firm rankings
           </Link>
         </nav>{" "}
-        <DataProvenance datasets={["pw-disclosure", "lca-disclosure", "uscis-h1b-hub"]} />
+        <DataProvenance datasets={DATASETS} />
       </div>
     </>
   );

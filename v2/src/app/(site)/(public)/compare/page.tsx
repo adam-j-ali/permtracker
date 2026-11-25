@@ -26,6 +26,7 @@ import { RIVALS } from "@/lib/compare/rivals";
 import { checkedPhrase, compareFaq, GROUPS, PERM_TRACKER, ROWS, type Tracker } from "@/lib/compare/trackers";
 import { FaqList } from "@/components/tools/FaqList";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { longDate as formatLongDate } from "@convex/lib/months";
 import { getSweepCoverage } from "@/lib/db/sweepCoverage";
 import { daysBetween, easternDay } from "@/lib/time";
@@ -116,11 +117,7 @@ export default async function ComparePage() {
   const trackers: Tracker[] = [await ourselfNow(), ...RIVALS];
   const fresh = freshnessRows(trackers);
   const faq = compareFaq(trackers);
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
-  };
+  const faqSchema = getFAQPageSchema(faq);
   return (
     // Wider than most pages: the grid is the page's picture, and every site needs its column.
     <div className="mx-auto w-full max-w-[1320px] px-4 pb-20 pt-10 sm:px-6 sm:pt-14">

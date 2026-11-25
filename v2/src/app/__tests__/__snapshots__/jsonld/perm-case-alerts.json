@@ -1,0 +1,72 @@
+[
+ {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+   {
+    "@type": "Question",
+    "name": "Is it really free?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "Yes. Every alert here is free and needs no account: an email address is all it asks for."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "How quickly will I hear when my PERM case changes?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "Within minutes on a weekday. A watched case is checked against DOL's record every 5 minutes from 7 AM to 9 PM Eastern on weekdays, and every half hour otherwise, and a status change is emailed at once. DOL emails the employer's attorney itself, so the attorney may still hear first."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "Will you fill my inbox?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "No. A status change on your own case goes out at once, and news about an employer you follow goes out after each of the day's two checks. A filing month and the visa bulletin are gathered into at most one email a day."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "Can I watch more than one case?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "Yes, up to 100 for one email address. Paste the numbers into the list box on this page: one email names each case with DOL's status for it, and one click confirms them all. Entering them one after another works too, and you won't get an email for each."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "What happens after DOL decides my case?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "The watch carries on for a year, in case of an appeal or a reversal, then stops by itself. A certification lapsing on its own clock isn't emailed."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "Can I get just the weekly digest?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "Yes. Sign up for it on its own at the end of this page. It comes on Tuesdays, and you can add it to any alert too."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "How do I see everything I've signed up for?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "The email preferences page sends a link to your address that lists every alert and email it gets, and turns any of them off."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "How do I stop the emails?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "Every email has a one-click link that stops it, and a link to a page listing everything your address follows, where each can be turned off."
+    }
+   }
+  ]
+ }
+]

@@ -18,6 +18,7 @@ import { PageSection } from "@/components/data/PageSection";
 import { SplitColumns } from "@/components/data/SplitColumns";
 import { ChapterFold } from "@/components/entities/ChapterFold";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { CodeCards } from "@/components/soc/CodeCards";
 import { SocSources } from "@/components/soc/SocSources";
 import { CaseNextStep } from "@/components/tools/CaseNextStep";
@@ -153,11 +154,7 @@ export default async function SocTitlePage({ params }: { params: Promise<{ title
       a: "Use them to see which of your past duties match the job. The letter itself still describes what you did: USCIS asks for letters from current or former employers with \"a specific description of the duties performed\" (8 CFR 204.5(g)(1)), so each one is written from your own work there.",
     },
   ];
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage" as const,
-    mainEntity: faqs.map((f) => ({ "@type": "Question" as const, name: f.q, acceptedAnswer: { "@type": "Answer" as const, text: f.a } })),
-  };
+  const faqSchema = getFAQPageSchema(faqs);
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-16 pt-10 sm:px-6 sm:pt-12">
       <JsonLdScript schema={breadcrumbSchema(path, a.title)} />{" "}

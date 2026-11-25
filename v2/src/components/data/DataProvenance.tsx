@@ -26,7 +26,7 @@ import { keepWhole } from "@/components/ui/keep-whole";
  * mistake, the same line an article ends with (Oct 28 2026, E-E-A-T:
  * scripts/audit_trust.py finds this block by `data-provenance`).
  */
-export async function DataProvenance({ datasets, className }: { datasets: string[]; className?: string }) {
+export async function DataProvenance({ datasets, className }: { datasets: readonly string[]; className?: string }) {
   const all: Record<string, DatasetFreshness> = await getFreshness().catch(softFail<Record<string, DatasetFreshness>>("DataProvenance.getFreshness", {}));
   // A type-guard filter: .filter(Boolean) doesn't narrow away the
   // `| undefined` that noUncheckedIndexedAccess puts on all[d].

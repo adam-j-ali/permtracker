@@ -18,6 +18,7 @@ import { EMPLOYER_EMAIL_SUBJECT } from "@/components/marketing/employerEmailSamp
 import { EMPLOYER_SHOTS } from "@/components/marketing/employerShots";
 import { EmployersTour } from "@/components/marketing/EmployersTour";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { FaqList } from "@/components/tools/FaqList";
 import { SITE_URL } from "@/lib/constants/site";
 import { getActivitySeries } from "@/lib/db/activity";
@@ -75,11 +76,7 @@ export default async function ForEmployersPage() {
       : []),
     { kind: "measured" as const, label: "Read from DOL's case system", value: `${CASE_CHECKS.length} times a day`, note: "Every waiting case, each weekday" },
   ];
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: EMPLOYER_FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
-  };
+  const faqSchema = getFAQPageSchema(EMPLOYER_FAQS);
   // Who the page is for, said to machines the way the title says it to people.
   const pageSchema = {
     "@context": "https://schema.org",

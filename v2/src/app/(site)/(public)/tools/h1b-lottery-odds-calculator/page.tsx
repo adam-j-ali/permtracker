@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { FaqList } from "@/components/tools/FaqList";
 import { H1bLotteryCalculator } from "@/components/tools/H1bLotteryCalculator";
 import { SearchParamsBoundary } from "@/hooks/useUrlSearchParams";
@@ -55,11 +56,7 @@ const FAQS = [
 ];
 
 export default function H1bLotteryCalculatorPage() {
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage" as const,
-    mainEntity: FAQS.map((f) => ({ "@type": "Question" as const, name: f.q, acceptedAnswer: { "@type": "Answer" as const, text: f.a } })),
-  };
+  const faqSchema = getFAQPageSchema(FAQS);
   return (
     <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">
       <div className="pt-10 sm:pt-12" />

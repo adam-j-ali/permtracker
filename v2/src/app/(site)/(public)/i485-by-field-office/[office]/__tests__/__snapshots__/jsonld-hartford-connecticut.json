@@ -1,0 +1,75 @@
+[
+ {
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "name": "I-485 applications at the USCIS Hartford field office, by quarter",
+  "description": "How long each I-485 step took at USCIS's Hartford, Connecticut field office, from cases people reported, beside USCIS's quarterly counts.",
+  "url": "https://permtracker.app/i485-by-field-office/hartford-connecticut",
+  "dateModified": "2026-06-30",
+  "isBasedOn": "https://www.uscis.gov/tools/reports-and-studies/immigration-and-citizenship-data",
+  "creator": {
+   "@type": "Organization",
+   "name": "U.S. Citizenship and Immigration Services",
+   "url": "https://www.uscis.gov"
+  },
+  "isAccessibleForFree": true,
+  "license": "https://www.usa.gov/government-works",
+  "spatialCoverage": {
+   "@type": "Place",
+   "name": "Hartford, Connecticut"
+  },
+  "variableMeasured": [
+   "applications received",
+   "approved",
+   "denied",
+   "pending",
+   "category of admission"
+  ]
+ },
+ {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+   {
+    "@type": "Question",
+    "name": "How many employment-based I-485s are pending at the Hartford field office?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "USCIS's file for Apr to Jun 2026 lists 2,699 employment-based I-485s pending at the Hartford field office on the quarter's last day, with 266 approved and 18 denied during the quarter."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "How long does the Hartford field office take to decide an I-485?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "USCIS doesn't publish a wait for one field office's employment-based cases. It posts one time for every field office together: 9.5 months, the time within which it decided 8 cases in 10, as of its October 19, 2026 posting."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "Can my I-485 be decided at an office other than my local one?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "Yes. USCIS can move a case from one office to another while it waits, and its file counts a case wherever it sits on the quarter's last day. USCIS says it sends a transfer notice when it moves a case, and an interview or appointment notice names the office to go to."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "How long did people at the Hartford field office wait for their I-485?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "USCIS doesn't publish a wait for one office. People whose I-485 was at the Hartford field office can share their own dates on this page, and it shows a median once five have."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "Where do these numbers come from?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "From the I-485 file USCIS publishes each quarter on its Immigration and Citizenship Data page, which lists every field office and service center. This site copies it as published and names the quarter beside every figure."
+    }
+   }
+  ]
+ }
+]

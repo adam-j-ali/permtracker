@@ -18,6 +18,7 @@ import { notFound } from "next/navigation";
 import { withSocialCard } from "@/lib/socialCard";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { FaqList } from "@/components/tools/FaqList";
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { OfficeReportedCases } from "@/components/community/OfficeReportedCases";
@@ -49,6 +50,7 @@ import {
 } from "@/lib/uscisQuarterlyShape";
 import { USCIS_OFFICES, isCenter, officeBySlug, officePlace, type UscisOffice } from "@/lib/uscisOffices";
 import { SITE_URL } from "@/lib/constants/site";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { formatInt } from "@/lib/format";
 import { StepsByStage } from "@/components/community/StepFigures";
 import { WhoIsWaiting } from "@/components/community/TimelineBoard";
@@ -57,7 +59,8 @@ import type { PlaceSummary } from "@/lib/reportedSummary";
 import { KeepWhole } from "@/components/ui/keep-whole";
 
 const INDEX = "/i485-by-field-office";
-const USCIS_DATA_PAGE = "https://www.uscis.gov/tools/reports-and-studies/immigration-and-citizenship-data";
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["uscis-i485-offices"] as const;
 const USCIS_OFFICE_FINDER = "https://www.uscis.gov/about-us/find-a-uscis-office/field-offices";
 /** USCIS posts one employment-based I-485 time for every field office together, under this office code. */
 const ALL_FIELD_OFFICES = "FOD";
@@ -273,30 +276,16 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
     },
   ];
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage" as const,
-    mainEntity: faqs.map((f) => ({
-      "@type": "Question" as const,
-      name: f.q,
-      acceptedAnswer: { "@type": "Answer" as const, text: f.a },
-    })),
-  };
-  // USCIS's own table for one office; a bare Organization creator (Google's Dataset parser matches the type literally).
-  const datasetSchema = {
-    "@context": "https://schema.org",
-    "@type": "Dataset",
+  const faqSchema = getFAQPageSchema(faqs);
+  // USCIS's own table for one office: its creator is USCIS and its licence usa.gov's (datasetSchemaFor).
+  const datasetSchema = datasetSchemaFor(SITE_URL, DATASETS, {
     name: `I-485 applications at ${center ? `USCIS's ${office.name}` : `the USCIS ${office.name} field office`}, by quarter`,
     description: descriptionOf(office),
     url: `${SITE_URL}${path}`,
     ...(current ? { dateModified: current.quarterEnd } : {}),
-    isBasedOn: USCIS_DATA_PAGE,
-    creator: { "@type": "Organization", name: "U.S. Citizenship and Immigration Services", url: "https://www.uscis.gov" },
-    isAccessibleForFree: true,
-    license: "https://www.usa.gov/government-works",
-    ...(center ? {} : { spatialCoverage: { "@type": "Place", name: place } }),
+    ...(center ? {} : { place }),
     variableMeasured: ["applications received", "approved", "denied", "pending", "category of admission"],
-  };
+  });
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 pt-6 pb-12 sm:px-6 sm:pb-16">

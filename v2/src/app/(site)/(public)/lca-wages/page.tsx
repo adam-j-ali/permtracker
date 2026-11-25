@@ -6,6 +6,7 @@ import { DataProvenance } from "@/components/data/DataProvenance";
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
 import { FaqList } from "@/components/tools/FaqList";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import {
@@ -85,15 +86,7 @@ export default async function LcaWagesPage() {
   const hi = stats.p95 !== null ? Math.floor(stats.p95 / width) * width : 0;
   const { bins, below, above } = clampBins(raw, lo, hi);
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage" as const,
-    mainEntity: FAQS.map((f) => ({
-      "@type": "Question" as const,
-      name: f.q,
-      acceptedAnswer: { "@type": "Answer" as const, text: f.a },
-    })),
-  };
+  const faqSchema = getFAQPageSchema(FAQS);
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">

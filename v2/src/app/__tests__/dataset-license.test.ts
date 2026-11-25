@@ -53,7 +53,7 @@ describe("Dataset license", () => {
       // so the gate skipped the very file it existed for and passed while the
       // licence was deleted. Caught by probing rather than by reading: the
       // mutation landed (1 occurrence -> 0) and the test still went green.
-      if (/getDatasetSchema\s*\(/.test(src)) continue;
+      if (/(?:getDatasetSchema|datasetSchemaFor)\s*\(/.test(src)) continue;
 
       for (const m of src.matchAll(/["']@type["']\s*:\s*["']Dataset["']/g)) {
         if (!/\blicense\s*:/.test(literalAfter(src, m.index ?? 0))) {

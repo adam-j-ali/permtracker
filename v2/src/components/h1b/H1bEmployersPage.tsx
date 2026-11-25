@@ -25,7 +25,8 @@ import {
   type H1bSummary,
 } from "@/lib/h1bRanks";
 import { openGraphBase } from "@/lib/openGraphBase";
-import { getDatasetSchema } from "@/lib/structuredData";
+import { getFAQPageSchema } from "@/lib/structuredData";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { getH1bSummary, getH1bView } from "@/lib/db/h1bRanks";
 import { pageDate } from "@/lib/pageDates";
 import { SiteBreadcrumbs } from "@/components/layout/SiteBreadcrumbs";
@@ -34,6 +35,9 @@ import { choiceVariants } from "@/components/ui/choice";
 import { buttonVariants } from "@/components/ui/button";
 import { softFail } from "@/lib/softRead";
 import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
+
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["lca-disclosure", "uscis-h1b-hub"] as const;
 
 /**
  * /h1b-employers and /h1b-employers/<state>: the busiest H-1B employers by
@@ -124,12 +128,11 @@ export async function H1bEmployersPage({ state }: { state: string }) {
 
   const firstLca = firstLcaYear(summary);
   const schemas: object[] = [
-    getDatasetSchema(SITE_URL, {
+    datasetSchemaFor(SITE_URL, DATASETS, {
       name: state === NATION ? "Top H-1B employers by fiscal year and state" : `Top H-1B employers in ${name}`,
       description:
         `Employers ranked by certified H-1B Labor Condition Applications (DOL${firstLca ? `, FY${firstLca} on` : ""}) and by H-1B approvals (USCIS's Employer Data Hub, FY2009 on), with positions, median yearly wage and approvals.`,
       url: `${SITE_URL}${path}`,
-      isBasedOn: "https://www.dol.gov/agencies/eta/foreign-labor/performance",
       temporalCoverage: summary ? `${summary.years[summary.years.length - 1]!.fy - 1}-10-01/..` : undefined,
       variableMeasured: ["Certified H-1B LCAs", "Positions", "Median yearly wage", "USCIS H-1B approvals"],
     }),
@@ -145,11 +148,7 @@ export async function H1bEmployersPage({ state }: { state: string }) {
     });
   }
   if (state !== NATION) schemas.push(breadcrumbSchema(path, name));
-  schemas.push({
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
-  });
+  schemas.push(getFAQPageSchema(FAQS));
 
   const updated = pageDate(state === NATION ? "/h1b-employers" : "/h1b-employers/[state]", { h1b: h1bAsOf(summary) });
   return (
@@ -253,7 +252,7 @@ export async function H1bEmployersPage({ state }: { state: string }) {
           <KeepWhole>{"Search H-1B LCAs"}</KeepWhole>
         </Link>
       </nav>{" "}
-      <DataProvenance datasets={["lca-disclosure", "uscis-h1b-hub"]} />
+      <DataProvenance datasets={DATASETS} />
     </div>
     </>
   );

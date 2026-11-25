@@ -16,7 +16,7 @@ import type { Metadata } from "next";
 import { withSocialCard } from "@/lib/socialCard";
 import Link from "next/link";
 
-import { getDatasetSchema } from "@/lib/structuredData";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { StateExplorer, type StateStat } from "@/components/tools/USStateMap";
@@ -30,6 +30,9 @@ import { PageBasics } from "@/components/data/PageBasics";
 import { stateName } from "@/lib/usStateNames";
 import { formatInt } from "@/lib/format";
 import { SITE_URL } from "@/lib/constants/site";
+
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["perm-cases"] as const;
 const TITLE = "PERM Filings by State";
 const DESCRIPTION =
   "Interactive map of PERM filings by worksite state: volume, approval rate, median days and median wage, from DOL's own disclosure files.";
@@ -91,7 +94,7 @@ export default async function PermByStatePage() {
     .filter((s) => s.topOccupationShare !== null && s.topOccupations[0])
     .sort((a, b) => (b.topOccupationShare ?? 0) - (a.topOccupationShare ?? 0))[0];
 
-  const datasetSchema = getDatasetSchema(SITE_URL, {
+  const datasetSchema = datasetSchemaFor(SITE_URL, DATASETS, {
     name: "PERM labor certification filings by state",
     description: DESCRIPTION,
     url: `${SITE_URL}/perm-by-state`,
@@ -267,7 +270,7 @@ export default async function PermByStatePage() {
       <p className="mt-8 max-w-3xl text-sm leading-relaxed text-muted-foreground">
         Filings newer than DOL&apos;s last published file aren&apos;t in these figures: DOL reports the worksite state only when it publishes the decided case. Those are on the <Link href="/perm-cases#live" className="link">live list</Link>, by employer.
       </p>{" "}
-      <DataProvenance datasets={["perm-cases"]} />
+      <DataProvenance datasets={DATASETS} />
     </div>
   );
 }

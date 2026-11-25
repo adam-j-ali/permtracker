@@ -1,0 +1,40 @@
+[
+ {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+   {
+    "@type": "Question",
+    "name": "Why is a determination from October valid for eight months and one from May for three?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "20 CFR 656.40(c) sets the validity at no less than 90 days and no more than one year, and DOL ties it to its wage year: the OEWS wage data turns over on July 1. A determination issued between July 1 and April 1 runs to the next June 30. One issued from April 2 to June 30 would otherwise fall short of 90 days, so it gets 90 days instead."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "What has to happen before it expires?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "The employer must either file the ETA-9089 or begin recruitment inside the validity period. Beginning recruitment is enough: a PERM whose first recruitment step started inside the window can be filed after the determination has expired, subject to the 180-day recruitment rule."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "Can the determination be used for more than one filing?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "It's issued for one employer, one occupation and one area of intended employment. A different job or worksite needs its own request."
+    }
+   },
+   {
+    "@type": "Question",
+    "name": "How long does a wage request take to come back?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "That depends on DOL's queue. No rule fixes it. The prevailing wage queue calculator linked below reads DOL's published position for the month a request was filed."
+    }
+   }
+  ]
+ }
+]

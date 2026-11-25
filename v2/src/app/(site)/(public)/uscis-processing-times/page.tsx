@@ -27,6 +27,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { ChartHit, hitSpan } from "@/components/data/ChartHit";
 import { ChartTips } from "@/components/data/ChartTips";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { FaqList } from "@/components/tools/FaqList";
 import { FigurePlate } from "@/components/tools/FigurePlate";
 import { FinePrint } from "@/components/data/FinePrint";
@@ -50,6 +51,7 @@ import { easternDay } from "@/lib/time";
 import { PostedI140History } from "@/components/uscis/PostedI140History";
 import { formatAsOf } from "@/lib/dolFormat";
 import { SITE_URL } from "@/lib/constants/site";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { FORM_PAGES, slotShort } from "@/lib/uscisForms";
 import { monthsVs, pointBefore } from "@/lib/uscisTrends";
@@ -61,7 +63,8 @@ const DESCRIPTION =
   "The median months USCIS took to decide every form last quarter, from its own quarterly data, with receipts, completions, pending and history to 2016.";
 const PATH = "/uscis-processing-times";
 const SITE = SITE_URL;
-const USCIS_DATA_PAGE = "https://www.uscis.gov/tools/reports-and-studies/immigration-and-citizenship-data";
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["uscis-form-quarters"] as const;
 
 export const metadata: Metadata = withSocialCard({
   title: TITLE,
@@ -229,33 +232,16 @@ export default async function UscisProcessingTimesPage() {
     getUscisPosted(),
   ]);
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage" as const,
-    mainEntity: FAQS.map((f) => ({
-      "@type": "Question" as const,
-      name: f.q,
-      acceptedAnswer: { "@type": "Answer" as const, text: f.a },
-    })),
-  };
-  // USCIS's own table, transcribed: a work of the United States Government,
-  // so the license is usa.gov's, as on /perm-processing-times, not this
-  // site's terms. The creator is the bare "Organization" type on purpose:
-  // Google's Dataset parser matches the type literally.
-  const datasetSchema = {
-    "@context": "https://schema.org",
-    "@type": "Dataset",
+  const faqSchema = getFAQPageSchema(FAQS);
+  // USCIS's own table, transcribed: its creator is USCIS and its licence usa.gov's (datasetSchemaFor).
+  const datasetSchema = datasetSchemaFor(SITE, DATASETS, {
     name: "USCIS quarterly form performance data: median processing times",
     description:
       "Receipts, approvals, denials, completions, pending counts and median months to a decision for every USCIS form, per fiscal quarter, from USCIS's quarterly performance workbooks.",
     url: `${SITE}${PATH}`,
     ...(quarter ? { dateModified: quarter.quarterEnd, temporalCoverage: `${quarter.quarterStart}/${quarter.quarterEnd}` } : {}),
-    isBasedOn: USCIS_DATA_PAGE,
-    creator: { "@type": "Organization", name: "U.S. Citizenship and Immigration Services", url: "https://www.uscis.gov" },
-    isAccessibleForFree: true,
-    license: "https://www.usa.gov/government-works",
     variableMeasured: ["forms received", "approved", "denied", "total completions", "pending", "median processing months"],
-  };
+  });
 
   const forms = quarter?.forms ?? [];
   const keyRows = KEY_FORMS.map((spec) => ({ spec, row: pick(forms, spec) })).filter((k) => k.row !== null) as Array<{ spec: (typeof KEY_FORMS)[number]; row: UscisFormRow }>;
@@ -633,7 +619,7 @@ export default async function UscisProcessingTimesPage() {
 
       <StepBothSources here="/uscis-processing-times" groups={["i140", "i485"]} />{" "}
       <PageBasics page="uscis-processing-times" title="More questions" />{" "}
-      <DataProvenance datasets={["uscis-form-quarters"]} />
+      <DataProvenance datasets={DATASETS} />
     </div>
   );
 }

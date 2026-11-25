@@ -19,7 +19,8 @@ import type { Metadata } from "next";
 import { withSocialCard } from "@/lib/socialCard";
 import Link from "next/link";
 
-import { getDatasetSchema } from "@/lib/structuredData";
+import { getFAQPageSchema } from "@/lib/structuredData";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { EntityExplorer } from "@/components/tools/EntityExplorer";
@@ -46,6 +47,9 @@ import { ChapterNav, type ChapterItem } from "@/components/entities/Chapters";
 import { formatDollars } from "@/lib/format";
 import { SITE_URL } from "@/lib/constants/site";
 import { entityHref } from "@/lib/entityPayload";
+
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["perm-cases", "entities"] as const;
 const TITLE = "PERM Salaries by Occupation";
 const DESCRIPTION =
   "What PERM cases pay: the full wage ladder by occupation, filters by job, state and year, with volume and approval rates, from DOL's own disclosure files.";
@@ -135,17 +139,9 @@ export default async function PermWagesPage() {
     { id: "a-z", label: "A to Z" },
   ];
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage" as const,
-    mainEntity: FAQS.map((f) => ({
-      "@type": "Question" as const,
-      name: f.q,
-      acceptedAnswer: { "@type": "Answer" as const, text: f.a },
-    })),
-  };
+  const faqSchema = getFAQPageSchema(FAQS);
 
-  const datasetSchema = getDatasetSchema(SITE_URL, {
+  const datasetSchema = datasetSchemaFor(SITE_URL, DATASETS, {
     name: "PERM offered wages by occupation",
     description: DESCRIPTION,
     url: `${SITE_URL}/perm-wages`,
@@ -349,7 +345,7 @@ export default async function PermWagesPage() {
       <p className="mt-8 max-w-3xl text-sm leading-relaxed text-muted-foreground">
         Filings newer than DOL&apos;s last published file aren&apos;t in this table: DOL reports the occupation and the wage only when it publishes the decided case. Those cases are on the <Link href="/perm-cases#live" className="link">live list</Link>, by employer.
       </p>{" "}
-      <DataProvenance datasets={["perm-cases", "entities"]} />
+      <DataProvenance datasets={DATASETS} />
     </div>
   );
 }

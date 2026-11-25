@@ -11,6 +11,7 @@ import { DataProvenance } from "@/components/data/DataProvenance";
 import { FaqList } from "@/components/tools/FaqList";
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { CASE_STATUS_FRAME, CaseStatusHead, CheckAnother, LookupSkeleton } from "./CaseStatusShell";
 import { howLongSentence } from "@/lib/dolNow";
 import { getPermBoard } from "@/lib/db/board";
@@ -231,15 +232,7 @@ export async function CaseStatusPage({ raw }: { raw: string | undefined }) {
   const howLong = howLongSentence(permBoard, times, permLine);
   const faqs = FAQS.map((f) => ({ ...f, a: f.a.replace(HOW_LONG, howLong) }));
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage" as const,
-    mainEntity: faqs.map((f) => ({
-      "@type": "Question" as const,
-      name: f.q,
-      acceptedAnswer: { "@type": "Answer" as const, text: f.a },
-    })),
-  };
+  const faqSchema = getFAQPageSchema(faqs);
 
   return (
     <div className={CASE_STATUS_FRAME}>

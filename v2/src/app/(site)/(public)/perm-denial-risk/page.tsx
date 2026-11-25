@@ -21,7 +21,8 @@ import { withSocialCard } from "@/lib/socialCard";
 import Link from "next/link";
 
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
-import { getDatasetSchema } from "@/lib/structuredData";
+import { getFAQPageSchema } from "@/lib/structuredData";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { socMajorGroup } from "@/lib/socGroups";
 import { stateName } from "@/lib/usStateNames";
@@ -44,6 +45,9 @@ import { SITE_URL } from "@/lib/constants/site";
 import { describeDisclosureFiles } from "@/lib/disclosureFiles";
 import { CaveatBox } from "@/components/ui/note";
 import { softFail } from "@/lib/softRead";
+
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["perm-cases"] as const;
 
 // "Approval rate" is what people and answer engines ask for (owner, Nov 4 2026); the page answers it first.
 const TITLE = "PERM Approval and Denial Rates";
@@ -250,38 +254,22 @@ export default async function PermDenialRiskPage() {
     })
     .filter((r): r is RateRow => r !== null);
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: [
-      {
-        "@type": "Question",
-        name: "What’s the PERM denial rate?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: baseline
-            ? `Across the current disclosure window, ${baseline.denialRate}% of decided PERM cases were denied (${baseline.denied.toLocaleString("en-US")} of ${baseline.decided.toLocaleString("en-US")}). Withdrawn cases are excluded from both sides of that ratio.`
-            : "The rate is computed from DOL's quarterly disclosure files over decided cases only.",
-        },
-      },
-      {
-        "@type": "Question",
-        name: "What raises the risk of a PERM denial?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "In DOL's own files the strongest correlates are a position that isn’t full time and a foreign worker with an ownership interest in the employer. Both are recorded on the ETA-9089 itself. These are group rates. They aren’t probabilities for an individual case.",
-        },
-      },
-      {
-        "@type": "Question",
-        name: "Which occupations have the highest PERM denial rate?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "Denial rates by occupation are on this page, ranked over the occupations with enough decided cases to carry a rate. The floor matters: an occupation with a handful of decisions can read as 25% denied on a single denial, so rates below the floor aren’t ranked at all.",
-        },
-      },
-    ],
-  };
+  const faqSchema = getFAQPageSchema([
+    {
+      q: "What’s the PERM denial rate?",
+      a: baseline
+        ? `Across the current disclosure window, ${baseline.denialRate}% of decided PERM cases were denied (${baseline.denied.toLocaleString("en-US")} of ${baseline.decided.toLocaleString("en-US")}). Withdrawn cases are excluded from both sides of that ratio.`
+        : "The rate is computed from DOL's quarterly disclosure files over decided cases only.",
+    },
+    {
+      q: "What raises the risk of a PERM denial?",
+      a: "In DOL's own files the strongest correlates are a position that isn’t full time and a foreign worker with an ownership interest in the employer. Both are recorded on the ETA-9089 itself. These are group rates. They aren’t probabilities for an individual case.",
+    },
+    {
+      q: "Which occupations have the highest PERM denial rate?",
+      a: "Denial rates by occupation are on this page, ranked over the occupations with enough decided cases to carry a rate. The floor matters: an occupation with a handful of decisions can read as 25% denied on a single denial, so rates below the floor aren’t ranked at all.",
+    },
+  ]);
 
   // A MEASURED DATASET, and this was one of two data pages whose markup
   // did not say so. Five of seven carried `Dataset`; this one and the other
@@ -289,7 +277,7 @@ export default async function PermDenialRiskPage() {
   // every page looks finished on its own. It is the AEO lever for a data
   // page: it is what tells an answer engine the numbers have a named federal
   // source, a licence and a coverage window rather than being prose.
-  const datasetSchema = getDatasetSchema(SITE_URL, {
+  const datasetSchema = datasetSchemaFor(SITE_URL, DATASETS, {
     name: "PERM denial rates by filing attribute",
     description:
       "Measured PERM denial rates by ETA-9089 answer, offered wage band, occupation, state and fiscal year, from DOL disclosure files. Group rates only, with no per-case risk score.",
@@ -680,7 +668,7 @@ export default async function PermDenialRiskPage() {
           </p>
         </div>
       </section>
-      <DataProvenance datasets={["perm-cases"]} />
+      <DataProvenance datasets={DATASETS} />
     </div>
   );
 }

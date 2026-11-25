@@ -11,7 +11,7 @@ import type { Metadata } from "next";
 import { withSocialCard } from "@/lib/socialCard";
 import Link from "next/link";
 
-import { getDatasetSchema } from "@/lib/structuredData";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { ChartTips } from "@/components/data/ChartTips";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { openGraphBase } from "@/lib/openGraphBase";
@@ -35,6 +35,9 @@ import { formatInt } from "@/lib/format";
 import { SITE_URL } from "@/lib/constants/site";
 import { entityHref } from "@/lib/entityPayload";
 import { softFail } from "@/lib/softRead";
+
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["perm-cases", "entities", "perm-case-status"] as const;
 const TITLE = "PERM Filings by Company: Top Employers Ranked";
 const DESCRIPTION =
   "Which companies file the most PERM cases: every sponsor ranked by filings, with its approval rate and median days, from DOL's own disclosure files.";
@@ -83,7 +86,7 @@ export default async function PermEmployersPage() {
   const topTen = employers.slice(0, 10);
   const maxTotal = Math.max(1, ...topTen.map((e) => e.total));
 
-  const datasetSchema = getDatasetSchema(SITE_URL, {
+  const datasetSchema = datasetSchemaFor(SITE_URL, DATASETS, {
     name: "PERM labor certification filings by employer",
     description: DESCRIPTION,
     url: `${SITE_URL}/perm-employers`,
@@ -298,7 +301,7 @@ export default async function PermEmployersPage() {
         </div>
       </section>
       <PageBasics page="perm-employers" />{" "}
-      <DataProvenance datasets={["perm-cases", "entities", "perm-case-status"]} />
+      <DataProvenance datasets={DATASETS} />
     </div>
   );
 }

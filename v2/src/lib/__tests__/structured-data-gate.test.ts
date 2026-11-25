@@ -14,7 +14,8 @@
  * NewsMediaOrganization only) and a site-wide SoftwareApplication with no rating (Google's Software App feature
  * requires aggregateRating or review), whose rating sat in a second node with the same @id that validators don't merge.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 
 import ts from "typescript";
@@ -291,8 +292,9 @@ describe("each page family's own nodes, read from the source", () => {
   const literals = files.flatMap(typedLiterals);
 
   it("finds the files that build nodes (a scan that sees nothing would pass anything)", () => {
-    expect(files.length).toBeGreaterThan(50);
-    expect(literals.length).toBeGreaterThan(100);
+    // 64 files before the pages' FAQPage and Dataset literals moved to the helpers (Nov 25 2026), 16 after.
+    expect(files.length).toBeGreaterThan(12);
+    expect(literals.length).toBeGreaterThan(60);
   });
 
   it("every literal's properties are ones schema.org allows on its type", () => {
@@ -325,6 +327,38 @@ describe("each page family's own nodes, read from the source", () => {
     expect(pages).toEqual([...OWN_PAGE_NODE]);
     // The page dates its node from the code alone, so the bar's day must come from the code alone too.
     for (const route of OWN_PAGE_NODE) expect(DATE_SOURCE[route]).toBeUndefined();
+  });
+
+  it("a FAQPage node is built in one place: no page writes its own (Nov 25 2026, 48 inline copies moved)", () => {
+    const faqs = literals.filter((l) => l.type === "FAQPage").map((l) => `${l.file}:${l.line}`);
+    expect(faqs.map((f) => f.replace(/:\d+$/, ""))).toEqual(["src/lib/structuredData.ts"]);
+  });
+
+  it("a Dataset node is built by the helpers, from the page's datasets, save two pages that differ on purpose", () => {
+    // datasetSchemaFor (src/lib/datasetSchema.ts) takes the keys a page's source line takes; getDatasetSchema is its
+    // building block and /open-data's, whose two open files are no registry dataset. The two pages below kept their
+    // own node because moving them would change what it says: /perm-rfi-audit/[stage] names the site as a bare
+    // Organization rather than by reference, and /visa-bulletin/family credits State under the Terms' licence.
+    const HAND_ROLLED = ["src/app/(site)/(public)/perm-rfi-audit/[stage]/page.tsx", "src/app/(site)/(public)/visa-bulletin/family/page.tsx"];
+    const files = [...new Set(literals.filter((l) => l.type === "Dataset").map((l) => l.file))].sort();
+    expect(files).toEqual(["src/lib/datasetSchema.ts", "src/lib/structuredData.ts", ...HAND_ROLLED].sort());
+    const direct = sourceFilesCalling("getDatasetSchema").map((f) => relative(ROOT, f));
+    expect(direct.sort()).toEqual(["src/app/(site)/(public)/open-data/page.tsx", "src/lib/datasetSchema.ts", "src/lib/structuredData.ts"]);
+  });
+
+  it("the scan finds an inline FAQPage or Dataset the moment one is written (probe)", () => {
+    const dir = mkdtempSync(join(tmpdir(), "jsonld-probe-"));
+    const file = join(dir, "page.tsx");
+    writeFileSync(
+      file,
+      'export const a = { "@context": "https://schema.org", "@type": "FAQPage" as const, mainEntity: [] };\n' +
+        'export const b = { "@type": "Dataset", name: "x", description: "y" };\n',
+    );
+    try {
+      expect(typedLiterals(file).map((l) => l.type)).toEqual(["FAQPage", "Dataset"]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("the app's full node is built in one place, and only the homepage calls it", () => {

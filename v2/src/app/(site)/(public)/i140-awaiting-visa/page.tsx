@@ -24,6 +24,8 @@ import { Fragment } from "react";
 import { withSocialCard } from "@/lib/socialCard";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { FaqList } from "@/components/tools/FaqList";
 import { FigurePlate } from "@/components/tools/FigurePlate";
 import { FinePrint } from "@/components/data/FinePrint";
@@ -57,7 +59,8 @@ const DESCRIPTION =
   "How many approved I-140, I-360 and I-526 petitions are waiting for a visa number by preference and country of birth, from USCIS's quarterly count.";
 const PATH = "/i140-awaiting-visa";
 const SITE = SITE_URL;
-const USCIS_DATA_PAGE = "https://www.uscis.gov/tools/reports-and-studies/immigration-and-citizenship-data";
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["uscis-eb-awaiting-visa", "uscis-i140-class-country"] as const;
 
 export const metadata: Metadata = withSocialCard({
   title: TITLE,
@@ -105,29 +108,15 @@ function n(v: number | null | undefined): string {
 export default async function I140AwaitingVisaPage() {
   const [awaiting, classCountry] = await Promise.all([getEbAwaitingVisa(), getI140ClassCountry()]);
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage" as const,
-    mainEntity: FAQS.map((f) => ({
-      "@type": "Question" as const,
-      name: f.q,
-      acceptedAnswer: { "@type": "Answer" as const, text: f.a },
-    })),
-  };
-  const datasetSchema = {
-    "@context": "https://schema.org",
-    "@type": "Dataset",
+  const faqSchema = getFAQPageSchema(FAQS);
+  const datasetSchema = datasetSchemaFor(SITE, DATASETS, {
     name: "USCIS approved employment-based petitions awaiting visa availability",
     description:
       "Approved Form I-140, I-360 and I-526 petitions awaiting a visa number by employment preference category and country of birth, as counted by USCIS each quarter. It also holds I-140 receipts by fiscal year, class and country.",
     url: `${SITE}${PATH}`,
     ...(awaiting ? { dateModified: `${awaiting.asOf}-01` } : {}),
-    isBasedOn: USCIS_DATA_PAGE,
-    creator: { "@type": "Organization", name: "U.S. Citizenship and Immigration Services", url: "https://www.uscis.gov" },
-    isAccessibleForFree: true,
-    license: "https://www.usa.gov/government-works",
     variableMeasured: ["approved petitions awaiting visa availability", "preference category", "country of birth", "I-140 receipts by fiscal year"],
-  };
+  });
 
   const table = awaiting ? pivotAwaiting(awaiting.cells) : null;
   const totalAll = table?.cells.TOTAL?.TOTAL ?? null;
@@ -401,7 +390,7 @@ export default async function I140AwaitingVisaPage() {
           asOf: awaiting ? monthLabel(awaiting.asOf) : undefined,
         }}
       />{" "}
-      <DataProvenance datasets={["uscis-eb-awaiting-visa", "uscis-i140-class-country"]} />
+      <DataProvenance datasets={DATASETS} />
     </div>
   );
 }

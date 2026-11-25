@@ -305,20 +305,24 @@ export function getLongReadSchema(baseUrl: string, input: LongReadInput) {
   };
 }
 
+/** One question and its plain-text answer, as a page types it: `q` and `a`, or `question` and `answer`. */
+export type FaqEntry = { q: string; a: string } | { question: string; answer: string };
+
 /**
- * Generate FAQPage schema for rich results
- * Used on pages with FAQ content (homepage, /faq) to surface answers in search
+ * A page's FAQPage node, from the questions it shows. Every page builds it here (the structured-data gate fails a
+ * FAQPage literal anywhere else), so each Question has its name and an acceptedAnswer with text, the shape the
+ * engines that still read FAQPage ask for. The answer must be plain text: JSX would serialise to nothing.
  */
-export function getFAQPageSchema(faqs: { question: string; answer: string }[]) {
+export function getFAQPageSchema(faqs: readonly FaqEntry[]) {
   return {
     '@context': 'https://schema.org',
     '@type': 'FAQPage' as const,
     mainEntity: faqs.map((faq) => ({
       '@type': 'Question' as const,
-      name: faq.question,
+      name: 'q' in faq ? faq.q : faq.question,
       acceptedAnswer: {
         '@type': 'Answer' as const,
-        text: faq.answer,
+        text: 'q' in faq ? faq.a : faq.answer,
       },
     })),
   };

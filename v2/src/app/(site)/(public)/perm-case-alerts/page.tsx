@@ -12,6 +12,7 @@ import {
 
 import { PageSection } from "@/components/data/PageSection";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { BulletinAlertForm } from "@/components/tools/BulletinAlertForm";
 import { CaseListAlertForm } from "@/components/tools/CaseListAlertForm";
 import { CaseLookupForm } from "@/components/tools/CaseLookupForm";
@@ -108,11 +109,7 @@ const KINDS = [
 ] as const;
 
 export default function Page() {
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
-  };
+  const faqSchema = getFAQPageSchema(FAQS);
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pb-16 pt-10 sm:px-6 sm:pt-12">
       <JsonLdScript schema={faqSchema} />

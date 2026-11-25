@@ -11,7 +11,7 @@ import { breadcrumbSchema } from "@/lib/breadcrumbs";
 import { SITE_URL } from "@/lib/constants/site";
 import type { EntityKind } from "@/lib/entityPayload";
 import { openGraphBaseNoImage } from "@/lib/openGraphBase";
-import { getDatasetSchema } from "@/lib/structuredData";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { listByKind, PRERENDERED_ENTITY_HEAD } from "@/lib/db/entities";
 import type { DatasetFreshness } from "@/lib/db/publicData";
 import { isNeutralPath } from "@/lib/privacy/withheld";
@@ -88,7 +88,7 @@ export function entityJsonLd({
   return {
     "@context": "https://schema.org",
     "@graph": [
-      getDatasetSchema(SITE_URL, {
+      datasetSchemaFor(SITE_URL, ["perm-cases"], {
         name: dataset.name,
         description: dataset.description,
         url: `${SITE_URL}${path}`,

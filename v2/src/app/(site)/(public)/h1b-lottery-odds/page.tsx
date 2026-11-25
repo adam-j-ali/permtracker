@@ -12,6 +12,7 @@ import Link from "next/link";
 import { ChartHit } from "@/components/data/ChartHit";
 import { ChartTips } from "@/components/data/ChartTips";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { FaqList } from "@/components/tools/FaqList";
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
 import { timesWord } from "@/lib/h1bLotteryCalc";
@@ -71,15 +72,7 @@ export default function H1bLotteryOddsPage() {
   const newestRate = perRegistrationRate(newest);
   const perBen = registrationsPerBeneficiary(newest);
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage" as const,
-    mainEntity: FAQS.map((f) => ({
-      "@type": "Question" as const,
-      name: f.q,
-      acceptedAnswer: { "@type": "Answer" as const, text: f.a },
-    })),
-  };
+  const faqSchema = getFAQPageSchema(FAQS);
 
   // The year chart: eligible registrations as the frame, selected filled in.
   const W = 720;

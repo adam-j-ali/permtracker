@@ -11,7 +11,7 @@ import type { Metadata } from "next";
 import { withSocialCard } from "@/lib/socialCard";
 import Link from "next/link";
 
-import { getDatasetSchema } from "@/lib/structuredData";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { ChartTips } from "@/components/data/ChartTips";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { openGraphBase } from "@/lib/openGraphBase";
@@ -28,6 +28,9 @@ import { ChapterNav, type ChapterItem } from "@/components/entities/Chapters";
 import { formatInt } from "@/lib/format";
 import { SITE_URL } from "@/lib/constants/site";
 import { entityHref } from "@/lib/entityPayload";
+
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["perm-cases", "entities"] as const;
 const TITLE = "Find a PERM Law Firm: Cases and Approvals";
 const DESCRIPTION =
   "Compare every immigration law firm filing PERM cases by cases filed, approval rate and processing time, from DOL's own disclosure data.";
@@ -71,7 +74,7 @@ export default async function PermAttorneysPage() {
     { id: "a-z", label: "A to Z" },
   ];
 
-  const datasetSchema = getDatasetSchema(SITE_URL, {
+  const datasetSchema = datasetSchemaFor(SITE_URL, DATASETS, {
     name: "PERM labor certification filings by law firm",
     description: DESCRIPTION,
     url: `${SITE_URL}/perm-attorneys`,
@@ -242,7 +245,7 @@ export default async function PermAttorneysPage() {
       <p className="mt-8 max-w-3xl text-sm leading-relaxed text-muted-foreground">
         Filings newer than DOL&apos;s last published file aren&apos;t here: DOL names the firm only when it publishes the decided case. Those cases are on the <Link href="/perm-cases#live" className="link">live list</Link>, by employer.
       </p>{" "}
-      <DataProvenance datasets={["perm-cases", "entities"]} />
+      <DataProvenance datasets={DATASETS} />
     </div>
   );
 }

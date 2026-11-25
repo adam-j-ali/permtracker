@@ -17,6 +17,7 @@ const I485_COUNTRY: Record<CountryKey, string> = {
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
 import { FaqList } from "@/components/tools/FaqList";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { getFAQPageSchema } from "@/lib/structuredData";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { DataProvenance } from "@/components/data/DataProvenance";
 import {
@@ -129,15 +130,7 @@ export default async function I485QueuePositionPage() {
   // the undercount is only people who could file and have not.
   const newestBulletin = bulletins[bulletins.length - 1] ?? null;
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage" as const,
-    mainEntity: FAQS.map((f) => ({
-      "@type": "Question" as const,
-      name: f.q,
-      acceptedAnswer: { "@type": "Answer" as const, text: f.a },
-    })),
-  };
+  const faqSchema = getFAQPageSchema(FAQS);
 
 
   return (

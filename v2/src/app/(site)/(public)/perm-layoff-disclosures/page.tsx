@@ -24,9 +24,13 @@ import { formatInt, formatShareOf } from "@/lib/format";
 import { newestYear, outcomeTotal, yearComplete, type LayoffDoc, type LayoffEmployer } from "@/lib/layoffDisclosures";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
-import { getDatasetSchema } from "@/lib/structuredData";
+import { getFAQPageSchema } from "@/lib/structuredData";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { softFail } from "@/lib/softRead";
 import { keepWhole } from "@/components/ui/keep-whole";
+
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["perm-cases"] as const;
 
 /**
  * What employers told DOL about layoffs on their PERM applications (Form 9089,
@@ -120,20 +124,15 @@ export default async function Page() {
   const doc = await getLayoffDisclosures();
   const qa = faqs(doc);
   const schemas: object[] = [
-    getDatasetSchema(SITE_URL, {
+    datasetSchemaFor(SITE_URL, DATASETS, {
       name: "Layoffs reported on PERM applications",
       description:
         "Each employer's answer to Form 9089's layoff question (Section G, Item 12) on its decided PERM applications, by fiscal year, employer and occupation, from DOL's PERM disclosure files.",
       url: `${SITE_URL}${PATH}`,
-      isBasedOn: "https://www.dol.gov/agencies/eta/foreign-labor/performance",
       temporalCoverage: doc ? `${doc.years[0]!.from ?? `${doc.years[0]!.fy - 1}-10-01`}/${doc.newestThrough ?? ".."}` : "2015-10-01/..",
       variableMeasured: ["Applications reporting a layoff", "Applications answering the layoff question", "Outcomes"],
     }),
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: qa.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
-    },
+    getFAQPageSchema(qa),
   ];
   const y = doc ? newestYear(doc) : null;
   const top = doc?.employers[0] ?? null;
@@ -344,7 +343,7 @@ export default async function Page() {
           When your employer has layoffs
         </Link>
       </nav>{" "}
-      <DataProvenance datasets={["perm-cases"]} />
+      <DataProvenance datasets={DATASETS} />
     </div>
   );
 }

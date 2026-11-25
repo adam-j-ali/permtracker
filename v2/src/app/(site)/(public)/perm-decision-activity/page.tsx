@@ -24,7 +24,7 @@ import { DataProvenance } from "@/components/data/DataProvenance";
 import { FinePrint } from "@/components/data/FinePrint";
 import { PageBasics } from "@/components/data/PageBasics";
 import { FigurePlate } from "@/components/tools/FigurePlate";
-import { getDatasetSchema } from "@/lib/structuredData";
+import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { DecisionPaceChart } from "@/components/activity/DecisionPaceChart";
@@ -57,6 +57,9 @@ import { SITE_URL } from "@/lib/constants/site";
 import { softFail } from "@/lib/softRead";
 import { StepBothSources } from "@/components/community/StepBothSources";
 import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
+
+/** The page's datasets, for its source line and its Dataset node alike. */
+const DATASETS = ["daily-decisions", "perm-case-status"] as const;
 
 const TITLE = "PERM Decisions Over Time";
 const DESCRIPTION =
@@ -152,7 +155,7 @@ export default async function DecisionActivityPage() {
   const idleWeekdays = zeroWeekdays(record);
   const recordTotal = record.reduce((a, b) => a + b.total, 0);
 
-  const schema = getDatasetSchema(SITE_URL, {
+  const schema = datasetSchemaFor(SITE_URL, DATASETS, {
     name: "PERM decisions per day",
     description: DESCRIPTION,
     url: `${SITE_URL}/perm-decision-activity`,
@@ -554,7 +557,7 @@ export default async function DecisionActivityPage() {
 
       <StepBothSources here="/perm-decision-activity" groups={["perm"]} />{" "}
       <PageBasics page="perm-decision-activity" />{" "}
-      <DataProvenance datasets={["daily-decisions", "perm-case-status"]} />
+      <DataProvenance datasets={DATASETS} />
     </div>
   );
 }
