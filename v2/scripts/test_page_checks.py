@@ -131,6 +131,28 @@ def main() -> int:
         failures.append("against a local copy, axe and the phone sweep load several pages at once")
     if any("--workers" in cmd for cmd in live.values()):
         failures.append("against the live site, no check loads several pages at once")
+    # Nov 25 2026: a local build also sweeps a slice of the site's other pages, a different slice for each commit, so
+    # every page is swept within a few builds; the live site never takes the extra loads.
+    one, two = pc.rotation("a" * 40), pc.rotation("7" * 40)
+    if len(one) != pc.ROTATION or one == two:
+        failures.append(f"each commit sweeps its own slice of {pc.ROTATION} pages: {one[:3]} {two[:3]}")
+    if any(r in pc.PAGES or r.startswith(("/blog/", "/guides/", "/changelog/")) or "[" in r for r in one):
+        failures.append(f"the slice holds only pages the fixed list doesn't, and no articles: {one}")
+    if len(set(one)) != len(one):
+        failures.append(f"the slice repeats no page: {one}")
+    covered = set()
+    for i in range(40):
+        covered |= set(pc.rotation(f"{i * 0x5f3759d:08x}" + "0" * 32))
+    if len(covered) < len(pc.rotation_pool()) * 0.9:
+        failures.append(f"forty commits reach most of the pool: {len(covered)} of {len(pc.rotation_pool())}")
+    sha = "b" * 40
+    local_rot = {c["key"]: c["cmd"] for c in pc.checks("http://127.0.0.1:3000", sha=sha)}
+    live_rot = {c["key"]: c["cmd"] for c in pc.checks("https://permtracker.app", sha=sha)}
+    picked = pc.rotation(sha)
+    if not all(r in local_rot["phone"] and r in local_rot["axe"] for r in picked):
+        failures.append("a local build's phone sweep and axe read the commit's slice")
+    if any(r in live_rot["phone"] or r in live_rot["axe"] for r in picked if r not in pc.PAGES):
+        failures.append("the live site's checks read no slice")
     import threading
     import time as _time
     started, live_n, peak = [], [0], [0]

@@ -69,15 +69,53 @@ LOCAL_WORKERS = 3
 EXPECTED_S = {"axe": 420, "phone": 289, "headings": 86, "hidden": 48, "trust": 43, "glued": 42, "pages": 36, "flows": 21}
 
 
+# A local build's axe and phone sweep also read this many of the site's other pages, a different slice for each commit,
+# so every page is swept within a few builds (Nov 25 2026: a sweep of all 113 static pages found four the fixed list
+# never reached, /badges 271 px past a phone's edge among them). Only a local copy takes the extra loads.
+ROTATION = 15
+
+
+def rotation_pool() -> list[str]:
+    """The pages a slice is drawn from: every static public page (one per page.tsx, so a template's hundreds of copies
+    count once, through the fixed list's sample) the fixed list doesn't hold."""
+    public = ROOT / "src" / "app" / "(site)" / "(public)"
+    routes = set()
+    for page in public.rglob("page.tsx"):
+        parts = [x for x in page.parent.relative_to(public).parts if not x.startswith("(")]
+        if any(x.startswith(("[", "_")) for x in parts):
+            continue
+        routes.add("/" + "/".join(parts) if parts else "/")
+    return sorted(routes - set(PAGES))
+
+
+def rotation(sha: str) -> list[str]:
+    """This commit's slice: ROTATION pages in a row from a start the commit picks, wrapping at the end."""
+    pool = rotation_pool()
+    if not pool:
+        return []
+    start = int(sha[:8], 16) % len(pool) if re.fullmatch(r"[0-9a-f]{8,}", sha or "") else 0
+    return [pool[(start + i) % len(pool)] for i in range(min(ROTATION, len(pool)))]
+
+
+def head_sha() -> str:
+    sha = os.environ.get("GITHUB_SHA", "")
+    if sha:
+        return sha
+    done = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True)
+    return done.stdout.strip() if done.returncode == 0 else ""
+
+
 def is_local(base: str) -> bool:
     return (urlparse(base).hostname or "") in LOCAL_HOSTS
 
 
-def checks(base: str, extra: list[str] | None = None) -> list[dict]:
-    """`extra`: more pages for the checks that read a list (a push's changed pages, before it ships)."""
+def checks(base: str, extra: list[str] | None = None, sha: str | None = None) -> list[dict]:
+    """`extra`: more pages for the checks that read a list (a push's changed pages, before it ships). `sha`: the commit
+    whose slice a local build's axe and phone sweep add (the checked-out commit when not given)."""
     py = sys.executable
     pages = list(dict.fromkeys([*PAGES, *(extra or [])]))
     workers = ["--workers", str(LOCAL_WORKERS)] if is_local(base) else []
+    swept = list(dict.fromkeys([*pages, *(rotation(sha if sha is not None else head_sha()) if is_local(base) else [])]))
     return [
         {"key": "glued", "title": "Words run together", "cmd": [py, "scripts/audit_glued_text.py", "--base", base], "limit": 600},
         {"key": "hidden", "title": "Content hidden until scripts run", "cmd": [py, "scripts/audit_ssr_visibility.py", "--base", base, "--limit", "150"], "limit": 600},
@@ -97,8 +135,8 @@ def checks(base: str, extra: list[str] | None = None) -> list[dict]:
         # Not a page check either: a sentence that put a deadline ahead ("comments close November 9") goes wrong
         # by itself the day after, with no push to catch it, so it's read against today's date each morning.
         {"key": "deadlines", "title": "Deadlines written as ahead after the day passed", "cmd": [py, "scripts/audit_passed_deadlines.py"], "limit": 60},
-        {"key": "axe", "title": "Accessibility (axe, WCAG AA)", "cmd": ["node", "scripts/audit_axe.mjs", base, *pages, *workers], "limit": 900},
-        {"key": "phone", "title": "Phone widths (overflow, text size, tap size, split names)", "cmd": ["node", "scripts/phone_sweep.mjs", base, *pages, *workers], "limit": 900,
+        {"key": "axe", "title": "Accessibility (axe, WCAG AA)", "cmd": ["node", "scripts/audit_axe.mjs", base, *swept, *workers], "limit": 900},
+        {"key": "phone", "title": "Phone widths (overflow, text size, tap size, split names)", "cmd": ["node", "scripts/phone_sweep.mjs", base, *swept, *workers], "limit": 900,
          # A page with nothing wrong prints a line too; the report keeps the lines with findings.
          "clean": r"overflow=0px\s+(past=0\s+)?small=0\s+taps=0(\s+covered=0)?(\s+split=0)?(\s+\([\d.]+ s\))?\s*$"},
         {
