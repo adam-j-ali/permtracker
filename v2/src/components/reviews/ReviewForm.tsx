@@ -330,7 +330,7 @@ export function ReviewForm() {
         <p role="status" className="sr-only">
           {error ? error.message : ""}
         </p>
-        <fieldset ref={starsRef} aria-describedby={error?.field === "rating" ? "review-error-rating" : "review-hint-rating"} className="scroll-mt-24 text-center">
+        <fieldset ref={starsRef} aria-describedby={error?.field === "rating" ? "review-error-rating" : "review-hint-rating"} className="min-w-0 scroll-mt-24 text-center">
           <legend className="block w-full text-center text-xl font-bold">How would you rate PERM Tracker?</legend>{" "}
           <div className="mt-3 flex flex-col items-center">
             <div key={nudge} className={cn("flex", nudge > 0 && "review-stars-nudge")} onPointerLeave={() => setPointing(null)}>
@@ -342,7 +342,7 @@ export function ReviewForm() {
                     onPointerEnter={(e) => {
                       if (e.pointerType === "mouse" && Date.now() >= hoverQuietUntil.current) setPointing(n);
                     }}
-                    className="flex size-16 cursor-pointer items-center justify-center has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-foreground"
+                    className="flex size-14 min-[360px]:size-16 cursor-pointer items-center justify-center has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-foreground"
                   >
                     <input
                       type="radio"

@@ -194,7 +194,7 @@ export default async function CompareEmployersPage({
       ) : null}{" "}
 
       {both ? (
-        <div className="mt-10 overflow-x-auto overscroll-x-none border-t-2 border-[var(--object-border)] bg-card">
+        <div className="mt-10 relative overflow-x-auto overscroll-x-none border-t-2 border-[var(--object-border)] bg-card">
           <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead className="dark border-b border-black bg-[#141414] text-foreground">
               <tr>

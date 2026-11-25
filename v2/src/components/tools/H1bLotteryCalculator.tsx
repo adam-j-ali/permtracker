@@ -30,6 +30,7 @@ import { ScrollBox } from "@/components/ui/scroll-box";
 import { SocPicker } from "@/components/soc/SocPicker";
 import { AreaLoadFailure, areaPlaceholder, useWageAreas } from "@/components/tools/WageAreas";
 import { keepWhole } from "@/components/ui/keep-whole";
+import { cn } from "@/lib/utils";
 
 /**
  * The weighted H-1B lottery for one job: the OEWS level an offer meets in
@@ -294,7 +295,7 @@ export function H1bLotteryCalculator() {
           <button
             type="submit"
             disabled={result.kind === "loading"}
-            className={buttonVariants({ variant: "default", size: "lg" })}
+            className={cn(buttonVariants({ variant: "default", size: "lg" }), "h-auto min-h-12 max-w-full whitespace-normal py-2 text-center")}
           >
             {result.kind === "loading" ? "Asking DOL" : "Work out the level and the odds"}
           </button>{" "}

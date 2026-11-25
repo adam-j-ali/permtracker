@@ -156,7 +156,7 @@ export default async function LcaWageSourcesPage() {
                     {" "}
                     <li className="flex items-baseline gap-3 py-2 text-base">
                       <span className="min-w-0">
-                        <span className="font-bold">{p.name}</span>{" "}
+                        <span className="font-bold">{keepWhole(p.name)}</span>{" "}
                         {p.spellings.length > 1 ? (
                           <span className="block text-sm text-muted-foreground">{`as ${p.spellings.join("; ")}`}</span>
                         ) : null}
@@ -174,7 +174,7 @@ export default async function LcaWageSourcesPage() {
                   <Fragment key={s.name}>
                     {" "}
                     <li className="flex items-baseline gap-3 py-2 text-base">
-                      <span className="min-w-0">{s.name}</span>{" "}
+                      <span className="min-w-0">{keepWhole(s.name)}</span>{" "}
                       <span className="ml-auto font-mono text-sm tabular-nums">{formatInt(s.n)}</span>
                     </li>
                   </Fragment>

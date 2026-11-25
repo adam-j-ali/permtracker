@@ -230,7 +230,7 @@ export function FilingsExplorer({ asOf, windowFrom, programs }: { asOf: string; 
               See its {names.plural}
             </button>
           </form>{" "}
-          <div className="mt-8 overflow-x-auto" role="region" aria-label={`${names.plural} by day`} tabIndex={0}>
+          <div className="mt-8 relative overflow-x-auto" role="region" aria-label={`${names.plural} by day`} tabIndex={0}>
             <table className="w-full min-w-[36rem] border-collapse text-left">
               <caption className="sr-only">{`${names.plural} filed each day, ${longDate(from)} to ${longDate(to)}`}</caption>
               <thead>

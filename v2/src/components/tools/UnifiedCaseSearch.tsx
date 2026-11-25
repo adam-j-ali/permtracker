@@ -1807,7 +1807,7 @@ export function UnifiedCaseSearch({
               <PhoneRow key={r.caseNumber} r={r} />
             ))}
           </ul>{" "}
-          <div className="mt-4 hidden overflow-x-auto sm:block">
+          <div className="mt-4 hidden relative overflow-x-auto sm:block">
             <table className="w-full min-w-[1200px] border-collapse text-left text-base">
               <caption className="sr-only">
                 <KeepWhole>{"Every filing found across PERM, wage requests, LCAs and H-2A, H-2B and CW-1"}</KeepWhole>

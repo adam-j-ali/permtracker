@@ -76,7 +76,7 @@ export default async function BulletinCategoriesPage() {
 
       {board && categories.length ? (
         <section className="mt-10">
-          <div className="overflow-x-auto border-t-2 border-[var(--object-border)] bg-card">
+          <div className="relative overflow-x-auto border-t-2 border-[var(--object-border)] bg-card">
             <table className="w-full min-w-[760px] text-left text-base">
               <caption className="sr-only">
                 Final action and dates for filing cutoffs, {bulletinMonthLabel(board.lastMonth)}, by category and country

@@ -139,7 +139,7 @@ export default async function FilingsByDayPage() {
         <h2 id="every-program" className="font-heading text-2xl font-bold">
           Every program
         </h2>{" "}
-        <div className="mt-4 overflow-x-auto">
+        <div className="mt-4 relative overflow-x-auto">
           <table className="w-full min-w-[34rem] border-collapse text-left">
             <caption className="sr-only">Filings by program, today so far, yesterday, the last 7 days and the last 30 days</caption>
             <thead>

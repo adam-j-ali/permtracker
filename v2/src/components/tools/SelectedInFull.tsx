@@ -11,6 +11,8 @@
  * when the label is long enough to be at risk, so a short choice is not
  * repeated twice on the screen.
  */
+import { keepWhole } from "@/components/ui/keep-whole";
+
 
 const SHOW_FROM = 26;
 
@@ -18,7 +20,7 @@ export function SelectedInFull({ label }: { label: string | null | undefined }) 
   if (!label || label.length < SHOW_FROM) return null;
   return (
     <p className="mt-1 text-sm leading-relaxed text-muted-foreground" data-selected-in-full>
-      Selected: <span className="font-bold text-soft">{label}</span>
+      Selected: <span className="font-bold text-soft">{keepWhole(label)}</span>
     </p>
   );
 }

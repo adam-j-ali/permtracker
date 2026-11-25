@@ -131,7 +131,7 @@ export default function CalculatorsPage() {
           tool, in the order the process happens. */}
       <section className="mt-10">
         <h2 className="font-heading text-2xl font-bold">Which one answers your question?</h2>
-        <div className="mt-6 overflow-x-auto">
+        <div className="mt-6 relative overflow-x-auto">
           <table className="w-full border-t-2 border-[var(--object-border)] text-left text-sm">
             <thead className="dark border-b border-black bg-[#141414] text-foreground">
               <tr>

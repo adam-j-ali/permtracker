@@ -12,6 +12,8 @@
  */
 import { isValidElement, type ReactNode } from "react";
 
+import { keepWhole } from "@/components/ui/keep-whole";
+
 /** The plain text of a React node: strings and numbers, through children. */
 export function plainText(node: ReactNode): string {
   if (node === null || node === undefined || typeof node === "boolean") return "";
@@ -64,7 +66,7 @@ export function MoreText({
     <details className={`group max-w-3xl ${className}`}>
       <summary className={`flex min-h-[44px] cursor-pointer list-none items-baseline gap-x-2 py-1 leading-relaxed text-soft [&::-webkit-details-marker]:hidden ${size === "sm" ? "text-sm" : "text-base"}`}>
         <span>
-          {gist}{" "}
+          {keepWhole(gist)}{" "}
           <span className="whitespace-nowrap font-bold link group-open:hidden">
             More
           </span>

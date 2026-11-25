@@ -224,7 +224,7 @@ function StepLabel({ s, n, today, sides }: { s: PlanStep; n: number; today: stri
           <ArrowRightIcon aria-hidden="true" weight="bold" className="size-4 text-soft transition-transform motion-safe:group-hover:translate-x-0.5" />
         </Link>{" "}
         {headline(s, today) ? <p className={cn("text-lg font-bold tabular-nums", inkOf(s))}>{headline(s, today)}</p> : null}{" "}
-        <p className="text-sm tabular-nums text-soft">{when(s, today)}</p>{" "}
+        <p className="text-sm tabular-nums text-soft">{keepWhole(when(s, today))}</p>{" "}
         {sides.map((side) => (
           <p key={side.key} className="text-sm tabular-nums text-soft">
             {side.name}: {side.end ? dayLabel(side.end.mid, today) : "no measured wait"}{" "}

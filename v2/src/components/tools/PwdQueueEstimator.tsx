@@ -21,7 +21,7 @@ import { PwdBacklogChart } from "@/components/tools/PwdBacklogChart";
 import { Label } from "@/components/ui/label";
 import { CaveatBox } from "@/components/ui/note";
 import { cn } from "@/lib/utils";
-import { KeepWhole } from "@/components/ui/keep-whole";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 export interface PwdQueueEstimatorProps {
   frontier: { oewsMonth: string | null; nonOewsMonth: string | null } | null;
@@ -214,7 +214,7 @@ export function PwdQueueEstimator({
           <ul className="mt-3 space-y-2">
             {estimate.caveats.map((c) => (
               <li key={c} className="text-base leading-relaxed">
-                {c}{" "}
+                {keepWhole(c)}{" "}
               </li>
             ))}
           </ul>

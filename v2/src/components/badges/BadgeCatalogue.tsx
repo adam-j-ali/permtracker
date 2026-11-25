@@ -176,7 +176,7 @@ function MatrixGroup({
       <p className="border-b-2 border-border p-4 text-sm leading-relaxed text-soft">
         {`The final action cutoff the State Department published for each category and country. A priority date earlier than its cutoff has a visa number available. Pick a badge for its line.`}
       </p>{" "}
-      <div className="overflow-x-auto overscroll-x-none">
+      <div className="relative overflow-x-auto overscroll-x-none">
         {/* Fixed columns, and each badge scales down to its cell (the SVGs
             carry a viewBox), so five places fit a desktop column; a phone
             scrolls the table inside its own box. */}
@@ -368,7 +368,7 @@ export function BadgeCatalogue({ rows, origin }: { rows: BadgeRow[]; origin: str
                     />{" "}
                     <div className="flex flex-1 flex-col p-4">
                       <p className="font-heading text-lg font-bold">{keepWhole(row.label)}</p>{" "}
-                      <p className="mt-1 text-sm leading-relaxed text-soft">{row.meaning}</p>{" "}
+                      <p className="mt-1 text-sm leading-relaxed text-soft">{keepWhole(row.meaning)}</p>{" "}
                       {substituted ? (
                         <p className="mt-2 text-sm text-muted-foreground">
                           Shown as {STYLE_LABELS[v.style].toLowerCase()}: {STYLE_LABELS[style].toLowerCase()} needs a

@@ -741,7 +741,7 @@ export function ImportModal({
                   <div className="border-border border">
                     <div
                       className={cn(
-                        "overflow-x-auto overscroll-x-none",
+                        "relative overflow-x-auto overscroll-x-none",
                         showAllCases && "max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent"
                       )}
                     >
@@ -1077,7 +1077,7 @@ export function ImportModal({
               </div>
 
               {/* Duplicate List */}
-              <div className="border-t-2 border-[var(--object-border)] overflow-x-auto overscroll-x-none">
+              <div className="border-t-2 border-[var(--object-border)] relative overflow-x-auto overscroll-x-none">
                 <table className="w-full min-w-[600px]">
                   <thead>
                     <tr className="border-b-2 border-border bg-muted">

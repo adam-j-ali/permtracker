@@ -57,7 +57,7 @@ export function ActionList({
                   <span className="sr-only">{`, ${KIND[a.kind].toLowerCase()}, ${shortDate(a.date)}`}</span>
                 </h3>{" "}
                 {a.place ? <p className="text-sm text-muted-foreground">{a.place}</p> : null}{" "}
-                <p className="mt-2 text-base leading-relaxed">{a.conduct}</p>{" "}
+                <p className="mt-2 text-base leading-relaxed">{keepWhole(a.conduct)}</p>{" "}
                 {a.civilPenalty || a.backPay ? (
                   <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-base">
                     {a.civilPenalty ? (

@@ -203,7 +203,7 @@ export function RateTable({
   );
 
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <table className="w-full min-w-[560px] border-t-2 border-[var(--object-border)] text-left text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead className="dark border-b border-black bg-[#141414] text-foreground">

@@ -172,7 +172,7 @@ export async function CityReference({
           className="mt-10"
         >
           <PayBands bands={bands} scale="auto" label={`Market pay and DOL wage levels in ${label}`} />
-          <div className="mt-6 overflow-x-auto">
+          <div className="mt-6 relative overflow-x-auto">
             <table className="w-full min-w-[40rem] text-left text-base">
               <caption className="sr-only">Market pay and DOL wage levels for the jobs filed most here{" "}</caption>
               <thead>

@@ -330,7 +330,7 @@ export function UsersTable({
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto overscroll-x-none">
+          <div className="relative overflow-x-auto overscroll-x-none">
             <table className="w-full border-collapse">
               <thead className="border-b-2 border-border bg-muted/50 sticky top-0 z-10">
                 <tr>

@@ -432,7 +432,7 @@ export default async function SponsorFinderPage({
                     </li>
                   ))}
                 </ul>{" "}
-                <div className="mt-4 hidden overflow-x-auto border-t-2 border-[var(--object-border)] sm:block">
+                <div className="mt-4 hidden relative overflow-x-auto border-t-2 border-[var(--object-border)] sm:block">
                   <table className="w-full min-w-[960px] border-collapse text-sm">
                     <caption className="sr-only">Sponsors matching the filters</caption>
                     <thead>

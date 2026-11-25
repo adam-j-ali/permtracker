@@ -439,7 +439,7 @@ export default async function EstimateScorecardPage() {
           Before the daily sample began, a few cases were written down by hand, exactly as the case page printed them
           then. Their windows are the months-wide ranges of those earlier methods.
         </p>{" "}
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
         <table className="w-full min-w-[56rem] border-collapse text-left text-sm">
             <thead>
               <tr className="border-b-2 border-border">
