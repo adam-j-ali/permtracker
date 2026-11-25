@@ -318,6 +318,8 @@ case "$job" in
     # DOL's quarterly Selected Statistics for PERM and wage requests (Nov 25 2026): one page read a day, the PDFs only
     # when a new quarter is listed. It records its own ok row, or the reason a sheet didn't read.
     python3 scripts/ingest_dol_selected_stats.py || { rc=1; fail ingest_dol_selected_stats.py "a sheet didn't read; the stored copy stands"; }
+    # Then our figures scored against DOL's (figure_scores, D11): a few reads, a few rows.
+    python3 scripts/score_official_figures.py || { rc=1; fail score_official_figures.py "scoring against DOL's figures failed"; }
     export_published ;;
   # The public community sheets people keep their own green card cases in, hourly (moved here from GitHub's runners on
   # Nov 23 2026, so their log stays on this server). Each sheet's parse settings are private, beside this job's other
