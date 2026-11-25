@@ -16,6 +16,8 @@ export const CONSULAR_PAGES = [
   "/sitemaps/pages.xml",
   // State's refusals by ground, every year.
   "/visa-refusals",
+  // The site search's list of consulate pages (src/app/consulates.json), so a new post is found the day it lands.
+  "/consulates.json",
 ];
 
 /** Whole families, by FILE path (route groups included), expired with the (route, "page") form. */

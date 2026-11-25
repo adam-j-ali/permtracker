@@ -26,6 +26,7 @@ import { CircleNotchIcon, ClockCounterClockwiseIcon, MagnifyingGlassIcon } from 
 
 import { staticIndex } from "@/lib/search/siteIndex";
 import { useArticles } from "@/lib/search/articleList";
+import { useConsulates } from "@/lib/search/consulateList";
 import { GROUPS } from "@/lib/siteMap";
 import { fuzzyScore } from "@/lib/fuzzy";
 import { useNameSuggestions } from "@/components/search/DidYouMean";
@@ -116,6 +117,8 @@ export function SearchPalette({
   // Fetched the first time the palette opens and kept for the visit; the page
   // itself no longer carries the list (src/app/articles.json).
   const { articles, failed: articlesFailed } = useArticles(true);
+  // Every consulate with a page (/consulates.json, Batch 5): listed once something is typed, matched like the pages.
+  const { list: consulates, failed: consulatesFailed } = useConsulates(open);
   const pathname = usePathname();
   const [query, setQuery] = React.useState(initialQuery);
   // Each opening starts from what the box held at that moment.
@@ -384,7 +387,7 @@ export function SearchPalette({
             the moment you type, and it is the only place that can hold the
             whole list of what this box accepts. */}
         <p className="border-b-2 border-border px-4 py-2 text-sm leading-snug text-muted-foreground">
-          Employers, law firms, occupations, pages and articles. Paste a G-, A-,
+          Employers, law firms, occupations, consulates, pages and articles. Paste a G-, A-,
           P-, I- or H- case number and it goes straight to the lookup.
         </p>
         {navTarget !== null ? (
@@ -601,6 +604,25 @@ export function SearchPalette({
             ),
           )}
 
+          {query.trim() !== "" && consulates.length > 0 ? (
+            <Command.Group heading="Consulates" className={GROUP_HEADING}>
+              {consulates.map((c) => (
+                <Command.Item
+                  key={c.href}
+                  value={`${c.label} ${c.keywords}`}
+                  onSelect={() => go(c.href, c.label, c.label)}
+                  className={ROW}
+                >
+                  {keepWhole(c.label)}
+                </Command.Item>
+              ))}
+            </Command.Group>
+          ) : null}
+          {query.trim() !== "" && consulatesFailed && consulates.length === 0 ? (
+            <p className="px-3 py-2 text-sm text-muted-foreground">
+              Consulates couldn&apos;t load this time. Close search and open it again to retry.
+            </p>
+          ) : null}
           {articlesFailed && articles.length === 0 ? (
             <p className="px-3 py-2 text-sm text-muted-foreground">
               Articles couldn&apos;t load this time. Close search and open it again to retry.
