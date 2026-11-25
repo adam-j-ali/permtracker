@@ -182,6 +182,25 @@ export function monthRows(doc: SampleMonthsDoc, form: string): MonthRow[] {
   }));
 }
 
+export interface SampleMonth {
+  month: string;
+  counted: number;
+  approved: GroupFigure;
+}
+
+/**
+ * A form's newest months that have ended, newest first, each with the cases the sample holds of it: the small figure
+ * the form and center pages show (Batch 8). The month the sample is dated in is still filling, so it's left out. A
+ * month with few cases still shows, its margin and count beside it, never hidden (the owner's call, Nov 25 2026).
+ */
+export function newestCompleteMonths(doc: SampleMonthsDoc, form: string, n = 3): SampleMonth[] {
+  const filling = doc.as_of.slice(0, 7);
+  return monthRows(doc, form)
+    .filter((r) => r.month < filling)
+    .slice(0, n)
+    .map((r) => ({ month: r.month, counted: r.counted, approved: r.approved }));
+}
+
 /**
  * Whether a typed receipt shows the last status the sample saw for that exact number (the owner's call, Nov 25 2026:
  * "Show its last status"). Off until the Privacy Policy line that describes it is approved: today the policy says a

@@ -26,6 +26,8 @@ const getUscisMonthly = vi.fn(async () => null as unknown);
 vi.mock("@/lib/db/uscisMonthly", () => ({ getUscisMonthly }));
 const getReportedSummary = vi.fn(async () => null as unknown);
 vi.mock("@/lib/db/reportedSummary", () => ({ getReportedSummary }));
+const getSampleMonths = vi.fn(async () => null as unknown);
+vi.mock("@/lib/db/uscisSample", () => ({ getSampleMonths }));
 
 const { default: UscisFormPage } = await import("../page");
 
@@ -58,6 +60,8 @@ beforeEach(() => {
   getPostedHistory.mockReset();
   getUscisPosted.mockResolvedValue(POSTED);
   getPostedHistory.mockResolvedValue([]);
+  getSampleMonths.mockReset();
+  getSampleMonths.mockResolvedValue(null);
 });
 
 describe("the I-140's posted times when USCIS has posted again", () => {
@@ -239,5 +243,66 @@ describe("what people reported, on the pages of the forms they report", () => {
     const text = await page("i-140");
     expect(text).not.toContain("What people reported about their own I-140s");
     expect(text).toContain("Median months, quarter by quarter");
+  });
+});
+
+describe("our USCIS sample's share approved, on the form pages", () => {
+  const figure = (counted: number, share: number) => ({
+    counted, walked_cases: 0, drawn_cases: counted, rest_unknown: false, rest_share: 1,
+    groups: {
+      approved: { count: Math.round(counted * share), estimated: 0, share, low: Math.max(0, share - 0.1), high: Math.min(1, share + 0.1) },
+      denied: { count: 0, estimated: 0, share: 0, low: 0, high: 0.1 }, withdrawn: { count: 0, estimated: 0, share: 0, low: 0, high: 0.1 },
+      closed: { count: 0, estimated: 0, share: 0, low: 0, high: 0.1 }, revoked: { count: 0, estimated: 0, share: 0, low: 0, high: 0.1 },
+      rfe: { count: 0, estimated: 0, share: 0, low: 0, high: 0.1 }, waiting: { count: 0, estimated: 0, share: 0, low: 0, high: 1 },
+    },
+  });
+  const SAMPLE = {
+    as_of: "2026-11-25",
+    groups: [],
+    by_month: {
+      "2026-08": { "I-824": figure(1, 0) },
+      "2026-09": { "I-129": figure(43, 0.81), "I-824": figure(4, 0.5) },
+      "2026-10": { "I-129": figure(913, 0.71), "I-824": figure(9, 0) },
+      "2026-11": { "I-129": figure(14943, 0.38) },
+    },
+  };
+  beforeEach(() => {
+    getSampleMonths.mockReset();
+    getSampleMonths.mockResolvedValue(SAMPLE);
+  });
+
+  it("shows the newest ended months with margin and count, online filings only, and links the blocks", async () => {
+    const { container } = render(await UscisFormPage({ params: Promise.resolve({ form: "i-129" }) }));
+    const section = container.querySelector("#sample")!;
+    const text = (section.textContent ?? "").replace(/\s+/g, " ");
+    expect(section.querySelector("h2")?.textContent).toBe("Online I-129s approved so far, by the month filed");
+    expect(text).toContain("Filed in October 2026");
+    expect(text).toContain("71%");
+    expect(text).toContain("Margin 61% to 81%, from 913 cases checked.");
+    expect(text).toContain("Filed in September 2026");
+    expect(text).not.toContain("November 2026");
+    expect(text).toContain("Online (IOE) I-129s only: paper filings aren't in the sample.");
+    expect(text).toContain("as of November 25, 2026");
+    expect(section.querySelector('a[href="/uscis-receipt-blocks"]')).not.toBeNull();
+  });
+
+  it("shows a form's few cases with their margin and count, never hiding them", async () => {
+    const { container } = render(await UscisFormPage({ params: Promise.resolve({ form: "i-824" }) }));
+    const text = (container.querySelector("#sample")?.textContent ?? "").replace(/\s+/g, " ");
+    expect(text).toContain("Margin 0% to 10%, from 9 cases checked.");
+    expect(text).toContain("from 4 cases checked.");
+    expect(text).toContain("Margin 0% to 10%, from 1 case checked.");
+  });
+
+  it("shows nothing on a form the sample doesn't hold", async () => {
+    const { container } = render(await UscisFormPage({ params: Promise.resolve({ form: "i-129f" }) }));
+    expect(container.querySelector("#sample")).toBeNull();
+  });
+
+  it("loses only its own section when the sample can't be read", async () => {
+    getSampleMonths.mockRejectedValue(new Error("db down"));
+    const { container } = render(await UscisFormPage({ params: Promise.resolve({ form: "i-129" }) }));
+    expect(container.querySelector("#sample")).toBeNull();
+    expect(container.querySelector("h1")?.textContent).toBe("I-129 processing time");
   });
 });

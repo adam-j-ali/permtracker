@@ -39,6 +39,9 @@ import { getI485OfficeQuarters } from "@/lib/db/uscisQuarterly";
 import { getPostedHistory, getUscisPosted } from "@/lib/db/uscisPosted";
 import { changeWords, officeStanding, waitPapers, yearChange } from "@/lib/uscisPosted";
 import { PostedI140History } from "@/components/uscis/PostedI140History";
+import { SampleMonthFigures } from "@/components/uscis/SampleMonthFigures";
+import { getSampleMonths } from "@/lib/db/uscisSample";
+import { newestCompleteMonths, type SampleMonthsDoc } from "@/lib/uscisSample";
 import { formatAsOf } from "@/lib/dolFormat";
 import {
   officeYear,
@@ -146,7 +149,7 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
   const office = officeBySlug((await params).office);
   if (!office) notFound();
 
-  const [quarters, posted, shared, ownPosted, reported, reportedAt, summary] = await Promise.all([
+  const [quarters, posted, shared, ownPosted, reported, reportedAt, summary, sample] = await Promise.all([
     getI485OfficeQuarters(),
     getUscisPosted(),
     // People's own timelines from this office. A failed read is named on the page, never drawn as "nobody has shared".
@@ -160,7 +163,12 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
     getReportedCasesBuiltAt().catch(softFail<number | null>("i485-by-field-office/[office].reportedAt", null)),
     // How long each step took here, over every case people reported at this office (the hourly build's summary).
     getOfficeSummary(office.code).catch(softFail<PlaceSummary | null>("i485-by-field-office/[office].summary", null)),
+    // A center's page carries our USCIS sample's I-485 figure; field offices don't read it. A failed read loses only it.
+    isCenter(office)
+      ? getSampleMonths().catch(softFail<SampleMonthsDoc | null>("i485-by-field-office/[office].sample", null))
+      : Promise.resolve(null),
   ]);
+  const sampleShown = sample !== null && newestCompleteMonths(sample, "I-485").length > 0;
   const stepsMeasured = !!summary && summary.steps.some((st) => st.median !== null);
   const waiting = summary?.waiting?.open ? summary.waiting : null;
   const waitingBody = (w: NonNullable<typeof waiting>) => (
@@ -484,6 +492,26 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
         </>
       )}
 
+      {sample && sampleShown ? (
+        <section id="sample" className="mt-12 scroll-mt-24" aria-labelledby="sample-h">
+          <h2 id="sample-h" className="font-heading text-2xl font-bold">
+            <KeepWhole>{"Online I-485s approved so far, by the month filed"}</KeepWhole>
+          </h2>{" "}
+          <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
+            <KeepWhole>
+              {"Our own daily sample of USCIS's Case Status page, beside USCIS's counts above. It holds I-485s of every kind, family and employment."}
+            </KeepWhole>
+          </p>{" "}
+          <div className="mt-5">
+            <SampleMonthFigures
+              doc={sample}
+              form="I-485"
+              note="The sample can't tell which office holds a case, so these are every office's online I-485s together, not this center's alone."
+            />
+          </div>
+        </section>
+      ) : null}
+
       {stepsMeasured ? (
         <section id="reported-figures" className="mt-12 scroll-mt-24" aria-labelledby="reported-figures-h">
           <h2 id="reported-figures-h" className="font-heading text-2xl font-bold">
@@ -570,7 +598,7 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
         </ul>
       </section>
 
-      <DataProvenance datasets={["uscis-i485-offices"]} />
+      <DataProvenance datasets={sampleShown ? [...DATASETS, "uscis-sample"] : DATASETS} />
     </div>
   );
 }

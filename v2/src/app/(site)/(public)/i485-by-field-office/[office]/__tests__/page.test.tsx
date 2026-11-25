@@ -28,6 +28,8 @@ vi.mock("@/lib/convexStatic", () => ({ queryStatic }));
 const getOfficeReportedCases = vi.fn();
 const getReportedCasesBuiltAt = vi.fn(async () => Date.UTC(2026, 10, 19, 18, 16));
 vi.mock("@/lib/db/communityReports", () => ({ getOfficeReportedCases, getReportedCasesBuiltAt }));
+const getSampleMonths = vi.fn(async () => null as unknown);
+vi.mock("@/lib/db/uscisSample", () => ({ getSampleMonths }));
 
 const { default: UscisOfficePage, generateStaticParams, generateMetadata } = await import("../page");
 
@@ -103,6 +105,8 @@ beforeEach(() => {
   queryStatic.mockResolvedValue(sharedView(0));
   getOfficeReportedCases.mockReset();
   getOfficeReportedCases.mockResolvedValue([]);
+  getSampleMonths.mockReset();
+  getSampleMonths.mockResolvedValue(null);
 });
 
 /** A case people reported at the San Fernando Valley office (src/lib/reportedCases.ts). */
@@ -297,6 +301,59 @@ describe("a USCIS office's page", () => {
     const long = await generateMetadata({ params: Promise.resolve({ office: "charlotte-amalie-us-virgin-islands" }) });
     expect(String(long.title).length).toBeLessThanOrEqual(45);
     expect(meta.alternates?.canonical).toBe("/i485-by-field-office/hartford-connecticut");
+  });
+
+  describe("our USCIS sample's I-485 figure, on the six centers' pages", () => {
+    const figure = (counted: number, share: number) => ({
+      counted, walked_cases: 0, drawn_cases: counted, rest_unknown: false, rest_share: 1,
+      groups: {
+        approved: { count: Math.round(counted * share), estimated: 0, share, low: Math.max(0, share - 0.05), high: share + 0.05 },
+        denied: { count: 0, estimated: 0, share: 0, low: 0, high: 0.1 }, withdrawn: { count: 0, estimated: 0, share: 0, low: 0, high: 0.1 },
+        closed: { count: 0, estimated: 0, share: 0, low: 0, high: 0.1 }, revoked: { count: 0, estimated: 0, share: 0, low: 0, high: 0.1 },
+        rfe: { count: 0, estimated: 0, share: 0, low: 0, high: 0.1 }, waiting: { count: 0, estimated: 0, share: 0, low: 0, high: 1 },
+      },
+    });
+    const SAMPLE = {
+      as_of: "2026-11-25",
+      groups: [],
+      by_month: {
+        "2026-08": { "I-485": figure(60, 0.1) },
+        "2026-09": { "I-485": figure(83, 0.012) },
+        "2026-10": { "I-485": figure(4355, 0) },
+        "2026-11": { "I-485": figure(47103, 0) },
+      },
+    };
+    beforeEach(() => {
+      getSampleMonths.mockReset();
+      getSampleMonths.mockResolvedValue(SAMPLE);
+    });
+
+    it("shows the newest ended months with their margin and count, says it's online filings only, and links the blocks", async () => {
+      const { container } = await page("national-benefits-center");
+      const section = container.querySelector("#sample")!;
+      const text = (section.textContent ?? "").replace(/\s+/g, " ");
+      expect(section.querySelector("h2")?.textContent).toBe("Online I-485s approved so far, by the month filed");
+      expect([...section.querySelectorAll("[data-source-kind]")].map((f) => f.getAttribute("data-source-kind"))).toEqual(["measured", "measured", "measured"]);
+      expect(text).toContain("Filed in October 2026");
+      expect(text).not.toContain("November 2026");
+      expect(text).toContain("Margin 0% to 5%, from 4,355 cases checked.");
+      expect(text).toContain("Online (IOE) I-485s only: paper filings aren't in the sample.");
+      expect(text).toContain("not this center's alone");
+      expect(section.querySelector('a[href="/uscis-receipt-blocks"]')).not.toBeNull();
+    });
+
+    it("leaves a field office's page without it, and never reads the sample there", async () => {
+      const { container } = await page("hartford-connecticut");
+      expect(container.querySelector("#sample")).toBeNull();
+      expect(getSampleMonths).not.toHaveBeenCalled();
+    });
+
+    it("drops only its own section when the sample can't be read", async () => {
+      getSampleMonths.mockRejectedValue(new Error("db down"));
+      const { container, text } = await page("national-benefits-center");
+      expect(container.querySelector("#sample")).toBeNull();
+      expect(text).toContain("I-485s at the National Benefits Center");
+    });
   });
 
   // Written by the inline literals before the move to getFAQPageSchema and datasetSchemaFor (Nov 25 2026), matched by

@@ -68,6 +68,9 @@ import { PostedI140History } from "@/components/uscis/PostedI140History";
 import { monthsLabel, quarterLabel } from "@/lib/uscisQuarterlyShape";
 import { approvalMoved, countMoved, medianMoved } from "@/lib/uscisTrends";
 import { softFail } from "@/lib/softRead";
+import { getSampleMonths } from "@/lib/db/uscisSample";
+import { newestCompleteMonths, type SampleMonthsDoc } from "@/lib/uscisSample";
+import { SampleMonthFigures } from "@/components/uscis/SampleMonthFigures";
 import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 // The workbook changes four times a year; the quarterly ingest's new quarter is
@@ -207,7 +210,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
   const page = formPage((await params).form);
   if (!page) notFound();
   const path = `/uscis-processing-times/${page.slug}`;
-  const [rows, history, posted, monthly, summary] = await Promise.all([
+  const [rows, history, posted, monthly, summary, sample] = await Promise.all([
     getUscisFormRows(page.form),
     getHistoricalMedians().catch(softFail("uscis-processing-times/[form]/page.getHistoricalMedians", null)),
     // Throws on a failed read, like the rows: the page keeps its last good render for the week.
@@ -218,7 +221,21 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
     FORM_STEPS[page.form]
       ? getReportedSummary().catch(softFail<ReportedSummary | null>("uscis-processing-times/[form]/page.summary", null))
       : Promise.resolve(null),
+    // Our USCIS sample's share approved by receipt month. A failed read loses only its section.
+    getSampleMonths().catch(softFail<SampleMonthsDoc | null>("uscis-processing-times/[form]/page.sample", null)),
   ]);
+  // The sample's figure shows where it holds this form's cases in a month that has ended.
+  const sampleShown = sample !== null && newestCompleteMonths(sample, page.form).length > 0;
+  const sampleSection =
+    sample && sampleShown ? (
+      <PageSection
+        id="sample"
+        title={`Online ${page.form}s approved so far, by the month filed`}
+        lede="Our own daily sample of USCIS's Case Status page, beside USCIS's figures."
+      >
+        <SampleMonthFigures doc={sample} form={page.form} />
+      </PageSection>
+    ) : null;
   const reportedSteps = (FORM_STEPS[page.form] ?? []).flatMap((id) => summary?.steps.find((st) => st.id === id) ?? []);
   const month = leadLine(monthly, page.form);
   const monthRows = month && monthly ? recentMonths(monthly, month, 12) : [];
@@ -312,7 +329,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
         {lead && leadNow?.row?.medianMonths != null ? (
           <p className="mt-4 text-lg leading-relaxed">
             USCIS decided half its {lines.length > 1 ? `${lead.line.label.toLowerCase()} ` : ""}
-            {page.form}s within {monthsPhrase(leadNow.row.medianMonths)} in {quarterLabel(leadNow.slot.fy, leadNow.slot.quarter)},
+            {keepWhole(`${page.form}s`)} within {monthsPhrase(leadNow.row.medianMonths)} in {quarterLabel(leadNow.slot.fy, leadNow.slot.quarter)},
             its median.
           </p>
         ) : null}{" "}
@@ -339,7 +356,10 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
       </header>{" "}
       {rows.length === 0 ? <QuarterlyEmpty file="quarterly_all_forms" /> : null}{" "}
       {rows.length === 0 ? (
-        reported
+        <>
+          {reported}{" "}
+          {sampleSection}
+        </>
       ) : (
         <>
           <FigureRow className="mt-8">
@@ -414,7 +434,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
                 <BarRows inline rows={categories} label={`${page.form}: the months USCIS posts, by category`} />
               </div>{" "}
               <p className="mt-3 max-w-3xl text-sm leading-relaxed text-soft">
-                The median above is one figure over every {page.form} USCIS decided in a quarter. These are by category,
+                The median above is one figure over every {keepWhole(page.form)} USCIS decided in a quarter. These are by category,
                 and each is the time for 8 cases in 10. From{" "}
                 <a href={PROCESSING_TIMES_SOURCE_URL} target="_blank" rel="noopener noreferrer" className="link">
                   USCIS&apos;s processing-times page
@@ -431,13 +451,14 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
                   </>
                 )}
                 <Link href={`/tools/uscis-case-inquiry?form=${encodeURIComponent(page.form)}`} className="link">
-                  Put your own {page.form} on the calendar
+                  Put your own {keepWhole(page.form)} on the calendar
                 </Link>
                 .
               </p>
             </PageSection>
           ) : null}{" "}
           {reported}{" "}
+          {sampleSection}{" "}
           <PageSection
             id="median"
             title="Median months, quarter by quarter"
@@ -669,7 +690,7 @@ export default async function UscisFormPage({ params }: { params: Promise<{ form
           <KeepWhole>{"sets them side by side for the I-140."}</KeepWhole>
         </p>
       </FinePrint>{" "}
-      <DataProvenance datasets={["uscis-form-quarters", "uscis-posted-times"]} />
+      <DataProvenance datasets={sampleSection ? ["uscis-form-quarters", "uscis-posted-times", "uscis-sample"] : ["uscis-form-quarters", "uscis-posted-times"]} />
     </div>
   );
 }

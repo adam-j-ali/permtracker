@@ -97,3 +97,38 @@ describe("monthRows", () => {
     expect(rows[1]!.walked).toBe(false);
   });
 });
+
+describe("newestCompleteMonths", () => {
+  const doc = {
+    as_of: "2026-11-25",
+    groups: [],
+    by_month: {
+      "2026-06": { "I-485": form(40, 30) },
+      "2026-07": { "I-485": form(25, 10) },
+      "2026-08": { "I-485": form(19, 9) },
+      "2026-09": { "I-485": form(60, 6) },
+      "2026-10": { "I-485": form(4000, 0), "I-765": form(500, 90) },
+      "2026-11": { "I-485": form(40000, 0) },
+    },
+  };
+
+  it("leaves out the month the sample is dated in, which is still filling, and gives the newest three after it", async () => {
+    const { newestCompleteMonths } = await import("../uscisSample");
+    expect(newestCompleteMonths(doc, "I-485").map((m) => m.month)).toEqual(["2026-10", "2026-09", "2026-08"]);
+  });
+
+  it("keeps a month with few cases, with its count and margin, and carries each month's figures", async () => {
+    const { newestCompleteMonths } = await import("../uscisSample");
+    const [oct, sep, aug] = newestCompleteMonths(doc, "I-485");
+    expect(oct).toMatchObject({ month: "2026-10", counted: 4000, approved: { count: 0, share: 0 } });
+    expect(aug).toMatchObject({ month: "2026-08", counted: 19, approved: { count: 9 } });
+    expect(sep!.approved.low).toBeLessThan(sep!.approved.share);
+    expect(newestCompleteMonths(doc, "I-485", 5).map((m) => m.month)).toEqual(["2026-10", "2026-09", "2026-08", "2026-07", "2026-06"]);
+  });
+
+  it("gives nothing for a form the sample doesn't hold", async () => {
+    const { newestCompleteMonths } = await import("../uscisSample");
+    expect(newestCompleteMonths(doc, "I-129F")).toEqual([]);
+    expect(newestCompleteMonths(doc, "I-765").map((m) => m.month)).toEqual(["2026-10"]);
+  });
+});
