@@ -136,6 +136,35 @@ function SampleCells({ cell, since }: { cell: Cell; since: string | null }) {
   );
 }
 
+/** Estimates the site shows that this page doesn't grade yet, and why (Batch 4, Nov 25 2026). */
+const UNGRADED: readonly { name: string; href: string; why: string }[] = [
+  {
+    name: "I-140 wait",
+    href: "/tools/i140-calculator",
+    why: "Built from USCIS's published counts. Grading it needs the decision days of the petitions it was made for, which our USCIS sample starts to record from November 29.",
+  },
+  {
+    name: "When will USCIS decide my case?",
+    href: "/tools/uscis-case-inquiry",
+    why: "USCIS's own posted time, and the day you can ask. The same sample's rechecks will show how often a decision came by then.",
+  },
+  {
+    name: "Your place in line",
+    href: "/tools/green-card-line",
+    why: "The people ahead of a priority date and the years at last year's pace. Each is graded only when that date becomes current, which can take years.",
+  },
+  {
+    name: "Green card timeline and planner",
+    href: "/tools/green-card-timeline",
+    why: "Each step's span comes from a published or reported figure. Grading the whole plan needs cases followed all the way to the card.",
+  },
+  {
+    name: "PERM backlog: the month DOL works on next",
+    href: "/perm-queue",
+    why: "DOL stopped printing the month it's working on on October 31, 2026, so there's nothing to grade it against until it prints one again.",
+  },
+];
+
 export default async function EstimateScorecardPage() {
   const [rows, sweep, sample, backtest, checks, everyCheck] = await Promise.all([
     getScorecard(),
@@ -417,6 +446,24 @@ export default async function EstimateScorecardPage() {
             </>
           ) : null}
         </FinePrint>
+      </section>
+
+      <section aria-labelledby="ungraded-h" className="mt-12">
+        <h2 id="ungraded-h" className="font-heading text-2xl font-bold sm:text-3xl">Estimates we don&apos;t grade yet</h2>{" "}
+        <p className="mt-2 max-w-2xl text-base text-soft">
+          These show on the site but aren&apos;t scored here, because the outcome that would grade them hasn&apos;t
+          happened yet or isn&apos;t published.
+        </p>{" "}
+        <ul className="mt-4 grid max-w-3xl grid-cols-1 gap-3 [&>*]:min-w-0">
+          {UNGRADED.map((u) => (
+            <li key={u.href} className="border-2 border-border bg-card p-4">
+              <Link href={u.href} className="link font-bold">
+                {keepWhole(u.name)}
+              </Link>{" "}
+              <p className="mt-1 text-base text-soft">{keepWhole(u.why)}</p>
+            </li>
+          ))}
+        </ul>
       </section>
 
       {/* What the case page no longer does, kept on the record and out of the
