@@ -10,7 +10,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { createTestContext } from "../../test-utils/convex";
+// Tracked, so each test's own scheduled work (a confirmation email) is settled before the next test starts and
+// can't send through the next test's fetch stub (test-utils/convexSettle.ts).
+import { settleScheduled, trackedTestContext as createTestContext } from "../../test-utils/convexSettle";
 import { internal } from "../_generated/api";
 import { SUBSCRIBE_IP_LIMIT } from "../lib/alertBudgets";
 import { QUEUED_REPLY } from "../confirmationQueue";
@@ -84,7 +86,8 @@ beforeEach(() => {
   vi.stubEnv("BLOCKED_EMAILS", "");
 });
 
-afterEach(() => {
+afterEach(async () => {
+  await settleScheduled();
   global.fetch = originalFetch;
   vi.unstubAllEnvs();
 });
