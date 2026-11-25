@@ -113,7 +113,7 @@ export default async function OptEmployersPage() {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pb-12 sm:px-6 sm:pb-16">
       <IndexHeader
-        title="Who hires students on OPT and CPT"
+        title="OPT and CPT employers: who hires students"
         lede="The 200 employers with the most F-1 students on practical training each year, as ICE lists them."
         figures={figures}
         aside={optNewest ? <LeaderBar list={optNewest} /> : undefined}

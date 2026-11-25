@@ -338,7 +338,7 @@ export async function FirmRankingsPage({ state }: { state: string }) {
   const summary = await getFirmRanksSummary();
   const path = pathOf(state);
   const name = placeName(state);
-  const heading = state === NATION ? "The busiest immigration law firms" : `The busiest immigration law firms in ${name}`;
+  const heading = state === NATION ? "Law firm rankings: the busiest immigration law firms" : `The busiest immigration law firms in ${name}`;
   const states = summary ? rankedStates(summary) : [];
   const updated = pageDate(state === NATION ? FIRM_RANKS_PATH : `${FIRM_RANKS_PATH}/[state]`, { firms: firmRanksAsOf(summary) });
   // The years the rankings hold, read from the builder's summary, so the label is never older or newer than the data.

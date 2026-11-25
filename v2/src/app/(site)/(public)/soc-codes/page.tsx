@@ -85,7 +85,7 @@ export default async function SocCodesPage() {
     <div className="mx-auto w-full max-w-6xl px-4 pb-16 pt-10 sm:px-6 sm:pt-12">
       <JsonLdScript schema={faqSchema} />
       <header className="max-w-3xl">
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Find a job&apos;s SOC code</h1>{" "}
+        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Find a SOC code for a job</h1>{" "}
         <p className="mt-4 text-lg leading-relaxed text-soft">
           Type a job title and see the codes employers filed it under in DOL&apos;s files, and how often. Or type a code to
           see the job.

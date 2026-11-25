@@ -112,7 +112,7 @@ export default async function PermEmployersPage() {
       <JsonLdScript schema={datasetSchema} />
 
       <IndexHeader
-        title="Who sponsors the most"
+        title="PERM employers: who sponsors the most"
         lede={
           <>
             {busiest && throughMonth ? (

@@ -203,7 +203,7 @@ export default async function I485ByFieldOfficePage() {
 
       <header>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">
-          <KeepWhole>{"The I-485 by field office"}</KeepWhole>
+          <KeepWhole>{"I-485 by field office"}</KeepWhole>
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           What each USCIS office received, decided and still holds

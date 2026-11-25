@@ -128,7 +128,7 @@ export default async function WageViolationsPage() {
     <div className="mx-auto w-full max-w-6xl px-4 pb-12 sm:px-6 sm:pb-16">
       <div className="pt-10 sm:pt-12" />
       <header>
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl"><KeepWhole>{"H-1B, H-2A and H-2B wage violations"}</KeepWhole></h1>{" "}
+        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl"><KeepWhole>{"Visa wage violations: H-1B, H-2A and H-2B"}</KeepWhole></h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           Every Wage and Hour case the Labor Department concluded under the three visa programs, from DOL&apos;s own file:
           what it found, and the back wages owed to workers.

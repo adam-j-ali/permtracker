@@ -101,7 +101,7 @@ export default async function LcaWagesPage() {
       <JsonLdScript schema={faqSchema} />
       <header>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">
-          <KeepWhole>{"H-1B salary explorer"}</KeepWhole>
+          <KeepWhole>{"H-1B salaries by job, state and year"}</KeepWhole>
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           <KeepWhole>

@@ -41,7 +41,7 @@ describe("every word stays in the DOM", () => {
     expect(PAGES.glossary).toMatch(/\{(?:keepWhole\()?rest\.join\(" "\)\)?\}/);
   });
   it("/perm-case-statuses still renders the rest of each summary, the clock, who acts and the source", () => {
-    for (const field of ["{rest}", "{m.deadline}", "{m.action}", "<Source cite={m.cite}", "<Source cite={e.cite}"]) {
+    for (const field of ["{keepWhole(rest)}", "{m.deadline}", "{m.action}", "<Source cite={m.cite}", "<Source cite={e.cite}"]) {
       expect(PAGES.statuses).toContain(field);
     }
   });

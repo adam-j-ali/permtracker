@@ -65,7 +65,7 @@ export default async function SettlementsPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-16 pt-10 sm:px-6 sm:pb-24 sm:pt-14">
-      <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">When the government acts against a sponsor</h1>{" "}
+      <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Settlements and suspensions against sponsors</h1>{" "}
       <p className="mt-5 max-w-3xl text-lg leading-relaxed text-soft">
         Settlements, a lawsuit and a suspension from the Justice and Labor Departments, each set beside what
         DOL&apos;s own case record shows for the company. DOL&apos;s{" "}

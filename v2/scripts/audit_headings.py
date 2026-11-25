@@ -13,6 +13,13 @@ WHAT IT CHECKS, and why each one is worth a finding:
                 to a person as a navigation bug.
   level skips   h2 straight to h4. Assistive technology presents the outline as
                 a tree, and a missing level is a broken branch.
+  sub-pages     A parent page links each page scripts/data/child_pages.json
+                says is reached from it (the unit test every-page-reachable
+                holds every other page to the header, menus and footer).
+  name          The H1 holds the page's one name, the breadcrumb trail's last
+                item (lib/siteMap.ts). A reader who clicked "PERM backlog" in
+                a menu lands on a heading that says it: one name in the header,
+                menu, title, heading and search (owner's rule, Nov 24 2026).
 
 Entity pages are sampled rather than walked: 78,600 of them share three
 templates, so three of each says everything and the rest is load on the site.
@@ -24,6 +31,8 @@ from __future__ import annotations
 
 import argparse
 import collections
+import json
+import pathlib
 import re
 import sys
 import urllib.request
@@ -64,6 +73,49 @@ ALLOW_DUPLICATES = {
     # <h2> section explains them for that program.
     "/perm-case-statuses",
 }
+
+
+# Pages whose heading says something other than their menu name on purpose, each with its reason. A page added here
+# is a decision, never a way past the check.
+NAME_NOT_IN_H1 = {
+    "/for-attorneys": "the menus name the audience; the heading says what the page does for them",
+    "/for-employers": "the menus name the audience; the heading says what the page does for them",
+    "/perm-updates": "the heading names the day its figures are for; the header's Today's decisions leads to it",
+    "/faq": "the heading spells out the abbreviation the menus use",
+}
+
+
+# Pages reached from their parent rather than a menu (the unit test every-page-reachable.test.ts reads the same list).
+CHILD_PAGES: dict[str, str] = json.loads(
+    (pathlib.Path(__file__).resolve().parent / "data" / "child_pages.json").read_text())["pages"]
+
+
+def name_words(text: str) -> str:
+    """A name or heading compared by its words: case, apostrophes, punctuation and a plural s set aside, so
+    "Wage requests" is found in "Find a prevailing wage request"."""
+    t = re.sub(r"[\u2019']", "", text.lower())
+    words = re.sub(r"[^a-z0-9]+", " ", t).split()
+    return " ".join(w[:-1] if len(w) > 3 and w.endswith("s") and not w.endswith("ss") else w for w in words)
+
+
+def trail_name(html: str) -> str | None:
+    """The breadcrumb trail's last name, from the page's BreadcrumbList JSON-LD; None on a page without one."""
+    for m in re.finditer(r'<script[^>]*type="application/ld\+json"[^>]*>([\s\S]*?)</script>', html):
+        try:
+            doc = json.loads(m.group(1))
+        except ValueError:
+            continue
+        nodes = doc if isinstance(doc, list) else doc.get("@graph", [doc]) if isinstance(doc, dict) else []
+        for n in nodes:
+            if isinstance(n, dict) and n.get("@type") == "BreadcrumbList":
+                items = n.get("itemListElement") or []
+                if len(items) >= 2 and isinstance(items[-1], dict) and items[-1].get("name"):
+                    return str(items[-1]["name"])
+    return None
+
+
+def holds_name(h1: str, name: str) -> bool:
+    return f" {name_words(name)} " in f" {name_words(h1)} "
 
 
 def fetch(url: str) -> str | None:
@@ -182,6 +234,14 @@ def main() -> int:
         if skips:
             msgs.append(f"level skips: {skips[:2]}")
 
+        missing = [c for c, parent in CHILD_PAGES.items() if parent == p and f'href="{c}"' not in html]
+        if missing:
+            msgs.append(f"doesn't link its pages {missing} (scripts/data/child_pages.json)")
+
+        name = trail_name(html)
+        if name and len(h1s) == 1 and p not in NAME_NOT_IN_H1 and not holds_name(h1s[0], name):
+            msgs.append(f"the H1 {h1s[0][:60]!r} doesn't hold the page's name {name!r} (lib/siteMap.ts)")
+
         if msgs:
             findings += 1
             print(p)
@@ -191,6 +251,11 @@ def main() -> int:
     # A CONTROL, so a blind run cannot read as a clean one.
     probe = headings("<body><h1>a</h1><h2>b</h2><h2>b</h2><h4>c</h4></body>")
     assert len(probe) == 4, "the heading parser stopped seeing headings"
+    crumbs = ('<script type="application/ld+json">{"@type":"BreadcrumbList","itemListElement":'
+              '[{"name":"Home"},{"name":"Wage requests"}]}</script>')
+    assert trail_name(crumbs) == "Wage requests", "the trail reader stopped reading the page's name"
+    assert holds_name("Find a prevailing wage request", "Wage requests") and not holds_name("Where it stands", "Queue backlog"), \
+        "the name comparison stopped telling a match from a miss"
 
     print(f"\n{scanned} pages scanned, {findings} with a finding")
     return 1 if findings else 0

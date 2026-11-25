@@ -88,7 +88,7 @@ export default async function GreenCardTimelinePage() {
       <div className="pt-10 sm:pt-12" />
       <JsonLdScript schema={faqSchema} />
       <header>
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Your green card timeline</h1>{" "}
+        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Your green card timeline and planner</h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           Enter your case&apos;s dates. Every step to the green card comes out dated, with its cost, from today&apos;s DOL
           and USCIS figures.

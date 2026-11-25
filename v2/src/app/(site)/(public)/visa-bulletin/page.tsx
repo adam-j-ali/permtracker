@@ -544,6 +544,7 @@ export default async function VisaBulletinPage() {
         reading={[
           { href: `/visa-bulletin/${last.bulletinMonth}`, label: `The ${monthLabel(last.bulletinMonth)} bulletin, every cutoff`, note: "both charts, all nine categories, five countries, and what each cell did since the month before" },
           { href: "/tools/priority-date-calculator", label: "Priority dates, every bulletin since 2014", note: "the month-by-month cutoffs both tables above are summarised from" },
+          { href: "/visa-bulletin/family", label: "Family-sponsored cutoffs", note: "F1 to F4 by country, how far each moved, month by month" },
           { href: "/tools/i485-queue-position", label: "I-485 queue position", note: "the whole inventory ahead of your own priority date" },
           { href: "/tools/green-card-timeline", label: "Green card timeline", note: "the whole road from PERM to adjustment, with the wait at each stage" },
         ]}

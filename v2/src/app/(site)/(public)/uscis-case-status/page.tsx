@@ -175,7 +175,7 @@ export default async function UscisCaseStatusPage({
 
       <header>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">
-          Check a USCIS case by receipt number
+          Check your USCIS case status
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-soft">
           <KeepWhole>

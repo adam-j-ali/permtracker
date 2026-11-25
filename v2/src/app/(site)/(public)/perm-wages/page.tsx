@@ -160,7 +160,7 @@ export default async function PermWagesPage() {
       <JsonLdScript schema={faqSchema} />
 
       <IndexHeader
-        title="What PERM cases pay"
+        title="PERM wages: what each job pays"
         lede="What each employer committed to pay, on the federal filing itself."
         figures={[
           ...(ladder?.p50 != null

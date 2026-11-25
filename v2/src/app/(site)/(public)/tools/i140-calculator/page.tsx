@@ -95,7 +95,7 @@ export default async function I140CalculatorPage() {
 
       <header>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">
-          <KeepWhole>{"I-140 queue calculator"}</KeepWhole>
+          <KeepWhole>{"I-140 wait calculator"}</KeepWhole>
         </h1>{" "}
         {/* The answer to "I-140 processing time" first, from USCIS's own figures. */}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">

@@ -1,0 +1,12 @@
+{
+  "_why": "Public pages reached from their parent page rather than the header, menus or footer. The unit test every-page-reachable.test.ts holds every static public page to the header, the menus, the footer or this list, with a parent those reach; scripts/audit_headings.py checks on the rendered site that each parent links its pages.",
+  "pages": {
+    "/debarments/settlements": "/debarments",
+    "/perm-attorneys/browse": "/perm-attorneys",
+    "/perm-employers/browse": "/perm-employers",
+    "/perm-wages/browse": "/perm-wages",
+    "/soc-codes/browse": "/soc-codes",
+    "/visa-bulletin/categories": "/visa-bulletin",
+    "/visa-bulletin/family": "/visa-bulletin"
+  }
+}

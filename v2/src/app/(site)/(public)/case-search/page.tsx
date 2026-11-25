@@ -148,7 +148,7 @@ export default async function CaseSearchPage() {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">
       <IndexHeader
-        title="Search every case an employer has filed"
+        title="Find a case by employer"
         lede={
           <>
             <KeepWhole>{"PERM, wage requests, H-1B LCAs and seasonal work in one search, open and decided"}</KeepWhole>

@@ -301,7 +301,7 @@ export default async function PermDenialRiskPage() {
 
       <header className="max-w-2xl">
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">
-          How often PERM is approved, and what gets denied
+          PERM denial rates, and what gets denied
         </h1>{" "}
         {/* The answer first: the sentence a search result or an AI answer quotes. */}
         {approval ? (

@@ -102,7 +102,7 @@ export default function Page() {
     <div className="mx-auto w-full max-w-5xl px-4 pb-16 pt-10 sm:px-6 sm:pt-12">
       <JsonLdScript schema={faqSchema} />
       <header className="max-w-3xl">
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Get an email when your PERM case changes</h1>{" "}
+        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Email alerts when your PERM case changes</h1>{" "}
         <p className="mt-4 text-lg leading-relaxed text-soft">
           Free alerts for your case, your filing month, your wage request, the visa bulletin and any employer, and a
           weekly digest. No account, and one click to stop.

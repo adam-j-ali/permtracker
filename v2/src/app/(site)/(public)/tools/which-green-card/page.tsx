@@ -63,7 +63,7 @@ export default function WhichGreenCardPage() {
       <JsonLdScript schema={faqSchema} />
 
       <header>
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Which employment green card fits?</h1>{" "}
+        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Which green card fits my job?</h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           A few questions about the job and about you, matched against the regulation&apos;s own definitions: which
           categories could apply, whether each needs a PERM or an employer, and where its queue stands.

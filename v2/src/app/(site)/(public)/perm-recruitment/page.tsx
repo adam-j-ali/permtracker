@@ -171,7 +171,7 @@ export default async function PermRecruitmentPage() {
     <div className="mx-auto w-full max-w-5xl px-4 pb-12 sm:px-6 sm:pb-16">
       <div className="pt-10 sm:pt-12" />
       <header className="max-w-3xl">
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Where PERM employers recruit, and when</h1>{" "}
+        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">PERM recruitment: where employers recruit, and when</h1>{" "}
         <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
           {doc
             ? `From the ${formatInt(doc.cases)} decided PERM cases filed on DOL's current form${doc.asOf ? `, through ${longDate(doc.asOf)}` : ""}: the newspapers, the additional steps, the notice of filing and how long before filing the recruiting began.`

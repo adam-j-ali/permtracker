@@ -81,7 +81,7 @@ export default async function PressPage() {
       <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] [&>*]:min-w-0">
         <div>
           <h1 className="font-heading text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
-            Data for journalists
+            Press: data for journalists
           </h1>{" "}
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-soft sm:text-xl">
             The Department of Labor&apos;s own case records, read every day. Quote any figure with credit and a link.

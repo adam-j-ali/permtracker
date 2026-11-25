@@ -65,7 +65,7 @@ export default async function LcaWageSourcesPage() {
     <div className="mx-auto w-full max-w-5xl px-4 pb-12 sm:px-6 sm:pb-16">
       <div className="pt-10 sm:pt-12" />
       <header className="max-w-3xl">
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl"><KeepWhole>{"Where H-1B prevailing wages come from"}</KeepWhole></h1>{" "}
+        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl"><KeepWhole>{"H-1B wage sources: where prevailing wages come from"}</KeepWhole></h1>{" "}
         <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
           {keepWhole(latest
             ? `In FY${latest.fy}, ${formatShare(latest.OES / latest.total)} of LCAs set their prevailing wage from DOL's OES data and ${formatShare(latest.Survey / latest.total)} from a private salary survey. A union contract's rate applies where one covers the job. Otherwise the employer picks the source, and DOL's file says which.`

@@ -88,7 +88,7 @@ export async function TitleIndexBody() {
     <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">
       <div className="pt-10 sm:pt-12" />
       <header className="max-w-3xl">
-        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Job titles A to Z</h1>{" "}
+        <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Browse job titles A to Z</h1>{" "}
         <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
           All {formatInt(total)} job titles with a page of their own, grouped by first letter.
           {biggest ? ` ${bucketLabel(biggest)} is the biggest group at ${formatInt(counts[biggest])}.` : ""} Each page shows the

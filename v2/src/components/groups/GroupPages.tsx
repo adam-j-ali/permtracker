@@ -93,7 +93,7 @@ const COPY: Record<GroupKind, KindCopy> = {
   },
   country: {
     indexTitle: "PERM by Country of Citizenship",
-    indexH1: "PERM by the worker's country of citizenship",
+    indexH1: "PERM sponsorship by citizenship",
     indexLede:
       "Every country with 20 or more PERM decisions on DOL's old form, FY2016 to FY2024, with each country's yearly record back to FY2008.",
     indexDescription:

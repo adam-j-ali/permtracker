@@ -127,7 +127,7 @@ function ProgramSection({
       <div className="dark flex items-center gap-3 border-2 border-black bg-[#141414] px-5 py-4 text-foreground">
         <span aria-hidden="true" className="size-3.5 shrink-0 bg-primary" />
         <h2 id={`${id}-title`} className="font-heading text-2xl font-bold">
-          {title}
+          {keepWhole(title)}
         </h2>
       </div>{" "}
       <p className="mt-3 max-w-3xl text-base leading-relaxed text-muted-foreground">{lede}</p>{" "}
@@ -193,14 +193,14 @@ function FlagEntry({ e, anchor, n, max }: { e: FlagStatusEntry; anchor: string; 
             <span className="font-heading text-base font-bold">{keepWhole(e.label)}</span>{" "}
             <code className="text-sm text-muted-foreground">{e.status}</code>
           </h3>{" "}
-          <span className="mt-1 block text-sm leading-relaxed text-soft">{lead}</span>
+          <span className="mt-1 block text-sm leading-relaxed text-soft">{keepWhole(lead)}</span>
         </span>{" "}
         <Count n={n} />{" "}
         <ShareBar n={n} max={max} status={e.status} />
         <CaretDownIcon className="mt-0.5 h-5 w-5 shrink-0 text-primary transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
       </summary>{" "}
       <div className="max-w-3xl border-t-2 border-border/40 px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
-        {rest ? <p className="text-sm leading-relaxed text-soft">{rest}</p> : null}{" "}
+        {rest ? <p className="text-sm leading-relaxed text-soft">{keepWhole(rest)}</p> : null}{" "}
         <Source cite={e.cite} unsourced={e.unsourced} />
       </div>
     </details>
@@ -275,7 +275,7 @@ export default async function PermCaseStatusesPage() {
       <JsonLdScript schema={termSet} />
       <header>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">
-          Every case status, explained
+          What each case status means
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           <KeepWhole>
@@ -369,14 +369,14 @@ export default async function PermCaseStatusesPage() {
                           <span className="font-heading text-base font-bold">{keepWhole(m.label)}</span>{" "}
                           <code className="text-sm text-muted-foreground">{m.status}</code>
                         </span>{" "}
-                        <span className="mt-1 block text-sm leading-relaxed text-soft">{lead}</span>
+                        <span className="mt-1 block text-sm leading-relaxed text-soft">{keepWhole(lead)}</span>
                       </span>{" "}
                       <Count n={permCount(m.status)} />{" "}
                       <ShareBar n={permCount(m.status)} max={groupMax} status={m.status} />
                       <CaretDownIcon className="mt-0.5 h-5 w-5 shrink-0 text-primary transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
                     </summary>{" "}
                     <div className="max-w-3xl border-t-2 border-border/40 px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
-                      {rest ? <p className="text-sm leading-relaxed text-soft">{rest}</p> : null}{" "}
+                      {rest ? <p className="text-sm leading-relaxed text-soft">{keepWhole(rest)}</p> : null}{" "}
                       {stagePage && permCount(m.status) ? (
                         <p className="mt-2 text-sm">
                           <Link href={stagePage} className="link">
