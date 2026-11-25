@@ -182,7 +182,14 @@ export function RoadStage({ stops }: { stops: RoadStop[] }) {
             data-road-fill=""
             className="pointer-events-none bottom-4 left-[16px] top-4 hidden w-1 origin-top bg-foreground [transform:scaleY(var(--road-fill,0))] lg:motion-safe:absolute lg:motion-safe:block"
           />
-        </div>
+        </div>{" "}
+        {/* The road draws the I-485 route; the consulate is the other way to the same card (Batch 8, Nov 25 2026). */}
+        <p className="mt-6 text-base text-soft">
+          Living abroad? The green card comes through a US consulate instead of the I-485.{" "}
+          <Link href="/consular-posts" className="link font-bold">
+            The consulate route
+          </Link>
+        </p>
       </div>
     </section>
   );
