@@ -1,3 +1,4 @@
+import { approvedShareOfDecisions } from "@convex/lib/approval";
 import { Fragment } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
@@ -162,6 +163,7 @@ function span(from: number | null, to: number | null): string | null {
  */
 export function groupFigures(group: GroupSummary, years: readonly YearCount[], partialFy: number | null): StatCard[] {
   const decided = group.certified + group.denied;
+  const share = approvedShareOfDecisions(group.certified, group.denied);
   const tally = `${formatInt(group.certified)} certified, ${formatInt(group.denied)} denied`;
   return [
     {
@@ -171,8 +173,8 @@ export function groupFigures(group: GroupSummary, years: readonly YearCount[], p
       icon: "filings",
       trend: yearTrend(years, partialFy),
     },
-    decided >= FLOOR
-      ? { k: "Approval", v: `${((group.certified / decided) * 100).toFixed(1)}%`, sub: tally, icon: "approval" }
+    decided >= FLOOR && share !== null
+      ? { k: "Approval", v: `${(share * 100).toFixed(1)}%`, sub: tally, icon: "approval" }
       : { k: "Approval", v: "Not shown", sub: `${tally}: too few to rate`, icon: "approval" },
     {
       k: "Median certified wage",

@@ -5,10 +5,13 @@
  * "never denied". So a share only reaches 1 when nothing was denied, and only
  * 0 when nothing was certified; the counts travel beside it either way.
  */
+
+import { approvedShareOfDecisions } from "@convex/lib/approval";
 export function certifiedShare(certified: number, denied: number, minDecided = 1): number | null {
-  const decided = certified + denied;
-  if (decided < Math.max(1, minDecided)) return null;
-  const share = Math.round((certified / decided) * 1000) / 1000;
+  if (certified + denied < Math.max(1, minDecided)) return null;
+  const exact = approvedShareOfDecisions(certified, denied);
+  if (exact === null) return null;
+  const share = Math.round(exact * 1000) / 1000;
   if (share === 1 && denied > 0) return 0.999;
   if (share === 0 && certified > 0) return 0.001;
   return share;

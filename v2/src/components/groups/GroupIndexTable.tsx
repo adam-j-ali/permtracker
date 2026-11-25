@@ -1,5 +1,6 @@
 "use client";
 
+import { approvedShareOfDecisions } from "@convex/lib/approval";
 import Link from "next/link";
 
 import { FilterableStatTable, type Facet, type StatColumn } from "@/components/tools/FilterableStatTable";
@@ -28,8 +29,8 @@ export interface GroupIndexRow {
 }
 
 function rate(r: GroupIndexRow): number | null {
-  const decided = r.certified + r.denied;
-  return decided >= 20 ? (r.certified / decided) * 100 : null;
+  const share = approvedShareOfDecisions(r.certified, r.denied);
+  return share !== null && r.certified + r.denied >= 20 ? share * 100 : null;
 }
 
 export function GroupIndexTable({

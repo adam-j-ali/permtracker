@@ -16,6 +16,8 @@
  * charts, never a zero and never a line drawn through it.
  */
 
+import { approvedShareOfDecisions } from "@convex/lib/approval";
+
 export interface FormLine {
   key: string;
   /** What the line counts, in plain words. */
@@ -394,8 +396,7 @@ export function formTotals(rows: readonly FormQuarterRow[], slots: readonly Slot
 /** The share of decided cases approved, or null without both counts or with none decided. */
 export function approvedShare(t: { approved: number | null; denied: number | null }): number | null {
   if (t.approved === null || t.denied === null) return null;
-  const decided = t.approved + t.denied;
-  return decided > 0 ? t.approved / decided : null;
+  return approvedShareOfDecisions(t.approved, t.denied);
 }
 
 /** "FY2026 Q3" for a column's short label. */

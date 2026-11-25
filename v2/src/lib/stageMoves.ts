@@ -128,9 +128,10 @@ export function reconsiderationOutcome(
     if (to === "CERTIFIED") certified += m.n;
     else if (to === "NORD ISSUED" || to.startsWith("DENIED")) refused += m.n;
   }
-  const decided = granted + refused;
-  if (decided < MIN_MOVES) return null;
-  return { decided, granted, refused, grantedShare: granted / decided, certified, reopened: granted - certified, certifiedShare: certified / decided };
+  // Shares of the reconsiderations DOL acted on (granted plus refused), not an approval rate over PERM decisions.
+  const moves = granted + refused;
+  if (moves < MIN_MOVES) return null;
+  return { decided: moves, granted, refused, grantedShare: granted / moves, certified, reopened: granted - certified, certifiedShare: certified / moves };
 }
 
 export interface OutcomeCounts {

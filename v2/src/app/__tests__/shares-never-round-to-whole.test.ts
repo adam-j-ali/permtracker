@@ -34,7 +34,7 @@ describe("shares never round to a whole the counts don't have", () => {
     // Arrange, Act, Assert
     expect(byHand("<span>{pct.toFixed(0)}%</span>")).toHaveLength(1);
     expect(byHand("{Math.round(estimate.shareOfAllPending * 100)}% of every I-140")).toHaveLength(1);
-    expect(byHand("{formatShare(city.certified / city.total)}")).toHaveLength(1);
+    expect(byHand("{formatShare(city.withdrawn / city.total)}")).toHaveLength(1);
     expect(byHand("{formatShareOf(month.decided, month.total)}")).toHaveLength(0);
   });
 

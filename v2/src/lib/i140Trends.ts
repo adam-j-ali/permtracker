@@ -6,6 +6,8 @@
  * uses happy-dom where importing server-only throws.
  */
 
+import { approvedShareOfDecisions, deniedShareOfDecisions } from "@convex/lib/approval";
+
 export interface TrendRow {
   fiscalYear: number;
   quarter: number;
@@ -73,16 +75,14 @@ export function isPreference(category: string): boolean {
  * a confident 0%.
  */
 export function denialRate(approved: number, denied: number): number | null {
-  const decided = approved + denied;
-  if (decided <= 0) return null;
-  return (denied / decided) * 100;
+  const share = deniedShareOfDecisions(approved, denied);
+  return share === null ? null : share * 100;
 }
 
 /** Approval rate over the same denominator, for the same reason. */
 export function approvalRate(approved: number, denied: number): number | null {
-  const decided = approved + denied;
-  if (decided <= 0) return null;
-  return (approved / decided) * 100;
+  const share = approvedShareOfDecisions(approved, denied);
+  return share === null ? null : share * 100;
 }
 
 export interface QuarterPoint {

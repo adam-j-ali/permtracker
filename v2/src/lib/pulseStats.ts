@@ -21,6 +21,7 @@
  * dated by the day DOL worked (the day our sweep saw them change, or the day
  * before when it saw them before 7 AM Eastern).
  */
+import { certifiedShareOfOutcomes } from "@convex/lib/approval";
 import { federalHolidayName, isFederalHoliday } from "@/lib/perm";
 import { daysBetween } from "@/lib/time";
 
@@ -113,7 +114,8 @@ export function recentWeekdays(days: readonly ActivityDay[], weeks = 4): Weekday
 
 /** Share of a day's decisions that were certifications, whole percent, or null on an empty day. */
 export function certifiedShare(day: ActivityDay): number | null {
-  return day.total > 0 ? Math.round((day.certified / day.total) * 100) : null;
+  const share = certifiedShareOfOutcomes(day.certified, day.total);
+  return share === null ? null : Math.round(share * 100);
 }
 
 export interface PulseSummary {

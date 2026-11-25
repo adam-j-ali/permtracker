@@ -1,3 +1,4 @@
+import { deniedShareOfDecisions } from "@convex/lib/approval";
 import { monthYear } from "@convex/lib/months";
 /**
  * The pure half of the USCIS quarterly data: labels, pivots and rankings
@@ -285,11 +286,10 @@ export function yearsFor(cells: readonly ClassCountryCell[], country: string, pr
       const approved = m.approved ?? 0;
       const denied = m.denied ?? 0;
       const pending = m.pending ?? 0;
-      const decided = approved + denied;
       return {
         fy, total, approved, denied, pending,
         pendingShare: total ? pending / total : 0,
-        denialRate: decided ? denied / decided : null,
+        denialRate: deniedShareOfDecisions(approved, denied),
       };
     });
 }

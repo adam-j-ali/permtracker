@@ -1,3 +1,4 @@
+import { approvedShareOfDecisions } from "@convex/lib/approval";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Fragment } from "react";
@@ -179,7 +180,7 @@ export async function GroupIndexPage({ kind }: { kind: GroupKind }) {
               <ChartTips label={`The ${top.length} busiest ${c.noun}, by PERM decisions`} className="mt-5">
                 <ol className="space-y-2.5">
                   {top.map((r) => {
-                    const decided = r.certified + r.denied;
+                    const share = approvedShareOfDecisions(r.certified, r.denied);
                     return (
                       <Fragment key={r.slug}>
                       {" "}
@@ -187,7 +188,7 @@ export async function GroupIndexPage({ kind }: { kind: GroupKind }) {
                         data-tip={[
                           r.label,
                           `${formatInt(r.total)} decisions`,
-                          decided > 0 ? `${((r.certified / decided) * 100).toFixed(1)}% approved` : null,
+                          share !== null ? `${(share * 100).toFixed(1)}% approved` : null,
                           r.medianWage ? `Median wage $${formatInt(r.medianWage)}` : null,
                         ]
                           .filter(Boolean)

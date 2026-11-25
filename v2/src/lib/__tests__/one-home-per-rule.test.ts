@@ -67,6 +67,22 @@ const RULES: readonly Rule[] = [
     probe: "  const said = `give or take ${margin.toFixed(1)} points`;",
     spare: "# Filed within two weeks of the quiet period's end: as soon as the rules allow, give or take.",
   },
+  {
+    name: "the approval and denial rate",
+    homes: ["convex/lib/approval.ts", "scripts/lib_shares.py"],
+    // A certified, approved or denied count divided by the decisions (a variable named for them, or certified plus
+    // denied written out) or by every outcome (a total). Comment lines and an API field's description state the rule in
+    // words and are passed.
+    copy: /^(?![^\n]*\.describe\()(?![ \t]*(?:\/\*|\*|\/\/|#))[^\n]*?[\w.]*(?:[cC]ertified|[aA]pproved|[dD]enied)\w*[ \t]*\/[ \t]*\(?[ \t]*(?:\w*decided\w*\b|[\w.]*(?:[cC]ertified|[aA]pproved)\w*[ \t]*\+[ \t]*[\w.]*denied\b|[\w.]*(?:[tT]otal|[oO]utcomes)\b)/m,
+    probe: "  return decided > 0 ? t.approved / decided : null;",
+    spare: [
+      "                  const width = (decided / maxDecided) * 100;",
+      " * denied / (approved + denied). A rate over receipts drifts with the backlog",
+      '  certifiedShare: z.number().nullable().describe("certified / (certified + denied), from 0 to 1."),',
+      "  return { decided: moves, grantedShare: granted / moves };",
+      "    /** certified / (certified + denied), or null under the floor. */",
+    ].join("\n"),
+  },
 ];
 
 /** Where a file computes a rule outside its homes, as file:line (a copy may run over several lines). */

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { approvedShareOfDecisions } from "@convex/lib/approval";
 import { slugify } from "@/lib/entitySlug";
 import { tidyCaseNumber } from "@/lib/tidyCaseNumber";
 import { one } from "./client";
@@ -71,9 +72,13 @@ export interface CaseLookupResult {
   employer: {
     name: string;
     slug: string;
+    /** Every outcome, withdrawals included. */
     total: number;
+    /** Certified plus denied: DOL's decisions, the approval rate's denominator (D4). */
+    decided: number;
     certified: number;
     denied: number;
+    /** Certified over decided, as a percent; 0 only when nothing was decided, which the card shows as counts. */
     approvalRate: number;
     medianDays: number | null;
     /** The fiscal years the counts cover; null when they're the current files' alone (the yearly table had none). */
@@ -301,7 +306,8 @@ export async function lookupCase(
         total,
         certified,
         denied,
-        approvalRate: total > 0 ? (certified / total) * 100 : 0,
+        decided: certified + denied,
+        approvalRate: (approvedShareOfDecisions(certified, denied) ?? 0) * 100,
         medianDays: e.median_days === null ? null : Number(e.median_days),
         fyFrom: counted ? Number(years.fy_from) : null,
         fyTo: counted ? Number(years.fy_to) : null,

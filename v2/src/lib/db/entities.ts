@@ -25,6 +25,7 @@
  * ERRORS ARE NOT SWALLOWED - see publicData.ts for what a `.catch(() => [])`
  * cost here.
  */
+import { approvedShareOfDecisions } from "@convex/lib/approval";
 import "server-only";
 import { unstable_cache } from "next/cache";
 
@@ -204,9 +205,9 @@ async function computeFieldDistribution(
   const medianDays: number[] = [];
   const wages: number[] = [];
   for (const row of members) {
-    const decided = row.certified + row.denied;
-    if (decided <= 0) continue;
-    approval.push((row.certified / decided) * 100);
+    const share = approvedShareOfDecisions(row.certified, row.denied);
+    if (share === null) continue;
+    approval.push(share * 100);
     if (row.median_days !== null) medianDays.push(row.median_days);
     if (row.median_annual_wage !== null) wages.push(row.median_annual_wage);
   }

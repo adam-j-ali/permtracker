@@ -40,6 +40,7 @@
  * Table V), which is a measurement of one past year, labelled as such.
  */
 
+import { approvedShareOfDecisions } from "@convex/lib/approval";
 import type { CountryKey, Cutoff } from "@/lib/perm";
 import { DAYS_PER_MONTH } from "@/lib/time";
 import { FY_START_MONTH, monthFromIndex, monthIndex } from "@convex/lib/months";
@@ -337,7 +338,7 @@ export function approvalRate(
     for (const cls of PREFERENCE_CLASSES[pref]) approved += snap.approved[cls]?.[bucket]?.[fy] ?? 0;
     denied += snap.denied[pref]?.[bucket]?.[fy] ?? 0;
   }
-  return approved + denied > 0 ? approved / (approved + denied) : null;
+  return approvedShareOfDecisions(approved, denied);
 }
 
 /** Pending I-140s of one line, by priority-date month, times the approval rate. */

@@ -1,3 +1,4 @@
+import { certifiedShareOfOutcomes } from "@convex/lib/approval";
 import type { ActivityDay } from "@/lib/activityStats";
 import { Fragment, type ReactNode } from "react";
 import { EnvelopeSimpleIcon, HourglassMediumIcon, SealCheckIcon, TimerIcon } from "@phosphor-icons/react/ssr";
@@ -136,11 +137,14 @@ export function RfiJourney({
   const all = since ? observed.filter((d) => d.date >= since) : [];
   const allTotal = all.reduce((a, d) => a + d.total, 0);
   const allCertified = all.reduce((a, d) => a + d.certified, 0);
+  // Both over every outcome, withdrawals included, so the two sit on one footing.
+  const rfiShare = path ? certifiedShareOfOutcomes(path.decided.certified, decided) : null;
+  const allShare = certifiedShareOfOutcomes(allCertified, allTotal);
   const compare =
-    path && decided >= 30 && allTotal > 0
+    path && decided >= 30 && rfiShare !== null && allShare !== null
       ? [
-          { label: "Cases DOL sent an RFI", share: path.decided.certified / decided, n: decided },
-          { label: "Every PERM case", share: allCertified / allTotal, n: allTotal },
+          { label: "Cases DOL sent an RFI", share: rfiShare, n: decided },
+          { label: "Every PERM case", share: allShare, n: allTotal },
         ]
       : null;
   const afterReply = path ? sumOutcomes(path.afterReply) : 0;

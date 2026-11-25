@@ -10,6 +10,7 @@
  * Plain module: the pages read cases_meta and the observed days (lib/db/approvalRate.ts) and pass them here.
  */
 
+import { certifiedShareOfOutcomes } from "@convex/lib/approval";
 import { formatApprovalRate, formatInt, formatShareOf } from "@/lib/format";
 import { longDate } from "@convex/lib/months";
 
@@ -74,7 +75,9 @@ export function approvalRate(meta: CasesMeta | null, days: readonly DecidedDay[]
   const denied = statusCount(meta.byStatus, "denied");
   const withdrawn = statusCount(meta.byStatus, "withdrawn");
   if (!total || !from || !to || certified === null || certified > total) return null;
-  const rate = formatApprovalRate(certified / total);
+  const share = certifiedShareOfOutcomes(certified, total);
+  if (share === null) return null;
+  const rate = formatApprovalRate(share);
   const parts = [
     denied !== null ? `${formatShareOf(denied, total)} were denied` : null,
     withdrawn !== null ? `${formatShareOf(withdrawn, total)} withdrawn` : null,
@@ -93,9 +96,10 @@ export function approvalRate(meta: CasesMeta | null, days: readonly DecidedDay[]
     const window = days.filter((d) => d.date >= since && d.date <= newest);
     const n = window.reduce((s, d) => s + d.total, 0);
     const c = window.reduce((s, d) => s + d.certified, 0);
-    if (n >= RECENT_MIN_DECISIONS) {
-      recent = `In the 30 days to ${longDate(newest)}, our daily check of DOL's case status saw ${formatInt(n)} PERM decisions, and ${formatApprovalRate(c / n)} of them were certified.`;
-      recentPart = { to: newest, n, share: formatApprovalRate(c / n) };
+    const recentShare = certifiedShareOfOutcomes(c, n);
+    if (n >= RECENT_MIN_DECISIONS && recentShare !== null) {
+      recent = `In the 30 days to ${longDate(newest)}, our daily check of DOL's case status saw ${formatInt(n)} PERM decisions, and ${formatApprovalRate(recentShare)} of them were certified.`;
+      recentPart = { to: newest, n, share: formatApprovalRate(recentShare) };
     }
   }
   const outcomes: ApprovalParts["outcomes"] = [

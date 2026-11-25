@@ -9,6 +9,8 @@
  * only where they repeat themselves.
  */
 
+import { approvedShareOfDecisions } from "@convex/lib/approval";
+
 export const USCIS_H1B_HUB = "https://www.uscis.gov/tools/reports-and-studies/h-1b-employer-data-hub";
 export const USCIS_H1B_GLOSSARY =
   "https://www.uscis.gov/tools/reports-and-studies/h-1b-employer-data-hub/understanding-our-h-1b-employer-data-hub";
@@ -73,8 +75,7 @@ export const sum = (r: Record<H1bKindKey, number>) => H1B_KINDS.reduce((s, k) =>
 
 /** Approvals over first decisions, or null under the floor. */
 export function approvalRate(approved: number, denied: number): number | null {
-  const decided = approved + denied;
-  return decided >= RATE_FLOOR ? approved / decided : null;
+  return approved + denied >= RATE_FLOOR ? approvedShareOfDecisions(approved, denied) : null;
 }
 
 /**

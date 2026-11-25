@@ -1,3 +1,4 @@
+import { approvedShareOfDecisions } from "@convex/lib/approval";
 import { Fragment, type ReactNode } from "react";
 
 import { Z_95, wilsonInterval } from "@convex/lib/wilson";
@@ -95,7 +96,7 @@ export function rateReliability(
   const straddles = lowerDenialPct <= baselineDenialPct && upperDenialPct >= baselineDenialPct;
   return {
     decided,
-    ratePct: (certified / decided) * 100,
+    ratePct: (approvedShareOfDecisions(certified, denied) ?? 0) * 100,
     tier: straddles ? "soft" : "firm",
     upperDenialPct,
     needed,

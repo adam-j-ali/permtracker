@@ -8,6 +8,8 @@
  * the posted 8-in-10 time as the same measure.
  */
 
+import { deniedShareOfDecisions } from "@convex/lib/approval";
+
 export interface MonthlyPoint {
   month: string;
   received: number | null;
@@ -90,8 +92,7 @@ export function leadLine(doc: UscisMonthly | null, form: string): MonthlyLine | 
 /** Of the cases decided in a month, the share denied; null without both counts or with none decided. */
 export function deniedShare(p: MonthlyPoint): number | null {
   if (p.approved === null || p.denied === null) return null;
-  const decided = p.approved + p.denied;
-  return decided > 0 ? p.denied / decided : null;
+  return deniedShareOfDecisions(p.approved, p.denied);
 }
 
 /**

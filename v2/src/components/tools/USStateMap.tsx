@@ -1,5 +1,6 @@
 "use client";
 
+import { approvedShareOfDecisions, deniedShareOfDecisions } from "@convex/lib/approval";
 import { Fragment, useMemo, useState } from "react";
 
 import { BLUE_STEPS, blueFill } from "@/lib/mapScale";
@@ -76,13 +77,15 @@ function fmtWage(n: number | null): string {
   return n == null ? "—" : formatDollars(n);
 }
 
+const percentOf = (share: number | null): number | null => (share === null ? null : share * 100);
+
 function decidedOf(s: StateStat): number {
   return s.certified + s.denied;
 }
 
 function certRate(s: StateStat): string {
-  const decided = decidedOf(s);
-  return decided === 0 ? "—" : `${((s.certified / decided) * 100).toFixed(1)}%`;
+  const share = approvedShareOfDecisions(s.certified, s.denied);
+  return share === null ? "—" : `${(share * 100).toFixed(1)}%`;
 }
 
 export type StateMetric = "total" | "approval" | "denial" | "days" | "wage";
@@ -111,7 +114,7 @@ export const STATE_METRICS: Record<StateMetric, MetricSpec> = {
   },
   approval: {
     label: "Approval rate",
-    value: (s) => (decidedOf(s) > 0 ? (s.certified / decidedOf(s)) * 100 : null),
+    value: (s) => percentOf(approvedShareOfDecisions(s.certified, s.denied)),
     format: (v) => `${v.toFixed(1)}%`,
     population: decidedOf,
     floored: true,
@@ -119,7 +122,7 @@ export const STATE_METRICS: Record<StateMetric, MetricSpec> = {
   },
   denial: {
     label: "Denial rate",
-    value: (s) => (decidedOf(s) > 0 ? (s.denied / decidedOf(s)) * 100 : null),
+    value: (s) => percentOf(deniedShareOfDecisions(s.certified, s.denied)),
     format: (v) => `${v.toFixed(2)}%`,
     population: decidedOf,
     floored: true,

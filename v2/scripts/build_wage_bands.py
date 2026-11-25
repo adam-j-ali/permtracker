@@ -38,6 +38,7 @@ import json
 import sys
 
 from build_lca_facets import min_for_median
+from lib_shares import denial_rate_pct
 from lib_db import Database, query_dicts, read_doc, write_doc
 
 DOC_KEY = "wage_denial_bands"
@@ -135,7 +136,7 @@ def measure(db: Database, bands) -> list[dict]:
                 "decided": decided,
                 "denied": denied,
                 "withdrawn": x["withdrawn"] or 0,
-                "denialRate": round(denied / decided * 100, 2) if decided else None,
+                "denialRate": denial_rate_pct(denied, decided),
             }
         )
     return out

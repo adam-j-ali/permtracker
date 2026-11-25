@@ -13,6 +13,7 @@
  * groups at the top and calls them the riskiest thing in the data.
  */
 
+import { deniedShareOfDecisions } from "@convex/lib/approval";
 import { approvalRate, type CasesMeta } from "@/lib/approvalRate";
 import { getObservedDays } from "@/lib/db/pulse";
 import type { Metadata } from "next";
@@ -99,9 +100,10 @@ const FLAG_LABELS: Record<
   },
 };
 
-/** Denial rate over decided cases, to two decimals. Null when nothing decided. */
-function denialRate(denied: number, decided: number): number | null {
-  return decided > 0 ? Number(((denied / decided) * 100).toFixed(2)) : null;
+/** Denial rate over decided cases, as a percent to two decimals. Null when nothing decided. */
+function denialRate(certified: number, denied: number): number | null {
+  const share = deniedShareOfDecisions(certified, denied);
+  return share === null ? null : Number((share * 100).toFixed(2));
 }
 
 export default async function PermDenialRiskPage() {
@@ -218,7 +220,7 @@ export default async function PermDenialRiskPage() {
   const occupationRows: RateRow[] = (stats?.topOccupations ?? [])
     .map((o): RateRow | null => {
       const decided = o.certified + o.denied;
-      const rate = denialRate(o.denied, decided);
+      const rate = denialRate(o.certified, o.denied);
       return rate === null
         ? null
         : {
@@ -235,7 +237,7 @@ export default async function PermDenialRiskPage() {
   const stateRows: RateRow[] = (stats?.byState ?? [])
     .map((s): RateRow | null => {
       const decided = s.certified + s.denied;
-      const rate = denialRate(s.denied, decided);
+      const rate = denialRate(s.certified, s.denied);
       return rate === null
         ? null
         : {

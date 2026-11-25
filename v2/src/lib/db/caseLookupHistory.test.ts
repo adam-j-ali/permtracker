@@ -100,9 +100,11 @@ describe("the employer's record on the case page", () => {
       name: "Acme Inc",
       slug: "acme-inc",
       total: 2000,
+      // Over decisions (D4): the 60 withdrawals sit on neither side, so 1,900 of 1,940, never 1,900 of 2,000.
+      decided: 1940,
       certified: 1900,
       denied: 40,
-      approvalRate: 95,
+      approvalRate: (1900 / 1940) * 100,
       medianDays: 410,
       fyFrom: 2009,
       fyTo: 2026,

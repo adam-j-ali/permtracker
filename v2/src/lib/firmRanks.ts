@@ -6,6 +6,7 @@
  * outcomes and pace, never a grade.
  */
 
+import { approvedShareOfDecisions } from "@convex/lib/approval";
 import { formatInt } from "@/lib/format";
 import { US_STATE_NAMES } from "@/lib/usStateNames";
 
@@ -87,8 +88,7 @@ export function lastYearWords(prev: number | null): string {
 
 /** The share of decided cases certified, or null with none decided. Withdrawals aren't decisions on the merits. */
 export function certifiedShare(r: Pick<FirmRankRow, "certified" | "denied">): number | null {
-  const decided = r.certified + r.denied;
-  return decided > 0 ? r.certified / decided : null;
+  return approvedShareOfDecisions(r.certified, r.denied);
 }
 
 /** Rows drawn as bars; the rest of the 100 fold into a table. */

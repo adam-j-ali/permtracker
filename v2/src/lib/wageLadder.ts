@@ -11,6 +11,7 @@
  * with numpy's linear interpolation. Nothing in this file computes a
  * percentile; publicData.ts owns the one copy of that SQL.
  */
+import { deniedShareOfDecisions } from "@convex/lib/approval";
 import { wilsonInterval } from "@convex/lib/wilson";
 
 /** The seven rungs, low to high, as the table stores them. */
@@ -222,6 +223,8 @@ export function toBands(
     const row = byFrom.get(from);
     const decided = row?.decided ?? 0;
     const denied = row?.denied ?? 0;
+    // The band's row carries decided (certified plus denied) and denied; certified is the difference.
+    const deniedOfDecided = deniedShareOfDecisions(decided - denied, denied);
     return {
       band: bandLabel(from, to),
       from,
@@ -230,7 +233,7 @@ export function toBands(
       denied,
       // A rate over a thin band is one filing wearing a percentage's clothes.
       deniedPct:
-        decided >= MIN_DECIDED_FOR_BAND_RATE ? (denied / decided) * 100 : null,
+        decided >= MIN_DECIDED_FOR_BAND_RATE && deniedOfDecided !== null ? deniedOfDecided * 100 : null,
       // The interval is what makes the mid-band hump a finding rather than an
       // impression. Wilson rather than the normal approximation, because these
       // proportions sit near zero where the normal approximation produces

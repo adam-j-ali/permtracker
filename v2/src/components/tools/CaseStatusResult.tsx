@@ -1279,9 +1279,9 @@ function EmployerRecord({
 }: {
   employer: NonNullable<CaseLookupResult["employer"]>;
 }) {
-  const thin = employer.total < MIN_RATE_SAMPLE;
+  const thin = employer.decided < MIN_RATE_SAMPLE;
   const figures: { value: string; label: string }[] = [
-    { value: formatInt(employer.total), label: "decided cases" },
+    { value: formatInt(employer.decided), label: "decided cases" },
     { value: formatInt(employer.certified), label: "certified" },
     ...(employer.denied > 0
       ? [{ value: formatInt(employer.denied), label: "denied" }]
@@ -1325,23 +1325,23 @@ function EmployerRecord({
 
         <p className="mt-5 max-w-3xl text-base leading-relaxed text-soft border-t-2 border-border">
           {thin ? (
-            employer.total === employer.certified ? (
+            employer.denied === 0 && employer.decided > 0 ? (
               <>
-                A clean record over {formatInt(employer.total)} cases is worth knowing,
+                A clean record over {formatInt(employer.decided)} cases is worth knowing,
                 but it isn&apos;t a rate. At this volume one denial would move the
                 figure by tens of percentage points, so the counts are here and
                 the percentage isn&apos;t.
               </>
             ) : (
               <>
-                At {formatInt(employer.total)} decided cases this is too small a
+                At {formatInt(employer.decided)} decided cases this is too small a
                 sample to carry a percentage, so the counts are here and the
                 rate isn&apos;t.
               </>
             )
           ) : (
             <>
-              {employer.approvalRate.toFixed(1)}% of {formatInt(employer.total)}{" "}
+              {employer.approvalRate.toFixed(1)}% of {formatInt(employer.decided)}{" "}
               decided cases were certified. That describes what DOL did with
               this sponsor&apos;s past filings and carries no claim about this
               one.

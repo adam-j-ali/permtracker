@@ -39,6 +39,7 @@ import json
 import sys
 import time
 
+from lib_shares import denial_rate_pct
 from lib_db import Database, lit, query_dicts, write_doc
 
 DOC_KEY = "state_profiles"
@@ -171,7 +172,7 @@ def build(db: Database) -> dict:
 
     field_decided = sum(r["decided"] or 0 for r in outcome)
     field_denied = sum(r["denied"] or 0 for r in outcome)
-    field_rate = (field_denied / field_decided * 100) if field_decided else None
+    field_rate = denial_rate_pct(field_denied, field_decided)
 
     profiles = []
     for r in sorted(outcome, key=lambda x: -(x["total"] or 0)):
@@ -198,7 +199,7 @@ def build(db: Database) -> dict:
                 # forty decided cases moves several points on one denial, and a
                 # page that prints it next to California's invites the
                 # comparison the floor exists to prevent.
-                "denialRate": round(denied / decided * 100, 2)
+                "denialRate": denial_rate_pct(denied, decided)
                 if decided >= RATE_FLOOR
                 else None,
                 "topOccupations": top_occ,
@@ -212,7 +213,7 @@ def build(db: Database) -> dict:
         "rateFloor": RATE_FLOOR,
         "fieldDecided": field_decided,
         "fieldDenied": field_denied,
-        "fieldDenialRate": round(field_rate, 2) if field_rate is not None else None,
+        "fieldDenialRate": field_rate,
         "states": profiles,
     }
 

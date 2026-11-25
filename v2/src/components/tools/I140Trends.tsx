@@ -1,5 +1,6 @@
 "use client";
 
+import { approvedShareOfDecisions } from "@convex/lib/approval";
 import { Fragment, useId, useMemo, useState } from "react";
 
 import { Label } from "@/components/ui/label";
@@ -228,7 +229,7 @@ export function I140Trends({ rows }: I140TrendsProps) {
                 {points.map((p) => {
                   const decided = p.approved + p.denied;
                   const width = (decided / maxDecided) * 100;
-                  const approvedShare = decided > 0 ? (p.approved / decided) * 100 : 0;
+                  const approvedShare = (approvedShareOfDecisions(p.approved, p.denied) ?? 0) * 100;
                   return (
                     <Fragment key={p.label}>
                       {" "}

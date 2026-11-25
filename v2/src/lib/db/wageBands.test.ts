@@ -1,3 +1,4 @@
+import { deniedShareOfDecisions } from "@convex/lib/approval";
 import { describe, expect, it } from "vitest";
 
 import { isMonotonic, peakBand, type WageBand, type WageDenialBands } from "./wageBands";
@@ -17,7 +18,7 @@ function band(bucket: string, decided: number, denied: number): WageBand {
     decided,
     denied,
     withdrawn: 0,
-    denialRate: decided > 0 ? Number(((denied / decided) * 100).toFixed(2)) : null,
+    denialRate: ((share) => (share === null ? null : Number((share * 100).toFixed(2))))(deniedShareOfDecisions(decided - denied, denied)),
   };
 }
 

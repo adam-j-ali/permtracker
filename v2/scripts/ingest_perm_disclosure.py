@@ -49,6 +49,7 @@ from datetime import date, timedelta
 from xml.etree.ElementTree import iterparse
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from lib_shares import denial_rate_pct
 from lib_wage import ANNUALIZE, PERM_BAND  # noqa: E402
 from lib_recruitment import COLUMNS as RECRUITMENT_COLUMNS, recruitment_fields  # noqa: E402
 
@@ -1178,7 +1179,7 @@ def build_payload(files: list[tuple[str, str]], acc: dict, unique: int) -> dict:
                     "bucket": k,
                     "decided": decided,
                     "denied": denied,
-                    "denialRate": round(denied / decided * 100, 2),
+                    "denialRate": denial_rate_pct(denied, decided),
                 }
             )
         return out
@@ -1194,7 +1195,7 @@ def build_payload(files: list[tuple[str, str]], acc: dict, unique: int) -> dict:
     risk["baseline"] = {
         "decided": decided_total,
         "denied": denied_total,
-        "denialRate": round(denied_total / decided_total * 100, 2) if decided_total else 0.0,
+        "denialRate": denial_rate_pct(denied_total, decided_total) if decided_total else 0.0,
     }
 
     payload = {

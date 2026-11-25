@@ -86,6 +86,7 @@ const PENDING: CaseLookupResult = {
     name: "Psomagen Inc",
     slug: "psomagen-inc",
     total: 7,
+    decided: 7,
     certified: 7,
     denied: 0,
     approvalRate: 100,
@@ -377,6 +378,7 @@ describe("CaseStatusResult, pending case", () => {
         name: "Big Sponsor LLC",
         slug: "big-sponsor-llc",
         total: 1_000,
+        decided: 1_000,
         certified: 940,
         denied: 60,
         approvalRate: 94,
@@ -391,12 +393,32 @@ describe("CaseStatusResult, pending case", () => {
     expect(container.textContent).toMatch(/Across FY2024 to FY2026\. It describes/);
   });
 
+  it("counts decided cases as certified plus denied: a withdrawal was never decided (D4)", () => {
+    const { container } = renderPending({
+      employer: {
+        name: "Big Sponsor LLC",
+        slug: "big-sponsor-llc",
+        total: 1_000,
+        decided: 910,
+        certified: 900,
+        denied: 10,
+        approvalRate: (900 / 910) * 100,
+        medianDays: 480,
+        fyFrom: 2024,
+        fyTo: 2026,
+      },
+    });
+    expect(container.textContent).toMatch(/98\.9% of 910\s+decided cases were certified/);
+    expect(container.textContent).not.toMatch(/of 1,000\s+decided/);
+  });
+
   it("names the years the employer's counts cover, and the median's own when they differ", () => {
     const { container } = renderPending({
       employer: {
         name: "Big Sponsor LLC",
         slug: "big-sponsor-llc",
         total: 9_000,
+        decided: 8_700,
         certified: 8_400,
         denied: 300,
         approvalRate: 93.3,

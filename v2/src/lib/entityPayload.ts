@@ -11,6 +11,8 @@
  * format, and a format whose halves live in different files drifts.
  */
 
+import { approvedShareOfDecisions } from "@convex/lib/approval";
+
 export const ENTITY_KINDS = ["employer", "attorney", "occupation"] as const;
 export type EntityKind = (typeof ENTITY_KINDS)[number];
 
@@ -192,8 +194,7 @@ export function approvalRate(r: {
   certified: number;
   denied: number;
 }): number | null {
-  const decided = r.certified + r.denied;
-  return decided === 0 ? null : r.certified / decided;
+  return approvedShareOfDecisions(r.certified, r.denied);
 }
 
 /** The rate a page may print: the approval rate, or null under MIN_DECIDED_FOR_RATE decided cases. */
