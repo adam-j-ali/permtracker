@@ -223,7 +223,10 @@ export function borrowedBrand(from: string): string | null {
 }
 
 /** One of our own addresses: phishing echoes the address it was sent to in the subject or the name. */
-const OUR_ADDRESS = /[a-z0-9._%+-]+@(?:[a-z0-9-]+\.)*permtracker\.app\b/i;
+// One address character before the @, never a run of them: `[...]+@` tried every start of a long run, so its time
+// grew with the square of the subject (80,000 characters took 2.7 s), and the mail Worker passes subjects uncapped.
+// eslint-disable-next-line security/detect-unsafe-regex -- measured linear: spamCheck.test.ts, 200,000 characters
+const OUR_ADDRESS = /[a-z0-9._%+-]@(?:[a-z0-9-]+\.)*permtracker\.app\b/i;
 
 export function isNoticeSender(from: string): boolean {
   return onDomain(from, NOTICE_DOMAINS);

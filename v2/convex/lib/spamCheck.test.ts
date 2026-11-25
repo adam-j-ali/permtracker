@@ -397,4 +397,22 @@ describe("borrowedBrand", () => {
     const quoted = ruleScore({ from: "a@b.example", subject: "support@permtracker.app notice", text: "" });
     expect(quoted.score).toBe(2);
   });
+
+  it("reads a stranger's 200,000-character subject and name in linear time (the mail Worker passes them uncapped)", () => {
+    // Nov 25 2026: the own-address rule scanned every start of a run of address characters, so its time grew with the
+    // square of the subject: 80,000 characters took 2.7 s, and a megabyte would hold a Convex function for minutes.
+    const long = "a".repeat(200_000);
+    const started = performance.now();
+    const r = ruleScore({ from: "x@y.example", fromName: `${long}@`, subject: `${long}@`, text: "" });
+    expect(performance.now() - started).toBeLessThan(500);
+    // The body too, in the shapes a hostile sender would try: long runs, dotted runs, address-like runs.
+    for (const text of [long, "a.".repeat(100_000), "a@b.".repeat(50_000), "http://".repeat(28_000), "x ".repeat(100_000)]) {
+      const t0 = performance.now();
+      ruleScore({ from: "x@y.example", subject: "Hello", text });
+      expect(performance.now() - t0, text.slice(0, 12)).toBeLessThan(500);
+    }
+    expect(r.reasons.some((why) => why.includes("our own address"))).toBe(false);
+    expect(ruleScore({ from: "x@y.example", subject: "write to hello@mail.permtracker.app", text: "" }).score).toBe(2);
+    expect(ruleScore({ from: "x@y.example", subject: "x@notpermtracker.app", text: "" }).score).toBe(0);
+  });
 });
