@@ -87,6 +87,8 @@ def bin_width(p5, p95) -> int:
 
 
 QUANTILES = ((0.05, "p5"), (0.25, "p25"), (0.5, "p50"), (0.75, "p75"), (0.95, "p95"))
+# A state's row carries the ladder's seven points: STATE_PERCENTILE_SELECT's port (publicData.ts).
+STATE_QUANTILES = ((0.05, "p5"), (0.1, "p10"), (0.25, "p25"), (0.5, "p50"), (0.75, "p75"), (0.9, "p90"), (0.95, "p95"))
 
 
 def percentile_select() -> str:
@@ -113,7 +115,7 @@ def percentile_select() -> str:
 def state_percentile_select() -> str:
     """A byte-faithful port of statePercentileExpr()."""
     out = []
-    for p, name in QUANTILES:
+    for p, name in STATE_QUANTILES:
         k = f"(n - 1) * {p}"
         lo_rank = f"1 + CAST({k} AS INTEGER)"
         lo = f"MAX(CASE WHEN rn = {lo_rank} THEN wage END)"

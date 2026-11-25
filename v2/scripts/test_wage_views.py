@@ -136,8 +136,8 @@ def main() -> int:
                     f"WHERE {where2} AND {sc} IS NOT NULL AND {sc} <> '') "
                     f"SELECT state, MAX(n) AS n, {state_percentile_select()} FROM o "
                     "GROUP BY state HAVING MAX(n) >= ? ORDER BY MAX(n) DESC, state", [*args2, 30]).fetchall()
-                got = [(x["state"], x["n"], x["p50"], x["p5"], x["p95"]) for x in v["byState"]]
-                want = [(r["state"], r["n"], r["p50"], r["p5"], r["p95"]) for r in by]
+                got = [(x["state"], x["n"], x["p50"], x["p5"], x["p95"], x.get("p10"), x.get("p90")) for x in v["byState"]]
+                want = [(r["state"], r["n"], r["p50"], r["p5"], r["p95"], r["p10"], r["p90"]) for r in by]
                 same = same and got == want
             con.row_factory = None
             if not same:

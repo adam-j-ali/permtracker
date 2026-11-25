@@ -45,7 +45,7 @@ import time
 from itertools import islice
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from build_lca_facets import bin_width, min_for_median  # noqa: E402
+from build_lca_facets import STATE_QUANTILES, bin_width, min_for_median  # noqa: E402
 from lib_wage import ANNUAL_WAGE_SQL, FLAG_BAND  # noqa: E402
 from lib_db import Database, cell, insert_stmts, query_rows, record_run, run_stmts  # noqa: E402
 
@@ -128,11 +128,11 @@ def sql_round(x: float) -> float:
     return float(math.floor(x + 0.5)) if x >= 0 else -float(math.floor(-x + 0.5))
 
 
-def percentiles(vals: list[float]) -> dict:
-    """n, avg and the five interpolated percentiles of an ASCENDING list."""
+def percentiles(vals: list[float], quantiles: tuple = QUANTILES) -> dict:
+    """n, avg and the interpolated percentiles (the five, or a state's seven) of an ASCENDING list."""
     n = len(vals)
     out: dict = {"n": n, "avg": (math.fsum(vals) / n) if n else None}
-    for p, name in QUANTILES:
+    for p, name in quantiles:
         if not n:
             out[name] = None
             continue
@@ -257,7 +257,7 @@ def build(program: str, rows: list[tuple], min_cases: int, *, min_rows: int | No
                 by = []
                 for st, sv in (children.get(k) or {}).items():
                     if len(sv) >= min_cases:
-                        by.append({"state": st, **percentiles(sv)})
+                        by.append({"state": st, **percentiles(sv, STATE_QUANTILES)})
                 by.sort(key=lambda x: (-x["n"], x["state"]))
                 view["byState"] = by
             views[k] = view

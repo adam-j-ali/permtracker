@@ -163,15 +163,16 @@ def ts_quantiles(const_name: str) -> tuple:
     )
 
 
-for const_name in ("PERCENTILE_SELECT", "STATE_PERCENTILE_SELECT"):
+# A state's row carries the ladder's seven points (the 10th and 90th too, Nov 25 2026: the wages page's one state chart
+# shows the whole ladder); the overall stats keep five.
+for const_name, want in (("PERCENTILE_SELECT", blf.QUANTILES), ("STATE_PERCENTILE_SELECT", blf.STATE_QUANTILES)):
     got = ts_quantiles(const_name)
-    check(f"{const_name} quantiles match the builder's", got == blf.QUANTILES,
-          f"ts={got} py={blf.QUANTILES}")
+    check(f"{const_name} quantiles match the builder's", got == want, f"ts={got} py={want}")
 
-for fn_name, py_fn in (("percentileExpr", blf.percentile_select),
-                       ("statePercentileExpr", blf.state_percentile_select)):
+for fn_name, py_fn, quantiles in (("percentileExpr", blf.percentile_select, blf.QUANTILES),
+                                  ("statePercentileExpr", blf.state_percentile_select, blf.STATE_QUANTILES)):
     expected = ",\n            ".join(
-        ts_expr(fn_name, q, name) for q, name in blf.QUANTILES
+        ts_expr(fn_name, q, name) for q, name in quantiles
     )
     got = py_fn()
     check(f"{fn_name} port equals the TypeScript's own output", got == expected,

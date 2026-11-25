@@ -28,14 +28,11 @@ import { BrowseTeaser } from "@/components/entities/BrowseBody";
 import { fetchEntitySeed } from "@/lib/entitySeed";
 import { getDisclosureStats } from "@/lib/db/publicData";
 import {
-  getStateLadders,
   getVolumeLadders,
   getWageBandRates,
   getWageBandRatesByYear,
-  MIN_CASES_FOR_LADDER,
 } from "@/lib/db/wages";
 import { FaqList } from "@/components/tools/FaqList";
-import { SplitLadderNote } from "@/components/wages/SplitLadderNote";
 import { WageExplorer } from "@/components/wages/WageExplorer";
 import { TwoMarketsNote } from "@/components/wages/LadderComb";
 import { LadderCombViews } from "@/components/wages/LadderViews";
@@ -100,13 +97,12 @@ export const metadata: Metadata = withSocialCard({
 export const revalidate = 604800;
 
 export default async function PermWagesPage() {
-  const [stats, seed, ladders, bandsByYear, bandsPooled, stateLadders] = await Promise.all([
+  const [stats, seed, ladders, bandsByYear, bandsPooled] = await Promise.all([
     getDisclosureStats(),
     fetchEntitySeed("occupation"),
     getVolumeLadders(12),
     getWageBandRatesByYear(),
     getWageBandRates(),
-    getStateLadders(60),
   ]);
   const { rows: occupations, total: occupationCount } = seed;
   const ladder = stats?.wageLadder ?? null;
@@ -132,7 +128,8 @@ export default async function PermWagesPage() {
     ...(ladder ? [{ id: "ladder", label: "The ladder" }] : []),
     { id: "explore", label: "Filter by state and year" },
     ...(ladders.length > 0 ? [{ id: "by-job", label: "By job" }] : []),
-    ...(stateLadders.length > 0 ? [{ id: "by-state", label: "By state" }] : []),
+    // The explorer's one state chart (StateWageSpread) carries #by-state since Nov 25 2026.
+    { id: "by-state", label: "By state" },
     ...(bandsPooled.length > 0 ? [{ id: "denials", label: "Denials by wage" }] : []),
     { id: "all", label: `All ${formatInt(occupationCount)}` },
     { id: "a-z", label: "A to Z" },
@@ -264,26 +261,6 @@ export default async function PermWagesPage() {
                   return slug ? entityHref("occupation", slug) : null;
                 }}
               />
-            </FigurePlate>
-          ) : null}
-
-          {stateLadders.length > 0 ? (
-            <FigurePlate
-              title="Every state on one axis"
-              subject={`${stateLadders.length} states and territories with ${MIN_CASES_FOR_LADDER}+ certified cases`}
-              caption={
-                <>
-                  <SplitLadderNote ladders={stateLadders} className="mb-3" />
-                  Each row is one state&apos;s certified offers, cut at seven points, ordered by how many cases it
-                  files. These come from the pre-computed cells, and the filters above don&apos;t change them, so they
-                  cover the whole window and every state at once.
-                </>
-              }
-              source="DOL PERM disclosure files, certified cases only"
-              className="mt-10"
-              id="by-state"
-            >
-              <LadderCombViews label="Wage ladder by state" subjectLabel="State" ladders={stateLadders} />
             </FigurePlate>
           ) : null}
 

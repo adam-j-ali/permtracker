@@ -1114,8 +1114,11 @@ export interface WagePercentileRow {
   p95: number | null;
 }
 
+/** A state's row: the overall five points plus the 10th and 90th (absent in views built before Nov 25 2026). */
 export interface WageStateRow extends WagePercentileRow {
   state: string;
+  p10?: number | null;
+  p90?: number | null;
 }
 
 export interface WageOption {
@@ -1236,12 +1239,16 @@ function statePercentileExpr(p: number, name: string): string {
   return `ROUND(${lo} + (${hi} - ${lo}) * ${frac}) AS ${name}`;
 }
 
+// A state's row carries the ladder's seven points, the 10th and 90th too: the wages page's one state chart shows the
+// whole ladder (Nov 25 2026). build_lca_facets.py STATE_QUANTILES is its port, held equal by test_lca_facets.py.
 export const STATE_PERCENTILE_SELECT = (
   [
     [0.05, "p5"],
+    [0.1, "p10"],
     [0.25, "p25"],
     [0.5, "p50"],
     [0.75, "p75"],
+    [0.9, "p90"],
     [0.95, "p95"],
   ] as const
 )
@@ -1388,9 +1395,11 @@ export async function getWageByState(
     n: Number(x.n),
     avg: num(x.avg),
     p5: num(x.p5),
+    p10: num(x.p10),
     p25: num(x.p25),
     p50: num(x.p50),
     p75: num(x.p75),
+    p90: num(x.p90),
     p95: num(x.p95),
   }));
 }
