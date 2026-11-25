@@ -6,6 +6,7 @@ import {
   decodeReceipt,
   looksLikeReceipt,
   normaliseReceipt,
+  readPartialReceipt,
 } from "../receipt";
 
 /**
@@ -129,5 +130,76 @@ describe("the shape message", () => {
   it("names the shape and where to find it, in one sentence pair", () => {
     expect(RECEIPT_SHAPE_MESSAGE).toMatch(/three letters and ten digits/);
     expect(RECEIPT_SHAPE_MESSAGE).toMatch(/I-797/);
+  });
+});
+
+describe("readPartialReceipt: a receipt read as it's typed (RT1, Nov 25 2026)", () => {
+  it("names the office from the first three letters, then counts down", () => {
+    const r = readPartialReceipt("lin");
+    expect(r.prefix).toBe("LIN");
+    expect(r.office?.name).toBe("Nebraska Service Center");
+    expect(r.remaining).toBe(10);
+    expect(r.fiscalYear).toBeNull();
+    expect(r.problem).toBeNull();
+  });
+
+  it("adds the fiscal year at five characters and the series at six, and the day at eight", () => {
+    expect(readPartialReceipt("LIN26").fiscalYear).toBe(2026);
+    expect(readPartialReceipt("LIN26").series).toBeNull();
+    expect(readPartialReceipt("EAC219").series).toBe("lockbox");
+    expect(readPartialReceipt("LIN260").series).toBe("day");
+    const d = readPartialReceipt("LIN26042");
+    expect(d.series).toBe("day");
+    expect(d.day).toBe(42);
+    expect(d.remaining).toBe(5);
+  });
+
+  it("reads an online number's series at once and never a year", () => {
+    const r = readPartialReceipt("IOE09");
+    expect(r.series).toBe("online");
+    expect(r.fiscalYear).toBeNull();
+  });
+
+  it("decodes in full at thirteen characters, the same way decodeReceipt does", () => {
+    const r = readPartialReceipt("lin-2604-214850");
+    expect(r.remaining).toBe(0);
+    expect(r.full).toEqual(decodeReceipt("LIN2604214850"));
+  });
+
+  it("names the first character that can't belong, by its position", () => {
+    expect(readPartialReceipt("LI1").problem).toEqual({ position: 3, expected: "letter", got: "1" });
+    expect(readPartialReceipt("LIN26A").problem).toEqual({ position: 6, expected: "digit", got: "A" });
+    expect(readPartialReceipt("LIN26042148500").problem).toEqual({ position: 14, expected: "end", got: "0" });
+  });
+
+  it("offers the one-character fix for the usual typos, only when it makes a clean number", () => {
+    expect(readPartialReceipt("LIN26O4214850").suggestion).toBe("LIN2604214850"); // O for zero
+    expect(readPartialReceipt("LIN26042I4850").suggestion).toBe("LIN2604214850"); // I for one
+    expect(readPartialReceipt("LIN26042l4850").suggestion).toBe("LIN2604214850"); // l for one
+    expect(readPartialReceipt("L1N2604214850").suggestion).toBe("LIN2604214850"); // 1 for I in the letters
+    expect(readPartialReceipt("I0E0912345678").suggestion).toBe("IOE0912345678"); // 0 for O in the letters
+    expect(readPartialReceipt("LIN2604214850").suggestion).toBeNull();
+    expect(readPartialReceipt("LIN26XX214850").suggestion).toBeNull(); // two wrong characters: no guess
+  });
+
+  it("recognises an A-number, which is a different number", () => {
+    expect(readPartialReceipt("A123456789").otherKind).toBe("a-number");
+    expect(readPartialReceipt("A-123-456-789").otherKind).toBe("a-number");
+    expect(readPartialReceipt("A12345678").otherKind).toBe("a-number");
+    expect(readPartialReceipt("LIN2604214850").otherKind).toBeNull();
+  });
+
+  it("says a three-letter start USCIS doesn't list is unknown, without refusing it", () => {
+    const r = readPartialReceipt("XYZ2604214850");
+    expect(r.office).toBeNull();
+    expect(r.unknownPrefix).toBe(true);
+    expect(r.full?.prefix).toBe("XYZ");
+  });
+
+  it("reads nothing from an empty box", () => {
+    const r = readPartialReceipt("  ");
+    expect(r.typed).toBe("");
+    expect(r.remaining).toBe(13);
+    expect(r.problem).toBeNull();
   });
 });

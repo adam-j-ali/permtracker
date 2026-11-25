@@ -105,14 +105,19 @@ const DAYS_IN_YEAR_MAX = 366;
 const LOCKBOX_MARK = "9";
 const ONLINE_PREFIX = "IOE";
 
+/**
+ * Two-digit fiscal years: USCIS issued receipts under this scheme well before 2000, so 90-99 are read as the 1990s and
+ * everything else as 2000s. A receipt from 1989 or earlier is not something anyone looks up.
+ */
+function fiscalYearOf(yy: string): number {
+  const n = Number(yy);
+  return n >= 90 ? 1900 + n : 2000 + n;
+}
+
 function readDigits(receipt: string): ReceiptDigits {
   if (receipt.includes("*")) return { series: "masked" };
   if (receipt.startsWith(ONLINE_PREFIX)) return { series: "online" };
-  const yy = Number(receipt.slice(3, 5));
-  // Two-digit fiscal years: USCIS issued receipts under this scheme well
-  // before 2000, so 90-99 are read as the 1990s and everything else as
-  // 2000s. A receipt from 1989 or earlier is not something anyone looks up.
-  const fiscalYear = yy >= 90 ? 1900 + yy : 2000 + yy;
+  const fiscalYear = fiscalYearOf(receipt.slice(3, 5));
   if (receipt[5] === LOCKBOX_MARK) return { series: "lockbox", fiscalYear, counter: Number(receipt.slice(6)) };
   const day = Number(receipt.slice(5, 8));
   if (day >= 1 && day <= DAYS_IN_YEAR_MAX) return { series: "day", fiscalYear, day, sequence: receipt.slice(8) };
@@ -128,6 +133,100 @@ export function decodeReceipt(input: string): DecodedReceipt | null {
   const prefix = receipt.slice(0, 3);
   const office = RECEIPT_PREFIXES[prefix] ?? null;
   return { receipt, prefix, office, masked: receipt.includes("*"), digits: readDigits(receipt) };
+}
+
+/**
+ * A receipt as far as it's been typed (RT1, Nov 25 2026): what each part already says (the office from three letters,
+ * the fiscal year from five, the series from six, the day from eight), the first character that can't belong, a
+ * one-character fix for the usual typos, and an A-number recognised as one. Shape only, like decodeReceipt: nothing
+ * here asks USCIS, and nothing is read past the first wrong character.
+ */
+export interface PartialReceipt {
+  /** What was typed, upper-cased, without spaces, dashes or dots. */
+  typed: string;
+  prefix: string | null;
+  /** The office the three letters name, or null before three letters or for letters USCIS doesn't list. */
+  office: ReceiptPrefix | null;
+  /** Three letters that aren't a prefix USCIS lists or one seen on notices. Still accepted, as decodeReceipt does. */
+  unknownPrefix: boolean;
+  fiscalYear: number | null;
+  series: "day" | "lockbox" | "online" | null;
+  /** The day the day series names, once its three digits are typed and fall in a year. */
+  day: number | null;
+  /** Characters a full number still needs. */
+  remaining: number;
+  /** The first character that can't be part of a receipt, by its position from 1. */
+  problem: { position: number; expected: "letter" | "digit" | "end"; got: string } | null;
+  /** The number with one usual typo fixed (O for 0, I or L for 1 among the digits; 0 for O, 1 for I among the letters). */
+  suggestion: string | null;
+  /** Another kind of number this is instead. */
+  otherKind: "a-number" | null;
+  /** The full decode, once thirteen characters are right. */
+  full: DecodedReceipt | null;
+}
+
+const RECEIPT_LENGTH = 13;
+const PREFIX_LENGTH = 3;
+/** Spaces, hyphens, the Unicode dashes and dots, which a pasted number often carries. */
+const TYPED_NOISE = /[\s\-\u2010-\u2015.]+/g;
+/** An Alien Registration Number: an A and eight or nine digits. */
+const A_NUMBER = /^A\d{8,9}$/;
+const LETTER_FIXES: Readonly<Record<string, string>> = { "0": "O", "1": "I" };
+const DIGIT_FIXES: Readonly<Record<string, string>> = { O: "0", I: "1", L: "1" };
+
+function firstProblem(typed: string): PartialReceipt["problem"] {
+  for (let i = 0; i < typed.length; i++) {
+    const c = typed[i] as string;
+    if (i >= RECEIPT_LENGTH) return { position: i + 1, expected: "end", got: c };
+    const letter = i < PREFIX_LENGTH;
+    if (letter ? !/[A-Z]/.test(c) : !/\d/.test(c)) return { position: i + 1, expected: letter ? "letter" : "digit", got: c };
+  }
+  return null;
+}
+
+function typoFix(typed: string): string | null {
+  if (typed.length !== RECEIPT_LENGTH || FULL.test(typed)) return null;
+  let fixes = 0;
+  let unfixable = false;
+  const out = [...typed]
+    .map((c, i) => {
+      const letter = i < PREFIX_LENGTH;
+      if (letter ? /[A-Z]/.test(c) : /\d/.test(c)) return c;
+      const fix = (letter ? LETTER_FIXES : DIGIT_FIXES)[c];
+      if (!fix) unfixable = true;
+      fixes += 1;
+      return fix ?? c;
+    })
+    .join("");
+  return !unfixable && fixes === 1 && FULL.test(out) ? out : null;
+}
+
+export function readPartialReceipt(input: string): PartialReceipt {
+  const typed = input.toUpperCase().replace(TYPED_NOISE, "");
+  const masked = MASKED.test(typed);
+  const problem = masked || !typed ? null : firstProblem(typed);
+  const good = problem ? typed.slice(0, problem.position - 1) : typed;
+  const prefix = good.length >= PREFIX_LENGTH ? good.slice(0, PREFIX_LENGTH) : null;
+  const office = prefix ? (RECEIPT_PREFIXES[prefix] ?? null) : null;
+  const online = prefix === ONLINE_PREFIX;
+  const fiscalYear = prefix && !online && good.length >= 5 ? fiscalYearOf(good.slice(3, 5)) : null;
+  const series: PartialReceipt["series"] = !prefix ? null : online ? "online" : good.length >= 6 ? (good[5] === LOCKBOX_MARK ? "lockbox" : "day") : null;
+  const dayDigits = series === "day" && good.length >= 8 ? Number(good.slice(5, 8)) : null;
+  const day = dayDigits !== null && dayDigits >= 1 && dayDigits <= DAYS_IN_YEAR_MAX ? dayDigits : null;
+  return {
+    typed,
+    prefix,
+    office,
+    unknownPrefix: prefix !== null && office === null,
+    fiscalYear,
+    series,
+    day,
+    remaining: Math.max(0, RECEIPT_LENGTH - typed.length),
+    problem,
+    suggestion: typoFix(typed),
+    otherKind: A_NUMBER.test(typed) ? "a-number" : null,
+    full: !problem && (masked || typed.length === RECEIPT_LENGTH) ? decodeReceipt(typed) : null,
+  };
 }
 
 /**
