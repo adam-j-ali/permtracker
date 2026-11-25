@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { addBusinessDays, subtractBusinessDays, countBusinessDays } from './businessDays';
+import { addBusinessDays, subtractBusinessDays, countBusinessDays, onOrNextBusinessDay } from './businessDays';
 
 describe('subtractBusinessDays', () => {
   describe('basic subtraction (no holidays)', () => {
@@ -100,5 +100,27 @@ describe('countBusinessDays', () => {
   it('excludes weekends', () => {
     // Sat Mar 16 to Sun Mar 17 = 0 business days
     expect(countBusinessDays('2024-03-16', '2024-03-17')).toBe(0);
+  });
+});
+
+describe('onOrNextBusinessDay (8 CFR 1.2, "Day")', () => {
+  it('keeps a business day as it is', () => {
+    // Wednesday, March 13, 2024
+    expect(onOrNextBusinessDay('2024-03-13')).toBe('2024-03-13');
+  });
+
+  it('moves a Saturday or a Sunday to the Monday', () => {
+    expect(onOrNextBusinessDay('2024-03-16')).toBe('2024-03-18');
+    expect(onOrNextBusinessDay('2024-03-17')).toBe('2024-03-18');
+  });
+
+  it('moves past a Monday holiday too', () => {
+    // Saturday, January 18, 2025, before MLK Day on Monday, January 20.
+    expect(onOrNextBusinessDay('2025-01-18')).toBe('2025-01-21');
+  });
+
+  it('moves a weekday holiday to the next business day', () => {
+    // Thursday, July 4, 2024
+    expect(onOrNextBusinessDay('2024-07-04')).toBe('2024-07-05');
   });
 });

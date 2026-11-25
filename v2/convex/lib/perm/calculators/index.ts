@@ -199,5 +199,26 @@ export {
   type OptUnemploymentInput,
   type OptUnemploymentResult,
   type PendingExtensionResult,
+  optUnemploymentFromJobs,
+  type OptJob,
+  type OptJobDaysInput,
+  type OptJobDaysResult,
 } from './f1Dates';
 export { I140_PREMIUM_BUSINESS_DAYS, premiumActionDeadline, type I140PremiumClass } from './premiumClock';
+export {
+  n400EarliestFiling,
+  N400_EARLY_FILING_DAYS,
+  NATURALIZATION_RESIDENCE_YEARS,
+  type NaturalizationPath,
+  type N400EarlyFilingInput,
+  type N400EarlyFilingResult,
+} from './naturalization';
+export { i751FilingWindow, I751_FILING_WINDOW_DAYS, type I751WindowInput, type I751WindowResult } from './conditionalResidence';
+export {
+  rfeResponseDeadline,
+  RFE_MAX_RESPONSE_DAYS,
+  NOID_MAX_RESPONSE_DAYS,
+  USCIS_MAIL_DAYS,
+  type RfeDeadlineInput,
+  type RfeDeadlineResult,
+} from './rfeDeadline';

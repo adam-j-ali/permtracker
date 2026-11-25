@@ -52,6 +52,20 @@ export function subtractBusinessDays(startDate: string, days: number): string {
 }
 
 /**
+ * The day itself when it's a business day, or the next one that is. The rule for a period's last day in USCIS's
+ * chapter of the regulations (8 CFR 1.2, "Day"): when it "falls on a Saturday, Sunday, or a legal holiday, the period
+ * shall run until the end of the next day which is not a Saturday, Sunday, or a legal holiday."
+ *
+ * @example
+ * onOrNextBusinessDay('2024-03-16') // '2024-03-18' (Saturday to Monday)
+ */
+export function onOrNextBusinessDay(date: string): string {
+  let day = parseISO(date);
+  while (!isBusinessDay(format(day, 'yyyy-MM-dd'))) day = addDays(day, 1);
+  return format(day, 'yyyy-MM-dd');
+}
+
+/**
  * Count business days between two dates (inclusive), skipping weekends and federal holidays.
  *
  * @param startDate - ISO date string (YYYY-MM-DD)

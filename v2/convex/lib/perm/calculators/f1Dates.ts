@@ -115,6 +115,86 @@ export function calculateOptUnemployment(input: OptUnemploymentInput): OptUnempl
   return { limit, used, left: Math.max(0, limit - used), lastDay, over: used > limit };
 }
 
+/** A job held on OPT: its first day, and its last when it has ended. */
+export interface OptJob {
+  start: string;
+  end?: string;
+}
+
+export interface OptJobDaysInput {
+  /** The first day of OPT: the start date on the EAD. */
+  optStart: string;
+  /** The last day of OPT (the EAD's end, or the STEM extension's), when known. The count stops there. */
+  optEnd?: string;
+  /** A 24-month STEM extension has been granted. */
+  stem: boolean;
+  jobs: readonly OptJob[];
+  today: string;
+}
+
+export interface OptJobDaysResult {
+  limit: number;
+  /** Days without a job from the OPT start through today (or the OPT's end), both counted. */
+  used: number;
+  left: number;
+  over: boolean;
+  /** The last day counted, or null before the OPT starts. */
+  countedThrough: string | null;
+  /** A job covers today. */
+  workingNow: boolean;
+  /** Without work from today on, the day the count reaches the limit; null while working, past it, or after the OPT. */
+  lastDay: string | null;
+  /** The first day past the limit, once the count went over. */
+  firstDayOver: string | null;
+}
+
+/**
+ * OPT unemployment counted from the job dates, the way SEVIS counts it (SEVIS Help Hub, "Unemployment Counter", last
+ * updated July 27 2026): look back to the OPT start date and count each day without an employer. Every day counts,
+ * weekends included (SEVP Policy Guidance 1004-03, 7.1.6), against the 90 or 150 of 8 CFR 214.2(f)(10)(ii)(E).
+ * A STEM extension starts the day after the first OPT ends (214.2(f)(11)(iii)(A)), so the two read as one period.
+ */
+export function optUnemploymentFromJobs(input: OptJobDaysInput): OptJobDaysResult {
+  const limit = input.stem ? STEM_OPT_UNEMPLOYMENT_DAYS : OPT_UNEMPLOYMENT_DAYS;
+  const start = day("optStart", input.optStart);
+  const today = day("today", input.today);
+  const end = input.optEnd ? day("optEnd", input.optEnd) : null;
+  const jobs = input.jobs.map((j, i) => {
+    const s = day(`job ${i + 1} start`, j.start);
+    const e = j.end ? day(`job ${i + 1} end`, j.end) : null;
+    if (e && e < s) throw new Error(`job ${i + 1}: its last day comes before its first`);
+    return { s, e };
+  });
+  const worked = (d: Date) => jobs.some((j) => d >= j.s && (j.e === null || d <= j.e));
+
+  const through = end && end < today ? end : today;
+  let used = 0;
+  let firstDayOver: string | null = null;
+  // At most a few years of days: walking them is clearer than merging intervals, and as exact.
+  for (let d = start; d <= through; d = addDays(d, 1)) {
+    if (worked(d)) continue;
+    used += 1;
+    if (used === limit + 1) firstDayOver = iso(d);
+  }
+
+  const counting = start <= through;
+  const workingNow = counting && worked(through) && through.getTime() === today.getTime();
+  const left = Math.max(0, limit - used);
+  const stillRunning = counting && through.getTime() === today.getTime();
+  const reachedOn = addDays(today, left);
+  const lastDay = stillRunning && !workingNow && used <= limit && (!end || reachedOn <= end) ? iso(reachedOn) : null;
+  return {
+    limit,
+    used,
+    left,
+    over: used > limit,
+    countedThrough: counting ? iso(through) : null,
+    workingNow,
+    lastDay,
+    firstDayOver,
+  };
+}
+
 export const EXTENSION_PENDING_DAYS = 240;
 
 export interface PendingExtensionResult {

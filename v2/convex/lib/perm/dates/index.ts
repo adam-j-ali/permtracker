@@ -14,7 +14,7 @@ export {
 } from './dateUtils';
 
 // Business day utilities
-export { addBusinessDays, subtractBusinessDays, countBusinessDays } from './businessDays';
+export { addBusinessDays, subtractBusinessDays, countBusinessDays, onOrNextBusinessDay } from './businessDays';
 
 // Federal holiday utilities
 export {
