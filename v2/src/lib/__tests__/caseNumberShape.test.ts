@@ -89,6 +89,15 @@ describe("normaliseCaseNumber, the wide lookup rule", () => {
     expect(normaliseCaseNumber(input)).toBeNull();
   });
 
+  it("takes DOL's FY2008 LCA form, which the case page finds in the older files (Nov 25 2026)", () => {
+    expect(normaliseCaseNumber("I-07135-3458699")).toBe("I-07135-3458699");
+    expect(normaliseCaseNumber(" i–07135–3458699. ")).toBe("I-07135-3458699");
+    expect(normaliseCaseNumber("I-07135-345869")).toBeNull();
+    expect(normaliseCaseNumber("I-0713-3458699")).toBeNull();
+    expect(normaliseCaseNumber("A-07135-3458699")).toBeNull();
+    expect(isLegacyCaseNumber("I-07135-3458699")).toBe(false); // never date-decoded as a PERM legacy number
+  });
+
   it("has not become permissive: the widening added exactly one shape", () => {
     // The probe the lead asked for. A five-and-five rule could easily have
     // been written loosely enough to swallow anything with two number blocks.

@@ -325,6 +325,12 @@ describe("normaliseRecordCaseNumber", () => {
     expect(normaliseRecordCaseNumber("A-23043-006411")).toBeNull();
   });
 
+  it("reads an FY2008 LCA number (I-NNNNN-NNNNNNN), which the case page finds in DOL's older files", () => {
+    expect(normaliseRecordCaseNumber("I-07135-3458699")).toEqual({ caseNumber: "I-07135-3458699", program: "lca" });
+    expect(normaliseRecordCaseNumber("I-07135-345869")).toBeNull();
+    expect(normaliseFlagCaseNumber("I-07135-3458699")).toBeNull(); // never watched: decided years ago
+  });
+
   it("reads every four-part number normaliseFlagCaseNumber reads, the same way", () => {
     for (const raw of ["G-100-26125-868956", " p-100-26125-868956 ", "I-203-26125-868956"]) {
       expect(normaliseRecordCaseNumber(raw), raw).toEqual(normaliseFlagCaseNumber(raw));

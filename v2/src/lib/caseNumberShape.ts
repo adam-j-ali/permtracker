@@ -34,10 +34,17 @@ const CURRENT = /^(?:[A-Z]|JO-A)-\d{3}-\d{5}-\d+$/;
 /** The legacy three-segment form: `A-23043-00641`. Five digits, then five. */
 const LEGACY = /^[A-Z]-\d{5}-\d{5}$/;
 
-/** Tidied the way a paste needs (`tidyCaseNumber`), or null when it is neither shape. */
+/**
+ * DOL's FY2008 LCA form, `I-07135-3458699`: an I, five digits, then seven. It's only in DOL's older files
+ * (lca_cases_history), where the case page finds it; the box refused it as "not the shape of a case number" until
+ * Nov 25 2026. Not the legacy PERM form: nothing date-decodes it.
+ */
+export const OLD_LCA = /^I-\d{5}-\d{7}$/;
+
+/** Tidied the way a paste needs (`tidyCaseNumber`), or null when it is none of the shapes. */
 export function normaliseCaseNumber(input: string): string | null {
   const raw = tidyCaseNumber(input);
-  return CURRENT.test(raw) || LEGACY.test(raw) ? raw : null;
+  return CURRENT.test(raw) || LEGACY.test(raw) || OLD_LCA.test(raw) ? raw : null;
 }
 
 /**

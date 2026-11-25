@@ -33,7 +33,7 @@ import {
   isApproval,
   normaliseCaseNumber,
 } from "./caseStatusVocabulary";
-import { isLegacyCaseNumber } from "./caseNumberShape";
+import { normaliseCaseNumber as normaliseAnyShape, OLD_LCA } from "./caseNumberShape";
 import { tidyCaseNumber } from "./tidyCaseNumber";
 
 /**
@@ -48,7 +48,7 @@ import { tidyCaseNumber } from "./tidyCaseNumber";
  */
 export const LCA_NUMBER_RE = /^I-(?:\d{3}-\d{5}-\d+|\d{5}-\d{7})$/;
 /** The FY2008 shape alone: DOL's live case service never knew these, so nothing asks it about one. */
-export const OLD_LCA_NUMBER_RE = /^I-\d{5}-\d{7}$/;
+export const OLD_LCA_NUMBER_RE = OLD_LCA;
 
 export type FlagProgram = "perm" | "pwd" | "lca" | "seasonal";
 
@@ -115,15 +115,16 @@ export function normaliseFlagCaseNumber(input: string): FlagCaseRef | null {
 }
 
 /**
- * A case number to READ a record by: what normaliseFlagCaseNumber takes, or the legacy three-part PERM form the case page
- * also looks up (A-23043-00641: 92,248 cases in perm_cases). Only for reading a record (the API's case read): anything
- * that WATCHES a case (alerts, the app's follow, webhooks) keeps normaliseFlagCaseNumber, because a legacy case is
- * decided and would never send mail.
+ * A case number to READ a record by: what normaliseFlagCaseNumber takes, or a shape the case page also looks up in DOL's
+ * older files: the legacy three-part PERM form (A-23043-00641: 92,248 cases in perm_cases) and the FY2008 LCA form
+ * (I-07135-3458699). Only for reading a record (the API's case read): anything that WATCHES a case (alerts, the app's
+ * follow, webhooks) keeps normaliseFlagCaseNumber, because these cases are decided and would never send mail.
  */
 export function normaliseRecordCaseNumber(input: string): FlagCaseRef | null {
   const ref = normaliseFlagCaseNumber(input);
   if (ref) return ref;
-  return isLegacyCaseNumber(input) ? { caseNumber: tidyCaseNumber(input), program: "perm" } : null;
+  const caseNumber = normaliseAnyShape(input);
+  return caseNumber ? { caseNumber, program: programOf(caseNumber) } : null;
 }
 
 const STATUS_TABLE: Record<FlagProgram, string> = {
