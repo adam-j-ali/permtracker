@@ -29,7 +29,7 @@ from typing import Any, Callable, Optional
 
 __all__ = ["PermTracker", "PermTrackerError", "Answer", "CsvExport", "Usage", "verify_webhook", "WEBHOOK_EVENTS",
            "EXPORT_KINDS", "DEFAULT_BASE_URL", "__version__"]
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 WEBHOOK_EVENTS = ("case.status_changed", "employer.moved", "bulletin.published", "queue.moved", "processing_times.updated")
 EXPORT_KINDS = ("cases", "employers", "law-firms", "occupations")
 DEFAULT_BASE_URL = "https://permtracker.app/v1"
@@ -242,6 +242,44 @@ class PermTracker:
         (15-1252, 15-1252.00 or 151252), its title, description, core tasks, the titles filed under it
         and its PERM approval rate and median wage. No key needed."""
         return self.get("/lookup/soc", {"q": q}, needs_key=False)
+
+    def receipt_blocks(self, form: Optional[str] = None) -> Answer:
+        """One USCIS form's approval shares in every online receipt block (IOE and five digits) that
+        PERM Tracker's sample counts, each with a 95% margin. I-485 unless form says. Counts and
+        shares only: never a receipt number."""
+        return self.get("/uscis/receipt-blocks", {"form": form})
+
+    def receipt_block(self, block: str) -> Answer:
+        """One receipt block (IOE09366): each form's shares, the blocks either side and the newest moves, as counts."""
+        return self.get("/uscis/receipt-blocks/" + urllib.parse.quote(block.strip().upper(), safe=""))
+
+    def receipt_months(self, form: Optional[str] = None) -> Answer:
+        """One USCIS form's approval shares by the month USCIS received the cases, newest first. I-485 unless form says."""
+        return self.get("/uscis/receipt-months", {"form": form})
+
+    def i140_figures(self) -> Answer:
+        """USCIS's own I-140 figures: the newest quarter, eight quarters by category, processing times, petitions awaiting a visa."""
+        return self.get("/uscis/i140")
+
+    def i485_figures(self) -> Answer:
+        """USCIS's own I-485 figures: the newest quarter by office, the employment-based inventory, processing times."""
+        return self.get("/uscis/i485")
+
+    def consulates(self) -> Answer:
+        """Every consulate's immigrant visa interview line, and the visas it issued in the newest 12 months."""
+        return self.get("/consulates")
+
+    def consulate(self, slug: str) -> Answer:
+        """One consulate by its slug: its line over time and its issuances each month."""
+        return self.get("/consulates/" + urllib.parse.quote(slug, safe=""))
+
+    def timelines(self, office: Optional[str] = None, consulate: Optional[str] = None) -> Answer:
+        """The timelines people reported, for everyone or for one USCIS office (three letters) or consulate (its slug). Self-reported."""
+        return self.get("/timelines", {"office": office, "consulate": consulate})
+
+    def accuracy(self) -> Answer:
+        """How close PERM Tracker's own estimates land, graded against what DOL and the State Department did."""
+        return self.get("/accuracy")
 
     def me(self) -> Answer:
         """Your key's scopes, the plan that applies, the paywall and what you've used. Not counted."""

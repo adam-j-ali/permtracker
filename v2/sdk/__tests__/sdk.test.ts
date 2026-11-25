@@ -137,6 +137,34 @@ describe("PermTracker", () => {
   it("reads usage headers that are missing as unknown, not zero", () => {
     expect(usageFrom(new Headers())).toEqual({ perMinute: null, remainingThisMinute: null, today: null, perDay: null, month: null, perMonth: null });
   });
+
+  it("calls each figure read's path with the key, sending only what was given", async () => {
+    const f = fakeFetch(200, { data: { form: "I-485" }, meta: { source: "USCIS", asOf: null } });
+    const pt = new PermTracker({ apiKey: KEY, fetch: f as unknown as typeof fetch });
+    await pt.receiptBlocks();
+    await pt.receiptBlocks("I-765");
+    await pt.receiptBlock(" ioe09366 ");
+    await pt.receiptMonths("I-485");
+    await pt.i140Figures();
+    await pt.i485Figures();
+    await pt.consulates();
+    await pt.consulate("mumbai");
+    await pt.timelines({ office: "SFV" });
+    await pt.accuracy();
+    expect(f.mock.calls.map(([url]) => String(url).replace("https://permtracker.app/v1", ""))).toEqual([
+      "/uscis/receipt-blocks",
+      "/uscis/receipt-blocks?form=I-765",
+      "/uscis/receipt-blocks/IOE09366",
+      "/uscis/receipt-months?form=I-485",
+      "/uscis/i140",
+      "/uscis/i485",
+      "/consulates",
+      "/consulates/mumbai",
+      "/timelines?office=SFV",
+      "/accuracy",
+    ]);
+    for (const [, init] of f.mock.calls) expect((init!.headers as Record<string, string>).Authorization).toBe(`Bearer ${KEY}`);
+  });
 });
 
 describe("live lookups, exports and webhooks", () => {

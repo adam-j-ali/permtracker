@@ -7,6 +7,8 @@ The [PERM Tracker](https://permtracker.app) API for Python and the command line.
 - A case found without its number, from the employer and the filing day
 - DOL's queue and the visa bulletin
 - Employer, law firm and job records
+- USCIS's I-140 and I-485 figures, and approval shares by receipt block and month
+- Each consulate's interview line, the timelines people reported, and how close our estimates land
 - Exports, live DOL lookups and signed webhooks
 
 ## Install
@@ -51,7 +53,7 @@ ok = verify_webhook(secret, request.headers, raw_body)
 
 ## If it breaks
 
-- **No key found:** the CLI reads `--key`, then `PERMTRACKER_API_KEY`, then the key `login` saved.
-- **A refused call** raises `PermTrackerError` with the API's `code`. On a rate limit, wait `retry_after` seconds.
+- If no key is found: the CLI reads `--key`, then `PERMTRACKER_API_KEY`, then the key `login` saved.
+- A refused call raises `PermTrackerError` with the API's `code`. On a rate limit, wait `retry_after` seconds.
 
 Full reference: [permtracker.app/developers](https://permtracker.app/developers). Terms: [permtracker.app/api-terms](https://permtracker.app/api-terms).
