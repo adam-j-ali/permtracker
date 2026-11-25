@@ -29,7 +29,15 @@ const INVISIBLE = /[­​-‍⁠﻿]/g;
  * A label pasted in front of the number: "Case number:", "DOL case #", "PERM Case No.". Whole words only, so a name that
  * starts with "Casey" keeps its letters (Batch 5, Nov 25 2026).
  */
-const LABEL = /^(?:(?:DOL|PERM|ETA|FLAG)\s+)*CASE\b(?:\s*(?:NUMBER|NO\.?|#))?\s*[:#.]?\s*/;
+const LABEL_WORD = /^(?:DOL|PERM|ETA|FLAG)\s+/;
+const LABEL_CASE = /^CASE\b\s*(?:NUMBER|NO\.|NO|#)?\s*[:#.]?\s*/;
+/** The label off the front, when there is one: any of the words above, then "CASE" and its "number". No pattern repeats
+ * inside another, so none can backtrack; a paste whose words don't reach "CASE" keeps them. */
+function stripLabel(s: string): string {
+  let rest = s;
+  while (LABEL_WORD.test(rest)) rest = rest.replace(LABEL_WORD, "");
+  return LABEL_CASE.test(rest) ? rest.replace(LABEL_CASE, "") : s;
+}
 /** Quotes and brackets a number arrives inside, and the punctuation a sentence leaves after it. */
 const LEADING = /^["'(\[‘“]+/;
 const TRAILING = /["')\].,;:!?’”]+$/;
@@ -51,7 +59,7 @@ export function tidyCaseNumber(input: string): string {
   // Too long to be a case number with its sentence around it: upper-cased only, for the shape rules to refuse.
   if (input.length > TIDY_MAX) return input.toUpperCase();
   let s = input.toUpperCase().replace(INVISIBLE, "").replace(DASHES, "-").trim();
-  s = s.replace(LABEL, "").replace(LEADING, "").replace(TRAILING, "").trim();
+  s = stripLabel(s).replace(LEADING, "").replace(TRAILING, "").trim();
   const spacedGroups = /\s/.test(s) && !NOT_GROUPS.test(s);
   s = spacedGroups ? s.replace(/\s+/g, "-") : s.replace(/\s+/g, "");
   const bare = FOURTEEN.exec(s);

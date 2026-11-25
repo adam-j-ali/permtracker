@@ -39,7 +39,8 @@ const MASKED = /^[A-Z]{3}\*\d{9}$/;
 /** Spaces, hyphens, the Unicode dashes and dots, which a pasted number often carries. */
 const TYPED_NOISE = /[\s\-\u2010-\u2015.]+/g;
 /** A label pasted in front: "Receipt number:", "Receipt #", "USCIS receipt no.". Whole words only (Batch 5, Nov 25 2026). */
-const RECEIPT_LABEL = /^\s*(?:USCIS\s+)?RECEIPT\b(?:\s*(?:NUMBER|NO\.?|#))?\s*[:#.]?\s*/i;
+// The same strings as an optional "USCIS " and an optional "number" group, written with no repeat inside another.
+const RECEIPT_LABEL = /^\s*(?:USCIS\s+RECEIPT|RECEIPT)\b\s*(?:NUMBER|NO\.|NO|#)?\s*[:#.]?\s*/i;
 /** What was typed, without a pasted label, upper-cased, with the noise the box strips taken out. */
 const typedReceipt = (input: string) => input.replace(RECEIPT_LABEL, "").toUpperCase().replace(TYPED_NOISE, "");
 
