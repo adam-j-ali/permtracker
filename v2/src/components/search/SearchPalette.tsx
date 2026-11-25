@@ -11,9 +11,17 @@
  * A CASE NUMBER IS THE HIGHEST-INTENT QUERY and it is detected by SHAPE:
  * type one and the first action is the case-status lookup, exactly where the
  * hero's form goes. A "YYYY-MM" month routes to the timeline calculator's
- * prefill. Everything else filters the static index client-side while the
+ * prefill. Everything else is matched client-side against the page index,
+ * the consulates, the job titles, the cities and the articles, while the
  * entity lookup queries the same `?q=` endpoint the index pages use,
  * debounced, three kinds in parallel.
+ *
+ * THE ORDER IS WORKED OUT HERE, NOT BY CMDK (D14): `rankGroups`
+ * (lib/search/paletteRank.ts) scores every row (an exact name, then the words
+ * at a word's start, then inside one, then the keywords, then a near
+ * spelling), puts each group where its best row puts it, and cmdk is handed
+ * the rows in that order with its own filter off. cmdk 1.1.1 could not move a
+ * group whose name has a space, so an exact page name could sit sixth.
  *
  * Mounted lazily by SiteSearch (dynamic import on first open), so the public
  * pages ship none of this until someone asks for it.
@@ -26,9 +34,11 @@ import { CircleNotchIcon, ClockCounterClockwiseIcon, MagnifyingGlassIcon } from 
 
 import { staticIndex } from "@/lib/search/siteIndex";
 import { useArticles } from "@/lib/search/articleList";
+import { useCities } from "@/lib/search/cityList";
 import { useConsulates } from "@/lib/search/consulateList";
+import { rankGroups, type RankGroup, type Rankable } from "@/lib/search/paletteRank";
+import { socTitleLabel, useSocTitles } from "@/lib/search/socTitleList";
 import { GROUPS } from "@/lib/siteMap";
-import { fuzzyScore } from "@/lib/fuzzy";
 import { useNameSuggestions } from "@/components/search/DidYouMean";
 import { KIND_NOUN } from "@/lib/search/suggestTypes";
 // The palette carried a byte-identical copy of this regex pair. One rule,
@@ -37,7 +47,7 @@ import { KIND_NOUN } from "@/lib/search/suggestTypes";
 import { normaliseCaseNumber } from "@/lib/caseNumberShape";
 import { looksLikeReceipt, normaliseReceipt } from "@/lib/uscis/receipt";
 import type { EntityPayload } from "@/lib/entityPayload";
-import { trackPaletteSelected } from "@/lib/funnelEvents";
+import { trackPaletteSelected, trackSearchMiss } from "@/lib/funnelEvents";
 import { SEARCH_TEXT_MAX } from "@/lib/search/limits";
 import { caseSearchHref } from "@/lib/caseSearchPlan";
 import { entityHref } from "@/lib/entityPayload";
@@ -75,16 +85,28 @@ const ENTITY_KINDS = [
   { kind: "occupation", base: "/perm-wages", label: "Occupation", plural: "occupations" },
 ] as const;
 
-/**
- * The site's own matcher in place of cmdk's, so a swapped or missing letter
- * ("proecssing", "visa buletin") still finds the page. cmdk's default only
- * forgives letters skipped, and shows nothing for a transposition.
- */
-const PALETTE_MIN = 0.6;
-function paletteFilter(value: string, search: string): number {
-  const s = fuzzyScore(search, value);
-  return s >= PALETTE_MIN ? s : 0;
+/** One row of the palette's matched groups, ranked by `rankGroups`. */
+interface PaletteRow extends Rankable {
+  /** cmdk's value for the row: one per row, so the row the keys are on is never two. */
+  id: string;
+  href: string;
+  /** What the row says. */
+  label: string;
+  /** A short note at the row's end: an article's kind, a name's kind and cases. */
+  note?: string;
+  /** Typed text a program name runs through (keepWhole); a name DOL prints is shown as printed. */
+  whole?: boolean;
+  /** Picking it keeps what was typed among recent searches, not the row's label ("Every employer matching ..."). */
+  keepsQuery?: boolean;
 }
+
+/**
+ * Between two groups whose best rows match alike: the site's own pages and consulates first, then the names in
+ * DOL's data, then the job titles and cities, then the articles, then the guesses at a name.
+ */
+const PRIORITY = { pages: 4, data: 3, lists: 2, articles: 1, guesses: 0 } as const;
+/** Rows a long list (the job titles, the cities) shows at most, as the name lookup shows five of each kind. */
+const LIST_ROWS = 5;
 
 /** One look for the palette's rows: a quiet grey for the row the keys are on. */
 const ROW = "flex cursor-pointer items-baseline justify-between gap-3 px-3 py-2.5 text-base data-[selected=true]:bg-accent";
@@ -129,9 +151,12 @@ export function SearchPalette({
   const router = useRouter();
   // Fetched the first time the palette opens and kept for the visit; the page
   // itself no longer carries the list (src/app/articles.json).
-  const { articles, failed: articlesFailed } = useArticles(true);
+  const { articles, failed: articlesFailed, ready: articlesReady } = useArticles(true);
   // Every consulate with a page (/consulates.json, Batch 5): listed once something is typed, matched like the pages.
-  const { list: consulates, failed: consulatesFailed } = useConsulates(open);
+  const { list: consulates, failed: consulatesFailed, ready: consulatesReady } = useConsulates(open);
+  // Every job title page (/soc-titles.json) and every city page (/cities.json), the same way.
+  const { list: socTitles, failed: titlesFailed, ready: titlesReady } = useSocTitles(open);
+  const { list: cities, failed: citiesFailed, ready: citiesReady } = useCities(open);
   const pathname = usePathname();
   const [query, setQuery] = React.useState(initialQuery);
   // Each opening starts from what the box held at that moment.
@@ -148,6 +173,8 @@ export function SearchPalette({
   // "Nothing matches" - the interface confidently reporting an answer it never
   // got. The count of kinds that threw is kept so the box can say which it is.
   const [entityError, setEntityError] = React.useState(false);
+  // The query the name lookup last answered for, so an answer is never read as the answer to what's typed now.
+  const [entityFor, setEntityFor] = React.useState<string | null>(null);
 
   // This module is loaded on the first open, so the trigger has been showing a
   // spinner since the click. Mounting is the moment that ends.
@@ -169,7 +196,7 @@ export function SearchPalette({
   const month = looksLikeMonth(query);
   // The closest employer, firm and occupation names, asked for only once the
   // exact lookup has come back with none.
-  const { suggestions, loading: suggesting } = useNameSuggestions(
+  const { suggestions, loading: suggesting, settled: suggestionsSettled } = useNameSuggestions(
     "all",
     query,
     !caseNumber && !receiptish && !month && !searchingEntities && !entityError && entityHits.length === 0 && query.trim().length >= 3,
@@ -236,6 +263,7 @@ export function SearchPalette({
       // than no spinner: it is a claim that never becomes false.
       setSearchingEntities(false);
       setEntityError(false);
+      setEntityFor(null);
       return;
     }
     let cancelled = false;
@@ -294,6 +322,7 @@ export function SearchPalette({
         // did not load" over a list of hits would be its own lie.
         setEntityError(rows.length === 0 && results.every((r) => r.failed));
         setSearchingEntities(false);
+        setEntityFor(q);
       }
     }, 250);
     return () => {
@@ -348,7 +377,155 @@ export function SearchPalette({
     };
   }, [open, onOpenChange]);
 
+  // Every row the matched groups can hold, built once per list, so the ranking's normalised names are kept between keys.
+  const pageGroupRows = React.useMemo(
+    () =>
+      pageGroups.map((group) => ({
+        group,
+        rows: pages
+          .filter((p) => p.group === group)
+          .map((p): PaletteRow & { main?: boolean } => ({
+            id: `page ${p.href}`,
+            href: p.href,
+            label: p.label,
+            name: p.label,
+            keywords: p.keywords,
+            whole: true,
+            ...(p.aliases ? { aliases: p.aliases } : {}),
+            ...(p.main ? { main: true } : {}),
+          })),
+      })),
+    [pages, pageGroups],
+  );
+  const consulateRows = React.useMemo(
+    () => consulates.map((c): PaletteRow => ({ id: `consulate ${c.href}`, href: c.href, label: c.label, name: c.label, keywords: c.keywords, whole: true })),
+    [consulates],
+  );
+  const titleRows = React.useMemo(
+    () =>
+      socTitles.map((t): PaletteRow => ({ id: `title ${t.href}`, href: t.href, label: socTitleLabel(t), name: t.title, keywords: t.code ?? "", whole: true })),
+    [socTitles],
+  );
+  const cityRows = React.useMemo(
+    () => cities.map((c): PaletteRow => ({ id: `city ${c.href}`, href: c.href, label: c.label, name: c.label, keywords: c.keywords })),
+    [cities],
+  );
+  const articleRows = React.useMemo(
+    () =>
+      articles.map((a): PaletteRow => ({ id: `article ${a.href}`, href: a.href, label: a.title, name: a.title, keywords: a.kind, note: a.kind, whole: true })),
+    [articles],
+  );
+  const entityRows = React.useMemo(
+    () =>
+      entityHits.map(
+        (h): PaletteRow => ({
+          id: `data ${h.href}`,
+          href: h.href,
+          label: h.name,
+          name: h.name,
+          note: h.more ? "More than fit here" : `${h.kindLabel} · ${h.total.toLocaleString("en-US")} ${h.total === 1 ? "case" : "cases"}`,
+          // "Every employer matching ..." says the query back: shown, never what places the group.
+          ...(h.more ? { unranked: true, keepsQuery: true } : {}),
+        }),
+      ),
+    [entityHits],
+  );
+  const suggestionRows = React.useMemo(
+    () =>
+      suggestions.map(
+        (h): PaletteRow => ({
+          id: `suggest ${h.href}`,
+          href: h.href,
+          label: h.name,
+          name: h.name,
+          note: `${KIND_NOUN[h.kind]} · ${h.cases.toLocaleString("en-US")} ${h.cases === 1 ? "case" : "cases"}`,
+        }),
+      ),
+    [suggestions],
+  );
+
+  const typed = query.trim();
+  // Ranking about 7,700 rows takes 3 to 20 ms a key on a fast laptop and several times that on a phone, so it
+  // follows the box at React's low priority: the letters show the moment they're typed, the list a beat later.
+  const ranked = React.useDeferredValue(typed);
+  // Before anything is typed: the main jobs in the menu's groups, then the articles, in their own order.
+  // Once something is: every group ranked, the best group first.
+  const shown = React.useMemo((): { heading: string; rows: PaletteRow[] }[] => {
+    if (ranked === "") {
+      return [
+        ...pageGroupRows.map(({ group, rows }) => ({ heading: group, rows: rows.filter((r) => r.main) })),
+        { heading: "Articles", rows: articleRows },
+      ].filter((g) => g.rows.length > 0);
+    }
+    const groups: RankGroup<PaletteRow>[] = [
+      // Kept on the list whatever the ranking says: the closest names to a search that matched none exactly.
+      { heading: "Did you mean", rows: suggestionRows, priority: PRIORITY.guesses, given: true },
+      // The lookup's answer to what's typed, in its own order. While the next answer is on its way, the last one's
+      // names stay only where they still match.
+      { heading: "In the data", rows: entityRows, priority: PRIORITY.data, given: entityFor === ranked },
+      ...pageGroupRows.map(({ group, rows }) => ({ heading: group, rows, priority: PRIORITY.pages })),
+      { heading: "Consulates", rows: consulateRows, priority: PRIORITY.pages },
+      { heading: "Job titles", rows: titleRows, priority: PRIORITY.lists, limit: LIST_ROWS, longList: true },
+      { heading: "Cities", rows: cityRows, priority: PRIORITY.lists, limit: LIST_ROWS, longList: true },
+      { heading: "Articles", rows: articleRows, priority: PRIORITY.articles },
+    ];
+    return rankGroups(ranked, groups);
+  }, [ranked, pageGroupRows, articleRows, suggestionRows, entityRows, entityFor, consulateRows, titleRows, cityRows]);
+
+  // The row the keys are on follows the best match: when an answer arriving later (the name lookup, a list) puts a
+  // new row first, Enter opens that one, not whatever was first a moment before.
+  const actionId = caseNumber ? `case ${caseNumber}` : receipt ? `receipt ${receipt}` : month ? `month ${month}` : null;
+  const allResultsId = !caseNumber && !month && typed.length >= 2 ? `all programs ${typed}` : null;
+  const topId = actionId ?? (showRecents ? `recent ${recents[0]!.href}` : (shown[0]?.rows[0]?.id ?? allResultsId));
+  const [selected, setSelected] = React.useState("");
+  React.useEffect(() => {
+    if (topId !== null) setSelected(topId);
+  }, [topId]);
+
+  // A search of three letters or more that found nothing anywhere, once every lookup has answered, is recorded
+  // (its words only; trackSearchMiss says which words): what people look for and don't find is what search learns next.
+  const missed = React.useRef(new Set<string>());
+  React.useEffect(() => {
+    if (!open) missed.current.clear();
+  }, [open]);
+  const listsIn = articlesReady && consulatesReady && titlesReady && citiesReady;
+  const listFailed = articlesFailed || consulatesFailed || titlesFailed || citiesFailed;
+  const nothingFound =
+    open &&
+    typed.length >= 3 &&
+    !caseNumber &&
+    !receipt &&
+    !receiptish &&
+    !month &&
+    entityFor === typed &&
+    !entityError &&
+    entityHits.length === 0 &&
+    suggestionsSettled &&
+    suggestions.length === 0 &&
+    listsIn &&
+    !listFailed &&
+    ranked === typed &&
+    shown.length === 0;
+  React.useEffect(() => {
+    if (!nothingFound || missed.current.has(typed)) return;
+    missed.current.add(typed);
+    trackSearchMiss(typed);
+  }, [nothingFound, typed]);
+
   if (!open) return null;
+
+  // The bridge to the cross-program search, under the best group. The name rows answer "who is this employer"; this
+  // one answers "what have they filed", across PERM, wage requests and LCAs at once, which no other row covers.
+  const allResults =
+    allResultsId !== null ? (
+      <Command.Item
+        value={allResultsId}
+        onSelect={() => go(caseSearchHref({ q: query }), `every filing by "${typed}"`, query)}
+        className={ACTION_ROW}
+      >
+        All results for &ldquo;{typed}&rdquo;
+      </Command.Item>
+    ) : null;
 
   return (
     <div
@@ -361,8 +538,9 @@ export function SearchPalette({
       <Command
         ref={panelRef}
         label="Search PERM Tracker"
-        shouldFilter={true}
-        filter={paletteFilter}
+        shouldFilter={false}
+        value={selected}
+        onValueChange={setSelected}
         role="dialog"
         aria-modal="true"
         aria-label="Search PERM Tracker"
@@ -401,8 +579,8 @@ export function SearchPalette({
             the moment you type, and it is the only place that can hold the
             whole list of what this box accepts. */}
         <p className="border-b-2 border-border px-4 py-2 text-sm leading-snug text-muted-foreground">
-          Employers, law firms, occupations, consulates, pages and articles. Paste a G-, A-,
-          P-, I- or H- case number and it goes straight to the lookup.
+          Employers, law firms, occupations, job titles, cities, consulates, pages and articles.
+          Paste a G-, A-, P-, I- or H- case number and it goes straight to the lookup.
         </p>
         {navTarget !== null ? (
           <p
@@ -477,8 +655,8 @@ export function SearchPalette({
               work.
             </p>
           ) : null}
-          {/* The two rows that act on exactly what was typed always show: the filter scores the text against the
-              row's words, and a number typed without its dashes scored too low to show its own lookup. */}
+          {/* The rows that act on exactly what was typed come first, whatever else matches: a number typed without
+              its dashes once scored too low against its own row to show its lookup. */}
           {caseNumber ? (
             <Command.Item
               forceMount
@@ -527,140 +705,51 @@ export function SearchPalette({
                 : `Nothing matches “${query.trim()}”. Try an employer, a law firm, a page name, or a case number.`}
           </Command.Empty>
 
-          {suggestions.length > 0 ? (
-            /* Kept on the list whatever the filter says: these are the
-               closest names to a search that matched none exactly. */
-            <Command.Group
-              forceMount
-              heading="Did you mean"
-              className={GROUP_HEADING}
-            >
-              {suggestions.map((h) => (
-                <Command.Item
-                  forceMount
-                  key={h.href}
-                  value={`suggest ${h.name}`}
-                  onSelect={() => go(h.href, h.name, h.name)}
-                  className={ROW}
-                >
-                  <span className="min-w-0 truncate">{h.name}</span>{" "}
-                  <span className="shrink-0 text-sm text-muted-foreground">
-                    {`${KIND_NOUN[h.kind]} · ${h.cases.toLocaleString("en-US")} ${h.cases === 1 ? "case" : "cases"}`}
-                  </span>
-                </Command.Item>
-              ))}
-            </Command.Group>
-          ) : null}
-
-          {entityHits.length > 0 ? (
-            <Command.Group
-              heading="In the data"
-              className={GROUP_HEADING}
-            >
-              {entityHits.map((h) => (
-                <Command.Item
-                  key={h.href}
-                  value={`${h.kindLabel} ${h.name}`}
-                  onSelect={() => go(h.href, h.name, h.more ? query : h.name)}
-                  className={ROW}
-                >
-                  <span className="min-w-0 truncate">{h.name}</span>{" "}
-                  <span className="shrink-0 text-sm text-muted-foreground">
-                    {h.more
-                      ? "More than fit here"
-                      : `${h.kindLabel} · ${h.total.toLocaleString("en-US")} ${h.total === 1 ? "case" : "cases"}`}
-                  </span>
-                </Command.Item>
-              ))}
-            </Command.Group>
-          ) : null}
-
-          {!caseNumber && !month && query.trim().length >= 2 ? (
-            /* The bridge to the cross-program search. The entity rows below
-               answer "who is this employer"; this one answers "what have they
-               filed", across PERM, wage requests and LCAs at once, which no
-               other row on this list covers. */
-            <Command.Item
-              value={`all programs ${query.trim()}`}
-              onSelect={() =>
-                go(
-                  caseSearchHref({ q: query }),
-                  `every filing by "${query.trim()}"`,
-                  query,
-                )
-              }
-              className={ACTION_ROW}
-            >
-              All results for &ldquo;{query.trim()}&rdquo;
-            </Command.Item>
-          ) : null}
-          {pageGroups.map(
-            (group) => (
-              <Command.Group
-                key={group}
-                heading={group}
-                className={GROUP_HEADING}
-              >
-                {pages
-                  // Before anything is typed, only the main jobs show.
-                  .filter((p) => p.group === group && (query.trim() !== "" || p.main))
-                  .map((p) => (
-                    <Command.Item
-                      key={p.href}
-                      value={`${p.label} ${p.keywords}`}
-                      onSelect={() => go(p.href, p.label, query.trim() ? p.label : null)}
-                      className={ROW}
-                    >
-                      {keepWhole(p.label)}
-                    </Command.Item>
-                  ))}
+          {shown.map((g, i) => (
+            <React.Fragment key={g.heading}>
+              <Command.Group heading={g.heading} className={GROUP_HEADING}>
+                {g.rows.map((row) => (
+                  <Command.Item
+                    key={row.id}
+                    value={row.id}
+                    onSelect={() => go(row.href, row.label, typed === "" ? null : row.keepsQuery ? query : row.label)}
+                    className={ROW}
+                  >
+                    {row.note === undefined ? (
+                      row.whole ? keepWhole(row.label) : row.label
+                    ) : (
+                      <>
+                        <span className="min-w-0 truncate">{row.whole ? keepWhole(row.label) : row.label}</span>{" "}
+                        <span className="shrink-0 text-sm text-muted-foreground">{row.note}</span>
+                      </>
+                    )}
+                  </Command.Item>
+                ))}
               </Command.Group>
-            ),
-          )}
+              {i === 0 ? allResults : null}
+            </React.Fragment>
+          ))}
+          {shown.length === 0 ? allResults : null}
 
-          {query.trim() !== "" && consulates.length > 0 ? (
-            <Command.Group heading="Consulates" className={GROUP_HEADING}>
-              {consulates.map((c) => (
-                <Command.Item
-                  key={c.href}
-                  value={`${c.label} ${c.keywords}`}
-                  onSelect={() => go(c.href, c.label, c.label)}
-                  className={ROW}
-                >
-                  {keepWhole(c.label)}
-                </Command.Item>
-              ))}
-            </Command.Group>
-          ) : null}
-          {query.trim() !== "" && consulatesFailed && consulates.length === 0 ? (
+          {typed !== "" && consulatesFailed && consulates.length === 0 ? (
             <p className="px-3 py-2 text-sm text-muted-foreground">
               Consulates couldn&apos;t load this time. Close search and open it again to retry.
+            </p>
+          ) : null}
+          {typed !== "" && titlesFailed && socTitles.length === 0 ? (
+            <p className="px-3 py-2 text-sm text-muted-foreground">
+              Job titles couldn&apos;t load this time. Close search and open it again to retry.
+            </p>
+          ) : null}
+          {typed !== "" && citiesFailed && cities.length === 0 ? (
+            <p className="px-3 py-2 text-sm text-muted-foreground">
+              Cities couldn&apos;t load this time. Close search and open it again to retry.
             </p>
           ) : null}
           {articlesFailed && articles.length === 0 ? (
             <p className="px-3 py-2 text-sm text-muted-foreground">
               Articles couldn&apos;t load this time. Close search and open it again to retry.
             </p>
-          ) : null}
-          {articles.length > 0 ? (
-            <Command.Group
-              heading="Articles"
-              className={GROUP_HEADING}
-            >
-              {articles.map((a) => (
-                <Command.Item
-                  key={a.href}
-                  value={`${a.title} ${a.kind}`}
-                  onSelect={() => go(a.href, a.title, query.trim() ? a.title : null)}
-                  className={ROW}
-                >
-                  <span className="min-w-0 truncate">{keepWhole(a.title)}</span>{" "}
-                  <span className="shrink-0 text-sm text-muted-foreground">
-                    {a.kind}
-                  </span>
-                </Command.Item>
-              ))}
-            </Command.Group>
           ) : null}
         </Command.List>
         <div className="border-t-2 border-border px-4 py-2 text-sm text-muted-foreground">

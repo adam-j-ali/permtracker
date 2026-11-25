@@ -95,7 +95,7 @@ describe("SearchPalette feedback", () => {
       "Name, page or case number",
     );
     expect(
-      screen.getByText(/Employers, law firms, occupations, consulates, pages and articles/i),
+      screen.getByText(/Employers, law firms, occupations, job titles, cities, consulates, pages and articles/i),
     ).toBeInTheDocument();
   });
 

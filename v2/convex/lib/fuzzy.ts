@@ -89,7 +89,11 @@ function wordScore(q: string, c: string): number {
 const WHOLE_WORD = 0.95;
 const WORD_START = 0.85;
 
-function scoreNormalized(nq: string, nc: string): number {
+/**
+ * fuzzyScore for a query and a candidate already through normalizeText: for a caller scoring one query against
+ * thousands of names it normalised once (the search palette, src/lib/search/paletteRank.ts).
+ */
+export function scoreNormalized(nq: string, nc: string): number {
   if (!nq || !nc) return 0;
   if (nc === nq) return 1;
 

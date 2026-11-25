@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { fuzzyScore } from "@/lib/fuzzy";
+import { matchScore } from "@/lib/search/paletteRank";
 import { staticIndex } from "@/lib/search/siteIndex";
 
 /**
  * Pages renamed on Nov 25 2026 (one name per page) stay findable by the words people searched under their old names.
- * The palette shows a page when fuzzyScore(typed, label + keywords) reaches PALETTE_MIN, 0.6 (SearchPalette.tsx).
+ * The palette shows a page when the palette's own matcher scores it above nothing (lib/search/paletteRank.ts), read
+ * against its name, its questions and its keywords as SearchPalette builds its rows.
  */
-const PALETTE_MIN = 0.6;
 const found = (typed: string) =>
   staticIndex()
-    .filter((e) => fuzzyScore(typed, `${e.label} ${e.keywords}`) >= PALETTE_MIN)
+    .filter((e) => matchScore(typed, { name: e.label, keywords: e.keywords, ...(e.aliases ? { aliases: e.aliases } : {}) }) > 0)
     .map((e) => e.href);
 
 describe("renamed pages are still found by their old words", () => {

@@ -15,15 +15,25 @@ import {
 import { FORM_PAGES } from "@/lib/uscisForms";
 import { USCIS_OFFICES, isCenter } from "@/lib/uscisOffices";
 import { reviewStages, stageInSentence } from "@/components/rfi/stageMeta";
+import questionMap from "../../../scripts/data/question_map.json";
 
 export interface SiteIndexEntry {
   label: string;
   href: string;
   group: string;
   keywords: string;
+  /** The visitors' questions this page answers (scripts/data/question_map.json): the palette reads them like its name. */
+  aliases?: string[];
   /** Shown before anything is typed: the site's main jobs. */
   main?: boolean;
 }
+
+/** Each page's questions, from the one list of the questions visitors ask and the page that answers each. */
+const QUESTIONS: ReadonlyMap<string, string[]> = (() => {
+  const out = new Map<string, string[]>();
+  for (const { question, page } of questionMap.questions) out.set(page, [...(out.get(page) ?? []), question]);
+  return out;
+})();
 
 /** What the palette shows before anything is typed, in this order. */
 export const MAIN_JOBS: readonly string[] = [
@@ -124,14 +134,17 @@ const OTHER_GO_TO = [
 
 export function staticIndex(): SiteIndexEntry[] {
   const out: SiteIndexEntry[] = [];
-  const add = (p: SitePage, group: string, base = "") =>
+  const add = (p: SitePage, group: string, base = "") => {
+    const aliases = QUESTIONS.get(p.href);
     out.push({
       label: PAGE_NAMES.get(p.href) ?? p.name,
       href: p.href,
       group,
       keywords: `${base} ${PAGE_KEYWORDS[p.href] ?? ""}`.trim(),
+      ...(aliases ? { aliases } : {}),
       ...(MAIN_JOBS.includes(p.href) ? { main: true } : {}),
     });
+  };
   for (const p of Object.values(HEADER_PAGES)) add(p, "Go to");
   for (const s of SECTIONS) add(s, s.group, s.tool ? "calculator estimate" : "data statistics");
   for (const p of LEARN_PAGES) add(p, "Learn");

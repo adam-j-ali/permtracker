@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { CircleNotchIcon } from "@phosphor-icons/react";
 
+import { SUGGEST_MAX_LENGTH } from "@/lib/search/limits";
 import { KIND_NOUN, type NameSuggestion, type SuggestKind } from "@/lib/search/suggestTypes";
 import { cn } from "@/lib/utils";
 import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
@@ -25,12 +26,21 @@ export function useNameSuggestions(
   kind: SuggestKind | "all",
   query: string,
   enabled: boolean,
-): { suggestions: NameSuggestion[]; loading: boolean } {
-  const [state, setState] = React.useState<{ key: string; suggestions: NameSuggestion[] }>({ key: "", suggestions: [] });
+): {
+  suggestions: NameSuggestion[];
+  loading: boolean;
+  /** Nothing more is coming for this query: the answer is in (or couldn't be had), or there's nothing to ask. */
+  settled: boolean;
+} {
+  const [state, setState] = React.useState<{ key: string; suggestions: NameSuggestion[]; final: boolean }>({
+    key: "",
+    suggestions: [],
+    final: true,
+  });
   const [loading, setLoading] = React.useState(false);
   const q = query.trim();
   const key = `${kind}|${q}`;
-  const active = enabled && q.length >= 2 && q.length <= 80;
+  const active = enabled && q.length >= 2 && q.length <= SUGGEST_MAX_LENGTH;
 
   React.useEffect(() => {
     if (!active) return;
@@ -41,15 +51,15 @@ export function useNameSuggestions(
       fetch(`/api/suggest?kind=${kind}&q=${encodeURIComponent(q)}`, { signal: ctl.signal })
         .then((r) => (r.ok ? r.json() : null))
         .then((d: { suggestions?: NameSuggestion[]; warming?: string[] } | null) => {
-          setState({ key, suggestions: d?.suggestions ?? [] });
           // The server's name list was still loading: ask once more shortly.
-          if (again && (d?.warming?.length ?? 0) > 0 && (d?.suggestions?.length ?? 0) === 0) {
-            retry = setTimeout(() => ask(false), WARMING_RETRY_MS);
-          }
+          const askAgain = again && (d?.warming?.length ?? 0) > 0 && (d?.suggestions?.length ?? 0) === 0;
+          setState({ key, suggestions: d?.suggestions ?? [], final: !askAgain });
+          if (askAgain) retry = setTimeout(() => ask(false), WARMING_RETRY_MS);
         })
         .catch(() => {
           // A suggestion is a courtesy: when it can't be had, the search's own
           // "nothing matches" stands on its own.
+          if (!ctl.signal.aborted) setState({ key, suggestions: [], final: true });
         })
         .finally(() => {
           if (!ctl.signal.aborted) setLoading(false);
@@ -63,7 +73,11 @@ export function useNameSuggestions(
     };
   }, [active, key, kind, q]);
 
-  return { suggestions: active && state.key === key ? state.suggestions : [], loading: active && loading };
+  return {
+    suggestions: active && state.key === key ? state.suggestions : [],
+    loading: active && loading,
+    settled: !active || (state.key === key && state.final && !loading),
+  };
 }
 
 export interface Suggestion {
