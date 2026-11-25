@@ -2,11 +2,13 @@ import Link from "next/link";
 
 import { Figure, FigureRow } from "@/components/data/FigureRow";
 import { PageSection } from "@/components/data/PageSection";
+import { SourceSwitch } from "@/components/community/SourceSwitch";
 import { StepFigures } from "@/components/community/StepFigures";
 import { getOfficialHeadlines } from "@/lib/db/officialHeadlines";
 import { getReportedSummary } from "@/lib/db/reportedSummary";
 import { softFail } from "@/lib/softRead";
 import { stepsIn, windowText, type ReportedSummary, type StepGroup } from "@/lib/reportedSummary";
+import { kindsOf, type SourceKind } from "@/lib/sourceKind";
 import { figuresLinkText, sourcesLede } from "@/lib/stepSources";
 import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
@@ -43,6 +45,8 @@ export async function StepBothSources({
   const measured = reported.filter((s) => s.median !== null);
   const few = reported.filter((s) => s.median === null && s.n > 0);
   const officials = groups.flatMap((g) => (official[g] ? [{ g, h: official[g]! }] : []));
+  // The kinds the box holds, for the sources switch: each figure's own, and people's reports where the box shows them.
+  const kinds = [...new Set<SourceKind>([...officials.flatMap(({ h }) => kindsOf(h.kind)), ...(withReported ? (["community"] as const) : [])])];
 
   return (
     <PageSection
@@ -50,46 +54,52 @@ export async function StepBothSources({
       title={title}
       lede={sourcesLede(officials.length ? officials.map(({ h }) => h.kind) : ["official"], withReported)}
     >
-      {officials.length ? (
-        <FigureRow>
-          {officials.map(({ g, h }) => (
-            <Figure
-              key={g}
-              label={h.label}
-              value={h.value}
-              kind={h.kind}
-              note={
-                <>
-                  {keepWhole(h.note)}{" "}
-                  {h.href === here ? null : (
-                    <Link href={h.href} className="link">
-                      <KeepWhole>{figuresLinkText(g, h.kind)}</KeepWhole>
-                    </Link>
-                  )}
-                </>
-              }
-            />
-          ))}
-        </FigureRow>
-      ) : (
-        <p className="text-base text-muted-foreground">This step&apos;s figures can&apos;t be read right now.</p>
-      )}{" "}
-      {!withReported ? null : summary === null ? (
-        <p className="mt-6 text-base text-muted-foreground">The cases people reported can&apos;t be read right now.</p>
-      ) : measured.length ? (
-        <div className="mt-6">
-          <StepFigures steps={measured} allHref="/green-card-timelines" label="How long people's own cases took at this step" />
-        </div>
-      ) : (
-        <p className="mt-6 max-w-3xl text-base leading-relaxed">
-          {keepWhole(few.length
-            ? `Only ${few.map((s) => `${s.n} ${s.n === 1 ? "case" : "cases"} for "${s.label}"`).join(", ")} were reported in ${windowText(few[0]!.windowDays)}, too few for a typical wait. This figure covers every case.`
-            : "Few people report this step's dates, so this figure is the one to go by.")}{" "}
-          <Link href="/green-card-timelines#add-h" className="link font-bold">
-            Add your own dates
-          </Link>
-        </p>
-      )}
+      <SourceSwitch kinds={kinds}>
+        {officials.length ? (
+          <FigureRow>
+            {officials.map(({ g, h }) => (
+              <Figure
+                key={g}
+                label={h.label}
+                value={h.value}
+                kind={h.kind}
+                note={
+                  <>
+                    {keepWhole(h.note)}{" "}
+                    {h.href === here ? null : (
+                      <Link href={h.href} className="link">
+                        <KeepWhole>{figuresLinkText(g, h.kind)}</KeepWhole>
+                      </Link>
+                    )}
+                  </>
+                }
+              />
+            ))}
+          </FigureRow>
+        ) : (
+          <p className="text-base text-muted-foreground">This step&apos;s figures can&apos;t be read right now.</p>
+        )}{" "}
+        {!withReported ? null : (
+          <div data-source-kind="community">
+            {summary === null ? (
+              <p className="mt-6 text-base text-muted-foreground">The cases people reported can&apos;t be read right now.</p>
+            ) : measured.length ? (
+              <div className="mt-6">
+                <StepFigures steps={measured} allHref="/green-card-timelines" label="How long people's own cases took at this step" />
+              </div>
+            ) : (
+              <p className="mt-6 max-w-3xl text-base leading-relaxed">
+                {keepWhole(few.length
+                  ? `Only ${few.map((s) => `${s.n} ${s.n === 1 ? "case" : "cases"} for "${s.label}"`).join(", ")} were reported in ${windowText(few[0]!.windowDays)}, too few for a typical wait. This figure covers every case.`
+                  : "Few people report this step's dates, so this figure is the one to go by.")}{" "}
+                <Link href="/green-card-timelines#add-h" className="link font-bold">
+                  Add your own dates
+                </Link>
+              </p>
+            )}
+          </div>
+        )}
+      </SourceSwitch>
     </PageSection>
   );
 }

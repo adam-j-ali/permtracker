@@ -70,6 +70,12 @@ describe("robots.txt", () => {
     expect(allowed("/perm-cases", list(rules.allow), list(rules.disallow))).toBe(true);
   });
 
+  it("keeps crawlers off a sources view in the address, on any page (D3, Nov 25 2026)", () => {
+    const disallow = list(rules.disallow);
+    expect(disallow).toContain("/*?source=");
+    expect(allowed("/perm-queue", list(rules.allow), disallow)).toBe(true);
+  });
+
   it("keeps crawlers off a receipt number in the address, and the receipt page open (Nov 25 2026)", () => {
     expect(allowed("/uscis-case-status", list(rules.allow), list(rules.disallow))).toBe(true);
     expect(allowed("/uscis-case-status?receipt=EAC2112312345", list(rules.allow), list(rules.disallow))).toBe(false);

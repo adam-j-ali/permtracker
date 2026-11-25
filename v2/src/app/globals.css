@@ -2660,3 +2660,11 @@ a:focus-visible .u-title,
   border-left: env(safe-area-inset-left, 0px) solid transparent;
   border-right: env(safe-area-inset-right, 0px) solid transparent;
 }
+
+/* The sources switch (src/components/community/SourceSwitch.tsx): a view shows one kind of figure. Each card carries
+   its kinds in data-source-kind (Figure), a blended card every kind it uses, so it shows under each of them. */
+[data-source-view="agency"] [data-source-kind]:not([data-source-kind~="official"]),
+[data-source-view="ours"] [data-source-kind]:not([data-source-kind~="measured"]),
+[data-source-view="people"] [data-source-kind]:not([data-source-kind~="community"]) {
+  display: none;
+}
