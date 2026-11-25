@@ -325,3 +325,29 @@ describe("the HTTP layer", () => {
     expect(huge.status).toBe(400);
   });
 });
+
+describe("permHalfFrom", () => {
+  it("dates a certification the sweep saw by its Eastern day", async () => {
+    const { permHalfFrom } = await import("../communityTimelines");
+    // 9:30 PM Eastern on Nov 24 2026 is 02:30 UTC on Nov 25.
+    const at = Date.UTC(2026, 10, 25, 2, 30);
+    expect(permHalfFrom({ filing_date: "2025-12-01", current_status: "Certified" }, undefined, { at: String(at) })).toEqual({
+      permFiledOn: "2025-12-01",
+      permCertifiedOn: "2026-11-24",
+      source: "observed",
+    });
+  });
+  it("prefers the disclosure file's day, and leaves an undecided case open", async () => {
+    const { permHalfFrom } = await import("../communityTimelines");
+    expect(permHalfFrom(undefined, { received_date: "2025-01-02", decision_date: "2026-03-04" }, undefined)).toEqual({
+      permFiledOn: "2025-01-02",
+      permCertifiedOn: "2026-03-04",
+      source: "disclosure",
+    });
+    expect(permHalfFrom({ filing_date: "2025-01-02", current_status: "Analyst review" }, undefined, { at: "1795617903127" })).toEqual({
+      permFiledOn: "2025-01-02",
+      permCertifiedOn: null,
+      source: null,
+    });
+  });
+});

@@ -826,24 +826,33 @@ async function verifyOne(ctx: ActionCtx, c: string): Promise<void> {
     console.warn("[communityTimelines.verify] mirror read failed", String(e));
     return;
   }
+  await ctx.runMutation(internal.communityTimelines.setPermHalf, { caseNumber: c, ...permHalfFrom(live, published, observed) });
+}
+
+/**
+ * A report's DOL half from the three reads: the filing day from the live service or the disclosure file, and the
+ * certification day from the file, else the day the sweep first saw the case certified. That sighting is stored in
+ * milliseconds and counts by its Eastern day, like every day key: a certification seen at 9 PM Eastern was dated the
+ * next day by its UTC day.
+ */
+export function permHalfFrom(
+  live: Record<string, unknown> | undefined,
+  published: Record<string, unknown> | undefined,
+  observed: Record<string, unknown> | undefined,
+): { permFiledOn: string | null; permCertifiedOn: string | null; source: "disclosure" | "observed" | null } {
   const str = (x: unknown) => (typeof x === "string" && ISO_DATE.test(x.slice(0, 10)) ? x.slice(0, 10) : null);
-  const filed = str(live?.filing_date) ?? str(published?.received_date);
+  const filed = str(live?.filing_date) || str(published?.received_date);
   const status = typeof live?.current_status === "string" ? live.current_status.toUpperCase() : "";
   let certified: string | null = str(published?.decision_date);
   let source: "disclosure" | "observed" | null = certified ? "disclosure" : null;
   if (!certified && status.startsWith("CERTIFIED")) {
     const at = Number(observed?.at);
     if (Number.isFinite(at) && at > 0) {
-      certified = new Date(at).toISOString().slice(0, 10);
+      certified = easternDay(at);
       source = "observed";
     }
   }
-  await ctx.runMutation(internal.communityTimelines.setPermHalf, {
-    caseNumber: c,
-    permFiledOn: filed,
-    permCertifiedOn: certified,
-    source,
-  });
+  return { permFiledOn: filed, permCertifiedOn: certified, source };
 }
 
 export const verifyCase = internalAction({
