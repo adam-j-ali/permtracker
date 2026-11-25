@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
 
 /**
  * The retry predicate in `client.ts`, which is the whole point of the helper
@@ -34,12 +34,24 @@ function fetchFailed(reason: string) {
   return err;
 }
 
+// The client waits between retries (attempt × 1.5 s, and 3 s for a restarting database): a real wait matters in
+// production, and nothing here measures it, so the tests skip the wait itself. The 20 s query deadline is left alone.
+// Nov 24 2026: the file took 19.6 s of real waiting for 22 tests.
+const realSetTimeout = globalThis.setTimeout;
+const RETRY_WAITS = new Set([1500, 3000, 4500, 6000]);
+
 beforeEach(() => {
+  vi.spyOn(globalThis, "setTimeout").mockImplementation(((fn: (...args: unknown[]) => void, ms?: number, ...args: unknown[]) =>
+    realSetTimeout(fn, ms !== undefined && RETRY_WAITS.has(ms) ? 0 : ms, ...args)) as unknown as typeof setTimeout);
   vi.resetModules();
   execute.mockReset();
   process.env.DATABASE_URL = "libsql://test";
   process.env.DATABASE_AUTH_TOKEN = "t";
   delete process.env.DATABASE_RW_AUTH_TOKEN;
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe("reads retry a dropped connection", () => {

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { sendEmailWithRetry } from "../email";
+import { skipEmailBackoff } from "../../../test-utils/skipEmailBackoff";
 import type { Resend } from "resend";
 
 // Mock Resend client factory
@@ -20,7 +21,11 @@ describe("sendEmailWithRetry", () => {
   };
 
   beforeEach(() => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+    skipEmailBackoff();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("returns data on successful send", async () => {

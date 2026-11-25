@@ -6,6 +6,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createTestContext } from "../../test-utils/convex";
+import { skipEmailBackoff } from "../../test-utils/skipEmailBackoff";
 import { api } from "../_generated/api";
 
 const ADMIN = "admin@send-email-test.com";
@@ -22,6 +23,7 @@ function stubResend(status: number) {
 }
 
 beforeEach(() => {
+  skipEmailBackoff();
   vi.stubEnv("ADMIN_EMAIL", ADMIN);
   vi.stubEnv("AUTH_RESEND_KEY", "re_test_key");
   vi.stubEnv("BLOCKED_EMAILS", "");
@@ -29,6 +31,7 @@ beforeEach(() => {
 afterEach(() => {
   global.fetch = originalFetch;
   vi.unstubAllEnvs();
+  vi.restoreAllMocks();
 });
 
 async function asAdmin(t: ReturnType<typeof createTestContext>) {
