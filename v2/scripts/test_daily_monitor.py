@@ -1155,6 +1155,23 @@ def mac_section_reads_the_macs_own_check() -> None:
     noted = v({**good, "notes": ["A reader: 3 chats not found"]}, now_ms)
     check(noted["status"] == "ok" and "A reader: 3 chats not found" in noted["lines"], "notes are listed under an ok")
 
+    # Our figures against DOL's own (figure_scores, D11, Nov 25 2026): the newest row per figure and scope, plain
+    # lines, never amber (counting every open case sits outside DOL's scope by design).
+    rows = [("perm.pending", "DOL's apparent scope", "2026-09-30", "cases", "89969", "90121", "-152.0", "-0.17", "1"),
+            ("perm.pending", "every open case", "2026-09-30", "cases", 92931, 90121, 2810, 3.12, 0),
+            ("perm.pending", "every open case", "2026-06-30", "cases", 1, 1, 0, 0, 1),
+            ("perm.analyst_review_mean_30d", "analyst review decisions", "2026-10-31", "days", 300.8, 300, 0.8, 0.27, 1)]
+    got = dm.official_score_lines(rows)
+    check(got == [
+        "Against DOL: PERM analyst review, mean of the last 30 days, Oct 31 2026: ours 300.8 days, DOL's 300.0, "
+        "0.8 over (0.27%), inside tolerance",
+        "Against DOL: PERM pending (DOL's apparent scope), Sep 30 2026: ours 89,969, DOL's 90,121, 152 under (0.17%), "
+        "inside tolerance",
+        "Against DOL: PERM pending (every open case), Sep 30 2026: ours 92,931, DOL's 90,121, 2,810 over (3.12%), "
+        "outside tolerance",
+    ], "official scores: the newest row per figure and scope, each in one plain line", str(got))
+    check(dm.official_score_lines(None) == [] and dm.official_score_lines([]) == [], "no scores yet says nothing")
+
 
 if __name__ == "__main__":
     sys.exit(main())

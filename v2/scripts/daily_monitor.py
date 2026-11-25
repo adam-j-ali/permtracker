@@ -28,6 +28,7 @@ import datetime as dt
 import json
 import os
 import pathlib
+import re
 import socket
 import ssl
 import statistics
@@ -862,6 +863,35 @@ def bulletin_wait_line(waiting: tuple | list | None, read_at_ms, now_ms: int) ->
             f"({predicted.strftime('%a %b %-d')}); {seen}")
 
 
+def official_score_lines(rows: list | None) -> list[str]:
+    """Our figures against DOL's own (figure_scores, D11, score_official_figures.py): the newest row per figure and
+    scope, one plain line each. Never amber: counting every open case sits outside DOL's scope by design, and a gap is
+    a reading for a person, not a fault anyone can fix this morning."""
+    newest: dict[tuple[str, str], tuple] = {}
+    for row in rows or []:
+        figure, scope, as_of = str(row[0]), str(row[1]), str(row[2])
+        if (figure, scope) not in newest or as_of > newest[(figure, scope)][2]:
+            newest[(figure, scope)] = (figure, scope, as_of, *row[3:])
+    lines = []
+    for figure, scope, as_of, unit, ours, theirs, gap, gap_pct, within in sorted(newest.values()):
+        mean = re.fullmatch(r"perm\.analyst_review_mean_(\d+)d", figure)
+        if figure == "perm.pending":
+            name = f"PERM pending ({scope})"
+        elif mean:
+            name = f"PERM analyst review, mean of the last {mean.group(1)} days"
+        else:
+            name = f"{figure} ({scope})"
+        days = str(unit) == "days"
+        show = (lambda x: f"{float(x):,.1f}") if days else (lambda x: f"{round(float(x)):,}")
+        g = float(gap)
+        side = "over" if g > 0 else "under" if g < 0 else "level"
+        pct = f" ({abs(float(gap_pct)):.2f}%)" if gap_pct not in (None, "") else ""
+        when = dt.date.fromisoformat(as_of).strftime("%b %-d %Y")
+        lines.append(f"Against DOL: {name}, {when}: ours {show(ours)}{' days' if days else ''}, DOL's {show(theirs)}, "
+                     f"{show(abs(g))} {side}{pct}, {'inside' if str(within) in ('1', 'True') else 'outside'} tolerance")
+    return lines
+
+
 def data_section(now_ms: int) -> dict:
     from lib_db import Database, query_rows  # noqa: PLC0415 - only needed here
 
@@ -925,6 +955,12 @@ def data_section(now_ms: int) -> dict:
         for alarm in priv.get("alarms") or []:
             lines.append(f"Scorecard alarm: {alarm}")
             status = "warn"
+    # Our figures against DOL's own, one plain line each (figure_scores; the table appears with its first run).
+    try:
+        lines.extend(official_score_lines(query_rows(
+            db, "SELECT figure, scope, as_of, unit, ours, theirs, gap, gap_pct, within FROM figure_scores")))
+    except Exception:  # noqa: BLE001 - no table yet is no line, never a crash
+        pass
     # A bulletin State hasn't published past our estimate: nobody here can act on it, so the routing list keeps it a
     # plain line, never amber. Read by idx_ep_open.
     try:
