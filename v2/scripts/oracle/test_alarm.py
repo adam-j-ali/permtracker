@@ -412,6 +412,26 @@ check("a journal with no such line gives its last lines instead",
       str(alarm.failure_lines("one\ntwo\nthree\nfour\nunit.service: Failed with result 'exit-code'.")))
 check("an empty journal gives nothing", alarm.failure_lines("") == [])
 
+# Nov 24 2026: the community-sheets alarm said why with "recorded failed for ingest_community_sheets.py (verified)"
+# twice, the run's own bookkeeping line, while the line that said why ("::error::... Refused: the sheet's columns
+# changed") matched none of the words. The reason comes first now, and the bookkeeping only when nothing else says so.
+SHEETS = """San Fernando Filers: 131 cases (56 approved), 0 empty rows skipped
+::error::I-485 Status Update Sheet: Refused: the sheet's columns changed: tab 'Feb 26' has no receipt_date column in ['1', 'Case Duration']
+NVC case dates (r/NationalVisaCenter): 310 cases (0 approved), 58 empty rows skipped
+recorded failed for ingest_community_sheets.py (verified)
+permtracker-uscis@community-sheets.service: Main process exited, code=exited, status=1/FAILURE"""
+sheets_why = alarm.failure_lines(SHEETS)
+check("a refusal flagged ::error:: is the reason, without the marker",
+      sheets_why == ["I-485 Status Update Sheet: Refused: the sheet's columns changed: tab 'Feb 26' has no receipt_date column in ['1', 'Case Duration']"],
+      str(sheets_why))
+check("an ::error:: line with no other verdict word is still the reason",
+      alarm.failure_lines("read 4 files\n::error::only 3 tests found; the glob is wrong\nrecorded failed for x.py (verified)")
+      == ["only 3 tests found; the glob is wrong"],
+      str(alarm.failure_lines("read 4 files\n::error::only 3 tests found; the glob is wrong\nrecorded failed for x.py (verified)")))
+check("the bookkeeping line still says something when it's all there is",
+      alarm.failure_lines("loaded 3 files\nrecorded failed for x.py (verified)") == ["recorded failed for x.py (verified)"],
+      str(alarm.failure_lines("loaded 3 files\nrecorded failed for x.py (verified)")))
+
 UNIT = "unit:permtracker-cron@ingest-health"
 _, text = alarm.compose([(UNIT, "start", "permtracker-cron@ingest-health.service failed")], healthy(), 0.1, [], T0,
                         why={UNIT: why})

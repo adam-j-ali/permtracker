@@ -477,8 +477,11 @@ def record_events(events: list[dict] | None, on: dict[str, str], routes: dict[st
     return kept[-EVENTS_MAX:]
 
 
-# A journal line that says why a job failed: its own verdict words, or a Python error's last line.
-FAILURE_WORDS = re.compile(r"\bFAIL|BROKEN|\bfailed\b|\b\w*Error\b")
+# A journal line that says why a job failed: its own verdict words, a Python error's last line, or a GitHub-style
+# "::error::" annotation, which the ingests use for a refused source (Nov 24 2026: "Refused: the sheet's columns changed").
+FAILURE_WORDS = re.compile(r"\bFAIL|BROKEN|\bfailed\b|\b\w*Error\b|::error::|\bRefused\b")
+# The run's own bookkeeping ("recorded failed for x.py (verified)") repeats that it failed, never why: last resort only.
+BOOKKEEPING = re.compile(r"^recorded \w+ for \S+")
 # systemd's own lines about the unit ("x.service: Failed with result 'exit-code'.") say only that it failed.
 SYSTEMD_LINE = re.compile(r"^(\S+\.(service|timer): |Failed to start |Starting |Started |Finished |Stopped )")
 WHY_LINES = 4
@@ -488,9 +491,12 @@ TAIL_LINES = 3
 def failure_lines(journal: str) -> list[str]:
     """Why a unit failed, from `journalctl -u <unit> -n 40 -o cat`: its last few FAIL, BROKEN, failed or error lines,
     or its last few lines when none says so. systemd's own lines are left out. Pure, for the test."""
-    own = [ln.strip()[:240] for ln in journal.splitlines() if ln.strip() and not SYSTEMD_LINE.match(ln.strip())]
-    hits = [ln for ln in own if FAILURE_WORDS.search(ln)]
-    return hits[-WHY_LINES:] if hits else own[-TAIL_LINES:]
+    own = [ln.strip() for ln in journal.splitlines() if ln.strip() and not SYSTEMD_LINE.match(ln.strip())]
+    shown = lambda ln: ln.removeprefix("::error::").strip()[:240]  # noqa: E731
+    hits = [shown(ln) for ln in own if FAILURE_WORDS.search(ln)]
+    telling = [ln for ln in hits if not BOOKKEEPING.match(ln)]
+    picked = telling or hits
+    return picked[-WHY_LINES:] if picked else [shown(ln) for ln in own][-TAIL_LINES:]
 
 
 def todo_of(key: str) -> str:
