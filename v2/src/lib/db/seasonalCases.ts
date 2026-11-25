@@ -1,4 +1,6 @@
 import "server-only";
+import { SEASONAL_NUMBER_RE } from "@/lib/flagCaseNumber";
+import { isSeasonalApplication, isSeasonalWageRequest } from "@/lib/seasonalForms";
 import { seasonalWageRequestSql } from "@/lib/wageRequestRanges";
 import { one } from "./client";
 import { makeFlagProgram, parseDisclosureSummaryDoc, type FlagDisclosureSummary } from "./flagCases";
@@ -48,7 +50,7 @@ export const SEASONAL_FINAL_STATUSES: ReadonlySet<string> = new Set([
 export const seasonal = makeFlagProgram({
   key: "seasonal",
   table: "seasonal_case_status",
-  numberRe: /^(?:H-300|H-400|P-400|P-500|JO-A-300|C-500)-\d{5}-\d+$/,
+  numberRe: SEASONAL_NUMBER_RE,
   finalStatuses: SEASONAL_FINAL_STATUSES,
   docKey: "seasonal_live_summary",
   discoverySource: "flag.dol.gov/recaptcha/caseStatus (DOL, via lookup)",
@@ -125,8 +127,8 @@ const BASE_COLS =
 export async function lookupSeasonalRecord(caseNumber: string): Promise<SeasonalRecord | null> {
   const cn = normaliseSeasonalCaseNumber(caseNumber);
   if (!cn) return null;
-  const application = /^(?:H-300|H-400|C-500)-/.test(cn);
-  const wageRequest = /^P-(?:400|500)-/.test(cn);
+  const application = isSeasonalApplication(cn);
+  const wageRequest = isSeasonalWageRequest(cn);
   if (!application && !wageRequest) return null;
   const r = application
     ? await one<RecordRow>(

@@ -215,13 +215,14 @@ describe("the prefix rules", () => {
     const pwd = await source("../db/pwdCases.ts");
     const lca = await source("../db/lcaCases.ts");
     const seasonal = await source("../db/seasonalCases.ts");
+    // Each reader takes its number rule from here (Nov 25 2026, D2b), so there's no copy to drift: no pattern typed there.
     expect(
-      seasonal.includes("/^(?:H-300|H-400|P-400|P-500|JO-A-300|C-500)-\\d{5}-\\d+$/"),
-      "seasonalCases.ts no longer uses the same prefix pattern as flagCaseNumber.ts",
+      seasonal.includes("numberRe: SEASONAL_NUMBER_RE") && !/numberRe: \//.test(seasonal),
+      "seasonalCases.ts no longer takes its number rule from flagCaseNumber.ts",
     ).toBe(true);
     expect(
-      pwd.includes("/^P-(?:100|200|201|202|203)-\\d{5}-\\d+$/"),
-      "pwdCases.ts no longer uses the same prefix pattern as flagCaseNumber.ts",
+      pwd.includes("numberRe: PWD_NUMBER_RE") && !/numberRe: \//.test(pwd),
+      "pwdCases.ts no longer takes its number rule from flagCaseNumber.ts",
     ).toBe(true);
     // The LCA reader takes the one rule from here (both shapes, Nov 20 2026), so there's no copy to drift.
     expect(

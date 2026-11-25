@@ -50,6 +50,16 @@ export const LCA_NUMBER_RE = /^I-(?:\d{3}-\d{5}-\d+|\d{5}-\d{7})$/;
 /** The FY2008 shape alone: DOL's live case service never knew these, so nothing asks it about one. */
 export const OLD_LCA_NUMBER_RE = OLD_LCA;
 
+/**
+ * P-100 (a PERM job) and P-200 to P-203 (an H-1B, H-1B1 or E-3 job): one ETA-9141 queue, as DOL publishes it. Never any
+ * P-###, which would file an H-2B or CW-1 wage request (P-400, P-500) under the PWD program and its queue. The one rule:
+ * the PWD reader (db/pwdCases.ts) takes it from here.
+ */
+export const PWD_NUMBER_RE = /^P-(?:100|200|201|202|203)-\d{5}-\d+$/;
+
+/** The H-2A, H-2B and CW-1 forms (seasonalForms.ts names each). The seasonal reader (db/seasonalCases.ts) takes it from here. */
+export const SEASONAL_NUMBER_RE = /^(?:H-300|H-400|P-400|P-500|JO-A-300|C-500)-\d{5}-\d+$/;
+
 export type FlagProgram = "perm" | "pwd" | "lca" | "seasonal";
 
 /** Every program, in a stable order, for exhaustive iteration in tests. */
@@ -62,12 +72,8 @@ export const FLAG_PROGRAMS: readonly FlagProgram[] = ["perm", "pwd", "lca", "sea
  * fallback rather than a pattern. See `programOf`.
  */
 const PROGRAM_PATTERNS: readonly { program: FlagProgram; re: RegExp }[] = [
-  // P-100 (a PERM job) and P-200 to P-203 (an H-1B, H-1B1 or E-3 job): one
-  // ETA-9141 queue, as DOL publishes it. Never any P-###, which would file an
-  // H-2B or CW-1 wage request (P-400, P-500) under the
-  // PWD program and its ETA-9141 queue.
-  { program: "pwd", re: /^P-(?:100|200|201|202|203)-\d{5}-\d+$/ },
-  { program: "seasonal", re: /^(?:H-300|H-400|P-400|P-500|JO-A-300|C-500)-\d{5}-\d+$/ },
+  { program: "pwd", re: PWD_NUMBER_RE },
+  { program: "seasonal", re: SEASONAL_NUMBER_RE },
   { program: "lca", re: LCA_NUMBER_RE },
 ];
 

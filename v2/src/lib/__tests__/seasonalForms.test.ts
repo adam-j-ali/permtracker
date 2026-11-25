@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { seasonalForm, seasonalVisas } from "../seasonalForms";
+import { isSeasonalApplication, isSeasonalWageRequest, seasonalForm, seasonalVisas } from "../seasonalForms";
 
 describe("seasonalForm", () => {
   it.each([
@@ -33,5 +33,23 @@ describe("seasonalVisas", () => {
 
   it("falls back to all three when no count is known", () => {
     expect(seasonalVisas({ h2a: 0, h2b: 0, cw1: 0 })).toBe("H-2A, H-2B and CW-1");
+  });
+});
+
+describe("isSeasonalApplication and isSeasonalWageRequest (one rule, Nov 25 2026)", () => {
+  it.each([
+    ["H-300-26100-000001", true, false],
+    ["H-400-26100-000001", true, false],
+    ["C-500-26100-000001", true, false],
+    ["P-400-26100-000001", false, true],
+    ["P-500-26100-000001", false, true],
+    ["JO-A-300-26100-000002", false, false], // a job order is neither
+    ["P-100-26100-000001", false, false], // a PERM wage request is the PWD program's
+    [" h-400-26100-000001 ", true, false], // a paste, tidied
+    ["H-3000-26100-000001", false, false],
+    ["", false, false],
+  ])("%s: application %s, wage request %s", (n, app, wage) => {
+    expect(isSeasonalApplication(n)).toBe(app);
+    expect(isSeasonalWageRequest(n)).toBe(wage);
   });
 });

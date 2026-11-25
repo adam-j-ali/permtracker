@@ -23,7 +23,7 @@ import {
 } from "@/lib/seasonalDetails";
 import { isLookupGap } from "@/lib/dolMiss";
 import { SEASONAL_STATUSES, statusAnchor } from "@/lib/statusDictionary";
-import { seasonalForm } from "@/lib/seasonalForms";
+import { seasonalForm, isSeasonalWageRequest } from "@/lib/seasonalForms";
 import { awaitingFirstDecision, timingView } from "@/lib/seasonalTiming";
 import { easternDay } from "@convex/lib/time";
 import { getSeasonalCheck, getSeasonalTiming } from "@/lib/db/seasonalTiming";
@@ -259,7 +259,7 @@ export async function SeasonalLookup({ caseNumber }: { caseNumber: string }) {
   const isH2b = caseNumber.trim().toUpperCase().startsWith("H-400-");
   // An H-2B or CW-1 wage request is decided in DOL's prevailing wage file, which prints the level and the job's
   // requirements the shared record leaves out.
-  const isWageRequest = /^P-(?:400|500)-/.test(caseNumber.trim().toUpperCase());
+  const isWageRequest = isSeasonalWageRequest(caseNumber);
   const [outcome, record, posting, timing, checks, groupOf, groupTiming, detail] = await Promise.all([
     lookupSeasonalCaseOutcome(caseNumber).catch(softFail("SeasonalStatusResult.lookupSeasonalCaseOutcome", { row: null, dolMiss: "records" as const })),
     lookupSeasonalRecord(caseNumber).catch(softFail("SeasonalStatusResult.lookupSeasonalRecord", null)),

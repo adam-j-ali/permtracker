@@ -32,6 +32,25 @@ export function seasonalForm(caseNumber: string): { form: string; label: string;
   return (m ? SEASONAL_FORMS[m[1]!] : undefined) ?? null;
 }
 
+/** The seasonal applications (H-2A, H-2B, CW-1): the forms DOL decides on the seasonal clocks. */
+const APPLICATIONS: ReadonlySet<string> = new Set(["H-300", "H-400", "C-500"]);
+/** The H-2B and CW-1 wage requests, decided in DOL's prevailing wage file. */
+const WAGE_REQUESTS: ReadonlySet<string> = new Set(["P-400", "P-500"]);
+
+function formCode(caseNumber: string): string | null {
+  return /^((?:JO-A|[A-Z])-\d{3})-/.exec(caseNumber.trim().toUpperCase())?.[1] ?? null;
+}
+
+/** An H-2A, H-2B or CW-1 application (H-300, H-400, C-500), never a wage request or a job order. */
+export function isSeasonalApplication(caseNumber: string): boolean {
+  return APPLICATIONS.has(formCode(caseNumber) ?? "");
+}
+
+/** An H-2B or CW-1 wage request (P-400, P-500). */
+export function isSeasonalWageRequest(caseNumber: string): boolean {
+  return WAGE_REQUESTS.has(formCode(caseNumber) ?? "");
+}
+
 /**
  * The visas an employer actually files under, in DOL's order: "H-2B",
  * "H-2A and H-2B", "H-2A, H-2B and CW-1". A title naming all three for an

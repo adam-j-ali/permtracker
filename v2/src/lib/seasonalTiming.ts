@@ -23,7 +23,7 @@
  */
 
 import type { GroupPick } from "@/lib/h2bGroups";
-import { seasonalForm, type SeasonalVisa } from "@/lib/seasonalForms";
+import { isSeasonalApplication, seasonalForm, type SeasonalVisa } from "@/lib/seasonalForms";
 import { dayNumber } from "@/lib/time";
 
 export interface TimingPercentiles {
@@ -134,8 +134,6 @@ export function parseSeasonalTiming(json: string): SeasonalTiming | null {
   return VISAS.some((v) => out[v]) ? out : null;
 }
 
-/** Applications only: a wage request or a job order is not decided on these clocks. */
-const APPLICATION = /^(?:H-300|H-400|C-500)-/;
 
 /**
  * Is this application still waiting on DOL's first decision? An appeal and a
@@ -216,7 +214,7 @@ export function timingView(args: {
   group?: GroupPick | null;
 }): TimingView | null {
   const { caseNumber, filingDate, firstDay, today, timing } = args;
-  if (!APPLICATION.test(caseNumber.trim().toUpperCase())) return null;
+  if (!isSeasonalApplication(caseNumber.trim().toUpperCase())) return null;
   const visa = seasonalForm(caseNumber)?.visa;
   const g = args.group ?? null;
   if (g && visa === "H-2B" && filingDate && isDay(filingDate)) {

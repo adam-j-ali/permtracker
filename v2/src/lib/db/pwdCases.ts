@@ -1,4 +1,5 @@
 import { PWD_VISA_CLASS } from "@/lib/changeProgram";
+import { PWD_NUMBER_RE } from "@/lib/flagCaseNumber";
 import { pwdOwnSql } from "@/lib/wageRequestRanges";
 import "server-only";
 import { makeFlagProgram, type FlagSummary } from "./flagCases";
@@ -54,10 +55,8 @@ export const PWD_DISCOVERY_SOURCE = "flag.dol.gov/recaptcha/caseStatus (DOL, via
 export const pwd = makeFlagProgram({
   key: "pwd",
   table: "pwd_case_status",
-  // P-100 and P-200 to P-203 (PERM, H-1B, H-1B1 and E-3 jobs), the one
-  // ETA-9141 queue DOL publishes a time for. P-400 and P-500 (H-2B and CW-1)
-  // are read by seasonalCases.ts.
-  numberRe: /^P-(?:100|200|201|202|203)-\d{5}-\d+$/,
+  // P-100 and P-200 to P-203 (PERM, H-1B, H-1B1 and E-3 jobs); P-400 and P-500 (H-2B and CW-1) are seasonalCases.ts's.
+  numberRe: PWD_NUMBER_RE,
   finalStatuses: PWD_FINAL_STATUSES,
   docKey: "pwd_live_summary",
   discoverySource: PWD_DISCOVERY_SOURCE,
