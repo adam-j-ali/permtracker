@@ -346,7 +346,22 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
   {
     path: "/tools/cap-gap-calculator",
     label: "Cap-gap and OPT unemployment calculator",
-    blurb: "How far a pending H-1B cap petition extends an F-1 student's status and OPT (until April 1 of the fiscal year since 89 FR 103054, effective January 17, 2025, or the approved start if earlier), and the OPT unemployment days left (90, or 150 with STEM OPT), from 8 CFR 214.2(f).",
+    blurb: "How far a pending H-1B cap petition extends an F-1 student's status and OPT (until April 1 of the fiscal year since 89 FR 103054, effective January 17, 2025, or the approved start if earlier), and the OPT unemployment days used and left (90, or 150 with STEM OPT), counted from the EAD's start and the job dates the way SEVIS counts them, from 8 CFR 214.2(f).",
+  },
+  {
+    path: "/tools/rfe-response-deadline",
+    label: "USCIS RFE response deadline",
+    blurb: "The day USCIS must receive the answer to a request for evidence or a notice of intent to deny: the period on the notice (at most 84 days, 30 for a NOID, 8 CFR 103.2(b)(8)(iv)), 3 days more when it was mailed (8 CFR 103.8(b)), and a weekend or federal holiday last day run to the next business day (8 CFR 1.2), as the USCIS Policy Manual states it.",
+  },
+  {
+    path: "/tools/i751-filing-window",
+    label: "I-751 filing window",
+    blurb: "The 90 days to file the I-751 that removes the conditions on a two-year green card, from the date the card expires (8 CFR 216.4(a)(1)), counted as USCIS's own calculator counts them, with what happens when the window is missed.",
+  },
+  {
+    path: "/tools/n400-early-filing",
+    label: "N-400 early filing date",
+    blurb: "The first day a green card holder can apply for citizenship: 90 days before five years as a permanent resident, or three married to a U.S. citizen (INA 334(a), 8 CFR 334.2(b), USCIS Policy Manual Volume 12), and no earlier than three years of marriage on that path.",
   },
   {
     path: "/tools/cspa-age-calculator",

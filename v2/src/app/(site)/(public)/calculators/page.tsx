@@ -150,14 +150,18 @@ export default function CalculatorsPage() {
                 { s: "Determination in hand, planning recruitment", q: "By when must we file?", href: "/tools/perm-deadline-calculator", tool: "Deadline calculator" },
                 { s: "ETA-9089 filed, waiting", q: "When will DOL decide?", href: "/tools/perm-timeline-calculator", tool: "PERM timeline calculator" },
                 { s: "PERM certified, I-140 next or pending", q: "How deep is USCIS's queue?", href: "/tools/i140-calculator", tool: "I-140 queue" },
+                { s: "A request for evidence from USCIS", q: "When must my answer arrive?", href: "/tools/rfe-response-deadline", tool: "USCIS RFE response deadline" },
                 { s: "I-140 approved, waiting to adjust status", q: "How deep is the green card queue at my priority date?", href: "/tools/i485-queue-position", tool: "I-485 queue position" },
                 { s: "I-140 approved, watching the bulletin", q: "Is my date current, and which way is it moving?", href: "/tools/priority-date-calculator", tool: "Priority dates" },
                 { s: "I-140 approved, years from current", q: "How many people are ahead of me in the whole line?", href: "/tools/green-card-line", tool: "Green card line" },
+                { s: "Two-year green card from a marriage", q: "When do I file to remove the conditions?", href: "/tools/i751-filing-window", tool: "I-751 filing window" },
+                { s: "Green card in hand", q: "When can I apply for citizenship?", href: "/tools/n400-early-filing", tool: "N-400 early filing date" },
                 { s: "Deciding between EB-2 and EB-3", q: "Which line has fewer people ahead of my date?", href: "/tools/eb2-vs-eb3", tool: "EB-2 vs EB-3" },
                 { s: "Before the PERM", q: "Which employment green card could my job lead to?", href: "/tools/which-green-card", tool: "Which green card fits" },
                 { s: "Just starting, or planning ahead", q: "When will I get my green card, and what will it cost?", href: "/tools/green-card-timeline", tool: "Green card timeline and planner" },
                 { s: "Writing the job offer, before any of the above", q: "What does this role pay here?", href: "/perm-wages#explore", tool: "PERM wages by job" },
                 { s: "Weighing EB-2 against EB-3", q: "Which category is USCIS clearing?", href: "/tools/i140-trends", tool: "I-140 trends" },
+                { s: "On OPT, between jobs", q: "How many unemployment days have I used?", href: "/tools/cap-gap-calculator#opt-days", tool: "OPT unemployment days" },
               ].map((r) => (
                 <tr key={r.href} className="border-t border-border/40">
                   <td className="p-3">{keepWhole(r.s)}{" "}</td>

@@ -120,6 +120,21 @@
     "alt": "The cap-gap calculator for OPT ending June 10, 2026, an H-1B start of October 1, 2026 and a petition filed April 1, 2026: the student's status and OPT work authorization run until April 1, 2027 while the petition is pending.",
     "captured": "2026-10-31"
   },
+  "calculators/citizenship": {
+    "capture": {
+      "url": "/tools/n400-early-filing",
+      "clip": "fromm:N-400 early filing date",
+      "maxHeight": 1150,
+      "fill": [
+        {
+          "sel": ":nth-match(main input[type=\"date\"], 1)",
+          "text": "2022-03-15"
+        }
+      ]
+    },
+    "alt": "The N-400 early filing calculator for a green card holder resident since March 15, 2022: five years complete on March 15, 2027, so the first day to apply for citizenship is Tuesday, December 15, 2026, 20 days away.",
+    "captured": "2026-11-25"
+  },
   "data/cases": {
     "capture": {
       "url": "/perm-cases",
@@ -219,6 +234,21 @@
     },
     "alt": "The OPT and CPT employers page: the 200 employers with the most F-1 students on practical training each year, as ICE lists them, with Amazon busiest in 2024 at 10,167 students on OPT or STEM OPT and the 10 busiest holding 26% of the 2024 list.",
     "captured": "2026-10-31"
+  },
+  "data/citizenship": {
+    "capture": {
+      "url": "/tools/n400-early-filing",
+      "clip": "fromm:N-400 early filing date",
+      "maxHeight": 1150,
+      "fill": [
+        {
+          "sel": ":nth-match(main input[type=\"date\"], 1)",
+          "text": "2022-03-15"
+        }
+      ]
+    },
+    "alt": "The N-400 early filing calculator for a green card holder resident since March 15, 2022: five years complete on March 15, 2027, so the first day to apply for citizenship is Tuesday, December 15, 2026, 20 days away.",
+    "captured": "2026-11-25"
   },
   "data/visas": {
     "capture": {

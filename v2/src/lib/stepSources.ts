@@ -68,6 +68,7 @@ export const STEP_PAGES: Record<string, StepPage> = {
   "/tools/i140-trends": { groups: ["i140"], reported: true },
   "/i140-awaiting-visa": { groups: ["i140"], reported: true },
   "/uscis-rfe-rates": { groups: ["i140"], reported: true },
+  "/tools/rfe-response-deadline": { exempt: "a deadline from the date on USCIS's notice" },
   "/tools/priority-date-retention": { exempt: "a rule about keeping a priority date, not a wait" },
   "/tools/cspa-age-calculator": { exempt: "a child's age under CSPA, from the case's own dates" },
   // The green card line

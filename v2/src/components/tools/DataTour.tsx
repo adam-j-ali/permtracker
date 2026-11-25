@@ -47,6 +47,11 @@ const BANDS: Record<DataGroup, { lead: string; shot: DataShot; url: string }> = 
     shot: "line",
     url: "permtracker.app/visa-bulletin",
   },
+  "After the green card": {
+    lead: "The 90 days to file to remove a two-year card's conditions, and the first day to apply for citizenship, each worked out from the card.",
+    shot: "citizenship",
+    url: "permtracker.app/tools/n400-early-filing",
+  },
   "Employers and firms": {
     lead: "Every sponsor and law firm in DOL's files, with its record, its cases waiting now, and any layoff notice or debarment.",
     shot: "employers",

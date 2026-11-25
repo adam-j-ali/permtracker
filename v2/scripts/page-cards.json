@@ -807,6 +807,72 @@
   "maxWidth": 1100
  },
  {
+  "slug": "rfe-response-deadline",
+  "path": "/tools/rfe-response-deadline",
+  "title": "USCIS RFE response deadline",
+  "label": "The day USCIS must receive your answer, from the date on the notice.",
+  "shot": "rfe-response-deadline.png",
+  "crop": [
+   0,
+   0,
+   2200,
+   1504
+  ],
+  "fill": [
+   [
+    "Notice date",
+    "2027-01-07"
+   ]
+  ],
+  "css": "main figure > p:last-child, main details, main section ~ section, [data-shell-column] > section[aria-label='Check your case'], footer{display:none!important}",
+  "viewport": 1440,
+  "maxWidth": 1100
+ },
+ {
+  "slug": "i751-filing-window",
+  "path": "/tools/i751-filing-window",
+  "title": "I-751 filing window",
+  "label": "The 90 days to file to remove conditions, from the date the card expires.",
+  "shot": "i751-filing-window.png",
+  "crop": [
+   0,
+   0,
+   2200,
+   1504
+  ],
+  "fill": [
+   [
+    "Card expires",
+    "2028-09-30"
+   ]
+  ],
+  "css": "main figure > p:last-child, main details, main section ~ section, [data-shell-column] > section[aria-label='Check your case'], footer{display:none!important}",
+  "viewport": 1440,
+  "maxWidth": 1100
+ },
+ {
+  "slug": "n400-early-filing",
+  "path": "/tools/n400-early-filing",
+  "title": "N-400 early filing date",
+  "label": "The first day you can apply for citizenship, from the date on your green card.",
+  "shot": "n400-early-filing.png",
+  "crop": [
+   0,
+   0,
+   2200,
+   1504
+  ],
+  "fill": [
+   [
+    "Resident since",
+    "2022-03-15"
+   ]
+  ],
+  "css": "main figure > p:last-child, main details, main section ~ section, [data-shell-column] > section[aria-label='Check your case'], footer{display:none!important}",
+  "viewport": 1440,
+  "maxWidth": 1100
+ },
+ {
   "slug": "visa-bulletin-family",
   "path": "/visa-bulletin/family",
   "title": "Family-sponsored cutoffs",

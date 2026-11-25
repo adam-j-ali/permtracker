@@ -33,6 +33,7 @@ export type DataGroup =
   | "PERM"
   | "I-140"
   | "Green card line"
+  | "After the green card"
   | "Employers and firms"
   | "Breakdowns"
   | "Wages"
@@ -116,7 +117,10 @@ export type DataSection =
   | "six-year-limit"
   | "cspa-age"
   | "wage-violations"
-  | "cap-gap";
+  | "cap-gap"
+  | "rfe-deadline"
+  | "n400-early-filing"
+  | "i751-window";
 
 export interface DataNavSection extends SitePage {
   key: DataSection;
@@ -191,6 +195,9 @@ export const SECTIONS: DataNavSection[] = [
   t("i140-trends", "I-140", "I-140 trends", "/tools/i140-trends", "Petitions received, approved and denied, by quarter."),
   s("awaiting-visa", "I-140", "I-140s awaiting a visa", "/i140-awaiting-visa"),
   s("uscis-rfe", "I-140", "USCIS RFE rates", "/uscis-rfe-rates"),
+  // Any USCIS form can draw a request for evidence; it sits beside the RFE rates, as the PERM's own RFI deadline sits
+  // beside DOL's RFI page.
+  t("rfe-deadline", "I-140", "USCIS RFE response deadline", "/tools/rfe-response-deadline", "The day USCIS must receive your answer."),
   t("retention", "I-140", "Priority date retention", "/tools/priority-date-retention", "When the date is kept, and when an I-485 can move."),
   // The age-out rule subtracts the time the I-140 was pending, so it sits with the I-140 tools.
   t("cspa-age", "I-140", "Will my child age out?", "/tools/cspa-age-calculator", "Whether a child still counts as under 21."),
@@ -205,6 +212,10 @@ export const SECTIONS: DataNavSection[] = [
   s("nvc-waiting-list", "Green card line", "NVC waiting list", "/nvc-waiting-list"),
   s("visa-issuances", "Green card line", "Visas issued", "/visa-issuances"),
   s("consular-posts", "Green card line", "Consulates", "/consular-posts"),
+
+  // The steps past the green card: removing the conditions on a two-year card, then citizenship.
+  t("i751-window", "After the green card", "I-751 filing window", "/tools/i751-filing-window", "The 90 days to file to remove conditions."),
+  t("n400-early-filing", "After the green card", "N-400 early filing date", "/tools/n400-early-filing", "The first day you can apply for citizenship."),
 
   s("employers", "Employers and firms", "Employers", "/perm-employers"),
   s("attorneys", "Employers and firms", "Find a PERM law firm", "/perm-attorneys"),
@@ -246,6 +257,7 @@ export const GROUPS: DataGroup[] = [
   "Your case",
   // The steps of the process, in the road's order (src/lib/road.ts).
   ...ROAD_MENU_GROUPS,
+  "After the green card",
   "Employers and firms",
   "Breakdowns",
   "Wages",

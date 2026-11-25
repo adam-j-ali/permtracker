@@ -66,6 +66,12 @@ export const LOOK: Partial<Record<DataGroup, BandLook>> = {
     url: "permtracker.app/tools/green-card-line",
     caption: "Captured October 21, 2026, for a sample EB-2 India priority date of June 15, 2019.",
   },
+  "After the green card": {
+    lead: "A two-year card's conditions come off in a 90-day window, and citizenship can be asked for 90 days early. Each date comes from the card, with its rule.",
+    picture: CALCULATOR_SHOTS.citizenship,
+    url: "permtracker.app/tools/n400-early-filing",
+    caption: "Captured November 25, 2026, for a green card holder resident since March 15, 2022.",
+  },
   Wages: {
     lead: "What certified jobs pay, and where an offer sits among them.",
     picture: DATA_SHOTS.wages,
