@@ -15,6 +15,7 @@ import {
   freshnessDatasetFor,
   isProgramApproval,
   normaliseFlagCaseNumber,
+  normaliseRecordCaseNumber,
   programNoun,
   programNounWithArticle,
   programOf,
@@ -107,6 +108,10 @@ describe("normaliseFlagCaseNumber", () => {
       caseNumber: "I-203-26125-868956",
       program: "lca",
     });
+  });
+
+  it("refuses a legacy three-part number: watching a case (alerts, the follow) is for cases that can still move", () => {
+    expect(normaliseFlagCaseNumber("A-23043-00641")).toBeNull();
   });
 
   it("rejects everything that is not a case number", () => {
@@ -309,5 +314,21 @@ describe("isProgramApproval", () => {
       ).toBe(true);
     }
     expect(lca.includes('"CERTIFIED"')).toBe(true);
+  });
+});
+
+describe("normaliseRecordCaseNumber", () => {
+  it("reads a legacy three-part PERM number, as the case page does (Nov 25 2026: the API refused all 92,248)", () => {
+    expect(normaliseRecordCaseNumber("A-23043-00641")).toEqual({ caseNumber: "A-23043-00641", program: "perm" });
+    expect(normaliseRecordCaseNumber(" a–23043–00641. ")).toEqual({ caseNumber: "A-23043-00641", program: "perm" });
+    expect(normaliseRecordCaseNumber("A-2304-00641")).toBeNull();
+    expect(normaliseRecordCaseNumber("A-23043-006411")).toBeNull();
+  });
+
+  it("reads every four-part number normaliseFlagCaseNumber reads, the same way", () => {
+    for (const raw of ["G-100-26125-868956", " p-100-26125-868956 ", "I-203-26125-868956"]) {
+      expect(normaliseRecordCaseNumber(raw), raw).toEqual(normaliseFlagCaseNumber(raw));
+    }
+    expect(normaliseRecordCaseNumber("hello")).toBeNull();
   });
 });

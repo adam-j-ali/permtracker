@@ -33,6 +33,7 @@ import {
   isApproval,
   normaliseCaseNumber,
 } from "./caseStatusVocabulary";
+import { isLegacyCaseNumber } from "./caseNumberShape";
 import { tidyCaseNumber } from "./tidyCaseNumber";
 
 /**
@@ -111,6 +112,18 @@ export function normaliseFlagCaseNumber(input: string): FlagCaseRef | null {
   const caseNumber = normaliseCaseNumber(input);
   if (!caseNumber) return null;
   return { caseNumber, program: programOf(caseNumber) };
+}
+
+/**
+ * A case number to READ a record by: what normaliseFlagCaseNumber takes, or the legacy three-part PERM form the case page
+ * also looks up (A-23043-00641: 92,248 cases in perm_cases). Only for reading a record (the API's case read): anything
+ * that WATCHES a case (alerts, the app's follow, webhooks) keeps normaliseFlagCaseNumber, because a legacy case is
+ * decided and would never send mail.
+ */
+export function normaliseRecordCaseNumber(input: string): FlagCaseRef | null {
+  const ref = normaliseFlagCaseNumber(input);
+  if (ref) return ref;
+  return isLegacyCaseNumber(input) ? { caseNumber: tidyCaseNumber(input), program: "perm" } : null;
 }
 
 const STATUS_TABLE: Record<FlagProgram, string> = {

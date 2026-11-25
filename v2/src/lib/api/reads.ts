@@ -10,7 +10,7 @@
 import "server-only";
 
 import { SITE_URL } from "@/lib/constants/site";
-import { normaliseFlagCaseNumber, type FlagProgram } from "@/lib/flagCaseNumber";
+import { normaliseFlagCaseNumber, normaliseRecordCaseNumber, type FlagProgram } from "@/lib/flagCaseNumber";
 import { isEntityKind, type EntityKind } from "@/lib/entityPayload";
 import { lookupCase } from "@/lib/db/caseLookup";
 import { one } from "@/lib/db/client";
@@ -94,7 +94,7 @@ export interface CaseRecord {
 
 export async function readCase(input: string): Promise<ReadResult<CaseRecord>> {
   if (input.length > 40) return bad("That isn't a case number.");
-  const ref = normaliseFlagCaseNumber(input);
+  const ref = normaliseRecordCaseNumber(input);
   if (!ref) {
     return bad("That isn't a case number. PERM numbers look like G-100-26045-123456, prevailing wage P-100-..., H-1B I-200-....");
   }
