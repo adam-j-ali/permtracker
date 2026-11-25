@@ -198,6 +198,7 @@ import type * as lib_perm_deadlines_index from "../lib/perm/deadlines/index.js";
 import type * as lib_perm_deadlines_isDeadlineActive from "../lib/perm/deadlines/isDeadlineActive.js";
 import type * as lib_perm_deadlines_timezones from "../lib/perm/deadlines/timezones.js";
 import type * as lib_perm_deadlines_types from "../lib/perm/deadlines/types.js";
+import type * as lib_perm_greenCard from "../lib/perm/greenCard.js";
 import type * as lib_perm_index from "../lib/perm/index.js";
 import type * as lib_perm_recruitment_applicantReport from "../lib/perm/recruitment/applicantReport.js";
 import type * as lib_perm_recruitment_isRecruitmentComplete from "../lib/perm/recruitment/isRecruitmentComplete.js";
@@ -211,6 +212,7 @@ import type * as lib_perm_utils_fieldMapper from "../lib/perm/utils/fieldMapper.
 import type * as lib_perm_utils_validation from "../lib/perm/utils/validation.js";
 import type * as lib_perm_validators_denialReview from "../lib/perm/validators/denialReview.js";
 import type * as lib_perm_validators_eta9089 from "../lib/perm/validators/eta9089.js";
+import type * as lib_perm_validators_greenCard from "../lib/perm/validators/greenCard.js";
 import type * as lib_perm_validators_i140 from "../lib/perm/validators/i140.js";
 import type * as lib_perm_validators_index from "../lib/perm/validators/index.js";
 import type * as lib_perm_validators_pwd from "../lib/perm/validators/pwd.js";
@@ -508,6 +510,7 @@ declare const fullApi: ApiFromModules<{
   "lib/perm/deadlines/isDeadlineActive": typeof lib_perm_deadlines_isDeadlineActive;
   "lib/perm/deadlines/timezones": typeof lib_perm_deadlines_timezones;
   "lib/perm/deadlines/types": typeof lib_perm_deadlines_types;
+  "lib/perm/greenCard": typeof lib_perm_greenCard;
   "lib/perm/index": typeof lib_perm_index;
   "lib/perm/recruitment/applicantReport": typeof lib_perm_recruitment_applicantReport;
   "lib/perm/recruitment/isRecruitmentComplete": typeof lib_perm_recruitment_isRecruitmentComplete;
@@ -521,6 +524,7 @@ declare const fullApi: ApiFromModules<{
   "lib/perm/utils/validation": typeof lib_perm_utils_validation;
   "lib/perm/validators/denialReview": typeof lib_perm_validators_denialReview;
   "lib/perm/validators/eta9089": typeof lib_perm_validators_eta9089;
+  "lib/perm/validators/greenCard": typeof lib_perm_validators_greenCard;
   "lib/perm/validators/i140": typeof lib_perm_validators_i140;
   "lib/perm/validators/index": typeof lib_perm_validators_index;
   "lib/perm/validators/pwd": typeof lib_perm_validators_pwd;

@@ -67,6 +67,7 @@ export default async function UscisReceiptBlocksPage() {
             high: r.approved.high,
             rfe: r.rfe.share,
             waiting: r.waiting.share,
+            pending: r.pending,
             walked: r.walked,
           })),
         }))

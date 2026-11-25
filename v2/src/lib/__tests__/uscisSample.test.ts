@@ -132,3 +132,23 @@ describe("newestCompleteMonths", () => {
     expect(newestCompleteMonths(doc, "I-765").map((m) => m.month)).toEqual(["2026-10"]);
   });
 });
+
+describe("pendingEstimate (Batch 3: pending by month, Nov 25 2026)", () => {
+  const g = (estimated: number, share: number, low: number, high: number) => ({ count: 0, estimated, share, low, high });
+  const figure = {
+    counted: 400, walked_cases: 0, drawn_cases: 400, rest_unknown: false, rest_share: null,
+    groups: {
+      approved: g(6000, 0.6, 0.55, 0.65), denied: g(200, 0.02, 0.01, 0.03), withdrawn: g(0, 0, 0, 0.01),
+      closed: g(0, 0, 0, 0.01), revoked: g(0, 0, 0, 0.01), rfe: g(800, 0.08, 0.06, 0.1), waiting: g(3000, 0.3, 0.26, 0.34),
+    },
+  };
+  it("is the waiting group's estimated count, its range the margin applied to all the month's cases", async () => {
+    const { pendingEstimate } = await import("../uscisSample");
+    expect(pendingEstimate(figure as never)).toEqual({ estimated: 3000, low: 2600, high: 3400 });
+  });
+  it("says nothing for a month with no estimated cases", async () => {
+    const { pendingEstimate } = await import("../uscisSample");
+    const empty = { ...figure, groups: Object.fromEntries(Object.keys(figure.groups).map((k) => [k, g(0, 0, 0, 0)])) };
+    expect(pendingEstimate(empty as never)).toBeNull();
+  });
+});

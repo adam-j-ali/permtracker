@@ -17,6 +17,8 @@ export interface MonthLine {
   high: number;
   rfe: number;
   waiting: number;
+  /** Cases still waiting, estimated, with the margin's range. */
+  pending: { estimated: number; low: number; high: number } | null;
   walked: boolean;
 }
 
@@ -59,6 +61,7 @@ export function MonthTable({ series }: { series: { form: string; rows: MonthLine
               <th scope="col" className="px-4 py-2">Margin{" "}</th>
               <th scope="col" className="px-4 py-2 text-right">Evidence request{" "}</th>
               <th scope="col" className="px-4 py-2 text-right">Still waiting{" "}</th>
+              <th scope="col" className="px-4 py-2 text-right">Cases still waiting, estimated{" "}</th>
             </tr>
           </thead>
           <tbody>
@@ -72,6 +75,18 @@ export function MonthTable({ series }: { series: { form: string; rows: MonthLine
                 {" "}</td>
                 <td className="px-4 py-2 text-right tabular-nums">{pct(r.rfe)}{" "}</td>
                 <td className="px-4 py-2 text-right tabular-nums">{pct(r.waiting)}{" "}</td>
+                <td className="px-4 py-2 text-right tabular-nums">
+                  {r.pending ? (
+                    <>
+                      {int(r.pending.estimated)}{" "}
+                      {r.pending.low !== r.pending.high ? (
+                        <span className="text-muted-foreground">({int(r.pending.low)} to {int(r.pending.high)})</span>
+                      ) : null}
+                    </>
+                  ) : (
+                    "n/a"
+                  )}
+                {" "}</td>
               </tr>
             ))}
           </tbody>

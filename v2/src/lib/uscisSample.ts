@@ -153,6 +153,8 @@ export interface MonthRow {
   approved: GroupFigure;
   rfe: GroupFigure;
   waiting: GroupFigure;
+  /** The cases still waiting, estimated, with the range its margin gives (pendingEstimate). */
+  pending: { estimated: number; low: number; high: number } | null;
   /** True when part of the month was walked number by number (counted whole), the rest estimated from the draw. */
   walked: boolean;
 }
@@ -170,6 +172,17 @@ export function monthFigures(doc: SampleMonthsDoc, form: string): { month: strin
     });
 }
 
+/**
+ * How many of a form-month's cases are still waiting (Batch 3, pending by month): the waiting group's estimated count,
+ * and its range from the share's 95% margin applied to every case the month holds. Null for a month with none.
+ */
+export function pendingEstimate(f: FormFigure): { estimated: number; low: number; high: number } | null {
+  const total = SAMPLE_GROUPS.reduce((n, g) => n + (f.groups[g]?.estimated ?? 0), 0);
+  const w = f.groups.waiting;
+  if (!w || total <= 0) return null;
+  return { estimated: Math.round(w.estimated), low: Math.round(w.low * total), high: Math.round(w.high * total) };
+}
+
 /** One row per receipt month holding `form`, newest first: what the month table shows. */
 export function monthRows(doc: SampleMonthsDoc, form: string): MonthRow[] {
   return monthFigures(doc, form).map(({ month, figure: f, walked }) => ({
@@ -178,6 +191,7 @@ export function monthRows(doc: SampleMonthsDoc, form: string): MonthRow[] {
     approved: f.groups.approved,
     rfe: f.groups.rfe,
     waiting: f.groups.waiting,
+    pending: pendingEstimate(f),
     walked,
   }));
 }
