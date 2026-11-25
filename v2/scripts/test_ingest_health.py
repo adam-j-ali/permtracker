@@ -648,6 +648,7 @@ def main() -> int:
     check_lca_numbers_rules()
     check_lca_years_rules()
     check_coverage_rules()
+    check_typed_perm_quarters_rules()
     print(f"\n  {len(failures)} failure(s)")
     return 1 if failures else 0
 
@@ -898,11 +899,11 @@ def check_main_combines_every_check() -> None:
 
     saved = {name: getattr(health, name) for name in CHECKS + ("Database", "check_cap_streak",
                                                               "check_unclassified_statuses", "check_warn_states",
-                                                              "check_hand_read_figures", "check_consular_facts")}
+                                                              "check_hand_read_figures", "check_consular_facts", "check_typed_perm_quarters")}
     try:
         health.Database = FreshDB
         for name in ("check_cap_streak", "check_unclassified_statuses", "check_warn_states", "check_hand_read_figures",
-                     "check_consular_facts"):
+                     "check_consular_facts", "check_typed_perm_quarters"):
             setattr(health, name, lambda *a: 0)
         for name in CHECKS:
             setattr(health, name, lambda db: 0)
@@ -919,6 +920,42 @@ def check_main_combines_every_check() -> None:
     finally:
         for name, fn in saved.items():
             setattr(health, name, fn)
+
+
+def check_typed_perm_quarters_rules() -> None:
+    """The green card line's typed PERM medians stopped at FY2026 Q3 while FY2026 Q4's file was loaded, so recent
+    receipts used Q3's 440 days for Q4's 336 (Nov 25 2026). The morning check warns when the table falls behind."""
+    import contextlib
+    import io
+
+    q = health.decision_quarter
+    check("typed quarters: Sep 30 is the fiscal year's fourth quarter", q(datetime.date(2026, 9, 30)) == (2026, 4))
+    check("typed quarters: Oct 1 starts the next fiscal year", q(datetime.date(2026, 10, 1)) == (2027, 1))
+    check("typed quarters: Jan 2 is the second quarter", q(datetime.date(2026, 1, 2)) == (2026, 2))
+    v = health.typed_quarters_verdict
+    check("typed quarters: a newer decision quarter is behind", v((2026, 3), datetime.date(2026, 9, 30)) == "behind")
+    check("typed quarters: the same quarter is ok", v((2026, 4), datetime.date(2026, 9, 30)) == "ok")
+    check("typed quarters: nothing read is unread", v(None, datetime.date(2026, 9, 30)) == "unread")
+
+    class OneDate:
+        def __init__(self, day):
+            self.day = day
+
+        def execute(self, sql, args=None):
+            return {"response": {"result": {"rows": [[{"type": "text", "value": self.day}]]}}}
+
+    def run(day):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = health.check_typed_perm_quarters(OneDate(day))
+        return code, out.getvalue()
+
+    code, said = run("2026-09-30")
+    check("typed quarters: the real table holds FY2026 Q4, so decisions through Sep 30 are ok",
+          code == 0 and "through FY2026 Q4" in said and "::warning::" not in said, said)
+    code, said = run("2026-12-15")
+    check("typed quarters: a loaded FY2027 Q1 file warns, naming both quarters, and never fails the run",
+          code == 0 and "::warning::" in said and "FY2026 Q4" in said and "FY2027 Q1" in said, said)
 
 
 def check_freshness_rows_read_plainly() -> None:
@@ -949,11 +986,11 @@ def check_freshness_rows_read_plainly() -> None:
 
     saved = {name: getattr(health, name) for name in CHECKS + ("Database", "check_cap_streak",
                                                               "check_unclassified_statuses", "check_warn_states",
-                                                              "check_hand_read_figures", "check_consular_facts")}
+                                                              "check_hand_read_figures", "check_consular_facts", "check_typed_perm_quarters")}
     try:
         health.Database = Rows
         for name in ("check_cap_streak", "check_unclassified_statuses", "check_warn_states", "check_hand_read_figures",
-                     "check_consular_facts"):
+                     "check_consular_facts", "check_typed_perm_quarters"):
             setattr(health, name, lambda *a: 0)
         for name in CHECKS:
             setattr(health, name, lambda db: 0)
@@ -999,11 +1036,11 @@ def check_layoff_lists_wait_on_employers() -> None:
 
         saved = {name: getattr(health, name) for name in CHECKS + ("Database", "check_cap_streak",
                                                                   "check_unclassified_statuses", "check_warn_states",
-                                                                  "check_hand_read_figures", "check_consular_facts")}
+                                                                  "check_hand_read_figures", "check_consular_facts", "check_typed_perm_quarters")}
         try:
             health.Database = Rows
             for name in ("check_cap_streak", "check_unclassified_statuses", "check_warn_states",
-                         "check_hand_read_figures", "check_consular_facts"):
+                         "check_hand_read_figures", "check_consular_facts", "check_typed_perm_quarters"):
                 setattr(health, name, lambda *a: 0)
             for name in CHECKS:
                 setattr(health, name, lambda db: 0)
@@ -1066,11 +1103,11 @@ def check_no_maximum_age_is_never_stale() -> None:
 
         saved = {name: getattr(health, name) for name in CHECKS + ("Database", "check_cap_streak",
                                                                   "check_unclassified_statuses", "check_warn_states",
-                                                                  "check_hand_read_figures", "check_consular_facts")}
+                                                                  "check_hand_read_figures", "check_consular_facts", "check_typed_perm_quarters")}
         try:
             health.Database = Rows
             for name in ("check_cap_streak", "check_unclassified_statuses", "check_warn_states",
-                         "check_hand_read_figures", "check_consular_facts"):
+                         "check_hand_read_figures", "check_consular_facts", "check_typed_perm_quarters"):
                 setattr(health, name, lambda *a: 0)
             for name in CHECKS:
                 setattr(health, name, lambda db: 0)

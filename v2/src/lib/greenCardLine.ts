@@ -156,7 +156,10 @@ export const FAMILY_SIZE_SOURCES = [
 /**
  * Days from PERM filing to certification, median over certified cases by the
  * fiscal quarter DOL decided them, measured from DOL's disclosure files
- * (FY2024 through FY2026 Q3) as loaded in this site's perm_cases table.
+ * (FY2024 through FY2026 Q4) as loaded in this site's perm_cases table. Every
+ * row was recomputed exactly on Nov 25 2026 (certified cases, days >= 0, by
+ * decision date), when FY2026 Q4 was found missing: a receipt after the newest
+ * row takes it, so recent cases had used Q3's 440 days instead of Q4's 336.
  */
 export const PERM_DAYS_BY_DECISION_QUARTER: ReadonlyArray<{ fy: number; q: number; days: number }> = [
   { fy: 2024, q: 1, days: 348 },
@@ -170,6 +173,7 @@ export const PERM_DAYS_BY_DECISION_QUARTER: ReadonlyArray<{ fy: number; q: numbe
   { fy: 2026, q: 1, days: 498 },
   { fy: 2026, q: 2, days: 503 },
   { fy: 2026, q: 3, days: 440 },
+  { fy: 2026, q: 4, days: 336 },
 ];
 
 /**

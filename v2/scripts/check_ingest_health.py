@@ -1255,6 +1255,52 @@ def check_hand_read_figures(today: datetime.date | None = None) -> int:
     return 0
 
 
+# The green card line's PERM medians by the quarter DOL decided them are typed in src/lib/greenCardLine.ts from the
+# loaded files, and a receipt after the newest row takes that row: FY2026 Q4's file was loaded while the table stopped
+# at Q3, so recent receipts used Q3's 440 days for Q4's 336 (found Nov 25 2026). A warning, never a failure.
+GREEN_CARD_LINE = pathlib.Path(__file__).resolve().parent.parent / "src" / "lib" / "greenCardLine.ts"
+QUARTER_ROW = re.compile(r"\{\s*fy:\s*(\d{4}),\s*q:\s*([1-4]),\s*days:\s*\d+\s*\}")
+
+
+def decision_quarter(d: datetime.date) -> tuple[int, int]:
+    """DOL's fiscal year and quarter for a decision day: the year starts October 1."""
+    return (d.year + 1 if d.month >= 10 else d.year), (d.month - 10) % 12 // 3 + 1
+
+
+def typed_quarters_verdict(newest_typed: tuple[int, int] | None, newest_decision: datetime.date | None) -> str:
+    if newest_typed is None or newest_decision is None:
+        return "unread"
+    return "behind" if decision_quarter(newest_decision) > newest_typed else "ok"
+
+
+def check_typed_perm_quarters(db, path: pathlib.Path = GREEN_CARD_LINE) -> int:
+    """Whether the typed PERM medians reach the newest decision quarter the PERM table holds. Prints, returns 0."""
+    try:
+        text = path.read_text(encoding="utf8")
+        block = text[text.index("PERM_DAYS_BY_DECISION_QUARTER"):]
+        block = block[:block.index("];")]
+        typed = [(int(a), int(b)) for a, b in QUARTER_ROW.findall(block)]
+    except (OSError, ValueError):
+        typed = []
+    newest_typed = max(typed) if typed else None
+    try:
+        r = query_rows(db, "SELECT MAX(decision_date) FROM perm_cases")
+        newest = datetime.date.fromisoformat(str(r[0][0])[:10]) if r and r[0] and r[0][0] else None
+    except (RuntimeError, ValueError, TypeError, KeyError, IndexError):
+        newest = None
+    verdict = typed_quarters_verdict(newest_typed, newest)
+    if verdict == "behind":
+        fy, q = decision_quarter(newest)
+        print(f"::warning::The green card line's typed PERM medians end at FY{newest_typed[0]} Q{newest_typed[1]}, but "
+              f"perm_cases holds decisions through {newest} (FY{fy} Q{q}): add that quarter's median over certified cases "
+              "to PERM_DAYS_BY_DECISION_QUARTER in src/lib/greenCardLine.ts")
+    elif verdict == "unread":
+        print("::warning::The green card line's typed PERM medians, or the newest PERM decision, couldn't be read")
+    else:
+        print(f"typed PERM medians: through FY{newest_typed[0]} Q{newest_typed[1]}, decisions through {newest}  ok")
+    return 0
+
+
 CONSULAR_FACTS = pathlib.Path(__file__).resolve().parent / "data" / "consular_facts.json"
 
 
@@ -1376,6 +1422,7 @@ def main() -> int:
     lca_numbers_bad = check_lca_numbers(db)
     lca_years_bad = check_lca_years(db)
     handread_bad = check_hand_read_figures()
+    check_typed_perm_quarters(db)     # a warning only; see its docstring
 
     print()
     if unparseable:
