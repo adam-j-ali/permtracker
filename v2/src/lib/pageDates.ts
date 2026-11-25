@@ -96,6 +96,7 @@ export const TEMPLATE_DAY: Readonly<Record<string, string>> = {
   "/visa-bulletin/[month]": "2026-10-17",
   // Nov 3 2026: the consulate pages are new. Nov 5 2026: each gained the work visas it issued and every nonimmigrant class.
   "/consular-posts/[post]": "2026-11-05",
+  "/uscis-receipt-blocks/[block]": "2026-11-25",
   "/visa-bulletin/categories/[line]": "2026-10-16",
 };
 

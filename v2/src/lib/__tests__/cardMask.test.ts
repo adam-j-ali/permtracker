@@ -34,6 +34,11 @@ describe("what a social card masks", () => {
     expect(["EB-2", "I-140", "to", "Level II"].map(isBareFigure)).toEqual([false, false, false, false]);
   });
 
+  it("masks a receipt block's code, which moves with the data, and never a whole receipt number (Nov 25 2026)", () => {
+    expect(figureRuns("I-485 approvals seen up to block IOE09382")).toEqual(["IOE09382"]);
+    expect(figureRuns("A receipt like IOE0000000000")).toEqual([]);
+  });
+
   it("leaves codes, form names and fixed wording alone", () => {
     expect(figureRuns("G-100-26125-868956 on an ETA-9089, the I-140, FY2016, H-1B and EB-2; 60 days' notice")).toEqual([]);
   });

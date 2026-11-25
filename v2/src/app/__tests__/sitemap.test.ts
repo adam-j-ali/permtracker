@@ -107,6 +107,17 @@ vi.mock("@/lib/db/socTitles", () => ({
 // provenance line reads the database and their pager is a client widget, neither of which decides what's listed.
 vi.mock("@/components/data/DataProvenance", () => ({ DataProvenance: () => null }));
 vi.mock("@/components/ui/list-pages", () => ({ ListPages: () => null }));
+vi.mock("@/lib/db/uscisSample", () => ({
+  getSampleBlocks: vi.fn(async () => ({
+    as_of: "2026-11-25",
+    groups: [],
+    by_block: {
+      IOE09366: { "I-485": { counted: 3, walked_cases: 0, drawn_cases: 3, rest_unknown: false, rest_share: 1,
+        groups: { approved: { count: 1, estimated: 1, share: 0.33, low: 0.06, high: 0.79 } } } },
+      IOE09367: {},
+    },
+  })),
+}));
 vi.mock("@/lib/db/consularPosts", () => ({
   getConsularIndex: vi.fn(async () => ({
     asOf: "2026-10-07",

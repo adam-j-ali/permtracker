@@ -64,6 +64,10 @@ export const FAMILY_HUBS: Readonly<Record<string, FamilyHub>> = {
     proof: { test: "src/app/__tests__/bulletin-hub-links-every-month.test.tsx", mark: "BulletinMonthStrip" },
   },
   "/visa-bulletin/categories/[line]": { hub: "/visa-bulletin/categories", owed: UNTESTED },
+  "/uscis-receipt-blocks/[block]": {
+    hub: "/uscis-receipt-blocks",
+    owed: `The index lists every block with sampled cases, every link kept in the HTML (ListPages). ${UNTESTED}`,
+  },
   "/consular-posts/[post]": {
     hub: "/consular-posts",
     owed: `The table renders every row (89 of 89 posts linked on the live index, Nov 20 2026). ${UNTESTED}`,

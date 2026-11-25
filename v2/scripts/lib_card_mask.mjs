@@ -13,6 +13,8 @@ export const FIGURE_SOURCE = [
   // A day's move: "+49", "-12" (after a space, so "I-140" and "G-100" stay).
   "(?<![\\w-])\\+\\d+\\b",
   "(?<=\\s)[-\\u2212]\\d+\\b",
+  // A receipt block's code ("IOE09382"), which moves with the sample; never a whole receipt number (13 characters).
+  "\\bIOE\\d{5}\\b",
   // A weekday names a day that passes: "Since the end of Tuesday".
   "\\b(?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day\\b",
   // A date as data prints it: "2026-10-21", "2026-11", and State's "01NOV13".

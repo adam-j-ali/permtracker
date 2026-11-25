@@ -23,7 +23,7 @@ import { blockForms, chartSeries, topForms } from "@/lib/uscisSample";
 
 const TITLE = "USCIS Receipt Blocks: Where Approvals Are Now";
 const DESCRIPTION =
-  "Type your IOE receipt or block to see how cases filed near yours are moving: the share approved in each block, from receipt numbers checked on USCIS's site.";
+  "Type your IOE receipt or block to see how cases near yours are moving: the share approved in each block, from receipt numbers checked on USCIS's page.";
 const PATH = "/uscis-receipt-blocks";
 
 export const metadata: Metadata = withSocialCard(

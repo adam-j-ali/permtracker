@@ -46,6 +46,8 @@ import { FORM_PAGES } from "@/lib/uscisForms";
 import { USCIS_OFFICES } from "@/lib/uscisOffices";
 import { softFail } from "@/lib/softRead";
 import { getConsularIndex } from "@/lib/db/consularPosts";
+import { getSampleBlocks } from "@/lib/db/uscisSample";
+import { blockForms } from "@/lib/uscisSample";
 import { getSocTitlePages } from "@/lib/db/socTitles";
 import { SOC_TITLES_BASE, titleBucketCounts } from "@/lib/socTitleBrowse";
 
@@ -176,6 +178,17 @@ export async function pagesEntries(): Promise<Entry[]> {
     consularPosts = (await getConsularIndex()).posts;
   } catch {
     consularPosts = [];
+  }
+  // A page per receipt block with sampled cases, from the same figures the block pages read; a read that fails, or a
+  // sample not loaded yet, lists none and keeps the rest of the file.
+  let sampleBlocks: string[] = [];
+  try {
+    const doc = await getSampleBlocks();
+    sampleBlocks = doc
+      ? Object.keys(doc.by_block).filter((b) => /^IOE\d{5}$/.test(b) && blockForms(doc.by_block[b] ?? {}).length > 0).sort()
+      : [];
+  } catch {
+    sampleBlocks = [];
   }
   // One URL per filing month holding at least one case, read from the SAME
   // census `/perm-queue` builds its month strip from and the month route
@@ -315,6 +328,7 @@ export async function pagesEntries(): Promise<Entry[]> {
     { url: `${base}/consular-posts`, lastModified: at("/consular-posts"), images: [`${base}/og/consular-posts.jpg`] },
     // A page per consulate State's tables name, from the same read the index makes.
     ...consularPosts.map((p) => ({ url: `${base}/consular-posts/${p.slug}`, lastModified: at("/consular-posts/[post]") })),
+    ...sampleBlocks.map((b) => ({ url: `${base}/uscis-receipt-blocks/${b}`, lastModified: at("/uscis-receipt-blocks/[block]") })),
     { url: `${base}/visa-wait-times`, lastModified: at("/visa-wait-times"), images: [`${base}/og/visa-wait-times.jpg`] },
     // Its social card is still to be drawn; the image joins this entry with it.
     { url: `${base}/visa-refusals`, lastModified: at("/visa-refusals") },
