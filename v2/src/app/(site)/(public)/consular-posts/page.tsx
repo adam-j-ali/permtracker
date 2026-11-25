@@ -26,6 +26,7 @@ import { SplitBar } from "@/components/data/FigureVisual";
 import { FinePrint } from "@/components/data/FinePrint";
 import { FigurePlate } from "@/components/tools/FigurePlate";
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
+import { ListPages } from "@/components/ui/list-pages";
 import { PanelTabs } from "@/components/ui/panel-tabs";
 import { behindLabel, IV_CATEGORIES, IV_CATEGORY_LABEL, IV_TOOL_URL, monthsBehind, type IvCategory } from "@/lib/consular/scheduling";
 import { queryStatic } from "@/lib/convexStatic";
@@ -166,7 +167,22 @@ export default async function ConsularPostsPage() {
               id: `behind-${cat}`,
               label: IV_CATEGORY_LABEL[cat],
               panel: rows.length ? (
-                <BarRows inline rows={rows} label={`Months back each post is scheduling ${IV_CATEGORY_LABEL[cat].toLowerCase()} cases`} />
+                <>
+                  <BarRows
+                    inline
+                    rows={rows}
+                    id={`behind-${cat}-rows`}
+                    label={`Months back each post is scheduling ${IV_CATEGORY_LABEL[cat].toLowerCase()} cases`}
+                  />{" "}
+                  <ListPages
+                    listId={`behind-${cat}-rows`}
+                    total={rows.length}
+                    perPage={60}
+                    phonePerPage={10}
+                    paramKey={`posts-${cat}`}
+                    noun="posts"
+                  />
+                </>
               ) : (
                 <p className="text-base text-muted-foreground">Every post is caught up on paper in this category.</p>
               ),

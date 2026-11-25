@@ -20,6 +20,7 @@ import { longDate } from "@convex/lib/months";
 import { SANDBOX_CASE_NUMBERS } from "@/lib/api/sandbox";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
+import { ListPages } from "@/components/ui/list-pages";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { SpotPicture } from "@/components/ui/spot-picture";
 import { CodeWindow } from "@/components/marketing/CodeWindow";
@@ -270,7 +271,9 @@ export default function DevelopersPage() {
                             {e.counted ? "Counted." : "Not counted."}
                           </span>{" "}
                         </td>
-                        <td className="px-4 py-3 font-mono text-soft">{e.example}{" "}</td>
+                        {/* One line: an example is an address to copy, so a form name in it (I-485) can't break at its hyphen, and
+                            a non-breaking hyphen would break the copied address. The table scrolls sideways on a phone. */}
+                        <td className="whitespace-nowrap px-4 py-3 font-mono text-soft">{e.example}{" "}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -328,7 +331,7 @@ export default function DevelopersPage() {
                 <th scope="col" className="px-4 py-3 font-bold">What it means{" "}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody id="api-error-rows" className="divide-y divide-border">
               {API_ERRORS.map((e) => (
                 <tr key={e.code} id={errorAnchor(e.code)} className="scroll-mt-28 align-top">
                   <td className="px-4 py-3 font-mono font-bold">{e.status}{" "}</td>
@@ -342,7 +345,8 @@ export default function DevelopersPage() {
               ))}
             </tbody>
           </table>
-        </ScrollBox>
+        </ScrollBox>{" "}
+        <ListPages listId="api-error-rows" total={API_ERRORS.length} perPage={50} phonePerPage={8} paramKey="errors" noun="error codes" />
       </section>
 
       <section className="mt-12" aria-labelledby="keys">

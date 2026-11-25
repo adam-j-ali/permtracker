@@ -71,6 +71,7 @@ export function BarRows({
   label = "Bar chart",
   className,
   inline = false,
+  id,
 }: {
   rows: readonly BarRow[];
   /**
@@ -84,6 +85,8 @@ export function BarRows({
   /** The value that fills the bar; defaults to the largest value present. */
   max?: number;
   className?: string;
+  /** The list's id, for a pager (ListPages) to page its rows by: the bars keep one scale across the pages. */
+  id?: string;
 }) {
   const top = max ?? Math.max(0, ...rows.map((r) => r.value ?? 0));
   // Inline rows are separate grids, so each figure column is as wide as its own text and a short figure
@@ -92,7 +95,7 @@ export function BarRows({
   const figureCh = Math.max(0, ...rows.map((r) => figureText(r).length));
   return (
     <ChartTips label={label} className={className}>
-    <ol className="space-y-3">
+    <ol id={id} className="space-y-3">
       {rows.map((r) => {
         const width = r.value === null || top <= 0 ? 0 : Math.max(1, (r.value / top) * 100);
         return (

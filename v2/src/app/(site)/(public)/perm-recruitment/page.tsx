@@ -18,6 +18,7 @@ import { withSocialCard } from "@/lib/socialCard";
 import { stateName } from "@/lib/usStateNames";
 import { StepBothSources } from "@/components/community/StepBothSources";
 import { keepWhole } from "@/components/ui/keep-whole";
+import { ListPages } from "@/components/ui/list-pages";
 
 /**
  * Where and when PERM employers recruit, nationally: DOL's Form 9089 Section H
@@ -258,7 +259,7 @@ export default async function PermRecruitmentPage() {
             </p>
             <PaperList papers={doc.papers} className="mt-4 columns-1 gap-10 divide-y divide-border/60 md:columns-2 [&>li]:break-inside-avoid" />{" "}
             <h3 className="mt-10 font-heading text-lg font-bold">By state</h3>{" "}
-            <ul className="mt-3 grid grid-cols-1 gap-x-8 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
+            <ul id="papers-by-state" className="mt-3 grid grid-cols-1 gap-x-8 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
               {Object.entries(doc.byState)
                 .sort(([a], [b]) => stateName(a).localeCompare(stateName(b)))
                 .map(([st, papers]) => (
@@ -275,7 +276,15 @@ export default async function PermRecruitmentPage() {
                   </li>
                 </Fragment>
               ))}
-            </ul>
+            </ul>{" "}
+            <ListPages
+              listId="papers-by-state"
+              total={Object.keys(doc.byState).length}
+              perPage={60}
+              phonePerPage={20}
+              paramKey="states"
+              noun="states"
+            />
           </section>
 
           <section className="mt-12 max-w-3xl" aria-labelledby="more">

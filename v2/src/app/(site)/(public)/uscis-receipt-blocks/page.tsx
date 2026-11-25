@@ -200,7 +200,7 @@ export default async function UscisReceiptBlocksPage() {
                 );
               })}
             </ul>{" "}
-            <ListPages listId="blocks" total={held.length} perPage={60} noun="blocks" />
+            <ListPages listId="blocks" total={held.length} perPage={60} phonePerPage={25} noun="blocks" />
           </section>
         </>
       )}

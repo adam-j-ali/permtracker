@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { SelectInput } from "@/components/forms/SelectInput";
+import { ListPages } from "@/components/ui/list-pages";
 import { useQueryParam } from "@/components/ui/pagination";
 import { SORTS, sortOf, sortPosts } from "@/lib/content/listing";
 import type { PostSummary } from "@/lib/content/types";
@@ -40,13 +41,20 @@ export default function ChangelogListing({ posts }: { posts: PostSummary[] }) {
     <div className="space-y-8">
       <div className="grid max-w-3xl grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1fr)_11rem_11rem] sm:items-end [&>*]:min-w-0">
         <div className="col-span-2 sm:col-span-1">
-          <ContentSearch value={search} onChange={setSearch} placeholder="Search the changelog..." />
+          <ContentSearch
+            value={search}
+            onChange={(value) => {
+              setSearch(value);
+              setQuery({ page: null });
+            }}
+            placeholder="Search the changelog..."
+          />
         </div>{" "}
         <label className="flex flex-col gap-1 text-sm font-semibold">
           Kind
           <SelectInput
             value={kind}
-            onChange={(e) => setQuery({ kind: e.target.value || null })}
+            onChange={(e) => setQuery({ kind: e.target.value || null, page: null })}
             options={[{ value: "", label: "Every change" }, ...KINDS.map((k) => ({ value: k, label: `${k}s` }))]}
           />
         </label>{" "}
@@ -54,13 +62,16 @@ export default function ChangelogListing({ posts }: { posts: PostSummary[] }) {
           Sort
           <SelectInput
             value={sort}
-            onChange={(e) => setQuery({ sort: e.target.value === "newest" ? null : e.target.value })}
+            onChange={(e) => setQuery({ sort: e.target.value === "newest" ? null : e.target.value, page: null })}
             options={CHANGELOG_SORTS.map((o) => ({ value: o.id, label: o.label }))}
           />
         </label>
       </div>
       {shown.length ? (
-        <ChangelogTimeline posts={shown} />
+        <div>
+          <ChangelogTimeline posts={shown} id="changelog-entries" />{" "}
+          <ListPages listId="changelog-entries" total={shown.length} perPage={10} noun="changes" />
+        </div>
       ) : (
         <p className="py-10 text-base text-soft">
           {q ? <>Nothing in the changelog matches &ldquo;{search}&rdquo;.</> : <>No {kind.toLowerCase()}s yet.</>}

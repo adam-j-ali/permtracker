@@ -7,6 +7,7 @@ import { formatInt } from "@/lib/format";
 import { shortSourceName } from "@/lib/reportedCases";
 import { officeByCode, officeHref } from "@/lib/uscisOffices";
 import { KeepWhole } from "@/components/ui/keep-whole";
+import { ListPages } from "@/components/ui/list-pages";
 
 /**
  * Every case people reported, from every source, at a glance (the merged list, src/lib/reportedCases.ts): how many
@@ -72,7 +73,12 @@ export function ReportedOverview({
         </div>{" "}
         <div>
           <h3 className="font-heading text-lg font-bold">Where to see them</h3>{" "}
-          <ul className="mt-2 space-y-1 text-base">
+          <p className="mt-2 text-base">
+            <Link href="/uscis-processing-times/i-140#reported" className="link inline-flex min-h-11 items-center">
+              <KeepWhole>{`I-140s: ${formatInt(overview.i140s)} ${overview.i140s === 1 ? "case" : "cases"}, by category and premium processing`}</KeepWhole>
+            </Link>
+          </p>{" "}
+          <ul id="reported-offices" className="space-y-1 text-base">
             {offices.map((o) => (
               <li key={o.office}>
                 <Link href={o.href} className="link inline-flex min-h-11 items-center">
@@ -80,12 +86,8 @@ export function ReportedOverview({
                 </Link>{" "}
               </li>
             ))}
-            <li>
-              <Link href="/uscis-processing-times/i-140#reported" className="link inline-flex min-h-11 items-center">
-                <KeepWhole>{`I-140s: ${formatInt(overview.i140s)} ${overview.i140s === 1 ? "case" : "cases"}, by category and premium processing`}</KeepWhole>
-              </Link>{" "}
-            </li>
-          </ul>
+          </ul>{" "}
+          <ListPages listId="reported-offices" total={offices.length} perPage={25} phonePerPage={10} paramKey="offices" noun="offices" />
         </div>
       </div>
     </section>

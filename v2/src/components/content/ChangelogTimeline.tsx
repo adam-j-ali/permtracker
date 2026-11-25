@@ -33,6 +33,8 @@ const KIND_FILL: Record<string, string> = {
 
 interface ChangelogTimelineProps {
   posts: PostSummary[];
+  /** The list's id, for a pager (ListPages) to page its entries by. */
+  id?: string;
 }
 
 /**
@@ -45,7 +47,7 @@ interface ChangelogTimelineProps {
  */
 type Entry = { date: string; key: string; post: PostSummary };
 
-export default function ChangelogTimeline({ posts }: ChangelogTimelineProps) {
+export default function ChangelogTimeline({ posts, id }: ChangelogTimelineProps) {
   if (posts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -63,9 +65,9 @@ export default function ChangelogTimeline({ posts }: ChangelogTimelineProps) {
   const entries: Entry[] = posts.map((post): Entry => ({ date: post.meta.date, key: post.slug, post }));
 
   return (
-    <ol className="relative max-w-3xl">
-      {/* The rail, drawn, never animated in. */}
-      <div className="absolute bottom-2 left-[7px] top-2 w-[2px] bg-border" aria-hidden="true" />
+    // The rail, drawn, never animated in: a pseudo-element, so the list's children are its entries alone and a pager
+    // (ListPages) counts them by position.
+    <ol id={id} className="relative max-w-3xl before:absolute before:bottom-2 before:left-[7px] before:top-2 before:w-[2px] before:bg-border">
 
       {entries.map((entry) => {
         const { meta } = entry.post;

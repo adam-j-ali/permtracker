@@ -59,6 +59,48 @@ describe("pages for a server-rendered list of names", () => {
     expect(screen.getByRole("button", { name: "12 rows per page" })).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("pages taller items by their own phone size, and shows the pager on a phone only when a wide page holds them all", () => {
+    phone(false);
+    const { container } = render(<ListPages listId="states" total={55} perPage={60} phonePerPage={20} paramKey="states" noun="states" />);
+
+    expect(rule(container)).toContain("@media (max-width: 639px) { #states > :nth-child(n+21) { display: none; } }");
+    expect(container.querySelector("nav")?.closest(".sm\\:hidden")).not.toBeNull();
+  });
+
+  it("keeps its page under its own key, so two paged lists on one page don't move each other", () => {
+    phone(true);
+    at("?states=2");
+    render(
+      <>
+        <ListPages listId="states" total={55} perPage={60} phonePerPage={20} paramKey="states" noun="states" />
+        <ListPages listId="names" total={950} noun="employers" />
+      </>,
+    );
+
+    expect(screen.getByText("21 to 40 of 55 states")).toBeInTheDocument();
+    expect(screen.getByText(`1 to ${PHONE_NAMES} of 950 employers`)).toBeInTheDocument();
+  });
+
+  it("opens the page that holds a linked item, so the link never lands on a hidden row", () => {
+    phone(false);
+    at("#entry-75");
+    Element.prototype.scrollIntoView = vi.fn();
+    const list = document.createElement("ol");
+    list.id = "entries";
+    for (let i = 1; i <= 120; i++) {
+      const li = document.createElement("li");
+      li.id = `entry-${i}`;
+      list.appendChild(li);
+    }
+    document.body.appendChild(list);
+    try {
+      render(<ListPages listId="entries" total={120} perPage={25} noun="changes" />);
+      expect(screen.getByText("51 to 75 of 120 changes")).toBeInTheDocument();
+    } finally {
+      list.remove();
+    }
+  });
+
   it("draws nothing for a list shorter than any page", () => {
     phone(false);
     const { container } = render(<ListPages listId="names" total={9} perPage={12} noun="reviews" />);
