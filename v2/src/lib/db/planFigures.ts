@@ -61,7 +61,11 @@ const NVC_READINGS_FOR_RANGE = 12;
  * newest week's lag between the quickest and slowest of the recent weeks; the step to the visa
  * adds the consulate's interview wait, an assumption. Null without a reading.
  */
-export function nvcSpans(readings: readonly NvcReading[] | null | undefined): { creation: Span; consular: Span; newest: NvcReading } | null {
+export function nvcSpans(
+  readings: readonly NvcReading[] | null | undefined,
+  /** The interview wait measured from people's employment cases (the reported step nvc-interview-eb), when it has a median. */
+  interview: Span | null = null,
+): { creation: Span; consular: Span; newest: NvcReading } | null {
   const recent = (readings ?? []).filter((r) => Number.isFinite(r.creationLagDays) && Number.isFinite(r.reviewLagDays)).slice(0, NVC_READINGS_FOR_RANGE);
   const newest = recent[0];
   if (!newest) return null;
@@ -74,9 +78,9 @@ export function nvcSpans(readings: readonly NvcReading[] | null | undefined): { 
   return {
     creation: range((r) => r.creationLagDays),
     consular: {
-      low: review.low + CONSULAR_INTERVIEW_DAYS_ASSUMED.low,
-      mid: review.mid + CONSULAR_INTERVIEW_DAYS_ASSUMED.mid,
-      high: review.high + CONSULAR_INTERVIEW_DAYS_ASSUMED.high,
+      low: review.low + (interview ?? CONSULAR_INTERVIEW_DAYS_ASSUMED).low,
+      mid: review.mid + (interview ?? CONSULAR_INTERVIEW_DAYS_ASSUMED).mid,
+      high: review.high + (interview ?? CONSULAR_INTERVIEW_DAYS_ASSUMED).high,
     },
     newest,
   };
@@ -151,7 +155,14 @@ export const getPlanReading = cache(async (): Promise<PlanReading> => {
     prepStep && prepStep.median !== null && prepStep.p25 !== null && prepStep.p75 !== null && prepStep.windowDays !== null
       ? { span: { low: prepStep.p25, mid: prepStep.median, high: prepStep.p75 }, n: prepStep.n, windowDays: prepStep.windowDays }
       : null;
-  const nvc = nvcSpans(nvcDoc?.readings);
+  // The consulate's interview wait from people's employment cases once they hold a median (Nov 25 2026); the
+  // assumption stays the fallback, because the plain nvc-interview step is mostly family visas.
+  const interviewStep = reported?.steps.find((st) => st.id === "nvc-interview-eb");
+  const interviewMeasured =
+    interviewStep && interviewStep.median !== null && interviewStep.p25 !== null && interviewStep.p75 !== null
+      ? { span: { low: interviewStep.p25, mid: interviewStep.median, high: interviewStep.p75 }, n: interviewStep.n }
+      : null;
+  const nvc = nvcSpans(nvcDoc?.readings, interviewMeasured?.span ?? null);
 
   const lead = recruitment?.lead.firstStep ?? null;
   const eighty = (cat: keyof typeof PLAN_I140_CLASS) =>
@@ -216,8 +227,9 @@ export const getPlanReading = cache(async (): Promise<PlanReading> => {
     i485: "USCIS's employment-based median, the newest quarter between the quickest and slowest of the last four",
     ead: "USCIS's work-permit median for a pending I-485, the last four quarters",
     ap: "USCIS's advance-parole median inside the US, the last four quarters",
-    consular:
-      "NVC's document review, this week's between the quickest and slowest of the last 12 weeks (State's NVC Timeframes page), then the consulate's interview, which is an assumption that isn't measured. State publishes no interview wait in days. Its monthly table of each consulate's scheduling month (on the consulate pages) is NVC's paperwork queue. Set it to your consulate's, and setting it dates the visa while interviews are paused",
+    consular: interviewMeasured
+      ? `NVC's document review, this week's between the quickest and slowest of the last 12 weeks (State's NVC Timeframes page), then the consulate's interview, from people's own reports: ${interviewMeasured.n} employment cases, the quarter quickest, the middle and the quarter slowest`
+      : "NVC's document review, this week's between the quickest and slowest of the last 12 weeks (State's NVC Timeframes page), then the consulate's interview, which is an assumption that isn't measured. State publishes no interview wait in days. Its monthly table of each consulate's scheduling month (on the consulate pages) is NVC's paperwork queue. Set it to your consulate's, and setting it dates the visa while interviews are paused",
   };
   const consulates =
     consular?.asOf

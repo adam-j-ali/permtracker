@@ -27,8 +27,9 @@ OFFICE_FLOOR = FLOOR  # an office or a consulate gets its own summary from this 
 
 # Every step people report, in the order a case goes, each in its group (the page that shows it). The ids match the
 # board's metrics where the step is the same (convex/lib/communityTimeline.ts METRICS), so one component draws both.
-def _s(sid, label, a, b, group, premium=None):
-    return {"id": sid, "label": label, "from": a, "to": b, "group": group, "premium": premium, "verified": False}
+def _s(sid, label, a, b, group, premium=None, employment=False):
+    return {"id": sid, "label": label, "from": a, "to": b, "group": group, "premium": premium, "verified": False,
+            "employment": employment}
 
 
 STEPS = (
@@ -52,6 +53,9 @@ STEPS = (
     _s("interview-gc", "Interview to green card", "interview", "i485_decided", "i485"),
     _s("gc-card", "Green card approved to the card in the mail", "i485_decided", "card", "i485"),
     _s("nvc-interview", "NVC documents accepted to the consulate interview", "nvc_complete", "consular_interview", "consular"),
+    # Employment cases only (an EB category), for the green card planner: the step above is mostly family visas.
+    _s("nvc-interview-eb", "NVC documents accepted to the interview, employment cases", "nvc_complete",
+       "consular_interview", "consular", employment=True),
     _s("consular-visa", "Consulate interview to visa issued", "consular_interview", "visa_issued", "consular"),
 )
 GROUPS = ("h1b", "pwd", "perm", "i140", "i485", "consular")
@@ -141,6 +145,8 @@ def spans(cases: list[dict], step: dict) -> list[tuple[dt.date, int]]:
         if not start or not end or not _approved(c, b):
             continue
         if prem and _premium(c) != prem:
+            continue
+        if step.get("employment") and not str(c.get("category") or "").upper().startswith("EB"):
             continue
         d = (end - start).days
         if (rough_start or rough_end) and d < MONTH_SPAN_MIN:

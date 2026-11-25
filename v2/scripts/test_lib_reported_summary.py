@@ -173,6 +173,16 @@ def main() -> int:
 
     h = rs.headline(recent + denied, TODAY)
     check(h["cases"] == 55 and h["greenCards30"] == 0, "the headline counts cases and the month's green cards")
+    # Nov 25 2026: the NVC-to-interview step for employment cases only, which the planner reads.
+    def consular(cat: str, took: int) -> dict:
+        return {"nvc_complete": ago(100 + took), "consular_interview": ago(100), "category": cat, "as_of": ago(100)}
+    mixed = [consular("EB-2", 60) for _ in range(6)] + [consular("F2A", 200) for _ in range(20)] + [consular("", 300)]
+    eb = rs.step_figure(mixed, step("nvc-interview-eb"), TODAY)
+    every = rs.step_figure(mixed, step("nvc-interview"), TODAY)
+    check(eb["n"] == 6 and eb["median"] == 60, f"the employment step counts EB cases only: {eb['n']} at {eb['median']} days")
+    check(every["n"] == 27, f"the plain step still counts every case: {every['n']}")
+    check(step("nvc-interview-eb")["id"] in rs.POST_STEPS, "it's a consulate step, so a consulate's own summary carries it")
+
     print(f"{failures} failed")
     return 1 if failures else 0
 
