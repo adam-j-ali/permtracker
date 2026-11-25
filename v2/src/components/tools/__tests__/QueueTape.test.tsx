@@ -159,15 +159,20 @@ describe("QueueTape on a phone", () => {
     expect(all.map((l, i) => (shown(l) ? i : -1)).filter((i) => i >= 0)).toEqual([0, 4, 8, 9, 12, 16]);
   });
 
-  it("keeps a plain label one more column clear of a turned pair, which reaches further", () => {
-    // DOL at index 6 and the reader at 7: index 4 is an every-fourth month two columns from DOL's. Beside a centred
-    // label it fits; beside one turned toward it, the two would touch, so it's hidden on a phone.
+  it("keeps a plain label three columns clear of a flagged month, centred or turned", () => {
+    // DOL at index 6 and the reader at 7: index 4 is an every-fourth month two columns from DOL's, so it's hidden on a
+    // phone beside the turned pair.
     const { container } = render(<QueueTape frontierMonth="2026-01" selectedMonth="2026-02" monthsBehind={6} monthsAhead={10} />);
     const shown = (l: { classes: string[] }) => !l.classes.includes("sr-only") && !l.classes.includes("max-sm:sr-only");
     expect(labels(container).map((l, i) => (shown(l) ? i : -1)).filter((i) => i >= 0)).toEqual([0, 6, 7, 12, 16]);
-    // Apart, that same month keeps its label.
+    // Beside a centred flag too: on a 17-month strip at 320 px a label two columns away printed into DOL's
+    // ("JanMarMay" on /perm-processing-times, Nov 25 2026), so it gives its label up on a phone.
     const apart = render(<QueueTape frontierMonth="2026-01" selectedMonth="2026-06" monthsBehind={6} monthsAhead={10} />);
-    expect(labels(apart.container).map((l, i) => (shown(l) ? i : -1)).filter((i) => i >= 0)).toContain(4);
+    const phone = labels(apart.container).map((l, i) => (shown(l) ? i : -1)).filter((i) => i >= 0);
+    expect(phone).not.toContain(4);
+    expect(phone).not.toContain(8);
+    // From `sm` up it keeps its label.
+    expect(labels(apart.container)[4]!.classes).not.toContain("sr-only");
   });
 
   it("at the strip's own edge, where a label can't turn, DOL's month gives its label up on a phone", () => {

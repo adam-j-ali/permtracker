@@ -45,9 +45,10 @@ const FLAGS_COLLIDE_WITHIN = 4;
 /** From `sm` up every other month is labelled; on a phone every fourth. */
 const LABEL_EVERY = 2;
 const PHONE_LABEL_EVERY = 4;
-/** On a phone a label this close to a flagged month's label would touch it. */
-const PHONE_LABEL_CLEAR_OF_FLAG = 2;
-/** When the two flagged months sit side by side their labels are turned outward and reach a column further. */
+/** On a phone a label this close to a flagged month's label would touch it: at 320 px on a 17-month strip a column is
+ * about 16 px and a label two, so one two columns away printed into it ("JanMarMay", Nov 25 2026). */
+const PHONE_LABEL_CLEAR_OF_FLAG = 3;
+/** When the two flagged months sit side by side their labels are turned outward: the same clearance holds. */
 const PHONE_LABEL_CLEAR_OF_TURNED = 3;
 /** "DOL is here" is wider than three phone columns: this near the strip's start it's set from the column's edge. */
 const PHONE_FLAG_EDGE_COLUMNS = 3;
