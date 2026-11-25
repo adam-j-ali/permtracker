@@ -3,6 +3,7 @@
 Oct 26 2026: the phone sweep failed on two pages at 390px, and the morning
 report showed its last 12 lines, every one a clean 320px page.
 """
+import hashlib
 import sys
 from pathlib import Path
 
@@ -141,8 +142,9 @@ def main() -> int:
     if len(set(one)) != len(one):
         failures.append(f"the slice repeats no page: {one}")
     covered = set()
+    # Commit ids are hashes, so the test's are too: a fixed stride clumped at a pool of 108 (Nov 25 2026).
     for i in range(40):
-        covered |= set(pc.rotation(f"{i * 0x5f3759d:08x}" + "0" * 32))
+        covered |= set(pc.rotation(hashlib.sha1(f"commit {i}".encode()).hexdigest()))
     if len(covered) < len(pc.rotation_pool()) * 0.9:
         failures.append(f"forty commits reach most of the pool: {len(covered)} of {len(pc.rotation_pool())}")
     sha = "b" * 40
