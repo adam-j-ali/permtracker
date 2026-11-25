@@ -164,7 +164,10 @@ describe("product-news consent", () => {
     );
     expect(row!.unsubscribedAt).toBeDefined();
 
-    // A fresh checkbox tick (stage) followed by a confirm: back on.
+    // A fresh checkbox tick (stage) followed by a confirm: back on. The stage counts only when it's later than the
+    // opt-out (createdAt > unsubscribedAt), and on a fast machine both can land in the same millisecond, which failed
+    // about one shuffled run in three. A person can't tick the box in the millisecond they opted out.
+    await new Promise((r) => setTimeout(r, 2));
     await t.mutation(internal.emailPrefs.stageNews, { email: EMAIL });
     await t.mutation(internal.emailPrefs.confirmNewsForEmail, { email: EMAIL });
     row = await t.run(async (ctx) =>
