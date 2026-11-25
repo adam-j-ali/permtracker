@@ -5,14 +5,19 @@ import { render, fireEvent, act } from "@testing-library/react";
 const capture = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/analytics", () => ({ analytics: { capture } }));
 
-import { queryShape, hrefGroup, searchMissText, trackSearchMiss, useAlertFormTelemetry } from "../funnelEvents";
+import { SEARCH_MISS_ON, queryShape, hrefGroup, searchMissText, trackSearchMiss, useAlertFormTelemetry } from "../funnelEvents";
 
 describe("search_miss", () => {
   beforeEach(() => capture.mockClear());
 
-  it("sends nothing while it's off, until the Privacy Policy covers it", () => {
-    trackSearchMiss("green card for chefs");
+  it("sends nothing while its switch is off", () => {
+    trackSearchMiss("green card for chefs", false);
     expect(capture).not.toHaveBeenCalled();
+  });
+
+  it("follows the site's switch by default", () => {
+    trackSearchMiss("green card for chefs");
+    expect(capture.mock.calls.length).toBe(SEARCH_MISS_ON ? 1 : 0);
   });
 
   it("sends the words of a search that found nothing, cut to 60 characters, and nothing else", () => {

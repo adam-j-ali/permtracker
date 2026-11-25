@@ -62,7 +62,7 @@ export default function TermsPage() {
       <div>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">Terms of service</h1>{" "}
         <p className="mb-8 mt-4 text-lg text-muted-foreground">
-          Effective Date: February 17, 2026 | Last Updated: November 18, 2026
+          Effective Date: February 17, 2026 | Last Updated: November 25, 2026
         </p>{" "}
 
         {/* The contents beside the text on a wide page, held in view while it scrolls; above it on a phone. */}
@@ -105,6 +105,10 @@ export default function TermsPage() {
                 and export, and an AI assistant.
               </li>
             </ul>{" "}
+            <p className="text-soft leading-relaxed mt-4">
+              Receipt alerts for USCIS cases are a beta: we may change how often we check, pause them, or end them,
+              and we&apos;ll say so by email first when we end them.
+            </p>{" "}
             <p className="text-soft leading-relaxed mt-4">
               The Service is currently offered free of charge, though we reserve
               the right to introduce fees or subscription plans in the future.
@@ -223,7 +227,10 @@ export default function TermsPage() {
               <li>Harass, abuse, or harm other users</li>{" "}
               <li>Use the Service to send spam or unsolicited communications</li>{" "}
               <li>Reverse engineer, decompile, or attempt to extract the source code</li>
-            </ul>
+            </ul>{" "}
+            <p className="text-soft leading-relaxed mt-4">
+              Sign up only a receipt number that is yours, or one whose owner has asked you to watch it for them.
+            </p>
           </details>{" "}
 
           <details className="legal-section group border-b-2 border-border">
@@ -404,6 +411,11 @@ export default function TermsPage() {
               </li>{" "}
               <li>Any warranty that defects will be corrected</li>
             </ul>{" "}
+            <p className="text-soft leading-relaxed mt-4">
+              A receipt alert reports the status USCIS showed when we checked, and the time we checked. USCIS is the
+              authority on every case. An alert can arrive late or not at all, and its absence never means nothing has
+              changed.
+            </p>{" "}
 
             <h3 className="font-heading text-lg font-bold mt-6 mb-3">
               Not Legal Advice
@@ -691,6 +703,10 @@ export default function TermsPage() {
               <li>Discontinuation or material modification of the Service</li>{" "}
               <li>Extended periods of inactivity</li>
             </ul>{" "}
+            <p className="text-soft leading-relaxed mt-4">
+              We may stop receipt alerts for an address that we have reason to think is watching receipts that
+              aren&apos;t its own.
+            </p>{" "}
             <p className="text-soft leading-relaxed mt-4">
               Upon termination, your right to use the Service will immediately
               cease. You may request your data before termination.

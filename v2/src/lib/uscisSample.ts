@@ -216,8 +216,7 @@ export function newestCompleteMonths(doc: SampleMonthsDoc, form: string, n = 3):
 }
 
 /**
- * Whether a typed receipt shows the last status the sample saw for that exact number (the owner's call, Nov 25 2026:
- * "Show its last status"). Off until the Privacy Policy line that describes it is approved: today the policy says a
- * receipt number is never published or shared and doesn't describe the sample.
+ * Whether a typed receipt shows the last status the sample saw for that exact number. On since Nov 25 2026, when the
+ * Privacy Policy gained "Our sample of USCIS cases" (section 18), which describes this display.
  */
-export const RECEIPT_LAST_STATUS_SHOWN = false;
+export const RECEIPT_LAST_STATUS_SHOWN = true;

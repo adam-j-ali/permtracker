@@ -87,10 +87,10 @@ export function searchMissText(raw: string): string | null {
 }
 
 /**
- * Off until the Privacy Policy says the site keeps the words of a search that found nothing (the owner's call; draft in
- * .planning). Everything else about the event is built and tested.
+ * On since Nov 25 2026, when the Privacy Policy's Product Analytics section gained "Searches that find nothing", which
+ * describes exactly what this sends.
  */
-export const SEARCH_MISS_ON = false;
+export const SEARCH_MISS_ON = true;
 
 /** A site search found nothing: its words go (searchMissText), and nothing else, once SEARCH_MISS_ON is on. */
 export function trackSearchMiss(raw: string, on: boolean = SEARCH_MISS_ON): void {

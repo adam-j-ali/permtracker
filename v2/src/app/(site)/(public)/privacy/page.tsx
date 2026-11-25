@@ -1032,6 +1032,16 @@ export default function PrivacyPage() {
               .
             </p>{" "}
 
+            <h3 id="searches-that-find-nothing" className="font-heading text-lg font-bold mt-6 mb-3">
+              Searches that find nothing
+            </h3>{" "}
+            <p className="text-soft leading-relaxed">
+              When a search on the site finds nothing, we record the words typed (up to 60 characters) so we can add
+              what people look for. We never record a search that finds something, and we drop any search that looks
+              like a case number, a receipt number, an email address or a long number. The words are kept with our
+              other usage counts and never tied to an account.
+            </p>{" "}
+
             <h3 className="font-heading text-lg font-bold mt-6 mb-3">
               Session Replay
             </h3>{" "}
@@ -1915,6 +1925,15 @@ export default function PrivacyPage() {
               <li>Stored lookups are deleted twelve months after the last lookup of that receipt, or sooner if you ask at <a href="mailto:support@permtracker.app?subject=USCIS%20lookup%20deletion" className="link">support@permtracker.app</a> with the receipt number.</li>{" "}
               <li>No email or notification is sent from a lookup. Receipt alerts are a separate subscription you opt in to, described next.</li>
             </ul>{" "}
+            <h3 id="uscis-sample" className="font-heading text-lg font-bold mt-6 mb-3">Our sample of USCIS cases</h3>{" "}
+            <p className="text-soft leading-relaxed">
+              Each day we check a spread of USCIS receipt numbers on USCIS&apos;s public Case Status page and keep the
+              status each one shows, with the day we checked. We publish only totals from this sample, never a list of
+              receipt numbers. If you type a receipt number our sample has checked, the lookup shows the last status we
+              saw for it and the day we saw it. To have a receipt number&apos;s record removed from the sample, write to{" "}
+              <a href="mailto:support@permtracker.app?subject=USCIS%20sample%20removal" className="link">support@permtracker.app</a>{" "}
+              with the number.
+            </p>{" "}
             <h3 id="uscis-receipt-alerts" className="font-heading text-lg font-bold mt-6 mb-3">Receipt alerts (beta)</h3>{" "}
             <p className="text-soft leading-relaxed">
               You can ask us to email you when USCIS changes the status of a receipt. Nothing is sent until you
