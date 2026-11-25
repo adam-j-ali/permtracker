@@ -394,6 +394,53 @@ export const exportForMerge = internalQuery({
   },
 });
 
+/**
+ * Every shown report, any kind of visa, for the reports' own figures on each consulate's page, which the server's
+ * summary works out (scripts/lib_reported_summary.py report_view; GET /reported-export, the server's secret).
+ * Internal: the post, the kind of visa, its choices and dates, and when it was last saved. Never a key or a hash.
+ */
+export const exportReports = internalQuery({
+  args: {},
+  returns: v.array(
+    v.object({
+      updatedAt: v.number(),
+      post: v.string(),
+      category: v.string(),
+      outcome: v.string(),
+      mode: v.optional(v.string()),
+      line: v.optional(v.string()),
+      nvcCompleteMonth: v.optional(v.string()),
+      scheduledOn: v.optional(v.string()),
+      interviewOn: v.optional(v.string()),
+      approvedOn: v.optional(v.string()),
+      resolvedOn: v.optional(v.string()),
+      holdReason: v.optional(v.string()),
+      cancelledBy: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx) => {
+    // NEWEST first, so past the cap the figures cover the newest SCAN_CAP reports, never the oldest.
+    const rows = await ctx.db.query("consularReports").order("desc").take(SCAN_CAP);
+    return rows
+      .filter((r) => !r.hidden)
+      .map((r) => ({
+        updatedAt: r.updatedAt,
+        post: r.post,
+        category: r.category,
+        outcome: r.outcome,
+        mode: r.mode,
+        line: r.line,
+        nvcCompleteMonth: r.nvcCompleteMonth,
+        scheduledOn: r.scheduledOn,
+        interviewOn: r.interviewOn,
+        approvedOn: r.approvedOn,
+        resolvedOn: r.resolvedOn,
+        holdReason: r.holdReason,
+        cancelledBy: r.cancelledBy,
+      }));
+  },
+});
+
 export const hide = internalMutation({
   args: { id: v.id("consularReports"), hidden: v.boolean() },
   returns: v.null(),

@@ -33,6 +33,7 @@ import {
   DETAIL_DATES,
   H4_DATES,
   H4_EAD_ROUTES,
+  h4EadRoute,
   contactOutcomes,
   interviewShare,
   rfesOf,
@@ -722,11 +723,22 @@ const mergeRowV = v.object({
   rfeForm: v.optional(v.string()),
   rfeIssuedOn: v.optional(v.string()),
   rfeRespondedOn: v.optional(v.string()),
+  /** RFEs after the first: each one's form and dates, never its reason (the summary times each RFE, D7). */
+  moreRfes: v.optional(
+    v.array(v.object({ form: v.string(), issuedOn: v.optional(v.string()), respondedOn: v.optional(v.string()) })),
+  ),
+  /** A spouse's H-4 papers, and how the work permit went in as `h4EadRoute` resolves it (none when nothing says). */
+  h4FiledOn: v.optional(v.string()),
+  h4ApprovedOn: v.optional(v.string()),
+  h4EadFiledOn: v.optional(v.string()),
+  h4EadApprovedOn: v.optional(v.string()),
+  h4EadRoute: v.optional(v.union(v.literal("with-i539"), v.literal("alone"))),
 });
 
 /**
  * Every shown timeline's dates, for scripts/build_reported_cases.py (GET /reported-export, the server's secret).
- * Internal, and narrower than any page's read: dates, categories and offices only.
+ * Internal, and narrower than any page's read: dates, categories and offices only. The server's summary
+ * (scripts/lib_reported_summary.py) works out every figure from them; nothing here counts.
  */
 export const exportForMerge = internalQuery({
   args: {},
@@ -759,6 +771,12 @@ export const exportForMerge = internalQuery({
       rfeForm: r.rfeForm,
       rfeIssuedOn: r.rfeIssuedOn,
       rfeRespondedOn: r.rfeRespondedOn,
+      moreRfes: r.moreRfes?.map((e) => ({ form: e.form, issuedOn: e.issuedOn, respondedOn: e.respondedOn })),
+      h4FiledOn: r.h4FiledOn,
+      h4ApprovedOn: r.h4ApprovedOn,
+      h4EadFiledOn: r.h4EadFiledOn,
+      h4EadApprovedOn: r.h4EadApprovedOn,
+      h4EadRoute: h4EadRoute(r) ?? undefined,
     }));
   },
 });

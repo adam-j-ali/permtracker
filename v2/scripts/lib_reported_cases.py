@@ -38,19 +38,22 @@ DATE_FIELDS = (
     "h1b_filed", "h1b_decided", "lca_certified", "pwd_filed", "pwd_issued",
     # PERM.
     "perm_filed", "perm_audit", "perm_decided", "priority_date",
-    # The I-140.
-    "i140_receipt", "i140_rfe_issued", "i140_rfe_answered", "i140_decided",
+    # The I-140, and the day premium processing was asked for when it came after filing.
+    "i140_receipt", "i140_premium_on", "i140_rfe_issued", "i140_rfe_answered", "i140_decided",
     # Adjustment at a USCIS office.
-    "i485_receipt", "biometrics", "ead", "ap", "i485_rfe_issued", "transfer", "interview", "i485_decided", "card",
+    "i485_receipt", "biometrics", "ead", "ap", "i485_rfe_issued", "i485_rfe_answered", "transfer", "interview",
+    "i485_decided", "card",
     # Or the consular path.
     "nvc_complete", "consular_scheduled", "consular_interview", "visa_issued",
+    # A spouse's H-4 papers while the case runs: the extension (I-539) and the work permit, each filed and approved.
+    "h4_filed", "h4_approved", "h4_ead_filed", "h4_ead_approved",
 )
 # What a case is, compared for contradictions and never counted toward a match.
 IDENTITY_FIELDS = ("category", "office", "center", "post", "chargeability")
 DECISION_FIELDS = ("h1b_decision", "perm_decision", "i140_decision", "i485_decision", "consular_outcome")
 # Carried along, never compared: what a source adds about the wait (a sheet's "visa available", the status held
 # while waiting, a priority date given in words).
-OTHER_FIELDS = ("premium", "i140_rfe", "visa_available", "nonimmigrant_status", "priority_note")
+OTHER_FIELDS = ("premium", "i140_rfe", "visa_available", "nonimmigrant_status", "priority_note", "h4_ead_route")
 META_FIELDS = ("source", "key", "person", "as_of", "checked", "shows")
 FIELDS = DATE_FIELDS + IDENTITY_FIELDS + DECISION_FIELDS + OTHER_FIELDS
 
@@ -67,6 +70,8 @@ PREMIUM_DETAIL = {"with filing": 3, "after filing": 3, "yes": 2, "none": 1}
 # Whether an I-140 got a request for evidence or a notice of intent to deny: a yes beats "none" (it came later).
 I140_RFE = ("noid", "rfe", "none")
 I140_RFE_DETAIL = {"noid": 3, "rfe": 2, "none": 1}
+# How the H-4 work permit went in: with the I-539 extension, or on its own (USCIS posts the two as separate times).
+H4_EAD_ROUTES = ("with-i539", "alone")
 
 
 def outcomes_for(field: str) -> tuple[str, ...]:
@@ -120,6 +125,8 @@ def check_record(r: dict) -> None:
         raise ValueError(f"premium must be one of {PREMIUMS}, got {r['premium']!r}")
     if r.get("i140_rfe") is not None and r["i140_rfe"] not in I140_RFE:
         raise ValueError(f"i140_rfe must be one of {I140_RFE}, got {r['i140_rfe']!r}")
+    if r.get("h4_ead_route") is not None and r["h4_ead_route"] not in H4_EAD_ROUTES:
+        raise ValueError(f"h4_ead_route must be one of {H4_EAD_ROUTES}, got {r['h4_ead_route']!r}")
     # The build stores it as 1 or 0, so anything else would stop the whole build, every source with it.
     if r.get("visa_available") is not None and r["visa_available"] not in (True, False):
         raise ValueError(f"visa_available must be true or false, got {r['visa_available']!r}")

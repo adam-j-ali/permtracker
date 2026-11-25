@@ -25,11 +25,11 @@ MAX_DAYS = 3650      # a span past ten years is a typo
 MONTHS = 12          # the line by month
 OFFICE_FLOOR = FLOOR  # an office or a consulate gets its own summary from this many cases (each step keeps its own floor)
 
-# Every step people report, in the order a case goes, each in its group (the page that shows it). The ids match the
-# board's metrics where the step is the same (convex/lib/communityTimeline.ts METRICS), so one component draws both.
-def _s(sid, label, a, b, group, premium=None, employment=False):
+# Every step people report, in the order a case goes, each in its group (the page that shows it). This module is the
+# one place a figure over people's reports is worked out (D7, Nov 25 2026): Convex and the pages read what it stores.
+def _s(sid, label, a, b, group, premium=None, employment=False, **more):
     return {"id": sid, "label": label, "from": a, "to": b, "group": group, "premium": premium, "verified": False,
-            "employment": employment}
+            "employment": employment, **more}
 
 
 STEPS = (
@@ -40,7 +40,9 @@ STEPS = (
     _s("perm-audit", "PERM filed to an audit", "perm_filed", "perm_audit", "perm"),
     _s("perm", "PERM filed to decided", "perm_filed", "perm_decided", "perm"),
     _s("cert-to-i140", "PERM certified to I-140 filed", "perm_decided", "i140_receipt", "i140"),
-    _s("i140-premium", "I-140 filed to decided, premium", "i140_receipt", "i140_decided", "i140", "premium"),
+    # Premium asked for after filing starts its own clock, on the day it was asked for when the report gives it.
+    _s("i140-premium", "I-140 filed to decided, premium", "i140_receipt", "i140_decided", "i140", "premium",
+       from_first="i140_premium_on"),
     _s("i140-regular", "I-140 filed to decided, regular", "i140_receipt", "i140_decided", "i140", "regular"),
     _s("i140-rfe", "I-140 RFE issued to answered", "i140_rfe_issued", "i140_rfe_answered", "i140"),
     _s("i485-bio", "I-485 filed to biometrics", "i485_receipt", "biometrics", "i485"),
@@ -59,6 +61,21 @@ STEPS = (
     _s("consular-visa", "Consulate interview to visa issued", "consular_interview", "visa_issued", "consular"),
 )
 GROUPS = ("h1b", "pwd", "perm", "i140", "i485", "consular")
+# Beside the case, never a step of it: each RFE on either form, and a spouse's H-4 papers, which can come before PERM
+# or after the I-485. A step with `pairs` reads each pair as its own span: one value per RFE, so the count is RFEs.
+SIDE_STEPS = (
+    _s("rfe-answer", "RFE issued to answered", "i140_rfe_issued", "i140_rfe_answered", "side",
+       pairs=(("i140_rfe_issued", "i140_rfe_answered"), ("i485_rfe_issued", "i485_rfe_answered"))),
+    # The decision after an RFE is its own form's approval: a denial after the answer never counts.
+    _s("rfe-decision", "RFE answered to approved", "i140_rfe_answered", "i140_decided", "side",
+       pairs=(("i140_rfe_answered", "i140_decided"), ("i485_rfe_answered", "i485_decided"))),
+    _s("h4-i539", "H-4 extension, filed to approved", "h4_filed", "h4_approved", "side"),
+    # USCIS posts the two ways in as separate times, so a work permit that doesn't say how it went in counts in neither.
+    _s("h4-ead-together", "H-4 work permit filed with the I-539, filed to approved", "h4_ead_filed", "h4_ead_approved",
+       "side", route="with-i539"),
+    _s("h4-ead-alone", "H-4 work permit filed on its own, filed to approved", "h4_ead_filed", "h4_ead_approved", "side",
+       route="alone"),
+)
 # The steps an office's own summary carries (the I-485's), and a consulate's (its own two).
 OFFICE_STEPS = tuple(x["id"] for x in STEPS if x["group"] == "i485")
 POST_STEPS = tuple(x["id"] for x in STEPS if x["group"] == "consular")
@@ -111,10 +128,12 @@ def _approved(c: dict, end: str) -> bool:
 
 
 def _premium(c: dict) -> str | None:
-    """'premium' when the clock ran premium from filing, 'regular' when there was none, None when it can't be told:
-    premium added later starts its own clock on a day the merge doesn't carry."""
+    """'premium' when the clock ran premium, 'regular' when there was none, None when it can't be told: premium added
+    later starts its own clock, so it counts only when the report gives the day it was asked for."""
     p = c.get("premium")
-    return "premium" if p in ("yes", "with filing") else "regular" if p == "none" else None
+    if p in ("yes", "with filing") or (p == "after filing" and _day(c.get("i140_premium_on"))):
+        return "premium"
+    return "regular" if p == "none" else None
 
 
 # A month-only end counts as the month's 15th on a span this long or longer, where half a month is a small share of
@@ -137,22 +156,29 @@ def _when(v) -> tuple[dt.date | None, bool]:
 
 
 def spans(cases: list[dict], step: dict) -> list[tuple[dt.date, int]]:
-    """(the day the step finished, its days) for every case that holds both ends."""
-    a, b, prem = step["from"], step["to"], step["premium"]
+    """(the day the step finished, its days) for every case that holds both ends: one value a case, or one a pair for
+    a step with `pairs` (each RFE)."""
+    prem, first, route = step["premium"], step.get("from_first"), step.get("route")
     out = []
     for c in cases:
-        (start, rough_start), (end, rough_end) = _when(c.get(a)), _when(c.get(b))
-        if not start or not end or not _approved(c, b):
-            continue
         if prem and _premium(c) != prem:
             continue
         if step.get("employment") and not str(c.get("category") or "").upper().startswith("EB"):
             continue
-        d = (end - start).days
-        if (rough_start or rough_end) and d < MONTH_SPAN_MIN:
+        if route and c.get("h4_ead_route") != route:
             continue
-        if 0 <= d <= MAX_DAYS:
-            out.append((end, d))
+        for a, b in step.get("pairs") or ((step["from"], step["to"]),):
+            (start, rough_start), (end, rough_end) = _when(c.get(a)), _when(c.get(b))
+            if not start or not end or not _approved(c, b):
+                continue
+            later = _day(c.get(first)) if first else None
+            if later and later > start:
+                start = later
+            d = (end - start).days
+            if (rough_start or rough_end) and d < MONTH_SPAN_MIN:
+                continue
+            if 0 <= d <= MAX_DAYS:
+                out.append((end, d))
     return out
 
 
@@ -359,6 +385,7 @@ def week(cases: list[dict], today: dt.date) -> dict:
 def summarize(cases: list[dict], today: dt.date) -> dict:
     return {"today": today.isoformat(), "headline": headline(cases, today), "week": week(cases, today),
             "steps": [step_figure(cases, s, today) for s in STEPS],
+            "side": [step_figure(cases, s, today) for s in SIDE_STEPS],
             "waiting": waiting(cases, today), "i140": i140_figures(cases, today)}
 
 
@@ -402,10 +429,179 @@ def prepared(cases: list[dict]) -> list[dict]:
     return out
 
 
-def all_summaries(cases: list[dict], today: dt.date) -> dict[str, dict]:
-    """Every stored summary by its key: "all", "office:<code>", "post:<slug>"."""
+# The consulate reports sent through this site's form (convex/consularReports.ts), every kind of visa: each
+# consulate's "What people report". They're the only source that says how an interview ended (a 221(g), a drop box,
+# a cancelled interview) or covers a work, family or visitor visa, so these figures read the reports alone, each
+# report once; the employment steps over every source are the consulate's own summary ("post:<slug>"). The rules
+# were convex/lib/consularReport.ts summarizeReports until Nov 25 2026 (D7); the medians are now this module's own.
+#
+# A report row (scripts/build_reported_cases.py report_row): post, category, mode, line, outcome, nvc_month,
+# scheduled, interview, approved, resolved, hold_reason, cancelled_by, saved (the Eastern day it was last saved).
+REPORT_FLOOR = 3           # a figure, a breakdown, a week or a median shows from this many reports (MIN_REPORTS in TS)
+REPORT_WINDOWS = (30, 90)  # the windows the reports are counted in, by the day of each one's newest step
+REPORT_WEEKS = 12          # weeks of interviews held, the newest holding today
+WAIT_WINDOW = 180          # NVC to the interview, and the interview to the visa, read appointments in this many days
+RESULT_WINDOW = 90         # the share that ended in 221(g) reads results in this many days
+MOVED_WINDOW = 90
+APPROVED_OUTCOMES = ("approved", "issued", "passport-returned")
+DECIDED_OUTCOMES = (*APPROVED_OUTCOMES, "221g", "refused")
+MOVED_OUTCOMES = ("cancelled", "rescheduled")
+BUSIEST = 20               # the most consulates the index page's panel lists
+NO_REPORTS = "_none"       # the key of the figures for a consulate nobody has reported yet (never a slug)
+
+
+def _plus(day: dt.date, n: int) -> str:
+    return (day + dt.timedelta(days=n)).isoformat()
+
+
+def report_day(r: dict) -> str:
+    """The day a report speaks for: its newest step (the visa, the approval, the interview, the appointment), or the
+    day it was saved when it holds only NVC's month. An interview from 2022 reported today is old news."""
+    days = [r.get(f) for f in ("resolved", "approved", "interview", "scheduled") if r.get(f)]
+    return max(days) if days else r["saved"]
+
+
+def _appeared(r: dict) -> bool:
+    """The appointment took place, or waits on its result: not cancelled, not moved."""
+    return bool(r.get("interview")) and r.get("outcome") not in MOVED_OUTCOMES
+
+
+def _held(r: dict) -> bool:
+    """An interview was held: the appointment took place, and it wasn't a drop box."""
+    return _appeared(r) and r.get("mode") != "dropbox"
+
+
+def report_wait(r: dict) -> int | None:
+    """Days from NVC's month to an interview held, counted from the month's 15th (wrong by at most half a month)."""
+    if not r.get("nvc_month") or not _held(r):
+        return None
+    start, _ = _when(r["nvc_month"])
+    end = _day(r["interview"])
+    if not start or not end:
+        return None
+    d = (end - start).days
+    return d if d >= 0 else None
+
+
+def after_appointment(r: dict) -> int | str | None:
+    """After the interview or drop box: days to the approval or the visa (a 221(g) to the day it cleared), "waiting"
+    (no result yet, or a 221(g) not cleared), or None (refused, cancelled, moved, or no appointment day)."""
+    if not _appeared(r):
+        return None
+    outcome = r.get("outcome")
+    end = r.get("resolved") if outcome == "221g" else (r.get("approved") or r.get("resolved")) if outcome in APPROVED_OUTCOMES else None
+    if end:
+        a, b = _day(r["interview"]), _day(end)
+        return (b - a).days if a and b and b >= a else None
+    return "waiting" if outcome in ("waiting", "221g") else None
+
+
+def week_starts(today: dt.date, n: int = REPORT_WEEKS) -> list[str]:
+    """The Mondays that start the last n weeks, oldest first, the newest holding today."""
+    monday = today - dt.timedelta(days=today.weekday())
+    return [_plus(monday, -7 * (n - 1 - i)) for i in range(n)]
+
+
+def _median(xs: list[int]) -> int | None:
+    return round(statistics.median(xs)) if xs else None
+
+
+def _counts(rows: list[dict], field: str) -> dict[str, int]:
+    """How many reports gave each answer, leaving out the ones that gave none."""
+    out: dict[str, int] = {}
+    for r in rows:
+        if r.get(field):
+            out[r[field]] = out.get(r[field], 0) + 1
+    return out
+
+
+def report_view(reports: list[dict], today: dt.date) -> dict:
+    """The figures for one set of reports (one consulate's, or every one's). Only what a page may print: every
+    breakdown, cell, week and median under REPORT_FLOOR comes back empty or None, so no page can print one by mistake.
+    Counts by answer are keyed by the form's ids; the page puts the form's words and order on them."""
+    shown = lambda n: n >= REPORT_FLOOR  # noqa: E731
+    since = lambda days: _plus(today, -(days - 1))  # noqa: E731
+    windows = []
+    for days in REPORT_WINDOWS:
+        rows = [r for r in reports if report_day(r) >= since(days)]
+        windows.append({"days": days, "total": len(rows), "open": shown(len(rows)),
+                        "byOutcome": _counts(rows, "outcome") if shown(len(rows)) else {}})
+    recent = [r for r in reports if report_day(r) >= since(90)]
+    appt_from = since(WAIT_WINDOW)
+    recent_appt = lambda rows: [r for r in rows if r.get("interview") and r["interview"] >= appt_from]  # noqa: E731
+    waits_of = lambda rows: [w for w in map(report_wait, recent_appt(rows)) if w is not None]  # noqa: E731
+
+    categories = {}
+    for cat in sorted({r["category"] for r in reports}):
+        rows = [r for r in recent if r["category"] == cat]
+        mine = [r for r in reports if r["category"] == cat]
+        waits = waits_of(mine)
+        finished, waiting = [], 0
+        for r in recent_appt(mine):
+            a = after_appointment(r)
+            if a == "waiting":
+                waiting += 1
+            elif a is not None:
+                finished.append(a)
+        after = ({"finished": len(finished), "waiting": waiting,
+                  "median": _median(finished) if shown(len(finished)) else None}
+                 if shown(len(finished) + waiting) else {"finished": None, "waiting": None, "median": None})
+        categories[cat] = {"count": len(rows) if shown(len(rows)) else None, "open": shown(len(rows)),
+                           "byOutcome": _counts(rows, "outcome") if shown(len(rows)) else {},
+                           "byLine": _counts(rows, "line") if shown(len(rows)) else {},
+                           "waitMedian": _median(waits) if shown(len(waits)) else None, "after": after}
+
+    weeks = []
+    for start in week_starts(today):
+        end = _plus(dt.date.fromisoformat(start), 7)
+        n = sum(1 for r in reports if _held(r) and start <= r["interview"] < end)
+        weeks.append({"start": start, "count": n if shown(n) else None, "partial": end > today.isoformat()})
+
+    decided = [r for r in reports if r.get("outcome") in DECIDED_OUTCOMES and report_day(r) >= since(RESULT_WINDOW)]
+    holds = [r for r in decided if r["outcome"] == "221g"]
+    results_open = shown(len(decided))
+    moved = [r for r in recent if r.get("outcome") in MOVED_OUTCOMES]
+    waits = waits_of(reports)
+    return {
+        "today": today.isoformat(), "total": len(reports), "floor": REPORT_FLOOR, "windows": windows,
+        "categories": categories, "weeks": weeks,
+        "results": {"days": RESULT_WINDOW, "n": len(decided) if results_open else None,
+                    "g221": len(holds) if results_open else None,
+                    "share": len(holds) / len(decided) if results_open else None,
+                    "holdReasons": _counts(holds, "hold_reason") if results_open and shown(len(holds)) else {}},
+        "moved": {"days": MOVED_WINDOW, "n": len(moved) if shown(len(moved)) else None,
+                  "byWho": _counts(moved, "cancelled_by") if shown(len(moved)) else {}},
+        "wait": {"days": WAIT_WINDOW, "n": len(waits) if shown(len(waits)) else None,
+                 "median": _median(waits) if shown(len(waits)) else None},
+    }
+
+
+def report_summaries(reports: list[dict], today: dt.date) -> dict[str, dict]:
+    """"reports:all" (every consulate, with the busiest ones), "reports:<slug>" for each consulate with a report, and
+    "reports:_none" for a consulate nobody has reported yet."""
+    by_post: dict[str, list[dict]] = {}
+    for r in reports:
+        by_post.setdefault(r["post"], []).append(r)
+    out = {f"reports:{post}": report_view(rows, today) for post, rows in sorted(by_post.items())}
+    busiest = []
+    for post, rows in by_post.items():
+        v = out[f"reports:{post}"]
+        if v["windows"][0]["total"] >= REPORT_FLOOR:
+            busiest.append({"post": post, "reports30": v["windows"][0]["total"], "results": v["results"]["n"],
+                            "g221": v["results"]["g221"], "share": v["results"]["share"]})
+    busiest.sort(key=lambda b: (-b["reports30"], b["post"]))
+    out["reports:all"] = {**report_view(reports, today), "busiest": busiest[:BUSIEST]}
+    out[f"reports:{NO_REPORTS}"] = report_view([], today)
+    return out
+
+
+def all_summaries(cases: list[dict], today: dt.date, reports: list[dict] | None = None) -> dict[str, dict]:
+    """Every stored summary by its key: "all", "office:<code>", "post:<slug>", and the consulate reports' own when
+    they were read ("reports:..."; None when the export didn't send them)."""
     cases = prepared(cases)
     out = {"all": summarize(cases, today)}
     out.update({f"office:{k}": v for k, v in office_summaries(cases, today).items()})
     out.update({f"post:{k}": v for k, v in post_summaries(cases, today).items()})
+    if reports is not None:
+        out.update(report_summaries(reports, today))
     return out

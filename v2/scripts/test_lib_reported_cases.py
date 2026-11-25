@@ -230,6 +230,21 @@ def main() -> int:
     except ValueError:
         check(True, "refuses an RFE answer it doesn't know")
 
+    # 21. A spouse's H-4 papers, the I-485's RFE answer and the day premium was asked for are dates the figures count
+    # (D7, Nov 25 2026); how the H-4 work permit went in is one of two words.
+    h4 = rec("timeline", "t9", i140_receipt="2026-01-05", i140_premium_on="2026-02-01", i485_rfe_issued="2026-05-01",
+             i485_rfe_answered="2026-05-20", h4_filed="2026-03-01", h4_approved="2026-06-01",
+             h4_ead_filed="2026-03-01", h4_ead_approved="2026-07-01", h4_ead_route="with-i539")
+    got = rc.merge([h4])[0]["figures"]
+    check(got["h4_ead_route"] == "with-i539" and got["h4_ead_approved"] == "2026-07-01"
+          and got["i485_rfe_answered"] == "2026-05-20" and got["i140_premium_on"] == "2026-02-01",
+          "the H-4 papers, the RFE's answer and the premium day reach the figures")
+    try:
+        rc.merge([rec("reddit", "x11", h4_ead_route="maybe")])
+        check(False, "refuses an H-4 work permit route it doesn't know")
+    except ValueError:
+        check(True, "refuses an H-4 work permit route it doesn't know")
+
     # 15. Bad input is refused, never guessed.
     for bad, what in ((rec("reddit", "x", transfer="9/24/2026"), "a date not in ISO form"),
                       (rec("reddit", "x", nickname="z"), "a field the merge doesn't know"),

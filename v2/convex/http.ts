@@ -2793,13 +2793,15 @@ http.route({
   handler: httpAction(async (ctx, req) => {
     const refused = await watchedGate(req);
     if (refused) return refused;
-    const [timelines, consular, cases] = await Promise.all([
+    const [timelines, consular, cases, reports] = await Promise.all([
       ctx.runQuery(internal.communityTimelines.exportForMerge, {}),
       ctx.runQuery(internal.consularReports.exportForMerge, {}),
       // The saved cases of accounts that chose to count them in the public figures: dates only.
       ctx.runQuery(internal.caseFigures.exportForMerge, {}),
+      // Every consulate report, any kind of visa, for the reports' own figures on each consulate's page.
+      ctx.runQuery(internal.consularReports.exportReports, {}),
     ]);
-    return serverJson({ ok: true, timelines, consular, cases }, 200);
+    return serverJson({ ok: true, timelines, consular, cases, reports }, 200);
   }),
 });
 

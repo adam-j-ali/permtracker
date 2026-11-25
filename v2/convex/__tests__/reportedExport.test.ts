@@ -82,4 +82,46 @@ describe("the reported-cases export", () => {
     expect(body.consular[0]).toMatchObject({ post: "mumbai", line: "eb3", outcome: "221g", interviewOn: "2026-06-10" });
     expect(JSON.stringify(body.consular)).not.toContain("editKeyHash");
   });
+
+  // D7 (Nov 25 2026): the server's summary works out every figure over people's reports, so the export carries what
+  // the figures read: a spouse's H-4 papers with the work permit's route resolved here, and every RFE's form and dates.
+  it("hands over the H-4 papers, the route they went in by and every RFE's dates, never an RFE's reason", async () => {
+    vi.stubEnv("WATCHED_CASES_SECRET", SECRET);
+    const t = createTestContext();
+    await t.run(async (ctx) => {
+      await ctx.db.insert("communityTimelines", {
+        editKeyHash: "h", ipHash: "ip", createdAt: NOW, updatedAt: NOW, public: true, status: "approved", category: "eb2",
+        h4FiledOn: "2026-03-01", h4ApprovedOn: "2026-06-01", h4EadFiledOn: "2026-03-01", h4EadApprovedOn: "2026-07-01",
+        rfeForm: "i140", rfeReason: "ability-to-pay", rfeIssuedOn: "2026-02-01", rfeRespondedOn: "2026-02-20", rfeOutcome: "approved",
+        moreRfes: [{ form: "i485", reason: "medical", issuedOn: "2026-09-01", respondedOn: "2026-09-20", outcome: "pending" }],
+      });
+    });
+    const body = (await (await t.fetch("/reported-export", { headers: { "x-watched-secret": SECRET } })).json()) as {
+      timelines: Record<string, unknown>[];
+    };
+    expect(body.timelines[0]).toMatchObject({
+      h4FiledOn: "2026-03-01", h4ApprovedOn: "2026-06-01", h4EadFiledOn: "2026-03-01", h4EadApprovedOn: "2026-07-01",
+      // No answer given, and the two filing days are one day: filed with the I-539 (h4EadRoute).
+      h4EadRoute: "with-i539",
+      moreRfes: [{ form: "i485", issuedOn: "2026-09-01", respondedOn: "2026-09-20" }],
+    });
+    const text = JSON.stringify(body.timelines);
+    for (const never of ["ability-to-pay", "medical", "rfeReason"]) expect(text).not.toContain(never);
+  });
+
+  it("hands over every shown consulate report, any kind of visa, with what the reports' own figures read", async () => {
+    vi.stubEnv("WATCHED_CASES_SECRET", SECRET);
+    const t = createTestContext();
+    await seed(t);
+    const body = (await (await t.fetch("/reported-export", { headers: { "x-watched-secret": SECRET } })).json()) as {
+      reports: Record<string, unknown>[];
+    };
+    expect(body.reports.map((r) => r.post).sort()).toEqual(["chennai", "mumbai"]);
+    expect(body.reports.find((r) => r.post === "chennai")).toMatchObject({ category: "h1b", outcome: "issued", updatedAt: NOW });
+    expect(body.reports.find((r) => r.post === "mumbai")).toMatchObject({
+      category: "employment", line: "eb3", nvcCompleteMonth: "2026-03", interviewOn: "2026-06-10", outcome: "221g",
+    });
+    const text = JSON.stringify(body.reports);
+    for (const never of ["editKeyHash", "ipHash", '"c1"', "_id"]) expect(text).not.toContain(never);
+  });
 });

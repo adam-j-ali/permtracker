@@ -147,6 +147,45 @@ def main() -> int:
     check(b.consular_record({"id": "c2", "updatedAt": 1, "post": "mumbai", "outcome": "221g"})["consular_outcome"] == "221g"
           and b.consular_record({"id": "c3", "updatedAt": 1, "post": "mumbai", "outcome": "rescheduled"})["consular_outcome"] == "pending",
           "a 221(g) stays one; a rescheduled interview is still pending")
+    # The fields the one summary needs from a timeline (D7, Nov 25 2026): the day premium was asked for, a spouse's
+    # H-4 papers with the route Convex resolved, and every RFE, the later one on a form being the one its decision follows.
+    check(r["i140_premium_on"] == "2026-02-01" and b.timeline_record({**tl, "premiumOn": None}).get("i140_premium_on") is None,
+          "the day premium was asked for, when it was")
+    more = {**tl, "h4FiledOn": "2026-03-01", "h4ApprovedOn": "2026-06-01", "h4EadFiledOn": "2026-03-01",
+            "h4EadApprovedOn": "2026-07-01", "h4EadRoute": "with-i539",
+            "moreRfes": [{"form": "i485", "issuedOn": "2026-09-01", "respondedOn": "2026-09-20"},
+                         {"form": "i140", "issuedOn": "2026-02-05", "respondedOn": "2026-02-12"}]}
+    m = b.timeline_record(more)
+    check(m["h4_filed"] == "2026-03-01" and m["h4_approved"] == "2026-06-01" and m["h4_ead_filed"] == "2026-03-01"
+          and m["h4_ead_approved"] == "2026-07-01" and m["h4_ead_route"] == "with-i539", "a spouse's H-4 papers")
+    check(m["i485_rfe_issued"] == "2026-09-01" and m["i485_rfe_answered"] == "2026-09-20", "an RFE on the I-485 from the more list")
+    check(m["i140_rfe_issued"] == "2026-02-05" and m["i140_rfe_answered"] == "2026-02-12" and m["i140_rfe"] == "rfe",
+          "of two I-140 RFEs, the later one, which the decision follows")
+    only485 = b.timeline_record({**tl, "rfeForm": None, "rfeIssuedOn": None, "rfeRespondedOn": None,
+                                 "moreRfes": [{"form": "i485", "issuedOn": "2026-09-01"}]})
+    check(only485.get("i140_rfe") is None and only485["i485_rfe_issued"] == "2026-09-01"
+          and only485.get("i485_rfe_answered") is None, "an RFE only on the I-485 says nothing about the I-140")
+    check(b.build_cases({"timelines": [more]})[1]["left_out"] == 0, "the merge reads every new field")
+
+    # Every consulate report, every kind of visa, as the reports' own figures read it (the merge takes only the
+    # employment ones, through `consular`).
+    rep = b.report_row({"post": "manila", "category": "k1", "mode": "interview", "outcome": "221g",
+                        "nvcCompleteMonth": "2026-08", "scheduledOn": "2026-10-01", "interviewOn": "2026-11-03",
+                        "holdReason": "public-charge", "updatedAt": 1795118400000})
+    check(rep == {"post": "manila", "category": "k1", "mode": "interview", "line": None, "outcome": "221g",
+                  "nvc_month": "2026-08", "scheduled": "2026-10-01", "interview": "2026-11-03", "approved": None,
+                  "resolved": None, "hold_reason": "public-charge", "cancelled_by": None, "saved": "2026-11-19"},
+          f"a report row keeps what its figures read, and the Eastern day it was saved: {rep}")
+    lists = b.export_lists({"ok": True, "timelines": [], "consular": [], "cases": [], "reports": [{"post": "manila"}]})
+    check(lists["reports"] == [{"post": "manila"}], "the export's reports list")
+    old = b.export_lists({"ok": True, "timelines": [], "consular": []})
+    check("reports" not in old and old["app"] == [], "a Convex deployment older than the list sends none, and none is made up")
+    try:
+        b.export_lists({"ok": True, "timelines": [], "consular": [], "reports": "x"})
+        check(False, "refuses a reports list that isn't one")
+    except RuntimeError:
+        check(True, "refuses a reports list that isn't one")
+
     # A case saved in the app by an account that chose to count it: dates only, counted, never listed.
     app = {"id": "k1", "updatedAt": 1795118400000, "pwdFilingDate": "2025-01-10", "pwdDeterminationDate": "2025-07-01",
            "eta9089FilingDate": "2025-10-01", "eta9089AuditDate": "2026-01-20", "eta9089CertificationDate": "2026-06-15",
@@ -197,6 +236,25 @@ def main() -> int:
     b.write(db, [b.case_row(c, 9) for c in two[:1]], force=True)
     check(int(query_rows(db, "SELECT count(*) FROM reported_cases")[0][0]) == 1, "a case gone from the build is deleted")
     db.pipeline = real
+
+    # The consulate reports' figures are summaries like the rest (D7): one for every consulate, one per consulate with a
+    # report, one for a consulate with none. A Convex deployment that sent no reports list leaves the stored ones alone.
+    import datetime as dt
+    today = dt.date(2026, 11, 19)
+    reps = [b.report_row({"post": "manila", "category": "h1b", "outcome": "issued", "interviewOn": "2026-11-03",
+                          "updatedAt": 1795118400000})]
+    bodies = b.summary_rows(b.build_cases({"sheets": [sheet_row()]})[0], today, reps)
+    check({"reports:all", "reports:manila", "reports:_none"} <= set(bodies), f"the reports' summaries: {sorted(bodies)}")
+    check(not any(k.startswith("reports:") for k in b.summary_rows([], today, None)), "no reports list, no reports summaries")
+    db2 = SqliteTurso()
+    b.write_summaries(db2, bodies)
+    b.write_summaries(db2, {"all": bodies["all"]}, keep=("reports:",))
+    kept = {r[0] for r in query_rows(db2, "SELECT key FROM reported_summary")}
+    check({"all", "reports:all", "reports:manila"} <= kept and not any(k.startswith("office:") for k in kept),
+          f"a build without the reports keeps the stored ones and drops the rest it didn't make: {sorted(kept)}")
+    check(b.refreshed_posts({"post:mumbai", "reports:manila", "reports:all", "reports:_none", "office:SFV", "all"})
+          == ["manila", "mumbai"], "the consulates whose figures moved, never the summaries of every consulate")
+    check([len(x) for x in b.chunks(list(range(450)), 200)] == [200, 200, 50], "a long list goes in calls of 200")
 
     # A bad row from one source is counted and left out, never allowed to stop the build.
     cases, counts = b.build_cases({"sheets": [sheet_row(), sheet_row(row_no=3, transfer_date="9/24/2026")]})
