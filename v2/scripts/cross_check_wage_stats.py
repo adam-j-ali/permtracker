@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import sys
 import pathlib
+import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from lib_db import Database, query_dicts  # noqa: E402
@@ -61,6 +62,11 @@ P50 = (
 
 
 def main() -> int:
+    # --max-seconds N: print each read's time and stop at the first slower than N, the rule for a first run on the
+    # live database (Nov 25 2026: its reads were never timed, so no timer could run it).
+    limit = None
+    if "--max-seconds" in sys.argv:
+        limit = float(sys.argv[sys.argv.index("--max-seconds") + 1])
     t = Database()
     pre = query_dicts(
         t,
@@ -78,6 +84,7 @@ def main() -> int:
         if r["fiscal_year"] != "all":
             year_clause = " AND fiscal_year = ?"
             args.append(r["fiscal_year"])
+        started = time.monotonic()
         live = query_dicts(
             t,
             f"""WITH f AS (
@@ -92,6 +99,12 @@ def main() -> int:
         )[0]
 
         label = f"{r['soc_code']} FY{r['fiscal_year']}"
+        took = time.monotonic() - started
+        if limit is not None:
+            print(f"  {label}: {took:.2f} s")
+            if took > limit:
+                print(f"STOPPED: {label} took {took:.2f} s, over {limit:g} s; no more reads")
+                return 3
         if live["n"] is None or int(live["n"]) == 0:
             # The materialised row survives a cohort leaving the window. That
             # is expected, not a defect.
