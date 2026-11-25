@@ -8,7 +8,9 @@ Oct 1; the staleness audit read a Convex function deleted Oct 1 and printed
 "skipped" while passing), and the browser flows had gone stale.
 
 A check here is a file whose job is to find something wrong: scripts/audit_*,
-scripts/check_*, the phone sweep, the browser flows, and the server's own jobs.
+scripts/check_*, the backtests (scripts/backtest_*) and cross-checks
+(scripts/cross_check_*), the phone sweep, the browser flows, and the server's
+own jobs.
 Each must be named by a runner (a workflow, scripts/check.sh,
 scripts/page_checks.py, a server unit or script, the cron dispatcher's table)
 or be listed in HAND_ONLY with the reason it runs by hand. Adding a check
@@ -45,6 +47,15 @@ HAND_ONLY = {
     "scripts/oracle/bin/permtracker-db-stats": "prints the database's costliest statements for a person reading them",
     "run-e2e-tests.sh": "starts a local server and runs the browser flows against it; the same flows run each "
     "morning against the live site (scripts/page_checks.py)",
+    "scripts/backtest_models.py": "research: ranks every completion model on the twenty or so matured cohorts for a "
+    "person to read, with no pass or fail; the estimators' own backtests run with each sweep",
+    "scripts/backtest_pace.py": "research: measures the pace formula against matured cohorts for a person to read, "
+    "with no pass or fail; run again when the queue estimate's model changes",
+    "scripts/backtest_wage_links.ts": "asks about every decided case, so it reads a local copy of the database only; "
+    "run again when src/lib/wageLink.ts's rules change, since it sets MOST_LIKELY",
+    "scripts/cross_check_wage_stats.py": "fails on a real divergence, but its 25 percentile reads of perm_cases haven't "
+    "been timed on the live database, which comes before any timer runs them; its place is after "
+    "db_migrate_public.py in perm-disclosure-ingest.yml",
 }
 
 
@@ -84,6 +95,11 @@ def checks() -> list[str]:
         *V2.glob("scripts/audit_*.py"),
         *V2.glob("scripts/audit_*.mjs"),
         *V2.glob("scripts/check_*.py"),
+        # The backtests score an estimate against cases already decided, and the cross-checks hold one figure
+        # against a second source or a second route to it.
+        *V2.glob("scripts/backtest_*.py"),
+        *V2.glob("scripts/backtest_*.ts"),
+        *V2.glob("scripts/cross_check_*.py"),
         V2 / "scripts" / "phone_sweep.mjs",
         V2 / "scripts" / "page_checks.py",
         # The whole site's weekly audit, a seventh of the sitemap a night on the server.
