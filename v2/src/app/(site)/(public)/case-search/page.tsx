@@ -66,12 +66,12 @@ export default async function CaseSearchPage() {
     getLcaSummary().catch(softFail("case-search/page.getLcaSummary", null)),
     getLcaDisclosureSummary().catch(softFail("case-search/page.getLcaDisclosureSummary", null)),
     getSeasonalSummary().catch(softFail("case-search/page.getSeasonalSummary", null)),
-    getSeasonalPublishedSummary().catch(softFail("case-search/page.getSeasonalPublishedSummary", [])),
-    getPermHistory().catch(softFail("case-search/page.getPermHistory", { years: [], byState: [] })),
+    getSeasonalPublishedSummary().catch(softFail("case-search/page.getSeasonalPublishedSummary", null)),
+    getPermHistory().catch(softFail("case-search/page.getPermHistory", null)),
     getCaseFieldOptions(),
   ]);
   // DOL's FY2008 to FY2023 files, held in their own table; empty until loaded.
-  const historyYears = history.years;
+  const historyYears = history?.years ?? [];
   const historyTotal = historyYears.reduce((n, y) => n + y.total, 0);
   const firstYear = historyYears.at(-1)?.fiscalYear ?? null;
 
@@ -88,10 +88,8 @@ export default async function CaseSearchPage() {
       // search reads. `perm_live_recent` holds only cases `perm_cases` does
       // not, and the history table's rows are cases decided before the
       // current table's first file, so the three cannot double-count.
-      n:
-        permMeta || permLive || historyTotal
-          ? (permMeta?.totalCases ?? 0) + (permLive?.total ?? 0) + historyTotal
-          : null,
+      // Every part or none: a part whose read failed would drop its cases from the sum unseen (Nov 25 2026).
+      n: permMeta && permLive && history ? permMeta.totalCases + permLive.total + historyTotal : null,
       href: "/perm-cases",
       swatch: "bg-foreground",
     },
@@ -99,7 +97,7 @@ export default async function CaseSearchPage() {
       key: "pwd",
       label: "Wage requests",
       prefixes: ["P-100 to P-203"],
-      n: pwd && pwdFile ? pwd.total + pwdFile.rows : (pwd?.total ?? pwdFile?.rows ?? null),
+      n: pwd && pwdFile ? pwd.total + pwdFile.rows : null,
       href: "/pwd-cases",
       // The wage request is the timeline's PWD stage, and wears its colour.
       swatch: "bg-stage-pwd",
@@ -108,7 +106,7 @@ export default async function CaseSearchPage() {
       key: "lca",
       label: "H-1B LCAs",
       prefixes: ["I-200 to I-203"],
-      n: lca && lcaFile ? lca.total + lcaFile.rows : (lca?.total ?? lcaFile?.rows ?? null),
+      n: lca && lcaFile ? lca.total + lcaFile.rows : null,
       href: "/lca-cases",
       swatch: "text-foreground bg-hatch",
     },
@@ -116,9 +114,7 @@ export default async function CaseSearchPage() {
       key: "seasonal",
       label: "H-2A, H-2B and CW-1",
       prefixes: ["H-300", "JO-A-300", "H-400", "P-400", "C-500", "P-500"],
-      n: seasonal || seasonalFiles.length
-        ? (seasonal?.total ?? 0) + seasonalFiles.reduce((n, f) => n + f.summary.rows, 0)
-        : null,
+      n: seasonal && seasonalFiles ? seasonal.total + seasonalFiles.reduce((n, f) => n + f.summary.rows, 0) : null,
       href: "/seasonal-cases",
       swatch: "bg-data-none",
     },
@@ -131,7 +127,7 @@ export default async function CaseSearchPage() {
   // once (a case the current table also holds is counted there), and the two
   // add here with no read of either table. Without the current counts there's
   // no list, as before: the older half alone would undercount every state.
-  const stateOptions = (permMeta ? sumStateCounts(permMeta.byState, history.byState) : [])
+  const stateOptions = (permMeta ? sumStateCounts(permMeta.byState, history?.byState ?? []) : [])
     .filter((s) => s.state)
     .map((s) => ({ code: s.state, total: s.total }));
   // The current file's years and the history table's, one list: a year is in
