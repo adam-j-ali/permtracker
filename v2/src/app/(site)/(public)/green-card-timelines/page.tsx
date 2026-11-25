@@ -329,7 +329,7 @@ export default async function GreenCardTimelinesPage() {
             </div>
           </section>
 
-          <ReportedOverview overview={reported} />{" "}
+          <ReportedOverview overview={reported} counted={summary?.headline.cases ?? null} />{" "}
 
           {board ? (
           <>

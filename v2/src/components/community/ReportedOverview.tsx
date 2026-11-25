@@ -13,8 +13,20 @@ import { KeepWhole } from "@/components/ui/keep-whole";
  * people, how many were in more than one place, where they were reported, and where each slice lives on the site.
  * The timelines shared here stay the page's own checked board below it.
  */
-export function ReportedOverview({ overview }: { overview: Overview | null }) {
+export function ReportedOverview({
+  overview,
+  counted = null,
+}: {
+  overview: Overview | null;
+  /**
+   * Every case the step figures count (the summary's headline): the listed ones here plus the timelines and saved cases
+   * their owners shared privately. Two counts that both said "each person once" read as a mistake (Nov 25 2026), so the
+   * gap is named.
+   */
+  counted?: number | null;
+}) {
   if (!overview || overview.people === 0) return null;
+  const unlisted = counted !== null && counted > overview.people ? counted - overview.people : 0;
   const offices = overview.offices.flatMap((o) => {
     const office = officeByCode(o.office);
     const href = officeHref(o.office);
@@ -36,9 +48,12 @@ export function ReportedOverview({ overview }: { overview: Overview | null }) {
       <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
         People report their own dates in many places. These are all of them we read, each person counted once: two
         reports join only when three of their dates match. Only the timelines shared here are checked.
+        {unlisted > 0
+          ? ` The step figures above also count ${formatInt(unlisted)} more, timelines and saved cases their owners shared privately, which are never listed.`
+          : ""}
       </p>{" "}
       <FigureRow className="mt-5">
-        <Figure kind="community" label="People's cases" value={formatInt(overview.people)} note="every source, each person once" />
+        <Figure kind="community" label="People's cases" value={formatInt(overview.people)} note="listed, every source, each person once" />
         <Figure kind="community"
           label="I-485s at a USCIS office"
           value={formatInt(offices.reduce((n, o) => n + o.cases, 0))}

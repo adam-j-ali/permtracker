@@ -43,6 +43,14 @@ describe("every case people reported, at a glance", () => {
     for (const name of ["VisaStats", "Reddit", "San Fernando Filers", "Shared here"]) expect(text).toContain(name);
   });
 
+  it("names the cases the figures count that aren't listed, so two 'each person once' counts don't read as a mistake", () => {
+    const people = overview.people;
+    const withGap = render(<ReportedOverview overview={overview} counted={people + 442} />).container.textContent ?? "";
+    expect(withGap).toContain("also count 442 more, timelines and saved cases their owners shared privately");
+    const even = render(<ReportedOverview overview={overview} counted={people} />).container.textContent ?? "";
+    expect(even).not.toContain("also count");
+  });
+
   it("shows nothing before the first build or with no cases", () => {
     expect(render(<ReportedOverview overview={null} />).container.textContent).toBe("");
     expect(render(<ReportedOverview overview={{ ...overview, people: 0 }} />).container.textContent).toBe("");
