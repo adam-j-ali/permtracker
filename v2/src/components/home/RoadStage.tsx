@@ -6,7 +6,7 @@ import { useCallback, useRef, type CSSProperties, type FocusEvent } from "react"
 import { SiteImage } from "@/components/ui/site-image";
 import { goToStep, useScrollStage, type StagePlace } from "@/components/scroll/useScrollStage";
 import { HOME_WIDTH } from "./homeWidth";
-import { keepWhole } from "@/components/ui/keep-whole";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The road as a scroll stage (PREVIEW, Oct 21 2026). One DOM for every mode:
@@ -185,7 +185,7 @@ export function RoadStage({ stops }: { stops: RoadStop[] }) {
         </div>{" "}
         {/* The road draws the I-485 route; the consulate is the other way to the same card (Batch 8, Nov 25 2026). */}
         <p className="mt-6 text-base text-soft">
-          Living abroad? The green card comes through a US consulate instead of the I-485.{" "}
+          <KeepWhole>{"Living abroad? The green card comes through a US consulate instead of the I-485."}</KeepWhole>{" "}
           <Link href="/consular-posts" className="link font-bold">
             The consulate route
           </Link>
