@@ -251,6 +251,7 @@ import type * as lib_socCode from "../lib/socCode.js";
 import type * as lib_spamCheck from "../lib/spamCheck.js";
 import type * as lib_supportEmailForward from "../lib/supportEmailForward.js";
 import type * as lib_suspension from "../lib/suspension.js";
+import type * as lib_tableRetention from "../lib/tableRetention.js";
 import type * as lib_textFooter from "../lib/textFooter.js";
 import type * as lib_throttleReply from "../lib/throttleReply.js";
 import type * as lib_time from "../lib/time.js";
@@ -559,6 +560,7 @@ declare const fullApi: ApiFromModules<{
   "lib/spamCheck": typeof lib_spamCheck;
   "lib/supportEmailForward": typeof lib_supportEmailForward;
   "lib/suspension": typeof lib_suspension;
+  "lib/tableRetention": typeof lib_tableRetention;
   "lib/textFooter": typeof lib_textFooter;
   "lib/throttleReply": typeof lib_throttleReply;
   "lib/time": typeof lib_time;
