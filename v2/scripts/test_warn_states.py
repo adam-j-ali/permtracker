@@ -26,6 +26,7 @@ import warnings
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+from lib_days import today_et  # noqa: E402 - the code's own Eastern day
 import ingest_warn as iw  # noqa: E402
 import lib_gov_data  # noqa: E402
 import lib_warn as lw  # noqa: E402
@@ -541,7 +542,7 @@ def main() -> int:
         check(lw.parse_int(raw) == want, f"parse_int({raw!r}) is {want}", f)
     check(lw.as_of_date("2026-10") == "2026-10-01" and lw.as_of_date("2026-10-21") == "2026-10-21",
           "a month reads as its first day for the freshness check", f)
-    check(iw.stamp_date("2999-01-01") == dt.date.today().isoformat(), "a notice dated ahead never stamps freshness past today", f)
+    check(iw.stamp_date("2999-01-01") == today_et().isoformat(), "a notice dated ahead never stamps freshness past today", f)
 
     # --- a refusal is told from a defect -------------------------------------------------
     check(lw.is_unreachable(urllib.error.URLError("reset")) and lw.is_unreachable(TimeoutError()),
@@ -769,7 +770,7 @@ def main() -> int:
         listed = ws.parse_job_center("AZ", b("az_search.html"))
         ws.HELD["lookup"] = lambda st: {listed[0]["id"]: {"employees": 31}} if st == "AZ" else {}
         ws.JC_DETAIL_SECONDS = -1
-        off = (dt.date.today().weekday() - ws.walk_day("AZ")) % 7 != 0
+        off = (today_et().weekday() - ws.walk_day("AZ")) % 7 != 0
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
             rows = ws.load_job_center("AZ")(None)

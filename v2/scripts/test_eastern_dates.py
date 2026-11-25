@@ -16,9 +16,11 @@ SERVER_CLOCK = re.compile(r"date\.today\(\)|time\.localtime\(|time\.strftime\(\"
 
 
 def scripts() -> list[pathlib.Path]:
-    """Every data script and server script; the tests are left out (a fixture may pin a day)."""
-    found = [p for p in sorted(HERE.glob("*.py")) if not p.name.startswith("test_")]
-    found += [p for p in sorted((HERE / "oracle").rglob("*.py")) if not p.name.startswith("test_")]
+    """Every data script, server script and test. Tests joined Nov 24 2026: test_warn_states compared the code's Eastern
+    day with the machine's, and failed every evening on GitHub's UTC clock. A test that pins a day writes the date out;
+    only this file, whose probe holds the patterns on purpose, is left out."""
+    found = [p for p in sorted(HERE.glob("*.py")) if p.name != "test_eastern_dates.py"]
+    found += [p for p in sorted((HERE / "oracle").rglob("*.py"))]
     return found
 
 

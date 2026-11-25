@@ -31,6 +31,7 @@ import re
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from lib_days import today_et  # noqa: E402 - the code's own Eastern day
 
 import check_ingest_health as health  # noqa: E402
 import daily_monitor as dm  # noqa: E402
@@ -351,7 +352,7 @@ def main() -> int:
             raise AssertionError("unexpected sql: " + sql[:60])
 
     def code(days_ago):
-        d = _dt.date.today() - _dt.timedelta(days=days_ago)
+        d = today_et() - _dt.timedelta(days=days_ago)
         return f"{d.year % 100:02d}{d.timetuple().tm_yday:03d}"
 
     check("frontier: a missing cursor doc fails", health.check_frontier(DocDB(None)) == 1)
@@ -889,7 +890,7 @@ def check_main_combines_every_check() -> None:
 
     class FreshDB:
         def execute(self, sql, args=None):
-            today = datetime.date.today().isoformat()
+            today = today_et().isoformat()
             return {"response": {"result": {"rows": [[
                 {"type": "text", "value": "perm-case-status"}, {"type": "text", "value": today},
                 {"type": "integer", "value": "3"}, {"type": "text", "value": "DOL"},
@@ -928,7 +929,7 @@ def check_freshness_rows_read_plainly() -> None:
     import contextlib
     import io
 
-    today = datetime.date.today()
+    today = today_et()
     # Past the quarterly file's budget (lib_db.QUARTERLY_FILE_MAX_AGE_DAYS), which holds whatever a row was stamped
     # with: the row below still carries the 135 that warned on Nov 17 2026 at 140 days.
     old = (today - datetime.timedelta(days=health.QUARTERLY_FILE_MAX_AGE_DAYS + 10)).isoformat()
@@ -982,7 +983,7 @@ def check_layoff_lists_wait_on_employers() -> None:
     import contextlib
     import io
 
-    today = datetime.date.today()
+    today = today_et()
     quiet_since = (today - datetime.timedelta(days=60)).isoformat()
     recent = str(int(NOW) - 86_400_000)
     stopped = str(int(NOW) - 70 * 86_400_000)
@@ -1050,7 +1051,7 @@ def check_no_maximum_age_is_never_stale() -> None:
     import contextlib
     import io
 
-    long_ago = (datetime.date.today() - datetime.timedelta(days=400)).isoformat()
+    long_ago = (today_et() - datetime.timedelta(days=400)).isoformat()
     a_year_ago_ms = str(int(NOW) - 365 * 86_400_000)
 
     def say(rows) -> tuple[int, str]:
