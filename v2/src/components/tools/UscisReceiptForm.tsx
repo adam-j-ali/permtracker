@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 
-import { RECEIPT_SHAPE_MESSAGE, normaliseReceipt } from "@/lib/uscis/receipt";
+import { readPartialReceipt, type PartialReceipt } from "@/lib/uscis/receipt";
 import { buttonVariants } from "@/components/ui/button";
 import { KeepWhole } from "@/components/ui/keep-whole";
 
@@ -14,6 +14,11 @@ import { KeepWhole } from "@/components/ui/keep-whole";
  * off. The client half does one thing: says the shape is wrong BEFORE a round
  * trip, and says when the thing typed is a DOL number that belongs on the
  * other page. Neither hint blocks submission; the server is the authority.
+ *
+ * Since Nov 25 2026 it reads the number as it's typed (readPartialReceipt): the office from three letters, the fiscal
+ * year and the series as they arrive, the first character that can't belong by its position, a one-tap fix for the
+ * usual typos, and an A-number told apart. A strip under the box shows the number in its parts; the line above it
+ * says the same in words, for anyone who can't see the strip.
  */
 
 export interface UscisReceiptFormProps {
@@ -30,6 +35,33 @@ export interface UscisReceiptFormProps {
 /** A DOL FLAG number: letter, dash, digits. Never a USCIS receipt. */
 const DOL_SHAPE = /^[A-Z]-\d/i;
 
+/** What the characters typed so far say, in one line. The day digits wait for the result, where their caveat is. */
+function readingLine(r: PartialReceipt): string {
+  if (!r.prefix) return "A receipt number is three letters, then ten digits.";
+  const parts = [r.office ? r.office.name : `${r.prefix}, letters USCIS doesn't list`];
+  if (r.series === "online") parts.push("filed online");
+  if (r.fiscalYear !== null) parts.push(`fiscal year ${r.fiscalYear}`);
+  if (r.series === "lockbox") parts.push("a lockbox number");
+  const left = r.remaining > 0 ? ` ${r.remaining} more ${r.remaining === 1 ? "digit" : "digits"}.` : " Look it up for the rest.";
+  return `${parts.join(", ")}.${left}`;
+}
+
+function problemLine(r: PartialReceipt): string | null {
+  if (!r.problem) return null;
+  if (r.problem.expected === "end") return `That's ${r.typed.length} characters. A receipt number has 13.`;
+  return `Character ${r.problem.position} should be a ${r.problem.expected}.`;
+}
+
+/** The number in its parts as far as it's right, each part padded to its length so what's left shows. */
+function segments(r: PartialReceipt): { chars: string; size: number; label: string }[] {
+  const good = r.problem ? r.typed.slice(0, r.problem.position - 1) : r.typed;
+  const part = (from: number, size: number, label: string) => ({ chars: good.slice(from, from + size), size, label });
+  if (r.series === "online") return [part(0, 3, "Office"), part(3, 10, "Online count")];
+  const start = [part(0, 3, "Office"), part(3, 2, "Year")];
+  if (r.series === "lockbox") return [...start, part(5, 8, "Lockbox count")];
+  return [...start, part(5, 3, "Day"), part(8, 5, "Sequence")];
+}
+
 export function UscisReceiptForm({ defaultValue = "", className, live = false }: UscisReceiptFormProps) {
   const inputId = useId();
   const helpId = useId();
@@ -39,7 +71,11 @@ export function UscisReceiptForm({ defaultValue = "", className, live = false }:
 
   const typed = value.trim();
   const isDol = edited && DOL_SHAPE.test(typed);
-  const malformed = edited && typed.length > 0 && !isDol && normaliseReceipt(typed) === null;
+  const reading = readPartialReceipt(typed);
+  const showReading = edited && typed.length > 0 && !isDol;
+  const aNumber = showReading && reading.otherKind === "a-number";
+  const problem = showReading && !aNumber ? problemLine(reading) : null;
+  const malformed = problem !== null || aNumber;
 
   return (
     <form method="get" action="/uscis-case-status" className={className}>
@@ -54,7 +90,7 @@ export function UscisReceiptForm({ defaultValue = "", className, live = false }:
           id={inputId}
           name="receipt"
           type="text"
-          defaultValue={defaultValue}
+          value={value}
           onChange={(e) => {
             setValue(e.target.value);
             setEdited(true);
@@ -76,14 +112,49 @@ export function UscisReceiptForm({ defaultValue = "", className, live = false }:
           Look it up
         </button>
       </div>{" "}
-      <p id={helpId} className="mt-2 text-sm text-muted-foreground">
+      {showReading && !aNumber && reading.typed.length > 0 ? (
+        <div aria-hidden="true" className="mt-3 flex flex-wrap gap-2">
+          {segments(reading).map((s) => (
+            <span key={s.label} className="inline-flex flex-col items-start">
+              {" "}
+              <span className="border-2 border-border bg-background px-2 py-1 font-mono text-base tracking-[0.2em]">
+                {s.chars.padEnd(s.size, "·")}
+              </span>{" "}
+              <span className="mt-1 text-sm text-muted-foreground">{s.label}</span>
+            </span>
+          ))}
+        </div>
+      ) : null}{" "}
+      <p id={helpId} className="mt-2 text-sm text-muted-foreground" aria-live="polite">
         {isDol ? (
           <span className="font-bold text-data-warn-ink">
             That&apos;s a Department of Labor number. Submitting takes you to the
             PERM case page, which reads it.
           </span>
-        ) : malformed ? (
-          <span className="font-bold text-data-bad-ink">{RECEIPT_SHAPE_MESSAGE}</span>
+        ) : aNumber ? (
+          <span className="font-bold text-data-warn-ink">
+            <KeepWhole>
+              {"That's an A-number, the number USCIS gives a person. A receipt number names one case: three " +
+                "letters and ten digits, at the top of the I-797 notice."}
+            </KeepWhole>
+          </span>
+        ) : problem ? (
+          <>
+            <span className="font-bold text-data-bad-ink">{problem}</span>{" "}
+            {reading.suggestion ? (
+              <button
+                type="button"
+                onClick={() => setValue(reading.suggestion ?? value)}
+                className="link inline-flex min-h-11 items-center font-bold"
+              >
+                Use {reading.suggestion}
+              </button>
+            ) : (
+              <><KeepWhole>{"A receipt number is three letters and ten digits, at the top of the I-797 notice."}</KeepWhole></>
+            )}
+          </>
+        ) : showReading ? (
+          <span className="font-bold text-foreground">{readingLine(reading)}</span>
         ) : live ? (
           <>
             <KeepWhole>

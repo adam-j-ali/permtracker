@@ -19,17 +19,29 @@ describe("SavedReceipts", () => {
     expect(container.textContent).toBe("");
   });
 
-  it("saves the receipt on the page with an optional name, and links it back", async () => {
+  it("saves the receipt on the page by itself, links it back, and takes a name after (Nov 25 2026)", async () => {
     render(<SavedReceipts current="EAC2190123456" />);
     await act(async () => {});
-    fireEvent.change(screen.getByLabelText(/A name for EAC2190123456/), { target: { value: "Mum's EAD" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save EAC2190123456" }));
     expect(screen.getByRole("link", { name: "EAC2190123456" }).getAttribute("href")).toBe(
       "/uscis-case-status?receipt=EAC2190123456",
     );
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY)!)).toEqual([{ receipt: "EAC2190123456", label: "" }]);
+    fireEvent.change(screen.getByLabelText(/A name for EAC2190123456/), { target: { value: "Mum's EAD" } });
+    fireEvent.click(screen.getByRole("button", { name: "Name it, EAC2190123456" }));
     expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY)!)).toEqual([{ receipt: "EAC2190123456", label: "Mum's EAD" }]);
-    // Saved already: no second save offer.
-    expect(screen.queryByRole("button", { name: /Save / })).toBeNull();
+    // Named already: no second offer, and nothing to save by hand.
+    expect(screen.queryByRole("button", { name: /^Name it/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Save / })).toBeNull();
+  });
+
+  it("puts the newest receipt first and doesn't add one twice", async () => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([{ receipt: "IOE0912345678", label: "Mine" }]));
+    const { unmount } = render(<SavedReceipts current="eac 2190123456" />);
+    await act(async () => {});
+    unmount();
+    render(<SavedReceipts current="EAC2190123456" />);
+    await act(async () => {});
+    expect(readSaved().map((s) => s.receipt)).toEqual(["EAC2190123456", "IOE0912345678"]);
   });
 
   it("removes a receipt", async () => {
@@ -68,7 +80,6 @@ describe("SavedReceipts", () => {
     try {
       render(<SavedReceipts current="EAC2190123456" />);
       await act(async () => {});
-      fireEvent.click(screen.getByRole("button", { name: "Save EAC2190123456" }));
       expect(screen.getByRole("status").textContent).toMatch(/isn't letting the page save/);
       expect(screen.getByRole("link", { name: "EAC2190123456" })).toBeInTheDocument();
     } finally {

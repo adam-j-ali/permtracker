@@ -34,6 +34,7 @@ import { KIND_NOUN } from "@/lib/search/suggestTypes";
 // one module: `caseNumberShape` is the client-side wide form (G- and A-, and
 // by shape the P- and I- numbers that share the current layout).
 import { normaliseCaseNumber } from "@/lib/caseNumberShape";
+import { normaliseReceipt } from "@/lib/uscis/receipt";
 import type { EntityPayload } from "@/lib/entityPayload";
 import { trackPaletteSelected } from "@/lib/funnelEvents";
 import { SEARCH_TEXT_MAX } from "@/lib/search/limits";
@@ -144,13 +145,15 @@ export function SearchPalette({
   // staticIndex takes no arguments.
   const pages = React.useMemo(() => staticIndex(), []);
   const caseNumber = normaliseCaseNumber(query);
+  // A USCIS receipt typed here goes to its own page, which reads it and saves it in this browser (Nov 25 2026).
+  const receipt = caseNumber ? null : normaliseReceipt(query);
   const month = looksLikeMonth(query);
   // The closest employer, firm and occupation names, asked for only once the
   // exact lookup has come back with none.
   const { suggestions, loading: suggesting } = useNameSuggestions(
     "all",
     query,
-    !caseNumber && !month && !searchingEntities && !entityError && entityHits.length === 0 && query.trim().length >= 3,
+    !caseNumber && !receipt && !month && !searchingEntities && !entityError && entityHits.length === 0 && query.trim().length >= 3,
   );
 
   /**
@@ -204,7 +207,7 @@ export function SearchPalette({
   React.useEffect(() => {
     if (!open) return;
     const q = query.trim();
-    if (q.length < 2 || caseNumber || month) {
+    if (q.length < 2 || caseNumber || receipt || month) {
       setEntityHits([]);
       // `setSearchingEntities(false)` HAS TO BE ON THIS PATH TOO. It was not,
       // and the flag is only ever set true by the branch below - so typing
@@ -278,7 +281,7 @@ export function SearchPalette({
       cancelled = true;
       clearTimeout(t);
     };
-  }, [query, open, caseNumber, month]);
+  }, [query, open, caseNumber, receipt, month]);
 
   // Escape closes, Tab stays inside, and focus goes back where it came from.
   //
@@ -465,6 +468,16 @@ export function SearchPalette({
               className={ACTION_ROW}
             >
               Check case {caseNumber}: live status and estimate
+            </Command.Item>
+          ) : null}
+          {receipt ? (
+            <Command.Item
+              forceMount
+              value={`receipt ${receipt}`}
+              onSelect={() => go(`/uscis-case-status?receipt=${encodeURIComponent(receipt)}`, `receipt ${receipt}`, receipt)}
+              className={ACTION_ROW}
+            >
+              Look up USCIS receipt {receipt}: what it says
             </Command.Item>
           ) : null}
           {month ? (

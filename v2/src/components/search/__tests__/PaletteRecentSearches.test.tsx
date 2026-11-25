@@ -92,6 +92,17 @@ describe("the site palette's recent searches", () => {
     ]);
   });
 
+  it("offers a USCIS receipt its own row, and never keeps it among recent searches (Nov 25 2026)", async () => {
+    const user = userEvent.setup();
+    render(<SearchPalette open onOpenChange={noop} />);
+
+    await user.type(screen.getByRole("combobox"), "lin 2604214850");
+    const row = screen.getByRole("option", { name: /Look up USCIS receipt LIN2604214850/ });
+    await user.click(row);
+
+    expect(readRecentSearches()).toEqual([]);
+  });
+
   it("keeps a page found by typing, and not a page picked with nothing typed", async () => {
     const user = userEvent.setup();
     const { unmount } = render(<SearchPalette open onOpenChange={noop} />);

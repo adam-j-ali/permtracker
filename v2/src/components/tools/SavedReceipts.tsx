@@ -16,6 +16,9 @@ import { keepWhole } from "@/components/ui/keep-whole";
  * this site never sees it. Storage can be blocked or empty (a private window,
  * cleared site data), so every read and write is guarded and the page works
  * the same without it.
+ *
+ * A receipt that reaches the page joins the list by itself, newest first (Nov 25 2026): every box that takes one sends
+ * it here, so a receipt typed anywhere on the site is saved. Naming it and removing it stay one tap away.
  */
 
 export const STORAGE_KEY = "pt.uscisReceipts.v1";
@@ -54,22 +57,31 @@ function write(list: SavedReceipt[]): boolean {
   }
 }
 
-const LINK = "link font-mono text-sm";
+// 44px tall like every tap target: the list shows by itself on a result page now, so a 20px link met every phone.
+const LINK = "link inline-flex min-h-11 items-center font-mono text-sm";
 const BUTTON = buttonVariants({ variant: "outline", size: "sm" });
 
 export function SavedReceipts({ current }: { current: string | null }) {
   const [list, setList] = useState<SavedReceipt[] | null>(null);
   const [label, setLabel] = useState("");
   const [blocked, setBlocked] = useState(false);
+  const receipt = current ? normaliseReceipt(current) : null;
 
   useEffect(() => {
-    setList(readSaved());
-  }, []);
+    const saved = readSaved();
+    if (receipt && !saved.some((s) => s.receipt === receipt)) {
+      const next = [{ receipt, label: "" }, ...saved].slice(0, MAX_SAVED);
+      setBlocked(!write(next));
+      setList(next);
+    } else {
+      setList(saved);
+    }
+  }, [receipt]);
 
   if (list === null) return null;
-  const receipt = current ? normaliseReceipt(current) : null;
-  const canSave = receipt !== null && !list.some((s) => s.receipt === receipt);
-  if (list.length === 0 && !canSave) return null;
+  const here = receipt ? list.find((s) => s.receipt === receipt) : undefined;
+  const canName = here !== undefined && here.label === "";
+  if (list.length === 0) return null;
 
   const update = (next: SavedReceipt[]) => {
     setBlocked(!write(next));
@@ -82,8 +94,8 @@ export function SavedReceipts({ current }: { current: string | null }) {
         Your receipt numbers
       </h2>{" "}
       <p className="mt-1 text-sm text-muted-foreground">
-        Kept in this browser only. This site never sees the list, and clearing the browser&apos;s site data
-        removes it.
+        Every receipt you look up here is added, so it&apos;s one tap away next time. Kept in this browser only: this
+        site never sees the list, and clearing the browser&apos;s site data removes it.
       </p>
       {list.length ? (
         <ul className="mt-3 divide-y divide-border/60">
@@ -108,12 +120,14 @@ export function SavedReceipts({ current }: { current: string | null }) {
           ))}
         </ul>
       ) : null}{" "}
-      {canSave && receipt ? (
+      {canName && receipt ? (
         <form
           className="mt-3 flex flex-wrap items-stretch gap-2"
           onSubmit={(e) => {
             e.preventDefault();
-            update([{ receipt, label: label.trim().slice(0, 40) }, ...list].slice(0, MAX_SAVED));
+            const name = label.trim().slice(0, 40);
+            if (!name) return;
+            update(list.map((s) => (s.receipt === receipt ? { ...s, label: name } : s)));
             setLabel("");
           }}
         >
@@ -128,14 +142,14 @@ export function SavedReceipts({ current }: { current: string | null }) {
             placeholder="A name, optional"
             className="min-h-[44px] min-w-0 flex-1 basis-48 border-2 border-input bg-background px-3 text-base focus:outline-none focus:ring-2 focus:ring-primary"
           />{" "}
-          <button type="submit" className={BUTTON}>
-            Save {receipt}
+          <button type="submit" className={BUTTON} aria-label={`Name it, ${receipt}`}>
+            Name it
           </button>
         </form>
       ) : null}{" "}
       {list.length >= MAX_SAVED ? (
         <p className="mt-2 text-sm text-muted-foreground">
-          The list keeps {MAX_SAVED}, so saving another drops the oldest.
+          The list keeps {MAX_SAVED}, so looking up another drops the oldest.
         </p>
       ) : null}{" "}
       {blocked ? (
