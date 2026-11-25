@@ -53,6 +53,7 @@ const ADJUSTMENT_ROWS: readonly Row[] = [
   { field: "i485BiometricsDate" },
   { field: "i485InterviewDate" },
   { field: "i485ApprovalDate" },
+  { field: "i485DenialDate" },
 ];
 
 const PERMIT_ROWS: readonly Row[] = [

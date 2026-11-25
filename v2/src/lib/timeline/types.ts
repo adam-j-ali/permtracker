@@ -170,6 +170,7 @@ export const MILESTONE_CONFIG: readonly MilestoneConfig[] = [
   { field: "i485BiometricsDate", label: "Fingerprints", stage: "i485" },
   { field: "i485InterviewDate", label: "I-485 interview", stage: "i485" },
   { field: "i485ApprovalDate", label: "I-485 approved", stage: "i485" },
+  { field: "i485DenialDate", label: "I-485 denied", stage: "i485" },
   { field: "eadFilingDate", label: "Work permit filed", stage: "i485" },
   { field: "eadApprovalDate", label: "Work permit approved", stage: "i485" },
   { field: "apFilingDate", label: "Travel document filed", stage: "i485" },
@@ -242,6 +243,7 @@ export interface CaseWithDates {
   i485BiometricsDate?: string | null;
   i485InterviewDate?: string | null;
   i485ApprovalDate?: string | null;
+  i485DenialDate?: string | null;
   eadFilingDate?: string | null;
   eadApprovalDate?: string | null;
   apFilingDate?: string | null;

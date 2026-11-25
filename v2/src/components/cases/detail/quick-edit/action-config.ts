@@ -341,7 +341,16 @@ export const ACTION_CONFIG: Record<NextActionName, ActionConfig> = {
 
   "Wait for I-485 decision": {
     type: "editable",
-    fields: [{ name: "i485ApprovalDate", label: "I-485 approval date", type: "date", placeholder: "Enter when approved" }],
+    fields: [
+      { name: "i485ApprovalDate", label: "I-485 approval date", type: "date", optional: true, placeholder: "Enter when approved" },
+      { name: "i485DenialDate", label: "I-485 denial date", type: "date", optional: true, placeholder: "Enter if denied" },
+    ],
+  },
+
+  "Plan the next step": {
+    type: "complex",
+    complexMessage: "Record a new I-485 filing, or choose the consulate, in the full edit form.",
+    linkToFullForm: true,
   },
 
   "Submit DS-260": {

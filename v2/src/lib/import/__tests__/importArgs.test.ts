@@ -86,6 +86,7 @@ const FULL: FullCaseData = {
   i485BiometricsDate: "2026-11-01",
   i485InterviewDate: "2027-03-01",
   i485ApprovalDate: "2027-04-01",
+  i485DenialDate: "2027-02-01",
   eadFilingDate: "2026-10-01",
   eadReceiptNumber: "IOE0000000002",
   eadApprovalDate: "2027-01-02",

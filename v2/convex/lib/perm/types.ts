@@ -191,6 +191,7 @@ export interface CaseData {
   i485_biometrics_date?: string | null;
   i485_interview_date?: string | null;
   i485_approval_date?: string | null;
+  i485_denial_date?: string | null;
   ead_filing_date?: string | null;
   ead_approval_date?: string | null;
   ap_filing_date?: string | null;

@@ -189,6 +189,7 @@ export interface ExportedCase {
   i485BiometricsDate?: string;
   i485InterviewDate?: string;
   i485ApprovalDate?: string;
+  i485DenialDate?: string;
   eadFilingDate?: string;
   eadReceiptNumber?: string;
   eadApprovalDate?: string;
@@ -334,6 +335,7 @@ export interface FullCaseData {
   i485BiometricsDate?: string;
   i485InterviewDate?: string;
   i485ApprovalDate?: string;
+  i485DenialDate?: string;
   eadFilingDate?: string;
   eadReceiptNumber?: string;
   eadApprovalDate?: string;
@@ -484,6 +486,7 @@ function transformFullCaseForExport(caseData: FullCaseData): ExportedCase {
     i485BiometricsDate: caseData.i485BiometricsDate,
     i485InterviewDate: caseData.i485InterviewDate,
     i485ApprovalDate: caseData.i485ApprovalDate,
+    i485DenialDate: caseData.i485DenialDate,
     eadFilingDate: caseData.eadFilingDate,
     eadReceiptNumber: caseData.eadReceiptNumber,
     eadApprovalDate: caseData.eadApprovalDate,
@@ -634,6 +637,8 @@ const FULL_CSV_COLUMNS = [
   "consularInterviewDate",
   "cardProducedDate",
   "cardReceivedDate",
+  // Added after the rest of v3, so every column before it stays where it was
+  "i485DenialDate",
 ] as const satisfies readonly (keyof ExportedCase)[];
 
 /** The CSV header row for the full export. */

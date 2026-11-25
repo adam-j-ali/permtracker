@@ -239,8 +239,10 @@ function getGreenCardSummary(values: Partial<CaseFormData>): string | undefined 
   if (filed) parts.push(`Filed ${filed}`);
   const received = fmtDate(values.cardReceivedDate);
   const approved = fmtDate(values.i485ApprovalDate);
+  const denied = fmtDate(values.i485DenialDate);
   if (received) parts.push(`Card received ${received}`);
   else if (approved) parts.push(`Approved ${approved}`);
+  else if (denied) parts.push(`Denied ${denied}`);
 
   return parts.length > 0 ? parts.join(" · ") : undefined;
 }

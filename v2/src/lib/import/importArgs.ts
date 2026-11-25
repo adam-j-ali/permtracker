@@ -87,6 +87,7 @@ export function toImportCaseArgs(c: Record<string, unknown>): ImportCaseArgs {
     i485BiometricsDate: pick("i485BiometricsDate"),
     i485InterviewDate: pick("i485InterviewDate"),
     i485ApprovalDate: pick("i485ApprovalDate"),
+    i485DenialDate: pick("i485DenialDate"),
     eadFilingDate: pick("eadFilingDate"),
     eadReceiptNumber: pick("eadReceiptNumber"),
     eadApprovalDate: pick("eadApprovalDate"),

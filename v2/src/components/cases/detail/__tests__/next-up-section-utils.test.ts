@@ -231,6 +231,17 @@ describe("calculateNextAction", () => {
       ).toBe("Wait for the card");
     });
 
+    it("after a denied I-485, asks for the next step instead of waiting on a decision already made", () => {
+      const denied = calculateNextAction({ ...approved, i485FilingDate: "2025-07-01", i485DenialDate: "2026-01-02" })!;
+      expect(denied.action).toBe("Plan the next step");
+      expect(denied.description).toMatch(/I-485 was denied/);
+      // An approval recorded later wins, as it does on the stage.
+      expect(
+        calculateNextAction({ ...approved, i485FilingDate: "2025-07-01", i485DenialDate: "2026-01-02", i485ApprovalDate: "2026-03-01" })!
+          .action,
+      ).toBe("Wait for the card");
+    });
+
     it("walks the consulate: the DS-260, the interview, the card", () => {
       expect(calculateNextAction({ ...approved, greenCardPath: "consular" })!.action).toBe("Submit DS-260");
       expect(calculateNextAction({ ...approved, ds260SubmittedDate: "2025-07-01" })!.action).toBe("Wait for the interview");

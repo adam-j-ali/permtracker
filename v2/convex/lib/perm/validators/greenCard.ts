@@ -13,6 +13,7 @@ export interface GreenCardValidationInput {
   i485_biometrics_date?: string | null;
   i485_interview_date?: string | null;
   i485_approval_date?: string | null;
+  i485_denial_date?: string | null;
   ead_filing_date?: string | null;
   ead_approval_date?: string | null;
   ap_filing_date?: string | null;
@@ -42,6 +43,7 @@ function day(value: string | null | undefined): string | null {
  * - V-GC-05: The consular interview can't be before the DS-260 went in
  * - V-GC-06: The card can't arrive before it was produced
  * - V-GC-07: A country is a two-letter country code
+ * - V-GC-08: The I-485's denial can't be before its filing
  */
 export function validateGreenCard(input: GreenCardValidationInput): ValidationResult {
   const errors: ValidationIssue[] = [];
@@ -65,6 +67,7 @@ export function validateGreenCard(input: GreenCardValidationInput): ValidationRe
   notBefore('V-GC-04', 'i485_biometrics_date', input.i485_biometrics_date, input.i485_filing_date, 'I-485 fingerprints date cannot be before its filing date');
   notBefore('V-GC-04', 'i485_interview_date', input.i485_interview_date, input.i485_filing_date, 'I-485 interview date cannot be before its filing date');
   notBefore('V-GC-05', 'consular_interview_date', input.consular_interview_date, input.ds260_submitted_date, 'Consular interview date cannot be before the DS-260 was submitted');
+  notBefore('V-GC-08', 'i485_denial_date', input.i485_denial_date, input.i485_filing_date, 'I-485 denial date cannot be before its filing date');
   notBefore('V-GC-06', 'card_received_date', input.card_received_date, input.card_produced_date, 'Card received date cannot be before the card was produced');
 
   const countries = [

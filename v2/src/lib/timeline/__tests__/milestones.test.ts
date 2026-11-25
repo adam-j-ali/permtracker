@@ -66,6 +66,13 @@ describe("extractMilestones", () => {
       expect(byField.has("ds260SubmittedDate")).toBe(false);
     });
 
+    it("marks a denied I-485 on the timeline", () => {
+      const byField = new Map(
+        extractMilestones({ i485FilingDate: "2025-01-02", i485DenialDate: "2025-09-01" }).map((m) => [m.field, m]),
+      );
+      expect(byField.get("i485DenialDate")).toMatchObject({ label: "I-485 denied", stage: "i485" });
+    });
+
     it("should exclude milestones with no date", () => {
       const caseData: CaseWithDates = {
         pwdFilingDate: "2024-01-15",

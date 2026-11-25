@@ -41,6 +41,8 @@ describe("GreenCardSection: the adjustment-or-consulate choice", () => {
     expect(screen.getByLabelText("I-485 filed")).toBeInTheDocument();
     expect(screen.getByLabelText("I-485 receipt number")).toBeInTheDocument();
     expect(screen.getByLabelText("I-485 fingerprints (biometrics)")).toBeInTheDocument();
+    expect(screen.getByLabelText("I-485 approved")).toBeInTheDocument();
+    expect(screen.getByLabelText("I-485 denied")).toBeInTheDocument();
     expect(screen.getByLabelText("Work permit (I-765) filed")).toBeInTheDocument();
     expect(screen.getByLabelText("Travel document (I-131) filed")).toBeInTheDocument();
     expect(screen.queryByLabelText("DS-260 submitted")).not.toBeInTheDocument();

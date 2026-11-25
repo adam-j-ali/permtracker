@@ -2348,6 +2348,7 @@ export const importCases = mutation({
             "i485BiometricsDate",
             "i485InterviewDate",
             "i485ApprovalDate",
+            "i485DenialDate",
             "eadFilingDate",
             "eadReceiptNumber",
             "eadApprovalDate",

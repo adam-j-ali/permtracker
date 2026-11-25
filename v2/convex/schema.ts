@@ -490,6 +490,8 @@ export default defineSchema({
     i485BiometricsDate: v.optional(v.string()),
     i485InterviewDate: v.optional(v.string()),
     i485ApprovalDate: v.optional(v.string()),
+    /** The date on USCIS's denial notice. The case stays in the I-485 stage, back to working; an approval wins. */
+    i485DenialDate: v.optional(v.string()),
     eadFilingDate: v.optional(v.string()),
     eadReceiptNumber: v.optional(v.string()),
     eadApprovalDate: v.optional(v.string()),

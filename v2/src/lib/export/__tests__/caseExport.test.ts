@@ -627,6 +627,17 @@ describe("exportFullCasesCSV", () => {
     expect(cells).toHaveLength(columns.length);
   });
 
+  it("adds the I-485 denial date last, so every column before it stays where it was", async () => {
+    exportFullCasesCSV([{ ...mockFullCaseData, i485FilingDate: "2025-01-02", i485DenialDate: "2025-09-01" } as typeof mockFullCaseData]);
+    const blob = (URL.createObjectURL as any).mock.calls[0][0] as Blob;
+    const [header, row] = (await blob.text()).split("\n");
+    const columns = header!.split(",");
+    const cells = row!.split(",");
+    expect(columns[columns.length - 1]).toBe("i485DenialDate");
+    expect(columns[columns.length - 2]).toBe("cardReceivedDate");
+    expect(cells[columns.indexOf("i485DenialDate")]).toBe("2025-09-01");
+  });
+
   it("should convert BigInt fields to numbers in CSV", async () => {
     exportFullCasesCSV([mockFullCaseWithLargeValues]);
 

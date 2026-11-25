@@ -152,6 +152,9 @@ function greenCardStage(input: StatusCalculationInput): AutoStatusResult | null 
     return { caseStatus, progressStatus: 'working' };
   }
   if (input.i485ApprovalDate) return { caseStatus, progressStatus: 'approved' };
+  // Denied: the I-140 usually stands, so the case stays here, back to working on a motion, a new filing or the
+  // consulate. Closing it is the person's call, as with a final ETA 9089 denial.
+  if (input.i485DenialDate) return { caseStatus, progressStatus: 'working' };
   if (input.i485InterviewDate) return { caseStatus, progressStatus: 'under_review' };
   if (input.i485FilingDate || input.i485ReceiptDate || input.eadFilingDate || input.apFilingDate) {
     return { caseStatus, progressStatus: 'filed' };
@@ -173,7 +176,7 @@ function greenCardStage(input: StatusCalculationInput): AutoStatusResult | null 
  * 0. The green card received: complete
  * 1. Active RFI/RFE (overrides stage-based status)
  * 2. I-140 denied (closes the case, whatever was filed beside it)
- * 3. I-485 or consulate stage (card produced > approved > interview > filed > working)
+ * 3. I-485 or consulate stage (card produced > approved > denied, back to working > interview > filed > working)
  * 4. I-140 stage (approved > filed)
  * 5. ETA 9089 stage (certified > denied > filed)
  * 6. Recruitment stage (complete + window open > complete > in progress)

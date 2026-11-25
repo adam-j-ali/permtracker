@@ -64,6 +64,15 @@ describe("GreenCardTab", () => {
     expect(whole("Card received")).toBeInTheDocument();
   });
 
+  it("shows a denied I-485's date", () => {
+    render(
+      <GreenCardTab
+        caseData={caseData({ greenCardPath: "adjustment", i485FilingDate: "2025-01-02", i485DenialDate: "2025-09-01", cardReceivedDate: undefined })}
+      />,
+    );
+    expect(whole("I-485 denied")).toBeInTheDocument();
+  });
+
   it("shows the consulate's steps on the consular path, and no I-485", () => {
     render(<GreenCardTab caseData={caseData({ greenCardPath: "consular", ds260SubmittedDate: "2025-02-01" })} />);
     expect(whole("Immigrant visa at a consulate abroad").closest("h2")).not.toBeNull();

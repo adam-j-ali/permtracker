@@ -182,6 +182,7 @@ export function mapToValidatorFormat(fields: CamelCaseFields): CaseData {
     i485_biometrics_date: fields.i485BiometricsDate || null,
     i485_interview_date: fields.i485InterviewDate || null,
     i485_approval_date: fields.i485ApprovalDate || null,
+    i485_denial_date: fields.i485DenialDate || null,
     ead_filing_date: fields.eadFilingDate || null,
     ead_approval_date: fields.eadApprovalDate || null,
     ap_filing_date: fields.apFilingDate || null,

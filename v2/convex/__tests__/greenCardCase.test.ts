@@ -94,6 +94,22 @@ describe("a case past the I-140", () => {
     expect(c.cardReceivedDate).toBeUndefined();
   });
 
+  it("stores an I-485 denial, keeps the case in the I-485 stage, and clears it with null", async () => {
+    const { t, owner, caseId, read } = await seed({ i485FilingDate: "2025-01-02", i485DenialDate: "2025-09-01" });
+    expect(await read()).toMatchObject({ i485DenialDate: "2025-09-01", caseStatus: "i485", progressStatus: "working" });
+
+    await owner.mutation(api.cases.update, { id: caseId, i485DenialDate: null });
+    await finishScheduledFunctions(t);
+    const c = await read();
+    expect(c.i485DenialDate).toBeUndefined();
+    expect(c).toMatchObject({ caseStatus: "i485", progressStatus: "filed" });
+  });
+
+  it("refuses an I-485 denial dated before its filing", async () => {
+    const { owner, caseId } = await seed({ i485FilingDate: "2025-03-01" });
+    await expect(owner.mutation(api.cases.update, { id: caseId, i485DenialDate: "2025-02-01" })).rejects.toThrow(/V-GC-08|denial/i);
+  });
+
   it("clears the choice and the category with null", async () => {
     const { t, owner, caseId, read } = await seed({ greenCardPath: "adjustment", ebCategory: "EB-2" });
     await owner.mutation(api.cases.update, { id: caseId, greenCardPath: null, ebCategory: null });

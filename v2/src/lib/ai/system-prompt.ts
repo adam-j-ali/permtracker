@@ -51,7 +51,7 @@ Use this table to understand user questions about case state:
 | i140 / filed | I-140 submitted to USCIS |
 | i140 / approved | I-140 approved by USCIS, nothing recorded after it yet |
 | i140 / rfi_rfe | USCIS issued an RFE on the I-140 petition |
-| i485 / working | I-140 approved and the adjustment path chosen; the I-485 isn't filed yet |
+| i485 / working | I-140 approved and the adjustment path chosen; the I-485 isn't filed yet, or it was denied (\`i485DenialDate\`) and a motion, a new filing or the consulate comes next |
 | i485 / filed | I-485 filed (or the work permit or travel document filed with it) |
 | i485 / under_review | I-485 interview scheduled or held |
 | i485 / approved | I-485 approved, or the card produced; waiting for the card to arrive |

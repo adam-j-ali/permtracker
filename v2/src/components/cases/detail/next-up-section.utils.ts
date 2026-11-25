@@ -81,7 +81,7 @@ export type NextActionName =
   | "Post job order" | "Post notice of filing" | "Place Sunday ads"
   | "Complete additional recruitment" | "Wait for filing window" | "File ETA 9089"
   | "Wait for certification" | "File I-140" | "Wait for I-140 decision"
-  | "Choose the green card path" | "File I-485" | "Wait for I-485 decision"
+  | "Choose the green card path" | "File I-485" | "Wait for I-485 decision" | "Plan the next step"
   | "Submit DS-260" | "Wait for the interview" | "Wait for the card"
   | "Case complete" | "Respond to RFI" | "Respond to RFE"
   | "Respond to denial" | "Wait for reconsideration" | "Request BALCA review"
@@ -238,6 +238,13 @@ function greenCardNextAction(caseData: NextUpCaseData): NextAction | null {
     return done("Wait for the card", "After the visa and entry to the US, the card comes by mail.");
   }
   if (path === "adjustment") {
+    if (caseData.i485DenialDate) {
+      return done(
+        "Plan the next step",
+        "The I-485 was denied. An approved I-140 usually stands, so a motion, a new I-485 or the consulate can follow. Ask an immigration attorney which fits.",
+        createElement(AlertTriangle, { className: "h-5 w-5" }),
+      );
+    }
     if (!caseData.i485FilingDate) {
       return done("File I-485", "Adjustment of status, filed once the priority date is current", createElement(FileTextIcon, { className: "h-5 w-5" }));
     }

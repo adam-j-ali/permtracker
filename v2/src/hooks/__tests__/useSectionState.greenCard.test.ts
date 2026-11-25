@@ -41,4 +41,13 @@ describe("useSectionState: the green card section past the I-140", () => {
     expect(result.current.sectionStates.greenCard.isComplete).toBe(true);
     expect(result.current.sectionStates.greenCard.summary).toBe("I-485 · Filed Jan 2 · Card received Aug 1");
   });
+
+  it("says in its summary when the I-485 was denied", () => {
+    const { result } = renderHook(() =>
+      useSectionState(
+        base({ i140FilingDate: "2024-06-01", greenCardPath: "adjustment", i485FilingDate: "2025-01-02", i485DenialDate: "2025-09-01" }),
+      ),
+    );
+    expect(result.current.sectionStates.greenCard.summary).toBe("I-485 · Filed Jan 2 · Denied Sep 1");
+  });
 });

@@ -10,6 +10,13 @@ describe("validateGreenCard", () => {
     expect(validateGreenCard({}).valid).toBe(true);
   });
 
+  it("refuses an I-485 denial before its filing", () => {
+    expect(ruleIds(validateGreenCard({ i485_filing_date: "2025-03-01", i485_denial_date: "2025-02-01" }))).toEqual([
+      "V-GC-08",
+    ]);
+    expect(ruleIds(validateGreenCard({ i485_filing_date: "2025-03-01", i485_denial_date: "2025-03-01" }))).toEqual([]);
+  });
+
   it("refuses an approval before its filing: I-485, work permit, travel document", () => {
     expect(ruleIds(validateGreenCard({ i485_filing_date: "2025-03-01", i485_approval_date: "2025-02-01" }))).toEqual([
       "V-GC-01",

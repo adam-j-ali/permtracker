@@ -46,6 +46,7 @@ type DateField =
   | "i485BiometricsDate"
   | "i485InterviewDate"
   | "i485ApprovalDate"
+  | "i485DenialDate"
   | "eadFilingDate"
   | "eadApprovalDate"
   | "apFilingDate"
@@ -294,6 +295,7 @@ export function GreenCardSection(props: GreenCardSectionProps) {
             {dateField("i485BiometricsDate", "The fingerprint appointment (optional)")}
             {dateField("i485InterviewDate", "Only when USCIS calls one (optional)")}
             {dateField("i485ApprovalDate", "The date on the approval notice")}
+            {dateField("i485DenialDate", "Only if USCIS denied it: the date on the denial notice")}
           </div>
           <h3 className="text-sm font-semibold"><KeepWhole>{"Work permit (I-765) and travel document (I-131)"}</KeepWhole></h3>
           <div className="grid grid-cols-1 gap-4 [&>*]:min-w-0 md:grid-cols-2">

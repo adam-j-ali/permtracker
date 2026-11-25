@@ -67,6 +67,24 @@ describe("calculateAutoStatus past the I-140", () => {
       });
     });
 
+    it("keeps a denied I-485 in its stage, back to working: a new filing or the consulate can follow", () => {
+      expect(calculateAutoStatus({ ...approvedI140, i485FilingDate: "2025-01-02", i485InterviewDate: "2025-06-01", i485DenialDate: "2025-07-01" })).toEqual({
+        caseStatus: "i485",
+        progressStatus: "working",
+      });
+    });
+
+    it("lets an approval or a produced card win over a denial, as the I-140's approval does", () => {
+      expect(calculateAutoStatus({ ...approvedI140, i485FilingDate: "2025-01-02", i485DenialDate: "2025-07-01", i485ApprovalDate: "2025-09-01" })).toEqual({
+        caseStatus: "i485",
+        progressStatus: "approved",
+      });
+      expect(calculateAutoStatus({ ...approvedI140, i485FilingDate: "2025-01-02", i485DenialDate: "2025-07-01", cardProducedDate: "2025-09-01" })).toEqual({
+        caseStatus: "i485",
+        progressStatus: "approved",
+      });
+    });
+
     it("counts a work permit or travel document filing as the adjustment path", () => {
       expect(calculateAutoStatus({ ...approvedI140, eadFilingDate: "2025-01-02" })).toEqual({
         caseStatus: "i485",
