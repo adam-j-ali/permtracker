@@ -10,8 +10,9 @@
 import type { Doc } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { reminderRef } from "./reminderRecipients";
+import type { AlertKind } from "./alertKinds";
 
-type Kind = "case" | "queue" | "bulletin" | "employer" | "match";
+type Kind = AlertKind;
 
 /**
  * Drop queued items for an address: every kind, one kind, or one row.

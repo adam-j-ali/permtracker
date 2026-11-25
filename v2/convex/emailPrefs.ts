@@ -77,6 +77,7 @@ import {
 import { recordError } from "./lib/errorRecording";
 import { dropQueued, dropRetries } from "./lib/alertOutboxStore";
 import { turnOffAlerts, turnOffNewsAndDigest } from "./lib/listMailOff";
+import { deleteWatch, watchStateFor } from "./lib/uscisWatchStore";
 
 /**
  * Render the React template, or fall back to text only.
@@ -377,6 +378,17 @@ const stateValidator = v.object({
       active: v.boolean(),
     }),
   ),
+  uscisAlerts: v.array(
+    v.object({
+      id: v.id("uscisWatches"),
+      receipt: v.string(),
+      confirmed: v.boolean(),
+      active: v.boolean(),
+      status: v.union(v.string(), v.null()),
+      checkedAt: v.union(v.number(), v.null()),
+      notFound: v.boolean(),
+    }),
+  ),
   bulletinAlerts: v.array(
     v.object({
       id: v.id("bulletinAlerts"),
@@ -405,7 +417,7 @@ const stateValidator = v.object({
 
 /** Does any alert, digest, news or account row exist for this address? */
 async function holdsAnything(ctx: QueryCtx, email: string): Promise<boolean> {
-  for (const table of ["dolQueueAlerts", "caseStatusAlerts", "bulletinAlerts", "employerAlerts"] as const) {
+  for (const table of ["dolQueueAlerts", "caseStatusAlerts", "bulletinAlerts", "employerAlerts", "uscisWatches"] as const) {
     if (await ctx.db.query(table).withIndex("by_email", (q) => q.eq("email", email)).first()) return true;
   }
   for (const table of ["newsSubscribers", "newsletterSubscribers"] as const) {
@@ -471,6 +483,7 @@ async function stateForEmail(ctx: QueryCtx, email: string) {
         r.confirmedAt !== undefined &&
         r.caseClosedAt === undefined,
     })),
+    uscisAlerts: await watchStateFor(ctx, email),
     bulletinAlerts: bulletinRows.map((r) => ({
       id: r._id,
       category: r.category,
@@ -512,6 +525,7 @@ export const stateByToken = internalMutation({
 const disableKind = v.union(
   v.literal("queue"),
   v.literal("case"),
+  v.literal("uscis"),
   v.literal("bulletin"),
   v.literal("employer"),
   v.literal("news"),
@@ -584,6 +598,14 @@ async function disableForEmail(
       await dropQueued(ctx, email, `case:${row._id}`);
       // The PERMs this wage request may have led to go with its alerts.
       await dropQueued(ctx, email, `match:${row._id}`);
+    }
+  } else if (kind === "uscis") {
+    // Deleted, not tombstoned: the beta holds a receipt only while it's watched (convex/lib/uscisWatchStore.ts).
+    const wanted = ctx.db.normalizeId("uscisWatches", id);
+    const row = wanted ? await ctx.db.get(wanted) : null;
+    if (row && row.email === email) {
+      await deleteWatch(ctx, row);
+      await dropQueued(ctx, email, `uscis:${row._id}`);
     }
   } else if (kind === "bulletin") {
     const wanted = ctx.db.normalizeId("bulletinAlerts", id);

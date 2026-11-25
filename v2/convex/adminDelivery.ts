@@ -13,6 +13,7 @@
  */
 
 import { v } from "convex/values";
+import { alertKindValidator, type AlertKind } from "./lib/alertKinds";
 import { query, type QueryCtx } from "./_generated/server";
 import { requireAdmin } from "./lib/admin";
 import { BUDGETS, windowFor, type BudgetName } from "./lib/alertBudgets";
@@ -32,13 +33,7 @@ const OUTBOX_WEEK_READ = 3000;
 /** Employer follows read for the follower list. */
 const FOLLOWS_READ = 2000;
 
-const kindValidator = v.union(
-  v.literal("case"),
-  v.literal("queue"),
-  v.literal("bulletin"),
-  v.literal("employer"),
-  v.literal("match"),
-);
+const kindValidator = alertKindValidator;
 
 /**
  * When the address behind an outbox row signed up for that alert, and when it
@@ -65,6 +60,10 @@ async function signedUp(
       row = id ? await ctx.db.get(id) : null;
     } else if (kind === "employer") {
       const id = ctx.db.normalizeId("employerAlerts", raw);
+      row = id ? await ctx.db.get(id) : null;
+    } else if (kind === "uscis") {
+      // One email per address names every receipt that moved; its ref is the first watch's.
+      const id = ctx.db.normalizeId("uscisWatches", raw);
       row = id ? await ctx.db.get(id) : null;
     }
   }
@@ -117,7 +116,14 @@ export const getDelivery = query({
         direct: v.number(),
         failed: v.number(),
         dropped: v.number(),
-        byKind: v.object({ case: v.number(), queue: v.number(), bulletin: v.number(), employer: v.number(), match: v.number() }),
+        byKind: v.object({
+          case: v.number(),
+          queue: v.number(),
+          bulletin: v.number(),
+          employer: v.number(),
+          match: v.number(),
+          uscis: v.number(),
+        }),
       }),
     }),
     recent: v.array(
@@ -212,7 +218,7 @@ export const getDelivery = query({
       .withIndex("by_created", (q) => q.gte("createdAt", now - 7 * MS_PER_DAY))
       .order("desc")
       .take(OUTBOX_WEEK_READ);
-    const byKind = { case: 0, queue: 0, bulletin: 0, employer: 0, match: 0 };
+    const byKind: Record<AlertKind, number> = { case: 0, queue: 0, bulletin: 0, employer: 0, match: 0, uscis: 0 };
     let items = 0;
     let direct = 0;
     let failed = 0;

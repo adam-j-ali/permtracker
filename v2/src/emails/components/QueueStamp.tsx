@@ -41,7 +41,7 @@ export interface QueueStampProps {
   /** Small tracked-caps label naming who or what the month belongs to. */
   eyebrow: string;
   /** The month itself, already formatted for display (e.g. "September 2024"). */
-  month: string;
+  month: React.ReactNode;
   /** Provenance lines rendered under the block, in the mono face. */
   children?: React.ReactNode;
 }

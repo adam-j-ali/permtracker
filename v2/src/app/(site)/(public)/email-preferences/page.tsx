@@ -10,6 +10,7 @@ import {
   EnvelopeSimpleIcon,
   FileMagnifyingGlassIcon,
   HourglassIcon,
+  IdentificationCardIcon,
   ListChecksIcon,
   MegaphoneIcon,
   NewspaperIcon,
@@ -60,6 +61,7 @@ export const metadata: Metadata = withSocialCard({
 
 const KIND_ICONS: Record<MailKindId, Icon> = {
   case: FileMagnifyingGlassIcon,
+  uscis: IdentificationCardIcon,
   queue: HourglassIcon,
   bulletin: CalendarCheckIcon,
   employer: BuildingsIcon,

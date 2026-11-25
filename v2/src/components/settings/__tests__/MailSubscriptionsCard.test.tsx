@@ -21,6 +21,7 @@ const EMPTY: SubscriptionState = {
   caseAlerts: [],
   bulletinAlerts: [],
   employerAlerts: [],
+  uscisAlerts: [],
   news: false,
   newsletter: false,
   weeklyDigest: true,

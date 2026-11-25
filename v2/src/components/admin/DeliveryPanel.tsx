@@ -48,6 +48,7 @@ const KIND_LABEL = {
   bulletin: "Visa bulletin",
   employer: "Employer",
   match: "Possible PERM",
+  uscis: "USCIS receipt",
 } as const;
 
 const STATUS_CLASS: Record<string, string> = {

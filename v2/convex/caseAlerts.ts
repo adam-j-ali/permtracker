@@ -96,6 +96,8 @@
  *   policy change notices          20/day   (convex/policyConsent.ts, run by hand)
  *   second-person reminder invitations   20/day   (convex/reminderRecipients.ts, 5 per account)
  *   second-person deadline reminders     40/day   (convex/reminderRecipients.ts)
+ *   USCIS receipt confirmations    30/day   (convex/uscisAlerts.ts, the tracking beta)
+ *   USCIS receipt alerts           60/day   (convex/uscisAlerts.ts; a spent pool waits, never drops)
  *   sign-in and reset codes        80/day   (convex/authMail.ts)
  *
  * They add up to more than 100 on purpose: the day's real count decides, and a

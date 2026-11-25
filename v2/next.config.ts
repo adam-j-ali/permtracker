@@ -257,6 +257,7 @@ const nextConfig: NextConfig = {
           { source: "/unsubscribe", destination: `${convexSite}/unsubscribe` },
           { source: "/queue-alert/:path*", destination: `${convexSite}/queue-alert/:path*` },
           { source: "/case-alert/:path*", destination: `${convexSite}/case-alert/:path*` },
+          { source: "/uscis-alert/:path*", destination: `${convexSite}/uscis-alert/:path*` },
           { source: "/bulletin-alert/:path*", destination: `${convexSite}/bulletin-alert/:path*` },
           { source: "/employer-alert/:path*", destination: `${convexSite}/employer-alert/:path*` },
           { source: "/digest/:path*", destination: `${convexSite}/digest/:path*` },

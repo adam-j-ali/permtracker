@@ -533,6 +533,18 @@ crons.interval(
   {},
 );
 
+/**
+ * Every 30 minutes: a USCIS receipt alert still owed (its pool was spent, a send failed, or the receipt's one-hour
+ * gap held it) goes now (convex/uscisAlerts.ts). The emails themselves start from the checker's results post; this
+ * is how a held one is never dropped. Nothing owed costs one indexed read.
+ */
+crons.interval(
+  "uscis-alert-retries",
+  { minutes: 30 },
+  internal.uscisAlerts.sendDue,
+  {},
+);
+
 // ============================================================================
 // THE SERVER, WATCHED FROM OUTSIDE
 // ============================================================================

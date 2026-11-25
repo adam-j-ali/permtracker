@@ -8,6 +8,7 @@
 
 import type { ReactElement } from "react";
 import { v } from "convex/values";
+import { alertKindValidator } from "./lib/alertKinds";
 import {
   internalAction,
   internalMutation,
@@ -41,13 +42,7 @@ const MAX_ATTEMPTS = 6;
 /** Sent, dropped and failed rows are kept this long for the admin panel. */
 const KEEP_MS = 30 * MS_PER_DAY;
 
-const kindValidator = v.union(
-  v.literal("case"),
-  v.literal("queue"),
-  v.literal("bulletin"),
-  v.literal("employer"),
-  v.literal("match"),
-);
+const kindValidator = alertKindValidator;
 const summaryValidator = v.object({
   title: v.string(),
   line: v.string(),

@@ -43,7 +43,7 @@ const data = (recent: Delivery["recent"]): Delivery => ({
   outbox: {
     queued: 0,
     oldestQueuedAt: null,
-    last7d: { emails: 1, items: 1, bundles: 0, direct: 1, failed: 0, dropped: 0, byKind: { case: 1, queue: 0, bulletin: 0, employer: 0, match: 0 } },
+    last7d: { emails: 1, items: 1, bundles: 0, direct: 1, failed: 0, dropped: 0, byKind: { case: 1, queue: 0, bulletin: 0, employer: 0, match: 0, uscis: 0 } },
   },
   recent,
   recentTotal: recent.length,

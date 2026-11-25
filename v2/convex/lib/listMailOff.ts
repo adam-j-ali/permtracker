@@ -13,11 +13,13 @@
 import type { Doc } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { dropQueued } from "./alertOutboxStore";
+import { deleteWatchesFor } from "./uscisWatchStore";
 
 /**
  * Tombstone every alert row for an address (all four kinds, staged changes dropped so a replayed confirm link
- * cannot resurrect one), and drop every alert still waiting in the outbox or the retry queue. News, the digest and
- * account mail are not alerts and are left alone.
+ * cannot resurrect one), delete its USCIS receipt watches (the beta deletes rather than tombstones, so a receipt is
+ * held only while it's watched), and drop every alert still waiting in the outbox or the retry queue. News, the
+ * digest and account mail are not alerts and are left alone.
  */
 export async function turnOffAlerts(ctx: MutationCtx, email: string, now: number): Promise<number> {
   let changed = 0;
@@ -70,6 +72,7 @@ export async function turnOffAlerts(ctx: MutationCtx, email: string, now: number
       changed += 1;
     }
   }
+  changed += await deleteWatchesFor(ctx, email);
   await dropQueued(ctx, email, "all");
   return changed;
 }
@@ -107,6 +110,7 @@ const CONFIRMATION_KINDS = [
   "firmEdit",
   "digest",
   "caseList",
+  "uscis",
 ] as const satisfies readonly ConfirmationKind[];
 // A kind added to the table and not here fails the typecheck, so a waiting confirmation can't be missed.
 type MissingKind = Exclude<ConfirmationKind, (typeof CONFIRMATION_KINDS)[number]>;

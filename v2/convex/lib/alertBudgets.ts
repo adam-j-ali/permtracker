@@ -81,6 +81,14 @@ export const BUDGETS = {
    * by the daily reminder run beside the owner's own digest. At most one a day per confirmed recipient.
    */
   reminderCopy: { key: "reminder_copy_global", limit: 40, label: "Second-person deadline reminders" },
+  /** Confirmations for the USCIS receipt tracking beta (convex/uscisAlerts.ts). */
+  uscisConfirm: { key: "uscis_subscribe_global", limit: 30, label: "USCIS receipt confirmations" },
+  /**
+   * The tracking beta's change emails (convex/uscisAlerts.ts): one per address per check, naming every receipt of
+   * the address that moved. The beta watches 2,000 receipts at most, and USCIS moves a few percent of them a night.
+   * A spent pool leaves the receipts owed an email, and the next run sends them.
+   */
+  uscisAlert: { key: "uscis_alert_global", limit: 60, label: "USCIS receipt alerts" },
   /**
    * Sign-in and password-reset codes (convex/authMail.ts). Not list mail: these
    * are the emails whose absence locks someone out, so the pool sits above the
@@ -106,6 +114,8 @@ export const LIST_MAIL_POOLS = [
   "policyNotice",
   "reminderInvite",
   "reminderCopy",
+  "uscisConfirm",
+  "uscisAlert",
 ] as const satisfies readonly (keyof typeof BUDGETS)[];
 
 /**

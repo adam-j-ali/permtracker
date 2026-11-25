@@ -33,6 +33,8 @@ describe("the daily email budget table", () => {
       ["policy change notices", BUDGETS.policyNotice.limit],
       ["second-person reminder invitations", BUDGETS.reminderInvite.limit],
       ["second-person deadline reminders", BUDGETS.reminderCopy.limit],
+      ["USCIS receipt confirmations", BUDGETS.uscisConfirm.limit],
+      ["USCIS receipt alerts", BUDGETS.uscisAlert.limit],
       ["sign-in and reset codes", BUDGETS.authMail.limit],
     ] as const) {
       expect(ledger).toMatch(new RegExp(`${line}\\s+${n}/day`));

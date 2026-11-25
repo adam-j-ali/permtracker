@@ -16,9 +16,10 @@
 import { Link, Section, Text } from "@react-email/components";
 import { EmailLayout } from "./components";
 import { SANS_STACK } from "./components/QueueStamp";
+import type { AlertKind } from "../../convex/lib/alertKinds";
 
 export interface DailyUpdateItem {
-  kind: "case" | "queue" | "bulletin" | "employer" | "match";
+  kind: AlertKind;
   title: string;
   line: string;
   url: string;
@@ -41,6 +42,7 @@ const KIND_LABEL: Record<DailyUpdateItem["kind"], string> = {
   bulletin: "Visa bulletin",
   employer: "Employer you follow",
   match: "A PERM that may be yours",
+  uscis: "USCIS receipt",
 };
 
 export function DailyUpdate({ items, prefsUrl, stopUrl, moreWaiting = false }: DailyUpdateProps) {

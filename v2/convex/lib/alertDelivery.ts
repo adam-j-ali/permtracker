@@ -18,7 +18,10 @@
  *   call, Oct 7 2026): it is the news someone signed up to hear first, and
  *   holding it for a bundle could cost them most of a day. Anything older
  *   about the same case still waiting is dropped, so no bundle repeats it.
- *   Queue, bulletin and employer news still follow the rule above.
+ *   Queue, bulletin and employer news still follow the rule above. A USCIS
+ *   receipt's status change (kind "uscis", convex/uscisAlerts.ts) goes now for
+ *   the same reason: it already gathers every receipt of one address that
+ *   moved in the same check into one email.
  *
  * - On a paid email plan (EMAIL_DAILY_LIMIT above 100), an employer's move
  *   goes now too (owner's call, Nov 18 2026), and so do the queue reaching a
@@ -42,12 +45,13 @@ import { FROM_EMAIL, getResend, sendOrQueue } from "./email";
 import { savingEmail } from "./emailAllowance";
 import { easternDay } from "./time";
 
-export type AlertKind = "case" | "queue" | "bulletin" | "employer" | "match";
+import type { AlertKind } from "./alertKinds";
+export type { AlertKind };
 /** `<kind>:<row id>`: the subscription an alert is about, its kind first. */
 export type AlertRef = `${AlertKind}:${string}`;
 
 /** Kinds that never wait for a bundle. */
-export const IMMEDIATE_KINDS: ReadonlySet<AlertKind> = new Set<AlertKind>(["case"]);
+export const IMMEDIATE_KINDS: ReadonlySet<AlertKind> = new Set<AlertKind>(["case", "uscis"]);
 /** Kinds that never wait on a paid email plan, and wait on the free one. */
 export const IMMEDIATE_ON_PAID_PLAN: ReadonlySet<AlertKind> = new Set<AlertKind>(["employer", "queue", "bulletin"]);
 

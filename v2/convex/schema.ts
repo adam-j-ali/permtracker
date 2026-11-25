@@ -45,6 +45,7 @@ import { defineSchema, defineTable } from "convex/server";
 import { authTables } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { errorSourceValidator } from "./lib/errorRecording";
+import { alertKindValidator } from "./lib/alertKinds";
 import { contactEventTypeValidator } from "./marketingWebhook";
 import { CASE_STATUSES, PROGRESS_STATUSES } from "./lib/perm/statusTypes";
 
@@ -1883,6 +1884,83 @@ export default defineSchema({
     .index("by_created", ["createdAt"]),
 
   /**
+   * Someone watching one USCIS receipt by email: the receipt tracking beta (convex/uscisAlerts.ts).
+   *
+   * The sibling of `caseStatusAlerts`, with the same consent grammar: an unauthenticated sign-up writes an
+   * unconfirmed row, a click on the emailed link (a POST, never a GET) confirms it, and nothing is ever sent before
+   * that. Two differences, both for privacy. A stop DELETES the row instead of tombstoning it, so a receipt number is
+   * held only while someone wants it watched; a replayed confirm link then finds nothing to confirm. And the row
+   * keeps only what it last alerted (`lastAlertedStatus`): USCIS's newest status lives once, per receipt, in
+   * `uscisReceipts`. Every field here is one the Privacy Policy's receipt-alerts section names
+   * (src/app/__tests__/uscis-alerts-policy.test.ts holds the two together).
+   */
+  uscisWatches: defineTable({
+    /** Lower-cased. */
+    email: v.string(),
+    /** Upper-cased, three letters and ten digits (`watchableReceipt` in convex/lib/uscisWatch.ts). */
+    receipt: v.string(),
+    /** The person's DOL case number, when they gave one on sign-up: the PERM the receipt follows. */
+    dolCaseNumber: v.optional(v.string()),
+    createdAt: v.number(),
+    /** Which page the sign-up came from. */
+    source: v.optional(v.string()),
+    /** When the inbox's owner confirmed, which is also when they agreed to the policy. Unset means never sent to. */
+    confirmedAt: v.optional(v.number()),
+    /** Throttles repeat confirmations to this address. Records intent, not delivery. */
+    lastConfirmationSentAt: v.optional(v.number()),
+    /** Staged inside another confirmation's ten minutes; one follow-up email names every such row. */
+    confirmationOwed: v.optional(v.boolean()),
+    /**
+     * The status this person was last told about, or the first status seen after they confirmed (which is told
+     * nothing). The change detector: an email goes when USCIS's newest status for the receipt differs from it.
+     */
+    lastAlertedStatus: v.optional(v.string()),
+    lastAlertedAt: v.optional(v.number()),
+    /** True while USCIS's newest status differs from `lastAlertedStatus`: an email is owed. Indexed for the retry run. */
+    alertDue: v.optional(v.boolean()),
+    /** A send in progress (`claimDue`): its start, the status it carries and the outbox ref it goes under. */
+    sendingAt: v.optional(v.number()),
+    sendingStatus: v.optional(v.string()),
+    sendingRef: v.optional(v.string()),
+  })
+    .index("by_email", ["email"])
+    .index("by_email_receipt", ["email", "receipt"])
+    .index("by_receipt", ["receipt"])
+    .index("by_due", ["alertDue"])
+    .index("by_confirmed_created", ["confirmedAt", "createdAt"]),
+
+  /**
+   * The one home of each watched receipt's newest USCIS status (convex/uscisAlerts.ts), written by the private
+   * checker through POST /uscis-watched/results. A row exists only while at least one confirmed watch holds the
+   * receipt (`watchers`), and goes with the last one, so a receipt nobody watches is never kept.
+   */
+  uscisReceipts: defineTable({
+    receipt: v.string(),
+    /** Confirmed watches holding this receipt. */
+    watchers: v.number(),
+    /** USCIS's status title, as the checker read it. Unset until the first check that found the case. */
+    status: v.optional(v.string()),
+    group: v.optional(v.string()),
+    form: v.optional(v.string()),
+    /** When the checker last asked USCIS about it, whatever the answer. */
+    checkedAt: v.optional(v.number()),
+    /** When the checker first saw the current status. */
+    changedAt: v.optional(v.number()),
+    /** When the current status, a final one, was first seen: a year after it with nothing new, the watches end. */
+    finalSince: v.optional(v.number()),
+    /** True when the newest check found no case under the receipt. The last status found is kept. */
+    notFound: v.optional(v.boolean()),
+  }).index("by_receipt", ["receipt"]),
+
+  /** The tracking beta's one counter: how many receipts are watched, against the beta's cap. */
+  uscisWatchMeta: defineTable({
+    key: v.literal("main"),
+    receipts: v.number(),
+    /** When the checker last posted results. */
+    lastResultsAt: v.optional(v.number()),
+  }).index("by_key", ["key"]),
+
+  /**
    * Someone watching ONE visa-bulletin series: a category x country cutoff.
    *
    * Third sibling of `dolQueueAlerts` / `caseStatusAlerts`, same consent
@@ -2999,14 +3077,8 @@ export default defineSchema({
    */
   alertOutbox: defineTable({
     email: v.string(),
-    kind: v.union(
-      v.literal("case"),
-      v.literal("queue"),
-      v.literal("bulletin"),
-      v.literal("employer"),
-      // A PERM that may follow a watched wage request (convex/pipelineMatches.ts).
-      v.literal("match"),
-    ),
+    /** One list for every copy of it (convex/lib/alertKinds.ts). */
+    kind: alertKindValidator,
     /** `<kind>:<row id>`, so an opt-out can drop what is still waiting. */
     ref: v.string(),
     status: v.union(
@@ -3174,6 +3246,8 @@ export default defineSchema({
       v.literal("digest"),
       /** A pasted list of cases, held as one request (`subscribeList` in convex/caseAlerts.ts). */
       v.literal("caseList"),
+      /** A USCIS receipt watch (convex/uscisAlerts.ts). */
+      v.literal("uscis"),
     ),
     pool: v.string(),
     email: v.string(),

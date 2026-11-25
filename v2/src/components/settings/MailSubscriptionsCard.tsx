@@ -68,6 +68,7 @@ export function MailSubscriptionsCard({ email }: { email: string }) {
                 <div className="min-w-0">
                   <p className="text-sm font-semibold">{MAIL_KINDS[row.kind].one}</p>{" "}
                   <p className={`text-sm text-muted-foreground ${row.isCaseNumber ? "font-mono" : ""}`}>{row.detail}</p>
+                  {row.note ? <p className="text-sm text-muted-foreground">{row.note}</p> : null}
                 </div>{" "}
                 <Button
                   variant="outline"

@@ -283,7 +283,7 @@ function rowHtml(r: SubscriptionRow, token: string, focused: string | null): str
   const isFocused = key === focused;
   const meta = MAIL_KINDS[r.kind];
   return `<div class="row${isFocused ? " focus" : ""}"${isFocused ? ' id="focus"' : ""}>
-  <div><div class="what">${escapeHtml(meta.one)}</div><div class="detail${r.isCaseNumber ? " mono" : ""}">${escapeHtml(r.detail)}</div>${isFocused ? '<span class="tag">The email you came from was about this one</span>' : ""}</div>
+  <div><div class="what">${escapeHtml(meta.one)}</div><div class="detail${r.isCaseNumber ? " mono" : ""}">${escapeHtml(r.detail)}</div>${r.note ? `<div class="detail">${escapeHtml(r.note)}</div>` : ""}${isFocused ? '<span class="tag">The email you came from was about this one</span>' : ""}</div>
   <form method="POST" action="/prefs/update?token=${encodeURIComponent(token)}"><input type="hidden" name="kind" value="${r.kind}"/>${r.id ? `<input type="hidden" name="id" value="${escapeHtml(r.id)}"/>` : ""}<button type="submit" class="btn">Turn off</button></form>
 </div>`;
 }

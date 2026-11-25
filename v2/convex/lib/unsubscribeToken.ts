@@ -87,6 +87,9 @@ export type TokenPurpose =
   | "employer-confirm"
   | "employer-unsubscribe"
   | "prefs"
+  /** The USCIS receipt tracking beta (convex/uscisAlerts.ts). */
+  | "uscis-confirm"
+  | "uscis-unsubscribe"
   /** The weekly digest's own sign-up (convex/digestSignup.ts): confirm the digest, nothing else. */
   | "digest-confirm"
   /** The rating row in a case's last alert: rate the alerts, nothing else. */

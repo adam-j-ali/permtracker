@@ -43,6 +43,7 @@ import { SITE_URL } from "./lib/links";
 import { QUEUE_CANCEL_ASK, QUEUE_CONFIRM_ASK, queueConfirmedWords } from "./lib/queueAlertPages";
 import { createLogger } from "./lib/logging";
 import { watchedSecretOk, sharedSecretOk } from "./watchedCases";
+import { bearerToken, parseResults, RESULTS_BODY_MAX_CHARS } from "./lib/uscisWatch";
 import { checkTurnstile } from "./lib/turnstileVerify";
 import { callerIp } from "./lib/callerIp";
 import { ipHash as hashIp } from "./lib/ipHash";
@@ -685,6 +686,128 @@ http.route({
       "Stop your case alerts?",
       "You'll stop receiving status alerts for every PERM case this address is watching.",
       { post: `/case-alert/unsubscribe?token=${encodeURIComponent(token)}` },
+    );
+  }),
+});
+
+// ============================================================================
+// USCIS receipt alerts: the tracking beta (convex/uscisAlerts.ts)
+//
+// The same posture as the case alerts above. The sign-up's mutation is internal; a GET never confirms or stops
+// anything, so a mail gateway fetching the link changes nothing; the POST behind each page's button does. Every
+// receipt a page prints has passed `watchableReceipt` (three letters, ten digits), and every other string is a
+// literal, so nothing unescaped reaches `messagePage`.
+// ============================================================================
+
+http.route({
+  path: "/uscis-alert/subscribe",
+  method: "OPTIONS",
+  handler: httpAction(async (_ctx, req) => {
+    return new Response(null, { status: 204, headers: corsHeaders(req.headers.get("Origin")) });
+  }),
+});
+
+http.route({
+  path: "/uscis-alert/subscribe",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const cors = corsHeaders(req.headers.get("Origin"));
+    const json = (body: unknown, status = 200) =>
+      new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return json({ ok: false, message: "Malformed request." }, 400);
+    }
+    if (typeof body !== "object" || body === null) return json({ ok: false, message: "Malformed request." }, 400);
+    const { email, receipt, dolCaseNumber, source, news, newsletter } = body as Record<string, unknown>;
+    if (typeof email !== "string" || typeof receipt !== "string") {
+      return json({ ok: false, message: "An email address and a receipt number are both required." }, 400);
+    }
+    // Length caps before anything scans a string; the mutation reads every field again.
+    const result = await ctx.runMutation(internal.uscisAlerts.subscribe, {
+      email: email.slice(0, 320),
+      receipt: receipt.slice(0, 40),
+      dolCaseNumber: typeof dolCaseNumber === "string" ? dolCaseNumber.slice(0, 64) : undefined,
+      source: typeof source === "string" ? source.slice(0, 64) : undefined,
+      news: news === true,
+      newsletter: newsletter === true,
+      ip: callerIp(req),
+    });
+    const status = result.ok ? 200 : result.throttled ? 429 : result.full ? 503 : 400;
+    return json({ ok: result.ok, message: result.message, ...(result.queued ? { queued: true } : {}) }, status);
+  }),
+});
+
+http.route({
+  path: "/uscis-alert/confirm",
+  method: "GET",
+  handler: httpAction(async (_ctx, req) => {
+    const token = (new URL(req.url).searchParams.get("token") ?? "").slice(0, 512);
+    if (!token) return badLinkPage();
+    return messagePage(
+      "Confirm your receipt alerts",
+      "We&rsquo;ll check each receipt with USCIS every 4 hours and after USCIS&rsquo;s overnight updates, and email you when its status changes. Receipt alerts are a beta.",
+      { post: `/uscis-alert/confirm?token=${encodeURIComponent(token)}`, label: "Confirm" },
+    );
+  }),
+});
+
+http.route({
+  path: "/uscis-alert/confirm",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const token = (new URL(req.url).searchParams.get("token") ?? "").slice(0, 512);
+    if (!token) return badLinkPage();
+    const result = await ctx.runMutation(internal.uscisAlerts.confirmByToken, { token });
+    // Also the answer for an address that has since stopped: a new sign-up is the way back, never an old link.
+    if (!result) return badLinkPage("This confirmation link is no longer valid.", "Sign up again on the USCIS case status page.");
+    const list = result.receipts.join(", ");
+    const waiting = "full" in result && result.full ? result.full.join(", ") : "";
+    const fullNote = waiting
+      ? ` The beta is watching as many receipts as it can, so ${waiting} isn&rsquo;t watched yet. This link confirms it once there&rsquo;s room, for 30 days.`
+      : "";
+    if (result.already) {
+      return messagePage("You're already on the list", `Nothing more to do: we&rsquo;ll email you when USCIS changes the status of ${list}.`);
+    }
+    if (result.receipts.length === 0) {
+      return messagePage("The beta is full right now", `Nothing was confirmed yet.${fullNote}`);
+    }
+    return messagePage(
+      "You're on the list",
+      `We&rsquo;ll email you each time USCIS changes the status of ${list}, and for a year after a final decision. We check every 4 hours and after USCIS&rsquo;s overnight updates, and each email says when we checked. Today&rsquo;s status isn&rsquo;t emailed: you already know it.${fullNote}`,
+    );
+  }),
+});
+
+// POST is what Gmail and Apple Mail hit for one-click List-Unsubscribe.
+http.route({
+  path: "/uscis-alert/unsubscribe",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const token = (new URL(req.url).searchParams.get("token") ?? "").slice(0, 512);
+    if (!token) return badLinkPage();
+    const ok = await ctx.runMutation(internal.uscisAlerts.unsubscribeByToken, { token });
+    if (!ok) return badLinkPage("This link has expired or was changed.");
+    return messagePage(
+      "You're unsubscribed",
+      "You won&rsquo;t get USCIS receipt alerts from us. Every receipt this address watched is stopped, and we&rsquo;ve deleted them.",
+    );
+  }),
+});
+
+// GET shows a button and changes nothing, so a mail client's prefetch can't stop anyone's alerts.
+http.route({
+  path: "/uscis-alert/unsubscribe",
+  method: "GET",
+  handler: httpAction(async (_ctx, req) => {
+    const token = (new URL(req.url).searchParams.get("token") ?? "").slice(0, 512);
+    if (!token) return badLinkPage();
+    return messagePage(
+      "Stop your receipt alerts?",
+      "This stops the alerts for every USCIS receipt this address watches, and deletes them.",
+      { post: `/uscis-alert/unsubscribe?token=${encodeURIComponent(token)}`, label: "Stop" },
     );
   }),
 });
@@ -1934,17 +2057,18 @@ const ONE_CLICK_KINDS = [...PREFS_KINDS, "alerts"] as const;
 type OneClickKind = (typeof ONE_CLICK_KINDS)[number];
 const KIND_WORDS: Record<OneClickKind, string> = {
   case: `this ${MAIL_KINDS.case.one.toLowerCase()}`,
+  uscis: "alerts for this USCIS receipt",
   queue: `this ${MAIL_KINDS.queue.one.toLowerCase()}`,
   bulletin: `this ${MAIL_KINDS.bulletin.one.toLowerCase()}`,
   employer: "alerts for this employer",
-  alerts: "every alert this address gets (case, queue, bulletin and employer)",
+  alerts: "every alert this address gets (case, USCIS receipt, queue, bulletin and employer)",
   newsletter: `the ${MAIL_KINDS.newsletter.name.toLowerCase()}`,
   news: MAIL_KINDS.news.name.toLowerCase(),
   digest: `your ${MAIL_KINDS.digest.name.toLowerCase()}`,
 };
 
 /** The kinds whose link names one alert by its id. The others turn off a whole list for the address. */
-const ONE_ROW_KINDS: ReadonlySet<string> = new Set(["case", "queue", "bulletin", "employer"]);
+const ONE_ROW_KINDS: ReadonlySet<string> = new Set(["case", "uscis", "queue", "bulletin", "employer"]);
 
 function oneClickParams(req: Request): { token: string; kind: OneClickKind; id?: string } | null {
   const url = new URL(req.url);
@@ -2702,6 +2826,54 @@ http.route({
       },
       202,
     );
+  }),
+});
+
+// ============================================================================
+// The private checker's two routes for the USCIS receipt tracking beta (contract: convex/lib/uscisWatch.ts)
+//
+// Shaped like /watched-cases, with the same secret and the same check, sent as `Authorization: Bearer`.
+// Receipt numbers go out and statuses come back; no response says who watches anything.
+// ============================================================================
+
+/** The checker's gate: 401 for a missing or wrong secret, 503 (off, never open) when the deployment has none. */
+async function uscisCheckerGate(req: Request): Promise<Response | null> {
+  const verdict = await watchedSecretOk(bearerToken(req.headers.get("Authorization")));
+  if (verdict === "off") return serverJson({ ok: false, message: "This route is off." }, 503);
+  if (verdict === "denied") return serverJson({ ok: false, message: "Not allowed." }, 401);
+  return null;
+}
+
+http.route({
+  path: "/uscis-watched",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    const refused = await uscisCheckerGate(req);
+    if (refused) return refused;
+    const list = await ctx.runQuery(internal.uscisAlerts.watchedReceipts, {});
+    return serverJson({ receipts: list.receipts, capped: list.capped }, 200);
+  }),
+});
+
+http.route({
+  path: "/uscis-watched/results",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const refused = await uscisCheckerGate(req);
+    if (refused) return refused;
+    // The length before the parse, the cheap guard first.
+    const raw = await req.text();
+    if (raw.length > RESULTS_BODY_MAX_CHARS) return serverJson({ ok: false, message: "The body is too long." }, 413);
+    let body: unknown;
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      return serverJson({ ok: false, message: "Bad JSON." }, 400);
+    }
+    const parsed = parseResults(body, Date.now());
+    if (!parsed.ok) return serverJson({ ok: false, message: parsed.message }, 400);
+    const { recorded } = await ctx.runMutation(internal.uscisAlerts.recordResults, { results: parsed.results });
+    return serverJson({ recorded }, 200);
   }),
 });
 

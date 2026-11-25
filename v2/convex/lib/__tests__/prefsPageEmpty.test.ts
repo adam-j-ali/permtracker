@@ -12,6 +12,7 @@ const empty = {
   caseAlerts: [],
   bulletinAlerts: [],
   employerAlerts: [],
+  uscisAlerts: [],
   news: false,
   newsletter: false,
   weeklyDigest: null,

@@ -1,4 +1,5 @@
 import { monthLabel } from "./newsletterCompose";
+import { checkedLabel } from "./time";
 
 /**
  * Every kind of email PERM Tracker sends to someone who asked for it.
@@ -21,7 +22,7 @@ import { monthLabel } from "./newsletterCompose";
  */
 
 /** Kinds anyone can subscribe to, no account needed. Ids are in emailed links. */
-export const SUBSCRIBER_KINDS = ["case", "queue", "bulletin", "employer", "newsletter", "news"] as const;
+export const SUBSCRIBER_KINDS = ["case", "uscis", "queue", "bulletin", "employer", "newsletter", "news"] as const;
 
 /** Kinds that come with a PERM Tracker account, controlled in Settings. */
 export const ACCOUNT_KINDS = ["reminders", "updates", "digest"] as const;
@@ -65,6 +66,13 @@ export const MAIL_KINDS: Record<MailKindId, MailKind> = {
     what: "When DOL changes the status of a case you watch, and for a year after it's decided, in case of an appeal or a reversal.",
     when: "When it changes",
     start: { label: "Check a case", href: "/perm-case-status" },
+  },
+  uscis: {
+    name: "USCIS receipt alerts",
+    one: "USCIS receipt alert",
+    what: "When USCIS changes the status of a receipt you watch. A beta: we check every 4 hours and after USCIS's overnight updates.",
+    when: "When it changes",
+    start: { label: "Check a receipt", href: "/uscis-case-status" },
   },
   queue: {
     name: "Queue alerts",
@@ -169,6 +177,15 @@ export interface SubscriptionState {
   email: string;
   queueAlerts: { id: string; filingMonth: string; queue: string; active: boolean; notified: boolean }[];
   caseAlerts: { id: string; caseNumber: string; active: boolean }[];
+  /** USCIS receipts watched (the tracking beta), with what the checker last read. */
+  uscisAlerts: {
+    id: string;
+    receipt: string;
+    active: boolean;
+    status: string | null;
+    checkedAt: number | null;
+    notFound: boolean;
+  }[];
   bulletinAlerts: { id: string; category: string; country: string; active: boolean }[];
   employerAlerts: { id: string; employerName: string; active: boolean; scope?: "group" | "each" }[];
   news: boolean;
@@ -185,6 +202,19 @@ export interface SubscriptionRow {
   detail: string;
   /** True when `detail` is a case number, shown in a fixed-width face. */
   isCaseNumber?: boolean;
+  /** A second line in plain text: for a USCIS receipt, what the checker last read and when. */
+  note?: string;
+}
+
+/**
+ * What a watched receipt's row says under it: USCIS's newest status and when it was checked, or that it hasn't
+ * been yet. Always the time of the check, so a checker that has stopped reads as an old time, never as "no change".
+ */
+export function uscisCheckedNote(a: { status: string | null; checkedAt: number | null; notFound: boolean }): string {
+  if (a.checkedAt === null) return "Not checked yet.";
+  const when = checkedLabel(a.checkedAt);
+  if (a.notFound) return `USCIS showed no case under it when we checked, at ${when}.`;
+  return a.status ? `USCIS showed “${a.status}” when we checked, at ${when}.` : `Last checked at ${when}.`;
 }
 
 /**
@@ -201,6 +231,9 @@ export function subscriptionRows(state: SubscriptionState): {
     ...state.caseAlerts
       .filter((a) => a.active)
       .map((a) => ({ kind: "case" as const, id: a.id, detail: a.caseNumber, isCaseNumber: true })),
+    ...state.uscisAlerts
+      .filter((a) => a.active)
+      .map((a) => ({ kind: "uscis" as const, id: a.id, detail: a.receipt, isCaseNumber: true, note: uscisCheckedNote(a) })),
     ...state.queueAlerts
       .filter((a) => a.active)
       .map((a) => ({
