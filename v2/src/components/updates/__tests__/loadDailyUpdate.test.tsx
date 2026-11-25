@@ -80,3 +80,12 @@ describe("/perm-updates and the wage determinations", () => {
     expect(html).not.toMatch(/issued no wage determinations/);
   });
 });
+
+describe("/perm-updates/[day] with a day that isn't one", () => {
+  it("answers not found for an impossible or unreal day, never a thrown error", async () => {
+    vi.setSystemTime(est("2026-11-25", "12:38"));
+    for (const asked of ["2026-11-54", "2026-02-30", "2026-13-01", "2026-1-5", "abc", "2026-11-26"]) {
+      await expect(loadDailyUpdate(asked), asked).resolves.toBeNull();
+    }
+  });
+});

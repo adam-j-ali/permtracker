@@ -2,6 +2,7 @@ import "server-only";
 
 import type { DailyUpdateViewProps } from "@/components/updates/DailyUpdateView";
 import { dayCases, daysBefore, summariseDay } from "@/lib/dailyUpdate";
+import { isIsoDate } from "@/lib/dateCoverage";
 import { getActivitySeries } from "@/lib/db/activity";
 import { getChangeCalendar, getChangeDay } from "@/lib/db/changes";
 import { getCheckTimes } from "@/lib/db/sweepCoverage";
@@ -30,8 +31,6 @@ export type DailyLoad =
   /** Before the first day our own record covers. */
   | { kind: "outside"; since: string | null };
 
-const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
-const realDay = (v: string) => ISO_DAY.test(v) && new Date(`${v}T12:00:00Z`).toISOString().slice(0, 10) === v;
 const nextOf = (day: string) => new Date(Date.parse(`${day}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
 
 export async function loadDailyUpdate(asked: string | null): Promise<DailyLoad | null> {
@@ -58,7 +57,8 @@ export async function loadDailyUpdate(asked: string | null): Promise<DailyLoad |
     }
   } else {
     // A day that hasn't come is no page; a day before our record is one that says where the record starts.
-    if (!realDay(asked) || asked > today) return null;
+    // An impossible day (2026-11-54, Nov 25 2026) is no page, never a thrown RangeError.
+    if (!isIsoDate(asked) || asked > today) return null;
     if (since !== null && asked < since) return { kind: "outside", since };
     day = asked;
   }
