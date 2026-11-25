@@ -284,6 +284,7 @@ export {
   type PwdQueueEstimate,
   cohortMaturity,
   reportablePercentiles,
+  COHORT_SHAPE,
   COHORT_SETTLED_MONTHS,
   rangeCaveat,
   rangeNoteOf,

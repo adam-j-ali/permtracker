@@ -107,7 +107,7 @@ describe("buildCaseEstimate", () => {
     }
     expect(rfi.stage?.percentile).toBe(90);
     expect(rfi.totalDays).toBeGreaterThan(median.totalDays);
-    // p90 factor is 1.029: a shift measured in days, not a rewrite.
+    // p90 factor is 1.03 (the estimator's cohort shape): a shift measured in days, not a rewrite.
     expect(rfi.totalDays - median.totalDays).toBeLessThan(median.totalDays * 0.05);
   });
 

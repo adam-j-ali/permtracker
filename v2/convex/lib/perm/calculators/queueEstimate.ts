@@ -495,7 +495,12 @@ export interface QueueEstimate {
  * Cohorts spanning the October 2025 OFLC shutdown are unfittable by anything
  * here - the agency stopped, and no shape survives that.
  */
-const COHORT_SHAPE: ReadonlyArray<{ percentile: number; factor: number }> = [
+/**
+ * Exported (Nov 25 2026) so the case page's stage placement (src/lib/queueForecast.ts) reads this one table instead of
+ * its own typed copy. Re-checked that day on the 10 held-out cohorts: p25 0.987 recovers each cohort's true median with
+ * a 1.2-day median error, against 2.0 for a factor re-learned on today's more mature data, so the rows stay as measured.
+ */
+export const COHORT_SHAPE: ReadonlyArray<{ percentile: number; factor: number }> = [
   { percentile: 5, factor: 0.959 },
   { percentile: 10, factor: 0.977 },
   { percentile: 25, factor: 0.987 },

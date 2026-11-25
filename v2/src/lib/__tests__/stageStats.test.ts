@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { placeCaseInCohort, COHORT_PERCENTILE_FACTOR } from "../queueForecast";
+import { COHORT_SHAPE } from "@/lib/perm";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -101,6 +102,14 @@ describe("measured stage ages", () => {
 
   it("keeps the percentile factors untouched", () => {
     expect(COHORT_PERCENTILE_FACTOR[50]).toBe(1.0);
+  });
+
+  it("reads its factors from the estimator's one validated cohort shape, for every percentile a stage uses (Nov 25 2026)", () => {
+    // Two hand-typed tables disagreed (1.029 vs 1.03 at p90, 1.045 vs 1.048 at p95). The estimator's is the one
+    // validated out of sample, so the placement reads it.
+    for (const p of [50, 75, 90, 95]) {
+      expect(COHORT_PERCENTILE_FACTOR[p], `p${p}`).toBe(COHORT_SHAPE.find((s) => s.percentile === p)?.factor);
+    }
   });
 });
 

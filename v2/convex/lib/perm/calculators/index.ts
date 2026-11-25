@@ -46,6 +46,7 @@ export {
   type RetentionResult,
 } from './priorityDateRetention';
 export {
+  COHORT_SHAPE,
   estimateQueueDecision,
   measureFrontierAdvance,
   measureFrontierAdvanceRange,

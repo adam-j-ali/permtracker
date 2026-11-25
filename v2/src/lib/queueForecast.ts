@@ -1,4 +1,5 @@
 import type { DailyTotal } from "./dolPace";
+import { COHORT_SHAPE } from "@/lib/perm";
 import { businessDayPace } from "./dolPace";
 
 /**
@@ -217,14 +218,14 @@ export function placeCaseInCohort(
     : base;
 }
 
-/** Cohort percentile factors, measured over 18 matured cohorts. */
-export const COHORT_PERCENTILE_FACTOR: Readonly<Record<number, number>> = {
-  50: 1.0,
-  75: 1.014,
-  90: 1.029,
-  95: 1.045,
-  99: 1.101,
-};
+/**
+ * Each percentile a stage places a case at, as a multiple of its cohort's median: the estimator's one validated cohort
+ * shape (COHORT_SHAPE in convex/lib/perm), never a second typed table. Until Nov 25 2026 this file typed its own
+ * (1.029 at p90 and 1.045 at p95 against the shape's 1.03 and 1.048, plus a p99 no stage uses).
+ */
+export const COHORT_PERCENTILE_FACTOR: Readonly<Record<number, number>> = Object.fromEntries(
+  COHORT_SHAPE.map((s) => [s.percentile, s.factor]),
+);
 
 /**
  * Days-to-decision for a case, adjusted for the stage it is actually at.
