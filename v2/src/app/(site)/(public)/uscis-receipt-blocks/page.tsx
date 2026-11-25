@@ -144,7 +144,9 @@ export default async function UscisReceiptBlocksPage() {
               </h2>{" "}
               <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
                 The same shares for online filings, by receipt month. A month&apos;s newest cases are the least decided,
-                so its share approved climbs as the month ages.
+                so its share approved climbs as the month ages. Each month is read from where a receipt number falls
+                among that month&apos;s numbers, and USCIS doesn&apos;t number every case in the order it was received, so
+                some of a month&apos;s cases were received a little earlier or later.
               </p>{" "}
               <div className="mt-4">
                 <MonthTable series={monthSeries} />
