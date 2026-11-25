@@ -206,15 +206,16 @@ describe("ImportModal", () => {
         <ImportModal open={true} onOpenChange={mockOnOpenChange} onImport={mockOnImport} />
       );
 
-      // Note: Only employerName is truly required for validation
-      // Missing beneficiaryIdentifier just gets a placeholder, not an error
+      // A missing employer or beneficiary is no error (a person's own case may have neither); an employer
+      // that isn't text is
       const mixedJSON = JSON.stringify([
         {
           employerName: "Valid Corp",
           beneficiaryIdentifier: "Valid Person",
         },
         {
-          // Missing employerName - this causes a validation error
+          // An employer that isn't text - this causes a validation error
+          employerName: 42,
           beneficiaryIdentifier: "Person Without Employer",
         },
       ]);
@@ -242,8 +243,8 @@ describe("ImportModal", () => {
         <ImportModal open={true} onOpenChange={mockOnOpenChange} onImport={mockOnImport} />
       );
 
-      // Note: Missing beneficiaryIdentifier is NOT an error (uses placeholder)
-      // Only missing employerName causes a validation error
+      // Note: Missing beneficiaryIdentifier is NOT an error (uses placeholder), nor is a missing employer;
+      // an employer that isn't text is
       const mixedJSON = JSON.stringify([
         {
           employerName: "Valid 1",
@@ -254,7 +255,8 @@ describe("ImportModal", () => {
           beneficiaryIdentifier: "Person 2",
         },
         {
-          // Missing employerName - this causes a validation error
+          // An employer that isn't text - this causes a validation error
+          employerName: 42,
           beneficiaryIdentifier: "Person Without Employer",
         },
       ]);

@@ -9,6 +9,7 @@ import { readSharedRecord, type SharedRecord } from "@/lib/sharedRecruitmentReco
 import { emailStamp } from "@/lib/time";
 import { RecordViewed } from "./RecordViewed";
 import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
+import { caseInSentence } from "@convex/lib/caseLabel";
 
 /**
  * A case's recruitment record, shared by the attorney's office with its client through a private link
@@ -86,7 +87,7 @@ export default async function SharedRecruitmentRecordPage({ params }: { params: 
       <p className="font-heading text-lg font-bold">PERM Tracker</p>{" "}
       <h1 className="mt-8 font-heading text-3xl font-bold">Recruitment record</h1>{" "}
       <p className="mt-3 max-w-prose text-lg text-soft">
-        {`The recruitment record for ${record.positionTitle} at ${record.employerName}, shared by your attorney's office through PERM Tracker. It updates as they work.`}
+        {`The recruitment record for ${caseInSentence(record, "this case")}, shared by your attorney's office through PERM Tracker. It updates as they work.`}
       </p>{" "}
       <p className="mt-3 text-sm text-muted-foreground">{shownAt()}</p>{" "}
       <PrintButton className="mt-4" />{" "}

@@ -38,6 +38,7 @@ import { deleteCaseApplicants, deleteCaseReminderRecipients, deleteCaseShares } 
 import { deleteCaseDocumentBlobs } from "./lib/caseDocumentBlobs";
 import { dolCaseNumberOnCreate, dolCaseNumberOnUpdate, dolNumberKey } from "./lib/dolCaseNumber";
 import { timelineSwitchForEdit, timelineSwitchForNewCase } from "./lib/timelineShow";
+import { caseInSentence, duplicateKey } from "./lib/caseLabel";
 
 const log = loggers.cases;
 
@@ -257,13 +258,12 @@ const callerCalendarEventIds = caseTable.fields.calendarEventIds.pick(
 );
 
 /**
- * `create` takes every field as optional except the employer and the position.
+ * `create` takes every field as optional, the employer and the position too: a person tracking their own case may
+ * know neither, and each is then stored as empty text (convex/lib/caseLabel.ts names such a case).
  * The server stamps `markedAsDuplicateAt` from `duplicateOf`.
  */
 const caseCreateArgs = {
   ...caseInput.omit("markedAsDuplicateAt").partial().fields,
-  employerName: caseTable.fields.employerName,
-  positionTitle: caseTable.fields.positionTitle,
   calendarEventIds: callerCalendarEventIds,
 };
 
@@ -550,9 +550,9 @@ export async function insertCaseByCreateRules(
 
   const caseId = await ctx.db.insert("cases", {
     userId: userId,
-    employerName: args.employerName,
+    employerName: args.employerName?.trim() ? args.employerName : "",
     beneficiaryIdentifier: args.beneficiaryIdentifier ?? "",
-    positionTitle: args.positionTitle,
+    positionTitle: args.positionTitle?.trim() ? args.positionTitle : "",
 
     // Apply auto-calculated or overridden status
     caseStatus: effectiveCaseStatus,
@@ -718,7 +718,7 @@ export const create = mutation({
           caseId: caseId,
           type: "status_change",
           title: "New case created",
-          message: `A case for ${args.beneficiaryIdentifier || "a beneficiary"} at ${args.employerName} was added.`,
+          message: `A case for ${caseInSentence(args, "you")} was added.`,
           priority: "normal",
         });
 
@@ -730,8 +730,8 @@ export const create = mutation({
             await ctx.scheduler.runAfter(0, internal.notificationActions.sendStatusChangeEmail, {
               notificationId,
               to: user.email,
-              beneficiaryName: args.beneficiaryIdentifier || "Beneficiary",
-              companyName: args.employerName,
+              beneficiaryName: args.beneficiaryIdentifier ?? "",
+              companyName: args.employerName ?? "",
               previousStatus: "",
               newStatus: formatCaseStatus(effectiveCaseStatus),
               changeType: "stage",
@@ -1118,11 +1118,15 @@ export const update = mutation({
       ? (args.progressStatus ?? caseDoc!.progressStatus)
       : autoStatus.progressStatus;
 
-    // The case's label, "Position at Employer" (the employer alone without a position), as this save leaves it:
+    // The case's label, "Position at Employer" (whichever half there is, or "your case"), as this save leaves it:
     // a notice names the case the way the person now sees it.
-    const labelTitle = args.positionTitle ?? oldDoc!.positionTitle;
-    const labelEmployer = args.employerName ?? oldDoc!.employerName;
-    const caseLabel = labelTitle ? `${labelTitle} at ${labelEmployer}` : labelEmployer;
+    const caseLabel = caseInSentence(
+      {
+        positionTitle: args.positionTitle ?? oldDoc!.positionTitle,
+        employerName: args.employerName ?? oldDoc!.employerName,
+      },
+      "your case",
+    );
 
     // Detect what actually changed
     const caseStatusChanged = actualNewCaseStatus !== oldDoc!.caseStatus;
@@ -1161,7 +1165,7 @@ export const update = mutation({
               await ctx.scheduler.runAfter(0, internal.notificationActions.sendStatusChangeEmail, {
                 notificationId,
                 to: user.email,
-                beneficiaryName: oldDoc!.beneficiaryIdentifier || "Beneficiary",
+                beneficiaryName: oldDoc!.beneficiaryIdentifier ?? "",
                 companyName: oldDoc!.employerName,
                 previousStatus: formatCaseStatus(oldDoc!.caseStatus),
                 newStatus: formatCaseStatus(actualNewCaseStatus),
@@ -1736,7 +1740,7 @@ export const bulkUpdateStatus = mutation({
               caseId: id,
               type: "status_change",
               title: "Case status updated",
-              message: `${oldDoc.beneficiaryIdentifier || "A case"} at ${oldDoc.employerName} moved from ${formatCaseStatus(oldDoc.caseStatus)} to ${formatCaseStatus(newStatus.caseStatus)}.`,
+              message: `${caseInSentence(oldDoc, "Your case")} moved from ${formatCaseStatus(oldDoc.caseStatus)} to ${formatCaseStatus(newStatus.caseStatus)}.`,
               priority: "normal",
             });
 
@@ -1749,7 +1753,7 @@ export const bulkUpdateStatus = mutation({
                 await ctx.scheduler.runAfter(0, internal.notificationActions.sendStatusChangeEmail, {
                   notificationId,
                   to: user.email,
-                  beneficiaryName: oldDoc.beneficiaryIdentifier || "Beneficiary",
+                  beneficiaryName: oldDoc.beneficiaryIdentifier ?? "",
                   companyName: oldDoc.employerName,
                   previousStatus: formatCaseStatus(oldDoc.caseStatus),
                   newStatus: formatCaseStatus(newStatus.caseStatus),
@@ -2210,7 +2214,8 @@ export const checkDuplicates = query({
       if (args.excludeCaseId && c._id === args.excludeCaseId) {
         continue;
       }
-      const key = `${c.employerName.toLowerCase().trim()}|${(c.beneficiaryIdentifier ?? "").toLowerCase().trim()}`;
+      const key = duplicateKey(c);
+      if (key === null) continue;
       existingKeyMap.set(key, {
         id: c._id,
         positionTitle: c.positionTitle,
@@ -2231,8 +2236,8 @@ export const checkDuplicates = query({
     for (let i = 0; i < args.cases.length; i++) {
       const caseData = args.cases[i]!;
       const beneficiaryId = caseData.beneficiaryIdentifier ?? "";
-      const key = `${caseData.employerName.toLowerCase().trim()}|${beneficiaryId.toLowerCase().trim()}`;
-      const existing = existingKeyMap.get(key);
+      const key = duplicateKey(caseData);
+      const existing = key === null ? undefined : existingKeyMap.get(key);
       if (existing) {
         duplicates.push({
           index: i,
@@ -2420,8 +2425,8 @@ export const importCases = mutation({
     // Create a Map of existing employer+beneficiary combinations with their case IDs
     const existingKeyMap = new Map<string, Id<"cases">>();
     for (const c of existingCases) {
-      const key = `${c.employerName.toLowerCase().trim()}|${(c.beneficiaryIdentifier ?? "").toLowerCase().trim()}`;
-      existingKeyMap.set(key, c._id);
+      const key = duplicateKey(c);
+      if (key !== null) existingKeyMap.set(key, c._id);
     }
 
     // Track which keys we've seen in this import batch
@@ -2441,11 +2446,11 @@ export const importCases = mutation({
       const caseData = args.cases[i]!;
       // The same caps as create, so an imported file can't store more than the form can.
       validateCaseText(caseData);
-      // Check for duplicate (same employer + beneficiary)
-      const key = `${caseData.employerName.toLowerCase().trim()}|${caseData.beneficiaryIdentifier.toLowerCase().trim()}`;
-      const existingCaseId = existingKeyMap.get(key);
+      // Check for duplicate (same employer + beneficiary); a case without an employer is never one (duplicateKey)
+      const key = duplicateKey(caseData);
+      const existingCaseId = key === null ? undefined : existingKeyMap.get(key);
 
-      if (existingCaseId) {
+      if (key !== null && existingCaseId) {
         // This is a duplicate - check resolution
         const resolution = args.resolutions?.[String(i)] ?? "skip";
 
@@ -2509,14 +2514,14 @@ export const importCases = mutation({
           replacedCount++;
           // Continue to insert the new case below
         }
-      } else if (seenInBatch.has(key)) {
+      } else if (key !== null && seenInBatch.has(key)) {
         // Duplicate within the import batch - skip
         skippedCount++;
         continue;
       }
 
       // Add to seen batch to prevent duplicates within the import
-      seenInBatch.add(key);
+      if (key !== null) seenInBatch.add(key);
 
       // Calculate derived dates for queryability
       const isProfessionalOccupation = caseData.isProfessionalOccupation ?? false;

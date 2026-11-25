@@ -30,6 +30,7 @@ import { SITE_URL } from "../../convex/lib/links";
 import { NOTIFICATION_SETTINGS_PATH } from "../../convex/lib/mailKinds";
 import { urgencyHeadStyle, urgencyHeadText, urgencyRow, urgencyRowLast } from "./components/emailStyles";
 import { deadlineDigestWords } from "../../convex/lib/deadlineDigestWords";
+import { caseInSentence } from "../../convex/lib/caseLabel";
 
 export interface DeadlineDigestProps {
   /** First name (or display name) of the recipient. */
@@ -119,7 +120,7 @@ function DeadlineRow({ item, baseUrl, last }: { item: DeadlineDigestItem; baseUr
           <tr>
             <td style={styles.rowContent}>
               <Text className="em-text" style={styles.caseName}>
-                {item.beneficiaryIdentifier} at {item.employerName}
+                {caseInSentence(item, "Your case")}
               </Text>
               <Text className="em-text-secondary" style={styles.deadlineType}>
                 {item.deadlineType}

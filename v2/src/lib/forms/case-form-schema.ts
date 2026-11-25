@@ -179,10 +179,10 @@ function shortText(label: string) {
 
 export const caseFormSchema = z
   .object({
-    // Required fields
-    employerName: shortText('Employer name').min(1, 'Employer name is required'),
+    // Who and what: each optional, since a person tracking their own case may know neither the employer nor the job
+    employerName: shortText('Employer name').optional().default(''),
     beneficiaryIdentifier: shortText('Foreign worker ID').optional().default(''),
-    positionTitle: shortText('Position title').min(1, 'Position title is required'),
+    positionTitle: shortText('Position title').optional().default(''),
     caseStatus: z.enum(CASE_STATUSES),
     progressStatus: z.enum(PROGRESS_STATUSES),
 

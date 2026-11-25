@@ -22,6 +22,7 @@ import { formatClosureReasonLabel, formatCompactDate, formatDeadlineDate } from 
 import { CountdownChip } from "./DeadlineCountdown";
 import type { CaseCardData } from "@convex/lib/caseListTypes";
 import { keepWhole } from "@/components/ui/keep-whole";
+import { caseTitle } from "@convex/lib/caseLabel";
 
 export interface CaseListRowProps {
   caseData: CaseCardData;
@@ -39,6 +40,9 @@ export const CaseListRow = memo(function CaseListRow({
   const stage = STAGE_VISUALS[c.caseStatus];
   const isClosed = c.caseStatus === "closed";
   const open = !isClosed && c.nextDeadline;
+  // A person's own case may carry no employer or job title: the heading falls back (convex/lib/caseLabel.ts).
+  const title = caseTitle(c);
+  const subtitle = c.positionTitle;
   // A closed case says when and why, as its card does: its progress chip is
   // the stage it stopped at ("Working on it"), which reads as still open.
   const why = isClosed ? formatClosureReasonLabel(c.closedReason) : "";
@@ -59,33 +63,33 @@ export const CaseListRow = memo(function CaseListRow({
           checked={isSelected}
           onCheckedChange={() => onSelect?.(c._id)}
           className="relative z-10 shrink-0"
-          aria-label={`Select ${c.employerName}`}
+          aria-label={`Select ${title}`}
         />
       ) : null}
       {/* The stage's colour down the row's edge, as on the folder tabs. */}
       <span aria-hidden="true" className={cn("absolute inset-y-0 left-0 w-1.5", stage?.fill ?? "bg-muted")} />
       <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-2 truncate font-semibold" title={c.employerName}>
+        <p className="flex items-center gap-2 truncate font-semibold" title={title}>
           {selectionMode ? (
             <button type="button" onClick={() => onSelect?.(c._id)} className="truncate text-left after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring">
-              {c.employerName}
+              {title}
             </button>
           ) : (
             <Link href={`/cases/${c._id}`} className="truncate after:absolute after:inset-0 hover:text-primary-text focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring">
-              {c.employerName}
+              {title}
             </Link>
           )}
           {c.isSample ? <Badge className="shrink-0 border-dashed font-normal">Sample</Badge> : null}
         </p>{" "}
         <p className="truncate text-sm text-muted-foreground">
-          {c.positionTitle}
+          {subtitle}
           {c.socCode ? (
             <>
               {" "}
               <span className="font-mono">{c.socCode}</span>
             </>
           ) : null}
-          {c.positionTitle && stage?.label ? " · " : ""}
+          {subtitle && stage?.label ? " · " : ""}
           {keepWhole(stage?.label)}
         </p>
       </div>

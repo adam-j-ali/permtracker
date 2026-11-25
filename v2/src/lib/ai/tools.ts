@@ -904,19 +904,19 @@ export { RfiEntrySchema, RfeEntrySchema, NoteSchema, DocumentSchema };
  * Schema for createCase tool input
  */
 export const CreateCaseInputSchema = z.object({
-  // Required fields
+  // Every field is optional: a person tracking their own case may know neither the employer nor the job title
   employerName: z
     .string()
-    .min(1)
-    .describe('Name of the sponsoring employer (required)'),
+    .optional()
+    .describe('Name of the sponsoring employer (optional)'),
   foreignWorkerId: z
     .string()
     .optional()
     .describe('Foreign worker identifier - name or initials (optional)'),
   positionTitle: z
     .string()
-    .min(1)
-    .describe('Job position title (required)'),
+    .optional()
+    .describe('Job position title (optional)'),
 
   // Stage: follows the dates given, unless set by hand
   caseStatus: CaseStatusEnum.optional().describe(
@@ -1508,15 +1508,13 @@ export const createCaseTool = tool({
 ## WHEN NOT TO USE:
 - User is just asking questions about cases (use queryCases)
 - User wants to edit an existing case (use updateCase)
-- User hasn't provided required fields (ask for them first)
 - You're unsure if user wants to create (ask to confirm intent)
 
-## REQUIRED FIELDS:
+## FIELDS (all optional):
 - employerName: Sponsoring employer name
 - positionTitle: Job title
-
-## OPTIONAL FIELDS:
-- foreignWorkerId: Foreign worker name or initials (optional)
+- foreignWorkerId: Foreign worker name or initials
+Someone tracking their own case may know neither the employer nor the job title: create the case without them.
 
 ## OPTIONAL FIELDS:
 All dates should be YYYY-MM-DD format. See input schema for full list.
@@ -1525,7 +1523,9 @@ All dates should be YYYY-MM-DD format. See input schema for full list.
 - "Create case for TechCorp, John Doe, Software Engineer":
   { employerName: "TechCorp", foreignWorkerId: "John Doe", positionTitle: "Software Engineer" }
 - "Add a PWD case for ACME":
-  { employerName: "ACME", positionTitle: "[ask user]", caseStatus: "pwd" }
+  { employerName: "ACME", caseStatus: "pwd" }
+- "Track my own I-485, filed March 3 2025":
+  { i485FilingDate: "2025-03-03" }
 
 ## NOTES:
 - Always confirm details with user before creating

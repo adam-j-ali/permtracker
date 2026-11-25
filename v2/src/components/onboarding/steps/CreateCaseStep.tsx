@@ -33,22 +33,14 @@ export function CreateCaseStep({ onNext }: CreateCaseStepProps) {
   // this first case is saved with them, and its stage then follows them.
   const { dates: carried } = useCarriedDates();
 
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-    if (!employerName.trim()) newErrors.employerName = "Employer name is required";
-    if (!positionTitle.trim()) newErrors.positionTitle = "Position title is required";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
+  // Nothing here is required: someone tracking their own case may know neither the employer nor the job title.
   const handleCreate = async () => {
-    if (!validate()) return;
-
+    setErrors({});
     setIsCreating(true);
     try {
       const caseId = await createCase({
-        employerName: employerName.trim(),
-        positionTitle: positionTitle.trim(),
+        employerName: employerName.trim() || undefined,
+        positionTitle: positionTitle.trim() || undefined,
         beneficiaryIdentifier: beneficiaryIdentifier.trim() || undefined,
         // The stage follows the dates (cases.create works it out); a stage
         // picked here was never stored, so none is asked for.
@@ -103,41 +95,29 @@ export function CreateCaseStep({ onNext }: CreateCaseStepProps) {
         {/* Employer Name */}
         <div className="space-y-1.5">
           <Label htmlFor="onb-employer" className="font-heading font-semibold text-sm">
-            Employer name <span className="text-destructive">*</span>
+            Employer name{" "}
+            <span className="text-muted-foreground font-normal">(optional)</span>
           </Label>
           <Input
             id="onb-employer"
             value={employerName}
-            onChange={(e) => {
-              setEmployerName(e.target.value);
-              if (errors.employerName) setErrors((p) => ({ ...p, employerName: "" }));
-            }}
+            onChange={(e) => setEmployerName(e.target.value)}
             placeholder="e.g. Acme Corp"
-            aria-invalid={!!errors.employerName}
           />
-          {errors.employerName && (
-            <p className="text-sm text-destructive">{errors.employerName}</p>
-          )}
         </div>
 
         {/* Position Title */}
         <div className="space-y-1.5">
           <Label htmlFor="onb-position" className="font-heading font-semibold text-sm">
-            Position title <span className="text-destructive">*</span>
+            Position title{" "}
+            <span className="text-muted-foreground font-normal">(optional)</span>
           </Label>
           <Input
             id="onb-position"
             value={positionTitle}
-            onChange={(e) => {
-              setPositionTitle(e.target.value);
-              if (errors.positionTitle) setErrors((p) => ({ ...p, positionTitle: "" }));
-            }}
+            onChange={(e) => setPositionTitle(e.target.value)}
             placeholder="e.g. Software Engineer"
-            aria-invalid={!!errors.positionTitle}
           />
-          {errors.positionTitle && (
-            <p className="text-sm text-destructive">{errors.positionTitle}</p>
-          )}
         </div>
 
         {/* Beneficiary Identifier */}

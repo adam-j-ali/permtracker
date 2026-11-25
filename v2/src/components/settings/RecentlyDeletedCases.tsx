@@ -24,6 +24,7 @@ import { useAuthContext } from "@/lib/contexts/AuthContext";
 import { handleOperationError } from "@/lib/errors";
 import { toast } from "@/lib/toast";
 import { SettingsCard, SettingsCardSkeleton } from "./SettingsCard";
+import { caseSubtitle, caseTitle } from "@convex/lib/caseLabel";
 
 /** A short page on a phone, a few more on a wide screen. */
 const PAGE_SIZES = { wide: 10, narrow: 5, options: [5, 10, 25, 50] } as const;
@@ -103,10 +104,10 @@ export default function RecentlyDeletedCases() {
                 className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0 space-y-1">
-                  <p className="break-words font-medium text-foreground">{c.employerName || "No employer name"}</p>{" "}
-                  {c.positionTitle || c.beneficiaryIdentifier ? (
+                  <p className="break-words font-medium text-foreground">{caseTitle(c, "No employer name")}</p>{" "}
+                  {caseSubtitle(c) ? (
                     <p className="break-words text-sm text-muted-foreground">
-                      {[c.positionTitle, c.beneficiaryIdentifier].filter(Boolean).join(", ")}
+                      {caseSubtitle(c)}
                     </p>
                   ) : null}{" "}
                   <p className="text-sm text-muted-foreground">

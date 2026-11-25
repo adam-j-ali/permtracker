@@ -18,6 +18,7 @@ import {
 } from "./deadlineEnforcementHelpers";
 import { DEFAULT_NOTIFICATION_PREFS, DEFAULT_URGENT_DAYS } from "./userDefaults";
 import { DEADLINE_LABELS } from "./perm/deadlines/types";
+import { caseInSentence } from "./caseLabel";
 import type { CaseStatus } from "./perm/statusTypes";
 
 /** The most unread notifications counted for one user; a badge past it shows the cap. */
@@ -339,9 +340,7 @@ export function generateNotificationMessage(
 ): string {
   const caseLabel =
     context.caseLabel ||
-    (context.employerName && context.beneficiaryIdentifier
-      ? `${context.beneficiaryIdentifier} at ${context.employerName}`
-      : "this case");
+    caseInSentence(context, "this case");
 
   const formattedDate = context.deadlineDate
     ? new Date(context.deadlineDate + "T00:00:00Z").toLocaleDateString(

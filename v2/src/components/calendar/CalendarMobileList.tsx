@@ -31,6 +31,7 @@ import { STAGE_COLORS } from "@/lib/calendar/types";
 import { DaysChip } from "@/components/cases/DeadlineCountdown";
 import type { CaseDataMap } from "./CalendarView";
 import { keepWhole } from "@/components/ui/keep-whole";
+import { caseTitle } from "@convex/lib/caseLabel";
 
 // ============================================================================
 // Types
@@ -176,7 +177,7 @@ export function CalendarMobileList({
             {group.events.map((event) => {
               const caseData = caseDataMap?.get(event.caseId as string);
               // Extracted to local variable (React Compiler disabled; kept for SWC safety)
-              const employerName = caseData?.employerName;
+              const name = caseData ? caseTitle(caseData) : "Unknown case";
               const stageColor = STAGE_COLORS[event.stage] ?? "#6B7280";
               return (
                 <li key={event.id} className="relative border-b border-border">
@@ -186,12 +187,12 @@ export function CalendarMobileList({
                     type="button"
                     onClick={() => handleEventTap(event.caseId as string)}
                     className="flex min-h-16 w-full items-center gap-3 py-3 pl-4 pr-1 text-left hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-                    aria-label={`${event.title}, ${employerName ?? "case"}, ${formatEventDate(event.start)}`}
+                    aria-label={`${event.title}, ${name}, ${formatEventDate(event.start)}`}
                   >
                     <span className="min-w-0 flex-1">
                       <span className="line-clamp-2 font-semibold leading-snug">{keepWhole(event.title)}</span>{" "}
                       <span className="mt-0.5 block truncate text-sm text-muted-foreground">
-                        {employerName ?? "Unknown case"}
+                        {name}
                         {caseData?.positionTitle ? <span className="hidden sm:inline">{` - ${caseData.positionTitle}`}</span> : null}
                       </span>
                     </span>{" "}

@@ -333,6 +333,9 @@ export function sortCases(
         break;
 
       case "employer": {
+        // A case without an employer (a person's own case) goes last either way, like a missing date.
+        const nullResult = compareNullsLast(a.employerName.trim(), b.employerName.trim());
+        if (nullResult !== undefined) return nullResult;
         const aName = a.employerName.toLowerCase();
         const bName = b.employerName.toLowerCase();
         const aIsAlpha = /[a-z]/.test(aName.charAt(0));

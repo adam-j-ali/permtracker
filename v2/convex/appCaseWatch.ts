@@ -442,13 +442,13 @@ export const recordLiveChange = internalMutation({
       updatedAt: now,
     });
 
-    const who = caseDoc.beneficiaryIdentifier || "this case";
+    const who = caseDoc.beneficiaryIdentifier ?? "";
     const notificationId = await ctx.db.insert("notifications", {
       userId: caseDoc.userId,
       caseId: args.caseId,
       type: "status_change",
       title: "DOL updated this case",
-      message: `DOL's live status for ${caseDoc.employerName} moved from ${args.previousStatus} to ${args.status}.`,
+      message: `DOL's live status for ${caseDoc.employerName.trim() || "your case"} moved from ${args.previousStatus} to ${args.status}.`,
       priority: args.isFinal ? "high" : "normal",
       isRead: false,
       emailSent: false,

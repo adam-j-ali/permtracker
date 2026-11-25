@@ -17,6 +17,7 @@ import { formatCaseStatus } from "@convex/lib/notificationHelpers";
 import { countdownWords } from "@/components/cases/case-card.utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { caseTitle } from "@convex/lib/caseLabel";
 
 interface CalendarEventProps extends EventProps<CalendarEventType> {
   event: CalendarEventType;
@@ -29,8 +30,8 @@ function CaseSummary({ event }: { event: CalendarEventType }) {
   return (
     <div className="w-72">
       <div className="border-b border-border px-3 py-2">
-        <p className="truncate font-heading text-sm font-bold" title={event.employerName || undefined}>
-          {event.employerName || "Unknown employer"}
+        <p className="truncate font-heading text-sm font-bold" title={caseTitle(event)}>
+          {caseTitle(event)}
         </p>{" "}
         {event.positionTitle ? (
           <p className="truncate text-sm text-muted-foreground" title={event.positionTitle}>

@@ -814,15 +814,15 @@ function normalizeAndValidateCase(
   let beneficiaryIdentifier = normalized.beneficiaryIdentifier;
   const positionTitle = normalized.positionTitle;
 
-  // Validate employerName (required)
-  if (!employerName || typeof employerName !== "string" || !employerName.trim()) {
+  // employerName: optional (a person's own case may have none, stored as empty text), but text when given
+  if (employerName !== undefined && employerName !== null && typeof employerName !== "string") {
     errors.push({
       row: rowIndex,
       field: "employerName",
-      message: "employerName is required and must be a non-empty string",
+      message: "employerName must be text",
     });
   } else {
-    employerName = (employerName as string).trim();
+    employerName = typeof employerName === "string" ? employerName.trim() : "";
     normalized.employerName = employerName;
   }
 

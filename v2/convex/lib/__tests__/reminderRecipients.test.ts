@@ -104,6 +104,10 @@ describe("what the invitation calls the case", () => {
 
   it("is the job title at the employer, as the reminders name it", () => {
     expect(safeCaseLine("Robotics Engineer", "ACME Robotics")).toBe("Robotics Engineer at ACME Robotics");
+    // A case may carry no job title or no employer (a person's own case).
+    expect(safeCaseLine("", "ACME Robotics")).toBe("ACME Robotics");
+    expect(safeCaseLine("Robotics Engineer", " ")).toBe("Robotics Engineer");
+    expect(safeCaseLine("", "")).toBe(A_PERM_CASE);
   });
 
   it("is \"a PERM case\" when the job title reads like a link, so a stranger's inbox never carries one under our name", () => {

@@ -23,6 +23,7 @@ const is = (fn: unknown, ref: unknown) => getFunctionName(fn as never) === getFu
 import type { Doc } from '@convex/_generated/dataModel';
 import {
   buildCaseUpdate,
+  caseLabel,
   dateNeededFor,
   hashAction,
   prepareAction,
@@ -31,7 +32,7 @@ import {
   runAction,
   toStoredMethod,
 } from '../caseActions';
-import type { UpdateCaseInput } from '../tools';
+import { CreateCaseInputSchema, type UpdateCaseInput } from '../tools';
 
 const ID = 'k577zsgc2hqkypgjp070hhnh458g4dyg';
 
@@ -412,5 +413,30 @@ describe('prepareCreateCase keeps the job', () => {
       jobDescription: 'Develop software.\n\n- Analyze user needs.',
     });
     expect(prepared.kind).toBe('plan');
+  });
+});
+
+describe('a case without an employer or a job title', () => {
+  it('plans one with neither, and names it plainly', async () => {
+    fetchQuery.mockImplementation(async (fn: unknown) => {
+      if (is(fn, api.cases.previewCreate)) return { valid: true, errors: [], caseStatus: 'i485', progressStatus: 'working' };
+      if (is(fn, api.cases.checkDuplicates)) return { duplicates: [] };
+      throw new Error('unexpected query');
+    });
+    const prepared = await prepareCreateCase({ i485FilingDate: '2025-03-03' } as Parameters<typeof prepareCreateCase>[0], 'token');
+    const preview = fetchQuery.mock.calls.find(([fn]) => is(fn, api.cases.previewCreate))?.[1] as Record<string, unknown>;
+    expect(preview).not.toHaveProperty('employerName');
+    expect(preview).not.toHaveProperty('positionTitle');
+    expect(prepared.kind).toBe('plan');
+    if (prepared.kind === 'plan') expect(prepared.description).toBe('Create a case: A case');
+  });
+
+  it('the create tool needs neither', () => {
+    expect(CreateCaseInputSchema.safeParse({}).success).toBe(true);
+  });
+
+  it('caseLabel says only what the case has', () => {
+    expect(caseLabel({ employerName: 'Acme', beneficiaryIdentifier: 'J.D.', positionTitle: 'Engineer' })).toBe('Acme for J.D. (Engineer)');
+    expect(caseLabel({ employerName: '', beneficiaryIdentifier: '', positionTitle: '' })).toBe('A case');
   });
 });

@@ -26,6 +26,7 @@ import { CaseBadges, CaseDates } from "./CaseCardParts";
 import { LiveStatusChip } from "./LiveStatusChip";
 import { DeadlineCountdown } from "./DeadlineCountdown";
 import { keepWhole } from "@/components/ui/keep-whole";
+import { caseTitle } from "@convex/lib/caseLabel";
 
 interface CaseCardProps {
   case: CaseCardData;
@@ -45,8 +46,10 @@ export const CaseCard = memo(function CaseCard({
   onArchiveRequest,
 }: CaseCardProps) {
   const isClosed = c.caseStatus === "closed";
-  const role = c.positionTitle || c.beneficiaryIdentifier;
-  const caseName = `${c.employerName} - ${role}`;
+  // A person's own case may carry no employer or job title: the heading falls back (convex/lib/caseLabel.ts).
+  const title = caseTitle(c);
+  const role = c.employerName.trim() ? c.positionTitle || c.beneficiaryIdentifier : c.positionTitle;
+  const caseName = role ? `${title} - ${role}` : title;
   const actions = useCardMutations(c._id);
   const stage = STAGE_VISUALS[c.caseStatus];
   const dateCount = countShownDates(c.dates);
@@ -79,7 +82,7 @@ export const CaseCard = memo(function CaseCard({
                 checked={isSelected}
                 onCheckedChange={() => onSelect?.(c._id)}
                 className="relative z-10 size-5"
-                aria-label={`Select ${c.employerName}`}
+                aria-label={`Select ${title}`}
               />
             ) : null}
           </span>
@@ -132,18 +135,18 @@ export const CaseCard = memo(function CaseCard({
         </div>
 
         <div className="min-w-0 pr-20">
-          <h3 className="truncate font-heading text-lg font-bold leading-tight" title={c.employerName}>
+          <h3 className="truncate font-heading text-lg font-bold leading-tight" title={title}>
             {selectionMode ? (
               <button
                 type="button"
                 onClick={() => onSelect?.(c._id)}
                 className="text-left after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring"
               >
-                {c.employerName}
+                {title}
               </button>
             ) : (
               <Link href={`/cases/${c._id}`} className="after:absolute after:inset-0 hover:text-primary-text focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring">
-                {c.employerName}
+                {title}
               </Link>
             )}
           </h3>{" "}

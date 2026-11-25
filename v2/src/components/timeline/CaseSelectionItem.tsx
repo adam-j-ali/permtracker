@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CaseStageBadge } from "@/components/status/case-stage-badge";
 import { cn } from "@/lib/utils";
 import type { CaseStatus, ProgressStatus } from "@/lib/perm";
+import { caseTitle } from "@convex/lib/caseLabel";
 
 export interface CaseForSelection {
   _id: string;
@@ -63,14 +64,14 @@ export function CaseSelectionItem({
         checked={isSelected}
         onCheckedChange={() => onToggle(caseData._id)}
         onClick={(e) => e.stopPropagation()}
-        aria-label={`Select ${caseData.employerName}`}
+        aria-label={`Select ${caseTitle(caseData)}`}
         className="shrink-0"
       />
 
       {/* Case Info */}
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm truncate" title={caseData.employerName}>
-          {caseData.employerName}
+        <p className="font-semibold text-sm truncate" title={caseTitle(caseData)}>
+          {caseTitle(caseData)}
         </p>{" "}
         <p
           className="text-sm text-muted-foreground truncate"

@@ -28,8 +28,8 @@ describe('BasicInfoSection', () => {
 
   describe('required field indicators', () => {
     it.each([
-      ['Employer name', true],
-      ['Position title', true],
+      ['Employer name', false],
+      ['Position title', false],
       ['Case status', true],
       ['Progress status', true],
       ['Foreign worker ID', false],

@@ -150,8 +150,9 @@ Related: Case Form, RFI/RFE Management, Filing Windows`,
 Form Sections:
 
 1. Basic Information
-- Beneficiary name (required): Foreign worker's name
-- Employer name (required): Sponsoring company
+- Every field is optional. Someone tracking their own case can leave the employer and the job title blank.
+- Beneficiary name: Foreign worker's name
+- Employer name: Sponsoring company
 - Job title, SOC code, wage offered
 - Professional occupation checkbox (triggers additional recruitment methods)
 
@@ -1297,8 +1298,8 @@ Step 1: Access the Case Form
 - The case creation form opens in a new page or modal
 
 Step 2: Enter Basic Information
-- Beneficiary Name: Enter the foreign worker's full name (required)
-- Employer Name: Enter the sponsoring company name (required)
+- Beneficiary Name: Enter the foreign worker's full name (optional)
+- Employer Name: Enter the sponsoring company name (optional: leave it blank for your own case if you don't know it)
 - Job Title: Position title for the PERM application
 - SOC Code: Occupation code (can be looked up)
 - Wage Offered: Salary amount for the position

@@ -120,9 +120,11 @@ export function stageWords(caseStatus: string, progressStatus: string): string {
   return `${formatCaseStatus(caseStatus)}, ${formatProgressStatus(progressStatus).toLowerCase()}`;
 }
 
-export function caseLabel(c: Pick<CaseDoc, 'employerName' | 'beneficiaryIdentifier' | 'positionTitle'>): string {
+/** "Acme for J.D. (Engineer)", each part only when the case has it; a case with no employer is "A case". */
+export function caseLabel(c: { employerName?: string; beneficiaryIdentifier?: string; positionTitle?: string }): string {
   const who = c.beneficiaryIdentifier ? ` for ${c.beneficiaryIdentifier}` : '';
-  return `${c.employerName}${who} (${c.positionTitle})`;
+  const job = c.positionTitle?.trim() ? ` (${c.positionTitle})` : '';
+  return `${c.employerName?.trim() || 'A case'}${who}${job}`;
 }
 
 /** Field names in the words the case form uses. */
@@ -779,9 +781,10 @@ async function runUpdateCase(args: Args, token: string): Promise<ActionOutcome> 
 // =============================================================================
 
 export async function prepareCreateCase(params: CreateCaseInput, token: string): Promise<Prepared> {
+  // The employer and the job title are optional: a person's own case may have neither.
   const args: Args = {
-    employerName: params.employerName,
-    positionTitle: params.positionTitle,
+    ...(params.employerName ? { employerName: params.employerName } : {}),
+    ...(params.positionTitle ? { positionTitle: params.positionTitle } : {}),
     beneficiaryIdentifier: params.foreignWorkerId ?? '',
   };
   const p = params as unknown as Args;
@@ -862,7 +865,7 @@ export async function prepareCreateCase(params: CreateCaseInput, token: string):
   try {
     const dup = await fetchQuery(
       api.cases.checkDuplicates,
-      { cases: [{ employerName: params.employerName, beneficiaryIdentifier: params.foreignWorkerId }] },
+      { cases: [{ employerName: params.employerName ?? '', beneficiaryIdentifier: params.foreignWorkerId }] },
       { token },
     );
     const first = dup.duplicates[0];
@@ -886,7 +889,7 @@ export async function prepareCreateCase(params: CreateCaseInput, token: string):
 async function runCreateCase(args: Args, token: string): Promise<ActionOutcome> {
   const id = await fetchMutation(api.cases.create, args as Parameters<typeof fetchMutation<typeof api.cases.create>>[1], { token });
   const after = await readCaseOrUnreadable(id, token).then((c) => (c === UNREADABLE ? null : c));
-  const label = after ? caseLabel(after) : String(args.employerName);
+  const label = after ? caseLabel(after) : caseLabel({ employerName: typeof args.employerName === 'string' ? args.employerName : '' });
   const stage = after ? stageWords(after.caseStatus, after.progressStatus) : 'unknown';
   const message = `Created a case: ${label}. Stage: ${stage}.`;
   return {
@@ -1048,7 +1051,7 @@ async function resolveBulk(
 }
 
 function namesPreview(cases: MinimalCase[]): string[] {
-  const shown = cases.slice(0, 8).map((c) => `${c.employerName}${c.beneficiaryIdentifier ? ` for ${c.beneficiaryIdentifier}` : ''}`);
+  const shown = cases.slice(0, 8).map((c) => `${c.employerName.trim() || 'A case'}${c.beneficiaryIdentifier ? ` for ${c.beneficiaryIdentifier}` : ''}`);
   if (cases.length > shown.length) shown.push(`and ${cases.length - shown.length} more`);
   return shown;
 }

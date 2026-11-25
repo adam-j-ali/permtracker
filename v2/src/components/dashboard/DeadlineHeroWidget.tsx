@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import AddCaseButton from "./AddCaseButton";
 import UrgencyGroup from "./UrgencyGroup";
 import { WidgetHeader, WidgetLink } from "./widget-primitives";
+import { caseTitle } from "@convex/lib/caseLabel";
 
 const GROUPS = [
   { key: "overdue", title: "Overdue" },
@@ -56,16 +57,19 @@ function soonest(items: readonly DeadlineItem[]): DeadlineItem | undefined {
   return items.reduce<DeadlineItem | undefined>((a, b) => (a === undefined || b.daysUntil < a.daysUntil ? b : a), undefined);
 }
 
+/** A deadline's case as the lead sentence names it: the employer, else the person, else "your case". */
+const whose = (d: DeadlineItem) => caseTitle({ employerName: d.employerName, beneficiaryIdentifier: d.beneficiaryName }, "your case");
+
 /** The one sentence the dashboard leads with. */
 export function deadlineAnswer(data: Pick<DeadlineGroups, "overdue" | "thisWeek" | "thisMonth" | "later">, openCases: number | undefined): string {
   const late = data.overdue.length;
   const next = soonest([...data.thisWeek, ...data.thisMonth, ...data.later]);
   const nextLine = next
-    ? `Next: ${next.label} for ${next.employerName}, ${formatDeadlineDate(next.dueDate)} (${countdownWords(next.daysUntil).toLowerCase()}).`
+    ? `Next: ${next.label} for ${whose(next)}, ${formatDeadlineDate(next.dueDate)} (${countdownWords(next.daysUntil).toLowerCase()}).`
     : "";
   if (late > 0) {
     const first = soonest(data.overdue)!;
-    const lead = `${late} ${late === 1 ? "deadline is" : "deadlines are"} late, the earliest ${first.label} for ${first.employerName}.`;
+    const lead = `${late} ${late === 1 ? "deadline is" : "deadlines are"} late, the earliest ${first.label} for ${whose(first)}.`;
     return next ? `${lead} ${nextLine}` : lead;
   }
   if (next) return nextLine;

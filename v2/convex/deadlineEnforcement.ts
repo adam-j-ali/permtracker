@@ -176,7 +176,7 @@ export const checkAndEnforceDeadlines = mutation({
               await ctx.scheduler.runAfter(0, internal.notificationActions.sendAutoClosureEmail, {
                 notificationId,
                 to: user.email,
-                beneficiaryName: caseDoc.beneficiaryIdentifier || "Beneficiary",
+                beneficiaryName: caseDoc.beneficiaryIdentifier ?? "",
                 companyName: caseDoc.employerName,
                 violationType: formatDeadlineType(VIOLATION_TO_DEADLINE_TYPE[violation.type]),
                 reason: violation.reason,

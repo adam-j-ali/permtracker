@@ -241,6 +241,19 @@ describe("formatEventTitle", () => {
   });
 });
 
+describe("a case without an employer", () => {
+  it("is titled by the person, and by the event alone when nothing names it", () => {
+    expect(formatEventTitle(createEventInput({ employerName: "", beneficiaryIdentifier: "J.D." }))).toBe("PWD expires: J.D.");
+    expect(formatEventTitle(createEventInput({ employerName: "", beneficiaryIdentifier: "" }))).toBe("PWD expires");
+  });
+
+  it("leaves out the lines it has nothing for", () => {
+    const desc = formatEventDescription(createEventInput({ employerName: "", beneficiaryIdentifier: "" }));
+    expect(desc).not.toContain("Employer:");
+    expect(desc).not.toContain("Beneficiary:");
+  });
+});
+
 // formatEventDescription Tests
 
 describe("formatEventDescription", () => {

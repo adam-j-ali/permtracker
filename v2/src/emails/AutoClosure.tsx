@@ -13,6 +13,7 @@ import { Text, Section } from "@react-email/components";
 import { EmailLayout, EmailButton, EmailHeader } from "./components";
 import { labelStyle, valueStyle, detailsSectionStyle, ctaSectionStyle } from "./components/emailStyles";
 import { SITE_URL } from "../../convex/lib/links";
+import { caseInSentence } from "../../convex/lib/caseLabel";
 
 export interface AutoClosureProps {
   /** Beneficiary name */
@@ -44,7 +45,7 @@ export function AutoClosure({
   caseUrl,
   caseNumber,
 }: AutoClosureProps) {
-  const previewText = `Case closed automatically: ${beneficiaryName} at ${companyName}`;
+  const previewText = `Case closed automatically: ${caseInSentence({ beneficiaryIdentifier: beneficiaryName, employerName: companyName }, "your case")}`;
 
   return (
     <EmailLayout previewText={previewText}>
@@ -55,11 +56,19 @@ export function AutoClosure({
       />
 
       <Section style={detailsSectionStyle}>
-        <Text className="em-text-secondary" style={labelStyle}>Foreign worker</Text>
-        <Text className="em-text" style={valueStyle}>{beneficiaryName}</Text>
+        {beneficiaryName ? (
+          <>
+            <Text className="em-text-secondary" style={labelStyle}>Foreign worker</Text>
+            <Text className="em-text" style={valueStyle}>{beneficiaryName}</Text>
+          </>
+        ) : null}
 
-        <Text className="em-text-secondary" style={labelStyle}>Company</Text>
-        <Text className="em-text" style={valueStyle}>{companyName}</Text>
+        {companyName ? (
+          <>
+            <Text className="em-text-secondary" style={labelStyle}>Company</Text>
+            <Text className="em-text" style={valueStyle}>{companyName}</Text>
+          </>
+        ) : null}
       </Section>
 
       {/* Closure reason box */}

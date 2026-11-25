@@ -61,6 +61,7 @@ import {
   DOCUMENT_CAP_MESSAGE,
   type DocumentCategory,
 } from "@/lib/documents";
+import { caseSubtitle, caseTitle } from "@convex/lib/caseLabel";
 
 // ============================================================================
 // TYPES
@@ -492,7 +493,9 @@ function CaseDetail({ caseId, caseData }: CaseDetailProps) {
   );
 
   const isClosed = caseData.caseStatus === "closed";
-  const caseName = `${caseData.employerName} - ${caseData.positionTitle}`;
+  // A person's own case may carry no employer or job title: its name falls back (convex/lib/caseLabel.ts).
+  const caseTitleText = caseTitle(caseData);
+  const caseName = caseData.positionTitle ? `${caseTitleText} - ${caseData.positionTitle}` : caseTitleText;
   const isProfessionalOccupation = caseData.isProfessionalOccupation;
   const isSample = caseData.isSample;
 
@@ -507,17 +510,17 @@ function CaseDetail({ caseId, caseData }: CaseDetailProps) {
       />
 
       <header className="space-y-4">
-        <AppBreadcrumb steps={[{ href: "/cases", label: "Cases" }]} current={caseData.employerName} />
+        <AppBreadcrumb steps={[{ href: "/cases", label: "Cases" }]} current={caseTitleText} />
 
         {/* The name starts at 16rem, so on a phone the buttons wrap below it; at a
             basis of 0 the name squeezed to a letter a line beside them. */}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-[1_1_16rem]">
             <h1 className="font-heading text-3xl font-bold leading-[1.1] [overflow-wrap:anywhere] sm:text-4xl">
-              {caseData.employerName}
+              {caseTitleText}
             </h1>{" "}
             <p className="mt-1 text-base text-muted-foreground [overflow-wrap:anywhere]">
-              {[caseData.positionTitle, caseData.beneficiaryIdentifier].filter(Boolean).join(", ")}
+              {caseSubtitle(caseData)}
             </p>{" "}
             <CaseEmployerLine employer={employerPage} />
           </div>

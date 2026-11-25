@@ -391,7 +391,8 @@ describe("parseCaseImportFile", () => {
   // VALIDATION TESTS
   // ============================================================================
   describe("validation", () => {
-    it("validates employerName is required", async () => {
+    // A person's own case may have no employer, and its export has to come back in.
+    it("imports a row without an employer as a case without one", async () => {
       const missingEmployer = JSON.stringify([
         {
           beneficiaryIdentifier: "John Doe",
@@ -401,8 +402,15 @@ describe("parseCaseImportFile", () => {
       const file = new File([missingEmployer], "test.json", { type: "application/json" });
       const result = await parseCaseImportFile(file);
 
+      expect(result.errors).toHaveLength(0);
+      expect(result.valid).toHaveLength(1);
+      expect(result.valid[0]?.employerName).toBe("");
+    });
+
+    it("still refuses an employer that isn't text", async () => {
+      const file = new File([JSON.stringify([{ employerName: 42 }])], "test.json", { type: "application/json" });
+      const result = await parseCaseImportFile(file);
       expect(result.valid).toHaveLength(0);
-      expect(result.errors).toHaveLength(1);
       expect(result.errors[0]?.field).toBe("employerName");
     });
 
@@ -605,7 +613,8 @@ describe("parseCaseImportFile", () => {
           beneficiaryIdentifier: "Valid Person",
         },
         {
-          // Missing employerName
+          // An employer that isn't text
+          employerName: 42,
           beneficiaryIdentifier: "Invalid Person",
         },
         {

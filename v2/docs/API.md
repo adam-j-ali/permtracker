@@ -98,7 +98,7 @@ import { api } from "@/convex/_generated/api";
 // 2. Query cases (reactive: re-runs when the data changes)
 const cases = useQuery(api.cases.list, { status: "pwd" });
 
-// 3. Create a case (employerName and positionTitle are the only required fields)
+// 3. Create a case (every field is optional; a case without an employer or a job title stores each as "")
 const createCase = useMutation(api.cases.create);
 await createCase({
   employerName: "Acme Corp",
@@ -480,9 +480,9 @@ Creates a case: derived dates, validation, the stage, the change log, a notifica
 
 ```typescript
 create(args: {
-  // Required
-  employerName: string;
-  positionTitle: string;
+  // Optional, like everything else: a case without them stores each as ""
+  employerName?: string;
+  positionTitle?: string;
 
   // Everything else is optional: any stored field of the `cases` table
   // except the ones the server sets (userId, recruitmentStartDate,

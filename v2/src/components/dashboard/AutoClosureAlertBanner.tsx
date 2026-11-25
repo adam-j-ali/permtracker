@@ -35,6 +35,7 @@ import Link from "next/link";
 import { handleOperationError } from "@/lib/errors";
 import { toast } from "@/lib/toast";
 import { useAuthContext } from "@/lib/contexts/AuthContext";
+import { caseTitle } from "@convex/lib/caseLabel";
 
 /**
  * Format closure reason for display.
@@ -196,19 +197,25 @@ export default function AutoClosureAlertBanner() {
 
       {/* Alert list */}
       <ul className="space-y-2">
-        {visibleAlerts.map((alert) => (
+        {visibleAlerts.map((alert) => {
+          // A person's own case may carry no employer or job title (convex/lib/caseLabel.ts).
+          const name = caseTitle(alert);
+          const label = alert.positionTitle ? `${name} - ${alert.positionTitle}` : name;
+          return (
           <li
             key={alert.notificationId}
             className="flex items-center justify-between bg-background border-2 border-data-warn p-3"
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-data-warn-ink truncate" title={alert.employerName}>
-                  {alert.employerName}
+                <span className="font-semibold text-data-warn-ink truncate" title={name}>
+                  {name}
                 </span>{" "}
-                <span className="text-data-warn-ink text-sm truncate" title={alert.positionTitle}>
-                  - {alert.positionTitle}
-                </span>
+                {alert.positionTitle ? (
+                  <span className="text-data-warn-ink text-sm truncate" title={alert.positionTitle}>
+                    - {alert.positionTitle}
+                  </span>
+                ) : null}
               </div>
               <div className="flex items-center gap-2 mt-1 text-sm text-data-warn-ink">
                 <span className="inline-flex items-center px-2 py-0.5 bg-data-warn/15 text-data-warn-ink text-sm font-medium">
@@ -229,7 +236,7 @@ export default function AutoClosureAlertBanner() {
                   className="min-h-11"
                   disabled={busy !== null}
                   onClick={() => handleReopen(alert.caseId!, alert.notificationId)}
-                  aria-label={`Reopen ${alert.employerName} - ${alert.positionTitle}`}
+                  aria-label={`Reopen ${label}`}
                 >
                   Reopen
                 </Button>
@@ -239,7 +246,7 @@ export default function AutoClosureAlertBanner() {
                   href={`/cases/${alert.caseId}`}
                   className="inline-flex min-h-11 min-w-11 items-center justify-center text-data-warn-ink transition-colors"
                   title="View case"
-                  aria-label={`View ${alert.employerName} - ${alert.positionTitle}`}
+                  aria-label={`View ${label}`}
                 >
                   <ArrowSquareOutIcon className="w-4 h-4" aria-hidden="true" />
                 </Link>
@@ -251,13 +258,14 @@ export default function AutoClosureAlertBanner() {
                 aria-busy={busy === alert.notificationId}
                 className="inline-flex min-h-11 min-w-11 items-center justify-center text-data-warn-ink transition-colors disabled:opacity-50"
                 title="Dismiss alert"
-                aria-label={`Dismiss alert for ${alert.employerName} - ${alert.positionTitle}`}
+                aria-label={`Dismiss alert for ${label}`}
               >
                 <XIcon className="w-4 h-4" />
               </button>
             </div>
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       {/* Collapsed indicator */}

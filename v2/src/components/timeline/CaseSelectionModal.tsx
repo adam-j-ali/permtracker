@@ -127,6 +127,8 @@ export function CaseSelectionModal({
     result.sort((a, b) => {
       switch (sortBy) {
         case "name":
+          // A case without an employer (a person's own case) goes after every named one.
+          if (!a.employerName.trim() !== !b.employerName.trim()) return a.employerName.trim() ? -1 : 1;
           return a.employerName.localeCompare(b.employerName);
         case "status":
           return STATUS_ORDER[a.caseStatus] - STATUS_ORDER[b.caseStatus];

@@ -3,6 +3,7 @@
 import type { DeadlineItem as DeadlineItemType } from "@convex/lib/dashboardTypes";
 import { countdownWords, formatDeadlineDate } from "@/components/cases/case-card.utils";
 import { WidgetRow } from "./widget-primitives";
+import { caseTitle } from "@convex/lib/caseLabel";
 
 /**
  * One deadline: the employer, what's due and the role, then how long until
@@ -10,11 +11,13 @@ import { WidgetRow } from "./widget-primitives";
  */
 export default function DeadlineItem({ deadline }: { deadline: DeadlineItemType }) {
   const overdue = deadline.urgency === "overdue";
-  const role = deadline.positionTitle || deadline.beneficiaryName;
+  // A person's own case may carry no employer: the person names it then (convex/lib/caseLabel.ts).
+  const named = Boolean(deadline.employerName.trim());
+  const role = named ? deadline.positionTitle || deadline.beneficiaryName : deadline.positionTitle;
   return (
     <WidgetRow
       href={`/cases/${deadline.caseId}`}
-      title={deadline.employerName}
+      title={caseTitle({ employerName: deadline.employerName, beneficiaryIdentifier: deadline.beneficiaryName })}
       detail={role ? `${deadline.label} · ${role}` : deadline.label}
       aside={countdownWords(deadline.daysUntil)}
       asideClassName={overdue ? "text-destructive" : undefined}

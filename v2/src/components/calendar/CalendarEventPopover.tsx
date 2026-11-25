@@ -250,8 +250,8 @@ export function CalendarEventPopover({
               </div>
             )}
 
-            {/* Employer */}
-            {caseData && (
+            {/* Employer: a person's own case may have none */}
+            {caseData?.employerName && (
               <div
                 className="flex items-start gap-2"
               >
@@ -265,7 +265,7 @@ export function CalendarEventPopover({
             )}
 
             {/* Foreign Worker */}
-            {caseData && (
+            {caseData?.beneficiaryIdentifier && (
               <div
                 className="flex items-start gap-2"
               >
@@ -279,7 +279,7 @@ export function CalendarEventPopover({
             )}
 
             {/* Position */}
-            {caseData && (
+            {caseData?.positionTitle && (
               <div
                 className="flex items-start gap-2"
               >

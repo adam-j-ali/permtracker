@@ -945,7 +945,7 @@ export const enforceDeadlinesForAllUsers = internalAction({
                 {
                   notificationId,
                   to: email,
-                  beneficiaryName: caseDoc.beneficiaryIdentifier || "Beneficiary",
+                  beneficiaryName: caseDoc.beneficiaryIdentifier ?? "",
                   companyName: caseDoc.employerName,
                   violationType: formatDeadlineType(
                     VIOLATION_TO_DEADLINE_TYPE[violation.type]

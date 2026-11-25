@@ -14,11 +14,12 @@ import { StatusRail } from "./components/StatusRail";
 import { SANS_STACK } from "./components/QueueStamp";
 import { ctaSectionStyle } from "./components/emailStyles";
 import { SITE_URL } from "../../convex/lib/links";
+import { caseInSentence } from "../../convex/lib/caseLabel";
 
 export interface StatusChangeProps {
-  /** Beneficiary name */
+  /** Beneficiary name ("" when the case names none) */
   beneficiaryName: string;
-  /** Company/employer name */
+  /** Company/employer name ("" when the case names none) */
   companyName: string;
   /** Previous status */
   previousStatus: string;
@@ -49,9 +50,10 @@ export function StatusChange({
 }: StatusChangeProps) {
   // A new case has no previous stage: it says so instead of "N/A to Created".
   const isNew = !previousStatus || previousStatus === "N/A";
+  const who = caseInSentence({ beneficiaryIdentifier: beneficiaryName, employerName: companyName }, "Your case");
   const previewText = isNew
-    ? `New case: ${beneficiaryName} at ${companyName}, starting at ${newStatus}`
-    : `${beneficiaryName} at ${companyName} moved from ${previousStatus} to ${newStatus}`;
+    ? `New case: ${who}, starting at ${newStatus}`
+    : `${who} moved from ${previousStatus} to ${newStatus}`;
   const title = isNew
     ? "New case added"
     : changeType === "stage" ? "Case stage updated" : "Case progress updated";
@@ -59,7 +61,7 @@ export function StatusChange({
   return (
     <EmailLayout previewText={previewText}>
       <Text className="em-text-secondary" style={styles.eyebrow}>{title}</Text>
-      <Text className="em-text" style={styles.heading}>{`${beneficiaryName} at ${companyName}`}</Text>
+      <Text className="em-text" style={styles.heading}>{who}</Text>
       {caseNumber ? (
         <Text className="em-text-secondary" style={styles.caseNumber}>{`Case #${caseNumber}`}</Text>
       ) : null}

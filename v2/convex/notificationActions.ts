@@ -42,6 +42,7 @@ import { weeklyUnsubscribeUrl } from "./lib/prefsLink";
 import { extractUserIdFromAction } from "./lib/auth";
 import { rateLimiter } from "./rateLimitConfig";
 import { SITE_URL } from "./lib/links";
+import { caseInSentence } from "./lib/caseLabel";
 import { NOTIFICATION_SETTINGS_PATH } from "./lib/mailKinds";
 import { deadlineDigestWords } from "./lib/deadlineDigestWords";
 
@@ -175,9 +176,10 @@ export const sendStatusChangeEmail = internalAction({
 
     const changeLabel = args.changeType === "stage" ? "stage" : "progress";
     const isNew = !args.previousStatus || args.previousStatus === "N/A";
+    const who = caseInSentence({ beneficiaryIdentifier: args.beneficiaryName, employerName: args.companyName }, "Your case");
     const subject = isNew
-      ? `New case: ${args.beneficiaryName} at ${args.companyName}`
-      : `${args.beneficiaryName} at ${args.companyName}: ${changeLabel} moved from ${args.previousStatus} to ${args.newStatus}`;
+      ? `New case: ${who}`
+      : `${who}: ${changeLabel} moved from ${args.previousStatus} to ${args.newStatus}`;
 
     await sendNotificationEmail(ctx, {
       to: args.to,
@@ -223,7 +225,8 @@ export const sendAutoClosureEmail = internalAction({
       })
     );
 
-    const subject = `Case closed: ${args.beneficiaryName} at ${args.companyName} (${args.violationType})`;
+    const who = caseInSentence({ beneficiaryIdentifier: args.beneficiaryName, employerName: args.companyName }, "your case");
+    const subject = `Case closed: ${who} (${args.violationType})`;
 
     await sendNotificationEmail(ctx, {
       to: args.to,

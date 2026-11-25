@@ -170,7 +170,6 @@ export function BasicInfoSection(props: BasicInfoSectionProps) {
           <FormField
             label="Employer name"
             name="employerName"
-            required
             error={errors?.employerName}
             className="md:col-span-2"
           >
@@ -254,7 +253,6 @@ export function BasicInfoSection(props: BasicInfoSectionProps) {
           <FormField
             label="Position title"
             name="positionTitle"
-            required
             error={errors?.positionTitle}
             className="md:col-span-2"
           >

@@ -4,6 +4,7 @@ import { safeFormatDistanceToNow } from "@/lib/utils/date";
 import { STAGE_VISUALS } from "@/components/status/stage-visuals";
 import type { RecentActivityItem } from "@convex/lib/dashboardTypes";
 import { WidgetRow } from "./widget-primitives";
+import { caseTitle } from "@convex/lib/caseLabel";
 
 /** One recent change: the case, what changed and its stage, and when. */
 export default function RecentActivityCard({ activity }: { activity: RecentActivityItem }) {
@@ -12,7 +13,7 @@ export default function RecentActivityCard({ activity }: { activity: RecentActiv
   return (
     <WidgetRow
       href={`/cases/${activity.id}`}
-      title={activity.employerName}
+      title={caseTitle(activity)}
       detail={[activity.action, activity.positionTitle, stage, dol].filter(Boolean).join(" · ")}
       asideDetail={
         <time dateTime={new Date(activity.timestamp).toISOString()} data-testid="activity-timestamp">

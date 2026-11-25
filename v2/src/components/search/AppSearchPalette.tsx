@@ -24,6 +24,7 @@ import { formatProgressStatus } from "@convex/lib/notificationHelpers";
 import { caseSearchHref } from "@/lib/caseSearchPlan";
 import { recordSearch } from "@/lib/search/recentSearches";
 import { ClearRecentButton, RECENT_CLEARED, RECENT_HEADING, recentSearchCount, useRecentSearches } from "@/components/search/RecentSearches";
+import { caseSubtitle, caseTitle } from "@convex/lib/caseLabel";
 
 /** Cases shown in the box; the cases page holds every match. */
 const CASES_SHOWN = 8;
@@ -149,11 +150,11 @@ export function AppSearchPalette({
                 ) : (
                   <>
                     {result.cases.map((c) => (
-                      <Command.Item key={c._id} value={`case-${c._id}`} onSelect={() => go(`/cases/${c._id}`, c.employerName)} className={ROW}>
+                      <Command.Item key={c._id} value={`case-${c._id}`} onSelect={() => go(`/cases/${c._id}`, caseTitle(c))} className={ROW}>
                         <span className="min-w-0">
-                          <span className="block truncate font-medium">{c.employerName}</span>{" "}
+                          <span className="block truncate font-medium">{caseTitle(c)}</span>{" "}
                           <span className="block truncate text-sm text-muted-foreground">
-                            {[c.positionTitle, c.beneficiaryIdentifier].filter(Boolean).join(", ")}
+                            {caseSubtitle(c)}
                           </span>
                         </span>{" "}
                         <span className="shrink-0 text-sm text-muted-foreground">{formatProgressStatus(c.progressStatus)}</span>

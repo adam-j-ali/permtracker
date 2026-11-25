@@ -30,6 +30,7 @@ import type { Milestone, RangeBar, CaseWithDates } from "@/lib/timeline/types";
 import type { Id } from "@convex/_generated/dataModel";
 import { TimelineMilestoneMarker } from "./TimelineMilestoneMarker";
 import { TimelineRangeBar } from "./TimelineRangeBar";
+import { caseTitle } from "@convex/lib/caseLabel";
 
 // ============================================================================
 // Types
@@ -232,9 +233,9 @@ export function TimelineRow({
             "cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
           )}
           data-testid={`timeline-case-name-${caseData.id}`}
-          title={caseData.employerName}
+          title={caseTitle(caseData)}
         >
-          {caseData.employerName}
+          {caseTitle(caseData)}
         </button>
         <div className="truncate text-sm text-muted-foreground leading-tight" title={caseData.positionTitle}>
           {caseData.positionTitle}

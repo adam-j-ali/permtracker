@@ -34,6 +34,7 @@ import {
 } from "./lib/notificationHelpers";
 import { groupRemindersByUser, type DigestReminderInput } from "./lib/reminderDigest";
 import { copiesByCase } from "./lib/reminderRecipients";
+import { caseInSentence } from "./lib/caseLabel";
 
 const log = loggers.scheduler;
 
@@ -102,7 +103,7 @@ export const runDeadlineReminders = internalAction({
     for (const reminder of reminders) {
       const notificationType = reminderNotificationType(reminder.deadlineType);
 
-      const caseLabel = `${reminder.beneficiaryIdentifier} at ${reminder.employerName}`;
+      const caseLabel = caseInSentence(reminder, "your case");
       const title = generateNotificationTitle(notificationType, {
         deadlineType: reminder.deadlineType,
         daysUntilDeadline: reminder.daysUntilDeadline,

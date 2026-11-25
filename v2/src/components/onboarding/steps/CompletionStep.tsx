@@ -2,6 +2,7 @@
 
 import { CertifiedFormArt } from "@/components/illustrations/CertifiedFormArt";
 import { Button } from "@/components/ui/button";
+import { caseSubtitle, caseTitle } from "@convex/lib/caseLabel";
 import { useOnboarding } from "../OnboardingProvider";
 
 interface CompletionStepProps {
@@ -26,15 +27,15 @@ export function CompletionStep({ onTakeTour, onSkip }: CompletionStepProps) {
         {madeACase ? "You\u2019re all set" : "Welcome aboard"}
       </h2>
 
-      {onboardingCaseInfo && (
+      {onboardingCaseInfo && (onboardingCaseInfo.employerName || onboardingCaseInfo.positionTitle) && (
         <div className="mb-4 inline-flex items-center gap-2 bg-tint px-4 py-2 border-2 shadow-hard-sm border-border">
           <span className="text-sm">
             <span className="font-heading font-semibold">
-              {onboardingCaseInfo.employerName}
+              {caseTitle(onboardingCaseInfo)}
             </span>
-            {", "}
+            {caseSubtitle(onboardingCaseInfo) ? ", " : ""}
             <span className="text-muted-foreground">
-              {onboardingCaseInfo.positionTitle}
+              {caseSubtitle(onboardingCaseInfo)}
             </span>
           </span>
         </div>

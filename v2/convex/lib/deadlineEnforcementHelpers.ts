@@ -23,6 +23,7 @@ import {
   getTodayISO,
 } from "./dateValidation";
 import { daysBetweenOrNull } from "./time";
+import { caseInSentence } from "./caseLabel";
 import { longDate } from "./months";
 
 /** A date in a closure reason, written the way every notice writes one ("October 10, 2026"). */
@@ -607,7 +608,7 @@ export function generateClosureMessage(
   employerName: string,
   beneficiaryIdentifier: string
 ): string {
-  const caseLabel = `${beneficiaryIdentifier} at ${employerName}`;
+  const caseLabel = caseInSentence({ beneficiaryIdentifier, employerName }, "your case");
 
   if (violation.suggestedAction === "close") {
     return `Case for ${caseLabel} has been automatically closed: ${violation.reason}`;

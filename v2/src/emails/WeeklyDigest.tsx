@@ -24,6 +24,7 @@ import { MS_PER_DAY } from "../../convex/lib/time";
 import { SITE_URL } from "../../convex/lib/links";
 import { NOTIFICATION_SETTINGS_PATH } from "../../convex/lib/mailKinds";
 import { urgencyHeadStyle, urgencyHeadText, urgencyRow, urgencyRowLast } from "./components/emailStyles";
+import { caseInSentence } from "../../convex/lib/caseLabel";
 
 export interface WeeklyDigestProps {
   /** Complete digest content built by digestHelpers */
@@ -229,7 +230,7 @@ function DeadlineRow({
           <tr>
             <td style={styles.deadlineContent}>
               <Text className="em-text" style={styles.deadlineCaseName}>
-                {deadline.beneficiaryIdentifier} at {deadline.employerName}
+                {caseInSentence(deadline, "Your case")}
               </Text>
               <Text className="em-text-secondary" style={styles.deadlineType}>
                 {deadline.deadlineType}
@@ -287,7 +288,7 @@ function ActivityRow({
           <tr>
             <td style={styles.activityContent}>
               <Text className="em-text" style={styles.activityCase}>
-                {update.beneficiaryIdentifier} at {update.employerName}
+                {caseInSentence(update, "Your case")}
               </Text>
               <Text className="em-text-secondary" style={styles.activityChange}>
                 {update.changeDescription}

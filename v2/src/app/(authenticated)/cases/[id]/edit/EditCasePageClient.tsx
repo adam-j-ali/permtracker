@@ -27,6 +27,7 @@ import type { CaseFormData } from "@/lib/forms/case-form-schema";
 import type { SectionName } from "@/hooks/useSectionState";
 import { prepareUpdatePayload } from "@/lib/forms/prepareUpdatePayload";
 import { caseWriteErrorMessage } from "@/lib/caseWriteErrors";
+import { caseSubtitle, caseTitle } from "@convex/lib/caseLabel";
 
 // ============================================================================
 // COMPONENTS
@@ -292,14 +293,14 @@ export function EditCasePageClient() {
       <AppBreadcrumb
         steps={[
           { href: "/cases", label: "Cases" },
-          { href: `/cases/${caseData._id}`, label: caseData.employerName },
+          { href: `/cases/${caseData._id}`, label: caseTitle(caseData) },
         ]}
         current="Edit"
       />
 
       <PageHeading
-        title={caseData.employerName}
-        meta={[caseData.positionTitle, caseData.beneficiaryIdentifier].filter(Boolean).join(", ")}
+        title={caseTitle(caseData)}
+        meta={caseSubtitle(caseData)}
       />
 
       {/* Case Form */}

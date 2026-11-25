@@ -159,18 +159,20 @@ describe('caseFormSchema', () => {
       expect(result.success).toBe(true);
     });
 
-    it('fails when employerName is missing', () => {
+    // A person tracking their own case may know neither the employer nor the job title.
+    it('passes without an employer, which defaults to empty text', () => {
       const data = createValidCaseFormData();
-      // @ts-expect-error - testing missing required field
+      // @ts-expect-error - testing an omitted field
       delete data.employerName;
       const result = caseFormSchema.safeParse(data);
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.employerName).toBe('');
     });
 
-    it('fails when employerName is empty string', () => {
+    it('passes with an empty employer', () => {
       const data = createValidCaseFormData({ employerName: '' });
       const result = caseFormSchema.safeParse(data);
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
     });
 
     it('succeeds when beneficiaryIdentifier is missing (optional field)', () => {
@@ -184,11 +186,17 @@ describe('caseFormSchema', () => {
       }
     });
 
-    it('fails when positionTitle is missing', () => {
+    it('passes without a position title, which defaults to empty text', () => {
       const data = createValidCaseFormData();
-      // @ts-expect-error - testing missing required field
+      // @ts-expect-error - testing an omitted field
       delete data.positionTitle;
       const result = caseFormSchema.safeParse(data);
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.positionTitle).toBe('');
+    });
+
+    it('still caps the employer at the server limit', () => {
+      const result = caseFormSchema.safeParse(createValidCaseFormData({ employerName: 'x'.repeat(501) }));
       expect(result.success).toBe(false);
     });
   });
@@ -431,7 +439,7 @@ describe('validateCaseForm', () => {
 
     it('returns field-specific errors for Zod validation failures', () => {
       const data = createValidCaseFormData({
-        employerName: '', // Empty required field
+        employerName: 'x'.repeat(501), // Over the length cap
       });
       const result = validateCaseForm(data);
       expect(result.valid).toBe(false);
@@ -455,7 +463,7 @@ describe('validateCaseForm', () => {
 
     it('aggregates both Zod and lib/perm errors', () => {
       const data = createValidCaseFormData({
-        employerName: '', // Zod error
+        employerName: 'x'.repeat(501), // Zod error
         pwdFilingDate: '2024-03-20',
         pwdDeterminationDate: '2024-01-15', // lib/perm error
       });
@@ -482,7 +490,7 @@ describe('validateCaseForm', () => {
   describe('error format', () => {
     it('returns errors in CaseFormErrors format', () => {
       const data = createValidCaseFormData({
-        employerName: '',
+        employerName: 'x'.repeat(501),
       });
       const result = validateCaseForm(data);
       expect(result.valid).toBe(false);

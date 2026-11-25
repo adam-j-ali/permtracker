@@ -19,6 +19,7 @@ import { CALENDAR_EVENT_LABELS } from "./calendarTypes";
 import { isValidISODate } from "./dateTypes";
 import { loggers } from "./logging";
 import { SITE_URL } from "./links";
+import { caseTitle } from "./caseLabel";
 
 const log = loggers.calendar;
 
@@ -107,7 +108,9 @@ export function toGoogleCalendarDate(dateStr: string): GoogleCalendarDate {
  */
 export function formatEventTitle(input: CalendarEventInput): string {
   const label = CALENDAR_EVENT_LABELS[input.eventType];
-  return `${label}: ${input.employerName}`;
+  // A case may carry no employer (a person's own case): the person names it then, or the event stands alone.
+  const name = caseTitle(input, "");
+  return name ? `${label}: ${name}` : label;
 }
 
 // ============================================================================
@@ -151,8 +154,8 @@ export function formatEventDescription(input: CalendarEventInput): string {
   lines.push("");
 
   // Case details
-  lines.push(`Employer: ${input.employerName}`);
-  lines.push(`Beneficiary: ${input.beneficiaryIdentifier}`);
+  if (input.employerName.trim()) lines.push(`Employer: ${input.employerName}`);
+  if (input.beneficiaryIdentifier.trim()) lines.push(`Beneficiary: ${input.beneficiaryIdentifier}`);
 
   if (input.caseNumber) {
     lines.push(`Case number: ${input.caseNumber}`);

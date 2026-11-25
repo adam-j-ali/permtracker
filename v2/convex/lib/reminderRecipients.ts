@@ -303,7 +303,10 @@ export const A_PERM_CASE = "a PERM case";
 export function safeCaseLine(jobTitle: string, employerName: string): string {
   const title = shownPlain(jobTitle, CASE_PART_MAX);
   const employer = shownPlain(employerName, CASE_PART_MAX);
-  return title === null || employer === null ? A_PERM_CASE : `${title} at ${employer}`;
+  if (title === null || employer === null) return A_PERM_CASE;
+  // A person's own case may carry no job title or no employer: whichever half there is names it.
+  if (title && employer) return `${title} at ${employer}`;
+  return title || employer || A_PERM_CASE;
 }
 
 /** The second person's subject: the owner's digest subject, then the case it's about (safeCaseLine). */

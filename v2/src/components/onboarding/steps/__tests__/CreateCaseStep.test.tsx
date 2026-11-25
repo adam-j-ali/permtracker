@@ -69,4 +69,14 @@ describe("CreateCaseStep", () => {
     // No stage set by hand: the server works it out from the dates.
     expect(args).not.toHaveProperty("progressStatusOverride");
   });
+
+  it("creates a case with neither the employer nor the job title", async () => {
+    const onNext = vi.fn();
+    render(<CreateCaseStep onNext={onNext} />);
+    fireEvent.click(screen.getByRole("button", { name: "Create case" }));
+    await waitFor(() => expect(onNext).toHaveBeenCalled());
+    const args = calls.create.mock.calls[0]![0];
+    expect(args.employerName).toBeUndefined();
+    expect(args.positionTitle).toBeUndefined();
+  });
 });
