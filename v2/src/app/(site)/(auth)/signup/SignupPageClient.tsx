@@ -51,6 +51,7 @@ import { useFormDomSync } from "@/hooks/useFormDomSync";
 import { StorageBlockedNotice } from "@/components/auth/StorageBlockedNotice";
 import { afterSignIn } from "@/lib/auth/returnTo";
 import { useAuthPageHref } from "@/hooks/useAuthPageHref";
+import { AuthAudienceLine } from "@/components/auth/AuthAudienceLine";
 
 type SignupStep = "credentials" | "verification";
 
@@ -423,7 +424,8 @@ export function SignupPageClient() {
       <CardHeader>
         <h1 className="font-heading text-3xl font-bold leading-none tracking-tight sm:text-4xl">
           Sign up
-        </h1>
+        </h1>{" "}
+        <AuthAudienceLine />
       </CardHeader>
       <CardContent className="space-y-6">
         <StorageBlockedNotice />

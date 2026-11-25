@@ -39,6 +39,7 @@ import { useFormDomSync } from "@/hooks/useFormDomSync";
 import { StorageBlockedNotice } from "@/components/auth/StorageBlockedNotice";
 import { afterSignIn, authPageHref } from "@/lib/auth/returnTo";
 import { useAuthPageHref } from "@/hooks/useAuthPageHref";
+import { AuthAudienceLine } from "@/components/auth/AuthAudienceLine";
 
 type LoginStep = "login" | "verification";
 
@@ -323,7 +324,8 @@ export function LoginPageClient() {
       <CardHeader>
         <h1 className="font-heading text-3xl font-bold leading-none tracking-tight sm:text-4xl">
           Sign in
-        </h1>
+        </h1>{" "}
+        <AuthAudienceLine />
       </CardHeader>
       <CardContent className="space-y-6">
         <StorageBlockedNotice />

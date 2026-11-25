@@ -7,7 +7,7 @@ export const dynamic = "force-static";
 export const metadata: Metadata = {
   title: "Sign In",
   description:
-    "Sign in to your PERM Tracker account to manage your immigration cases.",
+    "Sign in to PERM Tracker to track your own case, or every case you manage.",
   alternates: {
     canonical: "/login",
   },

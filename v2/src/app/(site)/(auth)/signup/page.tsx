@@ -24,7 +24,7 @@ export const revalidate = 86400;
 export const metadata: Metadata = {
   title: "Create Account",
   description:
-    "Create a free PERM Tracker account to manage your immigration cases. No account limits and no credit card.",
+    "Create a free PERM Tracker account to track your own case, or every case you manage. No account limits and no credit card.",
   alternates: {
     canonical: "/signup",
   },
