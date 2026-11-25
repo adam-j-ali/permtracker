@@ -62,8 +62,12 @@ export function PremiumClock() {
           />{" "}
           <p id={hintId} className="mt-1 text-sm text-muted-foreground">
             <KeepWhole>
-              {"The I-907's receipt date, or the day USCIS received your answer to its request for evidence, " +
-                "which starts a new count."}
+              {cls === "standard"
+                ? "The I-907's receipt date, or the day USCIS received your answer to its request for evidence, " +
+                  "which starts a new count."
+                : "The day USCIS had everything it needs to decide: the petition, its fees and the I-907, usually " +
+                  "the I-907's receipt date (8 CFR 106.4(f)(2)), or the day it received your answer to a request " +
+                  "for evidence, which starts a new count."}
             </KeepWhole>
           </p>
         </div>{" "}

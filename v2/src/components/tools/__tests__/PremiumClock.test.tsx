@@ -20,6 +20,14 @@ describe("the premium processing clock", () => {
     expect(screen.getByText(/refunds the premium fee/)).toBeTruthy();
   });
 
+  it("starts the 45-day count when USCIS has everything it needs, per 8 CFR 106.4(f)(2)(ii)", () => {
+    render(<PremiumClock />);
+    expect(screen.getByText(/your answer to its request for evidence/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /national interest waiver/ }));
+    expect(screen.getByText(/everything it needs to decide/)).toBeTruthy();
+    expect(screen.getByText(/106\.4\(f\)\(2\)/)).toBeTruthy();
+  });
+
   it("counts 45 for EB-1C and national interest waivers", () => {
     render(<PremiumClock />);
     fill("2026-11-23");
