@@ -125,7 +125,7 @@ export default async function UscisReceiptBlocksPage() {
             </div>
           </section>
 
-          <section className="mt-12" aria-label="Approved share by block">
+          <section className="mt-12" aria-label="Approved share by block" data-embed="uscis-receipt-blocks">
             <FigurePlate
               title="Share approved in each receipt block"
               subject={`Sampled cases of one form, ${formatAsOf(meta.as_of)}`}

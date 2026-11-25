@@ -252,7 +252,7 @@ export default async function GreenCardTimelinesPage() {
             <ThirtyDayLine month={month} className="mt-8 max-w-3xl" />
           ) : null}{" "}
 
-          <section className="mt-10" aria-labelledby="stages-h">
+          <section className="mt-10" aria-labelledby="stages-h" data-embed="reported-timelines">
             <h2 id="stages-h" className="font-heading text-2xl font-bold sm:text-3xl">
               How long each step took
             </h2>{" "}

@@ -18,7 +18,7 @@ import { ISO_MONTH_RE } from "@convex/lib/months";
  * re-pointed. `badge.test.ts` says so.
  */
 
-export type BadgeGroup = "DOL queues" | "The record" | "Where cases sit" | "Visa bulletin";
+export type BadgeGroup = "DOL queues" | "The record" | "Where cases sit" | "Visa bulletin" | "USCIS and consulates";
 
 /** The shapes a badge can be drawn in. Not every figure supports every one. */
 export const BADGE_STYLES = ["shield", "card", "bar"] as const;
@@ -66,6 +66,12 @@ export interface BadgeData {
   counts: Partial<Record<string, { value: number; asOf: string | null }>>;
 
   /**
+   * Counts USCIS or the State Department printed, keyed by badge id, each with the day or month it's for. Absent
+   * before the figure reads joined the badges (API 1.2); a missing one renders "no figure today".
+   */
+  published?: Partial<Record<string, { value: number; asOf: string | null }>>;
+
+  /**
    * Pending cases by DOL review stage, each with the date it was last seen.
    *
    * The stamp is PER STAGE, not one date for the table. A figure and its date
@@ -111,6 +117,7 @@ export interface BadgeDef {
 
 const DOL = "Department of Labor";
 const STATE = "State Department";
+const USCIS = "USCIS";
 
 /** A DOL queue month, as "at Nov 2025". */
 function queueMonth(
@@ -142,6 +149,32 @@ function recordCount(id: string, label: string, href: string, meaning: string, w
     resolve: (d) => {
       const c = d.counts[id];
       return c ? { value: groupDigits(c.value), asOf: c.asOf, source: "PERM Tracker, from federal files" } : null;
+    },
+  };
+}
+
+/** A count USCIS or the State Department printed, dated by the publisher's own quarter or month. */
+function publishedCount(id: string, label: string, href: string, meaning: string, what: string, source: string): BadgeDef {
+  return {
+    id, group: "USCIS and consulates", label, href, meaning,
+    styles: ["card", "shield"],
+    alt: (v) => `${v} ${what}`,
+    resolve: (d) => {
+      const c = d.published?.[id];
+      return c && c.asOf ? { value: groupDigits(c.value), asOf: c.asOf, source } : null;
+    },
+  };
+}
+
+/** A count of records this site holds, in the USCIS and consulates group. Never without its date. */
+function heldCount(id: string, label: string, href: string, meaning: string, what: string, source: string): BadgeDef {
+  return {
+    id, group: "USCIS and consulates", label, href, meaning,
+    styles: ["card", "shield"],
+    alt: (v) => `${v} ${what}`,
+    resolve: (d) => {
+      const c = d.counts[id];
+      return c && c.asOf ? { value: groupDigits(c.value), asOf: c.asOf, source } : null;
     },
   };
 }
@@ -277,6 +310,29 @@ export const BADGE_DEFS: readonly BadgeDef[] = [
   ...(["EB1", "EB2", "EB3"] as const).flatMap((cat) =>
     BULLETIN_COUNTRIES.map(([country, label]) => cutoff(cat, country, label)),
   ),
+
+  // ---- USCIS and consulates ---------------------------------------------
+  // Counts the agencies printed, each dated by its own quarter or month. The receipt-number sample's approval shares
+  // are estimates with a margin, and the estimates' record is a rate this site works out, so neither is a badge: their
+  // pages carry the margin and the basis beside the figure.
+  publishedCount("uscis-i140-pending", "I-140s pending", "/tools/i140-trends",
+    "I-140 petitions pending at USCIS at the end of its newest quarter, as USCIS's quarterly report prints it.",
+    "I-140 petitions pending at USCIS", USCIS),
+  publishedCount("uscis-i485-eb-pending", "Job-based I-485s pending", "/i485-by-field-office",
+    "Employment-based green card applications (I-485) pending at USCIS at the end of its newest quarter, every office together, as USCIS prints it.",
+    "employment-based I-485s pending at USCIS", USCIS),
+  publishedCount("uscis-awaiting-visa", "Waiting for a visa number", "/i140-awaiting-visa",
+    "Approved employment-based petitions waiting for a visa number, every country and category, as USCIS counts them.",
+    "approved employment-based petitions waiting for a visa number", USCIS),
+  publishedCount("visas-issued-employment", "Job-based visas issued", "/visa-issuances",
+    "Employment-based immigrant visas the State Department issued abroad in the newest 12 months it has published, from its monthly tables. Dated by the newest month.",
+    "employment-based immigrant visas issued in 12 months", STATE),
+  heldCount("timelines-reported", "Reported timelines", "/green-card-timelines",
+    "People's own green card timelines PERM Tracker has merged from every place it reads, each person counted once. Self-reported.",
+    "people's reported timelines, each person once", "PERM Tracker, from people's own reports"),
+  heldCount("uscis-sample-cases", "USCIS sample", "/uscis-receipt-blocks",
+    "USCIS cases in PERM Tracker's sample of receipt numbers, each checked on USCIS's Case Status page.",
+    "USCIS cases in the receipt-number sample", "PERM Tracker, from USCIS's Case Status page"),
 ];
 
 export const BADGE_KINDS = BADGE_DEFS.map((d) => d.id);

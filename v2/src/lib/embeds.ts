@@ -61,6 +61,11 @@ export const EMBEDS: readonly EmbedDef[] = [
   { slug: "i140-trends", title: "I-140 trends", blurb: "USCIS I-140 receipts, approvals and pending by quarter.", href: "/tools/i140-trends", height: 760, group: "chart" },
   { slug: "perm-queue", title: "The PERM queue by filing month", blurb: "Every filing month's undecided cases, and the month DOL is working by our daily check.", href: "/perm-queue", height: 1000, narrow: { at0: 1600, perVw: 104 }, group: "chart" },
   { slug: "perm-processing-times", title: "PERM processing times today", blurb: "The filing month DOL is deciding, by our daily check of DOL's case status, with DOL's own average days and the prevailing wage line. It keeps itself current.", href: "/perm-processing-times", height: 860, narrow: { at0: 1790, perVw: 161 }, group: "chart" },
+  { slug: "uscis-receipt-blocks", title: "Approvals by USCIS receipt block", blurb: "The share of sampled cases USCIS shows as approved in each online receipt block, with its margin.", href: "/uscis-receipt-blocks", height: 760, group: "chart" },
+  { slug: "i485-by-field-office", title: "I-485s at each USCIS office", blurb: "USCIS's own quarterly I-485 counts for every field office and service center, searchable.", href: "/i485-by-field-office", height: 900, group: "chart" },
+  { slug: "consular-posts", title: "Consulate interview lines", blurb: "The month each consulate is scheduling immigrant visa interviews for, and the visas it issued, from the State Department.", href: "/consular-posts", height: 900, group: "chart" },
+  { slug: "reported-timelines", title: "How long each green card step took", blurb: "The typical days for each step, from people who reported their own cases, each person counted once.", href: "/green-card-timelines", height: 1000, group: "chart" },
+  { slug: "estimate-checks", title: "How close the estimates land", blurb: "Each kind of date PERM Tracker gives, checked against what DOL and the State Department then did.", href: "/estimate-scorecard", height: 760, group: "chart" },
   { slug: "visa-bulletin", title: "Visa bulletin cutoffs", blurb: "Final action and filing dates by category and country, with the month's movement.", href: "/visa-bulletin", height: 820, group: "chart" },
 ];
 

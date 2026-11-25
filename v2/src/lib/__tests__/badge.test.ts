@@ -26,6 +26,14 @@ const data: BadgeData = {
     "pwd-determinations": { value: 634638, asOf: "2026-06-30" },
     "lca-decisions": { value: 437496, asOf: "2026-06-30" },
     "bulletins-held": { value: 96, asOf: "2026-09" },
+    "timelines-reported": { value: 1210, asOf: "2026-11-25" },
+    "uscis-sample-cases": { value: 2014, asOf: "2026-11-25" },
+  },
+  published: {
+    "uscis-i140-pending": { value: 152340, asOf: "2026-06-30" },
+    "uscis-i485-eb-pending": { value: 88012, asOf: "2026-06-30" },
+    "uscis-awaiting-visa": { value: 1240000, asOf: "2026-06" },
+    "visas-issued-employment": { value: 21450, asOf: "2026-08" },
   },
   stages: {
     "ANALYST REVIEW": { cases: 90150, seenTo: "2026-09-08" },
@@ -61,7 +69,7 @@ describe("badges", () => {
   it("offers a lot of badges across every group", () => {
     expect(BADGE_KINDS.length).toBeGreaterThanOrEqual(30);
     const groups = new Set(BADGE_DEFS.map((d) => d.group));
-    expect([...groups].sort()).toEqual(["DOL queues", "The record", "Visa bulletin", "Where cases sit"]);
+    expect([...groups].sort()).toEqual(["DOL queues", "The record", "USCIS and consulates", "Visa bulletin", "Where cases sit"]);
     // Ids are addressable URLs, so they must be unique and URL-clean.
     expect(new Set(BADGE_KINDS).size).toBe(BADGE_KINDS.length);
     for (const id of BADGE_KINDS) expect(id, `${id} is not URL-safe`).toMatch(/^[a-z0-9-]+$/);
@@ -86,6 +94,29 @@ describe("badges", () => {
     // The date and the publisher are part of the claim, not decoration.
     expect(badgeSpec("perm-queue", data)?.alt).toContain("2026-08-31");
     expect(badgeSpec("bulletin-eb2-india", data)?.source).toContain("State");
+  });
+
+  it("carries USCIS's and State's own counts, each under its publisher and its own date", () => {
+    expect(badgeSpec("uscis-i140-pending", data)).toMatchObject({ value: "152,340", asOf: "2026-06-30", source: "USCIS" });
+    expect(badgeSpec("uscis-i485-eb-pending", data)?.alt).toContain("2026-06-30");
+    expect(badgeSpec("uscis-awaiting-visa", data)?.value).toBe("1,240,000");
+    expect(badgeSpec("visas-issued-employment", data)).toMatchObject({ asOf: "2026-08", source: "State Department" });
+    expect(badgeSpec("timelines-reported", data)).toMatchObject({ value: "1,210", asOf: "2026-11-25" });
+    expect(badgeSpec("uscis-sample-cases", data)?.source).toContain("Case Status");
+  });
+
+  it("never draws a figure without its date, and never an estimate or a rate the site works out", () => {
+    const undated: BadgeData = {
+      ...data,
+      counts: { ...data.counts, "timelines-reported": { value: 5, asOf: null }, "uscis-sample-cases": { value: 5, asOf: null } },
+      published: Object.fromEntries(Object.keys(data.published!).map((k) => [k, { value: 5, asOf: null }])),
+    };
+    for (const kind of ["uscis-i140-pending", "uscis-i485-eb-pending", "uscis-awaiting-visa", "visas-issued-employment", "timelines-reported", "uscis-sample-cases"]) {
+      expect(badgeSpec(kind, data), kind).not.toBeNull();
+      expect(badgeSpec(kind, undated), `${kind} drew a figure with no date`).toBeNull();
+    }
+    // The sample's approval shares and the estimates' record have their margin and basis on their pages, not here.
+    expect(BADGE_KINDS.filter((k) => /share|approv|accura|scorecard|estimate/.test(k))).toEqual([]);
   });
 
   it("dates a wage-request queue by DOL's wage table, never by the PERM table", () => {

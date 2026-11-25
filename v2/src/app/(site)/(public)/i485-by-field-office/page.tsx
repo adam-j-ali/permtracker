@@ -227,7 +227,7 @@ export default async function I485ByFieldOfficePage() {
           ) : null}
 
           {/* First things first: the search and the list, then the charts. */}
-          <section id="every-office" className="mt-12 scroll-mt-24">
+          <section id="every-office" className="mt-12 scroll-mt-24" data-embed="i485-by-field-office">
             <h2 className="font-heading text-2xl font-bold">Find your office</h2>{" "}
             <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
               {fieldOffices.length} field offices and {serviceCenters.length} service

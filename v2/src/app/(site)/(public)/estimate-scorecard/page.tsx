@@ -270,7 +270,7 @@ export default async function EstimateScorecardPage() {
       ) : null}
 
       {everyCheck.length > 0 ? (
-        <section aria-labelledby="every-h" className="mt-8">
+        <section aria-labelledby="every-h" className="mt-8" data-embed="estimate-checks">
           <h2 id="every-h" className="font-heading text-2xl font-bold sm:text-3xl">Every estimate, checked</h2>{" "}
           <p className="mt-2 max-w-2xl text-base leading-relaxed text-soft">
             <KeepWhole>

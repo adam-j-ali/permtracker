@@ -129,7 +129,11 @@ describe("the embed registry", () => {
     };
     // Tools whose first view runs to several screens (a filled-in example, a long chart page). Their frame is a
     // window that scrolls, by design: a frame as tall as the content would be thousands of pixels of someone's page.
-    const SCROLLS_BY_DESIGN = ["green-card-timeline", "visa-bulletin", "i485-position", "i140-trends", "priority-date", "i140-queue", "salary-explorer", "green-card-fees", "pwd-queue", "perm-deadlines"];
+    const SCROLLS_BY_DESIGN = [
+      "green-card-timeline", "visa-bulletin", "i485-position", "i140-trends", "priority-date", "i140-queue", "salary-explorer", "green-card-fees", "pwd-queue", "perm-deadlines",
+      // Long tables and charts of the figure pages (API 1.2's figures): a window that scrolls, like the charts above.
+      "uscis-receipt-blocks", "i485-by-field-office", "consular-posts", "reported-timelines", "estimate-checks",
+    ];
 
     for (const [slug, points] of Object.entries(FIRST_VIEW)) {
       it.each(points)(`${slug}: a frame %dpx wide holds its %dpx first view`, (frameWidth, contentHeight) => {

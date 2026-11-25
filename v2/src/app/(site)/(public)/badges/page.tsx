@@ -33,7 +33,7 @@ import { SITE_URL } from "@/lib/constants/site";
 
 const TITLE = "PERM and Visa Bulletin Badges";
 const DESCRIPTION =
-  "Embeddable SVG badges carrying figures DOL and the State Department publish: queue positions, decision days, visa bulletin cutoffs. Rebuilt daily.";
+  "Embeddable SVG badges with figures DOL, USCIS and the State Department publish: queue months, decision days, bulletin cutoffs, USCIS backlogs. Rebuilt daily.";
 const PATH = "/badges";
 const ORIGIN = SITE_URL;
 

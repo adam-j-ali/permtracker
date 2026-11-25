@@ -190,7 +190,7 @@ export default async function ConsularPostsPage() {
         </section>
       ) : null}
 
-      <section className="mt-12" aria-labelledby="every-post">
+      <section className="mt-12" aria-labelledby="every-post" data-embed="consular-posts">
         <h2 id="every-post" className="font-heading text-2xl font-bold">
           Every consulate
         </h2>{" "}
