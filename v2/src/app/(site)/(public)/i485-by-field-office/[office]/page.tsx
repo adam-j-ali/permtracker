@@ -119,10 +119,17 @@ function ordinal(n: number): string {
 }
 
 /**
- * The answer about people's own waits here, from the timelines they shared. A median is named only when the read
- * sent one (five timelines or more), and always as theirs, never as USCIS's.
+ * The answer about people's own waits here: the office's figure merged from every source (the summary's "i485-gc")
+ * first, the timelines shared on this page while that has none (Nov 25 2026: it read the shared ones alone). A median
+ * is named only when a read sent one, and always as theirs, never as USCIS's.
  */
-function sharedAnswer(o: UscisOffice, view: OfficeTimelineView | null): string {
+function reportedAnswer(o: UscisOffice, summary: PlaceSummary | null, view: OfficeTimelineView | null): string {
+  const caveat = "Their dates are self-reported, and people with a fast or a stuck case are likelier to share, so read it as what they saw.";
+  const merged = summary?.steps.find((st) => st.id === "i485-gc");
+  if (merged && merged.median !== null) {
+    const window = merged.windowDays ? `, over the last ${merged.windowDays <= 183 ? 6 : 12} months` : "";
+    return `USCIS doesn't publish a wait for one office. The ${formatInt(merged.n)} people who reported a finished I-485 at ${theOffice(o)} in ${REPORTED_COMMUNITY_PLACES} and on this site report a median of ${formatInt(merged.median)} days from filing the I-485 to the green card${window}. ${caveat}`;
+  }
   const none = `USCIS doesn't publish a wait for one office. People whose I-485 was at ${theOffice(o)} can share their own dates on this page, and it shows a median once five have.`;
   const toCard = view?.metrics.find((m) => m.id === "i485-gc");
   if (!view || !toCard || toCard.median === null) return none;
@@ -151,6 +158,18 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
     // How long each step took here, over every case people reported at this office (the hourly build's summary).
     getOfficeSummary(office.code).catch(softFail<PlaceSummary | null>("i485-by-field-office/[office].summary", null)),
   ]);
+  const stepsMeasured = !!summary && summary.steps.some((st) => st.median !== null);
+  const waiting = summary?.waiting?.open ? summary.waiting : null;
+  const waitingBody = (w: NonNullable<typeof waiting>) => (
+    <>
+      <p className="mt-1 max-w-2xl text-base text-muted-foreground">
+        {`The ${formatInt(w.heard)} people heard from in the last year, at the furthest step each reported.`}
+      </p>
+      <div className="mt-3">
+        <WhoIsWaiting waiting={w} total={w.heard} noun={["person", "people"]} />
+      </div>
+    </>
+  );
   const year = officeYear(quarters, office.code);
   const newest = quarters[quarters.length - 1];
   const now = year[year.length - 1];
@@ -246,7 +265,7 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
     },
     {
       q: `How long did people at ${theOffice(office)} wait for their I-485?`,
-      a: sharedAnswer(office, shared),
+      a: reportedAnswer(office, summary, shared),
     },
     {
       q: `Where do these numbers come from?`,
@@ -476,7 +495,7 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
         </>
       )}
 
-      {summary && summary.steps.some((st) => st.median !== null) ? (
+      {stepsMeasured ? (
         <section id="reported-figures" className="mt-12 scroll-mt-24" aria-labelledby="reported-figures-h">
           <h2 id="reported-figures-h" className="font-heading text-2xl font-bold">
             How long each step took here, as people report it
@@ -487,15 +506,10 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
           <div className="mt-5">
             <StepsByStage steps={summary.steps} stages={[{ groups: ["i485"], title: "Each step of the I-485" }]} />
           </div>{" "}
-          {summary.waiting?.open ? (
+          {waiting ? (
             <div className="mt-8">
               <h3 className="font-heading text-xl font-bold">Who&apos;s waiting here</h3>{" "}
-              <p className="mt-1 max-w-2xl text-base text-muted-foreground">
-                {`The ${formatInt(summary.waiting.heard)} people heard from in the last year, at the furthest step each reported.`}
-              </p>
-              <div className="mt-3">
-                <WhoIsWaiting waiting={summary.waiting} total={summary.waiting.heard} noun={["person", "people"]} />
-              </div>
+              {waitingBody(waiting)}
             </div>
           ) : null}{" "}
           <p className="mt-5 max-w-3xl text-base leading-relaxed">
@@ -515,7 +529,18 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
         </section>
       ) : null}
 
-      <OfficeTimelines office={office} view={shared} />
+      {!stepsMeasured && waiting ? (
+        // No step has a median here yet, but who's waiting is its own count and stands alone (Nov 25 2026: it sat
+        // inside the steps' section and vanished with it).
+        <section id="reported-figures" className="mt-12 scroll-mt-24" aria-labelledby="waiting-here-h">
+          <h2 id="waiting-here-h" className="font-heading text-2xl font-bold">
+            Who&apos;s waiting here
+          </h2>{" "}
+          {waitingBody(waiting)}
+        </section>
+      ) : null}
+
+      <OfficeTimelines office={office} view={shared} mergedShown={stepsMeasured} />
 
       {reported === null ? (
         <NoteBanner alert className="mt-12 max-w-2xl">

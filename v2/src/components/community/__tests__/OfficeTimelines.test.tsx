@@ -99,6 +99,15 @@ describe("OfficeTimelines", () => {
     expect(three).toContain("3 of 5 reports");
   });
 
+  it("leaves its own medians out when the page already shows the office's figures from every source, and keeps the list", () => {
+    const view = viewOf(Array.from({ length: 5 }, (_, i) => rec(i)));
+    const merged = renderToStaticMarkup(<OfficeTimelines office={HAR} view={view} mergedShown />);
+    expect(merged).not.toContain("Median 295 days");
+    expect(merged).not.toContain("of 5 reports");
+    expect(merged).toContain("Timelines shared from");
+    expect(html(view)).toContain("Median 295 days");
+  });
+
   it("gives a step its month when the person left the I-485 date out", () => {
     const out = html(viewOf([rec(0, { i485FiledOn: undefined }), rec(1), rec(2)]));
     expect(out).toContain("Not given");

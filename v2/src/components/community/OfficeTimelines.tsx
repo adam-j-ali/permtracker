@@ -43,7 +43,20 @@ function stopText(s: { day: number | null; month: string | null }): string {
 
 const place = (o: UscisOffice) => (isCenter(o) ? `the ${o.name}` : `the ${o.name} office`);
 
-export function OfficeTimelines({ office, view }: { office: UscisOffice; view: OfficeTimelineView | null }) {
+export function OfficeTimelines({
+  office,
+  view,
+  mergedShown = false,
+}: {
+  office: UscisOffice;
+  view: OfficeTimelineView | null;
+  /**
+   * The page already shows this office's figures merged from every source. The shared timelines' own medians would then
+   * be a second, smaller set for the same steps (or "not enough timelines" under real figures), so they're left out and
+   * the list of timelines stays (Nov 25 2026).
+   */
+  mergedShown?: boolean;
+}) {
   const sharePath = `/i485-by-field-office/${office.slug}#timelines`;
   return (
     <PageSection
@@ -80,9 +93,11 @@ export function OfficeTimelines({ office, view }: { office: UscisOffice; view: O
 
       {view && view.total > 0 ? (
         <>
-          <div className="mt-6">
-            <StageMedians metrics={view.metrics as readonly MetricResult[]} />
-          </div>{" "}
+          {mergedShown ? null : (
+            <div className="mt-6">
+              <StageMedians metrics={view.metrics as readonly MetricResult[]} />
+            </div>
+          )}{" "}
           {/* Optional: a backend older than Nov 17 2026 sends no codes. */}
           <AccountCodes codes={view.codes ?? []} where={`timelines from ${place(office)}`} className="mt-6" />{" "}
           {view.open ? (
