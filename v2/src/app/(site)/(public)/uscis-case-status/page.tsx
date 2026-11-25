@@ -10,6 +10,7 @@ import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
 import { SavedReceipts } from "@/components/tools/SavedReceipts";
 import { UscisReceiptForm } from "@/components/tools/UscisReceiptForm";
 import { ReceiptSampleNote } from "@/components/uscis/ReceiptSampleNote";
+import { TypedReceiptBeacon } from "@/components/uscis/TypedReceiptBeacon";
 import { UscisStatusResult } from "@/components/tools/UscisStatusResult";
 import { UscisWatchForm } from "@/components/tools/UscisWatchForm";
 import { watchableReceipt } from "@convex/lib/uscisWatch";
@@ -251,6 +252,7 @@ export default async function UscisCaseStatusPage({
       ) : null}
 
       {receipt ? <ReceiptSampleNote receipt={receipt} /> : null}
+      {receipt ? <TypedReceiptBeacon receipt={receipt} /> : null}
 
       {enabled ? (
         receipt ? (

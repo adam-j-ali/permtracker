@@ -84,4 +84,5 @@ export const FAMILY_HUBS: Readonly<Record<string, FamilyHub>> = {
 export const UNLISTED_FAMILIES: Readonly<Record<string, string>> = {
   "/perm-queue/[month]/[day]": "noindex: a filing day's list, reached from its month page; robots.txt keeps crawlers off.",
   "/perm-updates/[day]": "noindex: one day's moves, reached from /perm-updates.",
+  "/uscis-receipt-blocks/[block]/numbers": "noindex: a block's checked receipt numbers (the Privacy Policy keeps them out of search), reached from the block's page.",
 };

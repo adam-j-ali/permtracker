@@ -304,6 +304,7 @@ import type * as turnstile from "../turnstile.js";
 import type * as turnstilePasses from "../turnstilePasses.js";
 import type * as uscisAlerts from "../uscisAlerts.js";
 import type * as uscisI140 from "../uscisI140.js";
+import type * as uscisTyped from "../uscisTyped.js";
 import type * as userCaseOrder from "../userCaseOrder.js";
 import type * as users from "../users.js";
 import type * as watchedCases from "../watchedCases.js";
@@ -617,6 +618,7 @@ declare const fullApi: ApiFromModules<{
   turnstilePasses: typeof turnstilePasses;
   uscisAlerts: typeof uscisAlerts;
   uscisI140: typeof uscisI140;
+  uscisTyped: typeof uscisTyped;
   userCaseOrder: typeof userCaseOrder;
   users: typeof users;
   watchedCases: typeof watchedCases;

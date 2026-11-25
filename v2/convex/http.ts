@@ -43,7 +43,7 @@ import { SITE_URL } from "./lib/links";
 import { QUEUE_CANCEL_ASK, QUEUE_CONFIRM_ASK, queueConfirmedWords } from "./lib/queueAlertPages";
 import { createLogger } from "./lib/logging";
 import { watchedSecretOk, sharedSecretOk } from "./watchedCases";
-import { bearerToken, parseResults, RESULTS_BODY_MAX_CHARS } from "./lib/uscisWatch";
+import { bearerToken, parseResults, RESULTS_BODY_MAX_CHARS, watchableReceipt } from "./lib/uscisWatch";
 import { checkTurnstile } from "./lib/turnstileVerify";
 import { callerIp } from "./lib/callerIp";
 import { ipHash as hashIp } from "./lib/ipHash";
@@ -2845,6 +2845,56 @@ async function uscisCheckerGate(req: Request): Promise<Response | null> {
   if (verdict === "denied") return serverJson({ ok: false, message: "Not allowed." }, 401);
   return null;
 }
+
+// Typed receipt numbers for the sample (convex/uscisTyped.ts). The page sends a number once it reads as a receipt;
+// the route checks the length and shape before the mutation, which charges the per-address limit and the day's global
+// budget before it writes. 400 is a malformed number, 429 a busy address or a full day: either way nothing is kept.
+http.route({
+  path: "/uscis-typed",
+  method: "OPTIONS",
+  handler: httpAction(async (_ctx, req) => {
+    return new Response(null, { status: 204, headers: corsHeaders(req.headers.get("Origin")) });
+  }),
+});
+
+http.route({
+  path: "/uscis-typed",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const cors = corsHeaders(req.headers.get("Origin"));
+    const json = (body: unknown, status = 200) =>
+      new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
+    const raw = await req.text();
+    if (raw.length > 200) return json({ ok: false }, 413);
+    let receipt: unknown;
+    try {
+      receipt = (JSON.parse(raw) as { receipt?: unknown } | null)?.receipt;
+    } catch {
+      return json({ ok: false }, 400);
+    }
+    if (typeof receipt !== "string" || !watchableReceipt(receipt.slice(0, 40))) return json({ ok: false }, 400);
+    const got = await ctx.runMutation(internal.uscisTyped.record, { receipt: receipt.slice(0, 40), ip: callerIp(req) });
+    return json({ ok: got.ok }, got.ok ? 200 : got.why === "shape" ? 400 : 429);
+  }),
+});
+
+/** The kit's pull of typed numbers, behind the checker's secret: ?after=<ms>&limit=<n>, oldest first. */
+http.route({
+  path: "/uscis-typed",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    const refused = await uscisCheckerGate(req);
+    if (refused) return refused;
+    const q = new URL(req.url).searchParams;
+    const after = Number(q.get("after") ?? "0");
+    const limit = Number(q.get("limit") ?? "500");
+    const got = await ctx.runQuery(internal.uscisTyped.typedSince, {
+      after: Number.isFinite(after) ? after : 0,
+      limit: Number.isFinite(limit) ? limit : 500,
+    });
+    return serverJson(got, 200);
+  }),
+});
 
 http.route({
   path: "/uscis-watched",

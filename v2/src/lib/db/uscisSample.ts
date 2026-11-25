@@ -10,8 +10,9 @@ import { one, rows } from "./client";
 /**
  * The reads behind the receipt-block pages and a receipt's last status (Batch 3): the USCIS sample's figures
  * (perm_docs 'uscis_sample' and 'uscis_sample_blocks') and its tables (uscis_sample_cases, one row per number with a
- * case; uscis_sample_events, each status change), all loaded nightly by scripts/ingest_uscis_sample.py. A receipt
- * number leaves this module only in `getReceiptLastStatus`, for that number's own lookup; every other read is counts.
+ * case; uscis_sample_events, each status change), all loaded nightly by scripts/ingest_uscis_sample.py. Receipt
+ * numbers leave this module in three reads: a typed number's own last status, the checked numbers around it, and each
+ * block's list of checked numbers (the Privacy Policy, "Our sample of USCIS cases"; those pages stay out of search).
  * Before the first load the docs are missing and these return null, which the pages say in words; a failed read throws.
  */
 
@@ -78,4 +79,60 @@ export async function getReceiptLastStatus(receipt: string): Promise<ReceiptLast
   return r
     ? { form: r.form, grp: String(r.grp), status: String(r.status), checked_on: String(r.checked_on), since_on: String(r.since_on) }
     : null;
+}
+
+export interface SampleCaseRow {
+  receipt: string;
+  form: string | null;
+  grp: string;
+  status: string;
+  checked_on: string;
+  since_on: string;
+}
+
+const caseRow = (r: Record<string, unknown>): SampleCaseRow => ({
+  receipt: String(r.receipt),
+  form: r.form === null || r.form === undefined ? null : String(r.form),
+  grp: String(r.grp),
+  status: String(r.status),
+  checked_on: String(r.checked_on),
+  since_on: String(r.since_on),
+});
+
+/** One page of the numbers the sample checked in a block, in number order, and how many there are in all. */
+export async function getBlockCases(block: string, page: number, per: number): Promise<{ total: number; rows: SampleCaseRow[] }> {
+  if (!/^IOE\d{5}$/.test(block)) return { total: 0, rows: [] };
+  const [count, got] = await Promise.all([
+    one<{ n: number | string }>("SELECT COUNT(*) AS n FROM uscis_sample_cases WHERE receipt >= ? AND receipt < ?", [block, `${block}~`]),
+    rows<Record<string, unknown>>(
+      `SELECT receipt, form, grp, status, checked_on, since_on FROM uscis_sample_cases
+        WHERE receipt >= ? AND receipt < ? ORDER BY receipt LIMIT ? OFFSET ?`,
+      [block, `${block}~`, per, Math.max(0, page - 1) * per],
+    ),
+  ]);
+  return { total: Number(count?.n) || 0, rows: got.map(caseRow) };
+}
+
+/** Where a number falls in its block's list: how many checked numbers come before it. */
+export async function blockPlace(receipt: string): Promise<number> {
+  if (!/^IOE\d{10}$/.test(receipt)) return 0;
+  const r = await one<{ n: number | string }>(
+    "SELECT COUNT(*) AS n FROM uscis_sample_cases WHERE receipt >= ? AND receipt < ?",
+    [receipt.slice(0, 8), receipt],
+  );
+  return Number(r?.n) || 0;
+}
+
+/** The numbers the sample checked within `span` of a receipt, either side, in number order (the receipt itself left out). */
+export async function getCasesAround(receipt: string, span = 500): Promise<SampleCaseRow[]> {
+  const m = /^([A-Z]{3})(\d{10})$/.exec(receipt);
+  if (!m) return [];
+  const n = Number(m[2]);
+  const at = (k: number) => `${m[1]}${String(Math.max(0, k)).padStart(10, "0")}`;
+  const got = await rows<Record<string, unknown>>(
+    `SELECT receipt, form, grp, status, checked_on, since_on FROM uscis_sample_cases
+      WHERE receipt >= ? AND receipt <= ? AND receipt <> ? ORDER BY receipt LIMIT ?`,
+    [at(n - span), at(n + span), receipt, span * 2 + 1],
+  );
+  return got.map(caseRow);
 }

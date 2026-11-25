@@ -1,4 +1,5 @@
 import { normaliseReceipt } from "@/lib/uscis/receipt";
+import type { CaseStatusTint } from "@/lib/statusTone";
 
 /**
  * The USCIS sample's figures as the site reads them (Batch 3). The sample is a spread of receipt numbers checked on
@@ -220,3 +221,43 @@ export function newestCompleteMonths(doc: SampleMonthsDoc, form: string, n = 3):
  * Privacy Policy gained "Our sample of USCIS cases" (section 18), which describes this display.
  */
 export const RECEIPT_LAST_STATUS_SHOWN = true;
+
+/** A sample group's word and its colour on the site's one status code (certified green, denied red, waiting yellow, withdrawn purple). */
+export const SAMPLE_GROUP_WORD: Record<string, string> = {
+  approved: "Approved",
+  denied: "Denied",
+  revoked: "Revoked",
+  rejected: "Rejected as filed",
+  withdrawn: "Withdrawn",
+  rfe: "Evidence request",
+  waiting: "Waiting",
+  closed: "Closed",
+  decided: "Decided",
+  other: "Other",
+};
+
+export const SAMPLE_GROUP_TINT: Record<string, CaseStatusTint> = {
+  approved: "good",
+  denied: "bad",
+  revoked: "bad",
+  rejected: "bad",
+  withdrawn: "withdrawn",
+  rfe: "wait",
+  waiting: "wait",
+  closed: "flat",
+  decided: "flat",
+  other: "flat",
+};
+
+/** How many of `rows` sit in each group, the groups in the order SAMPLE_GROUP_WORD names them, empty ones left out. */
+export function groupCounts(rows: readonly { grp: string }[]): { grp: string; n: number }[] {
+  const n = new Map<string, number>();
+  for (const r of rows) n.set(r.grp, (n.get(r.grp) ?? 0) + 1);
+  return Object.keys(SAMPLE_GROUP_WORD)
+    .filter((g) => n.get(g))
+    .map((g) => ({ grp: g, n: n.get(g) ?? 0 }))
+    .concat([...n].filter(([g]) => !(g in SAMPLE_GROUP_WORD)).map(([g, k]) => ({ grp: g, n: k })));
+}
+
+/** The rows per page a block's list of numbers offers, the first being the default. */
+export const BLOCK_NUMBERS_PER = [25, 50, 100] as const;

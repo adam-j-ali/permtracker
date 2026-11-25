@@ -20,6 +20,18 @@ const SWITCHES: { name: string; on: boolean; heading: string; says: RegExp }[] =
     says: /we record the words typed \(up to 60 characters\)/,
   },
   {
+    name: "typed numbers watched (TypedReceiptBeacon)",
+    on: true,
+    heading: "Our sample of USCIS cases",
+    says: /A receipt number typed into the lookup joins the numbers\s+our sample checks each week, with the numbers around it/,
+  },
+  {
+    name: "block pages list their numbers (uscis-receipt-blocks/[block]/numbers)",
+    on: true,
+    heading: "Our sample of USCIS cases",
+    says: /on each receipt\s+block&apos;s page, the receipt numbers we checked[\s\S]{0,120}Those pages are kept out of search engines/,
+  },
+  {
     name: "RECEIPT_LAST_STATUS_SHOWN",
     on: RECEIPT_LAST_STATUS_SHOWN,
     heading: "Our sample of USCIS cases",
@@ -39,5 +51,12 @@ describe("a switch is on only while the Privacy Policy describes it", () => {
   it("the search words the policy names match the code's cap", async () => {
     const { SEARCH_MISS_MAX } = await import("@/lib/funnelEvents");
     expect(POLICY).toContain(`(up to ${SEARCH_MISS_MAX} characters)`);
+  });
+});
+
+describe("the pages the policy keeps out of search engines", () => {
+  it("a block's list of numbers is noindex", () => {
+    const page = readFileSync(join(process.cwd(), "src/app/(site)/(public)/uscis-receipt-blocks/[block]/numbers/page.tsx"), "utf8");
+    expect(page).toMatch(/robots: \{ index: false, follow: true \}/);
   });
 });

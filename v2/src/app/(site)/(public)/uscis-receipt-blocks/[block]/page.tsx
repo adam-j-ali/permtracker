@@ -128,6 +128,11 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
                 <p className="mt-2 font-heading text-5xl font-bold leading-none tabular-nums">{int(total)}</p>{" "}
                 <p className="mt-2 text-base">
                   Across {forms.length} {forms.length === 1 ? "form" : "forms"}, each counted at its newest status.
+                </p>{" "}
+                <p className="mt-3 text-base">
+                  <Link href={`/uscis-receipt-blocks/${block}/numbers`} className="link">
+                    See each number checked in {block}
+                  </Link>
                 </p>
               </div>
             </div>

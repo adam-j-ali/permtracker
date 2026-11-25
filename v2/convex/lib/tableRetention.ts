@@ -65,6 +65,8 @@ export const TABLE_RETENTION: Record<string, { kind: RetentionKind; rule: string
   siteReviews: { kind: "record", rule: "kept, a deleted account's too (owner, Nov 4 2026); spam declined" },
   siteReviewTally: { kind: "bounded", rule: "one row, the count by stars" },
   employerAlerts: { kind: "subscription", rule: "deleted when stopped or unconfirmed after 30 days" },
+  uscisTypedReceipts: { kind: "pruned", rule: "12 months after the number was last typed (uscisTyped.pruneTyped, daily)" },
+  uscisTypedDays: { kind: "pruned", rule: "a week of day counters (uscisTyped.pruneTyped, daily)" },
   uscisWatches: {
     kind: "subscription",
     rule: "a receipt alert: deleted when stopped, unconfirmed after 30 days, with the account, or a year after a final status with nothing new",

@@ -1674,6 +1674,27 @@ export default defineSchema({
     .index("by_created", ["createdAt"]),
 
   /**
+   * Receipt numbers typed into the USCIS lookup, for the sample to check with the numbers around them
+   * (convex/uscisTyped.ts; the Privacy Policy, "Our sample of USCIS cases"). The number alone: no email, no address.
+   */
+  uscisTypedReceipts: defineTable({
+    /** Upper-cased, three letters and ten digits (`watchableReceipt`). */
+    receipt: v.string(),
+    firstAt: v.number(),
+    lastAt: v.number(),
+    times: v.number(),
+  })
+    .index("by_receipt", ["receipt"])
+    .index("by_firstAt", ["firstAt"])
+    .index("by_lastAt", ["lastAt"]),
+
+  /** How many new typed numbers each Eastern day took, against TYPED_DAILY_MAX. */
+  uscisTypedDays: defineTable({
+    day: v.string(),
+    n: v.number(),
+  }).index("by_day", ["day"]),
+
+  /**
    * Someone watching one USCIS receipt by email: the receipt tracking beta (convex/uscisAlerts.ts).
    *
    * The sibling of `caseStatusAlerts`, with the same consent grammar: an unauthenticated sign-up writes an

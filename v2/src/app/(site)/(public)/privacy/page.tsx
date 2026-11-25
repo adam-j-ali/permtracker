@@ -1920,7 +1920,7 @@ export default function PrivacyPage() {
             <ul className="list-disc list-inside text-soft space-y-2 ml-4">
               <li>The receipt number, the form type, the status text, the dated history, and the time of the lookup.</li>{" "}
               <li>The page address you asked for, with the receipt number in it, also sits in our web server&apos;s request log for 14 days (Section 2).</li>{" "}
-              <li>We store it so a later lookup of the same receipt can show what changed, and so we can count lookups by form type and status. Counts are published only in aggregate; a receipt number is never published or shared.</li>{" "}
+              <li>We store it so a later lookup of the same receipt can show what changed, and so we can count lookups by form type and status. Counts are published only in aggregate. A receipt number is published only as{" "}<a href="#uscis-sample" className="link">Our sample of USCIS cases</a>{" "}describes, and it&apos;s never shared.</li>{" "}
               <li>A receipt number identifies a case rather than a person, and we treat it as personal data anyway: it&apos;s encrypted at rest with the rest of the database, it&apos;s not sold, and it&apos;s not used for advertising.</li>{" "}
               <li>Stored lookups are deleted twelve months after the last lookup of that receipt, or sooner if you ask at <a href="mailto:support@permtracker.app?subject=USCIS%20lookup%20deletion" className="link">support@permtracker.app</a> with the receipt number.</li>{" "}
               <li>No email or notification is sent from a lookup. Receipt alerts are a separate subscription you opt in to, described next.</li>
@@ -1928,8 +1928,11 @@ export default function PrivacyPage() {
             <h3 id="uscis-sample" className="font-heading text-lg font-bold mt-6 mb-3">Our sample of USCIS cases</h3>{" "}
             <p className="text-soft leading-relaxed">
               Each day we check a spread of USCIS receipt numbers on USCIS&apos;s public Case Status page and keep the
-              status each one shows, with the day we checked. We publish only totals from this sample, never a list of
-              receipt numbers. If you type a receipt number our sample has checked, the lookup shows the last status we
+              status each one shows, with the day we checked. We publish totals from this sample and, on each receipt
+              block&apos;s page, the receipt numbers we checked, with the last status we saw for each and the day we saw
+              it. Those pages are kept out of search engines. A receipt number typed into the lookup joins the numbers
+              our sample checks each week, with the numbers around it, and is counted apart from the sample&apos;s
+              random draw. If you type a receipt number our sample has checked, the lookup shows the last status we
               saw for it and the day we saw it. To have a receipt number&apos;s record removed from the sample, write to{" "}
               <a href="mailto:support@permtracker.app?subject=USCIS%20sample%20removal" className="link">support@permtracker.app</a>{" "}
               with the number.

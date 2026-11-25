@@ -585,4 +585,12 @@ crons.daily(
   {},
 );
 
+/** Typed receipt numbers go 12 months after their last typing, and old day counters after a week (convex/uscisTyped.ts). */
+crons.daily(
+  "uscis-typed-prune",
+  { hourUTC: 9, minuteUTC: 10 },
+  internal.uscisTyped.pruneTyped,
+  {},
+);
+
 export default crons;

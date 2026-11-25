@@ -495,6 +495,9 @@ describe("sitemap.ts", () => {
       "perm-queue/[month]/[day]": "filing-day pages",
       // One DOL day's decisions, a noindex list a person shares by its address; /perm-updates is the page to find.
       "perm-updates/[day]": "decision-day pages",
+      // Each block's list of checked receipt numbers: kept out of search engines, as the Privacy Policy says
+      // ("Our sample of USCIS cases"); the block's own page carries the figures and is in the sitemap.
+      "uscis-receipt-blocks/[block]/numbers": "a block's receipt-number lists",
     };
     // Every public page whose route has a dynamic segment, as its pattern ("perm-employers/[slug]"). Patterns,
     // not the folder above a [param]: a [param] segment at the root would have the whole site above it, which
