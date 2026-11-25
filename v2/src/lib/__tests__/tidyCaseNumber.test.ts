@@ -104,4 +104,13 @@ describe("tidyCaseNumber", () => {
     // Two letters in front is not the one-letter form.
     expect(tidyCaseNumber("GG10026125868956")).toBe("GG10026125868956");
   });
+
+  it("drops a label pasted in front of the number (Batch 5, Nov 25 2026)", () => {
+    expect(tidyCaseNumber("Case number: G-100-25123-456789")).toBe("G-100-25123-456789");
+    expect(tidyCaseNumber("DOL case # G-100-25123-456789")).toBe("G-100-25123-456789");
+    expect(tidyCaseNumber("PERM Case No. G–100–25123–456789.")).toBe("G-100-25123-456789");
+    expect(tidyCaseNumber("case number G 100 25123 456789")).toBe("G-100-25123-456789");
+    // Only a label in front: a name that merely starts with a word like it is left to the shape rules.
+    expect(tidyCaseNumber("Casey Number Works")).toBe("CASEY-NUMBER-WORKS");
+  });
 });

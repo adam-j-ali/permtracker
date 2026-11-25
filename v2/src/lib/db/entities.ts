@@ -36,6 +36,7 @@ import { getEntityBySlug, getEntitySeed } from "./publicData";
 import { one, rows } from "./client";
 import { SEARCH_TEXT_MAX } from "@/lib/search/limits";
 import { LIKE_ESCAPE, likeContains } from "./like";
+import { programKey } from "@/lib/entitySlug";
 
 /**
  * One entity by slug. `null` means no such page, which callers turn into a 404.
@@ -454,9 +455,13 @@ export async function searchByName(
   return found.map(toEntityRow);
 }
 
-/** Names spelled with no space, hyphen or apostrophe, the SQL twin of `letters`. */
+/**
+ * Names spelled with no space, hyphen or apostrophe, the SQL twin of `letters`. A whole-word "and" goes first, as
+ * programKey drops it from what's typed, so "Johnson and Johnson" meets "JOHNSON & JOHNSON" (Nov 25 2026).
+ */
 const NAME_LETTERS =
-  "replace(replace(replace(replace(replace(replace(lower(name), ' ', ''), '-', ''), '''', ''), '.', ''), ',', ''), '&', '')";
+  "replace(replace(replace(replace(replace(replace(replace(lower(name), ' and ', ' '), ' ', ''), '-', ''), '''', ''), " +
+  "'.', ''), ',', ''), '&', '')";
 
 /**
  * Entities whose name holds these letters once spaces and punctuation go: how
@@ -473,4 +478,31 @@ export async function searchByLetters(kind: EntityKind, letters: string, limit =
     [kind, `%${letters}%`, take],
   );
   return found.map(toEntityRow);
+}
+
+/**
+ * The site's name search (Batch 5, Nov 25 2026): the substring search, then the letters search for what it missed,
+ * the same pair the API's employer lookup runs. "walmart" finds WAL-MART ASSOCIATES, "macys" finds Macy's beside MACYS
+ * SYSTEMS, and "johnson and johnson" or "baker mckenzie" find the names spelled with "&". Name matches come first, in
+ * rank order, then the letters-only ones; the letters search runs only from four letters.
+ */
+export async function searchNameOrLetters(kind: EntityKind, text: string, limit: number): Promise<EntityRow[]> {
+  if (text.length > SEARCH_TEXT_MAX) return [];
+  const letters = programKey(text).replace(/ /g, "");
+  const [byName, byLetters] = await Promise.all([
+    searchByName(kind, text, limit),
+    letters.length >= 4 ? searchByLetters(kind, letters, limit) : Promise.resolve([]),
+  ]);
+  const seen = new Set(byName.map((r) => r.slug));
+  return [...byName, ...byLetters.filter((r) => !seen.has(r.slug) && lettersStartAWord(r.name, letters))].slice(0, limit);
+}
+
+/**
+ * Whether the typed letters begin at one of the name's words, read across the words after it: "macys" fits MACY'S
+ * CORPORATE (macy, s) but not C & D PHARMACY SERVICES, whose letters only hold it inside "pharmacys". The letters search
+ * finds any substring; this keeps the ones a person meant.
+ */
+export function lettersStartAWord(name: string, letters: string): boolean {
+  const words = programKey(name).split(" ").filter(Boolean);
+  return words.some((_, i) => words.slice(i).join("").startsWith(letters));
 }

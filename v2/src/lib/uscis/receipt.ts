@@ -38,6 +38,10 @@ const FULL = /^[A-Z]{3}\d{10}$/;
 const MASKED = /^[A-Z]{3}\*\d{9}$/;
 /** Spaces, hyphens, the Unicode dashes and dots, which a pasted number often carries. */
 const TYPED_NOISE = /[\s\-\u2010-\u2015.]+/g;
+/** A label pasted in front: "Receipt number:", "Receipt #", "USCIS receipt no.". Whole words only (Batch 5, Nov 25 2026). */
+const RECEIPT_LABEL = /^\s*(?:USCIS\s+)?RECEIPT\b(?:\s*(?:NUMBER|NO\.?|#))?\s*[:#.]?\s*/i;
+/** What was typed, without a pasted label, upper-cased, with the noise the box strips taken out. */
+const typedReceipt = (input: string) => input.replace(RECEIPT_LABEL, "").toUpperCase().replace(TYPED_NOISE, "");
 
 export interface ReceiptPrefix {
   /** The office the prefix names. */
@@ -75,7 +79,7 @@ export const RECEIPT_PREFIXES: Readonly<Record<string, ReceiptPrefix>> = {
 export function normaliseReceipt(input: string): string | null {
   // The same noise the box strips (TYPED_NOISE): a number pasted from a PDF with an en dash or dots read as whole in
   // the box and as malformed here until Nov 25 2026.
-  const raw = input.toUpperCase().replace(TYPED_NOISE, "");
+  const raw = typedReceipt(input);
   return FULL.test(raw) || MASKED.test(raw) ? raw : null;
 }
 
@@ -204,7 +208,7 @@ function typoFix(typed: string): string | null {
 }
 
 export function readPartialReceipt(input: string): PartialReceipt {
-  const typed = input.toUpperCase().replace(TYPED_NOISE, "");
+  const typed = typedReceipt(input);
   const masked = MASKED.test(typed);
   const problem = masked || !typed ? null : firstProblem(typed);
   const good = problem ? typed.slice(0, problem.position - 1) : typed;
@@ -239,7 +243,7 @@ export function readPartialReceipt(input: string): PartialReceipt {
  * rather than holding a malformed number.
  */
 export function looksLikeReceipt(input: string): boolean {
-  const raw = input.toUpperCase().replace(TYPED_NOISE, "");
+  const raw = typedReceipt(input);
   return /^[A-Z]{3}\*?\d{4,}$/.test(raw) && !/^[A-Z]-/.test(input.trim().toUpperCase());
 }
 

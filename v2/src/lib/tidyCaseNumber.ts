@@ -13,6 +13,7 @@
  * - spaces where the dashes were ("G 100 26125 868956"), read as dashes only when the number has no dash at all, so a
  *   space inside a dashed number is removed, as it always was;
  * - the sentence around it: a full stop, a comma or a bracket on the end, quotes or a bracket in front;
+ * - a label in front: "Case number:", "DOL case #", "PERM Case No.";
  * - no dashes at all: one letter and 14 digits is the current form, `G-100-26125-868956`;
  * - a lost dash after the letter when the rest has its dashes (`G100-26125-868956`);
  * - characters nobody sees: a zero-width space, a byte-order mark, a soft hyphen.
@@ -24,6 +25,11 @@
 const DASHES = /[‐-―−﹘﹣－]/g;
 /** Characters with no width that a PDF or a web page copies along. */
 const INVISIBLE = /[­​-‍⁠﻿]/g;
+/**
+ * A label pasted in front of the number: "Case number:", "DOL case #", "PERM Case No.". Whole words only, so a name that
+ * starts with "Casey" keeps its letters (Batch 5, Nov 25 2026).
+ */
+const LABEL = /^(?:(?:DOL|PERM|ETA|FLAG)\s+)*CASE\b(?:\s*(?:NUMBER|NO\.?|#))?\s*[:#.]?\s*/;
 /** Quotes and brackets a number arrives inside, and the punctuation a sentence leaves after it. */
 const LEADING = /^["'(\[‘“]+/;
 const TRAILING = /["')\].,;:!?’”]+$/;
@@ -45,7 +51,7 @@ export function tidyCaseNumber(input: string): string {
   // Too long to be a case number with its sentence around it: upper-cased only, for the shape rules to refuse.
   if (input.length > TIDY_MAX) return input.toUpperCase();
   let s = input.toUpperCase().replace(INVISIBLE, "").replace(DASHES, "-").trim();
-  s = s.replace(LEADING, "").replace(TRAILING, "").trim();
+  s = s.replace(LABEL, "").replace(LEADING, "").replace(TRAILING, "").trim();
   const spacedGroups = /\s/.test(s) && !NOT_GROUPS.test(s);
   s = spacedGroups ? s.replace(/\s+/g, "-") : s.replace(/\s+/g, "");
   const bare = FOURTEEN.exec(s);

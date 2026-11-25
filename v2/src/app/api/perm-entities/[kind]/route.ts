@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { fetchAllEntitiesServer } from "@/lib/entitySeed";
-import { searchByName } from "@/lib/db/entities";
+import { searchNameOrLetters } from "@/lib/db/entities";
 import { searchLiveOnlyEmployers } from "@/lib/db/liveEmployers";
 import { isEntityKind, packRow, type EntityPayload } from "@/lib/entityPayload";
 import { SEARCH_TEXT_MAX } from "@/lib/search/limits";
@@ -85,7 +85,8 @@ export async function GET(
     const nameCap = asked > 0 ? Math.min(asked, NAME_MATCHES_SHOWN) : NAME_MATCHES_SHOWN;
     const liveCap = asked > 0 ? Math.min(asked, LIVE_MATCHES_SHOWN) : LIVE_MATCHES_SHOWN;
     const [found, live] = await Promise.all([
-      liveOnly ? Promise.resolve([]) : searchByName(kind, needle, nameCap + 1),
+      // The name search with its letters twin ("walmart" finds WAL-MART, "macys" finds Macy's, "and" meets "&").
+      liveOnly ? Promise.resolve([]) : searchNameOrLetters(kind, needle, nameCap + 1),
       kind === "employer" ? searchLiveOnlyEmployers(needle, liveCap + 1) : Promise.resolve([]),
     ]);
     const shown = found.slice(0, nameCap);

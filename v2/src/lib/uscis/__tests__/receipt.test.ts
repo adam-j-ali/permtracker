@@ -244,3 +244,19 @@ describe("describeTypedReceipt: one reading for every box a receipt is typed in 
     }
   });
 });
+
+describe("a label pasted in front of a receipt (Batch 5, Nov 25 2026)", () => {
+  it.each([
+    "Receipt number: IOE0912345678",
+    "Receipt #IOE0912345678",
+    "USCIS receipt no. IOE-0912345678",
+    "receipt number ioe 0912 345 678.",
+  ])("%s reads as the receipt", (typed) => {
+    expect(normaliseReceipt(typed)).toBe("IOE0912345678");
+    expect(readPartialReceipt(typed).full?.receipt).toBe("IOE0912345678");
+    expect(looksLikeReceipt(typed)).toBe(true);
+  });
+  it("leaves a word that only starts like the label alone", () => {
+    expect(normaliseReceipt("Receipts IOE0912345678")).toBeNull();
+  });
+});

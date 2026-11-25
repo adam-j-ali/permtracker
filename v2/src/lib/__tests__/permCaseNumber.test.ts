@@ -53,7 +53,6 @@ describe("parseCaseNumber", () => {
     ["", "empty"],
     ["not a case number", "prose"],
     ["G-100-24158", "truncated"],
-    ["G100-24158-078964", "missing separator"],
     ["G-100-24000-078964", "day 000 does not exist"],
     ["G-100-24367-078964", "day 367 does not exist"],
     ["G-100-99001-078964", "year 2099 is in the future"],
@@ -68,5 +67,27 @@ describe("parseCaseNumber", () => {
     expect(parseCaseNumber("G-100-25366-078964")).toBeNull();
     // 2024 IS a leap year, so the same day number is valid there.
     expect(parseCaseNumber("G-100-24366-078964")?.filingDate).toBe("2024-12-31");
+  });
+});
+
+describe("parseCaseNumber reads a pasted number the way the lookup box does (one tidy, Nov 25 2026)", () => {
+  it.each([
+    ["g-100-25123-456789"],
+    ["G 100 25123 456789"],
+    ["G\u2013100\u201325123\u2013456789"],
+    ["G\u2014100\u201425123\u2014456789"],
+    ["G-100-25123-456789."],
+    ["G-100-25123-456789,"],
+    ["(G-100-25123-456789)"],
+    ["Case number: G-100-25123-456789"],
+    ["G10025123456789"],
+    // A dash lost after the letter goes back, as in the lookup box (tidyCaseNumber, Nov 23 2026).
+    ["G100-25123-456789"],
+  ])("%s", (typed) => {
+    expect(parseCaseNumber(typed)?.caseNumber).toBe("G-100-25123-456789");
+  });
+  it("still refuses what isn't a case number", () => {
+    expect(parseCaseNumber("G-100-25123-456789 extra words that go on and on")).toBeNull();
+    expect(parseCaseNumber("Amazon Com Services")).toBeNull();
   });
 });

@@ -27,7 +27,7 @@ vi.mock("next/cache", () => ({
 vi.mock("../client", () => ({ rows, one }));
 
 const { nameVariants } = await import("../entityDetail");
-const { fieldDistribution, searchByLetters } = await import("../entities");
+const { fieldDistribution, lettersStartAWord, searchByLetters, searchNameOrLetters } = await import("../entities");
 const { countPageworthy, getAllEntities, getEntitySeed } = await import("../publicData");
 
 beforeEach(() => {
@@ -47,6 +47,11 @@ describe("searchByLetters", () => {
     }
     expect((sql.match(/'/g) ?? []).length % 2).toBe(0);
     expect(args).toEqual(["employer", "%walmart%", 25]);
+  });
+
+  it("drops a whole-word 'and' from the name, so 'Johnson and Johnson' and 'Johnson & Johnson' read alike", async () => {
+    await searchByLetters("employer", "johnsonjohnson");
+    expect(rows.mock.calls[0]![0]).toContain("' and ', ' '");
   });
 
   it("refuses anything but plain letters, so LIKE's wildcards never reach it", async () => {
@@ -132,5 +137,43 @@ describe("getAllEntities", () => {
       expect(sql).not.toMatch(/OFFSET/i);
       expect(args).toEqual(["employer", 5, i * 2500, (i + 1) * 2500]);
     }
+  });
+});
+
+describe("searchNameOrLetters (the site's name search, Batch 5, Nov 25 2026)", () => {
+  const row = (slug: string, rank: number) => ({ kind: "employer", slug, name: slug.replace(/-/g, " "), rank, total: 10, certified: 9, denied: 1 });
+  beforeEach(() => rows.mockReset());
+
+  it("returns the name matches first, then the letters-only ones, with no repeats", async () => {
+    rows.mockImplementation(async (...a: unknown[]) => {
+      return String(a[0]).includes("name LIKE ?") ? [row("macys-systems", 2)] : [row("macys-systems", 2), row("macy-s-corporate", 5)];
+    });
+    const got = await searchNameOrLetters("employer", "macys", 10);
+    expect(got.map((r) => r.slug)).toEqual(["macys-systems", "macy-s-corporate"]);
+  });
+
+  it("finds 'walmart', 'johnson and johnson' and 'baker mckenzie' through the letters", async () => {
+    rows.mockImplementation(async (...a: unknown[]) => (String(a[0]).includes("name LIKE ?") ? [] : [row("walmart-johnson-johnson-baker-mckenzie", 1)]));
+    for (const q of ["walmart", "johnson and johnson", "baker mckenzie"]) {
+      rows.mockClear();
+      expect((await searchNameOrLetters("employer", q, 10)).map((r) => r.slug)).toEqual(["walmart-johnson-johnson-baker-mckenzie"]);
+      const lettersCall = rows.mock.calls.find(([sql]) => !String(sql).includes("name LIKE ?"));
+      expect(lettersCall?.[1]?.[1]).toBe(q === "walmart" ? "%walmart%" : q === "baker mckenzie" ? "%bakermckenzie%" : "%johnsonjohnson%");
+    }
+  });
+
+  it("skips the letters search under four letters", async () => {
+    rows.mockResolvedValue([]);
+    await searchNameOrLetters("employer", "ab", 10);
+    expect(rows.mock.calls.every(([sql]) => String(sql).includes("name LIKE ?"))).toBe(true);
+  });
+});
+
+describe("lettersStartAWord", () => {
+  it("keeps a match that starts a word and drops one buried inside a word", () => {
+    expect(lettersStartAWord("Macy's Corporate Services LLC", "macys")).toBe(true);
+    expect(lettersStartAWord("WAL-MART ASSOCIATES, INC.", "walmart")).toBe(true);
+    expect(lettersStartAWord("Kenvue Brands LLC (F/K/A Johnson & Johnson Consumer, Inc.)", "johnsonjohnson")).toBe(true);
+    expect(lettersStartAWord("C & D Pharmacy Services Inc", "macys")).toBe(false);
   });
 });

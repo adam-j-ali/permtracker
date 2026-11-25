@@ -20,6 +20,7 @@
  * disclosure record when it is there.
  */
 
+import { tidyCaseNumber } from "./tidyCaseNumber";
 import { MS_PER_DAY } from "@/lib/time";
 
 export interface ParsedCaseNumber {
@@ -45,7 +46,9 @@ const CASE_RE = /^([A-Za-z]|JO-A)-(\d{3})-(\d{2})(\d{3})-(\d+)$/i;
  * which is worse than refusing, because the user cannot see it happen.
  */
 export function parseCaseNumber(input: string): ParsedCaseNumber | null {
-  const raw = input.trim().toUpperCase();
+  // The one tidy every reader uses (tidyCaseNumber.ts): a pasted dash, space, label or full stop reads the same here
+  // as in the lookup box.
+  const raw = tidyCaseNumber(input);
   const m = CASE_RE.exec(raw);
   if (!m) return null;
 
