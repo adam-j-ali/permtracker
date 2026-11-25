@@ -30,6 +30,7 @@ import { NoteBanner } from "@/components/ui/note";
 import { softFail } from "@/lib/softRead";
 import { easternDay } from "@/lib/time";
 import { getUscisPosted } from "@/lib/db/uscisPosted";
+import { agencyStepNotes } from "@/lib/agencyStepNotes";
 import { waitPapers } from "@/lib/uscisPosted";
 import { formatAsOf } from "@/lib/dolFormat";
 import { Figure, FigureRow } from "@/components/data/FigureRow";
@@ -166,6 +167,8 @@ export default async function GreenCardTimelinesPage() {
     // Every figure over every source (the hourly build's summary). Without it the page falls back to the shared timelines'.
     getReportedSummary().catch(softFail<ReportedSummary | null>("green-card-timelines/page.getReportedSummary", null)),
   ]);
+  // The agencies' own line under a step nobody has reported yet (the H-1B and its LCA, Nov 25 2026).
+  const agencyNotes = agencyStepNotes(posted ? { published: posted.published, newest: posted.newest } : null);
   const papers = waitPapers(posted);
   const month = summary
     ? { greenCards: summary.headline.greenCards30, i140s: summary.headline.i140s30, perm: summary.headline.perm30 }
@@ -261,7 +264,7 @@ export default async function GreenCardTimelinesPage() {
                   this one. The blue line is the median by the month each case finished.
                 </p>
                 <div className="mt-5">
-                  <StepsByStage steps={summary.steps} />
+                  <StepsByStage steps={summary.steps} agency={agencyNotes} />
                 </div>{" "}
                 {board ? <BesideTheCase metrics={board.metrics} /> : null}{" "}
                 <p className="mt-6 max-w-3xl text-base leading-relaxed">

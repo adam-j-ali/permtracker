@@ -164,10 +164,13 @@ export function StepsByStage({
   steps,
   stages = STAGE_GROUPS,
   headingLevel = 3,
+  agency = {},
 }: {
   steps: readonly StepFigure[];
   stages?: readonly { groups: readonly StepGroup[]; title: string }[];
   headingLevel?: 3 | 4;
+  /** The agency's own line for a step with too few reports, by step id (agencyStepNotes): shown beneath it. */
+  agency?: Readonly<Record<string, string>>;
 }) {
   const H = headingLevel === 3 ? "h3" : "h4";
   // One scale for the whole page, so a PERM bar and an I-485 bar compare by eye.
@@ -189,11 +192,19 @@ export function StepsByStage({
                   {shown.length ? "Too few cases yet for a figure:" : "No step here has enough cases for a figure yet:"}
                 </p>{" "}
                 <ul className="mt-1 list-disc pl-5 text-base text-muted-foreground">
-                  {waiting.map((s) => (
-                    <li key={s.id}>
-                      <KeepWhole>{`${s.label}, ${s.allTime === 0 ? "none reported yet" : `${formatInt(s.allTime)} ever reported`} `}</KeepWhole>
-                    </li>
-                  ))}
+                  {waiting.map((s) => {
+                    const note = agency[s.id];
+                    return (
+                      <li key={s.id}>
+                        <KeepWhole>{`${s.label}, ${s.allTime === 0 ? "none reported yet" : `${formatInt(s.allTime)} ever reported`} `}</KeepWhole>
+                        {note ? (
+                          <span data-source-kind="agency" className="mt-1 block text-sm text-foreground">
+                            <KeepWhole>{note}</KeepWhole>{" "}
+                          </span>
+                        ) : null}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ) : null}
