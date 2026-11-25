@@ -1,7 +1,10 @@
 /**
  * axe-core over rendered pages, in both themes, to WCAG 2.2 AA.
  *
- *   node scripts/audit_axe.mjs <base-url> <path>... [--json out.json]
+ *   node scripts/audit_axe.mjs <base-url> <path>... [--json out.json] [--workers N]
+ *
+ * --workers N checks N pages at once in the one browser (default 1). Only for a local copy of the site (the deploy
+ * build, Nov 24 2026: 420 s one page at a time); never against production, which takes them one by one.
  *
  * One browser, one page at a time. Each page is checked in light and dark at
  * 1440 and at 390, since a phone layout can hide or crowd what a desktop one
@@ -28,6 +31,8 @@ const VIEWS = [
 const args = process.argv.slice(2);
 const jsonAt = args.indexOf("--json");
 const jsonOut = jsonAt >= 0 ? args.splice(jsonAt, 2)[1] : null;
+const workersAt = args.indexOf("--workers");
+const WORKERS = workersAt >= 0 ? Math.max(1, Number(args.splice(workersAt, 2)[1]) || 1) : 1;
 const [base, ...paths] = args;
 if (!base || paths.length === 0) throw new Error("usage: audit_axe.mjs <base-url> <path>... [--json out.json]");
 
@@ -42,8 +47,7 @@ const browser = await chromium.launch(
       ? { headless: true }
       : { channel: "chrome", headless: true },
 );
-try {
-  for (const path of paths) {
+async function checkPage(path) {
     for (const scheme of ["light", "dark"]) {
       for (const v of VIEWS) {
         const ctx = await browser.newContext({ viewport: { width: v.w, height: v.h }, colorScheme: scheme, reducedMotion: "reduce" });
@@ -69,7 +73,14 @@ try {
         }
       }
     }
-  }
+}
+
+try {
+  // WORKERS pages at once, each taking the next path in order; one page's four views stay in sequence.
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(WORKERS, paths.length) }, async () => {
+    while (next < paths.length) await checkPage(paths[next++]);
+  }));
 } finally {
   await browser.close();
 }

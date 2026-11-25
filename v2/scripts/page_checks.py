@@ -9,6 +9,12 @@ deploy, and the report prints one line per check ("The live pages, checked").
 
     python3 scripts/page_checks.py --base https://permtracker.app --out checks.json
     python3 scripts/page_checks.py --only glued,headings   # a few, by key
+    python3 scripts/page_checks.py --base http://127.0.0.1:3000 --jobs 3   # the deploy build: checks side by side
+
+Against a local copy of the site (the deploy build, Nov 24 2026: 985 s one check after another, axe 420 s and the
+phone sweep 289 s of it) --jobs runs that many checks at once, longest first, and axe and the phone sweep each load
+LOCAL_WORKERS pages at a time. Against any other host it's one check and one page at a time whatever --jobs says:
+the morning run reads the live site, which must never take the checks' load at once.
 
 Each check is a separate command with its own time limit. A check that fails,
 times out or can't start is a failure: a check that didn't run never reads as a
@@ -23,6 +29,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import threading
+from concurrent.futures import ThreadPoolExecutor
+from urllib.parse import urlparse
 import os
 import re
 import subprocess
@@ -53,10 +62,22 @@ PAGES = [
 ]
 
 
+LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
+LOCAL_WORKERS = 3
+# Rough seconds each check took on the deploy build (Nov 24 2026): the longest start first, so the slowest one isn't
+# left to begin last.
+EXPECTED_S = {"axe": 420, "phone": 289, "headings": 86, "hidden": 48, "trust": 43, "glued": 42, "pages": 36, "flows": 21}
+
+
+def is_local(base: str) -> bool:
+    return (urlparse(base).hostname or "") in LOCAL_HOSTS
+
+
 def checks(base: str, extra: list[str] | None = None) -> list[dict]:
     """`extra`: more pages for the checks that read a list (a push's changed pages, before it ships)."""
     py = sys.executable
     pages = list(dict.fromkeys([*PAGES, *(extra or [])]))
+    workers = ["--workers", str(LOCAL_WORKERS)] if is_local(base) else []
     return [
         {"key": "glued", "title": "Words run together", "cmd": [py, "scripts/audit_glued_text.py", "--base", base], "limit": 600},
         {"key": "hidden", "title": "Content hidden until scripts run", "cmd": [py, "scripts/audit_ssr_visibility.py", "--base", base, "--limit", "150"], "limit": 600},
@@ -76,8 +97,8 @@ def checks(base: str, extra: list[str] | None = None) -> list[dict]:
         # Not a page check either: a sentence that put a deadline ahead ("comments close November 9") goes wrong
         # by itself the day after, with no push to catch it, so it's read against today's date each morning.
         {"key": "deadlines", "title": "Deadlines written as ahead after the day passed", "cmd": [py, "scripts/audit_passed_deadlines.py"], "limit": 60},
-        {"key": "axe", "title": "Accessibility (axe, WCAG AA)", "cmd": ["node", "scripts/audit_axe.mjs", base, *pages], "limit": 900},
-        {"key": "phone", "title": "Phone widths (overflow, text size, tap size, split names)", "cmd": ["node", "scripts/phone_sweep.mjs", base, *pages], "limit": 900,
+        {"key": "axe", "title": "Accessibility (axe, WCAG AA)", "cmd": ["node", "scripts/audit_axe.mjs", base, *pages, *workers], "limit": 900},
+        {"key": "phone", "title": "Phone widths (overflow, text size, tap size, split names)", "cmd": ["node", "scripts/phone_sweep.mjs", base, *pages, *workers], "limit": 900,
          # A page with nothing wrong prints a line too; the report keeps the lines with findings.
          "clean": r"overflow=0px\s+(past=0\s+)?small=0\s+taps=0(\s+covered=0)?(\s+split=0)?(\s+\([\d.]+ s\))?\s*$"},
         {
@@ -137,6 +158,7 @@ def main() -> int:
     ap.add_argument("--out", default=None)
     ap.add_argument("--only", default="", help="comma-separated keys")
     ap.add_argument("--pages-file", default=None, help="more pages for the list checks, one path per line")
+    ap.add_argument("--jobs", type=int, default=1, help="checks at once, against a local copy of the site only")
     args = ap.parse_args()
     wanted = {k for k in args.only.split(",") if k}
     extra = []
@@ -146,14 +168,29 @@ def main() -> int:
     if wanted and len(todo) != len(wanted):
         print(f"unknown check key(s): {sorted(wanted - {c['key'] for c in todo})}", file=sys.stderr)
         return 2
-    results = []
-    for c in todo:
+    jobs = max(1, args.jobs) if is_local(args.base) else 1
+    if args.jobs > 1 and jobs == 1:
+        print(f"one check at a time: {args.base} isn't a local copy of the site", flush=True)
+    said = threading.Lock()
+
+    def one(c: dict) -> dict:
         r = run(c)
-        results.append(r)
-        print(f"{'pass' if r['ok'] else 'FAIL'}  {r['key']}  ({r['seconds']} s, exit {r['exit']})", flush=True)
-        if not r["ok"]:
-            for ln in r.get("findings") or r["tail"]:
-                print(f"    {ln}")
+        with said:  # each check's lines together, whatever finishes first
+            print(f"{'pass' if r['ok'] else 'FAIL'}  {r['key']}  ({r['seconds']} s, exit {r['exit']})", flush=True)
+            if not r["ok"]:
+                for ln in r.get("findings") or r["tail"]:
+                    print(f"    {ln}")
+        return r
+
+    started = time.monotonic()
+    if jobs == 1:
+        results = [one(c) for c in todo]
+    else:
+        order = sorted(todo, key=lambda c: -EXPECTED_S.get(c["key"], 60))
+        with ThreadPoolExecutor(max_workers=jobs) as pool:
+            done = dict(zip((c["key"] for c in order), pool.map(one, order)))
+        results = [done[c["key"]] for c in todo]
+        print(f"{len(todo)} checks, {jobs} at a time: {round(time.monotonic() - started)} s", flush=True)
     doc = {"base": args.base, "checkedAt": int(time.time() * 1000), "checks": results}
     if args.out:
         Path(args.out).write_text(json.dumps(doc))

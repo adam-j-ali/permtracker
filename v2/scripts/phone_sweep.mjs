@@ -54,7 +54,12 @@ const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 // /glossary, /for-attorneys on Nov 23), one page per build. Blocking returns once a sweep of every page comes back
 // clean.
 const SPLIT_BLOCKS = process.env.PT_SPLIT_BLOCKS === "1";
-const [base, ...paths] = process.argv.slice(2);
+// --workers N sweeps N pages at once per width, each in its own tab (default 1). Only for a local copy of the site (the
+// deploy build: 289 s one page at a time, Nov 24 2026); never against production, which takes them one by one.
+const argv = process.argv.slice(2);
+const workersAt = argv.indexOf("--workers");
+const WORKERS = workersAt >= 0 ? Math.max(1, Number(argv.splice(workersAt, 2)[1]) || 1) : 1;
+const [base, ...paths] = argv;
 if (!base || !paths.length) {
   console.error("usage: node scripts/phone_sweep.mjs <base-url> <path> [path ...]");
   process.exit(2);
@@ -170,54 +175,62 @@ const browser = await chromium.launch(
       ? { headless: true }
       : { channel: "chrome", headless: true },
 );
+async function sweepOne(page, open, width, p) {
+  open.clear();
+  // Load, then up to 8 s for the network to go quiet. Waiting for quiet alone cost 2 minutes a width on a
+  // page that keeps a request open, and the deploy's sweep ran out of its 10 minutes (Nov 1 2026).
+  const t0 = Date.now();
+  const ok = await page.goto(base + p, { waitUntil: "load", timeout: LOAD_MS }).then(() => true, (e) => (console.log(`${width} ${p} load failed: ${String(e).slice(0, 80)}`), false));
+  if (!ok) {
+    console.log(`${width} ${p} was still waiting on: ${stillOpen(open) || "nothing it had asked for"}`);
+    bad++;
+    return;
+  }
+  await page.waitForLoadState("networkidle", { timeout: 8000 }).catch(() => {});
+  const secs = ((Date.now() - t0) / 1000).toFixed(1);
+  const r = await page.evaluate(measure);
+  const past = await page.evaluate(pastTheEdge, width);
+  const covered = (await page.evaluate(coveredText)).map((c) => `${width}: ${c}`);
+  const split = (await page.evaluate(splitNames, PROGRAM_NAME_SOURCE)).map((s) => `${width}: ${s}`);
+  if (width === WIDTHS[0]) {
+    for (const wide of WIDE) {
+      await page.setViewportSize({ width: wide, height: 900 });
+      covered.push(...(await page.evaluate(coveredText)).map((c) => `${wide}: ${c}`));
+      split.push(...(await page.evaluate(splitNames, PROGRAM_NAME_SOURCE)).map((s) => `${wide}: ${s}`));
+    }
+    await page.setViewportSize({ width, height: 844 });
+  }
+  if (r.overflow > 0 || past.length || r.smallN || r.tapsN || covered.length || (SPLIT_BLOCKS && split.length)) bad++;
+  console.log(
+    `${width} ${p}  overflow=${r.overflow}px  past=${past.length}  small=${r.smallN}  taps=${r.tapsN}  covered=${covered.length}  split=${split.length}  (${secs} s)`,
+  );
+  for (const c of r.culprit.slice(-3)) console.log(`    wide: ${c}`);
+  for (const e of past.slice(0, 4)) console.log(`    past: ${e}`);
+  for (const s of r.small) console.log(`    small: ${s}`);
+  for (const t of r.taps) console.log(`    tap: ${t}`);
+  for (const c of covered.slice(0, 6)) console.log(`    covered: ${c}`);
+  for (const s of split.slice(0, 6)) console.log(`    split: ${s}`);
+  if (process.env.SHOTS && width === 390) await page.screenshot({ path: `${process.env.SHOTS}/${p.replace(/\W+/g, "_") || "home"}-${width}.png` });
+}
+
 try {
   for (const width of WIDTHS) {
-    const ctx = await browser.newContext({ viewport: { width, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
-    const page = await ctx.newPage();
-    // What the page is still waiting on when a load runs out of time. A load that hangs on someone else's script
-    // reads the same as one that hangs on our own page until the open requests are named (Nov 11 2026: about
-    // seven 90 s timeouts in one deploy's sweep, with nothing in the site's own log).
-    const open = new Map();
-    page.on("request", (r) => open.set(r, r.url()));
-    for (const ended of ["requestfinished", "requestfailed"]) page.on(ended, (r) => open.delete(r));
-    for (const p of paths) {
-      open.clear();
-      // Load, then up to 8 s for the network to go quiet. Waiting for quiet alone cost 2 minutes a width on a
-      // page that keeps a request open, and the deploy's sweep ran out of its 10 minutes (Nov 1 2026).
-      const t0 = Date.now();
-      const ok = await page.goto(base + p, { waitUntil: "load", timeout: LOAD_MS }).then(() => true, (e) => (console.log(`${width} ${p} load failed: ${String(e).slice(0, 80)}`), false));
-      if (!ok) {
-        console.log(`${width} ${p} was still waiting on: ${stillOpen(open) || "nothing it had asked for"}`);
-        bad++;
-        continue;
+    let next = 0;
+    await Promise.all(Array.from({ length: Math.min(WORKERS, paths.length) }, async () => {
+      const ctx = await browser.newContext({ viewport: { width, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+      const page = await ctx.newPage();
+      // What the page is still waiting on when a load runs out of time. A load that hangs on someone else's script
+      // reads the same as one that hangs on our own page until the open requests are named (Nov 11 2026: about
+      // seven 90 s timeouts in one deploy's sweep, with nothing in the site's own log).
+      const open = new Map();
+      page.on("request", (r) => open.set(r, r.url()));
+      for (const ended of ["requestfinished", "requestfailed"]) page.on(ended, (r) => open.delete(r));
+      try {
+        while (next < paths.length) await sweepOne(page, open, width, paths[next++]);
+      } finally {
+        await ctx.close();
       }
-      await page.waitForLoadState("networkidle", { timeout: 8000 }).catch(() => {});
-      const secs = ((Date.now() - t0) / 1000).toFixed(1);
-      const r = await page.evaluate(measure);
-      const past = await page.evaluate(pastTheEdge, width);
-      const covered = (await page.evaluate(coveredText)).map((c) => `${width}: ${c}`);
-      const split = (await page.evaluate(splitNames, PROGRAM_NAME_SOURCE)).map((s) => `${width}: ${s}`);
-      if (width === WIDTHS[0]) {
-        for (const wide of WIDE) {
-          await page.setViewportSize({ width: wide, height: 900 });
-          covered.push(...(await page.evaluate(coveredText)).map((c) => `${wide}: ${c}`));
-          split.push(...(await page.evaluate(splitNames, PROGRAM_NAME_SOURCE)).map((s) => `${wide}: ${s}`));
-        }
-        await page.setViewportSize({ width, height: 844 });
-      }
-      if (r.overflow > 0 || past.length || r.smallN || r.tapsN || covered.length || (SPLIT_BLOCKS && split.length)) bad++;
-      console.log(
-        `${width} ${p}  overflow=${r.overflow}px  past=${past.length}  small=${r.smallN}  taps=${r.tapsN}  covered=${covered.length}  split=${split.length}  (${secs} s)`,
-      );
-      for (const c of r.culprit.slice(-3)) console.log(`    wide: ${c}`);
-      for (const e of past.slice(0, 4)) console.log(`    past: ${e}`);
-      for (const s of r.small) console.log(`    small: ${s}`);
-      for (const t of r.taps) console.log(`    tap: ${t}`);
-      for (const c of covered.slice(0, 6)) console.log(`    covered: ${c}`);
-      for (const s of split.slice(0, 6)) console.log(`    split: ${s}`);
-      if (process.env.SHOTS && width === 390) await page.screenshot({ path: `${process.env.SHOTS}/${p.replace(/\W+/g, "_") || "home"}-${width}.png` });
-    }
-    await ctx.close();
+    }));
   }
 } finally {
   await browser.close();

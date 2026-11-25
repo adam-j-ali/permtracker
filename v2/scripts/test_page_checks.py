@@ -124,6 +124,40 @@ def main() -> int:
     passing = pc.run({**flows, "cmd": [sys.executable, "-c", "print('  1) [chromium] x')"], "env": {}})
     if "findings" in passing:
         failures.append("a check that passed carries no findings")
+    # Nov 24 2026: side by side against a local copy of the site only; the live site gets one check, one page at a time.
+    local = {c["key"]: c["cmd"] for c in pc.checks("http://127.0.0.1:3000")}
+    live = {c["key"]: c["cmd"] for c in pc.checks("https://permtracker.app")}
+    if "--workers" not in local["axe"] or "--workers" not in local["phone"]:
+        failures.append("against a local copy, axe and the phone sweep load several pages at once")
+    if any("--workers" in cmd for cmd in live.values()):
+        failures.append("against the live site, no check loads several pages at once")
+    import threading
+    import time as _time
+    started, live_n, peak = [], [0], [0]
+    lock = threading.Lock()
+
+    def fake_run(c):
+        with lock:
+            started.append(c["key"]); live_n[0] += 1; peak[0] = max(peak[0], live_n[0])
+        _time.sleep(0.05)
+        with lock:
+            live_n[0] -= 1
+        return {"key": c["key"], "title": c["title"], "ok": True, "exit": 0, "seconds": 0, "tail": []}
+
+    real_run, real_argv = pc.run, sys.argv
+    pc.run = fake_run
+    try:
+        for base, jobs, want_peak in (("http://127.0.0.1:3000", 3, 3), ("https://permtracker.app", 3, 1)):
+            started.clear(); peak[0] = 0
+            sys.argv = ["page_checks.py", "--base", base, "--jobs", str(jobs), "--only", "glued,axe,phone,flows,headings"]
+            pc.main()
+            if peak[0] != want_peak:
+                failures.append(f"{base} with --jobs {jobs}: {peak[0]} checks at once (want {want_peak})")
+            if base.startswith("http://127") and started[:2] != ["axe", "phone"]:
+                failures.append(f"the longest checks start first: {started}")
+    finally:
+        pc.run, sys.argv = real_run, real_argv
+
     for f in failures:
         print("FAIL", f)
     print("ALL PASS" if not failures else f"{len(failures)} failed")

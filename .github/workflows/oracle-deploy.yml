@@ -299,8 +299,11 @@ jobs:
           fi
           echo "changed pages added to the checks: $(grep -c . "$RUNNER_TEMP/changed.txt" || true)"
           code=0
+          # Three checks at a time, longest first, and axe and the phone sweep three pages at a time: this is a local
+          # copy of the site on a 4-core runner (985 s one by one, Nov 24 2026). The morning run on the live site
+          # stays one at a time (page_checks.py refuses --jobs for any host but this one).
           python3 scripts/page_checks.py --base http://127.0.0.1:3000 --pages-file "$RUNNER_TEMP/changed.txt" \
-            --only glued,hidden,headings,pages,trust,axe,phone,flows || code=$?
+            --only glued,hidden,headings,pages,trust,axe,phone,flows --jobs 3 || code=$?
           pkill -f "node server.js" || :
           if [ "$code" != 0 ]; then
             echo "::error::a page check failed on this build, so it won't ship; the findings are above"
