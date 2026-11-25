@@ -166,7 +166,8 @@ function decidedCaseNext(
       isFinal: true,
       approved: isProgramApproval(program, s),
       certifiedOn: isPerm && s === "CERTIFIED" ? decision.decidedOn : null,
-      deniedOn: isPerm && s === "DENIED" ? decision.decidedOn : null,
+      // A denial gets the rule alone: the day the watch saw it can follow the letter's date (convex/caseAlerts.ts).
+      deniedOn: null,
     }),
     caseUrl,
   );

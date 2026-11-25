@@ -2067,19 +2067,18 @@ export const sweepCaseChanges = internalAction({
         const approved = isProgramApproval(program, status);
         const tone = !isFinal || approved ? "live" : "closed";
         // What comes next (convex/lib/alertNextSteps.ts). The day DOL's record
-        // moved is read only for the two emails that count a deadline from it:
-        // a certification (the I-140's 180 days) and a denial (30 days to ask
-        // DOL to look again).
+        // moved is read only for the certification, whose I-140 window the
+        // email counts from it. A denial gets the rule alone: the day our sweep
+        // saw it can follow the letter's date, and a day counted from it could
+        // come out later than the real one, which the app never shows.
         const certified = program === "perm" && isFinal && approved;
-        const denied = program === "perm" && isFinal && /^DENIED$/i.test(status.trim());
-        const decidedOn =
-          certified || denied
-            ? await dayRecordMoved(sub.caseNumber, status).catch((error: unknown) => {
-                // The block still goes, with the rule and no computed day.
-                log.error("decision day unreadable", { caseNumber: sub.caseNumber, error });
-                return null;
-              })
-            : null;
+        const decidedOn = certified
+          ? await dayRecordMoved(sub.caseNumber, status).catch((error: unknown) => {
+              // The block still goes, with the rule and no computed day.
+              log.error("decision day unreadable", { caseNumber: sub.caseNumber, error });
+              return null;
+            })
+          : null;
         const next = nextStepsFor({
           program,
           caseNumber: sub.caseNumber,
@@ -2087,8 +2086,7 @@ export const sweepCaseChanges = internalAction({
           isFinal,
           approved,
           priorityDate: program === "perm" ? context.filingDay : null,
-          certifiedOn: certified ? decidedOn : null,
-          deniedOn: denied ? decidedOn : null,
+          certifiedOn: decidedOn,
           employerName: context.employerName,
           jobTitle: context.jobTitle,
         });
