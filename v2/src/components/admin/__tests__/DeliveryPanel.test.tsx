@@ -16,7 +16,7 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-const { DeliveryPanel } = await import("../DeliveryPanel");
+const { BudgetPools, DeliveryPanel } = await import("../DeliveryPanel");
 
 const SENT = Date.UTC(2026, 10, 10, 18, 7); // 1:07 PM Eastern
 const alert = (over: Partial<Delivery["recent"][number]> = {}): Delivery["recent"][number] => ({
@@ -188,5 +188,16 @@ describe("employer follows, on a phone", () => {
     const grid = screen.getByText("emails sent").closest("div")!.parentElement!;
     expect(grid.className).toMatch(/(^|\s)grid-cols-2(\s|$)/);
     expect(screen.getByText("emails sent").closest("div")!.className).not.toMatch(/(^|\s)sm:block(\s|$)/);
+  });
+});
+
+describe("the admin page's email pools", () => {
+  it("names the support mail the Worker forwarded beside a pool that only counts Resend's forwards", () => {
+    const pool = { name: "supportForward", label: "Support mail forwards", limit: 480, usedLast24h: 0, refusedLast7d: 0, queuedLast7d: 0 };
+    const { container } = render(<BudgetPools pools={[{ ...pool, otherRouteLast24h: 13 }, { ...pool, name: "bulletinAlert", label: "Bulletin alerts", limit: 640 }]} />);
+    const text = container.textContent ?? "";
+    expect(text).toContain("13 forwarded by the mail Worker in the last 24 hours, which spends none of this pool");
+    expect(text).toContain("of 480");
+    expect(text.match(/forwarded by the mail Worker/g)).toHaveLength(1);
   });
 });

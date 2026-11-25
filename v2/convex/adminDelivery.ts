@@ -15,10 +15,13 @@
 import { v } from "convex/values";
 import { query, type QueryCtx } from "./_generated/server";
 import { requireAdmin } from "./lib/admin";
-import { BUDGETS, type BudgetName } from "./lib/alertBudgets";
+import { BUDGETS, windowFor, type BudgetName } from "./lib/alertBudgets";
 import { QUEUE_MAX } from "./confirmationQueue";
 import { RETRY_MAX_ROWS, dailyCeilings, utcDay } from "./lib/emailLimits";
 import { easternDay, MS_PER_DAY } from "./lib/time";
+
+/** At most this many of a day's Worker-forwarded messages are counted (a flood reads as "500 or more"). */
+const WORKER_FORWARDS_READ = 500;
 
 /** Budget refusal rows read: one per pool per day, so a week of pools fits many times over. */
 const REFUSALS_READ = 200;
@@ -82,6 +85,11 @@ export const getDelivery = query({
         refusedLast7d: v.number(),
         /** Requests the full pool queued instead of refusing (sent as room freed). */
         queuedLast7d: v.number(),
+        /**
+         * The same kind of mail sent by a route that spends none of this pool: inbound mail the Cloudflare mail Worker
+         * forwards (supportForward). Without it the pool reads 0 while mail is forwarded all day (Nov 25 2026).
+         */
+        otherRouteLast24h: v.optional(v.number()),
       }),
     ),
     refusalDays: v.array(v.object({ day: v.string(), pool: v.string(), count: v.number(), queued: v.number() })),
@@ -156,19 +164,31 @@ export const getDelivery = query({
       queuedBy.set(r.pool, (queuedBy.get(r.pool) ?? 0) + (r.queued ?? 0));
     }
 
+    // Mail the Worker forwarded (its rows carry a "cloudflare:" id): newest first, stopping at a day old.
+    let workerForwards = 0;
+    for await (const row of ctx.db.query("supportEmails").order("desc")) {
+      if (row._creationTime < now - MS_PER_DAY) break;
+      if (row.status === "forwarded" && String(row.resendEmailId ?? "").startsWith("cloudflare:")) workerForwards += 1;
+      if (workerForwards >= WORKER_FORWARDS_READ) break;
+    }
+
     const pools = [];
     for (const [name, b] of Object.entries(BUDGETS) as [BudgetName, (typeof BUDGETS)[BudgetName]][]) {
+      // The limit the senders enforce: the free plan's number grown with the paid allowance (windowFor). The bare
+      // number read "0 of 40" on Resend's paid plan, where the bound is 16 times that, and stopped counting at it.
+      const { limit } = windowFor(name);
       const used = await ctx.db
         .query("rateLimits")
         .withIndex("by_key_and_timestamp", (q) => q.eq("key", `${b.key}:all`).gte("timestamp", now - MS_PER_DAY))
-        .take(b.limit + 50);
+        .take(limit + 50);
       pools.push({
         name,
         label: b.label,
-        limit: b.limit,
+        limit,
         usedLast24h: used.length,
         refusedLast7d: refusedBy.get(name) ?? 0,
         queuedLast7d: queuedBy.get(name) ?? 0,
+        ...(name === "supportForward" ? { otherRouteLast24h: workerForwards } : {}),
       });
     }
 

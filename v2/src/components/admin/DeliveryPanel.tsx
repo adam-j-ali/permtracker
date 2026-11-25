@@ -131,6 +131,11 @@ export function BudgetPools({
               ) : null}{" "}
               {p.queuedLast7d > 0 ? (
                 <p className="mt-1 text-sm">{`${formatInt(p.queuedLast7d)} queued this week`}</p>
+              ) : null}{" "}
+              {p.otherRouteLast24h !== undefined ? (
+                <p className="mt-1 text-sm">
+                  {`${formatInt(p.otherRouteLast24h)} forwarded by the mail Worker in the last 24 hours, which spends none of this pool. The pool counts only Resend's forwards, the fallback.`}
+                </p>
               ) : null}
             </li>
           );

@@ -66,6 +66,28 @@ describe("adminDelivery.getDelivery", () => {
     expect(d.follows.top[0]).toMatchObject({ slug: "adobe-inc", followers: 2 });
   });
 
+  it("shows each pool's limit as the senders enforce it on the paid plan, and the Worker's forwards beside the support pool", async () => {
+    vi.stubEnv("EMAIL_DAILY_LIMIT", "1600");
+    const t = createTestContext();
+    const adminId = await t.run(async (ctx) => ctx.db.insert("users", { email: ADMIN }));
+    await t.run(async (ctx) => {
+      const mail = (i: number, status: "forwarded" | "received", id: string) => ({
+        fromEmail: `p${i}@x.com`, toEmail: "support@permtracker.app", subject: "s", messageId: `m${i}`, resendEmailId: id, status, createdAt: Date.now(),
+      });
+      await ctx.db.insert("supportEmails", mail(1, "forwarded", "cloudflare:m1"));
+      await ctx.db.insert("supportEmails", mail(2, "forwarded", "cloudflare:m2"));
+      await ctx.db.insert("supportEmails", mail(3, "received", "cloudflare:m3"));
+      await ctx.db.insert("supportEmails", mail(4, "forwarded", "re_resend_id"));
+    });
+    const d = await t.withIdentity({ subject: adminId, email: ADMIN }).query(api.adminDelivery.getDelivery, {});
+    const pool = (name: string) => d.pools.find((p) => p.name === name)!;
+    // 1,600 a day is 16 times the free plan's 100, so a 40 becomes 640 (convex/lib/emailAllowance.ts scaled()).
+    expect(pool("bulletinAlert").limit).toBe(640);
+    expect(pool("supportForward").limit).toBe(480);
+    expect(pool("supportForward").otherRouteLast24h).toBe(2);
+    expect(pool("bulletinAlert").otherRouteLast24h).toBeUndefined();
+  });
+
   it("says when each alert's reader signed up and confirmed, beside when it went out", async () => {
     const t = createTestContext();
     const adminId = await t.run(async (ctx) => ctx.db.insert("users", { email: ADMIN }));
