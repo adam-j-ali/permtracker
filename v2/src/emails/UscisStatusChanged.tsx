@@ -123,7 +123,9 @@ export function UscisStatusChanged({ items, unsubscribeUrl, prefsUrl }: UscisSta
           ...(item.dolCaseUrl && item.dolCaseNumber
             ? [{ href: item.dolCaseUrl, text: `Your PERM case ${item.dolCaseNumber} at DOL` }]
             : []),
-        ])}
+        ]).concat(
+          first ? [{ href: `${new URL(first.statusUrl).origin}/uscis-case-statuses`, text: "What each USCIS case status means" }] : [],
+        )}
       />
     </EmailLayout>
   );
