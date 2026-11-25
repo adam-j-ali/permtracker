@@ -84,7 +84,9 @@ describe("pageDate", () => {
 });
 
 describe("a template's day", () => {
-  const templates = Object.keys(dates).filter((r) => r.includes("[") && !r.startsWith("/cases"));
+  // Public templates only: the signed-in /cases pages and the /share links (noindex, never in the sitemap; the
+  // recruitment share joined page-dates.json on Nov 24 2026) have no sitemap day to set.
+  const templates = Object.keys(dates).filter((r) => r.includes("[") && !r.startsWith("/cases") && !r.startsWith("/share/"));
 
   it("is set by hand for every public template", () => {
     // A template left to git would take the day of any commit to anything it

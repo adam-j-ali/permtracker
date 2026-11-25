@@ -337,6 +337,16 @@ backup"; start cloudflared with the SAME tunnel token, so DNS and every
 GitHub secrets `ORACLE_HOST`, `ORACLE_KNOWN_HOSTS` and the deploy key; deploy;
 run each nightly job once by hand.
 
+**Rehearsed from R2, Nov 24 2026:** the owner's Mac alone read the bucket and rebuilt the data. It listed and
+downloaded the newest `db/`, `server/` and `convex/` objects through R2's S3 API (curl `--aws-sigv4`). The R2 key has
+a copy in the Keychain item `permtracker-r2-env` on that Mac, so the bucket stays readable with this server gone. All
+three opened with the backup key. Loaded into a fresh SQLite file, the database dump took 87 s with no errors, and
+`integrity_check` said ok: 123 tables, from the same 398,736,359 bytes the server recorded. Still untested: the
+rebuild on a new machine.
+
+**Pieces this repository doesn't name** go in the sealed server copy through `/etc/permtracker/backup-extra.list`, one
+path a line. Each listed path must exist, as the named ones must, and the list itself is in the copy.
+
 **What was checked, Oct 18 2026:** every script, unit, drop-in and the nginx file installed on the server
 matched this directory byte for byte (65 files plus 19 drop-ins; the Cockpit drop-in was the one missing,
 added that day), and the owner's Mac key opened that night's sealed server copy (the env files, units and

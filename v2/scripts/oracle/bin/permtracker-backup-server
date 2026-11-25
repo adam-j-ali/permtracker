@@ -26,10 +26,20 @@ REQUIRED=(/srv/permtracker/app/env /srv/permtracker/secrets /srv/permtracker/db-
   /etc/ssh/sshd_config.d /etc/fail2ban/jail.d /usr/local/bin /usr/local/sbin
   /usr/local/lib/permtracker /etc/systemd/system)
 [ -r "$R" ] || { echo "no recipient key at $R; nothing sealed"; exit 1; }
-for p in "${REQUIRED[@]}"; do [ -e "$p" ] || { echo "missing $p; refusing to write a copy without it"; exit 1; }; done
+# Paths this repository doesn't name (the owner's private tools on this machine) are listed one a line in
+# /etc/permtracker/backup-extra.list, which is itself in the copy. Each must exist, like the ones above (Nov 24 2026:
+# a server piece added by hand had no copy anywhere until this list).
+EXTRA=()
+if [ -r /etc/permtracker/backup-extra.list ]; then
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%%#*}"; line="${line%"${line##*[![:space:]]}"}"
+    [ -n "$line" ] && EXTRA+=("$line")
+  done < /etc/permtracker/backup-extra.list
+fi
+for p in "${REQUIRED[@]}" "${EXTRA[@]}"; do [ -e "$p" ] || { echo "missing $p; refusing to write a copy without it"; exit 1; }; done
 s="$B/server-$(date -u +%Y%m%d-%H%M).tar.zst.cms"
 # No --ignore-failed-read: root reads all of it, and an unreadable file must fail the run.
-tar --zstd -cf - "${REQUIRED[@]}" 2>/tmp/backup-server.tar.err \
+tar --zstd -cf - "${REQUIRED[@]}" "${EXTRA[@]}" 2>/tmp/backup-server.tar.err \
   | openssl cms -encrypt -binary -aes-256-gcm -outform DER -out "$s.part" "$R"
 grep -v "Removing leading" /tmp/backup-server.tar.err || true; rm -f /tmp/backup-server.tar.err
 [ "$(od -An -tx1 -N1 "$s.part" | tr -d ' ')" = "30" ] || { echo "sealing produced no CMS file"; rm -f "$s.part"; exit 1; }
