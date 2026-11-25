@@ -14,6 +14,9 @@ import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { rateLimiter } from "./rateLimitConfig";
 
+/** More than any account holds: the order list is refused past this. */
+export const MAX_ORDERED_CASES = 5000;
+
 /**
  * Save custom case order.
  * Stores the ordered array of case IDs along with active filters and base sort method.
@@ -59,6 +62,20 @@ export const saveCaseOrder = mutation({
 
     await rateLimiter.limit(ctx, "userCaseOrderSave", { key: userId, throws: true });
 
+    // Only the caller's own cases, once each, in the order given (Nov 25 2026). Nothing reads a case by these ids,
+    // but the order row should never hold someone else's, and the list is capped before any read walks it.
+    if (args.caseIds.length > MAX_ORDERED_CASES) {
+      throw new Error("Too many cases in one order");
+    }
+    const caseIds: typeof args.caseIds = [];
+    const seen = new Set<string>();
+    for (const id of args.caseIds) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const doc = await ctx.db.get(id);
+      if (doc && doc.userId === userId) caseIds.push(id);
+    }
+
     const now = Date.now();
 
     // Check if user already has a custom order
@@ -70,7 +87,7 @@ export const saveCaseOrder = mutation({
     if (existing) {
       // Update existing custom order
       await ctx.db.patch(existing._id, {
-        caseIds: args.caseIds,
+        caseIds,
         filters: args.filters,
         baseSortMethod: args.baseSortMethod,
         baseSortOrder: args.baseSortOrder,
@@ -81,7 +98,7 @@ export const saveCaseOrder = mutation({
       // Create new custom order
       const id = await ctx.db.insert("userCaseOrder", {
         userId,
-        caseIds: args.caseIds,
+        caseIds,
         filters: args.filters,
         baseSortMethod: args.baseSortMethod,
         baseSortOrder: args.baseSortOrder,
