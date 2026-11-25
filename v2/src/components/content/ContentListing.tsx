@@ -150,11 +150,11 @@ export default function ContentListing({ posts, type }: ContentListingProps) {
           <h2 id="sorted-h" className="mb-5 border-b-2 border-border pb-3 font-heading text-2xl font-bold sm:text-3xl">
             {sortedHeading(shown, noun, sort)}
           </h2>
-          <ContentGrid posts={ordered} headingLevel={3} shown={onPage} />
+          <ContentGrid posts={ordered} headingLevel={3} shown={onPage} priorityFirst />
         </section>
       ) : null}
 
-      {sections.map(({ topic, posts: list, here }) => (
+      {sections.map(({ topic, posts: list, here }, i) => (
         <section key={topic.id} id={topic.id} aria-labelledby={`${topic.id}-h`} hidden={!here}>
           <div className="mb-5 flex items-center gap-3 border-b-2 border-border pb-3 sm:gap-4">
             <SpotPicture name={topic.picture} alt="" className="w-16 shrink-0 sm:w-24" />{" "}
@@ -165,7 +165,7 @@ export default function ContentListing({ posts, type }: ContentListingProps) {
               <p className="mt-1 text-base text-soft">{keepWhole(topic.blurb)}</p>
             </div>
           </div>
-          <ContentGrid posts={list} headingLevel={3} shown={onPage} />
+          <ContentGrid posts={list} headingLevel={3} shown={onPage} priorityFirst={here && i === sections.findIndex((s) => s.here)} />
         </section>
       ))}
 

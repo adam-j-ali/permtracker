@@ -16,9 +16,12 @@ interface ContentGridProps {
   headingLevel?: 2 | 3;
   /** Paging: the slugs on the current page. Every post is rendered; the rest are hidden, so their links stay. */
   shown?: Set<string>;
+  /** The first card leads the page's first screen: its picture is fetched first (the largest paint). */
+  priorityFirst?: boolean;
 }
 
-export default function ContentGrid({ posts, showType, headingLevel = 2, shown }: ContentGridProps) {
+export default function ContentGrid({ posts, showType, headingLevel = 2, shown, priorityFirst = false }: ContentGridProps) {
+  const first = posts.find((p) => !shown || shown.has(p.slug))?.slug;
   if (posts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -38,10 +41,10 @@ export default function ContentGrid({ posts, showType, headingLevel = 2, shown }
         shown ? (
           // Off the current page, a card stays in the HTML (every article keeps its link from the list) and is hidden.
           <div key={`${post.type}-${post.slug}`} className={shown.has(post.slug) ? "contents" : "hidden"}>
-            <ContentCard headingLevel={headingLevel} post={post} showType={showType} />
+            <ContentCard headingLevel={headingLevel} post={post} showType={showType} priority={priorityFirst && post.slug === first} />
           </div>
         ) : (
-          <ContentCard key={`${post.type}-${post.slug}`} headingLevel={headingLevel} post={post} showType={showType} />
+          <ContentCard key={`${post.type}-${post.slug}`} headingLevel={headingLevel} post={post} showType={showType} priority={priorityFirst && post.slug === first} />
         ),
       )}
     </div>

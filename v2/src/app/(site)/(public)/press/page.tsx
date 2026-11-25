@@ -130,7 +130,7 @@ export default async function PressPage() {
           What you can report on
         </h2>{" "}
         <ul className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
-          {TOPICS.map((t) => (
+          {TOPICS.map((t, i) => (
             <li key={t.slug}>
               <Link
                 href={t.href}
@@ -143,6 +143,7 @@ export default async function PressPage() {
                   height={630}
                   sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
                   className="block h-auto w-full border-b-2 border-border"
+                  priority={i === 0}
                 />{" "}
                 <span className="block p-4">
                   <span className="block font-heading text-lg font-bold group-hover:underline group-hover:decoration-primary group-hover:decoration-2 group-hover:underline-offset-4">

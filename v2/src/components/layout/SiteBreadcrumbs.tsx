@@ -59,7 +59,9 @@ export function SiteBreadcrumbs({
   const updated = date ?? (route && sources && !pageName ? pageDate(route, sources) : null);
   const page = updated && !(route && OWN_PAGE_NODE.has(route)) ? <PageDateSchema path={pathname} date={updated} /> : null;
   const base = breadcrumbTrail(pathname);
-  const trail = pageName && base.length > 0 ? [...base, { name: pageName, href: pathname }] : base;
+  // An article that is also a named page (the corrections log) already ends the trail: it keeps its one name, once.
+  const named = base.length > 0 && base[base.length - 1]!.href === pathname;
+  const trail = pageName && base.length > 0 && !named ? [...base, { name: pageName, href: pathname }] : base;
   // The home page has no trail; it still says when it changed, to search.
   if (trail.length === 0) return page;
   const endsAtPage = Boolean(pageName) || trailEndsAtPage(pathname);

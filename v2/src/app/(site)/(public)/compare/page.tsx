@@ -162,7 +162,7 @@ export default async function ComparePage() {
                 <th scope="col" className="hidden px-4 py-3 font-heading font-bold md:table-cell">Data from{" "}</th>
                 <th scope="col" className="hidden px-4 py-3 font-heading font-bold lg:table-cell">Cost{" "}</th>
               </tr>
-            </thead>{" "}
+            </thead>
             <tbody>
               {trackers.map((t) => (
                 <tr key={t.slug} className={t.slug === PERM_TRACKER.slug ? "border-t-2 border-border bg-sage" : "border-t border-border/25"}>

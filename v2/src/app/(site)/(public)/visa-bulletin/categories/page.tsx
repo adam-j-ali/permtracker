@@ -106,8 +106,10 @@ export default async function BulletinCategoriesPage() {
                             <Link
                               href={`/visa-bulletin/categories/${lineSlug(cat, country)}`}
                               className={`block min-h-[44px] px-2 py-2 ${STATE_FILL[fa.latest.kind] ?? "hover:bg-sage"}`}
-                              aria-label={`${LINE_CATEGORY_SHORT[cat]} ${LINE_COUNTRY_SHORT[country]}: final action ${cutoffLabel(fa.latest)}`}
                             >
+                              {/* The name starts with the row and column a screen reader can't see, then says what the
+                                  cell shows: the visible words stay in the name (WCAG 2.5.3, label in name). */}
+                              <span className="sr-only">{`${LINE_CATEGORY_SHORT[cat]} ${LINE_COUNTRY_SHORT[country]}, final action `}</span>{" "}
                               <span className="block font-bold tabular-nums underline underline-offset-2">{cutoffLabel(fa.latest)}</span>{" "}
                               {dff ? (
                                 <span className="block text-sm text-muted-foreground tabular-nums">filing {cutoffLabel(dff.latest)}</span>

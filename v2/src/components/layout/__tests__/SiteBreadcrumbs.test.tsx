@@ -16,6 +16,13 @@ describe("SiteBreadcrumbs", () => {
     expect(render("/")).toBe("");
   });
 
+  it("names a page once when its article copy is also a named page (Nov 25 2026: 'Corrections > Corrections')", () => {
+    const html = render("/changelog/corrections", { pageName: "Corrections, every one dated" });
+    const crumbs = [...html.matchAll(/<li\b[\s\S]*?<\/li>/g)].map((m) => m[0]);
+    expect(crumbs.filter((li) => li.includes("Corrections"))).toHaveLength(1);
+    expect(html).toMatch(/aria-current="page"[^>]*><span class="truncate">Corrections</);
+  });
+
   it("marks the page itself as current and emits its BreadcrumbList", () => {
     const html = render("/about");
     expect(html).toContain('aria-label="Breadcrumb"');

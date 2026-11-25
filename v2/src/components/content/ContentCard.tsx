@@ -33,12 +33,15 @@ interface ContentCardProps {
    * Default 3 so the related-posts strip keeps the level it already had.
    */
   headingLevel?: 2 | 3;
+  /** The picture is the page's largest on the first screen: fetched first, never lazily. */
+  priority?: boolean;
 }
 
 export default function ContentCard({
   post,
   showType,
   headingLevel = 3,
+  priority = false,
 }: ContentCardProps) {
   const Heading = headingLevel === 2 ? "h2" : "h3";
   const { slug, type, meta } = post;
@@ -89,6 +92,7 @@ export default function ContentCard({
                 className={isWholeHero(meta.image) ? "object-contain" : "object-cover"}
                 style={isWholeHero(meta.image) ? undefined : { objectPosition: meta.imagePosition ?? "center" }}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                priority={priority}
               />
               {/* Type badge overlay */}
               {showType && (
