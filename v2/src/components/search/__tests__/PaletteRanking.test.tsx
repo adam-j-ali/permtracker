@@ -5,6 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const capture = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/analytics", () => ({ analytics: { capture } }));
+// The event is off on the site until the Privacy Policy covers it (SEARCH_MISS_ON); here it's on, to prove the palette
+// sends it once, with its words only.
+vi.mock("@/lib/funnelEvents", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/lib/funnelEvents")>();
+  return { ...real, trackSearchMiss: (raw: string) => real.trackSearchMiss(raw, true) };
+});
 
 import { resetArticleList } from "@/lib/search/articleList";
 import { resetCityList } from "@/lib/search/cityList";

@@ -95,8 +95,15 @@ export function searchMissText(raw: string): string | null {
   return q.slice(0, SEARCH_MISS_MAX);
 }
 
-/** A site search found nothing: its words go (searchMissText), and nothing else. */
-export function trackSearchMiss(raw: string): void {
+/**
+ * Off until the Privacy Policy says the site keeps the words of a search that found nothing (the owner's call; draft in
+ * .planning). Everything else about the event is built and tested.
+ */
+export const SEARCH_MISS_ON = false;
+
+/** A site search found nothing: its words go (searchMissText), and nothing else, once SEARCH_MISS_ON is on. */
+export function trackSearchMiss(raw: string, on: boolean = SEARCH_MISS_ON): void {
+  if (!on) return;
   const query = searchMissText(raw);
   if (query !== null) analytics.capture("search_miss", { query });
 }

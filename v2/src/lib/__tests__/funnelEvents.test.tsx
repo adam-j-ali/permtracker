@@ -10,11 +10,16 @@ import { queryShape, hrefGroup, searchMissText, trackSearchMiss, useAlertFormTel
 describe("search_miss", () => {
   beforeEach(() => capture.mockClear());
 
+  it("sends nothing while it's off, until the Privacy Policy covers it", () => {
+    trackSearchMiss("green card for chefs");
+    expect(capture).not.toHaveBeenCalled();
+  });
+
   it("sends the words of a search that found nothing, cut to 60 characters, and nothing else", () => {
-    trackSearchMiss("  green   card  for   chefs ");
+    trackSearchMiss("  green   card  for   chefs ", true);
     expect(capture).toHaveBeenCalledWith("search_miss", { query: "green card for chefs" });
     const long = "a".repeat(70);
-    trackSearchMiss(long);
+    trackSearchMiss(long, true);
     expect(capture).toHaveBeenLastCalledWith("search_miss", { query: "a".repeat(60) });
   });
 
@@ -34,7 +39,7 @@ describe("search_miss", () => {
       expect(searchMissText(typed), typed).toBeNull();
     }
     expect(searchMissText("15-1252")).toBe("15-1252");
-    trackSearchMiss("me@example.com");
+    trackSearchMiss("me@example.com", true);
     expect(capture).not.toHaveBeenCalled();
   });
 });
