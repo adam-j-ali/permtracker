@@ -25,4 +25,5 @@ pnpm test:run    # every test
 - [CLAUDE.md](CLAUDE.md): the developer guide
 - [TEST_README.md](TEST_README.md): tests
 - [docs/API.md](docs/API.md): the Convex API
+- [docs/CRYPTO.md](docs/CRYPTO.md): keys, tokens and encryption
 - [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md): the design system

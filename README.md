@@ -14,9 +14,14 @@ Free PERM case status and DOL data for people waiting on a green card, and case 
 - Search by employer, law firm, state, job or city
 - DOL's queue and processing times
 - Visa bulletin history
+- USCIS processing times, I-140 and I-485 figures, and approvals by receipt block
+- Each consulate's interview line and the visas it issued
+- Green card timelines people reported, each person counted once
+- An estimate scorecard: how close our dates land
 - Free calculators
 - Email alerts, no account needed
 - A free API and MCP server ([permtracker.app/developers](https://permtracker.app/developers))
+- Badges and embeds for your own site ([permtracker.app/badges](https://permtracker.app/badges))
 
 ## For attorneys
 
@@ -54,6 +59,7 @@ pnpm check
 - [perm_flow.md](perm_flow.md): how the PERM process works
 - [v2/TEST_README.md](v2/TEST_README.md): tests
 - [v2/docs/API.md](v2/docs/API.md): the Convex API
+- [v2/docs/CRYPTO.md](v2/docs/CRYPTO.md): keys, tokens and encryption
 
 ## License
 
