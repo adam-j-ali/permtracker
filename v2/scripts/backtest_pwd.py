@@ -34,7 +34,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from lib_db import ET, Database, query_rows, write_doc  # noqa: E402
-from lib_holidays import add_workdays, decided_on, is_dol_workday, workdays_between  # noqa: E402
+from lib_holidays import add_workdays, decided_on, dol_day_starts, is_dol_workday, workdays_between  # noqa: E402
 
 IN_LINE = "IN PROCESS"
 PREFIX = "P-100-"
@@ -294,8 +294,9 @@ def day_section(rows: list, events: dict, end: date) -> dict | None:
     runs, samples = [], []
     for t0 in sorted(starts):
         pace = workday_pace(exit_days(events, t0, DAY_PACE_DAYS))
-        # The queue as the start day's morning sweep left it.
-        t_ms = int(datetime(t0.year, t0.month, t0.day, 12, tzinfo=ET).timestamp() * 1000)
+        # The queue when the start day began on DOL's clock (dol_day_starts: 7 AM from Nov 25 2026, noon before), the
+        # boundary decided_on reads, so a case decided on t0 is in the line and its outcome, never outside both.
+        t_ms = int(dol_day_starts(t0).timestamp() * 1000)
         in_line, outcome = [], {}
         for cn, fd, cur in rows:
             if not fd or fd > t0.isoformat():

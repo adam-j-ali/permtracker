@@ -102,6 +102,13 @@ def decided_on(seen_ms: int) -> date:
     return t.date() - timedelta(days=1) if t.hour < starts else t.date()
 
 
+def dol_day_starts(d: date) -> datetime:
+    """When DOL's day d begins on our clock, the boundary decided_on reads: 7 AM Eastern from RULE_FROM_MS, noon before."""
+    midnight = datetime(d.year, d.month, d.day, tzinfo=ET)
+    hour = DOL_DAY_STARTS_HOUR if midnight.timestamp() * 1000 >= RULE_FROM_MS else SEEN_NEXT_MORNING_BEFORE_HOUR
+    return datetime(d.year, d.month, d.day, hour, tzinfo=ET)
+
+
 def next_workday(d: date) -> date:
     """The first DOL working day on or after d."""
     while not is_dol_workday(d):

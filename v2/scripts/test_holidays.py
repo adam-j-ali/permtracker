@@ -9,13 +9,14 @@ from __future__ import annotations
 import json
 import pathlib
 import sys
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from lib_holidays import (DOL_DAY_STARTS_HOUR, RULE_FROM_MS, SEEN_NEXT_MORNING_BEFORE_HOUR, add_workdays,  # noqa: E402
-                          decided_on, federal_holidays, is_dol_workday,
+                          decided_on, dol_day_starts, federal_holidays, is_dol_workday,
                           next_workday, workdays_between)
+from lib_db import ET  # noqa: E402
 
 fails: list[str] = []
 
@@ -73,6 +74,16 @@ check(not is_dol_workday(date(2041, 1, 21)), "Monday Jan 21 2041 is Inauguration
 # New Year's Day 2028 is a Saturday, so it's observed Friday Dec 31, 2027, a date in 2028's list.
 check(not is_dol_workday(date(2027, 12, 31)), "Dec 31 2027 is the observed New Year's Day, not a workday")
 check(is_dol_workday(date(2027, 12, 30)), "the day before it still is")
+
+# The backtest's queue snapshot and decided_on share one boundary: 7 AM Eastern from Nov 25 2026, noon before. Every
+# quarter hour from Nov 23 to Nov 27 belongs to exactly the DOL day whose window holds it.
+check(dol_day_starts(date(2026, 11, 24)).hour == 12, "Nov 24 began at noon on our clock (the old rule)")
+check(dol_day_starts(date(2026, 11, 25)).hour == 7, "Nov 25 began at 7 AM (the switch)")
+_t = datetime(2026, 11, 23, tzinfo=ET)
+while _t < datetime(2026, 11, 27, tzinfo=ET):
+    _d = decided_on(int(_t.timestamp() * 1000))
+    check(dol_day_starts(_d) <= _t < dol_day_starts(_d + timedelta(days=1)), f"{_t} sits in the window of {_d}")
+    _t += timedelta(minutes=15)
 
 print(f"\n{len(fails)} failure(s)")
 sys.exit(1 if fails else 0)
