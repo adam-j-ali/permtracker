@@ -59,10 +59,16 @@ describe("SummaryTilesGrid", () => {
       expect(container.querySelector(`a[href="${href}"]`)).toBeInTheDocument();
     });
 
-    it("Complete tile links to /cases?status=i140&progress=approved", () => {
+    it("Complete tile links to the cases whose green card arrived", () => {
       const { container } = renderWithProviders(<SummaryTilesGrid />);
       const wrapper = container.querySelector('[data-status="complete"]');
-      expect(wrapper?.querySelector("a")).toHaveAttribute("href", "/cases?status=i140&progress=approved");
+      expect(wrapper?.querySelector("a")).toHaveAttribute("href", "/cases?status=complete");
+    });
+
+    it("shows the I-485 and consulate tiles only once a case reaches them", () => {
+      const { container } = renderWithProviders(<SummaryTilesGrid />);
+      expect(container.querySelector('[data-status="i485"]')).toBeNull();
+      expect(container.querySelector('[data-status="consular"]')).toBeNull();
     });
 
     it("all tiles are accessible links with names", () => {
@@ -87,6 +93,21 @@ describe("SummaryTilesGrid", () => {
       renderWithProviders(<SummaryTilesGrid />);
 
       expect(screen.getAllByText("150").length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe("past the I-140", () => {
+    it("adds an I-485 tile and a consulate tile, each linked to its cases", () => {
+      vi.mocked(useQuery).mockReturnValue(
+        createMockDashboardSummary({
+          i485: { count: 2, subtext: "1 filed, 1 approved" },
+          consular: { count: 1, subtext: "1 interview" },
+        }),
+      );
+      const { container } = renderWithProviders(<SummaryTilesGrid />);
+      expect(container.querySelector('[data-status="i485"] a')).toHaveAttribute("href", "/cases?status=i485");
+      expect(container.querySelector('[data-status="consular"] a')).toHaveAttribute("href", "/cases?status=consular");
+      expect(screen.getByText("1 filed, 1 approved")).toBeInTheDocument();
     });
   });
 

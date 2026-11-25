@@ -17,6 +17,7 @@
  */
 
 import type { CaseCardData } from "@convex/lib/caseListTypes";
+import { CASE_STATUSES, GREEN_CARD_DATE_FIELDS, PROGRESS_STATUSES } from "@/lib/perm";
 import { calculateI140FilingDeadline } from "@/lib/perm";
 import { captureError } from "@/lib/sentry";
 import { csvDate, csvToCases, looksLikeCsv } from "./csvImport";
@@ -101,8 +102,8 @@ function detectFormat(parsed: unknown): { format: DetectedFormat; cases: unknown
   if (typeof parsed === "object" && !Array.isArray(parsed)) {
     const obj = parsed as Record<string, unknown>;
 
-    // V2 versioned format
-    if (obj.version === "v2" && Array.isArray(obj.cases)) {
+    // Our own versioned export: v2, and v3 with the fields past the I-140
+    if ((obj.version === "v2" || obj.version === "v3") && Array.isArray(obj.cases)) {
       return { format: "v2", cases: obj.cases };
     }
 
@@ -175,8 +176,9 @@ function detectFormat(parsed: unknown): { format: DetectedFormat; cases: unknown
 // ============================================================================
 
 /**
- * Map legacy case status values to v2 format
- * V2 statuses: "pwd" | "recruitment" | "eta9089" | "i140" | "closed"
+ * Map legacy case status values to the stages the app stores (CASE_STATUSES). An older tool's "Complete", in any
+ * case, was an approved I-140 and still reads as one; only our own export (v3, JSON or CSV) writes "complete" for the
+ * green card received, and normalizeAndValidateCase keeps that one.
  */
 const CASE_STATUS_MAP: Record<string, string> = {
   // Legacy perm-tracker-new statuses
@@ -203,8 +205,13 @@ const CASE_STATUS_MAP: Record<string, string> = {
   "recruitment": "recruitment",
   "eta9089": "eta9089",
   "i140": "i140",
+  "i485": "i485",
+  "consular": "consular",
   "closed": "closed",
 };
+
+/** The formats our own export writes, where "complete" is the stage the app stores. */
+const OWN_EXPORT_FORMATS: readonly DetectedFormat[] = ["v2", "csv"];
 
 /**
  * Map legacy progress status values to v2 format
@@ -422,6 +429,8 @@ const V2_DATE_FIELDS = [
   "i140ReceiptDate",
   "i140ApprovalDate",
   "i140DenialDate",
+  // Past the I-140 (convex/lib/perm/greenCard.ts)
+  ...GREEN_CARD_DATE_FIELDS,
   "closedAt",
 ];
 
@@ -595,15 +604,8 @@ export const BENEFICIARY_PLACEHOLDER = "[NEEDS ENTRY]";
 // VALIDATION CONSTANTS
 // ============================================================================
 
-const VALID_CASE_STATUSES = ["pwd", "recruitment", "eta9089", "i140", "closed"] as const;
-const VALID_PROGRESS_STATUSES = [
-  "working",
-  "waiting_intake",
-  "filed",
-  "approved",
-  "under_review",
-  "rfi_rfe",
-] as const;
+const VALID_CASE_STATUSES = CASE_STATUSES;
+const VALID_PROGRESS_STATUSES = PROGRESS_STATUSES;
 
 // ============================================================================
 // FILE READING HELPERS
@@ -770,7 +772,7 @@ interface NormalizeResult {
 function normalizeAndValidateCase(
   caseData: unknown,
   rowIndex: number,
-  _format: DetectedFormat // Preserved for potential future format-specific handling
+  format: DetectedFormat
 ): NormalizeResult {
   const errors: ImportError[] = [];
   const warnings: ImportWarning[] = [];
@@ -856,7 +858,6 @@ function normalizeAndValidateCase(
     }
 
     const originalStatus = String(value);
-    const isComplete = originalStatus.toLowerCase() === "complete";
 
     // Direct lookup
     let mappedStatus = statusMap[originalStatus];
@@ -871,6 +872,9 @@ function normalizeAndValidateCase(
         }
       }
     }
+
+    // An older file's "Complete": an approved I-140, so its progress is set to approved below.
+    const isComplete = originalStatus.toLowerCase() === "complete";
 
     // Validate result
     if (mappedStatus) {
@@ -901,14 +905,11 @@ function normalizeAndValidateCase(
     return { mapped: originalStatus, original: originalStatus, isComplete };
   }
 
-  // Step 3: Map and validate case status
-  const caseStatusResult = mapStatus(
-    normalized.caseStatus,
-    "caseStatus",
-    CASE_STATUS_MAP,
-    VALID_CASE_STATUSES,
-    "pwd"
-  );
+  // Step 3: Map and validate case status. Our own export's "complete" is the green card received, so it's kept.
+  const ownComplete = normalized.caseStatus === "complete" && OWN_EXPORT_FORMATS.includes(format);
+  const caseStatusResult = ownComplete
+    ? { mapped: "complete", original: "complete", isComplete: false }
+    : mapStatus(normalized.caseStatus, "caseStatus", CASE_STATUS_MAP, VALID_CASE_STATUSES, "pwd");
   normalized.caseStatus = caseStatusResult.mapped;
   const originalCaseStatusWasComplete = caseStatusResult.isComplete;
 

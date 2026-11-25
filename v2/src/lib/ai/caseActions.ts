@@ -22,6 +22,15 @@
  */
 
 import { createHash } from 'node:crypto';
+import {
+  EB_CATEGORY_LABELS,
+  GREEN_CARD_FIELD_LABELS,
+  GREEN_CARD_PATH_LABELS,
+  GREEN_CARD_TEXT_FIELDS,
+  isEbCategory,
+  isGreenCardPath,
+} from '@convex/lib/perm/greenCard';
+import { countryName } from '@/lib/countries';
 import { format, parseISO } from 'date-fns';
 import { fetchMutation, fetchQuery } from 'convex/nextjs';
 import { api } from '@convex/_generated/api';
@@ -107,6 +116,7 @@ export function dollars(n: unknown): string {
 
 export function stageWords(caseStatus: string, progressStatus: string): string {
   if (caseStatus === 'closed') return 'Closed';
+  if (caseStatus === 'complete') return 'Complete, the green card arrived';
   return `${formatCaseStatus(caseStatus)}, ${formatProgressStatus(progressStatus).toLowerCase()}`;
 }
 
@@ -164,6 +174,8 @@ export const FIELD_LABELS: Record<string, string> = {
   i140Category: 'I-140 category',
   i140PremiumProcessing: 'Premium processing',
   i140ServiceCenter: 'Service center',
+  // Past the I-140: the names the case form uses (convex/lib/perm/greenCard.ts)
+  ...GREEN_CARD_FIELD_LABELS,
   jobDescription: 'Job description',
   jobDescriptionPositionTitle: 'Job description title',
   employerFein: 'Employer FEIN',
@@ -198,6 +210,9 @@ function valueWords(field: string, value: unknown): string {
   if (typeof value === 'boolean') return value ? 'yes' : 'no';
   if (field.endsWith('Date')) return day(value);
   if (field === 'caseStatus') return formatCaseStatus(String(value));
+  if (field === 'ebCategory' && isEbCategory(value)) return EB_CATEGORY_LABELS[value];
+  if (field === 'greenCardPath' && isGreenCardPath(value)) return GREEN_CARD_PATH_LABELS[value];
+  if ((field === 'countryOfBirth' || field === 'chargeabilityCountry') && typeof value === 'string') return countryName(value);
   if (field === 'progressStatus') return formatProgressStatus(String(value));
   return String(value);
 }
@@ -326,6 +341,18 @@ export function dateNeededFor(caseStatus: string, progressStatus?: string): stri
       if (progressStatus === 'approved') return 'the I-140 approval date';
       if (progressStatus === 'rfi_rfe') return 'the date the RFE was received';
       return 'the ETA 9089 certification date';
+    case 'i485':
+      if (progressStatus === 'approved') return 'the I-485 approval date, or the date the card was produced';
+      if (progressStatus === 'under_review') return 'the I-485 interview date';
+      if (progressStatus === 'filed') return 'the I-485 filing date';
+      return 'the adjustment path chosen (greenCardPath adjustment) with the I-140 approved';
+    case 'consular':
+      if (progressStatus === 'approved') return 'the date the card was produced';
+      if (progressStatus === 'under_review') return 'the consular interview date';
+      if (progressStatus === 'filed') return 'the DS-260 submitted date';
+      return 'the National Visa Center case date, or the consular path chosen with the I-140 approved';
+    case 'complete':
+      return 'the date the green card arrived';
     case 'closed':
       return 'nothing: closing a case is archiveCase';
     default:
@@ -387,6 +414,10 @@ const SCALAR_UPDATE_FIELDS = [
   'employerFein',
   'socCode',
   'socTitle',
+  // Past the I-140
+  ...GREEN_CARD_TEXT_FIELDS,
+  'greenCardPath',
+  'ebCategory',
 ] as const;
 
 function newEntryId(prefix: string): string {
@@ -763,6 +794,8 @@ export async function prepareCreateCase(params: CreateCaseInput, token: string):
     'i140FilingDate', 'i140ReceiptNumber', 'i140Category', 'i140PremiumProcessing',
     'internalCaseNumber', 'employerFein', 'socCode', 'socTitle', 'jobOrderState',
     'jobDescriptionPositionTitle', 'jobDescription',
+    // Past the I-140
+    ...GREEN_CARD_TEXT_FIELDS, 'greenCardPath', 'ebCategory',
   ];
   for (const f of copy) if (p[f] !== undefined) args[f] = p[f];
   if (params.additionalRecruitmentMethods?.length) {

@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { SelectInput, type SelectOption } from "@/components/forms/SelectInput";
 import { CaseSelectionItem, type CaseForSelection } from "./CaseSelectionItem";
 import { cn } from "@/lib/utils";
-import { CASE_STATUS_ORDER, type CaseStatus } from "@/lib/perm";
+import { CASE_STATUS_ORDER, isCaseComplete, type CaseStatus } from "@/lib/perm";
 import { rankFuzzy } from "@/lib/fuzzy";
 
 // Re-export for consumers
@@ -117,10 +117,8 @@ export function CaseSelectionModal({
     if (filterBy === "active") {
       result = result.filter((c) => c.caseStatus !== "closed");
     } else if (filterBy === "completed") {
-      // Completed = I-140 approved cases
-      result = result.filter(
-        (c) => c.caseStatus === "i140" && c.progressStatus === "approved"
-      );
+      // Completed = the green card received
+      result = result.filter((c) => isCaseComplete(c));
     } else if (filterBy !== "all") {
       result = result.filter((c) => c.caseStatus === filterBy);
     }

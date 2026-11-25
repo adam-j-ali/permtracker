@@ -95,8 +95,8 @@ export const STAGE_VISUALS: Record<CaseStatus, StageVisual> = {
     icon: AirplaneTiltIcon,
   },
   complete: {
-    label: "Green card",
-    code: "Card",
+    label: "Complete",
+    code: "Done",
     fill: "bg-stage-complete",
     onFill: "text-black",
     ink: "text-stage-complete-ink",

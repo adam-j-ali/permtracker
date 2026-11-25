@@ -319,6 +319,54 @@ describe("parseCaseImportFile", () => {
       }
     });
 
+    it("imports a new export's complete case as complete, with its dates past the I-140", async () => {
+      const json = JSON.stringify({
+        version: "v3",
+        cases: [
+          {
+            employerName: "Tech Corp",
+            beneficiaryIdentifier: "John Doe",
+            caseStatus: "complete",
+            progressStatus: "approved",
+            greenCardPath: "adjustment",
+            ebCategory: "EB-3-other",
+            countryOfBirth: "IN",
+            i485FilingDate: "01/02/2025",
+            cardReceivedDate: "2025-08-01",
+          },
+        ],
+      });
+      const result = await parseCaseImportFile(new File([json], "test.json", { type: "application/json" }));
+      expect(result.detectedFormat).toBe("v2");
+      expect(result.valid[0]).toMatchObject({
+        caseStatus: "complete",
+        progressStatus: "approved",
+        greenCardPath: "adjustment",
+        ebCategory: "EB-3-other",
+        countryOfBirth: "IN",
+        i485FilingDate: "2025-01-02",
+        cardReceivedDate: "2025-08-01",
+      });
+      expect(result.warnings.filter((w) => w.field === "caseStatus" || w.field === "progressStatus")).toEqual([]);
+    });
+
+    it("still reads an older file's I-140 approval as the I-140 stage, approved", async () => {
+      const json = JSON.stringify({
+        version: "v2",
+        cases: [
+          {
+            employerName: "Tech Corp",
+            beneficiaryIdentifier: "John Doe",
+            caseStatus: "i140",
+            progressStatus: "approved",
+            i140ApprovalDate: "2024-09-01",
+          },
+        ],
+      });
+      const result = await parseCaseImportFile(new File([json], "test.json", { type: "application/json" }));
+      expect(result.valid[0]).toMatchObject({ caseStatus: "i140", progressStatus: "approved" });
+    });
+
     it("generates warnings for mapped statuses", async () => {
       const legacyJSON = JSON.stringify({
         cases: [

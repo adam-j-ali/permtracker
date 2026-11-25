@@ -18,6 +18,7 @@ import {
 } from "./deadlineEnforcementHelpers";
 import { DEFAULT_NOTIFICATION_PREFS, DEFAULT_URGENT_DAYS } from "./userDefaults";
 import { DEADLINE_LABELS } from "./perm/deadlines/types";
+import type { CaseStatus } from "./perm/statusTypes";
 
 /** The most unread notifications counted for one user; a badge past it shows the cap. */
 export const UNREAD_COUNT_CAP = 1000;
@@ -203,15 +204,20 @@ export function formatProgressStatus(status: string): string {
   return labels[status] || status;
 }
 
+/** Each stage's name as the app writes it. Complete is the green card received. */
+export const CASE_STATUS_LABELS: Record<CaseStatus, string> = {
+  pwd: "PWD",
+  recruitment: "Recruitment",
+  eta9089: "ETA 9089",
+  i140: "I-140",
+  i485: "I-485",
+  consular: "Consulate",
+  complete: "Complete",
+  closed: "Closed",
+};
+
 export function formatCaseStatus(status: string): string {
-  const statusMap: Record<string, string> = {
-    pwd: "PWD",
-    recruitment: "Recruitment",
-    eta9089: "ETA 9089",
-    i140: "I-140",
-    closed: "Closed",
-  };
-  return statusMap[status] || status;
+  return (CASE_STATUS_LABELS as Record<string, string>)[status] || status;
 }
 
 /**

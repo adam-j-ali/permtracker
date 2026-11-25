@@ -112,6 +112,39 @@ describe("Calendar Events", () => {
       expect(events[0].employerName).toBe("Active Corp");
     });
 
+    it("leaves out completed cases (the green card arrived) unless asked; an approved I-140 still shows", async () => {
+      const t = createTestContext();
+      const user = await createAuthenticatedContext(t, "User 1");
+      const base = {
+        beneficiaryIdentifier: "Person",
+        positionTitle: "Engineer",
+        eta9089FilingDate: "2023-08-01",
+        eta9089CertificationDate: "2024-05-01",
+        i140FilingDate: "2024-06-01",
+        i140ApprovalDate: "2024-09-01",
+      };
+      await user.mutation(api.cases.create, { ...base, employerName: "Approved Corp" });
+      await user.mutation(api.cases.create, {
+        ...base,
+        employerName: "Card Corp",
+        i485FilingDate: "2025-01-02",
+        cardReceivedDate: "2025-08-01",
+      });
+      await finishScheduledFunctions(t);
+
+      const shown = await user.query(api.calendar.getCalendarEvents, {});
+      expect(shown.map((e) => e.employerName)).toEqual(["Approved Corp"]);
+
+      const all = await user.query(api.calendar.getCalendarEvents, { showCompleted: true });
+      expect(all.map((e) => e.employerName).sort()).toEqual(["Approved Corp", "Card Corp"]);
+      // The rows carry the green card dates for the timeline and the calendar to read.
+      expect(all.find((e) => e.employerName === "Card Corp")).toMatchObject({
+        caseStatus: "complete",
+        i485FilingDate: "2025-01-02",
+        cardReceivedDate: "2025-08-01",
+      });
+    });
+
     it("should include closed cases when showClosed is true", async () => {
       const t = createTestContext();
       const user = await createAuthenticatedContext(t, "User 1");

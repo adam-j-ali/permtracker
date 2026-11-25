@@ -82,7 +82,7 @@ export interface CaseListFilters {
   readonly searchQuery?: string;
   readonly favoritesOnly?: boolean;
   readonly duplicatesOnly?: boolean; // Show only cases marked as duplicates
-  readonly activeOnly?: boolean; // Exclude closed and completed (i140 + approved) cases
+  readonly activeOnly?: boolean; // Exclude closed and complete (the green card received) cases
 }
 
 // ============================================================================

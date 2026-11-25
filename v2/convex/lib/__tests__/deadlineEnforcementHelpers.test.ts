@@ -647,6 +647,21 @@ describe("checkDeadlineViolations - Edge Cases", () => {
     expect(violation).toBeNull();
   });
 
+  it.each(["i485", "consular", "complete"] as const)(
+    "skips a case past the I-140 (%s): its PERM deadlines are behind it",
+    (caseStatus) => {
+      // An I-485 entered without the I-140's filing date would otherwise read as an ETA 9089 certification that lapsed.
+      const caseData = createMinimalCase({
+        caseStatus,
+        pwdExpirationDate: daysFromToday(-300),
+        eta9089CertificationDate: daysFromToday(-400),
+        eta9089ExpirationDate: daysFromToday(-220),
+        i140FilingDate: undefined,
+      });
+      expect(checkDeadlineViolations(caseData, TODAY_ISO)).toBeNull();
+    },
+  );
+
   it("skips deleted cases", () => {
     const caseData = createMinimalCase({
       caseStatus: "pwd",

@@ -12,8 +12,8 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { getCurrentUserId, getCurrentUserIdOrNull } from "./lib/auth";
 import { readUserCases } from "./lib/userCases";
-import { calendarCaseRow, type CaseDeadlineDates } from "./lib/caseDates";
-import type { CaseStatus, ProgressStatus } from "./lib/perm/statusTypes";
+import { calendarCaseRow, type CaseDeadlineDates, type CaseGreenCardDates } from "./lib/caseDates";
+import { isCaseComplete, type CaseStatus, type ProgressStatus } from "./lib/perm/statusTypes";
 import { buildDefaultProfile } from "./lib/userDefaults";
 
 
@@ -34,7 +34,7 @@ interface CalendarRfiRfeEntry {
 /**
  * Calendar event data type - case with all deadline-relevant fields
  */
-interface CalendarEventData extends CaseDeadlineDates {
+interface CalendarEventData extends CaseDeadlineDates, CaseGreenCardDates {
   id: Id<"cases">;
   employerName: string;
   beneficiaryIdentifier: string;
@@ -52,18 +52,18 @@ interface CalendarEventData extends CaseDeadlineDates {
 interface CalendarPreferences {
   hiddenCases: Id<"cases">[];
   hiddenDeadlineTypes: string[];
-  showCompleted: boolean; // Show I-140 approved cases
+  showCompleted: boolean; // Show complete cases (the green card received)
   showClosed: boolean; // Show closed/archived cases
 }
 
 /**
  * Get calendar events (cases with deadline fields) for the current user
- * @param showCompleted - If true, includes I-140 approved cases (default: false)
+ * @param showCompleted - If true, includes complete cases, whose green card arrived (default: false)
  * @param showClosed - If true, includes closed/archived cases (default: false)
  */
 export const getCalendarEvents = query({
   args: {
-    showCompleted: v.optional(v.boolean()), // Show I-140 approved cases
+    showCompleted: v.optional(v.boolean()), // Show complete cases (the green card received)
     showClosed: v.optional(v.boolean()), // Show closed/archived cases
   },
   handler: async (ctx, args): Promise<CalendarEventData[]> => {
@@ -76,11 +76,10 @@ export const getCalendarEvents = query({
     // Live cases, newest first (convex/lib/userCases.ts)
     let filteredCases = (await readUserCases(ctx, userId)).cases;
 
-    // Filter out completed cases (I-140 + approved) unless showCompleted is true
+    // Filter out complete cases (the green card received) unless showCompleted is true. An approved I-140
+    // isn't complete any more: the I-485 or the consulate comes after it.
     if (args.showCompleted !== true) {
-      filteredCases = filteredCases.filter(
-        (c) => !(c.caseStatus === "i140" && c.progressStatus === "approved")
-      );
+      filteredCases = filteredCases.filter((c) => !isCaseComplete(c));
     }
 
     // Filter out closed cases unless showClosed is true

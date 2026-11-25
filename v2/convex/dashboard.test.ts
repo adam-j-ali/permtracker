@@ -263,6 +263,8 @@ describe("dashboard.getSummary", () => {
       recruitment: { count: 0, subtext: "" },
       eta9089: { count: 0, subtext: "" },
       i140: { count: 0, subtext: "" },
+      i485: { count: 0, subtext: "" },
+      consular: { count: 0, subtext: "" },
       complete: { count: 0, subtext: "" },
       closed: { count: 0, subtext: "" },
       duplicates: { count: 0, subtext: "" },
@@ -281,7 +283,9 @@ describe("dashboard.getSummary", () => {
       recruitment: { count: 0, subtext: "0 ready to start", progress: 0 },
       eta9089: { count: 0, subtext: "0 prep", progress: 0 },
       i140: { count: 0, subtext: "0 prep", progress: 0 },
-      complete: { count: 0, subtext: "I-140 Approved", progress: 100 },
+      i485: { count: 0, subtext: "0 filed", progress: 0 },
+      consular: { count: 0, subtext: "0 filed", progress: 0 },
+      complete: { count: 0, subtext: "Green card received", progress: 100 },
       closed: { count: 0, subtext: "Archived", progress: 100 },
       duplicates: { count: 0, subtext: "Marked as duplicate", progress: 0 },
     });
@@ -310,18 +314,39 @@ describe("dashboard.getSummary", () => {
     expect(result.i140.count).toBe(1);
   });
 
-  test("separates Complete (I-140 Approved) from Closed", { timeout: 30000 }, async () => {
+  test("counts an approved I-140 in the I-140 stage; Complete is the green card received", { timeout: 30000 }, async () => {
     const t = createTestContext();
     const auth = await createAuthenticatedContext(t, "User A");
 
-    // Create authenticated context - userId is created internally by createAuthenticatedContext
-
-    // Create completed case (I-140 approved, still in i140 stage)
+    // An approved I-140 with nothing after it: still the I-140 stage, now that complete means the card arrived.
     await auth.mutation(api.cases.create, {
       ...fixtures.i140.i140Approved(),
       caseStatus: "i140",
       progressStatus: "approved",
       i140ApprovalDate: daysAgo(10),
+    });
+    // The I-485 filed, and one waiting on the consulate's interview.
+    await auth.mutation(api.cases.create, {
+      ...fixtures.i140.i140Approved(),
+      // The stage follows these dates (the fixture sets it by hand otherwise).
+      progressStatusOverride: false,
+      i485FilingDate: daysAgo(5),
+    });
+    await auth.mutation(api.cases.create, {
+      ...fixtures.i140.i140Approved(),
+      // The stage follows these dates (the fixture sets it by hand otherwise).
+      progressStatusOverride: false,
+      greenCardPath: "consular",
+      consularInterviewDate: daysAgo(2),
+    });
+    // The card arrived.
+    await auth.mutation(api.cases.create, {
+      ...fixtures.i140.i140Approved(),
+      // The stage follows these dates (the fixture sets it by hand otherwise).
+      progressStatusOverride: false,
+      i485FilingDate: daysAgo(5),
+      i485ApprovalDate: daysAgo(3),
+      cardReceivedDate: daysAgo(1),
     });
 
     // Create closed case (archived)
@@ -334,7 +359,10 @@ describe("dashboard.getSummary", () => {
 
     const result = await auth.query(api.dashboard.getSummary, {});
 
-    expect(result.complete.count).toBe(1); // I-140 approved
+    expect(result.i140).toMatchObject({ count: 1, subtext: "1 approved" });
+    expect(result.i485).toMatchObject({ count: 1, subtext: "1 filed" });
+    expect(result.consular).toMatchObject({ count: 1, subtext: "1 interview" });
+    expect(result.complete.count).toBe(1); // The green card arrived
     expect(result.closed.count).toBe(1); // Archived
   });
 

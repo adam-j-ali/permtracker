@@ -236,7 +236,7 @@ I-140 Filing Window:
 
 I-140 Approval:
 - I-140 approval date must be after filing date
-- Upon I-140 approval, the case is considered complete
+- Upon I-140 approval, the case moves on to the I-485 (adjustment of status) or the consulate; it is complete when the green card arrives
 - Celebration animation may display on approval
 
 Date Validation Chain:

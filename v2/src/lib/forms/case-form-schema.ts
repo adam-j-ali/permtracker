@@ -8,6 +8,7 @@ import { z } from 'zod';
 import type { Id } from '@convex/_generated/dataModel';
 import { isSocCode } from '@convex/lib/socCode';
 import { INPUT_LIMITS } from '@convex/lib/validation';
+import { EB_CATEGORIES, GREEN_CARD_PATHS, I140_CATEGORIES, isCountryCode } from '@convex/lib/perm/greenCard';
 import {
   validateCase,
   validateProfessionalMethods,
@@ -249,9 +250,32 @@ export const caseFormSchema = z
     i140ReceiptNumber: z.string().max(50, 'I-140 receipt number must be 50 characters or less').optional(),
     i140ApprovalDate: optionalIsoDateSchema,
     i140DenialDate: optionalIsoDateSchema,
-    i140Category: z.enum(['EB-1', 'EB-2', 'EB-2-NIW', 'EB-3']).optional(),
+    i140Category: z.enum(I140_CATEGORIES).optional(),
     i140ServiceCenter: z.string().max(100, 'Service center must be 100 characters or less').optional(),
     i140PremiumProcessing: z.boolean().optional(),
+
+    // Past the I-140 (convex/lib/perm/greenCard.ts): the path, the category, the countries, the dates, the receipts
+    greenCardPath: z.enum(GREEN_CARD_PATHS).optional(),
+    ebCategory: z.enum(EB_CATEGORIES).optional(),
+    countryOfBirth: z.string().refine((c) => !c || isCountryCode(c), 'Pick a country from the list').optional(),
+    chargeabilityCountry: z.string().refine((c) => !c || isCountryCode(c), 'Pick a country from the list').optional(),
+    i485FilingDate: optionalIsoDateSchema,
+    i485ReceiptDate: optionalIsoDateSchema,
+    i485BiometricsDate: optionalIsoDateSchema,
+    i485InterviewDate: optionalIsoDateSchema,
+    i485ApprovalDate: optionalIsoDateSchema,
+    eadFilingDate: optionalIsoDateSchema,
+    eadApprovalDate: optionalIsoDateSchema,
+    apFilingDate: optionalIsoDateSchema,
+    apApprovalDate: optionalIsoDateSchema,
+    nvcReceivedDate: optionalIsoDateSchema,
+    ds260SubmittedDate: optionalIsoDateSchema,
+    consularInterviewDate: optionalIsoDateSchema,
+    cardProducedDate: optionalIsoDateSchema,
+    cardReceivedDate: optionalIsoDateSchema,
+    i485ReceiptNumber: z.string().max(50, 'I-485 receipt number must be 50 characters or less').optional(),
+    eadReceiptNumber: z.string().max(50, 'Work permit receipt number must be 50 characters or less').optional(),
+    apReceiptNumber: z.string().max(50, 'Travel document receipt number must be 50 characters or less').optional(),
 
     // Organization & Metadata
     priorityLevel: z.enum(['low', 'normal', 'high', 'urgent']),
@@ -720,6 +744,23 @@ const PERM_TO_FORM_FIELD_MAP: Record<string, string> = {
   eta9089_balca_request_date: 'eta9089BalcaRequestDate',
   i140_filing_date: 'i140FilingDate',
   i140_approval_date: 'i140ApprovalDate',
+  // Past the I-140
+  i485_filing_date: 'i485FilingDate',
+  i485_receipt_date: 'i485ReceiptDate',
+  i485_biometrics_date: 'i485BiometricsDate',
+  i485_interview_date: 'i485InterviewDate',
+  i485_approval_date: 'i485ApprovalDate',
+  ead_filing_date: 'eadFilingDate',
+  ead_approval_date: 'eadApprovalDate',
+  ap_filing_date: 'apFilingDate',
+  ap_approval_date: 'apApprovalDate',
+  nvc_received_date: 'nvcReceivedDate',
+  ds260_submitted_date: 'ds260SubmittedDate',
+  consular_interview_date: 'consularInterviewDate',
+  card_produced_date: 'cardProducedDate',
+  card_received_date: 'cardReceivedDate',
+  country_of_birth: 'countryOfBirth',
+  chargeability_country: 'chargeabilityCountry',
   // RFI/RFE use arrays - map to specific entry fields (index 0 = active entry)
   rfi_received_date: 'rfiEntries.0.receivedDate',
   rfi_due_date: 'rfiEntries.0.responseDueDate',
@@ -783,6 +824,23 @@ function formDataToValidationData(data: CaseFormData) {
     rfe_due_date: activeRfe?.responseDueDate || null,
     rfe_submitted_date: activeRfe?.responseSubmittedDate || null,
     is_professional_occupation: data.isProfessionalOccupation,
+    // Past the I-140
+    i485_filing_date: data.i485FilingDate || null,
+    i485_receipt_date: data.i485ReceiptDate || null,
+    i485_biometrics_date: data.i485BiometricsDate || null,
+    i485_interview_date: data.i485InterviewDate || null,
+    i485_approval_date: data.i485ApprovalDate || null,
+    ead_filing_date: data.eadFilingDate || null,
+    ead_approval_date: data.eadApprovalDate || null,
+    ap_filing_date: data.apFilingDate || null,
+    ap_approval_date: data.apApprovalDate || null,
+    nvc_received_date: data.nvcReceivedDate || null,
+    ds260_submitted_date: data.ds260SubmittedDate || null,
+    consular_interview_date: data.consularInterviewDate || null,
+    card_produced_date: data.cardProducedDate || null,
+    card_received_date: data.cardReceivedDate || null,
+    country_of_birth: data.countryOfBirth || null,
+    chargeability_country: data.chargeabilityCountry || null,
   };
 }
 

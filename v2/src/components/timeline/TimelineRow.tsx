@@ -17,7 +17,7 @@
 
 import { parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
-import type { CaseStatus, ProgressStatus } from "@/lib/perm";
+import { pickGreenCardDates, type CaseStatus, type GreenCardDates, type ProgressStatus } from "@/lib/perm";
 import { extractMilestones, extractRangeBars } from "@/lib/timeline/milestones";
 import {
   calculatePosition,
@@ -46,7 +46,7 @@ interface TimelineRfiRfeEntry {
   createdAt: number;
 }
 
-interface TimelineCaseData {
+interface TimelineCaseData extends GreenCardDates {
   id: Id<"cases">;
   employerName: string;
   positionTitle: string;
@@ -142,6 +142,8 @@ export function TimelineRow({
     eta9089ExpirationDate: caseData.eta9089ExpirationDate,
     i140FilingDate: caseData.i140FilingDate,
     i140ApprovalDate: caseData.i140ApprovalDate,
+    // Past the I-140: the I-485 or the consulate, and the card
+    ...pickGreenCardDates(caseData),
     rfiEntries: caseData.rfiEntries,
     rfeEntries: caseData.rfeEntries,
   };

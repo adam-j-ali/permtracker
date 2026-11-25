@@ -327,6 +327,38 @@ export const ACTION_CONFIG: Record<NextActionName, ActionConfig> = {
     ],
   },
 
+  // ========== Past the I-140 ==========
+  "Choose the green card path": {
+    type: "complex",
+    complexMessage: "Choose the I-485 in the US or an immigrant visa at a consulate in the full edit form.",
+    linkToFullForm: true,
+  },
+
+  "File I-485": {
+    type: "editable",
+    fields: [{ name: "i485FilingDate", label: "I-485 filing date", type: "date", placeholder: "Select filing date" }],
+  },
+
+  "Wait for I-485 decision": {
+    type: "editable",
+    fields: [{ name: "i485ApprovalDate", label: "I-485 approval date", type: "date", placeholder: "Enter when approved" }],
+  },
+
+  "Submit DS-260": {
+    type: "editable",
+    fields: [{ name: "ds260SubmittedDate", label: "DS-260 submitted", type: "date", placeholder: "Select the date" }],
+  },
+
+  "Wait for the interview": {
+    type: "editable",
+    fields: [{ name: "consularInterviewDate", label: "Interview date", type: "date", placeholder: "Enter when scheduled" }],
+  },
+
+  "Wait for the card": {
+    type: "editable",
+    fields: [{ name: "cardReceivedDate", label: "Card received", type: "date", placeholder: "Enter when it arrives" }],
+  },
+
   "Case complete": {
     type: "complete",
   },

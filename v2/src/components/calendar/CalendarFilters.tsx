@@ -15,7 +15,7 @@
  *
  * Features:
  * - Deadline type toggles grouped by stage
- * - "Show Completed (I-140 Approved)" toggle
+ * - "Show completed (green card received)" toggle
  * - "Show Closed/Archived" toggle
  * - "Case Selection" button with badge showing selection status
  * - Collapsible filter sections on mobile
@@ -53,7 +53,7 @@ export interface CalendarFiltersProps {
   hiddenCases: Id<"cases">[];
   /** Currently hidden deadline types */
   hiddenDeadlineTypes: DeadlineType[];
-  /** Whether to show completed cases (I-140 Approved) */
+  /** Whether to show complete cases (the green card received) */
   showCompleted: boolean;
   /** Callback when showCompleted changes */
   onShowCompletedChange: (value: boolean) => void;
@@ -341,7 +341,7 @@ export function CalendarFilters({
               htmlFor="show-completed"
               className="text-sm cursor-pointer whitespace-nowrap"
             >
-              <KeepWhole>{"Show completed (I-140 approved)"}</KeepWhole>
+              <KeepWhole>{"Show completed (green card received)"}</KeepWhole>
             </Label>
           </div>
 

@@ -555,6 +555,11 @@ export function checkDeadlineViolations(
 
   // Skip already closed or deleted cases
   if (caseData.caseStatus === "closed") return null;
+  // And a case past the I-140 (the I-485, the consulate, or complete): its PERM deadlines are behind it, and an
+  // I-485 entered without the I-140's filing date would otherwise read as a certification that lapsed.
+  if (caseData.caseStatus === "i485" || caseData.caseStatus === "consular" || caseData.caseStatus === "complete") {
+    return null;
+  }
   if (caseData.deletedAt !== undefined) return null;
 
   // Resolve DOL "today" once for functions that cross-check filing window dates

@@ -78,7 +78,16 @@ describe("CaseFilterBar on the Closed and Completed tabs", () => {
     expect(panel.getByText(`The ${tab} tab sets the stage. Pick All to filter by stage.`)).toBeInTheDocument();
   });
 
-  it("offers no progress on Completed, which is the approved I-140s", async () => {
+  it("offers the stages past the I-140 to pick on the Active tab", async () => {
+    const user = userEvent.setup();
+    render(<Bar />);
+    await user.click(screen.getByRole("button", { name: "Filters" }));
+    const panel = within(screen.getByRole("dialog", { name: "Filters" }));
+    expect(panel.getByRole("radio", { name: "I-485" })).toBeInTheDocument();
+    expect(panel.getByRole("radio", { name: "Consulate" })).toBeInTheDocument();
+  });
+
+  it("offers no progress on Completed, which is the cases whose green card arrived", async () => {
     // Arrange
     const user = userEvent.setup();
     render(<Bar />);

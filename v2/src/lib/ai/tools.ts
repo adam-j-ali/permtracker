@@ -14,6 +14,13 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { CASE_STATUSES, PROGRESS_STATUSES } from '@convex/lib/perm/statusTypes';
+import {
+  EB_CATEGORIES,
+  GREEN_CARD_PATHS,
+  GREEN_CARD_TEXT_FIELDS,
+  I140_CATEGORIES,
+  isCountryCode,
+} from '@convex/lib/perm/greenCard';
 import { isSocCode } from '@convex/lib/socCode';
 import { INPUT_LIMITS } from '@convex/lib/validation';
 
@@ -166,7 +173,7 @@ export const QueryCasesInputSchema = z.object({
     .enum(CASE_STATUSES)
     .optional()
     .describe(
-      'Filter by case stage. Options: pwd (Prevailing Wage), recruitment (Labor Market Test), eta9089 (Application Filing), i140 (I-140 Petition), closed (Completed/Withdrawn)'
+      'Filter by case stage. Options: pwd (Prevailing Wage), recruitment (Labor Market Test), eta9089 (Application Filing), i140 (I-140 Petition), i485 (adjustment of status), consular (immigrant visa abroad), complete (the green card arrived), closed (withdrawn, denied or archived)'
     ),
 
   progressStatus: z
@@ -319,7 +326,7 @@ export const queryCasesTool = tool({
 - Questions not about the user's specific cases
 
 ## PARAMETERS SUMMARY:
-- caseStatus: Filter by case stage (pwd, recruitment, eta9089, i140, closed)
+- caseStatus: Filter by case stage (pwd, recruitment, eta9089, i140, i485, consular, complete, closed); complete means the green card arrived
 - progressStatus: Filter by progress (working, waiting_intake, filed, approved, under_review, rfi_rfe)
 - hasRfi/hasRfe: Filter for cases with active RFI/RFE (true/false)
 - hasOverdueDeadline: Filter for overdue deadlines (true/false)
@@ -763,7 +770,12 @@ const PriorityLevelEnum = z.enum(['low', 'normal', 'high', 'urgent']);
 /**
  * I-140 category enum matching Convex schema
  */
-const I140CategoryEnum = z.enum(['EB-1', 'EB-2', 'EB-2-NIW', 'EB-3']);
+const I140CategoryEnum = z.enum(I140_CATEGORIES);
+
+/** Past the I-140, from convex/lib/perm/greenCard.ts: the path, the category with its subclass, a country code. */
+const GreenCardPathEnum = z.enum(GREEN_CARD_PATHS);
+const EbCategoryEnum = z.enum(EB_CATEGORIES);
+const CountryCodeString = z.string().refine((c) => isCountryCode(c), 'A two-letter country code, such as IN or MX');
 
 /**
  * ISO date string pattern (YYYY-MM-DD)
@@ -980,6 +992,29 @@ export const CreateCaseInputSchema = z.object({
     .optional()
     .describe('Whether premium processing was requested'),
 
+  // Past the I-140: the green card
+  greenCardPath: GreenCardPathEnum.optional().describe('adjustment (I-485 in the US) or consular (an immigrant visa abroad)'),
+  ebCategory: EbCategoryEnum.optional().describe('Preference category with its subclass, e.g. EB-1A, EB-2-NIW, EB-3-other'),
+  countryOfBirth: CountryCodeString.optional().describe('Two-letter country code of the country of birth, e.g. IN'),
+  chargeabilityCountry: CountryCodeString.optional().describe('Two-letter code of the country charged, only when it differs from the country of birth'),
+  i485FilingDate: ISODateString.optional().describe('When the I-485 (adjustment of status) was filed'),
+  i485ReceiptDate: ISODateString.optional().describe('The date on the I-485 receipt notice'),
+  i485BiometricsDate: ISODateString.optional().describe('The fingerprints (biometrics) appointment for the I-485'),
+  i485InterviewDate: ISODateString.optional().describe('The I-485 interview'),
+  i485ApprovalDate: ISODateString.optional().describe('When the I-485 was approved'),
+  eadFilingDate: ISODateString.optional().describe('When the work permit (I-765) was filed'),
+  eadApprovalDate: ISODateString.optional().describe('When the work permit was approved'),
+  apFilingDate: ISODateString.optional().describe('When the travel document (I-131, advance parole) was filed'),
+  apApprovalDate: ISODateString.optional().describe('When the travel document was approved'),
+  nvcReceivedDate: ISODateString.optional().describe('When the National Visa Center created the consular case'),
+  ds260SubmittedDate: ISODateString.optional().describe('When the DS-260 was submitted'),
+  consularInterviewDate: ISODateString.optional().describe('The immigrant visa interview at the consulate'),
+  cardProducedDate: ISODateString.optional().describe('When USCIS produced the green card'),
+  cardReceivedDate: ISODateString.optional().describe('When the green card arrived: this makes the case complete'),
+  i485ReceiptNumber: z.string().max(100).optional().describe('USCIS receipt number for the I-485'),
+  eadReceiptNumber: z.string().max(100).optional().describe('USCIS receipt number for the work permit'),
+  apReceiptNumber: z.string().max(100).optional().describe('USCIS receipt number for the travel document'),
+
   // Optional text fields
   internalCaseNumber: z.string().optional().describe('Internal case/matter number'),
   employerFein: z.string().optional().describe('Employer FEIN'),
@@ -1030,6 +1065,10 @@ export const CLEARABLE_CASE_FIELDS = [
   'employerFein',
   'socCode',
   'socTitle',
+  // Past the I-140
+  ...GREEN_CARD_TEXT_FIELDS,
+  'greenCardPath',
+  'ebCategory',
 ] as const;
 
 /**
@@ -1121,6 +1160,29 @@ export const UpdateCaseInputSchema = z.object({
   i140Category: I140CategoryEnum.optional(),
   i140PremiumProcessing: z.boolean().optional(),
   i140ServiceCenter: z.string().max(100).optional(),
+
+  // Past the I-140: the green card
+  greenCardPath: GreenCardPathEnum.optional().describe('adjustment (I-485 in the US) or consular (an immigrant visa abroad)'),
+  ebCategory: EbCategoryEnum.optional().describe('Preference category with its subclass, e.g. EB-1A, EB-2-NIW, EB-3-other'),
+  countryOfBirth: CountryCodeString.optional().describe('Two-letter country code of the country of birth, e.g. IN'),
+  chargeabilityCountry: CountryCodeString.optional().describe('Two-letter code of the country charged, only when it differs from the country of birth'),
+  i485FilingDate: ISODateString.optional().describe('When the I-485 (adjustment of status) was filed'),
+  i485ReceiptDate: ISODateString.optional().describe('The date on the I-485 receipt notice'),
+  i485BiometricsDate: ISODateString.optional().describe('The fingerprints (biometrics) appointment for the I-485'),
+  i485InterviewDate: ISODateString.optional().describe('The I-485 interview'),
+  i485ApprovalDate: ISODateString.optional().describe('When the I-485 was approved'),
+  eadFilingDate: ISODateString.optional().describe('When the work permit (I-765) was filed'),
+  eadApprovalDate: ISODateString.optional().describe('When the work permit was approved'),
+  apFilingDate: ISODateString.optional().describe('When the travel document (I-131, advance parole) was filed'),
+  apApprovalDate: ISODateString.optional().describe('When the travel document was approved'),
+  nvcReceivedDate: ISODateString.optional().describe('When the National Visa Center created the consular case'),
+  ds260SubmittedDate: ISODateString.optional().describe('When the DS-260 was submitted'),
+  consularInterviewDate: ISODateString.optional().describe('The immigrant visa interview at the consulate'),
+  cardProducedDate: ISODateString.optional().describe('When USCIS produced the green card'),
+  cardReceivedDate: ISODateString.optional().describe('When the green card arrived: this makes the case complete'),
+  i485ReceiptNumber: z.string().max(100).optional().describe('USCIS receipt number for the I-485'),
+  eadReceiptNumber: z.string().max(100).optional().describe('USCIS receipt number for the work permit'),
+  apReceiptNumber: z.string().max(100).optional().describe('USCIS receipt number for the travel document'),
 
   // Job description and position
   jobDescription: z.string().max(JOB_DESCRIPTION_MAX).optional(),

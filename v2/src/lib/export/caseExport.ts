@@ -10,9 +10,9 @@
  * - Filename includes current date
  * - Full case data export (all fields from schema)
  *
- * JSON Export Format (v2):
+ * JSON Export Format (v3; v2 had no fields past the I-140, and its files still import):
  * {
- *   "version": "v2",
+ *   "version": "v3",
  *   "exportDate": "2024-01-15T12:00:00.000Z",
  *   "totalCases": 5,
  *   "cases": [...]
@@ -20,13 +20,18 @@
  */
 
 import type { Id } from "@convex/_generated/dataModel";
+import type { EbCategory, GreenCardPath } from "@convex/lib/perm/greenCard";
 import { captureError } from "@/lib/sentry";
 
 // ============================================================================
 // EXPORT FORMAT VERSION
 // ============================================================================
 
-export const EXPORT_VERSION = "v2";
+/**
+ * v3 (Nov 25 2026) adds the fields past the I-140 and the stages i485, consular and complete (the green card
+ * received). Every v2 field keeps its name and meaning, and the CSV adds its new columns after the old ones.
+ */
+export const EXPORT_VERSION = "v3";
 
 // ============================================================================
 // JSON EXPORT TYPES - FULL CASE DATA
@@ -173,6 +178,29 @@ export interface ExportedCase {
   i140PremiumProcessing?: boolean;
   i140ServiceCenter?: string;
 
+  // Past the I-140 (convex/lib/perm/greenCard.ts)
+  greenCardPath?: GreenCardPath;
+  ebCategory?: EbCategory;
+  countryOfBirth?: string;
+  chargeabilityCountry?: string;
+  i485FilingDate?: string;
+  i485ReceiptDate?: string;
+  i485ReceiptNumber?: string;
+  i485BiometricsDate?: string;
+  i485InterviewDate?: string;
+  i485ApprovalDate?: string;
+  eadFilingDate?: string;
+  eadReceiptNumber?: string;
+  eadApprovalDate?: string;
+  apFilingDate?: string;
+  apReceiptNumber?: string;
+  apApprovalDate?: string;
+  nvcReceivedDate?: string;
+  ds260SubmittedDate?: string;
+  consularInterviewDate?: string;
+  cardProducedDate?: string;
+  cardReceivedDate?: string;
+
   // Organization & Metadata
   priorityLevel: string;
   isFavorite: boolean;
@@ -296,6 +324,27 @@ export interface FullCaseData {
   i140Category?: "EB-1" | "EB-2" | "EB-2-NIW" | "EB-3";
   i140PremiumProcessing?: boolean;
   i140ServiceCenter?: string;
+  greenCardPath?: GreenCardPath;
+  ebCategory?: EbCategory;
+  countryOfBirth?: string;
+  chargeabilityCountry?: string;
+  i485FilingDate?: string;
+  i485ReceiptDate?: string;
+  i485ReceiptNumber?: string;
+  i485BiometricsDate?: string;
+  i485InterviewDate?: string;
+  i485ApprovalDate?: string;
+  eadFilingDate?: string;
+  eadReceiptNumber?: string;
+  eadApprovalDate?: string;
+  apFilingDate?: string;
+  apReceiptNumber?: string;
+  apApprovalDate?: string;
+  nvcReceivedDate?: string;
+  ds260SubmittedDate?: string;
+  consularInterviewDate?: string;
+  cardProducedDate?: string;
+  cardReceivedDate?: string;
   priorityLevel: string;
   isFavorite: boolean;
   isPinned?: boolean;
@@ -424,6 +473,29 @@ function transformFullCaseForExport(caseData: FullCaseData): ExportedCase {
     i140PremiumProcessing: caseData.i140PremiumProcessing,
     i140ServiceCenter: caseData.i140ServiceCenter,
 
+    // Past the I-140
+    greenCardPath: caseData.greenCardPath,
+    ebCategory: caseData.ebCategory,
+    countryOfBirth: caseData.countryOfBirth,
+    chargeabilityCountry: caseData.chargeabilityCountry,
+    i485FilingDate: caseData.i485FilingDate,
+    i485ReceiptDate: caseData.i485ReceiptDate,
+    i485ReceiptNumber: caseData.i485ReceiptNumber,
+    i485BiometricsDate: caseData.i485BiometricsDate,
+    i485InterviewDate: caseData.i485InterviewDate,
+    i485ApprovalDate: caseData.i485ApprovalDate,
+    eadFilingDate: caseData.eadFilingDate,
+    eadReceiptNumber: caseData.eadReceiptNumber,
+    eadApprovalDate: caseData.eadApprovalDate,
+    apFilingDate: caseData.apFilingDate,
+    apReceiptNumber: caseData.apReceiptNumber,
+    apApprovalDate: caseData.apApprovalDate,
+    nvcReceivedDate: caseData.nvcReceivedDate,
+    ds260SubmittedDate: caseData.ds260SubmittedDate,
+    consularInterviewDate: caseData.consularInterviewDate,
+    cardProducedDate: caseData.cardProducedDate,
+    cardReceivedDate: caseData.cardReceivedDate,
+
     // Organization & Metadata
     priorityLevel: caseData.priorityLevel,
     isFavorite: caseData.isFavorite,
@@ -540,6 +612,28 @@ const FULL_CSV_COLUMNS = [
   "closedAt",
   "createdAt",
   "updatedAt",
+  // Past the I-140 (v3): after every older column, so a sheet that reads the older file by position still reads it
+  "greenCardPath",
+  "ebCategory",
+  "countryOfBirth",
+  "chargeabilityCountry",
+  "i485FilingDate",
+  "i485ReceiptDate",
+  "i485ReceiptNumber",
+  "i485BiometricsDate",
+  "i485InterviewDate",
+  "i485ApprovalDate",
+  "eadFilingDate",
+  "eadReceiptNumber",
+  "eadApprovalDate",
+  "apFilingDate",
+  "apReceiptNumber",
+  "apApprovalDate",
+  "nvcReceivedDate",
+  "ds260SubmittedDate",
+  "consularInterviewDate",
+  "cardProducedDate",
+  "cardReceivedDate",
 ] as const satisfies readonly (keyof ExportedCase)[];
 
 /** The CSV header row for the full export. */

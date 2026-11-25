@@ -21,6 +21,8 @@ export {
   CASE_STATUSES,
   CASE_STATUS_ORDER,
   PROGRESS_STATUSES,
+  isCaseComplete,
+  isCaseOpen,
   isCaseStatus,
   isProgressStatus,
 } from './statusTypes';
@@ -47,6 +49,8 @@ export {
   GREEN_CARD_FIELD_LABELS,
   type GreenCardFields,
   hasGreenCardDates,
+  type GreenCardDates,
+  pickGreenCardDates,
   greenCardPathOf,
   EB_CATEGORIES,
   EB_CATEGORY_LABELS,

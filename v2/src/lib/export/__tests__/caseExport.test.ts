@@ -610,6 +610,23 @@ describe("exportFullCasesCSV", () => {
     expect(cells).toHaveLength(columns.length);
   });
 
+  it("keeps every older column where it was and adds the green card's after them", async () => {
+    exportFullCasesCSV([
+      { ...mockFullCaseData, caseStatus: "complete", i485FilingDate: "2025-01-02", cardReceivedDate: "2025-08-01", countryOfBirth: "IN" } as typeof mockFullCaseData,
+    ]);
+    const blob = (URL.createObjectURL as any).mock.calls[0][0] as Blob;
+    const [header, row] = (await blob.text()).split("\n");
+    const columns = header!.split(",");
+    const cells = row!.split(",");
+    // The last of the 54 older columns is still the 54th, so a sheet that read the older file by position reads this one.
+    expect(columns.indexOf("updatedAt")).toBe(53);
+    expect(columns.indexOf("greenCardPath")).toBeGreaterThan(columns.indexOf("updatedAt"));
+    expect(cells[columns.indexOf("i485FilingDate")]).toBe("2025-01-02");
+    expect(cells[columns.indexOf("cardReceivedDate")]).toBe("2025-08-01");
+    expect(cells[columns.indexOf("countryOfBirth")]).toBe("IN");
+    expect(cells).toHaveLength(columns.length);
+  });
+
   it("should convert BigInt fields to numbers in CSV", async () => {
     exportFullCasesCSV([mockFullCaseWithLargeValues]);
 

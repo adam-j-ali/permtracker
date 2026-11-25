@@ -31,7 +31,7 @@ Key Dashboard Components:
 - Overdue deadlines appear in red with warning indicators
 
 2. Summary Tiles (Top Section)
-- Six tiles showing case counts by stage: PWD, Recruitment, ETA 9089, I-140, Complete, Archived
+- Tiles showing case counts by stage: PWD, Recruitment, ETA 9089, I-140, then I-485 and Consulate once a case reaches them, Complete (the green card arrived), Archived
 - Each tile shows subtotals (e.g., "5 filed, 2 working on it")
 - Click any tile to filter the cases list to that status
 

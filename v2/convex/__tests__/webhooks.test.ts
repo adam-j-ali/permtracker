@@ -18,7 +18,7 @@ vi.mock("node:dns/promises", () => ({
 import { api, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { hashApiKey } from "../lib/apiKeyFormat";
-import { RETRY_WINDOW_MS } from "../lib/webhookSign";
+import { RETRY_WINDOW_MS, WEBHOOK_PAYLOAD_VERSION } from "../lib/webhookSign";
 import { KEEP_DAYS, pauseEmailText } from "../webhookDelivery";
 import { RESUMES_PER_HOUR } from "../webhooks";
 
@@ -206,6 +206,14 @@ describe("a watched case changes", () => {
       type: "case.status_changed",
       data: { caseNumber: "G-100-26045-123456", from: "ANALYST REVIEW", to: "CERTIFIED", isFinal: true },
     });
+    // The body says which version of the payload it is; every field version 1 sent is still there, by the same name.
+    const parsed = JSON.parse(body) as Record<string, unknown>;
+    expect(parsed.version).toBe(WEBHOOK_PAYLOAD_VERSION);
+    expect(WEBHOOK_PAYLOAD_VERSION).toBe(2);
+    expect(Object.keys(parsed).sort()).toEqual(["data", "timestamp", "type", "version"]);
+    expect(Object.keys(parsed.data as object).sort()).toEqual(
+      ["caseNumber", "from", "isFinal", "observedOn", "program", "to", "url"],
+    );
     const d = (await t.run((ctx) => ctx.db.query("webhookDeliveries").collect()))[0]!;
     expect(d).toMatchObject({ status: "delivered", attempts: 1, lastStatusCode: 200 });
   });

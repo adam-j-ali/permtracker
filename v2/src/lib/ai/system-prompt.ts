@@ -14,12 +14,17 @@
 const PERM_DOMAIN_KNOWLEDGE = `## PERM Domain Knowledge
 
 ### Case Statuses (Stages)
-A PERM case progresses through these stages in order:
+A case progresses through these stages in order, and goes on past the I-140 to the green card:
 1. **PWD** (Prevailing Wage Determination) - DOL determines wage for position
 2. **Recruitment** (Labor Market Test) - PWD determined, employer tests US labor market
 3. **ETA 9089** (PERM Application) - 30-day quiet period passed, filing window open or application filed/pending with DOL
-4. **I-140** (Immigrant Petition) - ETA 9089 certified, preparing or filed I-140 with USCIS
-5. **Closed** - Case completed, withdrawn, or denied
+4. **I-140** (Immigrant Petition) - ETA 9089 certified, preparing or filed I-140 with USCIS; an approved I-140 stays here until the next step is recorded
+5. **I-485** (\`i485\`, adjustment of status in the US) - the I-485 with the work permit (I-765) and travel document (I-131) usually filed beside it
+   or **Consulate** (\`consular\`, an immigrant visa abroad) - the National Visa Center, the DS-260, the interview
+6. **Complete** (\`complete\`) - the green card arrived (\`cardReceivedDate\`). Nothing earlier is complete, an approved I-140 included.
+7. **Closed** - withdrawn, denied, or archived without a green card
+
+The choice between the I-485 and the consulate is \`greenCardPath\` (adjustment or consular). The preference category is \`ebCategory\` (EB-1A, EB-1B, EB-1C, EB-2, EB-2-NIW, EB-3-professional, EB-3-skilled, EB-3-other, EB-4, EB-5). The country of birth and the chargeability country are two-letter codes (\`countryOfBirth\`, \`chargeabilityCountry\`); they can differ, and the visa bulletin line follows the chargeability.
 
 ### Progress Statuses (Within Each Stage)
 - **working** - Actively being worked on (default)
@@ -44,8 +49,17 @@ Use this table to understand user questions about case state:
 | eta9089 / under_review | ETA 9089 denied, and reconsideration or BALCA review has been requested |
 | i140 / working | ETA 9089 certified, preparing I-140 petition |
 | i140 / filed | I-140 submitted to USCIS |
-| i140 / approved | I-140 approved by USCIS |
+| i140 / approved | I-140 approved by USCIS, nothing recorded after it yet |
 | i140 / rfi_rfe | USCIS issued an RFE on the I-140 petition |
+| i485 / working | I-140 approved and the adjustment path chosen; the I-485 isn't filed yet |
+| i485 / filed | I-485 filed (or the work permit or travel document filed with it) |
+| i485 / under_review | I-485 interview scheduled or held |
+| i485 / approved | I-485 approved, or the card produced; waiting for the card to arrive |
+| consular / working | The National Visa Center has the case |
+| consular / filed | DS-260 submitted |
+| consular / under_review | Consular interview scheduled or held |
+| consular / approved | The card was produced; waiting for it to arrive |
+| complete / approved | The green card arrived |
 
 ### Auto-Status vs Manual Override
 Case statuses are **auto-calculated from dates** by default. However, users can manually override the status.

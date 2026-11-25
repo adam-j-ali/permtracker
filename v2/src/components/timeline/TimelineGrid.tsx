@@ -25,7 +25,7 @@ import {
   eachMonthOfInterval,
 } from "date-fns";
 import { cn } from "@/lib/utils";
-import type { CaseStatus, ProgressStatus } from "@/lib/perm";
+import type { CaseStatus, GreenCardDates, ProgressStatus } from "@/lib/perm";
 import { SIDEBAR_WIDTH_CLASSES, SIDEBAR_WIDTHS } from "@/lib/timeline/constants";
 import { MIN_MONTH_PX } from "@/lib/timeline/positioning";
 import { useScrollToToday } from "@/lib/timeline/useScrollToToday";
@@ -48,7 +48,7 @@ interface TimelineRfiRfeEntry {
   createdAt: number;
 }
 
-interface TimelineCaseData {
+interface TimelineCaseData extends GreenCardDates {
   id: Id<"cases">;
   employerName: string;
   positionTitle: string;

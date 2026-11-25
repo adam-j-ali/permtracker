@@ -56,6 +56,19 @@ export const PROGRESS_STATUSES = [
 /** Each stage's place in the case's life, 1 for the PWD: sorts a list of cases by how far along they are. */
 export const CASE_STATUS_ORDER = Object.fromEntries(CASE_STATUSES.map((s, i) => [s, i + 1])) as Record<CaseStatus, number>;
 
+/**
+ * Complete means the green card arrived. Before Nov 25 2026 an approved I-140 was called complete; it's now the
+ * I-140 stage, approved, and the case goes on to the I-485 or the consulate.
+ */
+export function isCaseComplete(c: { caseStatus: string }): boolean {
+  return c.caseStatus === "complete";
+}
+
+/** Still on its way to a green card: neither complete nor closed. */
+export function isCaseOpen(c: { caseStatus: string }): boolean {
+  return c.caseStatus !== "closed" && c.caseStatus !== "complete";
+}
+
 // Type guards for runtime validation
 export function isCaseStatus(value: unknown): value is CaseStatus {
   return (

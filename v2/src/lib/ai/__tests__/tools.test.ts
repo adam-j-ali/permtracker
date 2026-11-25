@@ -11,6 +11,8 @@ import { describe, it, expect } from 'vitest';
 import {
   // Input schemas
   QueryCasesInputSchema,
+  CreateCaseInputSchema,
+  UpdateCaseInputSchema,
   SearchKnowledgeInputSchema,
   SearchWebInputSchema,
   NavigateInputSchema,
@@ -59,6 +61,13 @@ describe('Input Schemas', () => {
     it('rejects invalid caseStatus', () => {
       const result = schema.safeParse({ caseStatus: 'invalid_status' });
       expect(result.success).toBe(false);
+    });
+
+    it('takes the stages past the I-140, and says complete means the green card arrived', () => {
+      for (const status of ['i485', 'consular', 'complete']) {
+        expect(schema.safeParse({ caseStatus: status }).success).toBe(true);
+      }
+      expect(schema.shape.caseStatus.description).toContain('complete (the green card arrived)');
     });
 
     it('accepts valid progressStatus values', () => {
@@ -152,6 +161,31 @@ describe('Input Schemas', () => {
         limit: 25,
       });
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe('createCase and updateCase past the I-140', () => {
+    it('take the green card fields, and refuse a category or country the app does not know', () => {
+      const fields = {
+        greenCardPath: 'consular',
+        ebCategory: 'EB-1A',
+        countryOfBirth: 'IN',
+        chargeabilityCountry: 'CA',
+        i485FilingDate: '2026-10-01',
+        i485ReceiptNumber: 'IOE0000000001',
+        eadFilingDate: '2026-10-01',
+        apApprovalDate: '2027-01-03',
+        nvcReceivedDate: '2026-10-01',
+        ds260SubmittedDate: '2026-11-01',
+        consularInterviewDate: '2027-02-01',
+        cardProducedDate: '2027-03-01',
+        cardReceivedDate: '2027-03-10',
+      };
+      expect(CreateCaseInputSchema.safeParse({ employerName: 'Acme', positionTitle: 'Engineer', ...fields }).success).toBe(true);
+      expect(UpdateCaseInputSchema.safeParse({ caseId: 'x', ...fields }).success).toBe(true);
+      expect(UpdateCaseInputSchema.safeParse({ caseId: 'x', ebCategory: 'EB-6' }).success).toBe(false);
+      expect(UpdateCaseInputSchema.safeParse({ caseId: 'x', countryOfBirth: 'India' }).success).toBe(false);
+      expect(UpdateCaseInputSchema.safeParse({ caseId: 'x', clearFields: ['cardReceivedDate', 'ebCategory'] }).success).toBe(true);
     });
   });
 

@@ -7,7 +7,7 @@
 
 import { createElement, type ReactNode } from "react";
 import { BriefcaseIcon, CertificateIcon as Award, CheckCircleIcon as CheckCircle2, ClockIcon, FileArrowUpIcon as FileCheck, FileTextIcon, GraduationCapIcon, HourglassIcon as HourglassIcon, WarningIcon as AlertTriangle } from "@phosphor-icons/react/ssr";
-import type { CaseStatus, ProgressStatus } from "@/lib/perm";
+import { greenCardPathOf, hasGreenCardDates, type CaseStatus, type GreenCardFields, type ProgressStatus } from "@/lib/perm";
 import {
   isProfessionalRecruitmentComplete,
   calculateFilingWindowFromCase,
@@ -28,7 +28,8 @@ import { MS_PER_DAY } from "@/lib/time";
 /**
  * Case data shape required for next action/deadline calculations
  */
-export interface NextUpCaseData {
+export interface NextUpCaseData extends GreenCardFields {
+  // Past the I-140: the path, the I-485 or consulate dates, the card (convex/lib/perm/greenCard.ts)
   caseStatus: CaseStatus;
   progressStatus: ProgressStatus;
   // PWD
@@ -80,6 +81,8 @@ export type NextActionName =
   | "Post job order" | "Post notice of filing" | "Place Sunday ads"
   | "Complete additional recruitment" | "Wait for filing window" | "File ETA 9089"
   | "Wait for certification" | "File I-140" | "Wait for I-140 decision"
+  | "Choose the green card path" | "File I-485" | "Wait for I-485 decision"
+  | "Submit DS-260" | "Wait for the interview" | "Wait for the card"
   | "Case complete" | "Respond to RFI" | "Respond to RFE"
   | "Respond to denial" | "Wait for reconsideration" | "Request BALCA review"
   | "Wait for BALCA decision";
@@ -184,7 +187,7 @@ function findActiveEntry(
 
 /**
  * Get the current stage index based on case status.
- * pwd=0, recruitment=1, eta9089=2, i140=3, closed=4
+ * pwd=0, recruitment=1, eta9089=2, i140=3, the I-485 or consulate=4, complete=5, closed=6
  */
 export function getStageIndex(status: CaseStatus): number {
   switch (status) {
@@ -196,11 +199,55 @@ export function getStageIndex(status: CaseStatus): number {
       return 2;
     case "i140":
       return 3;
+    case "i485":
+    case "consular":
+      return 4; // One step, on either path
+    case "complete":
+      return 5;
     case "closed":
-      return 4; // Beyond all stages
+      return 6; // Beyond all stages
     default:
       return 0;
   }
+}
+
+/**
+ * The next step past the I-140, or null when the case hasn't reached it: the card's arrival, then the chosen (or
+ * dated) path, then the choice itself once the I-140 is approved. An I-485 filed beside a pending I-140 counts.
+ */
+function greenCardNextAction(caseData: NextUpCaseData): NextAction | null {
+  const done = (action: NextActionName, description: string, icon: ReactNode = createElement(HourglassIcon, { className: "h-5 w-5" })): NextAction => ({
+    action,
+    description,
+    icon,
+    urgency: "normal",
+  });
+  if (caseData.cardReceivedDate || caseData.caseStatus === "complete") {
+    return done("Case complete", "The green card arrived.", createElement(CheckCircle2, { className: "h-5 w-5" }));
+  }
+  const path = greenCardPathOf(caseData);
+  if (!path && !caseData.i140ApprovalDate) return null;
+  if (caseData.cardProducedDate || caseData.i485ApprovalDate) {
+    return done("Wait for the card", "Approved. The card comes by mail, usually within a few weeks.");
+  }
+  if (path === "consular") {
+    if (!caseData.ds260SubmittedDate) {
+      return done("Submit DS-260", "The immigrant visa application, submitted to the National Visa Center", createElement(FileTextIcon, { className: "h-5 w-5" }));
+    }
+    if (!caseData.consularInterviewDate) return done("Wait for the interview", "The consulate schedules it once the case is ready");
+    return done("Wait for the card", "After the visa and entry to the US, the card comes by mail.");
+  }
+  if (path === "adjustment") {
+    if (!caseData.i485FilingDate) {
+      return done("File I-485", "Adjustment of status, filed once the priority date is current", createElement(FileTextIcon, { className: "h-5 w-5" }));
+    }
+    return done("Wait for I-485 decision", "Awaiting USCIS: fingerprints, sometimes an interview, then the decision");
+  }
+  return done(
+    "Choose the green card path",
+    "I-140 approved. Next is the I-485 in the US or an immigrant visa at a consulate.",
+    createElement(CheckCircle2, { className: "h-5 w-5" }),
+  );
 }
 
 /**
@@ -227,6 +274,11 @@ export function calculateNextAction(caseData: NextUpCaseData): NextAction | null
     return null;
   }
 
+  // The card arrived: nothing is due, an old open request included.
+  if (caseData.cardReceivedDate || caseData.caseStatus === "complete") {
+    return greenCardNextAction(caseData);
+  }
+
   // Check for active RFI/RFE first (highest priority)
   const activeRfi = findActiveEntry(caseData.rfiEntries);
   if (activeRfi) {
@@ -248,6 +300,13 @@ export function calculateNextAction(caseData: NextUpCaseData): NextAction | null
       icon: createElement(AlertTriangle, { className: "h-5 w-5" }),
       urgency: getUrgencyLevel(daysUntil),
     };
+  }
+
+  // A case already past the I-140 (an I-485 filed, the consulate under way) is walked from there, so a case
+  // entered from the green card's steps isn't sent back to file a PWD.
+  if (hasGreenCardDates(caseData)) {
+    const next = greenCardNextAction(caseData);
+    if (next) return next;
   }
 
   // --- Walk PERM steps by dates (not by caseStatus) ---
@@ -424,12 +483,7 @@ export function calculateNextAction(caseData: NextUpCaseData): NextAction | null
     };
   }
   if (caseData.i140ApprovalDate) {
-    return {
-      action: "Case complete",
-      description: "I-140 approved. PERM process complete.",
-      icon: createElement(CheckCircle2, { className: "h-5 w-5" }),
-      urgency: "normal",
-    };
+    return greenCardNextAction(caseData);
   }
 
   return null;

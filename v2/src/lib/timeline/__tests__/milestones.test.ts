@@ -47,6 +47,25 @@ describe("extractMilestones", () => {
       });
     });
 
+    it("marks the steps past the I-140 in their own stage colours, the card last", () => {
+      const caseData: CaseWithDates = {
+        i140ApprovalDate: "2024-09-01",
+        i485FilingDate: "2025-01-02",
+        i485BiometricsDate: "2025-02-01",
+        eadApprovalDate: "2025-05-01",
+        ds260SubmittedDate: undefined,
+        consularInterviewDate: "2025-06-01",
+        cardReceivedDate: "2025-08-01",
+      };
+      const byField = new Map(extractMilestones(caseData).map((m) => [m.field, m]));
+      expect(byField.get("i485FilingDate")).toMatchObject({ label: "I-485 filed", stage: "i485" });
+      expect(byField.get("i485BiometricsDate")).toMatchObject({ stage: "i485" });
+      expect(byField.get("eadApprovalDate")).toMatchObject({ label: "Work permit approved", stage: "i485" });
+      expect(byField.get("consularInterviewDate")).toMatchObject({ label: "Consular interview", stage: "consular" });
+      expect(byField.get("cardReceivedDate")).toMatchObject({ label: "Card received", stage: "complete" });
+      expect(byField.has("ds260SubmittedDate")).toBe(false);
+    });
+
     it("should exclude milestones with no date", () => {
       const caseData: CaseWithDates = {
         pwdFilingDate: "2024-01-15",

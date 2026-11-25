@@ -20,6 +20,8 @@ export function createMockDashboardSummary(
     recruitment: { count: 8, subtext: "3 ready to start, 5 in progress" },
     eta9089: { count: 6, subtext: "2 prep, 1 RFI, 3 filed" },
     i140: { count: 4, subtext: "1 prep, 1 RFE, 2 filed" },
+    i485: { count: 0, subtext: "0 filed" },
+    consular: { count: 0, subtext: "0 filed" },
     complete: { count: 12, subtext: "" },
     closed: { count: 3, subtext: "" },
     duplicates: { count: 0, subtext: "" },
@@ -34,6 +36,8 @@ export function createMockDashboardSummary(
       (overrides.recruitment?.count ?? defaults.recruitment.count) +
       (overrides.eta9089?.count ?? defaults.eta9089.count) +
       (overrides.i140?.count ?? defaults.i140.count) +
+      (overrides.i485?.count ?? defaults.i485.count) +
+      (overrides.consular?.count ?? defaults.consular.count) +
       (overrides.complete?.count ?? defaults.complete.count) +
       (overrides.closed?.count ?? defaults.closed.count),
   };

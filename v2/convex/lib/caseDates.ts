@@ -12,6 +12,18 @@
 
 import type { Doc, Id } from "../_generated/dataModel";
 import type { CaseDataForCalendar } from "./calendarTypes";
+import { GREEN_CARD_DATE_FIELDS, type GreenCardDateField } from "./perm/greenCard";
+
+/** The dates past the I-140 (the I-485 or consulate, the card), as the calendar and timeline rows carry them. */
+export type CaseGreenCardDates = Pick<Doc<"cases">, GreenCardDateField>;
+
+export function caseGreenCardDates(caseDoc: Doc<"cases">): CaseGreenCardDates {
+  const out: CaseGreenCardDates = {};
+  for (const f of GREEN_CARD_DATE_FIELDS) {
+    if (caseDoc[f] !== undefined) out[f] = caseDoc[f];
+  }
+  return out;
+}
 
 export type CaseDeadlineDates = Pick<
   Doc<"cases">,
@@ -93,6 +105,7 @@ export function calendarCaseRow(caseDoc: Doc<"cases">) {
     caseStatus: caseDoc.caseStatus,
     progressStatus: caseDoc.progressStatus,
     ...caseDeadlineDates(caseDoc),
+    ...caseGreenCardDates(caseDoc),
     // RFI/RFE entries - default to empty arrays
     rfiEntries: caseDoc.rfiEntries ?? [],
     rfeEntries: caseDoc.rfeEntries ?? [],

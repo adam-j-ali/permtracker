@@ -221,7 +221,7 @@ The account's live cases, with an optional stage or favourites filter.
 
 ```typescript
 list(args: {
-  status?: "pwd" | "recruitment" | "eta9089" | "i140" | "closed";
+  status?: "pwd" | "recruitment" | "eta9089" | "i140" | "i485" | "consular" | "complete" | "closed";
   favoritesOnly?: boolean;
 }): Promise<Case[]>
 ```
@@ -490,7 +490,7 @@ create(args: {
   // recruitmentWindowCloses, closureReason, closedAt, createdAt,
   // updatedAt, deletedAt, markedAsDuplicateAt). For example:
   beneficiaryIdentifier?: string;
-  caseStatus?: "pwd" | "recruitment" | "eta9089" | "i140" | "closed";
+  caseStatus?: "pwd" | "recruitment" | "eta9089" | "i140" | "i485" | "consular" | "complete" | "closed";
   progressStatus?: "working" | "waiting_intake" | "filed" | "approved" | "under_review" | "rfi_rfe";
   progressStatusOverride?: boolean;
   priorityLevel?: "low" | "normal" | "high" | "urgent";
@@ -721,7 +721,7 @@ Closes, reopens or sets the stage of several cases.
 ```typescript
 bulkUpdateStatus(args: {
   ids: Id<"cases">[];
-  status: "pwd" | "recruitment" | "eta9089" | "i140" | "closed";
+  status: "pwd" | "recruitment" | "eta9089" | "i140" | "i485" | "consular" | "complete" | "closed";
   closureReason?: "withdrawn" | "denied" | "manual" | "other";
 }): Promise<{
   successCount: number;
@@ -1435,6 +1435,8 @@ getSummary(): Promise<{
   recruitment: { count: number; subtext: string; progress: number };
   eta9089: { count: number; subtext: string; progress: number };
   i140: { count: number; subtext: string; progress: number };
+  i485: { count: number; subtext: string; progress: number };
+  consular: { count: number; subtext: string; progress: number };
   complete: { count: number; subtext: string; progress: number };
   closed: { count: number; subtext: string; progress: number };
   duplicates: { count: number; subtext: string; progress: number };
@@ -1530,7 +1532,7 @@ interface CalendarEventData {
   employerName: string;
   beneficiaryIdentifier: string;  // "" when unset
   positionTitle: string;
-  caseStatus: "pwd" | "recruitment" | "eta9089" | "i140" | "closed";
+  caseStatus: "pwd" | "recruitment" | "eta9089" | "i140" | "i485" | "consular" | "complete" | "closed";
   progressStatus: "working" | "waiting_intake" | "filed" | "approved" | "under_review" | "rfi_rfe";
 
   // PWD

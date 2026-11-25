@@ -234,6 +234,11 @@ export interface DashboardSummary {
   recruitment: StatusCount;
   eta9089: StatusCount;
   i140: StatusCount;
+  /** Adjustment of status: the I-485, with its work permit and travel document. */
+  i485: StatusCount;
+  /** An immigrant visa at a consulate. */
+  consular: StatusCount;
+  /** The green card arrived. */
   complete: StatusCount;
   closed: StatusCount;
   duplicates: StatusCount;

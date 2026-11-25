@@ -9,6 +9,7 @@ import { QueryCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
 import { getCurrentUserId } from "./auth";
 import { audienceOf, type Audience } from "./audience";
+import { isCaseOpen } from "./perm/statusTypes";
 
 /**
  * Get the admin email address from ADMIN_EMAIL env var.
@@ -271,12 +272,8 @@ export async function getAdminDashboardDataHelper(
 
     // Case stats
     const totalCasesCount = userCases.length;
-    const activeCases = userCases.filter(
-      (c) =>
-        c.deletedAt === undefined &&
-        c.caseStatus !== "closed" &&
-        !(c.caseStatus === "i140" && c.progressStatus === "approved")
-    ).length;
+    // Active: still on its way to a green card (lib/perm/statusTypes.ts).
+    const activeCases = userCases.filter((c) => c.deletedAt === undefined && isCaseOpen(c)).length;
     const deletedCases = userCases.filter((c) => c.deletedAt !== undefined).length;
     const lastCaseUpdate = userCases.length > 0
       ? Math.max(...userCases.map((c) => c.updatedAt))

@@ -47,8 +47,8 @@ type ShowByTab = "active" | "completed" | "closed" | "all";
 // LABEL MAPS
 // ============================================================================
 
-/** The stages a filter can pick (closed has its own toggle). */
-const STAGES: readonly CaseStatus[] = ["pwd", "recruitment", "eta9089", "i140"];
+/** The stages a filter can pick (closed and complete have their own tabs). */
+const STAGES: readonly CaseStatus[] = ["pwd", "recruitment", "eta9089", "i140", "i485", "consular"];
 const PROGRESS: readonly ProgressStatus[] = ["working", "waiting_intake", "filed", "approved", "under_review", "rfi_rfe"];
 
 const TABS: ReadonlyArray<{ id: ShowByTab; label: string }> = [
@@ -113,7 +113,7 @@ function RadioRow({
  */
 const deriveTabFromFilters = (f: CaseListFilters): ShowByTab => {
   if (f.status === "closed") return "closed";
-  if (f.status === "i140" && f.progressStatus === "approved") return "completed";
+  if (f.status === "complete") return "completed";
   // If activeOnly is explicitly false with no status filters, show "all"
   if (f.activeOnly === false && !f.status && !f.progressStatus) return "all";
   return "active";
@@ -161,8 +161,8 @@ export function CaseFilterBar({
 
   // Sync activeTab when filters change from URL or external source
   useEffect(() => {
-    // Completed = i140 + approved
-    if (filters.status === "i140" && filters.progressStatus === "approved") {
+    // Completed = the green card received
+    if (filters.status === "complete") {
       setActiveTab("completed");
     } else if (filters.status === "closed") {
       setActiveTab("closed");
@@ -210,7 +210,7 @@ export function CaseFilterBar({
     switch (tab) {
       case "active":
         // Active = show all non-closed, non-completed cases
-        // Uses activeOnly filter to exclude closed and completed (i140 + approved)
+        // Uses activeOnly filter to exclude closed and complete (the green card received)
         onFiltersChange({
           ...filters,
           status: undefined,
@@ -219,11 +219,11 @@ export function CaseFilterBar({
         });
         break;
       case "completed":
-        // Completed = I-140 approved
+        // Completed = the green card received
         onFiltersChange({
           ...filters,
-          status: "i140",
-          progressStatus: "approved",
+          status: "complete",
+          progressStatus: undefined,
           activeOnly: false,
         });
         break;
@@ -368,7 +368,7 @@ export function CaseFilterBar({
                 </div>
               </fieldset>
             )}{" "}
-            {/* Completed is the approved I-140s, so its progress is set too. */}
+            {/* Completed is the cases whose green card arrived: one progress, so none to pick. */}
             {activeTab === "completed" ? null : (
               <fieldset className="mt-4">
                 <legend className={PANEL_LEGEND}>Progress</legend>{" "}

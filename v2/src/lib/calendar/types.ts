@@ -8,6 +8,7 @@
 import type { Id } from "@convex/_generated/dataModel";
 import type { Stage } from "../timeline/types";
 import type { RfiEntry, RfeEntry, AdditionalRecruitmentMethod } from "../shared/types";
+import type { GreenCardDates } from "@/lib/perm";
 
 // Re-export Stage and STAGE_COLORS for consistency
 export { STAGE_COLORS, STAGE_ON_FILL, type Stage } from "../timeline/types";
@@ -338,7 +339,7 @@ export function createCalendarEvent(input: CalendarEventInput): CalendarEvent {
  * Subset of case data required for calendar event extraction.
  * Extends CaseWithDates from timeline with additional identification fields.
  */
-export interface CalendarCaseData {
+export interface CalendarCaseData extends GreenCardDates {
   _id: Id<"cases">;
 
   // Case identification

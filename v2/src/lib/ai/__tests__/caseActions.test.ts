@@ -131,6 +131,31 @@ describe('buildCaseUpdate', () => {
     expect(buildCaseUpdate(params({ i140FilingDate: '2026-09-02', clearFields: ['i140FilingDate'] }), c)).toMatchObject({ kind: 'answer' });
   });
 
+  it("records the steps past the I-140, the category and the countries, each in the form's words", () => {
+    const out = buildCaseUpdate(
+      params({ i485FilingDate: '2026-10-01', ebCategory: 'EB-3-other', countryOfBirth: 'IN', greenCardPath: 'adjustment' }),
+      caseDoc(),
+    );
+    if ('kind' in out) throw new Error('expected a change');
+    expect(out.args).toMatchObject({
+      i485FilingDate: '2026-10-01',
+      ebCategory: 'EB-3-other',
+      countryOfBirth: 'IN',
+      greenCardPath: 'adjustment',
+    });
+    const words = out.changes.join(' | ');
+    expect(words).toContain('I-485 filed');
+    expect(words).toContain('EB-3, other worker');
+    expect(words).toContain('India');
+    expect(words).toContain('Adjustment of status in the US (I-485)');
+  });
+
+  it('clears the date the card arrived', () => {
+    const out = buildCaseUpdate(params({ clearFields: ['cardReceivedDate'] }), caseDoc({ cardReceivedDate: '2027-04-12' }));
+    if ('kind' in out) throw new Error('expected a change');
+    expect(out.args.cardReceivedDate).toBeNull();
+  });
+
   it('sets the stage by hand only when asked, with the override flag', () => {
     const out = buildCaseUpdate(params({ caseStatus: 'eta9089', progressStatus: 'filed', setStageByHand: true }), caseDoc());
     if ('kind' in out) throw new Error('expected a change');
@@ -347,6 +372,9 @@ describe('small pieces', () => {
     expect(dateNeededFor('eta9089', 'filed')).toBe('the ETA 9089 filing date');
     expect(dateNeededFor('i140', 'approved')).toBe('the I-140 approval date');
     expect(dateNeededFor('recruitment')).toBe('the PWD determination date');
+    expect(dateNeededFor('i485', 'filed')).toBe('the I-485 filing date');
+    expect(dateNeededFor('consular', 'under_review')).toBe('the consular interview date');
+    expect(dateNeededFor('complete')).toBe('the date the green card arrived');
   });
 
   it('stores a single-date method with its date', () => {

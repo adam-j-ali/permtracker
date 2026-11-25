@@ -164,7 +164,7 @@ function projectFields(
  * It supports extensive filtering, field projection, and aggregation options.
  *
  * ## Filter Options
- * - `caseStatus`: Filter by case stage (pwd, recruitment, eta9089, i140, closed)
+ * - `caseStatus`: Filter by case stage (pwd, recruitment, eta9089, i140, i485, consular, complete, closed)
  * - `progressStatus`: Filter by progress status (working, waiting_intake, filed, approved, under_review, rfi_rfe)
  * - `hasRfi`: Filter for cases with active RFI requests
  * - `hasRfe`: Filter for cases with active RFE requests
@@ -403,6 +403,12 @@ export const queryCases = query({
         "filingWindowCloses",
         "i140FilingDate",
         "i140ApprovalDate",
+        // Past the I-140
+        "greenCardPath",
+        "ebCategory",
+        "i485FilingDate",
+        "consularInterviewDate",
+        "cardReceivedDate",
         "createdAt",
         "updatedAt",
       ];

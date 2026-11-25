@@ -130,6 +130,8 @@ export const getSummary = query({
         recruitment: { count: 0, subtext: "" },
         eta9089: { count: 0, subtext: "" },
         i140: { count: 0, subtext: "" },
+        i485: { count: 0, subtext: "" },
+        consular: { count: 0, subtext: "" },
         complete: { count: 0, subtext: "" },
         closed: { count: 0, subtext: "" },
         duplicates: { count: 0, subtext: "" },
@@ -148,9 +150,12 @@ export const getSummary = query({
       recruitment: { total: 0, readyToStart: 0, inProgress: 0 },
       // ETA 9089 breakdowns
       eta9089: { total: 0, prep: 0, rfi: 0, filed: 0 },
-      // I-140 breakdowns (excluding approved)
-      i140: { total: 0, prep: 0, rfe: 0, filed: 0 },
-      // Complete (I-140 approved)
+      // I-140 breakdowns; an approved I-140 stays here until the case moves past it
+      i140: { total: 0, prep: 0, rfe: 0, filed: 0, approved: 0 },
+      // Past the I-140: the I-485 or the consulate
+      i485: { total: 0, prep: 0, filed: 0, interview: 0, decided: 0 },
+      consular: { total: 0, prep: 0, filed: 0, interview: 0, decided: 0 },
+      // Complete: the green card arrived
       complete: 0,
       // Closed/archived
       closed: 0,
@@ -204,25 +209,38 @@ export const getSummary = query({
           break;
 
         case "i140":
-          if (progress === "approved") {
-            // I-140 approved = Complete
-            counts.complete++;
-          } else {
-            // I-140 not approved = in I-140 stage
-            counts.i140.total++;
-            // prep = working | waiting_intake | under_review
-            if (progress === "working" || progress === "waiting_intake" || progress === "under_review") {
-              counts.i140.prep++;
-            }
-            // rfe = rfi_rfe
-            if (progress === "rfi_rfe") {
-              counts.i140.rfe++;
-            }
-            // filed = filed
-            if (progress === "filed") {
-              counts.i140.filed++;
-            }
+          counts.i140.total++;
+          // prep = working | waiting_intake | under_review
+          if (progress === "working" || progress === "waiting_intake" || progress === "under_review") {
+            counts.i140.prep++;
           }
+          // rfe = rfi_rfe
+          if (progress === "rfi_rfe") {
+            counts.i140.rfe++;
+          }
+          // filed = filed
+          if (progress === "filed") {
+            counts.i140.filed++;
+          }
+          // An approved I-140 isn't the end any more: the case is complete when the green card arrives.
+          if (progress === "approved") {
+            counts.i140.approved++;
+          }
+          break;
+
+        case "i485":
+        case "consular": {
+          const path = counts[status];
+          path.total++;
+          if (progress === "working" || progress === "waiting_intake") path.prep++;
+          if (progress === "filed" || progress === "rfi_rfe") path.filed++;
+          if (progress === "under_review") path.interview++;
+          if (progress === "approved") path.decided++;
+          break;
+        }
+
+        case "complete":
+          counts.complete++;
           break;
 
         case "closed":
@@ -261,7 +279,21 @@ export const getSummary = query({
     if (counts.i140.prep > 0) i140Parts.push(`${counts.i140.prep} prep`);
     if (counts.i140.rfe > 0) i140Parts.push(`${counts.i140.rfe} RFE`);
     if (counts.i140.filed > 0) i140Parts.push(`${counts.i140.filed} filed`);
+    if (counts.i140.approved > 0) i140Parts.push(`${counts.i140.approved} approved`);
     const i140Subtext = i140Parts.join(", ") || "0 prep";
+
+    // Past the I-140: "1 prep, 1 filed, 2 interview, 1 approved"
+    const pathSubtext = (c: { prep: number; filed: number; interview: number; decided: number }) => {
+      const parts: string[] = [];
+      if (c.prep > 0) parts.push(`${c.prep} prep`);
+      if (c.filed > 0) parts.push(`${c.filed} filed`);
+      if (c.interview > 0) parts.push(`${c.interview} interview`);
+      if (c.decided > 0) parts.push(`${c.decided} approved`);
+      return parts.join(", ") || "0 filed";
+    };
+    // How far along the path's cases are: the share whose card is on its way (a progress bar, not a rate).
+    const pathProgress = (c: { total: number; decided: number }) =>
+      c.total > 0 ? Math.round((c.decided / c.total) * 100) : 0;
 
     // Calculate progress percentages
     const pwdProgress = counts.pwd.total > 0
@@ -298,9 +330,19 @@ export const getSummary = query({
         subtext: i140Subtext,
         progress: i140Progress,
       },
+      i485: {
+        count: counts.i485.total,
+        subtext: pathSubtext(counts.i485),
+        progress: pathProgress(counts.i485),
+      },
+      consular: {
+        count: counts.consular.total,
+        subtext: pathSubtext(counts.consular),
+        progress: pathProgress(counts.consular),
+      },
       complete: {
         count: counts.complete,
-        subtext: "I-140 Approved",
+        subtext: "Green card received",
         progress: 100,
       },
       closed: {

@@ -26,6 +26,9 @@ export type Stage =
   | "recruitment"
   | "eta9089"
   | "i140"
+  | "i485"
+  | "consular"
+  | "complete"
   | "rfi"
   | "rfe";
 
@@ -39,16 +42,25 @@ export const STAGE_COLORS: Record<Stage, string> = {
   recruitment: "#9333EA",
   eta9089: "#D97706",
   i140: "#059669",
+  i485: "#0E7490",
+  consular: "#BE185D",
+  complete: "#2ECC40",
   rfi: "#DC2626",
   rfe: "#DC2626",
 } as const;
 
-/** Text that reads on each stage fill (white measured 3.2:1 on the amber, 3.8:1 on the teal). */
+/**
+ * Text that reads on each stage fill (white measured 3.2:1 on the amber, 3.8:1 on the teal; white 5.4:1 on the
+ * I-485 cyan and 6.0:1 on the consulate rose; black 9.8:1 on the complete green).
+ */
 export const STAGE_ON_FILL: Record<Stage, string> = {
   pwd: "#FFFFFF",
   recruitment: "#FFFFFF",
   eta9089: "#000000",
   i140: "#000000",
+  i485: "#FFFFFF",
+  consular: "#FFFFFF",
+  complete: "#000000",
   rfi: "#FFFFFF",
   rfe: "#FFFFFF",
 } as const;
@@ -151,6 +163,26 @@ export const MILESTONE_CONFIG: readonly MilestoneConfig[] = [
   { field: "i140ReceiptDate", label: "I-140 receipt", stage: "i140" },
   { field: "i140ApprovalDate", label: "I-140 approved", stage: "i140" },
   { field: "i140DenialDate", label: "I-140 denied", stage: "i140" },
+
+  // Past the I-140: adjustment of status (the I-485, the work permit, the travel document)
+  { field: "i485FilingDate", label: "I-485 filed", stage: "i485" },
+  { field: "i485ReceiptDate", label: "I-485 receipt", stage: "i485" },
+  { field: "i485BiometricsDate", label: "Fingerprints", stage: "i485" },
+  { field: "i485InterviewDate", label: "I-485 interview", stage: "i485" },
+  { field: "i485ApprovalDate", label: "I-485 approved", stage: "i485" },
+  { field: "eadFilingDate", label: "Work permit filed", stage: "i485" },
+  { field: "eadApprovalDate", label: "Work permit approved", stage: "i485" },
+  { field: "apFilingDate", label: "Travel document filed", stage: "i485" },
+  { field: "apApprovalDate", label: "Travel document approved", stage: "i485" },
+
+  // Or a visa at a consulate
+  { field: "nvcReceivedDate", label: "Visa Center case", stage: "consular" },
+  { field: "ds260SubmittedDate", label: "DS-260 submitted", stage: "consular" },
+  { field: "consularInterviewDate", label: "Consular interview", stage: "consular" },
+
+  // The card
+  { field: "cardProducedDate", label: "Card produced", stage: "complete" },
+  { field: "cardReceivedDate", label: "Card received", stage: "complete" },
 ] as const;
 
 // ============================================================================
@@ -203,6 +235,22 @@ export interface CaseWithDates {
   i140ReceiptDate?: string | null;
   i140ApprovalDate?: string | null;
   i140DenialDate?: string | null;
+
+  // Past the I-140 (convex/lib/perm/greenCard.ts)
+  i485FilingDate?: string | null;
+  i485ReceiptDate?: string | null;
+  i485BiometricsDate?: string | null;
+  i485InterviewDate?: string | null;
+  i485ApprovalDate?: string | null;
+  eadFilingDate?: string | null;
+  eadApprovalDate?: string | null;
+  apFilingDate?: string | null;
+  apApprovalDate?: string | null;
+  nvcReceivedDate?: string | null;
+  ds260SubmittedDate?: string | null;
+  consularInterviewDate?: string | null;
+  cardProducedDate?: string | null;
+  cardReceivedDate?: string | null;
 
   // RFI/RFE entries
   rfiEntries?: RfiEntry[] | null;

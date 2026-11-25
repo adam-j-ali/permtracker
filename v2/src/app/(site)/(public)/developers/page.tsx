@@ -75,6 +75,7 @@ webhook-signature: v1,K5oZ...base64...=
 
 {
   "type": "case.status_changed",
+  "version": 2,
   "timestamp": "2026-10-09T16:05:00.000Z",
   "data": {
     "caseNumber": "G-100-26045-123456",
@@ -440,8 +441,9 @@ export default function DevelopersPage() {
           <summary className="cursor-pointer py-2.5 font-bold">A delivery, and how to check its signature</summary>
           <Code>{WEBHOOK_EXAMPLE}</Code>{" "}
           <p className="mt-3 text-sm leading-relaxed text-soft">
-            The signature is HMAC-SHA256, keyed by your secret without its whsec_ prefix (base64-decoded), over the id,
-            the timestamp and the raw body joined by dots. Refuse a timestamp more than five minutes off, and use the
+            The body&rsquo;s version is 2. Version 1 had no version field, and every field it sent is still there by
+            the same name, so code written for it keeps working. The signature is HMAC-SHA256, keyed by your secret
+            without its whsec_ prefix (base64-decoded), over the id, the timestamp and the raw body joined by dots. Refuse a timestamp more than five minutes off, and use the
             id to skip a delivery you&rsquo;ve already handled: it&rsquo;s the same on every retry.
           </p>{" "}
           <Code>{VERIFY_EXAMPLE}</Code>

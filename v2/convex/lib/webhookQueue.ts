@@ -12,7 +12,7 @@ import type { MutationCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import { entitlement } from "./apiPlans";
-import type { WebhookEvent } from "./webhookSign";
+import { WEBHOOK_PAYLOAD_VERSION, type WebhookEvent } from "./webhookSign";
 
 /** The endpoints whose account's plan, as it applies now, carries webhooks. */
 async function withWebhooks(ctx: MutationCtx, endpoints: Doc<"webhookEndpoints">[]): Promise<Doc<"webhookEndpoints">[]> {
@@ -33,9 +33,9 @@ async function withWebhooks(ctx: MutationCtx, endpoints: Doc<"webhookEndpoints">
   return out;
 }
 
-/** What every delivery body looks like: Standard Webhooks' type, timestamp and data. */
+/** What every delivery body looks like: Standard Webhooks' type, timestamp and data, and the payload's version. */
 export function eventBody(type: WebhookEvent | "ping", data: Record<string, unknown>, at: number): string {
-  return JSON.stringify({ type, timestamp: new Date(at).toISOString(), data });
+  return JSON.stringify({ type, version: WEBHOOK_PAYLOAD_VERSION, timestamp: new Date(at).toISOString(), data });
 }
 
 export interface Enqueued {

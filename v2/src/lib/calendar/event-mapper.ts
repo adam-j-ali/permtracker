@@ -13,7 +13,7 @@
  */
 
 import { differenceInDays, parseISO } from "date-fns";
-import { buildDeadlineInput, extractActiveDeadlines, type ExtractedDeadline, type LooseDeadlineCaseData } from "@/lib/perm";
+import { buildDeadlineInput, extractActiveDeadlines, pickGreenCardDates, type ExtractedDeadline, type LooseDeadlineCaseData } from "@/lib/perm";
 import { extractMilestones } from "../timeline/milestones";
 import type { CaseWithDates, Milestone } from "../timeline/types";
 import {
@@ -127,6 +127,8 @@ export function caseToCalendarEvents(
     eta9089ExpirationDate: caseData.eta9089ExpirationDate,
     i140FilingDate: caseData.i140FilingDate,
     i140ApprovalDate: caseData.i140ApprovalDate,
+    // Past the I-140: the I-485 or the consulate, and the card
+    ...pickGreenCardDates(caseData),
     rfiEntries: caseData.rfiEntries ?? undefined,
     rfeEntries: caseData.rfeEntries ?? undefined,
   };

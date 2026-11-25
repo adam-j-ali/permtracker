@@ -16,7 +16,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { getCurrentUserId, getCurrentUserIdOrNull } from "./lib/auth";
 import { readUserCases } from "./lib/userCases";
-import { caseDeadlineDates, type CaseDeadlineDates } from "./lib/caseDates";
+import { caseDeadlineDates, caseGreenCardDates, type CaseDeadlineDates, type CaseGreenCardDates } from "./lib/caseDates";
 import type { CaseStatus, ProgressStatus } from "./lib/perm/statusTypes";
 import { onTimeline, timelineSwitchFor } from "./lib/timelineShow";
 
@@ -181,7 +181,7 @@ interface TimelineRfiRfeEntry {
 /**
  * Timeline case data type
  */
-interface TimelineCaseData extends CaseDeadlineDates {
+interface TimelineCaseData extends CaseDeadlineDates, CaseGreenCardDates {
   id: Id<"cases">;
   employerName: string;
   positionTitle: string;
@@ -221,6 +221,7 @@ export const getCasesForTimeline = query({
       caseStatus: caseDoc.caseStatus,
       progressStatus: caseDoc.progressStatus,
       ...caseDeadlineDates(caseDoc),
+      ...caseGreenCardDates(caseDoc),
       // RFI/RFE entries - default to empty arrays
       rfiEntries: (caseDoc.rfiEntries ?? []) as TimelineRfiRfeEntry[],
       rfeEntries: (caseDoc.rfeEntries ?? []) as TimelineRfiRfeEntry[],

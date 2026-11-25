@@ -29,12 +29,16 @@ const GROUPS = [
 ] as const;
 
 /**
- * Open cases are every case the deadline list reads: all but closed ones.
- * "complete" (I-140 approved) is still an open case there.
+ * Open cases are the ones still on their way to a green card: every stage
+ * from the PWD to the I-485 or the consulate. A complete case (the card
+ * arrived) and a closed one are done. The two counts past the I-140 read as
+ * zero from a server that doesn't send them yet, so the page never breaks
+ * while the site and the server are on different releases.
  */
 export function openCaseCount(
   summary:
-    | Record<"pwd" | "recruitment" | "eta9089" | "i140" | "complete", { count: number }>
+    | (Record<"pwd" | "recruitment" | "eta9089" | "i140", { count: number }> &
+        Partial<Record<"i485" | "consular", { count: number }>>)
     | undefined,
 ): number | undefined {
   if (summary === undefined) return undefined;
@@ -43,7 +47,8 @@ export function openCaseCount(
     summary.recruitment.count +
     summary.eta9089.count +
     summary.i140.count +
-    summary.complete.count
+    (summary.i485?.count || 0) +
+    (summary.consular?.count || 0)
   );
 }
 

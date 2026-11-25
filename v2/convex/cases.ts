@@ -21,7 +21,7 @@ import {
 } from "./lib/caseListTypes";
 import { filterBySearch, projectCaseForCard, sortCases, determineReopenStatus } from "./lib/caseListHelpers";
 import { calculateDerivedDates, resolveEta9089ExpirationDate } from "./lib/derivedCalculations";
-import { validateCase, mapToValidatorFormat, calculateAutoStatus } from "./lib/perm";
+import { validateCase, mapToValidatorFormat, calculateAutoStatus, isCaseOpen } from "./lib/perm";
 import {
   GREEN_CARD_TEXT_FIELDS,
   i140CategoryFor,
@@ -370,7 +370,7 @@ void _greenCardFitsTable;
 
 /** The fields past the I-140 as a new case stores them: empty text is no value. */
 function greenCardFieldsForCreate(
-  args: CaseCreateArgs,
+  args: Partial<Pick<StoredCase, GreenCardTextField | "greenCardPath" | "ebCategory">>,
 ): Partial<Pick<StoredCase, GreenCardTextField | "greenCardPath" | "ebCategory">> {
   const out: Partial<Pick<StoredCase, GreenCardTextField | "greenCardPath" | "ebCategory">> = {};
   for (const f of GREEN_CARD_TEXT_FIELDS) {
@@ -2331,6 +2331,28 @@ export const importCases = mutation({
             "tags",
             "jobDescriptionPositionTitle",
             "jobDescription",
+            // Past the I-140 (export v3)
+            "greenCardPath",
+            "ebCategory",
+            "countryOfBirth",
+            "chargeabilityCountry",
+            "i485FilingDate",
+            "i485ReceiptDate",
+            "i485ReceiptNumber",
+            "i485BiometricsDate",
+            "i485InterviewDate",
+            "i485ApprovalDate",
+            "eadFilingDate",
+            "eadReceiptNumber",
+            "eadApprovalDate",
+            "apFilingDate",
+            "apReceiptNumber",
+            "apApprovalDate",
+            "nvcReceivedDate",
+            "ds260SubmittedDate",
+            "consularInterviewDate",
+            "cardProducedDate",
+            "cardReceivedDate",
           )
           .partial().fields,
         // A second job title the case once carried beside the position title. No case held one on
@@ -2657,6 +2679,8 @@ export const importCases = mutation({
         i140Category: caseData.i140Category,
         i140PremiumProcessing: caseData.i140PremiumProcessing,
         i140ServiceCenter: caseData.i140ServiceCenter,
+        // Past the I-140: the path, the category, the countries, the I-485 or consulate, the card
+        ...greenCardFieldsForCreate(caseData),
 
         // Optional text fields (the DOL number as in create: convex/lib/dolCaseNumber.ts)
         caseNumber: dolCaseNumberOnCreate(caseData),
@@ -2702,7 +2726,8 @@ const caseListFilterArgs = {
 
 /**
  * The case list's filters other than search: stage, progress, favourites,
- * duplicates, and active-only (neither closed nor an approved I-140).
+ * duplicates, and active-only (neither closed nor complete, the green card
+ * received).
  */
 function applyCaseListFilters<T extends Doc<"cases">>(
   cases: T[],
@@ -2713,10 +2738,7 @@ function applyCaseListFilters<T extends Doc<"cases">>(
     if (args.progressStatus !== undefined && c.progressStatus !== args.progressStatus) return false;
     if (args.favoritesOnly === true && c.isFavorite !== true) return false;
     if (args.duplicatesOnly === true && c.duplicateOf === undefined) return false;
-    if (args.activeOnly === true) {
-      if (c.caseStatus === "closed") return false;
-      if (c.caseStatus === "i140" && c.progressStatus === "approved") return false;
-    }
+    if (args.activeOnly === true && !isCaseOpen(c)) return false;
     return true;
   });
 }

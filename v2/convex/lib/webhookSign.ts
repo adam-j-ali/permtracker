@@ -19,6 +19,13 @@
 
 export const WEBHOOK_SECRET_PREFIX = "whsec_";
 
+/**
+ * The delivery body's version, sent as `version` beside `type`, `timestamp` and `data`. Version 1 (Oct 2026 to
+ * Nov 25 2026) had no `version` field; version 2 adds it and keeps every version 1 field by the same name and
+ * meaning. A later change to a payload's fields raises this number, and a consumer reads it before `data`.
+ */
+export const WEBHOOK_PAYLOAD_VERSION = 2;
+
 /** Every event type an endpoint can subscribe to. */
 export const WEBHOOK_EVENTS = [
   "case.status_changed",

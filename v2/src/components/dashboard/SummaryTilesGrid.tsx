@@ -13,7 +13,9 @@ import { keepWhole } from "@/components/ui/keep-whole";
 
 /**
  * The account's cases by stage, as one row of counts. Each count links to
- * those cases; the stage's colour is a dot beside its name.
+ * those cases; the stage's colour is a dot beside its name. The I-485 and
+ * consulate counts join the row once a case reaches them; Complete counts the
+ * cases whose green card arrived.
  */
 
 interface Cell {
@@ -85,13 +87,23 @@ export function SummaryTilesSkeleton() {
 
 function SummaryTilesGridContent() {
   const { isSigningOut } = useAuthContext();
-  const data = useQuery(api.dashboard.getSummary, isSigningOut ? "skip" : undefined);
-  if (data === undefined) return <SummaryTilesSkeleton />;
+  const summary = useQuery(api.dashboard.getSummary, isSigningOut ? "skip" : undefined);
+  if (summary === undefined) return <SummaryTilesSkeleton />;
+  // A server a release behind sends no I-485 or consulate counts: they read as none.
+  const none = { count: 0, subtext: "" };
+  const data = { ...summary, i485: summary.i485 || none, consular: summary.consular || none };
 
   const total =
-    data.pwd.count + data.recruitment.count + data.eta9089.count + data.i140.count + data.complete.count + data.closed.count;
+    data.pwd.count +
+    data.recruitment.count +
+    data.eta9089.count +
+    data.i140.count +
+    data.i485.count +
+    data.consular.count +
+    data.complete.count +
+    data.closed.count;
 
-  const stage = (key: "pwd" | "recruitment" | "eta9089" | "i140"): Cell => ({
+  const stage = (key: "pwd" | "recruitment" | "eta9089" | "i140" | "i485" | "consular"): Cell => ({
     key,
     label: STAGE_VISUALS[key].label,
     dot: STAGE_VISUALS[key].fill,
@@ -104,13 +116,16 @@ function SummaryTilesGridContent() {
     stage("recruitment"),
     stage("eta9089"),
     stage("i140"),
+    // Past the I-140: shown once a case is there, so an account that tracks only PERM sees the row it always had.
+    ...(data.i485.count > 0 ? [stage("i485")] : []),
+    ...(data.consular.count > 0 ? [stage("consular")] : []),
     {
       key: "complete",
       label: "Complete",
       dot: "bg-data-good",
       count: data.complete.count,
       note: data.complete.subtext || undefined,
-      href: "/cases?status=i140&progress=approved",
+      href: "/cases?status=complete",
     },
     {
       key: "closed",

@@ -15,7 +15,10 @@ describe("getStageIndex", () => {
     ["recruitment", 1],
     ["eta9089", 2],
     ["i140", 3],
-    ["closed", 4],
+    ["i485", 4],
+    ["consular", 4],
+    ["complete", 5],
+    ["closed", 6],
   ] as const)("returns %i for %s", (status, expected) => {
     expect(getStageIndex(status)).toBe(expected);
   });
@@ -205,17 +208,42 @@ describe("calculateNextAction", () => {
     expect(result!.action).toBe("File I-140");
   });
 
-  it("returns 'Case complete' when I-140 approved", () => {
-    const result = calculateNextAction({
+  describe("past the I-140", () => {
+    const approved = {
       ...baseCaseData,
       ...recruitmentDone,
-      caseStatus: "i140",
+      caseStatus: "i140" as const,
       eta9089FilingDate: "2025-04-01",
       eta9089CertificationDate: "2025-05-01",
       i140FilingDate: "2025-05-15",
       i140ApprovalDate: "2025-05-30",
+    };
+
+    it("asks for the path once the I-140 is approved: it isn't the end any more", () => {
+      expect(calculateNextAction(approved)!.action).toBe("Choose the green card path");
     });
-    expect(result!.action).toBe("Case complete");
+
+    it("walks the I-485: file it, wait for its decision, wait for the card", () => {
+      expect(calculateNextAction({ ...approved, greenCardPath: "adjustment" })!.action).toBe("File I-485");
+      expect(calculateNextAction({ ...approved, i485FilingDate: "2025-07-01" })!.action).toBe("Wait for I-485 decision");
+      expect(
+        calculateNextAction({ ...approved, i485FilingDate: "2025-07-01", i485ApprovalDate: "2026-01-02" })!.action,
+      ).toBe("Wait for the card");
+    });
+
+    it("walks the consulate: the DS-260, the interview, the card", () => {
+      expect(calculateNextAction({ ...approved, greenCardPath: "consular" })!.action).toBe("Submit DS-260");
+      expect(calculateNextAction({ ...approved, ds260SubmittedDate: "2025-07-01" })!.action).toBe("Wait for the interview");
+      expect(
+        calculateNextAction({ ...approved, ds260SubmittedDate: "2025-07-01", consularInterviewDate: "2025-10-01" })!.action,
+      ).toBe("Wait for the card");
+    });
+
+    it("is complete only when the card arrived", () => {
+      expect(calculateNextAction({ ...approved, cardReceivedDate: "2026-02-01", caseStatus: "complete" })!.action).toBe(
+        "Case complete",
+      );
+    });
   });
 
   it("returns 'Wait for I-140 decision' when filed but no decision", () => {

@@ -105,6 +105,19 @@ export type GreenCardFields = Partial<Record<GreenCardTextField, string | null>>
   i140Category?: I140Category | null;
 };
 
+/** The dates past the I-140, each optional: what the timeline and the calendar rows carry. */
+export type GreenCardDates = Partial<Record<GreenCardDateField, string | null>>;
+
+/** The dates past the I-140 a case holds, and nothing else, so a row can carry them on. */
+export function pickGreenCardDates(c: GreenCardDates): Partial<Record<GreenCardDateField, string>> {
+  const out: Partial<Record<GreenCardDateField, string>> = {};
+  for (const f of GREEN_CARD_DATE_FIELDS) {
+    const value = c[f];
+    if (value) out[f] = value;
+  }
+  return out;
+}
+
 /** Whether the case has any date past the I-140. */
 export function hasGreenCardDates(c: GreenCardFields): boolean {
   return GREEN_CARD_DATE_FIELDS.some((f) => !!c[f]);
